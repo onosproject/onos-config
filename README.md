@@ -20,11 +20,11 @@ The following set of features will be required to support the real-world use-cas
 * Import existing device configuration
 * Configuration Intents - ability to translate high-level (possibly network-wide) configuration specifications into lower-level (device-specific) operations
 
-# Key Tenets
+## Key Tenets
 * The subsystem will be designed as a separate entity to allow its use with the existing ONOS 2.0 architecture and to fit with the NG ONOS architecture.
 * Northbound API for the subsystem will be gNMI and gNOI.
-** These interfaces are already accepted standards and are well-defined, low-profile interfaces with support for transaction semantics.
-** YANG models that will be exposed as part of the NB API are yet to be determined (or defined).
+   * These interfaces are already accepted standards and are well-defined, low-profile interfaces with support for transaction semantics.
+   * YANG models that will be exposed as part of the NB API are yet to be determined (or defined).
 * Southbound API for the subsystem will be gNMI and gNOI.
-** This will allow direct use with Stratum-compliant switches without requiring an adaptation layer.
-** Adapters can be created for devices that do not directly support gNMI/gNOI interfaces. Such adapters can be deployed either as proxy agents or potentially can be hosted on the devices themselves.
+   * This will allow direct use with Stratum-compliant switches without requiring an adaptation layer.
+   * Adapters can be created for devices that do not directly support gNMI/gNOI interfaces. Such adapters can be deployed either as proxy agents or potentially can be hosted on the devices themselves.
