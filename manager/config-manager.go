@@ -17,7 +17,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/store"
+	"onos-config/store"
 )
 
 func main() {
