@@ -28,3 +28,12 @@ The following set of features will be required to support the real-world use-cas
 * Southbound API for the subsystem will be gNMI and gNOI.
    * This will allow direct use with Stratum-compliant switches without requiring an adaptation layer.
    * Adapters can be created for devices that do not directly support gNMI/gNOI interfaces. Such adapters can be deployed either as proxy agents or potentially can be hosted on the devices themselves.
+
+## Installing
+
+This module is not yet available as a "go get " target, so to use it as a developer
+1) Ensure your $GOPATH is set to ~/go
+2) Change directory to ~/go/src/github.com/opennetworkinglab/onos-config
+3) git clone https://github.com/opennetworkinglab/onos-config.git
+
+## Running
