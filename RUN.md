@@ -2,7 +2,7 @@
 
 To run:
 ```
-cd ~/go/src/onos-config
+cd ~/go/src/github.com/opennetworkinglab/onos-config
 
 pushd store && \
 go build store-api.go && \
