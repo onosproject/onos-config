@@ -1,12 +1,13 @@
-#Device simulator
+# Device simulator
 
 This is a docker VM that runs gNMI implementation supporting openconfig models
 
 Inspired by https://github.com/faucetsdn/gnmi 
 
 ## Create the docker image
+```
 docker build -t devicesim -f Dockerfile .
-
+```
 
 ## Run 3 devices with Docker Compose
 Run 3 devices with 
