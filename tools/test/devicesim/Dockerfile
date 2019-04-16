@@ -55,7 +55,7 @@ COPY ./certs certs
 
 CMD certs/generate_certs.sh device $INDEX > /dev/null 2>&1 && \
   IPADDR=`ip route get 1.2.3.4 | grep dev | awk '{print $7}'` && \
-  echo "Device"$INDEX" "$IPADDR":"$GNMI_PORT && \
+  echo "Please add '"$IPADDR" device"$INDEX" device"$INDEX".opennetworking.org' to /etc/hosts and access with gNMI client at device"$INDEX":"$GNMI_PORT && \
   sed -i -e "s/replace-device-name/device"$INDEX"/g" target_configs/typical_ofsw_config.json && \
   gnmi_target \
   -bind_address :$GNMI_PORT \

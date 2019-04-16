@@ -23,7 +23,10 @@ if [ "${1}" = "-h" -o "${1}" = "--help" ]; then
     exit 0
 fi
 
-cd ~/certs
+if [ "${PWD##*/}" != "certs" ]; then
+    cd certs
+fi
+
 rm -f ${TYPE}${INDEX}.*
 
 # Generate Server Private Key
