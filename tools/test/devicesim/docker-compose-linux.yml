@@ -3,7 +3,7 @@ services:
   devicesim1:
     image: devicesim:latest
     environment:
-    - INDEX=1
+    - GNMI_TARGET=device1.opennetworking.org
     networks:
       simnet:
         ipv4_address: 172.25.0.11
@@ -15,7 +15,7 @@ services:
   devicesim2:
     image: devicesim:latest
     environment:
-    - INDEX=2
+      - GNMI_TARGET=device2.opennetworking.org
     networks:
       simnet:
         ipv4_address: 172.25.0.12
@@ -27,7 +27,7 @@ services:
   devicesim3:
     image: devicesim:latest
     environment:
-    - INDEX=3
+      - GNMI_TARGET=device3.opennetworking.org
     networks:
       simnet:
         ipv4_address: 172.25.0.13

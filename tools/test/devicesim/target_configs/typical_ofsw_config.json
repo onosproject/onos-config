@@ -33,7 +33,7 @@
       "hostname": "replace-device-name",
       "domain-name": "opennetworking.org",
       "login-banner": "This device is for authorized use only",
-      "motd-banner": "Welcome to gNMI Device simulator"
+      "motd-banner": "replace-motd-banner"
     },
     "openconfig-openflow:openflow": {
       "agent": {
