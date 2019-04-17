@@ -3,34 +3,25 @@ services:
   devicesim1:
     image: devicesim:latest
     environment:
-      - INDEX=1
-    networks:
-      default:
-        aliases:
-          - device1
-          - device1.opennetworking.org
+      - GNMI_PORT=10161
+    ports:
+      - "10161:10161"
     labels:
       description: "gNMI Simulator Device 1"
   devicesim2:
     image: devicesim:latest
     environment:
-      - INDEX=2
-    networks:
-      default:
-        aliases:
-          - device2
-          - device2.opennetworking.org
+      - GNMI_PORT=10162
+    ports:
+      - "10162:10162"
     labels:
       description: "gNMI Simulator Device 2"
   devicesim3:
     image: devicesim:latest
     environment:
-      - INDEX=3
-    networks:
-      default:
-        aliases:
-          - device3
-          - device3.opennetworking.org
+      - GNMI_PORT=10163
+    ports:
+      - "10163:10163"
     labels:
       description: "gNMI Simulator Device 3"
 

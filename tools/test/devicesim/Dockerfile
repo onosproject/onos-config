@@ -32,8 +32,6 @@ ENV GOBIN=$GOROOT/bin
 ENV PATH=$GOBIN:${PATH}
 ENV GOPATH=$HOME/go
 
-ENV INDEX=1
-
 RUN mkdir -p $GOPATH \
     && go get -u \
       github.com/google/gnxi/gnmi_capabilities \
@@ -53,14 +51,20 @@ ENV GNMI_PORT=10161
 COPY ./target_configs target_configs
 COPY ./certs certs
 
-CMD certs/generate_certs.sh device $INDEX > /dev/null 2>&1 && \
+CMD \
   IPADDR=`ip route get 1.2.3.4 | grep dev | awk '{print $7}'` && \
-  echo "Please add '"$IPADDR" device"$INDEX" device"$INDEX".opennetworking.org' to /etc/hosts and access with gNMI client at device"$INDEX":"$GNMI_PORT && \
-  sed -i -e "s/replace-device-name/device"$INDEX"/g" target_configs/typical_ofsw_config.json && \
+  if [ "$GNMI_TARGET" != "localhost" ]; then \
+      certs/generate_certs.sh $GNMI_TARGET > /dev/null 2>&1; \
+      echo "Please add '"$IPADDR" "$GNMI_TARGET"' to /etc/hosts and access with gNMI client at "$GNMI_TARGET":"$GNMI_PORT; \
+  else \
+      echo "gNMI running on localhost:"$GNMI_PORT; \
+  fi && \
+  sed -i -e "s/replace-device-name/"$GNMI_TARGET"/g" target_configs/typical_ofsw_config.json && \
+  sed -i -e "s/replace-motd-banner/Welcome to gNMI service on "$GNMI_TARGET":"$GNMI_PORT"/g" target_configs/typical_ofsw_config.json && \
   gnmi_target \
   -bind_address :$GNMI_PORT \
-  -key $HOME/certs/device$INDEX.key \
-  -cert $HOME/certs/device$INDEX.crt \
+  -key $HOME/certs/$GNMI_TARGET.key \
+  -cert $HOME/certs/$GNMI_TARGET.crt \
   -ca $HOME/certs/onfca.crt \
   -alsologtostderr \
   -config target_configs/typical_ofsw_config.json > /dev/null 2>&1
