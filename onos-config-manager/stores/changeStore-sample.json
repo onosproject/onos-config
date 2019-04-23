@@ -1,0 +1,107 @@
+{
+  "Version": "1.0.0",
+  "Storetype": "change",
+  "Store": {
+    "49ce5b11aa06b6916d63db1730cfc485eea68a23": {
+      "Id": "Sc5bEaoGtpFtY9sXMM/Ehe6miiM=",
+      "Description": "Original Config for test switch",
+      "Created": "2019-04-23T12:29:43.389306449+01:00",
+      "Config": [
+        {
+          "Path": "/test1:cont1a",
+          "Value": "",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/cont2a",
+          "Value": "",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2a",
+          "Value": "13",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2b",
+          "Value": "1.579",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2c",
+          "Value": "abc",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/leaf1a",
+          "Value": "abcdef",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a=txout1",
+          "Value": "",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a=txout1/tx-power",
+          "Value": "8",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a=txout2",
+          "Value": "",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a=txout2/tx-power",
+          "Value": "10",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:leafAtTopLevel",
+          "Value": "WXY-1234",
+          "Remove": false
+        }
+      ]
+    },
+    "aba73517711acffd25a58003683283d493951d99": {
+      "Id": "q6c1F3Eaz/0lpYADaDKD1JOVHZk=",
+      "Description": "Trim power level",
+      "Created": "2019-04-23T12:29:43.389477866+01:00",
+      "Config": [
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2b",
+          "Value": "3.14159",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a=txout3",
+          "Value": "",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a=txout3/tx-power",
+          "Value": "16",
+          "Remove": false
+        }
+      ]
+    },
+    "e5a600ce01a4a5594d7eba77ac894bc7302e1e25": {
+      "Id": "5aYAzgGkpVlNfrp3rIlLxzAuHiU=",
+      "Description": "Remove txout 2",
+      "Created": "2019-04-23T12:29:43.389488037+01:00",
+      "Config": [
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2c",
+          "Value": "def",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a=txout2",
+          "Value": "",
+          "Remove": true
+        }
+      ]
+    }
+  }
+}

@@ -13,27 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package main
+package store
 
 import (
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/store"
 )
 
-func main() {
-	var samplePath = "/test1:cont1a/cont2a/leaf2a"
+type ErrInvalidPath string
 
-	// Now create the ConfigValue
-	configValue1a := store.ConfigValue{
-		Path: samplePath,
-		Value: "23456",
-	}
+func (e ErrInvalidPath) Error() string {
+	return fmt.Sprintf("Invalid path: %s", e)
+}
 
-	// Convert it back in to string
-	fmt.Println("Welcome to config manager")
-	fmt.Println(configValue1a)
-
-	// Create ConfigValue from strings
-	configValue2a, _ := store.CreateChangeValue("/test1:cont1a/cont2a/leaf2a", "13", false)
-	fmt.Println(configValue2a)
+/**
+ * A model of a ConfigValue - path and a value
+ */
+type ConfigValue struct {
+	Path string // Can be changed to *gpb.Path
+	Value string // Can be changed to *gpb.TypedValue
 }
