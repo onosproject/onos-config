@@ -1,0 +1,32 @@
+{
+  "Version": "1.0.0",
+  "Storetype": "config",
+  "Store": {
+    "Device1Version": {
+      "Name": "Device1Version",
+      "Device": "Device1",
+      "Created": "2019-04-23T12:29:43.389721753+01:00",
+      "Updated": "2019-04-23T12:29:43.389721972+01:00",
+      "User": "onos",
+      "Description": "Configuration for Device 1",
+      "Changes": [
+        "Sc5bEaoGtpFtY9sXMM/Ehe6miiM=",
+        "q6c1F3Eaz/0lpYADaDKD1JOVHZk=",
+        "5aYAzgGkpVlNfrp3rIlLxzAuHiU="
+      ]
+    },
+    "Device2VersionMain": {
+      "Name": "Device2VersionMain",
+      "Device": "Device2",
+      "Created": "2019-04-23T12:29:43.389731896+01:00",
+      "Updated": "2019-04-23T12:29:43.389731991+01:00",
+      "User": "onos",
+      "Description": "Main Configuration for Device 2",
+      "Changes": [
+        "Sc5bEaoGtpFtY9sXMM/Ehe6miiM=",
+        "q6c1F3Eaz/0lpYADaDKD1JOVHZk=",
+        "5ZJobBO61glADjWF9TaVfxicJK8="
+      ]
+    }
+  }
+}

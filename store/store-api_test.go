@@ -34,6 +34,7 @@ var change4 Change
 
 var changeStore map[string]Change
 
+var configurationStore map[string]Configuration
 var device1V Configuration
 var device2V Configuration
 
@@ -77,7 +78,7 @@ func TestMain(m *testing.M) {
 	change3, err = CreateChange(ChangeValueCollection{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
-	if (err != nil) {
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
@@ -187,7 +188,7 @@ func Test_device1_version(t *testing.T) {
 		t.Errorf("Unexpected name for Configuration main %s", device1V.Name)
 	}
 
-	config := device1V.ExtractFullConfig(changeStore)
+	config := device1V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
 		fmt.Printf("Path %s = %s\n", c.Path, c.Value)
 	}
@@ -223,6 +224,29 @@ func Test_convertChangeToGnmi(t *testing.T) {
 		t.Errorf("Expected Delete[0] to be %s. Was %s",
 			expectedStr2, string(jsonstr2))
 	}
-
 }
 
+func Test_writeOutChangeFile(t *testing.T) {
+	changeStoreFile, _ := os.Create("testout/changeStore-sample.json")
+	jsonEncoder := json.NewEncoder(changeStoreFile)
+	var csf ChangeStore = ChangeStore{Version:STORE_VERSION,
+		Storetype:STORE_TYPE_CHANGE, Store:changeStore}
+	err := jsonEncoder.Encode(csf)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	defer changeStoreFile.Close()
+}
+
+func Test_writeOutConfigFile(t *testing.T) {
+	configStoreFile, _ := os.Create("testout/configStore-sample.json")
+	jsonEncoder := json.NewEncoder(configStoreFile)
+	err := jsonEncoder.Encode(ConfigurationStore{Version:STORE_VERSION,
+		Storetype:STORE_TYPE_CONFIG, Store:configurationStore})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	defer configStoreFile.Close()
+}
