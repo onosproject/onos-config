@@ -17,6 +17,8 @@ package store
 
 import (
 	"encoding/hex"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -37,24 +39,47 @@ type Configuration struct {
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
 func (b Configuration) ExtractFullConfig(changeStore map[string]Change, nBack int) []ConfigValue {
-	consolidatedConfig := make(map[string]string)
 
-	for _, changeId := range b.Changes[0:len(b.Changes)-1-nBack] {
+	// Have to use a slice to have a consistent output order
+	consolidatedConfig := make([]ConfigValue, 0)
+
+	for _, changeId := range b.Changes[0:len(b.Changes)-nBack] {
 		change := changeStore[hex.EncodeToString(changeId)]
 		for _, changeValue := range change.Config {
-			if (!changeValue.Remove) {
-				consolidatedConfig[changeValue.Path] = changeValue.Value
+			if (changeValue.Remove) {
+				// Delete everything at that path and all below it
+				// Have to search through consolidated config
+				// Make a list of indices to remove
+				indices := make([]int, 0)
+				for idx, cce := range consolidatedConfig {
+					if strings.Contains(cce.Path, changeValue.Path) {
+						indices = append(indices, idx)
+					}
+				}
+				// Remove in reverse
+				for i := len(indices)-1; i >= 0; i-- {
+					consolidatedConfig = append(consolidatedConfig[:indices[i]], consolidatedConfig[indices[i]+1:]...)
+				}
+
 			} else {
-				delete(consolidatedConfig, changeValue.Path)
+				var alreadyExists bool
+				for idx, cv := range consolidatedConfig {
+					if strings.Compare(changeValue.Path, cv.Path) == 0 {
+						consolidatedConfig[idx].Value = changeValue.Value
+						alreadyExists = true
+						break
+					}
+				}
+				if !alreadyExists {
+					consolidatedConfig = append(consolidatedConfig, changeValue.ConfigValue)
+				}
 			}
 		}
 	}
 
-	var configValues []ConfigValue
-	for key, value := range consolidatedConfig {
-		cfg := ConfigValue{key, value}
-		configValues = append(configValues, cfg)
-	}
+	sort.Slice(consolidatedConfig, func(i, j int) bool {
+		return consolidatedConfig[i].Path < consolidatedConfig[j].Path
+	});
 
-	return configValues
+	return consolidatedConfig
 }

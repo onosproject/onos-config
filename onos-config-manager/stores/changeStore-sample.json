@@ -2,10 +2,44 @@
   "Version": "1.0.0",
   "Storetype": "change",
   "Store": {
-    "49ce5b11aa06b6916d63db1730cfc485eea68a23": {
-      "Id": "Sc5bEaoGtpFtY9sXMM/Ehe6miiM=",
+    "0e5fe462291866fff733d6aef97269e5be99a659": {
+      "Id": "Dl/kYikYZv/3M9au+XJp5b6Zplk=",
+      "Description": "Remove txout 1",
+      "Created": "2019-04-24T11:02:20.734702296+01:00",
+      "Config": [
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2c",
+          "Value": "ghi",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a=txout1",
+          "Value": "",
+          "Remove": true
+        }
+      ]
+    },
+    "8110b502c3e7a84eef6088131c55cfcb6ca93d6c": {
+      "Id": "gRC1AsPnqE7vYIgTHFXPy2ypPWw=",
+      "Description": "Remove txout 2",
+      "Created": "2019-04-24T11:02:20.73468214+01:00",
+      "Config": [
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2c",
+          "Value": "def",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a=txout2",
+          "Value": "",
+          "Remove": true
+        }
+      ]
+    },
+    "a130feeeb6e33a269f293f29b158ec1a42c4aef9": {
+      "Id": "oTD+7rbjOiafKT8psVjsGkLErvk=",
       "Description": "Original Config for test switch",
-      "Created": "2019-04-23T12:29:43.389306449+01:00",
+      "Created": "2019-04-24T11:02:20.734497279+01:00",
       "Config": [
         {
           "Path": "/test1:cont1a",
@@ -64,10 +98,10 @@
         }
       ]
     },
-    "aba73517711acffd25a58003683283d493951d99": {
-      "Id": "q6c1F3Eaz/0lpYADaDKD1JOVHZk=",
+    "f5f436cff01ff8052f8945bb78ea1a3c19f8720d": {
+      "Id": "9fQ2z/Af+AUviUW7eOoaPBn4cg0=",
       "Description": "Trim power level",
-      "Created": "2019-04-23T12:29:43.389477866+01:00",
+      "Created": "2019-04-24T11:02:20.73466977+01:00",
       "Config": [
         {
           "Path": "/test1:cont1a/cont2a/leaf2b",
@@ -83,23 +117,6 @@
           "Path": "/test1:cont1a/list2a=txout3/tx-power",
           "Value": "16",
           "Remove": false
-        }
-      ]
-    },
-    "e5a600ce01a4a5594d7eba77ac894bc7302e1e25": {
-      "Id": "5aYAzgGkpVlNfrp3rIlLxzAuHiU=",
-      "Description": "Remove txout 2",
-      "Created": "2019-04-23T12:29:43.389488037+01:00",
-      "Config": [
-        {
-          "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "def",
-          "Remove": false
-        },
-        {
-          "Path": "/test1:cont1a/list2a=txout2",
-          "Value": "",
-          "Remove": true
         }
       ]
     }

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"io"
+	"sort"
 	"strings"
 	"time"
 )
@@ -123,6 +124,23 @@ func (c Change) GnmiChange() gnmi.SetRequest {
 func CreateChange(config ChangeValueCollection, desc string) (Change, error) {
 	h := sha1.New()
 	t := time.Now()
+
+	sort.Slice(config, func(i, j int) bool {
+		return config[i].Path < config[j].Path
+	});
+
+	var pathList = make([]string, len(config))
+	// If a path is repeated then reject
+	for _, cv := range config {
+		for _,p := range pathList {
+			if strings.Compare(cv.Path, p) == 0 {
+				return Change{}, ErrInvalidChange("Error Path " + p + " is repeated in change")
+			}
+		}
+		pathList = append(pathList, cv.Path)
+	}
+
+	// Calculate a hash from the config, description and timestamp
 	jsonstr, _ := json.Marshal(config)
 	_, err1 := io.WriteString(h, string(jsonstr))
 	if err1 != nil { return Change{}, err1}
