@@ -37,13 +37,16 @@ RUN mkdir -p $GOPATH \
       github.com/google/gnxi/gnmi_capabilities \
       github.com/google/gnxi/gnmi_get \
       github.com/google/gnxi/gnmi_set \
-      github.com/google/gnxi/gnmi_target
+      github.com/google/gnxi/gnmi_target \
+      github.com/openconfig/gnmi/cmd/gnmi_cli
+      
 
 RUN go install -v \
       github.com/google/gnxi/gnmi_capabilities \
       github.com/google/gnxi/gnmi_get \
       github.com/google/gnxi/gnmi_set \
-      github.com/google/gnxi/gnmi_target
+      github.com/google/gnxi/gnmi_target \
+      github.com/openconfig/gnmi/cmd/gnmi_cli
 
 ENV GNMI_TARGET=localhost
 ENV GNMI_PORT=10161

@@ -60,8 +60,15 @@ device1-3. An entry must still be placed in your /etc/hosts file for all 3 like:
 > the cluster, so either the entries have to be placed in /etc/hosts or on some
 > DNS server
 
+## gNMI Command Line Interface (CLI)
 
-## Get the capabilities
+To use gNMI CLI, you should ssh into your container using the following command:
+```bash
+docker exec -it <Container ID> /bin/bash
+```
+
+
+### Get the capabilities
 ```bash
 gnmi_cli -address localhost:10161 \
        -capabilities \
