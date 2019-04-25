@@ -85,7 +85,7 @@ E0416 15:23:08.099600   22997 gnmi_cli.go:180] could not create a gNMI client: D
 ```
 It indicates a transport problem - see the [troubleshooting](#deadline-exceeded) section below.
 
-## Retrieve the motd-banner
+### Retrieve the motd-banner
 ```bash
 gnmi_cli -address localhost:10162 \
        -get \
