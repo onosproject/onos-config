@@ -1,9 +1,23 @@
+// Copyright 2019-present Open Networking Foundation
+//
+// Licensed under the Apache License, Configuration 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package shell is a temporary minimal shell interface to the config manager
 package shell
 
 import (
 	"bufio"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"github.com/opennetworkinglab/onos-config/store"
 	"os"
@@ -23,10 +37,8 @@ func printHelp() {
 	fmt.Println("q) quit")
 }
 
-/**
- * This is a temporary utility that allows shell type access to the config
- * manager until a proper NBI is put in place
- */
+// RunShell is a temporary utility that allows shell type access to the config
+// manager until a proper NBI is put in place
 func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStore) {
 	reader := bufio.NewReader(os.Stdin)
 	printHelp()
@@ -39,35 +51,37 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 
 		switch text {
 		case "c":
-			changeId, err := selectChange(changeStore, reader)
+			changeID, err := selectChange(changeStore, reader)
 			if err != nil {
 				fmt.Println("Error invalid number given", err)
 				continue
 			}
-			change := changeStore.Store[hex.EncodeToString(changeId)]
-			fmt.Println("Change:", base64.StdEncoding.EncodeToString(changeId))
+			change := changeStore.Store[base64.StdEncoding.EncodeToString(changeID)]
+			fmt.Println("Change:", base64.StdEncoding.EncodeToString(changeID))
 			fmt.Println("#\tPath\t\t\tValue\tRemove")
 			for idx, c := range change.Config {
 				fmt.Println(idx, "\t", c.Path, "\t", c.Value, "\t", c.Remove)
 			}
 
 		case "s":
-			configId, err := selectDevice(configStore, reader)
+			configID, err := selectDevice(configStore, reader)
 			if err != nil {
 				fmt.Println("Error invalid number given", err)
 				continue
 			}
 
-			config := configStore.Store[configId]
-			fmt.Println("Config\t\t Device\t\t Updated\t\t\t\t\t User\t Description")
-			fmt.Println(configId, "\t", config.Device, "\t",
-				config.Updated, "\t", config.User, "\t", config.Description)
-			for _, change := range config.Changes {
-				fmt.Println("\tChange:\t", base64.StdEncoding.EncodeToString([]byte(change)))
+			config := configStore.Store[configID]
+			fmt.Println("Config\t\t Device\t\t Updated\t\t\t User\t Description")
+			fmt.Println(configID, "\t", config.Device, "\t",
+				config.Updated.Format(time.RFC3339), "\t", config.User, "\t", config.Description)
+			for _, changeID := range config.Changes {
+				change := changeStore.Store[base64.StdEncoding.EncodeToString(changeID)]
+				fmt.Println("\tChange:\t", base64.StdEncoding.EncodeToString(changeID),
+					"\t", change.Description)
 			}
 
 		case "x":
-			configId, err := selectDevice(configStore, reader)
+			configID, err := selectDevice(configStore, reader)
 			if err != nil {
 				fmt.Println("Error invalid number given", err)
 				continue
@@ -78,10 +92,10 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			nBack, err := strconv.Atoi(nBackStr)
 			if err != nil && nBackStr != "" {
 				fmt.Println("Error invalid number given", nBackStr)
-				continue;
+				continue
 			}
 
-			config := configStore.Store[configId]
+			config := configStore.Store[configID]
 			configValues := config.ExtractFullConfig(changeStore.Store, nBack)
 
 			for _, configValue := range configValues {
@@ -89,13 +103,13 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			}
 
 		case "m1":
-			configId, err := selectDevice(configStore, reader)
+			configID, err := selectDevice(configStore, reader)
 			if err != nil {
 				fmt.Println("Error invalid number given", err)
 				continue
 			}
 
-			config := configStore.Store[configId]
+			config := configStore.Store[configID]
 			var txPowerChange = make([]store.ChangeValue, 0)
 			for _, cv := range config.ExtractFullConfig(changeStore.Store, 0) {
 				if strings.Contains(cv.Path, "tx-power") {
@@ -109,17 +123,17 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				fmt.Println("Error creating tx-power change", err)
 				continue
 			}
-			changeStore.Store[hex.EncodeToString(change.Id)] = change
-			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.Id), "to ChangeStore (in memory)")
+			changeStore.Store[base64.StdEncoding.EncodeToString(change.ID)] = change
+			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.ID), "to ChangeStore (in memory)")
 
-			config.Changes = append(config.Changes, change.Id)
+			config.Changes = append(config.Changes, change.ID)
 			config.Updated = time.Now()
-			configStore.Store[configId] = config
-			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.Id),
+			configStore.Store[configID] = config
+			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.ID),
 				"to Config:", config.Name, "(in memory)")
 
 		case "m2":
-			configId, err := selectDevice(configStore, reader)
+			configID, err := selectDevice(configStore, reader)
 			if err != nil {
 				fmt.Println("Error invalid number given", err)
 				continue
@@ -137,14 +151,14 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				fmt.Println("Error creating m2 change", err)
 				continue
 			}
-			changeStore.Store[hex.EncodeToString(change.Id)] = change
-			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.Id), "to ChangeStore (in memory)")
+			changeStore.Store[base64.StdEncoding.EncodeToString(change.ID)] = change
+			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.ID), "to ChangeStore (in memory)")
 
-			config := configStore.Store[configId]
-			config.Changes = append(config.Changes, change.Id)
+			config := configStore.Store[configID]
+			config.Changes = append(config.Changes, change.ID)
 			config.Updated = time.Now()
-			configStore.Store[configId] = config
-			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.Id),
+			configStore.Store[configID] = config
+			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.ID),
 				"to Config:", config.Name, "(in memory)")
 
 		case "?":
@@ -165,8 +179,8 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 
 func selectDevice(configStore store.ConfigurationStore, reader *bufio.Reader) (string, error) {
 	fmt.Println("Select Device")
-	var i int = 1
-	configIds := make([]string, 1);
+	var i = 1
+	configIds := make([]string, 1)
 	for _, c := range configStore.Store {
 		fmt.Println(i, ")\t", c.Device)
 		configIds = append(configIds, c.Name)
@@ -189,11 +203,11 @@ func selectDevice(configStore store.ConfigurationStore, reader *bufio.Reader) (s
 
 func selectChange(changeStore store.ChangeStore, reader *bufio.Reader) ([]byte, error) {
 	fmt.Println("Select Change")
-	var i int = 1
-	changeIds := make([][]byte, 1);
+	var i = 1
+	changeIds := make([][]byte, 1)
 	for _, c := range changeStore.Store {
-		fmt.Println(i, ")\t", base64.StdEncoding.EncodeToString(c.Id), "\t", c.Description)
-		changeIds = append(changeIds, c.Id)
+		fmt.Println(i, ")\t", base64.StdEncoding.EncodeToString(c.ID), "\t", c.Description)
+		changeIds = append(changeIds, c.ID)
 		i++
 	}
 	fmt.Printf(">>([1]-%d\n", len(changeStore.Store))
