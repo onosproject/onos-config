@@ -26,5 +26,15 @@ go run github.com/opennetworkinglab/onos-config/onos-config-manager \
 
 or locally from ~/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/
 ```bash
-go build && ./onos-config-manager
+go build && go run config-manager.go
 ```
+
+## Documentation
+> Documentation is not yet publicy published
+
+Run locally
+```bash
+godoc -goroot=$HOME/go
+``` 
+
+and browse at [http://localhost:6060/pkg/github.com/opennetworkinglab/onos-config/](http://localhost:6060/pkg/github.com/opennetworkinglab/onos-config/)

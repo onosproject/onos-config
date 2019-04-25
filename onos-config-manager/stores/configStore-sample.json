@@ -5,27 +5,27 @@
     "Device1Version": {
       "Name": "Device1Version",
       "Device": "Device1",
-      "Created": "2019-04-24T11:02:20.734699899+01:00",
-      "Updated": "2019-04-24T11:02:20.734700021+01:00",
+      "Created": "2019-04-25T16:07:24.623962132+01:00",
+      "Updated": "2019-04-25T16:07:24.623962362+01:00",
       "User": "onos",
       "Description": "Configuration for Device 1",
       "Changes": [
-        "oTD+7rbjOiafKT8psVjsGkLErvk=",
-        "9fQ2z/Af+AUviUW7eOoaPBn4cg0=",
-        "gRC1AsPnqE7vYIgTHFXPy2ypPWw="
+        "DCuMG07l01g2BvMdEta+7DyxMxk=",
+        "ccrCK+iDpgjBvlkG/HQ57yzOPzU=",
+        "LsDuwm2XJjdOq+u9QEcUJo/HxaM="
       ]
     },
     "Device2VersionMain": {
       "Name": "Device2VersionMain",
       "Device": "Device2",
-      "Created": "2019-04-24T11:02:20.73471079+01:00",
-      "Updated": "2019-04-24T11:02:20.734710924+01:00",
+      "Created": "2019-04-25T16:07:24.623995634+01:00",
+      "Updated": "2019-04-25T16:07:24.623995815+01:00",
       "User": "onos",
       "Description": "Main Configuration for Device 2",
       "Changes": [
-        "oTD+7rbjOiafKT8psVjsGkLErvk=",
-        "9fQ2z/Af+AUviUW7eOoaPBn4cg0=",
-        "Dl/kYikYZv/3M9au+XJp5b6Zplk="
+        "DCuMG07l01g2BvMdEta+7DyxMxk=",
+        "ccrCK+iDpgjBvlkG/HQ57yzOPzU=",
+        "oJ5GSd9a4aBzgYRlCcFqyNdPzL0="
       ]
     }
   }
