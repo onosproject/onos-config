@@ -60,8 +60,21 @@ device1-3. An entry must still be placed in your /etc/hosts file for all 3 like:
 > the cluster, so either the entries have to be placed in /etc/hosts or on some
 > DNS server
 
+## gNMI Command Line Interface (CLI)
 
-## Get the capabilities
+To use gNMI CLI, you have two options:
+
+1. (**Recommended Option**): you can install the gNMI CLI on your own machine using the following command and run it as an external application to the Docker containers. This option allows you to connect to any of the targets and run the gNMI CLI commands. 
+```bash
+go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
+```
+2. You can ssh into any of the targets using the following command and run 
+the gNMI CLI from the Docker container. 
+```bash
+docker exec -it <Container ID> /bin/bash
+```
+
+### Get the capabilities
 ```bash
 gnmi_cli -address localhost:10161 \
        -capabilities \
@@ -78,7 +91,7 @@ E0416 15:23:08.099600   22997 gnmi_cli.go:180] could not create a gNMI client: D
 ```
 It indicates a transport problem - see the [troubleshooting](#deadline-exceeded) section below.
 
-## Retrieve the motd-banner
+### Retrieve the motd-banner
 ```bash
 gnmi_cli -address localhost:10162 \
        -get \
