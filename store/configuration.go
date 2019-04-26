@@ -15,7 +15,6 @@
 package store
 
 import (
-	"encoding/base64"
 	"sort"
 	"strings"
 	"time"
@@ -37,13 +36,13 @@ type Configuration struct {
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func (b Configuration) ExtractFullConfig(changeStore map[string]Change, nBack int) []ConfigValue {
+func (b Configuration) ExtractFullConfig(changeStore map[string]*Change, nBack int) []ConfigValue {
 
 	// Have to use a slice to have a consistent output order
 	consolidatedConfig := make([]ConfigValue, 0)
 
 	for _, changeID := range b.Changes[0 : len(b.Changes)-nBack] {
-		change := changeStore[base64.StdEncoding.EncodeToString(changeID)]
+		change := changeStore[B64(changeID)]
 		for _, changeValue := range change.Config {
 			if changeValue.Remove {
 				// Delete everything at that path and all below it
@@ -63,7 +62,7 @@ func (b Configuration) ExtractFullConfig(changeStore map[string]Change, nBack in
 			} else {
 				var alreadyExists bool
 				for idx, cv := range consolidatedConfig {
-					if strings.Compare(changeValue.Path, cv.Path) == 0 {
+					if changeValue.Path == cv.Path {
 						consolidatedConfig[idx].Value = changeValue.Value
 						alreadyExists = true
 						break

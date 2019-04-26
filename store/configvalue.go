@@ -17,7 +17,6 @@ package store
 import (
 	"errors"
 	"regexp"
-	"strings"
 )
 
 // ConfigValue is a of a path and a value
@@ -36,7 +35,7 @@ func (c ConfigValue) IsPathValid() error {
 	r1 := regexp.MustCompile(`(/[a-zA-Z0-9:=\-_[\]]+)+`)
 
 	match := r1.FindString(c.Path)
-	if strings.Compare(c.Path, match) != 0 {
+	if c.Path != match {
 		return errors.New(c.Path)
 	}
 	return nil
