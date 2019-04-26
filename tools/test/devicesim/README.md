@@ -62,11 +62,17 @@ device1-3. An entry must still be placed in your /etc/hosts file for all 3 like:
 
 ## gNMI Command Line Interface (CLI)
 
-To use gNMI CLI, you should ssh into one of the targets using the following command:
+To use gNMI CLI, you have two options:
+
+1. (**Recommended Option**): you can install the gNMI CLI on your own maching using the following command and run it as an external application to the Docker containers. This option allows you to connect to any of the targets and run the gNMI CLI commands. 
+```bash
+go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
+```
+2. You can ssh into any of the targets using the following command and run 
+the gNMI CLI from the Docker container. 
 ```bash
 docker exec -it <Container ID> /bin/bash
 ```
-
 
 ### Get the capabilities
 ```bash
