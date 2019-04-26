@@ -17,7 +17,6 @@ package shell
 
 import (
 	"bufio"
-	"encoding/base64"
 	"fmt"
 	"github.com/opennetworkinglab/onos-config/store"
 	"os"
@@ -56,8 +55,8 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				fmt.Println("Error invalid number given", err)
 				continue
 			}
-			change := changeStore.Store[base64.StdEncoding.EncodeToString(changeID)]
-			fmt.Println("Change:", base64.StdEncoding.EncodeToString(changeID))
+			change := changeStore.Store[store.B64(changeID)]
+			fmt.Println("Change:", store.B64(changeID))
 			fmt.Println("#\tPath\t\t\tValue\tRemove")
 			for idx, c := range change.Config {
 				fmt.Println(idx, "\t", c.Path, "\t", c.Value, "\t", c.Remove)
@@ -75,8 +74,8 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			fmt.Println(configID, "\t", config.Device, "\t",
 				config.Updated.Format(time.RFC3339), "\t", config.User, "\t", config.Description)
 			for _, changeID := range config.Changes {
-				change := changeStore.Store[base64.StdEncoding.EncodeToString(changeID)]
-				fmt.Println("\tChange:\t", base64.StdEncoding.EncodeToString(changeID),
+				change := changeStore.Store[store.B64(changeID)]
+				fmt.Println("\tChange:\t", store.B64(changeID),
 					"\t", change.Description)
 			}
 
@@ -110,7 +109,7 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			}
 
 			config := configStore.Store[configID]
-			var txPowerChange = make([]store.ChangeValue, 0)
+			var txPowerChange = make([]*store.ChangeValue, 0)
 			for _, cv := range config.ExtractFullConfig(changeStore.Store, 0) {
 				if strings.Contains(cv.Path, "tx-power") {
 					change, _ := store.CreateChangeValue(cv.Path, "5", false)
@@ -123,13 +122,13 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				fmt.Println("Error creating tx-power change", err)
 				continue
 			}
-			changeStore.Store[base64.StdEncoding.EncodeToString(change.ID)] = change
-			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.ID), "to ChangeStore (in memory)")
+			changeStore.Store[store.B64(change.ID)] = change
+			fmt.Println("Added change", store.B64(change.ID), "to ChangeStore (in memory)")
 
 			config.Changes = append(config.Changes, change.ID)
 			config.Updated = time.Now()
 			configStore.Store[configID] = config
-			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.ID),
+			fmt.Println("Added change", store.B64(change.ID),
 				"to Config:", config.Name, "(in memory)")
 
 		case "m2":
@@ -139,7 +138,7 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				continue
 			}
 
-			changes := make([]store.ChangeValue, 0)
+			changes := make([]*store.ChangeValue, 0)
 			c1, _ := store.CreateChangeValue("/test1:cont1a/cont2a/leaf2a", "", true)
 			c2, _ := store.CreateChangeValue("/test1:cont1a/cont2a/leaf2b", "", true)
 			c3, _ := store.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", "", true)
@@ -151,14 +150,14 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				fmt.Println("Error creating m2 change", err)
 				continue
 			}
-			changeStore.Store[base64.StdEncoding.EncodeToString(change.ID)] = change
-			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.ID), "to ChangeStore (in memory)")
+			changeStore.Store[store.B64(change.ID)] = change
+			fmt.Println("Added change", store.B64(change.ID), "to ChangeStore (in memory)")
 
 			config := configStore.Store[configID]
 			config.Changes = append(config.Changes, change.ID)
 			config.Updated = time.Now()
 			configStore.Store[configID] = config
-			fmt.Println("Added change", base64.StdEncoding.EncodeToString(change.ID),
+			fmt.Println("Added change", store.B64(change.ID),
 				"to Config:", config.Name, "(in memory)")
 
 		case "?":
@@ -206,7 +205,7 @@ func selectChange(changeStore store.ChangeStore, reader *bufio.Reader) ([]byte, 
 	var i = 1
 	changeIds := make([][]byte, 1)
 	for _, c := range changeStore.Store {
-		fmt.Println(i, ")\t", base64.StdEncoding.EncodeToString(c.ID), "\t", c.Description)
+		fmt.Println(i, ")\t", store.B64(c.ID), "\t", c.Description)
 		changeIds = append(changeIds, c.ID)
 		i++
 	}

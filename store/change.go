@@ -16,7 +16,6 @@ package store
 
 import (
 	"crypto/sha1"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -70,12 +69,11 @@ func (c Change) IsValid() error {
 	}
 
 	hash := h.Sum(nil)
-	if strings.Compare(base64.StdEncoding.EncodeToString(hash),
-		base64.StdEncoding.EncodeToString(c.ID)) == 0 {
+	if B64(hash) == B64(c.ID) {
 		return nil
 	}
 	return fmt.Errorf("Change '%s': Calculated hash '%s' does not match",
-		base64.StdEncoding.EncodeToString(c.ID), base64.StdEncoding.EncodeToString(hash))
+		B64(c.ID), B64(hash))
 }
 
 // GnmiChange converts a Change object to gNMI format
@@ -127,20 +125,20 @@ func (c Change) GnmiChange() gnmi.SetRequest {
 }
 
 // CreateChange creates a Change object from ChangeValues
-func CreateChange(config ChangeValueCollection, desc string) (Change, error) {
+func CreateChange(config ChangeValueCollection, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
 	sort.Slice(config, func(i, j int) bool {
-		return config[i].Path < config[j].Path
+		return (*config[i]).Path < (*config[j]).Path
 	})
 
 	var pathList = make([]string, len(config))
 	// If a path is repeated then reject
 	for _, cv := range config {
 		for _, p := range pathList {
-			if strings.Compare(cv.Path, p) == 0 {
-				return Change{}, errors.New("Error Path " + p + " is repeated in change")
+			if cv.Path == p {
+				return nil, errors.New("Error Path " + p + " is repeated in change")
 			}
 		}
 		pathList = append(pathList, cv.Path)
@@ -150,22 +148,22 @@ func CreateChange(config ChangeValueCollection, desc string) (Change, error) {
 	jsonstr, _ := json.Marshal(config)
 	_, err1 := io.WriteString(h, string(jsonstr))
 	if err1 != nil {
-		return Change{}, err1
+		return nil, err1
 	}
 
 	_, err2 := io.WriteString(h, desc)
 	if err2 != nil {
-		return Change{}, err1
+		return nil, err1
 	}
 
 	_, err3 := io.WriteString(h, t.String())
 	if err3 != nil {
-		return Change{}, err1
+		return nil, err1
 	}
 
 	hash := h.Sum(nil)
 
-	return Change{
+	return &Change{
 		Config:      config,
 		ID:          hash,
 		Description: desc,

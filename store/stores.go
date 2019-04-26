@@ -62,7 +62,7 @@ func LoadConfigStore(file string) (ConfigurationStore, error) {
 type ChangeStore struct {
 	Version   string
 	Storetype string
-	Store     map[string]Change
+	Store     map[string]*Change
 }
 
 // LoadChangeStore loads the change store from a file

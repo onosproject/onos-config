@@ -67,8 +67,8 @@ import (
 
 // Default locations of stores
 const (
-	ConfigStoreFile = "stores/configStore-sample.json"
-	ChangeStoreFile = "stores/changeStore-sample.json"
+	configStoreDefaultFileName = "stores/configStore-sample.json"
+	changeStoreDefaultFileName = "stores/changeStore-sample.json"
 )
 
 var (
@@ -78,10 +78,10 @@ var (
 
 // The main entry point
 func main() {
-	configStoreFile := flag.String("configStore", ConfigStoreFile,
-		"path to config store file (default="+ConfigStoreFile+")")
-	changeStoreFile := flag.String("changeStore", ChangeStoreFile,
-		"path to change store file (default="+ChangeStoreFile+")")
+	configStoreFile := flag.String("configStore", configStoreDefaultFileName,
+		"path to config store file (default="+configStoreDefaultFileName+")")
+	changeStoreFile := flag.String("changeStore", changeStoreDefaultFileName,
+		"path to change store file (default="+changeStoreDefaultFileName+")")
 
 	flag.Parse()
 	var err error

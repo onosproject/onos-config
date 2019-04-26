@@ -16,22 +16,22 @@ package store
 
 import (
 	"crypto/sha1"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 )
 
 var (
-	change1, change2, change3, change4 Change
+	change1, change2, change3, change4 *Change
 )
 
 var (
-	changeStore        map[string]Change
+	changeStore        map[string]*Change
 	configurationStore map[string]Configuration
 )
 
@@ -230,10 +230,10 @@ func TestMain(m *testing.M) {
 		os.Exit(-1)
 	}
 
-	changeStore = make(map[string]Change)
-	changeStore[base64.StdEncoding.EncodeToString(change1.ID)] = change1
-	changeStore[base64.StdEncoding.EncodeToString(change2.ID)] = change2
-	changeStore[base64.StdEncoding.EncodeToString(change3.ID)] = change3
+	changeStore = make(map[string]*Change)
+	changeStore[B64(change1.ID)] = change1
+	changeStore[B64(change2.ID)] = change2
+	changeStore[B64(change3.ID)] = change3
 
 	device1V = Configuration{
 		Name:        "Device1Version",
@@ -256,7 +256,7 @@ func TestMain(m *testing.M) {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
-	changeStore[base64.StdEncoding.EncodeToString(change4.ID)] = change4
+	changeStore[B64(change4.ID)] = change4
 
 	device2V = Configuration{
 		Name:        "Device2VersionMain",
@@ -304,8 +304,8 @@ func Test_changecreation(t *testing.T) {
 	}
 	hash := h.Sum(nil)
 
-	expectedID := base64.StdEncoding.EncodeToString(hash)
-	actualID := base64.StdEncoding.EncodeToString(change1.ID)
+	expectedID := B64(hash)
+	actualID := B64(change1.ID)
 	if actualID != expectedID {
 		t.Errorf("Creation of Change failed Expected %s got %s",
 			expectedID, actualID)
@@ -320,7 +320,7 @@ func Test_changecreation(t *testing.T) {
 	if errEmpty == nil {
 		t.Errorf("Checking of Change failed %s", errEmpty)
 	}
-	if strings.Compare(errEmpty.Error(), "Empty Change") != 0 {
+	if errEmpty.Error() != "Empty Change" {
 		t.Errorf("Expecting error 'Empty Change' Got: %s", errEmpty)
 	}
 
@@ -341,11 +341,10 @@ func Test_badpath(t *testing.T) {
 
 	if err1 == nil {
 		t.Errorf("Expected '%s' to produce error", badpath)
-	} else if strings.Compare(err1.Error(), badpath) != 0 {
+	} else if err1.Error() != badpath {
 		t.Errorf("Expected error to be '%s' Got: '%s'", badpath, err1)
 	}
-	emptyChange := ChangeValue{}
-	if conf1 != emptyChange {
+	if conf1 != nil {
 		t.Errorf("Expected config to be empty on error")
 	}
 
@@ -369,14 +368,14 @@ func Test_changeValueString(t *testing.T) {
 	cv1, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, "123", false)
 
 	var expected = "/test1:cont1a/cont2a/leaf2a 123 false"
-	if strings.Compare(cv1.String(), expected) != 0 {
+	if cv1.String() != expected {
 		t.Errorf("Expected changeValue to produce string %s. Got: %s",
 			expected, cv1.String())
 	}
 
 	//Test the error
 	cv2 := ChangeValue{}
-	if strings.Compare(cv2.String(), "InvalidChange") != 0 {
+	if cv2.String() != "InvalidChange" {
 		t.Errorf("Expected empty changeValue to produce InvalidChange Got: %s",
 			cv2.String())
 	}
@@ -419,15 +418,15 @@ func Test_duplicate_path(t *testing.T) {
 		t.Errorf("Expected %s to produce error for duplicate path", Test1Cont1ACont2ALeaf2B)
 	}
 
-	if len(change.Config) > 0 {
-		t.Errorf("Expected change to be empty because of duplicate path")
+	if change != nil {
+		t.Errorf("Expected change to be nil because of duplicate path")
 	}
 }
 
 func Test_device1_version(t *testing.T) {
 	fmt.Println("Configuration", device1V.Name, " (latest) Changes:")
 	for idx, cid := range device1V.Changes {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device1V.Name != "Device1Version" {
@@ -449,7 +448,7 @@ func Test_device1_prev_version(t *testing.T) {
 	const changePrevious = 1
 	fmt.Println("Configuration", device1V.Name, " (n-1) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device1V.Name != "Device1Version" {
@@ -471,7 +470,7 @@ func Test_device1_first_version(t *testing.T) {
 	const changePrevious = 2
 	fmt.Println("Configuration", device1V.Name, " (n-2) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device1V.Name != "Device1Version" {
@@ -493,7 +492,7 @@ func Test_device1_invalid_version(t *testing.T) {
 	const changePrevious = 3
 	fmt.Println("Configuration", device1V.Name, " (n-3) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device1V.Name != "Device1Version" {
@@ -509,7 +508,7 @@ func Test_device1_invalid_version(t *testing.T) {
 func Test_device2_version(t *testing.T) {
 	fmt.Println("Configuration", device2V.Name, " (latest) Changes:")
 	for idx, cid := range device2V.Changes {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device2V.Name != "Device2VersionMain" {
@@ -531,11 +530,11 @@ func checkPathvalue(t *testing.T, config []ConfigValue, index int,
 	expPaths []string, expValues []string) {
 
 	// Check that they are kept in a consistent order
-	if strings.Compare(config[index].Path, expPaths[index]) != 0 {
+	if config[index].Path != expPaths[index] {
 		t.Errorf("Unexpected change %d Exp: %s, Got %s", index,
 			expPaths[index], config[index].Path)
 	}
-	if strings.Compare(config[index].Value, expValues[index]) != 0 {
+	if config[index].Value != expValues[index] {
 		t.Errorf("Unexpected change %d Exp: %s, Got %s", index,
 			expValues[index], config[index].Value)
 	}
@@ -552,7 +551,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 
 	expectedStr := "{\"path\":{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"cont2a\"}," +
 		"{\"name\":\"leaf2c\"}]},\"val\":{\"Value\":{\"StringVal\":\"def\"}}}"
-	if strings.Compare(string(jsonstr), expectedStr) != 0 {
+	if string(jsonstr) != expectedStr {
 		t.Errorf("Expected Update[0] to be %s. Was %s",
 			expectedStr, string(jsonstr))
 	}
@@ -565,7 +564,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 	jsonstr2, _ := json.Marshal(setRequest.Delete[0])
 
 	expectedStr2 := "{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"list2a\",\"key\":{\"name\":\"txout2\"}}]}"
-	if strings.Compare(string(jsonstr2), expectedStr2) != 0 {
+	if string(jsonstr2) != expectedStr2 {
 		t.Errorf("Expected Delete[0] to be %s. Was %s",
 			expectedStr2, string(jsonstr2))
 	}
@@ -647,3 +646,33 @@ func Test_loadConfigStoreFileError(t *testing.T) {
 			configStore.Version)
 	}
 }
+
+func BenchmarkCreateChangeValue(b *testing.B) {
+
+	for i := 0; i < b.N; i++ {
+		path := fmt.Sprintf("/test-%s", strconv.Itoa(b.N))
+		cv, _ := CreateChangeValue(path, strconv.Itoa(i), false)
+		err := cv.IsPathValid()
+		if err != nil {
+			b.Errorf("path not valid %s", err)
+		}
+	}
+}
+
+func BenchmarkCreateChange(b *testing.B) {
+
+	changeValues := ChangeValueCollection{}
+	for i := 0; i < b.N; i++ {
+		path := fmt.Sprintf("/test%d", i)
+		cv, _ := CreateChangeValue(path, strconv.Itoa(i), false)
+		changeValues = append(changeValues, cv)
+	}
+
+	change, _ := CreateChange(changeValues, "Benchmarked Change")
+
+	err := change.IsValid()
+	if err != nil {
+		b.Errorf("Invalid change %s", err)
+	}
+}
+
