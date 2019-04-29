@@ -15,11 +15,13 @@ go get github.com/opennetworkinglab/onos-config/onos-config-manager
 ## Unit test
 ```bash
 go test -v github.com/opennetworkinglab/onos-config/store
+go test -v github.com/opennetworkinglab/onos-config/listener
 ```
 
 ## Run
 ```bash
 go run github.com/opennetworkinglab/onos-config/onos-config-manager \
+-restconfPort=8080 \
 -configStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/configStore-sample.json \
 -changeStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/changeStore-sample.json
 ```
@@ -28,6 +30,30 @@ or locally from ~/go/src/github.com/opennetworkinglab/onos-config/onos-config-ma
 ```bash
 go build && go run config-manager.go
 ```
+
+### CLI
+A rudimentary CLI allows mostly read only access to the configuration at present.
+
+### Restconf
+A rudimentary read-only Restconf interface is given at 
+* http://localhost:8080/restconf/
+
+To list changes:
+http://localhost:8080/restconf/change/
+
+To list configurations:
+* http://localhost:8080/restconf/configuration/
+
+To list data in tree format:
+* http://localhost:8080/restconf/data/
+
+To listen to an event stream in Server Sent Events format:
+* http://localhost:8080/restconf/events/
+> curl -v -H "Accept: text/event-stream" -H "Connection: keep-alive" -H "Cache-Control: no-cache" http://localhost:8080/restconf/events/
+
+> An event arrives when a change is made (e.g. at the CLI m1 or m2)
+
+
 
 ## Documentation
 > Documentation is not yet publicy published

@@ -526,6 +526,52 @@ func Test_device2_version(t *testing.T) {
 	}
 }
 
+func Test_device1_tree(t *testing.T) {
+	fmt.Println("Configuration", device1V.Name, " (latest) Changes:")
+
+	configTree, err := device1V.ExtractFullTree(changeStore, 0)
+	if err != nil {
+		t.Errorf("Unexpected error in extracting full tree %s", err)
+	}
+	const fullTreeLen = 244
+	if len(configTree) != fullTreeLen {
+		t.Errorf("Unexpected length %d extracting full tree. Got %d",
+			fullTreeLen, len(configTree))
+	}
+
+	const fullTree = `{"(root)": [{"test1:cont1a": [{"cont2a": [{"leaf2a":"13",` +
+		`"leaf2b":"3.14159","leaf2c":"def"}]},{"list2a": [{"id":"txout1","tx-power":"8"}]},` +
+		`{"list2a": [{"id":"txout3","tx-power":"16"}]},{"leaf1a":"abcdef"}]},` +
+		`{"test1:leafAtTopLevel":"WXY-1234"}]}`
+
+	if string(configTree) != fullTree {
+		t.Errorf("Expecting full tree. %s Got %s",
+			fullTree, string(configTree))
+	}
+
+	var data interface{}
+	err = json.Unmarshal(configTree, &data)
+	if err != nil {
+		t.Errorf("Unexpected error unmarshalling full tree %s", err.Error())
+	}
+	dataMap := data.(map[string]interface{})
+	treeObj := dataMap["(root)"]
+	topObjectsSlice := treeObj.([]interface{})
+	if len(topObjectsSlice) != 2 {
+		t.Errorf("Unexpected tree map from full tree %v", len(topObjectsSlice))
+	}
+
+	treeSampleFile, err := os.Create("testout/tree-sample.json")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	defer treeSampleFile.Close()
+
+	fmt.Fprintln(treeSampleFile, string(configTree))
+
+}
+
 func checkPathvalue(t *testing.T, config []ConfigValue, index int,
 	expPaths []string, expValues []string) {
 
@@ -675,4 +721,3 @@ func BenchmarkCreateChange(b *testing.B) {
 		b.Errorf("Invalid change %s", err)
 	}
 }
-

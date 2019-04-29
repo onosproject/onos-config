@@ -58,11 +58,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/opennetworkinglab/onos-config/events"
+	"github.com/opennetworkinglab/onos-config/listener"
+	"github.com/opennetworkinglab/onos-config/northbound/restconf"
 	"github.com/opennetworkinglab/onos-config/shell"
 	"github.com/opennetworkinglab/onos-config/store"
 	"log"
 	"log/syslog"
 	"os"
+	"time"
 )
 
 // Default locations of stores
@@ -72,16 +76,27 @@ const (
 )
 
 var (
-	configStore store.ConfigurationStore
-	changeStore store.ChangeStore
+	configStore    store.ConfigurationStore
+	changeStore    store.ChangeStore
+	nbiChannel     chan events.ConfigurationEvent
+	changesChannel chan events.ConfigurationEvent
 )
+
+func init() {
+	// Start the main listener system
+	changesChannel = make(chan events.ConfigurationEvent, 10)
+	go listener.Listen(changesChannel)
+
+}
 
 // The main entry point
 func main() {
 	configStoreFile := flag.String("configStore", configStoreDefaultFileName,
-		"path to config store file (default="+configStoreDefaultFileName+")")
+		"path to config store file")
 	changeStoreFile := flag.String("changeStore", changeStoreDefaultFileName,
-		"path to change store file (default="+changeStoreDefaultFileName+")")
+		"path to change store file")
+	restconfPort := flag.Int("restconfPort", 0,
+		"Run the restconf NBI on given port. If <=0 do not run")
 
 	flag.Parse()
 	var err error
@@ -108,9 +123,16 @@ func main() {
 	}
 	log.Println("Change store loaded from", *changeStoreFile)
 
+	if *restconfPort > 0 {
+		go restconf.StartRestServer(*restconfPort, &configStore, &changeStore);
+	}
+
 	// Run a shell as a temporary solution to not having an NBI
-	shell.RunShell(configStore, changeStore)
+	shell.RunShell(configStore, changeStore, changesChannel)
+
+	close(changesChannel)
 
 	log.Println("Shutting down")
+	time.Sleep(time.Second)
 	os.Exit(0)
 }
