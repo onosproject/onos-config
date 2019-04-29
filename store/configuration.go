@@ -81,3 +81,11 @@ func (b Configuration) ExtractFullConfig(changeStore map[string]*Change, nBack i
 
 	return consolidatedConfig
 }
+
+// ExtractFullTree of a Configuration extracts the full configuration to a tree
+// format in Json
+func (b Configuration) ExtractFullTree(changeStore map[string]*Change, nBack int) ([]byte, error) {
+	configValues := b.ExtractFullConfig(changeStore, nBack)
+
+	return BuildTree(configValues)
+}

@@ -18,6 +18,7 @@ package shell
 import (
 	"bufio"
 	"fmt"
+	"github.com/opennetworkinglab/onos-config/events"
 	"github.com/opennetworkinglab/onos-config/store"
 	"os"
 	"strconv"
@@ -38,7 +39,8 @@ func printHelp() {
 
 // RunShell is a temporary utility that allows shell type access to the config
 // manager until a proper NBI is put in place
-func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStore) {
+func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStore,
+	changesChannel chan events.ConfigurationEvent) {
 	reader := bufio.NewReader(os.Stdin)
 	printHelp()
 
@@ -100,7 +102,6 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			for _, configValue := range configValues {
 				fmt.Println(configValue.Path, "\t", configValue.Value)
 			}
-
 		case "m1":
 			configID, err := selectDevice(configStore, reader)
 			if err != nil {
@@ -128,6 +129,11 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			config.Changes = append(config.Changes, change.ID)
 			config.Updated = time.Now()
 			configStore.Store[configID] = config
+			changesChannel <- events.ConfigurationEvent{
+				ChangeID:  change.ID,
+				Committed: true,
+				Event:     events.Event{Device: config.Device, Time: time.Now()},
+			}
 			fmt.Println("Added change", store.B64(change.ID),
 				"to Config:", config.Name, "(in memory)")
 
@@ -157,6 +163,11 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			config.Changes = append(config.Changes, change.ID)
 			config.Updated = time.Now()
 			configStore.Store[configID] = config
+			changesChannel <- events.ConfigurationEvent{
+				ChangeID:  change.ID,
+				Committed: true,
+				Event:     events.Event{Device: config.Device, Time: time.Now()},
+			}
 			fmt.Println("Added change", store.B64(change.ID),
 				"to Config:", config.Name, "(in memory)")
 
