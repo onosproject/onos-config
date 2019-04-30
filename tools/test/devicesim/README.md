@@ -10,7 +10,7 @@ Everything below assumes you are in the __devicesim__ directory
 
 You can access to the user manuals for each simulator using the following links: 
 
-[gNMI User Manual](https://github.com/opennetworkinglab/onos-config/blob/master/tools/test/devicesim/gnmi_user_manual.md)
+[gNMI User Manual](gnmi_user_manual.md)
 
-[gNOI User Manual](https://github.com/opennetworkinglab/onos-config/blob/master/tools/test/devicesim/gnoi_user_manual.md)
+[gNOI User Manual](gnoi_user_manual.md)
 

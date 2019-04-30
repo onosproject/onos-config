@@ -53,9 +53,8 @@ RUN go install -v \
       github.com/google/gnxi/gnoi_target \ 
       github.com/google/gnxi/gnoi_cert 
 
-ENV GNMI_TARGET=localhost
 ENV GNMI_PORT=10161
-ENV GNOI_TARGET=localhost
+ENV HOST_TARGET=localhost
 ENV GNOI_PORT=50001
 ENV SIM_MODE=1
 
