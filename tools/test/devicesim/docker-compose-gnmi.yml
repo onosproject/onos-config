@@ -4,6 +4,7 @@ services:
     image: devicesim:latest
     environment:
       - GNMI_PORT=10161
+      - SIM_MODE=1  
     ports:
       - "10161:10161"
     labels:
@@ -12,6 +13,7 @@ services:
     image: devicesim:latest
     environment:
       - GNMI_PORT=10162
+      - SIM_MODE=1
     ports:
       - "10162:10162"
     labels:
@@ -20,8 +22,8 @@ services:
     image: devicesim:latest
     environment:
       - GNMI_PORT=10163
+      - SIM_MODE=1  
     ports:
       - "10163:10163"
     labels:
-      description: "gNMI Simulator Device 3"
-
+      description: "gNMI Simulator Device 3"     
