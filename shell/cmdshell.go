@@ -19,16 +19,26 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/opennetworkinglab/onos-config/events"
+	"github.com/opennetworkinglab/onos-config/southbound/topocache"
 	"github.com/opennetworkinglab/onos-config/store"
+	"github.com/opennetworkinglab/onos-config/store/change"
+	"html/template"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
+const deviceListTemplate = "Addr\t\t\tTarget\t\t\tTimeout\n{{ range . }}" +
+	"{{printf \"%-24s\" .Addr}}{{printf \"%-24s\" .Target}}{{.Timeout}}\n{{end}}"
+
+const configListTemplate = "#\tPath\t\t\t\t\tValue\t\tRemove\n{{ range $i, $e := .}}" +
+	"{{$i}}\t{{printf \"%-40s\" .Path}}{{printf \"%-16s\" .Value}}\t{{.Remove}}\n{{end}}"
+
 func printHelp() {
 	fmt.Println("-------------------")
 	fmt.Println("c) list changes")
+	fmt.Println("d) list connected devices")
 	fmt.Println("s) Show configuration for a device")
 	fmt.Println("x) Extract current config for a device")
 	fmt.Println("m1) Make change 1 - set all tx-power values to 5")
@@ -40,7 +50,8 @@ func printHelp() {
 // RunShell is a temporary utility that allows shell type access to the config
 // manager until a proper NBI is put in place
 func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStore,
-	changesChannel chan events.ConfigurationEvent) {
+	deviceStore *topocache.DeviceStore,
+	changesChannel chan events.Event) {
 	reader := bufio.NewReader(os.Stdin)
 	printHelp()
 
@@ -58,11 +69,21 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				continue
 			}
 			change := changeStore.Store[store.B64(changeID)]
-			fmt.Println("Change:", store.B64(changeID))
-			fmt.Println("#\tPath\t\t\tValue\tRemove")
-			for idx, c := range change.Config {
-				fmt.Println(idx, "\t", c.Path, "\t", c.Value, "\t", c.Remove)
+			t, err := template.New("configlist.txt").Parse(configListTemplate)
+			if err != nil {
+				fmt.Println("Error parsing template", err)
+				continue
 			}
+			fmt.Println("Change:", store.B64(changeID))
+			t.Execute(os.Stdout, change.Config)
+
+		case "d":
+			t, err := template.New("devicelist.txt").Parse(deviceListTemplate)
+			if err != nil {
+				fmt.Println("Error parsing template", deviceListTemplate)
+				continue
+			}
+			err = t.Execute(os.Stdout, deviceStore.Store)
 
 		case "s":
 			configID, err := selectDevice(configStore, reader)
@@ -110,15 +131,15 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			}
 
 			config := configStore.Store[configID]
-			var txPowerChange = make([]*store.ChangeValue, 0)
+			var txPowerChange = make([]*change.ChangeValue, 0)
 			for _, cv := range config.ExtractFullConfig(changeStore.Store, 0) {
 				if strings.Contains(cv.Path, "tx-power") {
-					change, _ := store.CreateChangeValue(cv.Path, "5", false)
+					change, _ := change.CreateChangeValue(cv.Path, "5", false)
 					txPowerChange = append(txPowerChange, change)
 				}
 			}
 
-			change, err := store.CreateChange(txPowerChange, "Changing tx-power to 5")
+			change, err := change.CreateChange(txPowerChange, "Changing tx-power to 5")
 			if err != nil {
 				fmt.Println("Error creating tx-power change", err)
 				continue
@@ -129,11 +150,11 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			config.Changes = append(config.Changes, change.ID)
 			config.Updated = time.Now()
 			configStore.Store[configID] = config
-			changesChannel <- events.ConfigurationEvent{
-				ChangeID:  change.ID,
-				Committed: true,
-				Event:     events.Event{Device: config.Device, Time: time.Now()},
-			}
+			eventValues := make(map[string]string)
+			eventValues["ChangeID"] = store.B64(change.ID)
+			eventValues["Committed"] = "true"
+			changesChannel <- events.CreateEvent(config.Device,
+				events.EventTypeConfiguration, eventValues)
 			fmt.Println("Added change", store.B64(change.ID),
 				"to Config:", config.Name, "(in memory)")
 
@@ -144,14 +165,14 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				continue
 			}
 
-			changes := make([]*store.ChangeValue, 0)
-			c1, _ := store.CreateChangeValue("/test1:cont1a/cont2a/leaf2a", "", true)
-			c2, _ := store.CreateChangeValue("/test1:cont1a/cont2a/leaf2b", "", true)
-			c3, _ := store.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", "", true)
-			c4, _ := store.CreateChangeValue("/test1:cont1a/leaf1b", "Hello World", false)
+			changes := make([]*change.ChangeValue, 0)
+			c1, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2a", "", true)
+			c2, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2b", "", true)
+			c3, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", "", true)
+			c4, _ := change.CreateChangeValue("/test1:cont1a/leaf1b", "Hello World", false)
 			changes = append(changes, c1, c2, c3, c4)
 
-			change, err := store.CreateChange(changes, "remove leafs 2a,2b,2c add leaf 1b")
+			change, err := change.CreateChange(changes, "remove leafs 2a,2b,2c add leaf 1b")
 			if err != nil {
 				fmt.Println("Error creating m2 change", err)
 				continue
@@ -163,11 +184,13 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			config.Changes = append(config.Changes, change.ID)
 			config.Updated = time.Now()
 			configStore.Store[configID] = config
-			changesChannel <- events.ConfigurationEvent{
-				ChangeID:  change.ID,
-				Committed: true,
-				Event:     events.Event{Device: config.Device, Time: time.Now()},
-			}
+
+			eventValues := make(map[string]string)
+			eventValues["ChangeID"] = store.B64(change.ID)
+			eventValues["Committed"] = "true"
+			changesChannel <- events.CreateEvent(config.Device,
+				events.EventTypeConfiguration, eventValues)
+
 			fmt.Println("Added change", store.B64(change.ID),
 				"to Config:", config.Name, "(in memory)")
 

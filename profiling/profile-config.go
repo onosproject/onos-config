@@ -26,7 +26,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/store"
+	"github.com/opennetworkinglab/onos-config/store/change"
 	"os"
 	"runtime/pprof"
 	"strconv"
@@ -42,16 +42,16 @@ func main() {
 	defer pprof.StopCPUProfile()
 
 
-	changeValues := store.ChangeValueCollection{}
+	changeValues := change.ChangeValueCollection{}
 	iterations := 50000
 
 	for i := 0; i < iterations; i++ {
 		path := fmt.Sprintf("/test%d", i)
-		cv, _ := store.CreateChangeValue(path, strconv.Itoa(i), false)
+		cv, _ := change.CreateChangeValue(path, strconv.Itoa(i), false)
 		changeValues = append(changeValues, cv)
 	}
 
-	change, err := store.CreateChange(changeValues, "Benchmarked Change")
+	change, err := change.CreateChange(changeValues, "Benchmarked Change")
 
 	err = change.IsValid()
 	if err != nil {

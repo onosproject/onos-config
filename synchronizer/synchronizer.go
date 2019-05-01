@@ -23,7 +23,7 @@ import (
 
 // Devicesync is a go routine that listens out for configuration events specific
 // to a device and propagates them downwards through southbound interface
-func Devicesync(device string, deviceChan <-chan events.ConfigurationEvent) {
+func Devicesync(device string, deviceChan <-chan events.Event) {
 	log.Println("Listen for config changes on", device)
 
 	for deviceConfigEvent := range deviceChan {

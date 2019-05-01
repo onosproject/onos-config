@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package store
+package change
 
 import (
 	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,6 +26,9 @@ import (
 	"strings"
 	"time"
 )
+
+// B64 is an alias for the function encoding a byte array to a Base64 string
+var b64 = base64.StdEncoding.EncodeToString
 
 // ChangeID is an alias for the ID of the change
 type ChangeID []byte
@@ -69,11 +73,11 @@ func (c Change) IsValid() error {
 	}
 
 	hash := h.Sum(nil)
-	if B64(hash) == B64(c.ID) {
+	if b64(hash) == b64(c.ID) {
 		return nil
 	}
 	return fmt.Errorf("Change '%s': Calculated hash '%s' does not match",
-		B64(c.ID), B64(hash))
+		b64(c.ID), b64(hash))
 }
 
 // GnmiChange converts a Change object to gNMI format

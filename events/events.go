@@ -15,19 +15,53 @@
 package events
 
 import (
-	"github.com/opennetworkinglab/onos-config/store"
 	"time"
 )
 
-// Event is a general purpose base type of event
-type Event struct {
-	Device string
-	Time   time.Time
+type EventType int
+
+const ( // For event types
+	EventTypeConfiguration EventType = iota
+	EventTypeTopoCache
+)
+
+func (et EventType) String() string {
+	return [...]string{"Configuration", "TopoCache"}[et]
 }
 
-// ConfigurationEvent is for a configuration change
-type ConfigurationEvent struct {
-	Event
-	ChangeID  store.ChangeID
-	Committed bool
+// Event is a general purpose base type of event
+type Event struct {
+	subject    string
+	time       time.Time
+	eventtype  EventType
+	values     map[string]string
+}
+
+func (e Event) Subject() string {
+	return e.subject
+}
+
+func (e Event) Time() time.Time {
+	return e.time
+}
+
+func (e Event) EventType() EventType {
+	return e.eventtype
+}
+
+func (e Event) Values() *map[string]string {
+	return &e.values
+}
+
+func (e Event) Value(name string) string {
+	return e.values[name]
+}
+
+func CreateEvent(subject string, eventtype EventType, values map[string]string) Event {
+	return Event{
+		subject:subject,
+		time:time.Now(),
+		eventtype: eventtype,
+		values: values,
+	}
 }

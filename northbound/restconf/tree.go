@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package store
+package restconf
 
 import (
 	"bytes"
 	"fmt"
+	"github.com/opennetworkinglab/onos-config/store/change"
 	"strings"
 )
 
@@ -71,7 +72,7 @@ func (n *Node) addNode(name string) *Node {
 
 // BuildTree is a function that takes an ordered array of ConfigValues and
 // produces a structured formatted tree
-func BuildTree(values []ConfigValue) ([]byte, error) {
+func BuildTree(values []change.ConfigValue) ([]byte, error) {
 	var buf bytes.Buffer
 
 	root := Node{Name: "(root)", Children: make([]*Node, 0), Leaves: make([]*Leaf, 0)}

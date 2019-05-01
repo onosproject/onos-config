@@ -17,6 +17,7 @@ package store
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/opennetworkinglab/onos-config/store/change"
 	"os"
 )
 
@@ -62,7 +63,7 @@ func LoadConfigStore(file string) (ConfigurationStore, error) {
 type ChangeStore struct {
 	Version   string
 	Storetype string
-	Store     map[string]*Change
+	Store     map[string]*change.Change
 }
 
 // LoadChangeStore loads the change store from a file
