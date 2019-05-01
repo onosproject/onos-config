@@ -20,6 +20,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"github.com/opennetworkinglab/onos-config/southbound/topocache"
 	"io/ioutil"
 	"time"
 
@@ -28,11 +29,6 @@ import (
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
-
-type Device struct {
-	Addr, Target, Usr, Pwd, CaPath, CertPath, KeyPath string
-	Timeout                                           time.Duration
-}
 
 //Can be extended, for now is ip:port
 type Key struct {
@@ -46,7 +42,7 @@ type Target struct {
 
 var targets = make(map[Key]Target)
 
-func createDestination(device Device) (*client.Destination, Key) {
+func createDestination(device topocache.Device) (*client.Destination, Key) {
 	d := &client.Destination{TLS: &tls.Config{}}
 	d.Addrs = []string{device.Addr}
 	d.Target = device.Target
@@ -82,7 +78,7 @@ func GetTarget(key Key) (Target, error) {
 
 }
 
-func ConnectTarget(device Device) (Target, Key, error) {
+func ConnectTarget(device topocache.Device) (Target, Key, error) {
 	dest, key := createDestination(device)
 	ctx := context.Background()
 	c, err := gclient.New(ctx, *dest)

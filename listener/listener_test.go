@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	device1Channel, device2Channel, device3Channel chan events.ConfigurationEvent
+	device1Channel, device2Channel, device3Channel chan events.Event
 	err                                            error
 )
 
@@ -67,7 +67,7 @@ func Test_register(t *testing.T) {
 	}
 
 	var deviceChannelIf interface{} = device4Channel
-	chanType, ok := deviceChannelIf.(chan events.ConfigurationEvent)
+	chanType, ok := deviceChannelIf.(chan events.Event)
 	if !ok {
 		t.Errorf("Unexpected channel type when registering device %v", chanType)
 	}
@@ -95,10 +95,10 @@ func Test_unregister(t *testing.T) {
 
 func Test_listen(t *testing.T) {
 	// Start a test listener
-	testChan := make(chan events.ConfigurationEvent, 10)
+	testChan := make(chan events.Event, 10)
 	go testSync(testChan)
 	// Start the main listener system
-	changesChannel := make(chan events.ConfigurationEvent, 10)
+	changesChannel := make(chan events.Event, 10)
 	go Listen(changesChannel)
 
 	// Start one go routine per device - each one will have its own channel
@@ -108,11 +108,11 @@ func Test_listen(t *testing.T) {
 
 	// Send down some changes
 	for i := 1; i < 13; i++ {
-		changesChannel <- events.ConfigurationEvent{
-			ChangeID:  []byte("test"),
-			Committed: true,
-			Event:     events.Event{Device: "device" + strconv.Itoa(i), Time: time.Now()},
-		}
+		values := make(map[string]string)
+		values["changeID"] = "test"
+		event := events.CreateEvent("device" + strconv.Itoa(i), events.EventTypeConfiguration, values)
+
+		changesChannel <- event
 	}
 
 	// Wait for the changes to get distributed
@@ -124,7 +124,7 @@ func Test_listen(t *testing.T) {
 	close(changesChannel)
 }
 
-func testSync(testChan <-chan events.ConfigurationEvent) {
+func testSync(testChan <-chan events.Event) {
 	log.Println("Listen for config changes for Test")
 
 	for nbiChange := range testChan {

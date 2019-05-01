@@ -1,0 +1,30 @@
+{
+  "Version": "1.0.0",
+  "Storetype": "device",
+  "Store": {
+    "Device1": {
+      "Addr": "localhost:10161",
+      "Target": "Test-onos-config",
+      "CaPath": "/home/scondon/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/onfca.crt",
+      "CertPath": "/home/scondon/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.crt",
+      "KeyPath": "/home/scondon/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.key",
+      "Timeout": 10000000000
+    },
+    "Device2": {
+      "Addr": "localhost:10162",
+      "Target": "Test-onos-config",
+      "CaPath": "/home/scondon/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/onfca.crt",
+      "CertPath": "/home/scondon/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.crt",
+      "KeyPath": "/home/scondon/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.key",
+      "Timeout": 10000000000
+    },
+    "Device3": {
+      "Addr": "localhost:10163",
+      "Target": "Test-onos-config",
+      "CaPath": "/home/scondon/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/onfca.crt",
+      "CertPath": "/home/scondon/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.crt",
+      "KeyPath": "/home/scondon/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.key",
+      "Timeout": 10000000000
+    }
+  }
+}

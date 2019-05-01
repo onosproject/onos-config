@@ -15,6 +15,7 @@
 package store
 
 import (
+	"github.com/opennetworkinglab/onos-config/store/change"
 	"sort"
 	"strings"
 	"time"
@@ -29,17 +30,17 @@ type Configuration struct {
 	Updated     time.Time
 	User        string
 	Description string
-	Changes     []ChangeID
+	Changes     []change.ChangeID
 }
 
 // ExtractFullConfig retrieves the full consolidated config for a Configuration
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func (b Configuration) ExtractFullConfig(changeStore map[string]*Change, nBack int) []ConfigValue {
+func (b Configuration) ExtractFullConfig(changeStore map[string]*change.Change, nBack int) []change.ConfigValue {
 
 	// Have to use a slice to have a consistent output order
-	consolidatedConfig := make([]ConfigValue, 0)
+	consolidatedConfig := make([]change.ConfigValue, 0)
 
 	for _, changeID := range b.Changes[0 : len(b.Changes)-nBack] {
 		change := changeStore[B64(changeID)]
@@ -80,12 +81,4 @@ func (b Configuration) ExtractFullConfig(changeStore map[string]*Change, nBack i
 	})
 
 	return consolidatedConfig
-}
-
-// ExtractFullTree of a Configuration extracts the full configuration to a tree
-// format in Json
-func (b Configuration) ExtractFullTree(changeStore map[string]*Change, nBack int) ([]byte, error) {
-	configValues := b.ExtractFullConfig(changeStore, nBack)
-
-	return BuildTree(configValues)
 }

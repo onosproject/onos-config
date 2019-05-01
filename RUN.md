@@ -15,7 +15,9 @@ go get github.com/opennetworkinglab/onos-config/onos-config-manager
 ## Unit test
 ```bash
 go test -v github.com/opennetworkinglab/onos-config/store
+go test -v github.com/opennetworkinglab/onos-config/store/change
 go test -v github.com/opennetworkinglab/onos-config/listener
+go test -v github.com/opennetworkinglab/onos-config/northbound/restconf
 ```
 
 ## Run
@@ -23,7 +25,9 @@ go test -v github.com/opennetworkinglab/onos-config/listener
 go run github.com/opennetworkinglab/onos-config/onos-config-manager \
 -restconfPort=8080 \
 -configStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/configStore-sample.json \
--changeStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/changeStore-sample.json
+-changeStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/changeStore-sample.json \
+-deviceStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/deviceStore-sample.json
+
 ```
 
 or locally from ~/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/

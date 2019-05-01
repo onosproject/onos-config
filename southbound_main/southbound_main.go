@@ -16,13 +16,13 @@ package main
 
 import (
 	"fmt"
-
+	"github.com/opennetworkinglab/onos-config/southbound/topocache"
 	"github.com/golang/protobuf/proto"
 	"github.com/opennetworkinglab/onos-config/southbound"
 )
 
 func main() {
-	device := southbound.Device{
+	device := topocache.Device{
 		Addr:     "localhost:10161",
 		Target:   "Test-onos-config",
 		CaPath:   "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/onfca.crt",

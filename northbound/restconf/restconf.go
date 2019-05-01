@@ -96,7 +96,7 @@ func treeHandler(w http.ResponseWriter, r *http.Request) {
 		var isFirst = true
 		fmt.Fprintf(w, "{\"Devices\": [")
 		for _, conf := range configStore.Store {
-			treeBytes, err := conf.ExtractFullTree(changeStore.Store, 0)
+			treeBytes, err := BuildTree(conf.ExtractFullConfig(changeStore.Store, 0))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 				return
@@ -164,10 +164,12 @@ func streamsHandler(w http.ResponseWriter, r *http.Request) {
 	for nbiChange := range nbiChan {
 		// Write to the ResponseWriter
 		// Server Sent Events compatible
-		changeJSON, _ := json.Marshal(nbiChange)
 		fmt.Fprintf(w, "id: %d\n", i)
-		fmt.Fprintf(w, "event: configuration\n")
-		fmt.Fprintf(w, "data: %s\n\n", changeJSON)
+		fmt.Fprintf(w, "event: %s\n", nbiChange.EventType())
+		fmt.Fprintf(w, "time: %s\n", nbiChange.Time().Format(time.RFC3339))
+		valuesjson, _ := json.Marshal(nbiChange.Values())
+		fmt.Fprintf(w, "data: %s %s\n\n",
+			nbiChange.Subject(), valuesjson)
 
 		// Flush the data immediatly instead of buffering it for later.
 		flusher.Flush()
