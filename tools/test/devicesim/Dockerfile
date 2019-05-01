@@ -60,8 +60,8 @@ ENV SIM_MODE=1
 
 COPY ./target_configs target_configs
 COPY ./certs certs
-COPY run_targets.sh .
+COPY ./scripts scripts
 
 
 CMD \
-  chmod +x run_targets.sh && ./run_targets.sh 
+  chmod +x ./scripts/run_targets.sh && ./scripts/run_targets.sh 
