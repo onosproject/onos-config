@@ -15,6 +15,7 @@
 package events
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -35,6 +36,15 @@ type Event struct {
 	time       time.Time
 	eventtype  EventType
 	values     map[string]string
+}
+
+func (e Event) String() string {
+	var evtValues string
+	for k, v := range e.values {
+		evtValues = evtValues + k + ":" + v + ","
+	}
+	return fmt.Sprintf("%s %s %s {%s}",
+		e.subject, e.eventtype, e.time.Format(time.RFC3339), evtValues)
 }
 
 func (e Event) Subject() string {

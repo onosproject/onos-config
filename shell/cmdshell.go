@@ -43,6 +43,7 @@ func printHelp() {
 	fmt.Println("x) Extract current config for a device")
 	fmt.Println("m1) Make change 1 - set all tx-power values to 5")
 	fmt.Println("m2) Make change 2 - remove leafs 2a,2b,2c add leaf 1b ")
+	fmt.Println("m3) Make a change to timezone on openconfig device")
 	fmt.Println("?) show this message")
 	fmt.Println("q) quit")
 }
@@ -175,6 +176,37 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			change, err := change.CreateChange(changes, "remove leafs 2a,2b,2c add leaf 1b")
 			if err != nil {
 				fmt.Println("Error creating m2 change", err)
+				continue
+			}
+			changeStore.Store[store.B64(change.ID)] = change
+			fmt.Println("Added change", store.B64(change.ID), "to ChangeStore (in memory)")
+
+			config := configStore.Store[configID]
+			config.Changes = append(config.Changes, change.ID)
+			config.Updated = time.Now()
+			configStore.Store[configID] = config
+
+			eventValues := make(map[string]string)
+			eventValues["ChangeID"] = store.B64(change.ID)
+			eventValues["Committed"] = "true"
+			changesChannel <- events.CreateEvent(config.Device,
+				events.EventTypeConfiguration, eventValues)
+
+			fmt.Println("Added change", store.B64(change.ID),
+				"to Config:", config.Name, "(in memory)")
+
+		case "m3":
+			configID, err := selectDevice(configStore, reader)
+			if err != nil {
+				fmt.Println("Error invalid number given", err)
+				continue
+			}
+			changes := make([]*change.ChangeValue, 0)
+			c1, _ := change.CreateChangeValue("/system/clock/config/timezone-name", "Europe/Milan", false)
+			changes = append(changes, c1)
+			change, err := change.CreateChange(changes, "Chanage timezone")
+			if err != nil {
+				fmt.Println("Error creating m3 change", err)
 				continue
 			}
 			changeStore.Store[store.B64(change.ID)] = change

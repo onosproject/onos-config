@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/opennetworkinglab/onos-config/southbound/topocache"
 	"io/ioutil"
+	"log"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -47,22 +48,33 @@ func createDestination(device topocache.Device) (*client.Destination, Key) {
 	d.Addrs = []string{device.Addr}
 	d.Target = device.Target
 	d.Timeout = time.Duration(device.Timeout * time.Second)
-	if device.CertPath != "" && device.KeyPath != "" {
-		if device.CaPath != "" {
-			certPool := getCertPool(device.CaPath)
-			d.TLS.RootCAs = certPool
-		} else {
-			fmt.Println("Assuming well know CA for certificate signature")
+	if device.CaPath == "" {
+		log.Println("Loading default CA onfca")
+		d.TLS.RootCAs = getCertPoolDefault()
+	} else {
+		d.TLS.RootCAs = getCertPool(device.CaPath)
+	}
+
+	if device.CertPath == "" && device.KeyPath == "" {
+		// Load default Certificates
+		log.Println("Loading default certificates")
+		clientCerts, err := tls.X509KeyPair([]byte(defaultClientCrt), []byte(defaultClientKey))
+		if err != nil {
+			log.Println("Error loading default certs")
 		}
-		// Certificates
+
+		d.TLS.Certificates = []tls.Certificate{clientCerts}
+	} else if device.CertPath != "" && device.KeyPath != "" {
+		// Load certs given for device
 		d.TLS.Certificates = []tls.Certificate{setCertificate(device.CertPath, device.KeyPath)}
+
 	} else if device.Usr != "" && device.Pwd != "" {
 		//TODO implement
 		// cred := &client.Credentials{}
 		// cred.Username = "test"
 		// cred.Password = "testpwd"
 		//d.Credentials = cred
-		//fmt.Println(*cred)
+		//log.Println(*cred)
 	} else {
 		d.TLS = &tls.Config{InsecureSkipVerify: true}
 	}
@@ -96,7 +108,7 @@ func ConnectTarget(device topocache.Device) (Target, Key, error) {
 func setCertificate(pathCert string, pathKey string) tls.Certificate {
 	certificate, err := tls.LoadX509KeyPair(pathCert, pathKey)
 	if err != nil {
-		fmt.Println("could not load client key pair: %v", err)
+		log.Println("could not load client key pair: %v", err)
 	}
 	return certificate
 }
@@ -105,10 +117,18 @@ func getCertPool(CaPath string) *x509.CertPool {
 	certPool := x509.NewCertPool()
 	ca, err := ioutil.ReadFile(CaPath)
 	if err != nil {
-		fmt.Println("could not read %q: %s", CaPath, err)
+		log.Println("could not read %q: %s", CaPath, err)
 	}
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
-		fmt.Println("failed to append CA certificates")
+		log.Println("failed to append CA certificates")
+	}
+	return certPool
+}
+
+func getCertPoolDefault() *x509.CertPool {
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM([]byte(onfCaCrt)); !ok {
+		log.Println("failed to append CA certificates")
 	}
 	return certPool
 }
