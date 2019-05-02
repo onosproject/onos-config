@@ -40,8 +40,21 @@ type Key struct {
 }
 
 type Target struct {
-	Clt  client.Impl
-	Ctxt context.Context
+	Destination client.Destination
+	Clt         client.Impl
+	Ctxt        context.Context
+}
+
+// SubscribeOptions is the gNMI subscription request options
+type SubscribeOptions struct {
+	UpdatesOnly       bool
+	Prefix            string
+	Mode              string
+	StreamMode        string
+	SampleInterval    uint64
+	HeartbeatInterval uint64
+	Paths             [][]string
+	Origin            string
 }
 
 var targets = make(map[Key]Target)
@@ -82,10 +95,13 @@ func GetTarget(key Key) (Target, error) {
 
 }
 
+//TODO make asyc
+//TODO lock channel to allow one request to device at each time
 func ConnectTarget(device Device) (Target, Key, error) {
 	dest, key := createDestination(device)
 	ctx := context.Background()
 	c, err := gclient.New(ctx, *dest)
+	//c.handler := client.NotificationHandler{}
 	if err != nil {
 		return Target{}, Key{}, fmt.Errorf("could not create a gNMI client: %v", err)
 	}
@@ -173,4 +189,86 @@ func Set(target Target, request *gpb.SetRequest) (*gpb.SetResponse, error) {
 		return nil, fmt.Errorf("target returned RPC error for Set(%q) : %v", request.String(), err)
 	}
 	return response, nil
+}
+
+func Subscribe(target Target, request *gpb.SubscribeRequest, handler client.NotificationHandler) error {
+	//TODO currently establishing a throwaway client per each subscription request
+	//this is due to the face that 1 NotificationHandler is allowed per client (1:1)
+	//alternatively we could handle every connection request with one NotificationHandler
+	//returing to the caller only the desired results.
+	q, err := client.NewQuery(request)
+	if err != nil {
+		//TODO handle
+	}
+	q.Addrs = target.Destination.Addrs
+	q.Timeout = target.Destination.Timeout
+	q.Target = target.Destination.Target
+	q.Credentials = target.Destination.Credentials
+	q.TLS = target.Destination.TLS
+	q.NotificationHandler = handler
+	c := client.New()
+	err = c.Subscribe(target.Ctxt, q, "")
+	if err != nil {
+		return fmt.Errorf("could not create a gNMI for subscription: %v", err)
+	}
+	target.Clt.(*gclient.Client).Subscribe(target.Ctxt, q)
+	return nil
+
+}
+
+// NewSubscribeRequest returns a SubscribeRequest for the given paths
+func NewSubscribeRequest(subscribeOptions *SubscribeOptions) (*gpb.SubscribeRequest, error) {
+	var mode gpb.SubscriptionList_Mode
+	switch subscribeOptions.Mode {
+	case "once":
+		mode = gpb.SubscriptionList_ONCE
+	case "poll":
+		mode = gpb.SubscriptionList_POLL
+	case "":
+		fallthrough
+	case "stream":
+		mode = gpb.SubscriptionList_STREAM
+	default:
+		return nil, fmt.Errorf("subscribe mode (%s) invalid", subscribeOptions.Mode)
+	}
+
+	var streamMode gpb.SubscriptionMode
+	switch subscribeOptions.StreamMode {
+	case "on_change":
+		streamMode = gpb.SubscriptionMode_ON_CHANGE
+	case "sample":
+		streamMode = gpb.SubscriptionMode_SAMPLE
+	case "":
+		fallthrough
+	case "target_defined":
+		streamMode = gpb.SubscriptionMode_TARGET_DEFINED
+	default:
+		return nil, fmt.Errorf("subscribe stream mode (%s) invalid", subscribeOptions.StreamMode)
+	}
+
+	prefixPath, err := ParseGNMIElements(SplitPath(subscribeOptions.Prefix))
+	if err != nil {
+		return nil, err
+	}
+	subList := &gpb.SubscriptionList{
+		Subscription: make([]*gpb.Subscription, len(subscribeOptions.Paths)),
+		Mode:         mode,
+		UpdatesOnly:  subscribeOptions.UpdatesOnly,
+		Prefix:       prefixPath,
+	}
+	for i, p := range subscribeOptions.Paths {
+		gnmiPath, err := ParseGNMIElements(p)
+		if err != nil {
+			return nil, err
+		}
+		gnmiPath.Origin = subscribeOptions.Origin
+		subList.Subscription[i] = &gpb.Subscription{
+			Path:              gnmiPath,
+			Mode:              streamMode,
+			SampleInterval:    subscribeOptions.SampleInterval,
+			HeartbeatInterval: subscribeOptions.HeartbeatInterval,
+		}
+	}
+	return &gpb.SubscribeRequest{Request: &gpb.SubscribeRequest_Subscribe{
+		Subscribe: subList}}, nil
 }

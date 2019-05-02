@@ -16,8 +16,10 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/openconfig/gnmi/client"
 	"github.com/opennetworkinglab/onos-config/southbound"
 )
 
@@ -39,7 +41,7 @@ func main() {
 		}
 	}
 	targetExists, err := southbound.GetTarget(southbound.Key{Key: device.Addr})
-	if target == targetExists {
+	if reflect.DeepEqual(target, targetExists) {
 		fmt.Println("Target reusal works")
 	}
 	request := ""
@@ -56,4 +58,33 @@ func main() {
 	}
 	getResponseString := proto.MarshalTextString(getResponse)
 	fmt.Println("get: ", getResponseString)
+
+	//"Subscribe"
+	options := &southbound.SubscribeOptions{
+		UpdatesOnly:       false,
+		Prefix:            "",
+		Mode:              "stream",
+		StreamMode:        "target_defined",
+		SampleInterval:    15,
+		HeartbeatInterval: 15,
+		Paths:             nil,
+		Origin:            "",
+	}
+	req, err := southbound.NewSubscribeRequest(options)
+
+	handler := func(n client.Notification) error {
+		switch v := n.(type) {
+		case client.Update:
+			fmt.Println(v.Path)
+			//TODO
+		case client.Delete:
+			//TODO
+		case client.Sync:
+			//TODO
+		case client.Error:
+			//TODO
+		}
+		return nil
+	}
+	southbound.Subscribe(target, req, handler)
 }
