@@ -62,6 +62,7 @@ To use gNMI CLI, you have two options:
 1. (**Recommended Option**): you can install the gNMI CLI on your own machine using the following command and run it as an external application to the Docker containers. This option allows you to connect to any of the targets and run the gNMI CLI commands. 
 ```bash
 go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
+go install -v github.com/openconfig/gnmi/cmd/gnmi_cli
 ```
 2. You can ssh into any of the targets using the following command and run 
 the gNMI CLI from the Docker container. 
@@ -127,7 +128,7 @@ notification: <
 If you just want to run a single device, it is not necessary to run docker-compose.
 It can be done just by docker directly, and can be handy for troubleshooting.
 ```bash
-docker run --env "GNMI_TARGET=localhost" --env "GNMI_PORT=10164" -p "10164:10164" devicesim
+docker run --env "HOST_TARGET=localhost" --env "GNMI_PORT=10164" -p "10164:10164" devicesim
 ```
 To stop it use "docker kill"
 
