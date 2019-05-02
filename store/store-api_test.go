@@ -419,11 +419,17 @@ func Test_convertChangeToGnmi(t *testing.T) {
 }
 
 func Test_writeOutChangeFile(t *testing.T) {
-	changeStoreFile, _ := os.Create("testout/changeStore-sample.json")
+	if _, err := os.Stat("testout"); os.IsNotExist(err) {
+		os.Mkdir("testout", os.ModePerm)
+	}
+	changeStoreFile, err := os.Create("testout/changeStore-sample.json")
+	if err != nil {
+		t.Errorf("%s", err)
+	}
 	jsonEncoder := json.NewEncoder(changeStoreFile)
 	var csf = ChangeStore{Version: StoreVersion,
 		Storetype: StoreTypeChange, Store: changeStore}
-	err := jsonEncoder.Encode(csf)
+	err = jsonEncoder.Encode(csf)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

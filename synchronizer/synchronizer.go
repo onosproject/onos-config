@@ -16,17 +16,54 @@
 package synchronizer
 
 import (
-	"fmt"
 	"github.com/opennetworkinglab/onos-config/events"
+	"github.com/opennetworkinglab/onos-config/southbound"
+	"github.com/opennetworkinglab/onos-config/southbound/topocache"
+	"github.com/opennetworkinglab/onos-config/store"
 	"log"
 )
 
 // Devicesync is a go routine that listens out for configuration events specific
 // to a device and propagates them downwards through southbound interface
-func Devicesync(device string, deviceChan <-chan events.Event) {
-	log.Println("Listen for config changes on", device)
+func Devicesync(changeStore *store.ChangeStore,
+	device *topocache.Device, deviceChan <-chan events.Event) {
+
+	log.Println("Connecting to", device.Addr, "over gNMI")
+
+	target, err := southbound.GetTarget(southbound.Key{Key: device.Addr})
+	if err != nil {
+		log.Println("Could not get target", err)
+		target, _, err = southbound.ConnectTarget(*device)
+		log.Println(device.Addr, "Connected over gNMI")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+
+	// Get the device capabilities
+	capResponse, capErr := southbound.CapabilitiesWithString(target, "")
+	if capErr != nil {
+		log.Println(device.Addr, "Capabilities", err)
+	}
+
+	log.Println(device.Addr, "Capabilities", capResponse)
 
 	for deviceConfigEvent := range deviceChan {
-		fmt.Println("Change for device", device, deviceConfigEvent)
+		change := changeStore.Store[deviceConfigEvent.Value("ChangeID")]
+		err := change.IsValid()
+		if err != nil {
+			log.Println("Event discarded because change is invalid", err)
+			continue
+		}
+		gnmiChange := change.GnmiChange()
+		log.Println("Change formatted to gNMI setRequest", gnmiChange)
+		setResponse, err := southbound.Set(target, &gnmiChange)
+		if err != nil {
+			log.Println("SetResponse ", err)
+			continue
+		}
+		log.Println(device.Addr, "SetResponse", setResponse)
+
 	}
 }
