@@ -8,8 +8,8 @@ then
     else \
         echo "gNMI running on localhost:"$GNMI_PORT; 
     fi 
-    sed -i -e "s/replace-device-name/"$HOST_TARGET"/g" target_configs/typical_ofsw_config.json && \
-    sed -i -e "s/replace-motd-banner/Welcome to gNMI service on "$HOST_TARGET":"$GNMI_PORT"/g" target_configs/typical_ofsw_config.json \
+    sed -i -e "s/replace-device-name/"$HOST_TARGET"/g" $HOME/target_configs/typical_ofsw_config.json && \
+    sed -i -e "s/replace-motd-banner/Welcome to gNMI service on "$HOST_TARGET":"$GNMI_PORT"/g" $HOME/target_configs/typical_ofsw_config.json
 
     gnmi_target \
        -bind_address :$GNMI_PORT \
@@ -17,7 +17,7 @@ then
        -cert $HOME/certs/$HOST_TARGET.crt \
        -ca $HOME/certs/onfca.crt \
        -alsologtostderr \
-       -config target_configs/typical_ofsw_config.json > /dev/null 2>&1; 
+       -config $HOME/target_configs/typical_ofsw_config.json > /dev/null 2>&1;
 elif [ $SIM_MODE == 2 ]; 
 then
     IPADDR=`ip route get 1.2.3.4 | grep dev | awk '{print $7}'` && \
@@ -38,15 +38,15 @@ then
         echo "gNMI running on localhost and port:"${GNMI_PORT}; 
         echo "gNOI running on localhost:"$GNOI_PORT; 
     fi
-    sed -i -e "s/replace-device-name/"$HOST_TARGET"/g" target_configs/typical_ofsw_config.json && \
-    sed -i -e "s/replace-motd-banner/Welcome to gNMI service on "$HOST_TARGET":"$GNMI_PORT"/g" target_configs/typical_ofsw_config.json \
+    sed -i -e "s/replace-device-name/"$HOST_TARGET"/g" $HOME/target_configs/typical_ofsw_config.json && \
+    sed -i -e "s/replace-motd-banner/Welcome to gNMI service on "$HOST_TARGET":"$GNMI_PORT"/g" $HOME/target_configs/typical_ofsw_config.json
     gnmi_target \
        -bind_address :$GNMI_PORT \
        -key $HOME/certs/$HOST_TARGET.key \
        -cert $HOME/certs/$HOST_TARGET.crt \
        -ca $HOME/certs/onfca.crt \
        -alsologtostderr \
-       -config target_configs/typical_ofsw_config.json > /dev/null 2>&1 &
+       -config $HOME/target_configs/typical_ofsw_config.json > /dev/null 2>&1 &
     
     gnoi_target \
       -bind_address :$GNOI_PORT \

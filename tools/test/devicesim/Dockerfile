@@ -20,6 +20,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -qy --no-install-recommends \
     netcat-openbsd \
     openssh-client \
     psmisc \
+    procps \
     sudo \
     vim
 
