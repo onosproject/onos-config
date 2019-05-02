@@ -24,17 +24,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/opennetworkinglab/onos-config/events"
-	"github.com/opennetworkinglab/onos-config/listener"
-	"github.com/opennetworkinglab/onos-config/synchronizer"
-	"log"
 	"os"
 	"time"
 )
 
 const storeTypeDevice = "device"
 const storeVersion = "1.0.0"
-
-var topoChannel chan events.Event
 
 // Device - the definition of Device will ultimately come from onos-topology
 type Device struct {
@@ -50,7 +45,7 @@ type DeviceStore struct {
 }
 
 // LoadDeviceStore loads a device store from a file - will eventually be from onos-topology
-func LoadDeviceStore(file string) (*DeviceStore, error) {
+func LoadDeviceStore(file string, topoChannel chan<- events.Event) (*DeviceStore, error) {
 	storeFile, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -71,40 +66,11 @@ func LoadDeviceStore(file string) (*DeviceStore, error) {
 	// We send a creation event for each device in store
 	for _, device := range deviceStore.Store {
 		values := make(map[string]string)
-		values["connected"] = "true"
+		values[events.Connect] = "true"
 		topoChannel <- events.CreateEvent(device.Addr, events.EventTypeTopoCache, values)
 	}
 
 	return &deviceStore, nil
 }
 
-func init() {
-	topoChannel = make(chan events.Event, 10)
-}
 
-// SynchronizerFactory is a go routine thread that listens out for Device creation
-// and deletion events and spawns Synchronizer threads for them
-func SynchronizerFactory() {
-
-	for topoEvent := range topoChannel {
-		deviceName := topoEvent.Subject()
-		if topoEvent.EventType() == events.EventTypeTopoCache {
-			if !listener.CheckListener(deviceName) &&
-				topoEvent.Value("connected") == "true" {
-
-				configChan, err := listener.Register(deviceName, true)
-				if err != nil {
-					log.Fatal(err)
-				}
-				go synchronizer.Devicesync(deviceName, configChan)
-			} else if listener.CheckListener(deviceName) &&
-				topoEvent.Value("connected") == "false" {
-
-				err := listener.Unregister(deviceName, true)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-		}
-	}
-}

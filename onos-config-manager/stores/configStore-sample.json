@@ -4,7 +4,7 @@
   "Store": {
     "Device1Version": {
       "Name": "Device1Version",
-      "Device": "Device1",
+      "Device": "localhost:10161",
       "Created": "2019-04-25T16:07:24.623962132+01:00",
       "Updated": "2019-04-25T16:07:24.623962362+01:00",
       "User": "onos",
@@ -17,7 +17,7 @@
     },
     "Device2VersionMain": {
       "Name": "Device2VersionMain",
-      "Device": "Device2",
+      "Device": "localhost:10162",
       "Created": "2019-04-25T16:07:24.623995634+01:00",
       "Updated": "2019-04-25T16:07:24.623995815+01:00",
       "User": "onos",
@@ -26,6 +26,17 @@
         "DCuMG07l01g2BvMdEta+7DyxMxk=",
         "ccrCK+iDpgjBvlkG/HQ57yzOPzU=",
         "oJ5GSd9a4aBzgYRlCcFqyNdPzL0="
+      ]
+    },
+    "devicesim1": {
+      "Name": "devicesim1",
+      "Device": "localhost:10163",
+      "Created": "2019-05-02T12:37:24+01:00",
+      "Updated": "2019-05-02T12:37:24+01:00",
+      "User": "onos",
+      "Description": "Sample configuration for devicesim1",
+      "Changes": [
+        "DCuMG07l01g2BvMdEta+7DyxMxk="
       ]
     }
   }

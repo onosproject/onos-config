@@ -72,7 +72,7 @@ func TestMain(m *testing.M) {
 	config1Value09, _ := CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, false)
 	config1Value10, _ := CreateChangeValue(Test1Cont1AList2ATxout2Txpwr, ValueTxout2Txpwr10, false)
 	config1Value11, _ := CreateChangeValue(Test1Leaftoplevel, ValueLeaftopWxy1234, false)
-	change1, err = CreateChange(ChangeValueCollection{
+	change1, err = CreateChange(ValueCollections{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11,
@@ -186,7 +186,7 @@ func Test_changeValueString(t *testing.T) {
 	}
 
 	//Test the error
-	cv2 := ChangeValue{}
+	cv2 := Value{}
 	if cv2.String() != "InvalidChange" {
 		t.Errorf("Expected empty changeValue to produce InvalidChange Got: %s",
 			cv2.String())
@@ -198,7 +198,7 @@ func Test_changeString(t *testing.T) {
 	cv2, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, "ABC", false)
 	cv3, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2C, "Hello", false)
 
-	changeObj, _ := CreateChange(ChangeValueCollection{cv1, cv2, cv3}, "Test Change")
+	changeObj, _ := CreateChange(ValueCollections{cv1, cv2, cv3}, "Test Change")
 
 	var expected = `"Config":[` +
 		`{"Path":"/test1:cont1a/cont2a/leaf2a","Value":"123","Remove":false},` +
@@ -224,7 +224,7 @@ func Test_duplicate_path(t *testing.T) {
 
 	cv3, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B159, false)
 
-	change, err := CreateChange(ChangeValueCollection{cv1, cv2, cv3}, "Test Change")
+	change, err := CreateChange(ValueCollections{cv1, cv2, cv3}, "Test Change")
 
 	if err == nil {
 		t.Errorf("Expected %s to produce error for duplicate path", Test1Cont1ACont2ALeaf2B)
@@ -234,5 +234,3 @@ func Test_duplicate_path(t *testing.T) {
 		t.Errorf("Expected change to be nil because of duplicate path")
 	}
 }
-
-

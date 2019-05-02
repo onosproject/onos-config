@@ -19,16 +19,18 @@ import (
 	"github.com/opennetworkinglab/onos-config/southbound/topocache"
 	"github.com/golang/protobuf/proto"
 	"github.com/opennetworkinglab/onos-config/southbound"
+	"time"
 )
 
 func main() {
 	device := topocache.Device{
 		Addr:     "localhost:10161",
 		Target:   "Test-onos-config",
-		CaPath:   "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/onfca.crt",
-		CertPath: "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.crt",
-		KeyPath:  "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.key",
-		Timeout:  10,
+		// Loaded from default-certificates.go
+		//CaPath:   "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/onfca.crt",
+		//CertPath: "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.crt",
+		//KeyPath:  "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.key",
+		Timeout:  time.Second * 10,
 	}
 	target, err := southbound.GetTarget(southbound.Key{Key: device.Addr})
 	if err != nil {

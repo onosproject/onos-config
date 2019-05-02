@@ -30,7 +30,7 @@ type Configuration struct {
 	Updated     time.Time
 	User        string
 	Description string
-	Changes     []change.ChangeID
+	Changes     []change.ID
 }
 
 // ExtractFullConfig retrieves the full consolidated config for a Configuration

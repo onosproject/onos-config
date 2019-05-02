@@ -51,7 +51,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-
 func Test_device1_tree(t *testing.T) {
 	device1V := configStoreTest.Store["Device1Version"]
 	fmt.Println("Configuration", device1V.Name, " (latest) Changes:")

@@ -9,7 +9,7 @@
 go get github.com/opennetworkinglab/onos-config/onos-config-manager
 ```
 > This pulls from master branch.
-> For the moment (Apr 19) you should check the project out from Git and use the
+> For the moment (May 19) you should check the project out from Git and use the
 > __firststeps__ branch
 
 ## Unit test
@@ -37,6 +37,28 @@ go build && go run config-manager.go
 
 ### CLI
 A rudimentary CLI allows mostly read only access to the configuration at present.
+
+To have a change of timezone pushed all the way down to a device
+
+1) run the devicesim simulator as described [here](tools/test/devicesim/README.md)
+
+2) Then tail the syslog of the local PC to see log messages from onos-config
+
+3) Run onos-config-manager and choose m3 option, and choose which device to send to
+
+> In the syslog you should see SetResponse op:UPDATE
+
+You can verify the Set was successful with
+```bash
+gnmi_cli -address localhost:10161 \
+    -get \
+    -proto "path: <elem: <name: 'system'> elem:<name:'clock'> elem:<name:'config'> elem: <name: 'timezone-name'>>" \
+    -timeout 5s \
+    -client_crt certs/client1.crt \
+    -client_key certs/client1.key \
+    -ca_crt certs/onfca.crt \
+    -alsologtostderr
+```
 
 ### Restconf
 A rudimentary read-only Restconf interface is given at 

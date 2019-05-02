@@ -43,6 +43,7 @@ func printHelp() {
 	fmt.Println("x) Extract current config for a device")
 	fmt.Println("m1) Make change 1 - set all tx-power values to 5")
 	fmt.Println("m2) Make change 2 - remove leafs 2a,2b,2c add leaf 1b ")
+	fmt.Println("m3) Make a change to timezone on openconfig device")
 	fmt.Println("?) show this message")
 	fmt.Println("q) quit")
 }
@@ -131,7 +132,7 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			}
 
 			config := configStore.Store[configID]
-			var txPowerChange = make([]*change.ChangeValue, 0)
+			var txPowerChange = make([]*change.Value, 0)
 			for _, cv := range config.ExtractFullConfig(changeStore.Store, 0) {
 				if strings.Contains(cv.Path, "tx-power") {
 					change, _ := change.CreateChangeValue(cv.Path, "5", false)
@@ -151,8 +152,8 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			config.Updated = time.Now()
 			configStore.Store[configID] = config
 			eventValues := make(map[string]string)
-			eventValues["ChangeID"] = store.B64(change.ID)
-			eventValues["Committed"] = "true"
+			eventValues[events.ChangeID] = store.B64(change.ID)
+			eventValues[events.Committed] = "true"
 			changesChannel <- events.CreateEvent(config.Device,
 				events.EventTypeConfiguration, eventValues)
 			fmt.Println("Added change", store.B64(change.ID),
@@ -165,7 +166,7 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				continue
 			}
 
-			changes := make([]*change.ChangeValue, 0)
+			changes := make([]*change.Value, 0)
 			c1, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2a", "", true)
 			c2, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2b", "", true)
 			c3, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", "", true)
@@ -186,8 +187,39 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 			configStore.Store[configID] = config
 
 			eventValues := make(map[string]string)
-			eventValues["ChangeID"] = store.B64(change.ID)
-			eventValues["Committed"] = "true"
+			eventValues[events.ChangeID] = store.B64(change.ID)
+			eventValues[events.Committed] = "true"
+			changesChannel <- events.CreateEvent(config.Device,
+				events.EventTypeConfiguration, eventValues)
+
+			fmt.Println("Added change", store.B64(change.ID),
+				"to Config:", config.Name, "(in memory)")
+
+		case "m3":
+			configID, err := selectDevice(configStore, reader)
+			if err != nil {
+				fmt.Println("Error invalid number given", err)
+				continue
+			}
+			changes := make([]*change.Value, 0)
+			c1, _ := change.CreateChangeValue("/system/clock/config/timezone-name", "Europe/Milan", false)
+			changes = append(changes, c1)
+			change, err := change.CreateChange(changes, "Chanage timezone")
+			if err != nil {
+				fmt.Println("Error creating m3 change", err)
+				continue
+			}
+			changeStore.Store[store.B64(change.ID)] = change
+			fmt.Println("Added change", store.B64(change.ID), "to ChangeStore (in memory)")
+
+			config := configStore.Store[configID]
+			config.Changes = append(config.Changes, change.ID)
+			config.Updated = time.Now()
+			configStore.Store[configID] = config
+
+			eventValues := make(map[string]string)
+			eventValues[events.ChangeID] = store.B64(change.ID)
+			eventValues[events.Committed] = "true"
 			changesChannel <- events.CreateEvent(config.Device,
 				events.EventTypeConfiguration, eventValues)
 

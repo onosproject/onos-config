@@ -197,7 +197,7 @@ func TestMain(m *testing.M) {
 	config1Value09, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, false)
 	config1Value10, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2Txpwr, ValueTxout2Txpwr10, false)
 	config1Value11, _ := change.CreateChangeValue(Test1Leaftoplevel, ValueLeaftopWxy1234, false)
-	change1, err = change.CreateChange(change.ChangeValueCollection{
+	change1, err = change.CreateChange(change.ValueCollections{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11,
@@ -210,7 +210,7 @@ func TestMain(m *testing.M) {
 	config2Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B314, false)
 	config2Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3, ValueEmpty, false)
 	config2Value03, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3Txpwr, ValueTxout3Txpwr16, false)
-	change2, err = change.CreateChange(change.ChangeValueCollection{
+	change2, err = change.CreateChange(change.ValueCollections{
 		config2Value01, config2Value02, config2Value03,
 	}, "Trim power level")
 	if err != nil {
@@ -220,7 +220,7 @@ func TestMain(m *testing.M) {
 
 	config3Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CDef, false)
 	config3Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, true)
-	change3, err = change.CreateChange(change.ChangeValueCollection{
+	change3, err = change.CreateChange(change.ValueCollections{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
 	if err != nil {
@@ -240,14 +240,14 @@ func TestMain(m *testing.M) {
 		Updated:     time.Now(),
 		User:        "onos",
 		Description: "Configuration for Device 1",
-		Changes:     []change.ChangeID{change1.ID, change2.ID, change3.ID},
+		Changes:     []change.ID{change1.ID, change2.ID, change3.ID},
 	}
 	configurationStore = make(map[string]Configuration)
 	configurationStore["Device1Version"] = device1V
 
 	config4Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CGhi, false)
 	config4Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, ValueEmpty, true)
-	change4, err = change.CreateChange(change.ChangeValueCollection{
+	change4, err = change.CreateChange(change.ValueCollections{
 		config4Value01, config4Value02,
 	}, "Remove txout 1")
 	if err != nil {
@@ -263,7 +263,7 @@ func TestMain(m *testing.M) {
 		Updated:     time.Now(),
 		User:        "onos",
 		Description: "Main Configuration for Device 2",
-		Changes:     []change.ChangeID{change1.ID, change2.ID, change4.ID},
+		Changes:     []change.ID{change1.ID, change2.ID, change4.ID},
 	}
 
 	configurationStore["Device2VersionMain"] = device2V
@@ -419,11 +419,17 @@ func Test_convertChangeToGnmi(t *testing.T) {
 }
 
 func Test_writeOutChangeFile(t *testing.T) {
-	changeStoreFile, _ := os.Create("testout/changeStore-sample.json")
+	if _, err := os.Stat("testout"); os.IsNotExist(err) {
+		os.Mkdir("testout", os.ModePerm)
+	}
+	changeStoreFile, err := os.Create("testout/changeStore-sample.json")
+	if err != nil {
+		t.Errorf("%s", err)
+	}
 	jsonEncoder := json.NewEncoder(changeStoreFile)
 	var csf = ChangeStore{Version: StoreVersion,
 		Storetype: StoreTypeChange, Store: changeStore}
-	err := jsonEncoder.Encode(csf)
+	err = jsonEncoder.Encode(csf)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -509,7 +515,7 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 
 func BenchmarkCreateChange(b *testing.B) {
 
-	changeValues := change.ChangeValueCollection{}
+	changeValues := change.ValueCollections{}
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test%d", i)
 		cv, _ := change.CreateChangeValue(path, strconv.Itoa(i), false)

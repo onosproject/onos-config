@@ -15,11 +15,21 @@
 package events
 
 import (
+	"fmt"
 	"time"
 )
 
+const (
+	ChangeID = "ChangeID"
+	Committed = "Committed"
+	Connect = "Connect"
+)
+
+
+// EventType is an enumerated type
 type EventType int
 
+// Values of the EventType enumeration
 const ( // For event types
 	EventTypeConfiguration EventType = iota
 	EventTypeTopoCache
@@ -31,37 +41,52 @@ func (et EventType) String() string {
 
 // Event is a general purpose base type of event
 type Event struct {
-	subject    string
-	time       time.Time
-	eventtype  EventType
-	values     map[string]string
+	subject   string
+	time      time.Time
+	eventtype EventType
+	values    map[string]string
 }
 
+func (e Event) String() string {
+	var evtValues string
+	for k, v := range e.values {
+		evtValues = evtValues + k + ":" + v + ","
+	}
+	return fmt.Sprintf("%s %s %s {%s}",
+		e.subject, e.eventtype, e.time.Format(time.RFC3339), evtValues)
+}
+
+// Subject extracts the subject field from the event
 func (e Event) Subject() string {
 	return e.subject
 }
 
+// Time extracts the time field from the event
 func (e Event) Time() time.Time {
 	return e.time
 }
 
+// EventType extracts the eventtype field from the event
 func (e Event) EventType() EventType {
 	return e.eventtype
 }
 
+// Values extracts a map of values from the event
 func (e Event) Values() *map[string]string {
 	return &e.values
 }
 
+// Value extracts a single value from the event
 func (e Event) Value(name string) string {
 	return e.values[name]
 }
 
+// CreateEvent creates a new event object
 func CreateEvent(subject string, eventtype EventType, values map[string]string) Event {
 	return Event{
-		subject:subject,
-		time:time.Now(),
+		subject:   subject,
+		time:      time.Now(),
 		eventtype: eventtype,
-		values: values,
+		values:    values,
 	}
 }

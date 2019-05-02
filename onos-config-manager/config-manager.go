@@ -64,6 +64,7 @@ import (
 	"github.com/opennetworkinglab/onos-config/shell"
 	"github.com/opennetworkinglab/onos-config/southbound/topocache"
 	"github.com/opennetworkinglab/onos-config/store"
+	"github.com/opennetworkinglab/onos-config/southbound/synchronizer"
 	"log"
 	"log/syslog"
 	"os"
@@ -81,14 +82,15 @@ var (
 	configStore    store.ConfigurationStore
 	changeStore    store.ChangeStore
 	deviceStore	   *topocache.DeviceStore
-	nbiChannel     chan events.Event
 	changesChannel chan events.Event
+	topoChannel chan events.Event
 )
 
 func init() {
 	// Start the main listener system
 	changesChannel = make(chan events.Event, 10)
 	go listener.Listen(changesChannel)
+	topoChannel = make(chan events.Event, 10)
 
 }
 
@@ -128,7 +130,7 @@ func main() {
 	}
 	log.Println("Change store loaded from", *changeStoreFile)
 
-	deviceStore, err = topocache.LoadDeviceStore(*deviceStoreFile)
+	deviceStore, err = topocache.LoadDeviceStore(*deviceStoreFile, topoChannel)
 	if err != nil {
 		log.Fatal("Cannot load device store ", err)
 	}
@@ -138,12 +140,13 @@ func main() {
 		go restconf.StartRestServer(*restconfPort, &configStore, &changeStore);
 	}
 
-	go topocache.SynchronizerFactory()
+	go synchronizer.Factory(&changeStore, deviceStore, topoChannel)
 
 	// Run a shell as a temporary solution to not having an NBI
 	shell.RunShell(configStore, changeStore, deviceStore, changesChannel)
 
 	close(changesChannel)
+	close(topoChannel)
 
 	log.Println("Shutting down")
 	time.Sleep(time.Second)
