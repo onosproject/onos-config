@@ -42,3 +42,8 @@ ChangeStore
 a way of storing Changes in JSON files
 */
 package store
+
+import "encoding/base64"
+
+// B64 is an alias for the function encoding a byte array to a Base64 string
+var B64 = base64.StdEncoding.EncodeToString

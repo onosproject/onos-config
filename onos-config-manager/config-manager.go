@@ -58,30 +58,50 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/opennetworkinglab/onos-config/events"
+	"github.com/opennetworkinglab/onos-config/listener"
+	"github.com/opennetworkinglab/onos-config/northbound/restconf"
 	"github.com/opennetworkinglab/onos-config/shell"
+	"github.com/opennetworkinglab/onos-config/southbound/topocache"
 	"github.com/opennetworkinglab/onos-config/store"
 	"log"
 	"log/syslog"
 	"os"
+	"time"
 )
 
 // Default locations of stores
 const (
-	ConfigStoreFile = "stores/configStore-sample.json"
-	ChangeStoreFile = "stores/changeStore-sample.json"
+	configStoreDefaultFileName = "stores/configStore-sample.json"
+	changeStoreDefaultFileName = "stores/changeStore-sample.json"
+	deviceStoreDefaultFileName = "stores/deviceStore-sample.json"
 )
 
 var (
-	configStore store.ConfigurationStore
-	changeStore store.ChangeStore
+	configStore    store.ConfigurationStore
+	changeStore    store.ChangeStore
+	deviceStore	   *topocache.DeviceStore
+	nbiChannel     chan events.Event
+	changesChannel chan events.Event
 )
+
+func init() {
+	// Start the main listener system
+	changesChannel = make(chan events.Event, 10)
+	go listener.Listen(changesChannel)
+
+}
 
 // The main entry point
 func main() {
-	configStoreFile := flag.String("configStore", ConfigStoreFile,
-		"path to config store file (default="+ConfigStoreFile+")")
-	changeStoreFile := flag.String("changeStore", ChangeStoreFile,
-		"path to change store file (default="+ChangeStoreFile+")")
+	configStoreFile := flag.String("configStore", configStoreDefaultFileName,
+		"path to config store file")
+	changeStoreFile := flag.String("changeStore", changeStoreDefaultFileName,
+		"path to change store file")
+	deviceStoreFile := flag.String("deviceStore", deviceStoreDefaultFileName,
+		"path to device store file")
+	restconfPort := flag.Int("restconfPort", 0,
+		"Run the restconf NBI on given port. If <=0 do not run")
 
 	flag.Parse()
 	var err error
@@ -108,9 +128,24 @@ func main() {
 	}
 	log.Println("Change store loaded from", *changeStoreFile)
 
+	deviceStore, err = topocache.LoadDeviceStore(*deviceStoreFile)
+	if err != nil {
+		log.Fatal("Cannot load device store ", err)
+	}
+	log.Println("Device store loaded from", *deviceStoreFile)
+
+	if *restconfPort > 0 {
+		go restconf.StartRestServer(*restconfPort, &configStore, &changeStore);
+	}
+
+	go topocache.SynchronizerFactory()
+
 	// Run a shell as a temporary solution to not having an NBI
-	shell.RunShell(configStore, changeStore)
+	shell.RunShell(configStore, changeStore, deviceStore, changesChannel)
+
+	close(changesChannel)
 
 	log.Println("Shutting down")
+	time.Sleep(time.Second)
 	os.Exit(0)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package store
+package change
 
 import (
 	"fmt"
@@ -33,17 +33,17 @@ func (c ChangeValue) String() string {
 }
 
 // CreateChangeValue decodes a path and value in to an object
-func CreateChangeValue(path string, value string, isRemove bool) (ChangeValue, error) {
+func CreateChangeValue(path string, value string, isRemove bool) (*ChangeValue, error) {
 	cv := ChangeValue{
 		ConfigValue{path, value},
 		isRemove,
 	}
 	err := cv.ConfigValue.IsPathValid()
 	if err != nil {
-		return ChangeValue{}, err
+		return nil, err
 	}
-	return cv, nil
+	return &cv, nil
 }
 
 // ChangeValueCollection is an alias for a slice of ChangeValues
-type ChangeValueCollection []ChangeValue
+type ChangeValueCollection []*ChangeValue

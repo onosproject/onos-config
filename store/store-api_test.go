@@ -15,23 +15,21 @@
 package store
 
 import (
-	"crypto/sha1"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
+	"github.com/opennetworkinglab/onos-config/store/change"
 	"os"
-	"strings"
+	"strconv"
 	"testing"
 	"time"
 )
 
 var (
-	change1, change2, change3, change4 Change
+	change1, change2, change3, change4 *change.Change
 )
 
 var (
-	changeStore        map[string]Change
+	changeStore        map[string]*change.Change
 	configurationStore map[string]Configuration
 )
 
@@ -188,18 +186,18 @@ var Config2Values = [11]string{
 
 func TestMain(m *testing.M) {
 	var err error
-	config1Value01, _ := CreateChangeValue(Test1Cont1A, ValueEmpty, false)
-	config1Value02, _ := CreateChangeValue(Test1Cont1ACont2A, ValueEmpty, false)
-	config1Value03, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, ValueLeaf2A13, false)
-	config1Value04, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B159, false)
-	config1Value05, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CAbc, false)
-	config1Value06, _ := CreateChangeValue(Test1Cont1ALeaf1A, ValueLeaf1AAbcdef, false)
-	config1Value07, _ := CreateChangeValue(Test1Cont1AList2ATxout1, ValueEmpty, false)
-	config1Value08, _ := CreateChangeValue(Test1Cont1AList2ATxout1Txpwr, ValueTxout1Txpwr8, false)
-	config1Value09, _ := CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, false)
-	config1Value10, _ := CreateChangeValue(Test1Cont1AList2ATxout2Txpwr, ValueTxout2Txpwr10, false)
-	config1Value11, _ := CreateChangeValue(Test1Leaftoplevel, ValueLeaftopWxy1234, false)
-	change1, err = CreateChange(ChangeValueCollection{
+	config1Value01, _ := change.CreateChangeValue(Test1Cont1A, ValueEmpty, false)
+	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, ValueEmpty, false)
+	config1Value03, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2A, ValueLeaf2A13, false)
+	config1Value04, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B159, false)
+	config1Value05, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CAbc, false)
+	config1Value06, _ := change.CreateChangeValue(Test1Cont1ALeaf1A, ValueLeaf1AAbcdef, false)
+	config1Value07, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, ValueEmpty, false)
+	config1Value08, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1Txpwr, ValueTxout1Txpwr8, false)
+	config1Value09, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, false)
+	config1Value10, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2Txpwr, ValueTxout2Txpwr10, false)
+	config1Value11, _ := change.CreateChangeValue(Test1Leaftoplevel, ValueLeaftopWxy1234, false)
+	change1, err = change.CreateChange(change.ChangeValueCollection{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11,
@@ -209,10 +207,10 @@ func TestMain(m *testing.M) {
 		os.Exit(-1)
 	}
 
-	config2Value01, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B314, false)
-	config2Value02, _ := CreateChangeValue(Test1Cont1AList2ATxout3, ValueEmpty, false)
-	config2Value03, _ := CreateChangeValue(Test1Cont1AList2ATxout3Txpwr, ValueTxout3Txpwr16, false)
-	change2, err = CreateChange(ChangeValueCollection{
+	config2Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B314, false)
+	config2Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3, ValueEmpty, false)
+	config2Value03, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3Txpwr, ValueTxout3Txpwr16, false)
+	change2, err = change.CreateChange(change.ChangeValueCollection{
 		config2Value01, config2Value02, config2Value03,
 	}, "Trim power level")
 	if err != nil {
@@ -220,9 +218,9 @@ func TestMain(m *testing.M) {
 		os.Exit(-1)
 	}
 
-	config3Value01, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CDef, false)
-	config3Value02, _ := CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, true)
-	change3, err = CreateChange(ChangeValueCollection{
+	config3Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CDef, false)
+	config3Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, true)
+	change3, err = change.CreateChange(change.ChangeValueCollection{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
 	if err != nil {
@@ -230,10 +228,10 @@ func TestMain(m *testing.M) {
 		os.Exit(-1)
 	}
 
-	changeStore = make(map[string]Change)
-	changeStore[base64.StdEncoding.EncodeToString(change1.ID)] = change1
-	changeStore[base64.StdEncoding.EncodeToString(change2.ID)] = change2
-	changeStore[base64.StdEncoding.EncodeToString(change3.ID)] = change3
+	changeStore = make(map[string]*change.Change)
+	changeStore[B64(change1.ID)] = change1
+	changeStore[B64(change2.ID)] = change2
+	changeStore[B64(change3.ID)] = change3
 
 	device1V = Configuration{
 		Name:        "Device1Version",
@@ -242,21 +240,21 @@ func TestMain(m *testing.M) {
 		Updated:     time.Now(),
 		User:        "onos",
 		Description: "Configuration for Device 1",
-		Changes:     []ChangeID{change1.ID, change2.ID, change3.ID},
+		Changes:     []change.ChangeID{change1.ID, change2.ID, change3.ID},
 	}
 	configurationStore = make(map[string]Configuration)
 	configurationStore["Device1Version"] = device1V
 
-	config4Value01, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CGhi, false)
-	config4Value02, _ := CreateChangeValue(Test1Cont1AList2ATxout1, ValueEmpty, true)
-	change4, err = CreateChange(ChangeValueCollection{
+	config4Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CGhi, false)
+	config4Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, ValueEmpty, true)
+	change4, err = change.CreateChange(change.ChangeValueCollection{
 		config4Value01, config4Value02,
 	}, "Remove txout 1")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
-	changeStore[base64.StdEncoding.EncodeToString(change4.ID)] = change4
+	changeStore[B64(change4.ID)] = change4
 
 	device2V = Configuration{
 		Name:        "Device2VersionMain",
@@ -265,7 +263,7 @@ func TestMain(m *testing.M) {
 		Updated:     time.Now(),
 		User:        "onos",
 		Description: "Main Configuration for Device 2",
-		Changes:     []ChangeID{change1.ID, change2.ID, change4.ID},
+		Changes:     []change.ChangeID{change1.ID, change2.ID, change4.ID},
 	}
 
 	configurationStore["Device2VersionMain"] = device2V
@@ -273,161 +271,10 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func Test_1(t *testing.T) {
-	// Create ConfigValue from strings
-	path := "/test1:cont1a/cont2a/leaf2a"
-	value := "13"
-
-	configValue2a, _ := CreateChangeValue(path, value, false)
-
-	if configValue2a.Path != path {
-		t.Errorf("Retrieval of ConfigValue.Path failed. Expected %q Got %q",
-			path, configValue2a.Path)
-	}
-
-	if string(configValue2a.Value) != value {
-		t.Errorf("Retrieval of ConfigValue.Path failed. Expected %q Got %q",
-			value, configValue2a.Value)
-	}
-}
-
-func Test_changecreation(t *testing.T) {
-
-	fmt.Printf("Change %x created\n", change1.ID)
-	h := sha1.New()
-	jsonstr, _ := json.Marshal(change1.Config)
-	_, err1 := io.WriteString(h, string(jsonstr))
-	_, err2 := io.WriteString(h, change1.Description)
-	_, err3 := io.WriteString(h, change1.Created.String())
-	if err1 != nil || err2 != nil || err3 != nil {
-		t.Errorf("Error when writing objects to json")
-	}
-	hash := h.Sum(nil)
-
-	expectedID := base64.StdEncoding.EncodeToString(hash)
-	actualID := base64.StdEncoding.EncodeToString(change1.ID)
-	if actualID != expectedID {
-		t.Errorf("Creation of Change failed Expected %s got %s",
-			expectedID, actualID)
-	}
-	err := change1.IsValid()
-	if err != nil {
-		t.Errorf("Checking of Change failed %s", err)
-	}
-
-	changeEmpty := Change{}
-	errEmpty := changeEmpty.IsValid()
-	if errEmpty == nil {
-		t.Errorf("Checking of Change failed %s", errEmpty)
-	}
-	if strings.Compare(errEmpty.Error(), "Empty Change") != 0 {
-		t.Errorf("Expecting error 'Empty Change' Got: %s", errEmpty)
-	}
-
-	oddID := [10]byte{10, 11, 12, 13, 14, 15, 16, 17, 18, 19}
-	changeOdd := Change{ID: oddID[:]}
-	errOdd := changeOdd.IsValid()
-	if errOdd == nil {
-		t.Errorf("Checking of Change failed %s", errOdd)
-	}
-	if !strings.Contains(errOdd.Error(), "does not match") {
-		t.Errorf("Expecting error 'does not match' Got: %s", errOdd)
-	}
-}
-
-func Test_badpath(t *testing.T) {
-	badpath := "does_not_have_any_slash"
-	conf1, err1 := CreateChangeValue(badpath, "123", false)
-
-	if err1 == nil {
-		t.Errorf("Expected '%s' to produce error", badpath)
-	} else if strings.Compare(err1.Error(), badpath) != 0 {
-		t.Errorf("Expected error to be '%s' Got: '%s'", badpath, err1)
-	}
-	emptyChange := ChangeValue{}
-	if conf1 != emptyChange {
-		t.Errorf("Expected config to be empty on error")
-	}
-
-	badpath = "//two/contiguous/slashes"
-	_, err2 := CreateChangeValue(badpath, "123", false)
-
-	if err2 == nil {
-		t.Errorf("Expected '%s' to produce error", badpath)
-	}
-
-	badpath = "/test*"
-	_, err3 := CreateChangeValue(badpath, "123", false)
-
-	if err3 == nil {
-		t.Errorf("Expected '%s' to produce error", badpath)
-	}
-
-}
-
-func Test_changeValueString(t *testing.T) {
-	cv1, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, "123", false)
-
-	var expected = "/test1:cont1a/cont2a/leaf2a 123 false"
-	if strings.Compare(cv1.String(), expected) != 0 {
-		t.Errorf("Expected changeValue to produce string %s. Got: %s",
-			expected, cv1.String())
-	}
-
-	//Test the error
-	cv2 := ChangeValue{}
-	if strings.Compare(cv2.String(), "InvalidChange") != 0 {
-		t.Errorf("Expected empty changeValue to produce InvalidChange Got: %s",
-			cv2.String())
-	}
-}
-
-func Test_changeString(t *testing.T) {
-	cv1, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, "123", false)
-	cv2, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, "ABC", false)
-	cv3, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2C, "Hello", false)
-
-	change, _ := CreateChange(ChangeValueCollection{cv1, cv2, cv3}, "Test Change")
-
-	var expected = `"Config":[` +
-		`{"Path":"/test1:cont1a/cont2a/leaf2a","Value":"123","Remove":false},` +
-		`{"Path":"/test1:cont1a/cont2a/leaf2b","Value":"ABC","Remove":false},` +
-		`{"Path":"/test1:cont1a/cont2a/leaf2c","Value":"Hello","Remove":false}]}`
-
-	if !strings.Contains(change.String(), expected) {
-		t.Errorf("Expected change to produce string %s. Got: %s",
-			expected, change.String())
-	}
-
-	change2 := Change{}
-	if !strings.Contains(change2.String(), "") {
-		t.Errorf("Expected change2 to produce empty string. Got: %s",
-			change2.String())
-	}
-
-}
-
-func Test_duplicate_path(t *testing.T) {
-	cv1, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B314, false)
-	cv2, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CAbc, false)
-
-	cv3, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B159, false)
-
-	change, err := CreateChange(ChangeValueCollection{cv1, cv2, cv3}, "Test Change")
-
-	if err == nil {
-		t.Errorf("Expected %s to produce error for duplicate path", Test1Cont1ACont2ALeaf2B)
-	}
-
-	if len(change.Config) > 0 {
-		t.Errorf("Expected change to be empty because of duplicate path")
-	}
-}
-
 func Test_device1_version(t *testing.T) {
 	fmt.Println("Configuration", device1V.Name, " (latest) Changes:")
 	for idx, cid := range device1V.Changes {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device1V.Name != "Device1Version" {
@@ -449,7 +296,7 @@ func Test_device1_prev_version(t *testing.T) {
 	const changePrevious = 1
 	fmt.Println("Configuration", device1V.Name, " (n-1) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device1V.Name != "Device1Version" {
@@ -471,7 +318,7 @@ func Test_device1_first_version(t *testing.T) {
 	const changePrevious = 2
 	fmt.Println("Configuration", device1V.Name, " (n-2) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device1V.Name != "Device1Version" {
@@ -493,7 +340,7 @@ func Test_device1_invalid_version(t *testing.T) {
 	const changePrevious = 3
 	fmt.Println("Configuration", device1V.Name, " (n-3) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device1V.Name != "Device1Version" {
@@ -509,7 +356,7 @@ func Test_device1_invalid_version(t *testing.T) {
 func Test_device2_version(t *testing.T) {
 	fmt.Println("Configuration", device2V.Name, " (latest) Changes:")
 	for idx, cid := range device2V.Changes {
-		fmt.Printf("%d: %s\n", idx, base64.StdEncoding.EncodeToString([]byte(cid)))
+		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	if device2V.Name != "Device2VersionMain" {
@@ -527,15 +374,15 @@ func Test_device2_version(t *testing.T) {
 	}
 }
 
-func checkPathvalue(t *testing.T, config []ConfigValue, index int,
+func checkPathvalue(t *testing.T, config []change.ConfigValue, index int,
 	expPaths []string, expValues []string) {
 
 	// Check that they are kept in a consistent order
-	if strings.Compare(config[index].Path, expPaths[index]) != 0 {
+	if config[index].Path != expPaths[index] {
 		t.Errorf("Unexpected change %d Exp: %s, Got %s", index,
 			expPaths[index], config[index].Path)
 	}
-	if strings.Compare(config[index].Value, expValues[index]) != 0 {
+	if config[index].Value != expValues[index] {
 		t.Errorf("Unexpected change %d Exp: %s, Got %s", index,
 			expValues[index], config[index].Value)
 	}
@@ -552,7 +399,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 
 	expectedStr := "{\"path\":{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"cont2a\"}," +
 		"{\"name\":\"leaf2c\"}]},\"val\":{\"Value\":{\"StringVal\":\"def\"}}}"
-	if strings.Compare(string(jsonstr), expectedStr) != 0 {
+	if string(jsonstr) != expectedStr {
 		t.Errorf("Expected Update[0] to be %s. Was %s",
 			expectedStr, string(jsonstr))
 	}
@@ -565,7 +412,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 	jsonstr2, _ := json.Marshal(setRequest.Delete[0])
 
 	expectedStr2 := "{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"list2a\",\"key\":{\"name\":\"txout2\"}}]}"
-	if strings.Compare(string(jsonstr2), expectedStr2) != 0 {
+	if string(jsonstr2) != expectedStr2 {
 		t.Errorf("Expected Delete[0] to be %s. Was %s",
 			expectedStr2, string(jsonstr2))
 	}
@@ -645,5 +492,34 @@ func Test_loadConfigStoreFileError(t *testing.T) {
 	if configStore.Version != "" {
 		t.Errorf("Expected version to be empty on error. Got: %s",
 			configStore.Version)
+	}
+}
+
+func BenchmarkCreateChangeValue(b *testing.B) {
+
+	for i := 0; i < b.N; i++ {
+		path := fmt.Sprintf("/test-%s", strconv.Itoa(b.N))
+		cv, _ := change.CreateChangeValue(path, strconv.Itoa(i), false)
+		err := cv.IsPathValid()
+		if err != nil {
+			b.Errorf("path not valid %s", err)
+		}
+	}
+}
+
+func BenchmarkCreateChange(b *testing.B) {
+
+	changeValues := change.ChangeValueCollection{}
+	for i := 0; i < b.N; i++ {
+		path := fmt.Sprintf("/test%d", i)
+		cv, _ := change.CreateChangeValue(path, strconv.Itoa(i), false)
+		changeValues = append(changeValues, cv)
+	}
+
+	change, _ := change.CreateChange(changeValues, "Benchmarked Change")
+
+	err := change.IsValid()
+	if err != nil {
+		b.Errorf("Invalid change %s", err)
 	}
 }
