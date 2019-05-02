@@ -4,6 +4,7 @@ services:
     image: devicesim:latest
     environment:
     - GNMI_TARGET=device1.opennetworking.org
+    - SIM_MODE=1  
     networks:
       simnet:
         ipv4_address: 172.25.0.11
@@ -16,6 +17,7 @@ services:
     image: devicesim:latest
     environment:
       - GNMI_TARGET=device2.opennetworking.org
+      - SIM_MODE=1  
     networks:
       simnet:
         ipv4_address: 172.25.0.12
@@ -28,6 +30,7 @@ services:
     image: devicesim:latest
     environment:
       - GNMI_TARGET=device3.opennetworking.org
+      - SIM_MODE=1  
     networks:
       simnet:
         ipv4_address: 172.25.0.13
