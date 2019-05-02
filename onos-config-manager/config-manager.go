@@ -64,7 +64,7 @@ import (
 	"github.com/opennetworkinglab/onos-config/shell"
 	"github.com/opennetworkinglab/onos-config/southbound/topocache"
 	"github.com/opennetworkinglab/onos-config/store"
-	"github.com/opennetworkinglab/onos-config/synchronizer"
+	"github.com/opennetworkinglab/onos-config/southbound/synchronizer"
 	"log"
 	"log/syslog"
 	"os"
@@ -140,7 +140,7 @@ func main() {
 		go restconf.StartRestServer(*restconfPort, &configStore, &changeStore);
 	}
 
-	go synchronizer.SynchronizerFactory(&changeStore, deviceStore, topoChannel)
+	go synchronizer.Factory(&changeStore, deviceStore, topoChannel)
 
 	// Run a shell as a temporary solution to not having an NBI
 	shell.RunShell(configStore, changeStore, deviceStore, changesChannel)

@@ -28,7 +28,7 @@ Certificate:
             Not Before: Apr 11 09:06:13 2019 GMT
             Not After : Apr  8 09:06:13 2029 GMT
         Subject: C = US, ST = CA, L = MenloPark, O = ONF, OU = Engineering, CN = ca.opennetworking.org
- */
+*/
 const onfCaCrt = `
 -----BEGIN CERTIFICATE-----
 MIIDYDCCAkgCCQDe99fSN9qxSTANBgkqhkiG9w0BAQsFADByMQswCQYDVQQGEwJV
@@ -56,7 +56,7 @@ eEfVeA==
 /*
 openssl rsa -in client1.key -text -noout
 Private-Key: (2048 bit)
- */
+*/
 const defaultClientKey = `
 -----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDmZHXagZc/64MP
@@ -100,7 +100,7 @@ Certificate:
             Not Before: Apr 11 11:16:23 2019 GMT
             Not After : Apr 10 11:16:23 2020 GMT
         Subject: C = US, ST = CA, L = MenloPark, O = ONF, OU = Engineering, CN = client1.opennetworking.org
- */
+*/
 const defaultClientCrt = `
 -----BEGIN CERTIFICATE-----
 MIIDZTCCAk0CCQDl7NF6ekffcTANBgkqhkiG9w0BAQsFADByMQswCQYDVQQGEwJV

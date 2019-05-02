@@ -17,7 +17,8 @@ package listener
 import (
 	"fmt"
 	"github.com/opennetworkinglab/onos-config/events"
-	"github.com/opennetworkinglab/onos-config/synchronizer"
+	"github.com/opennetworkinglab/onos-config/southbound/topocache"
+	"github.com/opennetworkinglab/onos-config/store"
 	"log"
 	"os"
 	"strconv"
@@ -28,13 +29,42 @@ import (
 
 var (
 	device1Channel, device2Channel, device3Channel chan events.Event
+	device1, device2, device3                      topocache.Device
 	err                                            error
 )
 
+const (
+	configStoreDefaultFileName = "../store/testout/configStore-sample.json"
+	changeStoreDefaultFileName = "../store/testout/changeStore-sample.json"
+)
+
+var (
+	configStoreTest store.ConfigurationStore
+	changeStoreTest store.ChangeStore
+)
+
 func TestMain(m *testing.M) {
-	device1Channel, err = Register("device1", true)
-	device2Channel, err = Register("device2", true)
-	device3Channel, err = Register("device3", true)
+	device1 = topocache.Device{Addr: "localhost:10161"}
+	device2 = topocache.Device{Addr: "localhost:10162"}
+	device3 = topocache.Device{Addr: "localhost:10163"}
+
+	device1Channel, err = Register(device1.Addr, true)
+	device2Channel, err = Register(device2.Addr, true)
+	device3Channel, err = Register(device3.Addr, true)
+
+	configStoreTest, err = store.LoadConfigStore(configStoreDefaultFileName)
+	if err != nil {
+		wd, _ := os.Getwd()
+		fmt.Println("Cannot load config store ", err, wd)
+		return
+	}
+	fmt.Println("Configuration store loaded from", configStoreDefaultFileName)
+
+	changeStoreTest, err = store.LoadChangeStore(changeStoreDefaultFileName)
+	if err != nil {
+		fmt.Println("Cannot load change store ", err)
+		return
+	}
 
 	os.Exit(m.Run())
 }
@@ -48,13 +78,13 @@ func Test_listlisteners(t *testing.T) {
 	listenerStr := strings.Join(listeners, ",")
 
 	// Could be in any order
-	if !strings.Contains(listenerStr, "device1") {
+	if !strings.Contains(listenerStr, "localhost:10161") {
 		t.Errorf("Expected to find device1 in list. Got %s", listeners)
 	}
-	if !strings.Contains(listenerStr, "device2") {
+	if !strings.Contains(listenerStr, "localhost:10162") {
 		t.Errorf("Expected to find device2 in list. Got %s", listeners)
 	}
-	if !strings.Contains(listenerStr, "device3") {
+	if !strings.Contains(listenerStr, "localhost:10163") {
 		t.Errorf("Expected to find device3 in list. Got %s", listeners)
 	}
 }
@@ -101,25 +131,20 @@ func Test_listen(t *testing.T) {
 	changesChannel := make(chan events.Event, 10)
 	go Listen(changesChannel)
 
-	// Start one go routine per device - each one will have its own channel
-	go synchronizer.Devicesync("device1", device1Channel)
-	go synchronizer.Devicesync("device2", device2Channel)
-	go synchronizer.Devicesync("device3", device3Channel)
-
 	// Send down some changes
 	for i := 1; i < 13; i++ {
 		values := make(map[string]string)
-		values["changeID"] = "test"
-		event := events.CreateEvent("device" + strconv.Itoa(i), events.EventTypeConfiguration, values)
+		values[events.ChangeID] = "test"
+		event := events.CreateEvent("device"+strconv.Itoa(i), events.EventTypeConfiguration, values)
 
 		changesChannel <- event
 	}
 
 	// Wait for the changes to get distributed
 	time.Sleep(time.Second)
-	Unregister("device1", true)
-	Unregister("device2", true)
-	Unregister("device3", true)
+	Unregister(device1.Addr, true)
+	Unregister(device2.Addr, true)
+	Unregister(device3.Addr, true)
 	close(testChan)
 	close(changesChannel)
 }

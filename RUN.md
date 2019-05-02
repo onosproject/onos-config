@@ -9,7 +9,7 @@
 go get github.com/opennetworkinglab/onos-config/onos-config-manager
 ```
 > This pulls from master branch.
-> For the moment (Apr 19) you should check the project out from Git and use the
+> For the moment (May 19) you should check the project out from Git and use the
 > __firststeps__ branch
 
 ## Unit test

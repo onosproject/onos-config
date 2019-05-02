@@ -50,7 +50,7 @@ func Devicesync(changeStore *store.ChangeStore,
 	log.Println(device.Addr, "Capabilities", capResponse)
 
 	for deviceConfigEvent := range deviceChan {
-		change := changeStore.Store[deviceConfigEvent.Value("ChangeID")]
+		change := changeStore.Store[deviceConfigEvent.Value(events.ChangeID)]
 		err := change.IsValid()
 		if err != nil {
 			log.Println("Event discarded because change is invalid", err)

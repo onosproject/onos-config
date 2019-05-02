@@ -18,14 +18,14 @@ import (
 	"fmt"
 )
 
-// ChangeValue is a model that extends ConfigValue - path and a value and bool
-type ChangeValue struct {
+// Value is a model that extends ConfigValue - path and a value and bool
+type Value struct {
 	ConfigValue
 	Remove bool
 }
 
-// ChangeValue.String is the stringer for ChangeValue
-func (c ChangeValue) String() string {
+// Value.String is the stringer for Value
+func (c Value) String() string {
 	if c.Path == "" {
 		return "InvalidChange"
 	}
@@ -33,8 +33,8 @@ func (c ChangeValue) String() string {
 }
 
 // CreateChangeValue decodes a path and value in to an object
-func CreateChangeValue(path string, value string, isRemove bool) (*ChangeValue, error) {
-	cv := ChangeValue{
+func CreateChangeValue(path string, value string, isRemove bool) (*Value, error) {
+	cv := Value{
 		ConfigValue{path, value},
 		isRemove,
 	}
@@ -45,5 +45,5 @@ func CreateChangeValue(path string, value string, isRemove bool) (*ChangeValue, 
 	return &cv, nil
 }
 
-// ChangeValueCollection is an alias for a slice of ChangeValues
-type ChangeValueCollection []*ChangeValue
+// ValueCollections is an alias for a slice of ChangeValues
+type ValueCollections []*Value

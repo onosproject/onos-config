@@ -42,7 +42,7 @@ func main() {
 	defer pprof.StopCPUProfile()
 
 
-	changeValues := change.ChangeValueCollection{}
+	changeValues := change.ValueCollections{}
 	iterations := 50000
 
 	for i := 0; i < iterations; i++ {
