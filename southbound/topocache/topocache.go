@@ -66,7 +66,7 @@ func LoadDeviceStore(file string, topoChannel chan<- events.Event) (*DeviceStore
 	// We send a creation event for each device in store
 	for _, device := range deviceStore.Store {
 		values := make(map[string]string)
-		values["connect"] = "true"
+		values[events.Connect] = "true"
 		topoChannel <- events.CreateEvent(device.Addr, events.EventTypeTopoCache, values)
 	}
 

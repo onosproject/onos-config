@@ -31,11 +31,12 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-//Can be extended, for now is ip:port
+// Key struct - can be extended, for now is ip:port
 type Key struct {
 	Key string
 }
 
+// Target struct for connecting to gNMI
 type Target struct {
 	Clt  client.Impl
 	Ctxt context.Context
@@ -81,6 +82,7 @@ func createDestination(device topocache.Device) (*client.Destination, Key) {
 	return d, Key{Key: device.Addr}
 }
 
+// GetTarget attempts to get a specific target from the targets cache
 func GetTarget(key Key) (Target, error) {
 	_, ok := targets[key]
 	if ok {
@@ -90,6 +92,7 @@ func GetTarget(key Key) (Target, error) {
 
 }
 
+// ConnectTarget make the initial connection to the gnmi device
 func ConnectTarget(device topocache.Device) (Target, Key, error) {
 	dest, key := createDestination(device)
 	ctx := context.Background()
@@ -108,7 +111,7 @@ func ConnectTarget(device topocache.Device) (Target, Key, error) {
 func setCertificate(pathCert string, pathKey string) tls.Certificate {
 	certificate, err := tls.LoadX509KeyPair(pathCert, pathKey)
 	if err != nil {
-		log.Println("could not load client key pair: %v", err)
+		log.Println("could not load client key pair", err)
 	}
 	return certificate
 }
@@ -117,7 +120,7 @@ func getCertPool(CaPath string) *x509.CertPool {
 	certPool := x509.NewCertPool()
 	ca, err := ioutil.ReadFile(CaPath)
 	if err != nil {
-		log.Println("could not read %q: %s", CaPath, err)
+		log.Println("could not read", CaPath, err)
 	}
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
 		log.Println("failed to append CA certificates")
@@ -133,6 +136,7 @@ func getCertPoolDefault() *x509.CertPool {
 	return certPool
 }
 
+// CapabilitiesWithString allows a request for the capabilities by a string - can be empty
 func CapabilitiesWithString(target Target, request string) (*gpb.CapabilityResponse, error) {
 	r := &gpb.CapabilityRequest{}
 	reqProto := &request
@@ -142,6 +146,7 @@ func CapabilitiesWithString(target Target, request string) (*gpb.CapabilityRespo
 	return Capabilities(target, r)
 }
 
+// Capabilities get capabilities according to a formatted request
 func Capabilities(target Target, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
 	response, err := target.Clt.(*gclient.Client).Capabilities(target.Ctxt, request)
 	if err != nil {
@@ -150,6 +155,7 @@ func Capabilities(target Target, request *gpb.CapabilityRequest) (*gpb.Capabilit
 	return response, nil
 }
 
+// GetWithString can make a get request according by a string - can be empty
 func GetWithString(target Target, request string) (*gpb.GetResponse, error) {
 	if request == "" {
 		return nil, errors.New("cannot get and empty request")
@@ -162,6 +168,7 @@ func GetWithString(target Target, request string) (*gpb.GetResponse, error) {
 	return Get(target, r)
 }
 
+// Get can make a get request according to a formatted request
 func Get(target Target, request *gpb.GetRequest) (*gpb.GetResponse, error) {
 	response, err := target.Clt.(*gclient.Client).Get(target.Ctxt, request)
 	if err != nil {
@@ -170,6 +177,7 @@ func Get(target Target, request *gpb.GetRequest) (*gpb.GetResponse, error) {
 	return response, nil
 }
 
+// SetWithString can make a set request according by a string
 func SetWithString(target Target, request string) (*gpb.SetResponse, error) {
 	//TODO modify with key that gets target from map
 	if request == "" {
@@ -183,6 +191,7 @@ func SetWithString(target Target, request string) (*gpb.SetResponse, error) {
 	return Set(target, r)
 }
 
+// Set can make a set request according to a formatted request
 func Set(target Target, request *gpb.SetRequest) (*gpb.SetResponse, error) {
 	response, err := target.Clt.(*gclient.Client).Set(target.Ctxt, request)
 	if err != nil {

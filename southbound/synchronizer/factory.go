@@ -22,18 +22,18 @@ import (
 	"log"
 )
 
-// SynchronizerFactory is a go routine thread that listens out for Device creation
+// Factory is a go routine thread that listens out for Device creation
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
 // propagate them downwards to the gNMI dispatcher
-func SynchronizerFactory(changeStore *store.ChangeStore,
+func Factory(changeStore *store.ChangeStore,
 	deviceStore *topocache.DeviceStore, topoChannel <-chan events.Event) {
 
 	for topoEvent := range topoChannel {
 		deviceName := topoEvent.Subject()
 		if topoEvent.EventType() == events.EventTypeTopoCache {
 			if !listener.CheckListener(deviceName) &&
-				topoEvent.Value("connect") == "true" {
+				topoEvent.Value(events.Connect) == "true" {
 
 				configChan, err := listener.Register(deviceName, true)
 				if err != nil {
@@ -42,7 +42,7 @@ func SynchronizerFactory(changeStore *store.ChangeStore,
 				device := deviceStore.Store[deviceName]
 				go Devicesync(changeStore, &device, configChan)
 			} else if listener.CheckListener(deviceName) &&
-				topoEvent.Value("connect") == "false" {
+				topoEvent.Value(events.Connect) == "false" {
 
 				err := listener.Unregister(deviceName, true)
 				if err != nil {

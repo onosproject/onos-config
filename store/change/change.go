@@ -30,16 +30,16 @@ import (
 // B64 is an alias for the function encoding a byte array to a Base64 string
 var b64 = base64.StdEncoding.EncodeToString
 
-// ChangeID is an alias for the ID of the change
-type ChangeID []byte
+// ID is an alias for the ID of the change
+type ID []byte
 
 // Change is one of the primary objects to be stored
 // A model of the Change object - its is an immutable collection of ChangeValues
 type Change struct {
-	ID          ChangeID
+	ID          ID
 	Description string
 	Created     time.Time
-	Config      ChangeValueCollection
+	Config      ValueCollections
 }
 
 // Stringer method for the Change
@@ -129,7 +129,7 @@ func (c Change) GnmiChange() gnmi.SetRequest {
 }
 
 // CreateChange creates a Change object from ChangeValues
-func CreateChange(config ChangeValueCollection, desc string) (*Change, error) {
+func CreateChange(config ValueCollections, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
