@@ -4,6 +4,7 @@ if [ $SIM_MODE == 1 ];
 then
     IPADDR=`ip route get 1.2.3.4 | grep dev | awk '{print $7}'` && \
     if [ "$HOST_TARGET" != "localhost" ]; then \
+      $HOME/certs/generate_certs.sh $HOST_TARGET > /dev/null 2>&1;
       echo "Please add '"$IPADDR" "$HOST_TARGET"' to /etc/hosts and access with gNMI client at "$HOST_TARGET":"$GNMI_PORT; \
     else \
         echo "gNMI running on localhost:"$GNMI_PORT; 
@@ -33,6 +34,7 @@ elif [ $SIM_MODE == 3 ];
 then
     IPADDR=`ip route get 1.2.3.4 | grep dev | awk '{print $7}'` && \
     if [ "$HOST_TARGET" != "localhost" ]; then \
+      $HOME/certs/generate_certs.sh $HOST_TARGET > /dev/null 2>&1;
       echo "Please add '"$IPADDR" "$HOST_TARGET"' to /etc/hosts and access with gNMI/gNOI clients at "$HOST_TARGET":"$GNMI_PORT":"$GNOI_PORT; \
     else \
         echo "gNMI running on localhost and port:"${GNMI_PORT}; 
