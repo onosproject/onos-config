@@ -23,9 +23,10 @@ package topocache
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/events"
 	"os"
 	"time"
+
+	"github.com/opennetworkinglab/onos-config/events"
 )
 
 const storeTypeDevice = "device"
@@ -33,8 +34,8 @@ const storeVersion = "1.0.0"
 
 // Device - the definition of Device will ultimately come from onos-topology
 type Device struct {
-	Addr, Target, Usr, Pwd, CaPath, CertPath, KeyPath string
-	Timeout                                           time.Duration
+	Addr, Target, Usr, Pwd, CaPath, CertPath, KeyPath, CertID string
+	Timeout                                                   time.Duration
 }
 
 // DeviceStore is the model of the Device store
@@ -72,5 +73,3 @@ func LoadDeviceStore(file string, topoChannel chan<- events.Event) (*DeviceStore
 
 	return &deviceStore, nil
 }
-
-

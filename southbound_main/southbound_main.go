@@ -16,45 +16,40 @@ package main
 
 import (
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/southbound/topocache"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/opennetworkinglab/onos-config/southbound"
-	"time"
+	"github.com/opennetworkinglab/onos-config/southbound/topocache"
 )
 
 func main() {
 	device := topocache.Device{
-		Addr:     "localhost:10161",
-		Target:   "Test-onos-config",
+		Addr:   "localhost:10161",
+		Target: "Test-onos-config",
 		// Loaded from default-certificates.go
 		//CaPath:   "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/onfca.crt",
 		//CertPath: "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.crt",
 		//KeyPath:  "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.key",
-		Timeout:  time.Second * 10,
+		Timeout: time.Second * 10,
 	}
-	target, err := southbound.GetTarget(southbound.Key{Key: device.Addr})
-	if err != nil {
-		fmt.Println("Creating device for addr: ", device.Addr)
-		target, _, err = southbound.ConnectTarget(device)
-		if err != nil {
-			fmt.Println("Error ", target, err)
-		}
-	}
-	targetExists, err := southbound.GetTarget(southbound.Key{Key: device.Addr})
-	if target == targetExists {
-		fmt.Println("Target reusal works")
-	}
+
+	gnmiTarget := southbound.GnmiTarget{}
+	_, err := gnmiTarget.ConnectTarget(device)
+
 	request := ""
-	capResponse, capErr := southbound.CapabilitiesWithString(target, request)
+	capResponse, capErr := gnmiTarget.CapabilitiesWithString(request)
 	if capErr != nil {
-		fmt.Println("Error ", target, err)
+		fmt.Println("Error ", gnmiTarget, err)
 	}
+
 	capResponseString := proto.MarshalTextString(capResponse)
 	fmt.Println("Capabilities: ", capResponseString)
+
 	request = "path: <elem: <name: 'system'> elem:<name:'config'> elem: <name: 'hostname'>>"
-	getResponse, getErr := southbound.GetWithString(target, request)
+	getResponse, getErr := gnmiTarget.GetWithString(request)
 	if getErr != nil {
-		fmt.Println("Error ", target, err)
+		fmt.Println("Error ", gnmiTarget, err)
 	}
 	getResponseString := proto.MarshalTextString(getResponse)
 	fmt.Println("get: ", getResponseString)
