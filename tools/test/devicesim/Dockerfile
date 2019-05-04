@@ -20,6 +20,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -qy --no-install-recommends \
     netcat-openbsd \
     openssh-client \
     psmisc \
+    procps \
     sudo \
     vim
 
@@ -53,16 +54,15 @@ RUN go install -v \
       github.com/google/gnxi/gnoi_target \ 
       github.com/google/gnxi/gnoi_cert 
 
-ENV GNMI_TARGET=localhost
 ENV GNMI_PORT=10161
-ENV GNOI_TARGET=localhost
+ENV HOST_TARGET=localhost
 ENV GNOI_PORT=50001
 ENV SIM_MODE=1
 
 COPY ./target_configs target_configs
 COPY ./certs certs
-COPY run_targets.sh .
+COPY ./scripts scripts
 
 
 CMD \
-  chmod +x run_targets.sh && ./run_targets.sh 
+  chmod +x ./scripts/run_targets.sh && ./scripts/run_targets.sh 
