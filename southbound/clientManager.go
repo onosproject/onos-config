@@ -16,12 +16,8 @@ package southbound
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/openconfig/gnmi/client"
@@ -29,128 +25,61 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-type Device struct {
-	Addr, Target, Usr, Pwd, CaPath, CertPath, KeyPath string
-	Timeout                                           time.Duration
-}
-
-//Can be extended, for now is ip:port
-type Key struct {
-	Key string
-}
-
-type Target struct {
-	Destination client.Destination
-	Clt         client.Impl
-	Ctxt        context.Context
-}
-
-// SubscribeOptions is the gNMI subscription request options
-type SubscribeOptions struct {
-	UpdatesOnly       bool
-	Prefix            string
-	Mode              string
-	StreamMode        string
-	SampleInterval    uint64
-	HeartbeatInterval uint64
-	Paths             [][]string
-	Origin            string
-}
-
-var targets = make(map[Key]Target)
-
-func createDestination(device Device) (*client.Destination, Key) {
-	d := &client.Destination{TLS: &tls.Config{}}
-	d.Addrs = []string{device.Addr}
-	d.Target = device.Target
-	d.Timeout = time.Duration(device.Timeout * time.Second)
-	if device.CertPath != "" && device.KeyPath != "" {
-		if device.CaPath != "" {
-			certPool := getCertPool(device.CaPath)
-			d.TLS.RootCAs = certPool
-		} else {
-			fmt.Println("Assuming well know CA for certificate signature")
-		}
-		// Certificates
-		d.TLS.Certificates = []tls.Certificate{setCertificate(device.CertPath, device.KeyPath)}
-	} else if device.Usr != "" && device.Pwd != "" {
-		//TODO implement
-		// cred := &client.Credentials{}
-		// cred.Username = "test"
-		// cred.Password = "testpwd"
-		//d.Credentials = cred
-		//fmt.Println(*cred)
-	} else {
-		d.TLS = &tls.Config{InsecureSkipVerify: true}
-	}
-	return d, Key{Key: device.Addr}
-}
-
-func GetTarget(key Key) (Target, error) {
+// GetTarget returns a target based on the given key.
+func GetTarget(key Key) (*GnmiTarget, error) {
 	_, ok := targets[key]
 	if ok {
-		return targets[key], nil
+		return targets[key].(*GnmiTarget), nil
 	}
-	return Target{}, fmt.Errorf("Client for %v does not exist, create first", key)
+	return &GnmiTarget{}, fmt.Errorf("Client for %v does not exist, create first", key)
 
 }
 
-//TODO make asyc
-//TODO lock channel to allow one request to device at each time
-func ConnectTarget(device Device) (Target, Key, error) {
+// ConnectTarget make the initial connection to the gnmi device
+func (gnmiTarget *GnmiTarget) ConnectTarget(device Device) (Key, error) {
+	//TODO make asyc
+	//TODO lock channel to allow one request to device at each time
 	dest, key := createDestination(device)
 	ctx := context.Background()
 	c, err := gclient.New(ctx, *dest)
 	//c.handler := client.NotificationHandler{}
 	if err != nil {
-		return Target{}, Key{}, fmt.Errorf("could not create a gNMI client: %v", err)
+		return Key{}, fmt.Errorf("could not create a gNMI client: %v", err)
 	}
+
 	target := Target{
-		Clt:  c,
 		Ctxt: ctx,
 	}
-	targets[key] = target
-	return target, key, err
+
+	gnmiTarget.target = target
+	gnmiTarget.Clt = c
+
+	targets[key] = gnmiTarget
+
+	return key, err
 }
 
-func setCertificate(pathCert string, pathKey string) tls.Certificate {
-	certificate, err := tls.LoadX509KeyPair(pathCert, pathKey)
-	if err != nil {
-		fmt.Println("could not load client key pair: %v", err)
-	}
-	return certificate
-}
-
-func getCertPool(CaPath string) *x509.CertPool {
-	certPool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile(CaPath)
-	if err != nil {
-		fmt.Println("could not read %q: %s", CaPath, err)
-	}
-	if ok := certPool.AppendCertsFromPEM(ca); !ok {
-		fmt.Println("failed to append CA certificates")
-	}
-	return certPool
-}
-
-func CapabilitiesWithString(target Target, request string) (*gpb.CapabilityResponse, error) {
+// CapabilitiesWithString allows a request for the capabilities by a string - can be empty
+func (gnmiTarget GnmiTarget) CapabilitiesWithString(request string) (*gpb.CapabilityResponse, error) {
 	r := &gpb.CapabilityRequest{}
 	reqProto := &request
 	if err := proto.UnmarshalText(*reqProto, r); err != nil {
 		return nil, fmt.Errorf("unable to parse gnmi.CapabilityRequest from %q : %v", *reqProto, err)
 	}
-	return Capabilities(target, r)
+	return gnmiTarget.Capabilities(r)
 }
 
-func Capabilities(target Target, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
-	response, err := target.Clt.(*gclient.Client).Capabilities(target.Ctxt, request)
+// Capabilities get capabilities according to a formatted request
+func (gnmiTarget GnmiTarget) Capabilities(request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
+	response, err := gnmiTarget.Clt.(*gclient.Client).Capabilities(gnmiTarget.target.Ctxt, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Capabilities(%q): %v", request.String(), err)
 	}
 	return response, nil
 }
 
-func GetWithString(target Target, request string) (*gpb.GetResponse, error) {
+// GetWithString can make a get request according by a string - can be empty
+func (gnmiTarget GnmiTarget) GetWithString(request string) (*gpb.GetResponse, error) {
 	if request == "" {
 		return nil, errors.New("cannot get and empty request")
 	}
@@ -159,18 +88,20 @@ func GetWithString(target Target, request string) (*gpb.GetResponse, error) {
 	if err := proto.UnmarshalText(*reqProto, r); err != nil {
 		return nil, fmt.Errorf("unable to parse gnmi.GetRequest from %q : %v", *reqProto, err)
 	}
-	return Get(target, r)
+	return gnmiTarget.Get(r)
 }
 
-func Get(target Target, request *gpb.GetRequest) (*gpb.GetResponse, error) {
-	response, err := target.Clt.(*gclient.Client).Get(target.Ctxt, request)
+// Get can make a get request according to a formatted request
+func (gnmiTarget GnmiTarget) Get(request *gpb.GetRequest) (*gpb.GetResponse, error) {
+	response, err := gnmiTarget.Clt.(*gclient.Client).Get(gnmiTarget.target.Ctxt, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Get(%q) : %v", request.String(), err)
 	}
 	return response, nil
 }
 
-func SetWithString(target Target, request string) (*gpb.SetResponse, error) {
+// SetWithString can make a set request according by a string
+func (gnmiTarget GnmiTarget) SetWithString(request string) (*gpb.SetResponse, error) {
 	//TODO modify with key that gets target from map
 	if request == "" {
 		return nil, errors.New("cannot get and empty request")
@@ -180,18 +111,20 @@ func SetWithString(target Target, request string) (*gpb.SetResponse, error) {
 	if err := proto.UnmarshalText(*reqProto, r); err != nil {
 		return nil, fmt.Errorf("unable to parse gnmi.SetRequest from %q : %v", *reqProto, err)
 	}
-	return Set(target, r)
+	return gnmiTarget.Set(r)
 }
 
-func Set(target Target, request *gpb.SetRequest) (*gpb.SetResponse, error) {
-	response, err := target.Clt.(*gclient.Client).Set(target.Ctxt, request)
+// Set can make a set request according to a formatted request
+func (gnmiTarget GnmiTarget) Set(request *gpb.SetRequest) (*gpb.SetResponse, error) {
+	response, err := gnmiTarget.Clt.(*gclient.Client).Set(gnmiTarget.target.Ctxt, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Set(%q) : %v", request.String(), err)
 	}
 	return response, nil
 }
 
-func Subscribe(target Target, request *gpb.SubscribeRequest, handler client.NotificationHandler) error {
+// Subscribe allows a client to request the target to stream it values of particular paths within the data tree.
+func (gnmiTarget GnmiTarget) Subscribe(request *gpb.SubscribeRequest, handler client.NotificationHandler) error {
 	//TODO currently establishing a throwaway client per each subscription request
 	//this is due to the face that 1 NotificationHandler is allowed per client (1:1)
 	//alternatively we could handle every connection request with one NotificationHandler
@@ -200,18 +133,18 @@ func Subscribe(target Target, request *gpb.SubscribeRequest, handler client.Noti
 	if err != nil {
 		//TODO handle
 	}
-	q.Addrs = target.Destination.Addrs
-	q.Timeout = target.Destination.Timeout
-	q.Target = target.Destination.Target
-	q.Credentials = target.Destination.Credentials
-	q.TLS = target.Destination.TLS
+	q.Addrs = gnmiTarget.Destination.Addrs
+	q.Timeout = gnmiTarget.Destination.Timeout
+	q.Target = gnmiTarget.Destination.Target
+	q.Credentials = gnmiTarget.Destination.Credentials
+	q.TLS = gnmiTarget.Destination.TLS
 	q.NotificationHandler = handler
 	c := client.New()
-	err = c.Subscribe(target.Ctxt, q, "")
+	err = c.Subscribe(gnmiTarget.target.Ctxt, q, "")
 	if err != nil {
 		return fmt.Errorf("could not create a gNMI for subscription: %v", err)
 	}
-	target.Clt.(*gclient.Client).Subscribe(target.Ctxt, q)
+	gnmiTarget.Clt.(*gclient.Client).Subscribe(gnmiTarget.target.Ctxt, q)
 	return nil
 
 }
@@ -220,13 +153,13 @@ func Subscribe(target Target, request *gpb.SubscribeRequest, handler client.Noti
 func NewSubscribeRequest(subscribeOptions *SubscribeOptions) (*gpb.SubscribeRequest, error) {
 	var mode gpb.SubscriptionList_Mode
 	switch subscribeOptions.Mode {
-	case "once":
+	case Once.String():
 		mode = gpb.SubscriptionList_ONCE
-	case "poll":
+	case Poll.String():
 		mode = gpb.SubscriptionList_POLL
 	case "":
 		fallthrough
-	case "stream":
+	case Stream.String():
 		mode = gpb.SubscriptionList_STREAM
 	default:
 		return nil, fmt.Errorf("subscribe mode (%s) invalid", subscribeOptions.Mode)
@@ -234,13 +167,13 @@ func NewSubscribeRequest(subscribeOptions *SubscribeOptions) (*gpb.SubscribeRequ
 
 	var streamMode gpb.SubscriptionMode
 	switch subscribeOptions.StreamMode {
-	case "on_change":
+	case OnChange.String():
 		streamMode = gpb.SubscriptionMode_ON_CHANGE
-	case "sample":
+	case Sample.String():
 		streamMode = gpb.SubscriptionMode_SAMPLE
 	case "":
 		fallthrough
-	case "target_defined":
+	case TargetDefined.String():
 		streamMode = gpb.SubscriptionMode_TARGET_DEFINED
 	default:
 		return nil, fmt.Errorf("subscribe stream mode (%s) invalid", subscribeOptions.StreamMode)

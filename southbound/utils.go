@@ -15,9 +15,15 @@
 package southbound
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"strings"
+	"time"
 
+	"github.com/openconfig/gnmi/client"
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
@@ -178,4 +184,78 @@ func nextTokenIndex(path string) int {
 		}
 	}
 	return len(path)
+}
+
+func setCertificate(pathCert string, pathKey string) tls.Certificate {
+	certificate, err := tls.LoadX509KeyPair(pathCert, pathKey)
+	if err != nil {
+		fmt.Println("could not load client key pair: %v", err)
+	}
+	return certificate
+}
+
+func getCertPool(CaPath string) *x509.CertPool {
+	certPool := x509.NewCertPool()
+	ca, err := ioutil.ReadFile(CaPath)
+	if err != nil {
+		log.Println("could not read", CaPath, err)
+	}
+	if ok := certPool.AppendCertsFromPEM(ca); !ok {
+		log.Println("failed to append CA certificates")
+	}
+	return certPool
+}
+
+func getCertPoolDefault() *x509.CertPool {
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM([]byte(onfCaCrt)); !ok {
+		log.Println("failed to append CA certificates")
+	}
+	return certPool
+}
+
+func createDestination(device Device) (*client.Destination, Key) {
+	d := &client.Destination{TLS: &tls.Config{}}
+	d.Addrs = []string{device.Addr}
+	d.Target = device.Target
+	d.Timeout = time.Duration(device.Timeout * time.Second)
+	if device.CaPath == "" {
+		log.Println("Loading default CA onfca")
+		d.TLS.RootCAs = getCertPoolDefault()
+	} else {
+		d.TLS.RootCAs = getCertPool(device.CaPath)
+	}
+
+	if device.CertPath == "" && device.KeyPath == "" {
+		// Load default Certificates
+		log.Println("Loading default certificates")
+		clientCerts, err := tls.X509KeyPair([]byte(defaultClientCrt), []byte(defaultClientKey))
+		if err != nil {
+			log.Println("Error loading default certs")
+		}
+
+		d.TLS.Certificates = []tls.Certificate{clientCerts}
+	} else if device.CertPath != "" && device.KeyPath != "" {
+		// Load certs given for device
+		d.TLS.Certificates = []tls.Certificate{setCertificate(device.CertPath, device.KeyPath)}
+
+	} else if device.Usr != "" && device.Pwd != "" {
+		//TODO implement
+		// cred := &client.Credentials{}
+		// cred.Username = "test"
+		// cred.Password = "testpwd"
+		//d.Credentials = cred
+		//log.Println(*cred)
+	} else {
+		d.TLS = &tls.Config{InsecureSkipVerify: true}
+	}
+	return d, Key{Key: device.Addr}
+}
+
+func (mode SubscribeMode) String() string {
+	return [...]string{"Once", "Poll", "Stream"}[mode]
+}
+
+func (mode StreamMode) String() string {
+	return [...]string{"on_change", "sample", "target_defined"}[mode]
 }
