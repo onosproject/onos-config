@@ -28,3 +28,10 @@ The following set of features will be required to support the real-world use-cas
 * Southbound API for the subsystem will be gNMI and gNOI.
    * This will allow direct use with Stratum-compliant switches without requiring an adaptation layer.
    * Adapters can be created for devices that do not directly support gNMI/gNOI interfaces. Such adapters can be deployed either as proxy agents or potentially can be hosted on the devices themselves.
+
+## Additional Documentation
+* [How to contribute][contributing] to µONOS
+* [How to run][running] µONOS
+
+[contributing]: https://github.com/opennetworkinglab/onos-config/blob/master/docs/CONTRIBUTING.md
+[running]:  https://github.com/opennetworkinglab/onos-config/blob/master/docs/RUN.md
