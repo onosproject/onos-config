@@ -4,12 +4,12 @@ Welcome to the µONOS-config contributing guide.
 We'd love to accept your patches and contributions to this project. There are just a few small guidelines you need to follow. 
 
 
-### 1 Fork in the cloud
+### 1. Fork in the cloud
 
 1. Visit https://github.com/opennetworkinglab/onos-config 
 2. Click `Fork` button (top right) to establish a cloud-based fork.
 
-### 2 Clone fork to local storage
+### 2. Clone fork to local storage
 
 Per Go's [workspace instructions][go-workspace], place onos-config' code on your
 `GOPATH` using the following cloning procedure.
@@ -24,13 +24,13 @@ export GOPATH=$(go env GOPATH)
 Create a local working directory:
 
 ```sh
-mkdir $GOPATH/src/github.com/opennetworkinglab
+mkdir -p $GOPATH/src/github.com/opennetworkinglab
 ```
 
 Export the local working directory:
 
 ```sh
-export working_dir=$GOPATH/src/github.com/opennetworking
+export working_dir=$GOPATH/src/github.com/opennetworkinglab
 ```
 
 > If you already do Go development on github, the `onos` directory
@@ -63,7 +63,7 @@ git remote set-url --push upstream no_push
 git remote -v
 ```
 
-### 3 Branch
+### 3. Branch
 
 Get your local master up to date:
 
@@ -81,7 +81,7 @@ git checkout -b myfeature
 
 Then edit code on the `myfeature` branch.
 
-### 4 Keep your branch in sync
+### 4. Keep your branch in sync
 
 ```sh
 # While on your myfeature branch
@@ -95,7 +95,7 @@ and violate the principle that commits ought to be individually understandable
 and useful (see below). You can also consider changing your `.git/config` file via
 `git config branch.autoSetupRebase always` to change the behavior of `git pull`.
 
-### 5 Commit
+### 5. Commit
 
 Commit your changes.
 
@@ -105,7 +105,7 @@ git commit
 Likely you go back and edit/build/test some more then `commit --amend`
 in a few cycles.
 
-### 6 Push
+### 6. Push
 
 When ready to review (or just to establish an offsite backup or your work),
 push your branch to your fork on `github.com`:
@@ -114,7 +114,7 @@ push your branch to your fork on `github.com`:
 git push -f origin myfeature
 ```
 
-### 7 Create a pull request
+### 7. Create a pull request
 
 1. Visit your fork at `https://github.com/$user/onos-config`
 2. Click the `Compare & Pull Request` button next to your `myfeature` branch.
@@ -163,7 +163,7 @@ For mass automated fixups (e.g. automated doc formatting), use one or more
 commits for the changes to tooling and a final commit to apply the fixup en
 masse. This makes reviews easier.
 
-### Reverting a commit
+### 8. Reverting a commit
 
 In case you wish to revert a commit, use the following instructions.
 
