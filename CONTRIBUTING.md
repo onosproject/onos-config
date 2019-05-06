@@ -105,7 +105,7 @@ When ready to review (or just to establish an offsite backup or your work),
 push your branch to your fork on `github.com`:
 
 ```sh
-git push -f ${your_remote_name} myfeature
+git push -f origin myfeature
 ```
 
 ### 7 Create a pull request
