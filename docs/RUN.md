@@ -14,10 +14,10 @@ go get github.com/opennetworkinglab/onos-config/onos-config-manager
 
 ## Unit test
 ```bash
-go test -v github.com/opennetworkinglab/onos-config/store
-go test -v github.com/opennetworkinglab/onos-config/store/change
-go test -v github.com/opennetworkinglab/onos-config/listener
-go test -v github.com/opennetworkinglab/onos-config/northbound/restconf
+go test -v github.com/opennetworkinglab/onos-config/pkg/store
+go test -v github.com/opennetworkinglab/onos-config/pkg/store/change
+go test -v github.com/opennetworkinglab/onos-config/pkg/listener
+go test -v github.com/opennetworkinglab/onos-config/pkg/northbound/restconf
 ```
 
 ## Run
