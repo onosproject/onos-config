@@ -16,9 +16,9 @@ package listener
 
 import (
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/events"
-	"github.com/opennetworkinglab/onos-config/southbound/topocache"
-	"github.com/opennetworkinglab/onos-config/store"
+	"github.com/opennetworkinglab/onos-config/pkg/events"
+	"github.com/opennetworkinglab/onos-config/pkg/southbound/topocache"
+	"github.com/opennetworkinglab/onos-config/pkg/store"
 	"log"
 	"os"
 	"strconv"

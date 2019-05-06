@@ -1,3 +1,4 @@
-onos-config-manager/config-manager
-onos-config-manager/onos-config-manager
-store/testout
+cmd/onos-config-manager/config-manager
+cmd/southbound_main/southbound_main
+pkg/store/testout
+

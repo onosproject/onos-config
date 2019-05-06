@@ -22,11 +22,11 @@ go test -v github.com/opennetworkinglab/onos-config/northbound/restconf
 
 ## Run
 ```bash
-go run github.com/opennetworkinglab/onos-config/onos-config-manager \
+go run github.com/opennetworkinglab/onos-config/cmd/onos-config-manager \
 -restconfPort=8080 \
--configStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/configStore-sample.json \
--changeStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/changeStore-sample.json \
--deviceStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/deviceStore-sample.json
+-configStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/configs/configStore-sample.json \
+-changeStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/configs/changeStore-sample.json \
+-deviceStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/configs/deviceStore-sample.json
 
 ```
 

@@ -17,7 +17,7 @@ package store
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/store/change"
+	"github.com/opennetworkinglab/onos-config/pkg/store/change"
 	"os"
 	"strconv"
 	"testing"

@@ -23,7 +23,7 @@ package listener
 
 import (
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/events"
+	"github.com/opennetworkinglab/onos-config/pkg/events"
 	"log"
 )
 
@@ -41,7 +41,7 @@ func init() {
 // configuration and distributes this to registered deviceListeners on the
 // Southbound and registered nbiListeners on the northbound
 // Southbound listeners are only sent the events that matter to them
-// All events are sent to northbound listeners
+// All events.Events are sent to northbound listeners
 func Listen(changeChannel <-chan events.Event) {
 	log.Println("Event listener initialized")
 

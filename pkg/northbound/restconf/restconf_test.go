@@ -17,7 +17,7 @@ package restconf
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/store"
+	"github.com/opennetworkinglab/onos-config/pkg/store"
 	"os"
 	"testing"
 )

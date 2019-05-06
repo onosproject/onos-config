@@ -17,7 +17,7 @@ package restconf
 import (
 	"bytes"
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/store/change"
+	"github.com/opennetworkinglab/onos-config/pkg/store/change"
 	"strings"
 )
 
