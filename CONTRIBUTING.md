@@ -16,6 +16,12 @@ Per Go's [workspace instructions][go-workspace], place onos-config' code on your
 
 [go-workspace]: https://golang.org/doc/code.html#Workspaces
 
+If you have not exported the GOPATH variable please do so:
+
+```sh
+export GOPATH=$(go env GOPATH)
+```
+
 Define a local working directory:
 
 ```sh
