@@ -21,16 +21,16 @@ If you have not exported the GOPATH variable please do so:
 ```sh
 export GOPATH=$(go env GOPATH)
 ```
-
-Define a local working directory:
+Create a local working directory:
 
 ```sh
-# If your GOPATH has multiple paths, pick
-# just one and use it instead of $GOPATH here.
-# You must follow exactly this pattern,
-# neither `$GOPATH/src/github.com/${your github profile name/`
-# nor any other pattern will work.
-export working_dir=$GOPATH/src/onos
+mkdir $GOPATH/src/github.com/opennetworkinglab
+```
+
+Export the local working directory:
+
+```sh
+export working_dir=$GOPATH/src/github.com/opennetworking
 ```
 
 > If you already do Go development on github, the `onos` directory
