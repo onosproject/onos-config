@@ -10,4 +10,8 @@ RUN mkdir release && \
     rmdir release && \
     rm dep-*.sha256
 
+RUN mkdir -p /go/src/github.com/opennetworkinglab/onos-config
+
+WORKDIR "/go/src/github.com/opennetworkinglab/onos-config"
+
 ENTRYPOINT ["make"]
