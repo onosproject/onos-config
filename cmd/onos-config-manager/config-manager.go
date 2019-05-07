@@ -65,6 +65,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"log"
 	"log/syslog"
 	"os"
@@ -142,6 +143,8 @@ func main() {
 
 	go synchronizer.Factory(&changeStore, deviceStore, topoChannel)
 
+	startNorthboundGNMI()
+
 	// Run a shell as a temporary solution to not having an NBI
 	shell.RunShell(configStore, changeStore, deviceStore, changesChannel)
 
@@ -151,4 +154,18 @@ func main() {
 	log.Println("Shutting down")
 	time.Sleep(time.Second)
 	os.Exit(0)
+}
+
+func startNorthboundGNMI() {
+	cfg := &gnmi.ServerConfig{
+		Port : 5150,
+		Insecure: true,
+	}
+
+	serv, err := gnmi.NewServer(cfg)
+	if err != nil {
+		fmt.Println("Can't start server ", err)
+	}
+
+	go serv.Serve()
 }

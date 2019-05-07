@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package southbound
+package certs
 
 /*
 All of these are copied over from onos-config/tools/test/devicesim/certs
+*/
 
+
+/*
+OnfCaCrt is the default CA certificate
 Certificate:
     Data:
         Version: 1 (0x0)
@@ -29,7 +33,7 @@ Certificate:
             Not After : Apr  8 09:06:13 2029 GMT
         Subject: C = US, ST = CA, L = MenloPark, O = ONF, OU = Engineering, CN = ca.opennetworking.org
 */
-const onfCaCrt = `
+const OnfCaCrt = `
 -----BEGIN CERTIFICATE-----
 MIIDYDCCAkgCCQDe99fSN9qxSTANBgkqhkiG9w0BAQsFADByMQswCQYDVQQGEwJV
 UzELMAkGA1UECAwCQ0ExEjAQBgNVBAcMCU1lbmxvUGFyazEMMAoGA1UECgwDT05G
@@ -54,10 +58,11 @@ eEfVeA==
 `
 
 /*
+DefaultClientKey is the default client key
 openssl rsa -in client1.key -text -noout
 Private-Key: (2048 bit)
 */
-const defaultClientKey = `
+const DefaultClientKey = `
 -----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDmZHXagZc/64MP
 sPNBl1OD3p4dZNzRQo/CJ7YjksstWxGgfY87mzYHmvqv8Tw5QbjSkZvq2QNEgnx4
@@ -89,7 +94,7 @@ g5NVOIsDpB1OqjQRb9PjipANkHQRKgrYFB20ZQUoaOMckhlVyqE6WcanGpUxJ0xg
 `
 
 /*
-Certificate:
+DefaultClientCrt is the default client certificate
     Data:
         Version: 1 (0x0)
         Serial Number:
@@ -101,7 +106,7 @@ Certificate:
             Not After : Apr 10 11:16:23 2020 GMT
         Subject: C = US, ST = CA, L = MenloPark, O = ONF, OU = Engineering, CN = client1.opennetworking.org
 */
-const defaultClientCrt = `
+const DefaultClientCrt = `
 -----BEGIN CERTIFICATE-----
 MIIDZTCCAk0CCQDl7NF6ekffcTANBgkqhkiG9w0BAQsFADByMQswCQYDVQQGEwJV
 UzELMAkGA1UECAwCQ0ExEjAQBgNVBAcMCU1lbmxvUGFyazEMMAoGA1UECgwDT05G
