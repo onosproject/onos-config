@@ -20,6 +20,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"io/ioutil"
 	"log"
@@ -72,7 +73,7 @@ func createDestination(device topocache.Device) (*client.Destination, Key) {
 	if device.CertPath == "" && device.KeyPath == "" {
 		// Load default Certificates
 		log.Println("Loading default certificates")
-		clientCerts, err := tls.X509KeyPair([]byte(defaultClientCrt), []byte(defaultClientKey))
+		clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
 		if err != nil {
 			log.Println("Error loading default certs")
 		}
@@ -146,7 +147,7 @@ func getCertPool(CaPath string) *x509.CertPool {
 
 func getCertPoolDefault() *x509.CertPool {
 	certPool := x509.NewCertPool()
-	if ok := certPool.AppendCertsFromPEM([]byte(onfCaCrt)); !ok {
+	if ok := certPool.AppendCertsFromPEM([]byte(certs.OnfCaCrt)); !ok {
 		log.Println("failed to append CA certificates")
 	}
 	return certPool
