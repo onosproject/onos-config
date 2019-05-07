@@ -22,29 +22,6 @@ Set `GIT_USER` to match your github profile name:
 export GIT_USER={your github profile name}
 ```
 
-Create a local working directory:
-
-```sh
-mkdir -p $GOPATH/src/github.com/opennetworkinglab
-```
-
-Export the local working directory:
-
-```sh
-export working_dir=$GOPATH/src/github.com/opennetworkinglab
-```
-
-> If you already do Go development on github, the `onos` directory
-> will be a sibling to your existing `github.com` directory.
-
-Set `user` to match your github profile name:
-
-```sh
-export user={your github profile name}
-```
-
-Both `$working_dir` and `$user` are mentioned in the figure above.
-
 Create your clone:
 
 ```sh
