@@ -5,7 +5,7 @@
 > GOPATH=~/go
 
 ## Install
-See [build/dev-docker/README.md](build/dev-docker/README.md) for instructions
+See [build/dev-docker/README.md](/../master/build/dev-docker/README.md) for instructions
 to build a Dev image that downloads any dependencies to you local folder
 This resolves any go dependencies
 
@@ -34,7 +34,7 @@ A rudimentary CLI allows mostly read only access to the configuration at present
 
 To have a change of timezone pushed all the way down to a device
 
-1) run the devicesim simulator as described [here](tools/test/devicesim/README.md)
+1) run the devicesim simulator as described [here](/../master/tools/test/devicesim/README.md)
 
 2) Then tail the syslog of the local PC to see log messages from onos-config
 
