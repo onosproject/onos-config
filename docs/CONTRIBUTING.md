@@ -16,11 +16,12 @@ Per Go's [workspace instructions][go-workspace], place onos-config' code on your
 
 [go-workspace]: https://golang.org/doc/code.html#Workspaces
 
-If you have not exported the GOPATH variable please do so:
+Set `GIT_USER` to match your github profile name:
 
 ```sh
-export GOPATH=$(go env GOPATH)
+export GIT_USER={your github profile name}
 ```
+
 Create a local working directory:
 
 ```sh
@@ -47,12 +48,13 @@ Both `$working_dir` and `$user` are mentioned in the figure above.
 Create your clone:
 
 ```sh
-mkdir -p $working_dir
-cd $working_dir
-git clone https://github.com/$user/onos-config.git
-# or: git clone git@github.com:$user/onos-config.git
+ONOS_ROOT=$GOPATH/src/github.com/opennetworkinglab
+mkdir -p $ONOS_ROOT && cd $ONOS_ROOT
 
-cd $working_dir/onos-config
+git clone https://github.com/$GIT_USER/onos-config.git
+# or: git clone git@github.com:$GIT_USER/onos-config.git
+
+cd $ONOS_ROOT/onos-config
 git remote add upstream https://github.com/opennetworkinglab/onos-config.git
 # or: git remote add upstream git@github.com:opennetworkinglab/onos-config.git
 
@@ -68,7 +70,7 @@ git remote -v
 Get your local master up to date:
 
 ```sh
-cd $working_dir/onos-config
+cd $GOPATH/src/github.com/opennetworkinglab/onos-config
 git fetch upstream
 git checkout master
 git rebase upstream/master
@@ -83,8 +85,9 @@ Then edit code on the `myfeature` branch.
 
 ### 4. Keep your branch in sync
 
+While on your _myfeature_ branch
+
 ```sh
-# While on your myfeature branch
 git fetch upstream
 git rebase upstream/master
 ```
