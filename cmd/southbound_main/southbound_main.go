@@ -16,8 +16,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/pkg/southbound"
-	"github.com/opennetworkinglab/onos-config/pkg/southbound/topocache"
+	"github.com/onosproject/onos-config/pkg/southbound"
+	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"reflect"
 	"time"
 

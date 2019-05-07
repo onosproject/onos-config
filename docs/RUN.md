@@ -6,7 +6,8 @@
 
 ## Install
 ```bash
-go get github.com/opennetworkinglab/onos-config/onos-config-manager
+go get https://github.com/openconfig/gnmi && \
+go get github.com/onosproject/onos-config/onos-config-manager
 ```
 > This pulls from master branch.
 > For the moment (May 19) you should check the project out from Git and use the
@@ -14,23 +15,23 @@ go get github.com/opennetworkinglab/onos-config/onos-config-manager
 
 ## Unit test
 ```bash
-go test -v github.com/opennetworkinglab/onos-config/pkg/store
-go test -v github.com/opennetworkinglab/onos-config/pkg/store/change
-go test -v github.com/opennetworkinglab/onos-config/pkg/listener
-go test -v github.com/opennetworkinglab/onos-config/pkg/northbound/restconf
+go test -v github.com/onosproject/onos-config/pkg/store
+go test -v github.com/onosproject/onos-config/pkg/store/change
+go test -v github.com/onosproject/onos-config/pkg/listener
+go test -v github.com/onosproject/onos-config/pkg/northbound/restconf
 ```
 
 ## Run
 ```bash
-go run github.com/opennetworkinglab/onos-config/cmd/onos-config-manager \
+go run github.com/onosproject/onos-config/cmd/onos-config-manager \
 -restconfPort=8080 \
--configStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/configs/configStore-sample.json \
--changeStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/configs/changeStore-sample.json \
--deviceStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/configs/deviceStore-sample.json
+-configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
+-changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
+-deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json
 
 ```
 
-or locally from ~/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/
+or locally from ~/go/src/github.com/onosproject/onos-config/onos-config-manager/
 ```bash
 go build && go run config-manager.go
 ```
@@ -89,4 +90,4 @@ Run locally
 godoc -goroot=$HOME/go
 ``` 
 
-and browse at [http://localhost:6060/pkg/github.com/opennetworkinglab/onos-config/](http://localhost:6060/pkg/github.com/opennetworkinglab/onos-config/)
+and browse at [http://localhost:6060/pkg/github.com/onosproject/onos-config/](http://localhost:6060/pkg/github.com/onosproject/onos-config/)
