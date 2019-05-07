@@ -3,10 +3,13 @@
 Welcome to the µONOS-config contributing guide.  
 We'd love to accept your patches and contributions to this project. There are just a few small guidelines you need to follow. 
 
+## Workflow
+
+![Git workflow](contributing_workflow.png)
 
 ### 1. Fork in the cloud
 
-1. Visit https://github.com/opennetworkinglab/onos-config 
+1. Visit https://github.com/onosproject/onos-config 
 2. Click `Fork` button (top right) to establish a cloud-based fork.
 
 ### 2. Clone fork to local storage
@@ -15,6 +18,12 @@ Per Go's [workspace instructions][go-workspace], place onos-config' code on your
 `GOPATH` using the following cloning procedure.
 
 [go-workspace]: https://golang.org/doc/code.html#Workspaces
+
+If you have not exported the `GOPATH` variable please do so:
+
+```sh
+export GOPATH=$(go env GOPATH)
+```
 
 Set `GIT_USER` to match your github profile name:
 
@@ -25,15 +34,15 @@ export GIT_USER={your github profile name}
 Create your clone:
 
 ```sh
-ONOS_ROOT=$GOPATH/src/github.com/opennetworkinglab
+ONOS_ROOT=$GOPATH/src/github.com/onosproject
 mkdir -p $ONOS_ROOT && cd $ONOS_ROOT
 
 git clone https://github.com/$GIT_USER/onos-config.git
 # or: git clone git@github.com:$GIT_USER/onos-config.git
 
 cd $ONOS_ROOT/onos-config
-git remote add upstream https://github.com/opennetworkinglab/onos-config.git
-# or: git remote add upstream git@github.com:opennetworkinglab/onos-config.git
+git remote add upstream https://github.com/onosproject/onos-config.git
+# or: git remote add upstream git@github.com:onosproject/onos-config.git
 
 # Never push to upstream master
 git remote set-url --push upstream no_push
@@ -47,7 +56,7 @@ git remote -v
 Get your local master up to date:
 
 ```sh
-cd $GOPATH/src/github.com/opennetworkinglab/onos-config
+cd $GOPATH/src/github.com/onosproject/onos-config
 git fetch upstream
 git checkout master
 git rebase upstream/master
