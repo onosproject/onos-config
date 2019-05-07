@@ -3,6 +3,9 @@
 Welcome to the µONOS-config contributing guide.  
 We'd love to accept your patches and contributions to this project. There are just a few small guidelines you need to follow. 
 
+## Workflow
+
+![Git workflow](contributing_workflow.png)
 
 ### 1. Fork in the cloud
 
@@ -15,6 +18,12 @@ Per Go's [workspace instructions][go-workspace], place onos-config' code on your
 `GOPATH` using the following cloning procedure.
 
 [go-workspace]: https://golang.org/doc/code.html#Workspaces
+
+If you have not exported the `GOPATH` variable please do so:
+
+```sh
+export GOPATH=$(go env GOPATH)
+```
 
 Set `GIT_USER` to match your github profile name:
 
