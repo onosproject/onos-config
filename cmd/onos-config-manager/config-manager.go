@@ -74,17 +74,19 @@ import (
 
 // Default locations of stores
 const (
-	configStoreDefaultFileName = "stores/configStore-sample.json"
-	changeStoreDefaultFileName = "stores/changeStore-sample.json"
-	deviceStoreDefaultFileName = "stores/deviceStore-sample.json"
+	configStoreDefaultFileName  = "../configs/configStore-sample.json"
+	changeStoreDefaultFileName  = "../configs/changeStore-sample.json"
+	deviceStoreDefaultFileName  = "../configs/deviceStore-sample.json"
+	networkStoreDefaultFileName = "../configs/networkStore-sample.json"
 )
 
 var (
 	configStore    store.ConfigurationStore
 	changeStore    store.ChangeStore
-	deviceStore	   *topocache.DeviceStore
+	deviceStore    *topocache.DeviceStore
+	networkStore   *store.NetworkStore
 	changesChannel chan events.Event
-	topoChannel chan events.Event
+	topoChannel    chan events.Event
 )
 
 func init() {
@@ -103,6 +105,8 @@ func main() {
 		"path to change store file")
 	deviceStoreFile := flag.String("deviceStore", deviceStoreDefaultFileName,
 		"path to device store file")
+	networkStoreFile := flag.String("networkStore", networkStoreDefaultFileName,
+		"path to network store file")
 	restconfPort := flag.Int("restconfPort", 0,
 		"Run the restconf NBI on given port. If <=0 do not run")
 
@@ -137,8 +141,14 @@ func main() {
 	}
 	log.Println("Device store loaded from", *deviceStoreFile)
 
+	networkStore, err = store.LoadNetworkStore(*networkStoreFile)
+	if err != nil {
+		log.Fatal("Cannot load network store ", err)
+	}
+	log.Println("Network store loaded from", *networkStoreFile)
+
 	if *restconfPort > 0 {
-		go restconf.StartRestServer(*restconfPort, &configStore, &changeStore);
+		go restconf.StartRestServer(*restconfPort, &configStore, &changeStore)
 	}
 
 	go synchronizer.Factory(&changeStore, deviceStore, topoChannel)
@@ -146,7 +156,7 @@ func main() {
 	startNorthboundGNMI()
 
 	// Run a shell as a temporary solution to not having an NBI
-	shell.RunShell(configStore, changeStore, deviceStore, changesChannel)
+	shell.RunShell(configStore, changeStore, deviceStore, networkStore, changesChannel)
 
 	close(changesChannel)
 	close(topoChannel)

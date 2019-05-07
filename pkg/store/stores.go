@@ -30,6 +30,9 @@ const StoreTypeChange = "change"
 // StoreTypeConfig is for Config stores
 const StoreTypeConfig = "config"
 
+// StoreTypeNetwork is for Config stores
+const StoreTypeNetwork = "network"
+
 // ConfigurationStore is the model of the Configuration store
 type ConfigurationStore struct {
 	Version   string
@@ -86,4 +89,33 @@ func LoadChangeStore(file string) (ChangeStore, error) {
 	}
 
 	return changeStore, nil
+}
+
+// NetworkStore is the model of the Network store
+type NetworkStore struct {
+	Version   string
+	Storetype string
+	Store     []NetworkConfiguration
+}
+
+// LoadNetworkStore loads the change store from a file
+func LoadNetworkStore(file string) (*NetworkStore, error) {
+	storeFile, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer storeFile.Close()
+
+	jsonDecoder := json.NewDecoder(storeFile)
+	var networkStore = NetworkStore{}
+	jsonDecoder.Decode(&networkStore)
+	if networkStore.Storetype != StoreTypeNetwork {
+		return nil,
+			fmt.Errorf("Store type invalid: " + networkStore.Storetype)
+	} else if networkStore.Version != StoreVersion {
+		return nil,
+			fmt.Errorf("Store version invalid: " + networkStore.Version)
+	}
+
+	return &networkStore, nil
 }

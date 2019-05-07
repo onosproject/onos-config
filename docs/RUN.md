@@ -20,7 +20,8 @@ go run github.com/onosproject/onos-config/cmd/onos-config-manager \
 -restconfPort=8080 \
 -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
 -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
--deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json
+-deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
+-networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
 
 ```
 
@@ -52,6 +53,13 @@ gnmi_cli -address localhost:10161 \
     -client_key certs/client1.key \
     -ca_crt certs/onfca.crt \
     -alsologtostderr
+```
+
+### GNIM Northbound
+The system implements a gNMI Northbound interface on port 5150
+To access it you can run:
+```bash
+gnmi_cli -address localhost:5150 -insecure -capabilities
 ```
 
 ### Restconf
