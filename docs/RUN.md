@@ -1,24 +1,17 @@
-# Bare bones of a Config Mgmt system in Go
+# Config Mgmt system in Go
 
 > The commands can be run from anywhere on your PC - it assumes that go is installed
 > and your:
 > GOPATH=~/go
 
 ## Install
-```bash
-go get https://github.com/openconfig/gnmi && \
-go get github.com/onosproject/onos-config/onos-config-manager
-```
-> This pulls from master branch.
-> For the moment (May 19) you should check the project out from Git and use the
-> __firststeps__ branch
+See [build/dev-docker/README.md](build/dev-docker/README.md) for instructions
+to build a Dev image that downloads any dependencies to you local folder
+This resolves any go dependencies
 
 ## Unit test
 ```bash
-go test -v github.com/onosproject/onos-config/pkg/store
-go test -v github.com/onosproject/onos-config/pkg/store/change
-go test -v github.com/onosproject/onos-config/pkg/listener
-go test -v github.com/onosproject/onos-config/pkg/northbound/restconf
+go test -v github.com/onosproject/onos-config/...
 ```
 
 ## Run
