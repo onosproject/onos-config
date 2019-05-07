@@ -27,7 +27,6 @@ package main
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"github.com/onosproject/onos-config/pkg"
 	"os"
 	"runtime/pprof"
 	"strconv"
