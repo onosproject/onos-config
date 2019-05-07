@@ -35,10 +35,19 @@ const deviceListTemplate = "Addr\t\t\tTarget\t\t\tTimeout\n{{ range . }}" +
 const configListTemplate = "#\tPath\t\t\t\t\tValue\t\tRemove\n{{ range $i, $e := .}}" +
 	"{{$i}}\t{{printf \"%-40s\" .Path}}{{printf \"%-16s\" .Value}}\t{{.Remove}}\n{{end}}"
 
+const networkConfigHeaderTemplate = "Name\tCreated\n"
+
+const networkConfigListTemplate = "{{.Name}}\t{{.Created}}\n" +
+	//"{{.ConfigurationChanges}}"
+	"{{ range $k, $v := .ConfigurationChanges}}" +
+	"\t{{printf \"%-20s\" $k}}\t{{printf \"%x\" $v}}\n" +
+	"{{end}}"
+
 func printHelp() {
 	fmt.Println("-------------------")
 	fmt.Println("c) list changes")
 	fmt.Println("d) list connected devices")
+	fmt.Println("n) list network changes")
 	fmt.Println("s) Show configuration for a device")
 	fmt.Println("x) Extract current config for a device")
 	fmt.Println("m1) Make change 1 - set all tx-power values to 5")
@@ -51,7 +60,7 @@ func printHelp() {
 // RunShell is a temporary utility that allows shell type access to the config
 // manager until a proper NBI is put in place
 func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStore,
-	deviceStore *topocache.DeviceStore,
+	deviceStore *topocache.DeviceStore, networkStore *store.NetworkStore,
 	changesChannel chan events.Event) {
 	reader := bufio.NewReader(os.Stdin)
 	printHelp()
@@ -85,6 +94,22 @@ func RunShell(configStore store.ConfigurationStore, changeStore store.ChangeStor
 				continue
 			}
 			err = t.Execute(os.Stdout, deviceStore.Store)
+
+		case "n":
+			t1, err := template.New("networkconfig.txt").Parse(networkConfigHeaderTemplate)
+			if err != nil {
+				fmt.Println("Error parsing template", networkConfigHeaderTemplate)
+				continue
+			}
+			t2, err := template.New("networklist.txt").Parse(networkConfigListTemplate)
+			if err != nil {
+				fmt.Println("Error parsing template", networkConfigListTemplate)
+				continue
+			}
+			err = t1.Execute(os.Stdout, networkStore.Store)
+			for _, nw := range networkStore.Store {
+				err = t2.Execute(os.Stdout, nw)
+			}
 
 		case "s":
 			configID, err := selectDevice(configStore, reader)

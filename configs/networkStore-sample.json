@@ -1,0 +1,21 @@
+{
+  "Version": "1.0.0",
+  "Storetype": "network",
+  "Store": [
+    {
+      "Name": "Change1",
+      "User": "onos",
+      "ConfigurationChanges": {
+        "Device1Version": "DCuMG07l01g2BvMdEta+7DyxMxk=",
+        "Device2VersionMain": "DCuMG07l01g2BvMdEta+7DyxMxk="
+      }
+    },
+    {
+      "Name": "Change2",
+      "User": "onos",
+      "ConfigurationChanges": {
+        "Device2VersionMain": "DCuMG07l01g2BvMdEta+7DyxMxk="
+      }
+    }
+  ]
+}

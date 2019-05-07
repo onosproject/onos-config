@@ -31,6 +31,7 @@ var (
 var (
 	changeStore        map[string]*change.Change
 	configurationStore map[string]Configuration
+	networkStore       []NetworkConfiguration
 )
 
 var (
@@ -268,6 +269,13 @@ func TestMain(m *testing.M) {
 
 	configurationStore["Device2VersionMain"] = device2V
 
+	networkStore = make([]NetworkConfiguration, 0)
+	ccs := make(map[string]change.ID)
+	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
+	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
+
+	networkStore = append(networkStore, NetworkConfiguration{Name: "nw1", User: "rocks", ConfigurationChanges: ccs})
+
 	os.Exit(m.Run())
 }
 
@@ -498,6 +506,30 @@ func Test_loadConfigStoreFileError(t *testing.T) {
 	if configStore.Version != "" {
 		t.Errorf("Expected version to be empty on error. Got: %s",
 			configStore.Version)
+	}
+}
+
+func Test_writeOutNetworkFile(t *testing.T) {
+	networkStoreFile, _ := os.Create("testout/networkStore-sample.json")
+	jsonEncoder := json.NewEncoder(networkStoreFile)
+	err := jsonEncoder.Encode(NetworkStore{Version: StoreVersion,
+		Storetype: StoreTypeNetwork, Store: networkStore})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	defer networkStoreFile.Close()
+}
+
+func Test_loadNetworkStoreFile(t *testing.T) {
+	networkStore, err := LoadNetworkStore("testout/networkStore-sample.json")
+	if err != nil {
+		t.Errorf("Unexpected error when loading Network Store from file %s", err)
+	}
+
+	if networkStore.Version != StoreVersion {
+		t.Errorf("Unexpected version %s when loading Network Store %s",
+			networkStore.Version, StoreVersion)
 	}
 }
 
