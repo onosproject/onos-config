@@ -15,10 +15,10 @@
 package synchronizer
 
 import (
-	"github.com/opennetworkinglab/onos-config/pkg/events"
-	"github.com/opennetworkinglab/onos-config/pkg/listener"
-	"github.com/opennetworkinglab/onos-config/pkg/southbound/topocache"
-	"github.com/opennetworkinglab/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/listener"
+	"github.com/onosproject/onos-config/pkg/southbound/topocache"
+	"github.com/onosproject/onos-config/pkg/store"
 	"log"
 )
 

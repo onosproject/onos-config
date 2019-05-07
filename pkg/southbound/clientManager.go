@@ -20,7 +20,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/pkg/southbound/topocache"
+	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"io/ioutil"
 	"log"
 	"time"

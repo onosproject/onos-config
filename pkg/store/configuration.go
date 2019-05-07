@@ -15,7 +15,7 @@
 package store
 
 import (
-	"github.com/opennetworkinglab/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"sort"
 	"strings"
 	"time"

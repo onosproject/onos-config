@@ -23,7 +23,7 @@ package topocache
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/opennetworkinglab/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/events"
 	"os"
 	"time"
 )
