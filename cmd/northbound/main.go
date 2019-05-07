@@ -16,12 +16,13 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 )
 
 func main() {
 	cfg := &gnmi.ServerConfig{
-		Port : 5150,
+		Port:     5150,
 		Insecure: true,
 	}
 

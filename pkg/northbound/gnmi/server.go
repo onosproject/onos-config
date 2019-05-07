@@ -1,3 +1,17 @@
+// Copyright 2019-present Open Networking Foundation
+//
+// Licensed under the Apache License, Configuration 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package gnmi
 
 import (
@@ -7,12 +21,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/onosproject/onos-config/pkg/certs"
 	"io/ioutil"
+	"log"
 	"net"
 	"sync"
-	"log"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/onosproject/onos-config/pkg/certs"
 
 	glog "github.com/golang/glog"
 	"google.golang.org/grpc"
@@ -22,23 +37,22 @@ import (
 	dpb "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/onosproject/onos-config/pkg/models"
 	pb "github.com/openconfig/gnmi/proto/gnmi"
-
 )
 
 // Server provides NB gNMI server for onos-config
 type Server struct {
-	lis net.Listener
-	grpc *grpc.Server
-	mu sync.Mutex
+	lis    net.Listener
+	grpc   *grpc.Server
+	mu     sync.Mutex
 	models *models.Models
 }
 
 // ServerConfig comprises a set of server configuration options
 type ServerConfig struct {
-	CaPath string
-	KeyPath string
+	CaPath   string
+	KeyPath  string
 	CertPath string
-	Port int16
+	Port     int16
 	Insecure bool
 }
 
@@ -51,8 +65,7 @@ func NewServer(cfg *ServerConfig) (*Server, error) {
 	}
 
 	tlsCfg := &tls.Config{
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-
+		ClientAuth: tls.RequireAndVerifyClientCert,
 	}
 
 	if cfg.CertPath == "" && cfg.KeyPath == "" {
@@ -69,7 +82,6 @@ func NewServer(cfg *ServerConfig) (*Server, error) {
 		}
 		tlsCfg.Certificates = []tls.Certificate{clientCerts}
 	}
-
 
 	if cfg.Insecure {
 		// RequestClientCert will ask client for a certificate but won't
@@ -109,9 +121,9 @@ func (s *Server) Serve() error {
 func (s *Server) Capabilities(ctx context.Context, req *pb.CapabilityRequest) (*pb.CapabilityResponse, error) {
 	v, _ := getGNMIServiceVersion()
 	return &pb.CapabilityResponse{
-		SupportedModels: 	s.models.Get(),
+		SupportedModels:    s.models.Get(),
 		SupportedEncodings: []pb.Encoding{pb.Encoding_JSON},
-		GNMIVersion:   		*v,
+		GNMIVersion:        *v,
 	}, nil
 }
 
@@ -129,7 +141,6 @@ func (s *Server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, 
 func (s *Server) Subscribe(stream pb.GNMI_SubscribeServer) error {
 	return nil
 }
-
 
 // getGNMIServiceVersion returns a pointer to the gNMI service version string.
 // The method is non-trivial because of the way it is defined in the proto file.
