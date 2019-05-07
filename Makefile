@@ -16,7 +16,7 @@ build: deps
 	export GOARCH=amd64
 	go build -o build/_output/onos-config-manager ./cmd/onos-config-manager
 
-test: deps lint vet
+test: build deps lint vet
 	go test github.com/onosproject/onos-config/pkg/...
 
 run: deps
