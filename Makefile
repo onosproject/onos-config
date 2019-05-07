@@ -2,11 +2,8 @@ export CGO_ENABLED=0
 
 .PHONY: build
 
-deps: golint
+deps: 
 	dep ensure -v
-
-golint:
-	go get -u golang.org/x/lint/golint
 
 build: deps
 	export GOOS=linux
