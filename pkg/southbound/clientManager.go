@@ -31,7 +31,7 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-//Can be extended, for now is ip:port
+// Key : Can be extended, for now is ip:port
 type Key struct {
 	Key string
 }
@@ -105,6 +105,7 @@ func GetTarget(key Key) (Target, error) {
 
 }
 
+// ConnectTarget :
 //TODO make asyc
 //TODO lock channel to allow one request to device at each time
 func ConnectTarget(device topocache.Device) (Target, Key, error) {
@@ -215,6 +216,7 @@ func Set(target Target, request *gpb.SetRequest) (*gpb.SetResponse, error) {
 	return response, nil
 }
 
+// Subscribe :
 func Subscribe(target Target, request *gpb.SubscribeRequest, handler client.NotificationHandler) error {
 	//TODO currently establishing a throwaway client per each subscription request
 	//this is due to the face that 1 NotificationHandler is allowed per client (1:1)

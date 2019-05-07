@@ -20,8 +20,13 @@ import (
 )
 
 const (
+	// ChangeID :
 	ChangeID = "ChangeID"
+
+	// Committed :
 	Committed = "Committed"
+
+	// Connect :
 	Connect = "Connect"
 )
 
