@@ -8,9 +8,9 @@ RUN mkdir release && \
     mv release/dep-$(go env GOOS)-$(go env GOARCH) /go/bin/dep && \
     chmod +x /go/bin/dep && \
     rmdir release && \
-    rm dep-*.sha256
-
-RUN mkdir -p /go/src/github.com/onosproject/onos-config
+    rm dep-*.sha256 && \
+    go get -u golang.org/x/lint/golint && \
+    mkdir -p /go/src/github.com/onosproject/onos-config
 
 WORKDIR "/go/src/github.com/onosproject/onos-config"
 
