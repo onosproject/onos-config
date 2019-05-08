@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"io"
 	"log"
 )
 
@@ -50,4 +51,26 @@ func main() {
 	} else {
 		fmt.Println("Request succeeded :-)")
 	}
+
+	stream, err := client.Shell(context.Background())
+	waitc := make(chan struct{})
+	go func() {
+		for {
+			in, err := stream.Recv()
+			if err == io.EOF {
+				// read done.
+				close(waitc)
+				return
+			}
+			if err != nil {
+				log.Fatalf("Failed to receive response : %v", err)
+			}
+			fmt.Println(in.Str)
+		}
+	}()
+	if err := stream.Send(&proto.Line{Str: "Hi there bozo..."}); err != nil {
+		log.Fatalf("Failed to send request: %v", err)
+	}
+	stream.CloseSend()
+	<-waitc
 }

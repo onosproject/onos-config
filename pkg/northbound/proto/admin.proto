@@ -10,7 +10,14 @@ message HelloWorldResponse {
 
 }
 
+message Line {
+    string Str = 1;
+}
+
 service Northbound {
+    rpc Shell(stream Line) returns (stream Line) {
+    }
+
     rpc SayHello(HelloWorldRequest) returns (HelloWorldResponse) {
     }
 }

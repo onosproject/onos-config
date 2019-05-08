@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"google.golang.org/grpc"
+	"io"
 )
 
 // Service is a Service implementation for administration
@@ -33,6 +34,32 @@ func (s Service) Register(r *grpc.Server) {
 
 // Server implements the grpc service for admin
 type Server struct {
+}
+
+// Shell provides CLI shell
+func (s Server) Shell(stream proto.Northbound_ShellServer) error {
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		// Switch on the menu command
+		// TODO: implement dispatching
+
+		if err := stream.Send(in); err != nil {
+			return err
+		}
+
+		//// Return the list of lines
+		//for _, line := range lines {
+		//	if err := stream.Send(line); err != nil {
+		//		return err
+		//	}
+		//}
+	}
 }
 
 // SayHello says hello!
