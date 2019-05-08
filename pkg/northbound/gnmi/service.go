@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/models"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -55,9 +56,33 @@ func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) 
 	}, nil
 }
 
-// Get implements gNMI Get
+// Get mplements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
-	return &gnmi.GetResponse{}, nil
+	//TODO for now this is one path one device
+	path := req.Path[0]
+	target := path.Target
+	element := path.Elem[0].Name
+	configValues, err := manager.GetNetworkConfig(target, "", element, 0)
+	if err != nil {
+		return nil, err
+	}
+	gnmi.TypedValue{
+		Value: configValues[0].Value,
+	}
+	update := &gnmi.Update{
+		Path:path,
+		Val:
+	}
+
+	notification := &gnmi.Notification{
+
+	}
+	notifications := make([]*gnmi.Notification,0)
+	notifications = append(notifications, notification)
+	response := gnmi.GetResponse{
+		Notification: notifications,
+	}
+	return &response, nil
 }
 
 // Set implements gNMI Set
