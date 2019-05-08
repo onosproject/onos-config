@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"google.golang.org/grpc/credentials"
 	"io/ioutil"
-	"log"
+	log "k8s.io/klog"
 	"net"
 	"sync"
 
 	"github.com/onosproject/onos-config/pkg/certs"
 
-	"github.com/golang/glog"
 	"google.golang.org/grpc"
 )
 
@@ -110,14 +109,14 @@ func (s *Server) Serve() error {
 		s.services[i].Register(grpc)
 	}
 
-	glog.Infof("Starting RPC server on address: %s", lis.Addr().String())
+	log.Infof("Starting RPC server on address: %s", lis.Addr().String())
 	return grpc.Serve(lis)
 }
 
 func getCertPoolDefault() *x509.CertPool {
 	certPool := x509.NewCertPool()
 	if ok := certPool.AppendCertsFromPEM([]byte(certs.OnfCaCrt)); !ok {
-		log.Println("failed to append CA certificates")
+		log.Warning("failed to append CA certificates")
 	}
 	return certPool
 }
@@ -126,10 +125,10 @@ func getCertPool(CaPath string) *x509.CertPool {
 	certPool := x509.NewCertPool()
 	ca, err := ioutil.ReadFile(CaPath)
 	if err != nil {
-		log.Println("could not read", CaPath, err)
+		log.Warning("could not read", CaPath, err)
 	}
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
-		log.Println("failed to append CA certificates")
+		log.Warning("failed to append CA certificates")
 	}
 	return certPool
 }

@@ -57,7 +57,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/onosproject/onos-config/cmd/onos-config-manager/shell"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/listener"
@@ -68,8 +67,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
-	"log"
-	"log/syslog"
+	log "k8s.io/klog"
 	"os"
 	"time"
 )
@@ -114,40 +112,35 @@ func main() {
 
 	flag.Parse()
 	var err error
-	sysLog, err := syslog.New(syslog.LOG_INFO|syslog.LOG_LOCAL7, "onos-config-manager")
 
 	if err != nil {
 		log.Fatal(err)
-	} else {
-		log.SetOutput(sysLog)
 	}
-	log.Println("onos-config-manager started")
-
-	fmt.Println("Welcome to onos-config-manager. Messages are logged to syslog")
+	log.Info("onos-config-manager started")
 
 	configStore, err = store.LoadConfigStore(*configStoreFile)
 	if err != nil {
 		log.Fatal("Cannot load config store ", err)
 	}
-	log.Println("Configuration store loaded from", *configStoreFile)
+	log.Info("Configuration store loaded from", *configStoreFile)
 
 	changeStore, err = store.LoadChangeStore(*changeStoreFile)
 	if err != nil {
 		log.Fatal("Cannot load change store ", err)
 	}
-	log.Println("Change store loaded from", *changeStoreFile)
+	log.Info("Change store loaded from", *changeStoreFile)
 
 	deviceStore, err = topocache.LoadDeviceStore(*deviceStoreFile, topoChannel)
 	if err != nil {
 		log.Fatal("Cannot load device store ", err)
 	}
-	log.Println("Device store loaded from", *deviceStoreFile)
+	log.Info("Device store loaded from", *deviceStoreFile)
 
 	networkStore, err = store.LoadNetworkStore(*networkStoreFile)
 	if err != nil {
 		log.Fatal("Cannot load network store ", err)
 	}
-	log.Println("Network store loaded from", *networkStoreFile)
+	log.Info("Network store loaded from", *networkStoreFile)
 
 	if *restconfPort > 0 {
 		go restconf.StartRestServer(*restconfPort, &configStore, &changeStore)
@@ -163,7 +156,7 @@ func main() {
 	close(changesChannel)
 	close(topoChannel)
 
-	log.Println("Shutting down")
+	log.Info("Shutting down")
 	time.Sleep(time.Second)
 	os.Exit(0)
 }
@@ -181,7 +174,7 @@ func startServer() {
 	go func() {
 		err := serv.Serve()
 		if err != nil {
-			log.Println("Serve failed", err)
+			log.Error("Serve failed", err)
 		}
 	}()
 }
