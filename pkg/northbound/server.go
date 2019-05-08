@@ -15,8 +15,10 @@
 package northbound
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"google.golang.org/grpc/credentials"
 	"io/ioutil"
 	"log"
 	"net"
@@ -69,9 +71,41 @@ func (s *Server) Serve() error {
 		return err
 	}
 
-	// TODO Configure TLS
+	tlsCfg := &tls.Config{
+		ClientAuth: tls.RequireAndVerifyClientCert,
+	}
 
-	grpc := grpc.NewServer()
+	if s.cfg.CertPath == "" && s.cfg.KeyPath == "" {
+		// Load default Certificates
+		clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+		if err != nil {
+			log.Println("Error loading default certs")
+		}
+		tlsCfg.Certificates = []tls.Certificate{clientCerts}
+	} else {
+		clientCerts, err := tls.LoadX509KeyPair(s.cfg.CertPath, s.cfg.KeyPath)
+		if err != nil {
+			log.Println("Error loading default certs")
+		}
+		tlsCfg.Certificates = []tls.Certificate{clientCerts}
+	}
+
+	if s.cfg.Insecure {
+		// RequestClientCert will ask client for a certificate but won't
+		// require it to proceed. If certificate is provided, it will be
+		// verified.
+		tlsCfg.ClientAuth = tls.RequestClientCert
+	}
+
+	if s.cfg.CaPath == "" {
+		log.Println("Loading default CA onfca")
+		tlsCfg.ClientCAs = getCertPoolDefault()
+	} else {
+		tlsCfg.ClientCAs = getCertPool(s.cfg.CaPath)
+	}
+
+	opts := []grpc.ServerOption{grpc.Creds(credentials.NewTLS(tlsCfg))}
+	grpc := grpc.NewServer(opts...)
 	for i := range s.services {
 		s.services[i].Register(grpc)
 	}
