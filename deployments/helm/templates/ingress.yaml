@@ -1,0 +1,14 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "fullname" . }}-ingress
+spec:
+  rules:
+    - http:
+        paths:
+        - path: /onos-config
+          backend:
+            serviceName: {{ template "fullname" . }}
+            servicePort: 5150
+{{- end }}
