@@ -1,7 +1,8 @@
 # Contributing to the Community Repo
 
 Welcome to the µONOS-config contributing guide.  
-We'd love to accept your patches and contributions to this project. There are just a few small guidelines you need to follow. 
+We'd love to accept your patches and contributions to this project. 
+There are just a few small guidelines you need to follow. 
 
 ## Workflow
 
@@ -91,8 +92,11 @@ Commit your changes.
 ```sh
 git commit
 ```
-Likely you go back and edit/build/test some more then `commit --amend`
-in a few cycles.
+
+If you make other changes pleas add them to a new commit and thus keep 
+the history of your work.  
+Your branch, after you open a pull request,
+will be merged with a _squash and commit_ strategy, thus showing as only one commit.
 
 ### 6. Push
 
@@ -100,7 +104,7 @@ When ready to review (or just to establish an offsite backup or your work),
 push your branch to your fork on `github.com`:
 
 ```sh
-git push -f origin myfeature
+git push origin myfeature
 ```
 
 ### 7. Create a pull request
