@@ -8,7 +8,7 @@ metadata:
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
 data:
-  changeStore-sample.json: {{ (.Files.Glob "files/changeStore-sample.json").AsConfig | indent 2 }}
-  configStore-sample.json: {{ (.Files.Glob "files/configStore-sample.json").AsConfig | indent 2 }}
-  deviceStore-sample.json: {{ (.Files.Glob "files/deviceStore-sample.json").AsConfig | indent 2 }}
-  networkStore-sample.json: {{ (.Files.Glob "files/networkStore-sample.json").AsConfig | indent 2 }}
+  {{ $root := . }}
+  {{ range $path, $bytes := .Files.Glob "files/*" }}
+  {{ base $path }}: '{{ $root.Files.Get $path }}'
+  {{ end }}
