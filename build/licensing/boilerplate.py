@@ -85,8 +85,7 @@ def file_passes(filename, refs, regexs):
     if generated:
         if extension == "go":
             extension = "generatego"
-        elif extension == "bzl":
-            extension = "generatebzl"
+
     if extension != "":
         ref = refs[extension]
     else:
@@ -95,9 +94,6 @@ def file_passes(filename, refs, regexs):
     # remove extra content from the top of files
     if extension == "go" or extension == "generatego":
         p = regexs["go_build_constraints"]
-        (data, found) = p.subn("", data, 1)
-    elif extension == "sh":
-        p = regexs["shebang"]
         (data, found) = p.subn("", data, 1)
 
     data = data.splitlines()
@@ -144,10 +140,8 @@ def file_passes(filename, refs, regexs):
 def file_extension(filename):
     return os.path.splitext(filename)[1].split(".")[-1].lower()
 
-#TODO edit this
-skipped_dirs = ['Godeps', 'third_party', '_gopath', '_output', '.git', 'cluster/env.sh',
-                "vendor", "test/e2e/generated/bindata.go", "hack/boilerplate/test",
-                "pkg/kubectl/generated/bindata.go"]
+# list of the directories to skip during license check
+skipped_dirs = ['.git', "vendor"]
 
 # list all the files contain 'DO NOT EDIT', but are not generated
 skipped_ungenerated_files = ['build/licensing/boilerplate.py']
