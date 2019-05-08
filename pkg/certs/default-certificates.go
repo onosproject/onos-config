@@ -129,3 +129,76 @@ n2GkeEDLaDAGFAIO+PDg2iT8BhKeEepqswid9gYAhZcOjrlnl6smZo7jEzBj1a9Q
 e3q1STjfQqe8
 -----END CERTIFICATE-----
 `
+
+/*
+DefaultLocalhostKey is the default localhost server key
+openssl rsa -in client1.key -text -noout
+Private-Key: (2048 bit)
+*/
+const DefaultLocalhostKey = `
+-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC4zBmctGU/0LQ4
+uJAtny0Zh/NwAVAgjAlVE9Y3hh1fTiXB7eAPhLrCa3KCzRlQAUCvorNPKYhlHV70
+CL8ACWVrstxeY635I3UGanPZhdNRv1h6hW8hympqIKO1otWDV6pwi0gXo6Zco8QQ
+/3LriBlsGn34kvP52Sh4n/id38CCw34OgkItfZb8VeSkXdNQHN1sfB/z0fJXGdIz
+Io5JGGfgiw/i5ccesyXxfN8A3vBhKE1sUJzeHZGEzkdmo/ZbfpVQt4H6aKurYfwD
+xDQjVasf+Lq+WDKd2OzN+BZ+YBMNWUcmZkAh8zZmQWhCttLL484GOeCtqq5HGsTD
+JvfkHSAvAgMBAAECggEBAIi5ORnfvimA2FY+9y1J36xMEaiE0CvEcAMqMgvShljF
+ENpyjJvur964cHimFlxDEQDhd5jSOb/WAzK6ZdY5HXiZVMHhLg5uVV7x09TUVozc
+7TF5F8gAYssyau0wFJige9HYuvYCdkuEPsP0u6nXgDejQiBvWWM5b+APO3pS2bPk
+fbyXPnp+xUQAQhH/m+VCCG4hlC1bKulkY4yWKp5wrKtj2Xun0Vh4Iu9UJiH/EuQ6
+mwpUeWLECO5OYDKQWH90iIVDZufe+8yw1VZrN82cTWL86jetgPEXz6klWGUu1gHU
+r57xz0Nb4rhFPs49aw9Yj/LswF1I5zdF6EiT0H5aRoECgYEA2tNBEo4ta3JW4wF/
+/3AKAE79RV+06z74x3Id5w2ED8TRq3SRu5oMmR9kJhe6owNg8WcbK/h/LuI5+CPD
+V8Uo8HGQs5VisSJGJdCul8gA2bDGPEokGezdEdE6UUaNxpgRU484owZau80c4Q/Y
+B4evLdJL9KIaSB5oPHGfu65i41kCgYEA2DD29X6i1GOSwzKXTXNdrZjxxOqeZiVv
+/+TTiRffIUNMObtR6B8wWi5Y+oPUUj+Xop1vM7L9ZkwfkuDMtaZbryA37rsoAKP9
+Sdlemyt0cB+cL7MN04Od9UD4YzbapRGAoFJduzzneQN0PBUc6wvB6cMBH2UZsEjQ
+GdV0r/iC1scCgYEA0pg9J/5s99syg4YOCWdqOKHMXded5kjUZB4PaS44ynRA1SF6
+n3HCbhsn5wEvPXMi+TChlc+xlw1hfM3uUaoNnFmvSSWbtZ2mpP4RCUISj27xWVSB
+KfIrT9pspYuhJl9zTVeoyjxzVgowoOj+n0CV9yNMtkLLyFx7NLClaZqK0QECgYAj
+rECz1YeMwDlxWCG7N/QXNwt90LD+beMDOIDnODcrR+2GATDMuojB+K/Z9nLMd43P
+2WaGA1zoylrTY6CjwKWUSh6wl9VL9cNPsjx4Ij1+WtjszgDUC/2+gE/8HwsI/dBZ
+o/2vbadMQpOlbl5tMm124ySGR6prejhMavpsJvd/9QKBgGBN5jGWqdezvFx1dY0S
+uZAlqQ3h5w/0MMGSmaM+yN30wjFdWd3yMAxNgIp4Oj1noqvuqXiXnBjN6YER3GNx
+hpjimxkZY9ogyVGz+RP9YqGKKbUtBL/8zZ/LYbWGvo9yJ6HxwO397EhyXNhCvwyF
+sDhPaK+DnzwfkjBk3kXNve4o
+-----END PRIVATE KEY-----
+`
+
+/*
+DefaultLocalhostCrt is the default localhost server certificate
+Certificate:
+    Data:
+        Version: 1 (0x0)
+        Serial Number:
+            a7:0e:38:d6:1c:87:53:46
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C = US, ST = CA, L = MenloPark, O = ONF, OU = Engineering, CN = ca.opennetworking.org
+        Validity
+            Not Before: Apr 16 17:35:40 2019 GMT
+            Not After : Apr 15 17:35:40 2020 GMT
+        Subject: C = US, ST = CA, L = MenloPark, O = ONF, OU = Engineering, CN = localhost
+*/
+const DefaultLocalhostCrt = `
+-----BEGIN CERTIFICATE-----
+MIIDVDCCAjwCCQCnDjjWHIdTRjANBgkqhkiG9w0BAQsFADByMQswCQYDVQQGEwJV
+UzELMAkGA1UECAwCQ0ExEjAQBgNVBAcMCU1lbmxvUGFyazEMMAoGA1UECgwDT05G
+MRQwEgYDVQQLDAtFbmdpbmVlcmluZzEeMBwGA1UEAwwVY2Eub3Blbm5ldHdvcmtp
+bmcub3JnMB4XDTE5MDQxNjE3MzU0MFoXDTIwMDQxNTE3MzU0MFowZjELMAkGA1UE
+BhMCVVMxCzAJBgNVBAgMAkNBMRIwEAYDVQQHDAlNZW5sb1BhcmsxDDAKBgNVBAoM
+A09ORjEUMBIGA1UECwwLRW5naW5lZXJpbmcxEjAQBgNVBAMMCWxvY2FsaG9zdDCC
+ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALjMGZy0ZT/QtDi4kC2fLRmH
+83ABUCCMCVUT1jeGHV9OJcHt4A+EusJrcoLNGVABQK+is08piGUdXvQIvwAJZWuy
+3F5jrfkjdQZqc9mF01G/WHqFbyHKamogo7Wi1YNXqnCLSBejplyjxBD/cuuIGWwa
+ffiS8/nZKHif+J3fwILDfg6CQi19lvxV5KRd01Ac3Wx8H/PR8lcZ0jMijkkYZ+CL
+D+Llxx6zJfF83wDe8GEoTWxQnN4dkYTOR2aj9lt+lVC3gfpoq6th/APENCNVqx/4
+ur5YMp3Y7M34Fn5gEw1ZRyZmQCHzNmZBaEK20svjzgY54K2qrkcaxMMm9+QdIC8C
+AwEAATANBgkqhkiG9w0BAQsFAAOCAQEAomXDe4bZl0JhL3FGeYny34qLZcsEjD+l
+Y79a4iNIhP97mPNbC9k0E1K9zjb8Kkl5/Gvcfr+IIMXLfuAxP1HI55YdAWKyMUsY
+zVujpMY29bcZJIdO/inu1A00F3CzQmyxOl6wXF3unbPZZe4QWIgtsWDGFKmpcV8Z
+3O+JwUFbXcAENFGYp+dL1MhyOClXq5Hj0hQNoRTOBdQ9SzPQomcce9L/VhUtSjBz
+ZCPSExNq6PUzUjocUGdaDI2Wjjt/IY6rd5AYnjkie28wt64r1EO1MGZiHiXx/NNO
+/utYBBcAzIsc63hM3Cjo2h0uFti3Sdza1Czq1t/NlOL9/2qtxVdyyg==
+-----END CERTIFICATE-----
+`
