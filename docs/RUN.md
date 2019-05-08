@@ -55,12 +55,27 @@ gnmi_cli -address localhost:10161 \
     -alsologtostderr
 ```
 
-### GNIM Northbound
+### gNMI Northbound
 The system implements a gNMI Northbound interface on port 5150
 To access it you can run:
 ```bash
 gnmi_cli -address localhost:5150 -insecure -capabilities
 ```
+
+To run the gNMI GET the gnmi_cli can also be used as follows:
+> Where the "target" in "path" is the identifier of the device, 
+> and the "elem" collection is the path to the requested element.
+> If config from several devices are required several paths can be added
+```bash
+gnmi_cli -get -address localhost:5150 \
+    -insecure  \
+    -proto "path: <target: 'localhost:10161', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
+    -timeout 5s \
+    -alsologtostderr
+```
+
+> The value in the response can be an individual value (per path)
+> or a tree of values per path.
 
 ### Restconf
 A rudimentary read-only Restconf interface is given at 
