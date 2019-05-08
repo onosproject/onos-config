@@ -7,9 +7,11 @@ deps:
 
 lint:
 	golint -set_exit_status github.com/onosproject/onos-config/pkg/...
+	golint -set_exit_status github.com/onosproject/onos-config/cmd/...
 
 vet:
 	go vet github.com/onosproject/onos-config/pkg/...
+	go vet github.com/onosproject/onos-config/cmd/...
 
 build: deps
 	export GOOS=linux
@@ -18,6 +20,7 @@ build: deps
 
 test: build deps lint vet
 	go test github.com/onosproject/onos-config/pkg/...
+	go test github.com/onosproject/onos-config/cmd/...
 
 run: deps
 	go run cmd/onos-config-manager/config-manager.go

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// main :
 /* Package main is for profiling the key functions
 Run the program from anywhere
 
@@ -55,7 +56,7 @@ func main() {
 
 	err = change.IsValid()
 	if err != nil {
-		fmt.Errorf("Invalid change %s", err)
+		fmt.Println(fmt.Errorf("Invalid change %s", err))
 	}
 
 	fmt.Println("Finished after ", iterations, "iterations")
