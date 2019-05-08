@@ -68,27 +68,33 @@ func TestMain(m *testing.M) {
 		Timeout: 10,
 	}
 
-	go Manager(
-		&store.ConfigurationStore{
-			Version:   "1.0",
-			Storetype: "config",
-			Store:     configurationStoreTest,
-		},
-		&store.ChangeStore{
-			Version: "1.0",
-			Storetype: "change",
-			Store: changeStoreTest,
-		},
-		&topocache.DeviceStore{
-			Version:"1.0",
-			Storetype:"change",
-			Store: deviceStoreTest,
-		},
-		&store.NetworkStore{
-			Version:"1.0",
-			Storetype:"network",
-			Store: networkStoreTest,
-		})
+	stopped := make(chan struct{})
+	go func() {
+		Manager(
+			&store.ConfigurationStore{
+				Version:   "1.0",
+				Storetype: "config",
+				Store:     configurationStoreTest,
+			},
+			&store.ChangeStore{
+				Version: "1.0",
+				Storetype: "change",
+				Store: changeStoreTest,
+			},
+			&topocache.DeviceStore{
+				Version:"1.0",
+				Storetype:"change",
+				Store: deviceStoreTest,
+			},
+			&store.NetworkStore{
+				Version:"1.0",
+				Storetype:"network",
+				Store: networkStoreTest,
+			})
+		stopped <- struct{}{}
+	}()
+
+	<-stopped
 
 	os.Exit(m.Run())
 
