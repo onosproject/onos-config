@@ -11,7 +11,10 @@ lint:
 vet:
 	go vet github.com/onosproject/onos-config/pkg/...
 
-build: deps
+protos:
+	./build/dev-docker/compile-protos.sh
+
+build: protos deps
 	export GOOS=linux
 	export GOARCH=amd64
 	go build -o build/_output/onos-config-manager ./cmd/onos-config-manager

@@ -186,8 +186,10 @@
     "github.com/openconfig/gnmi/client/gnmi",
     "github.com/openconfig/gnmi/proto/gnmi",
     "google.golang.org/grpc",
+    "google.golang.org/grpc/codes",
     "google.golang.org/grpc/credentials",
     "google.golang.org/grpc/reflection",
+    "google.golang.org/grpc/status",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

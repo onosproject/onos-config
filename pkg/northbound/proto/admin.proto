@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package proto;
+
+message HelloWorldRequest {
+
+}
+
+message HelloWorldResponse {
+
+}
+
+service Northbound {
+    rpc SayHello(HelloWorldRequest) returns (HelloWorldResponse) {
+    }
+}
