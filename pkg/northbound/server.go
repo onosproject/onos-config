@@ -78,13 +78,13 @@ func (s *Server) Serve() error {
 		// Load default Certificates
 		clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
 		if err != nil {
-			log.Println("Error loading default certs")
+			log.Info("Error loading default certs")
 		}
 		tlsCfg.Certificates = []tls.Certificate{clientCerts}
 	} else {
 		clientCerts, err := tls.LoadX509KeyPair(s.cfg.CertPath, s.cfg.KeyPath)
 		if err != nil {
-			log.Println("Error loading default certs")
+			log.Info("Error loading default certs")
 		}
 		tlsCfg.Certificates = []tls.Certificate{clientCerts}
 	}
@@ -97,7 +97,7 @@ func (s *Server) Serve() error {
 	}
 
 	if s.cfg.CaPath == "" {
-		log.Println("Loading default CA onfca")
+		log.Info("Loading default CA onfca")
 		tlsCfg.ClientCAs = getCertPoolDefault()
 	} else {
 		tlsCfg.ClientCAs = getCertPool(s.cfg.CaPath)
