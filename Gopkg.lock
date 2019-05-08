@@ -133,7 +133,7 @@
   revision = "54afdca5d873f7b529e2ce3def1a99df16feda90"
 
 [[projects]]
-  digest = "1:305ae1b02020aa7bd0bf7c51eb20cec7fec7d813c8b37e517ac588963fedd43d"
+  digest = "1:a8c9af73d2a644d8b6e642b34bdd1ac125b863c0ec192e24a41e86454593340d"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -162,7 +162,6 @@
     "metadata",
     "naming",
     "peer",
-    "reflection",
     "reflection/grpc_reflection_v1alpha",
     "resolver",
     "resolver/dns",
@@ -186,8 +185,8 @@
     "github.com/openconfig/gnmi/client/gnmi",
     "github.com/openconfig/gnmi/proto/gnmi",
     "google.golang.org/grpc",
-    "google.golang.org/grpc/credentials",
-    "google.golang.org/grpc/reflection",
+    "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/status",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
