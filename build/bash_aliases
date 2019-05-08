@@ -1,0 +1,15 @@
+# Shell aliases for developer convenience
+
+export GOPATH=$(go env GOPATH)
+
+# Changes working directory to the root of the project
+alias ocfg='cd $GOPATH/src/github.com/onosproject/onos-config'
+
+# Pull... meaning fetch and rebase against upstream master
+alias gp='git fetch upstream && git rebase upstream/master'
+
+# Review... meaning push the current branch to origin
+alias gr='git push origin $(git symbolic-ref HEAD)'
+
+
+
