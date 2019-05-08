@@ -2,16 +2,13 @@ export CGO_ENABLED=0
 
 .PHONY: build
 
+ONOS_CONFIG_VERSION := "latest"
+
 all: image
 
-image: check-version
+image:
 	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:0.3 build
 	docker build . -f build/config-manager/Dockerfile -t onosproject/onos-config:${ONOS_CONFIG_VERSION}
-
-check-version:
-ifndef ONOS_CONFIG_VERSION
-	$(error ONOS_CONFIG_VERSION is undefined)
-endif
 
 deps:
 	dep ensure -v
