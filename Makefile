@@ -24,6 +24,9 @@ vet:
 	go vet github.com/onosproject/onos-config/pkg/...
 	go vet github.com/onosproject/onos-config/cmd/...
 
+license_check:
+	./build/licensing/boilerplate.py -v
+
 protos:
 	./build/dev-docker/compile-protos.sh
 
@@ -32,7 +35,7 @@ build: test
 	export GOARCH=amd64
 	go build -o build/_output/onos-config-manager ./cmd/onos-config-manager
 
-test: protos deps lint vet
+test: protos deps lint vet license_check
 	go test github.com/onosproject/onos-config/pkg/...
 	go test github.com/onosproject/onos-config/cmd/...
 

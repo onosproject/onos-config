@@ -1,4 +1,4 @@
-// Copyright 2019-present Open Networking Foundation.
+// Copyright YEAR-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,24 +11,3 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-package main
-
-import (
-	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
-)
-
-func main() {
-	cfg := &northbound.ServerConfig{
-		Port : 5150,
-		Insecure: true,
-	}
-
-	serv := northbound.NewServer(cfg)
-	serv.AddService(admin.Service{})
-	serv.AddService(gnmi.Service{})
-
-	serv.Serve()
-}
