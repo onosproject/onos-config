@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/listener"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
 	"html/template"
 	"io"
@@ -96,7 +97,7 @@ func treeHandler(w http.ResponseWriter, r *http.Request) {
 		var isFirst = true
 		fmt.Fprintf(w, "{\"Devices\": [")
 		for _, conf := range configStore.Store {
-			treeBytes, err := BuildTree(conf.ExtractFullConfig(changeStore.Store, 0))
+			treeBytes, err := manager.BuildTree(conf.ExtractFullConfig(changeStore.Store, 0))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 				return

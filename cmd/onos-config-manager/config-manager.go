@@ -63,6 +63,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound/restconf"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
@@ -147,6 +148,8 @@ func main() {
 	}
 
 	go synchronizer.Factory(&changeStore, deviceStore, topoChannel)
+
+	go manager.Manager(&configStore, &changeStore, deviceStore, networkStore)
 
 	startServer()
 

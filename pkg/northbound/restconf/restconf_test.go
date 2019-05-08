@@ -17,6 +17,7 @@ package restconf
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
 	"os"
 	"testing"
@@ -55,7 +56,7 @@ func Test_device1_tree(t *testing.T) {
 	device1V := configStoreTest.Store["Device1Version"]
 	fmt.Println("Configuration", device1V.Name, " (latest) Changes:")
 
-	configTree, err := BuildTree(device1V.ExtractFullConfig(changeStoreTest.Store, 0))
+	configTree, err := manager.BuildTree(device1V.ExtractFullConfig(changeStoreTest.Store, 0))
 	if err != nil {
 		t.Errorf("Unexpected error in extracting full tree %s", err)
 	}

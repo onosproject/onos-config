@@ -21,11 +21,13 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/models"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"io/ioutil"
+	"time"
 )
 
 // Service implements Service for GNMI
@@ -57,7 +59,42 @@ func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) 
 
 // Get implements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
-	return &gnmi.GetResponse{}, nil
+	//TODO for now this is one path, one device
+	path := req.Path[0]
+	target := path.Target
+	element := path.Elem[0].Name
+	fmt.Println("target", target)
+	configValues, err := manager.GetNetworkConfig(target, "", element, 0)
+	if err != nil {
+		return nil, err
+	}
+	//TODO differentiate the type of config values.
+	json, err := manager.BuildTree(configValues)
+	typedValue := &gnmi.TypedValue_JsonVal{
+		JsonVal: json,
+	}
+	value := &gnmi.TypedValue{
+		Value: typedValue,
+	}
+	update := &gnmi.Update{
+		Path:path,
+		Val: value,
+	}
+
+	updates := make([]*gnmi.Update,0)
+	updates = append(updates, update)
+
+	notification := &gnmi.Notification{
+		Timestamp: time.Now().Unix(),
+		Update: updates,
+
+	}
+	notifications := make([]*gnmi.Notification,0)
+	notifications = append(notifications, notification)
+	response := gnmi.GetResponse{
+		Notification: notifications,
+	}
+	return &response, nil
 }
 
 // Set implements gNMI Set
