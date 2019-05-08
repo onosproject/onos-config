@@ -25,7 +25,7 @@ type AdminService struct {
 	northbound.Service
 }
 
-func (s *AdminService) Register(r *grpc.Server) {
+func (s AdminService) Register(r *grpc.Server) {
 	proto.RegisterNorthboundServer(r, AdminServer{})
 }
 

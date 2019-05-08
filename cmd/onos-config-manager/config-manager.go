@@ -61,11 +61,13 @@ import (
 	"github.com/onosproject/onos-config/cmd/onos-config-manager/shell"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/listener"
+	"github.com/onosproject/onos-config/pkg/northbound"
+	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/northbound/restconf"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"log"
 	"log/syslog"
 	"os"
@@ -153,7 +155,7 @@ func main() {
 
 	go synchronizer.Factory(&changeStore, deviceStore, topoChannel)
 
-	startNorthboundGNMI()
+	startServer()
 
 	// Run a shell as a temporary solution to not having an NBI
 	shell.RunShell(configStore, changeStore, deviceStore, networkStore, changesChannel)
@@ -166,16 +168,20 @@ func main() {
 	os.Exit(0)
 }
 
-func startNorthboundGNMI() {
-	cfg := &gnmi.ServerConfig{
+func startServer() {
+	cfg := &northbound.ServerConfig{
 		Port : 5150,
 		Insecure: true,
 	}
 
-	serv, err := gnmi.NewServer(cfg)
-	if err != nil {
-		fmt.Println("Can't start server ", err)
-	}
+	serv := northbound.NewServer(cfg)
+	serv.AddService(admin.AdminService{})
+	serv.AddService(gnmi.GNMIService{})
 
-	go serv.Serve()
+	go func() {
+		err := serv.Serve()
+		if err != nil {
+			log.Println("Serve failed", err)
+		}
+	}()
 }

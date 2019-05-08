@@ -15,20 +15,20 @@
 package main
 
 import (
-	"fmt"
+	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 )
 
 func main() {
-	cfg := &admin.ServerConfig{
-		Port:     5150,
+	cfg := &northbound.ServerConfig{
+		Port : 5150,
 		Insecure: true,
 	}
 
-	serv, err := admin.NewServer(cfg)
-	if err != nil {
-		fmt.Println("Can't start server ", err)
-	}
+	serv := northbound.NewServer(cfg)
+	serv.AddService(admin.AdminService{})
+	serv.AddService(gnmi.GNMIService{})
 
 	serv.Serve()
 }

@@ -32,7 +32,7 @@ type GNMIService struct {
 	northbound.Service
 }
 
-func (s *GNMIService) Register(r *grpc.Server) {
+func (s GNMIService) Register(r *grpc.Server) {
 	gnmi.RegisterGNMIServer(r, &GNMIServer{
 		models: models.NewModels(),
 	})
