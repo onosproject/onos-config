@@ -28,22 +28,25 @@ import (
 	"io/ioutil"
 )
 
-type GNMIService struct {
+// Service implements Service for GNMI
+type Service struct {
 	northbound.Service
 }
 
-func (s GNMIService) Register(r *grpc.Server) {
-	gnmi.RegisterGNMIServer(r, &GNMIServer{
+// Register registers the GNMI server with grpc
+func (s Service) Register(r *grpc.Server) {
+	gnmi.RegisterGNMIServer(r, &Server{
 		models: models.NewModels(),
 	})
 }
 
-type GNMIServer struct {
+// Server implements the grpc GNMI service
+type Server struct {
 	models *models.Models
 }
 
 // Capabilities implements gNMI Capabilities
-func (s *GNMIServer) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) (*gnmi.CapabilityResponse, error) {
+func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) (*gnmi.CapabilityResponse, error) {
 	v, _ := getGNMIServiceVersion()
 	return &gnmi.CapabilityResponse{
 		SupportedModels:     s.models.Get(),
@@ -53,17 +56,17 @@ func (s *GNMIServer) Capabilities(ctx context.Context, req *gnmi.CapabilityReque
 }
 
 // Get implements gNMI Get
-func (s *GNMIServer) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
+func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 	return &gnmi.GetResponse{}, nil
 }
 
 // Set implements gNMI Set
-func (s *GNMIServer) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
+func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	return &gnmi.SetResponse{}, nil
 }
 
 // Subscribe implements gNMI Subscribe
-func (s *GNMIServer) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
+func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	return nil
 }
 

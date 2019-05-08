@@ -21,17 +21,21 @@ import (
 	"google.golang.org/grpc"
 )
 
-type AdminService struct {
+// Service is a Service implementation for administration
+type Service struct {
 	northbound.Service
 }
 
-func (s AdminService) Register(r *grpc.Server) {
-	proto.RegisterNorthboundServer(r, AdminServer{})
+// Register registers the Service with the grpc server
+func (s Service) Register(r *grpc.Server) {
+	proto.RegisterNorthboundServer(r, Server{})
 }
 
-type AdminServer struct {
+// Server implements the grpc service for admin
+type Server struct {
 }
 
-func (s AdminServer) SayHello(ctx context.Context, r *proto.HelloWorldRequest) (*proto.HelloWorldResponse, error) {
+// SayHello says hello!
+func (s Server) SayHello(ctx context.Context, r *proto.HelloWorldRequest) (*proto.HelloWorldResponse, error) {
 	return &proto.HelloWorldResponse{}, nil
 }

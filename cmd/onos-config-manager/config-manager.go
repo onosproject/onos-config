@@ -175,8 +175,8 @@ func startServer() {
 	}
 
 	serv := northbound.NewServer(cfg)
-	serv.AddService(admin.AdminService{})
-	serv.AddService(gnmi.GNMIService{})
+	serv.AddService(admin.Service{})
+	serv.AddService(gnmi.Service{})
 
 	go func() {
 		err := serv.Serve()

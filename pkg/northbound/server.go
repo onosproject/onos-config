@@ -15,7 +15,6 @@
 package northbound
 
 import (
-	"context"
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
@@ -26,10 +25,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/certs"
 
 	"github.com/golang/glog"
-	pb "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"google.golang.org/grpc"
 )
 
+// Service provides service-specific registration for grpc services
 type Service interface {
 	Register(s *grpc.Server)
 }
@@ -58,6 +57,7 @@ func NewServer(cfg *ServerConfig) *Server {
 	}
 }
 
+// AddService adds a Service to the server to be registered on Serve
 func (s *Server) AddService(r Service) {
 	s.services = append(s.services, r)
 }
@@ -78,10 +78,6 @@ func (s *Server) Serve() error {
 
 	glog.Infof("Starting RPC server on address: %s", lis.Addr().String())
 	return grpc.Serve(lis)
-}
-
-func (s *Server) SayHello(ctx context.Context, req *pb.HelloWorldRequest) (*pb.HelloWorldResponse, error) {
-	return &pb.HelloWorldResponse{}, nil
 }
 
 func getCertPoolDefault() *x509.CertPool {
