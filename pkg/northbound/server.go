@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package admin
+package northbound
 
 import (
 	"context"
@@ -26,19 +26,19 @@ import (
 	"github.com/onosproject/onos-config/pkg/certs"
 
 	"github.com/golang/glog"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
-
-	"github.com/onosproject/onos-config/pkg/models"
 	pb "github.com/onosproject/onos-config/pkg/northbound/proto"
+	"google.golang.org/grpc"
 )
+
+type Service interface {
+	Register(s *grpc.Server)
+}
 
 // Server provides NB gNMI server for onos-config
 type Server struct {
-	lis    net.Listener
-	grpc   *grpc.Server
-	mu     sync.Mutex
-	models *models.Models
+	cfg      *ServerConfig
+	services []Service
+	mu       sync.Mutex
 }
 
 // ServerConfig comprises a set of server configuration options
@@ -51,30 +51,33 @@ type ServerConfig struct {
 }
 
 // NewServer initializes gNMI server using the supplied configuration
-func NewServer(cfg *ServerConfig) (*Server, error) {
-	var err error
-
-	s := &Server{
-		models: models.NewModels(),
+func NewServer(cfg *ServerConfig) *Server {
+	return &Server{
+		services: []Service{},
+		cfg:      cfg,
 	}
+}
 
-	s.grpc = grpc.NewServer()
-	reflection.Register(s.grpc)
-
-	s.lis, err = net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
-	if err != nil {
-		return nil, fmt.Errorf("failed to open listener port %d: %v", cfg.Port, err)
-	}
-
-	pb.RegisterNorthboundServer(s.grpc, s)
-
-	return s, nil
+func (s *Server) AddService(r Service) {
+	s.services = append(s.services, r)
 }
 
 // Serve starts the NB gNMI server
 func (s *Server) Serve() error {
-	glog.Infof("Starting RPC server on address: %s", s.lis.Addr().String())
-	return s.grpc.Serve(s.lis)
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.cfg.Port))
+	if err != nil {
+		return err
+	}
+
+	// TODO Configure TLS
+
+	grpc := grpc.NewServer()
+	for i := range s.services {
+		s.services[i].Register(grpc)
+	}
+
+	glog.Infof("Starting RPC server on address: %s", lis.Addr().String())
+	return grpc.Serve(lis)
 }
 
 func (s *Server) SayHello(ctx context.Context, req *pb.HelloWorldRequest) (*pb.HelloWorldResponse, error) {
