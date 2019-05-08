@@ -1,0 +1,12 @@
+nameOverride: ""
+
+replicas: 1
+image:
+  repository: onosproject/onos-config
+  tag: latest
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+resources:
+  requests:
+    cpu: 0.5
+    memory: 512Mi
