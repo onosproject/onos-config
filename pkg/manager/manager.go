@@ -15,6 +15,7 @@ var (
 	networkStore *store.NetworkStore
 )
 
+// Manager is a thread and the entry point for getting, setting and manipulating changes to and from the stores.
 func Manager(configs *store.ConfigurationStore, changes *store.ChangeStore, device *topocache.DeviceStore,
 	network *store.NetworkStore) {
 	configStore = configs
@@ -24,6 +25,8 @@ func Manager(configs *store.ConfigurationStore, changes *store.ChangeStore, devi
 	log.Println("Starting Manager")
 }
 
+// GetNetworkConfig returns a set of change values given a target, a configuration name, a path and a layer.
+// The layer is the numbers of configu changes we want to go back in time for.
 func GetNetworkConfig(target string, configname string, path string, layer int) ([]change.ConfigValue, error){
 	if _, ok := deviceStore.Store[target]; !ok {
 		return nil, fmt.Errorf("Device not present %s", target)

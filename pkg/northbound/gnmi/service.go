@@ -57,9 +57,9 @@ func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) 
 	}, nil
 }
 
-// Get mplements gNMI Get
+// Get implements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
-	//TODO for now this is one path one device
+	//TODO for now this is one path, one device
 	path := req.Path[0]
 	target := path.Target
 	element := path.Elem[0].Name
