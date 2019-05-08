@@ -149,7 +149,7 @@ func main() {
 
 	go synchronizer.Factory(&changeStore, deviceStore, topoChannel)
 
-	go manager.Manager(&changeStore, deviceStore, networkStore)
+	go manager.Manager(&configStore, &changeStore, deviceStore, networkStore)
 
 	startServer()
 

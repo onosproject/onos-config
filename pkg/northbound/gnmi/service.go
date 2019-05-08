@@ -27,6 +27,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"io/ioutil"
+	"time"
 )
 
 // Service implements Service for GNMI
@@ -62,19 +63,30 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	path := req.Path[0]
 	target := path.Target
 	element := path.Elem[0].Name
+	fmt.Println("target", target)
 	configValues, err := manager.GetNetworkConfig(target, "", element, 0)
 	if err != nil {
 		return nil, err
 	}
-	gnmi.TypedValue{
-		Value: configValues[0].Value,
+	//TODO differentiate the type of config values.
+	json, err := manager.BuildTree(configValues)
+	typedValue := &gnmi.TypedValue_JsonVal{
+		JsonVal: json,
+	}
+	value := &gnmi.TypedValue{
+		Value: typedValue,
 	}
 	update := &gnmi.Update{
 		Path:path,
-		Val:
+		Val: value,
 	}
 
+	updates := make([]*gnmi.Update,0)
+	updates = append(updates, update)
+
 	notification := &gnmi.Notification{
+		Timestamp: time.Now().Unix(),
+		Update: updates,
 
 	}
 	notifications := make([]*gnmi.Notification,0)
