@@ -25,10 +25,6 @@ go run github.com/onosproject/onos-config/cmd/onos-config-manager \
 
 ```
 
-or locally from ~/go/src/github.com/onosproject/onos-config/onos-config-manager/
-```bash
-go build && go run config-manager.go
-```
 
 ### CLI
 A rudimentary CLI allows mostly read only access to the configuration at present.
@@ -43,26 +39,31 @@ To have a change of timezone pushed all the way down to a device
 
 > In the syslog you should see SetResponse op:UPDATE
 
-You can verify the Set was successful with
+You can verify the Set was successful with (from onos-config)
 ```bash
 gnmi_cli -address localhost:10161 \
     -get \
     -proto "path: <elem: <name: 'system'> elem:<name:'clock'> elem:<name:'config'> elem: <name: 'timezone-name'>>" \
     -timeout 5s \
-    -client_crt certs/client1.crt \
-    -client_key certs/client1.key \
-    -ca_crt certs/onfca.crt \
+    -client_crt tools/test/devicesim/certs/client1.crt \
+    -client_key tools/test/devicesim/certs/client1.key \
+    -ca_crt tools/test/devicesim/certs/onfca.crt \
     -alsologtostderr
 ```
 
 ### gNMI Northbound
 The system implements a gNMI Northbound interface on port 5150
-To access it you can run:
+To access it you can run (from onos-config):
 ```bash
-gnmi_cli -address localhost:5150 -insecure -capabilities
+gnmi_cli -address localhost:5150 -capabilities \
+    -timeout 5s \
+    -client_crt tools/test/devicesim/certs/client1.crt \
+    -client_key tools/test/devicesim/certs/client1.key \
+    -ca_crt tools/test/devicesim/certs/onfca.crt \
+    -alsologtostderr
 ```
 
-To run the gNMI GET the gnmi_cli can also be used as follows:
+To run the gNMI GET on the NBI the gnmi_cli can also be used as follows:
 > Where the "target" in "path" is the identifier of the device, 
 > and the "elem" collection is the path to the requested element.
 > If config from several devices are required several paths can be added
@@ -71,32 +72,14 @@ gnmi_cli -get -address localhost:5150 \
     -insecure  \
     -proto "path: <target: 'localhost:10161', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
     -timeout 5s \
+    -client_crt tools/test/devicesim/certs/client1.crt \
+    -client_key tools/test/devicesim/certs/client1.key \
+    -ca_crt tools/test/devicesim/certs/onfca.crt \
     -alsologtostderr
 ```
 
 > The value in the response can be an individual value (per path)
 > or a tree of values per path.
-
-### Restconf
-A rudimentary read-only Restconf interface is given at 
-* http://localhost:8080/restconf/
-
-To list changes:
-http://localhost:8080/restconf/change/
-
-To list configurations:
-* http://localhost:8080/restconf/configuration/
-
-To list data in tree format:
-* http://localhost:8080/restconf/data/
-
-To listen to an event stream in Server Sent Events format:
-* http://localhost:8080/restconf/events/
-> curl -v -H "Accept: text/event-stream" -H "Connection: keep-alive" -H "Cache-Control: no-cache" http://localhost:8080/restconf/events/
-
-> An event arrives when a change is made (e.g. at the CLI m1 or m2)
-
-
 
 ## Documentation
 > Documentation is not yet publicy published

@@ -76,7 +76,7 @@ func (s *Server) Serve() error {
 
 	if s.cfg.CertPath == "" && s.cfg.KeyPath == "" {
 		// Load default Certificates
-		clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+		clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultLocalhostCrt), []byte(certs.DefaultLocalhostKey))
 		if err != nil {
 			log.Info("Error loading default certs")
 		}
