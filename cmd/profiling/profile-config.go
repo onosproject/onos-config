@@ -56,7 +56,7 @@ func main() {
 
 	err = change.IsValid()
 	if err != nil {
-		fmt.Errorf("Invalid change %s", err)
+		fmt.Println(fmt.Errorf("Invalid change %s", err))
 	}
 
 	fmt.Println("Finished after ", iterations, "iterations")
