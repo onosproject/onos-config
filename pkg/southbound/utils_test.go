@@ -45,6 +45,9 @@ const (
 	path2Segment3 = "33"
 	path2Segment4 = "\\44"
 	path2ToSplit = "/" + path2Segment1 + "/" + path2Segment2 + "/" + path2Segment3 + "/" + path2Segment4
+
+	pathNoClose = "/a/b[name=aaa"
+	pathNoKeyName = "/a/b/[=aaa]"
 )
 
 func checkElement(t *testing.T, parsed *gnmi.Path, index int, elemName string, elemKeyName string, elemKeyValue string) {
@@ -106,6 +109,28 @@ func Test_ParseMultiple(t *testing.T) {
 
 	checkElement(t, parsed, 0,  elemName1, elemKeyName1, elemKeyValue1)
 	checkElement(t, parsed, 1,  elemName2, elemKeyName2, elemKeyValue2)
+}
+
+func Test_ParseErrorNoClose(t *testing.T) {
+	elements := make([]string, 1)
+	elements[0] = pathNoClose
+	parsed, err := ParseGNMIElements(elements)
+
+	if err == nil || parsed != nil {
+		t.Errorf("path with no closing bracket did not generate an error")
+		return
+	}
+}
+
+func Test_ParseErrorNoKeyName(t *testing.T) {
+	elements := make([]string, 1)
+	elements[0] = pathNoKeyName
+	parsed, err := ParseGNMIElements(elements)
+
+	if err == nil || parsed != nil {
+		t.Errorf("path with no opening bracket did not generate an error")
+		return
+	}
 }
 
 func Test_Split(t *testing.T) {
