@@ -26,14 +26,14 @@ var (
 )
 
 const (
-	Test1Cont1A                  = "/test1:cont1a"
-	Test1Cont1ACont2A            = "/test1:cont1a/cont2a"
-	Test1Cont1ACont2ALeaf2A      = "/test1:cont1a/cont2a/leaf2a"
+	Test1Cont1A             = "/test1:cont1a"
+	Test1Cont1ACont2A       = "/test1:cont1a/cont2a"
+	Test1Cont1ACont2ALeaf2A = "/test1:cont1a/cont2a/leaf2a"
 )
 
 const (
-	ValueEmpty          = ""
-	ValueLeaf2A13       = "13"
+	ValueEmpty    = ""
+	ValueLeaf2A13 = "13"
 )
 
 func TestMain(m *testing.M) {
@@ -64,14 +64,31 @@ func TestMain(m *testing.M) {
 
 	deviceStoreTest = make(map[string]topocache.Device)
 	deviceStoreTest["Device1"] = topocache.Device{
-		Addr: "127.0.0.1:10161",
+		Addr:    "127.0.0.1:10161",
 		Timeout: 10,
 	}
 
-	go Manager(&store.ConfigurationStore{"1.0", "config", configurationStoreTest},
-	&store.ChangeStore{"1.0", "change", changeStoreTest},
-	&topocache.DeviceStore{"1.0", "change", deviceStoreTest},
-	&store.NetworkStore{"1.0", "network", networkStoreTest})
+	go Manager(
+		&store.ConfigurationStore{
+			Version:   "1.0",
+			Storetype: "config",
+			Store:     configurationStoreTest,
+		},
+		&store.ChangeStore{
+			Version: "1.0",
+			Storetype: "change",
+			Store: changeStoreTest,
+		},
+		&topocache.DeviceStore{
+			Version:"1.0",
+			Storetype:"change",
+			Store: deviceStoreTest,
+		},
+		&store.NetworkStore{
+			Version:"1.0",
+			Storetype:"network",
+			Store: networkStoreTest,
+		})
 
 	os.Exit(m.Run())
 
@@ -91,4 +108,3 @@ func Test_GetNetworkConfig(t *testing.T) {
 		t.Errorf("result %s is different from %s", result[0].Path, Test1Cont1A)
 	}
 }
-
