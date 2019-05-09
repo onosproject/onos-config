@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package southbound
+package utils
 
 import (
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -120,4 +120,14 @@ func Test_Split(t *testing.T) {
 	splitPaths1 := splitPaths[0]
 	assert.Equal(t, splitPaths1[0], pathSegment1)
 	assert.Equal(t, splitPaths1[3], pathSegment4)
+}
+
+func Test_ParseNamespace(t *testing.T) {
+	elements := SplitPath("/ns:a[x=y]/b/c")
+	parsed, err := ParseGNMIElements(elements)
+
+	assert.NilError(t, err, "Path with NS returns error")
+	assert.Assert(t, parsed != nil,"path with NS returns nil")
+
+	checkElement(t, parsed, 0,  "a", "x", "y")
 }

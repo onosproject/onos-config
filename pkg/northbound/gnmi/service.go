@@ -24,7 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/models"
 	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/southbound"
+	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"io/ioutil"
@@ -65,7 +65,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	for _, path := range req.Path {
 		target := path.Target
-		pathAsString := southbound.StrPath(path)
+		pathAsString := utils.StrPath(path)
 		configValues, err := manager.GetManager().GetNetworkConfig(target, "",
 			pathAsString, 0)
 		if err != nil {

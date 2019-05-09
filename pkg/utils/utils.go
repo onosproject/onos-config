@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package southbound
+package utils
 
 import (
 	"fmt"
@@ -43,6 +43,7 @@ func ParseGNMIElements(elms []string) (*pb.Path, error) {
 // It returns the first string (the current element name), and an optional map of key name
 // value pairs.
 func parseElement(pathElement string) (string, map[string]string, error) {
+
 	// First check if there are any keys, i.e. do we have at least one '[' in the element
 	name, keyStart := findUnescaped(pathElement, '[')
 	if keyStart < 0 {
@@ -144,7 +145,13 @@ func SplitPath(path string) []string {
 	}
 	for len(path) > 0 {
 		i := nextTokenIndex(path)
-		result = append(result, path[:i])
+		part := path[:i]
+		partsNs := strings.Split(part, ":")
+		if len(partsNs) == 2 {
+			// We have to discard the namespace as gNMI doesn't handle it
+			part = partsNs[1]
+		}
+		result = append(result, part)
 		path = path[i:]
 		if len(path) > 0 && path[0] == '/' {
 			path = path[1:]
