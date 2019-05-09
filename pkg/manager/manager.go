@@ -30,11 +30,11 @@ var mgr Manager
 
 // Manager single point of entry for the config system
 type Manager struct {
-	configStore *store.ConfigurationStore
-	changeStore *store.ChangeStore
-	deviceStore *topocache.DeviceStore
-	networkStore *store.NetworkStore
-	topoChannel chan events.Event
+	configStore    *store.ConfigurationStore
+	changeStore    *store.ChangeStore
+	deviceStore    *topocache.DeviceStore
+	NetworkStore   *store.NetworkStore
+	topoChannel    chan events.Event
 	changesChannel chan events.Event
 }
 
@@ -43,16 +43,17 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 	network *store.NetworkStore, topoCh chan events.Event) *Manager {
 	log.Println("Creating Manager")
 	mgr = Manager{
-		configStore : configs,
-		changeStore : changes,
-		deviceStore : device,
-		networkStore : network,
-		topoChannel: topoCh,
-		changesChannel:  make(chan events.Event, 10),
+		configStore:    configs,
+		changeStore:    changes,
+		deviceStore:    device,
+		NetworkStore:   network,
+		topoChannel:    topoCh,
+		changesChannel: make(chan events.Event, 10),
 	}
 	return &mgr
 
 }
+
 // Run starts a synchronizer based on the devices and the northbound services
 func (m *Manager) Run() {
 	log.Println("Starting Manager")
@@ -62,7 +63,7 @@ func (m *Manager) Run() {
 }
 
 //Close kills the channels and manager related objects
-func (m *Manager) Close(){
+func (m *Manager) Close() {
 	log.Println("Closing Manager")
 	close(m.changesChannel)
 }
@@ -76,7 +77,7 @@ func (m *Manager) GetNetworkConfig(target string, configname string, path string
 	fmt.Println("Getting config for", target, path)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
-	for configID, cfg := range m.configStore.Store{
+	for configID, cfg := range m.configStore.Store {
 		if cfg.Device == target {
 			configname = configID
 			config = cfg

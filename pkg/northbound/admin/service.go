@@ -16,10 +16,11 @@ package admin
 
 import (
 	"context"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"google.golang.org/grpc"
-	"io"
 )
 
 // Service is a Service implementation for administration
@@ -29,7 +30,7 @@ type Service struct {
 
 // Register registers the Service with the grpc server
 func (s Service) Register(r *grpc.Server) {
-	proto.RegisterNorthboundServer(r, Server{})
+	proto.RegisterAdminServer(r, Server{})
 }
 
 // Interpreter provides means to process remote input and write to remote output
@@ -48,24 +49,21 @@ func (s Server) SetShellInterpreter(shell Interpreter) {
 	s.shell = shell
 }
 
-// Shell provides CLI shell
-func (s Server) Shell(stream proto.Northbound_ShellServer) error {
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
+// NetworkChanges provides a stream of submitted network changes
+func (s Server) NetworkChanges(r *proto.VoidRequest, stream proto.Admin_NetworkChangesServer) error {
+	changes := manager.GetManager().NetworkStore.Store
+	for i := range changes {
+		c := changes[i]
+		err := stream.Send(&proto.NetChange{
+			Time: &timestamp.Timestamp{Seconds: c.Created.Unix(), Nanos: int32(c.Created.Nanosecond())},
+			Name: c.Name,
+			User: c.User,
+		})
 		if err != nil {
 			return err
 		}
-		// Switch on the menu command
-		s.shell.Exec(in.Str, func(s string) error {
-			if err := stream.Send(&proto.Line{Str: s}); err != nil {
-				return err
-			}
-			return nil
-		})
 	}
+	return nil
 }
 
 // SayHello says hello!

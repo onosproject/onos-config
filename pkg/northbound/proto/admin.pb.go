@@ -7,6 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -86,41 +87,88 @@ func (m *HelloWorldResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HelloWorldResponse proto.InternalMessageInfo
 
-type Line struct {
-	Str                  string   `protobuf:"bytes,1,opt,name=Str,json=str,proto3" json:"Str,omitempty"`
+type VoidRequest struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Line) Reset()         { *m = Line{} }
-func (m *Line) String() string { return proto.CompactTextString(m) }
-func (*Line) ProtoMessage()    {}
-func (*Line) Descriptor() ([]byte, []int) {
+func (m *VoidRequest) Reset()         { *m = VoidRequest{} }
+func (m *VoidRequest) String() string { return proto.CompactTextString(m) }
+func (*VoidRequest) ProtoMessage()    {}
+func (*VoidRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a91573d9ad3811b0, []int{2}
 }
 
-func (m *Line) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Line.Unmarshal(m, b)
+func (m *VoidRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_VoidRequest.Unmarshal(m, b)
 }
-func (m *Line) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Line.Marshal(b, m, deterministic)
+func (m *VoidRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_VoidRequest.Marshal(b, m, deterministic)
 }
-func (m *Line) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Line.Merge(m, src)
+func (m *VoidRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VoidRequest.Merge(m, src)
 }
-func (m *Line) XXX_Size() int {
-	return xxx_messageInfo_Line.Size(m)
+func (m *VoidRequest) XXX_Size() int {
+	return xxx_messageInfo_VoidRequest.Size(m)
 }
-func (m *Line) XXX_DiscardUnknown() {
-	xxx_messageInfo_Line.DiscardUnknown(m)
+func (m *VoidRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_VoidRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Line proto.InternalMessageInfo
+var xxx_messageInfo_VoidRequest proto.InternalMessageInfo
 
-func (m *Line) GetStr() string {
+type NetChange struct {
+	Time                 *timestamp.Timestamp `protobuf:"bytes,1,opt,name=time,proto3" json:"time,omitempty"`
+	Name                 string               `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	User                 string               `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
+}
+
+func (m *NetChange) Reset()         { *m = NetChange{} }
+func (m *NetChange) String() string { return proto.CompactTextString(m) }
+func (*NetChange) ProtoMessage()    {}
+func (*NetChange) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a91573d9ad3811b0, []int{3}
+}
+
+func (m *NetChange) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_NetChange.Unmarshal(m, b)
+}
+func (m *NetChange) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_NetChange.Marshal(b, m, deterministic)
+}
+func (m *NetChange) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NetChange.Merge(m, src)
+}
+func (m *NetChange) XXX_Size() int {
+	return xxx_messageInfo_NetChange.Size(m)
+}
+func (m *NetChange) XXX_DiscardUnknown() {
+	xxx_messageInfo_NetChange.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_NetChange proto.InternalMessageInfo
+
+func (m *NetChange) GetTime() *timestamp.Timestamp {
 	if m != nil {
-		return m.Str
+		return m.Time
+	}
+	return nil
+}
+
+func (m *NetChange) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *NetChange) GetUser() string {
+	if m != nil {
+		return m.User
 	}
 	return ""
 }
@@ -128,25 +176,30 @@ func (m *Line) GetStr() string {
 func init() {
 	proto.RegisterType((*HelloWorldRequest)(nil), "proto.HelloWorldRequest")
 	proto.RegisterType((*HelloWorldResponse)(nil), "proto.HelloWorldResponse")
-	proto.RegisterType((*Line)(nil), "proto.Line")
+	proto.RegisterType((*VoidRequest)(nil), "proto.VoidRequest")
+	proto.RegisterType((*NetChange)(nil), "proto.NetChange")
 }
 
 func init() { proto.RegisterFile("pkg/northbound/proto/admin.proto", fileDescriptor_a91573d9ad3811b0) }
 
 var fileDescriptor_a91573d9ad3811b0 = []byte{
-	// 177 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x28, 0xc8, 0x4e, 0xd7,
-	0xcf, 0xcb, 0x2f, 0x2a, 0xc9, 0x48, 0xca, 0x2f, 0xcd, 0x4b, 0xd1, 0x2f, 0x28, 0xca, 0x2f, 0xc9,
-	0xd7, 0x4f, 0x4c, 0xc9, 0xcd, 0xcc, 0xd3, 0x03, 0xb3, 0x85, 0x58, 0xc1, 0x94, 0x92, 0x30, 0x97,
-	0xa0, 0x47, 0x6a, 0x4e, 0x4e, 0x7e, 0x78, 0x7e, 0x51, 0x4e, 0x4a, 0x50, 0x6a, 0x61, 0x69, 0x6a,
-	0x71, 0x89, 0x92, 0x08, 0x97, 0x10, 0xb2, 0x60, 0x71, 0x41, 0x7e, 0x5e, 0x71, 0xaa, 0x92, 0x04,
-	0x17, 0x8b, 0x4f, 0x66, 0x5e, 0xaa, 0x90, 0x00, 0x17, 0x73, 0x70, 0x49, 0x91, 0x04, 0xa3, 0x02,
-	0xa3, 0x06, 0x67, 0x10, 0x73, 0x71, 0x49, 0x91, 0x51, 0x05, 0x17, 0x97, 0x1f, 0xdc, 0x2e, 0x21,
-	0x75, 0x2e, 0xd6, 0xe0, 0x8c, 0xd4, 0x9c, 0x1c, 0x21, 0x6e, 0x88, 0x55, 0x7a, 0x20, 0x5d, 0x52,
-	0xc8, 0x1c, 0x25, 0x06, 0x0d, 0x46, 0x03, 0x46, 0x21, 0x47, 0x2e, 0x8e, 0xe0, 0xc4, 0x4a, 0xb0,
-	0x4d, 0x42, 0x12, 0x50, 0x69, 0x0c, 0xc7, 0x48, 0x49, 0x62, 0x91, 0x81, 0xba, 0x88, 0x21, 0x89,
-	0x0d, 0x2c, 0x67, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0xda, 0x0d, 0x64, 0x5c, 0xf0, 0x00, 0x00,
-	0x00,
+	// 255 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x8f, 0x31, 0x4f, 0xc3, 0x30,
+	0x10, 0x85, 0x6b, 0x68, 0x11, 0xbd, 0x0a, 0x04, 0x07, 0x43, 0xc8, 0x42, 0x95, 0xa9, 0x93, 0x83,
+	0xca, 0xc6, 0x56, 0xb1, 0x30, 0x75, 0x08, 0x08, 0x66, 0x87, 0x1c, 0x69, 0xd4, 0xc4, 0x17, 0x6c,
+	0x47, 0x88, 0x3f, 0xc0, 0xef, 0x46, 0xb1, 0xd3, 0xaa, 0x12, 0x4c, 0xf7, 0xf4, 0xee, 0xd3, 0xbd,
+	0x7b, 0x30, 0x6f, 0xb7, 0x65, 0xaa, 0xd9, 0xb8, 0x4d, 0xce, 0x9d, 0x2e, 0xd2, 0xd6, 0xb0, 0xe3,
+	0x54, 0x15, 0x4d, 0xa5, 0xa5, 0xd7, 0x38, 0xf1, 0x23, 0xbe, 0x2d, 0x99, 0xcb, 0x9a, 0x02, 0x90,
+	0x77, 0x1f, 0xa9, 0xab, 0x1a, 0xb2, 0x4e, 0x35, 0x6d, 0xe0, 0x92, 0x2b, 0xb8, 0x7c, 0xa2, 0xba,
+	0xe6, 0x37, 0x36, 0x75, 0x91, 0xd1, 0x67, 0x47, 0xd6, 0x25, 0xd7, 0x80, 0x87, 0xa6, 0x6d, 0x59,
+	0x5b, 0x4a, 0xce, 0x60, 0xf6, 0xca, 0xd5, 0x1e, 0x7a, 0x87, 0xe9, 0x9a, 0xdc, 0xe3, 0x46, 0xe9,
+	0x92, 0x50, 0xc2, 0xb8, 0xbf, 0x1c, 0x89, 0xb9, 0x58, 0xcc, 0x96, 0xb1, 0x0c, 0xb1, 0x72, 0x17,
+	0x2b, 0x5f, 0x76, 0xb1, 0x99, 0xe7, 0x10, 0x61, 0xac, 0x55, 0x43, 0xd1, 0xd1, 0x5c, 0x2c, 0xa6,
+	0x99, 0xd7, 0xbd, 0xd7, 0x59, 0x32, 0xd1, 0x71, 0xf0, 0x7a, 0xbd, 0xfc, 0x11, 0x30, 0x59, 0xf5,
+	0xb5, 0xf0, 0x01, 0xce, 0xd7, 0xe4, 0xbe, 0xd8, 0x6c, 0x43, 0xa4, 0x45, 0x0c, 0xe7, 0xe5, 0xc1,
+	0x53, 0xf1, 0xc5, 0xe0, 0xed, 0x3f, 0x4b, 0x46, 0x77, 0x02, 0x57, 0x70, 0xfa, 0xac, 0xbe, 0x7d,
+	0x25, 0x8c, 0x06, 0xe2, 0x4f, 0xeb, 0xf8, 0xe6, 0x9f, 0xcd, 0x50, 0x7d, 0x94, 0x9f, 0xf8, 0xdd,
+	0xfd, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xec, 0x87, 0xc7, 0x54, 0x7a, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -157,142 +210,137 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// NorthboundClient is the client API for Northbound service.
+// AdminClient is the client API for Admin service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type NorthboundClient interface {
-	Shell(ctx context.Context, opts ...grpc.CallOption) (Northbound_ShellClient, error)
+type AdminClient interface {
+	NetworkChanges(ctx context.Context, in *VoidRequest, opts ...grpc.CallOption) (Admin_NetworkChangesClient, error)
 	SayHello(ctx context.Context, in *HelloWorldRequest, opts ...grpc.CallOption) (*HelloWorldResponse, error)
 }
 
-type northboundClient struct {
+type adminClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewNorthboundClient(cc *grpc.ClientConn) NorthboundClient {
-	return &northboundClient{cc}
+func NewAdminClient(cc *grpc.ClientConn) AdminClient {
+	return &adminClient{cc}
 }
 
-func (c *northboundClient) Shell(ctx context.Context, opts ...grpc.CallOption) (Northbound_ShellClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Northbound_serviceDesc.Streams[0], "/proto.Northbound/Shell", opts...)
+func (c *adminClient) NetworkChanges(ctx context.Context, in *VoidRequest, opts ...grpc.CallOption) (Admin_NetworkChangesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Admin_serviceDesc.Streams[0], "/proto.Admin/NetworkChanges", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &northboundShellClient{stream}
+	x := &adminNetworkChangesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
-type Northbound_ShellClient interface {
-	Send(*Line) error
-	Recv() (*Line, error)
+type Admin_NetworkChangesClient interface {
+	Recv() (*NetChange, error)
 	grpc.ClientStream
 }
 
-type northboundShellClient struct {
+type adminNetworkChangesClient struct {
 	grpc.ClientStream
 }
 
-func (x *northboundShellClient) Send(m *Line) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *northboundShellClient) Recv() (*Line, error) {
-	m := new(Line)
+func (x *adminNetworkChangesClient) Recv() (*NetChange, error) {
+	m := new(NetChange)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *northboundClient) SayHello(ctx context.Context, in *HelloWorldRequest, opts ...grpc.CallOption) (*HelloWorldResponse, error) {
+func (c *adminClient) SayHello(ctx context.Context, in *HelloWorldRequest, opts ...grpc.CallOption) (*HelloWorldResponse, error) {
 	out := new(HelloWorldResponse)
-	err := c.cc.Invoke(ctx, "/proto.Northbound/SayHello", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.Admin/SayHello", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// NorthboundServer is the server API for Northbound service.
-type NorthboundServer interface {
-	Shell(Northbound_ShellServer) error
+// AdminServer is the server API for Admin service.
+type AdminServer interface {
+	NetworkChanges(*VoidRequest, Admin_NetworkChangesServer) error
 	SayHello(context.Context, *HelloWorldRequest) (*HelloWorldResponse, error)
 }
 
-// UnimplementedNorthboundServer can be embedded to have forward compatible implementations.
-type UnimplementedNorthboundServer struct {
+// UnimplementedAdminServer can be embedded to have forward compatible implementations.
+type UnimplementedAdminServer struct {
 }
 
-func (*UnimplementedNorthboundServer) Shell(srv Northbound_ShellServer) error {
-	return status.Errorf(codes.Unimplemented, "method Shell not implemented")
+func (*UnimplementedAdminServer) NetworkChanges(req *VoidRequest, srv Admin_NetworkChangesServer) error {
+	return status.Errorf(codes.Unimplemented, "method NetworkChanges not implemented")
 }
-func (*UnimplementedNorthboundServer) SayHello(ctx context.Context, req *HelloWorldRequest) (*HelloWorldResponse, error) {
+func (*UnimplementedAdminServer) SayHello(ctx context.Context, req *HelloWorldRequest) (*HelloWorldResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
 }
 
-func RegisterNorthboundServer(s *grpc.Server, srv NorthboundServer) {
-	s.RegisterService(&_Northbound_serviceDesc, srv)
+func RegisterAdminServer(s *grpc.Server, srv AdminServer) {
+	s.RegisterService(&_Admin_serviceDesc, srv)
 }
 
-func _Northbound_Shell_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(NorthboundServer).Shell(&northboundShellServer{stream})
+func _Admin_NetworkChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(VoidRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AdminServer).NetworkChanges(m, &adminNetworkChangesServer{stream})
 }
 
-type Northbound_ShellServer interface {
-	Send(*Line) error
-	Recv() (*Line, error)
+type Admin_NetworkChangesServer interface {
+	Send(*NetChange) error
 	grpc.ServerStream
 }
 
-type northboundShellServer struct {
+type adminNetworkChangesServer struct {
 	grpc.ServerStream
 }
 
-func (x *northboundShellServer) Send(m *Line) error {
+func (x *adminNetworkChangesServer) Send(m *NetChange) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *northboundShellServer) Recv() (*Line, error) {
-	m := new(Line)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _Northbound_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Admin_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HelloWorldRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NorthboundServer).SayHello(ctx, in)
+		return srv.(AdminServer).SayHello(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.Northbound/SayHello",
+		FullMethod: "/proto.Admin/SayHello",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NorthboundServer).SayHello(ctx, req.(*HelloWorldRequest))
+		return srv.(AdminServer).SayHello(ctx, req.(*HelloWorldRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Northbound_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.Northbound",
-	HandlerType: (*NorthboundServer)(nil),
+var _Admin_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.Admin",
+	HandlerType: (*AdminServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "SayHello",
-			Handler:    _Northbound_SayHello_Handler,
+			Handler:    _Admin_SayHello_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Shell",
-			Handler:       _Northbound_Shell_Handler,
+			StreamName:    "NetworkChanges",
+			Handler:       _Admin_NetworkChanges_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 	Metadata: "pkg/northbound/proto/admin.proto",
