@@ -25,36 +25,36 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type VoidRequest struct {
+type NetworkChangesRequest struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *VoidRequest) Reset()         { *m = VoidRequest{} }
-func (m *VoidRequest) String() string { return proto.CompactTextString(m) }
-func (*VoidRequest) ProtoMessage()    {}
-func (*VoidRequest) Descriptor() ([]byte, []int) {
+func (m *NetworkChangesRequest) Reset()         { *m = NetworkChangesRequest{} }
+func (m *NetworkChangesRequest) String() string { return proto.CompactTextString(m) }
+func (*NetworkChangesRequest) ProtoMessage()    {}
+func (*NetworkChangesRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a91573d9ad3811b0, []int{0}
 }
 
-func (m *VoidRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_VoidRequest.Unmarshal(m, b)
+func (m *NetworkChangesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_NetworkChangesRequest.Unmarshal(m, b)
 }
-func (m *VoidRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_VoidRequest.Marshal(b, m, deterministic)
+func (m *NetworkChangesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_NetworkChangesRequest.Marshal(b, m, deterministic)
 }
-func (m *VoidRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VoidRequest.Merge(m, src)
+func (m *NetworkChangesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NetworkChangesRequest.Merge(m, src)
 }
-func (m *VoidRequest) XXX_Size() int {
-	return xxx_messageInfo_VoidRequest.Size(m)
+func (m *NetworkChangesRequest) XXX_Size() int {
+	return xxx_messageInfo_NetworkChangesRequest.Size(m)
 }
-func (m *VoidRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_VoidRequest.DiscardUnknown(m)
+func (m *NetworkChangesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_NetworkChangesRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_VoidRequest proto.InternalMessageInfo
+var xxx_messageInfo_NetworkChangesRequest proto.InternalMessageInfo
 
 type ConfigChange struct {
 	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -166,32 +166,123 @@ func (m *NetChange) GetChanges() []*ConfigChange {
 	return nil
 }
 
+type ChangesRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ChangesRequest) Reset()         { *m = ChangesRequest{} }
+func (m *ChangesRequest) String() string { return proto.CompactTextString(m) }
+func (*ChangesRequest) ProtoMessage()    {}
+func (*ChangesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a91573d9ad3811b0, []int{3}
+}
+
+func (m *ChangesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ChangesRequest.Unmarshal(m, b)
+}
+func (m *ChangesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ChangesRequest.Marshal(b, m, deterministic)
+}
+func (m *ChangesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ChangesRequest.Merge(m, src)
+}
+func (m *ChangesRequest) XXX_Size() int {
+	return xxx_messageInfo_ChangesRequest.Size(m)
+}
+func (m *ChangesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ChangesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ChangesRequest proto.InternalMessageInfo
+
+type Change struct {
+	Time                 *timestamp.Timestamp `protobuf:"bytes,1,opt,name=time,proto3" json:"time,omitempty"`
+	Id                   string               `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	Desc                 string               `protobuf:"bytes,3,opt,name=desc,proto3" json:"desc,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
+}
+
+func (m *Change) Reset()         { *m = Change{} }
+func (m *Change) String() string { return proto.CompactTextString(m) }
+func (*Change) ProtoMessage()    {}
+func (*Change) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a91573d9ad3811b0, []int{4}
+}
+
+func (m *Change) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Change.Unmarshal(m, b)
+}
+func (m *Change) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Change.Marshal(b, m, deterministic)
+}
+func (m *Change) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Change.Merge(m, src)
+}
+func (m *Change) XXX_Size() int {
+	return xxx_messageInfo_Change.Size(m)
+}
+func (m *Change) XXX_DiscardUnknown() {
+	xxx_messageInfo_Change.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Change proto.InternalMessageInfo
+
+func (m *Change) GetTime() *timestamp.Timestamp {
+	if m != nil {
+		return m.Time
+	}
+	return nil
+}
+
+func (m *Change) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *Change) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
 func init() {
-	proto.RegisterType((*VoidRequest)(nil), "proto.VoidRequest")
+	proto.RegisterType((*NetworkChangesRequest)(nil), "proto.NetworkChangesRequest")
 	proto.RegisterType((*ConfigChange)(nil), "proto.ConfigChange")
 	proto.RegisterType((*NetChange)(nil), "proto.NetChange")
+	proto.RegisterType((*ChangesRequest)(nil), "proto.ChangesRequest")
+	proto.RegisterType((*Change)(nil), "proto.Change")
 }
 
 func init() { proto.RegisterFile("pkg/northbound/proto/admin.proto", fileDescriptor_a91573d9ad3811b0) }
 
 var fileDescriptor_a91573d9ad3811b0 = []byte{
-	// 255 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0x41, 0x4f, 0x84, 0x30,
-	0x10, 0x85, 0x85, 0x65, 0x35, 0x3b, 0xe8, 0xc6, 0xd4, 0x0b, 0xe1, 0x22, 0xe1, 0xb4, 0x17, 0x8b,
-	0xc1, 0x9b, 0x37, 0xc3, 0x7d, 0x0f, 0xc4, 0x78, 0x2f, 0xb6, 0x5b, 0x9a, 0x95, 0x0e, 0xd2, 0x12,
-	0xff, 0x87, 0xbf, 0xd8, 0xb4, 0x05, 0xb3, 0xa7, 0xbe, 0xbc, 0x7c, 0xf3, 0xe6, 0x4d, 0xa1, 0x18,
-	0xcf, 0xb2, 0xd2, 0x38, 0xd9, 0xbe, 0xc3, 0x59, 0xf3, 0x6a, 0x9c, 0xd0, 0x62, 0xc5, 0xf8, 0xa0,
-	0x34, 0xf5, 0x9a, 0x6c, 0xfd, 0x93, 0x3f, 0x4a, 0x44, 0xf9, 0x25, 0x02, 0xd0, 0xcd, 0xa7, 0xca,
-	0xaa, 0x41, 0x18, 0xcb, 0x86, 0x31, 0x70, 0xe5, 0x1d, 0xa4, 0x1f, 0xa8, 0x78, 0x2b, 0xbe, 0x67,
-	0x61, 0x6c, 0x59, 0xc3, 0x6d, 0x83, 0xfa, 0xa4, 0x64, 0xd3, 0x33, 0x2d, 0x05, 0xd9, 0x43, 0xac,
-	0x78, 0x16, 0x15, 0xd1, 0x61, 0xd7, 0xc6, 0x8a, 0x13, 0x02, 0x49, 0xcf, 0x4c, 0x9f, 0xc5, 0xde,
-	0xf1, 0xba, 0xfc, 0x8d, 0x60, 0x77, 0x14, 0x76, 0x99, 0xa0, 0x90, 0xb8, 0x1d, 0x7e, 0x26, 0xad,
-	0x73, 0x1a, 0x0a, 0xd0, 0xb5, 0x00, 0x7d, 0x5f, 0x0b, 0xb4, 0x9e, 0x73, 0x89, 0x9a, 0x0d, 0x62,
-	0x4d, 0x74, 0xda, 0x79, 0xb3, 0x11, 0x53, 0xb6, 0x09, 0x9e, 0xd3, 0xe4, 0x09, 0x6e, 0x3e, 0xfd,
-	0x06, 0x93, 0x25, 0xc5, 0xe6, 0x90, 0xd6, 0x0f, 0x21, 0x93, 0x5e, 0xf6, 0x6d, 0x57, 0xa6, 0x6e,
-	0x60, 0xfb, 0xe6, 0xbe, 0x83, 0xbc, 0xc2, 0xfe, 0x28, 0xec, 0x0f, 0x4e, 0xe7, 0x80, 0x18, 0x42,
-	0x96, 0xc1, 0x8b, 0xbb, 0xf3, 0xfb, 0xc5, 0xfb, 0xbf, 0xa3, 0xbc, 0x7a, 0x8e, 0xba, 0x6b, 0x6f,
-	0xbe, 0xfc, 0x05, 0x00, 0x00, 0xff, 0xff, 0xad, 0x7d, 0x20, 0x47, 0x6f, 0x01, 0x00, 0x00,
+	// 299 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x91, 0xb1, 0x6e, 0xb3, 0x30,
+	0x14, 0x85, 0x7f, 0x08, 0x49, 0x94, 0x9b, 0xbf, 0x28, 0x72, 0x15, 0x15, 0xa1, 0x4a, 0x45, 0x4c,
+	0x59, 0x6a, 0x2a, 0xf2, 0x04, 0x55, 0x3a, 0x67, 0x40, 0x1d, 0xbb, 0x40, 0xb8, 0x01, 0x94, 0x62,
+	0x53, 0x6c, 0xd4, 0xbd, 0x8f, 0xd0, 0x27, 0xae, 0x6c, 0xc7, 0x6a, 0xa8, 0x3a, 0x75, 0xe2, 0xe8,
+	0xf8, 0x9e, 0xcb, 0xe7, 0x63, 0x88, 0xba, 0x53, 0x95, 0x30, 0xde, 0xcb, 0xba, 0xe0, 0x03, 0x2b,
+	0x93, 0xae, 0xe7, 0x92, 0x27, 0x79, 0xd9, 0x36, 0x8c, 0x6a, 0x4d, 0xa6, 0xfa, 0x13, 0xde, 0x55,
+	0x9c, 0x57, 0xaf, 0x68, 0x06, 0x8a, 0xe1, 0x98, 0xc8, 0xa6, 0x45, 0x21, 0xf3, 0xb6, 0x33, 0x73,
+	0xf1, 0x0d, 0xac, 0xf7, 0x28, 0xdf, 0x79, 0x7f, 0xda, 0xd5, 0x39, 0xab, 0x50, 0x64, 0xf8, 0x36,
+	0xa0, 0x90, 0x71, 0x0a, 0xff, 0x77, 0x9c, 0x1d, 0x9b, 0xca, 0xf8, 0xc4, 0x07, 0xb7, 0x29, 0x03,
+	0x27, 0x72, 0x36, 0x8b, 0xcc, 0x6d, 0x4a, 0x42, 0xc0, 0xab, 0x73, 0x51, 0x07, 0xae, 0x76, 0xb4,
+	0x8e, 0x3f, 0x1d, 0x58, 0xec, 0x51, 0x9e, 0x13, 0x14, 0x3c, 0xf5, 0x37, 0x9d, 0x59, 0xa6, 0x21,
+	0x35, 0x28, 0xd4, 0xa2, 0xd0, 0x67, 0x8b, 0x92, 0xe9, 0x39, 0xb5, 0x91, 0xe5, 0x2d, 0xda, 0x8d,
+	0x4a, 0x2b, 0x6f, 0x10, 0xd8, 0x07, 0x13, 0xe3, 0x29, 0x4d, 0xee, 0x61, 0x7e, 0x30, 0xac, 0x81,
+	0x17, 0x4d, 0x36, 0xcb, 0xf4, 0xda, 0xec, 0xa4, 0x97, 0xbc, 0x99, 0x9d, 0x89, 0x57, 0xe0, 0xff,
+	0xb8, 0xda, 0x0b, 0xcc, 0xfe, 0x88, 0x68, 0x4a, 0x70, 0x2f, 0x4b, 0x28, 0x51, 0x1c, 0x2c, 0x9e,
+	0xd2, 0xe9, 0x87, 0x03, 0xd3, 0x47, 0xf5, 0x12, 0xe4, 0x09, 0xfc, 0x71, 0xb7, 0xe4, 0xf6, 0x4c,
+	0xfa, 0x6b, 0xe5, 0xe1, 0xea, 0xfb, 0xd4, 0x9c, 0xc4, 0xff, 0x1e, 0x1c, 0xb2, 0x85, 0xb9, 0x8d,
+	0xaf, 0xed, 0x45, 0xc7, 0xb9, 0xab, 0x91, 0xad, 0x42, 0xc5, 0x4c, 0x3b, 0xdb, 0xaf, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0x50, 0x28, 0xbb, 0xaf, 0x29, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -206,7 +297,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type AdminClient interface {
-	NetworkChanges(ctx context.Context, in *VoidRequest, opts ...grpc.CallOption) (Admin_NetworkChangesClient, error)
+	NetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (Admin_NetworkChangesClient, error)
+	Changes(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (Admin_ChangesClient, error)
 }
 
 type adminClient struct {
@@ -217,7 +309,7 @@ func NewAdminClient(cc *grpc.ClientConn) AdminClient {
 	return &adminClient{cc}
 }
 
-func (c *adminClient) NetworkChanges(ctx context.Context, in *VoidRequest, opts ...grpc.CallOption) (Admin_NetworkChangesClient, error) {
+func (c *adminClient) NetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (Admin_NetworkChangesClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_Admin_serviceDesc.Streams[0], "/proto.Admin/NetworkChanges", opts...)
 	if err != nil {
 		return nil, err
@@ -249,17 +341,53 @@ func (x *adminNetworkChangesClient) Recv() (*NetChange, error) {
 	return m, nil
 }
 
+func (c *adminClient) Changes(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (Admin_ChangesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Admin_serviceDesc.Streams[1], "/proto.Admin/Changes", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &adminChangesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Admin_ChangesClient interface {
+	Recv() (*Change, error)
+	grpc.ClientStream
+}
+
+type adminChangesClient struct {
+	grpc.ClientStream
+}
+
+func (x *adminChangesClient) Recv() (*Change, error) {
+	m := new(Change)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // AdminServer is the server API for Admin service.
 type AdminServer interface {
-	NetworkChanges(*VoidRequest, Admin_NetworkChangesServer) error
+	NetworkChanges(*NetworkChangesRequest, Admin_NetworkChangesServer) error
+	Changes(*ChangesRequest, Admin_ChangesServer) error
 }
 
 // UnimplementedAdminServer can be embedded to have forward compatible implementations.
 type UnimplementedAdminServer struct {
 }
 
-func (*UnimplementedAdminServer) NetworkChanges(req *VoidRequest, srv Admin_NetworkChangesServer) error {
+func (*UnimplementedAdminServer) NetworkChanges(req *NetworkChangesRequest, srv Admin_NetworkChangesServer) error {
 	return status.Errorf(codes.Unimplemented, "method NetworkChanges not implemented")
+}
+func (*UnimplementedAdminServer) Changes(req *ChangesRequest, srv Admin_ChangesServer) error {
+	return status.Errorf(codes.Unimplemented, "method Changes not implemented")
 }
 
 func RegisterAdminServer(s *grpc.Server, srv AdminServer) {
@@ -267,7 +395,7 @@ func RegisterAdminServer(s *grpc.Server, srv AdminServer) {
 }
 
 func _Admin_NetworkChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(VoidRequest)
+	m := new(NetworkChangesRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -287,6 +415,27 @@ func (x *adminNetworkChangesServer) Send(m *NetChange) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Admin_Changes_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ChangesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AdminServer).Changes(m, &adminChangesServer{stream})
+}
+
+type Admin_ChangesServer interface {
+	Send(*Change) error
+	grpc.ServerStream
+}
+
+type adminChangesServer struct {
+	grpc.ServerStream
+}
+
+func (x *adminChangesServer) Send(m *Change) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _Admin_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.Admin",
 	HandlerType: (*AdminServer)(nil),
@@ -295,6 +444,11 @@ var _Admin_serviceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "NetworkChanges",
 			Handler:       _Admin_NetworkChanges_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Changes",
+			Handler:       _Admin_Changes_Handler,
 			ServerStreams: true,
 		},
 	},

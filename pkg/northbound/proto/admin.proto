@@ -20,7 +20,7 @@ package proto;
 
 import "google/protobuf/timestamp.proto";
 
-message VoidRequest {
+message NetworkChangesRequest {
 }
 
 message ConfigChange {
@@ -35,7 +35,19 @@ message NetChange {
     repeated ConfigChange changes = 4;
 }
 
+message ChangesRequest {
+}
+
+message Change {
+    google.protobuf.Timestamp time = 1;
+    string id = 2;
+    string desc = 3;
+}
+
 service Admin {
-    rpc NetworkChanges(VoidRequest) returns (stream NetChange) {
+    rpc NetworkChanges(NetworkChangesRequest) returns (stream NetChange) {
+    }
+
+    rpc Changes(ChangesRequest) returns (stream Change) {
     }
 }

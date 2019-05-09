@@ -50,7 +50,7 @@ func (s Server) SetShellInterpreter(shell Interpreter) {
 }
 
 // NetworkChanges provides a stream of submitted network changes
-func (s Server) NetworkChanges(r *proto.VoidRequest, stream proto.Admin_NetworkChangesServer) error {
+func (s Server) NetworkChanges(r *proto.NetworkChangesRequest, stream proto.Admin_NetworkChangesServer) error {
 	for _, nc := range manager.GetManager().NetworkStore.Store {
 
 		// Build net change message
@@ -66,6 +66,23 @@ func (s Server) NetworkChanges(r *proto.VoidRequest, stream proto.Admin_NetworkC
 			msg.Changes = append(msg.Changes, &proto.ConfigChange{Id: k, Hash: store.B64(v)})
 		}
 
+		err := stream.Send(msg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Changes provides a stream of submitted network changes
+func (s Server) Changes(r *proto.ChangesRequest, stream proto.Admin_ChangesServer) error {
+	for _, c := range manager.GetManager().ChangeStore.Store {
+		// Build a change message
+		msg := &proto.Change{
+			Time: &timestamp.Timestamp{Seconds: c.Created.Unix(), Nanos: int32(c.Created.Nanosecond())},
+			Id: store.B64(c.ID),
+			Desc: c.Description,
+		}
 		err := stream.Send(msg)
 		if err != nil {
 			return err
