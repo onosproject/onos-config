@@ -64,7 +64,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	target := path.Target
 	element := path.Elem[0].Name
 	fmt.Println("target", target)
-	configValues, err := manager.GetNetworkConfig(target, "", element, 0)
+	configValues, err := manager.GetManager().GetNetworkConfig(target, "", element, 0)
 	if err != nil {
 		return nil, err
 	}

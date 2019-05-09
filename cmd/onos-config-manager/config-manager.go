@@ -49,7 +49,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
-	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	log "k8s.io/klog"
@@ -124,11 +123,7 @@ func main() {
 	}
 	log.Info("Network store loaded from", *networkStoreFile)
 
-	go synchronizer.Factory(&changeStore, deviceStore, topoChannel)
-
-	go manager.Manager(&configStore, &changeStore, deviceStore, networkStore)
-
-	startServer()
+	mgr := manager.NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
 
 	defer func() {
 		close(changesChannel)
@@ -137,9 +132,15 @@ func main() {
 		log.Info("Shutting down")
 		time.Sleep(time.Second)
 	}()
+
+	mgr.Run()
+	err = startServer()
+	if err != nil {
+		log.Fatal("Cannot start server ", err)
+	}
 }
 
-func startServer() {
+func startServer() error {
 	cfg := &northbound.ServerConfig{
 		Port : 5150,
 		Insecure: true,
@@ -149,8 +150,7 @@ func startServer() {
 	serv.AddService(admin.Service{})
 	serv.AddService(gnmi.Service{})
 
-	err := serv.Serve()
-	if err != nil {
-		log.Error("Serve failed", err)
-	}
+	return serv.Serve()
 }
+
+
