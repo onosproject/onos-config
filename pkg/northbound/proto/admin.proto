@@ -20,25 +20,22 @@ package proto;
 
 import "google/protobuf/timestamp.proto";
 
-message HelloWorldRequest {
-}
-
-message HelloWorldResponse {
-}
-
 message VoidRequest {
+}
+
+message ConfigChange {
+    string id = 1;
+    string hash = 2;
 }
 
 message NetChange {
     google.protobuf.Timestamp time = 1;
     string name = 2;
     string user = 3;
+    repeated ConfigChange changes = 4;
 }
 
 service Admin {
     rpc NetworkChanges(VoidRequest) returns (stream NetChange) {
-    }
-
-    rpc SayHello(HelloWorldRequest) returns (HelloWorldResponse) {
     }
 }

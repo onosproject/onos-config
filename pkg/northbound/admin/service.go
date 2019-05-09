@@ -15,11 +15,11 @@
 package admin
 
 import (
-	"context"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
+	"github.com/onosproject/onos-config/pkg/store"
 	"google.golang.org/grpc"
 )
 
@@ -51,22 +51,25 @@ func (s Server) SetShellInterpreter(shell Interpreter) {
 
 // NetworkChanges provides a stream of submitted network changes
 func (s Server) NetworkChanges(r *proto.VoidRequest, stream proto.Admin_NetworkChangesServer) error {
-	changes := manager.GetManager().NetworkStore.Store
-	for i := range changes {
-		c := changes[i]
-		err := stream.Send(&proto.NetChange{
-			Time: &timestamp.Timestamp{Seconds: c.Created.Unix(), Nanos: int32(c.Created.Nanosecond())},
-			Name: c.Name,
-			User: c.User,
-		})
+	for _, nc := range manager.GetManager().NetworkStore.Store {
+
+		// Build net change message
+		msg := &proto.NetChange{
+			Time: &timestamp.Timestamp{Seconds: nc.Created.Unix(), Nanos: int32(nc.Created.Nanosecond())},
+			Name: nc.Name,
+			User: nc.User,
+			Changes: make([]*proto.ConfigChange, 0),
+		}
+
+		// Build list of config change messages
+		for k, v := range nc.ConfigurationChanges {
+			msg.Changes = append(msg.Changes, &proto.ConfigChange{Id: k, Hash: store.B64(v)})
+		}
+
+		err := stream.Send(msg)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-// SayHello says hello!
-func (s Server) SayHello(ctx context.Context, r *proto.HelloWorldRequest) (*proto.HelloWorldResponse, error) {
-	return &proto.HelloWorldResponse{}, nil
 }

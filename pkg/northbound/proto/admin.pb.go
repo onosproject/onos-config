@@ -25,68 +25,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type HelloWorldRequest struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *HelloWorldRequest) Reset()         { *m = HelloWorldRequest{} }
-func (m *HelloWorldRequest) String() string { return proto.CompactTextString(m) }
-func (*HelloWorldRequest) ProtoMessage()    {}
-func (*HelloWorldRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a91573d9ad3811b0, []int{0}
-}
-
-func (m *HelloWorldRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_HelloWorldRequest.Unmarshal(m, b)
-}
-func (m *HelloWorldRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_HelloWorldRequest.Marshal(b, m, deterministic)
-}
-func (m *HelloWorldRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HelloWorldRequest.Merge(m, src)
-}
-func (m *HelloWorldRequest) XXX_Size() int {
-	return xxx_messageInfo_HelloWorldRequest.Size(m)
-}
-func (m *HelloWorldRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_HelloWorldRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_HelloWorldRequest proto.InternalMessageInfo
-
-type HelloWorldResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *HelloWorldResponse) Reset()         { *m = HelloWorldResponse{} }
-func (m *HelloWorldResponse) String() string { return proto.CompactTextString(m) }
-func (*HelloWorldResponse) ProtoMessage()    {}
-func (*HelloWorldResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a91573d9ad3811b0, []int{1}
-}
-
-func (m *HelloWorldResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_HelloWorldResponse.Unmarshal(m, b)
-}
-func (m *HelloWorldResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_HelloWorldResponse.Marshal(b, m, deterministic)
-}
-func (m *HelloWorldResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HelloWorldResponse.Merge(m, src)
-}
-func (m *HelloWorldResponse) XXX_Size() int {
-	return xxx_messageInfo_HelloWorldResponse.Size(m)
-}
-func (m *HelloWorldResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_HelloWorldResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_HelloWorldResponse proto.InternalMessageInfo
-
 type VoidRequest struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -97,7 +35,7 @@ func (m *VoidRequest) Reset()         { *m = VoidRequest{} }
 func (m *VoidRequest) String() string { return proto.CompactTextString(m) }
 func (*VoidRequest) ProtoMessage()    {}
 func (*VoidRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a91573d9ad3811b0, []int{2}
+	return fileDescriptor_a91573d9ad3811b0, []int{0}
 }
 
 func (m *VoidRequest) XXX_Unmarshal(b []byte) error {
@@ -118,10 +56,58 @@ func (m *VoidRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_VoidRequest proto.InternalMessageInfo
 
+type ConfigChange struct {
+	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Hash                 string   `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ConfigChange) Reset()         { *m = ConfigChange{} }
+func (m *ConfigChange) String() string { return proto.CompactTextString(m) }
+func (*ConfigChange) ProtoMessage()    {}
+func (*ConfigChange) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a91573d9ad3811b0, []int{1}
+}
+
+func (m *ConfigChange) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ConfigChange.Unmarshal(m, b)
+}
+func (m *ConfigChange) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ConfigChange.Marshal(b, m, deterministic)
+}
+func (m *ConfigChange) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConfigChange.Merge(m, src)
+}
+func (m *ConfigChange) XXX_Size() int {
+	return xxx_messageInfo_ConfigChange.Size(m)
+}
+func (m *ConfigChange) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConfigChange.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ConfigChange proto.InternalMessageInfo
+
+func (m *ConfigChange) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *ConfigChange) GetHash() string {
+	if m != nil {
+		return m.Hash
+	}
+	return ""
+}
+
 type NetChange struct {
 	Time                 *timestamp.Timestamp `protobuf:"bytes,1,opt,name=time,proto3" json:"time,omitempty"`
 	Name                 string               `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	User                 string               `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
+	Changes              []*ConfigChange      `protobuf:"bytes,4,rep,name=changes,proto3" json:"changes,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -131,7 +117,7 @@ func (m *NetChange) Reset()         { *m = NetChange{} }
 func (m *NetChange) String() string { return proto.CompactTextString(m) }
 func (*NetChange) ProtoMessage()    {}
 func (*NetChange) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a91573d9ad3811b0, []int{3}
+	return fileDescriptor_a91573d9ad3811b0, []int{2}
 }
 
 func (m *NetChange) XXX_Unmarshal(b []byte) error {
@@ -173,10 +159,16 @@ func (m *NetChange) GetUser() string {
 	return ""
 }
 
+func (m *NetChange) GetChanges() []*ConfigChange {
+	if m != nil {
+		return m.Changes
+	}
+	return nil
+}
+
 func init() {
-	proto.RegisterType((*HelloWorldRequest)(nil), "proto.HelloWorldRequest")
-	proto.RegisterType((*HelloWorldResponse)(nil), "proto.HelloWorldResponse")
 	proto.RegisterType((*VoidRequest)(nil), "proto.VoidRequest")
+	proto.RegisterType((*ConfigChange)(nil), "proto.ConfigChange")
 	proto.RegisterType((*NetChange)(nil), "proto.NetChange")
 }
 
@@ -184,22 +176,22 @@ func init() { proto.RegisterFile("pkg/northbound/proto/admin.proto", fileDescrip
 
 var fileDescriptor_a91573d9ad3811b0 = []byte{
 	// 255 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x8f, 0x31, 0x4f, 0xc3, 0x30,
-	0x10, 0x85, 0x6b, 0x68, 0x11, 0xbd, 0x0a, 0x04, 0x07, 0x43, 0xc8, 0x42, 0x95, 0xa9, 0x93, 0x83,
-	0xca, 0xc6, 0x56, 0xb1, 0x30, 0x75, 0x08, 0x08, 0x66, 0x87, 0x1c, 0x69, 0xd4, 0xc4, 0x17, 0x6c,
-	0x47, 0x88, 0x3f, 0xc0, 0xef, 0x46, 0xb1, 0xd3, 0xaa, 0x12, 0x4c, 0xf7, 0xf4, 0xee, 0xd3, 0xbd,
-	0x7b, 0x30, 0x6f, 0xb7, 0x65, 0xaa, 0xd9, 0xb8, 0x4d, 0xce, 0x9d, 0x2e, 0xd2, 0xd6, 0xb0, 0xe3,
-	0x54, 0x15, 0x4d, 0xa5, 0xa5, 0xd7, 0x38, 0xf1, 0x23, 0xbe, 0x2d, 0x99, 0xcb, 0x9a, 0x02, 0x90,
-	0x77, 0x1f, 0xa9, 0xab, 0x1a, 0xb2, 0x4e, 0x35, 0x6d, 0xe0, 0x92, 0x2b, 0xb8, 0x7c, 0xa2, 0xba,
-	0xe6, 0x37, 0x36, 0x75, 0x91, 0xd1, 0x67, 0x47, 0xd6, 0x25, 0xd7, 0x80, 0x87, 0xa6, 0x6d, 0x59,
-	0x5b, 0x4a, 0xce, 0x60, 0xf6, 0xca, 0xd5, 0x1e, 0x7a, 0x87, 0xe9, 0x9a, 0xdc, 0xe3, 0x46, 0xe9,
-	0x92, 0x50, 0xc2, 0xb8, 0xbf, 0x1c, 0x89, 0xb9, 0x58, 0xcc, 0x96, 0xb1, 0x0c, 0xb1, 0x72, 0x17,
-	0x2b, 0x5f, 0x76, 0xb1, 0x99, 0xe7, 0x10, 0x61, 0xac, 0x55, 0x43, 0xd1, 0xd1, 0x5c, 0x2c, 0xa6,
-	0x99, 0xd7, 0xbd, 0xd7, 0x59, 0x32, 0xd1, 0x71, 0xf0, 0x7a, 0xbd, 0xfc, 0x11, 0x30, 0x59, 0xf5,
-	0xb5, 0xf0, 0x01, 0xce, 0xd7, 0xe4, 0xbe, 0xd8, 0x6c, 0x43, 0xa4, 0x45, 0x0c, 0xe7, 0xe5, 0xc1,
-	0x53, 0xf1, 0xc5, 0xe0, 0xed, 0x3f, 0x4b, 0x46, 0x77, 0x02, 0x57, 0x70, 0xfa, 0xac, 0xbe, 0x7d,
-	0x25, 0x8c, 0x06, 0xe2, 0x4f, 0xeb, 0xf8, 0xe6, 0x9f, 0xcd, 0x50, 0x7d, 0x94, 0x9f, 0xf8, 0xdd,
-	0xfd, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xec, 0x87, 0xc7, 0x54, 0x7a, 0x01, 0x00, 0x00,
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0x41, 0x4f, 0x84, 0x30,
+	0x10, 0x85, 0x85, 0x65, 0x35, 0x3b, 0xe8, 0xc6, 0xd4, 0x0b, 0xe1, 0x22, 0xe1, 0xb4, 0x17, 0x8b,
+	0xc1, 0x9b, 0x37, 0xc3, 0x7d, 0x0f, 0xc4, 0x78, 0x2f, 0xb6, 0x5b, 0x9a, 0x95, 0x0e, 0xd2, 0x12,
+	0xff, 0x87, 0xbf, 0xd8, 0xb4, 0x05, 0xb3, 0xa7, 0xbe, 0xbc, 0x7c, 0xf3, 0xe6, 0x4d, 0xa1, 0x18,
+	0xcf, 0xb2, 0xd2, 0x38, 0xd9, 0xbe, 0xc3, 0x59, 0xf3, 0x6a, 0x9c, 0xd0, 0x62, 0xc5, 0xf8, 0xa0,
+	0x34, 0xf5, 0x9a, 0x6c, 0xfd, 0x93, 0x3f, 0x4a, 0x44, 0xf9, 0x25, 0x02, 0xd0, 0xcd, 0xa7, 0xca,
+	0xaa, 0x41, 0x18, 0xcb, 0x86, 0x31, 0x70, 0xe5, 0x1d, 0xa4, 0x1f, 0xa8, 0x78, 0x2b, 0xbe, 0x67,
+	0x61, 0x6c, 0x59, 0xc3, 0x6d, 0x83, 0xfa, 0xa4, 0x64, 0xd3, 0x33, 0x2d, 0x05, 0xd9, 0x43, 0xac,
+	0x78, 0x16, 0x15, 0xd1, 0x61, 0xd7, 0xc6, 0x8a, 0x13, 0x02, 0x49, 0xcf, 0x4c, 0x9f, 0xc5, 0xde,
+	0xf1, 0xba, 0xfc, 0x8d, 0x60, 0x77, 0x14, 0x76, 0x99, 0xa0, 0x90, 0xb8, 0x1d, 0x7e, 0x26, 0xad,
+	0x73, 0x1a, 0x0a, 0xd0, 0xb5, 0x00, 0x7d, 0x5f, 0x0b, 0xb4, 0x9e, 0x73, 0x89, 0x9a, 0x0d, 0x62,
+	0x4d, 0x74, 0xda, 0x79, 0xb3, 0x11, 0x53, 0xb6, 0x09, 0x9e, 0xd3, 0xe4, 0x09, 0x6e, 0x3e, 0xfd,
+	0x06, 0x93, 0x25, 0xc5, 0xe6, 0x90, 0xd6, 0x0f, 0x21, 0x93, 0x5e, 0xf6, 0x6d, 0x57, 0xa6, 0x6e,
+	0x60, 0xfb, 0xe6, 0xbe, 0x83, 0xbc, 0xc2, 0xfe, 0x28, 0xec, 0x0f, 0x4e, 0xe7, 0x80, 0x18, 0x42,
+	0x96, 0xc1, 0x8b, 0xbb, 0xf3, 0xfb, 0xc5, 0xfb, 0xbf, 0xa3, 0xbc, 0x7a, 0x8e, 0xba, 0x6b, 0x6f,
+	0xbe, 0xfc, 0x05, 0x00, 0x00, 0xff, 0xff, 0xad, 0x7d, 0x20, 0x47, 0x6f, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -215,7 +207,6 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type AdminClient interface {
 	NetworkChanges(ctx context.Context, in *VoidRequest, opts ...grpc.CallOption) (Admin_NetworkChangesClient, error)
-	SayHello(ctx context.Context, in *HelloWorldRequest, opts ...grpc.CallOption) (*HelloWorldResponse, error)
 }
 
 type adminClient struct {
@@ -258,19 +249,9 @@ func (x *adminNetworkChangesClient) Recv() (*NetChange, error) {
 	return m, nil
 }
 
-func (c *adminClient) SayHello(ctx context.Context, in *HelloWorldRequest, opts ...grpc.CallOption) (*HelloWorldResponse, error) {
-	out := new(HelloWorldResponse)
-	err := c.cc.Invoke(ctx, "/proto.Admin/SayHello", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AdminServer is the server API for Admin service.
 type AdminServer interface {
 	NetworkChanges(*VoidRequest, Admin_NetworkChangesServer) error
-	SayHello(context.Context, *HelloWorldRequest) (*HelloWorldResponse, error)
 }
 
 // UnimplementedAdminServer can be embedded to have forward compatible implementations.
@@ -279,9 +260,6 @@ type UnimplementedAdminServer struct {
 
 func (*UnimplementedAdminServer) NetworkChanges(req *VoidRequest, srv Admin_NetworkChangesServer) error {
 	return status.Errorf(codes.Unimplemented, "method NetworkChanges not implemented")
-}
-func (*UnimplementedAdminServer) SayHello(ctx context.Context, req *HelloWorldRequest) (*HelloWorldResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
 }
 
 func RegisterAdminServer(s *grpc.Server, srv AdminServer) {
@@ -309,33 +287,10 @@ func (x *adminNetworkChangesServer) Send(m *NetChange) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Admin_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloWorldRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServer).SayHello(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.Admin/SayHello",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServer).SayHello(ctx, req.(*HelloWorldRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 var _Admin_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.Admin",
 	HandlerType: (*AdminServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "SayHello",
-			Handler:    _Admin_SayHello_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "NetworkChanges",
