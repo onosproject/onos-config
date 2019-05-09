@@ -26,7 +26,7 @@ import (
 
 // Connect establishes a client-side connection to the gRPC end-point.
 func Connect() *grpc.ClientConn {
-	cert, err := tls.X509KeyPair([]byte(certs.DefaultLocalhostCrt), []byte(certs.DefaultLocalhostKey))
+	cert, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
 	if err != nil {
 		log.Println("Error loading default certs")
 	}
