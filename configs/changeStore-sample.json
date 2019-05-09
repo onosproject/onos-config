@@ -2,27 +2,10 @@
   "Version": "1.0.0",
   "Storetype": "change",
   "Store": {
-    "Gtw6+LFJHaTvy+SDZO69nCvVJd8=": {
-      "ID": "Gtw6+LFJHaTvy+SDZO69nCvVJd8=",
-      "Description": "Remove txout 1",
-      "Created": "2019-05-09T16:41:08.669451+02:00",
-      "Config": [
-        {
-          "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "ghi",
-          "Remove": false
-        },
-        {
-          "Path": "/test1:cont1a/list2a[name=txout1]",
-          "Value": "",
-          "Remove": true
-        }
-      ]
-    },
-    "QOjMkJ9qJ9GGVoN7Nzi04ynL1qk=": {
-      "ID": "QOjMkJ9qJ9GGVoN7Nzi04ynL1qk=",
+    "29U3Tp46cS6RJvIyqlos7SFOgfE=": {
+      "ID": "29U3Tp46cS6RJvIyqlos7SFOgfE=",
       "Description": "Remove txout 2",
-      "Created": "2019-05-09T16:41:08.669417+02:00",
+      "Created": "2019-05-09T16:24:17.815274679Z",
       "Config": [
         {
           "Path": "/test1:cont1a/cont2a/leaf2c",
@@ -36,10 +19,49 @@
         }
       ]
     },
-    "mNqF7BoVZPSyU2ndvJnb/3KG6UA=": {
-      "ID": "mNqF7BoVZPSyU2ndvJnb/3KG6UA=",
+    "9h9NuN3XEorAKXv6GwLycB6yMls=": {
+      "ID": "9h9NuN3XEorAKXv6GwLycB6yMls=",
+      "Description": "Trim power level",
+      "Created": "2019-05-09T16:24:17.815259228Z",
+      "Config": [
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2b",
+          "Value": "3.14159",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a[name=txout3]",
+          "Value": "",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a[name=txout3]/tx-power",
+          "Value": "16",
+          "Remove": false
+        }
+      ]
+    },
+    "FGrHfVhk8rwhJ03U5TwxFqPSB/8=": {
+      "ID": "FGrHfVhk8rwhJ03U5TwxFqPSB/8=",
+      "Description": "Remove txout 1",
+      "Created": "2019-05-09T16:24:17.815294258Z",
+      "Config": [
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2c",
+          "Value": "ghi",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a[name=txout1]",
+          "Value": "",
+          "Remove": true
+        }
+      ]
+    },
+    "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=": {
+      "ID": "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=",
       "Description": "Original Config for test switch",
-      "Created": "2019-05-09T16:41:08.668915+02:00",
+      "Created": "2019-05-09T16:24:17.815187669Z",
       "Config": [
         {
           "Path": "/test1:cont1a",
@@ -94,28 +116,6 @@
         {
           "Path": "/test1:leafAtTopLevel",
           "Value": "WXY-1234",
-          "Remove": false
-        }
-      ]
-    },
-    "rma8AXFk8wB0dR1ar5bqgANfVik=": {
-      "ID": "rma8AXFk8wB0dR1ar5bqgANfVik=",
-      "Description": "Trim power level",
-      "Created": "2019-05-09T16:41:08.669376+02:00",
-      "Config": [
-        {
-          "Path": "/test1:cont1a/cont2a/leaf2b",
-          "Value": "3.14159",
-          "Remove": false
-        },
-        {
-          "Path": "/test1:cont1a/list2a[name=txout3]",
-          "Value": "",
-          "Remove": false
-        },
-        {
-          "Path": "/test1:cont1a/list2a[name=txout3]/tx-power",
-          "Value": "16",
           "Remove": false
         }
       ]

@@ -18,9 +18,10 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"gotest.tools/assert"
 	"io"
 	"os"
-	"strings"
 	"testing"
 )
 
@@ -35,12 +36,12 @@ const (
 	Test1Cont1ACont2ALeaf2B      = "/test1:cont1a/cont2a/leaf2b"
 	Test1Cont1ACont2ALeaf2C      = "/test1:cont1a/cont2a/leaf2c"
 	Test1Cont1ALeaf1A            = "/test1:cont1a/leaf1a"
-	Test1Cont1AList2ATxout1      = "/test1:cont1a/list2a=txout1"
-	Test1Cont1AList2ATxout1Txpwr = "/test1:cont1a/list2a=txout1/tx-power"
-	Test1Cont1AList2ATxout2      = "/test1:cont1a/list2a=txout2"
-	Test1Cont1AList2ATxout2Txpwr = "/test1:cont1a/list2a=txout2/tx-power"
-	Test1Cont1AList2ATxout3      = "/test1:cont1a/list2a=txout3"
-	Test1Cont1AList2ATxout3Txpwr = "/test1:cont1a/list2a=txout3/tx-power"
+	Test1Cont1AList2ATxout1      = "/test1:cont1a/list2a[name=txout1]"
+	Test1Cont1AList2ATxout1Txpwr = "/test1:cont1a/list2a[name==txout1]/tx-power"
+	Test1Cont1AList2ATxout2      = "/test1:cont1a/list2a[name==txout2]"
+	Test1Cont1AList2ATxout2Txpwr = "/test1:cont1a/list2a[name==txout2]/tx-power"
+	Test1Cont1AList2ATxout3      = "/test1:cont1a/list2a[name==txout3]"
+	Test1Cont1AList2ATxout3Txpwr = "/test1:cont1a/list2a[name==txout3]/tx-power"
 	Test1Leaftoplevel            = "/test1:leafAtTopLevel"
 )
 
@@ -92,15 +93,9 @@ func Test_ConfigValue(t *testing.T) {
 
 	configValue2a, _ := CreateChangeValue(path, value, false)
 
-	if configValue2a.Path != path {
-		t.Errorf("Retrieval of ConfigValue.Path failed. Expected %q Got %q",
-			path, configValue2a.Path)
-	}
+	assert.Equal(t, configValue2a.Path, path, "Retrieval of ConfigValue.Path failed")
 
-	if string(configValue2a.Value) != value {
-		t.Errorf("Retrieval of ConfigValue.Path failed. Expected %q Got %q",
-			value, configValue2a.Value)
-	}
+	assert.Equal(t, string(configValue2a.Value), value, "Retrieval of ConfigValue.Path failed")
 }
 
 func Test_changecreation(t *testing.T) {
@@ -109,88 +104,56 @@ func Test_changecreation(t *testing.T) {
 	h := sha1.New()
 	jsonstr, _ := json.Marshal(change1.Config)
 	_, err1 := io.WriteString(h, string(jsonstr))
-	_, err2 := io.WriteString(h, change1.Description)
-	_, err3 := io.WriteString(h, change1.Created.String())
-	if err1 != nil || err2 != nil || err3 != nil {
-		t.Errorf("Error when writing objects to json")
-	}
+	assert.NilError(t, err1, "Error when writing objects to json")
 	hash := h.Sum(nil)
 
 	expectedID := b64(hash)
 	actualID := b64(change1.ID)
-	if actualID != expectedID {
-		t.Errorf("Creation of Change failed Expected %s got %s",
-			expectedID, actualID)
-	}
+	assert.Equal(t, actualID, expectedID, "Creation of Change failed")
+
 	err := change1.IsValid()
-	if err != nil {
-		t.Errorf("Checking of Change failed %s", err)
-	}
+	assert.NilError(t, err, "Checking of Change failed")
 
 	changeEmpty := Change{}
 	errEmpty := changeEmpty.IsValid()
-	if errEmpty == nil {
-		t.Errorf("Checking of Change failed %s", errEmpty)
-	}
-	if errEmpty.Error() != "Empty Change" {
-		t.Errorf("Expecting error 'Empty Change' Got: %s", errEmpty)
-	}
+	assert.Error(t, errEmpty, "Empty Change")
+	assert.ErrorContains(t, errEmpty, "Empty Change")
 
 	oddID := [10]byte{10, 11, 12, 13, 14, 15, 16, 17, 18, 19}
 	changeOdd := Change{ID: oddID[:]}
 	errOdd := changeOdd.IsValid()
-	if errOdd == nil {
-		t.Errorf("Checking of Change failed %s", errOdd)
-	}
-	if !strings.Contains(errOdd.Error(), "does not match") {
-		t.Errorf("Expecting error 'does not match' Got: %s", errOdd)
-	}
+	assert.ErrorContains(t, errOdd, "does not match", "Checking of Change failed")
+
 }
 
 func Test_badpath(t *testing.T) {
 	badpath := "does_not_have_any_slash"
 	conf1, err1 := CreateChangeValue(badpath, "123", false)
 
-	if err1 == nil {
-		t.Errorf("Expected '%s' to produce error", badpath)
-	} else if err1.Error() != badpath {
-		t.Errorf("Expected error to be '%s' Got: '%s'", badpath, err1)
-	}
-	if conf1 != nil {
-		t.Errorf("Expected config to be empty on error")
-	}
+	assert.Error(t, err1, badpath, "Expected error on ", badpath)
+
+	assert.Assert(t, conf1 == nil, "Expected config to be empty on error")
 
 	badpath = "//two/contiguous/slashes"
 	_, err2 := CreateChangeValue(badpath, "123", false)
-
-	if err2 == nil {
-		t.Errorf("Expected '%s' to produce error", badpath)
-	}
+	assert.ErrorContains(t, err2, badpath, "Expected error on path", badpath)
 
 	badpath = "/test*"
 	_, err3 := CreateChangeValue(badpath, "123", false)
-
-	if err3 == nil {
-		t.Errorf("Expected '%s' to produce error", badpath)
-	}
-
+	assert.ErrorContains(t, err3, badpath, "Expected error on path", badpath)
 }
 
 func Test_changeValueString(t *testing.T) {
 	cv1, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, "123", false)
 
-	var expected = "/test1:cont1a/cont2a/leaf2a 123 false"
-	if cv1.String() != expected {
-		t.Errorf("Expected changeValue to produce string %s. Got: %s",
-			expected, cv1.String())
-	}
+	assert.Equal(t, cv1.String() , "/test1:cont1a/cont2a/leaf2a 123 false",
+		"Expected changeValue to produce string")
 
 	//Test the error
 	cv2 := Value{}
-	if cv2.String() != "InvalidChange" {
-		t.Errorf("Expected empty changeValue to produce InvalidChange Got: %s",
-			cv2.String())
-	}
+	assert.Equal(t, cv2.String(), "InvalidChange",
+		"Expected empty changeValue to produce InvalidChange")
+
 }
 
 func Test_changeString(t *testing.T) {
@@ -205,17 +168,8 @@ func Test_changeString(t *testing.T) {
 		`{"Path":"/test1:cont1a/cont2a/leaf2b","Value":"ABC","Remove":false},` +
 		`{"Path":"/test1:cont1a/cont2a/leaf2c","Value":"Hello","Remove":false}]}`
 
-	if !strings.Contains(changeObj.String(), expected) {
-		t.Errorf("Expected change to produce string %s. Got: %s",
-			expected, changeObj.String())
-	}
-
-	change2 := Change{}
-	if !strings.Contains(change2.String(), "") {
-		t.Errorf("Expected change2 to produce empty string. Got: %s",
-			change2.String())
-	}
-
+	assert.Assert(t, strings.Contains(changeObj.String(), expected),
+		"Expected change to produce string")
 }
 
 func Test_duplicate_path(t *testing.T) {
@@ -224,13 +178,6 @@ func Test_duplicate_path(t *testing.T) {
 
 	cv3, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B159, false)
 
-	change, err := CreateChange(ValueCollections{cv1, cv2, cv3}, "Test Change")
-
-	if err == nil {
-		t.Errorf("Expected %s to produce error for duplicate path", Test1Cont1ACont2ALeaf2B)
-	}
-
-	if change != nil {
-		t.Errorf("Expected change to be nil because of duplicate path")
-	}
+	_, err := CreateChange(ValueCollections{cv1, cv2, cv3}, "Test Change")
+	assert.ErrorContains(t, err, Test1Cont1ACont2ALeaf2B)
 }

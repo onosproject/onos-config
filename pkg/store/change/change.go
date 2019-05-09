@@ -49,7 +49,8 @@ func (c Change) String() string {
 }
 
 // IsValid checks the contents of the Change against its hash
-// This enforces the immutability of the Change
+// This enforces the immutability of the Change. The hash is only on the changes
+// and not the description or the time
 func (c Change) IsValid() error {
 	if len(c.ID) == 0 {
 		return fmt.Errorf("Empty Change")
@@ -59,16 +60,6 @@ func (c Change) IsValid() error {
 	jsonstr, _ := json.Marshal(c.Config)
 	_, err1 := io.WriteString(h, string(jsonstr))
 	if err1 != nil {
-		return err1
-	}
-
-	_, err2 := io.WriteString(h, c.Description)
-	if err2 != nil {
-		return err1
-	}
-
-	_, err3 := io.WriteString(h, c.Created.String())
-	if err3 != nil {
 		return err1
 	}
 
@@ -114,6 +105,9 @@ func (c Change) GnmiChange() (*gnmi.SetRequest, error) {
 }
 
 // CreateChange creates a Change object from ChangeValues
+// The ID is a has generated from the change values,a nd does not include
+// the description or the time. This way changes that have an identical meaning
+// can be identified
 func CreateChange(config ValueCollections, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
@@ -137,16 +131,6 @@ func CreateChange(config ValueCollections, desc string) (*Change, error) {
 	jsonstr, _ := json.Marshal(config)
 	_, err1 := io.WriteString(h, string(jsonstr))
 	if err1 != nil {
-		return nil, err1
-	}
-
-	_, err2 := io.WriteString(h, desc)
-	if err2 != nil {
-		return nil, err1
-	}
-
-	_, err3 := io.WriteString(h, t.String())
-	if err3 != nil {
 		return nil, err1
 	}
 
