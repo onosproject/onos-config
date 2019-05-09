@@ -41,6 +41,9 @@ spec:
             - "-changeStore=/etc/onos-config-manager/test-configs/changeStore-sample.json"
             - "-deviceStore=/etc/onos-config-manager/test-configs/deviceStore-sample.json"
             - "-networkStore=/etc/onos-config-manager/test-configs/networkStore-sample.json"
+          ports:
+            - name: grpc
+              containerPort: 5150
           readinessProbe:
             tcpSocket:
               port: 5150

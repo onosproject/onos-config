@@ -9,8 +9,8 @@ metadata:
     heritage: "{{ .Release.Service }}"
 spec:
   selector:
-    app: {{ template "fullname" . }}
+    name: {{ template "fullname" . }}
   clusterIP: None
   ports:
-    - name: h2
+    - name: grpc
       port: 5150
