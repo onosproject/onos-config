@@ -16,6 +16,7 @@ package manager
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
@@ -30,6 +31,10 @@ var (
 
 var (
 	device1config store.Configuration
+)
+
+var (
+	mgrTest *Manager
 )
 
 var (
@@ -81,10 +86,7 @@ func TestMain(m *testing.M) {
 		Addr:    "127.0.0.1:10161",
 		Timeout: 10,
 	}
-
-	stopped := make(chan struct{})
-	go func() {
-		Manager(
+	mgrTest = NewManager(
 			&store.ConfigurationStore{
 				Version:   "1.0",
 				Storetype: "config",
@@ -104,19 +106,16 @@ func TestMain(m *testing.M) {
 				Version:"1.0",
 				Storetype:"network",
 				Store: networkStoreTest,
-			})
-		stopped <- struct{}{}
-	}()
-
-	<-stopped
-
+			},
+			make(chan events.Event, 10))
+	mgrTest.Run()
 	os.Exit(m.Run())
 
 }
 
 func Test_GetNetworkConfig(t *testing.T) {
 
-	result, err := GetNetworkConfig("Device1", "running", "*", 0)
+	result, err := mgrTest.GetNetworkConfig("Device1", "running", "*", 0)
 	if err != nil {
 		t.Errorf("%s", err)
 	}

@@ -44,12 +44,10 @@ package main
 import (
 	"flag"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/listener"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
-	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	log "k8s.io/klog"
@@ -63,23 +61,6 @@ const (
 	deviceStoreDefaultFileName  = "../configs/deviceStore-sample.json"
 	networkStoreDefaultFileName = "../configs/networkStore-sample.json"
 )
-
-var (
-	configStore    store.ConfigurationStore
-	changeStore    store.ChangeStore
-	deviceStore    *topocache.DeviceStore
-	networkStore   *store.NetworkStore
-	changesChannel chan events.Event
-	topoChannel    chan events.Event
-)
-
-func init() {
-	// Start the main listener system
-	changesChannel = make(chan events.Event, 10)
-	go listener.Listen(changesChannel)
-	topoChannel = make(chan events.Event, 10)
-
-}
 
 // The main entry point
 func main() {
@@ -95,51 +76,50 @@ func main() {
 	flag.Parse()
 	var err error
 
-	if err != nil {
-		log.Fatal(err)
-	}
 	log.Info("onos-config-manager started")
 
-	configStore, err = store.LoadConfigStore(*configStoreFile)
+	topoChannel := make(chan events.Event, 10)
+
+	configStore, err := store.LoadConfigStore(*configStoreFile)
 	if err != nil {
 		log.Fatal("Cannot load config store ", err)
 	}
 	log.Info("Configuration store loaded from", *configStoreFile)
 
-	changeStore, err = store.LoadChangeStore(*changeStoreFile)
+	changeStore, err := store.LoadChangeStore(*changeStoreFile)
 	if err != nil {
 		log.Fatal("Cannot load change store ", err)
 	}
 	log.Info("Change store loaded from", *changeStoreFile)
 
-	deviceStore, err = topocache.LoadDeviceStore(*deviceStoreFile, topoChannel)
+	deviceStore, err := topocache.LoadDeviceStore(*deviceStoreFile, topoChannel)
 	if err != nil {
 		log.Fatal("Cannot load device store ", err)
 	}
 	log.Info("Device store loaded from", *deviceStoreFile)
 
-	networkStore, err = store.LoadNetworkStore(*networkStoreFile)
+	networkStore, err := store.LoadNetworkStore(*networkStoreFile)
 	if err != nil {
 		log.Fatal("Cannot load network store ", err)
 	}
 	log.Info("Network store loaded from", *networkStoreFile)
 
-	go synchronizer.Factory(&changeStore, deviceStore, topoChannel)
-
-	go manager.Manager(&configStore, &changeStore, deviceStore, networkStore)
-
-	startServer()
+	mgr := manager.NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
 
 	defer func() {
-		close(changesChannel)
 		close(topoChannel)
-
 		log.Info("Shutting down")
 		time.Sleep(time.Second)
 	}()
+
+	mgr.Run()
+	err = startServer()
+	if err != nil {
+		log.Fatal("Cannot start server ", err)
+	}
 }
 
-func startServer() {
+func startServer() error {
 	cfg := &northbound.ServerConfig{
 		Port : 5150,
 		Insecure: true,
@@ -149,8 +129,7 @@ func startServer() {
 	serv.AddService(admin.Service{})
 	serv.AddService(gnmi.Service{})
 
-	err := serv.Serve()
-	if err != nil {
-		log.Error("Serve failed", err)
-	}
+	return serv.Serve()
 }
+
+
