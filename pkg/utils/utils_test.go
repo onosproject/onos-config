@@ -22,18 +22,14 @@ import (
 
 const (
     // /network-instances/network-instance[name=DEFAULT]
-	elemName1 = "/network-instances/network-instance"
-	elemNameEscaped1 = "/network-instances/net\\w\\o\\r\\k-instance"
+	elemName1a = "network-instances"
+	elemName1b = "network-instance"
+	elemNameEscaped1a = "netwo\\r\\k\\-\\instances"
+	elemNameEscaped1b = "net\\w\\o\\r\\k-instance"
 	elemKeyName1 = "name"
 	elemKeyValue1 = "DEFAULT"
-	path1 = elemName1 + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]"
-	escapedPath1 = elemNameEscaped1 + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]"
-
-	// /test1[list2a=txout1]
-	elemName2 = "/test1"
-	elemKeyName2 = "list2a"
-	elemKeyValue2 = "txout1"
-	path2 = elemName2 + "[" + elemKeyName2 + "=" + elemKeyValue2 + "]"
+	path1 = "/" + elemName1a + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]/" + elemName1b
+	escapedPath1 = "/" + elemNameEscaped1a + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]/" + elemNameEscaped1b
 
 	pathSegment1 = "1"
 	pathSegment2 = "2[a=b]"
@@ -56,42 +52,28 @@ func checkElement(t *testing.T, parsed *gnmi.Path, index int, elemName string, e
 	assert.Assert(t, elem != nil, "path Element %d does not exist", index)
 
 	name := elem.Name
-	assert.Assert(t, name == elemName, "path Element 0 name is incorrect %s", name)
+	assert.Assert(t, name == elemName, "path Element %d name is incorrect %s", index, name)
 
 	key := elem.Key
 	assert.Assert(t, key[elemKeyName] == elemKeyValue, "key 0 is incorrect %s", key[elemKeyName])
 }
 
 func Test_ParseSimple(t *testing.T) {
-	elements := make([]string, 1)
-	elements[0] = path1
+	elements := SplitPath(path1)
 	parsed, err := ParseGNMIElements(elements)
 
 	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
 
-	checkElement(t, parsed, 0,  elemName1, elemKeyName1, elemKeyValue1)
+	checkElement(t, parsed, 0,  elemName1a, elemKeyName1, elemKeyValue1)
 }
 
 func Test_ParseEscape(t *testing.T) {
-	elements := make([]string, 1)
-	elements[0] = escapedPath1
+	elements := SplitPath(escapedPath1)
 	parsed, err := ParseGNMIElements(elements)
 
 	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
 
-	checkElement(t, parsed, 0, elemName1, elemKeyName1, elemKeyValue1)
-}
-
-func Test_ParseMultiple(t *testing.T) {
-	elements := make([]string, 2)
-	elements[0] = path1
-	elements[1] = path2
-	parsed, err := ParseGNMIElements(elements)
-
-	assert.Assert(t, parsed != nil && err == nil,"path returned an error")
-
-	checkElement(t, parsed, 0,  elemName1, elemKeyName1, elemKeyValue1)
-	checkElement(t, parsed, 1,  elemName2, elemKeyName2, elemKeyValue2)
+	checkElement(t, parsed, 0, elemName1a, elemKeyName1, elemKeyValue1)
 }
 
 func Test_ParseErrorNoClose(t *testing.T) {
@@ -130,4 +112,37 @@ func Test_ParseNamespace(t *testing.T) {
 	assert.Assert(t, parsed != nil,"path with NS returns nil")
 
 	checkElement(t, parsed, 0,  "a", "x", "y")
+}
+
+func Test_StrPath(t *testing.T) {
+	elements := SplitPath(path1)
+	parsed, err := ParseGNMIElements(elements)
+	assert.NilError(t, err)
+
+	generatedPath := StrPath(parsed)
+	assert.Equal(t, generatedPath, path1)
+}
+
+func Test_StrPathV03(t *testing.T) {
+	const path = "/a/b/c"
+	elements := SplitPath(path)
+	parsed, err := ParseGNMIElements(elements)
+	assert.NilError(t, err)
+
+	//  V3 used Element
+	parsed.Element = make([]string, len(parsed.Elem))
+	for i, elm := range parsed.Elem {
+		parsed.Element[i] = elm.Name
+	}
+	generatedPath := strPathV03(parsed)
+	assert.Equal(t, generatedPath, path)
+}
+
+func Test_StrPathV04(t *testing.T) {
+	elements := SplitPath(path1)
+	parsed, err := ParseGNMIElements(elements)
+	assert.NilError(t, err)
+
+	generatedPath := strPathV04(parsed)
+	assert.Equal(t, generatedPath, path1)
 }
