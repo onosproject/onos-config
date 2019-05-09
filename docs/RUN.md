@@ -1,13 +1,10 @@
-# Config Mgmt system in Go
+# How To Run ONOS-Config system
 
 > The commands can be run from anywhere on your PC - it assumes that go is installed
 > and your:
 > GOPATH=~/go
 
-## Install
-See [build/dev-docker/README.md](/../master/build/dev-docker/README.md) for instructions
-to build a Dev image that downloads any dependencies to you local folder
-This resolves any go dependencies
+Note: this assumes you have followed the the [developer workflow](./DEV_WORKFLOW.md) steps done. 
 
 ## Unit test
 ```bash

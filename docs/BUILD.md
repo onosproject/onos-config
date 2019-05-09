@@ -1,14 +1,17 @@
-## Building the Config Manager
+## Building onos-config
+
+Note: this assumes you have all the [Prerequisites](./Prerequisites.md) steps done. 
 
 ### Makefile
 
-The config manager provides a `Makefile` that supports all steps required to test
-and build the project. The makefile supports the following targets:
-* `test` - pulls dependencies and runs tests, including lint and vet
+The project provides a `Makefile` that supports all steps required to test
+and build the project.  
+The makefile supports the following targets:
+* `test` - pulls dependencies and runs tests, including lint, vet and license
 * `build` - runs `test` and builds an executable
 * `all` - runs `test`, `build`, and creates the `onosproject/onos-config` Docker image
   * Requires a local Docker daemon
-  * Requires the `ONOS_CONFIG_VERSION` environment variable to be set
+
 
 ### Building with the Docker image
 
@@ -23,16 +26,16 @@ docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/o
 
 ### Running the Docker image in development
 
-To build the Docker image, set the `ONOS_CONFIG_VERSION` environment variable and run `make`:
+To build the Docker image run `make` in the `onos-config` folder:
 ```
-ONOS_CONFIG_VERSION=0.1 make
+make
 ```
 
 To run the image for development, you must map the ports to the host and mount
 test configuration files to the container:
 
 ```
-docker run -p 8080:8080 -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosproject/onos-config:0.1 \
+docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosproject/onos-config:0.1 \
 -configStore=/etc/onos-config-manager/configStore-sample.json \
 -changeStore=/etc/onos-config-manager/changeStore-sample.json \
 -deviceStore=/etc/onos-config-manager/deviceStore-sample.json \

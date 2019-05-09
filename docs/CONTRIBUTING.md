@@ -1,4 +1,4 @@
-# Contributing to the Community Repo
+# Contributing to onos-config
 
 Welcome to the µONOS-config contributing guide.  
 We'd love to accept your patches and contributions to this project. 
