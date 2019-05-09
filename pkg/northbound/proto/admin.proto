@@ -18,22 +18,24 @@ syntax = "proto3";
 
 package proto;
 
-message HelloWorldRequest {
+import "google/protobuf/timestamp.proto";
 
+message VoidRequest {
 }
 
-message HelloWorldResponse {
-
+message ConfigChange {
+    string id = 1;
+    string hash = 2;
 }
 
-message Line {
-    string Str = 1;
+message NetChange {
+    google.protobuf.Timestamp time = 1;
+    string name = 2;
+    string user = 3;
+    repeated ConfigChange changes = 4;
 }
 
-service Northbound {
-    rpc Shell(stream Line) returns (stream Line) {
-    }
-
-    rpc SayHello(HelloWorldRequest) returns (HelloWorldResponse) {
+service Admin {
+    rpc NetworkChanges(VoidRequest) returns (stream NetChange) {
     }
 }

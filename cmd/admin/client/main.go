@@ -24,10 +24,11 @@ import (
 	"google.golang.org/grpc/credentials"
 	"io"
 	"log"
+	"time"
 )
 
 func main() {
-	cert, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+	cert, err := tls.X509KeyPair([]byte(certs.DefaultLocalhostCrt), []byte(certs.DefaultLocalhostKey))
 	if err != nil {
 		log.Println("Error loading default certs")
 	}
@@ -44,15 +45,12 @@ func main() {
 	}
 	defer conn.Close()
 
-	client := proto.NewNorthboundClient(conn)
-	_, err = client.SayHello(context.TODO(), &proto.HelloWorldRequest{})
-	if err != nil {
-		fmt.Println("Request failed", err)
-	} else {
-		fmt.Println("Request succeeded :-)")
-	}
+	client := proto.NewAdminClient(conn)
 
-	stream, err := client.Shell(context.Background())
+	stream, err := client.NetworkChanges(context.Background(), &proto.VoidRequest{})
+	if err != nil {
+		log.Fatalf("Failed to send request: %v", err)
+	}
 	waitc := make(chan struct{})
 	go func() {
 		for {
@@ -65,12 +63,16 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to receive response : %v", err)
 			}
-			fmt.Println(in.Str)
+			fmt.Printf("%s: %s (%s)\n", time.Unix(in.Time.Seconds, int64(in.Time.Nanos)),
+				in.Name, in.User)
+			for _, c := range in.Changes {
+				fmt.Printf("\t%s: %s\n", c.Id, c.Hash)
+			}
 		}
 	}()
-	if err := stream.Send(&proto.Line{Str: "Hi there bozo..."}); err != nil {
-		log.Fatalf("Failed to send request: %v", err)
+	err = stream.CloseSend()
+	if err != nil {
+		log.Fatalf("Failed to close: %v", err)
 	}
-	stream.CloseSend()
 	<-waitc
 }

@@ -7,7 +7,7 @@ ONOS_CONFIG_VERSION := "latest"
 all: image
 
 image:
-	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:0.3 build
+	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:0.3 protos build
 	docker build . -f build/config-manager/Dockerfile -t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
 deps:
