@@ -16,38 +16,21 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/certs"
+	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"io"
 	"log"
 	"time"
 )
 
 func main() {
-	cert, err := tls.X509KeyPair([]byte(certs.DefaultLocalhostCrt), []byte(certs.DefaultLocalhostKey))
-	if err != nil {
-		log.Println("Error loading default certs")
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		InsecureSkipVerify: true,
-	}
-
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(":5150", grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
-	if err != nil {
-		fmt.Println("Can't connect", err)
-	}
+	conn := admin.Connect()
 	defer conn.Close()
 
 	client := proto.NewAdminClient(conn)
 
-	stream, err := client.NetworkChanges(context.Background(), &proto.VoidRequest{})
+	stream, err := client.NetworkChanges(context.Background(), &proto.NetworkChangesRequest{})
 	if err != nil {
 		log.Fatalf("Failed to send request: %v", err)
 	}
