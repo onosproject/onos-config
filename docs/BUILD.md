@@ -33,7 +33,6 @@ test configuration files to the container:
 
 ```
 docker run -p 8080:8080 -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosproject/onos-config:0.1 \
--restconfPort=8080 \
 -configStore=/etc/onos-config-manager/configStore-sample.json \
 -changeStore=/etc/onos-config-manager/changeStore-sample.json \
 -deviceStore=/etc/onos-config-manager/deviceStore-sample.json \

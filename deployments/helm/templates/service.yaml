@@ -14,5 +14,3 @@ spec:
   ports:
     - name: h2
       port: 5150
-    - name: restconf
-      port: 8080
