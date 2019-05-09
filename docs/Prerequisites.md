@@ -8,7 +8,7 @@ Please do setup your IDE to include automatically the APACHE 2.0 License in your
 You can find the licens we expect for .go files [here](../build/licensing/boilerplate.go.txt) 
 A [guide](License_goland.md) for golang is provided. 
 
-## Install DOCKER
+## Install Docker
 
 For onos-config to build and run we leverage docker containers.
 Please install docker as explained in the [official Docker guide](https://docs.docker.com/install/).
