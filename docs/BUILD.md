@@ -1,4 +1,4 @@
-## Building the ONOS-config project
+## Building onos-config
 
 Note: this assumes you have all the [Prerequisites](./Prerequisites.md) steps done. 
 
