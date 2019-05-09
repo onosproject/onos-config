@@ -27,12 +27,12 @@ license_check:
 protos:
 	./build/dev-docker/compile-protos.sh
 
-build: deps test
+build: test
 	export GOOS=linux
 	export GOARCH=amd64
 	go build -o build/_output/onos-config-manager ./cmd/onos-config-manager
 
-test: lint vet license_check
+test: deps lint vet license_check
 	go test github.com/onosproject/onos-config/pkg/...
 	go test github.com/onosproject/onos-config/cmd/...
 
