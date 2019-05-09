@@ -65,6 +65,9 @@ func main() {
 			}
 			fmt.Printf("%s: %s (%s)\n", time.Unix(in.Time.Seconds, int64(in.Time.Nanos)),
 				in.Name, in.User)
+			for _, c := range in.Changes {
+				fmt.Printf("\t%s: %s\n", c.Id, c.Hash)
+			}
 		}
 	}()
 	err = stream.CloseSend()
