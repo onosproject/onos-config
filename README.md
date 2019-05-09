@@ -30,5 +30,5 @@ The following set of features will be required to support the real-world use-cas
    * Adapters can be created for devices that do not directly support gNMI/gNOI interfaces. Such adapters can be deployed either as proxy agents or potentially can be hosted on the devices themselves.
 
 ## Additional Documentation
-* [How to contribute](./docs/CONTRIBUTING.md) to µONOS-config
-* [Developer Workflow](./docs/DEV_WORKFLOW.md) µONOS-config
+* [How to contribute](./docs/CONTRIBUTING.md) to onos-config
+* [Developer Workflow](./docs/DEV_WORKFLOW.md) for onos-config
