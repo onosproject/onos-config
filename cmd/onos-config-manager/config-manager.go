@@ -44,7 +44,6 @@ package main
 import (
 	"flag"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/listener"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
@@ -63,23 +62,6 @@ const (
 	networkStoreDefaultFileName = "../configs/networkStore-sample.json"
 )
 
-var (
-	configStore    store.ConfigurationStore
-	changeStore    store.ChangeStore
-	deviceStore    *topocache.DeviceStore
-	networkStore   *store.NetworkStore
-	changesChannel chan events.Event
-	topoChannel    chan events.Event
-)
-
-func init() {
-	// Start the main listener system
-	changesChannel = make(chan events.Event, 10)
-	go listener.Listen(changesChannel)
-	topoChannel = make(chan events.Event, 10)
-
-}
-
 // The main entry point
 func main() {
 	configStoreFile := flag.String("configStore", configStoreDefaultFileName,
@@ -94,30 +76,29 @@ func main() {
 	flag.Parse()
 	var err error
 
-	if err != nil {
-		log.Fatal(err)
-	}
 	log.Info("onos-config-manager started")
 
-	configStore, err = store.LoadConfigStore(*configStoreFile)
+	topoChannel := make(chan events.Event, 10)
+
+	configStore, err := store.LoadConfigStore(*configStoreFile)
 	if err != nil {
 		log.Fatal("Cannot load config store ", err)
 	}
 	log.Info("Configuration store loaded from", *configStoreFile)
 
-	changeStore, err = store.LoadChangeStore(*changeStoreFile)
+	changeStore, err := store.LoadChangeStore(*changeStoreFile)
 	if err != nil {
 		log.Fatal("Cannot load change store ", err)
 	}
 	log.Info("Change store loaded from", *changeStoreFile)
 
-	deviceStore, err = topocache.LoadDeviceStore(*deviceStoreFile, topoChannel)
+	deviceStore, err := topocache.LoadDeviceStore(*deviceStoreFile, topoChannel)
 	if err != nil {
 		log.Fatal("Cannot load device store ", err)
 	}
 	log.Info("Device store loaded from", *deviceStoreFile)
 
-	networkStore, err = store.LoadNetworkStore(*networkStoreFile)
+	networkStore, err := store.LoadNetworkStore(*networkStoreFile)
 	if err != nil {
 		log.Fatal("Cannot load network store ", err)
 	}
@@ -126,9 +107,7 @@ func main() {
 	mgr := manager.NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
 
 	defer func() {
-		close(changesChannel)
 		close(topoChannel)
-
 		log.Info("Shutting down")
 		time.Sleep(time.Second)
 	}()

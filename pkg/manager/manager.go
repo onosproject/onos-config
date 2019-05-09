@@ -17,6 +17,7 @@ package manager
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/listener"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -33,6 +34,7 @@ type Manager struct {
 	deviceStore *topocache.DeviceStore
 	networkStore *store.NetworkStore
 	topoChannel chan events.Event
+	changesChannel chan events.Event
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -45,6 +47,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		deviceStore : device,
 		networkStore : network,
 		topoChannel: topoCh,
+		changesChannel:  make(chan events.Event, 10),
 	}
 	return &mgr
 
@@ -52,7 +55,15 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 // Run starts a synchronizer based on the devices and the northbound services
 func (m *Manager) Run() {
 	log.Println("Starting Manager")
+	// Start the main listener system
+	go listener.Listen(m.changesChannel)
 	go synchronizer.Factory(m.changeStore, m.deviceStore, m.topoChannel)
+}
+
+//Close kills the channels and manager related objects
+func (m *Manager) Close(){
+	log.Println("Closing Manager")
+	close(m.changesChannel)
 }
 
 // GetNetworkConfig returns a set of change values given a target, a configuration name, a path and a layer.
