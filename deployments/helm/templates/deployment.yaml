@@ -37,7 +37,6 @@ spec:
           command:
             - onos-config-manager
           args:
-            - "-restconfPort=8080"
             - "-configStore=/etc/onos-config-manager/test-configs/configStore-sample.json"
             - "-changeStore=/etc/onos-config-manager/test-configs/changeStore-sample.json"
             - "-deviceStore=/etc/onos-config-manager/test-configs/deviceStore-sample.json"

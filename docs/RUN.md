@@ -17,7 +17,6 @@ go test -v github.com/onosproject/onos-config/...
 ## Run
 ```bash
 go run github.com/onosproject/onos-config/cmd/onos-config-manager \
--restconfPort=8080 \
 -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
 -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
 -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
