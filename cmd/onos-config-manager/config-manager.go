@@ -43,18 +43,16 @@ package main
 
 import (
 	"flag"
-	"github.com/onosproject/onos-config/cmd/onos-config-manager/shell"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/listener"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
-	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	log "k8s.io/klog"
-	"os"
 	"time"
 )
 
@@ -132,15 +130,13 @@ func main() {
 
 	startServer()
 
-	// Run a shell as a temporary solution to not having an NBI
-	shell.RunShell(configStore, changeStore, deviceStore, networkStore, changesChannel)
+	defer func() {
+		close(changesChannel)
+		close(topoChannel)
 
-	close(changesChannel)
-	close(topoChannel)
-
-	log.Info("Shutting down")
-	time.Sleep(time.Second)
-	os.Exit(0)
+		log.Info("Shutting down")
+		time.Sleep(time.Second)
+	}()
 }
 
 func startServer() {
@@ -153,10 +149,8 @@ func startServer() {
 	serv.AddService(admin.Service{})
 	serv.AddService(gnmi.Service{})
 
-	go func() {
-		err := serv.Serve()
-		if err != nil {
-			log.Error("Serve failed", err)
-		}
-	}()
+	err := serv.Serve()
+	if err != nil {
+		log.Error("Serve failed", err)
+	}
 }

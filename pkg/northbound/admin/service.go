@@ -32,8 +32,20 @@ func (s Service) Register(r *grpc.Server) {
 	proto.RegisterNorthboundServer(r, Server{})
 }
 
+// Interpreter provides means to process remote input and write to remote output
+type Interpreter interface {
+	// Exec executes a
+	Exec(cmd string, o func(s string) error)
+}
+
 // Server implements the grpc service for admin
 type Server struct {
+	shell Interpreter
+}
+
+// SetShellInterpreter sets the shell interpreter
+func (s Server) SetShellInterpreter(shell Interpreter) {
+	s.shell = shell
 }
 
 // Shell provides CLI shell
@@ -47,18 +59,12 @@ func (s Server) Shell(stream proto.Northbound_ShellServer) error {
 			return err
 		}
 		// Switch on the menu command
-		// TODO: implement dispatching
-
-		if err := stream.Send(in); err != nil {
-			return err
-		}
-
-		//// Return the list of lines
-		//for _, line := range lines {
-		//	if err := stream.Send(line); err != nil {
-		//		return err
-		//	}
-		//}
+		s.shell.Exec(in.Str, func(s string) error {
+			if err := stream.Send(&proto.Line{Str: s}); err != nil {
+				return err
+			}
+			return nil
+		})
 	}
 }
 
