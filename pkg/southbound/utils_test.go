@@ -16,6 +16,7 @@ package southbound
 
 import (
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"gotest.tools/assert"
 	"testing"
 )
 
@@ -52,22 +53,13 @@ const (
 
 func checkElement(t *testing.T, parsed *gnmi.Path, index int, elemName string, elemKeyName string, elemKeyValue string) {
 	elem := parsed.Elem[index]
+	assert.Assert(t, elem != nil, "path Element %d does not exist", index)
 
-	if elem == nil {
-		t.Errorf("path Element %d does not exist", index)
-		return
-	}
 	name := elem.Name
-	if name != elemName {
-		t.Errorf("path Element 0 name is incorrect %s", name)
-		return
-	}
+	assert.Assert(t, name == elemName, "path Element 0 name is incorrect %s", name)
 
 	key := elem.Key
-	if key[elemKeyName] != elemKeyValue {
-		t.Errorf("key 0 is incorrect %s", key[elemKeyName])
-		return
-	}
+	assert.Assert(t, key[elemKeyName] == elemKeyValue, "key 0 is incorrect %s", key[elemKeyName])
 }
 
 func Test_ParseSimple(t *testing.T) {
@@ -75,10 +67,7 @@ func Test_ParseSimple(t *testing.T) {
 	elements[0] = path1
 	parsed, err := ParseGNMIElements(elements)
 
-	if parsed == nil || err != nil {
-		t.Errorf("path returned an error")
-		return
-	}
+	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
 
 	checkElement(t, parsed, 0,  elemName1, elemKeyName1, elemKeyValue1)
 }
@@ -88,10 +77,7 @@ func Test_ParseEscape(t *testing.T) {
 	elements[0] = escapedPath1
 	parsed, err := ParseGNMIElements(elements)
 
-	if parsed == nil || err != nil {
-		t.Errorf("path returned an error")
-		return
-	}
+	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
 
 	checkElement(t, parsed, 0, elemName1, elemKeyName1, elemKeyValue1)
 }
@@ -102,10 +88,7 @@ func Test_ParseMultiple(t *testing.T) {
 	elements[1] = path2
 	parsed, err := ParseGNMIElements(elements)
 
-	if parsed == nil || err != nil {
-		t.Errorf("path returned an error")
-		return
-	}
+	assert.Assert(t, parsed != nil && err == nil,"path returned an error")
 
 	checkElement(t, parsed, 0,  elemName1, elemKeyName1, elemKeyValue1)
 	checkElement(t, parsed, 1,  elemName2, elemKeyName2, elemKeyValue2)
@@ -116,10 +99,7 @@ func Test_ParseErrorNoClose(t *testing.T) {
 	elements[0] = pathNoClose
 	parsed, err := ParseGNMIElements(elements)
 
-	if err == nil || parsed != nil {
-		t.Errorf("path with no closing bracket did not generate an error")
-		return
-	}
+	assert.Assert(t, err != nil && parsed == nil,"path with no closing bracket did not generate an error")
 }
 
 func Test_ParseErrorNoKeyName(t *testing.T) {
@@ -127,10 +107,7 @@ func Test_ParseErrorNoKeyName(t *testing.T) {
 	elements[0] = pathNoKeyName
 	parsed, err := ParseGNMIElements(elements)
 
-	if err == nil || parsed != nil {
-		t.Errorf("path with no opening bracket did not generate an error")
-		return
-	}
+	assert.Assert(t, err != nil && parsed == nil,"path with no opening bracket did not generate an error")
 }
 
 func Test_Split(t *testing.T) {
@@ -138,19 +115,9 @@ func Test_Split(t *testing.T) {
 	paths[0] = pathToSplit
 	paths[1] = path2ToSplit
 	splitPaths := SplitPaths(paths)
-	if len(splitPaths) != 2 {
-		t.Errorf("paths split length is incorrect %d", len(splitPaths))
-		return
-	}
+	assert.Equal(t, len(splitPaths), 2)
 
 	splitPaths1 := splitPaths[0]
-	if splitPaths1[0] != pathSegment1 {
-		t.Errorf("paths split segment 1 is incorrect %s", splitPaths[0])
-		return
-	}
-
-	if splitPaths1[3] != pathSegment4 {
-		t.Errorf("paths split segment 4 is incorrect %s", splitPaths[3])
-		return
-	}
+	assert.Equal(t, splitPaths1[0], pathSegment1)
+	assert.Equal(t, splitPaths1[3], pathSegment4)
 }
