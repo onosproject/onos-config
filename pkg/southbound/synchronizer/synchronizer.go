@@ -56,9 +56,15 @@ func Devicesync(changeStore *store.ChangeStore,
 			log.Println("Event discarded because change is invalid", err)
 			continue
 		}
-		gnmiChange := change.GnmiChange()
+		gnmiChange, parseError := change.GnmiChange()
+
+		if parseError != nil {
+			log.Println("Parsing error for Gnmi change ", parseError)
+			continue
+		}
+
 		log.Println("Change formatted to gNMI setRequest", gnmiChange)
-		setResponse, err := southbound.Set(target, &gnmiChange)
+		setResponse, err := southbound.Set(target, gnmiChange)
 		if err != nil {
 			log.Println("SetResponse ", err)
 			continue

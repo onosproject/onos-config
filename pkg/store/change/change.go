@@ -20,10 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"io"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -81,40 +81,25 @@ func (c Change) IsValid() error {
 }
 
 // GnmiChange converts a Change object to gNMI format
-func (c Change) GnmiChange() gnmi.SetRequest {
+func (c Change) GnmiChange() (*gnmi.SetRequest, error) {
 	var deletePaths = []*gnmi.Path{}
 	var replacedPaths = []*gnmi.Update{}
 	var updatedPaths = []*gnmi.Update{}
 
 	for _, changeValue := range c.Config {
-		elems := strings.Split(changeValue.Path, "/")
-		pathElems := []*gnmi.PathElem{}
-		for idx, elem := range elems {
-			if idx == 0 {
-				continue
-			} //Skip first one
-			partsNs := strings.Split(elem, ":")
-			if len(partsNs) == 2 {
-				// We have to discard the namespace as gNMI doesn't handle it
-				elem = partsNs[1]
-			}
-			var pathElem = gnmi.PathElem{}
-			partsIdx := strings.Split(elem, "=")
-			if len(partsIdx) == 2 {
-				pathElem.Name = partsIdx[0]
-				pathElem.Key = make(map[string]string)
-				pathElem.Key["name"] = partsIdx[1]
-			} else {
-				pathElem.Name = partsIdx[0]
-			}
-			pathElems = append(pathElems, &pathElem)
+		elems := utils.SplitPath(changeValue.Path)
+		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
+
+		if parseError != nil {
+			return nil, parseError
 		}
+
 		if changeValue.Remove {
-			deletePaths = append(deletePaths, &gnmi.Path{Elem: pathElems})
+			deletePaths = append(deletePaths, &gnmi.Path{Elem: pathElemsRefs.Elem})
 		} else {
 			typedValue := gnmi.TypedValue_StringVal{StringVal: changeValue.Value}
 			value := gnmi.TypedValue{Value: &typedValue}
-			updatePath := gnmi.Path{Elem: pathElems}
+			updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
 			updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
 		}
 	}
@@ -125,7 +110,7 @@ func (c Change) GnmiChange() gnmi.SetRequest {
 		Update:  updatedPaths,
 	}
 
-	return setRequest
+	return &setRequest, nil
 }
 
 // CreateChange creates a Change object from ChangeValues

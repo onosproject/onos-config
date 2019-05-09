@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
+	"github.com/onosproject/onos-config/pkg/utils"
 	"io/ioutil"
 	"log"
 	"time"
@@ -273,7 +274,7 @@ func NewSubscribeRequest(subscribeOptions *SubscribeOptions) (*gpb.SubscribeRequ
 		return nil, fmt.Errorf("subscribe stream mode (%s) invalid", subscribeOptions.StreamMode)
 	}
 
-	prefixPath, err := ParseGNMIElements(SplitPath(subscribeOptions.Prefix))
+	prefixPath, err := utils.ParseGNMIElements(utils.SplitPath(subscribeOptions.Prefix))
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +285,7 @@ func NewSubscribeRequest(subscribeOptions *SubscribeOptions) (*gpb.SubscribeRequ
 		Prefix:       prefixPath,
 	}
 	for i, p := range subscribeOptions.Paths {
-		gnmiPath, err := ParseGNMIElements(p)
+		gnmiPath, err := utils.ParseGNMIElements(p)
 		if err != nil {
 			return nil, err
 		}
