@@ -263,26 +263,26 @@ func init() {
 func init() { proto.RegisterFile("pkg/northbound/proto/admin.proto", fileDescriptor_a91573d9ad3811b0) }
 
 var fileDescriptor_a91573d9ad3811b0 = []byte{
-	// 299 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x91, 0xb1, 0x6e, 0xb3, 0x30,
-	0x14, 0x85, 0x7f, 0x08, 0x49, 0x94, 0x9b, 0xbf, 0x28, 0x72, 0x15, 0x15, 0xa1, 0x4a, 0x45, 0x4c,
-	0x59, 0x6a, 0x2a, 0xf2, 0x04, 0x55, 0x3a, 0x67, 0x40, 0x1d, 0xbb, 0x40, 0xb8, 0x01, 0x94, 0x62,
-	0x53, 0x6c, 0xd4, 0xbd, 0x8f, 0xd0, 0x27, 0xae, 0x6c, 0xc7, 0x6a, 0xa8, 0x3a, 0x75, 0xe2, 0xe8,
-	0xf8, 0x9e, 0xcb, 0xe7, 0x63, 0x88, 0xba, 0x53, 0x95, 0x30, 0xde, 0xcb, 0xba, 0xe0, 0x03, 0x2b,
-	0x93, 0xae, 0xe7, 0x92, 0x27, 0x79, 0xd9, 0x36, 0x8c, 0x6a, 0x4d, 0xa6, 0xfa, 0x13, 0xde, 0x55,
-	0x9c, 0x57, 0xaf, 0x68, 0x06, 0x8a, 0xe1, 0x98, 0xc8, 0xa6, 0x45, 0x21, 0xf3, 0xb6, 0x33, 0x73,
-	0xf1, 0x0d, 0xac, 0xf7, 0x28, 0xdf, 0x79, 0x7f, 0xda, 0xd5, 0x39, 0xab, 0x50, 0x64, 0xf8, 0x36,
-	0xa0, 0x90, 0x71, 0x0a, 0xff, 0x77, 0x9c, 0x1d, 0x9b, 0xca, 0xf8, 0xc4, 0x07, 0xb7, 0x29, 0x03,
-	0x27, 0x72, 0x36, 0x8b, 0xcc, 0x6d, 0x4a, 0x42, 0xc0, 0xab, 0x73, 0x51, 0x07, 0xae, 0x76, 0xb4,
-	0x8e, 0x3f, 0x1d, 0x58, 0xec, 0x51, 0x9e, 0x13, 0x14, 0x3c, 0xf5, 0x37, 0x9d, 0x59, 0xa6, 0x21,
-	0x35, 0x28, 0xd4, 0xa2, 0xd0, 0x67, 0x8b, 0x92, 0xe9, 0x39, 0xb5, 0x91, 0xe5, 0x2d, 0xda, 0x8d,
-	0x4a, 0x2b, 0x6f, 0x10, 0xd8, 0x07, 0x13, 0xe3, 0x29, 0x4d, 0xee, 0x61, 0x7e, 0x30, 0xac, 0x81,
-	0x17, 0x4d, 0x36, 0xcb, 0xf4, 0xda, 0xec, 0xa4, 0x97, 0xbc, 0x99, 0x9d, 0x89, 0x57, 0xe0, 0xff,
-	0xb8, 0xda, 0x0b, 0xcc, 0xfe, 0x88, 0x68, 0x4a, 0x70, 0x2f, 0x4b, 0x28, 0x51, 0x1c, 0x2c, 0x9e,
-	0xd2, 0xe9, 0x87, 0x03, 0xd3, 0x47, 0xf5, 0x12, 0xe4, 0x09, 0xfc, 0x71, 0xb7, 0xe4, 0xf6, 0x4c,
-	0xfa, 0x6b, 0xe5, 0xe1, 0xea, 0xfb, 0xd4, 0x9c, 0xc4, 0xff, 0x1e, 0x1c, 0xb2, 0x85, 0xb9, 0x8d,
-	0xaf, 0xed, 0x45, 0xc7, 0xb9, 0xab, 0x91, 0xad, 0x42, 0xc5, 0x4c, 0x3b, 0xdb, 0xaf, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0x50, 0x28, 0xbb, 0xaf, 0x29, 0x02, 0x00, 0x00,
+	// 298 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x90, 0x31, 0x4f, 0xc3, 0x30,
+	0x10, 0x85, 0x49, 0x5a, 0x5a, 0xf5, 0x0a, 0x55, 0x65, 0x54, 0x11, 0x45, 0x48, 0x44, 0x99, 0xba,
+	0xe0, 0xa0, 0xf4, 0x27, 0xb4, 0x73, 0x87, 0x88, 0x91, 0xc5, 0x69, 0x5c, 0xc7, 0x2a, 0xb1, 0x43,
+	0xec, 0x88, 0xbf, 0xc0, 0xcc, 0x2f, 0x46, 0xb6, 0x6b, 0xd1, 0x20, 0x26, 0xa6, 0x3c, 0x3d, 0xdf,
+	0xbb, 0x7c, 0xf7, 0x20, 0x69, 0x4f, 0x2c, 0x13, 0xb2, 0xd3, 0x75, 0x29, 0x7b, 0x51, 0x65, 0x6d,
+	0x27, 0xb5, 0xcc, 0x48, 0xd5, 0x70, 0x81, 0xad, 0x46, 0xd7, 0xf6, 0x13, 0x3f, 0x32, 0x29, 0xd9,
+	0x1b, 0x75, 0x03, 0x65, 0x7f, 0xcc, 0x34, 0x6f, 0xa8, 0xd2, 0xa4, 0x69, 0xdd, 0x5c, 0x7a, 0x0f,
+	0xab, 0x3d, 0xd5, 0x1f, 0xb2, 0x3b, 0x6d, 0x6b, 0x22, 0x18, 0x55, 0x05, 0x7d, 0xef, 0xa9, 0xd2,
+	0x69, 0x0e, 0x37, 0x5b, 0x29, 0x8e, 0x9c, 0x39, 0x1f, 0x2d, 0x20, 0xe4, 0x55, 0x14, 0x24, 0xc1,
+	0x7a, 0x56, 0x84, 0xbc, 0x42, 0x08, 0xc6, 0x35, 0x51, 0x75, 0x14, 0x5a, 0xc7, 0xea, 0xf4, 0x2b,
+	0x80, 0xd9, 0x9e, 0xea, 0x73, 0x02, 0xc3, 0xd8, 0xfc, 0xcd, 0x66, 0xe6, 0x79, 0x8c, 0x1d, 0x0a,
+	0xf6, 0x28, 0xf8, 0xc5, 0xa3, 0x14, 0x76, 0xce, 0x6c, 0x14, 0xa4, 0xa1, 0x7e, 0xa3, 0xd1, 0xc6,
+	0xeb, 0x15, 0xed, 0xa2, 0x91, 0xf3, 0x8c, 0x46, 0x4f, 0x30, 0x3d, 0x38, 0xd6, 0x68, 0x9c, 0x8c,
+	0xd6, 0xf3, 0xfc, 0xce, 0xed, 0xc4, 0x97, 0xbc, 0x85, 0x9f, 0x49, 0x97, 0xb0, 0xf8, 0x75, 0xda,
+	0x2b, 0x4c, 0xfe, 0x89, 0xe8, 0x4a, 0x08, 0x2f, 0x4b, 0xa8, 0xa8, 0x3a, 0x78, 0x3c, 0xa3, 0xf3,
+	0xcf, 0x00, 0xe6, 0x8e, 0x64, 0xc7, 0x09, 0x53, 0x68, 0x07, 0x8b, 0x61, 0xc3, 0xe8, 0xe1, 0xcc,
+	0xfb, 0x67, 0xf1, 0xf1, 0xf2, 0xe7, 0xd5, 0xbd, 0xa4, 0x57, 0xcf, 0x01, 0xda, 0xc0, 0xd4, 0xc7,
+	0x57, 0xfe, 0xdc, 0x61, 0xee, 0x76, 0x60, 0x9b, 0x50, 0x39, 0xb1, 0xce, 0xe6, 0x3b, 0x00, 0x00,
+	0xff, 0xff, 0xbc, 0x00, 0xd0, 0x04, 0x2f, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -293,28 +293,28 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// AdminClient is the client API for Admin service.
+// ConfigDiagsClient is the client API for ConfigDiags service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type AdminClient interface {
-	NetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (Admin_NetworkChangesClient, error)
-	Changes(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (Admin_ChangesClient, error)
+type ConfigDiagsClient interface {
+	NetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (ConfigDiags_NetworkChangesClient, error)
+	Changes(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (ConfigDiags_ChangesClient, error)
 }
 
-type adminClient struct {
+type configDiagsClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewAdminClient(cc *grpc.ClientConn) AdminClient {
-	return &adminClient{cc}
+func NewConfigDiagsClient(cc *grpc.ClientConn) ConfigDiagsClient {
+	return &configDiagsClient{cc}
 }
 
-func (c *adminClient) NetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (Admin_NetworkChangesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Admin_serviceDesc.Streams[0], "/proto.Admin/NetworkChanges", opts...)
+func (c *configDiagsClient) NetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (ConfigDiags_NetworkChangesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_ConfigDiags_serviceDesc.Streams[0], "/proto.ConfigDiags/NetworkChanges", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &adminNetworkChangesClient{stream}
+	x := &configDiagsNetworkChangesClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -324,16 +324,16 @@ func (c *adminClient) NetworkChanges(ctx context.Context, in *NetworkChangesRequ
 	return x, nil
 }
 
-type Admin_NetworkChangesClient interface {
+type ConfigDiags_NetworkChangesClient interface {
 	Recv() (*NetChange, error)
 	grpc.ClientStream
 }
 
-type adminNetworkChangesClient struct {
+type configDiagsNetworkChangesClient struct {
 	grpc.ClientStream
 }
 
-func (x *adminNetworkChangesClient) Recv() (*NetChange, error) {
+func (x *configDiagsNetworkChangesClient) Recv() (*NetChange, error) {
 	m := new(NetChange)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -341,12 +341,12 @@ func (x *adminNetworkChangesClient) Recv() (*NetChange, error) {
 	return m, nil
 }
 
-func (c *adminClient) Changes(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (Admin_ChangesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Admin_serviceDesc.Streams[1], "/proto.Admin/Changes", opts...)
+func (c *configDiagsClient) Changes(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (ConfigDiags_ChangesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_ConfigDiags_serviceDesc.Streams[1], "/proto.ConfigDiags/Changes", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &adminChangesClient{stream}
+	x := &configDiagsChangesClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -356,16 +356,16 @@ func (c *adminClient) Changes(ctx context.Context, in *ChangesRequest, opts ...g
 	return x, nil
 }
 
-type Admin_ChangesClient interface {
+type ConfigDiags_ChangesClient interface {
 	Recv() (*Change, error)
 	grpc.ClientStream
 }
 
-type adminChangesClient struct {
+type configDiagsChangesClient struct {
 	grpc.ClientStream
 }
 
-func (x *adminChangesClient) Recv() (*Change, error) {
+func (x *configDiagsChangesClient) Recv() (*Change, error) {
 	m := new(Change)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -373,82 +373,82 @@ func (x *adminChangesClient) Recv() (*Change, error) {
 	return m, nil
 }
 
-// AdminServer is the server API for Admin service.
-type AdminServer interface {
-	NetworkChanges(*NetworkChangesRequest, Admin_NetworkChangesServer) error
-	Changes(*ChangesRequest, Admin_ChangesServer) error
+// ConfigDiagsServer is the server API for ConfigDiags service.
+type ConfigDiagsServer interface {
+	NetworkChanges(*NetworkChangesRequest, ConfigDiags_NetworkChangesServer) error
+	Changes(*ChangesRequest, ConfigDiags_ChangesServer) error
 }
 
-// UnimplementedAdminServer can be embedded to have forward compatible implementations.
-type UnimplementedAdminServer struct {
+// UnimplementedConfigDiagsServer can be embedded to have forward compatible implementations.
+type UnimplementedConfigDiagsServer struct {
 }
 
-func (*UnimplementedAdminServer) NetworkChanges(req *NetworkChangesRequest, srv Admin_NetworkChangesServer) error {
+func (*UnimplementedConfigDiagsServer) NetworkChanges(req *NetworkChangesRequest, srv ConfigDiags_NetworkChangesServer) error {
 	return status.Errorf(codes.Unimplemented, "method NetworkChanges not implemented")
 }
-func (*UnimplementedAdminServer) Changes(req *ChangesRequest, srv Admin_ChangesServer) error {
+func (*UnimplementedConfigDiagsServer) Changes(req *ChangesRequest, srv ConfigDiags_ChangesServer) error {
 	return status.Errorf(codes.Unimplemented, "method Changes not implemented")
 }
 
-func RegisterAdminServer(s *grpc.Server, srv AdminServer) {
-	s.RegisterService(&_Admin_serviceDesc, srv)
+func RegisterConfigDiagsServer(s *grpc.Server, srv ConfigDiagsServer) {
+	s.RegisterService(&_ConfigDiags_serviceDesc, srv)
 }
 
-func _Admin_NetworkChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _ConfigDiags_NetworkChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(NetworkChangesRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(AdminServer).NetworkChanges(m, &adminNetworkChangesServer{stream})
+	return srv.(ConfigDiagsServer).NetworkChanges(m, &configDiagsNetworkChangesServer{stream})
 }
 
-type Admin_NetworkChangesServer interface {
+type ConfigDiags_NetworkChangesServer interface {
 	Send(*NetChange) error
 	grpc.ServerStream
 }
 
-type adminNetworkChangesServer struct {
+type configDiagsNetworkChangesServer struct {
 	grpc.ServerStream
 }
 
-func (x *adminNetworkChangesServer) Send(m *NetChange) error {
+func (x *configDiagsNetworkChangesServer) Send(m *NetChange) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Admin_Changes_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _ConfigDiags_Changes_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ChangesRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(AdminServer).Changes(m, &adminChangesServer{stream})
+	return srv.(ConfigDiagsServer).Changes(m, &configDiagsChangesServer{stream})
 }
 
-type Admin_ChangesServer interface {
+type ConfigDiags_ChangesServer interface {
 	Send(*Change) error
 	grpc.ServerStream
 }
 
-type adminChangesServer struct {
+type configDiagsChangesServer struct {
 	grpc.ServerStream
 }
 
-func (x *adminChangesServer) Send(m *Change) error {
+func (x *configDiagsChangesServer) Send(m *Change) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-var _Admin_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.Admin",
-	HandlerType: (*AdminServer)(nil),
+var _ConfigDiags_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.ConfigDiags",
+	HandlerType: (*ConfigDiagsServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "NetworkChanges",
-			Handler:       _Admin_NetworkChanges_Handler,
+			Handler:       _ConfigDiags_NetworkChanges_Handler,
 			ServerStreams: true,
 		},
 		{
 			StreamName:    "Changes",
-			Handler:       _Admin_Changes_Handler,
+			Handler:       _ConfigDiags_Changes_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -30,7 +30,7 @@ type Service struct {
 
 // Register registers the Service with the grpc server
 func (s Service) Register(r *grpc.Server) {
-	proto.RegisterAdminServer(r, Server{})
+	proto.RegisterConfigDiagsServer(r, Server{})
 }
 
 // Interpreter provides means to process remote input and write to remote output
@@ -50,7 +50,7 @@ func (s Server) SetShellInterpreter(shell Interpreter) {
 }
 
 // NetworkChanges provides a stream of submitted network changes
-func (s Server) NetworkChanges(r *proto.NetworkChangesRequest, stream proto.Admin_NetworkChangesServer) error {
+func (s Server) NetworkChanges(r *proto.NetworkChangesRequest, stream proto.ConfigDiags_NetworkChangesServer) error {
 	for _, nc := range manager.GetManager().NetworkStore.Store {
 
 		// Build net change message
@@ -75,7 +75,7 @@ func (s Server) NetworkChanges(r *proto.NetworkChangesRequest, stream proto.Admi
 }
 
 // Changes provides a stream of submitted network changes
-func (s Server) Changes(r *proto.ChangesRequest, stream proto.Admin_ChangesServer) error {
+func (s Server) Changes(r *proto.ChangesRequest, stream proto.ConfigDiags_ChangesServer) error {
 	for _, c := range manager.GetManager().ChangeStore.Store {
 		// Build a change message
 		msg := &proto.Change{

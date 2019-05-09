@@ -28,7 +28,7 @@ func main() {
 	conn := admin.Connect()
 	defer conn.Close()
 
-	client := proto.NewAdminClient(conn)
+	client := proto.NewConfigDiagsClient(conn)
 
 	stream, err := client.Changes(context.Background(), &proto.ChangesRequest{})
 	if err != nil {
