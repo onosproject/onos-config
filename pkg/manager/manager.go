@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"strings"
 	"log"
 )
 
@@ -67,12 +68,13 @@ func (m *Manager) Close(){
 }
 
 // GetNetworkConfig returns a set of change values given a target, a configuration name, a path and a layer.
-// The layer is the numbers of configu changes we want to go back in time for.
+// The layer is the numbers of config changes we want to go back in time for. 0 is the latest
 func (m *Manager) GetNetworkConfig(target string, configname string, path string, layer int) ([]change.ConfigValue, error){
 	if _, ok := m.deviceStore.Store[target]; !ok {
 		return nil, fmt.Errorf("Device not present %s", target)
 	}
-	//TODO the key of the config store shoudl be a tuple of (devicename, configname) use the param
+	fmt.Println("Getting config for", target, path)
+	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
 	for configID, cfg := range m.configStore.Store{
 		if cfg.Device == target {
@@ -82,7 +84,17 @@ func (m *Manager) GetNetworkConfig(target string, configname string, path string
 		}
 	}
 	configValues := config.ExtractFullConfig(m.changeStore.Store, layer)
-	return configValues, nil
+	if len(configValues) == 0 || path == "/*" {
+		return configValues, nil
+	}
+	filteredValues := make([]change.ConfigValue, 0)
+	for _, cv := range configValues {
+		if strings.Contains(cv.Path, path) {
+			filteredValues = append(filteredValues, cv)
+		}
+	}
+
+	return filteredValues, nil
 }
 
 // GetManager retuns the initialized and running instance of manager.

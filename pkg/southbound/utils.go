@@ -16,6 +16,7 @@ package southbound
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	pb "github.com/openconfig/gnmi/proto/gnmi"
@@ -178,4 +179,58 @@ func nextTokenIndex(path string) int {
 		}
 	}
 	return len(path)
+}
+
+func writeSafeString(b *strings.Builder, s string, esc rune) {
+	for _, c := range s {
+		if c == esc || c == '\\' {
+			b.WriteRune('\\')
+		}
+		b.WriteRune(c)
+	}
+}
+
+// StrPath builds a human-readable form of a gnmi path.
+// e.g. /a/b/c[e=f]
+func StrPath(path *pb.Path) string {
+	if path == nil {
+		return "/"
+	} else if len(path.Elem) != 0 {
+		return strPathV04(path)
+	} else if len(path.Element) != 0 {
+		return strPathV03(path)
+	}
+	return "/"
+}
+
+// strPathV04 handles the v0.4 gnmi and later path.Elem member.
+func strPathV04(path *pb.Path) string {
+	b := &strings.Builder{}
+	for _, elm := range path.Elem {
+		b.WriteRune('/')
+		writeSafeString(b, elm.Name, '/')
+		if len(elm.Key) > 0 {
+			// Sort the keys so that they print in a conistent
+			// order. We don't have the YANG AST information, so the
+			// best we can do is sort them alphabetically.
+			keys := make([]string, 0, len(elm.Key))
+			for k := range elm.Key {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				b.WriteRune('[')
+				b.WriteString(k)
+				b.WriteRune('=')
+				writeSafeString(b, elm.Key[k], ']')
+				b.WriteRune(']')
+			}
+		}
+	}
+	return b.String()
+}
+
+// strPathV03 handles the v0.3 gnmi and earlier path.Element member.
+func strPathV03(path *pb.Path) string {
+	return "/" + strings.Join(path.Element, "/")
 }

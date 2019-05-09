@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"gotest.tools/assert"
 	"os"
 	"testing"
 	"time"
@@ -115,15 +116,10 @@ func TestMain(m *testing.M) {
 
 func Test_GetNetworkConfig(t *testing.T) {
 
-	result, err := mgrTest.GetNetworkConfig("Device1", "running", "*", 0)
-	if err != nil {
-		t.Errorf("%s", err)
-	}
-	if len(result) != 3 {
-		t.Errorf("result is empty %s", result)
-	}
+	result, err := mgrTest.GetNetworkConfig("Device1", "running", "/*", 0)
+	assert.NilError(t, err, "GetNetworkConfig error")
 
-	if result[0].Path != Test1Cont1A {
-		t.Errorf("result %s is different from %s", result[0].Path, Test1Cont1A)
-	}
+	assert.Equal(t, len(result), 3, "Unexpected result element count")
+
+	assert.Equal(t, result[0].Path, Test1Cont1A, "result %s is different")
 }
