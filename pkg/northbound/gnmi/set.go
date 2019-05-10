@@ -73,12 +73,19 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	configName := "Running"
 	for target, updates := range targetUpdates {
 		changeID, err := manager.GetManager().SetNetworkConfig(target, configName, updates, targetRemoves[target])
+		pathElems := make([]*gnmi.PathElem, 0)
+		for k := range updates {
+			pathElem := gnmi.PathElem{
+				Name: k,
+			}
+			pathElems = append(pathElems, &pathElem)
+		}
 		//FIXME this at the moment fails at a device level. we can specify a per path failure
 		// if the store could return us that info
 		updateResult := &gnmi.UpdateResult{
 			Path : &gnmi.Path{
 				Target: target,
-				Elem: make([]*gnmi.PathElem, 0),
+				Elem: pathElems,
 			},
 			Op : gnmi.UpdateResult_UPDATE,
 		}
