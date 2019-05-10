@@ -85,12 +85,10 @@ func createDestination(device topocache.Device) (*client.Destination, Key) {
 		d.TLS.Certificates = []tls.Certificate{setCertificate(device.CertPath, device.KeyPath)}
 
 	} else if device.Usr != "" && device.Pwd != "" {
-		//TODO implement
-		// cred := &client.Credentials{}
-		// cred.Username = "test"
-		// cred.Password = "testpwd"
-		//d.Credentials = cred
-		//log.Println(*cred)
+		cred := &client.Credentials{}
+		cred.Username = device.Usr
+		cred.Password = device.Pwd
+		d.Credentials = cred
 	} else {
 		d.TLS = &tls.Config{InsecureSkipVerify: true}
 	}
@@ -107,7 +105,7 @@ func GetTarget(key Key) (Target, error) {
 
 }
 
-// ConnectTarget :
+// ConnectTarget connects to a given Device according to the passed information establishing a channel to it.
 //TODO make asyc
 //TODO lock channel to allow one request to device at each time
 func ConnectTarget(device topocache.Device) (Target, Key, error) {
@@ -218,7 +216,7 @@ func Set(target Target, request *gpb.SetRequest) (*gpb.SetResponse, error) {
 	return response, nil
 }
 
-// Subscribe :
+// Subscribe initiates a subscription to a target and set of paths by establishing a new channel
 func Subscribe(target Target, request *gpb.SubscribeRequest, handler client.NotificationHandler) error {
 	//TODO currently establishing a throwaway client per each subscription request
 	//this is due to the face that 1 NotificationHandler is allowed per client (1:1)
@@ -226,7 +224,7 @@ func Subscribe(target Target, request *gpb.SubscribeRequest, handler client.Noti
 	//returing to the caller only the desired results.
 	q, err := client.NewQuery(request)
 	if err != nil {
-		//TODO handle
+		return err
 	}
 	q.Addrs = target.Destination.Addrs
 	q.Timeout = target.Destination.Timeout
@@ -239,8 +237,7 @@ func Subscribe(target Target, request *gpb.SubscribeRequest, handler client.Noti
 	if err != nil {
 		return fmt.Errorf("could not create a gNMI for subscription: %v", err)
 	}
-	target.Clt.(*gclient.Client).Subscribe(target.Ctxt, q)
-	return nil
+	return target.Clt.(*gclient.Client).Subscribe(target.Ctxt, q)
 
 }
 
