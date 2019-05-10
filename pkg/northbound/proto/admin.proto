@@ -44,7 +44,7 @@ message Change {
     string desc = 3;
 }
 
-service Admin {
+service ConfigDiags {
     rpc NetworkChanges(NetworkChangesRequest) returns (stream NetChange) {
     }
 
