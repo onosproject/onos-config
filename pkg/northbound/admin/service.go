@@ -15,6 +15,7 @@
 package admin
 
 import (
+	"context"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
@@ -31,6 +32,7 @@ type Service struct {
 // Register registers the Service with the grpc server
 func (s Service) Register(r *grpc.Server) {
 	proto.RegisterConfigDiagsServer(r, Server{})
+	proto.RegisterAdminServiceServer(r, Server{})
 }
 
 // Interpreter provides means to process remote input and write to remote output
@@ -89,4 +91,14 @@ func (s Server) Changes(r *proto.ChangesRequest, stream proto.ConfigDiags_Change
 		}
 	}
 	return nil
+}
+
+// RegisterModel registers a new YANG model
+func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+	return &proto.RegisterResponse{}, nil
+}
+
+// UnregisterModel unregisters the specified YANG model
+func (s Server) UnregisterModel(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+	return &proto.RegisterResponse{}, nil
 }

@@ -51,3 +51,19 @@ service ConfigDiags {
     rpc Changes(ChangesRequest) returns (stream Change) {
     }
 }
+
+
+message RegisterRequest {
+
+}
+
+message RegisterResponse {
+
+}
+
+service AdminService {
+    rpc RegisterModel(RegisterRequest) returns (RegisterResponse) {
+    }
+    rpc UnregisterModel(RegisterRequest) returns (RegisterResponse) {
+    }
+}
