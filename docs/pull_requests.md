@@ -1,6 +1,6 @@
 # Issues and Pull Requests Workflow
 
-This page documents the process to follow to work on an issue and submit a pull request
+This page documents the process to follow to work on an issue and submit a pull request.
 
 ## Issues 
 
@@ -25,7 +25,7 @@ This section describes how to open a pull request and put into one of the differ
 
 ### Referencing an issue from your commit
 If you have an issue identifying your work in onos-config [issues](https://github.com/onosproject/onos-config/issues), 
-To automatically link your pull request an issue, before pushing a commit to your fork of onos-config please insert 
+To automatically link your pull request an issue, before pushing a commit to your fork of onos-config please insert: 
 ```
 Fixes #<issue-number>
 ```
@@ -53,7 +53,7 @@ Fixes #90
 ### Open a pull request
 When you open a pull request for _myfeature_ you need to add the PR to a `project` (e.g. northbound) through the github UI. 
 Please also assign a reviewer out of the suggested ones. If non are suggested please pick one form the core team.     
-More information on opening pull request can be found [here](https://help.github.com/en/articles/creating-a-pull-request)
+More information on opening pull request can be found [here](https://help.github.com/en/articles/creating-a-pull-request).
 
 
 ### Tracking a pull request

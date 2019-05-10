@@ -4,9 +4,14 @@ This document provides an overview of the tools and packages needed to work on o
 ## IDE
 The onos-config team suggests the [Goland IDE](/https://www.jetbrains.com/go/) from JetBrains.   
 If you want an free IDE for a good option is [Visual Studio Code](/https://code.visualstudio.com).   
+
+## License
 Please do setup your IDE to include automatically the APACHE 2.0 License in your new files. 
 You can find the licens we expect for .go files [here](../build/licensing/boilerplate.go.txt) 
 A [guide](license_goland.md) for golang is provided. 
+
+**Note**   
+The CI tests the are run as part of verification of a pull request require license to be in place
 
 ## Install Docker
 

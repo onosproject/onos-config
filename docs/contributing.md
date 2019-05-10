@@ -112,6 +112,8 @@ git push origin myfeature
 1. Visit your fork at `https://github.com/$user/onos-config`
 2. Click the `Compare & Pull Request` button next to your `myfeature` branch.
 
+Please follow the pull request guideline [here](pull_requests.md) 
+
 _If you have upstream write access_, please refrain from using the GitHub UI for
 creating PRs, because GitHub will create the PR branch inside the main
 repository rather than inside your fork.
