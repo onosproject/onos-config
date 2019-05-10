@@ -25,6 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+// NetworkChangesRequest is a message for specifying GetNetworkChanges query parameters.
 type NetworkChangesRequest struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -56,6 +57,7 @@ func (m *NetworkChangesRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_NetworkChangesRequest proto.InternalMessageInfo
 
+// ConfigChange is a descriptor of a submitted configuration change targeted as a single device.
 type ConfigChange struct {
 	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Hash                 string   `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
@@ -103,6 +105,7 @@ func (m *ConfigChange) GetHash() string {
 	return ""
 }
 
+// NetChange is a descriptor of a configuration change submitted via gNMI.
 type NetChange struct {
 	Time                 *timestamp.Timestamp `protobuf:"bytes,1,opt,name=time,proto3" json:"time,omitempty"`
 	Name                 string               `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -166,6 +169,71 @@ func (m *NetChange) GetChanges() []*ConfigChange {
 	return nil
 }
 
+// RegisterRequest carries data for registering or unregistering a YANG model.
+type RegisterRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RegisterRequest) Reset()         { *m = RegisterRequest{} }
+func (m *RegisterRequest) String() string { return proto.CompactTextString(m) }
+func (*RegisterRequest) ProtoMessage()    {}
+func (*RegisterRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a91573d9ad3811b0, []int{3}
+}
+
+func (m *RegisterRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RegisterRequest.Unmarshal(m, b)
+}
+func (m *RegisterRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RegisterRequest.Marshal(b, m, deterministic)
+}
+func (m *RegisterRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterRequest.Merge(m, src)
+}
+func (m *RegisterRequest) XXX_Size() int {
+	return xxx_messageInfo_RegisterRequest.Size(m)
+}
+func (m *RegisterRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterRequest proto.InternalMessageInfo
+
+// RegisterResponse carries status of YANG model registeration or unregistration.
+type RegisterResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RegisterResponse) Reset()         { *m = RegisterResponse{} }
+func (m *RegisterResponse) String() string { return proto.CompactTextString(m) }
+func (*RegisterResponse) ProtoMessage()    {}
+func (*RegisterResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a91573d9ad3811b0, []int{4}
+}
+
+func (m *RegisterResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RegisterResponse.Unmarshal(m, b)
+}
+func (m *RegisterResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RegisterResponse.Marshal(b, m, deterministic)
+}
+func (m *RegisterResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterResponse.Merge(m, src)
+}
+func (m *RegisterResponse) XXX_Size() int {
+	return xxx_messageInfo_RegisterResponse.Size(m)
+}
+func (m *RegisterResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterResponse proto.InternalMessageInfo
+
+// ChangesRequest is a message for specifying GetChanges query parameters.
 type ChangesRequest struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -176,7 +244,7 @@ func (m *ChangesRequest) Reset()         { *m = ChangesRequest{} }
 func (m *ChangesRequest) String() string { return proto.CompactTextString(m) }
 func (*ChangesRequest) ProtoMessage()    {}
 func (*ChangesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a91573d9ad3811b0, []int{3}
+	return fileDescriptor_a91573d9ad3811b0, []int{5}
 }
 
 func (m *ChangesRequest) XXX_Unmarshal(b []byte) error {
@@ -197,6 +265,7 @@ func (m *ChangesRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ChangesRequest proto.InternalMessageInfo
 
+// Change is a descriptor of a submitted configuration change targeted at a single device.
 type Change struct {
 	Time                 *timestamp.Timestamp `protobuf:"bytes,1,opt,name=time,proto3" json:"time,omitempty"`
 	Id                   string               `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
@@ -210,7 +279,7 @@ func (m *Change) Reset()         { *m = Change{} }
 func (m *Change) String() string { return proto.CompactTextString(m) }
 func (*Change) ProtoMessage()    {}
 func (*Change) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a91573d9ad3811b0, []int{4}
+	return fileDescriptor_a91573d9ad3811b0, []int{6}
 }
 
 func (m *Change) XXX_Unmarshal(b []byte) error {
@@ -252,105 +321,43 @@ func (m *Change) GetDesc() string {
 	return ""
 }
 
-type RegisterRequest struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *RegisterRequest) Reset()         { *m = RegisterRequest{} }
-func (m *RegisterRequest) String() string { return proto.CompactTextString(m) }
-func (*RegisterRequest) ProtoMessage()    {}
-func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a91573d9ad3811b0, []int{5}
-}
-
-func (m *RegisterRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RegisterRequest.Unmarshal(m, b)
-}
-func (m *RegisterRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RegisterRequest.Marshal(b, m, deterministic)
-}
-func (m *RegisterRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RegisterRequest.Merge(m, src)
-}
-func (m *RegisterRequest) XXX_Size() int {
-	return xxx_messageInfo_RegisterRequest.Size(m)
-}
-func (m *RegisterRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RegisterRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RegisterRequest proto.InternalMessageInfo
-
-type RegisterResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *RegisterResponse) Reset()         { *m = RegisterResponse{} }
-func (m *RegisterResponse) String() string { return proto.CompactTextString(m) }
-func (*RegisterResponse) ProtoMessage()    {}
-func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a91573d9ad3811b0, []int{6}
-}
-
-func (m *RegisterResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RegisterResponse.Unmarshal(m, b)
-}
-func (m *RegisterResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RegisterResponse.Marshal(b, m, deterministic)
-}
-func (m *RegisterResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RegisterResponse.Merge(m, src)
-}
-func (m *RegisterResponse) XXX_Size() int {
-	return xxx_messageInfo_RegisterResponse.Size(m)
-}
-func (m *RegisterResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_RegisterResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RegisterResponse proto.InternalMessageInfo
-
 func init() {
 	proto.RegisterType((*NetworkChangesRequest)(nil), "proto.NetworkChangesRequest")
 	proto.RegisterType((*ConfigChange)(nil), "proto.ConfigChange")
 	proto.RegisterType((*NetChange)(nil), "proto.NetChange")
-	proto.RegisterType((*ChangesRequest)(nil), "proto.ChangesRequest")
-	proto.RegisterType((*Change)(nil), "proto.Change")
 	proto.RegisterType((*RegisterRequest)(nil), "proto.RegisterRequest")
 	proto.RegisterType((*RegisterResponse)(nil), "proto.RegisterResponse")
+	proto.RegisterType((*ChangesRequest)(nil), "proto.ChangesRequest")
+	proto.RegisterType((*Change)(nil), "proto.Change")
 }
 
 func init() { proto.RegisterFile("pkg/northbound/proto/admin.proto", fileDescriptor_a91573d9ad3811b0) }
 
 var fileDescriptor_a91573d9ad3811b0 = []byte{
 	// 368 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x92, 0xcf, 0x72, 0xda, 0x30,
-	0x10, 0xc6, 0xb1, 0xa1, 0x30, 0x2c, 0x7f, 0xab, 0x0e, 0xc5, 0xe3, 0xe9, 0x4c, 0x19, 0x9f, 0xb8,
-	0xd4, 0xee, 0x98, 0x27, 0x68, 0xe1, 0x5a, 0x0e, 0x6e, 0x72, 0xcb, 0xc5, 0xe0, 0xc5, 0xd6, 0x80,
-	0x25, 0xc7, 0x92, 0x93, 0x57, 0xc8, 0x39, 0xa7, 0x3c, 0x6e, 0x46, 0x16, 0x1a, 0xfe, 0x24, 0xa7,
-	0xe4, 0xe4, 0x6f, 0x3e, 0xed, 0xb7, 0xfa, 0xed, 0xca, 0x30, 0x2b, 0xf6, 0x69, 0xc0, 0x78, 0x29,
-	0xb3, 0x0d, 0xaf, 0x58, 0x12, 0x14, 0x25, 0x97, 0x3c, 0x88, 0x93, 0x9c, 0x32, 0xbf, 0xd6, 0xe4,
-	0x4b, 0xfd, 0x71, 0x7f, 0xa6, 0x9c, 0xa7, 0x07, 0xd4, 0x05, 0x9b, 0x6a, 0x17, 0x48, 0x9a, 0xa3,
-	0x90, 0x71, 0x5e, 0xe8, 0x3a, 0x6f, 0x0a, 0x93, 0x35, 0xca, 0x47, 0x5e, 0xee, 0x97, 0x59, 0xcc,
-	0x52, 0x14, 0x11, 0xde, 0x57, 0x28, 0xa4, 0x17, 0x42, 0x7f, 0xc9, 0xd9, 0x8e, 0xa6, 0xda, 0x27,
-	0x43, 0xb0, 0x69, 0xe2, 0x58, 0x33, 0x6b, 0xde, 0x8d, 0x6c, 0x9a, 0x10, 0x02, 0xad, 0x2c, 0x16,
-	0x99, 0x63, 0xd7, 0x4e, 0xad, 0xbd, 0x67, 0x0b, 0xba, 0x6b, 0x94, 0xc7, 0x84, 0x0f, 0x2d, 0x75,
-	0x5b, 0x9d, 0xe9, 0x85, 0xae, 0xaf, 0x51, 0x7c, 0x83, 0xe2, 0xdf, 0x18, 0x94, 0xa8, 0xae, 0x53,
-	0x1d, 0x59, 0x9c, 0xa3, 0xe9, 0xa8, 0xb4, 0xf2, 0x2a, 0x81, 0xa5, 0xd3, 0xd4, 0x9e, 0xd2, 0xe4,
-	0x17, 0x74, 0xb6, 0x9a, 0xd5, 0x69, 0xcd, 0x9a, 0xf3, 0x5e, 0xf8, 0x4d, 0xf7, 0xf4, 0xcf, 0x79,
-	0x23, 0x53, 0xe3, 0x8d, 0x61, 0x78, 0x35, 0xda, 0x1d, 0xb4, 0x3f, 0x88, 0xa8, 0x97, 0x60, 0x9f,
-	0x2f, 0x21, 0x41, 0xb1, 0x35, 0x78, 0x4a, 0x7b, 0x5f, 0x61, 0x14, 0x61, 0x4a, 0x85, 0xc4, 0xd2,
-	0x5c, 0x48, 0x60, 0x7c, 0xb2, 0x44, 0xc1, 0x99, 0xc0, 0xf0, 0xc9, 0x82, 0x9e, 0x06, 0x5e, 0xd1,
-	0x38, 0x15, 0x64, 0x05, 0xc3, 0xcb, 0x87, 0x20, 0x3f, 0x8e, 0x63, 0xbd, 0xfb, 0x3e, 0xee, 0xf8,
-	0x74, 0xaa, 0x4f, 0xbc, 0xc6, 0x6f, 0x8b, 0x2c, 0xa0, 0x63, 0xe2, 0x13, 0xb3, 0x95, 0xcb, 0xdc,
-	0xe0, 0xc2, 0x56, 0xa1, 0xf0, 0xc5, 0x82, 0xfe, 0x1f, 0xf5, 0xef, 0xfc, 0xc7, 0xf2, 0x81, 0x6e,
-	0x91, 0xfc, 0x85, 0x81, 0xe1, 0xfd, 0xc7, 0x13, 0x3c, 0x90, 0xef, 0xc7, 0xd0, 0xd5, 0x60, 0xee,
-	0xf4, 0x8d, 0xaf, 0xa7, 0xf3, 0x1a, 0x64, 0x05, 0xa3, 0x5b, 0x56, 0x7e, 0xb2, 0xcb, 0xa6, 0x5d,
-	0x9f, 0x2c, 0x5e, 0x03, 0x00, 0x00, 0xff, 0xff, 0x83, 0x03, 0x84, 0xf0, 0xf1, 0x02, 0x00, 0x00,
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x52, 0x4d, 0x4f, 0xe3, 0x30,
+	0x10, 0x55, 0xd2, 0x6e, 0x57, 0x9d, 0x7e, 0x7b, 0xd5, 0x6d, 0x14, 0xad, 0xb4, 0x55, 0x4e, 0xbd,
+	0x90, 0x54, 0x81, 0x1f, 0x00, 0x14, 0xd4, 0x13, 0x3d, 0x04, 0xb8, 0x71, 0x49, 0x9b, 0x69, 0x62,
+	0xb5, 0xb1, 0x43, 0xec, 0xc0, 0xff, 0xe0, 0xef, 0xf1, 0x67, 0x50, 0xe2, 0x5a, 0xfd, 0x80, 0x13,
+	0x9c, 0x32, 0x79, 0xf3, 0xfc, 0xfc, 0xde, 0x8c, 0x61, 0x9c, 0x6d, 0x62, 0x8f, 0xf1, 0x5c, 0x26,
+	0x4b, 0x5e, 0xb0, 0xc8, 0xcb, 0x72, 0x2e, 0xb9, 0x17, 0x46, 0x29, 0x65, 0x6e, 0x55, 0x93, 0x5f,
+	0xd5, 0xc7, 0xfe, 0x1f, 0x73, 0x1e, 0x6f, 0x51, 0x11, 0x96, 0xc5, 0xda, 0x93, 0x34, 0x45, 0x21,
+	0xc3, 0x34, 0x53, 0x3c, 0x67, 0x04, 0xc3, 0x05, 0xca, 0x57, 0x9e, 0x6f, 0x66, 0x49, 0xc8, 0x62,
+	0x14, 0x01, 0x3e, 0x17, 0x28, 0xa4, 0xe3, 0x43, 0x7b, 0xc6, 0xd9, 0x9a, 0xc6, 0x0a, 0x27, 0x5d,
+	0x30, 0x69, 0x64, 0x19, 0x63, 0x63, 0xd2, 0x0c, 0x4c, 0x1a, 0x11, 0x02, 0xf5, 0x24, 0x14, 0x89,
+	0x65, 0x56, 0x48, 0x55, 0x3b, 0x6f, 0x06, 0x34, 0x17, 0x28, 0x77, 0x27, 0x5c, 0xa8, 0x97, 0xb7,
+	0x55, 0x67, 0x5a, 0xbe, 0xed, 0x2a, 0x2b, 0xae, 0xb6, 0xe2, 0x3e, 0x68, 0x2b, 0x41, 0xc5, 0x2b,
+	0x15, 0x59, 0x98, 0xa2, 0x56, 0x2c, 0xeb, 0x12, 0x2b, 0x04, 0xe6, 0x56, 0x4d, 0x61, 0x65, 0x4d,
+	0xce, 0xe0, 0xf7, 0x4a, 0x79, 0xb5, 0xea, 0xe3, 0xda, 0xa4, 0xe5, 0xff, 0x51, 0x9a, 0xee, 0xa1,
+	0xdf, 0x40, 0x73, 0x9c, 0x01, 0xf4, 0x02, 0x8c, 0xa9, 0x90, 0x98, 0xeb, 0x6c, 0x04, 0xfa, 0x7b,
+	0x48, 0x64, 0x9c, 0x09, 0x74, 0xfa, 0xd0, 0x3d, 0x99, 0xc0, 0x13, 0x34, 0xbe, 0x99, 0x44, 0xcd,
+	0xca, 0x3c, 0x9c, 0x55, 0x84, 0x62, 0xa5, 0x53, 0x94, 0xb5, 0xff, 0x6e, 0x40, 0xfb, 0xaa, 0x5c,
+	0xd8, 0x3d, 0xe6, 0x2f, 0x74, 0x85, 0xe4, 0x12, 0x3a, 0xda, 0xd4, 0x1d, 0x8f, 0x70, 0x4b, 0xfe,
+	0xee, 0x62, 0x9d, 0xb8, 0xb7, 0x47, 0x9f, 0x70, 0x15, 0x81, 0x5c, 0x43, 0xef, 0x91, 0xe5, 0x3f,
+	0xd3, 0xb8, 0x85, 0xc1, 0x1c, 0xe5, 0xf1, 0x93, 0x20, 0xff, 0x76, 0xec, 0x2f, 0x5f, 0x8a, 0xdd,
+	0xdf, 0x77, 0x55, 0x67, 0x6a, 0xf8, 0x33, 0x68, 0xa9, 0x6d, 0xdc, 0xd0, 0x30, 0x16, 0xe4, 0x02,
+	0x60, 0xae, 0xbb, 0x82, 0x0c, 0xf5, 0xbe, 0x8e, 0x75, 0x3a, 0x47, 0xf0, 0xd4, 0x58, 0x36, 0xaa,
+	0xff, 0xf3, 0x8f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xf3, 0xfb, 0x1d, 0xd2, 0xee, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -361,174 +368,16 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// ConfigDiagsClient is the client API for ConfigDiags service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type ConfigDiagsClient interface {
-	NetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (ConfigDiags_NetworkChangesClient, error)
-	Changes(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (ConfigDiags_ChangesClient, error)
-}
-
-type configDiagsClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewConfigDiagsClient(cc *grpc.ClientConn) ConfigDiagsClient {
-	return &configDiagsClient{cc}
-}
-
-func (c *configDiagsClient) NetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (ConfigDiags_NetworkChangesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_ConfigDiags_serviceDesc.Streams[0], "/proto.ConfigDiags/NetworkChanges", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &configDiagsNetworkChangesClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type ConfigDiags_NetworkChangesClient interface {
-	Recv() (*NetChange, error)
-	grpc.ClientStream
-}
-
-type configDiagsNetworkChangesClient struct {
-	grpc.ClientStream
-}
-
-func (x *configDiagsNetworkChangesClient) Recv() (*NetChange, error) {
-	m := new(NetChange)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *configDiagsClient) Changes(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (ConfigDiags_ChangesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_ConfigDiags_serviceDesc.Streams[1], "/proto.ConfigDiags/Changes", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &configDiagsChangesClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type ConfigDiags_ChangesClient interface {
-	Recv() (*Change, error)
-	grpc.ClientStream
-}
-
-type configDiagsChangesClient struct {
-	grpc.ClientStream
-}
-
-func (x *configDiagsChangesClient) Recv() (*Change, error) {
-	m := new(Change)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-// ConfigDiagsServer is the server API for ConfigDiags service.
-type ConfigDiagsServer interface {
-	NetworkChanges(*NetworkChangesRequest, ConfigDiags_NetworkChangesServer) error
-	Changes(*ChangesRequest, ConfigDiags_ChangesServer) error
-}
-
-// UnimplementedConfigDiagsServer can be embedded to have forward compatible implementations.
-type UnimplementedConfigDiagsServer struct {
-}
-
-func (*UnimplementedConfigDiagsServer) NetworkChanges(req *NetworkChangesRequest, srv ConfigDiags_NetworkChangesServer) error {
-	return status.Errorf(codes.Unimplemented, "method NetworkChanges not implemented")
-}
-func (*UnimplementedConfigDiagsServer) Changes(req *ChangesRequest, srv ConfigDiags_ChangesServer) error {
-	return status.Errorf(codes.Unimplemented, "method Changes not implemented")
-}
-
-func RegisterConfigDiagsServer(s *grpc.Server, srv ConfigDiagsServer) {
-	s.RegisterService(&_ConfigDiags_serviceDesc, srv)
-}
-
-func _ConfigDiags_NetworkChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(NetworkChangesRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ConfigDiagsServer).NetworkChanges(m, &configDiagsNetworkChangesServer{stream})
-}
-
-type ConfigDiags_NetworkChangesServer interface {
-	Send(*NetChange) error
-	grpc.ServerStream
-}
-
-type configDiagsNetworkChangesServer struct {
-	grpc.ServerStream
-}
-
-func (x *configDiagsNetworkChangesServer) Send(m *NetChange) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _ConfigDiags_Changes_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ChangesRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ConfigDiagsServer).Changes(m, &configDiagsChangesServer{stream})
-}
-
-type ConfigDiags_ChangesServer interface {
-	Send(*Change) error
-	grpc.ServerStream
-}
-
-type configDiagsChangesServer struct {
-	grpc.ServerStream
-}
-
-func (x *configDiagsChangesServer) Send(m *Change) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-var _ConfigDiags_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.ConfigDiags",
-	HandlerType: (*ConfigDiagsServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "NetworkChanges",
-			Handler:       _ConfigDiags_NetworkChanges_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "Changes",
-			Handler:       _ConfigDiags_Changes_Handler,
-			ServerStreams: true,
-		},
-	},
-	Metadata: "pkg/northbound/proto/admin.proto",
-}
-
 // AdminServiceClient is the client API for AdminService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type AdminServiceClient interface {
+	// RegisterModel adds the specified YANG model to the list of supported models.
 	RegisterModel(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
+	// UnregisterModel removes the specified YANG model from the list of supported models.
 	UnregisterModel(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
+	// GetNetworkChanges returns a stream of network changes submitted via gNMI.
+	GetNetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (AdminService_GetNetworkChangesClient, error)
 }
 
 type adminServiceClient struct {
@@ -557,10 +406,46 @@ func (c *adminServiceClient) UnregisterModel(ctx context.Context, in *RegisterRe
 	return out, nil
 }
 
+func (c *adminServiceClient) GetNetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (AdminService_GetNetworkChangesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_AdminService_serviceDesc.Streams[0], "/proto.AdminService/GetNetworkChanges", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &adminServiceGetNetworkChangesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type AdminService_GetNetworkChangesClient interface {
+	Recv() (*NetChange, error)
+	grpc.ClientStream
+}
+
+type adminServiceGetNetworkChangesClient struct {
+	grpc.ClientStream
+}
+
+func (x *adminServiceGetNetworkChangesClient) Recv() (*NetChange, error) {
+	m := new(NetChange)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 type AdminServiceServer interface {
+	// RegisterModel adds the specified YANG model to the list of supported models.
 	RegisterModel(context.Context, *RegisterRequest) (*RegisterResponse, error)
+	// UnregisterModel removes the specified YANG model from the list of supported models.
 	UnregisterModel(context.Context, *RegisterRequest) (*RegisterResponse, error)
+	// GetNetworkChanges returns a stream of network changes submitted via gNMI.
+	GetNetworkChanges(*NetworkChangesRequest, AdminService_GetNetworkChangesServer) error
 }
 
 // UnimplementedAdminServiceServer can be embedded to have forward compatible implementations.
@@ -572,6 +457,9 @@ func (*UnimplementedAdminServiceServer) RegisterModel(ctx context.Context, req *
 }
 func (*UnimplementedAdminServiceServer) UnregisterModel(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnregisterModel not implemented")
+}
+func (*UnimplementedAdminServiceServer) GetNetworkChanges(req *NetworkChangesRequest, srv AdminService_GetNetworkChangesServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetNetworkChanges not implemented")
 }
 
 func RegisterAdminServiceServer(s *grpc.Server, srv AdminServiceServer) {
@@ -614,6 +502,27 @@ func _AdminService_UnregisterModel_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetNetworkChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(NetworkChangesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AdminServiceServer).GetNetworkChanges(m, &adminServiceGetNetworkChangesServer{stream})
+}
+
+type AdminService_GetNetworkChangesServer interface {
+	Send(*NetChange) error
+	grpc.ServerStream
+}
+
+type adminServiceGetNetworkChangesServer struct {
+	grpc.ServerStream
+}
+
+func (x *adminServiceGetNetworkChangesServer) Send(m *NetChange) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _AdminService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.AdminService",
 	HandlerType: (*AdminServiceServer)(nil),
@@ -627,6 +536,113 @@ var _AdminService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_UnregisterModel_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetNetworkChanges",
+			Handler:       _AdminService_GetNetworkChanges_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "pkg/northbound/proto/admin.proto",
+}
+
+// ConfigDiagsClient is the client API for ConfigDiags service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type ConfigDiagsClient interface {
+	// GetChanges returns a stream of submitted changes aimed at individual devices.
+	GetChanges(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (ConfigDiags_GetChangesClient, error)
+}
+
+type configDiagsClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewConfigDiagsClient(cc *grpc.ClientConn) ConfigDiagsClient {
+	return &configDiagsClient{cc}
+}
+
+func (c *configDiagsClient) GetChanges(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (ConfigDiags_GetChangesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_ConfigDiags_serviceDesc.Streams[0], "/proto.ConfigDiags/GetChanges", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &configDiagsGetChangesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ConfigDiags_GetChangesClient interface {
+	Recv() (*Change, error)
+	grpc.ClientStream
+}
+
+type configDiagsGetChangesClient struct {
+	grpc.ClientStream
+}
+
+func (x *configDiagsGetChangesClient) Recv() (*Change, error) {
+	m := new(Change)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ConfigDiagsServer is the server API for ConfigDiags service.
+type ConfigDiagsServer interface {
+	// GetChanges returns a stream of submitted changes aimed at individual devices.
+	GetChanges(*ChangesRequest, ConfigDiags_GetChangesServer) error
+}
+
+// UnimplementedConfigDiagsServer can be embedded to have forward compatible implementations.
+type UnimplementedConfigDiagsServer struct {
+}
+
+func (*UnimplementedConfigDiagsServer) GetChanges(req *ChangesRequest, srv ConfigDiags_GetChangesServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetChanges not implemented")
+}
+
+func RegisterConfigDiagsServer(s *grpc.Server, srv ConfigDiagsServer) {
+	s.RegisterService(&_ConfigDiags_serviceDesc, srv)
+}
+
+func _ConfigDiags_GetChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ChangesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ConfigDiagsServer).GetChanges(m, &configDiagsGetChangesServer{stream})
+}
+
+type ConfigDiags_GetChangesServer interface {
+	Send(*Change) error
+	grpc.ServerStream
+}
+
+type configDiagsGetChangesServer struct {
+	grpc.ServerStream
+}
+
+func (x *configDiagsGetChangesServer) Send(m *Change) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+var _ConfigDiags_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.ConfigDiags",
+	HandlerType: (*ConfigDiagsServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetChanges",
+			Handler:       _ConfigDiags_GetChanges_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "pkg/northbound/proto/admin.proto",
 }

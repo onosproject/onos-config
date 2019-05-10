@@ -47,6 +47,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -119,6 +120,7 @@ func main() {
 	}
 }
 
+// Starts gRPC server and registers various services; then serves
 func startServer() error {
 	cfg := &northbound.ServerConfig{
 		Port : 5150,
@@ -127,6 +129,7 @@ func startServer() error {
 
 	serv := northbound.NewServer(cfg)
 	serv.AddService(admin.Service{})
+	serv.AddService(diags.Service{})
 	serv.AddService(gnmi.Service{})
 
 	return serv.Serve()
