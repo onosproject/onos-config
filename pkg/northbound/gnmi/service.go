@@ -158,9 +158,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	for target, updates := range targetUpdates{
-		changeId, err := manager.GetManager().SetNetworkConfig(target, "test", updates, targetRemoves[target])
+		changeID, err := manager.GetManager().SetNetworkConfig(target, "test", updates, targetRemoves[target])
 		if err != nil {
-			log.Println("Error in setting config:", changeId, "for target", target)
+			log.Println("Error in setting config:", changeID, "for target", target)
 			//TODO save error and stop proccess and initiate rollback
 		}
 	}
