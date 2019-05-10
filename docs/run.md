@@ -55,24 +55,27 @@ gnmi_cli -get -address localhost:5150 \
 >         elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>>
 >         elem: <name: 'config'> elem: <name: 'address'>>"
 
+### Administrative Tools
+The project provides a number of administrative tools for remotely accessing the enhanced northbound
+functionality.
+
+For example, to list all network changes submitted through the northbound gNMI interface run:
+```bash
+go run github.com/onosproject/onos-config/cmd/admin/net-changes
+```
+
 ### Diagnostic Tools
-There are several commands that provide internal view into the state the onos-config store
-meta-data. These tools use a special-purpose gRPC interface to obtain the internal meta-data
+There are a number of commands that provide internal view into the state the onos-config store.
+These tools use a special-purpose gRPC interfaces to obtain the internal meta-data
 from the running onos-config process. Please note that these tools are intended purely for
 diagnostics and should not be relied upon for programmatic purposes as they are not subject
 to any backward compatibility guarantees.
 
-To list all network changes submitted through the northbound gNMI interface run:
-```bash
-go run github.com/onosproject/onos-config/cmd/diags/net-changes
-```
-
-Similarly, run the following to list all changes submitted through the northbound gNMI but
-broken-up into device specific batches:
+For example, run the following to list all changes submitted through the northbound gNMI 
+as they are tracked by the system broken-up into device specific batches:
 ```bash
 go run github.com/onosproject/onos-config/cmd/diags/changes
 ```
-
 
 ## Documentation
 > Documentation is not yet publicy published
