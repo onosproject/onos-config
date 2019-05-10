@@ -1,10 +1,10 @@
-## Contributing to onos-config
+# Contributing to onos-config
 
 Welcome to the µONOS-config contributing guide.  
 We'd love to accept your patches and contributions to this project. 
 There are just a few small guidelines you need to follow. 
 
-### Workflow
+## Workflow
 
 ![Git workflow](contributing_workflow.png)
 
@@ -166,7 +166,7 @@ _If you have upstream write access_, please refrain from using the
 `Revert` button in the GitHub UI for creating the PR, because GitHub
 will create the PR branch inside the main repository rather than inside your fork.
 
-1. Create a branch and sync it with upstream.
+#### 1. Create a branch and sync it with upstream.
 
 ```sh
 # create a branch
@@ -177,7 +177,7 @@ git fetch upstream
 git rebase upstream/master
 ```
 
-2. If the commit you wish to revert is a:
+#### 2. If the commit you wish to revert is a:
 
 - merge commit:
 
@@ -202,7 +202,7 @@ git push ${your_remote_name} myrevert
 
 4. [Create a Pull Request](#7-create-a-pull-request) using this branch.
 
-### Community Guidelines
+## Community Guidelines
 
 This project follows [Google's Open Source Community
 Guidelines](https://opensource.google.com/conduct/).

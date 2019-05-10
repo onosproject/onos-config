@@ -1,4 +1,4 @@
-# Deploying µONOS Config
+# Deploying onos-config
 
 One of the goals of the µONOS Config project is to provide simple deployment options
 that integrate with modern technologies. Deployment configurations can be found in
@@ -21,7 +21,7 @@ it over the network, both inside and outside the k8s cluster:
 * `Secret` - Provides TLS certificates for end-to-end encryption
 * `Ingress` - Optionally provides support for external load balancing
 
-### Local deployment setup
+### Local Deployment Setup
 
 To deploy the Helm chart locally, install [Minikube] and [Helm]. On OSX, this can be done
 using [Brew]:
@@ -64,7 +64,7 @@ need to enable the ingress addon:
 > minikube addons enable ingress
 ```
 
-### Installing the chart
+### Installing the Chart
 
 To install the chart, simply run `helm install deployments/helm` from the root
 directory of this project:
