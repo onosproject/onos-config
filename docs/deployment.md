@@ -115,7 +115,7 @@ to the service through the load balancer:
 
 ```bash
 > go run github.com/onosproject/onos-config/cmd/diags/changes \
-    -address=192.168.99.102:443 \
+    -address=config.onosproject.org:443 \
     -keyPath=deployments/helm/files/certs/tls.key \
     -certPath=deployments/helm/files/certs/tls.crt
 ```
