@@ -1,6 +1,6 @@
 # Developer Workflow for onos-config
 
-Note: This file assumes you have passed all the steps in [Prerequisites](./Prerequisites.md) and checked out the code as described in the first 4 steps in [CONTRIBUTING.md](contributing.md).
+Note: This file assumes you have passed all the steps in [Prerequisites](xprerequisites.md) and checked out the code as described in the first 4 steps in [CONTRIBUTING.md](contributing.md).
 
 ## Docker
 See [README.md](/../master/build/dev-docker/README.md) for instructions
