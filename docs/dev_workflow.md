@@ -14,11 +14,12 @@ After you made some changes to the code locally before opening a pull request yo
 * Run and pass `make build`
 * Run and pass `make test`
 
-You can find more information in the [build file](build.md)
+You can find more information in the [build file](build.md).
 
 ## Submit a Pull Request
 
-After the build and the test pass you can open a pull request following steps from 5 onwards of the [contributing how-to](contributing.md).
+After the build and the test pass you can open a pull request following guidance form [here](pull_requests.md) 
+and steps from 5 onwards of the [contributing how-to](contributing.md).
 
 ## Pull Request Review process
 The pull Request you just opened will be checked by our Travis CI system and reviewed by the community. 

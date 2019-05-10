@@ -6,7 +6,7 @@ validating the project. As such this container can be used as part of the Travis
 To build the container run the following command:
 
 ```sh
-docker build -t onos-config:0.1 build/dev-docker
+docker build -t onos-config:latest build/dev-docker
 ```
 
 ## Using the Container
@@ -17,6 +17,6 @@ the project dependencies and then will build the _onos-config_ project.
 This can be accomplished by running the following command:
 
 ```sh
-docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:0.2 build
+docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:latest build
 ```
 
