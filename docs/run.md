@@ -4,7 +4,7 @@
 > and your:
 > GOPATH=~/go
 
-Note: this assumes you have followed the the [developer workflow](xdev_workflow.md) steps done. 
+Note: this assumes you have followed the the [developer workflow](dev_workflow.md) steps done. 
 
 ## Unit test
 ```bash
