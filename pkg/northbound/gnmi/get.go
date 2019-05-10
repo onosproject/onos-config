@@ -29,6 +29,28 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	for _, path := range req.Path {
 		target := path.Target
+		// Special case - if target is "*" then ignore path and just return a list
+		// of devices
+		if target == "*" {
+			deviceIds := make([]*gnmi.TypedValue, 0)
+
+			for _, deviceID := range *manager.GetManager().GetAllDeviceIds() {
+				typedVal := gnmi.TypedValue_StringVal{StringVal: deviceID}
+				deviceIds = append(deviceIds, &gnmi.TypedValue{Value: &typedVal})
+			}
+			var allDevicesPathElem = make([]*gnmi.PathElem, 0)
+			allDevicesPathElem = append(allDevicesPathElem, &gnmi.PathElem{Name: "all-devices"})
+			allDevicesPath := gnmi.Path{Elem:allDevicesPathElem, Target: "*"}
+			typedVal := gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: deviceIds}}
+
+			update := &gnmi.Update{
+				Path: &allDevicesPath,
+				Val:  &gnmi.TypedValue{Value: &typedVal},
+			}
+			updates = append(updates, update)
+			break
+		}
+
 		pathAsString := utils.StrPath(path)
 		configValues, err := manager.GetManager().GetNetworkConfig(target, "",
 			pathAsString, 0)

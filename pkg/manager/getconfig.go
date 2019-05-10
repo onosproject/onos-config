@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"sort"
 	"strings"
 )
 
@@ -49,4 +50,16 @@ func (m *Manager) GetNetworkConfig(target string, configname string, path string
 	}
 
 	return filteredValues, nil
+}
+
+// GetAllDeviceIds returns a list of just DeviceIDs from the Config store
+func (m *Manager) GetAllDeviceIds() *[]string {
+	var deviceIds = make([]string, 0)
+
+	for _, v := range m.ConfigStore.Store {
+		deviceIds = append(deviceIds, v.Device)
+	}
+	sort.Strings(deviceIds)
+
+	return &deviceIds
 }
