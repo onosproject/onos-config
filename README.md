@@ -54,6 +54,6 @@ provided as additional layers:
 
 
 ## Additional Documentation
-* [How to contribute](./docs/CONTRIBUTING.md) to onos-config
-* [Developer workflow](./docs/DEV_WORKFLOW.md) for onos-config
-* [How to run](./docs/RUN.md) onos-config server and related commands
+* [How to contribute](docs/xcontributing.md) to onos-config
+* [Developer workflow](docs/xdev_workflow.md) for onos-config
+* [How to run](docs/xrun.md) onos-config server and related commands
