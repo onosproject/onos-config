@@ -3,7 +3,7 @@
 Note: This file assumes you have passed all the steps in [Prerequisites](prerequisites.md) and checked out the code as described in the first 4 steps in [the contributing how-to](contributing.md).
 
 ## Docker
-See [the docker build REAADME](/../master/build/dev-docker/README.md) for instructions
+See [the docker build README](/../master/build/dev-docker/README.md) for instructions
 to build a Dev image that downloads any dependencies to you local folder
 This resolves any go dependencies that are needed. 
 
