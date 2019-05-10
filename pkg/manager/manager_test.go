@@ -49,11 +49,14 @@ const (
 	Test1Cont1A             = "/test1:cont1a"
 	Test1Cont1ACont2A       = "/test1:cont1a/cont2a"
 	Test1Cont1ACont2ALeaf2A = "/test1:cont1a/cont2a/leaf2a"
+	Test1Cont1ACont2ALeaf2B = "/test1:cont1a/cont2a/leaf2b"
+	Test1Cont1ACont2ALeaf2C = "/test1:cont1a/cont2a/leaf2c"
 )
 
 const (
 	ValueEmpty    = ""
 	ValueLeaf2A13 = "13"
+	ValueLeaf2B159      = "1.579"
 )
 
 func TestMain(m *testing.M) {
@@ -71,7 +74,7 @@ func TestMain(m *testing.M) {
 	changeStoreTest[store.B64(change1.ID)] = change1
 
 	device1config = store.Configuration{
-		Name:        "Device1Version",
+		Name:        "Running",
 		Device:      "Device1",
 		Created:     time.Now(),
 		Updated:     time.Now(),
@@ -80,7 +83,7 @@ func TestMain(m *testing.M) {
 		Changes:     []change.ID{change1.ID},
 	}
 	configurationStoreTest = make(map[string]store.Configuration)
-	configurationStoreTest["Device1Version"] = device1config
+	configurationStoreTest["Running"] = device1config
 
 	deviceStoreTest = make(map[string]topocache.Device)
 	deviceStoreTest["Device1"] = topocache.Device{
@@ -116,10 +119,48 @@ func TestMain(m *testing.M) {
 
 func Test_GetNetworkConfig(t *testing.T) {
 
-	result, err := mgrTest.GetNetworkConfig("Device1", "running", "/*", 0)
+	result, err := mgrTest.GetNetworkConfig("Device1", "Running", "/*", 0)
 	assert.NilError(t, err, "GetNetworkConfig error")
 
 	assert.Equal(t, len(result), 3, "Unexpected result element count")
 
 	assert.Equal(t, result[0].Path, Test1Cont1A, "result %s is different")
+}
+
+func Test_SetNetworkConfig(t *testing.T) {
+
+	updates := make(map[string]string)
+	deletes := make([]string, 0)
+
+	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
+	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
+	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
+
+	changeID, err := mgrTest.SetNetworkConfig("Device1", "Running", updates, deletes)
+	assert.NilError(t, err, "GetNetworkConfig error")
+	testUpdate := configurationStoreTest["Running"]
+	changeIDTest := testUpdate.Changes[len(testUpdate.Changes)-1]
+	assert.Equal(t, store.B64(changeID), store.B64(changeIDTest), "Change Ids should correspond")
+
+	//Done in this order because ordering on a path base in the store.
+	updatedVals := changeStoreTest[store.B64(changeID)].Config
+	assert.Equal(t, len(updatedVals), 3)
+
+	//Asserting deletion 2A
+	assert.Equal(t, updatedVals[0].Path, Test1Cont1ACont2ALeaf2A)
+	assert.Equal(t, updatedVals[0].Value, "")
+	assert.Equal(t, updatedVals[0].Remove, true)
+
+	//Asserting Removal
+	assert.Equal(t, updatedVals[1].Path, Test1Cont1ACont2ALeaf2B)
+	assert.Equal(t, updatedVals[1].Value, ValueLeaf2B159)
+	assert.Equal(t, updatedVals[1].Remove, false)
+
+	//Asserting deletion of 2C
+	assert.Equal(t, updatedVals[2].Path, Test1Cont1ACont2ALeaf2C)
+	assert.Equal(t, updatedVals[2].Value, "")
+	assert.Equal(t, updatedVals[2].Remove, true)
+
+
+
 }

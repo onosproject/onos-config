@@ -25,7 +25,7 @@ import (
 
 // SetNetworkConfig sets the given value, according to the path on the configuration for the specified targed
 func (m *Manager) SetNetworkConfig(target string, configName string, updates map[string]string,
-	removes []string) (change.ID, error) {
+	deletes []string) (change.ID, error) {
 	if _, ok := m.deviceStore.Store[target]; !ok {
 		return nil, fmt.Errorf("Device not present %s", target)
 	}
@@ -37,9 +37,8 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 			Device:  target,
 			Created: time.Now(),
 			Updated: time.Now(),
-			//TODO make these usable value
-			User:        "foo",
-			Description: "test",
+			User:        "User1",
+			Description: fmt.Sprintf("Configuration %s for target %s", configName, target),
 			Changes:     make([]change.ID, 0),
 		}
 	}
@@ -51,14 +50,13 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 		newChange = append(newChange, changeValue)
 	}
 
-	//removes
-	for _, path := range removes {
+	//deletes
+	for _, path := range deletes {
 		changeValue, _ := change.CreateChangeValue(path, "", true)
 		newChange = append(newChange, changeValue)
 	}
 
-	//TODO gNMI --> no description we need to come up with something
-	configChange, err := change.CreateChange(newChange, "bar")
+	configChange, err := change.CreateChange(newChange, fmt.Sprintf("Update at %s", time.Now()))
 	if err != nil {
 		return nil, err
 	}

@@ -17,9 +17,12 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"log"
+	"time"
 )
 
 // Set implements gNMI Set
@@ -65,14 +68,26 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		targetRemoves[target] = deletes
 	}
 
-	for target, updates := range targetUpdates{
-		changeID, err := manager.GetManager().SetNetworkConfig(target, "test", updates, targetRemoves[target])
+	networkChangeIds := make(map[string]change.ID)
+	configName := "Running"
+	for target, updates := range targetUpdates {
+		changeID, err := manager.GetManager().SetNetworkConfig(target, configName, updates, targetRemoves[target])
 		if err != nil {
 			log.Println("Error in setting config:", changeID, "for target", target)
-			//TODO save error and stop proccess and initiate rollback
+			//TODO save error and stop process and initiate rollback
 		}
+		networkChangeIds[target] = changeID
 	}
-	//TODO consolidate across devices and create a network change
+
+	//TODO move to manager.CreateNewNetworkConfig
+	networkConfig := store.NetworkConfiguration{
+		Name:                 "Current",
+		Created:              time.Now(),
+		User:                 "User1",
+		ConfigurationChanges: networkChangeIds,
+	}
+	manager.GetManager().NetworkStore.Store = append(manager.GetManager().NetworkStore.Store, networkConfig)
+
 	//TODO Create the SetResponse
 	return &gnmi.SetResponse{}, nil
 }
