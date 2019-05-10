@@ -21,6 +21,7 @@ import (
 	"time"
 )
 
+// ConfigName is an alias for string - is used to qualify identifier for Configuration
 type ConfigName string
 
 // Configuration is the connection between a device and Change objects
