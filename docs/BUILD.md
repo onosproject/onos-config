@@ -21,7 +21,7 @@ image. To build with the build image, mount the onos-config root to the containe
 and pass the desired argument to the Makefile:
 
 ```
-docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:0.3 build
+docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build build
 ```
 
 ### Running the Docker image in development
@@ -35,7 +35,7 @@ To run the image for development, you must map the ports to the host and mount
 test configuration files to the container:
 
 ```
-docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosproject/onos-config:0.1 \
+docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosproject/onos-config \
 -configStore=/etc/onos-config-manager/configStore-sample.json \
 -changeStore=/etc/onos-config-manager/changeStore-sample.json \
 -deviceStore=/etc/onos-config-manager/deviceStore-sample.json \
