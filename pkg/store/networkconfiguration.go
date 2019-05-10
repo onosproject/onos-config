@@ -15,7 +15,9 @@
 package store
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"regexp"
 	"time"
 )
 
@@ -25,5 +27,21 @@ type NetworkConfiguration struct {
 	Name                 string
 	Created              time.Time
 	User                 string
-	ConfigurationChanges map[string]change.ID
+	ConfigurationChanges map[ConfigName]change.ID
+}
+
+// CreateNetworkStore creates a NetworkConfiguration object
+func CreateNetworkStore(name string, user string) (*NetworkConfiguration, error) {
+	r1 := regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
+	match := r1.FindString(name)
+	if name != match {
+		return nil, fmt.Errorf("Error in name %s", name)
+	}
+
+	return &NetworkConfiguration{
+		Name: name,
+		Created: time.Now(),
+		User: user,
+		ConfigurationChanges: make(map[ConfigName]change.ID),
+	}, nil
 }

@@ -21,10 +21,12 @@ import (
 	"time"
 )
 
+type ConfigName string
+
 // Configuration is the connection between a device and Change objects
 // The set of ChangeIds define it's content
 type Configuration struct {
-	Name        string
+	Name        ConfigName
 	Device      string
 	Created     time.Time
 	Updated     time.Time
