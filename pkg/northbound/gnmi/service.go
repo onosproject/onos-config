@@ -28,6 +28,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"io/ioutil"
+	"log"
 	"time"
 )
 
@@ -115,6 +116,56 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
+	//updates := make(map[string]string)
+	targetUpdates := make(map[string]map[string]string)
+	targetRemoves := make(map[string][]string)
+
+	//TODO consolidate these lines into methods
+	//Update
+	for _, u := range req.Update {
+		target := u.Path.Target
+		updates, ok := targetUpdates[target]
+		if !ok {
+			updates = make(map[string]string)
+		}
+		path := utils.StrPath(u.Path)
+		updates[path] = utils.StrVal(u.Val)
+		targetUpdates[target] = updates
+	}
+
+	//Replace
+	for _, u := range req.Replace {
+		target := u.Path.Target
+		updates, ok := targetUpdates[target]
+		if !ok {
+			updates = make(map[string]string)
+		}
+		path := utils.StrPath(u.Path)
+		updates[path] = utils.StrVal(u.Val)
+		targetUpdates[target] = updates
+	}
+
+	//Delete
+	for _, u := range req.Delete {
+		target := u.Target
+		deletes, ok := targetRemoves[target]
+		if !ok {
+			deletes = make([]string, 0)
+		}
+		path := utils.StrPath(u)
+		deletes = append(deletes, path)
+		targetRemoves[target] = deletes
+	}
+
+	for target, updates := range targetUpdates{
+		changeId, err := manager.GetManager().SetNetworkConfig(target, "test", updates, targetRemoves[target])
+		if err != nil {
+			log.Println("Error in setting config:", changeId, "for target", target)
+			//TODO save error and stop proccess and initiate rollback
+		}
+	}
+	//TODO consolidate across devices and create a network change
+	//TODO Create the SetResponse
 	return &gnmi.SetResponse{}, nil
 }
 
