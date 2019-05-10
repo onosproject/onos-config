@@ -54,6 +54,7 @@ provided as additional layers:
 
 
 ## Additional Documentation
-* [How to contribute](docs/contributing.md) to onos-config
-* [Developer workflow](docs/dev_workflow.md) for onos-config
+* [How to contribute](docs/contributing.md) to onos-config project
+* [How to build](docs/ildbu.md) onos-config server, related commands and Docker image
 * [How to run](docs/run.md) onos-config server and related commands
+* [(WIP) Developer workflow](docs/dev_workflow.md) for onos-config project

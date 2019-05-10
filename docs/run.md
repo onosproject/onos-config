@@ -1,4 +1,4 @@
-## Running onos-config 
+# Running onos-config 
 
 > The commands can be run from anywhere on your PC - it assumes that go is installed
 > and your:
@@ -6,7 +6,7 @@
 
 Note: this assumes you have followed the the [developer workflow](dev_workflow.md) steps done. 
 
-### Run Server Locally
+## Run Server Locally
 ```bash
 go run github.com/onosproject/onos-config/cmd/onos-config-manager \
     -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
@@ -15,7 +15,7 @@ go run github.com/onosproject/onos-config/cmd/onos-config-manager \
     -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
 ```
 
-### Run Server in Docker Image
+## Run Server in Docker Image
 
 | Note that that the Docker image can be built via `make` (see the [build document](build.md))
 
@@ -30,7 +30,7 @@ docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosprojec
     -networkStore=/etc/onos-config-manager/networkStore-sample.json
 ```
 
-### Northbound Get Request via gNMI
+## Northbound Get Request via gNMI
 The system implements a gNMI Northbound interface on port 5150
 To access it you can run (from onos-config):
 
@@ -63,7 +63,7 @@ gnmi_cli -get -address localhost:5150 \
 >         elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>>
 >         elem: <name: 'config'> elem: <name: 'address'>>"
 
-### Northbound Set Request via gNMI
+## Northbound Set Request via gNMI
 Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
 
 ```bash
@@ -83,7 +83,7 @@ gnmi_cli -address localhost:5150 -set \
 > southbound layer
 
 
-### Administrative Tools
+## Administrative Tools
 The project provides a number of administrative tools for remotely accessing the enhanced northbound
 functionality.
 
@@ -92,7 +92,7 @@ For example, to list all network changes submitted through the northbound gNMI i
 go run github.com/onosproject/onos-config/cmd/admin/net-changes
 ```
 
-### Diagnostic Tools
+## Diagnostic Tools
 There are a number of commands that provide internal view into the state the onos-config store.
 These tools use a special-purpose gRPC interfaces to obtain the internal meta-data
 from the running onos-config process. Please note that these tools are intended purely for
@@ -104,3 +104,5 @@ as they are tracked by the system broken-up into device specific batches:
 ```bash
 go run github.com/onosproject/onos-config/cmd/diags/changes
 ```
+
+> Of course, there will be many more such commands available in the near future
