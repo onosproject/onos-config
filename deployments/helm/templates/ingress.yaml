@@ -1,0 +1,25 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "fullname" . }}-ingress
+  chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  release: "{{ .Release.Name }}"
+  heritage: "{{ .Release.Service }}"
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPCS"
+spec:
+  tls:
+    - secretName: {{ template "fullname" . }}-secret
+      hosts:
+        - config.onosproject.org
+  rules:
+    - host: config.onosproject.org
+      http:
+        paths:
+          - backend:
+              serviceName: {{ template "fullname" . }}
+              servicePort: grpc
+{{- end }}

@@ -43,9 +43,9 @@ type Server struct {
 
 // ServerConfig comprises a set of server configuration options
 type ServerConfig struct {
-	CaPath   string
-	KeyPath  string
-	CertPath string
+	CaPath   *string
+	KeyPath  *string
+	CertPath *string
 	Port     int16
 	Insecure bool
 }
@@ -70,19 +70,13 @@ func (s *Server) Serve() error {
 		return err
 	}
 
-	tlsCfg := &tls.Config{
-		ClientAuth: tls.RequireAndVerifyClientCert,
-	}
+	tlsCfg := &tls.Config{}
 
-	if s.cfg.CertPath == "" && s.cfg.KeyPath == "" {
-		// Load default Certificates
-		clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultLocalhostCrt), []byte(certs.DefaultLocalhostKey))
-		if err != nil {
-			log.Info("Error loading default certs")
-		}
-		tlsCfg.Certificates = []tls.Certificate{clientCerts}
+	if *s.cfg.CertPath == "" && *s.cfg.KeyPath == "" {
+		tlsCfg.InsecureSkipVerify = true
 	} else {
-		clientCerts, err := tls.LoadX509KeyPair(s.cfg.CertPath, s.cfg.KeyPath)
+		log.Infof("Loading certs: %s %s", *s.cfg.CertPath, *s.cfg.KeyPath)
+		clientCerts, err := tls.LoadX509KeyPair(*s.cfg.CertPath, *s.cfg.KeyPath)
 		if err != nil {
 			log.Info("Error loading default certs")
 		}
@@ -94,13 +88,15 @@ func (s *Server) Serve() error {
 		// require it to proceed. If certificate is provided, it will be
 		// verified.
 		tlsCfg.ClientAuth = tls.RequestClientCert
+	} else {
+		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	if s.cfg.CaPath == "" {
+	if *s.cfg.CaPath == "" {
 		log.Info("Loading default CA onfca")
 		tlsCfg.ClientCAs = getCertPoolDefault()
 	} else {
-		tlsCfg.ClientCAs = getCertPool(s.cfg.CaPath)
+		tlsCfg.ClientCAs = getCertPool(*s.cfg.CaPath)
 	}
 
 	opts := []grpc.ServerOption{grpc.Creds(credentials.NewTLS(tlsCfg))}

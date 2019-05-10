@@ -1,14 +1,16 @@
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: {{ template "fullname" . }}-config
+  name: {{ template "fullname" . }}
   labels:
     app: {{ template "fullname" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
-data:
-  {{ $root := . }}
-  {{ range $path, $bytes := .Files.Glob "files/*" }}
-  {{ base $path }}: '{{ $root.Files.Get $path }}'
-  {{ end }}
+spec:
+  selector:
+    name: {{ template "fullname" . }}
+  type: NodePort
+  ports:
+    - name: grpc
+      port: 5150

@@ -2,6 +2,8 @@ nameOverride: ""
 
 replicas: 1
 
+annotations: {}
+
 image:
   repository: onosproject/onos-config
   tag: latest

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fullname" . }}-config
+  labels:
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+data:
+  {{ $root := . }}
+  {{ range $path, $bytes := .Files.Glob "files/configs/*.json" }}
+  {{ base $path }}: '{{ $root.Files.Get $path }}'
+  {{ end }}
