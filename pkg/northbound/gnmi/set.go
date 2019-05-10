@@ -69,13 +69,25 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	networkChangeIds := make(map[string]change.ID)
+	updateResults := make([]*gnmi.UpdateResult, 0)
 	configName := "Running"
 	for target, updates := range targetUpdates {
 		changeID, err := manager.GetManager().SetNetworkConfig(target, configName, updates, targetRemoves[target])
+		//FIXME this at the moment fails at a device level. we can specify a per path failure
+		// if the store could return us that info
+		updateResult := &gnmi.UpdateResult{
+			Path : &gnmi.Path{
+				Target: target,
+				Elem: make([]*gnmi.PathElem, 0),
+			},
+			Op : gnmi.UpdateResult_UPDATE,
+		}
 		if err != nil {
 			log.Println("Error in setting config:", changeID, "for target", target)
-			//TODO save error and stop process and initiate rollback
+			updateResult.Op = gnmi.UpdateResult_INVALID
+			//TODO initiate rollback
 		}
+		updateResults = append(updateResults, updateResult)
 		networkChangeIds[target] = changeID
 	}
 
@@ -88,6 +100,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 	manager.GetManager().NetworkStore.Store = append(manager.GetManager().NetworkStore.Store, networkConfig)
 
-	//TODO Create the SetResponse
-	return &gnmi.SetResponse{}, nil
+	setResponse := &gnmi.SetResponse{
+		Response: updateResults,
+		Timestamp: time.Now().Unix(),
+	}
+	return setResponse, nil
 }
