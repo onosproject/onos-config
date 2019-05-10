@@ -18,7 +18,6 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"log"
@@ -68,7 +67,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		targetRemoves[target] = deletes
 	}
 
-	networkChangeIds := make(map[string]change.ID)
+	networkConfig, err := store.CreateNetworkStore("Current", "User1")
+	if err != nil {
+		return nil, err
+	}
 	updateResults := make([]*gnmi.UpdateResult, 0)
 	configName := "Running"
 	for target, updates := range targetUpdates {
@@ -95,17 +97,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			//TODO initiate rollback
 		}
 		updateResults = append(updateResults, updateResult)
-		networkChangeIds[target] = changeID
+		networkConfig.ConfigurationChanges[store.ConfigName(target)] = changeID
 	}
 
-	//TODO move to manager.CreateNewNetworkConfig
-	networkConfig := store.NetworkConfiguration{
-		Name:                 "Current",
-		Created:              time.Now(),
-		User:                 "User1",
-		ConfigurationChanges: networkChangeIds,
-	}
-	manager.GetManager().NetworkStore.Store = append(manager.GetManager().NetworkStore.Store, networkConfig)
+
+
+
+	manager.GetManager().NetworkStore.Store = append(manager.GetManager().NetworkStore.Store, *networkConfig)
 
 	setResponse := &gnmi.SetResponse{
 		Response: updateResults,

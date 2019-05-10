@@ -62,7 +62,7 @@ func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.A
 
 		// Build list of config change messages.
 		for k, v := range nc.ConfigurationChanges {
-			msg.Changes = append(msg.Changes, &proto.ConfigChange{Id: k, Hash: store.B64(v)})
+			msg.Changes = append(msg.Changes, &proto.ConfigChange{Id: string(k), Hash: store.B64(v)})
 		}
 
 		err := stream.Send(msg)

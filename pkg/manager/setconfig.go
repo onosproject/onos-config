@@ -33,7 +33,7 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 	deviceConfig, ok := m.ConfigStore.Store[configName];
 	if !ok {
 		deviceConfig = store.Configuration{
-			Name:    configName,
+			Name:    store.ConfigName(configName),
 			Device:  target,
 			Created: time.Now(),
 			Updated: time.Now(),

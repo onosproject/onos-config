@@ -271,7 +271,7 @@ func TestMain(m *testing.M) {
 	configurationStore["Device2VersionMain"] = device2V
 
 	networkStore = make([]NetworkConfiguration, 0)
-	ccs := make(map[string]change.ID)
+	ccs := make(map[ConfigName]change.ID)
 	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
 	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
 
@@ -522,6 +522,21 @@ func Test_writeOutNetworkFile(t *testing.T) {
 		os.Exit(-1)
 	}
 	defer networkStoreFile.Close()
+}
+
+func Test_createnetStore(t *testing.T) {
+	nwStore, err := CreateNetworkStore("testnwstore", "onos")
+	assert.NilError(t, err, "Unexpected error")
+
+	assert.Equal(t, nwStore.User, "onos", "Unexpected user name")
+	assert.Equal(t, nwStore.Name, "testnwstore", "Unexpected store name")
+	assert.Equal(t, len(nwStore.ConfigurationChanges), 0, "size of config changes")
+}
+
+func Test_createnetStore_badname(t *testing.T) {
+	nwStore, err := CreateNetworkStore("???????", "onos")
+	assert.ErrorContains(t, err, "Error in name ???????")
+	assert.Check(t, nwStore == nil, "unexpected result", nwStore)
 }
 
 func Test_loadNetworkStoreFile(t *testing.T) {
