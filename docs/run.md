@@ -19,10 +19,9 @@ go run github.com/onosproject/onos-config/cmd/onos-config-manager \
 -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
 -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
 -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
-
 ```
 
-### gNMI Northbound
+### gNMI Northbound GET request
 The system implements a gNMI Northbound interface on port 5150
 To access it you can run (from onos-config):
 
@@ -54,6 +53,26 @@ gnmi_cli -get -address localhost:5150 \
 >         elem: <name: 'controller' key: <key: 'name' value: 'main'>>
 >         elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>>
 >         elem: <name: 'config'> elem: <name: 'address'>>"
+
+### gNMI Northbound SET request
+To make a SET request with the gnmi_cli use the -set command
+
+```bash
+gnmi_cli -address localhost:5150 -set \
+-proto "update: <path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Dublin'>>" \
+-timeout 5s \
+-client_crt tools/test/devicesim/certs/client1.crt \
+-client_key tools/test/devicesim/certs/client1.key \
+-ca_crt tools/test/devicesim/certs/onfca.crt \
+-alsologtostderr
+```
+
+> The corresponding -get for this will use the -proto
+> "path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
+
+> Currently no checking of the contents is enforced and the config is not forwared down to the 
+> southbound layer
+
 
 ### Administrative Tools
 The project provides a number of administrative tools for remotely accessing the enhanced northbound
