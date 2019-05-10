@@ -20,14 +20,17 @@ package proto;
 
 import "google/protobuf/timestamp.proto";
 
+// NetworkChangesRequest is a message for specifying GetNetworkChanges query parameters.
 message NetworkChangesRequest {
 }
 
+// ConfigChange is a descriptor of a submitted configuration change targeted as a single device.
 message ConfigChange {
     string id = 1;
     string hash = 2;
 }
 
+// NetChange is a descriptor of a configuration change submitted via gNMI.
 message NetChange {
     google.protobuf.Timestamp time = 1;
     string name = 2;
@@ -35,35 +38,42 @@ message NetChange {
     repeated ConfigChange changes = 4;
 }
 
+// RegisterRequest carries data for registering or unregistering a YANG model.
+message RegisterRequest {
+}
+
+// RegisterResponse carries status of YANG model registeration or unregistration.
+message RegisterResponse {
+}
+
+// AdminService provides means for enhanced interactions with the configuration subsystem.
+service AdminService {
+    // RegisterModel adds the specified YANG model to the list of supported models.
+    rpc RegisterModel(RegisterRequest) returns (RegisterResponse);
+    // UnregisterModel removes the specified YANG model from the list of supported models.
+    rpc UnregisterModel(RegisterRequest) returns (RegisterResponse);
+
+    // GetNetworkChanges returns a stream of network changes submitted via gNMI.
+    rpc GetNetworkChanges(NetworkChangesRequest) returns (stream NetChange);
+
+}
+
+
+// ChangesRequest is a message for specifying GetChanges query parameters.
 message ChangesRequest {
 }
 
+// Change is a descriptor of a submitted configuration change targeted at a single device.
 message Change {
     google.protobuf.Timestamp time = 1;
     string id = 2;
     string desc = 3;
 }
 
+// ConfigDiags provides means for obtaining diagnostic information about internal system state.
 service ConfigDiags {
-    rpc NetworkChanges(NetworkChangesRequest) returns (stream NetChange) {
-    }
-
-    rpc Changes(ChangesRequest) returns (stream Change) {
-    }
+    // GetChanges returns a stream of submitted changes aimed at individual devices.
+    rpc GetChanges(ChangesRequest) returns (stream Change);
 }
 
 
-message RegisterRequest {
-
-}
-
-message RegisterResponse {
-
-}
-
-service AdminService {
-    rpc RegisterModel(RegisterRequest) returns (RegisterResponse) {
-    }
-    rpc UnregisterModel(RegisterRequest) returns (RegisterResponse) {
-    }
-}

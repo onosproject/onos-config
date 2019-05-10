@@ -17,7 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"io"
 	"log"
@@ -25,12 +25,12 @@ import (
 )
 
 func main() {
-	conn := admin.Connect()
+	conn := northbound.Connect()
 	defer conn.Close()
 
-	client := proto.NewConfigDiagsClient(conn)
+	client := proto.NewAdminServiceClient(conn)
 
-	stream, err := client.NetworkChanges(context.Background(), &proto.NetworkChangesRequest{})
+	stream, err := client.GetNetworkChanges(context.Background(), &proto.NetworkChangesRequest{})
 	if err != nil {
 		log.Fatalf("Failed to send request: %v", err)
 	}
