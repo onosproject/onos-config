@@ -45,7 +45,7 @@ gnmi_cli -get -address localhost:5150 \
 > on the scope of the request.
 
 >Use the following value for proto to get all configuration and operational state on a particular device
->    -proto "path: <target: 'localhost:10161', elem: <name:'*'>>"
+>    -proto "path: <target: 'localhost:10161', elem: \<name:'/*'>>"
 
 >To get a keyed index in a list use a syntax like
 >    -proto "path: <target: 'localhost:10161',
