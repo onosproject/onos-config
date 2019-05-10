@@ -15,8 +15,12 @@
 package utils
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	pb "github.com/openconfig/gnmi/proto/gnmi"
@@ -240,4 +244,83 @@ func strPathV04(path *pb.Path) string {
 // strPathV03 handles the v0.3 gnmi and earlier path.Element member.
 func strPathV03(path *pb.Path) string {
 	return "/" + strings.Join(path.Element, "/")
+}
+
+// StrVal will return a string representing the supplied value
+func StrVal(val *pb.TypedValue) string {
+	switch v := val.GetValue().(type) {
+	case *pb.TypedValue_StringVal:
+		return v.StringVal
+	case *pb.TypedValue_JsonIetfVal:
+		return strJSON(v.JsonIetfVal)
+	case *pb.TypedValue_JsonVal:
+		return strJSON(v.JsonVal)
+	case *pb.TypedValue_IntVal:
+		return strconv.FormatInt(v.IntVal, 10)
+	case *pb.TypedValue_UintVal:
+		return strconv.FormatUint(v.UintVal, 10)
+	case *pb.TypedValue_BoolVal:
+		return strconv.FormatBool(v.BoolVal)
+	case *pb.TypedValue_BytesVal:
+		return base64.StdEncoding.EncodeToString(v.BytesVal)
+	case *pb.TypedValue_DecimalVal:
+		return strDecimal64(v.DecimalVal)
+	case *pb.TypedValue_FloatVal:
+		return strconv.FormatFloat(float64(v.FloatVal), 'g', -1, 32)
+	case *pb.TypedValue_LeaflistVal:
+		return strLeaflist(v.LeaflistVal)
+	case *pb.TypedValue_AsciiVal:
+		return v.AsciiVal
+	case *pb.TypedValue_AnyVal:
+		return v.AnyVal.String()
+	case *pb.TypedValue_ProtoBytes:
+		return base64.StdEncoding.EncodeToString(v.ProtoBytes)
+	default:
+		panic(v)
+	}
+}
+
+func strJSON(inJSON []byte) string {
+	var out bytes.Buffer
+	err := json.Indent(&out, inJSON, "", "  ")
+	if err != nil {
+		return fmt.Sprintf("(error unmarshalling json: %s)\n", err) + string(inJSON)
+	}
+	return out.String()
+}
+
+func strDecimal64(d *pb.Decimal64) string {
+	var i, frac int64
+	if d.Precision > 0 {
+		div := int64(10)
+		it := d.Precision - 1
+		for it > 0 {
+			div *= 10
+			it--
+		}
+		i = d.Digits / div
+		frac = d.Digits % div
+	} else {
+		i = d.Digits
+	}
+	if frac < 0 {
+		frac = -frac
+	}
+	return fmt.Sprintf("%d.%d", i, frac)
+}
+
+// strLeafList builds a human-readable form of a leaf-list. e.g. [1, 2, 3] or [a, b, c]
+func strLeaflist(v *pb.ScalarArray) string {
+	var b strings.Builder
+	b.WriteByte('[')
+
+	for i, elm := range v.Element {
+		b.WriteString(StrVal(elm))
+		if i < len(v.Element)-1 {
+			b.WriteString(", ")
+		}
+	}
+
+	b.WriteByte(']')
+	return b.String()
 }
