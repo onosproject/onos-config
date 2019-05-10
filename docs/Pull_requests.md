@@ -2,24 +2,24 @@
 
 This page documents the process to follow to work on an issue and submit a pull request
 
-##Issues 
+## Issues 
 
 Issues are units of work the need to be done in the onos project. 
 
-###Find an issue
+### Find an issue
 If you have something in mind to work on please use the _search_  in the [issues](https://github.com/onosproject/onos-config/issues).
 
-###Open an issue
+### Open an issue
 If you want to work on something which is not tracked in our current set of issues please open one and assign it to a given project (e.g. northbound).
 
-###Work on an Issue
+### Work on an Issue
 After you found or created an issue or opened a new one you need to:
 * assign that issue to yourself
 * go to the [projects](https://github.com/onosproject/onos-config/projects)
 * select the project you have assigned the issue to
 * drang and drop the issue to the `In Progress` column to let people know that you are working on it. 
 
-##Pull Requests
+## Pull Requests
 
 This section describes how to open a pull request and put into one of the different projects in onos-config.
 
@@ -50,13 +50,13 @@ Fixes #90
 #
 ```
 
-###Open a pull request
+### Open a pull request
 When you open a pull request for _myfeature_ you need to add the PR to a `project` (e.g. northbound) through the github UI. 
 Please also assign a reviewer out of the suggested ones. If non are suggested please pick one form the core team.     
 More information on opening pull request can be found [here](https://help.github.com/en/articles/creating-a-pull-request)
 
 
-###Tracking a pull request
+### Tracking a pull request
 After your pull request is included into a onos-config _project_ you can find it under the `In Progress` tab.  
 At this point in time the PR will go through a lifecycle:
 * Review from different people --> your PR will go into the `under-review` state
