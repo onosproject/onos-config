@@ -1,4 +1,4 @@
-# How To Run ONOS-Config system
+## Running onos-config 
 
 > The commands can be run from anywhere on your PC - it assumes that go is installed
 > and your:
@@ -6,26 +6,35 @@
 
 Note: this assumes you have followed the the [developer workflow](dev_workflow.md) steps done. 
 
-## Unit test
-```bash
-go test -v github.com/onosproject/onos-config/cmd/... && \
-go test -v github.com/onosproject/onos-config/pkg/...
-```
-
-## Run
+### Run Server Locally
 ```bash
 go run github.com/onosproject/onos-config/cmd/onos-config-manager \
--configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
--changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
--deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
--networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
+    -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
+    -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
+    -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
+    -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
 ```
 
-### gNMI Northbound GET request
+### Run Server in Docker Image
+
+| Note that that the Docker image can be built via `make` (see the [build document](build.md))
+
+To run the server via the Docker image as part of the development workflow, you must map the 
+ports to the host and mount test configuration files to the container as follows:
+
+```
+docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosproject/onos-config \
+    -configStore=/etc/onos-config-manager/configStore-sample.json \
+    -changeStore=/etc/onos-config-manager/changeStore-sample.json \
+    -deviceStore=/etc/onos-config-manager/deviceStore-sample.json \
+    -networkStore=/etc/onos-config-manager/networkStore-sample.json
+```
+
+### Northbound Get Request via gNMI
 The system implements a gNMI Northbound interface on port 5150
 To access it you can run (from onos-config):
 
-To run the gNMI GET on the NBI the gnmi_cli can also be used as follows:
+To issue a gNMI Get request, you can use the `gnmi_cli -get` command as follows:
 > Where the "target" is the identifier of the device, 
 > and the "elem" collection is the path to the requested element.
 > If config from several devices are required several paths can be added
@@ -54,17 +63,17 @@ gnmi_cli -get -address localhost:5150 \
 >         elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>>
 >         elem: <name: 'config'> elem: <name: 'address'>>"
 
-### gNMI Northbound SET request
-To make a SET request with the gnmi_cli use the -set command
+### Northbound Set Request via gNMI
+Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
 
 ```bash
 gnmi_cli -address localhost:5150 -set \
--proto "update: <path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Dublin'>>" \
--timeout 5s \
--client_crt tools/test/devicesim/certs/client1.crt \
--client_key tools/test/devicesim/certs/client1.key \
--ca_crt tools/test/devicesim/certs/onfca.crt \
--alsologtostderr
+    -proto "update: <path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Dublin'>>" \
+    -timeout 5s \
+    -client_crt tools/test/devicesim/certs/client1.crt \
+    -client_key tools/test/devicesim/certs/client1.key \
+    -ca_crt tools/test/devicesim/certs/onfca.crt \
+    -alsologtostderr
 ```
 
 > The corresponding -get for this will use the -proto
@@ -95,13 +104,3 @@ as they are tracked by the system broken-up into device specific batches:
 ```bash
 go run github.com/onosproject/onos-config/cmd/diags/changes
 ```
-
-## Documentation
-> Documentation is not yet publicy published
-
-Run locally
-```bash
-godoc -goroot=$HOME/go
-``` 
-
-and browse at [http://localhost:6060/pkg/github.com/onosproject/onos-config/](http://localhost:6060/pkg/github.com/onosproject/onos-config/)

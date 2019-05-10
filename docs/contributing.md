@@ -1,19 +1,19 @@
-# Contributing to onos-config
+## Contributing to onos-config
 
 Welcome to the µONOS-config contributing guide.  
 We'd love to accept your patches and contributions to this project. 
 There are just a few small guidelines you need to follow. 
 
-## Workflow
+### Workflow
 
 ![Git workflow](contributing_workflow.png)
 
-### 1. Fork in the cloud
+### 1. Fork on GitHub
 
 1. Visit https://github.com/onosproject/onos-config 
 2. Click `Fork` button (top right) to establish a cloud-based fork.
 
-### 2. Clone fork to local storage
+### 2. Clone Fork
 
 Per Go's [workspace instructions][go-workspace], place onos-config' code on your
 `GOPATH` using the following cloning procedure.
@@ -70,7 +70,7 @@ git checkout -b myfeature
 
 Then edit code on the `myfeature` branch.
 
-### 4. Keep your branch in sync
+### 4. Keep Branch in Sync
 
 While on your _myfeature_ branch
 
@@ -107,7 +107,7 @@ push your branch to your fork on `github.com`:
 git push origin myfeature
 ```
 
-### 7. Create a pull request
+### 7. Create a Pull Request
 
 1. Visit your fork at `https://github.com/$user/onos-config`
 2. Click the `Compare & Pull Request` button next to your `myfeature` branch.
@@ -118,7 +118,7 @@ _If you have upstream write access_, please refrain from using the GitHub UI for
 creating PRs, because GitHub will create the PR branch inside the main
 repository rather than inside your fork.
 
-#### Get a code review
+#### Get a Code Review
 
 Once your pull request has been opened it will be assigned to one or more
 reviewers.  Those reviewers will do a thorough code review, looking for
@@ -158,7 +158,7 @@ For mass automated fixups (e.g. automated doc formatting), use one or more
 commits for the changes to tooling and a final commit to apply the fixup en
 masse. This makes reviews easier.
 
-### 8. Reverting a commit
+### 8. Reverting a Commit
 
 In case you wish to revert a commit, use the following instructions.
 
@@ -202,7 +202,7 @@ git push ${your_remote_name} myrevert
 
 4. [Create a Pull Request](#7-create-a-pull-request) using this branch.
 
-## Community Guidelines
+### Community Guidelines
 
 This project follows [Google's Open Source Community
 Guidelines](https://opensource.google.com/conduct/).
