@@ -16,16 +16,45 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"flag"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"io"
 	"log"
 	"time"
 )
 
 func main() {
-	conn := northbound.Connect()
+	address := flag.String("address", ":5150", "address to which to send requests")
+	keyPath := flag.String("keyPath", "", "path to client private key")
+	certPath := flag.String("certPath", "", "path to client certificate")
+	flag.Parse()
+
+	var opts = []grpc.DialOption{}
+	if *keyPath != "" && *certPath != "" {
+		cert, err := tls.LoadX509KeyPair(*certPath, *keyPath)
+		if err != nil {
+			log.Println("Error loading certs", err)
+		} else {
+			log.Println("Loaded key and cert")
+		}
+
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			InsecureSkipVerify: true,
+		}
+
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	} else {
+		log.Println("No key/cert configured")
+		opts = append(opts, grpc.WithInsecure())
+	}
+
+	conn := northbound.Connect(address, opts...)
 	defer conn.Close()
 
 	client := proto.NewConfigDiagsClient(conn)

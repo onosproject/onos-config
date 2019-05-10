@@ -73,6 +73,9 @@ func main() {
 		"path to device store file")
 	networkStoreFile := flag.String("networkStore", networkStoreDefaultFileName,
 		"path to network store file")
+	caPath := flag.String("caPath", "", "path to CA certificate")
+	keyPath := flag.String("keyPath", "", "path to client private key")
+	certPath := flag.String("certPath", "", "path to client certificate")
 
 	flag.Parse()
 	var err error
@@ -114,17 +117,20 @@ func main() {
 	}()
 
 	mgr.Run()
-	err = startServer()
+	err = startServer(caPath, keyPath, certPath)
 	if err != nil {
 		log.Fatal("Cannot start server ", err)
 	}
 }
 
 // Starts gRPC server and registers various services; then serves
-func startServer() error {
+func startServer(caPath *string, keyPath *string, certPath *string) error {
 	cfg := &northbound.ServerConfig{
 		Port : 5150,
 		Insecure: true,
+		CaPath: caPath,
+		KeyPath: keyPath,
+		CertPath: certPath,
 	}
 
 	serv := northbound.NewServer(cfg)

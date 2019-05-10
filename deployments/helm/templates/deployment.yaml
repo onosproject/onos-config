@@ -14,6 +14,12 @@ spec:
     metadata:
       labels:
         name: {{ template "fullname" . }}
+      {{ if .Values.annotations }}
+      annotations:
+        {{- range $key, $value := .Values.annotations }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
+      {{ end }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
@@ -32,15 +38,19 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: HTTP_PROXY
-              value: $(NODE_NAME):4140
           command:
             - onos-config-manager
           args:
+            - "-caPath=/etc/onos-config-manager/certs/tls.cacrt"
+            - "-keyPath=/etc/onos-config-manager/certs/tls.key"
+            - "-certPath=/etc/onos-config-manager/certs/tls.crt"
             - "-configStore=/etc/onos-config-manager/test-configs/configStore-sample.json"
             - "-changeStore=/etc/onos-config-manager/test-configs/changeStore-sample.json"
             - "-deviceStore=/etc/onos-config-manager/test-configs/deviceStore-sample.json"
             - "-networkStore=/etc/onos-config-manager/test-configs/networkStore-sample.json"
+          ports:
+            - name: grpc
+              containerPort: 5150
           readinessProbe:
             tcpSocket:
               port: 5150
@@ -56,6 +66,10 @@ spec:
           volumeMounts:
             - name: test-config
               mountPath: /etc/onos-config-manager/test-configs
+              readOnly: true
+            - name: secret
+              mountPath: /etc/onos-config-manager/certs
+              readOnly: true
       {{- if .Values.image.pullSecrets }}
       imagePullSecrets:
         {{- range .Values.image.pullSecrets }}
@@ -68,3 +82,6 @@ spec:
         - name: test-config
           configMap:
             name: {{ template "fullname" . }}-config
+        - name: secret
+          secret:
+            secretName: {{ template "fullname" . }}-secret

@@ -9,6 +9,6 @@ metadata:
     heritage: "{{ .Release.Service }}"
 data:
   {{ $root := . }}
-  {{ range $path, $bytes := .Files.Glob "files/*" }}
+  {{ range $path, $bytes := .Files.Glob "files/configs/*.json" }}
   {{ base $path }}: '{{ $root.Files.Get $path }}'
   {{ end }}
