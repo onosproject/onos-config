@@ -1,6 +1,6 @@
 ## Building onos-config
 
-Note: this assumes you have all the [Prerequisites](./Prerequisites.md) steps done. 
+Note: this assumes you have all the [Prerequisites](prerequisites.md) steps done. 
 
 ### Makefile
 

@@ -6,7 +6,7 @@ The onos-config team suggests the [Goland IDE](/https://www.jetbrains.com/go/) f
 If you want an free IDE for a good option is [Visual Studio Code](/https://code.visualstudio.com).   
 Please do setup your IDE to include automatically the APACHE 2.0 License in your new files. 
 You can find the licens we expect for .go files [here](../build/licensing/boilerplate.go.txt) 
-A [guide](License_goland.md) for golang is provided. 
+A [guide](license_goland.md) for golang is provided. 
 
 ## Install Docker
 
