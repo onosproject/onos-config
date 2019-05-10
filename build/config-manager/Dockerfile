@@ -1,9 +1,11 @@
-FROM alpine:3.8
+FROM onosproject/onos-config-build as builder
+COPY . /go/src/github.com/onosproject/onos-config
+RUN cd /go/src/github.com/onosproject/onos-config && make build
 
-RUN apk upgrade --update --no-cache
+FROM alpine:3.8
 
 USER nobody
 
-ADD build/_output/onos-config-manager /usr/local/bin/onos-config-manager
+COPY --from=builder /go/src/github.com/onosproject/onos-config/build/_output/onos-config-manager /usr/local/bin/onos-config-manager
 
 ENTRYPOINT ["onos-config-manager"]
