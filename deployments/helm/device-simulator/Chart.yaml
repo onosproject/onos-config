@@ -1,5 +1,5 @@
 apiVersion: v1alpha1
-name: onos-config-device-simulator
+name: device-simulator
 version: 0.0.1
 kubeVersion: ">=1.12.0"
 appVersion: 0.0.1
