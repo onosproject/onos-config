@@ -1,0 +1,20 @@
+nameOverride: ""
+
+replicas: 1
+annotations: {}
+
+image:
+  repository: onosproject/onos-config
+  tag: latest
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+devices: []
+
+resources:
+  requests:
+    cpu: 0.5
+    memory: 512Mi
+
+ingress:
+  enabled: false

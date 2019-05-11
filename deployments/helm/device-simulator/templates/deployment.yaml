@@ -17,8 +17,8 @@ spec:
       {{ if .Values.annotations }}
       annotations:
         {{- range $key, $value := .Values.annotations }}
-        {{ $key }}: {{ $value }}
-        {{- end }}
+          {{ $key }}: {{ $value }}
+          {{- end }}
       {{ end }}
     spec:
       containers:
@@ -38,37 +38,22 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-          command:
-            - onos-config-manager
-          args:
-            - "-caPath=/etc/onos-config-manager/certs/tls.cacrt"
-            - "-keyPath=/etc/onos-config-manager/certs/tls.key"
-            - "-certPath=/etc/onos-config-manager/certs/tls.crt"
-            - "-configStore=/etc/onos-config-manager/test-configs/configStore-sample.json"
-            - "-changeStore=/etc/onos-config-manager/test-configs/changeStore-sample.json"
-            - "-deviceStore=/etc/onos-config-manager/test-configs/deviceStore-sample.json"
-            - "-networkStore=/etc/onos-config-manager/test-configs/networkStore-sample.json"
           ports:
-            - name: grpc
-              containerPort: 5150
+            - name: gnmi
+              containerPort: 10161
           readinessProbe:
             tcpSocket:
-              port: 5150
+              port: 10161
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             tcpSocket:
-              port: 5150
+              port: 10161
             initialDelaySeconds: 15
             periodSeconds: 20
-          # Mount the test configuration
-          # TODO: This should be removed when stores are added!
           volumeMounts:
-            - name: test-config
-              mountPath: /etc/onos-config-manager/test-configs
-              readOnly: true
-            - name: secret
-              mountPath: /etc/onos-config-manager/certs
+            - name: config
+              mountPath: /etc/simulator/configs
               readOnly: true
       {{- if .Values.image.pullSecrets }}
       imagePullSecrets:
@@ -76,12 +61,7 @@ spec:
         - name: {{ . | quote }}
         {{- end }}
       {{- end }}
-      # Mount test volumes
-      # TODO: This should be removed when stores are added!
       volumes:
-        - name: test-config
+        - name: config
           configMap:
             name: {{ template "fullname" . }}-config
-        - name: secret
-          secret:
-            secretName: {{ template "fullname" . }}-secret

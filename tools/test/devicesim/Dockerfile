@@ -52,10 +52,9 @@ RUN go install -v \
       github.com/google/gnxi/gnmi_target \
       github.com/openconfig/gnmi/cmd/gnmi_cli \
       github.com/google/gnxi/gnoi_target \ 
-      github.com/google/gnxi/gnoi_cert 
+      github.com/google/gnxi/gnoi_cert
 
 ENV GNMI_PORT=10161
-ENV HOST_TARGET=localhost
 ENV GNOI_PORT=50001
 ENV SIM_MODE=1
 
@@ -63,6 +62,6 @@ COPY ./target_configs target_configs
 COPY ./certs certs
 COPY ./scripts scripts
 
+RUN chmod +x ./scripts/run_targets.sh
 
-CMD \
-  chmod +x ./scripts/run_targets.sh && ./scripts/run_targets.sh 
+CMD ["./scripts/run_targets.sh"]

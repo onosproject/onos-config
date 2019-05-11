@@ -1,11 +1,10 @@
 nameOverride: ""
 
-replicas: 1
-
+replicas: 3
 annotations: {}
 
 image:
-  repository: onosproject/onos-config
+  repository: onosproject/devicesim
   tag: latest
   pullPolicy: IfNotPresent
   pullSecrets: []
@@ -14,6 +13,3 @@ resources:
   requests:
     cpu: 0.5
     memory: 512Mi
-
-ingress:
-  enabled: false

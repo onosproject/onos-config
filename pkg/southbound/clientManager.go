@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"io/ioutil"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -91,6 +92,9 @@ func createDestination(device topocache.Device) (*client.Destination, Key) {
 		d.Credentials = cred
 	} else {
 		d.TLS = &tls.Config{InsecureSkipVerify: true}
+	}
+	d.Extra = map[string]string{
+		"Host": strings.Split(device.Addr, ":")[0],
 	}
 	return d, Key{Key: device.Addr}
 }
