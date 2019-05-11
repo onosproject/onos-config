@@ -1,16 +1,20 @@
-# Adding automatic license for Goland
+# GoLand Copyright Profile Setup
 
-Open Goland IDE then follow these steps: 
-* Go into `preferences->Editor->Copyright Profiles`
-* Click the `plus`
-* Call the new profiel `onos`
-* Cut and paste the text from [here](./license_goland.txt) into the copyright field.
+GoLand IDE can be configured to automatically include the required Apache 2.0 license text in
+Go source files. Steps to do this are show below:
+
+* Open `Preferences` window
+* Select `Editor->Copyright->Copyright Profiles`
+* Click the `plus` icon
+* Name the new profie `onos`
+* Cut and paste the text from [here](./license_goland.txt) into the copyright field
 * Click `Apply`
 * Open `Formatting` then `Go`
 * Click check box for `Use Custom Formatting Options`
 * Click checkbox `Use Line Comment`
-* Click `OK`
-Now the changes needed to be applied. Please follow:
-* Preferences->Copyright
-* Choose `onos` in the _Default Project Copyright_ list
+* Click `Apply`
+
+Once the new copyright profile is created, it needs to be applied to the project:
+* Select `Editor->Copyright`
+* Choose `onos` in the _`Default Project Copyright`_ drop-down list
 * Click `OK`
