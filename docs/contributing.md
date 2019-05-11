@@ -1,21 +1,26 @@
 # Contributing to onos-config
 
-Welcome to the µONOS-config contributing guide.  
-We'd love to accept your patches and contributions to this project. 
-There are just a few small guidelines you need to follow. 
+The ONOS team hopes for and welcomes contributions from the community at large.
+
+To become a contributor, you will first need to sign a CLA. After that, simply follow the process
+outlined below for submitting your patches on GitHub.
 
 ## Workflow
+Contributions are accepted via GitHub Pull Requests submitted from the 
+developer's own Fork of the onos-config repository. The following diagram illustrates the steps
+required to establish such a Fork and to create a Pull Request.
 
 ![Git workflow](contributing_workflow.png)
+
 
 ### 1. Fork on GitHub
 
 1. Visit https://github.com/onosproject/onos-config 
-2. Click `Fork` button (top right) to establish a cloud-based fork.
+2. Click `Fork` button (top right) to establish your own GitHub repository fork.
 
 ### 2. Clone Fork
 
-Per Go's [workspace instructions][go-workspace], place onos-config' code on your
+Per [Go workspace instructions][go-workspace], place onos-config' code on your
 `GOPATH` using the following cloning procedure.
 
 [go-workspace]: https://golang.org/doc/code.html#Workspaces

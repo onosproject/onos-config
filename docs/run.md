@@ -1,12 +1,10 @@
 # Running onos-config 
 
-> The commands can be run from anywhere on your PC - it assumes that go is installed
-> and your:
-> GOPATH=~/go
-
-Note: this assumes you have followed the the [developer workflow](dev_workflow.md) steps done. 
+> The commands shown below can be run from anywhere on your PC provided that go tools are installed
+> and the GOPATH environment variable is set, e.g. `export GOPATH=~/go`
 
 ## Run Server Locally
+The onos-config server can be run as follows:
 ```bash
 go run github.com/onosproject/onos-config/cmd/onos-config-manager \
     -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
@@ -16,12 +14,7 @@ go run github.com/onosproject/onos-config/cmd/onos-config-manager \
 ```
 
 ## Run Server in Docker Image
-
-| Note that that the Docker image can be built via `make` (see the [build document](build.md))
-
-To run the server via the Docker image as part of the development workflow, you must map the 
-ports to the host and mount test configuration files to the container as follows:
-
+Alternatively, to run onos-config via its Docker image like this:
 ```
 docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosproject/onos-config \
     -configStore=/etc/onos-config-manager/configStore-sample.json \
@@ -29,6 +22,10 @@ docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosprojec
     -deviceStore=/etc/onos-config-manager/deviceStore-sample.json \
     -networkStore=/etc/onos-config-manager/networkStore-sample.json
 ```
+Note that the local config directory is mounted mounted from the container to allow access to local
+test configuration files. You can [build your own version of the onos-config Docker image](build.md) 
+or use the published one.
+
 
 ## Northbound Get Request via gNMI
 The system implements a gNMI Northbound interface on port 5150

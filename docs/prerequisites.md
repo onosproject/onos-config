@@ -1,5 +1,5 @@
-# Prerequisites for Installing and Running onos-config
-This document provides an overview of the tools and packages needed to work on onos-config
+# Development Prerequisites
+This document provides an overview of the tools and packages needed to work on onos-config.
 
 ## IDE
 The core team uses the [GoLand IDE](/https://www.jetbrains.com/go/) from JetBrains, but there are
@@ -8,12 +8,13 @@ Microsoft's [Visual Studio Code](/https://code.visualstudio.com) is one such opt
 and is available as a free download.
 
 ## License
-Please do setup your IDE to include automatically the APACHE 2.0 License in your new files. 
-You can find the licens we expect for .go files [here](../build/licensing/boilerplate.go.txt) 
-A [guide](license_goland.md) for golang is provided. 
+The project requires that all Go source files are properly annotated using the Apache 2.0 License.
+This requirement is enforced by the CI process. Therefore, it is strongly recommended that developers
+setup their IDE to automatically include the [license text](../build/licensing/boilerplate.go.txt)
+automatically.
 
-**Note**   
-The CI tests the are run as part of verification of a pull request require license to be in place
+[GoLand IDE can be easily setup to do this](license_goland.md) and other IDEs will have a similar mechanism.
+
 
 ## Docker
 While this project can be built entirely on the developer machine, this does require that a number of
@@ -23,4 +24,7 @@ build without these dependencies.
 
 However, to take advantage of this, Docker must be installed locally.
 See the [Docker installation guide](https://docs.docker.com/install/) for details.
+
+
+> Other tools will be added shortly.
 
