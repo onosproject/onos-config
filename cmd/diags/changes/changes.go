@@ -29,10 +29,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/metadata"
 	"io"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -67,10 +65,7 @@ func main() {
 
 	client := proto.NewConfigDiagsClient(conn)
 
-	ctx := context.Background()
-	ctx = metadata.AppendToOutgoingContext(ctx, "Host", strings.Split(*address, ":")[0])
-
-	stream, err := client.GetChanges(ctx, &proto.ChangesRequest{})
+	stream, err := client.GetChanges(context.Background(), &proto.ChangesRequest{})
 	if err != nil {
 		log.Fatalf("Failed to send request: %v", err)
 	}
