@@ -10,7 +10,6 @@ metadata:
 spec:
   selector:
     name: {{ template "fullname" . }}
-  clusterIP: None
   ports:
     - name: gnmi
       port: 10161
