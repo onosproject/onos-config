@@ -131,7 +131,7 @@ deployment in [Kubernetes]. Each chart instance deploys a single simulated devic
 `Pod` and a `Service` through which it can be access. The µONOS Config chart can
 then be configured to connect to the devices in k8s.
 
-To deploy a device, simple install the `deployments/helm/device-simulator` chart:
+To deploy a device, install the `deployments/helm/device-simulator` chart:
 
 ```bash
 > helm install -n device-1 deployments/helm/device-simulator
@@ -154,9 +154,9 @@ NAME                       READY  STATUS             RESTARTS  AGE
 device-1-device-simulator  0/1    ContainerCreating  0         1s
 ```
 
-The name of the `Service` that's created by the chart can be used to connect the
-µONOS Config pods to the device. This is done by simply passing a list of `devices`
-to the config manager when deploying the Helm chart:
+µONOS Config pods can be connected to the device through the `Service` that's
+created by the chart. This is done by simply passing a list of `devices` to the
+config manager when deploying the Helm chart:
 
 ```bash
 > helm install \
@@ -167,7 +167,7 @@ to the config manager when deploying the Helm chart:
 ```
 
 To deploy µONOS Config with multiple simulators, simply install the simulator
-chart n times to create n devices:
+chart _n_ times to create _n_ devices:
 
 ```bash
 > helm install -n device-1 deployments/helm/device-simulator
