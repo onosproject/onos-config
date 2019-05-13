@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"log"
 	"time"
 )
 
@@ -28,60 +29,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	updates := make([]*gnmi.Update,0)
 
 	for _, path := range req.Path {
-		target := path.Target
-		// Special case - if target is "*" then ignore path and just return a list
-		// of devices
-		if target == "*" {
-			deviceIds := make([]*gnmi.TypedValue, 0)
-
-			for _, deviceID := range *manager.GetManager().GetAllDeviceIds() {
-				typedVal := gnmi.TypedValue_StringVal{StringVal: deviceID}
-				deviceIds = append(deviceIds, &gnmi.TypedValue{Value: &typedVal})
-			}
-			var allDevicesPathElem = make([]*gnmi.PathElem, 0)
-			allDevicesPathElem = append(allDevicesPathElem, &gnmi.PathElem{Name: "all-devices"})
-			allDevicesPath := gnmi.Path{Elem:allDevicesPathElem, Target: "*"}
-			typedVal := gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: deviceIds}}
-
-			update := &gnmi.Update{
-				Path: &allDevicesPath,
-				Val:  &gnmi.TypedValue{Value: &typedVal},
-			}
-			updates = append(updates, update)
-			break
-		}
-
-		pathAsString := utils.StrPath(path)
-		configValues, err := manager.GetManager().GetNetworkConfig(target, "",
-			pathAsString, 0)
+		update, err := GetUpdate(path)
 		if err != nil {
 			return nil, err
-		}
-
-		var value *gnmi.TypedValue
-		if len(configValues) == 0 {
-			value = nil
-		} else if len(configValues) == 1 {
-			typedValue := &gnmi.TypedValue_AsciiVal{AsciiVal:configValues[0].Value}
-			value = &gnmi.TypedValue{
-				Value: typedValue,
-			}
-		} else {
-			json, err := manager.BuildTree(configValues)
-			if err != nil {
-
-			}
-			typedValue := &gnmi.TypedValue_JsonVal{
-				JsonVal: json,
-			}
-			value = &gnmi.TypedValue{
-				Value: typedValue,
-			}
-		}
-
-		update := &gnmi.Update{
-			Path: path,
-			Val:  value,
 		}
 		updates = append(updates, update)
 	}
@@ -97,4 +47,63 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		Notification: notifications,
 	}
 	return &response, nil
+}
+
+// GetUpdate utility method for getting an Update for a given path
+func GetUpdate(path *gnmi.Path) (*gnmi.Update, error) {
+	target := path.Target
+	// Special case - if target is "*" then ignore path and just return a list
+	// of devices
+	if target == "*" {
+		log.Println("Testing subscription")
+		deviceIds := make([]*gnmi.TypedValue, 0)
+
+		for _, deviceID := range *manager.GetManager().GetAllDeviceIds() {
+			typedVal := gnmi.TypedValue_StringVal{StringVal: deviceID}
+			deviceIds = append(deviceIds, &gnmi.TypedValue{Value: &typedVal})
+		}
+		var allDevicesPathElem = make([]*gnmi.PathElem, 0)
+		allDevicesPathElem = append(allDevicesPathElem, &gnmi.PathElem{Name: "all-devices"})
+		allDevicesPath := gnmi.Path{Elem:allDevicesPathElem, Target: "*"}
+		typedVal := gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: deviceIds}}
+
+		update := &gnmi.Update{
+			Path: &allDevicesPath,
+			Val:  &gnmi.TypedValue{Value: &typedVal},
+		}
+		return update, nil
+	}
+
+	pathAsString := utils.StrPath(path)
+	configValues, err := manager.GetManager().GetNetworkConfig(target, "",
+		pathAsString, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var value *gnmi.TypedValue
+	if len(configValues) == 0 {
+		value = nil
+	} else if len(configValues) == 1 {
+		typedValue := &gnmi.TypedValue_AsciiVal{AsciiVal:configValues[0].Value}
+		value = &gnmi.TypedValue{
+			Value: typedValue,
+		}
+	} else {
+		json, err := manager.BuildTree(configValues)
+		if err != nil {
+
+		}
+		typedValue := &gnmi.TypedValue_JsonVal{
+			JsonVal: json,
+		}
+		value = &gnmi.TypedValue{
+			Value: typedValue,
+		}
+	}
+
+	return &gnmi.Update{
+		Path: path,
+		Val:  value,
+	}, nil
 }
