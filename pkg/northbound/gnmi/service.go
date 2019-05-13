@@ -49,9 +49,9 @@ type Server struct {
 func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) (*gnmi.CapabilityResponse, error) {
 	v, _ := getGNMIServiceVersion()
 	return &gnmi.CapabilityResponse{
-		SupportedModels:     s.models.Get(),
+		SupportedModels:    s.models.Get(),
 		SupportedEncodings: []gnmi.Encoding{gnmi.Encoding_JSON},
-		GNMIVersion:           *v,
+		GNMIVersion:        *v,
 	}, nil
 }
 

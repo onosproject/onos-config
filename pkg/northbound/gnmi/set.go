@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -25,9 +26,11 @@ import (
 	"time"
 )
 
+// ConfigNameSuffix is appended to the Configuration name when it is created
+const ConfigNameSuffix = "Running"
+
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
-	//updates := make(map[string]string)
 	targetUpdates := make(map[string]map[string]string)
 	targetRemoves := make(map[string][]string)
 
@@ -73,12 +76,17 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, err
 	}
 	updateResults := make([]*gnmi.UpdateResult, 0)
-	configName := "Running"
 	for target, updates := range targetUpdates {
-		changeID, err := manager.GetManager().SetNetworkConfig(target, configName, updates, targetRemoves[target])
+		changeID, err := manager.GetManager().SetNetworkConfig(
+			target, string(target + ConfigNameSuffix), updates, targetRemoves[target])
 		var op = gnmi.UpdateResult_UPDATE
 
 		if err != nil {
+			if strings.Contains(err.Error(), manager.SetConfigAlreadyApplied) {
+				log.Println(manager.SetConfigAlreadyApplied, "Change", store.B64(changeID), "to", target)
+				continue
+			}
+
 			//FIXME this at the moment fails at a device level. we can specify a per path failure
 			// if the store could return us that info
 			log.Println("Error in setting config:", changeID, "for target", target)
@@ -122,13 +130,17 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		networkConfig.ConfigurationChanges[store.ConfigName(target)] = changeID
 	}
 
+	if len(updateResults) == 0 {
+		log.Println("All target changes were duplicated - Set rejected")
+		return nil, fmt.Errorf("Set change rejected as it is a " +
+			"duplicate of the last change for all targets")
+	}
 
-
-
-	manager.GetManager().NetworkStore.Store = append(manager.GetManager().NetworkStore.Store, *networkConfig)
+	manager.GetManager().NetworkStore.Store =
+		append(manager.GetManager().NetworkStore.Store, *networkConfig)
 
 	setResponse := &gnmi.SetResponse{
-		Response: updateResults,
+		Response:  updateResults,
 		Timestamp: time.Now().Unix(),
 	}
 	return setResponse, nil

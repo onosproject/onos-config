@@ -23,10 +23,13 @@ import (
 	"time"
 )
 
+// SetConfigAlreadyApplied is a string constant for "Already applied:"
+const SetConfigAlreadyApplied = "Already applied:"
+
 // SetNetworkConfig sets the given value, according to the path on the configuration for the specified targed
 func (m *Manager) SetNetworkConfig(target string, configName string, updates map[string]string,
 	deletes []string) (change.ID, error) {
-	if _, ok := m.deviceStore.Store[target]; !ok {
+	if _, ok := m.DeviceStore.Store[target]; !ok {
 		return nil, fmt.Errorf("Device not present %s", target)
 	}
 	//checks if config exists, otherwise create new
@@ -61,9 +64,22 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 	if err != nil {
 		return nil, err
 	}
-	m.ChangeStore.Store[store.B64(configChange.ID)] = configChange
-	log.Println("Added change", store.B64(configChange.ID), "to ChangeStore (in memory)")
 
+	if (m.ChangeStore.Store[store.B64(configChange.ID)] != nil) {
+		log.Println("Change ID", store.B64(configChange.ID), "already exists - not overwriting")
+	} else {
+		m.ChangeStore.Store[store.B64(configChange.ID)] = configChange
+		log.Println("Added change", store.B64(configChange.ID), "to ChangeStore (in memory)")
+	}
+
+	// If the last change applied to deviceConfig is the same as this one then don't apply it again
+	if len(deviceConfig.Changes) > 0 &&
+		store.B64(deviceConfig.Changes[len(deviceConfig.Changes)-1]) == store.B64(configChange.ID) {
+		log.Println("Change", store.B64(configChange.ID),
+			"has already been applied to", target, "Ignoring")
+		return configChange.ID, fmt.Errorf("%s %s",
+			SetConfigAlreadyApplied, store.B64(configChange.ID))
+	}
 	deviceConfig.Changes = append(deviceConfig.Changes, configChange.ID)
 	deviceConfig.Updated = time.Now()
 	m.ConfigStore.Store[configName] = deviceConfig
@@ -76,7 +92,7 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 	eventValues := make(map[string]string)
 	eventValues[events.ChangeID] = store.B64(configChange.ID)
 	eventValues[events.Committed] = "true"
-	m.changesChannel <- events.CreateEvent(deviceConfig.Device,
+	m.ChangesChannel <- events.CreateEvent(deviceConfig.Device,
 		events.EventTypeConfiguration, eventValues)
 	return configChange.ID, nil
 }
