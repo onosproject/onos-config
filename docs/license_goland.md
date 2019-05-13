@@ -1,7 +1,7 @@
 # GoLand Copyright Profile Setup
 
 GoLand IDE can be configured to automatically include the required Apache 2.0 license text in
-Go source files. Steps to do this are show below:
+Go source files. Steps to do this are shown below:
 
 * Open `Preferences` window
 * Select `Editor->Copyright->Copyright Profiles`
@@ -16,5 +16,5 @@ Go source files. Steps to do this are show below:
 
 Once the new copyright profile is created, it needs to be applied to the project:
 * Select `Editor->Copyright`
-* Choose `onos` in the _`Default Project Copyright`_ drop-down list
+* Choose `onos` in the `Default Project Copyright` drop-down list
 * Click `OK`
