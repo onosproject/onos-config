@@ -11,9 +11,9 @@ go run github.com/onosproject/onos-config/cmd/onos-config-manager \
     -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
     -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
     -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json \
-    -caPath tools/test/devicesim/certs/onfca.crt \
-    -keyPath tools/test/devicesim/certs/localhost.key \
-    -certPath tools/test/devicesim/certs/localhost.crt
+    -caPath $HOME/go/src/github.com/onosproject/onos-config/tools/test/devicesim/certs/onfca.crt \
+    -keyPath $HOME/go/src/github.com/onosproject/onos-config/tools/test/devicesim/certs/localhost.key \
+    -certPath $HOME/go/src/github.com/onosproject/onos-config/tools/test/devicesim/certs/localhost.crt
 ```
 
 ## Run Server in Docker Image
