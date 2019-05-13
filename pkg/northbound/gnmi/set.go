@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -75,28 +76,49 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	configName := "Running"
 	for target, updates := range targetUpdates {
 		changeID, err := manager.GetManager().SetNetworkConfig(target, configName, updates, targetRemoves[target])
-		pathElems := make([]*gnmi.PathElem, 0)
-		for k := range updates {
-			pathElem := gnmi.PathElem{
-				Name: k,
-			}
-			pathElems = append(pathElems, &pathElem)
-		}
-		//FIXME this at the moment fails at a device level. we can specify a per path failure
-		// if the store could return us that info
-		updateResult := &gnmi.UpdateResult{
-			Path : &gnmi.Path{
-				Target: target,
-				Elem: pathElems,
-			},
-			Op : gnmi.UpdateResult_UPDATE,
-		}
+		var op = gnmi.UpdateResult_UPDATE
+
 		if err != nil {
+			//FIXME this at the moment fails at a device level. we can specify a per path failure
+			// if the store could return us that info
 			log.Println("Error in setting config:", changeID, "for target", target)
-			updateResult.Op = gnmi.UpdateResult_INVALID
+			op = gnmi.UpdateResult_INVALID
 			//TODO initiate rollback
 		}
-		updateResults = append(updateResults, updateResult)
+
+		for k := range updates {
+			path, errInPath := utils.ParseGNMIElements(strings.Split(k, "/")[1:])
+			if errInPath != nil {
+				log.Println("ERROR: Unable to parse path", k)
+				continue
+			}
+			path.Target = target
+
+			updateResult := &gnmi.UpdateResult{
+				Path: path,
+				Op:   op,
+			}
+			updateResults = append(updateResults, updateResult)
+		}
+
+		if op == gnmi.UpdateResult_UPDATE {
+			op = gnmi.UpdateResult_DELETE
+		}
+		for _, r := range targetRemoves[target] {
+			path, errInPath := utils.ParseGNMIElements(strings.Split(r, "/")[1:])
+			if errInPath != nil {
+				log.Println("ERROR: Unable to parse path", r)
+				continue
+			}
+			path.Target = target
+
+			updateResult := &gnmi.UpdateResult{
+				Path: path,
+				Op:   op,
+			}
+			updateResults = append(updateResults, updateResult)
+		}
+
 		networkConfig.ConfigurationChanges[store.ConfigName(target)] = changeID
 	}
 
