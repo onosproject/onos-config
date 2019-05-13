@@ -2,7 +2,7 @@
 
 ## Mailing list
 
-the onos-config project currentlu leverage the onos developers mailing list:
+the onos-config project currently leverage the onos developers mailing list:
 [onos-dev@onosprojects.org](onos-dev@onosproject.org)  
 **Note** We kindly ask to have the start of the subject to be `[onos-config]`
 
