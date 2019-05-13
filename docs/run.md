@@ -22,7 +22,7 @@ docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosprojec
     -deviceStore=/etc/onos-config-manager/deviceStore-sample.json \
     -networkStore=/etc/onos-config-manager/networkStore-sample.json
 ```
-Note that the local config directory is mounted mounted from the container to allow access to local
+Note that the local config directory is mounted from the container to allow access to local
 test configuration files. You can [build your own version of the onos-config Docker image](build.md) 
 or use the published one.
 

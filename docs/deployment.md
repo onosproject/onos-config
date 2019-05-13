@@ -1,6 +1,6 @@
 # Deploying onos-config
 
-One of the goals of the µONOS Config project is to provide simple deployment options
+One of the goals of the onos-config project is to provide simple deployment options
 that integrate with modern technologies. Deployment configurations can be found in
 the `/deployments` folder in this repository.
 
@@ -84,8 +84,8 @@ must have an ingress controller installed/enabled:
 ```
 
 The ingress controller uses the self-signed certificates that ship with the chart
-to provide end-to-end routing, load balancing, and encryption, making µONOS Config
-accessible from outside the k8s cluster. The default certificates expect the
+to provide end-to-end routing, load balancing, and encryption, making the onos-config
+services accessible from outside the k8s cluster. The default certificates expect the
 service to be reached through the `config.onosproject.org` domain. Thus, to connect
 to the service through the ingress, you must configure `/etc/hosts` to add the
 load balancer's IP:
