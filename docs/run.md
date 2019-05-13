@@ -23,10 +23,7 @@ docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosprojec
     -configStore=/etc/onos-config-manager/configStore-sample.json \
     -changeStore=/etc/onos-config-manager/changeStore-sample.json \
     -deviceStore=/etc/onos-config-manager/deviceStore-sample.json \
-    -networkStore=/etc/onos-config-manager/networkStore-sample.json \
-    -caPath tools/test/devicesim/certs/onfca.crt \
-    -keyPath tools/test/devicesim/certs/localhost.key \
-    -certPath tools/test/devicesim/certs/localhost.crt
+    -networkStore=/etc/onos-config-manager/networkStore-sample.json
 ```
 Note that the local config directory is mounted from the container to allow access to local
 test configuration files. You can [build your own version of the onos-config Docker image](build.md) 
