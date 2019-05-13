@@ -85,7 +85,7 @@ func GetUpdate(path *gnmi.Path) (*gnmi.Update, error) {
 	if len(configValues) == 0 {
 		value = nil
 	} else if len(configValues) == 1 {
-		typedValue := &gnmi.TypedValue_AsciiVal{AsciiVal:configValues[0].Value}
+		typedValue := &gnmi.TypedValue_StringVal{StringVal:configValues[0].Value}
 		value = &gnmi.TypedValue{
 			Value: typedValue,
 		}

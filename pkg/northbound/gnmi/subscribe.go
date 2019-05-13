@@ -58,6 +58,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		subscribe := in.GetSubscribe()
 		mode := subscribe.Mode
 		stopped := make(chan struct{})
+		//If the subscription mode is ONCE we immediately start a routine to collect the data
 		if mode == gnmi.SubscriptionList_ONCE {
 			go collector(ch, subscribe)
 		}
@@ -72,38 +73,31 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 				Update: updateArray,
 
 			}
-			responseUpate := &gnmi.SubscribeResponse_Update{
+			responseUpdate := &gnmi.SubscribeResponse_Update{
 				Update: notification,
 			}
 			response := &gnmi.SubscribeResponse{
-				Response: responseUpate,
+				Response: responseUpdate,
 			}
-			log.Println(response)
-			err := stream.Send(response)
-			if err != nil {
-				//TODO remove channel registrations
-				log.Println("Error in sending response to client")
-			}
+			sendResponse(response, stream)
+			//If the subscription mode is ONCE we read from the channel, build a response and issue it
 			if mode == gnmi.SubscriptionList_ONCE {
-				responseUpate := &gnmi.SubscribeResponse_SyncResponse{
+				responseUpdate := &gnmi.SubscribeResponse_SyncResponse{
 					SyncResponse : true,
 				}
 				response := &gnmi.SubscribeResponse{
-					Response: responseUpate,
+					Response: responseUpdate,
 				}
-				log.Println(response)
-				err := stream.Send(response)
-				if err != nil {
-					//TODO remove channel registrations
-					log.Println("Error in sending response to client")
-				}
+				sendResponse(response, stream)
+				stopped <- struct{}{}
 			}
-			stopped <- struct{}{}
 		}()
+		//If the subscription mode is ONCE the channel need to be closed immediately
 		if mode == gnmi.SubscriptionList_ONCE {
 			<-stopped
 			return nil
 		}
+		//for each path we pair it to the the channel.
 		subs := subscribe.Subscription
 		for _, sub := range subs {
 			PathToChannels[sub.Path] = ch
@@ -112,9 +106,16 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 
 }
 
+func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeServer) {
+	err := stream.Send(response)
+	if err != nil {
+		//TODO remove channel registrations
+		log.Println("Error in sending response to client")
+	}
+}
+
 func collector(ch chan *gnmi.Update, request *gnmi.SubscriptionList){
 	for _, sub := range request.Subscription {
-		//sub.Path.Target = "localhost:10161"
 		update, err := GetUpdate(sub.Path)
 		if err != nil {
 			log.Println("Error while collecting data for subscribe once", err)
