@@ -86,7 +86,7 @@ Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as 
 
 ```bash
 gnmi_cli -address localhost:5150 \
-    -proto "subscribe:<mode: 1, subscription:<path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
     -timeout 5s \
     -client_crt tools/test/devicesim/certs/client1.crt \
     -client_key tools/test/devicesim/certs/client1.key \
