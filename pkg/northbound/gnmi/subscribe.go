@@ -15,6 +15,10 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"io"
 	"log"
@@ -62,6 +66,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		if mode == gnmi.SubscriptionList_ONCE {
 			go collector(ch, subscribe)
 		}
+		//TODO for POLL type spawn a routine that periodically checks for updates
 		//This generate a subscribe response for one or more updates on the channel.
 		// for Subscription_once messages also also closes the channel.
 		go func() {
@@ -121,4 +126,44 @@ func collector(ch chan *gnmi.Update, request *gnmi.SubscriptionList) {
 		}
 		ch <- update
 	}
+}
+
+func broadcastNotification() {
+	mgr := manager.GetManager()
+	changes := mgr.ChangesChannel
+	for {
+		update := <-changes
+		//TODO needs to be filtered for appropriate paths in the change
+		// currently boradcasting to everybody
+		for _, ch := range PathToChannels {
+			values := update.Values()
+			changeID := (*values)[events.ChangeID]
+			changeInternal := mgr.ChangeStore.Store[changeID]
+			err := getPath(changeInternal, ch)
+			if err != nil {
+				log.Println("Error while parsing path ", err)
+			}
+		}
+	}
+}
+
+func getPath(c *change.Change, ch chan *gnmi.Update) error {
+	for _, changeValue := range c.Config {
+		elems := utils.SplitPath(changeValue.Path)
+		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
+
+		if parseError != nil {
+			return parseError
+		}
+
+		typedValue := gnmi.TypedValue_StringVal{StringVal: changeValue.Value}
+		value := &gnmi.TypedValue{Value: &typedValue}
+		updatePath := &gnmi.Path{Elem: pathElemsRefs.Elem}
+		update := &gnmi.Update{
+			Path: updatePath,
+			Val:  value,
+		}
+		ch <- update
+	}
+	return nil
 }
