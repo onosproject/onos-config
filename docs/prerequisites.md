@@ -24,7 +24,8 @@ in order to build and execute the code. It is highly recommended that developers
 While this project can be built entirely on the developer machine, this does require that several
 developer tools are installed first - see Additional Tools below. To minimize the setup requirements
 for the developer's own machine, a Docker image has been published that has these tools installed and
-allows this project to be build without developers having to install the additional tools themselves.
+allows this project to be build without developers having to install the additional tools themselves
+ - see [build.md](build.md).
 
 However, to take advantage of this, Docker must be installed locally.
 See the [Docker installation guide](https://docs.docker.com/install/) for details.

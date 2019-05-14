@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/*
+Package certs is set of default certificates serialized in to string format.
+ */
 package certs
 
 /*

@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/*
+Package events is a general definition of an event type to be passed through channels.
+ */
 package events
 
 import (

@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// main :
-/* Package main is for profiling the key functions
+/*
+Package main of cmd/profiling is for profiling some key functions.
+
 Run the program from anywhere
 
 	time go run github.com/opennetworkinglab/onos-config/profiling

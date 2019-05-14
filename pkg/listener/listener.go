@@ -13,7 +13,8 @@
 // limitations under the License.
 
 /*
-Package listener is a channel for handling Configuration Events
+Package listener is a channel for handling Configuration Events.
+
 The channel system here is a two tier affair that forwards changes from the core
 configuration store to NBI listeners and to any registered device listeners
 This is so that the Configuration system does not have to be aware of the presence
