@@ -47,12 +47,15 @@ func Listen(changeChannel <-chan events.Event) {
 	log.Println("Event listener initialized")
 
 	for configEvent := range changeChannel {
+		log.Println("Event", configEvent)
 		for device, deviceChan := range deviceListeners {
 			if configEvent.Subject() == device {
 				deviceChan <- configEvent
 			}
 		}
+		log.Println("nbiListeners")
 		for _, nbiChan := range nbiListeners {
+			log.Println("Writing to NB channel", configEvent)
 			nbiChan <- configEvent
 		}
 

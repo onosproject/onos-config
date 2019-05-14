@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/listener"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -27,9 +28,8 @@ import (
 
 //per each subscribe request we reiceve the map is upated with a channel coprresponding to the path.
 var (
-	PathToChannels map[*gnmi.Path]chan *gnmi.Update
+	PathToChannels = make(map[*gnmi.Path]chan *gnmi.Update)
 )
-
 // Subscribe implements gNMI Subscribe
 func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	//Create channel
@@ -46,8 +46,9 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	//	go spawn gatherer for specified paths to generate update events
 	ch := make(chan *gnmi.Update)
 
-	//this for loop handles each subsicribe request coming into the server
+	//this for loop handles each subscribe request coming into the server
 	for {
+		//log.Println("Testing loop")
 		in, err := stream.Recv()
 		if err == io.EOF {
 			log.Println("Subscription Terminated")
@@ -130,9 +131,15 @@ func collector(ch chan *gnmi.Update, request *gnmi.SubscriptionList) {
 
 func broadcastNotification() {
 	mgr := manager.GetManager()
-	changes := mgr.ChangesChannel
+	changes, err := listener.Register("Gnmi NB", false)
+	if err != nil {
+		log.Println("Error while subscribing to updates", err)
+	}
+	//changes := mgr.ChangesChannel
 	for {
+		log.Println("Listening for updates on updatesChannel")
 		update := <-changes
+		log.Println("event", update)
 		//TODO needs to be filtered for appropriate paths in the change
 		// currently boradcasting to everybody
 		for _, ch := range PathToChannels {

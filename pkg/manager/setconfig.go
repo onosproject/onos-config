@@ -92,7 +92,9 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 	eventValues := make(map[string]string)
 	eventValues[events.ChangeID] = store.B64(configChange.ID)
 	eventValues[events.Committed] = "true"
-	m.ChangesChannel <- events.CreateEvent(deviceConfig.Device,
+	event := events.CreateEvent(deviceConfig.Device,
 		events.EventTypeConfiguration, eventValues)
+	log.Println("Writing to channel", event)
+	m.ChangesChannel <- event
 	return configChange.ID, nil
 }
