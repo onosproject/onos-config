@@ -2,7 +2,7 @@
 
 ## Mailing list
 
-the onos-config project currently leverage the onos developers mailing list:
+The onos-config project currently leverages the `ONOS` developers mailing list:
 [onos-dev@onosprojects.org](onos-dev@onosproject.org)  
 **Note** We kindly ask to have the start of the subject to be `[onos-config]`
 
@@ -12,7 +12,7 @@ If you want to join the `onosproject` slack please join [here](https://slackin.o
 
 ## Calendar
 
-The onos-config project leverages the common `onos` calendar which can be found at this 
+The onos-config project leverages the common `ONOS` calendar which can be found at this 
 [link](https://www.google.com/calendar/embed?src=onosproject.org_6l261cnjim09dv9sulta3bgcmc%40group.calendar.google.com&ctz=America/Los_Angeles).  
 If you instead would like to add the calendar to your personal Google Calendar, please add the copy the following string  
  ```
