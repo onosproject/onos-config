@@ -18,9 +18,9 @@ automatically.
 
 ## Docker
 While this project can be built entirely on the developer machine, this does require that a number of
-developer tools be installed first (list will be available shortlu. To minimize the setup requirements
+developer tools be installed first (list will be available shortly). To minimize the setup requirements
 for the developer's own machine, a Docker image has been published that allows this project to be
-build without these dependencies. 
+build without these dependencies - see [build.md](build.md).
 
 However, to take advantage of this, Docker must be installed locally.
 See the [Docker installation guide](https://docs.docker.com/install/) for details.

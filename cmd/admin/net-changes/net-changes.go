@@ -12,6 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/*
+Package main of cmd/admin/net-changes is a command line client for inspecting
+network changes.
+
+It connects to the admin gRPC interface of the onos-config-manager and queries
+the Network Store
+ */
 package main
 
 import (

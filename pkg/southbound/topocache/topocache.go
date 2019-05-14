@@ -13,7 +13,8 @@
 // limitations under the License.
 
 /*
-Package topocache is a mechanism for holding a cache of Devices
+Package topocache is a mechanism for holding a cache of Devices.
+
 When onos-topology is in place it will be the ultimate reference of device
 availability and accessibility
 Until then this simple cache will load a set of Device definitions from file

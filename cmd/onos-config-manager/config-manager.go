@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /*
-Package main is for the command onos-config-manager
+Package main of cmd/onos-config-manager is the main entry point to the system.
 
 It connects to devices through a Southbound gNMI interface and
 gives a gNMI interface northbound for other systems to connect to, and an
@@ -29,15 +29,14 @@ Arguments
 
 -networkStore <the location of a Network store> (stores/networkStore-sample.json by default)
 
-To run from anywhere
+-caPath <the location of a CA certificate>
 
-	go run github.com/opennetworkinglab/onos-config/onos-config-manager \
-	-configStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/configStore-sample.json \
-	-changeStore=$HOME/go/src/github.com/opennetworkinglab/onos-config/onos-config-manager/stores/changeStore-sample.json \
-    -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
-    -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
+-keyPath <the location of a client private key>
+
+-certPath <the location of a client certificate>
 
 
+See ../../docs/run.md for how to run the application.
 */
 package main
 

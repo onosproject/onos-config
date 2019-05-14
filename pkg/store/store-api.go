@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /*
-Package store contains the the Config Store API
+Package store contains the the Config Store API.
 
 The following core concepts are each maintained in their own files.
 
