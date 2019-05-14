@@ -10,7 +10,10 @@ go run github.com/onosproject/onos-config/cmd/onos-config-manager \
     -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
     -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
     -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
-    -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
+    -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json \
+    -caPath $HOME/go/src/github.com/onosproject/onos-config/tools/test/devicesim/certs/onfca.crt \
+    -keyPath $HOME/go/src/github.com/onosproject/onos-config/tools/test/devicesim/certs/localhost.key \
+    -certPath $HOME/go/src/github.com/onosproject/onos-config/tools/test/devicesim/certs/localhost.crt
 ```
 
 ## Run Server in Docker Image
@@ -22,7 +25,7 @@ docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config-manager -it onosprojec
     -deviceStore=/etc/onos-config-manager/deviceStore-sample.json \
     -networkStore=/etc/onos-config-manager/networkStore-sample.json
 ```
-Note that the local config directory is mounted mounted from the container to allow access to local
+Note that the local config directory is mounted from the container to allow access to local
 test configuration files. You can [build your own version of the onos-config Docker image](build.md) 
 or use the published one.
 
@@ -37,7 +40,6 @@ To issue a gNMI Get request, you can use the `gnmi_cli -get` command as follows:
 > If config from several devices are required several paths can be added
 ```bash
 gnmi_cli -get -address localhost:5150 \
-    -insecure  \
     -proto "path: <target: 'localhost:10161', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
     -timeout 5s \
     -client_crt tools/test/devicesim/certs/client1.crt \
@@ -76,9 +78,26 @@ gnmi_cli -address localhost:5150 -set \
 > The corresponding -get for this will use the -proto
 > "path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
 
-> Currently no checking of the contents is enforced and the config is not forwared down to the 
+> Currently no checking of the contents is enforced and the config is not forwarded down to the 
 > southbound layer
 
+## Northbound Subscribe Once Request via gNMI
+Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as in the example below:
+
+```bash
+gnmi_cli -address localhost:5150 \
+    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -timeout 5s \
+    -client_crt tools/test/devicesim/certs/client1.crt \
+    -client_key tools/test/devicesim/certs/client1.key \
+    -ca_crt tools/test/devicesim/certs/onfca.crt \
+    -alsologtostderr
+```
+
+> Currently no checking of the contents is enforced and the config is not forwarded down to the 
+> southbound layer
+
+**Note** This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
 
 ## Administrative Tools
 The project provides a number of administrative tools for remotely accessing the enhanced northbound

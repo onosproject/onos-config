@@ -55,11 +55,6 @@ func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) 
 	}, nil
 }
 
-// Subscribe implements gNMI Subscribe
-func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
-	return nil
-}
-
 // getGNMIServiceVersion returns a pointer to the gNMI service version string.
 // The method is non-trivial because of the way it is defined in the proto file.
 func getGNMIServiceVersion() (*string, error) {

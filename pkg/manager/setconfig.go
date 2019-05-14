@@ -56,7 +56,8 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 		newChange = append(newChange, changeValue)
 	}
 
-	configChange, err := change.CreateChange(newChange, fmt.Sprintf("Update at %s", time.Now()))
+	configChange, err := change.CreateChange(newChange,
+		fmt.Sprintf("Update at %s", time.Now().Format(time.RFC3339)))
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +67,12 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 	deviceConfig.Changes = append(deviceConfig.Changes, configChange.ID)
 	deviceConfig.Updated = time.Now()
 	m.ConfigStore.Store[configName] = deviceConfig
+
+	// TODO: At this stage
+	//  1) check that the new configuration is valid according to
+	// 		the (YANG) models for the device
+	//  2) Do a precheck that the device is reachable
+	//  3) Check that the caller is authorized to make the change
 	eventValues := make(map[string]string)
 	eventValues[events.ChangeID] = store.B64(configChange.ID)
 	eventValues[events.Committed] = "true"

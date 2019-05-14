@@ -1,0 +1,20 @@
+{
+  "Version": "1.0.0",
+  "Storetype": "device",
+  "Store": {
+    "localhost:10161": {
+      "Addr": "localhost:10161",
+      "User": "devicesim",
+      "Pwd": "notused",
+      "Timeout": 10000000000
+    },
+    "localhost:10162": {
+      "Addr": "localhost:10162",
+      "Timeout": 10000000000
+    },
+    "localhost:10163": {
+      "Addr": "localhost:10163",
+      "Timeout": 10000000000
+    }
+  }
+}
