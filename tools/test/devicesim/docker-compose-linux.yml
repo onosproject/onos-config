@@ -3,7 +3,7 @@ services:
   devicesim1:
     image: devicesim:latest
     environment:
-    - HOST_TARGET=device1.opennetworking.org
+    - HOSTNAME=device1.opennetworking.org
     - SIM_MODE=1  
     networks:
       simnet:
@@ -16,7 +16,7 @@ services:
   devicesim2:
     image: devicesim:latest
     environment:
-      - HOST_TARGET=device2.opennetworking.org
+      - HOSTNAME=device2.opennetworking.org
       - SIM_MODE=1  
     networks:
       simnet:
@@ -29,7 +29,7 @@ services:
   devicesim3:
     image: devicesim:latest
     environment:
-      - HOST_TARGET=device3.opennetworking.org
+      - HOSTNAME=device3.opennetworking.org
       - SIM_MODE=1  
     networks:
       simnet:

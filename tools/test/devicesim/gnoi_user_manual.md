@@ -68,7 +68,7 @@ device1-3. An entry must still be placed in your /etc/hosts file for all 3 like:
 If you just want to run a single device, it is not necessary to run docker-compose.
 It can be done just by docker directly, and can be handy for troubleshooting.
 ```bash
-docker run --env "HOST_TARGET=localhost" --env "GNOI_PORT=50001" -p "50001:50001" devicesim
+docker run --env "HOSTNAME=localhost" --env "GNOI_PORT=50001" -p "50001:50001" devicesim
 ```
 To stop it use "docker kill"
 

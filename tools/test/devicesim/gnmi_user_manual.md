@@ -128,7 +128,7 @@ notification: <
 If you just want to run a single device, it is not necessary to run docker-compose.
 It can be done just by docker directly, and can be handy for troubleshooting.
 ```bash
-docker run --env "HOST_TARGET=localhost" --env "GNMI_PORT=10164" -p "10164:10164" devicesim
+docker run --env "HOSTNAME=localhost" --env "GNMI_PORT=10164" -p "10164:10164" devicesim
 ```
 To stop it use "docker kill"
 

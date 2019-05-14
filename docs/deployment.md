@@ -125,10 +125,10 @@ traffic to provide end-to-end encryption.
 
 ### Deploying the device simulator
 
-µONOS Config provides a [device simulator](../tools/test/devicesim/gnmi_user_manual.md)
-for end-to-end testing. As with the µONOS Config app, a [Helm] chart is provided for
+onos-config provides a [device simulator](../tools/test/devicesim/gnmi_user_manual.md)
+for end-to-end testing. As with the onos-config app, a [Helm] chart is provided for
 deployment in [Kubernetes]. Each chart instance deploys a single simulated device
-`Pod` and a `Service` through which it can be access. The µONOS Config chart can
+`Pod` and a `Service` through which the simulator can be accessed. The onos-config chart can
 then be configured to connect to the devices in k8s.
 
 To deploy a device, install the `deployments/helm/device-simulator` chart:
@@ -154,7 +154,7 @@ NAME                       READY  STATUS             RESTARTS  AGE
 device-1-device-simulator  0/1    ContainerCreating  0         1s
 ```
 
-µONOS Config pods can be connected to the device through the `Service` that's
+onos-config pods can be connected to the device through the `Service` that's
 created by the chart. This is done by simply passing a list of `devices` to the
 config manager when deploying the Helm chart:
 
@@ -166,7 +166,7 @@ config manager when deploying the Helm chart:
     deployments/helm/onos-config
 ```
 
-To deploy µONOS Config with multiple simulators, simply install the simulator
+To deploy onos-config with multiple simulators, simply install the simulator
 chart _n_ times to create _n_ devices:
 
 ```bash
@@ -175,7 +175,7 @@ chart _n_ times to create _n_ devices:
 > helm install -n device-3 deployments/helm/device-simulator
 ```
 
-Then pass a comma-separated list of device services to the µONOS Config chart:
+Then pass a comma-separated list of device services to the onos-config chart:
 
 ```bash
 > helm install \
