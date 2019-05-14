@@ -1,0 +1,13 @@
+apiVersion: v1alpha1
+name: device-simulator
+version: 0.0.1
+kubeVersion: ">=1.12.0"
+appVersion: 0.0.1
+description: ONOS Config Device Simulator
+keywords:
+  - onos
+  - sdn
+home: https://onosproject.org
+maintainers:
+  - name: kuujo
+    email: jordan@opennetworking.org

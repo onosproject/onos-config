@@ -1,56 +1,58 @@
 #!/bin/bash
 
+hostname=${HOSTNAME:-localhost}
+
 if [ $SIM_MODE == 1 ]; 
 then
     IPADDR=`ip route get 1.2.3.4 | grep dev | awk '{print $7}'` && \
-    if [ "$HOST_TARGET" != "localhost" ]; then \
-      $HOME/certs/generate_certs.sh $HOST_TARGET > /dev/null 2>&1;
-      echo "Please add '"$IPADDR" "$HOST_TARGET"' to /etc/hosts and access with gNMI client at "$HOST_TARGET":"$GNMI_PORT; \
+    if [ "$hostname" != "localhost" ]; then \
+        $HOME/certs/generate_certs.sh $hostname > /dev/null 2>&1;
+        echo "Please add '"$IPADDR" "$hostname"' to /etc/hosts and access with gNMI client at "$hostname":"$GNMI_PORT; \
     else \
-        echo "gNMI running on localhost:"$GNMI_PORT; 
+        echo "gNMI running on $hostname:"$GNMI_PORT;
     fi 
-    sed -i -e "s/replace-device-name/"$HOST_TARGET"/g" $HOME/target_configs/typical_ofsw_config.json && \
-    sed -i -e "s/replace-motd-banner/Welcome to gNMI service on "$HOST_TARGET":"$GNMI_PORT"/g" $HOME/target_configs/typical_ofsw_config.json
+    sed -i -e "s/replace-device-name/"$hostname"/g" $HOME/target_configs/typical_ofsw_config.json && \
+    sed -i -e "s/replace-motd-banner/Welcome to gNMI service on "$hostname":"$GNMI_PORT"/g" $HOME/target_configs/typical_ofsw_config.json
 
     gnmi_target \
-       -bind_address :$GNMI_PORT \
-       -key $HOME/certs/$HOST_TARGET.key \
-       -cert $HOME/certs/$HOST_TARGET.crt \
+       -bind_address $hostname:$GNMI_PORT \
+       -key $HOME/certs/$hostname.key \
+       -cert $HOME/certs/$hostname.crt \
        -ca $HOME/certs/onfca.crt \
        -alsologtostderr \
        -config $HOME/target_configs/typical_ofsw_config.json > /dev/null 2>&1;
 elif [ $SIM_MODE == 2 ]; 
 then
     IPADDR=`ip route get 1.2.3.4 | grep dev | awk '{print $7}'` && \
-    if [ "$HOST_TARGET" != "localhost" ]; then \
-      echo "Please add '"$IPADDR" "$HOST_TARGET"' to /etc/hosts and access with gNOI client at "$HOST_TARGET":"$GNOI_PORT; \
+    if [ "$hostname" != "localhost" ]; then \
+        echo "Please add '"$IPADDR" "$hostname"' to /etc/hosts and access with gNOI client at "$hostname":"$GNOI_PORT; \
     else \
-        echo "gNOI running on localhost:"$GNOI_PORT; 
+        echo "gNOI running on $hostname:"$GNOI_PORT;
     fi    	
     gnoi_target \
-      -bind_address :$GNOI_PORT \
+      -bind_address $hostname:$GNOI_PORT \
       -alsologtostderr;
 elif [ $SIM_MODE == 3 ];
 then
     IPADDR=`ip route get 1.2.3.4 | grep dev | awk '{print $7}'` && \
-    if [ "$HOST_TARGET" != "localhost" ]; then \
-      $HOME/certs/generate_certs.sh $HOST_TARGET > /dev/null 2>&1;
-      echo "Please add '"$IPADDR" "$HOST_TARGET"' to /etc/hosts and access with gNMI/gNOI clients at "$HOST_TARGET":"$GNMI_PORT":"$GNOI_PORT; \
+    if [ "$hostname" != "localhost" ]; then \
+        $HOME/certs/generate_certs.sh $hostname > /dev/null 2>&1;
+        echo "Please add '"$IPADDR" "$hostname"' to /etc/hosts and access with gNMI/gNOI clients at "$hostname":"$GNMI_PORT":"$GNOI_PORT; \
     else \
-        echo "gNMI running on localhost and port:"${GNMI_PORT}; 
-        echo "gNOI running on localhost:"$GNOI_PORT; 
+        echo "gNMI running on $hostname:"${GNMI_PORT};
+        echo "gNOI running on $hostname:"$GNOI_PORT;
     fi
-    sed -i -e "s/replace-device-name/"$HOST_TARGET"/g" $HOME/target_configs/typical_ofsw_config.json && \
-    sed -i -e "s/replace-motd-banner/Welcome to gNMI service on "$HOST_TARGET":"$GNMI_PORT"/g" $HOME/target_configs/typical_ofsw_config.json
+    sed -i -e "s/replace-device-name/"$hostname"/g" $HOME/target_configs/typical_ofsw_config.json && \
+    sed -i -e "s/replace-motd-banner/Welcome to gNMI service on "$hostname":"$GNMI_PORT"/g" $HOME/target_configs/typical_ofsw_config.json
     gnmi_target \
-       -bind_address :$GNMI_PORT \
-       -key $HOME/certs/$HOST_TARGET.key \
-       -cert $HOME/certs/$HOST_TARGET.crt \
+       -bind_address $hostname:$GNMI_PORT \
+       -key $HOME/certs/$hostname.key \
+       -cert $HOME/certs/$hostname.crt \
        -ca $HOME/certs/onfca.crt \
        -alsologtostderr \
        -config $HOME/target_configs/typical_ofsw_config.json > /dev/null 2>&1 &
     
     gnoi_target \
-      -bind_address :$GNOI_PORT \
+      -bind_address $hostname:$GNOI_PORT \
       -alsologtostderr;
 fi
