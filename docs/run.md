@@ -118,6 +118,7 @@ gnmi_cli -address localhost:5150 \
 > southbound layer
 
 **Note** This command will block until there is a change at the requested value that gets propagated to the underlying stream.
+Also as per `gnmi_cli` behaviour the updates get printed twice. 
 
 ## Administrative Tools
 The project provides a number of administrative tools for remotely accessing the enhanced northbound

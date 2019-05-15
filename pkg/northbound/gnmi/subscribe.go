@@ -58,34 +58,35 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		//This generate a subscribe response for one or more updates on the channel.
 		// for Subscription_once messages also also closes the channel.
 		go func() {
-			update := <-ch
-			updateArray := make([]*gnmi.Update, 0)
-			updateArray = append(updateArray, update)
-			notification := &gnmi.Notification{
-				Timestamp: time.Now().Unix(),
-				Update:    updateArray,
-			}
-			responseUpdate := &gnmi.SubscribeResponse_Update{
-				Update: notification,
-			}
-			response := &gnmi.SubscribeResponse{
-				Response: responseUpdate,
-			}
-			sendResponse(response, stream)
-			//For stream and Poll we also send a Sync Response
-			//TODO make sure that for stream sending this every time adheres to spec.
-			// see section #3.5.1.4 of gnmi-specification.md
-			if mode != gnmi.SubscriptionList_ONCE {
-				responseSync := &gnmi.SubscribeResponse_SyncResponse{
-					SyncResponse: true,
+			for update := range ch {
+				updateArray := make([]*gnmi.Update, 0)
+				updateArray = append(updateArray, update)
+				notification := &gnmi.Notification{
+					Timestamp: time.Now().Unix(),
+					Update:    updateArray,
 				}
-				response = &gnmi.SubscribeResponse{
-					Response: responseSync,
+				responseUpdate := &gnmi.SubscribeResponse_Update{
+					Update: notification,
+				}
+				response := &gnmi.SubscribeResponse{
+					Response: responseUpdate,
 				}
 				sendResponse(response, stream)
-			} else {
-				//If the subscription mode is ONCE we read from the channel, build a response and issue it
-				stopped <- struct{}{}
+				//For stream and Poll we also send a Sync Response
+				//TODO make sure that for stream sending this every time adheres to spec.
+				// see section #3.5.1.4 of gnmi-specification.md
+				if mode != gnmi.SubscriptionList_ONCE {
+					responseSync := &gnmi.SubscribeResponse_SyncResponse{
+						SyncResponse: true,
+					}
+					response = &gnmi.SubscribeResponse{
+						Response: responseSync,
+					}
+					sendResponse(response, stream)
+				} else {
+					//If the subscription mode is ONCE we read from the channel, build a response and issue it
+					stopped <- struct{}{}
+				}
 			}
 		}()
 		//If the subscription mode is ONCE the channel need to be closed immediately
