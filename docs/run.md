@@ -82,7 +82,8 @@ gnmi_cli -address localhost:5150 -set \
 > southbound layer
 
 ## Northbound Subscribe Once Request via gNMI
-Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as in the example below:
+Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as in the example below, 
+please note the `1` as subscription mode to indicate to send the response once:
 
 ```bash
 gnmi_cli -address localhost:5150 \
@@ -98,6 +99,25 @@ gnmi_cli -address localhost:5150 \
 > southbound layer
 
 **Note** This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
+
+## Northbound Subscribe Request for Stream Notifications via gNMI
+Similarly, to make a gNMI Subscribe request for streaming, use the `gnmi_cli` command as in the example below, 
+please note the `0` as subscription mode to indicate streaming:
+
+```bash
+gnmi_cli -address localhost:5150 \
+    -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -timeout 5s \
+    -client_crt tools/test/devicesim/certs/client1.crt \
+    -client_key tools/test/devicesim/certs/client1.key \
+    -ca_crt tools/test/devicesim/certs/onfca.crt \
+    -alsologtostderr
+```
+
+> Currently no checking of the contents is enforced and the config is not forwarded down to the 
+> southbound layer
+
+**Note** This command will block until there is a change at the requested value that gets propagated to the underlying stream.
 
 ## Administrative Tools
 The project provides a number of administrative tools for remotely accessing the enhanced northbound

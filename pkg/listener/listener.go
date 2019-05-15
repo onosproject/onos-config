@@ -47,8 +47,11 @@ func Listen(changeChannel <-chan events.Event) {
 	log.Println("Event listener initialized")
 
 	for configEvent := range changeChannel {
+		log.Println("Listener: Event", configEvent)
 		for device, deviceChan := range deviceListeners {
 			if configEvent.Subject() == device {
+				log.Println("Device Simulators must be active")
+				//TODO need a timeout or be done in separate routine
 				deviceChan <- configEvent
 			}
 		}

@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"log"
@@ -80,6 +81,10 @@ func GetUpdate(path *gnmi.Path) (*gnmi.Update, error) {
 		return nil, err
 	}
 
+	return buildUpdate(path, configValues), nil
+}
+
+func buildUpdate(path *gnmi.Path, configValues []change.ConfigValue) *gnmi.Update {
 	var value *gnmi.TypedValue
 	if len(configValues) == 0 {
 		value = nil
@@ -100,9 +105,8 @@ func GetUpdate(path *gnmi.Path) (*gnmi.Update, error) {
 			Value: typedValue,
 		}
 	}
-
 	return &gnmi.Update{
 		Path: path,
 		Val:  value,
-	}, nil
+	}
 }
