@@ -27,9 +27,14 @@ To deploy the Helm chart locally, install [Minikube] and [Helm]. On OSX, this ca
 using [Brew]:
 
 ```bash
-> brew install minikube
-> brew install helm
+> brew cask install minikube
+> brew install kubernetes-helm
 ```
+
+You will also need VirtualBox 6.0 or higher and Docker to build and deploy an image.
+* VirtualBox [installation instructions](https://www.virtualbox.org/wiki/Downloads)
+* Docker [installation instructions](https://docs.docker.com/v17.12/install/)
+
 
 On Linux, users have [additional options](https://kubernetes.io/docs/setup/minikube/#additional-links)
 for installing local k8s clusters.
