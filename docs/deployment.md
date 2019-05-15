@@ -50,14 +50,14 @@ daemon and build the ONOS Config image:
 > make
 ```
 
-Helm requires a special pod - called Tiller - to be running inside the k8s cluster for deployment
-management. Deploy the Tiller pod to enable Helm for your cluster:
+Helm requires a special pod called Tiller to be running inside the k8s cluster for deployment
+management. Before using Helm you must deploy the Tiller pod via `helm init`:
 
 ```bash
 > helm init
 ```
 
-Once Helm has been initialized, wait for the Tiller pod to transition to the ready state:
+Wait for the Tiller pod to transition to the ready state before proceeding:
 
 ```bash
 > kubectl get pods -n kube-system
@@ -66,16 +66,17 @@ NAME                                        READY   STATUS    RESTARTS   AGE
 tiller-deploy-659d9559f5-k4v6p              1/1     Running   0          65s
 ```
 
-To expose the onos-config service externally, the cluster must first be configured with an
+The onos-config Helm charts also support exposing the config service externally via an [`Ingress`] 
+resource. But to support ingress, the Kubernetes cluster must first be configured with an
 [ingress controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/).
-Minikube conveniently ships with the [NGINX] ingress controller, so to enable ingress support
-simply enable the addon:
+Fortunately, Minikube ships with the [NGINX] ingress controller provided as an addon, so to enable
+ingress via NGINX simply enable the `ingress` addon:
 
 ```bash
 > minikube addons enable ingress
 ```
 
-Again, ensure the `nginx-ingress-controller-x` pod is running in the `kube-system` namespace:
+Again, ensure the `nginx-ingress-controller-x` pod in the `kube-system` namespace is running and ready:
 
 ```bash
 > kubectl get pods -n kube-system
@@ -182,8 +183,10 @@ NAME                                        TYPE                                
 jumpy-tortoise-onos-config-manager-secret   Opaque                                4      109s
 ```
 
+#### Ingress
+
 You can optionally enable [ingress] by overriding `ingress.enabled`. Note that you
-must have an ingress controller installed/enabled:
+must have an ingress controller installed/enabled as described above:
 
 ```bash
 > helm install \
@@ -192,19 +195,28 @@ must have an ingress controller installed/enabled:
     deployments/helm/onos-config
 ```
 
-The ingress controller uses the self-signed certificates that ship with the chart
-to provide end-to-end routing, load balancing, and encryption, making the onos-config
+By default, the ingress controller uses the self-signed certificates that ship with the 
+chart to provide end-to-end routing, load balancing, and encryption, making the onos-config
 services accessible from outside the k8s cluster. The default certificates expect the
 service to be reached through the `config.onosproject.org` domain. Thus, to connect
-to the service through the ingress, you must configure `/etc/hosts` to add the
+to the service through the ingress, you must configure `/etc/hosts` to point to the
 load balancer's IP:
 
 ```
 192.168.99.102 config.onosproject.org
 ```
 
-The IP address of the ingress differs depending on the environment. In Minikube,
-the ingress can be reached through the Minikube IP:
+The IP address of the ingress may differ depending on the environment. In clustered environments,
+the ingress IP is typically read from the `ingress` resource:
+
+```bash
+> kubectl get ingress
+NAME                                      HOSTS                    ADDRESS     PORTS     AGE
+onos-config-onos-config-manager-ingress   config.onosproject.org   10.0.2.15   80, 443   76m
+```
+
+However, since Minikube runs in a VM, the ingress must be reached through the Minikube VM's IP
+which can be found via the `minikube ip` command:
 
 ```bash
 LBIP=$(minikube ip)
@@ -219,10 +231,8 @@ NAME                                      HOSTS                    ADDRESS     P
 onos-config-onos-config-manager-ingress   config.onosproject.org   10.0.2.15   80, 443   76m
 ```
 
-Initially, the ingress resource will not show an address. You may have to wait for the ingress
-controller to assign an address to the `Ingress` resource, indicating the ingress is available. 
-Once you've determined the ingress IP, use the Helm chart certificates to connect
-to the service through the load balancer:
+Once you've located the ingress IP address and configured `/etc/hosts`, you can connect to
+the onos-config service via the ingress load balancer:
 
 ```bash
 > go run github.com/onosproject/onos-config/cmd/diags/changes \
@@ -231,19 +241,20 @@ to the service through the load balancer:
     -certPath=deployments/helm/onos-config/files/certs/tls.crt
 ```
 
-The ingress routes requests based on the host header and redirects the HTTP/2
-traffic to provide end-to-end encryption.
+Clients must connect through the HTTPS port using the certificates with which the ingress
+was configured. Currently, the certificates used by the Helm chart can be found in the
+`deployments/helm/onos-config/files/certs` directory.
 
 ### Deploying the device simulator
 
-onos-config provides a [device simulator](../tools/test/devicesim/gnmi_user_manual.md)
+ONOS Config provides a [device simulator](../tools/test/devicesim/gnmi_user_manual.md)
 for end-to-end testing. As with the onos-config app, a [Helm] chart is provided for
 deployment in [Kubernetes]. Each chart instance deploys a single simulated device
 `Pod` and a `Service` through which the simulator can be accessed. The onos-config chart can
 then be configured to connect to the devices in k8s.
 
-To support the device simulator, first build the simulator image inside the Minikube
-Docker environment:
+To support the device simulator, the simulator image must first be built inside the Minikube
+Docker environment to ensure it's accessible in the Kubernetes cluster:
 
 ```bash
 > eval $(minikube docker-env)
@@ -274,9 +285,17 @@ device-1-device-simulator  0/1    ContainerCreating  0         1s
 ```
 
 The device-simulator chart deploys a single `Pod` containing the device simulator with a `Service`
-through which it can be accessed. onos-config pods are connected to the device through this service.
-To connect onos-config to the device, simply pass a list of `devices` to the config manager when
-installing the Helm chart:
+through which it can be accessed. The device simulator's service can be seen by running the
+`kubectl get services` command:
+
+```bash
+> kubectl get svc
+NAME                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+device-1-device-simulator         ClusterIP   10.106.28.52    <none>        10161/TCP        25m
+```
+
+onos-config pods can be connected to the device through this service by passing the service name
+and port to the onos-config Helm chart via the `devices` option:
 
 ```bash
 > helm install \
@@ -307,17 +326,8 @@ onos-config-onos-config-manager-6f476ddc95-rgpgs   1/1     Running       0      
 Once onos-config has been deployed and connected to the device service, the northbound API can be
 used to query and update the device configuration. This is done by setting the `-address` argument
 in the `gnmi_cli` to the ingress `host:port` - i.e. `config.onosproject.org:443` - and identifying
-the device in the update `target`. Devices are identified by the name of their associated `Service`.
-The device's service name and port can be seen in the output of the `kubectl get services` command:
-
-```bash
-> kubectl get svc
-NAME                              TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
-device-1-device-simulator         ClusterIP   10.103.1.214     <none>        10161/TCP        11m
-...
-```
-
-Once you've retrieved the device's service name, simply reference the device in the path `target`:
+the device in the update `target`. Devices again are identified by the name of their associated 
+service and port:
 
 ```bash
 > gnmi_cli -set \
@@ -341,7 +351,7 @@ timestamp: 1557904258
 ```
 
 The client must connect through the HTTPS port using the certificates with which the _ingress_
-was configured. For development and testing, the certificates can be found in the
+was configured. The default certificates provided by the onos-config Helm chart can be found in the
 `deployments/helm/onos-config/files/certs` directory.
 
 Once you have modified the device, you can verify that onos-config handled the update successfully
@@ -357,7 +367,7 @@ by checking the onos-config logs:
 2019/05/15 07:10:58 device-1-device-simulator:10161 SetResponse response:<path:<elem:<name:"system" > elem:<name:"clock" > elem:<name:"config" > elem:<name:"timezone-name" > > op:UPDATE >
 ```
 
-Once the update has been successful, you should be able to read the updated state of the device
+If the update was successful, you should be able to read the updated state of the device
 through the northbound API:
 
 ```bash
@@ -394,8 +404,10 @@ notification: <
 >
 ```
 
+#### Deploying multiple simulators
+
 To deploy onos-config with multiple simulators, simply install the simulator chart _n_ times
-to create _n_ devices:
+to create _n_ devices, each with a unique name:
 
 ```bash
 > helm install -n device-1 deployments/helm/device-simulator
