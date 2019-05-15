@@ -70,8 +70,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 			updateArray = append(updateArray, update)
 			notification := &gnmi.Notification{
 				Timestamp: time.Now().Unix(),
-				Update: updateArray,
-
+				Update:    updateArray,
 			}
 			responseUpdate := &gnmi.SubscribeResponse_Update{
 				Update: notification,
@@ -83,7 +82,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 			//If the subscription mode is ONCE we read from the channel, build a response and issue it
 			if mode == gnmi.SubscriptionList_ONCE {
 				responseUpdate := &gnmi.SubscribeResponse_SyncResponse{
-					SyncResponse : true,
+					SyncResponse: true,
 				}
 				response := &gnmi.SubscribeResponse{
 					Response: responseUpdate,
@@ -114,16 +113,12 @@ func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeSe
 	}
 }
 
-func collector(ch chan *gnmi.Update, request *gnmi.SubscriptionList){
+func collector(ch chan *gnmi.Update, request *gnmi.SubscriptionList) {
 	for _, sub := range request.Subscription {
 		update, err := GetUpdate(sub.Path)
 		if err != nil {
 			log.Println("Error while collecting data for subscribe once", err)
 		}
-		ch<-update
+		ch <- update
 	}
 }
-
-
-
-

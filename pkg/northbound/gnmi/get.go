@@ -26,7 +26,7 @@ import (
 // Get implements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 
-	updates := make([]*gnmi.Update,0)
+	updates := make([]*gnmi.Update, 0)
 
 	for _, path := range req.Path {
 		update, err := GetUpdate(path)
@@ -38,10 +38,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	notification := &gnmi.Notification{
 		Timestamp: time.Now().Unix(),
-		Update: updates,
-
+		Update:    updates,
 	}
-	notifications := make([]*gnmi.Notification,0)
+	notifications := make([]*gnmi.Notification, 0)
 	notifications = append(notifications, notification)
 	response := gnmi.GetResponse{
 		Notification: notifications,
@@ -64,7 +63,7 @@ func GetUpdate(path *gnmi.Path) (*gnmi.Update, error) {
 		}
 		var allDevicesPathElem = make([]*gnmi.PathElem, 0)
 		allDevicesPathElem = append(allDevicesPathElem, &gnmi.PathElem{Name: "all-devices"})
-		allDevicesPath := gnmi.Path{Elem:allDevicesPathElem, Target: "*"}
+		allDevicesPath := gnmi.Path{Elem: allDevicesPathElem, Target: "*"}
 		typedVal := gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: deviceIds}}
 
 		update := &gnmi.Update{
@@ -85,7 +84,7 @@ func GetUpdate(path *gnmi.Path) (*gnmi.Update, error) {
 	if len(configValues) == 0 {
 		value = nil
 	} else if len(configValues) == 1 {
-		typedValue := &gnmi.TypedValue_StringVal{StringVal:configValues[0].Value}
+		typedValue := &gnmi.TypedValue_StringVal{StringVal: configValues[0].Value}
 		value = &gnmi.TypedValue{
 			Value: typedValue,
 		}

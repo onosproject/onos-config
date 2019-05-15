@@ -29,10 +29,10 @@ var mgr Manager
 type Manager struct {
 	ConfigStore    *store.ConfigurationStore
 	ChangeStore    *store.ChangeStore
-	deviceStore    *topocache.DeviceStore
+	DeviceStore    *topocache.DeviceStore
 	NetworkStore   *store.NetworkStore
-	topoChannel    chan events.Event
-	changesChannel chan events.Event
+	TopoChannel    chan events.Event
+	ChangesChannel chan events.Event
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -42,10 +42,10 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 	mgr = Manager{
 		ConfigStore:    configs,
 		ChangeStore:    changes,
-		deviceStore:    device,
+		DeviceStore:    device,
 		NetworkStore:   network,
-		topoChannel:    topoCh,
-		changesChannel: make(chan events.Event, 10),
+		TopoChannel:    topoCh,
+		ChangesChannel: make(chan events.Event, 10),
 	}
 	return &mgr
 
@@ -55,14 +55,14 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 func (m *Manager) Run() {
 	log.Println("Starting Manager")
 	// Start the main listener system
-	go listener.Listen(m.changesChannel)
-	go synchronizer.Factory(m.ChangeStore, m.deviceStore, m.topoChannel)
+	go listener.Listen(m.ChangesChannel)
+	go synchronizer.Factory(m.ChangeStore, m.DeviceStore, m.TopoChannel)
 }
 
 //Close kills the channels and manager related objects
 func (m *Manager) Close() {
 	log.Println("Closing Manager")
-	close(m.changesChannel)
+	close(m.ChangesChannel)
 }
 
 // GetManager retuns the initialized and running instance of manager.
