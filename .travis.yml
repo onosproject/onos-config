@@ -4,7 +4,7 @@ services:
   - docker
 
 before_install:
-  - docker pull onosproject/onos-config-build:0.3
+  - docker pull onosproject/onos-config-build
 
 notifications:
   email: false
@@ -14,5 +14,5 @@ branches:
     - master
 
 script:
-  - docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:0.3 test
+  - docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build test
 
