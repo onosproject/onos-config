@@ -81,6 +81,7 @@ func (e Event) EventType() EventType {
 
 // Values extracts a map of values from the event
 func (e Event) Values() *map[string]string {
+	whyAmIHere = 3;
 	return &e.values
 }
 
