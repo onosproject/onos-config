@@ -125,7 +125,9 @@ functionality.
 
 For example, to list all network changes submitted through the northbound gNMI interface run:
 ```bash
-go run github.com/onosproject/onos-config/cmd/admin/net-changes
+go run github.com/onosproject/onos-config/cmd/admin/net-changes \
+    -certPath tools/test/devicesim/certs/client1.crt \
+    -keyPath tools/test/devicesim/certs/client1.key
 ```
 
 ## Diagnostic Tools
@@ -138,7 +140,16 @@ to any backward compatibility guarantees.
 For example, run the following to list all changes submitted through the northbound gNMI 
 as they are tracked by the system broken-up into device specific batches:
 ```bash
-go run github.com/onosproject/onos-config/cmd/diags/changes
+go run github.com/onosproject/onos-config/cmd/diags/changes \
+    -certPath tools/test/devicesim/certs/client1.crt \
+    -keyPath tools/test/devicesim/certs/client1.key
+```
+
+To get details from the Configuration store use
+```bash
+go run github.com/onosproject/onos-config/cmd/diags/configs \
+    -certPath tools/test/devicesim/certs/client1.crt \
+    -keyPath tools/test/devicesim/certs/client1.key
 ```
 
 > Of course, there will be many more such commands available in the near future

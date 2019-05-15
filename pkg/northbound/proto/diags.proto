@@ -24,17 +24,43 @@ import "google/protobuf/timestamp.proto";
 message ChangesRequest {
 }
 
+// ConfigRequest is a message for specifying GetConfigurations query parameters.
+message ConfigRequest {
+}
+
+// ChangeValue is an individual Path/Value combination in a Change
+message ChangeValue {
+    string path = 1;
+    string value = 2;
+    bool removed = 3;
+}
+
 // Change is a descriptor of a submitted configuration change targeted at a single device.
 message Change {
     google.protobuf.Timestamp time = 1;
     string id = 2;
     string desc = 3;
+    repeated ChangeValue changevalues = 4;
+}
+
+// Change is a descriptor of a submitted configuration change targeted at a single device.
+message Configuration {
+    string name = 1;
+    string deviceid = 2;
+    google.protobuf.Timestamp created = 3;
+    google.protobuf.Timestamp updated = 4;
+    string user = 5;
+    string desc = 6;
+    repeated string changeIDs = 7;
 }
 
 // ConfigDiags provides means for obtaining diagnostic information about internal system state.
 service ConfigDiags {
-    // GetChanges returns a stream of submitted changes aimed at individual devices.
+    // GetChanges returns a stream of submitted changes objects.
     rpc GetChanges(ChangesRequest) returns (stream Change);
+
+    // GetConfigurations returns a stream of submitted configurations aimed at individual devices.
+    rpc GetConfigurations(ConfigRequest) returns (stream Configuration);
 }
 
 
