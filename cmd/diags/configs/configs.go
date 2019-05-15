@@ -13,10 +13,10 @@
 // limitations under the License.
 
 /*
-Package main of cmd/diags/changes is a command line client to list Changes.
+Package main of cmd/diags/configs is a command line client to list Configs.
 
 It connects to the diags gRPC interface of the onos-config-manager and queries
-the Change Store
+the Config Store
  */
 package main
 
@@ -65,7 +65,7 @@ func main() {
 
 	client := proto.NewConfigDiagsClient(conn)
 
-	stream, err := client.GetChanges(context.Background(), &proto.ChangesRequest{})
+	stream, err := client.GetConfigurations(context.Background(), &proto.ConfigRequest{})
 	if err != nil {
 		log.Fatalf("Failed to send request: %v", err)
 	}
@@ -81,10 +81,10 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to receive response : %v", err)
 			}
-			fmt.Printf("%s\t(%s)\t%s\n", in.Id, in.Desc,
-				time.Unix(in.Time.Seconds, int64(in.Time.Nanos)).Format(time.RFC3339))
-			for _, cv := range in.Changevalues {
-				fmt.Printf("\t%s\t%s\t%v\n", cv.Path, cv.Value, cv.Removed)
+			fmt.Printf("%s\t(%s)\t%s\t%s\n", in.Name, in.Deviceid, in.Desc,
+				time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos)).Format(time.RFC3339))
+			for _, cid := range in.ChangeIDs {
+				fmt.Printf("\t%s", cid)
 			}
 			fmt.Println()
 		}

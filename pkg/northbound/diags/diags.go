@@ -40,16 +40,54 @@ type Server struct {
 // GetChanges provides a stream of submitted network changes.
 func (s Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_GetChangesServer) error {
 	for _, c := range manager.GetManager().ChangeStore.Store {
+
+		changeValues := make([]*proto.ChangeValue, 0)
+
+		for _, cv := range c.Config {
+			changeValues = append(changeValues, &proto.ChangeValue{
+				Path: cv.Path,
+				Value: cv.Value,
+				Removed: cv.Remove,
+			})
+		}
+
 		// Build a change message
 		msg := &proto.Change{
 			Time: &timestamp.Timestamp{Seconds: c.Created.Unix(), Nanos: int32(c.Created.Nanosecond())},
 			Id: store.B64(c.ID),
 			Desc: c.Description,
+			Changevalues: changeValues,
 		}
 		err := stream.Send(msg)
 		if err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+// GetConfigurations provides a stream of submitted network changes.
+func (s Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDiags_GetConfigurationsServer) error {
+	for _, c := range manager.GetManager().ConfigStore.Store {
+		changeIDs := make([]string, 0)
+
+		for _, cid := range c.Changes {
+			changeIDs = append(changeIDs, store.B64(cid))
+		}
+
+		msg := &proto.Configuration{
+			Name: string(c.Name),
+			Deviceid: c.Device,
+			Updated:  &timestamp.Timestamp{Seconds: c.Updated.Unix(), Nanos: int32(c.Created.Nanosecond())},
+			User: c.User,
+			Desc: c.Description,
+			ChangeIDs: changeIDs,
+		}
+		err := stream.Send(msg)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
