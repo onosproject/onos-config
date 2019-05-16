@@ -26,7 +26,7 @@ type Key struct {
 // Target struct for connecting to gNMI
 type Target struct {
 	Destination client.Destination
-	Clt         client.Impl
+	Clt         GnmiClient
 }
 
 // SubscribeOptions is the gNMI subscription request options
