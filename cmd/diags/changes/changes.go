@@ -17,7 +17,7 @@ Package main of cmd/diags/changes is a command line client to list Changes.
 
 It connects to the diags gRPC interface of the onos-config-manager and queries
 the Change Store
- */
+*/
 package main
 
 import (
@@ -36,6 +36,7 @@ import (
 
 func main() {
 	address := flag.String("address", ":5150", "address to which to send requests")
+	changeID := flag.String("changeid", "", "a specific change ID")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
 	flag.Parse()
@@ -50,7 +51,7 @@ func main() {
 		}
 
 		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
+			Certificates:       []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		}
 
@@ -65,7 +66,12 @@ func main() {
 
 	client := proto.NewConfigDiagsClient(conn)
 
-	stream, err := client.GetChanges(context.Background(), &proto.ChangesRequest{})
+	changesReq := &proto.ChangesRequest{ChangeIds: make([]string, 0)}
+	if *changeID != "" {
+		changesReq.ChangeIds = append(changesReq.ChangeIds, *changeID)
+	}
+
+	stream, err := client.GetChanges(context.Background(), changesReq)
 	if err != nil {
 		log.Fatalf("Failed to send request: %v", err)
 	}

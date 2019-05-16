@@ -40,6 +40,9 @@ type Server struct {
 // GetChanges provides a stream of submitted network changes.
 func (s Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_GetChangesServer) error {
 	for _, c := range manager.GetManager().ChangeStore.Store {
+		if len(r.ChangeIds) > 0 && !stringInList(r.ChangeIds, store.B64(c.ID)){
+			continue
+		}
 
 		changeValues := make([]*proto.ChangeValue, 0)
 
@@ -69,6 +72,10 @@ func (s Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_Get
 // GetConfigurations provides a stream of submitted network changes.
 func (s Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDiags_GetConfigurationsServer) error {
 	for _, c := range manager.GetManager().ConfigStore.Store {
+		if len(r.DeviceIds) > 0 && !stringInList(r.DeviceIds, c.Device){
+			continue
+		}
+
 		changeIDs := make([]string, 0)
 
 		for _, cid := range c.Changes {
@@ -90,4 +97,13 @@ func (s Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDia
 	}
 
 	return nil
+}
+
+func stringInList(haystack []string, needle string) bool {
+	for _, hay := range haystack {
+		if hay == needle {
+			return true
+		}
+	}
+	return false
 }

@@ -94,7 +94,7 @@ func buildUpdate(path *gnmi.Path, configValues []change.ConfigValue) *gnmi.Updat
 			Value: typedValue,
 		}
 	} else {
-		json, err := manager.BuildTree(configValues)
+		json, err := manager.BuildTree(configValues, false)
 		if err != nil {
 
 		}

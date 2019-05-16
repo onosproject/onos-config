@@ -72,7 +72,7 @@ func (n *Node) addNode(name string) *Node {
 
 // BuildTree is a function that takes an ordered array of ConfigValues and
 // produces a structured formatted tree
-func BuildTree(values []change.ConfigValue) ([]byte, error) {
+func BuildTree(values []change.ConfigValue, pretty bool) ([]byte, error) {
 	var buf bytes.Buffer
 
 	root := Node{Name: "(root)", Children: make([]*Node, 0), Leaves: make([]*Leaf, 0)}
@@ -81,7 +81,7 @@ func BuildTree(values []change.ConfigValue) ([]byte, error) {
 		addPathToTree(cv.Path, cv.Value, &root)
 	}
 
-	jsonifyNodes(&root, &buf)
+	jsonifyNodes(&root, &buf, pretty, 1)
 	return buf.Bytes(), nil
 }
 
@@ -121,34 +121,48 @@ func addPathToTree(path, value string, node *Node) error {
 	return nil
 }
 
-func jsonifyNodes(n *Node, buf *bytes.Buffer) {
-	fmt.Fprintf(buf, "{\"%s\": [", n.Name)
+func jsonifyNodes(n *Node, buf *bytes.Buffer, pretty bool, tablevel int) {
+	var (
+		newLine = ""
+		tab = ""
+	)
+	if pretty {
+		newLine = "\n"
+		tabs := make([]string, tablevel)
+		tab = strings.Join(tabs, "\t")
+	}
+
+	fmt.Fprintf(buf, "%s{\"%s\": [", tab, n.Name)
 	var isFirst = true
 	for _, c := range n.Children {
 		if isFirst {
 			isFirst = false
+			fmt.Fprintf(buf, "%s", newLine)
 		} else {
-			fmt.Fprintf(buf, ",")
+			fmt.Fprintf(buf, ",%s", newLine)
 		}
-		jsonifyNodes(c, buf)
+		jsonifyNodes(c, buf, pretty, tablevel + 1)
 	}
 	if len(n.Leaves) > 0 {
-		if !isFirst {
-			fmt.Fprintf(buf, ",")
+		if isFirst {
+			fmt.Fprintf(buf, "%s", newLine)
+			isFirst = true
+		} else {
+			fmt.Fprintf(buf, ",%s", newLine)
 		}
-		isFirst = true
-		fmt.Fprintf(buf, "{")
+		fmt.Fprintf(buf, "%s{", tab + "\t")
 		for _, l := range n.Leaves {
 			if isFirst {
 				isFirst = false
+				fmt.Fprintf(buf, "%s", newLine)
 			} else {
-				fmt.Fprintf(buf, ",")
+				fmt.Fprintf(buf, ",%s", newLine)
 			}
-			fmt.Fprintf(buf, "\"%s\":\"%s\"", l.Attr, l.Value)
+			fmt.Fprintf(buf, "%s\"%s\":\"%s\"", tab + "\t", l.Attr, l.Value)
 		}
-		fmt.Fprintf(buf, "}")
+		fmt.Fprintf(buf, "%s}%s", tab, newLine)
 	}
-	fmt.Fprintf(buf, "]}")
+	fmt.Fprintf(buf, "%s]}", tab)
 }
 
 func xmlifyNodes(n *Node, buf *bytes.Buffer) {
