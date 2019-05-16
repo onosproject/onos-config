@@ -24,6 +24,9 @@ vet:
 license_check:
 	./build/licensing/boilerplate.py -v
 
+gofmt:
+	bash -c "diff -u <(echo -n) <(gofmt -d ./)"
+
 protos:
 	./build/dev-docker/compile-protos.sh
 
@@ -32,7 +35,7 @@ build: test
 	export GOARCH=amd64
 	go build -o build/_output/onos-config-manager ./cmd/onos-config-manager
 
-test: deps lint vet license_check
+test: deps lint vet license_check gofmt
 	go test github.com/onosproject/onos-config/pkg/...
 	go test github.com/onosproject/onos-config/cmd/...
 
