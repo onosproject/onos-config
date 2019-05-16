@@ -3,8 +3,8 @@
   "Storetype": "config",
   "Store": {
     "Device1Version": {
-      "Name": "Device1Version",
-      "Device": "Device1",
+      "Name": "localhost:10161Running",
+      "Device": "localhost:10161",
       "Created": "2019-05-09T16:24:17.815280516Z",
       "Updated": "2019-05-09T16:24:17.81528215Z",
       "User": "onos",
@@ -16,8 +16,8 @@
       ]
     },
     "Device2VersionMain": {
-      "Name": "Device2VersionMain",
-      "Device": "Device2",
+      "Name": "localhost:10161Running",
+      "Device": "localhost:10162",
       "Created": "2019-05-09T16:24:17.815298386Z",
       "Updated": "2019-05-09T16:24:17.815300015Z",
       "User": "onos",
