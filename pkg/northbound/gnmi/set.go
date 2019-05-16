@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"log"
@@ -71,14 +72,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		targetRemoves[target] = deletes
 	}
 
-	networkConfig, err := store.CreateNetworkStore("Current", "User1")
-	if err != nil {
-		return nil, err
-	}
+	networkChanges := make(map[store.ConfigName]change.ID)
 	updateResults := make([]*gnmi.UpdateResult, 0)
 	for target, updates := range targetUpdates {
 		changeID, err := manager.GetManager().SetNetworkConfig(
-			target, string(target+ConfigNameSuffix), updates, targetRemoves[target])
+			target, store.ConfigName(target + ConfigNameSuffix), updates, targetRemoves[target])
 		var op = gnmi.UpdateResult_UPDATE
 
 		if err != nil {
@@ -127,13 +125,18 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			updateResults = append(updateResults, updateResult)
 		}
 
-		networkConfig.ConfigurationChanges[store.ConfigName(target)] = changeID
+		networkChanges[store.ConfigName(target + ConfigNameSuffix)] = changeID
 	}
 
 	if len(updateResults) == 0 {
 		log.Println("All target changes were duplicated - Set rejected")
-		return nil, fmt.Errorf("Set change rejected as it is a " +
+		return nil, fmt.Errorf("set change rejected as it is a " +
 			"duplicate of the last change for all targets")
+	}
+
+	networkConfig, err := store.CreateNetworkStore("User1", networkChanges)
+	if err != nil {
+		return nil, err
 	}
 
 	manager.GetManager().NetworkStore.Store =

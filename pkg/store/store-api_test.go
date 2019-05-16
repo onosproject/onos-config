@@ -31,7 +31,7 @@ var (
 
 var (
 	changeStore        map[string]*change.Change
-	configurationStore map[string]Configuration
+	configurationStore map[ConfigName]Configuration
 	networkStore       []NetworkConfiguration
 )
 
@@ -244,7 +244,7 @@ func TestMain(m *testing.M) {
 		Description: "Configuration for Device 1",
 		Changes:     []change.ID{change1.ID, change2.ID, change3.ID},
 	}
-	configurationStore = make(map[string]Configuration)
+	configurationStore = make(map[ConfigName]Configuration)
 	configurationStore["Device1Version"] = device1V
 
 	config4Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CGhi, false)
@@ -525,7 +525,7 @@ func Test_writeOutNetworkFile(t *testing.T) {
 }
 
 func Test_createnetStore(t *testing.T) {
-	nwStore, err := CreateNetworkStore("testnwstore", "onos")
+	nwStore, err := CreateNetworkStoreWithName("testnwstore", "onos")
 	assert.NilError(t, err, "Unexpected error")
 
 	assert.Equal(t, nwStore.User, "onos", "Unexpected user name")
@@ -534,7 +534,7 @@ func Test_createnetStore(t *testing.T) {
 }
 
 func Test_createnetStore_badname(t *testing.T) {
-	nwStore, err := CreateNetworkStore("???????", "onos")
+	nwStore, err := CreateNetworkStoreWithName("???????", "onos")
 	assert.ErrorContains(t, err, "Error in name ???????")
 	assert.Check(t, nwStore == nil, "unexpected result", nwStore)
 }
