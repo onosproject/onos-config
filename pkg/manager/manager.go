@@ -65,7 +65,7 @@ func (m *Manager) Close() {
 	close(m.ChangesChannel)
 }
 
-// GetManager retuns the initialized and running instance of manager.
+// GetManager returns the initialized and running instance of manager.
 // Should be called only after NewManager and Run are done.
 func GetManager() *Manager {
 	return &mgr
