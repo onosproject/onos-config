@@ -17,7 +17,7 @@ Package main of cmd/diags/configs is a command line client to list Configs.
 
 It connects to the diags gRPC interface of the onos-config-manager and queries
 the Config Store
- */
+*/
 package main
 
 import (
@@ -36,6 +36,7 @@ import (
 
 func main() {
 	address := flag.String("address", ":5150", "address to which to send requests")
+	deviceName := flag.String("devicename", "", "The hostname and port of a configured device")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
 	flag.Parse()
@@ -50,7 +51,7 @@ func main() {
 		}
 
 		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
+			Certificates:       []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		}
 
@@ -65,7 +66,11 @@ func main() {
 
 	client := proto.NewConfigDiagsClient(conn)
 
-	stream, err := client.GetConfigurations(context.Background(), &proto.ConfigRequest{})
+	configReq := &proto.ConfigRequest{DeviceIds: make([]string, 0)}
+	if *deviceName != "" {
+		configReq.DeviceIds = append(configReq.DeviceIds, *deviceName)
+	}
+	stream, err := client.GetConfigurations(context.Background(), configReq)
 	if err != nil {
 		log.Fatalf("Failed to send request: %v", err)
 	}
