@@ -18,7 +18,7 @@ network changes.
 
 It connects to the admin gRPC interface of the onos-config-manager and queries
 the Network Store
- */
+*/
 package main
 
 import (
@@ -51,7 +51,7 @@ func main() {
 		}
 
 		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
+			Certificates:       []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		}
 

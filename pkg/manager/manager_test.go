@@ -54,9 +54,9 @@ const (
 )
 
 const (
-	ValueEmpty    = ""
-	ValueLeaf2A13 = "13"
-	ValueLeaf2B159      = "1.579"
+	ValueEmpty     = ""
+	ValueLeaf2A13  = "13"
+	ValueLeaf2B159 = "1.579"
 )
 
 func TestMain(m *testing.M) {
@@ -65,7 +65,7 @@ func TestMain(m *testing.M) {
 	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, ValueEmpty, false)
 	config1Value03, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2A, ValueLeaf2A13, false)
 	change1, err = change.CreateChange(change.ValueCollections{
-		config1Value01, config1Value02, config1Value03,}, "Original Config for test switch")
+		config1Value01, config1Value02, config1Value03}, "Original Config for test switch")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -91,27 +91,27 @@ func TestMain(m *testing.M) {
 		Timeout: 10,
 	}
 	mgrTest = NewManager(
-			&store.ConfigurationStore{
-				Version:   "1.0",
-				Storetype: "config",
-				Store:     configurationStoreTest,
-			},
-			&store.ChangeStore{
-				Version: "1.0",
-				Storetype: "change",
-				Store: changeStoreTest,
-			},
-			&topocache.DeviceStore{
-				Version:"1.0",
-				Storetype:"change",
-				Store: deviceStoreTest,
-			},
-			&store.NetworkStore{
-				Version:"1.0",
-				Storetype:"network",
-				Store: networkStoreTest,
-			},
-			make(chan events.Event, 10))
+		&store.ConfigurationStore{
+			Version:   "1.0",
+			Storetype: "config",
+			Store:     configurationStoreTest,
+		},
+		&store.ChangeStore{
+			Version:   "1.0",
+			Storetype: "change",
+			Store:     changeStoreTest,
+		},
+		&topocache.DeviceStore{
+			Version:   "1.0",
+			Storetype: "change",
+			Store:     deviceStoreTest,
+		},
+		&store.NetworkStore{
+			Version:   "1.0",
+			Storetype: "network",
+			Store:     networkStoreTest,
+		},
+		make(chan events.Event, 10))
 	mgrTest.Run()
 	os.Exit(m.Run())
 
@@ -160,7 +160,5 @@ func Test_SetNetworkConfig(t *testing.T) {
 	assert.Equal(t, updatedVals[2].Path, Test1Cont1ACont2ALeaf2C)
 	assert.Equal(t, updatedVals[2].Value, "")
 	assert.Equal(t, updatedVals[2].Remove, true)
-
-
 
 }

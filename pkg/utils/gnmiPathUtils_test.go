@@ -21,29 +21,29 @@ import (
 )
 
 const (
-    // /network-instances/network-instance[name=DEFAULT]
-	elemName1a = "network-instances"
-	elemName1b = "network-instance"
+	// /network-instances/network-instance[name=DEFAULT]
+	elemName1a        = "network-instances"
+	elemName1b        = "network-instance"
 	elemNameEscaped1a = "netwo\\r\\k\\-\\instances"
 	elemNameEscaped1b = "net\\w\\o\\r\\k-instance"
-	elemKeyName1 = "name"
-	elemKeyValue1 = "DEFAULT"
-	path1 = "/" + elemName1a + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]/" + elemName1b
-	escapedPath1 = "/" + elemNameEscaped1a + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]/" + elemNameEscaped1b
+	elemKeyName1      = "name"
+	elemKeyValue1     = "DEFAULT"
+	path1             = "/" + elemName1a + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]/" + elemName1b
+	escapedPath1      = "/" + elemNameEscaped1a + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]/" + elemNameEscaped1b
 
 	pathSegment1 = "1"
 	pathSegment2 = "2[a=b]"
 	pathSegment3 = "3"
 	pathSegment4 = "\\4"
-	pathToSplit = "/" + pathSegment1 + "/" + pathSegment2 + "/" + pathSegment3 + "/" + pathSegment4
+	pathToSplit  = "/" + pathSegment1 + "/" + pathSegment2 + "/" + pathSegment3 + "/" + pathSegment4
 
 	path2Segment1 = "11"
 	path2Segment2 = "22[a=b]"
 	path2Segment3 = "33"
 	path2Segment4 = "\\44"
-	path2ToSplit = "/" + path2Segment1 + "/" + path2Segment2 + "/" + path2Segment3 + "/" + path2Segment4
+	path2ToSplit  = "/" + path2Segment1 + "/" + path2Segment2 + "/" + path2Segment3 + "/" + path2Segment4
 
-	pathNoClose = "/a/b[name=aaa"
+	pathNoClose   = "/a/b[name=aaa"
 	pathNoKeyName = "/a/b/[=aaa]"
 )
 
@@ -64,7 +64,7 @@ func Test_ParseSimple(t *testing.T) {
 
 	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
 
-	checkElement(t, parsed, 0,  elemName1a, elemKeyName1, elemKeyValue1)
+	checkElement(t, parsed, 0, elemName1a, elemKeyName1, elemKeyValue1)
 }
 
 func Test_ParseEscape(t *testing.T) {
@@ -81,7 +81,7 @@ func Test_ParseErrorNoClose(t *testing.T) {
 	elements[0] = pathNoClose
 	parsed, err := ParseGNMIElements(elements)
 
-	assert.Assert(t, err != nil && parsed == nil,"path with no closing bracket did not generate an error")
+	assert.Assert(t, err != nil && parsed == nil, "path with no closing bracket did not generate an error")
 }
 
 func Test_ParseErrorNoKeyName(t *testing.T) {
@@ -89,7 +89,7 @@ func Test_ParseErrorNoKeyName(t *testing.T) {
 	elements[0] = pathNoKeyName
 	parsed, err := ParseGNMIElements(elements)
 
-	assert.Assert(t, err != nil && parsed == nil,"path with no opening bracket did not generate an error")
+	assert.Assert(t, err != nil && parsed == nil, "path with no opening bracket did not generate an error")
 }
 
 func Test_Split(t *testing.T) {
@@ -109,9 +109,9 @@ func Test_ParseNamespace(t *testing.T) {
 	parsed, err := ParseGNMIElements(elements)
 
 	assert.NilError(t, err, "Path with NS returns error")
-	assert.Assert(t, parsed != nil,"path with NS returns nil")
+	assert.Assert(t, parsed != nil, "path with NS returns nil")
 
-	checkElement(t, parsed, 0,  "a", "x", "y")
+	checkElement(t, parsed, 0, "a", "x", "y")
 }
 
 func Test_StrPath(t *testing.T) {

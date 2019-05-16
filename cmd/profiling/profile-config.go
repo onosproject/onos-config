@@ -23,7 +23,7 @@ and then run to view the output in a web browser (requires graphviz to be instal
 
 	go tool pprof -http=localhost:8080 /tmp/cpuProfile.out
 
- */
+*/
 package main
 
 import (
@@ -42,7 +42,6 @@ func main() {
 	}
 	pprof.StartCPUProfile(cpuFile)
 	defer pprof.StopCPUProfile()
-
 
 	changeValues := change.ValueCollections{}
 	iterations := 50000

@@ -54,9 +54,9 @@ func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.A
 
 		// Build net change message
 		msg := &proto.NetChange{
-			Time: &timestamp.Timestamp{Seconds: nc.Created.Unix(), Nanos: int32(nc.Created.Nanosecond())},
-			Name: nc.Name,
-			User: nc.User,
+			Time:    &timestamp.Timestamp{Seconds: nc.Created.Unix(), Nanos: int32(nc.Created.Nanosecond())},
+			Name:    nc.Name,
+			User:    nc.User,
 			Changes: make([]*proto.ConfigChange, 0),
 		}
 
@@ -72,4 +72,3 @@ func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.A
 	}
 	return nil
 }
-

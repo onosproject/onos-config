@@ -124,7 +124,7 @@ func addPathToTree(path, value string, node *Node) error {
 func jsonifyNodes(n *Node, buf *bytes.Buffer, pretty bool, tablevel int) {
 	var (
 		newLine = ""
-		tab = ""
+		tab     = ""
 	)
 	if pretty {
 		newLine = "\n"
@@ -141,7 +141,7 @@ func jsonifyNodes(n *Node, buf *bytes.Buffer, pretty bool, tablevel int) {
 		} else {
 			fmt.Fprintf(buf, ",%s", newLine)
 		}
-		jsonifyNodes(c, buf, pretty, tablevel + 1)
+		jsonifyNodes(c, buf, pretty, tablevel+1)
 	}
 	if len(n.Leaves) > 0 {
 		if isFirst {
@@ -150,7 +150,7 @@ func jsonifyNodes(n *Node, buf *bytes.Buffer, pretty bool, tablevel int) {
 		} else {
 			fmt.Fprintf(buf, ",%s", newLine)
 		}
-		fmt.Fprintf(buf, "%s{", tab + "\t")
+		fmt.Fprintf(buf, "%s{", tab+"\t")
 		for _, l := range n.Leaves {
 			if isFirst {
 				isFirst = false
@@ -158,7 +158,7 @@ func jsonifyNodes(n *Node, buf *bytes.Buffer, pretty bool, tablevel int) {
 			} else {
 				fmt.Fprintf(buf, ",%s", newLine)
 			}
-			fmt.Fprintf(buf, "%s\"%s\":\"%s\"", tab + "\t", l.Attr, l.Value)
+			fmt.Fprintf(buf, "%s\"%s\":\"%s\"", tab+"\t", l.Attr, l.Value)
 		}
 		fmt.Fprintf(buf, "%s}%s", tab, newLine)
 	}

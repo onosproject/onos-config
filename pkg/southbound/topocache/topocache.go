@@ -73,5 +73,3 @@ func LoadDeviceStore(file string, topoChannel chan<- events.Event) (*DeviceStore
 
 	return &deviceStore, nil
 }
-
-
