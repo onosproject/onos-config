@@ -27,13 +27,13 @@ import (
 
 func main() {
 	device := topocache.Device{
-		Addr:     "localhost:10161",
-		Target:   "Test-onos-config",
+		Addr:   "localhost:10161",
+		Target: "Test-onos-config",
 		// Loaded from default-certificates.go
 		//CaPath:   "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/onfca.crt",
 		//CertPath: "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.crt",
 		//KeyPath:  "/Users/andrea/go/src/github.com/opennetworkinglab/onos-config/tools/test/devicesim/certs/client1.key",
-		Timeout:  time.Second * 10,
+		Timeout: time.Second * 10,
 	}
 	target, err := southbound.GetTarget(southbound.Key{Key: device.Addr})
 	if err != nil {

@@ -14,7 +14,7 @@
 
 /*
 Package events is a general definition of an event type to be passed through channels.
- */
+*/
 package events
 
 import (
@@ -32,7 +32,6 @@ const (
 	// Connect :
 	Connect = "Connect"
 )
-
 
 // EventType is an enumerated type
 type EventType int

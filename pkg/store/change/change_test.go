@@ -18,10 +18,10 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"gotest.tools/assert"
 	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -146,7 +146,7 @@ func Test_badpath(t *testing.T) {
 func Test_changeValueString(t *testing.T) {
 	cv1, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, "123", false)
 
-	assert.Equal(t, cv1.String() , "/test1:cont1a/cont2a/leaf2a 123 false",
+	assert.Equal(t, cv1.String(), "/test1:cont1a/cont2a/leaf2a 123 false",
 		"Expected changeValue to produce string")
 
 	//Test the error

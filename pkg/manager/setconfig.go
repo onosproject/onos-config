@@ -33,13 +33,13 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 		return nil, fmt.Errorf("Device not present %s", target)
 	}
 	//checks if config exists, otherwise create new
-	deviceConfig, ok := m.ConfigStore.Store[configName];
+	deviceConfig, ok := m.ConfigStore.Store[configName]
 	if !ok {
 		deviceConfig = store.Configuration{
-			Name:    store.ConfigName(configName),
-			Device:  target,
-			Created: time.Now(),
-			Updated: time.Now(),
+			Name:        store.ConfigName(configName),
+			Device:      target,
+			Created:     time.Now(),
+			Updated:     time.Now(),
 			User:        "User1",
 			Description: fmt.Sprintf("Configuration %s for target %s", configName, target),
 			Changes:     make([]change.ID, 0),
@@ -65,7 +65,7 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 		return nil, err
 	}
 
-	if (m.ChangeStore.Store[store.B64(configChange.ID)] != nil) {
+	if m.ChangeStore.Store[store.B64(configChange.ID)] != nil {
 		log.Println("Change ID", store.B64(configChange.ID), "already exists - not overwriting")
 	} else {
 		m.ChangeStore.Store[store.B64(configChange.ID)] = configChange

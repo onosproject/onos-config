@@ -39,9 +39,9 @@ func CreateNetworkStore(name string, user string) (*NetworkConfiguration, error)
 	}
 
 	return &NetworkConfiguration{
-		Name: name,
-		Created: time.Now(),
-		User: user,
+		Name:                 name,
+		Created:              time.Now(),
+		User:                 user,
 		ConfigurationChanges: make(map[ConfigName]change.ID),
 	}, nil
 }

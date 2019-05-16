@@ -125,10 +125,10 @@ func main() {
 // Starts gRPC server and registers various services; then serves
 func startServer(caPath *string, keyPath *string, certPath *string) error {
 	cfg := &northbound.ServerConfig{
-		Port : 5150,
+		Port:     5150,
 		Insecure: true,
-		CaPath: caPath,
-		KeyPath: keyPath,
+		CaPath:   caPath,
+		KeyPath:  keyPath,
 		CertPath: certPath,
 	}
 
@@ -139,5 +139,3 @@ func startServer(caPath *string, keyPath *string, certPath *string) error {
 
 	return serv.Serve()
 }
-
-

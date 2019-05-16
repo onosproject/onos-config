@@ -14,13 +14,12 @@
 
 /*
 Package certs is set of default certificates serialized in to string format.
- */
+*/
 package certs
 
 /*
 All of these are copied over from onos-config/tools/test/devicesim/certs
 */
-
 
 /*
 OnfCaCrt is the default CA certificate

@@ -78,7 +78,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	updateResults := make([]*gnmi.UpdateResult, 0)
 	for target, updates := range targetUpdates {
 		changeID, err := manager.GetManager().SetNetworkConfig(
-			target, string(target + ConfigNameSuffix), updates, targetRemoves[target])
+			target, string(target+ConfigNameSuffix), updates, targetRemoves[target])
 		var op = gnmi.UpdateResult_UPDATE
 
 		if err != nil {

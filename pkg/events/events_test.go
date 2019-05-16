@@ -22,10 +22,10 @@ import (
 )
 
 const (
-	eventSubject = "device22"
-	eventType = EventTypeConfiguration
+	eventSubject  = "device22"
+	eventType     = EventTypeConfiguration
 	eventValueKey = ChangeID
-	eventValue = "test-event"
+	eventValue    = "test-event"
 )
 
 func Test_eventConstruction(t *testing.T) {
