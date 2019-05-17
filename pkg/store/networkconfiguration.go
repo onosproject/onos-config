@@ -53,9 +53,9 @@ func CreateNetworkStoreWithName(name string, user string) (*NetworkConfiguration
 func CreateNetworkStore(user string, changes map[ConfigName]change.ID) (*NetworkConfiguration, error) {
 
 	nwConf := NetworkConfiguration{
-		Name: "temp",
-		Created: time.Now(),
-		User: user,
+		Name:                 "temp",
+		Created:              time.Now(),
+		User:                 user,
 		ConfigurationChanges: changes,
 	}
 

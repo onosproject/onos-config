@@ -78,13 +78,13 @@ func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) {
 	}
 
 	s.Store[name] = Configuration{
-		Name: s.Store[name].Name,
-		Device: s.Store[name].Device,
+		Name:        s.Store[name].Name,
+		Device:      s.Store[name].Device,
 		Description: s.Store[name].Description,
-		Created: s.Store[name].Created,
-		Updated: time.Now(),
-		User: s.Store[name].User,
-		Changes: s.Store[name].Changes[:len(s.Store[name].Changes)-1],
+		Created:     s.Store[name].Created,
+		Updated:     time.Now(),
+		User:        s.Store[name].User,
+		Changes:     s.Store[name].Changes[:len(s.Store[name].Changes)-1],
 	}
 }
 

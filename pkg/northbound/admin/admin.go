@@ -83,7 +83,7 @@ func (s Server) RollbackNetworkChange(
 
 	if req.Name == "" {
 		networkConfig =
-			&manager.GetManager().NetworkStore.Store[len(manager.GetManager().NetworkStore.Store) - 1]
+			&manager.GetManager().NetworkStore.Store[len(manager.GetManager().NetworkStore.Store)-1]
 	} else {
 		for idx, nc := range manager.GetManager().NetworkStore.Store {
 			if nc.Name == req.Name {

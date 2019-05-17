@@ -28,11 +28,22 @@ func (m *Manager) GetNetworkConfig(target string, configname string, path string
 	fmt.Println("Getting config for", target, path)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
-	for configID, cfg := range m.ConfigStore.Store {
-		if cfg.Device == target {
-			configname = configID
-			config = cfg
-			break
+	if target != "" {
+		for _, cfg := range m.ConfigStore.Store {
+			if cfg.Device == target {
+				config = cfg
+				break
+			}
+		}
+		if config.Name == "" {
+			return make([]change.ConfigValue, 0),
+				fmt.Errorf("No Configuration found for %s", target)
+		}
+	} else if configname != "" {
+		config = m.ConfigStore.Store[store.ConfigName(configname)]
+		if config.Name == "" {
+			return make([]change.ConfigValue, 0),
+				fmt.Errorf("No Configuration found for %s", configname)
 		}
 	}
 	configValues := config.ExtractFullConfig(m.ChangeStore.Store, layer)

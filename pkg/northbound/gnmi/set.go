@@ -76,7 +76,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	updateResults := make([]*gnmi.UpdateResult, 0)
 	for target, updates := range targetUpdates {
 		changeID, err := manager.GetManager().SetNetworkConfig(
-			target, store.ConfigName(target + ConfigNameSuffix), updates, targetRemoves[target])
+			target, store.ConfigName(target+ConfigNameSuffix), updates, targetRemoves[target])
 		var op = gnmi.UpdateResult_UPDATE
 
 		if err != nil {
@@ -125,7 +125,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			updateResults = append(updateResults, updateResult)
 		}
 
-		networkChanges[store.ConfigName(target + ConfigNameSuffix)] = changeID
+		networkChanges[store.ConfigName(target+ConfigNameSuffix)] = changeID
 	}
 
 	if len(updateResults) == 0 {
