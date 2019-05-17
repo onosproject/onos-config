@@ -17,12 +17,13 @@ package store
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
-	"gotest.tools/assert"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-config/pkg/store/change"
+	"gotest.tools/assert"
 )
 
 var (
@@ -286,9 +287,7 @@ func Test_device1_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	if device1V.Name != "Device1Version" {
-		t.Errorf("Unexpected name for Configuration main %s", device1V.Name)
-	}
+	assert.Assert(t, device1V.Name == "Device1Version", "Unexpected name for Configuration main %s", device1V.Name)
 
 	config := device1V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
@@ -308,9 +307,7 @@ func Test_device1_prev_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	if device1V.Name != "Device1Version" {
-		t.Errorf("Unexpected name for Configuration main %s", device1V.Name)
-	}
+	assert.Assert(t, device1V.Name == "Device1Version", "Unexpected name for Configuration main %s", device1V.Name)
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
@@ -330,9 +327,7 @@ func Test_device1_first_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	if device1V.Name != "Device1Version" {
-		t.Errorf("Unexpected name for Configuration main %s", device1V.Name)
-	}
+	assert.Assert(t, device1V.Name == "Device1Version", "Unexpected name for Configuration main %s", device1V.Name)
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
@@ -352,14 +347,13 @@ func Test_device1_invalid_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	if device1V.Name != "Device1Version" {
-		t.Errorf("Unexpected name for Configuration main %s", device1V.Name)
-	}
+	assert.Assert(t, device1V.Name == "Device1Version", "Unexpected name for Configuration main %s", device1V.Name)
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	if len(config) > 0 {
 		t.Errorf("Not expecting any values for change (n-3). Got %d", len(config))
 	}
+
 }
 
 func Test_device2_version(t *testing.T) {
@@ -368,9 +362,7 @@ func Test_device2_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	if device2V.Name != "Device2VersionMain" {
-		t.Errorf("Unexpected name for Configuration main %s", device2V.Name)
-	}
+	assert.Assert(t, device2V.Name == "Device2VersionMain", "Unexpected name for Configuration main %s", device2V.Name)
 
 	config := device2V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
@@ -391,6 +383,7 @@ func checkPathvalue(t *testing.T, config []change.ConfigValue, index int,
 		t.Errorf("Unexpected change %d Exp: %s, Got %s", index,
 			expPaths[index], config[index].Path)
 	}
+
 	if config[index].Value != expValues[index] {
 		t.Errorf("Unexpected change %d Exp: %s, Got %s", index,
 			expValues[index], config[index].Value)
@@ -401,32 +394,25 @@ func Test_convertChangeToGnmi(t *testing.T) {
 	setRequest, parseError := change3.GnmiChange()
 
 	assert.NilError(t, parseError, "Parsing error for Gnmi change request")
+	assert.Equal(t, len(setRequest.Update), 1, "Expected %d Update elements. Had %d",
+		1, len(setRequest.Update))
 
-	if len(setRequest.Update) != 1 {
-		t.Errorf("Expected %d Update elements. Had %d",
-			1, len(setRequest.Update))
-	}
 	jsonstr, _ := json.Marshal(setRequest.Update[0])
 
 	expectedStr := "{\"path\":{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"cont2a\"}," +
 		"{\"name\":\"leaf2c\"}]},\"val\":{\"Value\":{\"StringVal\":\"def\"}}}"
-	if string(jsonstr) != expectedStr {
-		t.Errorf("Expected Update[0] to be %s. Was %s",
-			expectedStr, string(jsonstr))
-	}
 
-	if len(setRequest.Delete) != 1 {
-		t.Errorf("Expected %d Delete elements. Had %d",
-			1, len(setRequest.Delete))
-	}
+	assert.Equal(t, string(jsonstr), expectedStr, "Expected Update[0] to be %s. Was %s",
+		expectedStr, string(jsonstr))
+
+	assert.Equal(t, len(setRequest.Delete), 1, "Expected %d Delete elements. Had %d",
+		1, len(setRequest.Delete))
 
 	jsonstr2, _ := json.Marshal(setRequest.Delete[0])
 
 	expectedStr2 := "{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"list2a\",\"key\":{\"name\":\"txout2\"}}]}"
-	if string(jsonstr2) != expectedStr2 {
-		t.Errorf("Expected Delete[0] to be %s. Was %s",
-			expectedStr2, string(jsonstr2))
-	}
+	assert.Equal(t, string(jsonstr2), expectedStr2, "Expected Delete[0] to be %s. Was %s",
+		expectedStr2, string(jsonstr2))
 }
 
 func Test_writeOutChangeFile(t *testing.T) {
@@ -437,6 +423,7 @@ func Test_writeOutChangeFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("%s", err)
 	}
+
 	jsonEncoder := json.NewEncoder(changeStoreFile)
 	var csf = ChangeStore{Version: StoreVersion,
 		Storetype: StoreTypeChange, Store: changeStore}
@@ -450,28 +437,16 @@ func Test_writeOutChangeFile(t *testing.T) {
 
 func Test_loadChangeStoreFile(t *testing.T) {
 	changeStore, err := LoadChangeStore("testout/changeStore-sample.json")
-
-	if err != nil {
-		t.Errorf("Unexpected error when loading Change Store from file %s", err)
-	}
-
-	if changeStore.Version != StoreVersion {
-		t.Errorf("Unexpected version %s when loading Change Store %s",
-			changeStore.Version, StoreVersion)
-	}
+	assert.NilError(t, err, "Unexpected error when loading Change Store from file %s", err)
+	assert.Equal(t, changeStore.Version, StoreVersion, "Unexpected version %s when loading Change Store %s",
+		changeStore.Version, StoreVersion)
 }
 
 func Test_loadChangeStoreFileError(t *testing.T) {
 	changeStore, err := LoadChangeStore("nonexistent.json")
-
-	if err == nil {
-		t.Errorf("Expected an error when loading Change Store from invalid file")
-	}
-
-	if changeStore.Version != "" {
-		t.Errorf("Expected version to be empty on error. Got: %s",
-			changeStore.Version)
-	}
+	assert.Assert(t, err != nil, "Expected an error when loading Change Store from invalid file")
+	assert.Equal(t, changeStore.Version, "", "Expected version to be empty on error. Got: %s",
+		changeStore.Version)
 }
 
 func Test_writeOutConfigFile(t *testing.T) {
@@ -489,27 +464,16 @@ func Test_writeOutConfigFile(t *testing.T) {
 func Test_loadConfigStoreFile(t *testing.T) {
 	configStore, err := LoadConfigStore("testout/configStore-sample.json")
 
-	if err != nil {
-		t.Errorf("Unexpected error when loading Config Store from file %s", err)
-	}
-
-	if configStore.Version != StoreVersion {
-		t.Errorf("Unexpected version %s when loading Config Store %s",
-			configStore.Version, StoreVersion)
-	}
+	assert.NilError(t, err, "Unexpected error when loading Config Store from file %s", err)
+	assert.Equal(t, configStore.Version, StoreVersion, "Unexpected version %s when loading Config Store %s",
+		configStore.Version, StoreVersion)
 }
 
 func Test_loadConfigStoreFileError(t *testing.T) {
 	configStore, err := LoadConfigStore("nonexistent.json")
-
-	if err == nil {
-		t.Errorf("Expected an error when loading Config Store from invalid file")
-	}
-
-	if configStore.Version != "" {
-		t.Errorf("Expected version to be empty on error. Got: %s",
-			configStore.Version)
-	}
+	assert.Assert(t, err != nil, "Expected an error when loading Config Store from invalid file")
+	assert.Equal(t, configStore.Version, "", "Expected version to be empty on error. Got: %s",
+		configStore.Version)
 }
 
 func Test_writeOutNetworkFile(t *testing.T) {
@@ -541,14 +505,9 @@ func Test_createnetStore_badname(t *testing.T) {
 
 func Test_loadNetworkStoreFile(t *testing.T) {
 	networkStore, err := LoadNetworkStore("testout/networkStore-sample.json")
-	if err != nil {
-		t.Errorf("Unexpected error when loading Network Store from file %s", err)
-	}
-
-	if networkStore.Version != StoreVersion {
-		t.Errorf("Unexpected version %s when loading Network Store %s",
-			networkStore.Version, StoreVersion)
-	}
+	assert.NilError(t, err, "Unexpected error when loading Network Store from file %s", err)
+	assert.Equal(t, networkStore.Version, StoreVersion, "Unexpected version %s when loading Network Store %s",
+		networkStore.Version, StoreVersion)
 }
 
 func BenchmarkCreateChangeValue(b *testing.B) {
@@ -557,9 +516,8 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 		path := fmt.Sprintf("/test-%s", strconv.Itoa(b.N))
 		cv, _ := change.CreateChangeValue(path, strconv.Itoa(i), false)
 		err := cv.IsPathValid()
-		if err != nil {
-			b.Errorf("path not valid %s", err)
-		}
+		assert.NilError(b, err, "path not valid %s", err)
+
 	}
 }
 
@@ -575,7 +533,5 @@ func BenchmarkCreateChange(b *testing.B) {
 	change, _ := change.CreateChange(changeValues, "Benchmarked Change")
 
 	err := change.IsValid()
-	if err != nil {
-		b.Errorf("Invalid change %s", err)
-	}
+	assert.NilError(b, err, "Invalid change %s", err)
 }
