@@ -287,7 +287,7 @@ func Test_device1_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device1V.Name, ConfigName("Device1Version"), "Unexpected name for Configuration main %s", device1V.Name)
+	assert.Equal(t, device1V.Name, ConfigName("Device1Version"))
 
 	config := device1V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
@@ -307,7 +307,7 @@ func Test_device1_prev_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device1V.Name, ConfigName("Device1Version"), "Unexpected name for Configuration main %s", device1V.Name)
+	assert.Equal(t, device1V.Name, ConfigName("Device1Version"))
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
@@ -327,7 +327,7 @@ func Test_device1_first_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device1V.Name, ConfigName("Device1Version"), "Unexpected name for Configuration main %s", device1V.Name)
+	assert.Equal(t, device1V.Name, ConfigName("Device1Version"))
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
@@ -347,7 +347,7 @@ func Test_device1_invalid_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device1V.Name, ConfigName("Device1Version"), "Unexpected name for Configuration main %s", device1V.Name)
+	assert.Equal(t, device1V.Name, ConfigName("Device1Version"))
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	if len(config) > 0 {
@@ -362,7 +362,7 @@ func Test_device2_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device2V.Name, ConfigName("Device2VersionMain"), "Unexpected name for Configuration main %s", device2V.Name)
+	assert.Equal(t, device2V.Name, ConfigName("Device2VersionMain"))
 
 	config := device2V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
@@ -394,25 +394,21 @@ func Test_convertChangeToGnmi(t *testing.T) {
 	setRequest, parseError := change3.GnmiChange()
 
 	assert.NilError(t, parseError, "Parsing error for Gnmi change request")
-	assert.Equal(t, len(setRequest.Update), 1, "Expected %d Update elements. Had %d",
-		1, len(setRequest.Update))
+	assert.Equal(t, len(setRequest.Update), 1)
 
 	jsonstr, _ := json.Marshal(setRequest.Update[0])
 
 	expectedStr := "{\"path\":{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"cont2a\"}," +
 		"{\"name\":\"leaf2c\"}]},\"val\":{\"Value\":{\"StringVal\":\"def\"}}}"
 
-	assert.Equal(t, string(jsonstr), expectedStr, "Expected Update[0] to be %s. Was %s",
-		expectedStr, string(jsonstr))
+	assert.Equal(t, string(jsonstr), expectedStr)
 
-	assert.Equal(t, len(setRequest.Delete), 1, "Expected %d Delete elements. Had %d",
-		1, len(setRequest.Delete))
+	assert.Equal(t, len(setRequest.Delete), 1)
 
 	jsonstr2, _ := json.Marshal(setRequest.Delete[0])
 
 	expectedStr2 := "{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"list2a\",\"key\":{\"name\":\"txout2\"}}]}"
-	assert.Equal(t, string(jsonstr2), expectedStr2, "Expected Delete[0] to be %s. Was %s",
-		expectedStr2, string(jsonstr2))
+	assert.Equal(t, string(jsonstr2), expectedStr2)
 }
 
 func Test_writeOutChangeFile(t *testing.T) {
@@ -438,15 +434,13 @@ func Test_writeOutChangeFile(t *testing.T) {
 func Test_loadChangeStoreFile(t *testing.T) {
 	changeStore, err := LoadChangeStore("testout/changeStore-sample.json")
 	assert.NilError(t, err, "Unexpected error when loading Change Store from file %s", err)
-	assert.Equal(t, changeStore.Version, StoreVersion, "Unexpected version %s when loading Change Store %s",
-		changeStore.Version, StoreVersion)
+	assert.Equal(t, changeStore.Version, StoreVersion)
 }
 
 func Test_loadChangeStoreFileError(t *testing.T) {
 	changeStore, err := LoadChangeStore("nonexistent.json")
 	assert.Assert(t, err != nil, "Expected an error when loading Change Store from invalid file")
-	assert.Equal(t, changeStore.Version, "", "Expected version to be empty on error. Got: %s",
-		changeStore.Version)
+	assert.Equal(t, changeStore.Version, "")
 }
 
 func Test_writeOutConfigFile(t *testing.T) {
@@ -465,15 +459,13 @@ func Test_loadConfigStoreFile(t *testing.T) {
 	configStore, err := LoadConfigStore("testout/configStore-sample.json")
 
 	assert.NilError(t, err, "Unexpected error when loading Config Store from file %s", err)
-	assert.Equal(t, configStore.Version, StoreVersion, "Unexpected version %s when loading Config Store %s",
-		configStore.Version, StoreVersion)
+	assert.Equal(t, configStore.Version, StoreVersion)
 }
 
 func Test_loadConfigStoreFileError(t *testing.T) {
 	configStore, err := LoadConfigStore("nonexistent.json")
 	assert.Assert(t, err != nil, "Expected an error when loading Config Store from invalid file")
-	assert.Equal(t, configStore.Version, "", "Expected version to be empty on error. Got: %s",
-		configStore.Version)
+	assert.Equal(t, configStore.Version, "")
 }
 
 func Test_writeOutNetworkFile(t *testing.T) {
@@ -492,9 +484,9 @@ func Test_createnetStore(t *testing.T) {
 	nwStore, err := CreateNetworkStore("testnwstore", "onos")
 	assert.NilError(t, err, "Unexpected error")
 
-	assert.Equal(t, nwStore.User, "onos", "Unexpected user name")
-	assert.Equal(t, nwStore.Name, "testnwstore", "Unexpected store name")
-	assert.Equal(t, len(nwStore.ConfigurationChanges), 0, "size of config changes")
+	assert.Equal(t, nwStore.User, "onos")
+	assert.Equal(t, nwStore.Name, "testnwstore")
+	assert.Equal(t, len(nwStore.ConfigurationChanges), 0)
 }
 
 func Test_createnetStore_badname(t *testing.T) {
@@ -506,8 +498,7 @@ func Test_createnetStore_badname(t *testing.T) {
 func Test_loadNetworkStoreFile(t *testing.T) {
 	networkStore, err := LoadNetworkStore("testout/networkStore-sample.json")
 	assert.NilError(t, err, "Unexpected error when loading Network Store from file %s", err)
-	assert.Equal(t, networkStore.Version, StoreVersion, "Unexpected version %s when loading Network Store %s",
-		networkStore.Version, StoreVersion)
+	assert.Equal(t, networkStore.Version, StoreVersion)
 }
 
 func BenchmarkCreateChangeValue(b *testing.B) {
