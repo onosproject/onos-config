@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"os"
+	"time"
 )
 
 // StoreVersion is to check compatibility of a store loaded from file
@@ -37,7 +38,7 @@ const StoreTypeNetwork = "network"
 type ConfigurationStore struct {
 	Version   string
 	Storetype string
-	Store     map[string]Configuration
+	Store     map[ConfigName]Configuration
 }
 
 // LoadConfigStore loads the config store from a file
@@ -60,6 +61,31 @@ func LoadConfigStore(file string) (ConfigurationStore, error) {
 	}
 
 	return configStore, nil
+}
+
+// RemoveEntry removes a named Configuration
+func (s *ConfigurationStore) RemoveEntry(name ConfigName) {
+	delete(s.Store, name)
+}
+
+// RemoveLastChangeEntry removes a change entry from a named Configuration
+func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) {
+
+	// If it has only 1 entry remove it altogether
+	if len(s.Store[name].Changes) == 1 {
+		delete(s.Store, name)
+		return
+	}
+
+	s.Store[name] = Configuration{
+		Name:        s.Store[name].Name,
+		Device:      s.Store[name].Device,
+		Description: s.Store[name].Description,
+		Created:     s.Store[name].Created,
+		Updated:     time.Now(),
+		User:        s.Store[name].User,
+		Changes:     s.Store[name].Changes[:len(s.Store[name].Changes)-1],
+	}
 }
 
 // ChangeStore is the model of the Change store
@@ -96,6 +122,21 @@ type NetworkStore struct {
 	Version   string
 	Storetype string
 	Store     []NetworkConfiguration
+}
+
+// RemoveEntry removes a named entry from the Network Store
+func (s *NetworkStore) RemoveEntry(name string) error {
+	var rmvIdx int
+	for idx, entry := range s.Store {
+		if entry.Name == name {
+			rmvIdx = idx
+			break
+		}
+	}
+
+	s.Store = append(s.Store[:rmvIdx], s.Store[rmvIdx+1:]...)
+
+	return nil
 }
 
 // LoadNetworkStore loads the change store from a file

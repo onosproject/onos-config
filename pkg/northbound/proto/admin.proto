@@ -42,8 +42,20 @@ message NetChange {
 message RegisterRequest {
 }
 
-// RegisterResponse carries status of YANG model registeration or unregistration.
+// RegisterResponse carries status of YANG model registration or unregistration.
 message RegisterResponse {
+}
+
+// RollbackRequest carries the name of a network config to rollback. If there
+// are subsequent changes to any of the devices in that config, the rollback will
+// be rejected. If no name is given the last network change will be rolled back
+message RollbackRequest {
+    string name = 1;
+    string comment = 2;
+}
+
+message RollbackResponse {
+    string message = 1;
 }
 
 // AdminService provides means for enhanced interactions with the configuration subsystem.
@@ -56,6 +68,7 @@ service AdminService {
     // GetNetworkChanges returns a stream of network changes submitted via gNMI.
     rpc GetNetworkChanges(NetworkChangesRequest) returns (stream NetChange);
 
+    rpc RollbackNetworkChange(RollbackRequest) returns (RollbackResponse);
 }
 
 

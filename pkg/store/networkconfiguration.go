@@ -15,8 +15,11 @@
 package store
 
 import (
+	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"io"
 	"regexp"
 	"time"
 )
@@ -30,8 +33,8 @@ type NetworkConfiguration struct {
 	ConfigurationChanges map[ConfigName]change.ID
 }
 
-// CreateNetworkStore creates a NetworkConfiguration object
-func CreateNetworkStore(name string, user string) (*NetworkConfiguration, error) {
+// CreateNetworkStoreWithName creates a NetworkConfiguration object
+func CreateNetworkStoreWithName(name string, user string) (*NetworkConfiguration, error) {
 	r1 := regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 	match := r1.FindString(name)
 	if name != match {
@@ -44,4 +47,37 @@ func CreateNetworkStore(name string, user string) (*NetworkConfiguration, error)
 		User:                 user,
 		ConfigurationChanges: make(map[ConfigName]change.ID),
 	}, nil
+}
+
+// CreateNetworkStore creates a NetworkConfiguration object
+func CreateNetworkStore(user string, changes map[ConfigName]change.ID) (*NetworkConfiguration, error) {
+
+	nwConf := NetworkConfiguration{
+		Name:                 "temp",
+		Created:              time.Now(),
+		User:                 user,
+		ConfigurationChanges: changes,
+	}
+
+	_, err := nwConf.ChangeNameToHash()
+	if err != nil {
+		return nil, err
+	}
+	return &nwConf, nil
+}
+
+// ChangeNameToHash changes the name of a NetworkConfiguration to a hash of its contents
+func (n *NetworkConfiguration) ChangeNameToHash() (*string, error) {
+	h := sha1.New()
+
+	// Calculate a hash from the config, description and timestamp
+	jsonstr, _ := json.Marshal(n.ConfigurationChanges)
+	_, err1 := io.WriteString(h, string(jsonstr))
+	if err1 != nil {
+		return nil, err1
+	}
+
+	hash := h.Sum(nil)
+	n.Name = fmt.Sprintf("Change-%s", B64(hash))
+	return &n.Name, nil
 }

@@ -40,7 +40,7 @@ var (
 
 var (
 	changeStoreTest        map[string]*change.Change
-	configurationStoreTest map[string]store.Configuration
+	configurationStoreTest map[store.ConfigName]store.Configuration
 	networkStoreTest       []store.NetworkConfiguration
 	deviceStoreTest        map[string]topocache.Device
 )
@@ -82,7 +82,7 @@ func TestMain(m *testing.M) {
 		Description: "Configuration for Device 1",
 		Changes:     []change.ID{change1.ID},
 	}
-	configurationStoreTest = make(map[string]store.Configuration)
+	configurationStoreTest = make(map[store.ConfigName]store.Configuration)
 	configurationStoreTest["Running"] = device1config
 
 	deviceStoreTest = make(map[string]topocache.Device)

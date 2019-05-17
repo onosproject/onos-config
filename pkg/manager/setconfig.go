@@ -27,7 +27,7 @@ import (
 const SetConfigAlreadyApplied = "Already applied:"
 
 // SetNetworkConfig sets the given value, according to the path on the configuration for the specified targed
-func (m *Manager) SetNetworkConfig(target string, configName string, updates map[string]string,
+func (m *Manager) SetNetworkConfig(target string, configName store.ConfigName, updates map[string]string,
 	deletes []string) (change.ID, error) {
 	if _, ok := m.DeviceStore.Store[target]; !ok {
 		return nil, fmt.Errorf("Device not present %s", target)
@@ -60,7 +60,7 @@ func (m *Manager) SetNetworkConfig(target string, configName string, updates map
 	}
 
 	configChange, err := change.CreateChange(newChange,
-		fmt.Sprintf("Update at %s", time.Now().Format(time.RFC3339)))
+		fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339)))
 	if err != nil {
 		return nil, err
 	}

@@ -16,12 +16,14 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
 	"google.golang.org/grpc"
+	"strings"
 )
 
 // Service is a Service implementation for administration.
@@ -71,4 +73,61 @@ func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.A
 		}
 	}
 	return nil
+}
+
+// RollbackNetworkChange rolls back a named network changes.
+func (s Server) RollbackNetworkChange(
+	ctx context.Context, req *proto.RollbackRequest) (*proto.RollbackResponse, error) {
+	var networkConfig *store.NetworkConfiguration
+	var ncIdx int
+
+	if req.Name == "" {
+		networkConfig =
+			&manager.GetManager().NetworkStore.Store[len(manager.GetManager().NetworkStore.Store)-1]
+	} else {
+		for idx, nc := range manager.GetManager().NetworkStore.Store {
+			if nc.Name == req.Name {
+				networkConfig = &nc
+				ncIdx = idx
+			}
+		}
+		if networkConfig == nil {
+			return nil, fmt.Errorf("Rollback aborted. Network change %s not found", req.Name)
+		}
+
+		// Look to see if any of the devices have been updated in later NCs
+		if len(manager.GetManager().NetworkStore.Store) > ncIdx+1 {
+			for _, nc := range manager.GetManager().NetworkStore.Store[ncIdx+1:] {
+				for k := range nc.ConfigurationChanges {
+					if len(networkConfig.ConfigurationChanges[k]) > 0 {
+						return nil, fmt.Errorf(
+							"network change %s cannot be rolled back because change %s "+
+								"subsequently modifies %s", req.Name, nc.Name, k)
+					}
+				}
+			}
+		}
+	}
+
+	configNames := make([]string, 0)
+	// Check all are valid before we delete anything
+	for k, v := range networkConfig.ConfigurationChanges {
+		configChangeIds := manager.GetManager().ConfigStore.Store[k].Changes
+		if store.B64(configChangeIds[len(configChangeIds)-1]) != store.B64(v) {
+			return nil, fmt.Errorf(
+				"the last change on %s is not %s as expected. Was %s",
+				k, v, store.B64(configChangeIds[len(configChangeIds)-1]))
+		}
+		configNames = append(configNames, string(k))
+	}
+
+	for k := range networkConfig.ConfigurationChanges {
+		manager.GetManager().ConfigStore.RemoveLastChangeEntry(k)
+	}
+	manager.GetManager().NetworkStore.RemoveEntry(networkConfig.Name)
+
+	return &proto.RollbackResponse{
+		Message: fmt.Sprintf("Rolled back change '%s' Updated configs %s",
+			networkConfig.Name, strings.Join(configNames, ",")),
+	}, nil
 }

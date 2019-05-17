@@ -3,11 +3,11 @@
   "Storetype": "network",
   "Store": [
     {
-      "Name": "nw1",
-      "Created": "0001-01-01T00:00:00Z",
-      "User": "rocks",
+      "Name": "Removed txout-1 from Device 2",
+      "Created": "2019-05-10T00:00:00Z",
+      "User": "User1",
       "ConfigurationChanges": {
-        "Device2VersionMain": "THNEdXdtMlhKamRPcSt1OVFFY1VKby9IeGFNPQ=="
+        "Device2VersionMain": "FGrHfVhk8rwhJ03U5TwxFqPSB/8="
       }
     }
   ]
