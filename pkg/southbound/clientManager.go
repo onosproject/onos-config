@@ -125,7 +125,7 @@ func getCertPoolDefault() *x509.CertPool {
 }
 
 // CapabilitiesWithString allows a request for the capabilities by a string - can be empty
-func (target Target) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
+func (target *Target) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
 	r := &gpb.CapabilityRequest{}
 	reqProto := &request
 	if err := proto.UnmarshalText(*reqProto, r); err != nil {
@@ -135,7 +135,7 @@ func (target Target) CapabilitiesWithString(ctx context.Context, request string)
 }
 
 // Capabilities get capabilities according to a formatted request
-func (target Target) Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
+func (target *Target) Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
 	response, err := target.Clt.(*gclient.Client).Capabilities(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Capabilities(%q): %v", request.String(), err)
@@ -144,7 +144,7 @@ func (target Target) Capabilities(ctx context.Context, request *gpb.CapabilityRe
 }
 
 // GetWithString can make a get request according by a string - can be empty
-func (target Target) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
+func (target *Target) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
 	if request == "" {
 		return nil, errors.New("cannot get and empty request")
 	}
@@ -157,7 +157,7 @@ func (target Target) GetWithString(ctx context.Context, request string) (*gpb.Ge
 }
 
 // Get can make a get request according to a formatted request
-func (target Target) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error) {
+func (target *Target) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error) {
 	response, err := target.Clt.(*gclient.Client).Get(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Get(%q) : %v", request.String(), err)
@@ -166,7 +166,7 @@ func (target Target) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.Get
 }
 
 // SetWithString can make a set request according by a string
-func (target Target) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
+func (target *Target) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
 	//TODO modify with key that gets target from map
 	if request == "" {
 		return nil, errors.New("cannot get and empty request")
@@ -180,7 +180,7 @@ func (target Target) SetWithString(ctx context.Context, request string) (*gpb.Se
 }
 
 // Set can make a set request according to a formatted request
-func (target Target) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.SetResponse, error) {
+func (target *Target) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.SetResponse, error) {
 	response, err := target.Clt.(*gclient.Client).Set(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Set(%q) : %v", request.String(), err)
@@ -189,7 +189,7 @@ func (target Target) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.Set
 }
 
 // Subscribe initiates a subscription to a target and set of paths by establishing a new channel
-func (target Target) Subscribe(ctx context.Context, request *gpb.SubscribeRequest, handler client.NotificationHandler) error {
+func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeRequest, handler client.NotificationHandler) error {
 	//TODO currently establishing a throwaway client per each subscription request
 	//this is due to the face that 1 NotificationHandler is allowed per client (1:1)
 	//alternatively we could handle every connection request with one NotificationHandler
