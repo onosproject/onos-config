@@ -232,6 +232,7 @@
     "google.golang.org/grpc/credentials",
     "google.golang.org/grpc/status",
     "gotest.tools/assert",
+    "gotest.tools/assert/cmp",
     "k8s.io/klog",
   ]
   solver-name = "gps-cdcl"

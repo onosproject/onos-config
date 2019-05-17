@@ -16,15 +16,18 @@ package listener
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
-	"github.com/onosproject/onos-config/pkg/store"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/southbound/topocache"
+	"github.com/onosproject/onos-config/pkg/store"
+	"gotest.tools/assert"
+	is "gotest.tools/assert/cmp"
 )
 
 var (
@@ -71,56 +74,37 @@ func TestMain(m *testing.M) {
 
 func Test_listlisteners(t *testing.T) {
 	listeners := ListListeners()
-	if len(listeners) != 3 {
-		t.Errorf("Expected to find 3 devices in list. Got %d", len(listeners))
-	}
+
+	assert.Assert(t, len(listeners) == 3, "Expected to find 3 devices in list. Got %d", len(listeners))
 
 	listenerStr := strings.Join(listeners, ",")
-
 	// Could be in any order
-	if !strings.Contains(listenerStr, "localhost:10161") {
-		t.Errorf("Expected to find device1 in list. Got %s", listeners)
-	}
-	if !strings.Contains(listenerStr, "localhost:10162") {
-		t.Errorf("Expected to find device2 in list. Got %s", listeners)
-	}
-	if !strings.Contains(listenerStr, "localhost:10163") {
-		t.Errorf("Expected to find device3 in list. Got %s", listeners)
-	}
+	assert.Assert(t, is.Contains(listenerStr, "localhost:10161"), "Expected to find device1 in list. Got %s", listeners)
+	assert.Assert(t, is.Contains(listenerStr, "localhost:10162"), "Expected to find device2 in list. Got %s", listeners)
+	assert.Assert(t, is.Contains(listenerStr, "localhost:10163"), "Expected to find device3 in list. Got %s", listeners)
 }
 
 func Test_register(t *testing.T) {
 	device4Channel, err := Register("device4", true)
-
-	if err != nil {
-		t.Errorf("Unexpected error when registering device %s", err)
-	}
+	assert.NilError(t, err, "Unexpected error when registering device %s", err)
 
 	var deviceChannelIf interface{} = device4Channel
 	chanType, ok := deviceChannelIf.(chan events.Event)
-	if !ok {
-		t.Errorf("Unexpected channel type when registering device %v", chanType)
-	}
+	assert.Assert(t, ok, "Unexpected channel type when registering device %v", chanType)
+
 }
 
 func Test_unregister(t *testing.T) {
 	err1 := Unregister("device5", true)
 
-	if err1 == nil {
-		t.Errorf("Unexpected lack of error when unregistering non existent device")
-	}
-
-	if !strings.Contains(err1.Error(), "had not been registered") {
-		t.Errorf("Unexpected error text when unregistering non existent device %s", err1)
-	}
+	assert.Assert(t, err1 != nil, "Unexpected lack of error when unregistering non existent device")
+	assert.Assert(t, is.Contains(err1.Error(), "had not been registered"), "Unexpected error text when unregistering non existent device %s", err1)
 
 	_, err1 = Register("device6", true)
 	_, err1 = Register("device7", true)
 
 	err2 := Unregister("device6", true)
-	if err2 != nil {
-		t.Errorf("Unexpected error when unregistering device6 %s", err)
-	}
+	assert.NilError(t, err2, "Unexpected error when unregistering device6 %s", err)
 }
 
 func Test_listen(t *testing.T) {
