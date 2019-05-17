@@ -232,6 +232,7 @@ func Subscribe(target Target, request *gpb.SubscribeRequest, handler client.Noti
 	q.Credentials = target.Destination.Credentials
 	q.TLS = target.Destination.TLS
 	q.NotificationHandler = handler
+	//TODO revisit this. is this subscribing twice ?
 	c := client.New()
 	err = c.Subscribe(target.Ctxt, q, "")
 	if err != nil {

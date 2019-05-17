@@ -133,9 +133,10 @@ func broadcastNotification() {
 		// currently broadcasting to everybody
 		for _, ch := range PathToChannels {
 			values := update.Values()
+			target := update.Subject()
 			changeID := (*values)[events.ChangeID]
 			changeInternal := mgr.ChangeStore.Store[changeID]
-			err := sendUpdate(changeInternal, ch)
+			err := sendUpdate(target, changeInternal, ch)
 			if err != nil {
 				log.Println("Error while parsing path ", err)
 			}
@@ -143,7 +144,7 @@ func broadcastNotification() {
 	}
 }
 
-func sendUpdate(c *change.Change, ch chan *gnmi.Update) error {
+func sendUpdate(target string, c *change.Change, ch chan *gnmi.Update) error {
 	for _, changeValue := range c.Config {
 		elems := utils.SplitPath(changeValue.Path)
 		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
@@ -154,7 +155,7 @@ func sendUpdate(c *change.Change, ch chan *gnmi.Update) error {
 		//TODO use proper type of value, re-use code in get
 		typedValue := gnmi.TypedValue_StringVal{StringVal: changeValue.Value}
 		value := &gnmi.TypedValue{Value: &typedValue}
-		updatePath := &gnmi.Path{Elem: pathElemsRefs.Elem}
+		updatePath := &gnmi.Path{Elem: pathElemsRefs.Elem, Target: target}
 		update := &gnmi.Update{
 			Path: updatePath,
 			Val:  value,
