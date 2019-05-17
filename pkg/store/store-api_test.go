@@ -287,7 +287,7 @@ func Test_device1_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Assert(t, device1V.Name == "Device1Version", "Unexpected name for Configuration main %s", device1V.Name)
+	assert.Equal(t, device1V.Name, ConfigName("Device1Version"), "Unexpected name for Configuration main %s", device1V.Name)
 
 	config := device1V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
@@ -307,7 +307,7 @@ func Test_device1_prev_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Assert(t, device1V.Name == "Device1Version", "Unexpected name for Configuration main %s", device1V.Name)
+	assert.Equal(t, device1V.Name, ConfigName("Device1Version"), "Unexpected name for Configuration main %s", device1V.Name)
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
@@ -327,7 +327,7 @@ func Test_device1_first_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Assert(t, device1V.Name == "Device1Version", "Unexpected name for Configuration main %s", device1V.Name)
+	assert.Equal(t, device1V.Name, ConfigName("Device1Version"), "Unexpected name for Configuration main %s", device1V.Name)
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
@@ -347,7 +347,7 @@ func Test_device1_invalid_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Assert(t, device1V.Name == "Device1Version", "Unexpected name for Configuration main %s", device1V.Name)
+	assert.Equal(t, device1V.Name, ConfigName("Device1Version"), "Unexpected name for Configuration main %s", device1V.Name)
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	if len(config) > 0 {
@@ -362,7 +362,7 @@ func Test_device2_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Assert(t, device2V.Name == "Device2VersionMain", "Unexpected name for Configuration main %s", device2V.Name)
+	assert.Equal(t, device2V.Name, ConfigName("Device2VersionMain"), "Unexpected name for Configuration main %s", device2V.Name)
 
 	config := device2V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
