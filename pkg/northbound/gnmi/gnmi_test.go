@@ -117,7 +117,7 @@ func Test_getalldevices(t *testing.T) {
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
-	assert.Equal(t, deviceListStr, "[localhost:10161, localhost:10162]", "Expected value")
+	assert.Equal(t, deviceListStr, "[Device1, Device2]", "Expected value")
 }
 
 // Test_doSingleSet shows how a value of 1 path can be set on a target

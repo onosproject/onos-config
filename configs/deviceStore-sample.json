@@ -15,6 +15,10 @@
     "localhost:10163": {
       "Addr": "localhost:10163",
       "Timeout": 10000000000
+    },
+    "Device1": {
+      "Addr": "Device1",
+      "Timeout": 10000000000
     }
   }
 }

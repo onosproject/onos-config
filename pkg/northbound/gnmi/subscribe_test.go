@@ -59,7 +59,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 
 	assert.NilError(t, err, "Unexpected error doing parsing")
 
-	path.Target = "localhost:10161"
+	path.Target = "Device1"
 
 	subscription := &gnmi.Subscription{
 		Path: path,
@@ -104,7 +104,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 
 	pathResponse := responseReq.GetUpdate().Update[0].Path
 
-	assert.Equal(t, pathResponse.Target, "localhost:10161")
+	assert.Equal(t, pathResponse.Target, "Device1")
 
 	assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
 
@@ -126,7 +126,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 
 	assert.NilError(t, err, "Unexpected error doing parsing")
 
-	path.Target = "localhost:10161"
+	path.Target = "Device1"
 
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
@@ -193,7 +193,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 
 			pathResponse := response.GetUpdate().GetUpdate()[0].Path
 
-			assert.Equal(t, pathResponse.Target, "localhost:10161")
+			assert.Equal(t, pathResponse.Target, "Device1")
 
 			assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
 

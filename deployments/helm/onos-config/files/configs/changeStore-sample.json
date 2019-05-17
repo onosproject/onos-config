@@ -33,11 +33,6 @@
           "Remove": false
         },
         {
-          "Path": "/test1:cont1a/cont2a/leaf3a",
-          "Value": "13",
-          "Remove": false
-        },
-        {
           "Path": "/test1:cont1a/leaf1a",
           "Value": "abcdef",
           "Remove": false
