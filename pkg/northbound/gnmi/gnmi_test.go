@@ -17,6 +17,9 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
@@ -24,8 +27,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
-	"os"
-	"testing"
 )
 
 var (

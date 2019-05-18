@@ -16,11 +16,13 @@
 package synchronizer
 
 import (
+	"context"
+	"log"
+
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
-	"log"
 )
 
 // Devicesync is a go routine that listens out for configuration events specific
@@ -28,21 +30,19 @@ import (
 func Devicesync(changeStore *store.ChangeStore,
 	device *topocache.Device, deviceChan <-chan events.Event) {
 
+	ctx := context.Background()
 	log.Println("Connecting to", device.Addr, "over gNMI")
+	target := southbound.Target{}
 
-	target, err := southbound.GetTarget(southbound.Key{Key: device.Addr})
+	_, err := target.ConnectTarget(ctx, *device)
+	log.Println(device.Addr, "Connected over gNMI")
 	if err != nil {
-		log.Println("Could not get target", err)
-		target, _, err = southbound.ConnectTarget(*device)
-		log.Println(device.Addr, "Connected over gNMI")
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		log.Println(err)
+		return
 	}
 
 	// Get the device capabilities
-	capResponse, capErr := southbound.CapabilitiesWithString(target, "")
+	capResponse, capErr := target.CapabilitiesWithString(ctx, "")
 	if capErr != nil {
 		log.Println(device.Addr, "Capabilities", err)
 	}
@@ -64,7 +64,7 @@ func Devicesync(changeStore *store.ChangeStore,
 		}
 
 		log.Println("Change formatted to gNMI setRequest", gnmiChange)
-		setResponse, err := southbound.Set(target, gnmiChange)
+		setResponse, err := target.Set(ctx, gnmiChange)
 		if err != nil {
 			log.Println("SetResponse ", err)
 			continue
