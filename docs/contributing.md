@@ -10,7 +10,7 @@ Contributions are accepted via GitHub Pull Requests submitted from the
 developer's own Fork of the onos-config repository. The following diagram illustrates the steps
 required to establish such a Fork and to create a Pull Request.
 
-![Git workflow](contributing_workflow.png)
+![Git workflow](images/contributing_workflow.png)
 
 
 ### 1. Fork on GitHub
