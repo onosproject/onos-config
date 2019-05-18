@@ -50,7 +50,7 @@ provided as additional layers:
   ONOS 2.0 architecture and to fit with the NG ONOS architecture.
 
 ## High-Level Design
-![design](docs/design.png)
+![design](docs/images/design.png)
 
 
 ## Additional Documentation
