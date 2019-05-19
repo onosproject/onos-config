@@ -16,12 +16,13 @@ package gnmi
 
 import (
 	"context"
+	"log"
+	"time"
+
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"log"
-	"time"
 )
 
 // Get implements gNMI Get
@@ -29,7 +30,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	updates := make([]*gnmi.Update, 0)
 
-	for _, path := range req.Path {
+	for _, path := range req.GetPath() {
 		update, err := GetUpdate(path)
 		if err != nil {
 			return nil, err
@@ -51,7 +52,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 // GetUpdate utility method for getting an Update for a given path
 func GetUpdate(path *gnmi.Path) (*gnmi.Update, error) {
-	target := path.Target
+	target := path.GetTarget()
 	// Special case - if target is "*" then ignore path and just return a list
 	// of devices
 	if target == "*" {
