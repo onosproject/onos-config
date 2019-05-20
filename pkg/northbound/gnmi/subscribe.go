@@ -129,38 +129,35 @@ func broadcastNotification() {
 		log.Println("Error while subscribing to updates", err)
 	}
 	for update := range changes {
-		//TODO needs to be filtered for appropriate paths in the change
-		// currently broadcasting to everybody
-		for _, ch := range PathToChannels {
-			values := update.Values()
-			target := update.Subject()
-			changeID := (*values)[events.ChangeID]
-			changeInternal := mgr.ChangeStore.Store[changeID]
-			err := sendUpdate(target, changeInternal, ch)
-			if err != nil {
-				log.Println("Error while parsing path ", err)
+		target, changeInternal := getChange(update, mgr)
+		//For every channel we cycle over the paths of the config change and if somebody is subscribed to it we send out
+		for path, ch := range PathToChannels {
+			for _, changeValue := range changeInternal.Config {
+				//FIXME this might prove expensive, find better way to store path and targer in channels map
+				strPath := utils.StrPath(path)
+				if path.Target == target && strPath == changeValue.Path {
+					sendUpdate(path, changeValue.Value, ch)
+				}
 			}
 		}
 	}
 }
 
-func sendUpdate(target string, c *change.Change, ch chan *gnmi.Update) error {
-	for _, changeValue := range c.Config {
-		elems := utils.SplitPath(changeValue.Path)
-		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
+func getChange(update events.Event, mgr *manager.Manager) (string, *change.Change) {
+	values := update.Values()
+	target := update.Subject()
+	changeID := (*values)[events.ChangeID]
+	changeInternal := mgr.ChangeStore.Store[changeID]
+	return target, changeInternal
+}
 
-		if parseError != nil {
-			return parseError
-		}
-		//TODO use proper type of value, re-use code in get
-		typedValue := gnmi.TypedValue_StringVal{StringVal: changeValue.Value}
-		value := &gnmi.TypedValue{Value: &typedValue}
-		updatePath := &gnmi.Path{Elem: pathElemsRefs.Elem, Target: target}
-		update := &gnmi.Update{
-			Path: updatePath,
-			Val:  value,
-		}
-		ch <- update
+func sendUpdate(path *gnmi.Path, value string, ch chan *gnmi.Update) {
+	typedValue := gnmi.TypedValue_StringVal{StringVal: value}
+	valueGnmi := &gnmi.TypedValue{Value: &typedValue}
+
+	update := &gnmi.Update{
+		Path: path,
+		Val:  valueGnmi,
 	}
-	return nil
+	ch <- update
 }
