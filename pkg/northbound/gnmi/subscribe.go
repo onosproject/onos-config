@@ -23,6 +23,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"io"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -33,7 +34,7 @@ var (
 
 // Subscribe implements gNMI Subscribe
 func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
-	ch := make(chan *gnmi.Update)
+	updateChan := make(chan *gnmi.Update)
 	//this for loop handles each subscribe request coming into the server
 	for {
 		in, err := stream.Recv()
@@ -52,13 +53,13 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		stopped := make(chan struct{})
 		//If the subscription mode is ONCE we immediately start a routine to collect the data
 		if mode == gnmi.SubscriptionList_ONCE {
-			go collector(ch, subscribe)
+			go collector(updateChan, subscribe)
 		}
 		//TODO for POLL type spawn a routine that periodically checks for updates
 		//This generate a subscribe response for one or more updates on the channel.
 		// for Subscription_once messages also also closes the channel.
 		go func() {
-			for update := range ch {
+			for update := range updateChan {
 				updateArray := make([]*gnmi.Update, 0)
 				updateArray = append(updateArray, update)
 				notification := &gnmi.Notification{
@@ -97,7 +98,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		//for each path we pair it to the the channel.
 		subs := subscribe.Subscription
 		for _, sub := range subs {
-			PathToChannels[sub.Path] = ch
+			PathToChannels[sub.Path] = updateChan
 		}
 	}
 
@@ -124,19 +125,19 @@ func collector(ch chan *gnmi.Update, request *gnmi.SubscriptionList) {
 
 func broadcastNotification() {
 	mgr := manager.GetManager()
-	changes, err := listener.Register("GnmiSubscribeNorthBound", false)
+	changesChan, err := listener.Register("GnmiSubscribeNorthBound", false)
 	if err != nil {
 		log.Println("Error while subscribing to updates", err)
 	}
-	for update := range changes {
+	for update := range changesChan {
 		target, changeInternal := getChange(update, mgr)
 		//For every channel we cycle over the paths of the config change and if somebody is subscribed to it we send out
-		for path, ch := range PathToChannels {
+		for subscriptionPath, ch := range PathToChannels {
 			for _, changeValue := range changeInternal.Config {
-				//FIXME this might prove expensive, find better way to store path and targer in channels map
-				strPath := utils.StrPath(path)
-				if path.Target == target && strPath == changeValue.Path {
-					sendUpdate(path, changeValue.Value, ch)
+				//FIXME this might prove expensive, find better way to store subscriptionPath and target in channels map
+				subscriptionPathStr := utils.StrPath(subscriptionPath)
+				if subscriptionPath.Target == target && strings.HasPrefix(changeValue.Path, subscriptionPathStr) {
+					sendUpdate(subscriptionPath, changeValue.Value, ch)
 				}
 			}
 		}
@@ -151,7 +152,7 @@ func getChange(update events.Event, mgr *manager.Manager) (string, *change.Chang
 	return target, changeInternal
 }
 
-func sendUpdate(path *gnmi.Path, value string, ch chan *gnmi.Update) {
+func sendUpdate(path *gnmi.Path, value string, ch chan<- *gnmi.Update) {
 	typedValue := gnmi.TypedValue_StringVal{StringVal: value}
 	valueGnmi := &gnmi.TypedValue{Value: &typedValue}
 
