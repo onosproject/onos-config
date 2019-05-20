@@ -17,60 +17,50 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"log"
-	"strings"
-	"time"
 )
 
 // ConfigNameSuffix is appended to the Configuration name when it is created
 const ConfigNameSuffix = "Running"
 
-// Set implements gNMI Set
-func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
-	targetUpdates := make(map[string]map[string]string)
-	targetRemoves := make(map[string][]string)
+type mapTargetUpdates map[string]map[string]string
+type mapTargetRemoves map[string][]string
+type mapNetworkChanges map[store.ConfigName]change.ID
 
-	//TODO consolidate these lines into methods
-	//Update
-	for _, u := range req.Update {
-		target := u.Path.Target
-		updates, ok := targetUpdates[target]
-		if !ok {
-			updates = make(map[string]string)
-		}
-		path := utils.StrPath(u.Path)
-		updates[path] = utils.StrVal(u.Val)
-		targetUpdates[target] = updates
+func (s *Server) doUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) map[string]string {
+	target := u.Path.GetTarget()
+	updates, ok := targetUpdates[target]
+	if !ok {
+		updates = make(map[string]string)
 	}
+	path := utils.StrPath(u.Path)
+	updates[path] = utils.StrVal(u.Val)
+	return updates
 
-	//Replace
-	for _, u := range req.Replace {
-		target := u.Path.Target
-		updates, ok := targetUpdates[target]
-		if !ok {
-			updates = make(map[string]string)
-		}
-		path := utils.StrPath(u.Path)
-		updates[path] = utils.StrVal(u.Val)
-		targetUpdates[target] = updates
-	}
+}
 
-	//Delete
-	for _, u := range req.Delete {
-		target := u.Target
-		deletes, ok := targetRemoves[target]
-		if !ok {
-			deletes = make([]string, 0)
-		}
-		path := utils.StrPath(u)
-		deletes = append(deletes, path)
-		targetRemoves[target] = deletes
+func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string {
+	target := u.GetTarget()
+	deletes, ok := targetRemoves[target]
+	if !ok {
+		deletes = make([]string, 0)
 	}
+	path := utils.StrPath(u)
+	deletes = append(deletes, path)
+	return deletes
+
+}
+
+func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
+	targetRemoves mapTargetRemoves) ([]*gnmi.UpdateResult, mapNetworkChanges) {
 
 	networkChanges := make(map[store.ConfigName]change.ID)
 	updateResults := make([]*gnmi.UpdateResult, 0)
@@ -127,6 +117,35 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 		networkChanges[store.ConfigName(target+ConfigNameSuffix)] = changeID
 	}
+
+	return updateResults, networkChanges
+}
+
+// Set implements gNMI Set
+func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
+
+	targetUpdates := make(mapTargetUpdates)
+	targetRemoves := make(mapTargetRemoves)
+
+	//Update
+	for _, u := range req.GetUpdate() {
+		target := u.Path.GetTarget()
+		targetUpdates[target] = s.doUpdateOrReplace(u, targetUpdates)
+	}
+
+	//Replace
+	for _, u := range req.GetReplace() {
+		target := u.Path.GetTarget()
+		targetUpdates[target] = s.doUpdateOrReplace(u, targetUpdates)
+	}
+
+	//Delete
+	for _, u := range req.GetDelete() {
+		target := u.GetTarget()
+		targetRemoves[target] = s.doDelete(u, targetRemoves)
+	}
+
+	updateResults, networkChanges := s.buildUpdateResults(targetUpdates, targetRemoves)
 
 	if len(updateResults) == 0 {
 		log.Println("All target changes were duplicated - Set rejected")
