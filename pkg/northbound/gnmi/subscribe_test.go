@@ -16,18 +16,11 @@ package gnmi
 
 import (
 	"context"
-	"fmt"
-	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/listener"
-	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
-	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
 	"log"
-	"os"
 	"testing"
 	"time"
 )
@@ -52,8 +45,7 @@ func (x gNMISubscribeServerFake) Recv() (*gnmi.SubscribeRequest, error) {
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
-
-	err := setup(false)
+	server := setUp(false)
 
 	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
 
@@ -119,8 +111,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafStream(t *testing.T) {
-
-	err := setup(true)
+	server := setUp(true)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -207,59 +198,4 @@ func Test_SubscribeLeafStream(t *testing.T) {
 		}
 	}
 
-}
-
-func setup(broadcast bool) error {
-	server = &Server{}
-	cfgStore, err := store.LoadConfigStore("../../../configs/configStore-sample.json")
-	if err != nil {
-		fmt.Println("Unexpected config store loading error", err)
-		os.Exit(-1)
-	}
-	if cfgStore.Storetype != "config" {
-		fmt.Println("Expected Config store to be loaded")
-		os.Exit(-1)
-	}
-	changeStore, err := store.LoadChangeStore("../../../configs/changeStore-sample.json")
-	if err != nil {
-		fmt.Println("Unexpected change store loading error", err)
-		os.Exit(-1)
-	}
-	if changeStore.Storetype != "change" {
-		fmt.Println("Expected Change store to be loaded")
-		os.Exit(-1)
-	}
-	networkStore, err := store.LoadNetworkStore("../../../configs/networkStore-sample.json")
-	if err != nil {
-		fmt.Println("Unexpected network store loading error", err)
-		os.Exit(-1)
-	}
-	if networkStore.Storetype != "network" {
-		fmt.Println("Expected Network store to be loaded")
-		os.Exit(-1)
-	}
-	mgr = manager.GetManager()
-	mgr.TopoChannel = make(chan events.Event)
-	go listenToTopoLoading(mgr.TopoChannel)
-	mgr.ChangesChannel = make(chan events.Event)
-	go listener.Listen(mgr.ChangesChannel)
-
-	if broadcast {
-		go broadcastNotification()
-	}
-
-	deviceStore, err := topocache.LoadDeviceStore("../../../configs/deviceStore-sample.json", mgr.TopoChannel)
-	if err != nil {
-		fmt.Println("Unexpected device store loading error", err)
-		os.Exit(-1)
-	}
-	if deviceStore.Storetype != "device" {
-		fmt.Println("Expected device store to be loaded")
-		os.Exit(-1)
-	}
-	mgr.ConfigStore = &cfgStore
-	mgr.ChangeStore = &changeStore
-	mgr.NetworkStore = networkStore
-	mgr.DeviceStore = deviceStore
-	return err
 }
