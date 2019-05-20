@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -30,8 +31,18 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	updates := make([]*gnmi.Update, 0)
 
+	prefix := req.GetPrefix()
+
 	for _, path := range req.GetPath() {
-		update, err := GetUpdate(path)
+		update, err := getUpdate(prefix, path)
+		if err != nil {
+			return nil, err
+		}
+		updates = append(updates, update)
+	}
+	// Alternatively - if there's only the prefix
+	if len(req.GetPath()) == 0 {
+		update, err := getUpdate(prefix, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -41,6 +52,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	notification := &gnmi.Notification{
 		Timestamp: time.Now().Unix(),
 		Update:    updates,
+		Prefix:    prefix,
 	}
 	notifications := make([]*gnmi.Notification, 0)
 	notifications = append(notifications, notification)
@@ -50,11 +62,19 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	return &response, nil
 }
 
-// GetUpdate utility method for getting an Update for a given path
-func GetUpdate(path *gnmi.Path) (*gnmi.Update, error) {
+// getUpdate utility method for getting an Update for a given path
+func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
+	if (path == nil || path.Target == "") && (prefix == nil || prefix.Target == "") {
+		return nil, fmt.Errorf("Invalid request - Path %s has no target", utils.StrPath(path))
+	}
+
+	// If a target exists on the path, use it. If not use target of Prefix
 	target := path.GetTarget()
+	if target == "" {
+		target = prefix.Target
+	}
 	// Special case - if target is "*" then ignore path and just return a list
-	// of devices
+	// of devices - note, this can be done in addition to other Paths in the same Get
 	if target == "*" {
 		log.Println("Testing subscription")
 		deviceIds := make([]*gnmi.TypedValue, 0)
@@ -76,16 +96,19 @@ func GetUpdate(path *gnmi.Path) (*gnmi.Update, error) {
 	}
 
 	pathAsString := utils.StrPath(path)
+	if prefix != nil && prefix.Elem != nil {
+		pathAsString = utils.StrPath(prefix) + pathAsString
+	}
 	configValues, err := manager.GetManager().GetNetworkConfig(target, "",
 		pathAsString, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	return buildUpdate(path, configValues), nil
+	return buildUpdate(prefix, path, configValues), nil
 }
 
-func buildUpdate(path *gnmi.Path, configValues []change.ConfigValue) *gnmi.Update {
+func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []change.ConfigValue) *gnmi.Update {
 	var value *gnmi.TypedValue
 	if len(configValues) == 0 {
 		value = nil
