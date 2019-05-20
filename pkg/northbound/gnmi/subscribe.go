@@ -115,7 +115,7 @@ func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeSe
 
 func collector(ch chan *gnmi.Update, request *gnmi.SubscriptionList) {
 	for _, sub := range request.Subscription {
-		update, err := GetUpdate(sub.Path)
+		update, err := getUpdate(request.Prefix, sub.Path)
 		if err != nil {
 			log.Println("Error while collecting data for subscribe once", err)
 		}

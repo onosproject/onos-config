@@ -149,16 +149,11 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 
 	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
 
-	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_UPDATE.String())
-	assert.Equal(t, setResponse.Response[1].Op.String(), gnmi.UpdateResult_UPDATE.String())
-
-	path1 := setResponse.Response[0].Path
-	assert.Equal(t, path1.Target, "localhost:10161")
-	assert.Equal(t, path1.Elem[2].Name, "leaf2a")
-
-	path2 := setResponse.Response[1].Path
-	assert.Equal(t, path2.Target, "localhost:10162")
-	assert.Equal(t, path2.Elem[2].Name, "leaf2a")
+	// It's a map, so the order of element's is not guaranteed
+	for _, result := range setResponse.Response {
+		assert.Equal(t, result.Op.String(), gnmi.UpdateResult_UPDATE.String())
+		assert.Equal(t, result.Path.Elem[2].Name, "leaf2a")
+	}
 }
 
 // Test_do2SetsOnOneTargetOneOnDiffTarget shows how multiple paths on multiple
