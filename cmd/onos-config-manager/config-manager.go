@@ -107,7 +107,10 @@ func main() {
 	}
 	log.Info("Network store loaded from", *networkStoreFile)
 
-	mgr := manager.NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
+	mgr, err := manager.NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
+	if err != nil {
+		log.Fatal("Error in store consistency at startup. ", err)
+	}
 
 	defer func() {
 		close(topoChannel)

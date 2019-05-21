@@ -120,14 +120,22 @@
         }
       ]
     },
-    "JOavY10nsD6dvuJbuf/Qyo5KapA=": {
-      "ID": "JOavY10nsD6dvuJbuf/Qyo5KapA=",
+    "4cQNf/bxKWdRO0h5GG4a58q5YEQ=": {
+      "ID": "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
       "Description": "Original configuration for devicesim",
       "Created": "2019-05-21T08:43:01Z",
       "Config" : [
         {
           "Path": "/openconfig-interfaces:interfaces/interface[name=admin]/config/name",
           "Value": "admin"
+        },
+        {
+          "Path": "/openconfig-system:system/aaa/authentication/admin-user/config/admin-password",
+          "Value": "password"
+        },
+        {
+          "Path": "/openconfig-system:system/aaa/authentication/config/authentication-method",
+          "Value": "openconfig-aaa-types:LOCAL"
         },
         {
           "Path": "/openconfig-system:system/clock/config/timezone-name",
@@ -148,36 +156,96 @@
         {
           "Path": "/openconfig-system:system/config/motd-banner",
           "Value": "replace-motd-banner"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/backoff-interval",
+          "Value": "5"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/datapath-id",
+          "Value": "00:16:3e:00:00:00:00:00"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/failure-mode",
+          "Value": "SECURE"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/inactivity-probe",
+          "Value": "10"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/max-backoff",
+          "Value": "10"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/config/name",
+          "Value": "main"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/address",
+          "Value": "192.0.2.10"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/aux-id",
+          "Value": "0"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/port",
+          "Value": "6633"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/priority",
+          "Value": "1"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/source-interface",
+          "Value": "admin"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/transport",
+          "Value": "TLS"
         }
       ]
     },
-    "p7rgi089NTjZEVEkSU+1y3b52wI=": {
-      "ID": "p7rgi089NTjZEVEkSU+1y3b52wI=",
+    "i86kLjjNFr5IBa+O3YTuv9HBqJg=": {
+      "ID": "i86kLjjNFr5IBa+O3YTuv9HBqJg=",
       "Description": "Modification of device sim 1",
       "Created": "2019-05-21T08:43:02Z",
       "Config" : [
+        {
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "localhost:10161"
+        },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
           "Value": "Welcome to gNMI service on localhost:10161"
         }
       ]
     },
-    "YoB2mfS07wsyRO/nBZ1gYEtV5aA=": {
-      "ID": "YoB2mfS07wsyRO/nBZ1gYEtV5aA=",
+    "UyPwBSOxDqQM/ZCohHFannSF5ME=": {
+      "ID": "UyPwBSOxDqQM/ZCohHFannSF5ME=",
       "Description": "Modification of device sim 2",
       "Created": "2019-05-21T08:43:03Z",
       "Config" : [
+        {
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "localhost:10162"
+        },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
           "Value": "Welcome to gNMI service on localhost:10162"
         }
       ]
     },
-    "iU9IOAhERrrKobM8YJU1QpL3y1w=": {
-      "ID": "iU9IOAhERrrKobM8YJU1QpL3y1w=",
+    "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y=": {
+      "ID": "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y=",
       "Description": "Modification of device sim 3",
       "Created": "2019-05-21T08:43:04Z",
       "Config" : [
+        {
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "localhost:10163"
+        },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
           "Value": "Welcome to gNMI service on localhost:10163"

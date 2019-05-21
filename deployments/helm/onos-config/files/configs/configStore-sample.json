@@ -4,39 +4,64 @@
   "Store": {
     "Device1Version": {
       "Name": "Device1Version",
-      "Device": "localhost:10161",
-      "Created": "2019-04-25T16:07:24.623962132+01:00",
-      "Updated": "2019-04-25T16:07:24.623962362+01:00",
+      "Device": "Device1",
+      "Created": "2019-05-09T16:24:17.815280516Z",
+      "Updated": "2019-05-09T16:24:17.81528215Z",
       "User": "onos",
       "Description": "Configuration for Device 1",
       "Changes": [
-        "DCuMG07l01g2BvMdEta+7DyxMxk=",
-        "ccrCK+iDpgjBvlkG/HQ57yzOPzU=",
-        "LsDuwm2XJjdOq+u9QEcUJo/HxaM="
+        "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=",
+        "9h9NuN3XEorAKXv6GwLycB6yMls=",
+        "29U3Tp46cS6RJvIyqlos7SFOgfE="
       ]
     },
     "Device2VersionMain": {
-      "Name": "Device2VersionMain",
-      "Device": "localhost:10162",
-      "Created": "2019-04-25T16:07:24.623995634+01:00",
-      "Updated": "2019-04-25T16:07:24.623995815+01:00",
+      "Name": "Device2Version",
+      "Device": "Device2",
+      "Created": "2019-05-09T16:24:17.815298386Z",
+      "Updated": "2019-05-09T16:24:17.815300015Z",
       "User": "onos",
       "Description": "Main Configuration for Device 2",
       "Changes": [
-        "DCuMG07l01g2BvMdEta+7DyxMxk=",
-        "ccrCK+iDpgjBvlkG/HQ57yzOPzU=",
-        "oJ5GSd9a4aBzgYRlCcFqyNdPzL0="
+        "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=",
+        "9h9NuN3XEorAKXv6GwLycB6yMls=",
+        "FGrHfVhk8rwhJ03U5TwxFqPSB/8="
       ]
     },
-    "devicesim1": {
-      "Name": "devicesim1",
-      "Device": "localhost:10163",
-      "Created": "2019-05-02T12:37:24+01:00",
-      "Updated": "2019-05-02T12:37:24+01:00",
+    "localhost:10161Running": {
+      "Name": "localhost:10161Running",
+      "Device": "localhost:10161",
+      "Created": "2019-05-21T08:43:17Z",
+      "Updated": "2019-05-21T08:43:17Z",
       "User": "onos",
-      "Description": "Sample configuration for devicesim1",
+      "Description": "Main Configuration for localhost:10161",
       "Changes": [
-        "DCuMG07l01g2BvMdEta+7DyxMxk="
+        "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+        "i86kLjjNFr5IBa+O3YTuv9HBqJg="
+      ]
+    },
+    "localhost:10162Running": {
+      "Name": "localhost:10162Running",
+      "Device": "localhost:10162",
+      "Created": "2019-05-21T08:43:18Z",
+      "Updated": "2019-05-21T08:43:18Z",
+      "User": "onos",
+      "Description": "Main Configuration for localhost:10162",
+      "Changes": [
+        "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+        "UyPwBSOxDqQM/ZCohHFannSF5ME="
+      ]
+    },
+    "localhost:10163Running": {
+      "Name": "localhost:10163Running",
+      "Device": "localhost:10163",
+      "Created": "2019-05-21T08:43:19Z",
+      "Updated": "2019-05-21T08:43:19Z",
+      "User": "onos",
+      "Description": "Main Configuration for localhost:10163",
+      "Changes": [
+        "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+        "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y="
       ]
     }
   }
