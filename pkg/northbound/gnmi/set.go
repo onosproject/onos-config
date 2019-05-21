@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"log"
 	"strings"
 	"time"
@@ -30,6 +31,10 @@ import (
 
 // ConfigNameSuffix is appended to the Configuration name when it is created
 const ConfigNameSuffix = "Running"
+
+// GnmiExtensionNetwkChangeID is the extension number used in SetResponse
+// to hold the Network change ID
+const GnmiExtensionNetwkChangeID = 100
 
 type mapTargetUpdates map[string]map[string]string
 type mapTargetRemoves map[string][]string
@@ -164,6 +169,16 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	setResponse := &gnmi.SetResponse{
 		Response:  updateResults,
 		Timestamp: time.Now().Unix(),
+		Extension: []*gnmi_ext.Extension{
+			{
+				Ext: &gnmi_ext.Extension_RegisteredExt{
+					RegisteredExt: &gnmi_ext.RegisteredExtension{
+						Id:  100,
+						Msg: []byte(networkConfig.Name),
+					},
+				},
+			},
+		},
 	}
 	return setResponse, nil
 }

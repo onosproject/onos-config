@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -64,6 +65,13 @@ func Test_doSingleSet(t *testing.T) {
 	assert.Equal(t, path.Elem[0].Name, "cont1a")
 	assert.Equal(t, path.Elem[1].Name, "cont2a")
 	assert.Equal(t, path.Elem[2].Name, "leaf2a")
+
+	// Check that an the network change ID is given in extension 10
+	assert.Equal(t, len(setResponse.Extension), 1)
+
+	extension := setResponse.Extension[0].GetRegisteredExt()
+	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
+	assert.Equal(t, string(extension.Msg), "Change-wpF1oQi/Kg4AVTXuyIBZUs45DsQ=")
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
