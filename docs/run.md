@@ -10,10 +10,7 @@ go run github.com/onosproject/onos-config/cmd/onos-config-manager \
     -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
     -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
     -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
-    -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json \
-    -caPath $HOME/go/src/github.com/onosproject/onos-config/tools/test/devicesim/certs/onfca.crt \
-    -keyPath $HOME/go/src/github.com/onosproject/onos-config/tools/test/devicesim/certs/localhost.key \
-    -certPath $HOME/go/src/github.com/onosproject/onos-config/tools/test/devicesim/certs/localhost.crt
+    -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
 ```
 
 ## Run Server in Docker Image
@@ -31,21 +28,44 @@ or use the published one.
 
 
 ## Northbound Get Request via gNMI
-The system implements a gNMI Northbound interface on port 5150
-To access it you can run (from onos-config):
+onos-config implements the standard gNMI as a method of accessing a complete
+configuration system consisting of several devices - each identified as _target_.
+The configuration store supports network wide configuration actions (multiple 
+updates on multiple devices at once, and rollback of same).
 
-To issue a gNMI Get request, you can use the `gnmi_cli -get` command as follows:
-> Where the "target" is the identifier of the device, 
-> and the "elem" collection is the path to the requested element.
-> If config from several devices are required several paths can be added
+The gNMI Northbound interface is available through https/2 on port 5150.
+
+### gnmi_cli utility
+A simple way to issue a gNMI Get request is to use the `gnmi_cli` utility from
+the OpenConfig project. If it's not on your system, install as follows:
+```bash
+go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
+go install -v github.com/openconfig/gnmi/cmd/gnmi_cli
+```
+> For troubleshooting information see [gnmi_user_manual.md](../tools/test/devicesim/gnmi_user_manual.md)
+
+As an extension to gNMI onos-config allows retrieval of all stored device names
+with the following command
 ```bash
 gnmi_cli -get -address localhost:5150 \
-    -proto "path: <target: 'localhost:10161', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
-    -timeout 5s \
+    -proto "path: <target: '*'>" \
+    -timeout 5s -alsologtostderr \
     -client_crt tools/test/devicesim/certs/client1.crt \
     -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt \
-    -alsologtostderr
+    -ca_crt tools/test/devicesim/certs/onfca.crt
+```
+
+> Use `gnmi_cli -get` to get configuration and operational state from the system.
+> Use "target" as the identifier of the device,
+> and the "elem" collection is the path to the requested element.
+> If config from several devices are required, several paths can be added
+```bash
+gnmi_cli -get -address localhost:5150 \
+    -proto "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
+    -timeout 5s -alsologtostderr\
+    -client_crt tools/test/devicesim/certs/client1.crt \
+    -client_key tools/test/devicesim/certs/client1.key \
+    -ca_crt tools/test/devicesim/certs/onfca.crt
 ```
 
 > The value in the response can be an individual value or a tree of values depending

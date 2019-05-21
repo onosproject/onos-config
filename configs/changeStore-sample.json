@@ -119,6 +119,70 @@
           "Remove": false
         }
       ]
+    },
+    "JOavY10nsD6dvuJbuf/Qyo5KapA=": {
+      "ID": "JOavY10nsD6dvuJbuf/Qyo5KapA=",
+      "Description": "Original configuration for devicesim",
+      "Created": "2019-05-21T08:43:01Z",
+      "Config" : [
+        {
+          "Path": "/openconfig-interfaces:interfaces/interface[name=admin]/config/name",
+          "Value": "admin"
+        },
+        {
+          "Path": "/openconfig-system:system/clock/config/timezone-name",
+          "Value": "Europe/Dublin"
+        },
+        {
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "replace-device-name"
+        },
+        {
+          "Path": "/openconfig-system:system/config/domain-name",
+          "Value": "opennetworking.org"
+        },
+        {
+          "Path": "/openconfig-system:system/config/login-banner",
+          "Value": "This device is for authorized use only"
+        },
+        {
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "replace-motd-banner"
+        }
+      ]
+    },
+    "p7rgi089NTjZEVEkSU+1y3b52wI=": {
+      "ID": "p7rgi089NTjZEVEkSU+1y3b52wI=",
+      "Description": "Modification of device sim 1",
+      "Created": "2019-05-21T08:43:02Z",
+      "Config" : [
+        {
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "Welcome to gNMI service on localhost:10161"
+        }
+      ]
+    },
+    "YoB2mfS07wsyRO/nBZ1gYEtV5aA=": {
+      "ID": "YoB2mfS07wsyRO/nBZ1gYEtV5aA=",
+      "Description": "Modification of device sim 2",
+      "Created": "2019-05-21T08:43:03Z",
+      "Config" : [
+        {
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "Welcome to gNMI service on localhost:10162"
+        }
+      ]
+    },
+    "iU9IOAhERrrKobM8YJU1QpL3y1w=": {
+      "ID": "iU9IOAhERrrKobM8YJU1QpL3y1w=",
+      "Description": "Modification of device sim 3",
+      "Created": "2019-05-21T08:43:04Z",
+      "Config" : [
+        {
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "Welcome to gNMI service on localhost:10163"
+        }
+      ]
     }
   }
 }

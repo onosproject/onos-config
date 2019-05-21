@@ -73,7 +73,13 @@ func (s *Server) Serve() error {
 	tlsCfg := &tls.Config{}
 
 	if *s.cfg.CertPath == "" && *s.cfg.KeyPath == "" {
-		tlsCfg.InsecureSkipVerify = true
+		// Load default Certificates
+		clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultLocalhostCrt), []byte(certs.DefaultLocalhostKey))
+		if err != nil {
+			log.Error("Error loading default certs")
+			return err
+		}
+		tlsCfg.Certificates = []tls.Certificate{clientCerts}
 	} else {
 		log.Infof("Loading certs: %s %s", *s.cfg.CertPath, *s.cfg.KeyPath)
 		clientCerts, err := tls.LoadX509KeyPair(*s.cfg.CertPath, *s.cfg.KeyPath)

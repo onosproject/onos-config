@@ -47,6 +47,15 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		TopoChannel:    topoCh,
 		ChangesChannel: make(chan events.Event, 10),
 	}
+
+	// Perform a sanity check on the change store
+	for _, changeObj := range changes.Store {
+		err := changeObj.IsValid()
+		if err != nil {
+			log.Fatal("Error at startup. Invalid change:", err)
+		}
+	}
+
 	return &mgr
 
 }
