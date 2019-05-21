@@ -1,6 +1,6 @@
 # Device Simulator
 
-This is a docker VM that runs gNMI/gNOI implementation supporting openconfig models.
+This is a docker VM that runs a gNMI/gNOI implementation supporting openconfig models.
 
 Inspired by https://github.com/faucetsdn/gnmi 
 
