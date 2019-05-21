@@ -28,36 +28,24 @@ or use the published one.
 
 
 ## Northbound Get Request via gNMI
-onos-config implements the standard gNMI as a method of accessing a complete
-configuration system consisting of several devices - each identified as _target_.
-The configuration store supports network wide configuration actions (multiple 
+__onos-config__ extends standard gNMI as a method of accessing a complete
+configuration system consisting of *several* devices - each identified by _target_.
+It supports network wide configuration actions (multiple 
 updates on multiple devices at once, and rollback of same).
 
-The gNMI Northbound interface is available through https/2 on port 5150.
+The gNMI Northbound interface is available through https on port 5150.
 
 ### gnmi_cli utility
 A simple way to issue a gNMI Get request is to use the `gnmi_cli` utility from
-the OpenConfig project. If it's not on your system, install as follows:
+the [OpenConfig](https://github.com/openconfig/gnmi) project. If it's not on your system, install as follows:
 ```bash
 go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
-go install -v github.com/openconfig/gnmi/cmd/gnmi_cli
 ```
 > For troubleshooting information see [gnmi_user_manual.md](../tools/test/devicesim/gnmi_user_manual.md)
 
-As an extension to gNMI onos-config allows retrieval of all stored device names
-with the following command
-```bash
-gnmi_cli -get -address localhost:5150 \
-    -proto "path: <target: '*'>" \
-    -timeout 5s -alsologtostderr \
-    -client_crt tools/test/devicesim/certs/client1.crt \
-    -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt
-```
-
-> Use `gnmi_cli -get` to get configuration and operational state from the system.
-> Use "target" as the identifier of the device,
-> and the "elem" collection is the path to the requested element.
+### A simple Get operation
+Use `gnmi_cli -get` to get configuration for a particular device (target) from the system.
+> Use "target" as the identifier of the device, and the "elem" collection is the path to the requested element.
 > If config from several devices are required, several paths can be added
 ```bash
 gnmi_cli -get -address localhost:5150 \
@@ -68,16 +56,29 @@ gnmi_cli -get -address localhost:5150 \
     -ca_crt tools/test/devicesim/certs/onfca.crt
 ```
 
+### List all device names (targets)
+A useful way to retrieve all stored device names is with the command:
+```bash
+gnmi_cli -get -address localhost:5150 \
+    -proto "path: <target: '*'>" \
+    -timeout 5s -alsologtostderr \
+    -client_crt tools/test/devicesim/certs/client1.crt \
+    -client_key tools/test/devicesim/certs/client1.key \
+    -ca_crt tools/test/devicesim/certs/onfca.crt
+```
+
 > The value in the response can be an individual value or a tree of values depending
 > on the scope of the request.
 
+### List complete configuration for a device (target)
 >Use the following value for proto to get all configuration and operational state on a particular device
->    -proto "path: <target: 'localhost:10161', elem: \<name:'/*'>>"
+>    -proto "path: <target: 'localhost:10161'>"
 
->To get a keyed index in a list use a syntax like
+### Get a keyed index in a list
+Use a proto value like:
 >    -proto "path: <target: 'localhost:10161',
->         elem: <name: 'system'>
->         elem: <name: 'openflow'> elem: <name: 'controllers'>
+>         elem: <name: 'openconfig-system:system'>
+>         elem: <name: 'openconfig-openflow:openflow'> elem: <name: 'controllers'>
 >         elem: <name: 'controller' key: <key: 'name' value: 'main'>>
 >         elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>>
 >         elem: <name: 'config'> elem: <name: 'address'>>"
@@ -87,19 +88,19 @@ Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the
 
 ```bash
 gnmi_cli -address localhost:5150 -set \
-    -proto "update: <path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Dublin'>>" \
-    -timeout 5s \
+    -proto "update: <path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
+    -timeout 5s -alsologtostderr \
     -client_crt tools/test/devicesim/certs/client1.crt \
     -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt \
-    -alsologtostderr
+    -ca_crt tools/test/devicesim/certs/onfca.crt
 ```
 
 > The corresponding -get for this will use the -proto
-> "path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
+> "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
 
-> Currently no checking of the contents is enforced and the config is not forwarded down to the 
-> southbound layer
+> Currently (May '19) no checking of the contents is enforced when doing a Set operation
+> and the config is forwarded down to the southbound layer only if a device is registered
+> in the topocache (currently in the deviceStore)
 
 ## Northbound Subscribe Once Request via gNMI
 Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as in the example below, 
@@ -107,18 +108,14 @@ please note the `1` as subscription mode to indicate to send the response once:
 
 ```bash
 gnmi_cli -address localhost:5150 \
-    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
-    -timeout 5s \
+    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -timeout 5s alsologtostderr \
     -client_crt tools/test/devicesim/certs/client1.crt \
     -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt \
-    -alsologtostderr
+    -ca_crt tools/test/devicesim/certs/onfca.crt
 ```
 
-> Currently no checking of the contents is enforced and the config is not forwarded down to the 
-> southbound layer
-
-**Note** This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
+> This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
 
 ## Northbound Subscribe Request for Stream Notifications via gNMI
 Similarly, to make a gNMI Subscribe request for streaming, use the `gnmi_cli` command as in the example below, 
@@ -126,27 +123,34 @@ please note the `0` as subscription mode to indicate streaming:
 
 ```bash
 gnmi_cli -address localhost:5150 \
-    -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
-    -timeout 5s \
+    -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -timeout 5s -alsologtostderr \
     -client_crt tools/test/devicesim/certs/client1.crt \
     -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt \
-    -alsologtostderr
+    -ca_crt tools/test/devicesim/certs/onfca.crt
 ```
 
-> Currently no checking of the contents is enforced and the config is not forwarded down to the 
-> southbound layer
-
-**Note** This command will block until there is a change at the requested value that gets propagated to the underlying stream.
-Also as per `gnmi_cli` behaviour the updates get printed twice. 
+> This command will block until there is a change at the requested value that gets
+> propagated to the underlying stream. Also as per `gnmi_cli` behaviour the updates get printed twice. 
 
 ## Administrative Tools
 The project provides a number of administrative tools for remotely accessing the enhanced northbound
 functionality.
 
+### List Network Changes
 For example, to list all network changes submitted through the northbound gNMI interface run:
 ```bash
 go run github.com/onosproject/onos-config/cmd/admin/net-changes \
+    -certPath tools/test/devicesim/certs/client1.crt \
+    -keyPath tools/test/devicesim/certs/client1.key
+```
+
+### Rollback Network Change
+To rollback a network use the rollback admin tool. This will rollback the last network
+change unless a specific change is given with the **-changename** parameter
+```bash
+go run github.com/onosproject/onos-config/cmd/admin/rollback \
+    -changename Change-VgUAZI928B644v/2XQ0n24x0SjA= \
     -certPath tools/test/devicesim/certs/client1.crt \
     -keyPath tools/test/devicesim/certs/client1.key
 ```
@@ -165,10 +169,22 @@ go run github.com/onosproject/onos-config/cmd/diags/changes \
     -certPath tools/test/devicesim/certs/client1.crt \
     -keyPath tools/test/devicesim/certs/client1.key
 ```
+> For a specific change use the -changeid argument
+
 
 To get details from the Configuration store use
 ```bash
 go run github.com/onosproject/onos-config/cmd/diags/configs \
+    -certPath tools/test/devicesim/certs/client1.crt \
+    -keyPath tools/test/devicesim/certs/client1.key
+```
+> For the configuration for a specific device use the -devicename argument
+
+
+To get the aggregate configuration of a device from the store use
+```bash
+go run github.com/onosproject/onos-config/cmd/diags/devicetree \
+    -devicename localhost:10161 \
     -certPath tools/test/devicesim/certs/client1.crt \
     -keyPath tools/test/devicesim/certs/client1.key
 ```
