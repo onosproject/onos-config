@@ -190,3 +190,9 @@ go run github.com/onosproject/onos-config/cmd/diags/devicetree \
 ```
 
 > Of course, there will be many more such commands available in the near future
+
+
+## Testing Scripts
+
+You can use testing scripts under [Testing Scripts](../tools/test/scripts) directory to run 
+all of the above commands.  
