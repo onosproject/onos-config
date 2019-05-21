@@ -25,7 +25,7 @@ license_check:
 	./build/licensing/boilerplate.py -v
 
 gofmt:
-	bash -c "diff -u <(echo -n) <(gofmt -d pkg/)"
+	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/)"
 
 protos:
 	./build/dev-docker/compile-protos.sh
