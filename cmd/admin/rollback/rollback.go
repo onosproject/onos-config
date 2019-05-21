@@ -17,7 +17,7 @@ Package main of cmd/admin/rollback is a command line utility that enables a name
 network change to be rolled back.
 
 If no name is given that last network change is rolled back
- */
+*/
 package main
 
 import (
@@ -49,7 +49,7 @@ func main() {
 		}
 
 		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
+			Certificates:       []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		}
 
