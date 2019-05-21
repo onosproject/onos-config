@@ -52,26 +52,26 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 
 	changeIds := make([]string, 0)
 	// Perform a sanity check on the change store
-	for changeId, changeObj := range changes.Store {
+	for changeID, changeObj := range changes.Store {
 		err := changeObj.IsValid()
 		if err != nil {
 			return nil, err
 		}
-		if changeId != store.B64(changeObj.ID) {
+		if changeID != store.B64(changeObj.ID) {
 			return nil, fmt.Errorf("Change Id: %s must match %s",
-				changeId, store.B64(changeObj.ID))
+				changeID, store.B64(changeObj.ID))
 		}
-		changeIds = append(changeIds, changeId)
+		changeIds = append(changeIds, changeID)
 	}
 
 	changeIdsStr := strings.Join(changeIds, ",")
 
-	for configId, configObj := range configs.Store {
-		for _, chId := range configObj.Changes {
-			if !strings.Contains(changeIdsStr, store.B64(chId)) {
+	for configID, configObj := range configs.Store {
+		for _, chID := range configObj.Changes {
+			if !strings.Contains(changeIdsStr, store.B64(chID)) {
 				return nil, fmt.Errorf(
 					"ChangeID %s from Config %s not found in change store",
-					store.B64(chId), configId)
+					store.B64(chID), configID)
 			}
 		}
 
