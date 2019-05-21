@@ -2,10 +2,66 @@
   "Version": "1.0.0",
   "Storetype": "change",
   "Store": {
-    "DCuMG07l01g2BvMdEta+7DyxMxk=": {
-      "ID": "DCuMG07l01g2BvMdEta+7DyxMxk=",
+    "29U3Tp46cS6RJvIyqlos7SFOgfE=": {
+      "ID": "29U3Tp46cS6RJvIyqlos7SFOgfE=",
+      "Description": "Remove txout 2",
+      "Created": "2019-05-09T16:24:17.815274679Z",
+      "Config": [
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2c",
+          "Value": "def",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a[name=txout2]",
+          "Value": "",
+          "Remove": true
+        }
+      ]
+    },
+    "9h9NuN3XEorAKXv6GwLycB6yMls=": {
+      "ID": "9h9NuN3XEorAKXv6GwLycB6yMls=",
+      "Description": "Trim power level",
+      "Created": "2019-05-09T16:24:17.815259228Z",
+      "Config": [
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2b",
+          "Value": "3.14159",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a[name=txout3]",
+          "Value": "",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a[name=txout3]/tx-power",
+          "Value": "16",
+          "Remove": false
+        }
+      ]
+    },
+    "FGrHfVhk8rwhJ03U5TwxFqPSB/8=": {
+      "ID": "FGrHfVhk8rwhJ03U5TwxFqPSB/8=",
+      "Description": "Remove txout 1",
+      "Created": "2019-05-09T16:24:17.815294258Z",
+      "Config": [
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2c",
+          "Value": "ghi",
+          "Remove": false
+        },
+        {
+          "Path": "/test1:cont1a/list2a[name=txout1]",
+          "Value": "",
+          "Remove": true
+        }
+      ]
+    },
+    "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=": {
+      "ID": "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=",
       "Description": "Original Config for test switch",
-      "Created": "2019-04-25T16:07:24.623647371+01:00",
+      "Created": "2019-05-09T16:24:17.815187669Z",
       "Config": [
         {
           "Path": "/test1:cont1a",
@@ -38,22 +94,22 @@
           "Remove": false
         },
         {
-          "Path": "/test1:cont1a/list2a=txout1",
+          "Path": "/test1:cont1a/list2a[name=txout1]",
           "Value": "",
           "Remove": false
         },
         {
-          "Path": "/test1:cont1a/list2a=txout1/tx-power",
+          "Path": "/test1:cont1a/list2a[name=txout1]/tx-power",
           "Value": "8",
           "Remove": false
         },
         {
-          "Path": "/test1:cont1a/list2a=txout2",
+          "Path": "/test1:cont1a/list2a[name=txout2]",
           "Value": "",
           "Remove": false
         },
         {
-          "Path": "/test1:cont1a/list2a=txout2/tx-power",
+          "Path": "/test1:cont1a/list2a[name=txout2]/tx-power",
           "Value": "10",
           "Remove": false
         },
@@ -64,59 +120,135 @@
         }
       ]
     },
-    "LsDuwm2XJjdOq+u9QEcUJo/HxaM=": {
-      "ID": "LsDuwm2XJjdOq+u9QEcUJo/HxaM=",
-      "Description": "Remove txout 2",
-      "Created": "2019-04-25T16:07:24.623932408+01:00",
-      "Config": [
+    "4cQNf/bxKWdRO0h5GG4a58q5YEQ=": {
+      "ID": "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+      "Description": "Original configuration for devicesim",
+      "Created": "2019-05-21T08:43:01Z",
+      "Config" : [
         {
-          "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "def",
-          "Remove": false
+          "Path": "/openconfig-interfaces:interfaces/interface[name=admin]/config/name",
+          "Value": "admin"
         },
         {
-          "Path": "/test1:cont1a/list2a=txout2",
-          "Value": "",
-          "Remove": true
+          "Path": "/openconfig-system:system/aaa/authentication/admin-user/config/admin-password",
+          "Value": "password"
+        },
+        {
+          "Path": "/openconfig-system:system/aaa/authentication/config/authentication-method",
+          "Value": "openconfig-aaa-types:LOCAL"
+        },
+        {
+          "Path": "/openconfig-system:system/clock/config/timezone-name",
+          "Value": "Europe/Dublin"
+        },
+        {
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "replace-device-name"
+        },
+        {
+          "Path": "/openconfig-system:system/config/domain-name",
+          "Value": "opennetworking.org"
+        },
+        {
+          "Path": "/openconfig-system:system/config/login-banner",
+          "Value": "This device is for authorized use only"
+        },
+        {
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "replace-motd-banner"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/backoff-interval",
+          "Value": "5"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/datapath-id",
+          "Value": "00:16:3e:00:00:00:00:00"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/failure-mode",
+          "Value": "SECURE"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/inactivity-probe",
+          "Value": "10"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/max-backoff",
+          "Value": "10"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/config/name",
+          "Value": "main"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/address",
+          "Value": "192.0.2.10"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/aux-id",
+          "Value": "0"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/port",
+          "Value": "6633"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/priority",
+          "Value": "1"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/source-interface",
+          "Value": "admin"
+        },
+        {
+          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/transport",
+          "Value": "TLS"
         }
       ]
     },
-    "ccrCK+iDpgjBvlkG/HQ57yzOPzU=": {
-      "ID": "ccrCK+iDpgjBvlkG/HQ57yzOPzU=",
-      "Description": "Trim power level",
-      "Created": "2019-04-25T16:07:24.623888041+01:00",
-      "Config": [
+    "i86kLjjNFr5IBa+O3YTuv9HBqJg=": {
+      "ID": "i86kLjjNFr5IBa+O3YTuv9HBqJg=",
+      "Description": "Modification of device sim 1",
+      "Created": "2019-05-21T08:43:02Z",
+      "Config" : [
         {
-          "Path": "/test1:cont1a/cont2a/leaf2b",
-          "Value": "3.14159",
-          "Remove": false
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "localhost:10161"
         },
         {
-          "Path": "/test1:cont1a/list2a=txout3",
-          "Value": "",
-          "Remove": false
-        },
-        {
-          "Path": "/test1:cont1a/list2a=txout3/tx-power",
-          "Value": "16",
-          "Remove": false
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "Welcome to gNMI service on localhost:10161"
         }
       ]
     },
-    "oJ5GSd9a4aBzgYRlCcFqyNdPzL0=": {
-      "ID": "oJ5GSd9a4aBzgYRlCcFqyNdPzL0=",
-      "Description": "Remove txout 1",
-      "Created": "2019-04-25T16:07:24.623984111+01:00",
-      "Config": [
+    "UyPwBSOxDqQM/ZCohHFannSF5ME=": {
+      "ID": "UyPwBSOxDqQM/ZCohHFannSF5ME=",
+      "Description": "Modification of device sim 2",
+      "Created": "2019-05-21T08:43:03Z",
+      "Config" : [
         {
-          "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "ghi",
-          "Remove": false
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "localhost:10162"
         },
         {
-          "Path": "/test1:cont1a/list2a=txout1",
-          "Value": "",
-          "Remove": true
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "Welcome to gNMI service on localhost:10162"
+        }
+      ]
+    },
+    "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y=": {
+      "ID": "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y=",
+      "Description": "Modification of device sim 3",
+      "Created": "2019-05-21T08:43:04Z",
+      "Config" : [
+        {
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "localhost:10163"
+        },
+        {
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "Welcome to gNMI service on localhost:10163"
         }
       ]
     }

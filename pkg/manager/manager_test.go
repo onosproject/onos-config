@@ -90,7 +90,7 @@ func TestMain(m *testing.M) {
 		Addr:    "127.0.0.1:10161",
 		Timeout: 10,
 	}
-	mgrTest = NewManager(
+	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
 			Version:   "1.0",
 			Storetype: "config",
@@ -113,6 +113,10 @@ func TestMain(m *testing.M) {
 		},
 		make(chan events.Event, 10))
 	mgrTest.Run()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 	os.Exit(m.Run())
 
 }

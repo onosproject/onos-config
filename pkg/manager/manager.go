@@ -15,12 +15,14 @@
 package manager
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/listener"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"log"
+	"strings"
 )
 
 var mgr Manager
@@ -37,7 +39,7 @@ type Manager struct {
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, device *topocache.DeviceStore,
-	network *store.NetworkStore, topoCh chan events.Event) *Manager {
+	network *store.NetworkStore, topoCh chan events.Event) (*Manager, error) {
 	log.Println("Creating Manager")
 	mgr = Manager{
 		ConfigStore:    configs,
@@ -47,7 +49,35 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		TopoChannel:    topoCh,
 		ChangesChannel: make(chan events.Event, 10),
 	}
-	return &mgr
+
+	changeIds := make([]string, 0)
+	// Perform a sanity check on the change store
+	for changeID, changeObj := range changes.Store {
+		err := changeObj.IsValid()
+		if err != nil {
+			return nil, err
+		}
+		if changeID != store.B64(changeObj.ID) {
+			return nil, fmt.Errorf("Change Id: %s must match %s",
+				changeID, store.B64(changeObj.ID))
+		}
+		changeIds = append(changeIds, changeID)
+	}
+
+	changeIdsStr := strings.Join(changeIds, ",")
+
+	for configID, configObj := range configs.Store {
+		for _, chID := range configObj.Changes {
+			if !strings.Contains(changeIdsStr, store.B64(chID)) {
+				return nil, fmt.Errorf(
+					"ChangeID %s from Config %s not found in change store",
+					store.B64(chID), configID)
+			}
+		}
+
+	}
+
+	return &mgr, nil
 
 }
 

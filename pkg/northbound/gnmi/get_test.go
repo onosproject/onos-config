@@ -85,14 +85,15 @@ func Test_getAllDevices(t *testing.T) {
 	result, err := server.Get(nil, &request)
 	assert.NilError(t, err, "Unexpected error calling gNMI Get")
 
-	assert.Equal(t, len(result.Notification), 1, "Expected 1 notification")
-	assert.Equal(t, len(result.Notification[0].Update), 1, "Expected 1 update")
+	assert.Equal(t, len(result.Notification), 1)
+	assert.Equal(t, len(result.Notification[0].Update), 1)
 
-	assert.Equal(t, result.Notification[0].Update[0].Path.Target, "*", "Expected target")
+	assert.Equal(t, result.Notification[0].Update[0].Path.Target, "*")
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
-	assert.Equal(t, deviceListStr, "[Device1, Device2]", "Expected value")
+	assert.Equal(t, deviceListStr,
+		"[Device1, Device2, localhost:10161, localhost:10162, localhost:10163]")
 }
 
 // Test_getalldevices is where a wildcard is used for target - path is ignored
@@ -112,7 +113,9 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
-	assert.Equal(t, deviceListStr, "[Device1, Device2]", "Expected value")
+	assert.Equal(t, deviceListStr,
+		"[Device1, Device2, localhost:10161, localhost:10162, localhost:10163]",
+		"Expected value")
 }
 
 func Test_get2PathsWithPrefix(t *testing.T) {
