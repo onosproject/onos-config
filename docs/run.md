@@ -95,6 +95,10 @@ gnmi_cli -address localhost:5150 -set \
     -ca_crt tools/test/devicesim/certs/onfca.crt
 ```
 
+> The result will include a field as a gNMI SetResponse extension 100
+> giving the Network Change identifier, which may be subsequently used
+> to rollback the change.
+
 > The corresponding -get for this will use the -proto
 > "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
 
