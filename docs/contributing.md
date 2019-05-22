@@ -184,7 +184,7 @@ git rebase upstream/master
 
 #### 2. Revert the prior commit(s)
 
-If the commit you wish to rever it a merge commit, run this:
+If the commit you wish to revert it a merge commit, run this:
 
 ```sh
 # SHA is the hash of the merge commit you wish to revert
