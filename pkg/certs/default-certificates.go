@@ -17,6 +17,12 @@ Package certs is set of default certificates serialized in to string format.
 */
 package certs
 
+// Default Client Certificate name
+const (
+	Client1Key = "client1.key"
+	Client1Crt = "client1.crt"
+)
+
 /*
 All of these are copied over from onos-config/tools/test/devicesim/certs
 */

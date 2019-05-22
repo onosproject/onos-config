@@ -22,43 +22,26 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"io"
 	"log"
 	"time"
 )
 
 func main() {
-	address := flag.String("address", ":5150", "address to which to send requests")
+	address := flag.String("address", ":5150", "address to which to send requests e.g. localhost:5150")
 	deviceName := flag.String("devicename", "", "The hostname and port of a configured device")
-	keyPath := flag.String("keyPath", "", "path to client private key")
-	certPath := flag.String("certPath", "", "path to client certificate")
+	keyPath := flag.String("keyPath", certs.Client1Key, "path to client private key")
+	certPath := flag.String("certPath", certs.Client1Crt, "path to client certificate")
 	flag.Parse()
 
-	var opts = []grpc.DialOption{}
-	if *keyPath != "" && *certPath != "" {
-		cert, err := tls.LoadX509KeyPair(*certPath, *keyPath)
-		if err != nil {
-			log.Println("Error loading certs", err)
-		} else {
-			log.Println("Loaded key and cert")
-		}
-
-		tlsConfig := &tls.Config{
-			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-		}
-
-		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
-	} else {
-		log.Println("No key/cert configured")
-		opts = append(opts, grpc.WithInsecure())
+	opts, err := certs.HandleCertArgs(keyPath, certPath)
+	if err != nil {
+		log.Fatal("Error loading cert", err)
 	}
 
 	conn := northbound.Connect(address, opts...)
