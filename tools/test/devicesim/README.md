@@ -78,7 +78,7 @@ a standalone simulator in SIM_MODE=3, localhost mode:
 ```bash
 docker run --env "HOSTNAME=localhost" --env "SIM_MODE=3" \
     --env "GNMI_PORT=10164" --env "GNOI_PORT=50004" \
-    -p "10164:10164" -p "50004:50004" devicesim
+    -p "10164:10164" -p "50004:50004" onosproject/devicesim
 ```
 To stop it use "docker kill"
 
@@ -87,7 +87,7 @@ To stop it use "docker kill"
 By default the docker compose command will pull down the latest docker
 image from the Docker Hub. If you need to build it locally, run:
 ```bash
-docker build -t devicesim -f Dockerfile .
+docker build -t onosproject/devicesim -f Dockerfile .
 ```
 
 # Client tools for testing

@@ -1,7 +1,7 @@
 version: "3"
 services:
   devicesim1:
-    image: devicesim:latest
+    image: onosproject/devicesim:latest
     environment:
       - HOSTNAME=localhost
       - GNOI_PORT=50001
@@ -13,7 +13,7 @@ services:
     labels:
       description: "gNOI/gNMI Simulator Device 1"  
   devicesim2:
-    image: devicesim:latest
+    image: onosproject/devicesim:latest
     environment:
       - HOSTNAME=localhost
       - GNOI_PORT=50002
@@ -25,7 +25,7 @@ services:
     labels:
       description: "gNOI/gNMI Simulator Device 2"
   devicesim3:
-    image: devicesim:latest
+    image: onosproject/devicesim:latest
     environment:
       - HOSTNAME=localhost
       - GNOI_PORT=50003
