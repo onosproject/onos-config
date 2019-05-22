@@ -3,6 +3,7 @@ services:
   devicesim1:
     image: devicesim:latest
     environment:
+      - HOSTNAME=localhost
       - GNMI_PORT=10161
       - SIM_MODE=1  
     ports:
@@ -12,6 +13,7 @@ services:
   devicesim2:
     image: devicesim:latest
     environment:
+      - HOSTNAME=localhost
       - GNMI_PORT=10162
       - SIM_MODE=1
     ports:
@@ -21,6 +23,7 @@ services:
   devicesim3:
     image: devicesim:latest
     environment:
+      - HOSTNAME=localhost
       - GNMI_PORT=10163
       - SIM_MODE=1  
     ports:

@@ -3,6 +3,7 @@ services:
   devicesim1:
     image: devicesim:latest
     environment:
+      - HOSTNAME=localhost      -
       - GNOI_PORT=50001
       - SIM_MODE=2  
     ports:
@@ -12,6 +13,7 @@ services:
   devicesim2:
     image: devicesim:latest
     environment:
+      - HOSTNAME=localhost      -
       - GNOI_PORT=50002
       - SIM_MODE=2  
     ports:
@@ -21,6 +23,7 @@ services:
   devicesim3:
     image: devicesim:latest
     environment:
+      - HOSTNAME=localhost      -
       - GNOI_PORT=50003
       - SIM_MODE=2  
     ports:

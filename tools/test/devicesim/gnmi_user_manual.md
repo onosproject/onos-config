@@ -1,70 +1,17 @@
-# gNMI Simulator User Manual
+# gNMI Client Simulator User Manual
 
+## How to test the gNMI simulator? 
 
-The configuration is loaded by default from [target_configs/typical_ofsw_config.json](target_configs/typical_ofsw_config.json)
-
-## Create the docker image
-```bash
-docker build -t devicesim -f Dockerfile .
-```
-
-## Run 3 devices with Docker Compose
-Run 3 gNMI devices with 
-```bash
-docker-compose -f docker-compose-gnmi.yml up
-```
-
-This gives an output like
-```bash
-Creating devicesim_devicesim3_1 ... 
-Creating devicesim_devicesim1_1 ... 
-Creating devicesim_devicesim2_1 ... 
-Creating devicesim_devicesim3_1
-Creating devicesim_devicesim2_1
-Creating devicesim_devicesim1_1 ... done
-Attaching to devicesim_devicesim3_1, devicesim_devicesim2_1, devicesim_devicesim1_1
-devicesim3_1  | gNMI running on localhost:10163
-devicesim2_1  | gNMI running on localhost:10162
-devicesim1_1  | gNMI running on localhost:10161
-```
-
-> This uses port mapping to make the devices available to gNMI clients and is the
-> only option for running on Mac or Windows, and can be used with Linux too.
-
-### Running on Linux
-If you are fortunate enough to be using Docker on Linux, then you can use the
-above method __or__ the alternative:
-
-```bash
-docker-compose -f docker-compose-linux.yml up
-```
-
-This will use the fixed IP addresses 172.25.0.11, 172.25.0.12, 172.25.0.13 for
-device1-3. An entry must still be placed in your /etc/hosts file for all 3 like:
-```bash
-172.25.0.11 device1.opennetworking.org
-172.25.0.12 device2.opennetworking.org
-172.25.0.13 device3.opennetworking.org
-```
-
-> This uses a custom network 'simnet' in Docker and is only possible on Docker for Linux.
-> If you are on Mac or Windows it is __not possible__ to route to User Defined networks,
-> so the port mapping technique must be used.
-
-> It is not possible to use the name mapping of the docker network from outside
-> the cluster, so either the entries have to be placed in /etc/hosts or on some
-> DNS server
-
-## gNMI Command Line Interface (CLI)
-
-To use gNMI CLI, you have two options:
+gNMI CLI is a general purpose client tool for testing gNMI devices, from
+the OpenConfig project.
+To run it, two options are available:
 
 1. (**Recommended Option**): you can install the gNMI CLI on your own machine using the following command and run it as an external application to the Docker containers. This option allows you to connect to any of the targets and run the gNMI CLI commands. 
 ```bash
 go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
 go install -v github.com/openconfig/gnmi/cmd/gnmi_cli
 ```
-2. You can ssh into any of the targets using the following command and run 
+2. Or you can ssh into any of the targets using the following command and run 
 the gNMI CLI from the Docker container. 
 ```bash
 docker exec -it <Container ID> /bin/bash
@@ -74,11 +21,10 @@ docker exec -it <Container ID> /bin/bash
 ```bash
 gnmi_cli -address localhost:10161 \
        -capabilities \
-       -timeout 5s \
+       -timeout 5s -alsologtostderr \
        -client_crt certs/client1.crt \
        -client_key certs/client1.key \
-       -ca_crt certs/onfca.crt \
-       -alsologtostderr
+       -ca_crt certs/onfca.crt
 ```
 
 If you get
@@ -92,11 +38,10 @@ It indicates a transport problem - see the [troubleshooting](#deadline-exceeded)
 gnmi_cli -address localhost:10162 \
        -get \
        -proto "path: <elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
-       -timeout 5s \
+       -timeout 5s -alsologtostderr \
        -client_crt certs/client1.crt \
        -client_key certs/client1.key \
-       -ca_crt certs/onfca.crt \
-       -alsologtostderr
+       -ca_crt certs/onfca.crt
 ```
 
 This gives a response like
@@ -122,15 +67,6 @@ notification: <
 >
 
 ```
-
-
-## Run a single docker container
-If you just want to run a single device, it is not necessary to run docker-compose.
-It can be done just by docker directly, and can be handy for troubleshooting.
-```bash
-docker run --env "HOSTNAME=localhost" --env "GNMI_PORT=10164" -p "10164:10164" devicesim
-```
-To stop it use "docker kill"
 
 ## Troubleshooting
 
