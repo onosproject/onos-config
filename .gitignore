@@ -1,4 +1,4 @@
-cmd/onos-config-manager/config-manager
+cmd/onos-config/onos-config
 cmd/southbound_main/southbound_main
 pkg/store/testout
 vendor

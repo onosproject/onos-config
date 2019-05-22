@@ -6,6 +6,6 @@ FROM alpine:3.8
 
 USER nobody
 
-COPY --from=builder /go/src/github.com/onosproject/onos-config/build/_output/onos-config-manager /usr/local/bin/onos-config-manager
+COPY --from=builder /go/src/github.com/onosproject/onos-config/build/_output/onos-config /usr/local/bin/onos-config
 
-ENTRYPOINT ["onos-config-manager"]
+ENTRYPOINT ["onos-config"]

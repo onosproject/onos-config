@@ -15,7 +15,7 @@
 /*
 Package main of cmd/diags/configs is a command line client to list Configs.
 
-It connects to the diags gRPC interface of the onos-config-manager and queries
+It connects to the diags gRPC interface of the onos-config and queries
 the Config Store
 */
 package main
@@ -34,7 +34,7 @@ import (
 
 func main() {
 	address := flag.String("address", ":5150", "address to which to send requests e.g. localhost:5150")
-	deviceName := flag.String("devicename", "", "The hostname and port of a configured device")
+	deviceName := flag.String("devicename", "", "hostname and port of a configured device")
 	keyPath := flag.String("keyPath", certs.Client1Key, "path to client private key")
 	certPath := flag.String("certPath", certs.Client1Crt, "path to client certificate")
 	flag.Parse()

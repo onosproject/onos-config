@@ -8,7 +8,7 @@ all: image
 
 image:
 	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:0.3 protos build
-	docker build . -f build/config-manager/Dockerfile -t onosproject/onos-config:${ONOS_CONFIG_VERSION}
+	docker build . -f build/onos-config/Dockerfile -t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
 deps:
 	dep ensure -v
@@ -33,11 +33,11 @@ protos:
 build: test
 	export GOOS=linux
 	export GOARCH=amd64
-	go build -o build/_output/onos-config-manager ./cmd/onos-config-manager
+	go build -o build/_output/onos-config ./cmd/onos-config
 
 test: deps lint vet license_check gofmt
 	go test github.com/onosproject/onos-config/pkg/...
 	go test github.com/onosproject/onos-config/cmd/...
 
 run: deps
-	go run cmd/onos-config-manager/config-manager.go
+	go run cmd/onos-config/onos-config.go
