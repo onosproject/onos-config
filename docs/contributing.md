@@ -31,7 +31,7 @@ If you have not set and exported the `GOPATH` environment variable, please do so
 export GOPATH=$(go env GOPATH)
 ```
 
-Similarly, set and export `GIT_USER` environment variable to match your github profile name:
+Similarly, set and export the `GIT_USER` environment variable to match your github profile name:
 
 ```sh
 export GIT_USER={your github profile name}
@@ -191,7 +191,7 @@ If the commit you wish to rever it a merge commit, run this:
 git revert -m 1 SHA
 ```
 
-It is is a single commit, then run the following:
+If it is a single commit, then run the following:
 
 ```sh
 # SHA is the hash of the single commit you wish to revert
