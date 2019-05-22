@@ -29,6 +29,6 @@ Feel free to join to learn what the team is up to and discuss your latest work w
 
 ## Technical Steering Team
 
-The TST meets 9 AM PST, 5 PM GMT, 6 PM CET on Wednesday every 2 weeks to discuss different topics. 
-You can find a detailed agenda and next meeting information [here](https://wiki.onosproject.org/display/ONOSST/Technical+Steering+Team).
+The technical steering team meets 9 AM PST, 5 PM GMT, 6 PM CET on Wednesday every 2 weeks to discuss different topics. 
+You can find a detailed agenda and next meeting information [on the TST Wiki](https://wiki.onosproject.org/display/ONOSST/Technical+Steering+Team).
  

@@ -105,27 +105,27 @@ STATUS: DEPLOYED
 RESOURCES:
 ==> v1/Service
 NAME                                TYPE      CLUSTER-IP    EXTERNAL-IP  PORT(S)         AGE
-jumpy-tortoise-onos-config-manager  NodePort  10.106.9.103  <none>       5150:32271/TCP  0s
+jumpy-tortoise-onos-config          NodePort  10.106.9.103  <none>       5150:32271/TCP  0s
 
 ==> v1/Deployment
 NAME                                DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-jumpy-tortoise-onos-config-manager  1        1        1           0          0s
+jumpy-tortoise-onos-config          1        1        1           0          0s
 
 ==> v1beta1/Ingress
 NAME                                        HOSTS                   ADDRESS  PORTS  AGE
-jumpy-tortoise-onos-config-manager-ingress  config.onosproject.org  80, 443  0s
+jumpy-tortoise-onos-config-ingress          config.onosproject.org  80, 443  0s
 
 ==> v1/Pod(related)
 NAME                                                 READY  STATUS             RESTARTS  AGE
-jumpy-tortoise-onos-config-manager-655964cbf5-tkcfb  0/1    ContainerCreating  0         0s
+jumpy-tortoise-onos-config-655964cbf5-tkcfb          0/1    ContainerCreating  0         0s
 
 ==> v1/Secret
 NAME                                       TYPE    DATA  AGE
-jumpy-tortoise-onos-config-manager-secret  Opaque  4     0s
+jumpy-tortoise-onos-config-secret          Opaque  4     0s
 
 ==> v1/ConfigMap
 NAME                                       DATA  AGE
-jumpy-tortoise-onos-config-manager-config  5     0s
+jumpy-tortoise-onos-config-config          5     0s
 ```
 
 `helm install` assigns a unique name to the chart and displays all the k8s resources that were
@@ -135,7 +135,7 @@ created by it. To list the charts that are installed and view their statuses, ru
 > helm ls
 NAME          	REVISION	UPDATED                 	STATUS  	CHART                    	APP VERSION	NAMESPACE
 ...
-jumpy-tortoise	1       	Tue May 14 18:56:39 2019	DEPLOYED	onos-config-manager-0.0.1	0.0.1      	default
+jumpy-tortoise	1       	Tue May 14 18:56:39 2019	DEPLOYED	onos-config-0.0.1	        0.0.1      	default
 ```
 
 To view the pods that are deployed, run `kubectl get pods`:
@@ -144,14 +144,14 @@ To view the pods that are deployed, run `kubectl get pods`:
 > kubectl get pods
 NAME                                                  READY   STATUS    RESTARTS   AGE
 ...
-jumpy-tortoise-onos-config-manager-655964cbf5-tkcfb   1/1     Running   0          52s
+jumpy-tortoise-onos-config-655964cbf5-tkcfb           1/1     Running   0          52s
 ```
 
 You can view more detailed information about the pod and other resources by running `kubectl describe`:
 
 ```bash
-> kubectl describe pod jumpy-tortoise-onos-config-manager-655964cbf5-tkcfb
-Name:               jumpy-tortoise-onos-config-manager-655964cbf5-tkcfb
+> kubectl describe pod jumpy-tortoise-onos-config-655964cbf5-tkcfb
+Name:               jumpy-tortoise-onos-config-655964cbf5-tkcfb
 Namespace:          default
 Priority:           0
 PriorityClassName:  <none>
@@ -167,7 +167,7 @@ To view the services, run `kubectl get services`:
 > kubectl get svc
 NAME                                        DATA   AGE
 ...
-jumpy-tortoise-onos-config-manager-config   5      86s
+jumpy-tortoise-onos-config-config           5      86s
 ```
 
 The application's configuration is stored in a `ConfigMap` which can be viewed by running
@@ -176,7 +176,7 @@ The application's configuration is stored in a `ConfigMap` which can be viewed b
 > kubectl get cm
 NAME                                        DATA   AGE
 ...
-jumpy-tortoise-onos-config-manager-config   5      97s
+jumpy-tortoise-onos-config-config           5      97s
 ```
 
 And TLS keys and certs are stored in a `Secret` resource:
@@ -185,7 +185,7 @@ And TLS keys and certs are stored in a `Secret` resource:
 > kubectl get secrets
 NAME                                        TYPE                                  DATA   AGE
 ...
-jumpy-tortoise-onos-config-manager-secret   Opaque                                4      109s
+jumpy-tortoise-onos-config-secret           Opaque                                4      109s
 ```
 
 #### Ingress
@@ -217,7 +217,7 @@ the ingress IP is typically read from the `ingress` resource:
 ```bash
 > kubectl get ingress
 NAME                                      HOSTS                    ADDRESS     PORTS     AGE
-onos-config-onos-config-manager-ingress   config.onosproject.org   10.0.2.15   80, 443   76m
+onos-config-onos-config-ingress           config.onosproject.org   10.0.2.15   80, 443   76m
 ```
 
 However, since Minikube runs in a VM, the ingress must be reached through the Minikube VM's IP
@@ -233,7 +233,7 @@ metadata:
 ```bash
 > kubectl get ingress
 NAME                                      HOSTS                    ADDRESS     PORTS     AGE
-onos-config-onos-config-manager-ingress   config.onosproject.org   10.0.2.15   80, 443   76m
+onos-config-onos-config-ingress           config.onosproject.org   10.0.2.15   80, 443   76m
 ```
 
 Once you've located the ingress IP address and configured `/etc/hosts`, you can connect to
@@ -315,8 +315,8 @@ You can verify that the onos-config pods were connected to the device by checkin
 ```bash
 > kubectl get pods
 device-1-device-simulator                          1/1     Running       0          86s
-onos-config-onos-config-manager-6f476ddc95-rgpgs   1/1     Running       0          16s
-> kubectl logs onos-config-onos-config-manager-6f476ddc95-rgpgs
+onos-config-onos-config-6f476ddc95-rgpgs           1/1     Running       0          16s
+> kubectl logs onos-config-onos-config-6f476ddc95-rgpgs
 2019/05/15 07:07:36 Creating Manager
 2019/05/15 07:07:36 Starting Manager
 2019/05/15 07:07:36 Connecting to device-1-device-simulator:10161 over gNMI
@@ -363,7 +363,7 @@ Once you have modified the device, you can verify that onos-config handled the u
 by checking the onos-config logs:
 
 ```bash
-> kubectl logs onos-config-onos-config-manager-6f476ddc95-rgpgs
+> kubectl logs onos-config-onos-config-6f476ddc95-rgpgs
 ...
 2019/05/15 07:07:36 device-1-device-simulator:10161 Connected over gNMI
 2019/05/15 07:07:36 device-1-device-simulator:10161 Capabilities supported_models:<name:"openconfig-interfaces" organization:"OpenConfig working group" version:"2.0.0" > supported_models:<name:"openconfig-openflow" organization:"OpenConfig working group" version:"0.1.0" > supported_models:<name:"openconfig-platform" organization:"OpenConfig working group" version:"0.5.0" > supported_models:<name:"openconfig-system" organization:"OpenConfig working group" version:"0.2.0" > supported_encodings:JSON supported_encodings:JSON_IETF gNMI_version:"0.7.0"

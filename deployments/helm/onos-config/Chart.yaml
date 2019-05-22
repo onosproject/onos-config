@@ -1,5 +1,5 @@
 apiVersion: v1alpha1
-name: onos-config-manager
+name: onos-config
 version: 0.0.1
 kubeVersion: ">=1.12.0"
 appVersion: 0.0.1
@@ -9,7 +9,7 @@ keywords:
   - sdn
 home: https://onosproject.org
 maintainers:
-  - name: tomakazi
+  - name: tomikazi
     email: tom@opennetworking.org
   - name: kuujo
     email: jordan@opennetworking.org

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /*
-Package main of cmd/onos-config-manager is the main entry point to the system.
+Package main of cmd/onos-config is the main entry point to the system.
 
 It connects to devices through a Southbound gNMI interface and
 gives a gNMI interface northbound for other systems to connect to, and an
@@ -79,7 +79,7 @@ func main() {
 	flag.Parse()
 	var err error
 
-	log.Info("onos-config-manager started")
+	log.Info("onos-config started")
 
 	topoChannel := make(chan events.Event, 10)
 

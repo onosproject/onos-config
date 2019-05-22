@@ -39,19 +39,19 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           command:
-            - onos-config-manager
+            - onos-config
           args:
-            - "-caPath=/etc/onos-config-manager/certs/tls.cacrt"
-            - "-keyPath=/etc/onos-config-manager/certs/tls.key"
-            - "-certPath=/etc/onos-config-manager/certs/tls.crt"
-            - "-configStore=/etc/onos-config-manager/test-configs/configStore-sample.json"
-            - "-changeStore=/etc/onos-config-manager/test-configs/changeStore-sample.json"
+            - "-caPath=/etc/onos-config/certs/tls.cacrt"
+            - "-keyPath=/etc/onos-config/certs/tls.key"
+            - "-certPath=/etc/onos-config/certs/tls.crt"
+            - "-configStore=/etc/onos-config/test-configs/configStore-sample.json"
+            - "-changeStore=/etc/onos-config/test-configs/changeStore-sample.json"
             {{ if .Values.devices }}
-            - "-deviceStore=/etc/onos-config-manager/test-configs/deviceStore.json"
+            - "-deviceStore=/etc/onos-config/test-configs/deviceStore.json"
             {{ else }}
-            - "-deviceStore=/etc/onos-config-manager/test-configs/deviceStore-sample.json"
+            - "-deviceStore=/etc/onos-config/test-configs/deviceStore-sample.json"
             {{ end }}
-            - "-networkStore=/etc/onos-config-manager/test-configs/networkStore-sample.json"
+            - "-networkStore=/etc/onos-config/test-configs/networkStore-sample.json"
           ports:
             - name: grpc
               containerPort: 5150
@@ -69,10 +69,10 @@ spec:
           # TODO: This should be removed when stores are added!
           volumeMounts:
             - name: test-config
-              mountPath: /etc/onos-config-manager/test-configs
+              mountPath: /etc/onos-config/test-configs
               readOnly: true
             - name: secret
-              mountPath: /etc/onos-config-manager/certs
+              mountPath: /etc/onos-config/certs
               readOnly: true
       {{- if .Values.image.pullSecrets }}
       imagePullSecrets:
