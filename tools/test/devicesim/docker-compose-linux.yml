@@ -1,7 +1,7 @@
 version: "3"
 services:
   devicesim1:
-    image: devicesim:latest
+    image: onosproject/devicesim:latest
     environment:
     - HOSTNAME=device1.opennetworking.org
     - SIM_MODE=1  
@@ -14,7 +14,7 @@ services:
     labels:
       description: "gNMI Simulator Device 1"
   devicesim2:
-    image: devicesim:latest
+    image: onosproject/devicesim:latest
     environment:
       - HOSTNAME=device2.opennetworking.org
       - SIM_MODE=1  
@@ -27,7 +27,7 @@ services:
     labels:
       description: "gNMI Simulator Device 2"
   devicesim3:
-    image: devicesim:latest
+    image: onosproject/devicesim:latest
     environment:
       - HOSTNAME=device3.opennetworking.org
       - SIM_MODE=1  
