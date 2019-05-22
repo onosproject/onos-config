@@ -37,15 +37,15 @@ provided as additional layers:
    * These interfaces are already accepted standards and are well-defined, low-profile interfaces 
      with support for transaction semantics.
    * YANG models that will be exposed as part of the NB API are yet to be determined (or defined).
-* Enhanced northbound API will be a gRPC service providing access to enhanced functionality.
+* Enhanced northbound API will be a gRPC service providing access to administrative functionality.
    * Applications can navigate the change-log and roll-back various changes as they were 
      previously submitted via gNMI
-   * This interface is not subject to backward compatibility constraints.  
 * Southbound API for the subsystem will be gNMI and gNOI.
    * This will allow direct use with Stratum-compliant switches without requiring an adaptation layer.
    * Adapters can be created for devices that do not directly support gNMI/gNOI interfaces. 
      Such adapters can be deployed either as proxy agents or potentially can be hosted on the devices themselves.
 * Diagnostic gRPC service will allow for inspection of internal state using various remote tools.
+   * This interface is not subject to backward compatibility constraints.  
 * The subsystem will be designed as a separate entity to allow its use with the existing 
   ONOS 2.0 architecture and to fit with the NG ONOS architecture.
 
