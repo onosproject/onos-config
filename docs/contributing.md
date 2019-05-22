@@ -163,7 +163,7 @@ For mass automated fixups (e.g. automated doc formatting), use one or more
 commits for the changes to tooling and a final commit to apply the fixup en
 masse. This makes reviews easier.
 
-### 8. Reverting a Commit
+### How to Revert a Commit
 
 In case you wish to revert a commit, use the following instructions.
 
@@ -182,30 +182,31 @@ git fetch upstream
 git rebase upstream/master
 ```
 
-#### 2. If the commit you wish to revert is a:
+#### 2. Revert the prior commit(s)
 
-- merge commit:
+If the commit you wish to rever it a merge commit, run this:
 
 ```sh
 # SHA is the hash of the merge commit you wish to revert
 git revert -m 1 SHA
 ```
 
-- single commit:
+It is is a single commit, then run the following:
 
 ```sh
 # SHA is the hash of the single commit you wish to revert
 git revert SHA
 ```
 
-3. This will create a new commit reverting the changes.
-Push this new commit to your remote.
+The above will create a new commit reverting the changes.
+
+#### 3. Push this new commit to your remote.
 
 ```sh
 git push ${your_remote_name} myrevert
 ```
 
-4. [Create a pull request](#7-create-a-pull-request) using this branch.
+#### 4. [Create a pull request](#7-create-a-pull-request) using this branch.
 
 ## Community Guidelines
 

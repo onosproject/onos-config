@@ -3,3 +3,4 @@ cmd/southbound_main/southbound_main
 pkg/store/testout
 vendor
 build/_output
+*.DS_Store
