@@ -144,19 +144,20 @@ functionality.
 ### List Network Changes
 For example, to list all network changes submitted through the northbound gNMI interface run:
 ```bash
-go run github.com/onosproject/onos-config/cmd/admin/net-changes \
-    -certPath tools/test/devicesim/certs/client1.crt \
-    -keyPath tools/test/devicesim/certs/client1.key
+go run github.com/onosproject/onos-config/cmd/admin/net-changes
 ```
+> While this tool (and all the other utilities listed below) has the option to
+> specify a -keyPath and -certPath for a client certificate to make the connection
+> to the gRPC admin interface, those arguments can be omitted at runtime, leaving
+> the internal client key and cert at 
+> [default-certificates.go](../pkg/certs/default-certificates.go) to be used.
 
 ### Rollback Network Change
 To rollback a network use the rollback admin tool. This will rollback the last network
 change unless a specific change is given with the **-changename** parameter
 ```bash
 go run github.com/onosproject/onos-config/cmd/admin/rollback \
-    -changename Change-VgUAZI928B644v/2XQ0n24x0SjA= \
-    -certPath tools/test/devicesim/certs/client1.crt \
-    -keyPath tools/test/devicesim/certs/client1.key
+    -changename Change-VgUAZI928B644v/2XQ0n24x0SjA=
 ```
 
 ## Diagnostic Tools
@@ -169,18 +170,14 @@ to any backward compatibility guarantees.
 For example, run the following to list all changes submitted through the northbound gNMI 
 as they are tracked by the system broken-up into device specific batches:
 ```bash
-go run github.com/onosproject/onos-config/cmd/diags/changes \
-    -certPath tools/test/devicesim/certs/client1.crt \
-    -keyPath tools/test/devicesim/certs/client1.key
+go run github.com/onosproject/onos-config/cmd/diags/changes
 ```
 > For a specific change use the -changeid argument
 
 
 To get details from the Configuration store use
 ```bash
-go run github.com/onosproject/onos-config/cmd/diags/configs \
-    -certPath tools/test/devicesim/certs/client1.crt \
-    -keyPath tools/test/devicesim/certs/client1.key
+go run github.com/onosproject/onos-config/cmd/diags/configs
 ```
 > For the configuration for a specific device use the -devicename argument
 
@@ -188,9 +185,7 @@ go run github.com/onosproject/onos-config/cmd/diags/configs \
 To get the aggregate configuration of a device from the store use
 ```bash
 go run github.com/onosproject/onos-config/cmd/diags/devicetree \
-    -devicename localhost:10161 \
-    -certPath tools/test/devicesim/certs/client1.crt \
-    -keyPath tools/test/devicesim/certs/client1.key
+    -devicename localhost:10161
 ```
 
 > Of course, there will be many more such commands available in the near future
