@@ -65,8 +65,16 @@ notification: <
     >
   >
 >
-
 ```
+
+## Run the Subscribe command
+```bash
+gnmi_cli -address localhost:10161 \
+       -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+       -timeout 5s -alsologtostderr \
+       -client_crt certs/client1.crt -client_key certs/client1.key -ca_crt certs/onfca.crt
+```
+> **Note: this returns ```rpc error: code = Unimplemented desc = Subscribe is not implemented.``` and is the subject of Issue #212**
 
 ## Troubleshooting
 
