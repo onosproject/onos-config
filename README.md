@@ -1,4 +1,7 @@
 # onos-config
+[![Build Status](https://travis-ci.org/onosproject/onos-config.svg?branch=master)](https://travis-ci.org/onosproject/onos-config)
+[![Go Report Card](https://goreportcard.com/badge/github.com/onosproject/onos-config)](https://goreportcard.com/report/github.com/onosproject/onos-config)
+
 ONOS Configuration subsystem built using the µONOS architecture
 
 ## Design Objectives
