@@ -109,7 +109,7 @@ please note the `1` as subscription mode to indicate to send the response once:
 ```bash
 gnmi_cli -address localhost:5150 \
     -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
-    -timeout 5s alsologtostderr \
+    -timeout 5s -alsologtostderr \
     -client_crt tools/test/devicesim/certs/client1.crt \
     -client_key tools/test/devicesim/certs/client1.key \
     -ca_crt tools/test/devicesim/certs/onfca.crt
