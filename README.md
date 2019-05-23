@@ -1,6 +1,7 @@
 # onos-config
 [![Build Status](https://travis-ci.org/onosproject/onos-config.svg?branch=master)](https://travis-ci.org/onosproject/onos-config)
 [![Go Report Card](https://goreportcard.com/badge/github.com/onosproject/onos-config)](https://goreportcard.com/report/github.com/onosproject/onos-config)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/gojp/goreportcard/blob/master/LICENSE)
 
 ONOS Configuration subsystem built using the µONOS architecture
 
