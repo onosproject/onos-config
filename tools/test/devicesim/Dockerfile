@@ -1,5 +1,5 @@
 FROM debian:stretch
-MAINTAINER Sean Condon <sean@opennetworking.org>, Adib Rastegarnia <adib.rastegarnia@gmail.com>
+LABEL maintainer="Sean Condon <sean@opennetworking.org>, Adib Rastegarnia <adib@opennetworking.org> "
 LABEL description="Builds a gNMI/gNOI simulator on a Debian distribution"
 
 RUN apt-get update \
@@ -39,7 +39,7 @@ RUN mkdir -p $GOPATH \
       github.com/google/gnxi/gnmi_capabilities \
       github.com/google/gnxi/gnmi_get \
       github.com/google/gnxi/gnmi_set \
-      github.com/google/gnxi/gnmi_target \
+      github.com/onosproject/onos-config/tools/test/devicesim/gnmi_target \
       github.com/openconfig/gnmi/cmd/gnmi_cli \
       github.com/google/gnxi/gnoi_target \ 
       github.com/google/gnxi/gnoi_cert 
@@ -49,7 +49,7 @@ RUN go install -v \
       github.com/google/gnxi/gnmi_capabilities \
       github.com/google/gnxi/gnmi_get \
       github.com/google/gnxi/gnmi_set \
-      github.com/google/gnxi/gnmi_target \
+      github.com/onosproject/onos-config/tools/test/devicesim/gnmi_target\
       github.com/openconfig/gnmi/cmd/gnmi_cli \
       github.com/google/gnxi/gnoi_target \ 
       github.com/google/gnxi/gnoi_cert
