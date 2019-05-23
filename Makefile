@@ -3,11 +3,12 @@ export CGO_ENABLED=0
 .PHONY: build
 
 ONOS_CONFIG_VERSION := "latest"
+ONOS_BUILD_VERSION := "latest"
 
 all: image
 
 image: # @HELP build onos-config image
-	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:0.3 protos build
+	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:${ONOS_BUILD_VERSION} protos build
 	docker build . -f build/onos-config/Dockerfile -t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
 deps: # @HELP ensure that the required dependencies are in place
