@@ -13,6 +13,7 @@ image: # @HELP build onos-config image
 
 deps: # @HELP ensure that the required dependencies are in place
 	dep ensure -v
+	bash -c "diff -u <(echo -n) <(git diff Gopkg.lock)"
 
 lint: # @HELP run the linters for Go source code
 	golint -set_exit_status github.com/onosproject/onos-config/pkg/...
