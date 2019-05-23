@@ -31,8 +31,12 @@ func (s *server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, 
 		return nil, status.Error(codes.PermissionDenied, msg)
 	}
 	log.Infof("allowed a Set request: %v", msg)
+<<<<<<< HEAD
 	setResponse, err := s.Server.Set(ctx, req)
 	// Update gnmi target config store by retrieving it from the Server
 	s.configStruct, _ = s.Server.GetConfig()
 	return setResponse, err
+=======
+	return s.Server.Set(ctx, req)
+>>>>>>> Implementing subscribe ONCE for devsim - issue #212
 }

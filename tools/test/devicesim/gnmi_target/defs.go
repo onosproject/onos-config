@@ -17,7 +17,11 @@ package main
 import (
 	"flag"
 
+<<<<<<< HEAD
 	"github.com/onosproject/onos-config/tools/test/devicesim/gnmi"
+=======
+	"github.com/google/gnxi/gnmi"
+>>>>>>> Implementing subscribe ONCE for devsim - issue #212
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/ygot/ygot"
 )
