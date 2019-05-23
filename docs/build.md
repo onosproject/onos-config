@@ -23,7 +23,7 @@ To build with the build image, mount the onos-config root to the container
 and pass the desired argument to the Makefile entrypoint of the developer image as follows
 (from the onos-config directory of your development machine):
 ```bash
-docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build build
+docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable build
 ```
 
 See [run.md](run.md) for details on how to run the applications.

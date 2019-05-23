@@ -3,7 +3,7 @@ export CGO_ENABLED=0
 .PHONY: build
 
 ONOS_CONFIG_VERSION := "latest"
-ONOS_BUILD_VERSION := "latest"
+ONOS_BUILD_VERSION := "stable"
 
 all: image
 
