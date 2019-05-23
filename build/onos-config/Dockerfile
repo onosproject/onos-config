@@ -1,4 +1,4 @@
-FROM onosproject/onos-config-build as builder
+FROM onosproject/onos-config-build:stable as builder
 COPY . /go/src/github.com/onosproject/onos-config
 RUN cd /go/src/github.com/onosproject/onos-config && make build
 
