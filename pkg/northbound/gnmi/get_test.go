@@ -66,9 +66,11 @@ func Test_getNoPathElems(t *testing.T) {
 	result, err := server.Get(nil, &request)
 	assert.NilError(t, err, "Unexpected error")
 
-	assert.Equal(t, len(result.Notification), 1)
+	assert.Equal(t, len(result.Notification), 2)
 
-	assert.Equal(t, len(result.Notification[0].Update), 2)
+	assert.Equal(t, len(result.Notification[0].Update), 1)
+
+	assert.Equal(t, len(result.Notification[1].Update), 1)
 }
 
 // Test_getAllDevices is where a wildcard is used for target - path is ignored
@@ -139,18 +141,19 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 	result, err := server.Get(nil, &request)
 	assert.NilError(t, err, "Unexpected error")
 
-	assert.Equal(t, len(result.Notification), 1)
+	assert.Equal(t, len(result.Notification), 2)
 
-	assert.Equal(t, len(result.Notification[0].Update), 2)
+	assert.Equal(t, len(result.Notification[0].Update), 1)
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Prefix),
 		"/test1:cont1a/cont2a")
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/leaf2a")
 	assert.Equal(t, utils.StrVal(result.Notification[0].Update[0].Val), "13")
-	assert.Equal(t, utils.StrPath(result.Notification[0].Update[1].Path),
+
+	assert.Equal(t, utils.StrPath(result.Notification[1].Update[0].Path),
 		"/leaf2b")
-	assert.Equal(t, utils.StrVal(result.Notification[0].Update[1].Val), "3.14159")
+	assert.Equal(t, utils.StrVal(result.Notification[1].Update[0].Val), "3.14159")
 }
 
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
