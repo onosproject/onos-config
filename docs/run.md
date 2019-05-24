@@ -106,21 +106,6 @@ gnmi_cli -address localhost:5150 -set \
 > and the config is forwarded down to the southbound layer only if a device is registered
 > in the topocache (currently in the deviceStore)
 
-## Northbound Subscribe Once Request via gNMI
-Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as in the example below, 
-please note the `1` as subscription mode to indicate to send the response once:
-
-```bash
-gnmi_cli -address localhost:5150 \
-    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
-    -timeout 5s -alsologtostderr \
-    -client_crt tools/test/devicesim/certs/client1.crt \
-    -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt
-```
-
-> This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
-
 ## Northbound Subscribe Request for Stream Notifications via gNMI
 Similarly, to make a gNMI Subscribe request for streaming, use the `gnmi_cli` command as in the example below, 
 please note the `0` as subscription mode to indicate streaming:
@@ -136,6 +121,36 @@ gnmi_cli -address localhost:5150 \
 
 > This command will block until there is a change at the requested value that gets
 > propagated to the underlying stream. Also as per `gnmi_cli` behaviour the updates get printed twice. 
+
+## Northbound Subscribe Once Request via gNMI
+Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as in the example below, 
+please note the `1` as subscription mode to indicate to send the response once:
+
+```bash
+gnmi_cli -address localhost:5150 \
+    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -timeout 5s -alsologtostderr \
+    -client_crt tools/test/devicesim/certs/client1.crt \
+    -client_key tools/test/devicesim/certs/client1.key \
+    -ca_crt tools/test/devicesim/certs/onfca.crt
+```
+
+> This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
+
+## Northbound Subscribe Poll Request via gNMI
+Similarly, to make a gNMI Subscribe POLL request, use the `gnmi_cli` command as in the example below, 
+please note the `2` as subscription mode to indicate to send the response in a polling way every `polling_interval` specified seconds:
+
+```bash
+gnmi_cli -address localhost:5150 \
+     -proto "subscribe:<mode: 2, prefix:<>, subscription:<sample_interval: 5, path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+     -timeout 5s \
+     -polling_interval 5s \
+     -client_crt tools/test/devicesim/certs/client1.crt \
+     -client_key tools/test/devicesim/certs/client1.key \
+     -ca_crt tools/test/devicesim/certs/onfca.crt
+```
+> This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
 
 ## Administrative Tools
 The project provides a number of administrative tools for remotely accessing the enhanced northbound
