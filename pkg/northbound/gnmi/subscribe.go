@@ -35,6 +35,7 @@ var (
 // Subscribe implements gNMI Subscribe
 func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	updateChan := make(chan *gnmi.Update)
+	var subscribe *gnmi.SubscriptionList
 	//this for loop handles each subscribe request coming into the server
 	for {
 		in, err := stream.Recv()
@@ -48,78 +49,89 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 			return err
 		}
 
-		subscribe := in.GetSubscribe()
-		mode := subscribe.Mode
+		var mode gnmi.SubscriptionList_Mode
+
+		if in.GetPoll() != nil {
+			mode = gnmi.SubscriptionList_POLL
+		} else {
+			subscribe = in.GetSubscribe()
+			mode = subscribe.Mode
+		}
 		stopped := make(chan struct{})
-		//If the subscription mode is ONCE we immediately start a routine to collect the data
-		if mode == gnmi.SubscriptionList_ONCE {
+		//If the subscription mode is ONCE or POLL we immediately start a routine to collect the data
+		if mode != gnmi.SubscriptionList_STREAM {
 			go collector(updateChan, subscribe)
 		}
-		//TODO for POLL type spawn a routine that periodically checks for updates
+
 		//This generate a subscribe response for one or more updates on the channel.
 		// for Subscription_once messages also also closes the channel.
-		go func() {
-			for update := range updateChan {
-				updateArray := make([]*gnmi.Update, 0)
-				updateArray = append(updateArray, update)
-				notification := &gnmi.Notification{
-					Timestamp: time.Now().Unix(),
-					Update:    updateArray,
-				}
-				responseUpdate := &gnmi.SubscribeResponse_Update{
-					Update: notification,
-				}
-				response := &gnmi.SubscribeResponse{
-					Response: responseUpdate,
-				}
-				sendResponse(response, stream)
-				//For stream and Poll we also send a Sync Response
-				//TODO make sure that for stream sending this every time adheres to spec.
-				// see section #3.5.1.4 of gnmi-specification.md
-				if mode != gnmi.SubscriptionList_ONCE {
-					responseSync := &gnmi.SubscribeResponse_SyncResponse{
-						SyncResponse: true,
-					}
-					response = &gnmi.SubscribeResponse{
-						Response: responseSync,
-					}
-					sendResponse(response, stream)
-				} else {
-					//If the subscription mode is ONCE we read from the channel, build a response and issue it
-					stopped <- struct{}{}
-				}
-			}
-		}()
+		go listenForUpdates(updateChan, stream, mode, stopped)
 		//If the subscription mode is ONCE the channel need to be closed immediately
 		if mode == gnmi.SubscriptionList_ONCE {
 			<-stopped
 			return nil
-		}
-		//for each path we pair it to the the channel.
-		subs := subscribe.Subscription
-		for _, sub := range subs {
-			PathToChannels[sub.Path] = updateChan
+		} else if mode == gnmi.SubscriptionList_STREAM {
+			//for each path we pair it to the the channel.
+			subs := subscribe.Subscription
+			for _, sub := range subs {
+				PathToChannels[sub.Path] = updateChan
+			}
 		}
 	}
 
+}
+
+func listenForUpdates(updateChan chan *gnmi.Update, stream gnmi.GNMI_SubscribeServer,
+	mode gnmi.SubscriptionList_Mode, stopped chan struct{}) {
+	for update := range updateChan {
+		updateArray := make([]*gnmi.Update, 0)
+		updateArray = append(updateArray, update)
+		notification := &gnmi.Notification{
+			Timestamp: time.Now().Unix(),
+			Update:    updateArray,
+		}
+		responseUpdate := &gnmi.SubscribeResponse_Update{
+			Update: notification,
+		}
+		response := &gnmi.SubscribeResponse{
+			Response: responseUpdate,
+		}
+		sendResponse(response, stream)
+		//For stream and Poll we also send a Sync Response
+		//TODO make sure that for stream sending this every time adheres to spec.
+		// see section #3.5.1.4 of gnmi-specification.md
+		if mode != gnmi.SubscriptionList_ONCE {
+			responseSync := &gnmi.SubscribeResponse_SyncResponse{
+				SyncResponse: true,
+			}
+			response = &gnmi.SubscribeResponse{
+				Response: responseSync,
+			}
+			sendResponse(response, stream)
+		} else {
+			//If the subscription mode is ONCE we read from the channel, build a response and issue it
+			stopped <- struct{}{}
+		}
+	}
 }
 
 func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeServer) {
 	log.Println("Sending SubscribeResponse out to gNMI client", response)
 	err := stream.Send(response)
 	if err != nil {
-		//TODO remove channel registrations
-		log.Println("Error in sending response to client")
+		//TODO propagate error
+		log.Println("Error in sending response to client", err)
 	}
 }
 
-func collector(ch chan *gnmi.Update, request *gnmi.SubscriptionList) {
+func collector(updateChan chan<- *gnmi.Update, request *gnmi.SubscriptionList) {
 	for _, sub := range request.Subscription {
 		update, err := getUpdate(request.Prefix, sub.Path)
 		if err != nil {
-			log.Println("Error while collecting data for subscribe once", err)
+			//TODO propagate error
+			log.Println("Error while collecting data for subscribe once or poll", err)
 		}
-		ch <- update
+		updateChan <- update
 	}
 }
 
@@ -132,12 +144,12 @@ func broadcastNotification() {
 	for update := range changesChan {
 		target, changeInternal := getChange(update, mgr)
 		//For every channel we cycle over the paths of the config change and if somebody is subscribed to it we send out
-		for subscriptionPath, ch := range PathToChannels {
+		for subscriptionPath, subscriptionChan := range PathToChannels {
 			for _, changeValue := range changeInternal.Config {
 				//FIXME this might prove expensive, find better way to store subscriptionPath and target in channels map
 				subscriptionPathStr := utils.StrPath(subscriptionPath)
 				if subscriptionPath.Target == target && strings.HasPrefix(changeValue.Path, subscriptionPathStr) {
-					sendUpdate(subscriptionPath, changeValue.Value, ch)
+					sendUpdate(subscriptionChan, subscriptionPath, changeValue.Value)
 				}
 			}
 		}
@@ -152,7 +164,7 @@ func getChange(update events.Event, mgr *manager.Manager) (string, *change.Chang
 	return target, changeInternal
 }
 
-func sendUpdate(path *gnmi.Path, value string, ch chan<- *gnmi.Update) {
+func sendUpdate(updateChan chan<- *gnmi.Update, path *gnmi.Path, value string) {
 	typedValue := gnmi.TypedValue_StringVal{StringVal: value}
 	valueGnmi := &gnmi.TypedValue{Value: &typedValue}
 
@@ -160,5 +172,5 @@ func sendUpdate(path *gnmi.Path, value string, ch chan<- *gnmi.Update) {
 		Path: path,
 		Val:  valueGnmi,
 	}
-	ch <- update
+	updateChan <- update
 }

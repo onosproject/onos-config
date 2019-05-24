@@ -56,7 +56,7 @@ func (m *Manager) GetNetworkConfig(target string, configname string, path string
 			filteredValues = append(filteredValues, cv)
 		}
 	}
-
+	//TODO if filteredValue is empty return error
 	return filteredValues, nil
 }
 
