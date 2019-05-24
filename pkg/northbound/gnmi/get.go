@@ -17,19 +17,17 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	"log"
-	"time"
-
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"log"
+	"time"
 )
 
 // Get implements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
-
-	updates := make([]*gnmi.Update, 0)
+	notifications := make([]*gnmi.Notification, 0)
 
 	prefix := req.GetPrefix()
 
@@ -38,7 +36,13 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		if err != nil {
 			return nil, err
 		}
-		updates = append(updates, update)
+		notification := &gnmi.Notification{
+			Timestamp: time.Now().Unix(),
+			Update:    []*gnmi.Update{update},
+			Prefix:    prefix,
+		}
+
+		notifications = append(notifications, notification)
 	}
 	// Alternatively - if there's only the prefix
 	if len(req.GetPath()) == 0 {
@@ -46,16 +50,15 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		if err != nil {
 			return nil, err
 		}
-		updates = append(updates, update)
+		notification := &gnmi.Notification{
+			Timestamp: time.Now().Unix(),
+			Update:    []*gnmi.Update{update},
+			Prefix:    prefix,
+		}
+
+		notifications = append(notifications, notification)
 	}
 
-	notification := &gnmi.Notification{
-		Timestamp: time.Now().Unix(),
-		Update:    updates,
-		Prefix:    prefix,
-	}
-	notifications := make([]*gnmi.Notification, 0)
-	notifications = append(notifications, notification)
 	response := gnmi.GetResponse{
 		Notification: notifications,
 	}
