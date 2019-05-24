@@ -24,11 +24,11 @@ If you instead would like to add the calendar to your personal Google Calendar, 
 ## Daily Stand-up 
 
 The onos-config project team holds a short stand-up every day at 9 AM PST, 5 PM GMT, 6 PM CET. 
-Feel free to join to learn what the team is up to and discuss your latest work with us.  
+Feel free to join to learn what the team is up to and discuss your latest work with us.
 [meeting link](https://meet.google.com/pcn-wbei-utz) 
 
 ## Technical Steering Team
 
-The technical steering team meets 9 AM PST, 5 PM GMT, 6 PM CET on Wednesday every 2 weeks to discuss different topics. 
+The technical steering team has PUBLIC and RECORDED meetings at 9 AM PST, 5 PM GMT, 6 PM CET on Wednesday every 2 weeks to discuss different topics. 
 You can find a detailed agenda and next meeting information [on the TST Wiki](https://wiki.onosproject.org/display/ONOSST/Technical+Steering+Team).
  

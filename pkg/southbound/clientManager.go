@@ -30,7 +30,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/openconfig/gnmi/client"
-	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
@@ -85,7 +84,8 @@ func GetTarget(key Key) (*Target, error) {
 //TODO lock channel to allow one request to device at each time
 func (target *Target) ConnectTarget(ctx context.Context, device topocache.Device) (Key, error) {
 	dest, key := createDestination(device)
-	c, err := gclient.New(ctx, *dest)
+	c, err := GnmiClientFactory(ctx, *dest)
+
 	//c.handler := client.NotificationHandler{}
 	if err != nil {
 		return Key{}, fmt.Errorf("could not create a gNMI client: %v", err)
@@ -136,7 +136,7 @@ func (target *Target) CapabilitiesWithString(ctx context.Context, request string
 
 // Capabilities get capabilities according to a formatted request
 func (target *Target) Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
-	response, err := target.Clt.(*gclient.Client).Capabilities(ctx, request)
+	response, err := target.Clt.Capabilities(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Capabilities(%q): %v", request.String(), err)
 	}
@@ -158,7 +158,7 @@ func (target *Target) GetWithString(ctx context.Context, request string) (*gpb.G
 
 // Get can make a get request according to a formatted request
 func (target *Target) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error) {
-	response, err := target.Clt.(*gclient.Client).Get(ctx, request)
+	response, err := target.Clt.Get(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Get(%q) : %v", request.String(), err)
 	}
@@ -181,7 +181,7 @@ func (target *Target) SetWithString(ctx context.Context, request string) (*gpb.S
 
 // Set can make a set request according to a formatted request
 func (target *Target) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.SetResponse, error) {
-	response, err := target.Clt.(*gclient.Client).Set(ctx, request)
+	response, err := target.Clt.Set(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Set(%q) : %v", request.String(), err)
 	}
@@ -205,13 +205,14 @@ func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeReque
 	q.TLS = target.Destination.TLS
 	q.NotificationHandler = handler
 	//TODO revisit this. is this subscribing twice ?
-	c := client.New()
+	c := GnmiCacheClientFactory()
+
 	err = c.Subscribe(ctx, q, "")
 	if err != nil {
 		return fmt.Errorf("could not create a gNMI for subscription: %v", err)
 	}
-	return target.Clt.(*gclient.Client).Subscribe(ctx, q)
 
+	return target.Clt.Subscribe(ctx, q)
 }
 
 // NewSubscribeRequest returns a SubscribeRequest for the given paths
