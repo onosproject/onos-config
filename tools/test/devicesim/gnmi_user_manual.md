@@ -33,7 +33,8 @@ E0416 15:23:08.099600   22997 gnmi_cli.go:180] could not create a gNMI client: D
 ```
 It indicates a transport problem - see the [troubleshooting](#deadline-exceeded) section below.
 
-### Retrieve the motd-banner
+## Run the Get Command
+The following command retrieves the motd-banner.
 ```bash
 gnmi_cli -address localhost:10162 \
        -get \
@@ -64,6 +65,40 @@ notification: <
       string_val: "Welcome to gNMI service on localhost:10162"
     >
   >
+>
+```
+
+## Run the Set command
+The following command updates the timezone-name.  
+```bash
+gnmi_cli -address localhost:10161  \
+       -set \
+       -proto "update:<path: <elem: <name: 'system'>  elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>"  \
+       -timeout 5s \
+       -alsologtostderr  \
+       -client_crt certs/client1.crt \
+       -client_key certs/client1.key \
+       -ca_crt certs/onfca.crt
+```
+
+This gives a response like this:
+```bash
+response: <
+  path: <
+    elem: <
+      name: "system"
+    >
+    elem: <
+      name: "clock"
+    >
+    elem: <
+      name: "config"
+    >
+    elem: <
+      name: "timezone-name"
+    >
+  >
+  op: UPDATE
 >
 ```
 
