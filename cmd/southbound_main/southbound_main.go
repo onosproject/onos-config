@@ -76,6 +76,9 @@ func main() {
 		Origin:            "",
 	}
 	req, err := southbound.NewSubscribeRequest(options)
+	if err != nil {
+		fmt.Println("Error ", err)
+	}
 
 	handler := func(n client.Notification) error {
 		switch v := n.(type) {

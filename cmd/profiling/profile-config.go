@@ -28,10 +28,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	"os"
 	"runtime/pprof"
 	"strconv"
+
+	log "k8s.io/klog"
+
+	"github.com/onosproject/onos-config/pkg/store/change"
 )
 
 func main() {
@@ -53,12 +56,15 @@ func main() {
 	}
 
 	change, err := change.CreateChange(changeValues, "Benchmarked Change")
+	if err != nil {
+		log.Error("Cannot create a change object from ChangeValues ", err)
+	}
 
 	err = change.IsValid()
 	if err != nil {
-		fmt.Println(fmt.Errorf("Invalid change %s", err))
+		log.Error("Invalid change ", err)
 	}
 
-	fmt.Println("Finished after ", iterations, "iterations")
+	log.Info("Finished after ", iterations, "iterations")
 
 }
