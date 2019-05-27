@@ -90,11 +90,11 @@ func (e Event) Value(name string) string {
 }
 
 // createEvent creates a new event object
-func createEvent(subject string, eventtype EventType, values map[string]string) Event {
+func createEvent(subject string, eventType EventType, values map[string]string) Event {
 	return Event{
 		subject:   subject,
 		time:      time.Now(),
-		eventtype: eventtype,
+		eventtype: eventType,
 		values:    values,
 	}
 }

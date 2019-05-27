@@ -148,6 +148,7 @@ func getDevice1Target(t *testing.T) (Target, DeviceID, context.Context) {
 	assert.NilError(t, err)
 	assert.Assert(t, target.Clt != nil)
 	assert.Equal(t, key.DeviceID, "localhost:10161")
+	assert.Assert(t, target.Ctx != nil)
 	return target, key, ctx
 }
 
@@ -304,8 +305,10 @@ func Test_Subscribe(t *testing.T) {
 	assert.NilError(t, connectError)
 
 	paths := make([][]string, 1)
-	paths[0] = make([]string, 1)
-	paths[0][0] = "/a/b/c"
+	paths[0] = make([]string, 3)
+	paths[0][0] = "a"
+	paths[0][1] = "b"
+	paths[0][2] = "c"
 	options := &SubscribeOptions{
 		UpdatesOnly:       false,
 		Prefix:            "",
@@ -317,9 +320,12 @@ func Test_Subscribe(t *testing.T) {
 		Origin:            "",
 	}
 	request, requestError := NewSubscribeRequest(options)
+	assert.Equal(t, request.GetSubscribe().Subscription[0].Path.Elem[0].Name, "a")
+	assert.Equal(t, request.GetSubscribe().Subscription[0].Path.Elem[1].Name, "b")
+	assert.Equal(t, request.GetSubscribe().Subscription[0].Path.Elem[2].Name, "c")
 	assert.NilError(t, requestError)
 
-	var handler client.NotificationHandler
+	var handler client.ProtoHandler
 	subscribeError := target.Subscribe(ctx, request, handler)
 
 	assert.NilError(t, subscribeError)

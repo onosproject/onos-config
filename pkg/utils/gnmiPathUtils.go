@@ -214,10 +214,11 @@ func StrPath(path *pb.Path) string {
 	return "/"
 }
 
-// strPathV04 handles the v0.4 gnmi and later path.Elem member.
-func strPathV04(path *pb.Path) string {
+// StrPathElem builds a human-readable form of a list of path elements.
+// e.g. /a/b/c[e=f]
+func StrPathElem(pathElem []*pb.PathElem) string {
 	b := &strings.Builder{}
-	for _, elm := range path.Elem {
+	for _, elm := range pathElem {
 		b.WriteRune('/')
 		writeSafeString(b, elm.Name, '/')
 		if len(elm.Key) > 0 {
@@ -239,6 +240,12 @@ func strPathV04(path *pb.Path) string {
 		}
 	}
 	return b.String()
+}
+
+// strPathV04 handles the v0.4 gnmi and later path.Elem member.
+func strPathV04(path *pb.Path) string {
+	pathElem := path.Elem
+	return StrPathElem(pathElem)
 }
 
 // strPathV03 handles the v0.3 gnmi and earlier path.Element member.
