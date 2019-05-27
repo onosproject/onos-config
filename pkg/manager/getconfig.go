@@ -65,7 +65,7 @@ func (m *Manager) GetAllDeviceIds() *[]string {
 	var deviceIds = make([]string, 0)
 
 	for _, v := range m.ConfigStore.Store {
-		deviceIds = append(deviceIds, v.Device)
+		deviceIds = append(deviceIds, v.Device+" ("+v.Version+")")
 	}
 	sort.Strings(deviceIds)
 

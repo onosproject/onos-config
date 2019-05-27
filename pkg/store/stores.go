@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"os"
-	"time"
 )
 
 // StoreVersion is to check compatibility of a store loaded from file
@@ -69,23 +68,22 @@ func (s *ConfigurationStore) RemoveEntry(name ConfigName) {
 }
 
 // RemoveLastChangeEntry removes a change entry from a named Configuration
-func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) {
+func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) error {
 
 	// If it has only 1 entry remove it altogether
 	if len(s.Store[name].Changes) == 1 {
 		delete(s.Store, name)
-		return
+		return nil
 	}
 
-	s.Store[name] = Configuration{
-		Name:        s.Store[name].Name,
-		Device:      s.Store[name].Device,
-		Description: s.Store[name].Description,
-		Created:     s.Store[name].Created,
-		Updated:     time.Now(),
-		User:        s.Store[name].User,
-		Changes:     s.Store[name].Changes[:len(s.Store[name].Changes)-1],
+	newConf, err := CreateConfiguration(s.Store[name].Device, s.Store[name].Version, s.Store[name].Type,
+		s.Store[name].Models, s.Store[name].Changes[:len(s.Store[name].Changes)-1])
+	if err != nil {
+		return err
 	}
+
+	s.Store[name] = *newConf
+	return nil
 }
 
 // ChangeStore is the model of the Change store

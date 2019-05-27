@@ -49,11 +49,12 @@ message Change {
 message Configuration {
     string name = 1;
     string deviceid = 2;
-    google.protobuf.Timestamp created = 3;
-    google.protobuf.Timestamp updated = 4;
-    string user = 5;
-    string desc = 6;
+    string version = 3;
+    string devicetype = 4;
+    google.protobuf.Timestamp created = 5;
+    google.protobuf.Timestamp updated = 6;
     repeated string changeIDs = 7;
+    repeated string modelData = 8; // As model@version@org
 }
 
 // ConfigDiags provides means for obtaining diagnostic information about internal system state.

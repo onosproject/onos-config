@@ -17,13 +17,12 @@ package store
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/openconfig/gnmi/proto/gnmi"
+	"gotest.tools/assert"
 	"os"
 	"strconv"
 	"testing"
-	"time"
-
-	"github.com/onosproject/onos-config/pkg/store/change"
-	"gotest.tools/assert"
 )
 
 var (
@@ -37,7 +36,7 @@ var (
 )
 
 var (
-	device1V, device2V Configuration
+	device1V, device2V *Configuration
 )
 
 const (
@@ -236,17 +235,15 @@ func TestMain(m *testing.M) {
 	changeStore[B64(change2.ID)] = change2
 	changeStore[B64(change3.ID)] = change3
 
-	device1V = Configuration{
-		Name:        "Device1Version",
-		Device:      "Device1",
-		Created:     time.Now(),
-		Updated:     time.Now(),
-		User:        "onos",
-		Description: "Configuration for Device 1",
-		Changes:     []change.ID{change1.ID, change2.ID, change3.ID},
+	device1V, err = CreateConfiguration("Device1", "1.0.0", "TestDevice",
+		[]gnmi.ModelData{gnmi.ModelData{Name: "test", Version: "1.0.0", Organization: "onosproject"}},
+		[]change.ID{change1.ID, change2.ID, change3.ID})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
 	}
 	configurationStore = make(map[ConfigName]Configuration)
-	configurationStore["Device1Version"] = device1V
+	configurationStore[device1V.Name] = *device1V
 
 	config4Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CGhi, false)
 	config4Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, ValueEmpty, true)
@@ -259,24 +256,21 @@ func TestMain(m *testing.M) {
 	}
 	changeStore[B64(change4.ID)] = change4
 
-	device2V = Configuration{
-		Name:        "Device2VersionMain",
-		Device:      "Device2",
-		Created:     time.Now(),
-		Updated:     time.Now(),
-		User:        "onos",
-		Description: "Main Configuration for Device 2",
-		Changes:     []change.ID{change1.ID, change2.ID, change4.ID},
+	device2V, err = CreateConfiguration("Device2", "1.0.0", "TestDevice",
+		[]gnmi.ModelData{gnmi.ModelData{Name: "test", Version: "1.0.0", Organization: "onosproject"}},
+		[]change.ID{change1.ID, change2.ID, change4.ID})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
 	}
-
-	configurationStore["Device2VersionMain"] = device2V
+	configurationStore[device2V.Name] = *device2V
 
 	networkStore = make([]NetworkConfiguration, 0)
 	ccs := make(map[ConfigName]change.ID)
 	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
 	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
-
-	networkStore = append(networkStore, NetworkConfiguration{Name: "nw1", User: "rocks", ConfigurationChanges: ccs})
+	nw1, err := CreateNetworkStore("nw1", ccs)
+	networkStore = append(networkStore, *nw1)
 
 	os.Exit(m.Run())
 }
@@ -287,7 +281,7 @@ func Test_device1_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device1V.Name, ConfigName("Device1Version"))
+	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
 	config := device1V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
@@ -307,7 +301,7 @@ func Test_device1_prev_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device1V.Name, ConfigName("Device1Version"))
+	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
@@ -327,7 +321,7 @@ func Test_device1_first_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device1V.Name, ConfigName("Device1Version"))
+	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
@@ -347,7 +341,7 @@ func Test_device1_invalid_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device1V.Name, ConfigName("Device1Version"))
+	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	if len(config) > 0 {
@@ -362,7 +356,7 @@ func Test_device2_version(t *testing.T) {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device2V.Name, ConfigName("Device2VersionMain"))
+	assert.Equal(t, device2V.Name, ConfigName("Device2-1.0.0"))
 
 	config := device2V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
@@ -441,6 +435,53 @@ func Test_loadChangeStoreFileError(t *testing.T) {
 	changeStore, err := LoadChangeStore("nonexistent.json")
 	assert.Assert(t, err != nil, "Expected an error when loading Change Store from invalid file")
 	assert.Equal(t, changeStore.Version, "")
+}
+
+func TestCreateConfiguration_badname(t *testing.T) {
+	_, err :=
+		CreateConfiguration("", "1.0.0", "TestDevice",
+			[]gnmi.ModelData{}, []change.ID{})
+	assert.ErrorContains(t, err, "deviceName, version and deviceType must have values", "Empty")
+
+	_, err =
+		CreateConfiguration("abc", "1.0.0", "TestDevice",
+			[]gnmi.ModelData{}, []change.ID{})
+	assert.ErrorContains(t, err, "name abc does not match pattern", "Too short")
+
+	_, err =
+		CreateConfiguration("abc???", "1.0.0", "TestDevice",
+			[]gnmi.ModelData{}, []change.ID{})
+	assert.ErrorContains(t, err, "name abc??? does not match pattern", "Illegal char")
+
+	_, err =
+		CreateConfiguration("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO",
+			"1.0.0", "TestDevice",
+			[]gnmi.ModelData{}, []change.ID{})
+	assert.ErrorContains(t, err, "name abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO does not match pattern", "Too long")
+}
+
+func TestCreateConfiguration_badversion(t *testing.T) {
+	_, err :=
+		CreateConfiguration("localhost:10161", "1.234567890", "TestDevice",
+			[]gnmi.ModelData{}, []change.ID{})
+	assert.ErrorContains(t, err, "version 1.234567890 does not match pattern", "Too long")
+
+	_, err =
+		CreateConfiguration("localhost:10161", "a", "TestDevice",
+			[]gnmi.ModelData{}, []change.ID{})
+	assert.ErrorContains(t, err, "version a does not match pattern", "Too short")
+
+	_, err =
+		CreateConfiguration("localhost:10161", "1:0:0", "TestDevice",
+			[]gnmi.ModelData{}, []change.ID{})
+	assert.ErrorContains(t, err, "version 1:0:0 does not match pattern", "Illegal char")
+}
+
+func TestCreateConfiguration_badtype(t *testing.T) {
+	_, err :=
+		CreateConfiguration("localhost:10161", "1.0.0", "TestDeviceType",
+			[]gnmi.ModelData{}, []change.ID{})
+	assert.ErrorContains(t, err, "deviceType TestDeviceType does not match pattern", "Too long")
 }
 
 func Test_writeOutConfigFile(t *testing.T) {
