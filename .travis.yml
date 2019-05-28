@@ -14,5 +14,8 @@ branches:
     - master
 
 script:
-  - docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable test
+  - docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable test coverage
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 
