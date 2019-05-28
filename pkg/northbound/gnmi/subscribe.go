@@ -156,10 +156,9 @@ func broadcastNotification() {
 	}
 }
 
-func getChange(update events.Event, mgr *manager.Manager) (string, *change.Change) {
-	values := update.Values()
-	target := update.Subject()
-	changeID := (*values)[events.ChangeID]
+func getChange(update events.ConfigEvent, mgr *manager.Manager) (string, *change.Change) {
+	target := events.Event(update).Subject()
+	changeID := update.ChangeID()
 	changeInternal := mgr.ChangeStore.Store[changeID]
 	return target, changeInternal
 }

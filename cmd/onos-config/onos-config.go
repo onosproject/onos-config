@@ -81,7 +81,7 @@ func main() {
 
 	log.Info("onos-config started")
 
-	topoChannel := make(chan events.Event, 10)
+	topoChannel := make(chan events.TopoEvent, 10)
 
 	configStore, err := store.LoadConfigStore(*configStoreFile)
 	if err != nil {

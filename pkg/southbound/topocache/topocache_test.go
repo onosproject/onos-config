@@ -23,7 +23,7 @@ import (
 )
 
 func Test_LocalDeviceStore(t *testing.T) {
-	topoChannel := make(chan events.Event, 10)
+	topoChannel := make(chan events.TopoEvent, 10)
 	deviceStore, err := LoadDeviceStore("testdata/deviceStore.json", topoChannel)
 	assert.NilError(t, err, "Cannot load device store ")
 	assert.Assert(t, deviceStore != nil)
@@ -36,13 +36,13 @@ func Test_LocalDeviceStore(t *testing.T) {
 }
 
 func Test_BadDeviceStore(t *testing.T) {
-	topoChannel := make(chan events.Event, 10)
+	topoChannel := make(chan events.TopoEvent, 10)
 	_, err := LoadDeviceStore("testdata/badDeviceStore.json", topoChannel)
 	assert.ErrorContains(t, err, "Store type invalid")
 }
 
 func Test_NonexistentDeviceStore(t *testing.T) {
-	topoChannel := make(chan events.Event, 10)
+	topoChannel := make(chan events.TopoEvent, 10)
 	_, err := LoadDeviceStore("testdata/noSuchDeviceStore.json", topoChannel)
 	assert.ErrorContains(t, err, "no such file")
 }

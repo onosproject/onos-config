@@ -28,7 +28,7 @@ import (
 // Devicesync is a go routine that listens out for configuration events specific
 // to a device and propagates them downwards through southbound interface
 func Devicesync(changeStore *store.ChangeStore,
-	device *topocache.Device, deviceChan <-chan events.Event) {
+	device *topocache.Device, deviceConfigChan <-chan events.ConfigEvent) {
 
 	ctx := context.Background()
 	log.Println("Connecting to", device.Addr, "over gNMI")
@@ -49,8 +49,8 @@ func Devicesync(changeStore *store.ChangeStore,
 
 	log.Println(device.Addr, "Capabilities", capResponse)
 
-	for deviceConfigEvent := range deviceChan {
-		change := changeStore.Store[deviceConfigEvent.Value(events.ChangeID)]
+	for deviceConfigEvent := range deviceConfigChan {
+		change := changeStore.Store[deviceConfigEvent.ChangeID()]
 		err := change.IsValid()
 		if err != nil {
 			log.Println("Event discarded because change is invalid", err)

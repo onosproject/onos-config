@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	device1Channel, device2Channel, device3Channel chan events.Event
+	device1Channel, device2Channel, device3Channel chan events.ConfigEvent
 	device1, device2, device3                      topocache.Device
 	err                                            error
 )
@@ -89,7 +89,7 @@ func Test_register(t *testing.T) {
 	assert.NilError(t, err, "Unexpected error when registering device %s", err)
 
 	var deviceChannelIf interface{} = device4Channel
-	chanType, ok := deviceChannelIf.(chan events.Event)
+	chanType, ok := deviceChannelIf.(chan events.ConfigEvent)
 	assert.Assert(t, ok, "Unexpected channel type when registering device %v", chanType)
 
 }
@@ -112,14 +112,12 @@ func Test_listen(t *testing.T) {
 	testChan := make(chan events.Event, 10)
 	go testSync(testChan)
 	// Start the main listener system
-	changesChannel := make(chan events.Event, 10)
+	changesChannel := make(chan events.ConfigEvent, 10)
 	go Listen(changesChannel)
 
 	// Send down some changes
 	for i := 1; i < 13; i++ {
-		values := make(map[string]string)
-		values[events.ChangeID] = "test"
-		event := events.CreateEvent("device"+strconv.Itoa(i), events.EventTypeConfiguration, values)
+		event := events.CreateConfigEvent("device"+strconv.Itoa(i), "test", true)
 
 		changesChannel <- event
 	}

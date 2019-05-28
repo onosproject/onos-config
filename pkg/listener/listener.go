@@ -29,13 +29,13 @@ import (
 )
 
 var (
-	deviceListeners map[string]chan events.Event
-	nbiListeners    map[string]chan events.Event
+	deviceListeners map[string]chan events.ConfigEvent
+	nbiListeners    map[string]chan events.ConfigEvent
 )
 
 func init() {
-	deviceListeners = make(map[string]chan events.Event)
-	nbiListeners = make(map[string]chan events.Event)
+	deviceListeners = make(map[string]chan events.ConfigEvent)
+	nbiListeners = make(map[string]chan events.ConfigEvent)
 }
 
 // Listen is a go routine function that listens out for changes made in the
@@ -43,13 +43,13 @@ func init() {
 // Southbound and registered nbiListeners on the northbound
 // Southbound listeners are only sent the events that matter to them
 // All events.Events are sent to northbound listeners
-func Listen(changeChannel <-chan events.Event) {
+func Listen(changeChannel <-chan events.ConfigEvent) {
 	log.Println("Event listener initialized")
 
 	for configEvent := range changeChannel {
 		log.Println("Listener: Event", configEvent)
 		for device, deviceChan := range deviceListeners {
-			if configEvent.Subject() == device {
+			if events.Event(configEvent).Subject() == device {
 				log.Println("Device Simulators must be active")
 				//TODO need a timeout or be done in separate routine
 				deviceChan <- configEvent
@@ -67,13 +67,13 @@ func Listen(changeChannel <-chan events.Event) {
 
 // Register is a way for device synchronizers or nbi instances to register for
 // channel of events
-func Register(subscriber string, isDevice bool) (chan events.Event, error) {
+func Register(subscriber string, isDevice bool) (chan events.ConfigEvent, error) {
 	if isDevice && deviceListeners[subscriber] != nil {
 		return nil, fmt.Errorf("Device %s is already registered", subscriber)
 	} else if nbiListeners[subscriber] != nil {
 		return nil, fmt.Errorf("NBI %s is already registered", subscriber)
 	}
-	channel := make(chan events.Event)
+	channel := make(chan events.ConfigEvent)
 	if isDevice {
 		deviceListeners[subscriber] = channel
 	} else {
@@ -84,7 +84,7 @@ func Register(subscriber string, isDevice bool) (chan events.Event, error) {
 
 // Unregister closes the device channel and removes it from the deviceListeners
 func Unregister(subscriber string, isDevice bool) error {
-	var channel chan events.Event
+	var channel chan events.ConfigEvent
 	if isDevice {
 		channel = deviceListeners[subscriber]
 	} else {

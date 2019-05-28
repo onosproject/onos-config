@@ -70,9 +70,9 @@ func setUp(broadcast bool) *Server {
 	}
 
 	mgr = manager.GetManager()
-	mgr.TopoChannel = make(chan events.Event)
+	mgr.TopoChannel = make(chan events.TopoEvent)
 	go listenToTopoLoading(mgr.TopoChannel)
-	mgr.ChangesChannel = make(chan events.Event)
+	mgr.ChangesChannel = make(chan events.ConfigEvent)
 	go listener.Listen(mgr.ChangesChannel)
 
 	if broadcast {
@@ -97,7 +97,7 @@ func setUp(broadcast bool) *Server {
 	return server
 }
 
-func listenToTopoLoading(deviceChan <-chan events.Event) {
+func listenToTopoLoading(deviceChan <-chan events.TopoEvent) {
 	for range deviceChan {
 		// fmt.Printf("Ignoring event for testing %v\n", deviceConfigEvent)
 	}

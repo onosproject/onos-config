@@ -115,7 +115,7 @@ func setUp(t *testing.T) {
 	GnmiClientFactory = func(ctx context.Context, d client.Destination) (GnmiClient, error) {
 		return TestClientImpl{}, nil
 	}
-	topoChannel := make(chan events.Event, 10)
+	topoChannel := make(chan events.TopoEvent, 10)
 	deviceStore, _ = topocache.LoadDeviceStore("testdata/deviceStore.json", topoChannel)
 
 	GnmiCacheClientFactory = func() CacheClientInterface {

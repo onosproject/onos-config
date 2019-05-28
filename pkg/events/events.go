@@ -26,8 +26,8 @@ const (
 	// ChangeID :
 	ChangeID = "ChangeID"
 
-	// Committed :
-	Committed = "Committed"
+	// Applied :
+	Applied = "Applied"
 
 	// Connect :
 	Connect = "Connect"
@@ -40,6 +40,7 @@ type EventType int
 const ( // For event types
 	EventTypeConfiguration EventType = iota
 	EventTypeTopoCache
+	EventTypeOperationalState
 )
 
 func (et EventType) String() string {
@@ -88,8 +89,8 @@ func (e Event) Value(name string) string {
 	return e.values[name]
 }
 
-// CreateEvent creates a new event object
-func CreateEvent(subject string, eventtype EventType, values map[string]string) Event {
+// createEvent creates a new event object
+func createEvent(subject string, eventtype EventType, values map[string]string) Event {
 	return Event{
 		subject:   subject,
 		time:      time.Now(),

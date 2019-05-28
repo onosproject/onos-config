@@ -111,7 +111,7 @@ func TestMain(m *testing.M) {
 			Storetype: "network",
 			Store:     networkStoreTest,
 		},
-		make(chan events.Event, 10))
+		make(chan events.TopoEvent, 10))
 	mgrTest.Run()
 	if err != nil {
 		fmt.Println(err)
