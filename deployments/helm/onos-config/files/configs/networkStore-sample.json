@@ -3,18 +3,11 @@
   "Storetype": "network",
   "Store": [
     {
-      "Name": "Change1",
-      "User": "onos",
+      "Name": "Removed txout-1 from Device 2",
+      "Created": "2019-05-10T00:00:00Z",
+      "User": "User1",
       "ConfigurationChanges": {
-        "Device1Version": "DCuMG07l01g2BvMdEta+7DyxMxk=",
-        "Device2VersionMain": "DCuMG07l01g2BvMdEta+7DyxMxk="
-      }
-    },
-    {
-      "Name": "Change2",
-      "User": "onos",
-      "ConfigurationChanges": {
-        "Device2VersionMain": "DCuMG07l01g2BvMdEta+7DyxMxk="
+        "Device1-1.0.0": "FGrHfVhk8rwhJ03U5TwxFqPSB/8="
       }
     }
   ]

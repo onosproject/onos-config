@@ -69,7 +69,7 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to receive response : %v", err)
 			}
-			fmt.Printf("%s\t(%s)\t%s\t%s\n", in.Name, in.Deviceid, in.Desc,
+			fmt.Printf("%s\t(%s)\t%s\t%s\t%s\n", in.Name, in.Deviceid, in.Version, in.Devicetype,
 				time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos)).Format(time.RFC3339))
 			for _, cid := range in.ChangeIDs {
 				fmt.Printf("\t%s", cid)

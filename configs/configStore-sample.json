@@ -2,66 +2,164 @@
   "Version": "1.0.0",
   "Storetype": "config",
   "Store": {
-    "Device1Version": {
-      "Name": "Device1Version",
+    "Device1-1.0.0": {
+      "Name": "Device1-1.0.0",
       "Device": "Device1",
-      "Created": "2019-05-09T16:24:17.815280516Z",
-      "Updated": "2019-05-09T16:24:17.81528215Z",
-      "User": "onos",
-      "Description": "Configuration for Device 1",
+      "Version": "1.0.0",
+      "Type": "TestDevice",
+      "Created": "2019-05-09T16:24:17Z",
+      "Updated": "2019-05-09T16:24:17Z",
       "Changes": [
         "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=",
         "9h9NuN3XEorAKXv6GwLycB6yMls=",
         "29U3Tp46cS6RJvIyqlos7SFOgfE="
+      ],
+      "Models": [
+        {
+          "Name": "Test",
+          "Version": "1.0.0",
+          "Organisation": "Test"
+        }
       ]
     },
-    "Device2VersionMain": {
-      "Name": "Device2Version",
+    "Device2-1.0.0": {
+      "Name": "Device2-1.0.0",
       "Device": "Device2",
+      "Version": "1.0.0",
+      "Type": "TestDevice",
       "Created": "2019-05-09T16:24:17.815298386Z",
       "Updated": "2019-05-09T16:24:17.815300015Z",
-      "User": "onos",
-      "Description": "Main Configuration for Device 2",
       "Changes": [
         "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=",
         "9h9NuN3XEorAKXv6GwLycB6yMls=",
         "FGrHfVhk8rwhJ03U5TwxFqPSB/8="
+      ],
+      "Models": [
+        {
+          "Name": "Test",
+          "Version": "1.0.0",
+          "Organisation": "Test"
+        }
       ]
     },
-    "localhost:10161Running": {
-      "Name": "localhost:10161Running",
+    "Device2-2.0.0": {
+      "Name": "Device2-2.0.0",
+      "Device": "Device2",
+      "Version": "2.0.0",
+      "Type": "TestDevice",
+      "Created": "2019-05-09T17:00:00Z",
+      "Updated": "2019-05-09T17:00:00Z",
+      "Changes": [
+        "O+qCuHMfa8ETSeTFE/tk/9ZnEu8="
+      ],
+      "Models": [
+        {
+          "Name": "Test",
+          "Version": "2.0.0",
+          "Organisation": "Test"
+        }
+      ]
+    },
+    "localhost:10161-1.0.0": {
+      "Name": "localhost:10161-1.0.0",
       "Device": "localhost:10161",
+      "Version": "1.0.0",
+      "Type": "Devicesim",
       "Created": "2019-05-21T08:43:17Z",
       "Updated": "2019-05-21T08:43:17Z",
-      "User": "onos",
-      "Description": "Main Configuration for localhost:10161",
       "Changes": [
         "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
         "i86kLjjNFr5IBa+O3YTuv9HBqJg="
+      ],
+      "Models": [
+        {
+          "Name": "openconfig-interfaces",
+          "Version": "2.0.0",
+          "Organisation": "OpenConfig working group"
+        },
+        {
+          "Name": "openconfig-openflow",
+          "Version": "0.1.0",
+          "Organisation": "OpenConfig working group"
+        },
+        {
+          "Name": "openconfig-platform",
+          "Version": "0.5.0",
+          "Organisation": "OpenConfig working group"
+        },
+        {
+          "Name": "openconfig-system",
+          "Version": "0.2.0",
+          "Organisation": "OpenConfig working group"
+        }
       ]
     },
-    "localhost:10162Running": {
-      "Name": "localhost:10162Running",
+    "localhost:10162-1.0.0": {
+      "Name": "localhost:10162-1.0.0",
       "Device": "localhost:10162",
+      "Version": "1.0.0",
+      "Type": "Devicesim",
       "Created": "2019-05-21T08:43:18Z",
       "Updated": "2019-05-21T08:43:18Z",
-      "User": "onos",
-      "Description": "Main Configuration for localhost:10162",
       "Changes": [
         "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
         "UyPwBSOxDqQM/ZCohHFannSF5ME="
+      ],
+      "Models": [
+        {
+          "Name": "openconfig-interfaces",
+          "Version": "2.0.0",
+          "Organisation": "OpenConfig working group"
+        },
+        {
+          "Name": "openconfig-openflow",
+          "Version": "0.1.0",
+          "Organisation": "OpenConfig working group"
+        },
+        {
+          "Name": "openconfig-platform",
+          "Version": "0.5.0",
+          "Organisation": "OpenConfig working group"
+        },
+        {
+          "Name": "openconfig-system",
+          "Version": "0.2.0",
+          "Organisation": "OpenConfig working group"
+        }
       ]
     },
-    "localhost:10163Running": {
-      "Name": "localhost:10163Running",
+    "localhost:10163-1.0.0": {
+      "Name": "localhost:10163-1.0.0",
       "Device": "localhost:10163",
+      "Version": "1.0.0",
+      "Type": "Devicesim",
       "Created": "2019-05-21T08:43:19Z",
       "Updated": "2019-05-21T08:43:19Z",
-      "User": "onos",
-      "Description": "Main Configuration for localhost:10163",
       "Changes": [
         "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
         "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y="
+      ],
+      "Models": [
+        {
+          "Name": "openconfig-interfaces",
+          "Version": "2.0.0",
+          "Organisation": "OpenConfig working group"
+        },
+        {
+          "Name": "openconfig-openflow",
+          "Version": "0.1.0",
+          "Organisation": "OpenConfig working group"
+        },
+        {
+          "Name": "openconfig-platform",
+          "Version": "0.5.0",
+          "Organisation": "OpenConfig working group"
+        },
+        {
+          "Name": "openconfig-system",
+          "Version": "0.2.0",
+          "Organisation": "OpenConfig working group"
+        }
       ]
     }
   }

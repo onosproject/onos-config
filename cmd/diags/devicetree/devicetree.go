@@ -29,9 +29,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/openconfig/gnmi/proto/gnmi"
 	"io"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -83,21 +85,34 @@ func main() {
 				log.Fatalf("Failed to receive response : %v", err)
 			}
 
-			configuration := store.Configuration{
-				Name:        store.ConfigName(in.Name),
-				Device:      in.Deviceid,
-				Created:     time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos)),
-				Updated:     time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos)),
-				User:        in.User,
-				Description: in.Desc,
-				Changes:     make([]change.ID, 0),
+			changes := make([]change.ID, len(in.ChangeIDs))
+			for idx, ch := range in.ChangeIDs {
+				changes[idx] = change.ID(ch)
 			}
+
+			modelDatas := make([]gnmi.ModelData, len(in.ModelData))
+			for idx, m := range in.ModelData {
+				mparts := strings.Split(m, "@")
+				modelDatas[idx] = gnmi.ModelData{
+					Name:         mparts[0],
+					Version:      mparts[1],
+					Organization: mparts[2],
+				}
+			}
+
+			configuration, err := store.CreateConfiguration(
+				in.Deviceid, in.Version, in.Devicetype,
+				modelDatas, changes)
+
+			configuration.Updated = time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos))
+			configuration.Created = time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos))
+
 			for _, cid := range in.ChangeIDs {
 				idBytes, _ := base64.StdEncoding.DecodeString(cid)
 				configuration.Changes = append(configuration.Changes, change.ID(idBytes))
 			}
 
-			configurations = append(configurations, configuration)
+			configurations = append(configurations, *configuration)
 		}
 	}()
 	err = stream.CloseSend()

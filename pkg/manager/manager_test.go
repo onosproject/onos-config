@@ -20,29 +20,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"os"
 	"testing"
-	"time"
-)
-
-var (
-	change1 *change.Change
-)
-
-var (
-	device1config store.Configuration
-)
-
-var (
-	mgrTest *Manager
-)
-
-var (
-	changeStoreTest        map[string]*change.Change
-	configurationStoreTest map[store.ConfigName]store.Configuration
-	networkStoreTest       []store.NetworkConfiguration
-	deviceStoreTest        map[string]topocache.Device
 )
 
 const (
@@ -59,7 +40,27 @@ const (
 	ValueLeaf2B159 = "1.579"
 )
 
+// TestMain should only contain static data.
+// It is run once for all tests - each test is then run on its own thread, so if
+// anything is shared the order of it's modification is not deterministic
+// Also there can only be one TestMain per package
 func TestMain(m *testing.M) {
+	os.Exit(m.Run())
+}
+
+func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Configuration) {
+
+	var change1 *change.Change
+	var device1config *store.Configuration
+	var mgrTest *Manager
+
+	var (
+		changeStoreTest        map[string]*change.Change
+		configurationStoreTest map[store.ConfigName]store.Configuration
+		networkStoreTest       []store.NetworkConfiguration
+		deviceStoreTest        map[string]topocache.Device
+	)
+
 	var err error
 	config1Value01, _ := change.CreateChangeValue(Test1Cont1A, ValueEmpty, false)
 	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, ValueEmpty, false)
@@ -73,17 +74,12 @@ func TestMain(m *testing.M) {
 	changeStoreTest = make(map[string]*change.Change)
 	changeStoreTest[store.B64(change1.ID)] = change1
 
-	device1config = store.Configuration{
-		Name:        "Running",
-		Device:      "Device1",
-		Created:     time.Now(),
-		Updated:     time.Now(),
-		User:        "onos",
-		Description: "Configuration for Device 1",
-		Changes:     []change.ID{change1.ID},
-	}
+	device1config, err = store.CreateConfiguration("Device1", "1.0.0", "TestDevice",
+		[]gnmi.ModelData{gnmi.ModelData{Name: "test", Version: "1.0.0", Organization: "test"}},
+		[]change.ID{change1.ID})
+
 	configurationStoreTest = make(map[store.ConfigName]store.Configuration)
-	configurationStoreTest["Running"] = device1config
+	configurationStoreTest[device1config.Name] = *device1config
 
 	deviceStoreTest = make(map[string]topocache.Device)
 	deviceStoreTest["Device1"] = topocache.Device{
@@ -117,11 +113,12 @@ func TestMain(m *testing.M) {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
-	os.Exit(m.Run())
-
+	return mgrTest, changeStoreTest, configurationStoreTest
 }
 
 func Test_GetNetworkConfig(t *testing.T) {
+
+	mgrTest, _, _ := setUp()
 
 	result, err := mgrTest.GetNetworkConfig("Device1", "Running", "/*", 0)
 	assert.NilError(t, err, "GetNetworkConfig error")
@@ -133,6 +130,8 @@ func Test_GetNetworkConfig(t *testing.T) {
 
 func Test_SetNetworkConfig(t *testing.T) {
 
+	mgrTest, changeStoreTest, configurationStoreTest := setUp()
+
 	updates := make(map[string]string)
 	deletes := make([]string, 0)
 
@@ -140,11 +139,13 @@ func Test_SetNetworkConfig(t *testing.T) {
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
-	changeID, err := mgrTest.SetNetworkConfig("Device1", "Running", updates, deletes)
+	changeID, configName, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
 	assert.NilError(t, err, "GetNetworkConfig error")
-	testUpdate := configurationStoreTest["Running"]
+	testUpdate := configurationStoreTest["Device1-1.0.0"]
 	changeIDTest := testUpdate.Changes[len(testUpdate.Changes)-1]
 	assert.Equal(t, store.B64(changeID), store.B64(changeIDTest), "Change Ids should correspond")
+
+	assert.Equal(t, string(configName), "Device1-1.0.0")
 
 	//Done in this order because ordering on a path base in the store.
 	updatedVals := changeStoreTest[store.B64(changeID)].Config

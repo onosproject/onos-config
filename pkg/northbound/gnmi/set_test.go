@@ -34,7 +34,7 @@ func Test_doSingleSet(t *testing.T) {
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	typedValue := gnmi.TypedValue_StringVal{StringVal: "newValue2a"}
 	value := gnmi.TypedValue{Value: &typedValue}
-	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "localhost:10161"}
+	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
 
 	var setRequest = gnmi.SetRequest{
@@ -58,7 +58,7 @@ func Test_doSingleSet(t *testing.T) {
 
 	path := setResponse.Response[0].Path
 
-	assert.Equal(t, path.Target, "localhost:10161")
+	assert.Equal(t, path.Target, "Device1")
 
 	assert.Equal(t, len(path.Elem), 3, "Expected 3 path elements")
 
@@ -71,7 +71,7 @@ func Test_doSingleSet(t *testing.T) {
 
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
-	assert.Equal(t, string(extension.Msg), "Change-wpF1oQi/Kg4AVTXuyIBZUs45DsQ=")
+	assert.Equal(t, string(extension.Msg), "Change-2koYnvGHAuKTRc+7+5fg03gN5xA=")
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
@@ -441,7 +441,7 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	assert.NilError(t, setError, "Unexpected error doing Set")
 
 	// Check that Response is correct
-	assert.Assert(t, setResponse != nil, "Expected setResponse to be nil")
+	assert.Assert(t, setResponse != nil, "Expected setResponse to be not nil")
 
 	// Even though we send 4 down, should only get 2 in response because those on
 	// target 10161 were duplicates - quietly ignore duplicates where some valid

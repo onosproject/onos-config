@@ -76,19 +76,25 @@ func (s Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDia
 			continue
 		}
 
-		changeIDs := make([]string, 0)
+		changeIDs := make([]string, len(c.Changes))
 
-		for _, cid := range c.Changes {
-			changeIDs = append(changeIDs, store.B64(cid))
+		for idx, cid := range c.Changes {
+			changeIDs[idx] = store.B64(cid)
+		}
+
+		models := make([]string, len(c.Models))
+		for idx, m := range c.Models {
+			models[idx] = m.Name + "@" + m.Version + "@" + m.Organization
 		}
 
 		msg := &proto.Configuration{
-			Name:      string(c.Name),
-			Deviceid:  c.Device,
-			Updated:   &timestamp.Timestamp{Seconds: c.Updated.Unix(), Nanos: int32(c.Created.Nanosecond())},
-			User:      c.User,
-			Desc:      c.Description,
-			ChangeIDs: changeIDs,
+			Name:       string(c.Name),
+			Deviceid:   c.Device,
+			Version:    c.Version,
+			Devicetype: c.Type,
+			Updated:    &timestamp.Timestamp{Seconds: c.Updated.Unix(), Nanos: int32(c.Created.Nanosecond())},
+			ChangeIDs:  changeIDs,
+			ModelData:  models,
 		}
 		err := stream.Send(msg)
 		if err != nil {

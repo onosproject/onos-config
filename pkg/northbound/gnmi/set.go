@@ -29,13 +29,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
-// ConfigNameSuffix is appended to the Configuration name when it is created
-const ConfigNameSuffix = "Running"
-
-// GnmiExtensionNetwkChangeID is the extension number used in SetResponse
-// to hold the Network change ID
-const GnmiExtensionNetwkChangeID = 100
-
 type mapTargetUpdates map[string]map[string]string
 type mapTargetRemoves map[string][]string
 type mapNetworkChanges map[store.ConfigName]change.ID
@@ -65,26 +58,32 @@ func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string
 }
 
 func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
-	targetRemoves mapTargetRemoves) ([]*gnmi.UpdateResult, mapNetworkChanges) {
+	targetRemoves mapTargetRemoves, version string, deviceType string) ([]*gnmi.UpdateResult, mapNetworkChanges, error) {
 
-	networkChanges := make(map[store.ConfigName]change.ID)
+	networkChanges := make(mapNetworkChanges)
 	updateResults := make([]*gnmi.UpdateResult, 0)
 	for target, updates := range targetUpdates {
-		changeID, err := manager.GetManager().SetNetworkConfig(
-			target, store.ConfigName(target+ConfigNameSuffix), updates, targetRemoves[target])
+		// target is a device name with no version
+		configName := store.ConfigName(target)
+		if version != "" {
+			configName = store.ConfigName(strings.Join([]string{target, version}, "-"))
+		}
+
+		// If there was only 1 version for that device it is found and returned here
+		changeID, configName, err := manager.GetManager().SetNetworkConfig(
+			store.ConfigName(configName), updates, targetRemoves[target])
 		var op = gnmi.UpdateResult_UPDATE
 
 		if err != nil {
 			if strings.Contains(err.Error(), manager.SetConfigAlreadyApplied) {
-				log.Println(manager.SetConfigAlreadyApplied, "Change", store.B64(changeID), "to", target)
+				log.Println(manager.SetConfigAlreadyApplied, "Change", store.B64(changeID), "to", configName)
 				continue
 			}
 
 			//FIXME this at the moment fails at a device level. we can specify a per path failure
 			// if the store could return us that info
-			log.Println("Error in setting config:", changeID, "for target", target)
-			op = gnmi.UpdateResult_INVALID
-			//TODO initiate rollback
+			log.Println("Error in setting config:", changeID, "for target", configName, err)
+			return nil, nil, err
 		}
 
 		for k := range updates {
@@ -120,14 +119,18 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 			updateResults = append(updateResults, updateResult)
 		}
 
-		networkChanges[store.ConfigName(target+ConfigNameSuffix)] = changeID
+		networkChanges[store.ConfigName(configName)] = changeID
 	}
 
-	return updateResults, networkChanges
+	return updateResults, networkChanges, nil
 }
 
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
+	// There is only one set of extensions in Set request, regardless of number of
+	// updates
+	var version string    // May be specified as 101 in extension
+	var deviceType string // May be specified as 102 in extension
 
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
@@ -150,7 +153,22 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		targetRemoves[target] = s.doDelete(u, targetRemoves)
 	}
 
-	updateResults, networkChanges := s.buildUpdateResults(targetUpdates, targetRemoves)
+	for _, ext := range req.GetExtension() {
+		if ext.GetRegisteredExt().GetId() == GnmiExtensionVersion {
+			version = string(ext.GetRegisteredExt().GetMsg())
+		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionDeviceType {
+			deviceType = string(ext.GetRegisteredExt().GetMsg())
+		} else {
+			return nil, fmt.Errorf("Unexpected extension %d = '%s' in Set()",
+				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg())
+		}
+	}
+
+	updateResults, networkChanges, err :=
+		s.buildUpdateResults(targetUpdates, targetRemoves, version, deviceType)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(updateResults) == 0 {
 		log.Println("All target changes were duplicated - Set rejected")
