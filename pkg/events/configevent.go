@@ -15,6 +15,8 @@
 package events
 
 import (
+	"encoding/base64"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"strconv"
 	"time"
 )
@@ -37,9 +39,9 @@ func (cfgevent *ConfigEvent) Applied() bool {
 }
 
 // CreateConfigEvent creates a new config event object
-func CreateConfigEvent(subject string, changeID string, applied bool) ConfigEvent {
+func CreateConfigEvent(subject string, changeID change.ID, applied bool) ConfigEvent {
 	values := make(map[string]string)
-	values[ChangeID] = changeID
+	values[ChangeID] = base64.StdEncoding.EncodeToString(changeID)
 	values[Applied] = strconv.FormatBool(applied)
 	return ConfigEvent{
 		subject:   subject,

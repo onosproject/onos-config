@@ -31,23 +31,18 @@ func Factory(changeStore *store.ChangeStore,
 
 	for topoEvent := range topoChannel {
 		deviceName := events.Event(topoEvent).Subject()
-		log.Println("type event", events.Event(topoEvent).EventType(), "constant", events.EventTypeTopoCache)
-		log.Println("equals ", events.Event(topoEvent).EventType() == events.EventTypeTopoCache)
-		if events.Event(topoEvent).EventType() == events.EventTypeTopoCache {
-			log.Println(topoEvent.Connect())
-			if !listener.CheckListener(deviceName) && topoEvent.Connect() {
+		if !listener.CheckListener(deviceName) && topoEvent.Connect() {
 
-				configChan, err := listener.Register(deviceName, true)
-				if err != nil {
-					log.Fatal(err)
-				}
-				device := deviceStore.Store[deviceName]
-				go Devicesync(changeStore, &device, configChan)
-			} else if listener.CheckListener(deviceName) && !topoEvent.Connect() {
-				err := listener.Unregister(deviceName, true)
-				if err != nil {
-					log.Fatal(err)
-				}
+			configChan, err := listener.Register(deviceName, true)
+			if err != nil {
+				log.Fatal(err)
+			}
+			device := deviceStore.Store[deviceName]
+			go Devicesync(changeStore, &device, configChan)
+		} else if listener.CheckListener(deviceName) && !topoEvent.Connect() {
+			err := listener.Unregister(deviceName, true)
+			if err != nil {
+				log.Fatal(err)
 			}
 		}
 	}

@@ -114,10 +114,10 @@ func Test_listen(t *testing.T) {
 	// Start the main listener system
 	changesChannel := make(chan events.ConfigEvent, 10)
 	go Listen(changesChannel)
-
+	changeID := []byte("test")
 	// Send down some changes
 	for i := 1; i < 13; i++ {
-		event := events.CreateConfigEvent("device"+strconv.Itoa(i), "test", true)
+		event := events.CreateConfigEvent("device"+strconv.Itoa(i), changeID, true)
 
 		changesChannel <- event
 	}
