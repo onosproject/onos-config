@@ -17,6 +17,7 @@ package events
 import (
 	"encoding/base64"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"log"
 	"strconv"
 	"time"
 )
@@ -33,6 +34,7 @@ func (cfgevent *ConfigEvent) ChangeID() string {
 func (cfgevent *ConfigEvent) Applied() bool {
 	b, err := strconv.ParseBool(cfgevent.values[Applied])
 	if err != nil {
+		log.Println("error in conversion", err)
 		return false
 	}
 	return b
