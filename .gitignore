@@ -4,3 +4,4 @@ pkg/store/testout
 vendor
 build/_output
 *.DS_Store
+coverage.txt
