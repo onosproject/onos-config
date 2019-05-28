@@ -89,7 +89,7 @@ func (m *Manager) SetNetworkConfig(target string, configName store.ConfigName, u
 	// 		the (YANG) models for the device
 	//  2) Do a precheck that the device is reachable
 	//  3) Check that the caller is authorized to make the change
-	m.ChangesChannel <- events.ConfigEvent(events.CreateConfigEvent(deviceConfig.Device,
-		configChange.ID, true))
+	m.ChangesChannel <- events.CreateConfigEvent(deviceConfig.Device,
+		configChange.ID, true)
 	return configChange.ID, nil
 }
