@@ -44,7 +44,7 @@ const ( // For event types
 )
 
 func (et EventType) String() string {
-	return [...]string{"Configuration", "TopoCache"}[et]
+	return [...]string{"Configuration", "TopoCache", "OperationalState"}[et]
 }
 
 // Event is a general purpose base type of event

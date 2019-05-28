@@ -14,5 +14,19 @@
 
 package events
 
+import (
+	"time"
+)
+
 // OperationalStateEvent represents an event for an update in operational state on a device
 type OperationalStateEvent Event
+
+// CreateOperationalStateEvent creates a new operational state event object
+func CreateOperationalStateEvent(subject string, pathsAndValues map[string]string) OperationalStateEvent {
+	return OperationalStateEvent{
+		subject:   subject,
+		time:      time.Now(),
+		eventtype: EventTypeOperationalState,
+		values:    pathsAndValues,
+	}
+}
