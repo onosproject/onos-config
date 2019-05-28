@@ -27,9 +27,11 @@ import (
 )
 
 var (
-	deviceStore *topocache.DeviceStore
-	device      topocache.Device
-	deviceError bool
+	deviceStore                *topocache.DeviceStore
+	device                     topocache.Device
+	deviceError                bool
+	saveGnmiClientFactory      func(ctx context.Context, d client.Destination) (GnmiClient, error)
+	saveGnmiCacheClientFactory func() CacheClientInterface
 )
 
 const (
@@ -112,12 +114,14 @@ func (TestCacheClient) Subscribe(context.Context, client.Query, ...string) error
 }
 
 func setUp(t *testing.T) {
+	saveGnmiClientFactory = GnmiClientFactory
 	GnmiClientFactory = func(ctx context.Context, d client.Destination) (GnmiClient, error) {
 		return TestClientImpl{}, nil
 	}
 	topoChannel := make(chan events.TopoEvent, 10)
 	deviceStore, _ = topocache.LoadDeviceStore("testdata/deviceStore.json", topoChannel)
 
+	saveGnmiCacheClientFactory = GnmiCacheClientFactory
 	GnmiCacheClientFactory = func() CacheClientInterface {
 		c := TestCacheClient{}
 		return c
@@ -128,6 +132,11 @@ func setUp(t *testing.T) {
 	assert.Assert(t, deviceError)
 	assert.Equal(t, device.Addr, device1)
 
+}
+
+func tearDown() {
+	GnmiClientFactory = saveGnmiClientFactory
+	GnmiCacheClientFactory = saveGnmiCacheClientFactory
 }
 
 func getDevice1Target(t *testing.T) (Target, Key, context.Context) {
@@ -148,6 +157,7 @@ func Test_ConnectTarget(t *testing.T) {
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
 	assert.DeepEqual(t, &target, targetFetch)
+	tearDown()
 }
 
 func Test_BadTarget(t *testing.T) {
@@ -156,6 +166,7 @@ func Test_BadTarget(t *testing.T) {
 	key := Key{Key: "no such target"}
 	_, fetchError := GetTarget(key)
 	assert.ErrorContains(t, fetchError, "does not exist")
+	tearDown()
 }
 
 func Test_ConnectTargetUserPassword(t *testing.T) {
@@ -170,6 +181,8 @@ func Test_ConnectTargetUserPassword(t *testing.T) {
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
 	assert.DeepEqual(t, &target, targetFetch)
+
+	tearDown()
 }
 
 func Test_ConnectTargetInsecure(t *testing.T) {
@@ -182,6 +195,8 @@ func Test_ConnectTargetInsecure(t *testing.T) {
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
 	assert.DeepEqual(t, &target, targetFetch)
+
+	tearDown()
 }
 
 func Test_ConnectTargetWithCert(t *testing.T) {
@@ -195,6 +210,8 @@ func Test_ConnectTargetWithCert(t *testing.T) {
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
 	assert.DeepEqual(t, &target, targetFetch)
+
+	tearDown()
 }
 
 func Test_Get(t *testing.T) {
@@ -214,6 +231,8 @@ func Test_Get(t *testing.T) {
 	assert.Equal(t, response.Notification[0].Update[0].Path.Target, "*", "Expected target")
 	value := utils.StrVal(response.Notification[0].Update[0].Val)
 	assert.Equal(t, value, "0", "Expected index as value")
+
+	tearDown()
 }
 
 func Test_GetWithString(t *testing.T) {
@@ -229,6 +248,8 @@ func Test_GetWithString(t *testing.T) {
 	assert.Equal(t, getResponse.Notification[0].Update[0].Path.Elem[0].Name, "system")
 	value := utils.StrVal(getResponse.Notification[0].Update[0].Val)
 	assert.Equal(t, value, "0")
+
+	tearDown()
 }
 
 func Test_GetWithBadString(t *testing.T) {
@@ -243,6 +264,8 @@ func Test_GetWithBadString(t *testing.T) {
 	requestNull := ""
 	_, getEmptyErr := target.GetWithString(ctx, requestNull)
 	assert.ErrorContains(t, getEmptyErr, "empty request")
+
+	tearDown()
 }
 
 func Test_Subscribe(t *testing.T) {
@@ -276,6 +299,8 @@ func Test_Subscribe(t *testing.T) {
 	subscribeError := target.Subscribe(ctx, request, handler)
 
 	assert.NilError(t, subscribeError)
+
+	tearDown()
 }
 
 func Test_CapabilitiesWithString(t *testing.T) {
@@ -290,6 +315,8 @@ func Test_CapabilitiesWithString(t *testing.T) {
 	assert.Equal(t, capabilityResponse.SupportedEncodings[0], gnmi.Encoding_ASCII)
 	assert.Equal(t, capabilityResponse.GNMIVersion, "1.0")
 	assert.Equal(t, capabilityResponse.SupportedModels[0].Organization, "ONF")
+
+	tearDown()
 }
 
 func Test_CapabilitiesWithBadString(t *testing.T) {
@@ -300,6 +327,8 @@ func Test_CapabilitiesWithBadString(t *testing.T) {
 	_, capabilityErr := target.CapabilitiesWithString(ctx, "not a valid string")
 
 	assert.ErrorContains(t, capabilityErr, "unable to parse")
+
+	tearDown()
 }
 
 func Test_SetWithString(t *testing.T) {
@@ -313,4 +342,6 @@ func Test_SetWithString(t *testing.T) {
 	assert.NilError(t, setErr)
 	assert.Assert(t, setResponse != nil)
 	assert.Equal(t, setResponse.Response[0].Op, gnmi.UpdateResult_DELETE)
+
+	tearDown()
 }
