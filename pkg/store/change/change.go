@@ -20,11 +20,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/openconfig/gnmi/proto/gnmi"
 	"io"
 	"sort"
 	"time"
+
+	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
 // B64 is an alias for the function encoding a byte array to a Base64 string
@@ -105,7 +106,7 @@ func (c Change) GnmiChange() (*gnmi.SetRequest, error) {
 }
 
 // CreateChange creates a Change object from ChangeValues
-// The ID is a has generated from the change values,a nd does not include
+// The ID is a has generated from the change values,and does not include
 // the description or the time. This way changes that have an identical meaning
 // can be identified
 func CreateChange(config ValueCollections, desc string) (*Change, error) {

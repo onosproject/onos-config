@@ -15,11 +15,12 @@
 package gnmi
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
-	"strings"
-	"testing"
 )
 
 // See also the Test_getWithPrefixNoOtherPathsNoTarget below where the Target
@@ -42,6 +43,7 @@ func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
 	server := setUp(false)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
+	assert.NilError(t, err)
 
 	request := gnmi.GetRequest{
 		Prefix: prefixPath,
@@ -64,7 +66,7 @@ func Test_getNoPathElems(t *testing.T) {
 	}
 
 	result, err := server.Get(nil, &request)
-	assert.NilError(t, err, "Unexpected error")
+	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 2)
 
@@ -85,7 +87,7 @@ func Test_getAllDevices(t *testing.T) {
 	}
 
 	result, err := server.Get(nil, &request)
-	assert.NilError(t, err, "Unexpected error calling gNMI Get")
+	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
 	assert.Equal(t, len(result.Notification[0].Update), 1)
@@ -108,10 +110,10 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 	}
 
 	result, err := server.Get(nil, &request)
-	assert.NilError(t, err, "Unexpected error calling gNMI Get")
+	assert.NilError(t, err)
 
-	assert.Equal(t, len(result.Notification), 1, "Expected 1 notification")
-	assert.Equal(t, len(result.Notification[0].Update), 1, "Expected 1 update")
+	assert.Equal(t, len(result.Notification), 1)
+	assert.Equal(t, len(result.Notification[0].Update), 1)
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
@@ -124,13 +126,14 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 	server := setUp(false)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
+	assert.NilError(t, err)
 
 	leafAPath, err := utils.ParseGNMIElements([]string{"leaf2a"})
-	assert.NilError(t, err, "Unexpected error")
+	assert.NilError(t, err)
 	leafAPath.Target = "Device1"
 
 	leafBPath, err := utils.ParseGNMIElements([]string{"leaf2b"})
-	assert.NilError(t, err, "Unexpected error")
+	assert.NilError(t, err)
 	leafBPath.Target = "Device1"
 
 	request := gnmi.GetRequest{
@@ -139,7 +142,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 	}
 
 	result, err := server.Get(nil, &request)
-	assert.NilError(t, err, "Unexpected error")
+	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 2)
 
@@ -160,6 +163,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	server := setUp(false)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
+	assert.NilError(t, err)
 	prefixPath.Target = "Device1"
 
 	request := gnmi.GetRequest{
@@ -167,7 +171,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	}
 
 	result, err := server.Get(nil, &request)
-	assert.NilError(t, err, "Unexpected error")
+	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
 
@@ -186,7 +190,7 @@ func Test_targetDoesNotExist(t *testing.T) {
 	server := setUp(false)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
-	assert.NilError(t, err, "Unexpected error")
+	assert.NilError(t, err)
 	prefixPath.Target = "Device3"
 
 	request := gnmi.GetRequest{
@@ -203,10 +207,10 @@ func Test_pathDoesNotExist(t *testing.T) {
 	server := setUp(false)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
-	assert.NilError(t, err, "Unexpected error")
+	assert.NilError(t, err)
 	prefixPath.Target = "Device1"
 	path, err := utils.ParseGNMIElements([]string{"leaf2w"})
-	assert.NilError(t, err, "Unexpected error")
+	assert.NilError(t, err)
 
 	request := gnmi.GetRequest{
 		Prefix: prefixPath,
@@ -214,7 +218,7 @@ func Test_pathDoesNotExist(t *testing.T) {
 	}
 
 	result, err := server.Get(nil, &request)
-	assert.NilError(t, err, "Unexpected error")
+	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
 
