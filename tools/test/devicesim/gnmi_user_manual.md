@@ -103,13 +103,26 @@ response: <
 ```
 
 ## Run the Subscribe command
+### Subscribe ONCE
 ```bash
 gnmi_cli -address localhost:10161 \
-       -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+       -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <elem: <name: 'openconfig-system:system'>  elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
        -timeout 5s -alsologtostderr \
        -client_crt certs/client1.crt -client_key certs/client1.key -ca_crt certs/onfca.crt
 ```
-> **Note: this returns ```rpc error: code = Unimplemented desc = Subscribe is not implemented.``` and is the subject of Issue #212**
+
+This gives a response like this. 
+```bash
+{
+  "system": {
+    "clock": {
+      "config": {
+        "timezone-name": "Europe/Dublin"
+      }
+    }
+  }
+}
+```
 
 ## Troubleshooting
 

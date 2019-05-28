@@ -39,7 +39,6 @@ RUN mkdir -p $GOPATH \
       github.com/google/gnxi/gnmi_capabilities \
       github.com/google/gnxi/gnmi_get \
       github.com/google/gnxi/gnmi_set \
-      github.com/onosproject/onos-config/tools/test/devicesim/gnmi_target \
       github.com/openconfig/gnmi/cmd/gnmi_cli \
       github.com/google/gnxi/gnoi_target \ 
       github.com/google/gnxi/gnoi_cert 
@@ -49,7 +48,6 @@ RUN go install -v \
       github.com/google/gnxi/gnmi_capabilities \
       github.com/google/gnxi/gnmi_get \
       github.com/google/gnxi/gnmi_set \
-      github.com/onosproject/onos-config/tools/test/devicesim/gnmi_target\
       github.com/openconfig/gnmi/cmd/gnmi_cli \
       github.com/google/gnxi/gnoi_target \ 
       github.com/google/gnxi/gnoi_cert
@@ -61,7 +59,10 @@ ENV SIM_MODE=1
 COPY ./target_configs target_configs
 COPY ./certs certs
 COPY ./scripts scripts
+COPY ./gnmi_target gnmi_target
 
+
+RUN cd ./gnmi_target && go install
 RUN chmod +x ./scripts/run_targets.sh
 
 CMD ["./scripts/run_targets.sh"]
