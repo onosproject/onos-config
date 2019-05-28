@@ -46,7 +46,7 @@ type DeviceStore struct {
 }
 
 // LoadDeviceStore loads a device store from a file - will eventually be from onos-topology
-func LoadDeviceStore(file string, topoChannel chan<- events.Event) (*DeviceStore, error) {
+func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceStore, error) {
 	storeFile, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -66,9 +66,7 @@ func LoadDeviceStore(file string, topoChannel chan<- events.Event) (*DeviceStore
 
 	// We send a creation event for each device in store
 	for _, device := range deviceStore.Store {
-		values := make(map[string]string)
-		values[events.Connect] = "true"
-		topoChannel <- events.CreateEvent(device.Addr, events.EventTypeTopoCache, values)
+		topoChannel <- events.CreateTopoEvent(device.Addr, true)
 	}
 
 	return &deviceStore, nil

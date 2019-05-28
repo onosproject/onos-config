@@ -31,7 +31,7 @@ const (
 func Test_eventConstruction(t *testing.T) {
 	values := make(map[string]string)
 	values[eventValueKey] = eventValue
-	event := CreateEvent(eventSubject, eventType, values)
+	event := createEvent(eventSubject, eventType, values)
 
 	assert.Equal(t, event.EventType(), eventType)
 	assert.Equal(t, event.Subject(), eventSubject)

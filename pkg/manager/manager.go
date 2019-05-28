@@ -33,13 +33,13 @@ type Manager struct {
 	ChangeStore    *store.ChangeStore
 	DeviceStore    *topocache.DeviceStore
 	NetworkStore   *store.NetworkStore
-	TopoChannel    chan events.Event
-	ChangesChannel chan events.Event
+	TopoChannel    chan events.TopoEvent
+	ChangesChannel chan events.ConfigEvent
 }
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, device *topocache.DeviceStore,
-	network *store.NetworkStore, topoCh chan events.Event) (*Manager, error) {
+	network *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
 	log.Println("Creating Manager")
 	mgr = Manager{
 		ConfigStore:    configs,
@@ -47,7 +47,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		DeviceStore:    device,
 		NetworkStore:   network,
 		TopoChannel:    topoCh,
-		ChangesChannel: make(chan events.Event, 10),
+		ChangesChannel: make(chan events.ConfigEvent, 10),
 	}
 
 	changeIds := make([]string, 0)
