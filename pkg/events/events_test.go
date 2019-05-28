@@ -92,8 +92,8 @@ func Test_operationalStateEventConstruction(t *testing.T) {
 	assert.Equal(t, Event(event).Subject(), eventSubject)
 	assert.Assert(t, Event(event).Time().Before(time.Now()))
 
-	assert.Equal(t,  (*Event(event).Values())[path1], value1)
-	assert.Equal(t,  (*Event(event).Values())[path2], value2)
+	assert.Equal(t, (*Event(event).Values())[path1], value1)
+	assert.Equal(t, (*Event(event).Values())[path2], value2)
 
 	assert.Assert(t, strings.Contains(Event(event).String(), eventSubject))
 	assert.Assert(t, strings.Contains(EventTypeOperationalState.String(), "OperationalState"))

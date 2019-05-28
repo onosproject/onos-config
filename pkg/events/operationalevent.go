@@ -21,7 +21,7 @@ import (
 // OperationalStateEvent represents an event for an update in operational state on a device
 type OperationalStateEvent Event
 
-// CreateConfigEvent creates a new config event object
+// CreateOperationalStateEvent creates a new operational state event object
 func CreateOperationalStateEvent(subject string, pathsAndValues map[string]string) OperationalStateEvent {
 	return OperationalStateEvent{
 		subject:   subject,
