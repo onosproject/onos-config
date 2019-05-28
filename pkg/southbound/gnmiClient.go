@@ -32,6 +32,9 @@ type GnmiClient interface {
 // GnmiClientFactory : Default GnmiClient creation.
 var GnmiClientFactory = func(ctx context.Context, d client.Destination) (GnmiClient, error) {
 	openconfigClient, err := gclient.New(ctx, d)
+	if err != nil {
+		return nil, err
+	}
 	c := openconfigClient.(*gclient.Client)
 	return gnmiClientImpl{
 		c: c,
