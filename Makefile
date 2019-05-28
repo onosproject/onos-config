@@ -47,6 +47,9 @@ coverage: # @HELP generate unit test coverage data
 coverage: test
 	go test -coverprofile=coverage.txt -covermode=atomic github.com/onosproject/onos-config/pkg/...
 	go test -coverprofile=coverage.txt -covermode=atomic github.com/onosproject/onos-config/cmd/...
+	curl -s https://codecov.io/bash >/tmp/coverage.sh
+	chmod +x /tmp/coverage.sh
+	bash /tmp/coverage.sh -t 41f27869-f90a-4d4d-bb98-36c8075a9a5d
 
 run: # @HELP run mainline in cmd/onos-config
 run: deps
