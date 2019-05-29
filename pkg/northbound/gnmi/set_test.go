@@ -49,7 +49,7 @@ func Test_doSingleSet(t *testing.T) {
 		Delete:  deletePaths,
 		Replace: replacedPaths,
 		Update:  updatedPaths,
-		Extension: []*gnmi_ext.Extension{&gnmi_ext.Extension{
+		Extension: []*gnmi_ext.Extension{{
 			Ext: &ext100Name,
 		}},
 	}

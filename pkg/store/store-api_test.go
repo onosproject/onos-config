@@ -237,7 +237,7 @@ func TestMain(m *testing.M) {
 	changeStore[B64(change3.ID)] = change3
 
 	device1V, err = CreateConfiguration("Device1", "1.0.0", "TestDevice",
-		[]gnmi.ModelData{gnmi.ModelData{Name: "test", Version: "1.0.0", Organization: "onosproject"}},
+		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "onosproject"}},
 		[]change.ID{change1.ID, change2.ID, change3.ID})
 	if err != nil {
 		fmt.Println(err)
@@ -258,7 +258,7 @@ func TestMain(m *testing.M) {
 	changeStore[B64(change4.ID)] = change4
 
 	device2V, err = CreateConfiguration("Device2", "1.0.0", "TestDevice",
-		[]gnmi.ModelData{gnmi.ModelData{Name: "test", Version: "1.0.0", Organization: "onosproject"}},
+		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "onosproject"}},
 		[]change.ID{change1.ID, change2.ID, change4.ID})
 	if err != nil {
 		fmt.Println(err)

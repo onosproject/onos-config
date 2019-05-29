@@ -75,7 +75,7 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	changeStoreTest[store.B64(change1.ID)] = change1
 
 	device1config, err = store.CreateConfiguration("Device1", "1.0.0", "TestDevice",
-		[]gnmi.ModelData{gnmi.ModelData{Name: "test", Version: "1.0.0", Organization: "test"}},
+		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "test"}},
 		[]change.ID{change1.ID})
 
 	configurationStoreTest = make(map[store.ConfigName]store.Configuration)
