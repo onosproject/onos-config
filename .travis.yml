@@ -14,6 +14,6 @@ branches:
     - master
 
 script:
-  - docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable test coverage
+  - docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable test
 
 
