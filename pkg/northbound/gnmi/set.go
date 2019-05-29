@@ -129,8 +129,11 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	// There is only one set of extensions in Set request, regardless of number of
 	// updates
-	var version string    // May be specified as 101 in extension
-	var deviceType string // May be specified as 102 in extension
+	var (
+		netcfgchangename string // May be specified as 100 in extension
+		version          string // May be specified as 101 in extension
+		deviceType       string // May be specified as 102 in extension
+	)
 
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
@@ -154,7 +157,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	for _, ext := range req.GetExtension() {
-		if ext.GetRegisteredExt().GetId() == GnmiExtensionVersion {
+		if ext.GetRegisteredExt().GetId() == GnmiExtensionNetwkChangeID {
+			netcfgchangename = string(ext.GetRegisteredExt().GetMsg())
+		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionVersion {
 			version = string(ext.GetRegisteredExt().GetMsg())
 		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionDeviceType {
 			deviceType = string(ext.GetRegisteredExt().GetMsg())
@@ -176,7 +181,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			"duplicate of the last change for all targets")
 	}
 
-	networkConfig, err := store.CreateNetworkStore("User1", networkChanges)
+	networkConfig, err := store.CreateNetworkConfiguration(netcfgchangename, "User1", networkChanges)
 	if err != nil {
 		return nil, err
 	}

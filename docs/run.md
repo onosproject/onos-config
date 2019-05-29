@@ -94,12 +94,44 @@ gnmi_cli -address localhost:5150 -set \
     -client_key tools/test/devicesim/certs/client1.key \
     -ca_crt tools/test/devicesim/certs/onfca.crt
 ```
+giving a response like
+```bash
+response: <
+  path: <
+    elem: <
+      name: "openconfig-system:system"
+    >
+    elem: <
+      name: "clock"
+    >
+    elem: <
+      name: "config"
+    >
+    elem: <
+      name: "timezone-name"
+    >
+    target: "localhost:10161"
+  >
+  op: UPDATE
+>
+timestamp: 1559122191
+extension: <
+  registered_ext: <
+    id: 100
+    msg: "happy_matsumoto"
+  >
+>
+```
 
 > The result will include a field as a gNMI SetResponse extension 100
-> giving the Network Change identifier, which may be subsequently used
+> giving randomly generated Network Change identifier, which may be subsequently used
 > to rollback the change.
 
-> The corresponding -get for this will use the -proto
+> If a specific name is desired for a Network Change, the set may be given in the
+SetRequest() with the 100 extension at the end of the -proto section like:
+> ", extension: <registered_ext: <id: 100, msg: 'myfirstchange'>>"
+
+> The corresponding -get for this require using the -proto
 > "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
 
 > Currently (May '19) no checking of the contents is enforced when doing a Set operation
