@@ -24,8 +24,8 @@ import (
 func Test_GnmiClientBadCreate(t *testing.T) {
 	d := client.Destination{}
 	ctx := context.Background()
-	c, err := GnmiClientFactory(ctx, d)
+	c, e := GnmiClientFactory(ctx, d)
 
-	assert.ErrorContains(t, err, "Addrs must only contain")
+	assert.ErrorContains(t, e, "Addrs must only contain")
 	assert.Equal(t, c, nil)
 }

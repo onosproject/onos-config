@@ -14,6 +14,7 @@ branches:
     - master
 
 script:
-  - docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable test
+  - docker run -e TRAVIS_JOB_ID="$TRAVIS_JOB_ID" -e TRAVIS_BRANCH="$TRAVIS_BRANCH" -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable test coverage
+
 
 
