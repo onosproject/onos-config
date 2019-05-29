@@ -146,3 +146,27 @@ func Test_StrPathV04(t *testing.T) {
 	generatedPath := strPathV04(parsed)
 	assert.Equal(t, generatedPath, path1)
 }
+
+func Test_StrVal_Decimal64(t *testing.T) {
+	dec64Val1 := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_DecimalVal{
+			DecimalVal: &gnmi.Decimal64{
+				Digits:    123456,
+				Precision: 3,
+			},
+		},
+	}
+	result1 := StrVal(dec64Val1)
+	assert.Equal(t, "123.456", result1)
+
+	dec64Val2 := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_DecimalVal{
+			DecimalVal: &gnmi.Decimal64{
+				Digits:    -123456,
+				Precision: 0,
+			},
+		},
+	}
+	result2 := StrVal(dec64Val2)
+	assert.Equal(t, "-123456.0", result2)
+}
