@@ -37,10 +37,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0e38bf4a577ba6fb6cc16c3a8313cb603a7f4b8b867bf4dacba212d6069aef3e"
+  digest = "1:f138505b651041ebc0b68e301160652414b97be55fef0a842a27b9f05e541b40"
   name = "github.com/google/gnxi"
   packages = [
-    "gnmi",
     "gnmi/modeldata",
     "gnmi/modeldata/gostruct",
     "utils/credentials",
@@ -256,7 +255,6 @@
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/timestamp",
-    "github.com/google/gnxi/gnmi",
     "github.com/google/gnxi/gnmi/modeldata",
     "github.com/google/gnxi/gnmi/modeldata/gostruct",
     "github.com/google/gnxi/utils/credentials",
@@ -264,8 +262,13 @@
     "github.com/openconfig/gnmi/client/gnmi",
     "github.com/openconfig/gnmi/proto/gnmi",
     "github.com/openconfig/gnmi/proto/gnmi_ext",
+    "github.com/openconfig/gnmi/value",
+    "github.com/openconfig/goyang/pkg/yang",
+    "github.com/openconfig/ygot/experimental/ygotutils",
     "github.com/openconfig/ygot/ygot",
+    "github.com/openconfig/ygot/ytypes",
     "golang.org/x/net/context",
+    "google.golang.org/genproto/googleapis/rpc/code",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/credentials",

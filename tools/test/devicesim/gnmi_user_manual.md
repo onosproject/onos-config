@@ -123,6 +123,26 @@ This gives a response like this.
   }
 }
 ```
+### Subscribe POLL
+```bash
+gnmi_cli -address localhost:10161 \
+    -proto "subscribe:<mode: 2, prefix:<>, subscription:<path: <elem: <name: 'openconfig-system:system'>  elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -timeout 5s -alsologtostderr \
+    -polling_interval 5s \
+    -client_crt certs/client1.crt -client_key certs/client1.key -ca_crt certs/onfca.crt
+```
+After running the above command the following output will be printed on the screen every 5 seconds. 
+```bash
+{
+  "system": {
+    "clock": {
+      "config": {
+        "timezone-name": "Europe/Dublin"
+      }
+    }
+  }
+}
+```
 
 ## Troubleshooting
 
