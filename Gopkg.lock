@@ -2,6 +2,17 @@
 
 
 [[projects]]
+  digest = "1:a5036bc703c3994f70ced9b34e9941381aa6bd03e69a0ce538f43bf14dc8dc98"
+  name = "github.com/docker/docker"
+  packages = [
+    "pkg/namesgenerator",
+    "pkg/random",
+  ]
+  pruneopts = "UT"
+  revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
+  version = "v1.13.1"
+
+[[projects]]
   branch = "master"
   digest = "1:1ba1d79f2810270045c328ae5d674321db34e3aae468eb4233883b473c5c0467"
   name = "github.com/golang/glog"
@@ -240,6 +251,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/docker/docker/pkg/namesgenerator",
     "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",

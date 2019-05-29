@@ -22,6 +22,7 @@ import (
 	"gotest.tools/assert"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -269,7 +270,7 @@ func TestMain(m *testing.M) {
 	ccs := make(map[ConfigName]change.ID)
 	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
 	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
-	nw1, err := CreateNetworkStore("nw1", ccs)
+	nw1, err := CreateNetworkConfiguration("testChange", "nw1", ccs)
 	networkStore = append(networkStore, *nw1)
 
 	os.Exit(m.Run())
@@ -522,7 +523,7 @@ func Test_writeOutNetworkFile(t *testing.T) {
 }
 
 func Test_createnetStore(t *testing.T) {
-	nwStore, err := CreateNetworkStoreWithName("testnwstore", "onos")
+	nwStore, err := CreateNetworkConfiguration("testnwstore", "onos", make(map[ConfigName]change.ID))
 	assert.NilError(t, err, "Unexpected error")
 
 	assert.Equal(t, nwStore.User, "onos")
@@ -531,9 +532,18 @@ func Test_createnetStore(t *testing.T) {
 }
 
 func Test_createnetStore_badname(t *testing.T) {
-	nwStore, err := CreateNetworkStoreWithName("???????", "onos")
+	nwStore, err := CreateNetworkConfiguration("???????", "onos", make(map[ConfigName]change.ID))
 	assert.ErrorContains(t, err, "Error in name ???????")
 	assert.Check(t, nwStore == nil, "unexpected result", nwStore)
+}
+
+func Test_createnetStore_noname(t *testing.T) {
+	var noname string
+	nwStore, err := CreateNetworkConfiguration(noname, "onos", make(map[ConfigName]change.ID))
+	assert.NilError(t, err)
+	// name will be randomly assigned from docker style name generator like 'happy_matsumoto'
+	assert.Assert(t, len(nwStore.Name) > 3)
+	assert.Assert(t, strings.Contains(nwStore.Name, "_"))
 }
 
 func Test_loadNetworkStoreFile(t *testing.T) {

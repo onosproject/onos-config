@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"strconv"
 	"testing"
 
@@ -37,10 +38,20 @@ func Test_doSingleSet(t *testing.T) {
 	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
 
+	ext100Name := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  GnmiExtensionNetwkChangeID,
+			Msg: []byte("TestChange"),
+		},
+	}
+
 	var setRequest = gnmi.SetRequest{
 		Delete:  deletePaths,
 		Replace: replacedPaths,
 		Update:  updatedPaths,
+		Extension: []*gnmi_ext.Extension{&gnmi_ext.Extension{
+			Ext: &ext100Name,
+		}},
 	}
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
@@ -71,7 +82,7 @@ func Test_doSingleSet(t *testing.T) {
 
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
-	assert.Equal(t, string(extension.Msg), "Change-2koYnvGHAuKTRc+7+5fg03gN5xA=")
+	assert.Equal(t, string(extension.Msg), "TestChange")
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target

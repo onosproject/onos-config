@@ -27,7 +27,7 @@ import (
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
 const SetConfigAlreadyApplied = "Already applied:"
 
-// SetNetworkConfig sets the given value, according to the path on the configuration for the specified targed
+// SetNetworkConfig sets the given value, according to the path on the configuration for the specified target
 func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[string]string,
 	deletes []string) (change.ID, store.ConfigName, error) {
 
