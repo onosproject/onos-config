@@ -1,0 +1,6 @@
+#!/bin/bash
+
+go get github.com/go-playground/overalls && go get github.com/mattn/goveralls
+
+overalls -project=github.com/onosproject/onos-config -covermode=count -ignore=".git,vendor"
+goveralls -debug -repotoken zYSpxa0z7rO5sQ4IrVQeaG8ARkv0cZSNO -coverprofile=overalls.coverprofile

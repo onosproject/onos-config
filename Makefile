@@ -45,8 +45,7 @@ test: deps lint vet license_check gofmt
 
 coverage: # @HELP generate unit test coverage data
 coverage: test
-	go test -coverprofile=coverage.txt -covermode=atomic github.com/onosproject/onos-config/pkg/...
-	go test -coverprofile=coverage.txt -covermode=atomic github.com/onosproject/onos-config/cmd/...
+	./tools/build/coveralls-coverage
 
 run: # @HELP run mainline in cmd/onos-config
 run: deps
