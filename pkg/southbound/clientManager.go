@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/certs"
@@ -33,7 +34,9 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-func createDestination(device topocache.Device) (*client.Destination, Key) {
+var targets = make(map[DeviceID]interface{})
+
+func createDestination(device topocache.Device) (*client.Destination, DeviceID) {
 	d := &client.Destination{TLS: &tls.Config{}}
 	d.Addrs = []string{device.Addr}
 	d.Target = device.Target
@@ -66,11 +69,11 @@ func createDestination(device topocache.Device) (*client.Destination, Key) {
 	} else {
 		d.TLS = &tls.Config{InsecureSkipVerify: true}
 	}
-	return d, Key{Key: device.Addr}
+	return d, DeviceID{DeviceID: device.Addr}
 }
 
 // GetTarget attempts to get a specific target from the targets cache
-func GetTarget(key Key) (*Target, error) {
+func GetTarget(key DeviceID) (*Target, error) {
 	_, ok := targets[key].(*Target)
 	if ok {
 		return targets[key].(*Target), nil
@@ -82,13 +85,13 @@ func GetTarget(key Key) (*Target, error) {
 // ConnectTarget connects to a given Device according to the passed information establishing a channel to it.
 //TODO make asyc
 //TODO lock channel to allow one request to device at each time
-func (target *Target) ConnectTarget(ctx context.Context, device topocache.Device) (Key, error) {
+func (target *Target) ConnectTarget(ctx context.Context, device topocache.Device) (DeviceID, error) {
 	dest, key := createDestination(device)
 	c, err := GnmiClientFactory(ctx, *dest)
 
 	//c.handler := client.NotificationHandler{}
 	if err != nil {
-		return Key{}, fmt.Errorf("could not create a gNMI client: %v", err)
+		return DeviceID{}, fmt.Errorf("could not create a gNMI client: %v", err)
 	}
 
 	target.Clt = c
@@ -218,28 +221,28 @@ func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeReque
 // NewSubscribeRequest returns a SubscribeRequest for the given paths
 func NewSubscribeRequest(subscribeOptions *SubscribeOptions) (*gpb.SubscribeRequest, error) {
 	var mode gpb.SubscriptionList_Mode
-	switch subscribeOptions.Mode {
-	case Once.String():
+	switch strings.ToUpper(subscribeOptions.Mode) {
+	case gpb.SubscriptionList_ONCE.String():
 		mode = gpb.SubscriptionList_ONCE
-	case Poll.String():
+	case gpb.SubscriptionList_POLL.String():
 		mode = gpb.SubscriptionList_POLL
 	case "":
 		fallthrough
-	case Stream.String():
+	case gpb.SubscriptionList_STREAM.String():
 		mode = gpb.SubscriptionList_STREAM
 	default:
 		return nil, fmt.Errorf("subscribe mode (%s) invalid", subscribeOptions.Mode)
 	}
 
 	var streamMode gpb.SubscriptionMode
-	switch subscribeOptions.StreamMode {
-	case OnChange.String():
+	switch strings.ToUpper(subscribeOptions.StreamMode) {
+	case gpb.SubscriptionMode_ON_CHANGE.String():
 		streamMode = gpb.SubscriptionMode_ON_CHANGE
-	case Sample.String():
+	case gpb.SubscriptionMode_SAMPLE.String():
 		streamMode = gpb.SubscriptionMode_SAMPLE
 	case "":
 		fallthrough
-	case TargetDefined.String():
+	case gpb.SubscriptionMode_TARGET_DEFINED.String():
 		streamMode = gpb.SubscriptionMode_TARGET_DEFINED
 	default:
 		return nil, fmt.Errorf("subscribe stream mode (%s) invalid", subscribeOptions.StreamMode)

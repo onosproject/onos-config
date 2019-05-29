@@ -45,7 +45,7 @@ func main() {
 		fmt.Println("Error ", target, err)
 	}
 
-	targetExists, err := southbound.GetTarget(southbound.Key{Key: device.Addr})
+	targetExists, err := southbound.GetTarget(southbound.DeviceID{DeviceID: device.Addr})
 	if reflect.DeepEqual(target, targetExists) {
 		fmt.Println("Target reusal works")
 	}
