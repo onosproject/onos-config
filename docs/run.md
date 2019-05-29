@@ -16,15 +16,10 @@ go run github.com/onosproject/onos-config/cmd/onos-config \
 ## Run Server in Docker Image
 Alternatively, to run onos-config via its Docker image like this:
 ```
-docker run -p 5150:5150 -v `pwd`/configs:/etc/onos-config -it onosproject/onos-config \
-    -configStore=/etc/onos-config/configStore-sample.json \
-    -changeStore=/etc/onos-config/changeStore-sample.json \
-    -deviceStore=/etc/onos-config/deviceStore-sample.json \
-    -networkStore=/etc/onos-config/networkStore-sample.json
+make run-docker
 ```
 Note that the local config directory is mounted from the container to allow access to local
-test configuration files. You can [build your own version of the onos-config Docker image](build.md) 
-or use the published one.
+test configuration files. This command will build a docker image form source
 
 
 ## Northbound Get Request via gNMI
