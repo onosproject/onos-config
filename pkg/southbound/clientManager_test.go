@@ -335,6 +335,16 @@ func Test_NewSubscribeRequest(t *testing.T) {
 	assert.NilError(t, requestError)
 	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_POLL)
 	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_SAMPLE)
+
+	options.Mode = "Test_Error"
+	request, requestError = NewSubscribeRequest(options)
+	assert.ErrorContains(t, requestError, "invalid")
+
+	options.Mode = "Poll"
+	options.StreamMode = "test_error"
+	request, requestError = NewSubscribeRequest(options)
+	assert.ErrorContains(t, requestError, "invalid")
+
 }
 
 func Test_CapabilitiesWithString(t *testing.T) {
