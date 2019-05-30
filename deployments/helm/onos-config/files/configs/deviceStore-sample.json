@@ -2,18 +2,18 @@
   "Version": "1.0.0",
   "Storetype": "device",
   "Store": {
-    "localhost:10161": {
-      "Addr": "localhost:10161",
+    "device-1-device-simulator": {
+      "Addr": "device-1-device-simulator:10161",
       "User": "devicesim",
       "Pwd": "notused",
       "Timeout": 10000000000
     },
-    "localhost:10162": {
-      "Addr": "localhost:10162",
+    "device-2-device-simulator": {
+      "Addr": "device-2-device-simulator:10161",
       "Timeout": 10000000000
     },
-    "localhost:10163": {
-      "Addr": "localhost:10163",
+    "device-3-device-simulator": {
+      "Addr": "device-3-device-simulator:10161",
       "Timeout": 10000000000
     }
   }

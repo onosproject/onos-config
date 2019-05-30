@@ -124,7 +124,7 @@
       "ID": "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
       "Description": "Original configuration for devicesim",
       "Created": "2019-05-21T08:43:01Z",
-      "Config" : [
+      "Config": [
         {
           "Path": "/openconfig-interfaces:interfaces/interface[name=admin]/config/name",
           "Value": "admin"
@@ -211,7 +211,7 @@
       "ID": "i86kLjjNFr5IBa+O3YTuv9HBqJg=",
       "Description": "Modification of device sim 1",
       "Created": "2019-05-21T08:43:02Z",
-      "Config" : [
+      "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
           "Value": "localhost:10161"
@@ -226,7 +226,7 @@
       "ID": "UyPwBSOxDqQM/ZCohHFannSF5ME=",
       "Description": "Modification of device sim 2",
       "Created": "2019-05-21T08:43:03Z",
-      "Config" : [
+      "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
           "Value": "localhost:10162"
@@ -241,7 +241,7 @@
       "ID": "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y=",
       "Description": "Modification of device sim 3",
       "Created": "2019-05-21T08:43:04Z",
-      "Config" : [
+      "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
           "Value": "localhost:10163"
@@ -249,6 +249,51 @@
         {
           "Path": "/openconfig-system:system/config/motd-banner",
           "Value": "Welcome to gNMI service on localhost:10163"
+        }
+      ]
+    },
+    "ZOBFNpGhCHoc9gLiJduqY1FiTzs=": {
+      "ID": "ZOBFNpGhCHoc9gLiJduqY1FiTzs=",
+      "Description": "Modification of device-1-device-simulator",
+      "Created": "2019-05-30T18:03:17Z",
+      "Config": [
+        {
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "device-1-device-simulator"
+        },
+        {
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "Welcome to gNMI service on device-1-device-simulator"
+        }
+      ]
+    },
+    "ZYNxDoardxYaQwMtbFbf1qO9AjE=": {
+      "ID": "ZYNxDoardxYaQwMtbFbf1qO9AjE=",
+      "Description": "Modification of device-2-device-simulator",
+      "Created": "2019-05-30T18:03:17Z",
+      "Config": [
+        {
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "device-2-device-simulator"
+        },
+        {
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "Welcome to gNMI service on device-2-device-simulator"
+        }
+      ]
+    },
+    "pLAjo6M3icVnLsZ8ZOjSaELH8SQ=": {
+      "ID": "pLAjo6M3icVnLsZ8ZOjSaELH8SQ=",
+      "Description": "Modification of device-3-device-simulator",
+      "Created": "2019-05-30T18:03:17Z",
+      "Config": [
+        {
+          "Path": "/openconfig-system:system/config/hostname",
+          "Value": "device-3-device-simulator"
+        },
+        {
+          "Path": "/openconfig-system:system/config/motd-banner",
+          "Value": "Welcome to gNMI service on device-3-device-simulator"
         }
       ]
     }
