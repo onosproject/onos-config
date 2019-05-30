@@ -116,8 +116,8 @@ func Test_unregister(t *testing.T) {
 	assert.Assert(t, err1 != nil, "Unexpected lack of error when unregistering non existent device")
 	assert.Assert(t, is.Contains(err1.Error(), "had not been registered"), "Unexpected error text when unregistering non existent device %s", err1)
 
-	_, err1 = d.Register("device6", true)
-	_, err1 = d.Register("device7", true)
+	d.Register("device6", true)
+	d.Register("device7", true)
 
 	err2 := d.Unregister("device6", true)
 	assert.NilError(t, err2, "Unexpected error when unregistering device6 %s", err)
