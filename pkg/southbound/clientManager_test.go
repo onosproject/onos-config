@@ -139,13 +139,13 @@ func tearDown() {
 	GnmiCacheClientFactory = saveGnmiCacheClientFactory
 }
 
-func getDevice1Target(t *testing.T) (Target, Key, context.Context) {
+func getDevice1Target(t *testing.T) (Target, DeviceID, context.Context) {
 	target := Target{}
 	ctx := context.Background()
 	key, err := target.ConnectTarget(ctx, device)
 	assert.NilError(t, err)
 	assert.Assert(t, target.Clt != nil)
-	assert.Equal(t, key.Key, device1)
+	assert.Equal(t, key.DeviceID, device1)
 	return target, key, ctx
 }
 
@@ -163,7 +163,7 @@ func Test_ConnectTarget(t *testing.T) {
 func Test_BadTarget(t *testing.T) {
 	setUp(t)
 
-	key := Key{Key: "no such target"}
+	key := DeviceID{DeviceID: "no such target"}
 	_, fetchError := GetTarget(key)
 	assert.ErrorContains(t, fetchError, "does not exist")
 	tearDown()
@@ -301,6 +301,50 @@ func Test_Subscribe(t *testing.T) {
 	assert.NilError(t, subscribeError)
 
 	tearDown()
+}
+
+func Test_NewSubscribeRequest(t *testing.T) {
+	paths := make([][]string, 1)
+	paths[0] = make([]string, 1)
+	paths[0][0] = "/a/b/c"
+	options := &SubscribeOptions{
+		UpdatesOnly:       false,
+		Prefix:            "",
+		Mode:              "Stream",
+		StreamMode:        "target_defined",
+		SampleInterval:    15,
+		HeartbeatInterval: 15,
+		Paths:             paths,
+		Origin:            "",
+	}
+	request, requestError := NewSubscribeRequest(options)
+	assert.NilError(t, requestError)
+	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_STREAM)
+	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_TARGET_DEFINED)
+
+	options.Mode = "Once"
+	options.StreamMode = "on_change"
+	request, requestError = NewSubscribeRequest(options)
+	assert.NilError(t, requestError)
+	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_ONCE)
+	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_ON_CHANGE)
+
+	options.Mode = "Poll"
+	options.StreamMode = "sample"
+	request, requestError = NewSubscribeRequest(options)
+	assert.NilError(t, requestError)
+	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_POLL)
+	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_SAMPLE)
+
+	options.Mode = "Test_Error"
+	request, requestError = NewSubscribeRequest(options)
+	assert.ErrorContains(t, requestError, "invalid")
+
+	options.Mode = "Poll"
+	options.StreamMode = "test_error"
+	request, requestError = NewSubscribeRequest(options)
+	assert.ErrorContains(t, requestError, "invalid")
+
 }
 
 func Test_CapabilitiesWithString(t *testing.T) {

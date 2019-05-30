@@ -18,9 +18,9 @@ import (
 	"github.com/openconfig/gnmi/client"
 )
 
-// Key Target key; can be extended, for now is ip:port
-type Key struct {
-	Key string
+// DeviceID Target key; can be extended, for now is ip:port
+type DeviceID struct {
+	DeviceID string
 }
 
 // Target struct for connecting to gNMI
@@ -39,38 +39,4 @@ type SubscribeOptions struct {
 	HeartbeatInterval uint64
 	Paths             [][]string
 	Origin            string
-}
-
-// SubscribeMode specifies the mode of a subscription request
-type SubscribeMode int
-
-// StreamMode specifies the mode of a streaming request
-type StreamMode int
-
-const (
-	// Once mode
-	Once SubscribeMode = iota
-	// Poll mode
-	Poll
-	// Stream mode
-	Stream
-)
-
-const (
-	// OnChange stream mode
-	OnChange StreamMode = iota
-	// Sample stream mode
-	Sample
-	// TargetDefined stream mode
-	TargetDefined
-)
-
-var targets = make(map[Key]interface{})
-
-func (mode SubscribeMode) String() string {
-	return [...]string{"Once", "Poll", "Stream"}[mode]
-}
-
-func (mode StreamMode) String() string {
-	return [...]string{"on_change", "sample", "target_defined"}[mode]
 }
