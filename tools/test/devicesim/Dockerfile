@@ -60,11 +60,11 @@ ENV SIM_MODE=1
 
 RUN mkdir -p $ONOS_CONFIG_ROOT/tools/test/devicesim
 
-COPY ./target_configs target_configs
-COPY ./certs certs
-COPY ./scripts scripts
-COPY ./gnmi_target gnmi_target
-COPY ./gnmi $GOPATH/src/github.com/onosproject/onos-config/tools/test/devicesim/gnmi
+COPY target_configs target_configs
+COPY certs certs
+COPY scripts scripts
+COPY gnmi_target gnmi_target
+COPY gnmi $GOPATH/src/github.com/onosproject/onos-config/tools/test/devicesim/gnmi
 
 
 RUN cd $GOPATH/src/github.com/onosproject/onos-config/tools/test/devicesim/gnmi && go install
