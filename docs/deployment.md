@@ -337,7 +337,7 @@ service and port:
 ```bash
 > gnmi_cli -set \
     -address config.onosproject.org:443 \
-    -proto "update: <path: <target: 'device-1-device-simulator:10161', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Dublin'>>" \
+    -proto "update: <path: <target: 'device-1-device-simulator', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Dublin'>>" \
     -timeout 5s \
     -client_crt deployments/helm/onos-config/files/certs/tls.crt \
     -client_key deployments/helm/onos-config/files/certs/tls.key \
@@ -348,7 +348,7 @@ response: <
     elem: <
       name: "/system/clock/config/timezone-name"
     >
-    target: "device-1-device-simulator:10161"
+    target: "device-1-device-simulator"
   >
   op: UPDATE
 >
@@ -378,7 +378,7 @@ through the northbound API:
 ```bash
 > gnmi_cli -get \
     -address config.onosproject.org:443 \
-    -proto "path: <target: 'device-1-device-simulator:10161', elem: <name: 'system'> elem: <name: 'clock' > elem:<name:'config'> elem: <name: 'timezone-name'>>" \
+    -proto "path: <target: 'device-1-device-simulator', elem: <name: 'system'> elem: <name: 'clock' > elem:<name:'config'> elem: <name: 'timezone-name'>>" \
     -timeout 5s \
     -client_crt deployments/helm/onos-config/files/certs/tls.crt \
     -client_key deployments/helm/onos-config/files/certs/tls.key \
@@ -400,7 +400,7 @@ notification: <
       elem: <
         name: "timezone-name"
       >
-      target: "device-1-device-simulator:10161"
+      target: "device-1-device-simulator"
     >
     val: <
       ascii_val: "Europe/Dublin"
