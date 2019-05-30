@@ -15,8 +15,8 @@
 package synchronizer
 
 import (
+	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/listener"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"log"
@@ -27,7 +27,7 @@ import (
 // These synchronizers then listen out for configEvents relative to a device and
 // propagate them downwards to the gNMI dispatcher
 func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
-	topoChannel <-chan events.TopoEvent, dispatcher *listener.Dispatcher) {
+	topoChannel <-chan events.TopoEvent, dispatcher *dispatcher.Dispatcher) {
 
 	for topoEvent := range topoChannel {
 		deviceName := events.Event(topoEvent).Subject()
