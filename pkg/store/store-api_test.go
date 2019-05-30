@@ -271,6 +271,10 @@ func TestMain(m *testing.M) {
 	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
 	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
 	nw1, err := CreateNetworkConfiguration("testChange", "nw1", ccs)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 	networkStore = append(networkStore, *nw1)
 
 	os.Exit(m.Run())

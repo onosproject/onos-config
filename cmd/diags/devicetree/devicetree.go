@@ -100,7 +100,7 @@ func main() {
 				}
 			}
 
-			configuration, err := store.CreateConfiguration(
+			configuration, _ := store.CreateConfiguration(
 				in.Deviceid, in.Version, in.Devicetype,
 				modelDatas, changes)
 
