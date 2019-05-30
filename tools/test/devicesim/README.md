@@ -27,6 +27,7 @@ Docker compose manages the running of several docker images at once.
 
 For example to run 3 **SIM_MODE=1** (gNMI only devices) and **localhost** mode, use: 
 ```bash
+cd docker_compose
 docker-compose -f docker-compose-gnmi.yml up
 ```
 
@@ -51,6 +52,7 @@ If you are fortunate enough to be using Docker on Linux, then you can use the
 above method __or__ using the command below to start in **SIM_MODE=1** and **network** mode:
 
 ```bash
+cd docker_compose
 docker-compose -f docker-compose-linux.yml up
 ```
 
@@ -82,7 +84,6 @@ docker run --env "HOSTNAME=localhost" --env "SIM_MODE=3" \
 ```
 To stop it use "docker kill"
 
-
 ## Create the docker image
 By default the docker compose command will pull down the latest docker
 image from the Docker Hub. If you need to build it locally, run:
@@ -94,7 +95,7 @@ docker build -t onosproject/devicesim:stable -f Dockerfile .
 You can access to the information about client tools for each SIM_MODE
 including troubleshooting tips using the following links: 
 
-[gNMI Client_User Manual](gnmi_user_manual.md)
+[gNMI Client_User Manual](docs/gnmi_user_manual.md)
 
-[gNOI Client_User Manual](gnoi_user_manual.md)
+[gNOI Client_User Manual](docs/gnoi_user_manual.md)
 

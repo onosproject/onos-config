@@ -52,17 +52,24 @@ RUN go install -v \
       github.com/google/gnxi/gnoi_target \ 
       github.com/google/gnxi/gnoi_cert
 
+
+ENV ONOS_CONFIG_ROOT=$GOPATH/src/github.com/onosproject/onos-config/
 ENV GNMI_PORT=10161
 ENV GNOI_PORT=50001
 ENV SIM_MODE=1
 
-COPY ./target_configs target_configs
-COPY ./certs certs
-COPY ./scripts scripts
-COPY ./gnmi_target gnmi_target
+RUN mkdir -p $ONOS_CONFIG_ROOT/tools/test/devicesim
+
+COPY target_configs target_configs
+COPY certs certs
+COPY scripts scripts
+COPY gnmi_target gnmi_target
+COPY gnmi $GOPATH/src/github.com/onosproject/onos-config/tools/test/devicesim/gnmi
 
 
+RUN cd $GOPATH/src/github.com/onosproject/onos-config/tools/test/devicesim/gnmi && go install
 RUN cd ./gnmi_target && go install
+
 RUN chmod +x ./scripts/run_targets.sh
 
 CMD ["./scripts/run_targets.sh"]

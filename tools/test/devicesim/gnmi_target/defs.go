@@ -17,7 +17,7 @@ package main
 import (
 	"flag"
 
-	"github.com/google/gnxi/gnmi"
+	"github.com/onosproject/onos-config/tools/test/devicesim/gnmi"
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/ygot/ygot"
 )
