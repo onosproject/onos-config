@@ -52,13 +52,14 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 
 	for configEvent := range changeChannel {
 		log.Println("Listener: Event", configEvent)
-		for device, deviceChan := range d.deviceListeners {
-			if events.Event(configEvent).Subject() == device {
-				log.Println("Device Simulators must be active")
-				//TODO need a timeout or be done in separate routine
-				deviceChan <- configEvent
-			}
+		deviceChan, ok := d.deviceListeners[events.Event(configEvent).Subject()]
+		if ok {
+			log.Println("Device Simulators must be active")
+			//TODO need a timeout or be done in separate routine
+			log.Println(deviceChan)
+			deviceChan <- configEvent
 		}
+
 		for _, nbiChan := range d.nbiListeners {
 			nbiChan <- configEvent
 		}
@@ -83,6 +84,7 @@ func (d *Dispatcher) Register(subscriber string, isDevice bool) (chan events.Con
 	} else {
 		d.nbiListeners[subscriber] = channel
 	}
+	log.Printf("%s=%v", subscriber, channel)
 	return channel, nil
 }
 
@@ -97,12 +99,12 @@ func (d *Dispatcher) Unregister(subscriber string, isDevice bool) error {
 	if channel == nil {
 		return fmt.Errorf("Subscriber %s had not been registered", subscriber)
 	}
-	close(channel)
 	if isDevice {
 		delete(d.deviceListeners, subscriber)
 	} else {
 		delete(d.nbiListeners, subscriber)
 	}
+	close(channel)
 	return nil
 }
 

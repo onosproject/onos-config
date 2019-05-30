@@ -16,18 +16,16 @@ package dispatcher
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"strconv"
-	"strings"
-	"testing"
-	"time"
-
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
+	"log"
+	"os"
+	"strings"
+	"testing"
+	"time"
 )
 
 var (
@@ -58,7 +56,6 @@ func tearDown(d *Dispatcher) {
 	d.Unregister(device1.Addr, true)
 	d.Unregister(device2.Addr, true)
 	d.Unregister(device3.Addr, true)
-
 }
 
 func TestMain(m *testing.M) {
@@ -86,8 +83,8 @@ func TestMain(m *testing.M) {
 func Test_getListeners(t *testing.T) {
 	d := setUp()
 	listeners := d.GetListeners()
-
 	assert.Assert(t, len(listeners) == 3, "Expected to find 3 devices in list. Got %d", len(listeners))
+	assert.Assert(t, d.HasListener(device1.Addr), "Device 1 not registered")
 
 	listenerStr := strings.Join(listeners, ",")
 	// Could be in any order
@@ -126,36 +123,34 @@ func Test_unregister(t *testing.T) {
 	tearDown(d)
 }
 
-func Test_listen(t *testing.T) {
+func Test_listen_device(t *testing.T) {
 	d := setUp()
 
-	// Start a test listener
-	testChan := make(chan events.Event, 10)
-	go testSync(testChan)
 	// Start the main listener system
+	go testSync(device1Channel)
 	changesChannel := make(chan events.ConfigEvent, 10)
 	go d.Listen(changesChannel)
 	changeID := []byte("test")
 	// Send down some changes
-	for i := 1; i < 13; i++ {
-		event := events.CreateConfigEvent("device"+strconv.Itoa(i), changeID, true)
-
+	for i := 1; i < 3; i++ {
+		event := events.CreateConfigEvent(device1.Addr, changeID, true)
 		changesChannel <- event
 	}
+	close(changesChannel)
 
 	// Wait for the changes to get distributed
 	time.Sleep(time.Second)
 	tearDown(d)
-	close(testChan)
-	close(changesChannel)
 }
 
 func Test_listen_nbi(t *testing.T) {
 	d := NewDispatcher()
-	d.Register("nbi", false)
+	ch, err := d.Register("nbi", false)
+	assert.NilError(t, err, "Unexpected error when registering nbi %s", err)
 	assert.Equal(t, 1, len(d.GetListeners()), "One NBI listener expected")
 
 	// Start the main listener system
+	go testSync(ch)
 	changesChannel := make(chan events.ConfigEvent, 10)
 	go d.Listen(changesChannel)
 	changeID := []byte("test")
@@ -164,9 +159,11 @@ func Test_listen_nbi(t *testing.T) {
 		event := events.CreateConfigEvent("foobar", changeID, true)
 		changesChannel <- event
 	}
-
-	d.Unregister("nbi", false)
 	close(changesChannel)
+
+	// Wait for the changes to get distributed
+	time.Sleep(time.Second)
+	d.Unregister("nbi", false)
 }
 
 func Test_listen_none(t *testing.T) {
@@ -196,7 +193,7 @@ func Test_register_dup(t *testing.T) {
 	assert.Equal(t, i, len(d.GetListeners()), "Duplicate device listener added")
 }
 
-func testSync(testChan <-chan events.Event) {
+func testSync(testChan <-chan events.ConfigEvent) {
 	log.Println("Listen for config changes for Test")
 
 	for nbiChange := range testChan {
