@@ -16,8 +16,8 @@ package gnmi
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/listener"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -70,7 +70,7 @@ func setUp(broadcast bool) *Server {
 	}
 
 	mgr = manager.GetManager()
-	mgr.Dispatcher = listener.NewDispatcher()
+	mgr.Dispatcher = dispatcher.NewDispatcher()
 	mgr.TopoChannel = make(chan events.TopoEvent)
 	go listenToTopoLoading(mgr.TopoChannel)
 	mgr.ChangesChannel = make(chan events.ConfigEvent)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package listener
+package dispatcher
 
 import (
 	"fmt"
@@ -114,7 +114,8 @@ func Test_unregister(t *testing.T) {
 	err1 := d.Unregister("device5", true)
 
 	assert.Assert(t, err1 != nil, "Unexpected lack of error when unregistering non existent device")
-	assert.Assert(t, is.Contains(err1.Error(), "had not been registered"), "Unexpected error text when unregistering non existent device %s", err1)
+	assert.Assert(t, is.Contains(err1.Error(), "had not been registered"),
+		"Unexpected error text when unregistering non existent device %s", err1)
 
 	d.Register("device6", true)
 	d.Register("device7", true)

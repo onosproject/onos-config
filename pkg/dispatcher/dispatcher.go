@@ -13,14 +13,14 @@
 // limitations under the License.
 
 /*
-Package listener is a channel for handling Configuration Events.
+Package dispatcher enables registering and unregistering of listeners for different Events.
 
 The channel system here is a two tier affair that forwards changes from the core
 configuration store to NBI listeners and to any registered device listeners
 This is so that the Configuration system does not have to be aware of the presence
 or lack of NBI, Device synchronizers etc.
 */
-package listener
+package dispatcher
 
 import (
 	"fmt"
@@ -106,7 +106,7 @@ func (d *Dispatcher) Unregister(subscriber string, isDevice bool) error {
 	return nil
 }
 
-// GetListeners returns a list of registered listener names
+// GetListeners returns a list of registered dispatcher names
 func (d *Dispatcher) GetListeners() []string {
 	listenerKeys := make([]string, 0)
 	for k := range d.deviceListeners {
