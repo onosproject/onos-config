@@ -120,10 +120,6 @@ func (d *Dispatcher) GetListeners() []string {
 
 // HasListener returns true if the named listeners has been registered
 func (d *Dispatcher) HasListener(name string) bool {
-	for k := range d.deviceListeners {
-		if k == name {
-			return true
-		}
-	}
-	return false
+	_, ok := d.deviceListeners[name]
+	return ok
 }
