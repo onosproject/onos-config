@@ -20,6 +20,7 @@ const (
 
 	// GnmiExtensionVersion is used in Set, Get and Subscribe
 	GnmiExtensionVersion = 101
+	
 
 	// GnmiExtensionDeviceType is used in Set only when creating a device the first time
 	// It can be used as a discriminator on Get when wildcard target is given
