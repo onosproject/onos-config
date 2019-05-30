@@ -46,14 +46,25 @@ var (
 	changeStoreTest store.ChangeStore
 )
 
+func setUp() *Dispatcher {
+	d := NewDispatcher()
+	device1Channel, err = d.Register(device1.Addr, true)
+	device2Channel, err = d.Register(device2.Addr, true)
+	device3Channel, err = d.Register(device3.Addr, true)
+	return &d
+}
+
+func tearDown(d *Dispatcher) {
+	d.Unregister(device1.Addr, true)
+	d.Unregister(device2.Addr, true)
+	d.Unregister(device3.Addr, true)
+
+}
+
 func TestMain(m *testing.M) {
 	device1 = topocache.Device{Addr: "localhost:10161"}
 	device2 = topocache.Device{Addr: "localhost:10162"}
 	device3 = topocache.Device{Addr: "localhost:10163"}
-
-	device1Channel, err = Register(device1.Addr, true)
-	device2Channel, err = Register(device2.Addr, true)
-	device3Channel, err = Register(device3.Addr, true)
 
 	configStoreTest, err = store.LoadConfigStore(configStoreDefaultFileName)
 	if err != nil {
@@ -72,8 +83,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func Test_listlisteners(t *testing.T) {
-	listeners := ListListeners()
+func Test_getListeners(t *testing.T) {
+	d := setUp()
+	listeners := d.GetListeners()
 
 	assert.Assert(t, len(listeners) == 3, "Expected to find 3 devices in list. Got %d", len(listeners))
 
@@ -82,38 +94,46 @@ func Test_listlisteners(t *testing.T) {
 	assert.Assert(t, is.Contains(listenerStr, "localhost:10161"), "Expected to find device1 in list. Got %s", listeners)
 	assert.Assert(t, is.Contains(listenerStr, "localhost:10162"), "Expected to find device2 in list. Got %s", listeners)
 	assert.Assert(t, is.Contains(listenerStr, "localhost:10163"), "Expected to find device3 in list. Got %s", listeners)
+	tearDown(d)
 }
 
 func Test_register(t *testing.T) {
-	device4Channel, err := Register("device4", true)
+	d := setUp()
+	device4Channel, err := d.Register("device4", true)
 	assert.NilError(t, err, "Unexpected error when registering device %s", err)
 
 	var deviceChannelIf interface{} = device4Channel
 	chanType, ok := deviceChannelIf.(chan events.ConfigEvent)
 	assert.Assert(t, ok, "Unexpected channel type when registering device %v", chanType)
-
+	d.Unregister("device4", true)
+	tearDown(d)
 }
 
 func Test_unregister(t *testing.T) {
-	err1 := Unregister("device5", true)
+	d := setUp()
+	err1 := d.Unregister("device5", true)
 
 	assert.Assert(t, err1 != nil, "Unexpected lack of error when unregistering non existent device")
 	assert.Assert(t, is.Contains(err1.Error(), "had not been registered"), "Unexpected error text when unregistering non existent device %s", err1)
 
-	_, err1 = Register("device6", true)
-	_, err1 = Register("device7", true)
+	d.Register("device6", true)
+	d.Register("device7", true)
 
-	err2 := Unregister("device6", true)
+	err2 := d.Unregister("device6", true)
 	assert.NilError(t, err2, "Unexpected error when unregistering device6 %s", err)
+	d.Unregister("device7", true)
+	tearDown(d)
 }
 
 func Test_listen(t *testing.T) {
+	d := setUp()
+
 	// Start a test listener
 	testChan := make(chan events.Event, 10)
 	go testSync(testChan)
 	// Start the main listener system
 	changesChannel := make(chan events.ConfigEvent, 10)
-	go Listen(changesChannel)
+	go d.Listen(changesChannel)
 	changeID := []byte("test")
 	// Send down some changes
 	for i := 1; i < 13; i++ {
@@ -124,11 +144,55 @@ func Test_listen(t *testing.T) {
 
 	// Wait for the changes to get distributed
 	time.Sleep(time.Second)
-	Unregister(device1.Addr, true)
-	Unregister(device2.Addr, true)
-	Unregister(device3.Addr, true)
+	tearDown(d)
 	close(testChan)
 	close(changesChannel)
+}
+
+func Test_listen_nbi(t *testing.T) {
+	d := NewDispatcher()
+	d.Register("nbi", false)
+	assert.Equal(t, 1, len(d.GetListeners()), "One NBI listener expected")
+
+	// Start the main listener system
+	changesChannel := make(chan events.ConfigEvent, 10)
+	go d.Listen(changesChannel)
+	changeID := []byte("test")
+	// Send down some changes
+	for i := 1; i < 3; i++ {
+		event := events.CreateConfigEvent("foobar", changeID, true)
+		changesChannel <- event
+	}
+
+	d.Unregister("nbi", false)
+	close(changesChannel)
+}
+
+func Test_listen_none(t *testing.T) {
+	d := NewDispatcher()
+	assert.Equal(t, 0, len(d.GetListeners()), "No listeners expected")
+
+	// Start the main listener system
+	changesChannel := make(chan events.ConfigEvent, 10)
+	go d.Listen(changesChannel)
+	changeID := []byte("test")
+	// Send down some changes
+	for i := 1; i < 3; i++ {
+		event := events.CreateConfigEvent("foobar", changeID, true)
+		changesChannel <- event
+	}
+	close(changesChannel)
+}
+
+func Test_register_dup(t *testing.T) {
+	d := NewDispatcher()
+	d.Register("nbi", false)
+	d.Register("dev1", true)
+	i := len(d.GetListeners())
+	d.Register("nbi", false)
+	assert.Equal(t, i, len(d.GetListeners()), "Duplicate NBI listener added")
+	d.Register("dev1", true)
+	assert.Equal(t, i, len(d.GetListeners()), "Duplicate device listener added")
 }
 
 func testSync(testChan <-chan events.Event) {

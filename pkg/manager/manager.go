@@ -35,6 +35,7 @@ type Manager struct {
 	NetworkStore   *store.NetworkStore
 	TopoChannel    chan events.TopoEvent
 	ChangesChannel chan events.ConfigEvent
+	Dispatcher     listener.Dispatcher
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -48,6 +49,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		NetworkStore:   network,
 		TopoChannel:    topoCh,
 		ChangesChannel: make(chan events.ConfigEvent, 10),
+		Dispatcher:     listener.NewDispatcher(),
 	}
 
 	changeIds := make([]string, 0)
@@ -85,8 +87,8 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 func (m *Manager) Run() {
 	log.Println("Starting Manager")
 	// Start the main listener system
-	go listener.Listen(m.ChangesChannel)
-	go synchronizer.Factory(m.ChangeStore, m.DeviceStore, m.TopoChannel)
+	go m.Dispatcher.Listen(m.ChangesChannel)
+	go synchronizer.Factory(m.ChangeStore, m.DeviceStore, m.TopoChannel, &m.Dispatcher)
 }
 
 //Close kills the channels and manager related objects
