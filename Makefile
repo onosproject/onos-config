@@ -2,14 +2,16 @@ export CGO_ENABLED=0
 
 .PHONY: build
 
-ONOS_CONFIG_VERSION := "latest"
-ONOS_BUILD_VERSION := "stable"
+ONOS_CONFIG_VERSION := latest
+ONOS_BUILD_VERSION := stable
 
 all: image
 
 image: # @HELP build onos-config image
-	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:${ONOS_BUILD_VERSION} protos build
-	docker build . -f build/onos-config/Dockerfile -t onosproject/onos-config:${ONOS_CONFIG_VERSION}
+	docker run --rm -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:${ONOS_BUILD_VERSION} protos
+	docker build . -f build/onos-config/Dockerfile \
+	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+	-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
 deps: # @HELP ensure that the required dependencies are in place
 	dep ensure -v
@@ -33,7 +35,7 @@ protos: # @HELP compile the protobuf files
 	./build/dev-docker/compile-protos.sh
 
 build: # @HELP build the go binary in the cmd/onos-config package
-build: test
+build: protos test
 	export GOOS=linux
 	export GOARCH=amd64
 	go build -o build/_output/onos-config ./cmd/onos-config
@@ -50,6 +52,20 @@ coverage: test
 run: # @HELP run mainline in cmd/onos-config
 run: deps
 	go run cmd/onos-config/onos-config.go
+
+run-docker: # @HELP run onos-config docker image
+run-docker: image
+	docker run -d -p 5150:5150 -v `pwd`/configs:/etc/onos-config \
+	--name onos-config onosproject/onos-config \
+	-configStore=/etc/onos-config/configStore-sample.json \
+	-changeStore=/etc/onos-config/changeStore-sample.json \
+	-deviceStore=/etc/onos-config/deviceStore-sample.json \
+	-networkStore=/etc/onos-config/networkStore-sample.json
+
+clean: # @HELP remove all the build artifacts
+	rm -rf ./build/_output
+	rm -rf ./vendor
+	rm -rf ./cmd/onos-config/onos-config
 
 help:
 	@grep -E '^.*: *# *@HELP' $(MAKEFILE_LIST) \

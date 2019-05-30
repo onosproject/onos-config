@@ -8,8 +8,8 @@ The project provides a `Makefile` that supports all the  required to unit test,
 validate and build the project.
 The makefile supports the following targets:
 * `test` - pulls dependencies and runs tests, including lint, vet and license
-* `build` - runs `test` and builds an executable
-* `all` - runs `test`, `build`, and creates the run-time `onosproject/onos-config` Docker image
+* `build` - runs `protos`, `test` and builds an executable
+* `all` - runs `protos`, and creates the run-time `onosproject/onos-config` Docker image
   * Requires a local Docker daemon
 
 ## Building via Docker Developer Image
