@@ -303,6 +303,40 @@ func Test_Subscribe(t *testing.T) {
 	tearDown()
 }
 
+func Test_NewSubscribeRequest(t *testing.T) {
+	paths := make([][]string, 1)
+	paths[0] = make([]string, 1)
+	paths[0][0] = "/a/b/c"
+	options := &SubscribeOptions{
+		UpdatesOnly:       false,
+		Prefix:            "",
+		Mode:              "Stream",
+		StreamMode:        "target_defined",
+		SampleInterval:    15,
+		HeartbeatInterval: 15,
+		Paths:             paths,
+		Origin:            "",
+	}
+	request, requestError := NewSubscribeRequest(options)
+	assert.NilError(t, requestError)
+	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_STREAM)
+	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_TARGET_DEFINED)
+
+	options.Mode = "Once"
+	options.StreamMode = "on_change"
+	request, requestError = NewSubscribeRequest(options)
+	assert.NilError(t, requestError)
+	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_ONCE)
+	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_ON_CHANGE)
+
+	options.Mode = "Poll"
+	options.StreamMode = "sample"
+	request, requestError = NewSubscribeRequest(options)
+	assert.NilError(t, requestError)
+	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_POLL)
+	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_SAMPLE)
+}
+
 func Test_CapabilitiesWithString(t *testing.T) {
 	setUp(t)
 
