@@ -77,6 +77,10 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	device1config, err = store.CreateConfiguration("Device1", "1.0.0", "TestDevice",
 		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "test"}},
 		[]change.ID{change1.ID})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 
 	configurationStoreTest = make(map[store.ConfigName]store.Configuration)
 	configurationStoreTest[device1config.Name] = *device1config
