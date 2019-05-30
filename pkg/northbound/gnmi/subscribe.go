@@ -16,7 +16,6 @@ package gnmi
 
 import (
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/listener"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -137,7 +136,7 @@ func collector(updateChan chan<- *gnmi.Update, request *gnmi.SubscriptionList) {
 
 func broadcastNotification() {
 	mgr := manager.GetManager()
-	changesChan, err := listener.Register("GnmiSubscribeNorthBound", false)
+	changesChan, err := mgr.Dispatcher.Register("GnmiSubscribeNorthBound", false)
 	if err != nil {
 		log.Println("Error while subscribing to updates", err)
 	}

@@ -70,10 +70,11 @@ func setUp(broadcast bool) *Server {
 	}
 
 	mgr = manager.GetManager()
+	mgr.Dispatcher = listener.NewDispatcher()
 	mgr.TopoChannel = make(chan events.TopoEvent)
 	go listenToTopoLoading(mgr.TopoChannel)
 	mgr.ChangesChannel = make(chan events.ConfigEvent)
-	go listener.Listen(mgr.ChangesChannel)
+	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	if broadcast {
 		go broadcastNotification()

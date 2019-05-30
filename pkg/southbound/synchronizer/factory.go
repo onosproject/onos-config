@@ -26,21 +26,21 @@ import (
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
 // propagate them downwards to the gNMI dispatcher
-func Factory(changeStore *store.ChangeStore,
-	deviceStore *topocache.DeviceStore, topoChannel <-chan events.TopoEvent) {
+func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
+	topoChannel <-chan events.TopoEvent, dispatcher *listener.Dispatcher) {
 
 	for topoEvent := range topoChannel {
 		deviceName := events.Event(topoEvent).Subject()
-		if !listener.CheckListener(deviceName) && topoEvent.Connect() {
+		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
 
-			configChan, err := listener.Register(deviceName, true)
+			configChan, err := dispatcher.Register(deviceName, true)
 			if err != nil {
 				log.Fatal(err)
 			}
 			device := deviceStore.Store[deviceName]
 			go Devicesync(changeStore, &device, configChan)
-		} else if listener.CheckListener(deviceName) && !topoEvent.Connect() {
-			err := listener.Unregister(deviceName, true)
+		} else if dispatcher.HasListener(deviceName) && !topoEvent.Connect() {
+			err := dispatcher.Unregister(deviceName, true)
 			if err != nil {
 				log.Fatal(err)
 			}

@@ -28,14 +28,18 @@ import (
 	"log"
 )
 
-var (
+// Dispatcher manages SB and NB configuration event listeners
+type Dispatcher struct {
 	deviceListeners map[string]chan events.ConfigEvent
 	nbiListeners    map[string]chan events.ConfigEvent
-)
+}
 
-func init() {
-	deviceListeners = make(map[string]chan events.ConfigEvent)
-	nbiListeners = make(map[string]chan events.ConfigEvent)
+// NewDispatcher creates and initializes a new event dispatcher
+func NewDispatcher() Dispatcher {
+	return Dispatcher{
+		deviceListeners: make(map[string]chan events.ConfigEvent),
+		nbiListeners:    make(map[string]chan events.ConfigEvent),
+	}
 }
 
 // Listen is a go routine function that listens out for changes made in the
@@ -43,23 +47,23 @@ func init() {
 // Southbound and registered nbiListeners on the northbound
 // Southbound listeners are only sent the events that matter to them
 // All events.Events are sent to northbound listeners
-func Listen(changeChannel <-chan events.ConfigEvent) {
+func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 	log.Println("Event listener initialized")
 
 	for configEvent := range changeChannel {
 		log.Println("Listener: Event", configEvent)
-		for device, deviceChan := range deviceListeners {
+		for device, deviceChan := range d.deviceListeners {
 			if events.Event(configEvent).Subject() == device {
 				log.Println("Device Simulators must be active")
 				//TODO need a timeout or be done in separate routine
 				deviceChan <- configEvent
 			}
 		}
-		for _, nbiChan := range nbiListeners {
+		for _, nbiChan := range d.nbiListeners {
 			nbiChan <- configEvent
 		}
 
-		if len(deviceListeners)+len(nbiListeners) == 0 {
+		if len(d.deviceListeners)+len(d.nbiListeners) == 0 {
 			log.Println("Event discarded", configEvent)
 		}
 	}
@@ -67,56 +71,56 @@ func Listen(changeChannel <-chan events.ConfigEvent) {
 
 // Register is a way for device synchronizers or nbi instances to register for
 // channel of events
-func Register(subscriber string, isDevice bool) (chan events.ConfigEvent, error) {
-	if isDevice && deviceListeners[subscriber] != nil {
+func (d *Dispatcher) Register(subscriber string, isDevice bool) (chan events.ConfigEvent, error) {
+	if isDevice && d.deviceListeners[subscriber] != nil {
 		return nil, fmt.Errorf("Device %s is already registered", subscriber)
-	} else if nbiListeners[subscriber] != nil {
+	} else if d.nbiListeners[subscriber] != nil {
 		return nil, fmt.Errorf("NBI %s is already registered", subscriber)
 	}
 	channel := make(chan events.ConfigEvent)
 	if isDevice {
-		deviceListeners[subscriber] = channel
+		d.deviceListeners[subscriber] = channel
 	} else {
-		nbiListeners[subscriber] = channel
+		d.nbiListeners[subscriber] = channel
 	}
 	return channel, nil
 }
 
 // Unregister closes the device channel and removes it from the deviceListeners
-func Unregister(subscriber string, isDevice bool) error {
+func (d *Dispatcher) Unregister(subscriber string, isDevice bool) error {
 	var channel chan events.ConfigEvent
 	if isDevice {
-		channel = deviceListeners[subscriber]
+		channel = d.deviceListeners[subscriber]
 	} else {
-		channel = nbiListeners[subscriber]
+		channel = d.nbiListeners[subscriber]
 	}
 	if channel == nil {
 		return fmt.Errorf("Subscriber %s had not been registered", subscriber)
 	}
 	close(channel)
 	if isDevice {
-		deviceListeners[subscriber] = nil
+		delete(d.deviceListeners, subscriber)
 	} else {
-		nbiListeners[subscriber] = nil
+		delete(d.nbiListeners, subscriber)
 	}
 	return nil
 }
 
-// ListListeners returns a list of registered listeners
-func ListListeners() []string {
+// GetListeners returns a list of registered listener names
+func (d *Dispatcher) GetListeners() []string {
 	listenerKeys := make([]string, 0)
-	for k := range deviceListeners {
+	for k := range d.deviceListeners {
 		listenerKeys = append(listenerKeys, k)
 	}
-	for k := range nbiListeners {
+	for k := range d.nbiListeners {
 		listenerKeys = append(listenerKeys, k)
 	}
 	return listenerKeys
 }
 
-// CheckListener allows a check for a name listener
-func CheckListener(name string) bool {
-	for k := range deviceListeners {
+// HasListener returns true if the named listeners has been registered
+func (d *Dispatcher) HasListener(name string) bool {
+	for k := range d.deviceListeners {
 		if k == name {
 			return true
 		}
