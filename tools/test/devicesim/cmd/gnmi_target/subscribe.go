@@ -60,6 +60,11 @@ func (s *server) Subscribe(stream pb.GNMI_SubscribeServer) error {
 			<-done
 			return nil
 		} else if mode == pb.SubscriptionList_STREAM {
+			subs := subscribe.Subscription
+			for _, sub := range subs {
+				s.PathToChannels[sub.Path] = updateChan
+			}
+
 			return nil
 		}
 

@@ -58,16 +58,16 @@ ENV GNMI_PORT=10161
 ENV GNOI_PORT=50001
 ENV SIM_MODE=1
 
-RUN mkdir -p $ONOS_CONFIG_ROOT/tools/test/devicesim
+RUN mkdir -p $ONOS_CONFIG_ROOT/tools/test/devicesim/pkg
 
-COPY target_configs target_configs
-COPY certs certs
+COPY configs/target_configs target_configs
+COPY pkg/certs certs
 COPY scripts scripts
-COPY gnmi_target gnmi_target
-COPY gnmi $GOPATH/src/github.com/onosproject/onos-config/tools/test/devicesim/gnmi
+COPY cmd/gnmi_target gnmi_target
+COPY pkg/gnmi $GOPATH/src/github.com/onosproject/onos-config/tools/test/devicesim/pkg/gnmi
 
 
-RUN cd $GOPATH/src/github.com/onosproject/onos-config/tools/test/devicesim/gnmi && go install
+RUN cd $GOPATH/src/github.com/onosproject/onos-config/tools/test/devicesim/pkg/gnmi && go install
 RUN cd ./gnmi_target && go install
 
 RUN chmod +x ./scripts/run_targets.sh

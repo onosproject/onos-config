@@ -27,9 +27,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/onosproject/onos-config/tools/test/devicesim/gnmi"
-	"github.com/onosproject/onos-config/tools/test/devicesim/gnmi/modeldata"
-	"github.com/onosproject/onos-config/tools/test/devicesim/gnmi/modeldata/gostruct"
+	"github.com/onosproject/onos-config/tools/test/devicesim/pkg/gnmi"
+	"github.com/onosproject/onos-config/tools/test/devicesim/pkg/gnmi/modeldata"
+	"github.com/onosproject/onos-config/tools/test/devicesim/pkg/gnmi/modeldata/gostruct"
 
 	"github.com/google/gnxi/utils/credentials"
 

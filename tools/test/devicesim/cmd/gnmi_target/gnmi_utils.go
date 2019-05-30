@@ -19,7 +19,7 @@ import (
 	"time"
 
 	log "github.com/golang/glog"
-	"github.com/onosproject/onos-config/tools/test/devicesim/gnmi"
+	"github.com/onosproject/onos-config/tools/test/devicesim/pkg/gnmi"
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/ygot/ygot"
 	"google.golang.org/grpc/codes"

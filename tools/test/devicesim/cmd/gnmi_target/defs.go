@@ -17,7 +17,7 @@ package main
 import (
 	"flag"
 
-	"github.com/onosproject/onos-config/tools/test/devicesim/gnmi"
+	"github.com/onosproject/onos-config/tools/test/devicesim/pkg/gnmi"
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/ygot/ygot"
 )
@@ -29,8 +29,9 @@ var (
 
 type server struct {
 	*gnmi.Server
-	Model        *gnmi.Model
-	configStruct ygot.ValidatedGoStruct
+	Model          *gnmi.Model
+	configStruct   ygot.ValidatedGoStruct
+	PathToChannels map[*pb.Path]chan *pb.Update
 }
 
 type streamClient struct {
