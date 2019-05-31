@@ -152,6 +152,7 @@ func broadcastNotification() {
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
 					if err != nil {
 						log.Println("Error in parsing path", err)
+						continue
 					}
 					pathGnmi.Target = subscriptionPath.Target
 					sendUpdate(subscriptionChan, pathGnmi, changeValue.Value)
