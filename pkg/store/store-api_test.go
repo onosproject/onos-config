@@ -22,7 +22,6 @@ import (
 	"gotest.tools/assert"
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 )
 
@@ -270,7 +269,7 @@ func TestMain(m *testing.M) {
 	ccs := make(map[ConfigName]change.ID)
 	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
 	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
-	nw1, err := CreateNetworkConfiguration("testChange", "nw1", ccs)
+	nw1, err := NewNetworkConfiguration("testChange", "nw1", ccs)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -526,8 +525,10 @@ func Test_writeOutNetworkFile(t *testing.T) {
 	defer networkStoreFile.Close()
 }
 
+// Test_createnetStore tests that a valid network config name is accepted
+// Note: the testing against duplicate names is done in northbound/set_test.go
 func Test_createnetStore(t *testing.T) {
-	nwStore, err := CreateNetworkConfiguration("testnwstore", "onos", make(map[ConfigName]change.ID))
+	nwStore, err := NewNetworkConfiguration("testnwstore", "onos", make(map[ConfigName]change.ID))
 	assert.NilError(t, err, "Unexpected error")
 
 	assert.Equal(t, nwStore.User, "onos")
@@ -536,18 +537,17 @@ func Test_createnetStore(t *testing.T) {
 }
 
 func Test_createnetStore_badname(t *testing.T) {
-	nwStore, err := CreateNetworkConfiguration("???????", "onos", make(map[ConfigName]change.ID))
+	nwStore, err := NewNetworkConfiguration("???????", "onos", make(map[ConfigName]change.ID))
 	assert.ErrorContains(t, err, "Error in name ???????")
 	assert.Check(t, nwStore == nil, "unexpected result", nwStore)
 }
 
+// Test_createnetStore tests that a valid network config name is accepted
+// Note: the testing of name with no extension 100 is done in northbound/set_test.go
 func Test_createnetStore_noname(t *testing.T) {
 	var noname string
-	nwStore, err := CreateNetworkConfiguration(noname, "onos", make(map[ConfigName]change.ID))
-	assert.NilError(t, err)
-	// name will be randomly assigned from docker style name generator like 'happy_matsumoto'
-	assert.Assert(t, len(nwStore.Name) > 3)
-	assert.Assert(t, strings.Contains(nwStore.Name, "_"))
+	_, err := NewNetworkConfiguration(noname, "onos", make(map[ConfigName]change.ID))
+	assert.ErrorContains(t, err, "Empty name not allowed")
 }
 
 func Test_loadNetworkStoreFile(t *testing.T) {

@@ -459,3 +459,60 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	// changes are made
 	assert.Equal(t, len(setResponse.Response), 2)
 }
+
+func Test_NetCfgSetWithDuplicateNameGiven(t *testing.T) {
+	server := setUp(false)
+	var deletePaths = make([]*gnmi.Path, 0)
+	var replacedPaths = make([]*gnmi.Update, 0)
+	var updatedPaths = make([]*gnmi.Update, 0)
+
+	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
+	typedValue := gnmi.TypedValue_StringVal{StringVal: "Value2a"}
+	value := gnmi.TypedValue{Value: &typedValue}
+	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
+
+	ext100Name := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  GnmiExtensionNetwkChangeID,
+			Msg: []byte("TestChange"),
+		},
+	}
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+		Extension: []*gnmi_ext.Extension{{
+			Ext: &ext100Name,
+		}},
+	}
+
+	setResponse1, setError1 := server.Set(context.Background(), &setRequest)
+	assert.NilError(t, setError1)
+
+	assert.Equal(t, len(setResponse1.Response), 1)
+
+	extension := setResponse1.Extension[0].GetRegisteredExt()
+	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
+	assert.Equal(t, string(extension.Msg), "TestChange")
+
+	// Now create a second request with different value but same (extension 100) name
+	typedValue2 := gnmi.TypedValue_StringVal{StringVal: "newValue2a"}
+	value2 := gnmi.TypedValue{Value: &typedValue2}
+	updatedPaths = make([]*gnmi.Update, 0)
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value2})
+
+	var setRequest2 = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+		Extension: []*gnmi_ext.Extension{{
+			Ext: &ext100Name,
+		}},
+	}
+
+	_, setError2 := server.Set(context.Background(), &setRequest2)
+	assert.ErrorContains(t, setError2, "is already used for a Network Configuration")
+
+}
