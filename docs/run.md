@@ -45,7 +45,7 @@ go run github.com/onosproject/onos-config/cmd/admin/net-changes
 
 [Full list of the administrative tools](admin.md)
 
-# Diagnostic Tools
+## Diagnostic Tools
 There are a number of commands that provide internal view into the state the onos-config store.
 
 For example, run the following to list all changes submitted through the northbound gNMI 
