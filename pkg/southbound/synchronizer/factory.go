@@ -53,7 +53,7 @@ func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
 				log.Fatal(err)
 			}
 
-			err = dispatcher.UnregisterOperationalState(deviceName, true)
+			err = dispatcher.UnregisterOperationalState(deviceName)
 			if err != nil {
 				log.Fatal(err)
 			}

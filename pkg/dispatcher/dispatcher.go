@@ -143,7 +143,7 @@ func (d *Dispatcher) Unregister(subscriber string, isDevice bool) error {
 }
 
 // UnregisterOperationalState closes the device channel and removes it from the deviceListeners
-func (d *Dispatcher) UnregisterOperationalState(subscriber string, isDevice bool) error {
+func (d *Dispatcher) UnregisterOperationalState(subscriber string) error {
 	var channel chan events.OperationalStateEvent
 	channel = d.nbiOpStateListeners[subscriber]
 	if channel == nil {
@@ -161,6 +161,9 @@ func (d *Dispatcher) GetListeners() []string {
 		listenerKeys = append(listenerKeys, k)
 	}
 	for k := range d.nbiListeners {
+		listenerKeys = append(listenerKeys, k)
+	}
+	for k := range d.nbiOpStateListeners {
 		listenerKeys = append(listenerKeys, k)
 	}
 	return listenerKeys
