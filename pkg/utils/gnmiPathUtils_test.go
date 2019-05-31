@@ -15,6 +15,7 @@
 package utils
 
 import (
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"testing"
@@ -169,4 +170,156 @@ func Test_StrVal_Decimal64(t *testing.T) {
 	}
 	result2 := StrVal(dec64Val2)
 	assert.Equal(t, "-123456.0", result2)
+}
+
+func Test_StrVal_Leaflist(t *testing.T) {
+	var scalars = gnmi.ScalarArray{}
+	elements := make([]*gnmi.TypedValue, 2)
+	elements[0] = &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_DecimalVal{
+			DecimalVal: &gnmi.Decimal64{
+				Digits:    123456,
+				Precision: 3,
+			},
+		},
+	}
+
+	elements[1] = &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_IntVal{
+			IntVal: 33,
+		},
+	}
+
+	scalars.Element = elements
+
+	scalarValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_LeaflistVal{
+			LeaflistVal: &scalars,
+		},
+	}
+
+	result := StrVal(scalarValue)
+	assert.Equal(t, "[123.456, 33]", result)
+}
+
+func Test_StrVal_Json(t *testing.T) {
+	json := "{\"a\":1,\"b\":2}"
+	jsonBytes := []byte(json)
+	jsonTypedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_JsonVal{
+			JsonVal: jsonBytes,
+		},
+	}
+	result := StrVal(jsonTypedValue)
+	expected := "{\n  \"a\": 1,\n  \"b\": 2\n}"
+
+	assert.Equal(t, expected, result)
+}
+
+func Test_StrVal_JsonIetf(t *testing.T) {
+	json := "{\"a\":1,\"b\":2}"
+	jsonBytes := []byte(json)
+	jsonTypedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_JsonIetfVal{
+			JsonIetfVal: jsonBytes,
+		},
+	}
+	result := StrVal(jsonTypedValue)
+	expected := "{\n  \"a\": 1,\n  \"b\": 2\n}"
+
+	assert.Equal(t, expected, result)
+}
+
+func Test_StrVal_Uint(t *testing.T) {
+	typedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_UintVal{
+			UintVal: 3,
+		},
+	}
+	result := StrVal(typedValue)
+	expected := "3"
+
+	assert.Equal(t, expected, result)
+}
+
+func Test_StrVal_Bool(t *testing.T) {
+	typedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_BoolVal{
+			BoolVal: false,
+		},
+	}
+	result := StrVal(typedValue)
+	expected := "false"
+
+	assert.Equal(t, expected, result)
+}
+
+func Test_StrVal_Bytes(t *testing.T) {
+	source := "ABC-123"
+	expected := "QUJDLTEyMw=="
+	typedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_BytesVal{
+			BytesVal: []byte(source),
+		},
+	}
+	result := StrVal(typedValue)
+	assert.Equal(t, expected, result)
+}
+
+func Test_StrVal_ProtoBytes(t *testing.T) {
+	source := "ABC-123"
+	expected := "QUJDLTEyMw=="
+	typedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_ProtoBytes{
+			ProtoBytes: []byte(source),
+		},
+	}
+	result := StrVal(typedValue)
+	assert.Equal(t, expected, result)
+}
+
+func Test_StrVal_Float(t *testing.T) {
+	typedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_FloatVal{
+			FloatVal: 3.1,
+		},
+	}
+	result := StrVal(typedValue)
+	expected := "3.1"
+
+	assert.Equal(t, expected, result)
+}
+
+func Test_StrVal_String(t *testing.T) {
+	source := "ABC-123"
+	typedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_StringVal{
+			StringVal: source,
+		},
+	}
+	result := StrVal(typedValue)
+	assert.Equal(t, source, result)
+}
+
+func Test_StrVal_Ascii(t *testing.T) {
+	source := "ABC-123"
+	typedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_AsciiVal{
+			AsciiVal: source,
+		},
+	}
+	result := StrVal(typedValue)
+	assert.Equal(t, source, result)
+}
+
+func Test_StrVal_Any(t *testing.T) {
+	source := "ABC-123"
+	expected := "value:\"ABC-123\" "
+	typedValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_AnyVal{
+			AnyVal: &any.Any{Value: []byte(source)},
+		},
+	}
+	result := StrVal(typedValue)
+	assert.Equal(t, expected, result)
 }
