@@ -23,6 +23,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -112,11 +113,11 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 			Store:     networkStoreTest,
 		},
 		make(chan events.TopoEvent, 10))
-	mgrTest.Run()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
+	mgrTest.Run()
 	return mgrTest, changeStoreTest, configurationStoreTest
 }
 
@@ -170,4 +171,134 @@ func Test_SetNetworkConfig(t *testing.T) {
 	assert.Equal(t, updatedVals[2].Value, "")
 	assert.Equal(t, updatedVals[2].Remove, true)
 
+}
+
+func Test_SetBadNetworkConfig(t *testing.T) {
+
+	mgrTest, _, _ := setUp()
+
+	updates := make(map[string]string)
+	deletes := make([]string, 0)
+
+	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
+	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
+	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
+
+	_, _, err := mgrTest.SetNetworkConfig("DeviceXXXX", updates, deletes)
+	assert.ErrorContains(t, err, "no configuration found")
+}
+
+func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
+
+	mgrTest, _, configurationStoreTest := setUp()
+
+	device2config, err := store.CreateConfiguration("Device1", "1.0.1", "TestDevice",
+		[]gnmi.ModelData{{Name: "test", Version: "1.0.1", Organization: "test"}},
+		[]change.ID{})
+	assert.NilError(t, err)
+	configurationStoreTest[device2config.Name] = *device2config
+
+	updates := make(map[string]string)
+	deletes := make([]string, 0)
+
+	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
+	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
+	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
+
+	_, _, err = mgrTest.SetNetworkConfig("Device1", updates, deletes)
+	assert.ErrorContains(t, err, "configurations found for")
+}
+
+func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
+
+	mgrTest, _, _ := setUp()
+
+	updates := make(map[string]string)
+	deletes := make([]string, 0)
+
+	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
+	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
+	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
+
+	changeID, configName, err := mgrTest.SetNetworkConfig("Device1", updates, deletes)
+	assert.NilError(t, err, "Similar config not found")
+	assert.Assert(t, changeID != nil)
+	assert.Assert(t, configName != "")
+}
+
+func matchDeviceID(deviceID string, deviceName string) bool {
+	return strings.Contains(deviceID, deviceName)
+}
+
+func TestManager_GetAllDeviceIds(t *testing.T) {
+	mgrTest, _, configurationStoreTest := setUp()
+
+	device2config, err := store.CreateConfiguration("Device2", "1.0.0", "TestDevice",
+		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "test"}},
+		[]change.ID{})
+	assert.NilError(t, err)
+	configurationStoreTest[device2config.Name] = *device2config
+	device3config, err := store.CreateConfiguration("Device3", "1.0.0", "TestDevice",
+		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "test"}},
+		[]change.ID{})
+	assert.NilError(t, err)
+	configurationStoreTest[device3config.Name] = *device3config
+
+	deviceIds := mgrTest.GetAllDeviceIds()
+	assert.Equal(t, len(*deviceIds), 3)
+	assert.Assert(t, matchDeviceID((*deviceIds)[0], "Device1"))
+	assert.Assert(t, matchDeviceID((*deviceIds)[1], "Device2"))
+	assert.Assert(t, matchDeviceID((*deviceIds)[2], "Device3"))
+}
+
+func TestManager_GetNoConfig(t *testing.T) {
+	mgrTest, _, _ := setUp()
+
+	result, err := mgrTest.GetNetworkConfig("No Such Device", "Running", "/*", 0)
+	assert.Assert(t, len(result) == 0, "Get of bad device does not return empty array")
+	assert.ErrorContains(t, err, "No Configuration found")
+}
+
+func networkConfigContainsPath(configs []change.ConfigValue, whichOne string) bool {
+	for _, config := range configs {
+		if config.Path == whichOne {
+			return true
+		}
+	}
+	return false
+}
+
+func TestManager_GetAllConfig(t *testing.T) {
+	mgrTest, _, _ := setUp()
+
+	result, err := mgrTest.GetNetworkConfig("Device1", "Running", "/*", 0)
+	assert.Assert(t, len(result) == 3, "Get of device all paths does not return proper array")
+	assert.NilError(t, err, "Configuration not found")
+	assert.Assert(t, networkConfigContainsPath(result, "/test1:cont1a"), "/test1:cont1a not found")
+	assert.Assert(t, networkConfigContainsPath(result, "/test1:cont1a/cont2a"), "/test1:cont1a/cont2a not found")
+	assert.Assert(t, networkConfigContainsPath(result, "/test1:cont1a/cont2a/leaf2a"), "/test1:cont1a/cont2a/leaf2a not found")
+}
+
+func TestManager_GetOneConfig(t *testing.T) {
+	mgrTest, _, _ := setUp()
+
+	result, err := mgrTest.GetNetworkConfig("Device1", "Running", "/test1:cont1a/cont2a/leaf2a", 0)
+	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
+	assert.NilError(t, err, "Configuration not found")
+	assert.Assert(t, networkConfigContainsPath(result, "/test1:cont1a/cont2a/leaf2a"), "/test1:cont1a/cont2a/leaf2a not found")
+}
+
+func TestManager_GetConfigNoTarget(t *testing.T) {
+	mgrTest, _, _ := setUp()
+
+	result, err := mgrTest.GetNetworkConfig("", "Running", "/test1:cont1a/cont2a/leaf2a", 0)
+	assert.Assert(t, len(result) == 0, "Get of device one path does not return proper array")
+	assert.ErrorContains(t, err, "No Configuration found for Running")
+}
+
+func TestManager_GetManager(t *testing.T) {
+	mgrTest, _, _ := setUp()
+	assert.Equal(t, mgrTest, GetManager())
+	GetManager().Close()
+	assert.Equal(t, mgrTest, GetManager())
 }
