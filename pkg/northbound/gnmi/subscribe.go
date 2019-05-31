@@ -68,6 +68,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		//If the subscription mode is ONCE the channel need to be closed immediately
 		if mode == gnmi.SubscriptionList_ONCE {
 			<-stopped
+			close(updateChan)
 			return nil
 		} else if mode == gnmi.SubscriptionList_STREAM {
 			//for each path we pair it to the the channel.
@@ -148,7 +149,13 @@ func broadcastNotification() {
 				//FIXME this might prove expensive, find better way to store subscriptionPath and target in channels map
 				subscriptionPathStr := utils.StrPath(subscriptionPath)
 				if subscriptionPath.Target == target && strings.HasPrefix(changeValue.Path, subscriptionPathStr) {
-					sendUpdate(subscriptionChan, subscriptionPath, changeValue.Value)
+					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
+					if err != nil {
+						log.Println("Error in parsing path", err)
+						continue
+					}
+					pathGnmi.Target = subscriptionPath.Target
+					sendUpdate(subscriptionChan, pathGnmi, changeValue.Value)
 				}
 			}
 		}
