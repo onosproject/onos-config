@@ -176,8 +176,7 @@ func broadcastOperationalNotification() {
 			for pathStr, value := range *changeInternal {
 				//FIXME this might prove expensive, find better way to store subscriptionPath and target in channels map
 				subscriptionPathStr := utils.StrPath(subscriptionPath)
-				//TODO add method to do this
-				pathArr := strings.Split(pathStr, "/")[1:]
+				pathArr := utils.SplitPath(pathStr)
 				path, err := utils.ParseGNMIElements(pathArr)
 				if err != nil {
 					log.Println("Error in parsing path", pathStr)

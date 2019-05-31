@@ -149,12 +149,12 @@ func (d *Dispatcher) UnregisterOperationalState(subscriber string, isDevice bool
 	if channel == nil {
 		return fmt.Errorf("Subscriber %s had not been registered", subscriber)
 	}
-	close(channel)
 	delete(d.nbiOpStateListeners, subscriber)
+	close(channel)
 	return nil
 }
 
-// GetListeners returns a list of registered dispatcher names
+// GetListeners returns a list of registered listeners names
 func (d *Dispatcher) GetListeners() []string {
 	listenerKeys := make([]string, 0)
 	for k := range d.deviceListeners {
