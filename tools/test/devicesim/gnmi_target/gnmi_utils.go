@@ -19,11 +19,7 @@ import (
 	"time"
 
 	log "github.com/golang/glog"
-<<<<<<< HEAD
 	"github.com/onosproject/onos-config/tools/test/devicesim/gnmi"
-=======
-	"github.com/google/gnxi/gnmi"
->>>>>>> Implementing subscribe ONCE for devsim - issue #212
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/ygot/ygot"
 	"google.golang.org/grpc/codes"
@@ -44,13 +40,8 @@ func newServer(model *gnmi.Model, config []byte) (*server, error) {
 }
 
 // sendResponse sends an SubscribeResponse to a gNMI client.
-<<<<<<< HEAD
 func (s *server) sendResponse(response *pb.SubscribeResponse, stream pb.GNMI_SubscribeServer) {
 	log.Info("Sending SubscribeResponse out to gNMI client: ", response)
-=======
-func sendResponse(response *pb.SubscribeResponse, stream pb.GNMI_SubscribeServer) {
-	log.Infof("Sending SubscribeResponse out to gNMI client: %v", response)
->>>>>>> Implementing subscribe ONCE for devsim - issue #212
 	err := stream.Send(response)
 	if err != nil {
 		//TODO remove channel registrations
@@ -101,10 +92,6 @@ func (s *server) getUpdate(subList *pb.SubscriptionList, path *pb.Path) (*pb.Upd
 		},
 	}
 	update := pb.Update{Path: path, Val: val}
-<<<<<<< HEAD
-=======
-
->>>>>>> Implementing subscribe ONCE for devsim - issue #212
 	return &update, nil
 
 }
@@ -114,21 +101,16 @@ func (s *server) collector(ch chan *pb.Update, request *pb.SubscriptionList) {
 	for _, sub := range request.Subscription {
 		path := sub.GetPath()
 		update, err := s.getUpdate(request, path)
-<<<<<<< HEAD
 		if err != nil {
 			log.Info("Error while collecting data for subscribe once or poll", err)
 
 		}
-=======
-
->>>>>>> Implementing subscribe ONCE for devsim - issue #212
 		if err == nil {
 			ch <- update
 		}
 
 	}
 }
-<<<<<<< HEAD
 
 // listenForUpdates reads update messages from the update channel, creates a
 // subscribe response and send it to the gnmi client.
@@ -153,5 +135,3 @@ func (s *server) listenForUpdates(updateChan chan *pb.Update, stream pb.GNMI_Sub
 		}
 	}
 }
-=======
->>>>>>> Implementing subscribe ONCE for devsim - issue #212

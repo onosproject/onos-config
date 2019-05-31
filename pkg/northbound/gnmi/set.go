@@ -17,16 +17,16 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	"github.com/openconfig/gnmi/proto/gnmi_ext"
-	"log"
-	"strings"
-	"time"
-
+	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
+	"log"
+	"strings"
+	"time"
 )
 
 type mapTargetUpdates map[string]map[string]string
@@ -181,7 +181,19 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			"duplicate of the last change for all targets")
 	}
 
-	networkConfig, err := store.CreateNetworkConfiguration(netcfgchangename, "User1", networkChanges)
+	if netcfgchangename == "" {
+		netcfgchangename = namesgenerator.GetRandomName(0)
+	}
+
+	// Look for use of this name already
+	for _, nwCfg := range manager.GetManager().NetworkStore.Store {
+		if nwCfg.Name == netcfgchangename {
+			return nil, fmt.Errorf("Name %s is already used for a Network Configuration",
+				netcfgchangename)
+		}
+	}
+
+	networkConfig, err := store.NewNetworkConfiguration(netcfgchangename, "User1", networkChanges)
 	if err != nil {
 		return nil, err
 	}
