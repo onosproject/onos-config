@@ -36,18 +36,6 @@
   revision = "e91709a02e0e8ff8b86b7aa913fdc9ae9498e825"
 
 [[projects]]
-  branch = "master"
-  digest = "1:f138505b651041ebc0b68e301160652414b97be55fef0a842a27b9f05e541b40"
-  name = "github.com/google/gnxi"
-  packages = [
-    "gnmi/modeldata",
-    "gnmi/modeldata/gostruct",
-    "utils/credentials",
-  ]
-  pruneopts = "UT"
-  revision = "8521faedac371b6e13ac76f752eb41079ca79bd7"
-
-[[projects]]
   digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
   name = "github.com/google/go-cmp"
   packages = [
@@ -101,13 +89,11 @@
   revision = "e8b0ed2cbb0c40683bc0785ea2c796b2c12df80f"
 
 [[projects]]
-  digest = "1:8a77ebf6aaeff91897222cbb046dd3337340a2f23b86113d42955575efaee8ab"
+  digest = "1:51878b8f92740690ef73c01475b9d60dccf0ac2f97d278f4a82bf2e30cce7615"
   name = "github.com/openconfig/ygot"
   packages = [
-    "experimental/ygotutils",
     "util",
     "ygot",
-    "ytypes",
   ]
   pruneopts = "UT"
   revision = "b71b4131ec632fdb387e35dfe635182ad2368c1f"
@@ -172,17 +158,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:cfcfd70665eb0a32050c8957d9f3fbace894ac203c0fa7f7a91edd80b591114d"
+  digest = "1:c3076e7defee87de1236f1814beb588f40a75544c60121e6eb38b3b3721783e2"
   name = "google.golang.org/genproto"
-  packages = [
-    "googleapis/rpc/code",
-    "googleapis/rpc/status",
-  ]
+  packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
   revision = "54afdca5d873f7b529e2ce3def1a99df16feda90"
 
 [[projects]]
-  digest = "1:305ae1b02020aa7bd0bf7c51eb20cec7fec7d813c8b37e517ac588963fedd43d"
+  digest = "1:a8c9af73d2a644d8b6e642b34bdd1ac125b863c0ec192e24a41e86454593340d"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -211,7 +194,6 @@
     "metadata",
     "naming",
     "peer",
-    "reflection",
     "reflection/grpc_reflection_v1alpha",
     "resolver",
     "resolver/dns",
@@ -251,29 +233,17 @@
   analyzer-version = 1
   input-imports = [
     "github.com/docker/docker/pkg/namesgenerator",
-    "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
     "github.com/golang/protobuf/ptypes/timestamp",
-    "github.com/google/gnxi/gnmi/modeldata",
-    "github.com/google/gnxi/gnmi/modeldata/gostruct",
-    "github.com/google/gnxi/utils/credentials",
     "github.com/openconfig/gnmi/client",
     "github.com/openconfig/gnmi/client/gnmi",
     "github.com/openconfig/gnmi/proto/gnmi",
     "github.com/openconfig/gnmi/proto/gnmi_ext",
-    "github.com/openconfig/gnmi/value",
-    "github.com/openconfig/goyang/pkg/yang",
-    "github.com/openconfig/ygot/experimental/ygotutils",
-    "github.com/openconfig/ygot/ygot",
-    "github.com/openconfig/ygot/ytypes",
-    "golang.org/x/net/context",
-    "google.golang.org/genproto/googleapis/rpc/code",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/credentials",
-    "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/status",
     "gotest.tools/assert",
     "gotest.tools/assert/cmp",
