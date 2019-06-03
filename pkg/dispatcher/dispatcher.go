@@ -84,7 +84,7 @@ func (d *Dispatcher) Register(subscriber string, isDevice bool) (chan events.Con
 	} else {
 		d.nbiListeners[subscriber] = channel
 	}
-	log.Printf("%s=%v", subscriber, channel)
+	log.Printf("Registering %s on channel w%v", subscriber, channel)
 	return channel, nil
 }
 

@@ -41,33 +41,39 @@ func createDestination(device topocache.Device) (*client.Destination, DeviceID) 
 	d.Addrs = []string{device.Addr}
 	d.Target = device.Target
 	d.Timeout = time.Duration(device.Timeout * time.Second)
-	if device.CaPath == "" {
-		log.Println("Loading default CA onfca")
-		d.TLS.RootCAs = getCertPoolDefault()
+	if device.Insecure {
+		log.Println("Insecure connection to", device.Addr)
+		d.TLS = &tls.Config{InsecureSkipVerify: true}
 	} else {
-		d.TLS.RootCAs = getCertPool(device.CaPath)
-	}
-
-	if device.CertPath == "" && device.KeyPath == "" {
-		// Load default Certificates
-		log.Println("Loading default certificates")
-		clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
-		if err != nil {
-			log.Println("Error loading default certs")
+		if device.CaPath == "" {
+			log.Println("Loading default CA onfca")
+			d.TLS.RootCAs = getCertPoolDefault()
+		} else {
+			d.TLS.RootCAs = getCertPool(device.CaPath)
 		}
 
-		d.TLS.Certificates = []tls.Certificate{clientCerts}
-	} else if device.CertPath != "" && device.KeyPath != "" {
-		// Load certs given for device
-		d.TLS.Certificates = []tls.Certificate{setCertificate(device.CertPath, device.KeyPath)}
+		if device.CertPath == "" && device.KeyPath == "" {
+			// Load default Certificates
+			log.Println("Loading default certificates")
+			clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+			if err != nil {
+				log.Println("Error loading default certs")
+			}
 
-	} else if device.Usr != "" && device.Pwd != "" {
-		cred := &client.Credentials{}
-		cred.Username = device.Usr
-		cred.Password = device.Pwd
-		d.Credentials = cred
-	} else {
-		d.TLS = &tls.Config{InsecureSkipVerify: true}
+			d.TLS.Certificates = []tls.Certificate{clientCerts}
+		} else if device.CertPath != "" && device.KeyPath != "" {
+			// Load certs given for device
+			d.TLS.Certificates = []tls.Certificate{setCertificate(device.CertPath, device.KeyPath)}
+		} else if device.Usr != "" && device.Pwd != "" {
+			cred := &client.Credentials{}
+			cred.Username = device.Usr
+			cred.Password = device.Pwd
+			d.Credentials = cred
+		} else {
+			log.Println(fmt.Sprintf("Can't load Ca=%s , Cert=%s , key=%s for %v, trying with insecure connection",
+				device.CaPath, device.CertPath, device.KeyPath, device.Addr))
+			d.TLS = &tls.Config{InsecureSkipVerify: true}
+		}
 	}
 	return d, DeviceID{DeviceID: device.Addr}
 }
@@ -93,7 +99,7 @@ func (target *Target) ConnectTarget(ctx context.Context, device topocache.Device
 	if err != nil {
 		return DeviceID{}, fmt.Errorf("could not create a gNMI client: %v", err)
 	}
-
+	target.Destination = *dest
 	target.Clt = c
 	targets[key] = target
 	return key, err

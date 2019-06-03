@@ -156,7 +156,8 @@ func Test_ConnectTarget(t *testing.T) {
 
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
-	assert.DeepEqual(t, &target, targetFetch)
+	assert.DeepEqual(t, target.Destination.Addrs, targetFetch.Destination.Addrs)
+	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
 	tearDown()
 }
 
@@ -180,12 +181,14 @@ func Test_ConnectTargetUserPassword(t *testing.T) {
 
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
-	assert.DeepEqual(t, &target, targetFetch)
+	assert.Equal(t, target.Destination.Credentials.Username, "User")
+	assert.Equal(t, target.Destination.Credentials.Password, "Password")
+	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
 
 	tearDown()
 }
 
-func Test_ConnectTargetInsecure(t *testing.T) {
+func Test_ConnectTargetInsecurePaths(t *testing.T) {
 	setUp(t)
 
 	device.CertPath = "cert path"
@@ -194,7 +197,22 @@ func Test_ConnectTargetInsecure(t *testing.T) {
 
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
-	assert.DeepEqual(t, &target, targetFetch)
+	assert.Equal(t, targetFetch.Destination.TLS.InsecureSkipVerify, true)
+	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
+
+	tearDown()
+}
+
+func Test_ConnectTargetInsecureFlag(t *testing.T) {
+	setUp(t)
+
+	device.Insecure = true
+	target, key, _ := getDevice1Target(t)
+
+	targetFetch, fetchError := GetTarget(key)
+	assert.NilError(t, fetchError)
+	assert.Equal(t, targetFetch.Destination.TLS.InsecureSkipVerify, true)
+	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
 
 	tearDown()
 }
@@ -209,7 +227,11 @@ func Test_ConnectTargetWithCert(t *testing.T) {
 
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
-	assert.DeepEqual(t, &target, targetFetch)
+	ca := getCertPool("testdata/onfca.crt")
+	assert.DeepEqual(t, targetFetch.Destination.TLS.RootCAs.Subjects()[0], ca.Subjects()[0])
+	cert := setCertificate("testdata/client1.crt", "testdata/client1.key")
+	assert.DeepEqual(t, targetFetch.Destination.TLS.Certificates[0].Certificate, cert.Certificate)
+	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
 
 	tearDown()
 }
