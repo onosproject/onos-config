@@ -35,11 +35,11 @@ func Devicesync(changeStore *store.ChangeStore,
 	target := southbound.Target{}
 
 	_, err := target.ConnectTarget(ctx, *device)
-	log.Println(device.Addr, "Connected over gNMI")
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	log.Println(device.Addr, "Connected over gNMI")
 
 	// Get the device capabilities
 	capResponse, capErr := target.CapabilitiesWithString(ctx, "")
