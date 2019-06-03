@@ -252,21 +252,13 @@ was configured. Currently, the certificates used by the Helm chart can be found 
 
 ### Deploying the device simulator
 
-ONOS Config provides a [device simulator](../tools/test/devicesim/gnmi_user_manual.md)
+ONOS Config provides a device simulator
 for end-to-end testing. As with the onos-config app, a [Helm] chart is provided for
 deployment in [Kubernetes]. Each chart instance deploys a single simulated device
 `Pod` and a `Service` through which the simulator can be accessed. The onos-config chart can
 then be configured to connect to the devices in k8s.
 
-To support the device simulator, the simulator image must first be built inside the Minikube
-Docker environment to ensure it's accessible in the Kubernetes cluster:
-
-```bash
-> eval $(minikube docker-env)
-> docker build -t onosproject/devicesim tools/test/devicesim
-```
-
-Device simulators can then be deployed using the `deployments/helm/device-simulator` chart:
+Device simulators can be deployed using the `deployments/helm/device-simulator` chart:
 
 ```bash
 > helm install -n device-1 deployments/helm/device-simulator

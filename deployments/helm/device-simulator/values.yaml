@@ -4,7 +4,7 @@ replicas: 3
 annotations: {}
 
 image:
-  repository: onosproject/devicesim
+  repository: onosproject/device-simulator
   tag: latest
   pullPolicy: IfNotPresent
   pullSecrets: []
