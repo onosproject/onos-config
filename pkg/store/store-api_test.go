@@ -441,6 +441,42 @@ func Test_loadChangeStoreFileError(t *testing.T) {
 	assert.Equal(t, changeStore.Version, "")
 }
 
+func Test_loadConfigStoreFileBadVersion(t *testing.T) {
+	_, err := LoadConfigStore("testdata/configStore-badVersion.json")
+	assert.ErrorContains(t, err, "Store version invalid")
+}
+
+func Test_loadConfigStoreFileBadType(t *testing.T) {
+	_, err := LoadConfigStore("testdata/configStore-badType.json")
+	assert.ErrorContains(t, err, "Store type invalid")
+}
+
+func Test_loadChangeStoreFileBadVersion(t *testing.T) {
+	_, err := LoadChangeStore("testdata/changeStore-badVersion.json")
+	assert.ErrorContains(t, err, "Store version invalid")
+}
+
+func Test_loadChangeStoreFileBadType(t *testing.T) {
+	_, err := LoadChangeStore("testdata/changeStore-badType.json")
+	assert.ErrorContains(t, err, "Store type invalid")
+}
+
+func Test_loadNetworkStoreFileError(t *testing.T) {
+	networkStore, err := LoadNetworkStore("nonexistent.json")
+	assert.Assert(t, err != nil, "Expected an error when loading Change Store from invalid file")
+	assert.Assert(t, networkStore == nil, "")
+}
+
+func Test_loadNetworkStoreFileBadVersion(t *testing.T) {
+	_, err := LoadNetworkStore("testdata/networkStore-badVersion.json")
+	assert.ErrorContains(t, err, "Store version invalid")
+}
+
+func Test_loadNetworkStoreFileBadType(t *testing.T) {
+	_, err := LoadNetworkStore("testdata/networkStore-badType.json")
+	assert.ErrorContains(t, err, "Store type invalid")
+}
+
 func TestCreateConfiguration_badname(t *testing.T) {
 	_, err :=
 		CreateConfiguration("", "1.0.0", "TestDevice",
