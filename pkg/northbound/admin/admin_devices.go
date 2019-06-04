@@ -25,16 +25,17 @@ import (
 // AddDevice adds the specified device to the device inventory.
 func (s Server) AddDevice(c context.Context, d *proto.DeviceInfo) (*proto.DeviceResponse, error) {
 	manager.GetManager().DeviceStore.AddDevice(d.Id, topocache.Device{
-		Addr:     d.Address,
-		Target:   d.Target,
-		Usr:      d.User,
-		Pwd:      d.Password,
-		CaPath:   d.CaPath,
-		CertPath: d.CertPath,
-		KeyPath:  d.KeyPath,
-		Insecure: d.Insecure,
-		Plain:    d.Plain,
-		Timeout:  time.Duration(d.Timeout),
+		Addr:            d.Address,
+		Target:          d.Target,
+		SoftwareVersion: d.Version,
+		Usr:             d.User,
+		Pwd:             d.Password,
+		CaPath:          d.CaPath,
+		CertPath:        d.CertPath,
+		KeyPath:         d.KeyPath,
+		Insecure:        d.Insecure,
+		Plain:           d.Plain,
+		Timeout:         time.Duration(d.Timeout),
 	})
 	return &proto.DeviceResponse{}, nil
 }
@@ -51,7 +52,8 @@ func (s Server) GetDevices(r *proto.GetDevicesRequest, stream proto.DeviceInvent
 
 		// Build the device info message
 		msg := &proto.DeviceInfo{
-			Id: id, Address: dev.Addr, Target: dev.Target, User: dev.Usr, Password: dev.Pwd,
+			Id: id, Address: dev.Addr, Target: dev.Target, Version: dev.SoftwareVersion,
+			User: dev.Usr, Password: dev.Pwd,
 			CaPath: dev.CaPath, CertPath: dev.CertPath, KeyPath: dev.KeyPath,
 			Plain: dev.Plain, Insecure: dev.Insecure, Timeout: dev.Timeout.Nanoseconds(),
 		}

@@ -36,6 +36,7 @@ func main() {
 
 	deviceAddress := flag.String("deviceAddress", "", "device address:port")
 	deviceTarget := flag.String("deviceTarget", "", "device target name")
+	deviceSoftwareVersion := flag.String("deviceSoftwareVersion", "", "device software version")
 	deviceUser := flag.String("deviceUser", "", "device login user")
 	devicePassword := flag.String("devicePassword", "", "device login password")
 	deviceCaPath := flag.String("deviceCaPath", "", "device CA certificate path")
@@ -66,6 +67,7 @@ func main() {
 			Id:       id,
 			Address:  *deviceAddress,
 			Target:   *deviceTarget,
+			Version:  *deviceSoftwareVersion,
 			User:     *deviceUser,
 			Password: *devicePassword,
 			CaPath:   *deviceCaPath,
@@ -95,7 +97,7 @@ func main() {
 				if err != nil {
 					log.Fatalf("Failed to receive response : %v", err)
 				}
-				fmt.Printf("%s: %s\n", in.Id, in.Address)
+				fmt.Printf("%s: %s (%s)\n", in.Id, in.Address, in.Version)
 			}
 		}()
 		err = stream.CloseSend()

@@ -78,14 +78,15 @@ message DeviceInfo {
     string id = 1;
     string address = 2;
     string target = 3;
-    string user = 4;
-    string password = 5;
-    string caPath = 6;
-    string certPath = 7;
-    string keyPath = 8;
-    bool plain = 9;
-    bool insecure = 10;
-    int64 timeout = 11;
+    string version = 4;
+    string user = 5;
+    string password = 6;
+    string caPath = 7;
+    string certPath = 8;
+    string keyPath = 9;
+    bool plain = 10;
+    bool insecure = 11;
+    int64 timeout = 12;
 }
 
 // DeviceResponse carries the status of the add/remove operation.
