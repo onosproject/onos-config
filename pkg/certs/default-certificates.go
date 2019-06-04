@@ -24,7 +24,7 @@ const (
 )
 
 /*
-All of these are copied over from onos-config/tools/test/devicesim/certs
+All of these are copied over from https://github.com/onosproject/simulators/tree/master/pkg/certs
 */
 
 /*
