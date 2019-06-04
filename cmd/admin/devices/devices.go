@@ -28,6 +28,7 @@ import (
 	devices "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"io"
 	"log"
+	"strings"
 )
 
 func main() {
@@ -37,6 +38,7 @@ func main() {
 
 	addDevice := flag.String("addDevice", "", "protobuf encoding of device to add")
 	removeID := flag.String("removeID", "", "id of device to remove")
+	verbose := flag.Bool("verbose", false, "show all device attributes")
 
 	flag.Parse()
 
@@ -57,7 +59,7 @@ func main() {
 		removeDevice(client, *removeID)
 
 	} else {
-		listDevices(client)
+		listDevices(client, *verbose)
 	}
 }
 
@@ -82,7 +84,7 @@ func removeDevice(client devices.DeviceInventoryServiceClient, id string) {
 	}
 }
 
-func listDevices(client devices.DeviceInventoryServiceClient) {
+func listDevices(client devices.DeviceInventoryServiceClient, verbose bool) {
 	stream, err := client.GetDevices(context.Background(), &devices.GetDevicesRequest{})
 	if err != nil {
 		log.Fatalf("Failed to get devices: %v", err)
@@ -100,6 +102,9 @@ func listDevices(client devices.DeviceInventoryServiceClient) {
 				log.Fatalf("Failed to receive device: %v", err)
 			}
 			fmt.Printf("%s: %s (%s)\n", in.Id, in.Address, in.Version)
+			if verbose {
+				fmt.Printf("\t%v\n", strings.Replace(proto.MarshalTextString(in), "\n", " ", -1))
+			}
 		}
 	}()
 	err = stream.CloseSend()
