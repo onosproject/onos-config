@@ -30,7 +30,7 @@ func Test_LocalDeviceStore(t *testing.T) {
 
 	assert.Equal(t, deviceStore.Version, "1.0.0", "Device store loaded wrong version string")
 
-	d1, d1exists := deviceStore.Store["localhost:10161"]
+	d1, d1exists := deviceStore.Store["localhost-1"]
 	assert.Assert(t, d1exists)
 	assert.Equal(t, d1.Addr, "localhost:10161")
 }
@@ -41,8 +41,28 @@ func Test_BadDeviceStore(t *testing.T) {
 	assert.ErrorContains(t, err, "Store type invalid")
 }
 
+func Test_DeviceStoreNoAddr(t *testing.T) {
+	_, err := LoadDeviceStore("testdata/deviceStoreNoAddr.json", nil)
+	assert.ErrorContains(t, err, "has blank address")
+}
+
+func Test_DeviceStoreNoSwVer(t *testing.T) {
+	_, err := LoadDeviceStore("testdata/deviceStoreNoVersion.json", nil)
+	assert.ErrorContains(t, err, "has blank software version")
+}
+
 func Test_NonexistentDeviceStore(t *testing.T) {
 	topoChannel := make(chan events.TopoEvent, 10)
 	_, err := LoadDeviceStore("testdata/noSuchDeviceStore.json", topoChannel)
 	assert.ErrorContains(t, err, "no such file")
+}
+
+// In the case of a duplicate it cannot be determined which will overwrite the
+// other as the file contents are loaded in to a map
+func Test_DeviceStoreDuplicates(t *testing.T) {
+	topoChannel := make(chan events.TopoEvent, 10)
+	deviceStore, err := LoadDeviceStore("testdata/deviceStoreDuplicate.json", topoChannel)
+	assert.NilError(t, err)
+	lh2 := deviceStore.Store["localhost-2"]
+	assert.Assert(t, lh2.SoftwareVersion == "1.0.0" || lh2.SoftwareVersion == "2.0.0")
 }

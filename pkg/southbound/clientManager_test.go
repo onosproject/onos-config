@@ -35,7 +35,7 @@ var (
 )
 
 const (
-	device1 = "localhost:10161"
+	device1 = "localhost-1"
 )
 
 // Test Client to stub out the gnmiClient
@@ -119,7 +119,9 @@ func setUp(t *testing.T) {
 		return TestClientImpl{}, nil
 	}
 	topoChannel := make(chan events.TopoEvent, 10)
-	deviceStore, _ = topocache.LoadDeviceStore("testdata/deviceStore.json", topoChannel)
+	var err error
+	deviceStore, err = topocache.LoadDeviceStore("testdata/deviceStore.json", topoChannel)
+	assert.NilError(t, err)
 
 	saveGnmiCacheClientFactory = GnmiCacheClientFactory
 	GnmiCacheClientFactory = func() CacheClientInterface {
@@ -130,7 +132,7 @@ func setUp(t *testing.T) {
 	device, deviceError = deviceStore.Store[device1]
 
 	assert.Assert(t, deviceError)
-	assert.Equal(t, device.Addr, device1)
+	assert.Equal(t, device.Addr, "localhost:10161")
 
 }
 
@@ -145,7 +147,7 @@ func getDevice1Target(t *testing.T) (Target, DeviceID, context.Context) {
 	key, err := target.ConnectTarget(ctx, device)
 	assert.NilError(t, err)
 	assert.Assert(t, target.Clt != nil)
-	assert.Equal(t, key.DeviceID, device1)
+	assert.Equal(t, key.DeviceID, "localhost:10161")
 	return target, key, ctx
 }
 
