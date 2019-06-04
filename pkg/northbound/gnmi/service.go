@@ -19,13 +19,15 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"sync"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/onosproject/onos-config/pkg/models"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
-	"io/ioutil"
 )
 
 // Service implements Service for GNMI
@@ -44,6 +46,7 @@ func (s Service) Register(r *grpc.Server) {
 // Server implements the grpc GNMI service
 type Server struct {
 	models *models.Models
+	mu     sync.RWMutex
 }
 
 // Capabilities implements gNMI Capabilities

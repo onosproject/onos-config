@@ -17,12 +17,13 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"log"
-	"time"
 )
 
 // Get implements gNMI Get
@@ -31,6 +32,8 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	prefix := req.GetPrefix()
 
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	for _, path := range req.GetPath() {
 		update, err := getUpdate(prefix, path)
 		if err != nil {
