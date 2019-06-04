@@ -17,12 +17,11 @@ package synchronizer
 
 import (
 	"context"
-	"log"
-
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
+	"log"
 )
 
 // Devicesync is a go routine that listens out for configuration events specific
