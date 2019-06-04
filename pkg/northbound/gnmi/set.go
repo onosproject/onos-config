@@ -17,6 +17,10 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -24,9 +28,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
-	"log"
-	"strings"
-	"time"
 )
 
 type mapTargetUpdates map[string]map[string]string
@@ -138,6 +139,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	//Update
 	for _, u := range req.GetUpdate() {
 		target := u.Path.GetTarget()
