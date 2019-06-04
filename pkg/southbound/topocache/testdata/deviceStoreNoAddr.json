@@ -6,18 +6,14 @@
       "Addr": "localhost:10161",
       "SoftwareVersion": "1.0.0",
       "User": "devicesim",
-      "Pwd": "notused",
-      "Timeout": 10000000000
+      "Pwd": "notused"
     },
     "localhost-2": {
-      "Addr": "localhost:10162",
-      "SoftwareVersion": "1.0.0",
-      "Timeout": 10000000000
+      "SoftwareVersion": "1.0.0"
     },
     "localhost-3": {
       "Addr": "localhost:10163",
-      "SoftwareVersion": "1.0.0",
-      "Timeout": 10000000000
+      "SoftwareVersion": "1.0.0"
     }
   }
 }

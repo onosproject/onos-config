@@ -37,6 +37,7 @@ type Device struct {
 	Addr, Target, Usr, Pwd, CaPath, CertPath, KeyPath string
 	Plain, Insecure                                   bool
 	Timeout                                           time.Duration
+	SoftwareVersion                                   string
 }
 
 // DeviceStore is the model of the Device store
@@ -63,6 +64,18 @@ func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceS
 	} else if deviceStore.Version != storeVersion {
 		return nil,
 			fmt.Errorf("Store version invalid: " + deviceStore.Version)
+	}
+
+	// Validate that the store is OK before sending out any events
+	for deviceName, device := range deviceStore.Store {
+		if device.Addr == "" {
+			return nil, fmt.Errorf("Error loading store: %s. Device %s has blank address",
+				file, deviceName)
+		}
+		if device.SoftwareVersion == "" {
+			return nil, fmt.Errorf("Error loading store: %s. Device %s has blank software version",
+				file, deviceName)
+		}
 	}
 
 	// We send a creation event for each device in store
