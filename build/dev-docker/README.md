@@ -17,6 +17,6 @@ the project dependencies and then will build the _onos-config_ project.
 This can be accomplished by running the following command:
 
 ```sh
-docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable build
+docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/golang-build:stable build
 ```
 

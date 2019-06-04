@@ -15,7 +15,7 @@ The makefile supports the following targets:
 ## Building via Docker Developer Image
 
 Since the build requires a number of tools for depdency generation, linting, vetting, and 
-compiling, the project provides a published Docker image `onosproject/onos-config-build`, which 
+compiling, the project provides a published Docker image `onosproject/golang-build`, which 
 includes all the required facilities to allow developers to build the project with minimum 
 requirements placed on their own machines.
  
@@ -23,7 +23,7 @@ To build with the build image, mount the onos-config root to the container
 and pass the desired argument to the Makefile entrypoint of the developer image as follows
 (from the onos-config directory of your development machine):
 ```bash
-docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable build
+docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/golang-build:stable build
 ```
 
 See [run.md](run.md) for details on how to run the applications.
