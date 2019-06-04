@@ -29,9 +29,9 @@ Here is an example on how to use `gnmi_cli -get` to get configuration for a part
 gnmi_cli -get -address localhost:5150 \
     -proto "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
     -timeout 5s -alsologtostderr\
-    -client_crt tools/test/devicesim/certs/client1.crt \
-    -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt
+    -client_crt pkg/southbound/testdata/client1.crt \
+    -client_key pkg/southbound/testdata/client1.key \
+    -ca_crt pkg/southbound/testdata/onfca.crt
 ```
 [Full list of the gNMI northbound endpoints](gnmi.md)
 

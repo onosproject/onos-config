@@ -7,7 +7,7 @@ the [OpenConfig](https://github.com/openconfig/gnmi) project. If it's not on you
 ```bash
 go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
 ```
-> For troubleshooting information see [gnmi_user_manual.md](../tools/test/devicesim/gnmi_user_manual.md)
+> For troubleshooting information see [gnmi_user_manual.md](https://github.com/onosproject/simulators/blob/master/docs/gnmi/gnmi_user_manual.md)
 
 ## Northbound gNMI Get Request 
 __onos-config__ extends standard gNMI as a method of accessing a complete
@@ -25,9 +25,9 @@ Use `gnmi_cli -get` to get configuration for a particular device (target) from t
 gnmi_cli -get -address localhost:5150 \
     -proto "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
     -timeout 5s -alsologtostderr\
-    -client_crt tools/test/devicesim/certs/client1.crt \
-    -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt
+    -client_crt pkg/southbound/testdata/client1.crt \
+    -client_key pkg/southbound/testdata/client1.key \
+    -ca_crt pkg/southbound/testdata/onfca.crt
 ```
 
 ### List all device names (targets)
@@ -36,9 +36,9 @@ A useful way to retrieve all stored device names is with the command:
 gnmi_cli -get -address localhost:5150 \
     -proto "path: <target: '*'>" \
     -timeout 5s -alsologtostderr \
-    -client_crt tools/test/devicesim/certs/client1.crt \
-    -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt
+    -client_crt pkg/southbound/testdata/client1.crt \
+    -client_key pkg/southbound/testdata/client1.key \
+    -ca_crt pkg/southbound/testdata/onfca.crt
 ```
 
 > The value in the response can be an individual value or a tree of values depending
@@ -64,9 +64,9 @@ Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the
 gnmi_cli -address localhost:5150 -set \
     -proto "update: <path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
     -timeout 5s -alsologtostderr \
-    -client_crt tools/test/devicesim/certs/client1.crt \
-    -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt
+    -client_crt pkg/southbound/testdata/client1.crt \
+    -client_key pkg/southbound/testdata/client1.key \
+    -ca_crt pkg/southbound/testdata/onfca.crt
 ```
 giving a response like
 ```bash
@@ -120,9 +120,9 @@ please note the `0` as subscription mode to indicate streaming:
 gnmi_cli -address localhost:5150 \
     -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
     -timeout 5s -alsologtostderr \
-    -client_crt tools/test/devicesim/certs/client1.crt \
-    -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt
+    -client_crt pkg/southbound/testdata/client1.crt \
+    -client_key pkg/southbound/testdata/client1.key \
+    -ca_crt pkg/southbound/testdata/onfca.crt
 ```
 
 > This command will block until there is a change at the requested value that gets
@@ -136,9 +136,9 @@ please note the `1` as subscription mode to indicate to send the response once:
 gnmi_cli -address localhost:5150 \
     -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
     -timeout 5s -alsologtostderr \
-    -client_crt tools/test/devicesim/certs/client1.crt \
-    -client_key tools/test/devicesim/certs/client1.key \
-    -ca_crt tools/test/devicesim/certs/onfca.crt
+    -client_crt pkg/southbound/testdata/client1.crt \
+    -client_key pkg/southbound/testdata/client1.key \
+    -ca_crt pkg/southbound/testdata/onfca.crt
 ```
 
 > This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
@@ -152,8 +152,8 @@ gnmi_cli -address localhost:5150 \
      -proto "subscribe:<mode: 2, prefix:<>, subscription:<sample_interval: 5, path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
      -timeout 5s \
      -polling_interval 5s \
-     -client_crt tools/test/devicesim/certs/client1.crt \
-     -client_key tools/test/devicesim/certs/client1.key \
-     -ca_crt tools/test/devicesim/certs/onfca.crt
+     -client_crt pkg/southbound/testdata/client1.crt \
+     -client_key pkg/southbound/testdata/client1.key \
+     -ca_crt pkg/southbound/testdata/onfca.crt
 ```
 > This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
