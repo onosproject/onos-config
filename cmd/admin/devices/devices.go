@@ -22,9 +22,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/northbound/proto"
+	devices "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"io"
 	"log"
 )
@@ -34,18 +35,8 @@ func main() {
 	keyPath := flag.String("keyPath", certs.Client1Key, "path to client private key")
 	certPath := flag.String("certPath", certs.Client1Crt, "path to client certificate")
 
-	deviceAddress := flag.String("deviceAddress", "", "device address:port")
-	deviceTarget := flag.String("deviceTarget", "", "device target name")
-	deviceSoftwareVersion := flag.String("deviceSoftwareVersion", "", "device software version")
-	deviceUser := flag.String("deviceUser", "", "device login user")
-	devicePassword := flag.String("devicePassword", "", "device login password")
-	deviceCaPath := flag.String("deviceCaPath", "", "device CA certificate path")
-	deviceCertPath := flag.String("deviceCertPath", "", "device certificate path")
-	deviceKeyPath := flag.String("deviceKeyPath", "", "device key path")
-
-	devicePlain := flag.Bool("devicePlain", false, "device communicates in plain text")
-	deviceInsecure := flag.Bool("deviceInsecure", false, "device communicates insecurely")
-	deviceTimeout := flag.Int64("deviceTimeout", 10000000000, "device communication timeout in nanos")
+	addDevice := flag.String("addDevice", "", "protobuf encoding of device to add")
+	removeID := flag.String("removeID", "", "id of device to remove")
 
 	flag.Parse()
 
@@ -57,31 +48,23 @@ func main() {
 	conn := northbound.Connect(address, opts...)
 	defer conn.Close()
 
-	client := proto.NewDeviceInventoryServiceClient(conn)
+	client := devices.NewDeviceInventoryServiceClient(conn)
 
-	operation := flag.Arg(0)
-	id := flag.Arg(1)
+	if addDevice != nil && len(*addDevice) > 0 {
+		deviceInfo := &devices.DeviceInfo{}
+		if err := proto.UnmarshalText(*addDevice, deviceInfo); err == nil {
+			fmt.Printf("Adding device %s\n", deviceInfo.Id)
+			_, err = client.AddDevice(context.Background(), deviceInfo)
+		} else {
+			log.Fatalf("Unable to parse device info from %s : %v", *addDevice, err)
+		}
 
-	if operation == "add" {
-		_, err = client.AddDevice(context.Background(), &proto.DeviceInfo{
-			Id:       id,
-			Address:  *deviceAddress,
-			Target:   *deviceTarget,
-			Version:  *deviceSoftwareVersion,
-			User:     *deviceUser,
-			Password: *devicePassword,
-			CaPath:   *deviceCaPath,
-			CertPath: *deviceCertPath,
-			KeyPath:  *deviceKeyPath,
-			Plain:    *devicePlain,
-			Insecure: *deviceInsecure,
-			Timeout:  *deviceTimeout,
-		})
-	} else if operation == "remove" {
-		fmt.Printf("Removing device %s\n", id)
-		_, err = client.RemoveDevice(context.Background(), &proto.DeviceInfo{Id: id})
+	} else if removeID != nil && len(*removeID) > 0 {
+		fmt.Printf("Removing device %s\n", *removeID)
+		_, err = client.RemoveDevice(context.Background(), &devices.DeviceInfo{Id: *removeID})
+
 	} else {
-		stream, err := client.GetDevices(context.Background(), &proto.GetDevicesRequest{})
+		stream, err := client.GetDevices(context.Background(), &devices.GetDevicesRequest{})
 		if err != nil {
 			log.Fatalf("Failed to send request: %v", err)
 		}
