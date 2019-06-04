@@ -35,7 +35,7 @@ const storeVersion = "1.0.0"
 // Device - the definition of Device will ultimately come from onos-topology
 type Device struct {
 	Addr, Target, Usr, Pwd, CaPath, CertPath, KeyPath string
-	Insecure                                          bool
+	Plain, Insecure                                   bool
 	Timeout                                           time.Duration
 }
 

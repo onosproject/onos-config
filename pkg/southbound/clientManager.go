@@ -37,21 +37,23 @@ import (
 var targets = make(map[DeviceID]interface{})
 
 func createDestination(device topocache.Device) (*client.Destination, DeviceID) {
-	d := &client.Destination{TLS: &tls.Config{}}
+	d := &client.Destination{}
 	d.Addrs = []string{device.Addr}
 	d.Target = device.Target
 	d.Timeout = time.Duration(device.Timeout * time.Second)
-	if device.Insecure {
+	if device.Plain {
+		log.Println("Plain connection connection to", device.Addr)
+	} else if device.Insecure {
 		log.Println("Insecure connection to", device.Addr)
 		d.TLS = &tls.Config{InsecureSkipVerify: true}
 	} else {
+		d.TLS = &tls.Config{}
 		if device.CaPath == "" {
 			log.Println("Loading default CA onfca")
 			d.TLS.RootCAs = getCertPoolDefault()
 		} else {
 			d.TLS.RootCAs = getCertPool(device.CaPath)
 		}
-
 		if device.CertPath == "" && device.KeyPath == "" {
 			// Load default Certificates
 			log.Println("Loading default certificates")
@@ -59,7 +61,6 @@ func createDestination(device topocache.Device) (*client.Destination, DeviceID) 
 			if err != nil {
 				log.Println("Error loading default certs")
 			}
-
 			d.TLS.Certificates = []tls.Certificate{clientCerts}
 		} else if device.CertPath != "" && device.KeyPath != "" {
 			// Load certs given for device
