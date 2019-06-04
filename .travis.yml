@@ -4,7 +4,7 @@ services:
   - docker
 
 before_install:
-  - docker pull onosproject/onos-config-build:stable
+  - docker pull onosproject/golang-build:stable
 
 notifications:
   email: false
@@ -14,7 +14,7 @@ branches:
     - master
 
 script:
-  - docker run -e TRAVIS_JOB_ID="$TRAVIS_JOB_ID" -e TRAVIS_BRANCH="$TRAVIS_BRANCH" -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/onos-config-build:stable coverage
+  - docker run -e TRAVIS_JOB_ID="$TRAVIS_JOB_ID" -e TRAVIS_BRANCH="$TRAVIS_BRANCH" -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/golang-build:stable coverage
 
 
 
