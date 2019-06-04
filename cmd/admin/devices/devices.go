@@ -51,47 +51,60 @@ func main() {
 	client := devices.NewDeviceInventoryServiceClient(conn)
 
 	if addDevice != nil && len(*addDevice) > 0 {
-		deviceInfo := &devices.DeviceInfo{}
-		if err := proto.UnmarshalText(*addDevice, deviceInfo); err == nil {
-			fmt.Printf("Adding device %s\n", deviceInfo.Id)
-			_, err = client.AddDevice(context.Background(), deviceInfo)
-		} else {
-			log.Fatalf("Unable to parse device info from %s : %v", *addDevice, err)
-		}
+		addNewDevice(client, *addDevice)
 
 	} else if removeID != nil && len(*removeID) > 0 {
-		fmt.Printf("Removing device %s\n", *removeID)
-		_, err = client.RemoveDevice(context.Background(), &devices.DeviceInfo{Id: *removeID})
+		removeDevice(client, *removeID)
 
 	} else {
-		stream, err := client.GetDevices(context.Background(), &devices.GetDevicesRequest{})
-		if err != nil {
-			log.Fatalf("Failed to send request: %v", err)
-		}
-		waitc := make(chan struct{})
-		go func() {
-			for {
-				in, err := stream.Recv()
-				if err == io.EOF {
-					// read done.
-					close(waitc)
-					return
-				}
-				if err != nil {
-					log.Fatalf("Failed to receive response : %v", err)
-				}
-				fmt.Printf("%s: %s (%s)\n", in.Id, in.Address, in.Version)
-			}
-		}()
-		err = stream.CloseSend()
-		if err != nil {
-			log.Fatalf("Failed to close: %v", err)
-		}
-		<-waitc
-
+		listDevices(client)
 	}
+}
 
+func addNewDevice(client devices.DeviceInventoryServiceClient, deviceProto string) {
+	deviceInfo := &devices.DeviceInfo{}
+	if err := proto.UnmarshalText(deviceProto, deviceInfo); err == nil {
+		fmt.Printf("Adding device %s\n", deviceInfo.Id)
+		_, err = client.AddDevice(context.Background(), deviceInfo)
+		if err != nil {
+			log.Fatalf("Unable to add device: %v", err)
+		}
+	} else {
+		log.Fatalf("Unable to parse device info from %s: %v", deviceProto, err)
+	}
+}
+
+func removeDevice(client devices.DeviceInventoryServiceClient, id string) {
+	fmt.Printf("Removing device %s\n", id)
+	_, err := client.RemoveDevice(context.Background(), &devices.DeviceInfo{Id: id})
 	if err != nil {
-		log.Fatalf("Failed to send request: %v", err)
+		log.Fatalf("Unable to remove device: %v", err)
 	}
+}
+
+func listDevices(client devices.DeviceInventoryServiceClient) {
+	stream, err := client.GetDevices(context.Background(), &devices.GetDevicesRequest{})
+	if err != nil {
+		log.Fatalf("Failed to get devices: %v", err)
+	}
+	waitc := make(chan struct{})
+	go func() {
+		for {
+			in, err := stream.Recv()
+			if err == io.EOF {
+				// read done.
+				close(waitc)
+				return
+			}
+			if err != nil {
+				log.Fatalf("Failed to receive device: %v", err)
+			}
+			fmt.Printf("%s: %s (%s)\n", in.Id, in.Address, in.Version)
+		}
+	}()
+	err = stream.CloseSend()
+	if err != nil {
+		log.Fatalf("Failed to close: %v", err)
+	}
+	<-waitc
 }

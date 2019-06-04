@@ -24,7 +24,7 @@ import (
 
 // AddDevice adds the specified device to the device inventory.
 func (s Server) AddDevice(c context.Context, d *proto.DeviceInfo) (*proto.DeviceResponse, error) {
-	manager.GetManager().DeviceStore.AddDevice(d.Id, topocache.Device{
+	err := manager.GetManager().DeviceStore.AddDevice(d.Id, topocache.Device{
 		Addr:            d.Address,
 		Target:          d.Target,
 		SoftwareVersion: d.Version,
@@ -37,7 +37,7 @@ func (s Server) AddDevice(c context.Context, d *proto.DeviceInfo) (*proto.Device
 		Plain:           d.Plain,
 		Timeout:         time.Duration(d.Timeout),
 	})
-	return &proto.DeviceResponse{}, nil
+	return &proto.DeviceResponse{}, err
 }
 
 // RemoveDevice removes the specified device from the inventory.
