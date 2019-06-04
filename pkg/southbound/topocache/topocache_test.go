@@ -22,12 +22,16 @@ import (
 	"gotest.tools/assert"
 )
 
-func Test_LocalDeviceStore(t *testing.T) {
+func loadDeviceStore(t *testing.T) *DeviceStore {
 	topoChannel := make(chan events.TopoEvent, 10)
 	deviceStore, err := LoadDeviceStore("testdata/deviceStore.json", topoChannel)
 	assert.NilError(t, err, "Cannot load device store ")
 	assert.Assert(t, deviceStore != nil)
+	return deviceStore
+}
 
+func Test_LocalDeviceStore(t *testing.T) {
+	deviceStore := loadDeviceStore(t)
 	assert.Equal(t, deviceStore.Version, "1.0.0", "Device store loaded wrong version string")
 
 	d1, d1exists := deviceStore.Store["localhost-1"]
@@ -65,4 +69,19 @@ func Test_DeviceStoreDuplicates(t *testing.T) {
 	assert.NilError(t, err)
 	lh2 := deviceStore.Store["localhost-2"]
 	assert.Assert(t, lh2.SoftwareVersion == "1.0.0" || lh2.SoftwareVersion == "2.0.0")
+}
+
+func Test_AddDevice(t *testing.T) {
+	deviceStore := loadDeviceStore(t)
+	deviceStore.AddDevice("foobar", Device{Addr: "foobar:123"})
+	d, ok := deviceStore.Store["foobar"]
+	assert.Assert(t, ok, "device not added")
+	assert.Assert(t, d.Addr == "foobar:123", "wrong device added")
+}
+
+func Test_DeleteDevice(t *testing.T) {
+	deviceStore := loadDeviceStore(t)
+	deviceStore.RemoveDevice("localhost-2")
+	_, ok := deviceStore.Store["localhost-2"]
+	assert.Assert(t, !ok, "device not removed")
 }

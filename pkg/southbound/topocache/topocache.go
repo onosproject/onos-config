@@ -85,3 +85,13 @@ func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceS
 
 	return &deviceStore, nil
 }
+
+// AddDevice adds the specified device to the device inventory
+func (store *DeviceStore) AddDevice(id string, device Device) {
+	store.Store[id] = device
+}
+
+// RemoveDevice removes the device with the specified address from the device inventory.
+func (store *DeviceStore) RemoveDevice(id string) {
+	delete(store.Store, id)
+}

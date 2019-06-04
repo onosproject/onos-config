@@ -33,7 +33,9 @@ type Service struct {
 
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
-	proto.RegisterAdminServiceServer(r, Server{})
+	server := Server{}
+	proto.RegisterAdminServiceServer(r, server)
+	proto.RegisterDeviceInventoryServiceServer(r, server)
 }
 
 // Server implements the gRPC service for administrative facilities.

@@ -235,7 +235,7 @@ var xxx_messageInfo_RegisterResponse proto.InternalMessageInfo
 
 // RollbackRequest carries the name of a network config to rollback. If there
 // are subsequent changes to any of the devices in that config, the rollback will
-// be rejected. If no name is given the last network change will be rolled back
+// be rejected. If no name is given the last network change will be rolled back.
 type RollbackRequest struct {
 	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Comment              string   `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
@@ -322,6 +322,190 @@ func (m *RollbackResponse) GetMessage() string {
 	return ""
 }
 
+// DeviceInfo is a record of various device-pertinent information.
+type DeviceInfo struct {
+	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Address              string   `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
+	Target               string   `protobuf:"bytes,3,opt,name=target,proto3" json:"target,omitempty"`
+	User                 string   `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
+	Password             string   `protobuf:"bytes,5,opt,name=password,proto3" json:"password,omitempty"`
+	CaPath               string   `protobuf:"bytes,6,opt,name=caPath,proto3" json:"caPath,omitempty"`
+	CertPath             string   `protobuf:"bytes,7,opt,name=certPath,proto3" json:"certPath,omitempty"`
+	KeyPath              string   `protobuf:"bytes,8,opt,name=keyPath,proto3" json:"keyPath,omitempty"`
+	Plain                bool     `protobuf:"varint,9,opt,name=plain,proto3" json:"plain,omitempty"`
+	Insecure             bool     `protobuf:"varint,10,opt,name=insecure,proto3" json:"insecure,omitempty"`
+	Timeout              int64    `protobuf:"varint,11,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeviceInfo) Reset()         { *m = DeviceInfo{} }
+func (m *DeviceInfo) String() string { return proto.CompactTextString(m) }
+func (*DeviceInfo) ProtoMessage()    {}
+func (*DeviceInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a91573d9ad3811b0, []int{7}
+}
+
+func (m *DeviceInfo) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeviceInfo.Unmarshal(m, b)
+}
+func (m *DeviceInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeviceInfo.Marshal(b, m, deterministic)
+}
+func (m *DeviceInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeviceInfo.Merge(m, src)
+}
+func (m *DeviceInfo) XXX_Size() int {
+	return xxx_messageInfo_DeviceInfo.Size(m)
+}
+func (m *DeviceInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeviceInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeviceInfo proto.InternalMessageInfo
+
+func (m *DeviceInfo) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *DeviceInfo) GetAddress() string {
+	if m != nil {
+		return m.Address
+	}
+	return ""
+}
+
+func (m *DeviceInfo) GetTarget() string {
+	if m != nil {
+		return m.Target
+	}
+	return ""
+}
+
+func (m *DeviceInfo) GetUser() string {
+	if m != nil {
+		return m.User
+	}
+	return ""
+}
+
+func (m *DeviceInfo) GetPassword() string {
+	if m != nil {
+		return m.Password
+	}
+	return ""
+}
+
+func (m *DeviceInfo) GetCaPath() string {
+	if m != nil {
+		return m.CaPath
+	}
+	return ""
+}
+
+func (m *DeviceInfo) GetCertPath() string {
+	if m != nil {
+		return m.CertPath
+	}
+	return ""
+}
+
+func (m *DeviceInfo) GetKeyPath() string {
+	if m != nil {
+		return m.KeyPath
+	}
+	return ""
+}
+
+func (m *DeviceInfo) GetPlain() bool {
+	if m != nil {
+		return m.Plain
+	}
+	return false
+}
+
+func (m *DeviceInfo) GetInsecure() bool {
+	if m != nil {
+		return m.Insecure
+	}
+	return false
+}
+
+func (m *DeviceInfo) GetTimeout() int64 {
+	if m != nil {
+		return m.Timeout
+	}
+	return 0
+}
+
+// DeviceResponse carries the status of the add/remove operation.
+type DeviceResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeviceResponse) Reset()         { *m = DeviceResponse{} }
+func (m *DeviceResponse) String() string { return proto.CompactTextString(m) }
+func (*DeviceResponse) ProtoMessage()    {}
+func (*DeviceResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a91573d9ad3811b0, []int{8}
+}
+
+func (m *DeviceResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeviceResponse.Unmarshal(m, b)
+}
+func (m *DeviceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeviceResponse.Marshal(b, m, deterministic)
+}
+func (m *DeviceResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeviceResponse.Merge(m, src)
+}
+func (m *DeviceResponse) XXX_Size() int {
+	return xxx_messageInfo_DeviceResponse.Size(m)
+}
+func (m *DeviceResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeviceResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeviceResponse proto.InternalMessageInfo
+
+// GetDevicesRequest carries devices query information.
+type GetDevicesRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetDevicesRequest) Reset()         { *m = GetDevicesRequest{} }
+func (m *GetDevicesRequest) String() string { return proto.CompactTextString(m) }
+func (*GetDevicesRequest) ProtoMessage()    {}
+func (*GetDevicesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a91573d9ad3811b0, []int{9}
+}
+
+func (m *GetDevicesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetDevicesRequest.Unmarshal(m, b)
+}
+func (m *GetDevicesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetDevicesRequest.Marshal(b, m, deterministic)
+}
+func (m *GetDevicesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDevicesRequest.Merge(m, src)
+}
+func (m *GetDevicesRequest) XXX_Size() int {
+	return xxx_messageInfo_GetDevicesRequest.Size(m)
+}
+func (m *GetDevicesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDevicesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDevicesRequest proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*NetworkChangesRequest)(nil), "proto.NetworkChangesRequest")
 	proto.RegisterType((*ConfigChange)(nil), "proto.ConfigChange")
@@ -330,36 +514,52 @@ func init() {
 	proto.RegisterType((*RegisterResponse)(nil), "proto.RegisterResponse")
 	proto.RegisterType((*RollbackRequest)(nil), "proto.RollbackRequest")
 	proto.RegisterType((*RollbackResponse)(nil), "proto.RollbackResponse")
+	proto.RegisterType((*DeviceInfo)(nil), "proto.DeviceInfo")
+	proto.RegisterType((*DeviceResponse)(nil), "proto.DeviceResponse")
+	proto.RegisterType((*GetDevicesRequest)(nil), "proto.GetDevicesRequest")
 }
 
 func init() { proto.RegisterFile("pkg/northbound/proto/admin.proto", fileDescriptor_a91573d9ad3811b0) }
 
 var fileDescriptor_a91573d9ad3811b0 = []byte{
-	// 380 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x92, 0xcd, 0x6e, 0xa3, 0x30,
-	0x14, 0x85, 0x05, 0xc9, 0x4c, 0x94, 0x9b, 0xcc, 0x24, 0xf1, 0x28, 0x13, 0x84, 0x46, 0x9a, 0x88,
-	0x55, 0x16, 0x33, 0x50, 0xd1, 0x07, 0xe8, 0x4f, 0x54, 0xb5, 0x9b, 0x66, 0x41, 0xdb, 0x07, 0xe0,
-	0xe7, 0x06, 0x50, 0xc0, 0xa6, 0xd8, 0xb4, 0xef, 0xd1, 0x77, 0xe8, 0x7b, 0x56, 0x60, 0x5c, 0x92,
-	0xb4, 0xbb, 0xae, 0xb8, 0x3e, 0x3e, 0xf7, 0xf8, 0xf3, 0xc5, 0xb0, 0x2c, 0x76, 0xb1, 0x43, 0x59,
-	0x29, 0x92, 0x80, 0x55, 0x34, 0x72, 0x8a, 0x92, 0x09, 0xe6, 0xf8, 0x51, 0x9e, 0x52, 0xbb, 0xa9,
-	0xc9, 0xb7, 0xe6, 0x63, 0xfe, 0x8d, 0x19, 0x8b, 0x33, 0x94, 0x86, 0xa0, 0xda, 0x3a, 0x22, 0xcd,
-	0x91, 0x0b, 0x3f, 0x2f, 0xa4, 0xcf, 0x5a, 0xc0, 0x7c, 0x83, 0xe2, 0x99, 0x95, 0xbb, 0x75, 0xe2,
-	0xd3, 0x18, 0xb9, 0x87, 0x8f, 0x15, 0x72, 0x61, 0xb9, 0x30, 0x5e, 0x33, 0xba, 0x4d, 0x63, 0xa9,
-	0x93, 0x9f, 0xa0, 0xa7, 0x91, 0xa1, 0x2d, 0xb5, 0xd5, 0xd0, 0xd3, 0xd3, 0x88, 0x10, 0xe8, 0x27,
-	0x3e, 0x4f, 0x0c, 0xbd, 0x51, 0x9a, 0xda, 0x7a, 0xd1, 0x60, 0xb8, 0x41, 0xd1, 0x76, 0xd8, 0xd0,
-	0xaf, 0x4f, 0x6b, 0x7a, 0x46, 0xae, 0x69, 0x4b, 0x14, 0x5b, 0xa1, 0xd8, 0xf7, 0x0a, 0xc5, 0x6b,
-	0x7c, 0x75, 0x22, 0xf5, 0x73, 0x54, 0x89, 0x75, 0x5d, 0x6b, 0x15, 0xc7, 0xd2, 0xe8, 0x49, 0xad,
-	0xae, 0xc9, 0x7f, 0x18, 0x84, 0x92, 0xd5, 0xe8, 0x2f, 0x7b, 0xab, 0x91, 0xfb, 0x4b, 0x66, 0xda,
-	0xfb, 0xbc, 0x9e, 0xf2, 0x58, 0x33, 0x98, 0x78, 0x18, 0xa7, 0x5c, 0x60, 0xa9, 0xee, 0x46, 0x60,
-	0xda, 0x49, 0xbc, 0x60, 0x94, 0xa3, 0x75, 0x06, 0x13, 0x8f, 0x65, 0x59, 0xe0, 0x87, 0xbb, 0xd6,
-	0xf6, 0x0e, 0xa4, 0xed, 0x01, 0x19, 0x30, 0x08, 0x59, 0x9e, 0x23, 0x15, 0x2d, 0xa7, 0x5a, 0x5a,
-	0xff, 0x60, 0xda, 0x05, 0xc8, 0xd0, 0xda, 0x9d, 0x23, 0xe7, 0x7e, 0xac, 0x42, 0xd4, 0xd2, 0x7d,
-	0xd5, 0x61, 0x7c, 0x51, 0xff, 0xaf, 0x3b, 0x2c, 0x9f, 0xd2, 0x10, 0xc9, 0x39, 0xfc, 0x50, 0x4c,
-	0xb7, 0x2c, 0xc2, 0x8c, 0xfc, 0x6e, 0x6f, 0x75, 0x04, 0x6f, 0x2e, 0x3e, 0xe8, 0xed, 0x61, 0x97,
-	0x30, 0x79, 0xa0, 0xe5, 0xd7, 0x32, 0xae, 0x60, 0x76, 0x8d, 0xe2, 0xf0, 0x45, 0x90, 0x3f, 0xad,
-	0xfb, 0xd3, 0x87, 0x62, 0x4e, 0xbb, 0x5d, 0xb9, 0x73, 0xa2, 0x91, 0x1b, 0x98, 0xab, 0x59, 0x1c,
-	0x34, 0x75, 0x40, 0x87, 0xa3, 0xee, 0x80, 0x8e, 0x26, 0x18, 0x7c, 0x6f, 0xf4, 0xd3, 0xb7, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0x5f, 0xfb, 0x58, 0x4d, 0xf2, 0x02, 0x00, 0x00,
+	// 578 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0x96, 0xd3, 0xb4, 0x69, 0xa6, 0xa5, 0x4d, 0xb7, 0xb4, 0x5d, 0x59, 0x48, 0x44, 0x3e, 0xe5,
+	0x00, 0x49, 0x15, 0x84, 0x84, 0xc4, 0x01, 0x4a, 0x41, 0xc0, 0x81, 0x0a, 0x19, 0x78, 0x80, 0x8d,
+	0x3d, 0x75, 0xac, 0xc4, 0xbb, 0x61, 0x77, 0xd3, 0xaa, 0xaf, 0xc1, 0x89, 0x17, 0xe0, 0x55, 0x78,
+	0x2e, 0xb4, 0x7f, 0x76, 0xd2, 0x70, 0x41, 0x9c, 0x3c, 0xdf, 0x37, 0x33, 0x9f, 0x3f, 0xcf, 0x8c,
+	0xa1, 0xbf, 0x98, 0x15, 0x23, 0x2e, 0xa4, 0x9e, 0x4e, 0xc4, 0x92, 0xe7, 0xa3, 0x85, 0x14, 0x5a,
+	0x8c, 0x58, 0x5e, 0x95, 0x7c, 0x68, 0x63, 0xb2, 0x6d, 0x1f, 0xf1, 0xe3, 0x42, 0x88, 0x62, 0x8e,
+	0xae, 0x60, 0xb2, 0xbc, 0x1e, 0xe9, 0xb2, 0x42, 0xa5, 0x59, 0xb5, 0x70, 0x75, 0xc9, 0x19, 0x9c,
+	0x5c, 0xa1, 0xbe, 0x15, 0x72, 0x76, 0x39, 0x65, 0xbc, 0x40, 0x95, 0xe2, 0xf7, 0x25, 0x2a, 0x9d,
+	0x8c, 0x61, 0xff, 0x52, 0xf0, 0xeb, 0xb2, 0x70, 0x3c, 0x39, 0x80, 0x56, 0x99, 0xd3, 0xa8, 0x1f,
+	0x0d, 0xba, 0x69, 0xab, 0xcc, 0x09, 0x81, 0xf6, 0x94, 0xa9, 0x29, 0x6d, 0x59, 0xc6, 0xc6, 0xc9,
+	0x8f, 0x08, 0xba, 0x57, 0xa8, 0x7d, 0xc7, 0x10, 0xda, 0xe6, 0x6d, 0xb6, 0x67, 0x6f, 0x1c, 0x0f,
+	0x9d, 0x95, 0x61, 0xb0, 0x32, 0xfc, 0x1a, 0xac, 0xa4, 0xb6, 0xce, 0x28, 0x72, 0x56, 0x61, 0x50,
+	0x34, 0xb1, 0xe1, 0x96, 0x0a, 0x25, 0xdd, 0x72, 0x9c, 0x89, 0xc9, 0x53, 0xe8, 0x64, 0xce, 0x2b,
+	0x6d, 0xf7, 0xb7, 0x06, 0x7b, 0xe3, 0x63, 0xa7, 0x39, 0x5c, 0xf5, 0x9b, 0x86, 0x9a, 0xe4, 0x08,
+	0x0e, 0x53, 0x2c, 0x4a, 0xa5, 0x51, 0x86, 0x6f, 0x23, 0xd0, 0x6b, 0x28, 0xb5, 0x10, 0x5c, 0x61,
+	0xf2, 0x0a, 0x0e, 0x53, 0x31, 0x9f, 0x4f, 0x58, 0x36, 0xf3, 0x65, 0xb5, 0xa1, 0x68, 0xc5, 0x10,
+	0x85, 0x4e, 0x26, 0xaa, 0x0a, 0xb9, 0xf6, 0x3e, 0x03, 0x4c, 0x9e, 0x40, 0xaf, 0x11, 0x70, 0xa2,
+	0xa6, 0xba, 0x42, 0xa5, 0x58, 0x11, 0x44, 0x02, 0x4c, 0x7e, 0xb6, 0x00, 0xde, 0xe2, 0x4d, 0x99,
+	0xe1, 0x47, 0x7e, 0x2d, 0x36, 0xa6, 0x4b, 0xa1, 0xc3, 0xf2, 0x5c, 0xa2, 0x52, 0xe1, 0x35, 0x1e,
+	0x92, 0x53, 0xd8, 0xd1, 0x4c, 0x16, 0xa8, 0xfd, 0x4c, 0x3c, 0xaa, 0x27, 0xd5, 0x5e, 0x99, 0x54,
+	0x0c, 0xbb, 0x0b, 0xa6, 0xd4, 0xad, 0x90, 0x39, 0xdd, 0xb6, 0x7c, 0x8d, 0x8d, 0x4e, 0xc6, 0x3e,
+	0x33, 0x3d, 0xa5, 0x3b, 0x4e, 0xc7, 0x21, 0xd3, 0x93, 0xa1, 0xd4, 0x36, 0xd3, 0x71, 0x3d, 0x01,
+	0x1b, 0x57, 0x33, 0xbc, 0xb3, 0xa9, 0x5d, 0xe7, 0xca, 0x43, 0xf2, 0x10, 0xb6, 0x17, 0x73, 0x56,
+	0x72, 0xda, 0xed, 0x47, 0x83, 0xdd, 0xd4, 0x01, 0xa3, 0x55, 0x72, 0x85, 0xd9, 0x52, 0x22, 0x05,
+	0x9b, 0xa8, 0xb1, 0xd1, 0x32, 0x5b, 0x17, 0x4b, 0x4d, 0xf7, 0xfa, 0xd1, 0x60, 0x2b, 0x0d, 0x30,
+	0xe9, 0xc1, 0x81, 0x9b, 0x4c, 0xbd, 0x9b, 0x63, 0x38, 0x7a, 0x8f, 0xda, 0x91, 0xe1, 0x40, 0xc7,
+	0xbf, 0x5a, 0xb0, 0x7f, 0x61, 0x2e, 0xfe, 0x0b, 0x4a, 0x93, 0x20, 0xaf, 0xe1, 0x41, 0xd8, 0xea,
+	0x27, 0x91, 0xe3, 0x9c, 0x9c, 0xfa, 0xbb, 0xb8, 0xb7, 0xfe, 0xf8, 0x6c, 0x83, 0xf7, 0xeb, 0x7a,
+	0x03, 0x87, 0xdf, 0xb8, 0xfc, 0x3f, 0x8d, 0x77, 0xd6, 0xeb, 0xfa, 0x3f, 0x45, 0x1e, 0xf9, 0xea,
+	0xbf, 0xfe, 0x6a, 0x71, 0xaf, 0xc9, 0xba, 0xcc, 0x79, 0x44, 0x3e, 0xc0, 0x49, 0xb8, 0xa6, 0xb5,
+	0xa6, 0xc6, 0xd0, 0xfa, 0xb1, 0x36, 0x86, 0xee, 0xdd, 0xe0, 0xf8, 0x77, 0x04, 0xa7, 0xe1, 0xd2,
+	0x6e, 0x90, 0x6b, 0x21, 0xef, 0xc2, 0xc4, 0x9e, 0x43, 0xf7, 0x22, 0xcf, 0x5d, 0x92, 0x1c, 0x79,
+	0x81, 0xe6, 0x2a, 0xe3, 0x93, 0x35, 0xaa, 0xfe, 0xc4, 0x17, 0xb0, 0x9f, 0x62, 0x25, 0x6e, 0xf0,
+	0x9f, 0x3b, 0x5f, 0x02, 0x34, 0x8b, 0x24, 0xd4, 0x17, 0x6d, 0xec, 0x36, 0xde, 0x54, 0x3c, 0x8f,
+	0x26, 0x3b, 0x96, 0x7b, 0xf6, 0x27, 0x00, 0x00, 0xff, 0xff, 0x87, 0x92, 0x7b, 0x97, 0xfd, 0x04,
+	0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -380,6 +580,7 @@ type AdminServiceClient interface {
 	UnregisterModel(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	// GetNetworkChanges returns a stream of network changes submitted via gNMI.
 	GetNetworkChanges(ctx context.Context, in *NetworkChangesRequest, opts ...grpc.CallOption) (AdminService_GetNetworkChangesClient, error)
+	// RollbackNetworkChange rolls back the specified network change (or the latest one).
 	RollbackNetworkChange(ctx context.Context, in *RollbackRequest, opts ...grpc.CallOption) (*RollbackResponse, error)
 }
 
@@ -458,6 +659,7 @@ type AdminServiceServer interface {
 	UnregisterModel(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	// GetNetworkChanges returns a stream of network changes submitted via gNMI.
 	GetNetworkChanges(*NetworkChangesRequest, AdminService_GetNetworkChangesServer) error
+	// RollbackNetworkChange rolls back the specified network change (or the latest one).
 	RollbackNetworkChange(context.Context, *RollbackRequest) (*RollbackResponse, error)
 }
 
@@ -578,6 +780,184 @@ var _AdminService_serviceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "GetNetworkChanges",
 			Handler:       _AdminService_GetNetworkChanges_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "pkg/northbound/proto/admin.proto",
+}
+
+// DeviceInventoryServiceClient is the client API for DeviceInventoryService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type DeviceInventoryServiceClient interface {
+	// AddDevice adds a new device to the device inventory. The address field is required.
+	AddDevice(ctx context.Context, in *DeviceInfo, opts ...grpc.CallOption) (*DeviceResponse, error)
+	// RemoveDevice removes a device to the device inventory Just the address field is required.
+	RemoveDevice(ctx context.Context, in *DeviceInfo, opts ...grpc.CallOption) (*DeviceResponse, error)
+	// GetDevices returns a stream of devices in the device inventory.
+	GetDevices(ctx context.Context, in *GetDevicesRequest, opts ...grpc.CallOption) (DeviceInventoryService_GetDevicesClient, error)
+}
+
+type deviceInventoryServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewDeviceInventoryServiceClient(cc *grpc.ClientConn) DeviceInventoryServiceClient {
+	return &deviceInventoryServiceClient{cc}
+}
+
+func (c *deviceInventoryServiceClient) AddDevice(ctx context.Context, in *DeviceInfo, opts ...grpc.CallOption) (*DeviceResponse, error) {
+	out := new(DeviceResponse)
+	err := c.cc.Invoke(ctx, "/proto.DeviceInventoryService/AddDevice", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *deviceInventoryServiceClient) RemoveDevice(ctx context.Context, in *DeviceInfo, opts ...grpc.CallOption) (*DeviceResponse, error) {
+	out := new(DeviceResponse)
+	err := c.cc.Invoke(ctx, "/proto.DeviceInventoryService/RemoveDevice", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *deviceInventoryServiceClient) GetDevices(ctx context.Context, in *GetDevicesRequest, opts ...grpc.CallOption) (DeviceInventoryService_GetDevicesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_DeviceInventoryService_serviceDesc.Streams[0], "/proto.DeviceInventoryService/GetDevices", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &deviceInventoryServiceGetDevicesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type DeviceInventoryService_GetDevicesClient interface {
+	Recv() (*DeviceInfo, error)
+	grpc.ClientStream
+}
+
+type deviceInventoryServiceGetDevicesClient struct {
+	grpc.ClientStream
+}
+
+func (x *deviceInventoryServiceGetDevicesClient) Recv() (*DeviceInfo, error) {
+	m := new(DeviceInfo)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// DeviceInventoryServiceServer is the server API for DeviceInventoryService service.
+type DeviceInventoryServiceServer interface {
+	// AddDevice adds a new device to the device inventory. The address field is required.
+	AddDevice(context.Context, *DeviceInfo) (*DeviceResponse, error)
+	// RemoveDevice removes a device to the device inventory Just the address field is required.
+	RemoveDevice(context.Context, *DeviceInfo) (*DeviceResponse, error)
+	// GetDevices returns a stream of devices in the device inventory.
+	GetDevices(*GetDevicesRequest, DeviceInventoryService_GetDevicesServer) error
+}
+
+// UnimplementedDeviceInventoryServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedDeviceInventoryServiceServer struct {
+}
+
+func (*UnimplementedDeviceInventoryServiceServer) AddDevice(ctx context.Context, req *DeviceInfo) (*DeviceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddDevice not implemented")
+}
+func (*UnimplementedDeviceInventoryServiceServer) RemoveDevice(ctx context.Context, req *DeviceInfo) (*DeviceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveDevice not implemented")
+}
+func (*UnimplementedDeviceInventoryServiceServer) GetDevices(req *GetDevicesRequest, srv DeviceInventoryService_GetDevicesServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetDevices not implemented")
+}
+
+func RegisterDeviceInventoryServiceServer(s *grpc.Server, srv DeviceInventoryServiceServer) {
+	s.RegisterService(&_DeviceInventoryService_serviceDesc, srv)
+}
+
+func _DeviceInventoryService_AddDevice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeviceInfo)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeviceInventoryServiceServer).AddDevice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DeviceInventoryService/AddDevice",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeviceInventoryServiceServer).AddDevice(ctx, req.(*DeviceInfo))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DeviceInventoryService_RemoveDevice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeviceInfo)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeviceInventoryServiceServer).RemoveDevice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.DeviceInventoryService/RemoveDevice",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeviceInventoryServiceServer).RemoveDevice(ctx, req.(*DeviceInfo))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DeviceInventoryService_GetDevices_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GetDevicesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DeviceInventoryServiceServer).GetDevices(m, &deviceInventoryServiceGetDevicesServer{stream})
+}
+
+type DeviceInventoryService_GetDevicesServer interface {
+	Send(*DeviceInfo) error
+	grpc.ServerStream
+}
+
+type deviceInventoryServiceGetDevicesServer struct {
+	grpc.ServerStream
+}
+
+func (x *deviceInventoryServiceGetDevicesServer) Send(m *DeviceInfo) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+var _DeviceInventoryService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.DeviceInventoryService",
+	HandlerType: (*DeviceInventoryServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "AddDevice",
+			Handler:    _DeviceInventoryService_AddDevice_Handler,
+		},
+		{
+			MethodName: "RemoveDevice",
+			Handler:    _DeviceInventoryService_RemoveDevice_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetDevices",
+			Handler:       _DeviceInventoryService_GetDevices_Handler,
 			ServerStreams: true,
 		},
 	},
