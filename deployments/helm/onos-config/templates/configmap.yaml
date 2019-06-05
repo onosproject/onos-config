@@ -16,7 +16,8 @@ data:
         {{- range $i, $device := .Values.devices }}
         {{ if $i }},{{ end}}{{ printf "%s:10161" $device | quote }}: {
           "Addr": {{ printf "%s:10161" $device | quote }},
-          "Timeout": 10000000000
+          "Timeout": 10000000000,
+           "SoftwareVersion": "1.0.0"
         }
         {{- end }}
       }
