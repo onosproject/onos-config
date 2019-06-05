@@ -27,7 +27,7 @@ administrative interface that allows devices to be added, removed and listed via
 A command has been provided to allow manipulating the device inventory from the command
 line using this gRPC service.
 
-To add a new device, specify the device informatio protobuf encoding as the value of the 
+To add a new device, specify the device information protobuf encoding as the value of the 
 `addDevice` option. The 'id', 'address' and 'version' fields are required at the minimum.
 For example:
 
