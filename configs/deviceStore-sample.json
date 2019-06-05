@@ -18,6 +18,12 @@
       "Addr": "localhost:10163",
       "SoftwareVersion": "1.0.0",
       "Timeout": 10000000000
+    },
+    "localhost:50001": {
+      "Addr": "localhost:50001",
+      "SoftwareVersion": "1.0.0",
+      "Plain": true,
+      "Timeout": 10000000000
     }
   }
 }

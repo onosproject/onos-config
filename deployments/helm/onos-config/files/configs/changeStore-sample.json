@@ -296,6 +296,61 @@
           "Value": "Welcome to gNMI service on device-3-device-simulator"
         }
       ]
+    },
+    "hPE88W6rrt5TskCTxtoB1n0hr3I=": {
+      "ID": "hPE88W6rrt5TskCTxtoB1n0hr3I=",
+      "Description": "Initial configuration of Stratum Simulator",
+      "Created": "2019-06-05T12:03:17Z",
+      "Config": [
+        {
+          "Path": "/interfaces/interface[name=s1-eth1]/config/enabled",
+          "Value": "false"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth1]/config/health-indicator",
+          "Value": "GOOD"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/auto-negotiate",
+          "Value": "true"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/forwarding-viable",
+          "Value": "true"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/mac-address",
+          "Value": "11:22:33:44:55:66"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/port-speed",
+          "Value": "SPEED_10GB"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth2]/config/enabled",
+          "Value": "false"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth2]/config/health-indicator",
+          "Value": "GOOD"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/auto-negotiate",
+          "Value": "true"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/forwarding-viable",
+          "Value": "true"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/mac-address",
+          "Value": "11:22:33:44:55:66"
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/port-speed",
+          "Value": "SPEED_10GB"
+        }
+      ]
     }
   }
 }
