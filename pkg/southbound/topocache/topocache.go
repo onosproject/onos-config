@@ -67,14 +67,10 @@ func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceS
 	}
 
 	// Validate that the store is OK before sending out any events
-	for deviceName, device := range deviceStore.Store {
-		if device.Addr == "" {
-			return nil, fmt.Errorf("Error loading store: %s. Device %s has blank address",
-				file, deviceName)
-		}
-		if device.SoftwareVersion == "" {
-			return nil, fmt.Errorf("Error loading store: %s. Device %s has blank software version",
-				file, deviceName)
+	for id, device := range deviceStore.Store {
+		err := validateDevice(id, device)
+		if err != nil {
+			return nil, fmt.Errorf("Error loading store: %s: %v", id, err)
 		}
 	}
 
@@ -84,4 +80,28 @@ func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceS
 	}
 
 	return &deviceStore, nil
+}
+
+// AddOrUpdateDevice adds or updates the specified device in the device inventory.
+func (store *DeviceStore) AddOrUpdateDevice(id string, device Device) error {
+	err := validateDevice(id, device)
+	if err == nil {
+		store.Store[id] = device
+	}
+	return err
+}
+
+// RemoveDevice removes the device with the specified address from the device inventory.
+func (store *DeviceStore) RemoveDevice(id string) {
+	delete(store.Store, id)
+}
+
+func validateDevice(id string, device Device) error {
+	if device.Addr == "" {
+		return fmt.Errorf("device %s has blank address", id)
+	}
+	if device.SoftwareVersion == "" {
+		return fmt.Errorf("device %s has blank software version", id)
+	}
+	return nil
 }

@@ -48,7 +48,7 @@ message RegisterResponse {
 
 // RollbackRequest carries the name of a network config to rollback. If there
 // are subsequent changes to any of the devices in that config, the rollback will
-// be rejected. If no name is given the last network change will be rolled back
+// be rejected. If no name is given the last network change will be rolled back.
 message RollbackRequest {
     string name = 1;
     string comment = 2;
@@ -68,8 +68,46 @@ service AdminService {
     // GetNetworkChanges returns a stream of network changes submitted via gNMI.
     rpc GetNetworkChanges(NetworkChangesRequest) returns (stream NetChange);
 
+    // RollbackNetworkChange rolls back the specified network change (or the latest one).
     rpc RollbackNetworkChange(RollbackRequest) returns (RollbackResponse);
 }
 
 
+// DeviceInfo is a record of various device-pertinent information.
+message DeviceInfo {
+    string id = 1;
+    string address = 2;
+    string target = 3;
+    string version = 4;
+    string user = 5;
+    string password = 6;
+    string caPath = 7;
+    string certPath = 8;
+    string keyPath = 9;
+    bool plain = 10;
+    bool insecure = 11;
+    int64 timeout = 12;
+}
+
+// DeviceResponse carries the status of the add/remove operation.
+message DeviceResponse {
+}
+
+// GetDevicesRequest carries devices query information.
+message GetDevicesRequest {
+}
+
+// DeviceInventoryService provides a transient means for managing device inventory.
+service DeviceInventoryService {
+    // AddOrUpdateDevice adds a new or updates an existing new device in the device inventory.
+    // The address field is required.
+    rpc AddOrUpdateDevice(DeviceInfo) returns (DeviceResponse);
+
+    // RemoveDevice removes a device to the device inventory.
+    // Just the address field is required.
+    rpc RemoveDevice(DeviceInfo) returns (DeviceResponse);
+
+    // GetDevices returns a stream of devices in the device inventory.
+    rpc GetDevices(GetDevicesRequest) returns (stream DeviceInfo);
+}
 
