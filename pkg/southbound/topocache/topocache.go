@@ -82,8 +82,8 @@ func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceS
 	return &deviceStore, nil
 }
 
-// AddDevice adds the specified device to the device inventory
-func (store *DeviceStore) AddDevice(id string, device Device) error {
+// AddOrUpdateDevice adds or updates the specified device in the device inventory.
+func (store *DeviceStore) AddOrUpdateDevice(id string, device Device) error {
 	err := validateDevice(id, device)
 	if err == nil {
 		store.Store[id] = device

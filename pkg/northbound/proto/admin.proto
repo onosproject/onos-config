@@ -99,10 +99,12 @@ message GetDevicesRequest {
 
 // DeviceInventoryService provides a transient means for managing device inventory.
 service DeviceInventoryService {
-    // AddDevice adds a new device to the device inventory. The address field is required.
-    rpc AddDevice(DeviceInfo) returns (DeviceResponse);
+    // AddOrUpdateDevice adds a new or updates an existing new device in the device inventory.
+    // The address field is required.
+    rpc AddOrUpdateDevice(DeviceInfo) returns (DeviceResponse);
 
-    // RemoveDevice removes a device to the device inventory Just the address field is required.
+    // RemoveDevice removes a device to the device inventory.
+    // Just the address field is required.
     rpc RemoveDevice(DeviceInfo) returns (DeviceResponse);
 
     // GetDevices returns a stream of devices in the device inventory.

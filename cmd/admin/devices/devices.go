@@ -66,8 +66,8 @@ func main() {
 func addNewDevice(client devices.DeviceInventoryServiceClient, deviceProto string) {
 	deviceInfo := &devices.DeviceInfo{}
 	if err := proto.UnmarshalText(deviceProto, deviceInfo); err == nil {
-		fmt.Printf("Adding device %s\n", deviceInfo.Id)
-		_, err = client.AddDevice(context.Background(), deviceInfo)
+		fmt.Printf("Adding/updating device %s\n", deviceInfo.Id)
+		_, err = client.AddOrUpdateDevice(context.Background(), deviceInfo)
 		if err != nil {
 			log.Fatalf("Unable to add device: %v", err)
 		}

@@ -22,9 +22,9 @@ import (
 	"time"
 )
 
-// AddDevice adds the specified device to the device inventory.
-func (s Server) AddDevice(c context.Context, d *proto.DeviceInfo) (*proto.DeviceResponse, error) {
-	err := manager.GetManager().DeviceStore.AddDevice(d.Id, topocache.Device{
+// AddOrUpdateDevice adds the specified device to the device inventory.
+func (s Server) AddOrUpdateDevice(c context.Context, d *proto.DeviceInfo) (*proto.DeviceResponse, error) {
+	err := manager.GetManager().DeviceStore.AddOrUpdateDevice(d.Id, topocache.Device{
 		Addr:            d.Address,
 		Target:          d.Target,
 		SoftwareVersion: d.Version,
