@@ -121,6 +121,57 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	return mgrTest, changeStoreTest, configurationStoreTest
 }
 
+func Test_LoadManager(t *testing.T) {
+	mgr, err := LoadManager(
+		"../../configs/configStore-sample.json",
+		"../../configs/changeStore-sample.json",
+		"../../configs/deviceStore-sample.json",
+		"../../configs/networkStore-sample.json",
+	)
+	assert.Assert(t, err == nil, "failed to load manager")
+	assert.Equal(t, len(mgr.DeviceStore.Store), 3, "wrong number of devices loaded")
+}
+
+func Test_LoadManagerBadConfigStore(t *testing.T) {
+	_, err := LoadManager(
+		"../../configs/configStore-sampleX.json",
+		"../../configs/changeStore-sample.json",
+		"../../configs/deviceStore-sample.json",
+		"../../configs/networkStore-sample.json",
+	)
+	assert.Assert(t, err != nil, "should have failed to load manager")
+}
+
+func Test_LoadManagerBadChangeStore(t *testing.T) {
+	_, err := LoadManager(
+		"../../configs/configStore-sample.json",
+		"../../configs/changeStore-sampleX.json",
+		"../../configs/deviceStore-sample.json",
+		"../../configs/networkStore-sample.json",
+	)
+	assert.Assert(t, err != nil, "should have failed to load manager")
+}
+
+func Test_LoadManagerBadDeviceStore(t *testing.T) {
+	_, err := LoadManager(
+		"../../configs/configStore-sample.json",
+		"../../configs/changeStore-sample.json",
+		"../../configs/deviceStore-sampleX.json",
+		"../../configs/networkStore-sample.json",
+	)
+	assert.Assert(t, err != nil, "should have failed to load manager")
+}
+
+func Test_LoadManagerBadNetworkStore(t *testing.T) {
+	_, err := LoadManager(
+		"../../configs/configStore-sample.json",
+		"../../configs/changeStore-sample.json",
+		"../../configs/deviceStore-sample.json",
+		"../../configs/networkStore-sampleX.json",
+	)
+	assert.Assert(t, err != nil, "should have failed to load manager")
+}
+
 func Test_GetNetworkConfig(t *testing.T) {
 
 	mgrTest, _, _ := setUp()

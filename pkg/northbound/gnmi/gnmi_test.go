@@ -19,8 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
-	"github.com/onosproject/onos-config/pkg/store"
+	"log"
 	"os"
 	"testing"
 )
@@ -36,37 +35,16 @@ func TestMain(m *testing.M) {
 
 // setUp should not depend on any global variables
 func setUp(broadcast bool) *Server {
-	var mgr *manager.Manager
 	var server = &Server{}
 
-	cfgStore, err := store.LoadConfigStore("../../../configs/configStore-sample.json")
+	mgr, err := manager.LoadManager(
+		"../../../configs/configStore-sample.json",
+		"../../../configs/changeStore-sample.json",
+		"../../../configs/deviceStore-sample.json",
+		"../../../configs/networkStore-sample.json",
+	)
 	if err != nil {
-		fmt.Println("Unexpected config store loading error", err)
-		os.Exit(-1)
-	}
-	if cfgStore.Storetype != "config" {
-		fmt.Println("Expected Config store to be loaded")
-		os.Exit(-1)
-	}
-
-	changeStore, err := store.LoadChangeStore("../../../configs/changeStore-sample.json")
-	if err != nil {
-		fmt.Println("Unexpected change store loading error", err)
-		os.Exit(-1)
-	}
-	if changeStore.Storetype != "change" {
-		fmt.Println("Expected Change store to be loaded")
-		os.Exit(-1)
-	}
-
-	networkStore, err := store.LoadNetworkStore("../../../configs/networkStore-sample.json")
-	if err != nil {
-		fmt.Println("Unexpected network store loading error", err)
-		os.Exit(-1)
-	}
-	if networkStore.Storetype != "network" {
-		fmt.Println("Expected Network store to be loaded")
-		os.Exit(-1)
+		log.Println("Expected manager to be loaded")
 	}
 
 	mgr = manager.GetManager()
@@ -80,20 +58,6 @@ func setUp(broadcast bool) *Server {
 		go broadcastConfigNotification()
 	}
 
-	deviceStore, err := topocache.LoadDeviceStore("../../../configs/deviceStore-sample.json", mgr.TopoChannel)
-	if err != nil {
-		fmt.Println("Unexpected device store loading error", err)
-		os.Exit(-1)
-	}
-	if deviceStore.Storetype != "device" {
-		fmt.Println("Expected device store to be loaded")
-		os.Exit(-1)
-	}
-
-	mgr.ConfigStore = &cfgStore
-	mgr.ChangeStore = &changeStore
-	mgr.NetworkStore = networkStore
-	mgr.DeviceStore = deviceStore
 	fmt.Println("Finished setUp()")
 	return server
 }
