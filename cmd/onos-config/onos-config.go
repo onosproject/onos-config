@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /*
-Package main of cmd/onos-config is the main entry point to the system.
+Package onos-config is the main entry point to the ONOS configuration subsystem.
 
 It connects to devices through a Southbound gNMI interface and
 gives a gNMI interface northbound for other systems to connect to, and an

@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-Package main of cmd/diags/changes is a command line client to list Changes.
-
-It connects to the diags gRPC interface of the onos-config and queries
-the Change Store
-*/
+// Package changes is a command line client to list change records.
+//
+// It relies on gRPC to obtain the data from the onos-config server.
 package main
 
 import (

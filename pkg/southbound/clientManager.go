@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package southbound implements configuration of network devices via gNMI clients.
 package southbound
 
 import (

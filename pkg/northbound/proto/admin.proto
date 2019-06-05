@@ -16,6 +16,7 @@ limitations under the License.
 
 syntax = "proto3";
 
+// Package admin defines the administrative and diagnostic gRPC interfaces.
 package proto;
 
 import "google/protobuf/timestamp.proto";

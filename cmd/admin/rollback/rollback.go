@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*/
-Package main of cmd/admin/rollback is a command line utility that enables a named
-network change to be rolled back.
-
-If no name is given that last network change is rolled back
-*/
+// Package rollback is a command line utility that enables a named network change to be rolled back.
+//
+// It relies on gRPC to issue the request to the onos-config server.
 package main
 
 import (
