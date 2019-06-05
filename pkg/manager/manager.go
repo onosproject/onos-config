@@ -21,7 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
-	"log"
+	log "k8s.io/klog"
 	"strings"
 )
 
@@ -42,7 +42,7 @@ type Manager struct {
 // NewManager initializes the network config manager subsystem.
 func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, device *topocache.DeviceStore,
 	network *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
-	log.Println("Creating Manager")
+	log.Info("Creating Manager")
 	mgr = Manager{
 		ConfigStore:             configs,
 		ChangeStore:             changes,
@@ -62,7 +62,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 			return nil, err
 		}
 		if changeID != store.B64(changeObj.ID) {
-			return nil, fmt.Errorf("Change Id: %s must match %s",
+			return nil, fmt.Errorf("ChangeID: %s must match %s",
 				changeID, store.B64(changeObj.ID))
 		}
 		changeIds = append(changeIds, changeID)
@@ -78,16 +78,49 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 					store.B64(chID), configID)
 			}
 		}
-
 	}
 
 	return &mgr, nil
+}
 
+// LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
+func LoadManager(configStoreFile string, changeStoreFile string, deviceStoreFile string, networkStoreFile string) (*Manager, error) {
+	topoChannel := make(chan events.TopoEvent, 10)
+
+	configStore, err := store.LoadConfigStore(configStoreFile)
+	if err != nil {
+		log.Error("Cannot load config store ", err)
+		return nil, err
+	}
+	log.Info("Configuration store loaded from", configStoreFile)
+
+	changeStore, err := store.LoadChangeStore(changeStoreFile)
+	if err != nil {
+		log.Error("Cannot load change store ", err)
+		return nil, err
+	}
+	log.Info("Change store loaded from", changeStoreFile)
+
+	deviceStore, err := topocache.LoadDeviceStore(deviceStoreFile, topoChannel)
+	if err != nil {
+		log.Error("Cannot load device store ", err)
+		return nil, err
+	}
+	log.Info("Device store loaded from ", deviceStoreFile)
+
+	networkStore, err := store.LoadNetworkStore(networkStoreFile)
+	if err != nil {
+		log.Error("Cannot load network store ", err)
+		return nil, err
+	}
+	log.Info("Network store loaded from ", networkStoreFile)
+
+	return NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
 }
 
 // Run starts a synchronizer based on the devices and the northbound services
 func (m *Manager) Run() {
-	log.Println("Starting Manager")
+	log.Info("Starting Manager")
 	// Start the main dispatcher system
 	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
@@ -96,7 +129,7 @@ func (m *Manager) Run() {
 
 //Close kills the channels and manager related objects
 func (m *Manager) Close() {
-	log.Println("Closing Manager")
+	log.Info("Closing Manager")
 	close(m.ChangesChannel)
 	close(m.OperationalStateChannel)
 }

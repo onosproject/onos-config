@@ -42,14 +42,11 @@ package main
 
 import (
 	"flag"
-	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
-	"github.com/onosproject/onos-config/pkg/store"
 	log "k8s.io/klog"
 	"time"
 )
@@ -79,49 +76,23 @@ func main() {
 	flag.Parse()
 	var err error
 
-	log.Info("onos-config started")
+	log.Info("Starting onos-config")
 
-	topoChannel := make(chan events.TopoEvent, 10)
-
-	configStore, err := store.LoadConfigStore(*configStoreFile)
+	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *deviceStoreFile, *networkStoreFile)
 	if err != nil {
-		log.Fatal("Cannot load config store ", err)
-	}
-	log.Info("Configuration store loaded from", *configStoreFile)
+		log.Fatal("Unable to load onos-config ", err)
+	} else {
+		defer func() {
+			close(mgr.TopoChannel)
+			log.Info("Shutting down onos-config")
+			time.Sleep(time.Second)
+		}()
 
-	changeStore, err := store.LoadChangeStore(*changeStoreFile)
-	if err != nil {
-		log.Fatal("Cannot load change store ", err)
-	}
-	log.Info("Change store loaded from", *changeStoreFile)
-
-	deviceStore, err := topocache.LoadDeviceStore(*deviceStoreFile, topoChannel)
-	if err != nil {
-		log.Fatal("Cannot load device store ", err)
-	}
-	log.Info("Device store loaded from", *deviceStoreFile)
-
-	networkStore, err := store.LoadNetworkStore(*networkStoreFile)
-	if err != nil {
-		log.Fatal("Cannot load network store ", err)
-	}
-	log.Info("Network store loaded from", *networkStoreFile)
-
-	mgr, err := manager.NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
-	if err != nil {
-		log.Fatal("Error in store consistency at startup. ", err)
-	}
-
-	defer func() {
-		close(topoChannel)
-		log.Info("Shutting down")
-		time.Sleep(time.Second)
-	}()
-
-	mgr.Run()
-	err = startServer(caPath, keyPath, certPath)
-	if err != nil {
-		log.Fatal("Cannot start server ", err)
+		mgr.Run()
+		err = startServer(caPath, keyPath, certPath)
+		if err != nil {
+			log.Fatal("Unable to start onos-config ", err)
+		}
 	}
 }
 
