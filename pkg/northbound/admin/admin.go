@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package admin implements the northbound administrative gRPC service for the configuration subsystem.
 package admin
 
 import (

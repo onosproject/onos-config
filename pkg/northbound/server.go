@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package northbound houses implementations of various application-oriented interfaces
+// for the ONOS configuration subsystem.
 package northbound
 
 import (

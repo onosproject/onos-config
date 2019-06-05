@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package manager is is the main coordinator for the ONOS configuration subsystem.
 package manager
 
 import (
@@ -27,7 +28,7 @@ import (
 
 var mgr Manager
 
-// Manager single point of entry for the config system
+// Manager single point of entry for the config system.
 type Manager struct {
 	ConfigStore             *store.ConfigurationStore
 	ChangeStore             *store.ChangeStore
@@ -118,7 +119,7 @@ func LoadManager(configStoreFile string, changeStoreFile string, deviceStoreFile
 	return NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
 }
 
-// Run starts a synchronizer based on the devices and the northbound services
+// Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
 	// Start the main dispatcher system

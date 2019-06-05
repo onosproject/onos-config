@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*/
-Package main of cmd/admin/device is a command line utility that allows adding
-and removing devices from the device inventory.
-*/
+// Package devices is a command line utility that allows adding and removing devices from the device inventory.
+//
+// It relies on gRPC to obtain the data from the onos-config server.
 package main
 
 import (

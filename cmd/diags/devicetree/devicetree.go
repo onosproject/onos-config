@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-Package main of cmd/diags/devicetree is a command line client to list devices
-and their configuration in tree format.
-*/
+// Package devicetree is a command line client to list devices and their configuration in tree format.
+//
+// It relies on gRPC to obtain the data from the onos-config server.
 package main
 
 import (
