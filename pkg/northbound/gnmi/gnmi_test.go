@@ -77,7 +77,7 @@ func setUp(broadcast bool) *Server {
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	if broadcast {
-		go broadcastNotification()
+		go broadcastConfigNotification()
 	}
 
 	deviceStore, err := topocache.LoadDeviceStore("../../../configs/deviceStore-sample.json", mgr.TopoChannel)

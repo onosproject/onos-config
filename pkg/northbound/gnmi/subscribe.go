@@ -135,7 +135,7 @@ func collector(updateChan chan<- *gnmi.Update, request *gnmi.SubscriptionList) {
 	}
 }
 
-func broadcastNotification() {
+func broadcastConfigNotification() {
 	mgr := manager.GetManager()
 	changesChan, err := mgr.Dispatcher.Register("GnmiSubscribeNorthBound", false)
 	if err != nil {
@@ -156,6 +156,33 @@ func broadcastNotification() {
 					}
 					pathGnmi.Target = subscriptionPath.Target
 					sendUpdate(subscriptionChan, pathGnmi, changeValue.Value)
+				}
+			}
+		}
+	}
+}
+
+func broadcastOperationalNotification() {
+	mgr := manager.GetManager()
+	opStateChan, err := mgr.Dispatcher.RegisterOpState("GnmiSubscribeNorthBoundOpState")
+	if err != nil {
+		log.Println("Error while subscribing to updates", err)
+	}
+	for opStateChange := range opStateChan {
+		target := events.Event(opStateChange).Subject()
+		changeInternal := events.Event(opStateChange).Values()
+		//For every channel we cycle over the paths of the config change and if somebody is subscribed to it we send out
+		for subscriptionPath, subscriptionChan := range PathToChannels {
+			for pathStr, value := range *changeInternal {
+				//FIXME this might prove expensive, find better way to store subscriptionPath and target in channels map
+				subscriptionPathStr := utils.StrPath(subscriptionPath)
+				pathArr := utils.SplitPath(pathStr)
+				path, err := utils.ParseGNMIElements(pathArr)
+				if err != nil {
+					log.Println("Error in parsing path", pathStr)
+				}
+				if subscriptionPath.Target == target && strings.HasPrefix(pathStr, subscriptionPathStr) {
+					sendUpdate(subscriptionChan, path, value)
 				}
 			}
 		}

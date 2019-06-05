@@ -15,6 +15,7 @@
 package southbound
 
 import (
+	"context"
 	"github.com/openconfig/gnmi/client"
 )
 
@@ -27,6 +28,7 @@ type DeviceID struct {
 type Target struct {
 	Destination client.Destination
 	Clt         GnmiClient
+	Ctx         context.Context
 }
 
 // SubscribeOptions is the gNMI subscription request options

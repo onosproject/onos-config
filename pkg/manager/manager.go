@@ -29,13 +29,14 @@ var mgr Manager
 
 // Manager single point of entry for the config system
 type Manager struct {
-	ConfigStore    *store.ConfigurationStore
-	ChangeStore    *store.ChangeStore
-	DeviceStore    *topocache.DeviceStore
-	NetworkStore   *store.NetworkStore
-	TopoChannel    chan events.TopoEvent
-	ChangesChannel chan events.ConfigEvent
-	Dispatcher     dispatcher.Dispatcher
+	ConfigStore             *store.ConfigurationStore
+	ChangeStore             *store.ChangeStore
+	DeviceStore             *topocache.DeviceStore
+	NetworkStore            *store.NetworkStore
+	TopoChannel             chan events.TopoEvent
+	ChangesChannel          chan events.ConfigEvent
+	OperationalStateChannel chan events.OperationalStateEvent
+	Dispatcher              dispatcher.Dispatcher
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -43,13 +44,14 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 	network *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
 	log.Println("Creating Manager")
 	mgr = Manager{
-		ConfigStore:    configs,
-		ChangeStore:    changes,
-		DeviceStore:    device,
-		NetworkStore:   network,
-		TopoChannel:    topoCh,
-		ChangesChannel: make(chan events.ConfigEvent, 10),
-		Dispatcher:     dispatcher.NewDispatcher(),
+		ConfigStore:             configs,
+		ChangeStore:             changes,
+		DeviceStore:             device,
+		NetworkStore:            network,
+		TopoChannel:             topoCh,
+		ChangesChannel:          make(chan events.ConfigEvent, 10),
+		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
+		Dispatcher:              dispatcher.NewDispatcher(),
 	}
 
 	changeIds := make([]string, 0)
@@ -88,13 +90,15 @@ func (m *Manager) Run() {
 	log.Println("Starting Manager")
 	// Start the main dispatcher system
 	go m.Dispatcher.Listen(m.ChangesChannel)
-	go synchronizer.Factory(m.ChangeStore, m.DeviceStore, m.TopoChannel, &m.Dispatcher)
+	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
+	go synchronizer.Factory(m.ChangeStore, m.DeviceStore, m.TopoChannel, m.OperationalStateChannel, &m.Dispatcher)
 }
 
 //Close kills the channels and manager related objects
 func (m *Manager) Close() {
 	log.Println("Closing Manager")
 	close(m.ChangesChannel)
+	close(m.OperationalStateChannel)
 }
 
 // GetManager returns the initialized and running instance of manager.

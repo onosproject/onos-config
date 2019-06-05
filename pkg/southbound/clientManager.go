@@ -102,6 +102,7 @@ func (target *Target) ConnectTarget(ctx context.Context, device topocache.Device
 	}
 	target.Destination = *dest
 	target.Clt = c
+	target.Ctx = ctx
 	targets[key] = target
 	return key, err
 }
@@ -199,7 +200,7 @@ func (target *Target) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.Se
 }
 
 // Subscribe initiates a subscription to a target and set of paths by establishing a new channel
-func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeRequest, handler client.NotificationHandler) error {
+func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeRequest, handler client.ProtoHandler) error {
 	//TODO currently establishing a throwaway client per each subscription request
 	//this is due to the face that 1 NotificationHandler is allowed per client (1:1)
 	//alternatively we could handle every connection request with one NotificationHandler
@@ -213,7 +214,7 @@ func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeReque
 	q.Target = target.Destination.Target
 	q.Credentials = target.Destination.Credentials
 	q.TLS = target.Destination.TLS
-	q.NotificationHandler = handler
+	q.ProtoHandler = handler
 	//TODO revisit this. is this subscribing twice ?
 	c := GnmiCacheClientFactory()
 

@@ -30,15 +30,17 @@ import (
 
 // Dispatcher manages SB and NB configuration event listeners
 type Dispatcher struct {
-	deviceListeners map[string]chan events.ConfigEvent
-	nbiListeners    map[string]chan events.ConfigEvent
+	deviceListeners     map[string]chan events.ConfigEvent
+	nbiListeners        map[string]chan events.ConfigEvent
+	nbiOpStateListeners map[string]chan events.OperationalStateEvent
 }
 
 // NewDispatcher creates and initializes a new event dispatcher
 func NewDispatcher() Dispatcher {
 	return Dispatcher{
-		deviceListeners: make(map[string]chan events.ConfigEvent),
-		nbiListeners:    make(map[string]chan events.ConfigEvent),
+		deviceListeners:     make(map[string]chan events.ConfigEvent),
+		nbiListeners:        make(map[string]chan events.ConfigEvent),
+		nbiOpStateListeners: make(map[string]chan events.OperationalStateEvent),
 	}
 }
 
@@ -70,6 +72,27 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 	}
 }
 
+// ListenOperationalState is a go routine function that listens out for changes made in the
+// configuration and distributes this to registered deviceListeners on the
+// Southbound and registered nbiListeners on the northbound
+// Southbound listeners are only sent the events that matter to them
+// All events.Events are sent to northbound listeners
+func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan events.OperationalStateEvent) {
+	log.Println("Operational State Event listener initialized")
+
+	for operationalStateEvent := range operationalStateChannel {
+		log.Println("Listener: Operational State Event", operationalStateEvent)
+		for _, nbiChan := range d.nbiOpStateListeners {
+			nbiChan <- operationalStateEvent
+		}
+
+		if len(d.nbiOpStateListeners) == 0 {
+			//TODO make sure not to flood the system
+			log.Println("Operational Event discarded", operationalStateEvent)
+		}
+	}
+}
+
 // Register is a way for device synchronizers or nbi instances to register for
 // channel of events
 func (d *Dispatcher) Register(subscriber string, isDevice bool) (chan events.ConfigEvent, error) {
@@ -85,6 +108,17 @@ func (d *Dispatcher) Register(subscriber string, isDevice bool) (chan events.Con
 		d.nbiListeners[subscriber] = channel
 	}
 	log.Printf("Registering %s on channel w%v", subscriber, channel)
+	return channel, nil
+}
+
+// RegisterOpState is a way for device synchronizers or nbi instances to register for
+// channel of events
+func (d *Dispatcher) RegisterOpState(subscriber string) (chan events.OperationalStateEvent, error) {
+	if d.nbiOpStateListeners[subscriber] != nil {
+		return nil, fmt.Errorf("NBI operational state %s is already registered", subscriber)
+	}
+	channel := make(chan events.OperationalStateEvent)
+	d.nbiOpStateListeners[subscriber] = channel
 	return channel, nil
 }
 
@@ -108,13 +142,28 @@ func (d *Dispatcher) Unregister(subscriber string, isDevice bool) error {
 	return nil
 }
 
-// GetListeners returns a list of registered dispatcher names
+// UnregisterOperationalState closes the device channel and removes it from the deviceListeners
+func (d *Dispatcher) UnregisterOperationalState(subscriber string) error {
+	var channel chan events.OperationalStateEvent
+	channel = d.nbiOpStateListeners[subscriber]
+	if channel == nil {
+		return fmt.Errorf("Subscriber %s had not been registered", subscriber)
+	}
+	delete(d.nbiOpStateListeners, subscriber)
+	close(channel)
+	return nil
+}
+
+// GetListeners returns a list of registered listeners names
 func (d *Dispatcher) GetListeners() []string {
 	listenerKeys := make([]string, 0)
 	for k := range d.deviceListeners {
 		listenerKeys = append(listenerKeys, k)
 	}
 	for k := range d.nbiListeners {
+		listenerKeys = append(listenerKeys, k)
+	}
+	for k := range d.nbiOpStateListeners {
 		listenerKeys = append(listenerKeys, k)
 	}
 	return listenerKeys

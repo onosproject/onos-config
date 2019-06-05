@@ -15,6 +15,7 @@
 package synchronizer
 
 import (
+	"context"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
@@ -25,22 +26,34 @@ import (
 // Factory is a go routine thread that listens out for Device creation
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
-// propagate them downwards to the gNMI dispatcher
-func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
-	topoChannel <-chan events.TopoEvent, dispatcher *dispatcher.Dispatcher) {
-
+func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore, topoChannel <-chan events.TopoEvent,
+	opStateChan chan<- events.OperationalStateEvent, dispatcher *dispatcher.Dispatcher) {
 	for topoEvent := range topoChannel {
 		deviceName := events.Event(topoEvent).Subject()
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
-
 			configChan, err := dispatcher.Register(deviceName, true)
 			if err != nil {
 				log.Fatal(err)
 			}
 			device := deviceStore.Store[deviceName]
-			go Devicesync(changeStore, &device, configChan)
+			ctx := context.Background()
+			sync, err := New(ctx, changeStore, &device, configChan, opStateChan)
+			if err != nil {
+				log.Println("Error in connecting to client", err)
+				return
+			}
+			//spawning two go routines to propagate changes and to get operational state
+			go sync.syncNbConfiguration()
+			//TODO error handling
+			go sync.syncOperationalState()
 		} else if dispatcher.HasListener(deviceName) && !topoEvent.Connect() {
+
 			err := dispatcher.Unregister(deviceName, true)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = dispatcher.UnregisterOperationalState(deviceName)
 			if err != nil {
 				log.Fatal(err)
 			}
