@@ -41,7 +41,7 @@ type Synchronizer struct {
 	operationalCache     map[string]string
 }
 
-// New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilites
+// New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, device *topocache.Device,
 	deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent) (*Synchronizer, error) {
 	sync := &Synchronizer{
