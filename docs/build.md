@@ -47,7 +47,7 @@ go test -v github.com/onosproject/onos-config/pkg/...
 ## Bulding Documentation
 Documentation is published at [https://godoc.org/github.com/onosproject/onos-config](https://godoc.org/github.com/onosproject/onos-config)
 
-If you wish to see and updated version of it locally run:
+If you wish to see a version of it locally run:
 ```bash
 godoc -goroot=$HOME/go
 ``` 
