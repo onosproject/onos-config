@@ -179,7 +179,6 @@ func (target *Target) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.Ge
 
 // SetWithString can make a set request according by a string
 func (target *Target) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
-	//TODO modify with key that gets target from map
 	if request == "" {
 		return nil, errors.New("cannot get and empty request")
 	}
