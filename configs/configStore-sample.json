@@ -263,6 +263,104 @@
           "Organisation": "OpenConfig working group"
         }
       ]
+    },
+    "localhost:50001-1.0.0": {
+      "Name": "localhost:50001-1.0.0",
+      "Device": "localhost:50001",
+      "Version": "1.0.0",
+      "Type": "Stratum",
+      "Created": "2019-06-05T10:03:17Z",
+      "Updated": "2019-06-05T10:03:17Z",
+      "Changes": [
+        "hPE88W6rrt5TskCTxtoB1n0hr3I="
+      ],
+      "Models": [
+        {
+          "Name": "openconfig-interfaces",
+          "Organization": "OpenConfig working group",
+          "Version": "2.4.1"
+        },
+        {
+          "Name": "openconfig-if-ip",
+          "Organization": "OpenConfig working group",
+          "Version": "3.0.0"
+        },
+        {
+          "Name": "openconfig-lacp",
+          "Organization": "OpenConfig working group",
+          "Version": "1.1.1"
+        },
+        {
+          "Name": "openconfig-platform",
+          "Organization": "OpenConfig working group",
+          "Version": "0.12.2"
+        },
+        {
+          "Name": "openconfig-platform-linecard",
+          "Organization": "OpenConfig working group",
+          "Version": "0.1.1"
+        },
+        {
+          "Name": "openconfig-platform-port",
+          "Organization": "OpenConfig working group",
+          "Version": "0.3.2"
+        },
+        {
+          "Name": "openconfig-platform-transceiver",
+          "Organization": "OpenConfig working group",
+          "Version": "0.7.0"
+        },
+        {
+          "Name": "openconfig-vlan",
+          "Organization": "OpenConfig working group",
+          "Version": "3.2.0"
+        },
+        {
+          "Name": "openconfig-system",
+          "Organization": "OpenConfig working group",
+          "Version": "0.7.0"
+        },
+        {
+          "Name": "openconfig-hercules-platform-linecard",
+          "Organization": "OpenConfig working group",
+          "Version": "0.2.0"
+        },
+        {
+          "Name": "openconfig-hercules-qos",
+          "Organization": "OpenConfig working group",
+          "Version": "0.1.0"
+        },
+        {
+          "Name": "openconfig-hercules-platform",
+          "Organization": "OpenConfig working group",
+          "Version": "0.2.0"
+        },
+        {
+          "Name": "openconfig-hercules-platform-chassis",
+          "Organization": "OpenConfig working group",
+          "Version": "0.2.0"
+        },
+        {
+          "Name": "openconfig-hercules-platform-port",
+          "Organization": "OpenConfig working group",
+          "Version": "0.2.0"
+        },
+        {
+          "Name": "openconfig-hercules",
+          "Organization": "OpenConfig working group",
+          "Version": "0.2.0"
+        },
+        {
+          "Name": "openconfig-hercules-interfaces",
+          "Organization": "OpenConfig working group",
+          "Version": "0.2.0"
+        },
+        {
+          "Name": "openconfig-hercules-platform-node",
+          "Organization": "OpenConfig working group",
+          "Version": "0.2.0"
+        }
+      ]
     }
   }
 }
