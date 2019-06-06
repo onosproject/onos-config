@@ -31,6 +31,9 @@ const (
 
 	// Connect :
 	Connect = "Connect"
+
+	// Address :
+	Address = "Address"
 )
 
 // EventType is an enumerated type

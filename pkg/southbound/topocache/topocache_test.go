@@ -55,6 +55,16 @@ func Test_DeviceStoreNoSwVer(t *testing.T) {
 	assert.ErrorContains(t, err, "has blank software version")
 }
 
+func Test_DeviceStoreNoId(t *testing.T) {
+	_, err := LoadDeviceStore("testdata/deviceStoreNoId.json", nil)
+	assert.ErrorContains(t, err, "has blank ID")
+}
+
+func Test_DeviceStoremismatchedId(t *testing.T) {
+	_, err := LoadDeviceStore("testdata/deviceStoreMismatchId.json", nil)
+	assert.ErrorContains(t, err, "ID mismatch with key")
+}
+
 func Test_NonexistentDeviceStore(t *testing.T) {
 	topoChannel := make(chan events.TopoEvent, 10)
 	_, err := LoadDeviceStore("testdata/noSuchDeviceStore.json", topoChannel)
@@ -73,7 +83,7 @@ func Test_DeviceStoreDuplicates(t *testing.T) {
 
 func Test_AddDevice(t *testing.T) {
 	deviceStore := loadDeviceStore(t)
-	deviceStore.AddOrUpdateDevice("foobar", Device{Addr: "foobar:123", SoftwareVersion: "1.0"})
+	deviceStore.AddOrUpdateDevice("foobar", Device{ID: "foobar", Addr: "foobar:123", SoftwareVersion: "1.0"})
 	d, ok := deviceStore.Store["foobar"]
 	assert.Assert(t, ok, "device not added")
 	assert.Assert(t, d.Addr == "foobar:123", "wrong device added")

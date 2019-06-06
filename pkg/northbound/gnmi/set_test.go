@@ -96,14 +96,14 @@ func Test_do2SetsOnSameTarget(t *testing.T) {
 	value1Str := gnmi.TypedValue_StringVal{StringVal: "newValue2b"}
 	value := gnmi.TypedValue{Value: &value1Str}
 
-	updatePath1 := gnmi.Path{Elem: pathElemsRefs1.Elem, Target: "localhost:10161"}
+	updatePath1 := gnmi.Path{Elem: pathElemsRefs1.Elem, Target: "localhost-1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath1, Val: &value})
 
 	pathElemsRefs2, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2c"})
 	value2Str := gnmi.TypedValue_StringVal{StringVal: "newValue2c"}
 	value2 := gnmi.TypedValue{Value: &value2Str}
 
-	updatePath2 := gnmi.Path{Elem: pathElemsRefs2.Elem, Target: "localhost:10161"}
+	updatePath2 := gnmi.Path{Elem: pathElemsRefs2.Elem, Target: "localhost-1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath2, Val: &value2})
 
 	var setRequest = gnmi.SetRequest{
@@ -128,7 +128,7 @@ func Test_do2SetsOnSameTarget(t *testing.T) {
 
 	// Response parts might not be in the same order because changes are stored in a map
 	for _, res := range setResponse.Response {
-		assert.Equal(t, res.Path.Target, "localhost:10161")
+		assert.Equal(t, res.Path.Target, "localhost-1")
 	}
 }
 
@@ -145,10 +145,10 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 	typedValue := gnmi.TypedValue_StringVal{StringVal: "2ndValue2a"}
 	value := gnmi.TypedValue{Value: &typedValue}
 
-	updatePathTgt1 := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "localhost:10161"}
+	updatePathTgt1 := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "localhost-1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePathTgt1, Val: &value})
 
-	updatePathTgt2 := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "localhost:10162"}
+	updatePathTgt2 := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "localhost-2"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePathTgt2, Val: &value})
 
 	var setRequest = gnmi.SetRequest{
@@ -194,21 +194,21 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 
 	// 2 changes on Target 1
 	updatedPaths = append(updatedPaths, &gnmi.Update{
-		Path: &gnmi.Path{Elem: pathElemsRefs2a.Elem, Target: "localhost:10161"},
+		Path: &gnmi.Path{Elem: pathElemsRefs2a.Elem, Target: "localhost-1"},
 		Val:  &gnmi.TypedValue{Value: &valueStr2a},
 	})
 	updatedPaths = append(updatedPaths, &gnmi.Update{
-		Path: &gnmi.Path{Elem: pathElemsRefs2b.Elem, Target: "localhost:10161"},
+		Path: &gnmi.Path{Elem: pathElemsRefs2b.Elem, Target: "localhost-1"},
 		Val:  &gnmi.TypedValue{Value: &valueStr2b},
 	})
 
 	// 2 changes on Target 2 - one of them is a delete
 	updatedPaths = append(updatedPaths, &gnmi.Update{
-		Path: &gnmi.Path{Elem: pathElemsRefs2a.Elem, Target: "localhost:10162"},
+		Path: &gnmi.Path{Elem: pathElemsRefs2a.Elem, Target: "localhost-2"},
 		Val:  &gnmi.TypedValue{Value: &valueStr2a},
 	})
 	deletePaths = append(deletePaths,
-		&gnmi.Path{Elem: pathElemsRefs2c.Elem, Target: "localhost:10162"})
+		&gnmi.Path{Elem: pathElemsRefs2c.Elem, Target: "localhost-2"})
 
 	var setRequest = gnmi.SetRequest{
 		Delete:  deletePaths,
@@ -228,7 +228,7 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 	// The order of response items is not ordered because it is held in a map
 	for _, res := range setResponse.Response {
 		if res.Op.String() == gnmi.UpdateResult_DELETE.String() {
-			assert.Equal(t, res.Path.Target, "localhost:10162")
+			assert.Equal(t, res.Path.Target, "localhost-2")
 		}
 	}
 }
@@ -248,7 +248,7 @@ func Test_doDuplicateSetSingleTarget(t *testing.T) {
 		&gnmi.Update{
 			Path: &gnmi.Path{
 				Elem:   pathElemsRefs2a.Elem,
-				Target: "localhost:10161",
+				Target: "localhost-1",
 			},
 			Val: &gnmi.TypedValue{Value: &valueStr2a},
 		})
@@ -259,7 +259,7 @@ func Test_doDuplicateSetSingleTarget(t *testing.T) {
 		&gnmi.Update{
 			Path: &gnmi.Path{
 				Elem:   pathElemsRefs2b.Elem,
-				Target: "localhost:10161",
+				Target: "localhost-1",
 			},
 			Val: &gnmi.TypedValue{Value: &valueStr2b},
 		})
@@ -307,7 +307,7 @@ func Test_doDuplicateSet2Targets(t *testing.T) {
 		&gnmi.Update{
 			Path: &gnmi.Path{
 				Elem:   pathElemsRefs2a.Elem,
-				Target: "localhost:10161",
+				Target: "localhost-1",
 			},
 			Val: &gnmi.TypedValue{Value: &valueStr2a},
 		})
@@ -315,7 +315,7 @@ func Test_doDuplicateSet2Targets(t *testing.T) {
 		&gnmi.Update{
 			Path: &gnmi.Path{
 				Elem:   pathElemsRefs2a.Elem,
-				Target: "localhost:10162",
+				Target: "localhost-2",
 			},
 			Val: &gnmi.TypedValue{Value: &valueStr2a},
 		})
@@ -326,7 +326,7 @@ func Test_doDuplicateSet2Targets(t *testing.T) {
 		&gnmi.Update{
 			Path: &gnmi.Path{
 				Elem:   pathElemsRefs2b.Elem,
-				Target: "localhost:10161",
+				Target: "localhost-1",
 			},
 			Val: &gnmi.TypedValue{Value: &valueStr2b},
 		})
@@ -335,7 +335,7 @@ func Test_doDuplicateSet2Targets(t *testing.T) {
 		&gnmi.Update{
 			Path: &gnmi.Path{
 				Elem:   pathElemsRefs2b.Elem,
-				Target: "localhost:10162",
+				Target: "localhost-2",
 			},
 			Val: &gnmi.TypedValue{Value: &valueStr2b},
 		})
@@ -380,7 +380,7 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	update1a := gnmi.Update{
 		Path: &gnmi.Path{
 			Elem:   pathElemsRefs2a.Elem,
-			Target: "localhost:10161",
+			Target: "localhost-1",
 		},
 		Val: &gnmi.TypedValue{Value: &valueStr2a},
 	}
@@ -388,7 +388,7 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	update2a := gnmi.Update{
 		Path: &gnmi.Path{
 			Elem:   pathElemsRefs2a.Elem,
-			Target: "localhost:10162",
+			Target: "localhost-2",
 		},
 		Val: &gnmi.TypedValue{Value: &valueStr2a},
 	}
@@ -399,7 +399,7 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	update1b := gnmi.Update{
 		Path: &gnmi.Path{
 			Elem:   pathElemsRefs2b.Elem,
-			Target: "localhost:10161",
+			Target: "localhost-1",
 		},
 		Val: &gnmi.TypedValue{Value: &valueStr2b},
 	}
@@ -407,7 +407,7 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	update2b := gnmi.Update{
 		Path: &gnmi.Path{
 			Elem:   pathElemsRefs2b.Elem,
-			Target: "localhost:10162",
+			Target: "localhost-2",
 		},
 		Val: &gnmi.TypedValue{Value: &valueStr2b},
 	}
@@ -436,7 +436,7 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	update2b1 := gnmi.Update{
 		Path: &gnmi.Path{
 			Elem:   pathElemsRefs2b.Elem,
-			Target: "localhost:10162",
+			Target: "localhost-2",
 		},
 		Val: &gnmi.TypedValue{Value: &valueStr2aCh},
 	}

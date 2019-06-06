@@ -23,7 +23,7 @@ go run github.com/onosproject/onos-config/cmd/diags/configs
 To get the aggregate configuration of a device from the store use
 ```bash
 go run github.com/onosproject/onos-config/cmd/diags/devicetree \
-    -devicename localhost:10161
+    -devicename localhost-1
 ```
 
 > Of course, there will be many more such commands available in the near future

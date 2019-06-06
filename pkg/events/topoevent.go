@@ -33,10 +33,18 @@ func (topoEvent *TopoEvent) Connect() bool {
 	return b
 }
 
+// Address represents the device address
+func (topoEvent *TopoEvent) Address() string {
+	return topoEvent.values[Address]
+}
+
 // CreateTopoEvent creates a new topo event object
-func CreateTopoEvent(subject string, connect bool) TopoEvent {
+// It is important not to depend on topocache package here or we will get a
+// circular dependency - we take the device.ID and treat it as a string
+func CreateTopoEvent(subject string, connect bool, address string) TopoEvent {
 	values := make(map[string]string)
 	values[Connect] = strconv.FormatBool(connect)
+	values[Address] = address
 	return TopoEvent{
 		subject:   subject,
 		time:      time.Now(),

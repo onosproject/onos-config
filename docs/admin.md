@@ -46,8 +46,8 @@ Removing device device-2
 If you do not specify any options, the command will list all the devices currently in the inventory:
 ```bash
 > go run github.com/onosproject/onos-config/cmd/admin/devices
-device-1: localhost:10161 (1.0.0)
-device-3: localhost:10163 (1.0.0)
-device-4: localhost:10164 (1.0.0)
+device-1: localhost-1 (1.0.0)
+device-3: localhost-3 (1.0.0)
+device-4: localhost-4 (1.0.0)
 ```
 

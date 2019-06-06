@@ -24,6 +24,7 @@ import (
 
 const (
 	eventSubject  = "device22"
+	eventAddress  = "device22:10161"
 	eventTypeCfg  = EventTypeConfiguration
 	eventTypeTopo = EventTypeTopoCache
 	eventValueKey = ChangeID
@@ -68,7 +69,7 @@ func Test_configEventConstruction(t *testing.T) {
 
 func Test_topoEventConstruction(t *testing.T) {
 
-	event := CreateTopoEvent(eventSubject, true)
+	event := CreateTopoEvent(eventSubject, true, eventAddress)
 
 	assert.Equal(t, Event(event).EventType(), eventTypeTopo)
 	assert.Equal(t, Event(event).Subject(), eventSubject)

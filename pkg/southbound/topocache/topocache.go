@@ -26,14 +26,21 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
 	"os"
+	"regexp"
 	"time"
 )
 
 const storeTypeDevice = "device"
 const storeVersion = "1.0.0"
+const deviceIDNamePattern = `[a-zA-Z0-9\-:_]{4,40}`
+const deviceVersionPattern = `[a-zA-Z0-9_\.]{2,10}` //same as configuration.go
+
+// ID is an alias for string
+type ID string
 
 // Device - the definition of Device will ultimately come from onos-topology
 type Device struct {
+	ID                                                ID
 	Addr, Target, Usr, Pwd, CaPath, CertPath, KeyPath string
 	Plain, Insecure                                   bool
 	Timeout                                           time.Duration
@@ -44,7 +51,7 @@ type Device struct {
 type DeviceStore struct {
 	Version   string
 	Storetype string
-	Store     map[string]Device
+	Store     map[ID]Device
 }
 
 // LoadDeviceStore loads a device store from a file - will eventually be from onos-topology
@@ -76,14 +83,14 @@ func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceS
 
 	// We send a creation event for each device in store
 	for _, device := range deviceStore.Store {
-		topoChannel <- events.CreateTopoEvent(device.Addr, true)
+		topoChannel <- events.CreateTopoEvent(string(device.ID), true, device.Addr)
 	}
 
 	return &deviceStore, nil
 }
 
 // AddOrUpdateDevice adds or updates the specified device in the device inventory.
-func (store *DeviceStore) AddOrUpdateDevice(id string, device Device) error {
+func (store *DeviceStore) AddOrUpdateDevice(id ID, device Device) error {
 	err := validateDevice(id, device)
 	if err == nil {
 		store.Store[id] = device
@@ -92,16 +99,36 @@ func (store *DeviceStore) AddOrUpdateDevice(id string, device Device) error {
 }
 
 // RemoveDevice removes the device with the specified address from the device inventory.
-func (store *DeviceStore) RemoveDevice(id string) {
+func (store *DeviceStore) RemoveDevice(id ID) {
 	delete(store.Store, id)
 }
 
-func validateDevice(id string, device Device) error {
+func validateDevice(id ID, device Device) error {
+	if device.ID == "" {
+		return fmt.Errorf("device %v has blank ID", device)
+	}
+	if device.ID != id {
+		return fmt.Errorf("device %v ID mismatch with key: %v", device, id)
+	}
+
+	rname := regexp.MustCompile(deviceIDNamePattern)
+	matchName := rname.FindString(string(id))
+	if string(id) != matchName {
+		return fmt.Errorf("name %s does not match pattern %s",
+			id, deviceIDNamePattern)
+	}
+
 	if device.Addr == "" {
-		return fmt.Errorf("device %s has blank address", id)
+		return fmt.Errorf("device %v has blank address", device)
 	}
 	if device.SoftwareVersion == "" {
-		return fmt.Errorf("device %s has blank software version", id)
+		return fmt.Errorf("device %v has blank software version", device)
+	}
+	rversion := regexp.MustCompile(deviceVersionPattern)
+	matchVer := rversion.FindString(device.SoftwareVersion)
+	if device.SoftwareVersion != matchVer {
+		return fmt.Errorf("version %s does not match pattern %s",
+			device.SoftwareVersion, deviceVersionPattern)
 	}
 	return nil
 }
