@@ -25,12 +25,13 @@ package dispatcher
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"log"
 )
 
 // Dispatcher manages SB and NB configuration event listeners
 type Dispatcher struct {
-	deviceListeners     map[string]chan events.ConfigEvent
+	deviceListeners     map[topocache.ID]chan events.ConfigEvent
 	nbiListeners        map[string]chan events.ConfigEvent
 	nbiOpStateListeners map[string]chan events.OperationalStateEvent
 }
@@ -38,7 +39,7 @@ type Dispatcher struct {
 // NewDispatcher creates and initializes a new event dispatcher
 func NewDispatcher() Dispatcher {
 	return Dispatcher{
-		deviceListeners:     make(map[string]chan events.ConfigEvent),
+		deviceListeners:     make(map[topocache.ID]chan events.ConfigEvent),
 		nbiListeners:        make(map[string]chan events.ConfigEvent),
 		nbiOpStateListeners: make(map[string]chan events.OperationalStateEvent),
 	}
@@ -54,7 +55,7 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 
 	for configEvent := range changeChannel {
 		log.Println("Listener: Event", configEvent)
-		deviceChan, ok := d.deviceListeners[events.Event(configEvent).Subject()]
+		deviceChan, ok := d.deviceListeners[topocache.ID(events.Event(configEvent).Subject())]
 		if ok {
 			log.Println("Device Simulators must be active")
 			//TODO need a timeout or be done in separate routine
@@ -93,25 +94,31 @@ func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan event
 	}
 }
 
-// Register is a way for device synchronizers or nbi instances to register for
-// channel of events
-func (d *Dispatcher) Register(subscriber string, isDevice bool) (chan events.ConfigEvent, error) {
-	if isDevice && d.deviceListeners[subscriber] != nil {
-		return nil, fmt.Errorf("Device %s is already registered", subscriber)
-	} else if d.nbiListeners[subscriber] != nil {
-		return nil, fmt.Errorf("NBI %s is already registered", subscriber)
+// RegisterDevice is a way for device synchronizers to register for
+// channel of config events
+func (d *Dispatcher) RegisterDevice(id topocache.ID) (chan events.ConfigEvent, error) {
+	if d.deviceListeners[id] != nil {
+		return nil, fmt.Errorf("Device %s is already registered", id)
 	}
 	channel := make(chan events.ConfigEvent)
-	if isDevice {
-		d.deviceListeners[subscriber] = channel
-	} else {
-		d.nbiListeners[subscriber] = channel
-	}
-	log.Printf("Registering %s on channel w%v", subscriber, channel)
+	d.deviceListeners[id] = channel
+	log.Printf("Registering Device %s on channel w%v", id, channel)
 	return channel, nil
 }
 
-// RegisterOpState is a way for device synchronizers or nbi instances to register for
+// RegisterNbi is a way for nbi instances to register for
+// channel of config events
+func (d *Dispatcher) RegisterNbi(subscriber string) (chan events.ConfigEvent, error) {
+	if d.nbiListeners[subscriber] != nil {
+		return nil, fmt.Errorf("NBI %s is already registered", subscriber)
+	}
+	channel := make(chan events.ConfigEvent)
+	d.nbiListeners[subscriber] = channel
+	log.Printf("Registering NBI %s on channel w%v", subscriber, channel)
+	return channel, nil
+}
+
+// RegisterOpState is a way for nbi instances to register for
 // channel of events
 func (d *Dispatcher) RegisterOpState(subscriber string) (chan events.OperationalStateEvent, error) {
 	if d.nbiOpStateListeners[subscriber] != nil {
@@ -122,22 +129,24 @@ func (d *Dispatcher) RegisterOpState(subscriber string) (chan events.Operational
 	return channel, nil
 }
 
-// Unregister closes the device channel and removes it from the deviceListeners
-func (d *Dispatcher) Unregister(subscriber string, isDevice bool) error {
-	var channel chan events.ConfigEvent
-	if isDevice {
-		channel = d.deviceListeners[subscriber]
-	} else {
-		channel = d.nbiListeners[subscriber]
+// UnregisterDevice closes the device config channel and removes it from the deviceListeners
+func (d *Dispatcher) UnregisterDevice(id topocache.ID) error {
+	channel, ok := d.deviceListeners[id]
+	if !ok {
+		return fmt.Errorf("Subscriber %s had not been registered", id)
 	}
-	if channel == nil {
+	delete(d.deviceListeners, id)
+	close(channel)
+	return nil
+}
+
+// UnregisterNbi closes the nbi config channel and removes it from the nbiListeners
+func (d *Dispatcher) UnregisterNbi(subscriber string) error {
+	channel, ok := d.nbiListeners[subscriber]
+	if !ok {
 		return fmt.Errorf("Subscriber %s had not been registered", subscriber)
 	}
-	if isDevice {
-		delete(d.deviceListeners, subscriber)
-	} else {
-		delete(d.nbiListeners, subscriber)
-	}
+	delete(d.nbiListeners, subscriber)
 	close(channel)
 	return nil
 }
@@ -158,7 +167,7 @@ func (d *Dispatcher) UnregisterOperationalState(subscriber string) error {
 func (d *Dispatcher) GetListeners() []string {
 	listenerKeys := make([]string, 0)
 	for k := range d.deviceListeners {
-		listenerKeys = append(listenerKeys, k)
+		listenerKeys = append(listenerKeys, string(k))
 	}
 	for k := range d.nbiListeners {
 		listenerKeys = append(listenerKeys, k)
@@ -170,7 +179,7 @@ func (d *Dispatcher) GetListeners() []string {
 }
 
 // HasListener returns true if the named listeners has been registered
-func (d *Dispatcher) HasListener(name string) bool {
+func (d *Dispatcher) HasListener(name topocache.ID) bool {
 	_, ok := d.deviceListeners[name]
 	return ok
 }

@@ -97,7 +97,7 @@ func Test_getAllDevices(t *testing.T) {
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
 	assert.Equal(t, deviceListStr,
-		"[Device1 (1.0.0), Device2 (1.0.0), Device2 (2.0.0), device-1-device-simulator (1.0.0), device-2-device-simulator (1.0.0), device-3-device-simulator (1.0.0), localhost:10161 (1.0.0), localhost:10162 (1.0.0), localhost:10163 (1.0.0), localhost:50001 (1.0.0)]")
+		"[Device1 (1.0.0), Device2 (1.0.0), Device2 (2.0.0), device-1-device-simulator (1.0.0), device-2-device-simulator (1.0.0), device-3-device-simulator (1.0.0), localhost-1 (1.0.0), localhost-2 (1.0.0), localhost-3 (1.0.0), stratum-sim-1 (1.0.0)]")
 }
 
 // Test_getalldevices is where a wildcard is used for target - path is ignored
@@ -118,7 +118,7 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
 	assert.Equal(t, deviceListStr,
-		"[Device1 (1.0.0), Device2 (1.0.0), Device2 (2.0.0), device-1-device-simulator (1.0.0), device-2-device-simulator (1.0.0), device-3-device-simulator (1.0.0), localhost:10161 (1.0.0), localhost:10162 (1.0.0), localhost:10163 (1.0.0), localhost:50001 (1.0.0)]",
+		"[Device1 (1.0.0), Device2 (1.0.0), Device2 (2.0.0), device-1-device-simulator (1.0.0), device-2-device-simulator (1.0.0), device-3-device-simulator (1.0.0), localhost-1 (1.0.0), localhost-2 (1.0.0), localhost-3 (1.0.0), stratum-sim-1 (1.0.0)]",
 		"Expected value")
 }
 

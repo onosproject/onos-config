@@ -137,7 +137,7 @@ func collector(updateChan chan<- *gnmi.Update, request *gnmi.SubscriptionList) {
 
 func broadcastConfigNotification() {
 	mgr := manager.GetManager()
-	changesChan, err := mgr.Dispatcher.Register("GnmiSubscribeNorthBound", false)
+	changesChan, err := mgr.Dispatcher.RegisterNbi("GnmiSubscribeNorthBound")
 	if err != nil {
 		log.Println("Error while subscribing to updates", err)
 	}

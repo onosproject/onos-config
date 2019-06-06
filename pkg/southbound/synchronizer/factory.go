@@ -29,13 +29,13 @@ import (
 func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore, topoChannel <-chan events.TopoEvent,
 	opStateChan chan<- events.OperationalStateEvent, dispatcher *dispatcher.Dispatcher) {
 	for topoEvent := range topoChannel {
-		deviceName := events.Event(topoEvent).Subject()
+		deviceName := topocache.ID(events.Event(topoEvent).Subject())
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
-			configChan, err := dispatcher.Register(deviceName, true)
+			configChan, err := dispatcher.RegisterDevice(deviceName)
 			if err != nil {
 				log.Fatal(err)
 			}
-			device := deviceStore.Store[deviceName]
+			device := deviceStore.Store[topocache.ID(deviceName)]
 			ctx := context.Background()
 			sync, err := New(ctx, changeStore, &device, configChan, opStateChan)
 			if err != nil {
@@ -48,12 +48,7 @@ func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
 			go sync.syncOperationalState()
 		} else if dispatcher.HasListener(deviceName) && !topoEvent.Connect() {
 
-			err := dispatcher.Unregister(deviceName, true)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			err = dispatcher.UnregisterOperationalState(deviceName)
+			err := dispatcher.UnregisterDevice(deviceName)
 			if err != nil {
 				log.Fatal(err)
 			}

@@ -60,9 +60,9 @@
         }
       ]
     },
-    "localhost:10161-1.0.0": {
-      "Name": "localhost:10161-1.0.0",
-      "Device": "localhost:10161",
+    "localhost-1-1.0.0": {
+      "Name": "localhost-1-1.0.0",
+      "Device": "localhost-1",
       "Version": "1.0.0",
       "Type": "Devicesim",
       "Created": "2019-05-21T08:43:17Z",
@@ -94,9 +94,9 @@
         }
       ]
     },
-    "localhost:10162-1.0.0": {
-      "Name": "localhost:10162-1.0.0",
-      "Device": "localhost:10162",
+    "localhost-2-1.0.0": {
+      "Name": "localhost-2-1.0.0",
+      "Device": "localhost-2",
       "Version": "1.0.0",
       "Type": "Devicesim",
       "Created": "2019-05-21T08:43:18Z",
@@ -128,9 +128,9 @@
         }
       ]
     },
-    "localhost:10163-1.0.0": {
-      "Name": "localhost:10163-1.0.0",
-      "Device": "localhost:10163",
+    "localhost-3-1.0.0": {
+      "Name": "localhost-3-1.0.0",
+      "Device": "localhost-3",
       "Version": "1.0.0",
       "Type": "Devicesim",
       "Created": "2019-05-21T08:43:19Z",

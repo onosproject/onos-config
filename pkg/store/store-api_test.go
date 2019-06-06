@@ -502,24 +502,24 @@ func TestCreateConfiguration_badname(t *testing.T) {
 
 func TestCreateConfiguration_badversion(t *testing.T) {
 	_, err :=
-		CreateConfiguration("localhost:10161", "1.234567890", "TestDevice",
+		CreateConfiguration("localhost-1", "1.234567890", "TestDevice",
 			[]gnmi.ModelData{}, []change.ID{})
 	assert.ErrorContains(t, err, "version 1.234567890 does not match pattern", "Too long")
 
 	_, err =
-		CreateConfiguration("localhost:10161", "a", "TestDevice",
+		CreateConfiguration("localhost-1", "a", "TestDevice",
 			[]gnmi.ModelData{}, []change.ID{})
 	assert.ErrorContains(t, err, "version a does not match pattern", "Too short")
 
 	_, err =
-		CreateConfiguration("localhost:10161", "1:0:0", "TestDevice",
+		CreateConfiguration("localhost-1", "1:0:0", "TestDevice",
 			[]gnmi.ModelData{}, []change.ID{})
 	assert.ErrorContains(t, err, "version 1:0:0 does not match pattern", "Illegal char")
 }
 
 func TestCreateConfiguration_badtype(t *testing.T) {
 	_, err :=
-		CreateConfiguration("localhost:10161", "1.0.0", "TestDeviceType",
+		CreateConfiguration("localhost-1", "1.0.0", "TestDeviceType",
 			[]gnmi.ModelData{}, []change.ID{})
 	assert.ErrorContains(t, err, "deviceType TestDeviceType does not match pattern", "Too long")
 }

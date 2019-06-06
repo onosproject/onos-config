@@ -59,7 +59,7 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 		changeStoreTest        map[string]*change.Change
 		configurationStoreTest map[store.ConfigName]store.Configuration
 		networkStoreTest       []store.NetworkConfiguration
-		deviceStoreTest        map[string]topocache.Device
+		deviceStoreTest        map[topocache.ID]topocache.Device
 	)
 
 	var err error
@@ -86,10 +86,12 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	configurationStoreTest = make(map[store.ConfigName]store.Configuration)
 	configurationStoreTest[device1config.Name] = *device1config
 
-	deviceStoreTest = make(map[string]topocache.Device)
+	deviceStoreTest = make(map[topocache.ID]topocache.Device)
 	deviceStoreTest["Device1"] = topocache.Device{
-		Addr:    "127.0.0.1:10161",
-		Timeout: 10,
+		ID:              topocache.ID("Device1"),
+		SoftwareVersion: "1.0.0",
+		Addr:            "127.0.0.1:10161",
+		Timeout:         10,
 	}
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
@@ -129,7 +131,7 @@ func Test_LoadManager(t *testing.T) {
 		"../../configs/networkStore-sample.json",
 	)
 	assert.Assert(t, err == nil, "failed to load manager")
-	assert.Equal(t, len(mgr.DeviceStore.Store), 3, "wrong number of devices loaded")
+	assert.Equal(t, len(mgr.DeviceStore.Store), 4, "wrong number of devices loaded")
 }
 
 func Test_LoadManagerBadConfigStore(t *testing.T) {

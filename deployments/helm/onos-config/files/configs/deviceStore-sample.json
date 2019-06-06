@@ -3,6 +3,7 @@
   "Storetype": "device",
   "Store": {
     "device-1-device-simulator": {
+      "ID": "device-1-device-simulator",
       "Addr": "device-1-device-simulator:10161",
       "SoftwareVersion": "1.0.0",
       "User": "devicesim",
@@ -10,11 +11,13 @@
       "Timeout": 10000000000
     },
     "device-2-device-simulator": {
+      "ID": "device-2-device-simulator",
       "Addr": "device-2-device-simulator:10161",
       "SoftwareVersion": "1.0.0",
       "Timeout": 10000000000
     },
     "device-3-device-simulator": {
+      "ID": "device-3-device-simulator",
       "Addr": "device-3-device-simulator:10161",
       "SoftwareVersion": "1.0.0",
       "Timeout": 10000000000

@@ -23,7 +23,7 @@ Use `gnmi_cli -get` to get configuration for a particular device (target) from t
 > If config from several devices are required, several paths can be added
 ```bash
 gnmi_cli -get -address localhost:5150 \
-    -proto "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
+    -proto "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
     -timeout 5s -alsologtostderr\
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -46,11 +46,11 @@ gnmi_cli -get -address localhost:5150 \
 
 ### List complete configuration for a device (target)
 >Use the following value for proto to get all configuration and operational state on a particular device
->    -proto "path: <target: 'localhost:10161'>"
+>    -proto "path: <target: 'localhost-1'>"
 
 ### Get a keyed index in a list
 Use a proto value like:
->    -proto "path: <target: 'localhost:10161',
+>    -proto "path: <target: 'localhost-1',
 >         elem: <name: 'openconfig-system:system'>
 >         elem: <name: 'openconfig-openflow:openflow'> elem: <name: 'controllers'>
 >         elem: <name: 'controller' key: <key: 'name' value: 'main'>>
@@ -62,7 +62,7 @@ Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the
 
 ```bash
 gnmi_cli -address localhost:5150 -set \
-    -proto "update: <path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
+    -proto "update: <path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -84,7 +84,7 @@ response: <
     elem: <
       name: "timezone-name"
     >
-    target: "localhost:10161"
+    target: "localhost-1"
   >
   op: UPDATE
 >
@@ -106,7 +106,7 @@ SetRequest() with the 100 extension at the end of the -proto section like:
 > ", extension: <registered_ext: <id: 100, msg: 'myfirstchange'>>"
 
 > The corresponding -get for this require using the -proto
-> "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
+> "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
 
 > Currently (May '19) no checking of the contents is enforced when doing a Set operation
 > and the config is forwarded down to the southbound layer only if a device is registered
@@ -118,7 +118,7 @@ please note the `0` as subscription mode to indicate streaming:
 
 ```bash
 gnmi_cli -address localhost:5150 \
-    -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -134,7 +134,7 @@ please note the `1` as subscription mode to indicate to send the response once:
 
 ```bash
 gnmi_cli -address localhost:5150 \
-    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -149,7 +149,7 @@ please note the `2` as subscription mode to indicate to send the response in a p
 
 ```bash
 gnmi_cli -address localhost:5150 \
-     -proto "subscribe:<mode: 2, prefix:<>, subscription:<sample_interval: 5, path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+     -proto "subscribe:<mode: 2, prefix:<>, subscription:<sample_interval: 5, path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
      -timeout 5s \
      -polling_interval 5s \
      -client_crt pkg/southbound/testdata/client1.crt \

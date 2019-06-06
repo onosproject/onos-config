@@ -24,7 +24,8 @@ import (
 
 // AddOrUpdateDevice adds the specified device to the device inventory.
 func (s Server) AddOrUpdateDevice(c context.Context, d *proto.DeviceInfo) (*proto.DeviceResponse, error) {
-	err := manager.GetManager().DeviceStore.AddOrUpdateDevice(d.Id, topocache.Device{
+	err := manager.GetManager().DeviceStore.AddOrUpdateDevice(topocache.ID(d.Id), topocache.Device{
+		ID:              topocache.ID(d.Id),
 		Addr:            d.Address,
 		Target:          d.Target,
 		SoftwareVersion: d.Version,
@@ -42,7 +43,7 @@ func (s Server) AddOrUpdateDevice(c context.Context, d *proto.DeviceInfo) (*prot
 
 // RemoveDevice removes the specified device from the inventory.
 func (s Server) RemoveDevice(c context.Context, d *proto.DeviceInfo) (*proto.DeviceResponse, error) {
-	manager.GetManager().DeviceStore.RemoveDevice(d.Id)
+	manager.GetManager().DeviceStore.RemoveDevice(topocache.ID(d.Id))
 	return &proto.DeviceResponse{}, nil
 }
 
@@ -52,7 +53,7 @@ func (s Server) GetDevices(r *proto.GetDevicesRequest, stream proto.DeviceInvent
 
 		// Build the device info message
 		msg := &proto.DeviceInfo{
-			Id: id, Address: dev.Addr, Target: dev.Target, Version: dev.SoftwareVersion,
+			Id: string(id), Address: dev.Addr, Target: dev.Target, Version: dev.SoftwareVersion,
 			User: dev.Usr, Password: dev.Pwd,
 			CaPath: dev.CaPath, CertPath: dev.CertPath, KeyPath: dev.KeyPath,
 			Plain: dev.Plain, Insecure: dev.Insecure, Timeout: dev.Timeout.Nanoseconds(),
