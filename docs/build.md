@@ -45,9 +45,9 @@ go test -v github.com/onosproject/onos-config/pkg/...
 ```
 
 ## Bulding Documentation
-> Documentation is not published at this time. Soon.
+Documentation is published at [https://godoc.org/github.com/onosproject/onos-config](https://godoc.org/github.com/onosproject/onos-config)
 
-Run locally
+If you wish to see a version of it locally run:
 ```bash
 godoc -goroot=$HOME/go
 ``` 
