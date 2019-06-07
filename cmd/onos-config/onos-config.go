@@ -59,8 +59,21 @@ const (
 	networkStoreDefaultFileName = "../configs/networkStore-sample.json"
 )
 
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	return "my string representation"
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 // The main entry point
 func main() {
+	var modelPlugins arrayFlags
+
 	configStoreFile := flag.String("configStore", configStoreDefaultFileName,
 		"path to config store file")
 	changeStoreFile := flag.String("changeStore", changeStoreDefaultFileName,
@@ -69,6 +82,7 @@ func main() {
 		"path to device store file")
 	networkStoreFile := flag.String("networkStore", networkStoreDefaultFileName,
 		"path to network store file")
+	flag.Var(&modelPlugins, "modelPlugins", "names of model plugins to load (comma separated list")
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
@@ -87,6 +101,16 @@ func main() {
 			log.Info("Shutting down onos-config")
 			time.Sleep(time.Second)
 		}()
+
+		for _, modelPlugin := range modelPlugins {
+			if modelPlugin == "" {
+				continue
+			}
+			err := mgr.RegisterModelPlugin(modelPlugin)
+			if err != nil {
+				log.Fatal("Unable to start onos-config ", err)
+			}
+		}
 
 		mgr.Run()
 		err = startServer(caPath, keyPath, certPath)

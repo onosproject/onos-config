@@ -20,12 +20,12 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"io/ioutil"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/onosproject/onos-config/pkg/models"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
@@ -38,22 +38,19 @@ type Service struct {
 
 // Register registers the GNMI server with grpc
 func (s Service) Register(r *grpc.Server) {
-	gnmi.RegisterGNMIServer(r, &Server{
-		models: models.NewModels(),
-	})
+	gnmi.RegisterGNMIServer(r, &Server{})
 }
 
 // Server implements the grpc GNMI service
 type Server struct {
-	models *models.Models
-	mu     sync.RWMutex
+	mu sync.RWMutex
 }
 
 // Capabilities implements gNMI Capabilities
 func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) (*gnmi.CapabilityResponse, error) {
 	v, _ := getGNMIServiceVersion()
 	return &gnmi.CapabilityResponse{
-		SupportedModels:    s.models.Get(),
+		SupportedModels:    manager.GetManager().Capabilities(),
 		SupportedEncodings: []gnmi.Encoding{gnmi.Encoding_JSON},
 		GNMIVersion:        *v,
 	}, nil

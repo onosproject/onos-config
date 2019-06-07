@@ -38,6 +38,7 @@ type Manager struct {
 	ChangesChannel          chan events.ConfigEvent
 	OperationalStateChannel chan events.OperationalStateEvent
 	Dispatcher              dispatcher.Dispatcher
+	ModelRegistry           map[string]ModelPlugin
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -53,6 +54,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		ChangesChannel:          make(chan events.ConfigEvent, 10),
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
+		ModelRegistry:           make(map[string]ModelPlugin),
 	}
 
 	changeIds := make([]string, 0)

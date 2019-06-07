@@ -18,7 +18,6 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/models"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
@@ -32,7 +31,7 @@ func TestService_getGNMIServiceVersion(t *testing.T) {
 }
 
 func TestService_Capabilities(t *testing.T) {
-	server := Server{models: &models.Models{}}
+	server := Server{}
 	request := gnmi.CapabilityRequest{}
 	response, err := server.Capabilities(context.Background(), &request)
 	assert.NilError(t, err)

@@ -148,15 +148,16 @@
   revision = "e8b0ed2cbb0c40683bc0785ea2c796b2c12df80f"
 
 [[projects]]
-  digest = "1:51878b8f92740690ef73c01475b9d60dccf0ac2f97d278f4a82bf2e30cce7615"
+  branch = "master"
+  digest = "1:ba1737eb0ccb3c20f65e0a2e45c25a705f13f378505b1c63743a482933c1e552"
   name = "github.com/openconfig/ygot"
   packages = [
     "util",
     "ygot",
+    "ytypes",
   ]
   pruneopts = "UT"
-  revision = "b71b4131ec632fdb387e35dfe635182ad2368c1f"
-  version = "v0.5.0"
+  revision = "68346f97239f91ac9fb1f419586f58d6c39f5500"
 
 [[projects]]
   digest = "1:93131d8002d7025da13582877c32d1fc302486775a1b06f62241741006428c5e"
@@ -368,6 +369,9 @@
     "github.com/openconfig/gnmi/client/gnmi",
     "github.com/openconfig/gnmi/proto/gnmi",
     "github.com/openconfig/gnmi/proto/gnmi_ext",
+    "github.com/openconfig/goyang/pkg/yang",
+    "github.com/openconfig/ygot/ygot",
+    "github.com/openconfig/ygot/ytypes",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
     "google.golang.org/grpc",
