@@ -23,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/certs"
-	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -170,7 +169,7 @@ func main() {
 	for _, configuration := range configurations {
 		fmt.Println("Config", configuration.Name, "(Device:", configuration.Device, ")")
 		fullDeviceConfigValues := configuration.ExtractFullConfig(changes, *version)
-		jsonTree, _ := manager.BuildTree(fullDeviceConfigValues, true)
+		jsonTree, _ := store.BuildTree(fullDeviceConfigValues)
 		fmt.Println(string(jsonTree))
 	}
 }

@@ -24,7 +24,7 @@ import (
 
 // GetNetworkConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest
-func (m *Manager) GetNetworkConfig(target string, configname string, path string, layer int) ([]change.ConfigValue, error) {
+func (m *Manager) GetNetworkConfig(target string, configname string, path string, layer int) ([]*change.ConfigValue, error) {
 	fmt.Println("Getting config for", target, path)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
@@ -36,13 +36,13 @@ func (m *Manager) GetNetworkConfig(target string, configname string, path string
 			}
 		}
 		if config.Name == "" {
-			return make([]change.ConfigValue, 0),
+			return make([]*change.ConfigValue, 0),
 				fmt.Errorf("No Configuration found for %s", target)
 		}
 	} else if configname != "" {
 		config = m.ConfigStore.Store[store.ConfigName(configname)]
 		if config.Name == "" {
-			return make([]change.ConfigValue, 0),
+			return make([]*change.ConfigValue, 0),
 				fmt.Errorf("No Configuration found for %s", configname)
 		}
 	}
@@ -50,7 +50,7 @@ func (m *Manager) GetNetworkConfig(target string, configname string, path string
 	if len(configValues) == 0 || path == "/*" {
 		return configValues, nil
 	}
-	filteredValues := make([]change.ConfigValue, 0)
+	filteredValues := make([]*change.ConfigValue, 0)
 	for _, cv := range configValues {
 		if strings.Contains(cv.Path, path) {
 			filteredValues = append(filteredValues, cv)
