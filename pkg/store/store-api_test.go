@@ -25,20 +25,6 @@ import (
 	"testing"
 )
 
-var (
-	change1, change2, change3, change4 *change.Change
-)
-
-var (
-	changeStore        map[string]*change.Change
-	configurationStore map[ConfigName]Configuration
-	networkStore       []NetworkConfiguration
-)
-
-var (
-	device1V, device2V *Configuration
-)
-
 const (
 	Test1Cont1A                  = "/test1:cont1a"
 	Test1Cont1ACont2A            = "/test1:cont1a/cont2a"
@@ -186,8 +172,13 @@ var Config2Values = [11]string{
 	ValueLeaftopWxy1234,
 }
 
-func TestMain(m *testing.M) {
+func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.Change) {
 	var err error
+
+	var (
+		change1, change2, change3, change4 *change.Change
+	)
+
 	config1Value01, _ := change.CreateChangeValue(Test1Cont1A, ValueEmpty, false)
 	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, ValueEmpty, false)
 	config1Value03, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2A, ValueLeaf2A13, false)
@@ -242,8 +233,6 @@ func TestMain(m *testing.M) {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
-	configurationStore = make(map[ConfigName]Configuration)
-	configurationStore[device1V.Name] = *device1V
 
 	config4Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CGhi, false)
 	config4Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, ValueEmpty, true)
@@ -263,23 +252,13 @@ func TestMain(m *testing.M) {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
-	configurationStore[device2V.Name] = *device2V
 
-	networkStore = make([]NetworkConfiguration, 0)
-	ccs := make(map[ConfigName]change.ID)
-	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
-	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
-	nw1, err := NewNetworkConfiguration("testChange", "nw1", ccs)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
-	}
-	networkStore = append(networkStore, *nw1)
-
-	os.Exit(m.Run())
+	return device1V, device2V, changeStore
 }
 
 func Test_device1_version(t *testing.T) {
+	device1V, _, changeStore := setUp()
+
 	fmt.Println("Configuration", device1V.Name, " (latest) Changes:")
 	for idx, cid := range device1V.Changes {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
@@ -299,6 +278,8 @@ func Test_device1_version(t *testing.T) {
 }
 
 func Test_device1_prev_version(t *testing.T) {
+	device1V, _, changeStore := setUp()
+
 	const changePrevious = 1
 	fmt.Println("Configuration", device1V.Name, " (n-1) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
@@ -319,6 +300,7 @@ func Test_device1_prev_version(t *testing.T) {
 }
 
 func Test_device1_first_version(t *testing.T) {
+	device1V, _, changeStore := setUp()
 	const changePrevious = 2
 	fmt.Println("Configuration", device1V.Name, " (n-2) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
@@ -339,6 +321,7 @@ func Test_device1_first_version(t *testing.T) {
 }
 
 func Test_device1_invalid_version(t *testing.T) {
+	device1V, _, changeStore := setUp()
 	const changePrevious = 3
 	fmt.Println("Configuration", device1V.Name, " (n-3) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
@@ -355,6 +338,7 @@ func Test_device1_invalid_version(t *testing.T) {
 }
 
 func Test_device2_version(t *testing.T) {
+	_, device2V, changeStore := setUp()
 	fmt.Println("Configuration", device2V.Name, " (latest) Changes:")
 	for idx, cid := range device2V.Changes {
 		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
@@ -373,7 +357,7 @@ func Test_device2_version(t *testing.T) {
 	}
 }
 
-func checkPathvalue(t *testing.T, config []change.ConfigValue, index int,
+func checkPathvalue(t *testing.T, config []*change.ConfigValue, index int,
 	expPaths []string, expValues []string) {
 
 	// Check that they are kept in a consistent order
@@ -389,6 +373,17 @@ func checkPathvalue(t *testing.T, config []change.ConfigValue, index int,
 }
 
 func Test_convertChangeToGnmi(t *testing.T) {
+
+	config3Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CDef, false)
+	config3Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, true)
+	change3, err := change.CreateChange(change.ValueCollections{
+		config3Value01, config3Value02,
+	}, "Remove txout 2")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+
 	setRequest, parseError := change3.GnmiChange()
 
 	assert.NilError(t, parseError, "Parsing error for Gnmi change request")
@@ -410,6 +405,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 }
 
 func Test_writeOutChangeFile(t *testing.T) {
+	_, _, changeStore := setUp()
 	if _, err := os.Stat("testout"); os.IsNotExist(err) {
 		os.Mkdir("testout", os.ModePerm)
 	}
@@ -525,6 +521,11 @@ func TestCreateConfiguration_badtype(t *testing.T) {
 }
 
 func Test_writeOutConfigFile(t *testing.T) {
+	device1V, device2V, _ := setUp()
+	configurationStore := make(map[ConfigName]Configuration)
+	configurationStore[device1V.Name] = *device1V
+	configurationStore[device2V.Name] = *device2V
+
 	configStoreFile, _ := os.Create("testout/configStore-sample.json")
 	jsonEncoder := json.NewEncoder(configStoreFile)
 	err := jsonEncoder.Encode(ConfigurationStore{Version: StoreVersion,
@@ -550,9 +551,20 @@ func Test_loadConfigStoreFileError(t *testing.T) {
 }
 
 func Test_writeOutNetworkFile(t *testing.T) {
+	networkStore := make([]NetworkConfiguration, 0)
+	ccs := make(map[ConfigName]change.ID)
+	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
+	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
+	nw1, err := NewNetworkConfiguration("testChange", "nw1", ccs)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	networkStore = append(networkStore, *nw1)
+
 	networkStoreFile, _ := os.Create("testout/networkStore-sample.json")
 	jsonEncoder := json.NewEncoder(networkStoreFile)
-	err := jsonEncoder.Encode(NetworkStore{Version: StoreVersion,
+	err = jsonEncoder.Encode(NetworkStore{Version: StoreVersion,
 		Storetype: StoreTypeNetwork, Store: networkStore})
 	if err != nil {
 		fmt.Println(err)

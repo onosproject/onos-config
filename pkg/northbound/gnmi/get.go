@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/store"
 	"log"
 	"time"
 
@@ -114,7 +115,7 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	return buildUpdate(prefix, path, configValues), nil
 }
 
-func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []change.ConfigValue) *gnmi.Update {
+func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*change.ConfigValue) *gnmi.Update {
 	var value *gnmi.TypedValue
 	if len(configValues) == 0 {
 		value = nil
@@ -124,7 +125,7 @@ func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []change.Confi
 			Value: typedValue,
 		}
 	} else {
-		json, err := manager.BuildTree(configValues, false)
+		json, err := store.BuildTree(configValues)
 		if err != nil {
 
 		}

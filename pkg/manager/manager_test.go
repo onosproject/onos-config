@@ -312,7 +312,7 @@ func TestManager_GetNoConfig(t *testing.T) {
 	assert.ErrorContains(t, err, "No Configuration found")
 }
 
-func networkConfigContainsPath(configs []change.ConfigValue, whichOne string) bool {
+func networkConfigContainsPath(configs []*change.ConfigValue, whichOne string) bool {
 	for _, config := range configs {
 		if config.Path == whichOne {
 			return true
