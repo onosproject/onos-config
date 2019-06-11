@@ -20,20 +20,22 @@ import (
 )
 
 const (
-	// http://tldp.org/LDP/abs/html/exitcodes.html
+	// ExitSuccess means nominal status
 	ExitSuccess = iota
+
+	// ExitError means general error
 	ExitError
+
+	// ExitBadConnection means failed connection to remote service
 	ExitBadConnection
-	ExitInvalidInput
-	ExitBadFeature
-	ExitInterrupted
-	ExitIO
+
+	// ExitBadArgs means invalid argument values were given
 	ExitBadArgs = 128
 )
 
 // ExitWithOutput prints the specified entity and exits program with success.
-func ExitWithOutput(output ...interface{}) {
-	fmt.Fprintln(os.Stdout, output...)
+func ExitWithOutput(msg string, output ...interface{}) {
+	fmt.Fprintf(os.Stdout, msg, output...)
 	os.Exit(ExitSuccess)
 }
 
@@ -46,4 +48,10 @@ func ExitWithSuccess() {
 func ExitWithError(code int, err error) {
 	fmt.Fprintln(os.Stderr, "Error:", err)
 	os.Exit(code)
+}
+
+// ExitWithErrorMessage prints the specified message and exits program with the given error code.
+func ExitWithErrorMessage(msg string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, msg, args...)
+	os.Exit(ExitError)
 }
