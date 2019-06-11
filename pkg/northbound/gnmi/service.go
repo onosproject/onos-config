@@ -38,8 +38,8 @@ type Service struct {
 
 // Register registers the GNMI server with grpc
 func (s Service) Register(r *grpc.Server) {
-	go broadcastConfigNotification()
-	go broadcastOperationalNotification()
+	//go broadcastConfigNotification()
+	//go broadcastOperationalNotification()
 	gnmi.RegisterGNMIServer(r, &Server{
 		models: models.NewModels(),
 	})
