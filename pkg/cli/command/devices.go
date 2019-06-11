@@ -16,19 +16,17 @@ package command
 
 import (
 	"context"
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	devices "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/spf13/cobra"
 	"io"
-	"os"
 	"strings"
 )
 
 func newDevicesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "devices {list,add,remove}",
-		Short: "Manages the devices inventory",
+		Short: "Manages inventory of network devices",
 	}
 	cmd.AddCommand(newDevicesListCommand())
 	cmd.AddCommand(newDevicesAddCommand())
@@ -38,9 +36,10 @@ func newDevicesCommand() *cobra.Command {
 
 func newDevicesListCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "list",
-		Args: cobra.ExactArgs(0),
-		Run:  runDevicesListCommand,
+		Use:   "list",
+		Short: "Lists devices in the inventory",
+		Args:  cobra.ExactArgs(0),
+		Run:   runDevicesListCommand,
 	}
 	cmd.Flags().BoolP("verbose", "v", false, "display verbose output")
 	return cmd
@@ -49,6 +48,8 @@ func newDevicesListCommand() *cobra.Command {
 func runDevicesListCommand(cmd *cobra.Command, args []string) {
 	client := devices.NewDeviceInventoryServiceClient(getConnection(cmd))
 	stream, err := client.GetDevices(context.Background(), &devices.GetDevicesRequest{})
+	verbose, _ := cmd.Flags().GetBool("verbose")
+
 	if err != nil {
 		ExitWithErrorMessage("Failed to get devices: %v\n", err)
 	}
@@ -64,9 +65,9 @@ func runDevicesListCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive device: %v\n", err)
 			}
-			fmt.Fprintf(os.Stdout, "%s: %s (%s)\n", in.Id, in.Address, in.Version)
-			if cmd.Flag("verbose").Value.String() == "true" { // FIXME: there's got to be a better test!
-				fmt.Fprintf(os.Stdout, "\t%v\n", strings.Replace(proto.MarshalTextString(in), "\n", " ", -1))
+			Output("%s: %s (%s)\n", in.Id, in.Address, in.Version)
+			if verbose {
+				Output("\t%v\n", strings.Replace(proto.MarshalTextString(in), "\n", " ", -1))
 			}
 		}
 	}()
@@ -80,9 +81,10 @@ func runDevicesListCommand(cmd *cobra.Command, args []string) {
 
 func newDevicesAddCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:  "add <deviceInfoProtobuf>",
-		Args: cobra.ExactArgs(1),
-		Run:  runDeviceAddCommand,
+		Use:   "add <deviceInfoProtobuf>",
+		Short: "Adds a new device to the inventory",
+		Args:  cobra.ExactArgs(1),
+		Run:   runDeviceAddCommand,
 	}
 }
 
@@ -102,9 +104,10 @@ func runDeviceAddCommand(cmd *cobra.Command, args []string) {
 
 func newDevicesRemoveCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:  "remove <deviceId>",
-		Args: cobra.ExactArgs(1),
-		Run:  runDeviceRemoveCommand,
+		Use:   "remove <deviceId>",
+		Short: "Removes a device from the inventory",
+		Args:  cobra.ExactArgs(1),
+		Run:   runDeviceRemoveCommand,
 	}
 }
 

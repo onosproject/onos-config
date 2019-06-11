@@ -33,6 +33,11 @@ const (
 	ExitBadArgs = 128
 )
 
+// Output prints the specified format message with arguments to stdout.
+func Output(msg string, args ...interface{}) {
+	fmt.Fprintf(os.Stdout, msg, args...)
+}
+
 // ExitWithOutput prints the specified entity and exits program with success.
 func ExitWithOutput(msg string, output ...interface{}) {
 	fmt.Fprintf(os.Stdout, msg, output...)
