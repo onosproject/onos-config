@@ -43,6 +43,9 @@ func GetRootCommand() *cobra.Command {
 	viper.BindPFlag("keyPath", cmd.PersistentFlags().Lookup("keyPath"))
 	viper.BindPFlag("certPath", cmd.PersistentFlags().Lookup("certPath"))
 
+	cmd.AddCommand(newInitCommand())
+	cmd.AddCommand(newConfigCommand())
+	cmd.AddCommand(newCompletionCommand())
 	cmd.AddCommand(newDevicesCommand())
 	cmd.AddCommand(newNetChangesCommand())
 	cmd.AddCommand(newRollbackCommand())
