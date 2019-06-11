@@ -28,11 +28,13 @@ import (
 type gNMISubscribeServerFake struct {
 	Request   *gnmi.SubscribeRequest
 	Responses chan *gnmi.SubscribeResponse
+	Signal    chan struct{}
 	grpc.ServerStream
 }
 
 func (x gNMISubscribeServerFake) Send(m *gnmi.SubscribeResponse) error {
 	x.Responses <- m
+	//x.Signal<- struct{}{}
 	if m.GetSyncResponse() {
 		close(x.Responses)
 	}
@@ -40,12 +42,15 @@ func (x gNMISubscribeServerFake) Send(m *gnmi.SubscribeResponse) error {
 }
 
 func (x gNMISubscribeServerFake) Recv() (*gnmi.SubscribeRequest, error) {
+	log.Println("Blocking")
+	<-x.Signal
+	log.Println("Unblocking")
 	return x.Request, nil
 }
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
-	server := setUp(false)
+	server := setUp()
 
 	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
 
@@ -77,11 +82,13 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	serverFake := gNMISubscribeServerFake{
 		Request:   request,
 		Responses: responsesChan,
+		Signal:    make(chan struct{}),
 	}
 	go func() {
 		err = server.Subscribe(serverFake)
 	}()
 
+	serverFake.Signal <- struct{}{}
 	assert.NilError(t, err, "Unexpected error doing Subscribe")
 
 	responseReq := <-responsesChan
@@ -105,13 +112,12 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	assert.Equal(t, pathResponse.Elem[2].Name, "leaf2a")
 
 	assert.Equal(t, responseReq.GetUpdate().Update[0].Val.GetStringVal(), "13")
-	close(responsesChan)
 
 }
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafStream(t *testing.T) {
-	server := setUp(true)
+	server := setUp()
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -157,6 +163,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	serverFake := gNMISubscribeServerFake{
 		Request:   request,
 		Responses: responsesChan,
+		Signal:    make(chan struct{}),
 	}
 
 	go func() {
@@ -166,8 +173,10 @@ func Test_SubscribeLeafStream(t *testing.T) {
 
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
 	time.Sleep(100000)
-
-	_, err = server.Set(context.Background(), &setRequest)
+	go func() {
+		_, err = server.Set(context.Background(), &setRequest)
+		serverFake.Signal <- struct{}{}
+	}()
 	assert.NilError(t, err, "Unexpected error doing parsing")
 
 	for response := range responsesChan {
