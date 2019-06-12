@@ -8,7 +8,6 @@ ONOS_BUILD_VERSION := stable
 all: image
 
 image: # @HELP build onos-config image
-	docker run --rm -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/golang-build:${ONOS_BUILD_VERSION} protos
 	docker build . -f build/onos-config/Dockerfile \
 	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 	-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
@@ -34,7 +33,7 @@ protos: # @HELP compile the protobuf files
 	./build/dev-docker/compile-protos.sh
 
 build: # @HELP build the go binary in the cmd/onos-config package
-build: protos test
+build: test
 	export GOOS=linux
 	export GOARCH=amd64
 	go build -o build/_output/onos-config ./cmd/onos-config
