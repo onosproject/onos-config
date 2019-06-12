@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 }
 
 // setUp should not depend on any global variables
-func setUp(broadcast bool) *Server {
+func setUp() (*Server, *manager.Manager) {
 	var server = &Server{}
 
 	mgr, err := manager.LoadManager(
@@ -54,12 +54,8 @@ func setUp(broadcast bool) *Server {
 	mgr.ChangesChannel = make(chan events.ConfigEvent)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
-	if broadcast {
-		go broadcastConfigNotification()
-	}
-
 	fmt.Println("Finished setUp()")
-	return server
+	return server, mgr
 }
 
 func listenToTopoLoading(deviceChan <-chan events.TopoEvent) {

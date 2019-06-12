@@ -16,6 +16,8 @@ package gnmi
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
@@ -28,6 +30,7 @@ import (
 type gNMISubscribeServerFake struct {
 	Request   *gnmi.SubscribeRequest
 	Responses chan *gnmi.SubscribeResponse
+	Signal    chan struct{}
 	grpc.ServerStream
 }
 
@@ -40,12 +43,13 @@ func (x gNMISubscribeServerFake) Send(m *gnmi.SubscribeResponse) error {
 }
 
 func (x gNMISubscribeServerFake) Recv() (*gnmi.SubscribeRequest, error) {
+	<-x.Signal
 	return x.Request, nil
 }
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
-	server := setUp(false)
+	server, _ := setUp()
 
 	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
 
@@ -77,11 +81,13 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	serverFake := gNMISubscribeServerFake{
 		Request:   request,
 		Responses: responsesChan,
+		Signal:    make(chan struct{}),
 	}
 	go func() {
 		err = server.Subscribe(serverFake)
 	}()
 
+	serverFake.Signal <- struct{}{}
 	assert.NilError(t, err, "Unexpected error doing Subscribe")
 
 	responseReq := <-responsesChan
@@ -105,13 +111,12 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	assert.Equal(t, pathResponse.Elem[2].Name, "leaf2a")
 
 	assert.Equal(t, responseReq.GetUpdate().Update[0].Val.GetStringVal(), "13")
-	close(responsesChan)
 
 }
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafStream(t *testing.T) {
-	server := setUp(true)
+	server, _ := setUp()
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -157,6 +162,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	serverFake := gNMISubscribeServerFake{
 		Request:   request,
 		Responses: responsesChan,
+		Signal:    make(chan struct{}),
 	}
 
 	go func() {
@@ -166,8 +172,10 @@ func Test_SubscribeLeafStream(t *testing.T) {
 
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
 	time.Sleep(100000)
-
-	_, err = server.Set(context.Background(), &setRequest)
+	go func() {
+		_, err = server.Set(context.Background(), &setRequest)
+		serverFake.Signal <- struct{}{}
+	}()
 	assert.NilError(t, err, "Unexpected error doing parsing")
 
 	for response := range responsesChan {
@@ -196,6 +204,72 @@ func Test_SubscribeLeafStream(t *testing.T) {
 		} else {
 			assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
 		}
+	}
+
+}
+
+func Test_WrongDevice(t *testing.T) {
+	_, mgr := setUp()
+
+	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
+
+	assert.NilError(t, err, "Unexpected error doing parsing")
+
+	path.Target = "Device1"
+
+	subscription := &gnmi.Subscription{
+		Path: path,
+		Mode: gnmi.SubscriptionMode_TARGET_DEFINED,
+	}
+
+	subscriptions := make([]*gnmi.Subscription, 0)
+
+	subscriptions = append(subscriptions, subscription)
+
+	subList := &gnmi.SubscriptionList{
+		Subscription: subscriptions,
+		Mode:         gnmi.SubscriptionList_STREAM,
+	}
+
+	request := &gnmi.SubscribeRequest{
+		Request: &gnmi.SubscribeRequest_Subscribe{
+			Subscribe: subList,
+		},
+	}
+
+	changeChan := make(chan events.ConfigEvent)
+	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
+	serverFake := gNMISubscribeServerFake{
+		Request:   request,
+		Responses: responsesChan,
+		Signal:    make(chan struct{}),
+	}
+
+	targets := make(map[string]struct{})
+	subs := make(map[string]struct{})
+	targets["Device2"] = struct{}{}
+	go listenForUpdates(changeChan, serverFake, mgr, targets, subs)
+	changeChan <- events.CreateConfigEvent("Device1", []byte("test"), true)
+	var response *gnmi.SubscribeResponse
+	select {
+	case response = <-responsesChan:
+		log.Println("Should not be receiving response ", response)
+		t.FailNow()
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	targets["Device1"] = struct{}{}
+	subs["/test1:cont1a/cont2a/leaf3c"] = struct{}{}
+	go listenForUpdates(changeChan, serverFake, mgr, targets, subs)
+	config1Value05, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", "def", false)
+	config1Value09, _ := change.CreateChangeValue("/test1:cont1a/list2a[name=txout2]", "", true)
+	change1, err := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
+	changeChan <- events.CreateConfigEvent("Device1", change1.ID, true)
+	select {
+	case response = <-responsesChan:
+		log.Println("Should not be receiving response ", response)
+		t.FailNow()
+	case <-time.After(50 * time.Millisecond):
 	}
 
 }

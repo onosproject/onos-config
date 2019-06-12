@@ -15,36 +15,58 @@
 package gnmi
 
 import (
+	"crypto/sha1"
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"io"
 	"log"
-	"strings"
 	"time"
-)
-
-//per each subscribe request we receive the map is updated with a channel corresponding to the path.
-var (
-	PathToChannels = make(map[*gnmi.Path]chan *gnmi.Update)
 )
 
 // Subscribe implements gNMI Subscribe
 func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
-	updateChan := make(chan *gnmi.Update)
+	//updateChan := make(chan *gnmi.Update)
 	var subscribe *gnmi.SubscriptionList
-	//this for loop handles each subscribe request coming into the server
+	mgr := manager.GetManager()
+	//hashing the stream to obtain a unique identifier of the client
+	h := sha1.New()
+	_, err1 := io.WriteString(h, fmt.Sprintf("%v", stream))
+	if err1 != nil {
+		return err1
+	}
+	hash := store.B64(h.Sum(nil))
+	//Registering one listener per NB app/client on both change and opStateChan
+	changesChan, err := mgr.Dispatcher.RegisterNbi(hash)
+	if err != nil {
+		log.Println("Subscription present: ", err)
+		return err
+	}
+	opStateChan, err := mgr.Dispatcher.RegisterOpState(hash)
+	if err != nil {
+		log.Println("Subscription present: ", err)
+		return err
+	}
+	//Handles each subscribe request coming into the server, blocks until a new request or an error comes in
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
 			log.Println("Subscription Terminated")
+			//Ignoring Errors during removal
+			mgr.Dispatcher.UnregisterNbi(hash)
+			mgr.Dispatcher.UnregisterOperationalState(hash)
 			return nil
 		}
 
 		if err != nil {
 			log.Println("Error in subscription", err)
+			//Ignoring Errors during removal
+			mgr.Dispatcher.UnregisterNbi(hash)
+			mgr.Dispatcher.UnregisterOperationalState(hash)
 			return err
 		}
 
@@ -56,63 +78,125 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 			subscribe = in.GetSubscribe()
 			mode = subscribe.Mode
 		}
-		stopped := make(chan struct{})
 		//If the subscription mode is ONCE or POLL we immediately start a routine to collect the data
 		if mode != gnmi.SubscriptionList_STREAM {
-			go collector(updateChan, subscribe)
-		}
-
-		//This generate a subscribe response for one or more updates on the channel.
-		// for Subscription_once messages also also closes the channel.
-		go listenForUpdates(updateChan, stream, mode, stopped)
-		//If the subscription mode is ONCE the channel need to be closed immediately
-		if mode == gnmi.SubscriptionList_ONCE {
-			<-stopped
-			close(updateChan)
-			return nil
-		} else if mode == gnmi.SubscriptionList_STREAM {
-			//for each path we pair it to the the channel.
+			go collector(stream, subscribe)
+		} else {
 			subs := subscribe.Subscription
+			//FAST way to identify if target and subscription is present
+			subsStr := make(map[string]struct{})
+			targets := make(map[string]struct{})
 			for _, sub := range subs {
-				PathToChannels[sub.Path] = updateChan
+				subscriptionPathStr := utils.StrPath(sub.Path)
+				subsStr[subscriptionPathStr] = struct{}{}
+				targets[sub.Path.Target] = struct{}{}
 			}
+			//Each subscription request spawns a go routing listening for related events for the target and the paths
+			go listenForUpdates(changesChan, stream, mgr, targets, subsStr)
+			go listenForOpStateUpdates(opStateChan, stream, targets, subsStr)
 		}
 	}
 
 }
 
-func listenForUpdates(updateChan chan *gnmi.Update, stream gnmi.GNMI_SubscribeServer,
-	mode gnmi.SubscriptionList_Mode, stopped chan struct{}) {
-	for update := range updateChan {
-		updateArray := make([]*gnmi.Update, 0)
-		updateArray = append(updateArray, update)
-		notification := &gnmi.Notification{
-			Timestamp: time.Now().Unix(),
-			Update:    updateArray,
+func collector(stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList) {
+	for _, sub := range request.Subscription {
+		//We get the stated of the device, for each path we build an update and send it out.
+		update, err := getUpdate(request.Prefix, sub.Path)
+		if err != nil {
+			//TODO propagate error
+			log.Println("Error while collecting data for subscribe once or poll", err)
 		}
-		responseUpdate := &gnmi.SubscribeResponse_Update{
-			Update: notification,
-		}
-		response := &gnmi.SubscribeResponse{
-			Response: responseUpdate,
-		}
+		response := buildUpdateResponse(update)
 		sendResponse(response, stream)
-		//For stream and Poll we also send a Sync Response
-		//TODO make sure that for stream sending this every time adheres to spec.
-		// see section #3.5.1.4 of gnmi-specification.md
-		if mode != gnmi.SubscriptionList_ONCE {
-			responseSync := &gnmi.SubscribeResponse_SyncResponse{
-				SyncResponse: true,
+	}
+	responseSync := buildSyncResponse()
+	sendResponse(responseSync, stream)
+}
+
+//For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
+func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
+	targets map[string]struct{}, subs map[string]struct{}) {
+	for update := range changeChan {
+		target, changeInternal := getChangeFromEvent(update, mgr)
+		_, targetPresent := targets[target]
+		if targetPresent {
+			for _, changeValue := range changeInternal.Config {
+				_, isPresent := subs[changeValue.Path]
+				if isPresent {
+					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
+					if err != nil {
+						log.Println("Error in parsing path", err)
+						continue
+					}
+					buildAndSendUpdate(pathGnmi, target, changeValue.Value, stream)
+				}
 			}
-			response = &gnmi.SubscribeResponse{
-				Response: responseSync,
-			}
-			sendResponse(response, stream)
-		} else {
-			//If the subscription mode is ONCE we read from the channel, build a response and issue it
-			stopped <- struct{}{}
 		}
 	}
+}
+
+//For each update coming from the state channel we check if it's for a valid target and path then, if so, we send it NB
+func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stream gnmi.GNMI_SubscribeServer,
+	targets map[string]struct{}, subs map[string]struct{}) {
+	for opStateChange := range opStateChan {
+		target := events.Event(opStateChange).Subject()
+		_, targetPresent := targets[target]
+		if targetPresent {
+			changeInternal := events.Event(opStateChange).Values()
+			for pathStr, value := range *changeInternal {
+				_, isPresent := subs[pathStr]
+				if isPresent {
+					pathArr := utils.SplitPath(pathStr)
+					pathGnmi, err := utils.ParseGNMIElements(pathArr)
+					if err != nil {
+						log.Println("Error in parsing path", err)
+						continue
+					}
+					buildAndSendUpdate(pathGnmi, target, value, stream)
+				}
+			}
+		}
+	}
+}
+
+func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value string, stream gnmi.GNMI_SubscribeServer) {
+	pathGnmi.Target = target
+	typedValue := gnmi.TypedValue_StringVal{StringVal: value}
+	valueGnmi := &gnmi.TypedValue{Value: &typedValue}
+	update := &gnmi.Update{
+		Path: pathGnmi,
+		Val:  valueGnmi,
+	}
+	response := buildUpdateResponse(update)
+	sendResponse(response, stream)
+	responseSync := buildSyncResponse()
+	sendResponse(responseSync, stream)
+}
+
+func buildSyncResponse() *gnmi.SubscribeResponse {
+	responseSync := &gnmi.SubscribeResponse_SyncResponse{
+		SyncResponse: true,
+	}
+	return &gnmi.SubscribeResponse{
+		Response: responseSync,
+	}
+}
+
+func buildUpdateResponse(update *gnmi.Update) *gnmi.SubscribeResponse {
+	updateArray := make([]*gnmi.Update, 0)
+	updateArray = append(updateArray, update)
+	notification := &gnmi.Notification{
+		Timestamp: time.Now().Unix(),
+		Update:    updateArray,
+	}
+	responseUpdate := &gnmi.SubscribeResponse_Update{
+		Update: notification,
+	}
+	response := &gnmi.SubscribeResponse{
+		Response: responseUpdate,
+	}
+	return response
 }
 
 func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeServer) {
@@ -124,85 +208,9 @@ func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeSe
 	}
 }
 
-func collector(updateChan chan<- *gnmi.Update, request *gnmi.SubscriptionList) {
-	for _, sub := range request.Subscription {
-		update, err := getUpdate(request.Prefix, sub.Path)
-		if err != nil {
-			//TODO propagate error
-			log.Println("Error while collecting data for subscribe once or poll", err)
-		}
-		updateChan <- update
-	}
-}
-
-func broadcastConfigNotification() {
-	mgr := manager.GetManager()
-	changesChan, err := mgr.Dispatcher.RegisterNbi("GnmiSubscribeNorthBound")
-	if err != nil {
-		log.Println("Error while subscribing to updates", err)
-	}
-	for update := range changesChan {
-		target, changeInternal := getChange(update, mgr)
-		//For every channel we cycle over the paths of the config change and if somebody is subscribed to it we send out
-		for subscriptionPath, subscriptionChan := range PathToChannels {
-			for _, changeValue := range changeInternal.Config {
-				//FIXME this might prove expensive, find better way to store subscriptionPath and target in channels map
-				subscriptionPathStr := utils.StrPath(subscriptionPath)
-				if subscriptionPath.Target == target && strings.HasPrefix(changeValue.Path, subscriptionPathStr) {
-					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
-					if err != nil {
-						log.Println("Error in parsing path", err)
-						continue
-					}
-					pathGnmi.Target = subscriptionPath.Target
-					sendUpdate(subscriptionChan, pathGnmi, changeValue.Value)
-				}
-			}
-		}
-	}
-}
-
-func broadcastOperationalNotification() {
-	mgr := manager.GetManager()
-	opStateChan, err := mgr.Dispatcher.RegisterOpState("GnmiSubscribeNorthBoundOpState")
-	if err != nil {
-		log.Println("Error while subscribing to updates", err)
-	}
-	for opStateChange := range opStateChan {
-		target := events.Event(opStateChange).Subject()
-		changeInternal := events.Event(opStateChange).Values()
-		//For every channel we cycle over the paths of the config change and if somebody is subscribed to it we send out
-		for subscriptionPath, subscriptionChan := range PathToChannels {
-			for pathStr, value := range *changeInternal {
-				//FIXME this might prove expensive, find better way to store subscriptionPath and target in channels map
-				subscriptionPathStr := utils.StrPath(subscriptionPath)
-				pathArr := utils.SplitPath(pathStr)
-				path, err := utils.ParseGNMIElements(pathArr)
-				if err != nil {
-					log.Println("Error in parsing path", pathStr)
-				}
-				if subscriptionPath.Target == target && strings.HasPrefix(pathStr, subscriptionPathStr) {
-					sendUpdate(subscriptionChan, path, value)
-				}
-			}
-		}
-	}
-}
-
-func getChange(update events.ConfigEvent, mgr *manager.Manager) (string, *change.Change) {
+func getChangeFromEvent(update events.ConfigEvent, mgr *manager.Manager) (string, *change.Change) {
 	target := events.Event(update).Subject()
 	changeID := update.ChangeID()
 	changeInternal := mgr.ChangeStore.Store[changeID]
 	return target, changeInternal
-}
-
-func sendUpdate(updateChan chan<- *gnmi.Update, path *gnmi.Path, value string) {
-	typedValue := gnmi.TypedValue_StringVal{StringVal: value}
-	valueGnmi := &gnmi.TypedValue{Value: &typedValue}
-
-	update := &gnmi.Update{
-		Path: path,
-		Val:  valueGnmi,
-	}
-	updateChan <- update
 }

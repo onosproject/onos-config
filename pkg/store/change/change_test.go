@@ -37,11 +37,11 @@ const (
 	Test1Cont1ACont2ALeaf2C      = "/test1:cont1a/cont2a/leaf2c"
 	Test1Cont1ALeaf1A            = "/test1:cont1a/leaf1a"
 	Test1Cont1AList2ATxout1      = "/test1:cont1a/list2a[name=txout1]"
-	Test1Cont1AList2ATxout1Txpwr = "/test1:cont1a/list2a[name==txout1]/tx-power"
-	Test1Cont1AList2ATxout2      = "/test1:cont1a/list2a[name==txout2]"
-	Test1Cont1AList2ATxout2Txpwr = "/test1:cont1a/list2a[name==txout2]/tx-power"
-	Test1Cont1AList2ATxout3      = "/test1:cont1a/list2a[name==txout3]"
-	Test1Cont1AList2ATxout3Txpwr = "/test1:cont1a/list2a[name==txout3]/tx-power"
+	Test1Cont1AList2ATxout1Txpwr = "/test1:cont1a/list2a[name=txout1]/tx-power"
+	Test1Cont1AList2ATxout2      = "/test1:cont1a/list2a[name=txout2]"
+	Test1Cont1AList2ATxout2Txpwr = "/test1:cont1a/list2a[name=txout2]/tx-power"
+	Test1Cont1AList2ATxout3      = "/test1:cont1a/list2a[name=txout3]"
+	Test1Cont1AList2ATxout3Txpwr = "/test1:cont1a/list2a[name=txout3]/tx-power"
 	Test1Leaftoplevel            = "/test1:leafAtTopLevel"
 )
 

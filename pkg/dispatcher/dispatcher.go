@@ -141,26 +141,25 @@ func (d *Dispatcher) UnregisterDevice(id topocache.ID) error {
 }
 
 // UnregisterNbi closes the nbi config channel and removes it from the nbiListeners
-func (d *Dispatcher) UnregisterNbi(subscriber string) error {
+func (d *Dispatcher) UnregisterNbi(subscriber string) {
 	channel, ok := d.nbiListeners[subscriber]
 	if !ok {
-		return fmt.Errorf("Subscriber %s had not been registered", subscriber)
+		log.Println(fmt.Sprintf("Subscriber %s had not been registered", subscriber))
+		return
 	}
 	delete(d.nbiListeners, subscriber)
 	close(channel)
-	return nil
 }
 
 // UnregisterOperationalState closes the device channel and removes it from the deviceListeners
-func (d *Dispatcher) UnregisterOperationalState(subscriber string) error {
-	var channel chan events.OperationalStateEvent
-	channel = d.nbiOpStateListeners[subscriber]
-	if channel == nil {
-		return fmt.Errorf("Subscriber %s had not been registered", subscriber)
+func (d *Dispatcher) UnregisterOperationalState(subscriber string) {
+	channel, ok := d.nbiOpStateListeners[subscriber]
+	if !ok {
+		log.Println(fmt.Sprintf("Subscriber %s had not been registered", subscriber))
+		return
 	}
 	delete(d.nbiOpStateListeners, subscriber)
 	close(channel)
-	return nil
 }
 
 // GetListeners returns a list of registered listeners names
