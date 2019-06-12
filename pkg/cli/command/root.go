@@ -56,9 +56,9 @@ func GetRootCommand() *cobra.Command {
 }
 
 func getConnection(cmd *cobra.Command) *grpc.ClientConn {
-	keyPath := cmd.Flag("keyPath").Value.String()
-	certPath := cmd.Flag("certPath").Value.String()
-	address := cmd.Flag("address").Value.String()
+	keyPath := getConfig("keyPath")
+	certPath := getConfig("certPath")
+	address := getConfig("address")
 	opts, err := certs.HandleCertArgs(&keyPath, &certPath)
 	if err != nil {
 		ExitWithError(ExitError, err)

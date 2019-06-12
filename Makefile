@@ -11,6 +11,9 @@ image: # @HELP build onos-config image
 	docker build . -f build/onos-config/Dockerfile \
 	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 	-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
+	docker build . -f build/onos-cli/Dockerfile \
+	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+	-t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
 deps: # @HELP ensure that the required dependencies are in place
 	dep ensure -v
@@ -39,6 +42,7 @@ build: test
 	export GOOS=linux
 	export GOARCH=amd64
 	go build -o build/_output/onos-config ./cmd/onos-config
+	go build -o build/_output/onos ./cmd/onos
 	go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
 	go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
 
