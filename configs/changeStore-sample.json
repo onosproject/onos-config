@@ -19,14 +19,14 @@
         }
       ]
     },
-    "9h9NuN3XEorAKXv6GwLycB6yMls=": {
-      "ID": "9h9NuN3XEorAKXv6GwLycB6yMls=",
+    "FBe9CDlvX9eIP1zXSgOKsiQB6YI=": {
+      "ID": "FBe9CDlvX9eIP1zXSgOKsiQB6YI=",
       "Description": "Trim power level",
       "Created": "2019-05-09T16:24:17.815259228Z",
       "Config": [
         {
           "Path": "/test1:cont1a/cont2a/leaf2b",
-          "Value": "3.14159",
+          "Value": "1.14159",
           "Remove": false
         },
         {
@@ -58,21 +58,11 @@
         }
       ]
     },
-    "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=": {
-      "ID": "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=",
+    "oOqIgEg82ZvVcF7Q3xEDpWAoPcw=": {
+      "ID": "oOqIgEg82ZvVcF7Q3xEDpWAoPcw=",
       "Description": "Original Config for test switch",
       "Created": "2019-05-09T16:24:17.815187669Z",
       "Config": [
-        {
-          "Path": "/test1:cont1a",
-          "Value": "",
-          "Remove": false
-        },
-        {
-          "Path": "/test1:cont1a/cont2a",
-          "Value": "",
-          "Remove": false
-        },
         {
           "Path": "/test1:cont1a/cont2a/leaf2a",
           "Value": "13",

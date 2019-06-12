@@ -156,7 +156,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 
 	assert.Equal(t, utils.StrPath(result.Notification[1].Update[0].Path),
 		"/leaf2b")
-	assert.Equal(t, utils.StrVal(result.Notification[1].Update[0].Val), "3.14159")
+	assert.Equal(t, utils.StrVal(result.Notification[1].Update[0].Val), "1.14159")
 }
 
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
@@ -183,7 +183,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/")
 	assert.Check(t, strings.Contains(utils.StrVal(result.Notification[0].Update[0].Val),
-		`"leaf2b": "3.14159"`))
+		`"leaf2b": "1.14159"`))
 }
 
 func Test_targetDoesNotExist(t *testing.T) {

@@ -277,6 +277,39 @@ func Test_device1_version(t *testing.T) {
 	}
 }
 
+//func Test_device1_version_ygot(t *testing.T) {
+//	device1V, _, changeStore := setUp()
+//
+//	modelRegistry := models.ModelRegistry(make(map[string]models.Model))
+//	modelData := make([]*gnmi.ModelData, 1)
+//	modelData[0] = &gnmi.ModelData{
+//		Name: "test1",
+//		Version: "1.0.0",
+//		Organization: "Open Networking Foundation",
+//	}
+//	modelRegistry.NewModel("testdevice_1_0_0", modelData, testdevice_1_0_0.UnmarshallConfigValues)
+//
+//	fmt.Println("Configuration", device1V.Name, " (latest) Changes YGOT:")
+//	for idx, cid := range device1V.Changes {
+//		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
+//	}
+//
+//	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
+//
+//	deviceObj, err := device1V.ExtractYgotModel(modelRegistry, changeStore)
+//	assert.NilError(t, err)
+//
+//	deviceDeref := *deviceObj
+//	device, ok := deviceDeref.(*testdevice_1_0_0.Device)
+//	assert.Assert(t, ok)
+//	assert.Equal(t, *device.Cont1A.Cont2A.Leaf2A, uint8(13))
+//	assert.Equal(t, *device.Cont1A.Cont2A.Leaf2B, float64(3.14159))
+//	assert.Equal(t, *device.Cont1A.Cont2A.Leaf2C, "def")
+//
+//	valErr := device.Validate()
+//	assert.NilError(t, valErr)
+//}
+
 func Test_device1_prev_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 

@@ -104,9 +104,31 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 	deviceConfig.Updated = time.Now()
 	m.ConfigStore.Store[configName] = deviceConfig
 
+	modelName := fmt.Sprintf("%s-%s", deviceConfig.Type, deviceConfig.Version)
+	deviceModelYgotPlugin, ok := m.ModelRegistry[modelName]
+	if !ok {
+		log.Println("No model", modelName, "available as a plugin")
+	} else {
+		configValues := deviceConfig.ExtractFullConfig(m.ChangeStore.Store, 0)
+		jsonTree, err := store.BuildTree(configValues)
+		if err != nil {
+			log.Println("Error building JSON tree from Config Values", err, jsonTree)
+		} else {
+			ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
+			if err != nil {
+				log.Println("Error unmarshaling JSON tree in to YGOT model", err)
+				return nil, configName, err
+			}
+			err = deviceModelYgotPlugin.Validate(ygotModel)
+			if err != nil {
+				return nil, configName, err
+			}
+			log.Println("Configuration is Valid according to model",
+				modelName, "after adding change", store.B64(configChange.ID))
+		}
+	}
+
 	// TODO: At this stage
-	//  1) check that the new configuration is valid according to
-	// 		the (YANG) models for the device
 	//  2) Do a precheck that the device is reachable
 	//  3) Check that the caller is authorized to make the change
 	m.ChangesChannel <- events.CreateConfigEvent(deviceConfig.Device,
