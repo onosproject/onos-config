@@ -14,8 +14,8 @@ data:
       "Storetype": "device",
       "Store": {
         {{- range $i, $device := .Values.devices }}
-        {{ if $i }},{{ end}}{{ printf "%s:10161" $device | quote }}: {
-          "ID": {{ printf "%s:10161" $device | quote }},
+        {{ if $i }},{{ end}}{{ printf "%s" $device | quote }}: {
+          "ID": {{ printf "%s" $device | quote }},
           "Addr": {{ printf "%s:10161" $device | quote }},
           "Timeout": 10000000000,
           "SoftwareVersion": "1.0.0"
