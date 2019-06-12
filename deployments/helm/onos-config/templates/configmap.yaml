@@ -17,7 +17,7 @@ data:
         {{ if $i }},{{ end}}{{ printf "%s" $device | quote }}: {
           "ID": {{ printf "%s" $device | quote }},
           "Addr": {{ printf "%s:10161" $device | quote }},
-          "Timeout": 10000000000,
+          "Timeout": 5,
           "SoftwareVersion": "1.0.0"
         }
         {{- end }}

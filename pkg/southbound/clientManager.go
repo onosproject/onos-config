@@ -41,7 +41,7 @@ func createDestination(device topocache.Device) (*client.Destination, DeviceID) 
 	d := &client.Destination{}
 	d.Addrs = []string{device.Addr}
 	d.Target = device.Target
-	d.Timeout = time.Duration(device.Timeout * time.Second)
+	d.Timeout = time.Duration(device.Timeout) * time.Second
 	if device.Plain {
 		log.Println("Plain connection connection to", device.Addr)
 	} else if device.Insecure {

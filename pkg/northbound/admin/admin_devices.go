@@ -19,7 +19,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
-	"time"
 )
 
 // AddOrUpdateDevice adds the specified device to the device inventory.
@@ -36,7 +35,7 @@ func (s Server) AddOrUpdateDevice(c context.Context, d *proto.DeviceInfo) (*prot
 		KeyPath:         d.KeyPath,
 		Insecure:        d.Insecure,
 		Plain:           d.Plain,
-		Timeout:         time.Duration(d.Timeout),
+		Timeout:         d.Timeout,
 	})
 	return &proto.DeviceResponse{}, err
 }
@@ -56,7 +55,7 @@ func (s Server) GetDevices(r *proto.GetDevicesRequest, stream proto.DeviceInvent
 			Id: string(id), Address: dev.Addr, Target: dev.Target, Version: dev.SoftwareVersion,
 			User: dev.Usr, Password: dev.Pwd,
 			CaPath: dev.CaPath, CertPath: dev.CertPath, KeyPath: dev.KeyPath,
-			Plain: dev.Plain, Insecure: dev.Insecure, Timeout: dev.Timeout.Nanoseconds(),
+			Plain: dev.Plain, Insecure: dev.Insecure, Timeout: dev.Timeout,
 		}
 
 		err := stream.Send(msg)

@@ -27,7 +27,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"os"
 	"regexp"
-	"time"
 )
 
 const storeTypeDevice = "device"
@@ -43,7 +42,7 @@ type Device struct {
 	ID                                                ID
 	Addr, Target, Usr, Pwd, CaPath, CertPath, KeyPath string
 	Plain, Insecure                                   bool
-	Timeout                                           time.Duration
+	Timeout                                           int64
 	SoftwareVersion                                   string
 }
 
