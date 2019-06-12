@@ -1,0 +1,152 @@
+# Administrative and Diagnostic Command-Line
+The project provides a command-line client for remotely 
+interacting with the administrative and diagnostic services of the `onos-config` server.
+
+## Client
+To build or get the client into an executable, simply run:
+```bash
+> go run github.com/onosproject/onos-config/cmd/onos
+```
+or
+```bash
+> go get github.com/onosproject/onos-config/cmd/onos
+```
+
+### Bash or Zsh Auto-Completion
+The `onos` client supports shell auto-completion for its various
+commands, sub-commands and flags. To enable this, run the following from the shell:
+```bash
+> eval "$(onos completion bash)"
+```
+After that, you should be able to use the `TAB` key to obtain suggestions for 
+valid options.
+
+### Global Flags
+Since the `onos` command is a client, it requires the address of the server as well
+as the paths to the key and the certificate to establish secure connection to the 
+server.
+
+These options are global to all commands and can be persisted to avoid having to
+specify them for each command. For example, you can set the default server address
+as follows:
+```bash
+onos config set address onos-config-server:5150
+```
+
+Subsequent usages of the `onos` command can then abstain from using the `--address` 
+option to indicate the server address, resulting in easier usage.
+
+### Usage
+Information on the general usage can be obtained by using the `--help` flag as follows:
+```bash
+> onos --help
+ONOS command line client
+
+Usage:
+  onos [command]
+
+Available Commands:
+  changes     Lists records of configuration changes
+  completion  Generated bash or zsh auto-completion script
+  config      Read and update CLI configuration options
+  configs     Lists details of device configuration changes
+  devices     Manages inventory of network devices
+  devicetree  Lists devices and their configuration in tree format
+  help        Help about any command
+  init        Initialize the ONOS CLI configuration
+  net-changes Lists network configuration changes
+  rollback    Rolls-back a network configuration change
+
+Flags:
+  -a, --address string    the controller address (default ":5150")
+  -c, --certPath string   path to client certificate (default "client1.crt")
+      --config string     config file (default: $HOME/.onos/config.yaml)
+  -h, --help              help for onos
+  -k, --keyPath string    path to client private key (default "client1.key")
+
+Use "onos [command] --help" for more information about a command.
+```
+
+> While this tool (and all the other utilities listed below) has the option to
+> specify a --keyPath and --certPath for a client certificate to make the connection
+> to the gRPC interface, those arguments can be omitted at runtime, leaving
+> the internal client key and cert at 
+> [default-certificates.go](../pkg/certs/default-certificates.go) to be used.
+
+
+## Example Commands
+
+### List Network Changes
+For example, to list all network changes submitted through the northbound gNMI interface run:
+```bash
+> onos net-changes
+...
+```
+
+### Rollback Network Change
+To rollback a network use the rollback admin tool. This will rollback the last network
+change unless a specific change is given with the **-changename** parameter
+```bash
+> onos rollback Change-VgUAZI928B644v/2XQ0n24x0SjA=
+```
+
+### Adding, Removing and Listing Devices
+Until the full topology subsystem is available, there is a provisional 
+administrative interface that allows devices to be added, removed and listed via gRPC.
+A command has been provided to allow manipulating the device inventory from the command
+line using this gRPC service.
+
+To add a new device, specify the device information protobuf encoding as the value of the 
+`addDevice` option. The `id`, `address` and `version` fields are required at the minimum.
+For example:
+
+```bash
+> onos devices add "id: 'device-4', address: 'localhost:10164' version: '1.0.0'"
+Added device device-4
+```
+
+In order to remove a device, specify its ID as follows:
+```bash
+> onos devices remove device-2 
+Removed device device-2
+```
+
+If you do not specify any options, the command will list all the devices currently in the inventory:
+```bash
+> onos devices list
+device-1: localhost-1 (1.0.0)
+device-3: localhost-3 (1.0.0)
+device-4: localhost-4 (1.0.0)
+```
+
+## Other Diagnostic Commands
+There are a number of commands that provide internal view into the state the onos-config store.
+These tools use a special-purpose gRPC interfaces to obtain the internal meta-data
+from the running onos-config process. Please note that these tools are intended purely for
+diagnostics and should not be relied upon for programmatic purposes as they are not subject
+to any backward compatibility guarantees.
+
+For example, run the following to list all changes submitted through the northbound gNMI 
+as they are tracked by the system broken-up into device specific batches:
+```bash
+> onos changes
+...
+```
+> For a specific change specify the optional `changeId` argument.
+
+
+To get details from the Configuration store use
+```bash
+> onos configs
+...
+```
+> For the configuration for a specific device use the optional `deviceId` argument.
+
+
+To get the aggregate configuration of a device from the store use
+```bash
+> onos devicetree localhost-1
+...
+```
+
+> Of course, there will be many more such commands available in the near future.
