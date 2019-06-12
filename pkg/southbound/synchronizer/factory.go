@@ -39,13 +39,14 @@ func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
 			ctx := context.Background()
 			sync, err := New(ctx, changeStore, &device, configChan, opStateChan)
 			if err != nil {
+				//TODO propagate the ERROR
 				log.Println("Error in connecting to client", err)
-				return
+			} else {
+				//spawning two go routines to propagate changes and to get operational state
+				go sync.syncNbConfiguration()
+				//TODO error handling
+				go sync.syncOperationalState()
 			}
-			//spawning two go routines to propagate changes and to get operational state
-			go sync.syncNbConfiguration()
-			//TODO error handling
-			go sync.syncOperationalState()
 		} else if dispatcher.HasListener(deviceName) && !topoEvent.Connect() {
 
 			err := dispatcher.UnregisterDevice(deviceName)

@@ -8,26 +8,26 @@
       "SoftwareVersion": "1.0.0",
       "User": "devicesim",
       "Pwd": "notused",
-      "Timeout": 10000000000
+      "Timeout": 5
     },
     "localhost-2": {
       "ID": "localhost-2",
       "Addr": "localhost:10162",
       "SoftwareVersion": "1.0.0",
-      "Timeout": 10000000000
+      "Timeout": 5
     },
     "localhost-3": {
       "ID": "localhost-3",
       "Addr": "localhost:10163",
       "SoftwareVersion": "1.0.0",
-      "Timeout": 10000000000
+      "Timeout": 5
     },
     "stratum-sim-1": {
       "ID": "stratum-sim-1",
       "Addr": "localhost:50001",
       "SoftwareVersion": "1.0.0",
       "Plain": true,
-      "Timeout": 10000000000
+      "Timeout": 5
     }
   }
 }
