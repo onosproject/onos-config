@@ -35,23 +35,20 @@ gnmi_cli -get -address localhost:5150 \
 ```
 [Full list of the gNMI northbound endpoints](gnmi.md)
 
-## Administrative Tools
-The project provides enhanced northbound functionality though administrative tools.
+## Administrative and Diagnostic Tools
+The project provides enhanced northbound functionality though administrative and 
+diagnostic tools, which are integrated into the consolidated `onos` command.
 
 For example, to list all network changes submitted through the northbound gNMI interface run:
 ```bash
-go run github.com/onosproject/onos-config/cmd/admin/net-changes
+go run github.com/onosproject/onos-config/cmd/onos net-changes
 ```
 
-[Full list of the administrative tools](admin.md)
-
-## Diagnostic Tools
-There are a number of commands that provide internal view into the state the onos-config store.
-
-For example, run the following to list all changes submitted through the northbound gNMI 
+Or, run the following to list all changes submitted through the northbound gNMI 
 as they are tracked by the system broken-up into device specific batches:
 ```bash
-go run github.com/onosproject/onos-config/cmd/diags/changes
+go run github.com/onosproject/onos-config/cmd/onos changes
 ```
 
-[Full list of the diagnostic tools](diags.md)
+You can read more comprehensive documentation of the various 
+[administrative and diagnostic commands](cli.md).
