@@ -136,17 +136,6 @@ func Test_unregister(t *testing.T) {
 	assert.NilError(t, err2, "Unexpected error when unregistering device6 %s", err2)
 	d.UnregisterDevice(topocache.ID("device7"))
 
-	errOpState := d.UnregisterOperationalState("0pState2")
-
-	assert.Assert(t, errOpState != nil, "Unexpected lack of error when unregistering non existent op state channel")
-	assert.Assert(t, is.Contains(errOpState.Error(), "had not been registered"),
-		"Unexpected error text when unregistering non existent opState2 channel %s", errOpState)
-
-	d.RegisterDevice(topocache.ID("opState3"))
-
-	errOpState3 := d.UnregisterDevice(topocache.ID("opState3"))
-	assert.NilError(t, errOpState3, "Unexpected error when unregistering OpState3 %s", errOpState3)
-
 	tearDown(d)
 }
 

@@ -36,7 +36,6 @@ type gNMISubscribeServerFake struct {
 
 func (x gNMISubscribeServerFake) Send(m *gnmi.SubscribeResponse) error {
 	x.Responses <- m
-	//x.Signal<- struct{}{}
 	if m.GetSyncResponse() {
 		close(x.Responses)
 	}
@@ -44,9 +43,7 @@ func (x gNMISubscribeServerFake) Send(m *gnmi.SubscribeResponse) error {
 }
 
 func (x gNMISubscribeServerFake) Recv() (*gnmi.SubscribeRequest, error) {
-	log.Println("Blocking")
 	<-x.Signal
-	log.Println("Unblocking")
 	return x.Request, nil
 }
 

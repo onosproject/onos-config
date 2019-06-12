@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -38,7 +39,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	if err1 != nil {
 		return err1
 	}
-	hash := string(h.Sum(nil))
+	hash := store.B64(h.Sum(nil))
 	//Registering one listener per NB app/client on both change and opStateChan
 	changesChan, err := mgr.Dispatcher.RegisterNbi(hash)
 	if err != nil {
@@ -50,11 +51,12 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		log.Println("Subscription present: ", err)
 		return err
 	}
-	//this for loop handles each subscribe request coming into the server
+	//Handles each subscribe request coming into the server, blocks until a new request or an error comes in
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
 			log.Println("Subscription Terminated")
+			//Ignoring Errors during removal
 			mgr.Dispatcher.UnregisterNbi(hash)
 			mgr.Dispatcher.UnregisterOperationalState(hash)
 			return nil
