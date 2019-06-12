@@ -30,7 +30,7 @@ These options are global to all commands and can be persisted to avoid having to
 specify them for each command. For example, you can set the default server address
 as follows:
 ```bash
-onos config set address onos-config-server:5150
+> onos config set address onos-config-server:5150
 ```
 
 Subsequent usages of the `onos` command can then abstain from using the `--address` 
