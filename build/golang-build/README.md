@@ -3,13 +3,14 @@ The purpose of this docker container is to provide a minimal environment for bui
 validating the project. As such this container can be used as part of the Travis CI.
 
 ## Using the Container
-The container can be used by running it with a mount that points to the local workspace,
-set the project-specific work directory and run make using top-level `Makefile` in that work directory.
+The container can be used by running it with a mount that points to the local workspace and setting the 
+project top-level directory as the work directory. It will run make using the top-level `Makefile` in 
+that work directory.
 Optionally, you may specify the desired make target if you don't wish to run the default one.
 
-For example, to build onos-config project, one would run the following command:
+For example, to build onos-config project, run the following:
 
-```sh
+```bash
 > docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config \
     -w /go/src/github.com/onosproject/onos-config \
     onosproject/golang-build:stable
