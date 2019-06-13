@@ -16,58 +16,23 @@ package admin
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/certs"
-	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
 	"io"
-	"log"
 	"os"
 	"testing"
 )
 
-var (
-	mgr     *manager.Manager
-	opts    []grpc.DialOption
-	address string
-)
-
 // TestMain initializes the test suite context.
 func TestMain(m *testing.M) {
-	var err error
-	mgr, err = manager.LoadManager(
-		"../../../configs/configStore-sample.json",
-		"../../../configs/changeStore-sample.json",
-		"../../../configs/deviceStore-sample.json",
-		"../../../configs/networkStore-sample.json",
-	)
-	if err != nil {
-		log.Fatal("Unable to load manager")
-	}
-
-	s := northbound.NewServer(northbound.NewServerConfig("", "", ""))
-	s.AddService(Service{})
-	go func() {
-		err := s.Serve()
-		if err != nil {
-			log.Fatal("Unable to serve", err)
-		}
-	}()
-
-	empty := ""
-	address = "localhost:5150"
-	opts, err = certs.HandleCertArgs(&empty, &empty)
-	if err != nil {
-		log.Fatal("Error loading cert", err)
-	}
-
+	northbound.SetUpServer(10124, Service{})
 	os.Exit(m.Run())
 }
 
 func getClient() (*grpc.ClientConn, proto.AdminServiceClient) {
-	conn := northbound.Connect(address, opts...)
+	conn := northbound.Connect(northbound.Address, northbound.Opts...)
 	return conn, proto.NewAdminServiceClient(conn)
 }
 
