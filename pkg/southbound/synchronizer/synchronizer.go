@@ -132,8 +132,6 @@ func (sync Synchronizer) syncOperationalState() error {
 		notifications = append(notifications, responseState.Notification...)
 	}
 
-
-
 	requestOperational := &gnmi.GetRequest{
 		Type: gnmi.GetRequest_OPERATIONAL,
 	}
@@ -180,7 +178,6 @@ func (sync Synchronizer) syncOperationalState() error {
 		path = append(path, "address")
 		subscribePaths = append(subscribePaths, path)
 	}
-
 
 	options := &southbound.SubscribeOptions{
 		UpdatesOnly:       false,

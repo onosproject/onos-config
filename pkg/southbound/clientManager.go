@@ -217,9 +217,9 @@ func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeReque
 	q.TLS = target.Destination.TLS
 	q.ProtoHandler = handler
 	//TODO move to already initialized context
-	ctxCl, _ := context.WithCancel(context.Background())
+	//ctxCl, _ := context.WithCancel(context.Background())
 	c := GnmiCacheClientFactory()
-	err = c.Subscribe(ctxCl, q, "gnmi")
+	err = c.Subscribe(ctx, q, "gnmi")
 	if err != nil {
 		return fmt.Errorf("could not create a gNMI for subscription: %v", err)
 	}

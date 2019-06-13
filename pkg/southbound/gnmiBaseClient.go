@@ -19,24 +19,24 @@ import (
 	"github.com/openconfig/gnmi/client"
 )
 
-// CacheClientInterface : interface to hide struct dependency on client.CacheClient. Can be overridden by tests.
+// BaseClientInterface : interface to hide struct dependency on client.BaseClient. Can be overridden by tests.
 type BaseClientInterface interface {
 	Subscribe(context.Context, client.Query, ...string) error
 }
 
-// GnmiCacheClientFactory : Default CacheClient creation.
+// GnmiBaseClientFactory : Default BaseClient creation.
 var GnmiBaseClientFactory = func() BaseClientInterface {
 	return gnmiBaseClientImpl{
 		&client.BaseClient{},
 	}
 }
 
-// GnmiCacheClientImpl : shim to hide Gnmi CacheClient type dependency.
+// GnmiBaseClientImpl : shim to hide Gnmi BaseClient type dependency.
 type gnmiBaseClientImpl struct {
 	c *client.BaseClient
 }
 
-// Subscribe : default implementation to subscribe via the cached client.
+// Subscribe : default implementation to subscribe via the base client.
 func (c gnmiBaseClientImpl) Subscribe(ctx context.Context, q client.Query, types ...string) error {
 	return c.c.Subscribe(ctx, q, types...)
 }

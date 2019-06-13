@@ -20,7 +20,7 @@ import (
 	"testing"
 )
 
-func Test_GnmiCacheClient(t *testing.T) {
+func Test_GnmiBaseClient(t *testing.T) {
 	baseClient := GnmiBaseClientFactory()
 	assert.Assert(t, baseClient != nil)
 	query := client.Query{Type: client.Unknown}

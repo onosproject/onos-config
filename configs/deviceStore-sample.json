@@ -21,6 +21,13 @@
       "Addr": "localhost:10163",
       "SoftwareVersion": "1.0.0",
       "Timeout": 5
+    },
+    "stratum-sim-1": {
+      "ID": "stratum-sim-1",
+      "Addr": "localhost:50001",
+      "SoftwareVersion": "1.0.0",
+      "Plain": true,
+      "Timeout": 5
     }
   }
 }
