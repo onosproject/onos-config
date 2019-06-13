@@ -63,88 +63,13 @@ func New(context context.Context, changeStore *store.ChangeStore, device *topoca
 	log.Println(sync.Device.Addr, "Connected over gNMI")
 
 	// Get the device capabilities
-	_, capErr := target.CapabilitiesWithString(context, "")
+	capResponse, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
 		log.Println(sync.Device.Addr, "Capabilities", err)
 		return nil, err
 	}
 
-	//log.Println(sync.Device.Addr, "Capabilities", capResponse)
-	//
-	//rnd := rand.Intn(4)
-	//
-	//time.Sleep(time.Duration(rnd) * time.Second)
-	//
-	//elems := make([]*gnmi.PathElem, 0)
-	//
-	//el1 := &gnmi.PathElem{
-	//	Name: "interfaces",
-	//}
-	//
-	//elems = append(elems, el1)
-	//keyGet := make(map[string]string)
-	//keyGet["name"] = "s1-eth1"
-	//el2 := &gnmi.PathElem{
-	//	Name: "interface",
-	//	Key : keyGet,
-	//}
-	//
-	//elems = append(elems, el2)
-	//
-	//elemsState := elems
-	//
-	//el3 := &gnmi.PathElem{
-	//	Name: "config",
-	//}
-	//
-	//elems = append(elems, el3)
-	//
-	//path := &gnmi.Path{
-	//	Elem: elems,
-	//
-	//}
-	//paths := make([]*gnmi.Path, 0)
-	//paths = append(paths, path)
-	//getreq := &gnmi.GetRequest{
-	//	Path: paths,
-	//	Type:gnmi.GetRequest_ALL,
-	//	Encoding: gnmi.Encoding_PROTO,
-	//
-	//}
-	//
-	////txt, err := target.GetWithString(ctx, "path: <elem: <name: 'openconfig:interfaces'>>")
-	//txt, err := target.Get(context, getreq)
-	//log.Println(device.Addr, "Response Config ", txt)
-	//
-	//el3State := &gnmi.PathElem{
-	//	Name: "state",
-	//}
-	//
-	//elemsState = append(elemsState, el3State)
-	//
-	//el4State := &gnmi.PathElem{
-	//	Name: "admin-status",
-	//}
-	//
-	//elemsState = append(elemsState, el4State)
-	//
-	//pathState := &gnmi.Path{
-	//	Elem: elemsState,
-	//
-	//}
-	//pathsState := make([]*gnmi.Path, 0)
-	//pathsState = append(pathsState, pathState)
-	//getreq = &gnmi.GetRequest{
-	//	Path: pathsState,
-	//	Type:gnmi.GetRequest_ALL,
-	//	Encoding: gnmi.Encoding_PROTO,
-	//
-	//}
-	//
-	////txt, err := target.GetWithString(ctx, "path: <elem: <name: 'openconfig:interfaces'>>")
-	//txtState, err := target.Get(context, getreq)
-	//log.Println(device.Addr, "Response State ", txtState)
-	//
+	log.Println(sync.Device.Addr, "Capabilities", capResponse)
 
 	return sync, nil
 }
@@ -261,7 +186,7 @@ func (sync Synchronizer) syncOperationalState() error {
 		UpdatesOnly:       false,
 		Prefix:            "",
 		Mode:              "stream",
-		//StreamMode:        "target_defined",
+		StreamMode:        "target_defined",
 		SampleInterval:    15,
 		HeartbeatInterval: 15,
 		Paths:             subscribePaths,
@@ -277,8 +202,6 @@ func (sync Synchronizer) syncOperationalState() error {
 }
 
 func (sync *Synchronizer) handler(msg proto.Message) error {
-
-	log.Println("response proto message", msg)
 
 	_, err := southbound.GetTarget(sync.key)
 	if err != nil {
@@ -319,7 +242,6 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			eventValues[pathStr] = ""
 			sync.operationalCache[pathStr] = ""
 		}
-		log.Println("------", sync.Device.Target)
 		sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), eventValues)
 	}
 	return nil

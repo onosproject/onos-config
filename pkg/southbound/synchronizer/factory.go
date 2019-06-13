@@ -37,7 +37,6 @@ func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
 			}
 			device := deviceStore.Store[topocache.ID(deviceName)]
 			ctx := context.Background()
-			log.Println("******** device.Target", device.Target)
 			sync, err := New(ctx, changeStore, &device, configChan, opStateChan)
 			if err != nil {
 				//TODO propagate the ERROR
