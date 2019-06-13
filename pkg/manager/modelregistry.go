@@ -24,7 +24,7 @@ import (
 
 // ModelPlugin is a set of methods that each model plugin should implement
 type ModelPlugin interface {
-	ModelData() (string, string, []*gnmi.ModelData)
+	ModelData() (string, string, []*gnmi.ModelData, string)
 	UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error)
 	Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error
 }
@@ -32,6 +32,7 @@ type ModelPlugin interface {
 // RegisterModelPlugin adds an external model plugin to the model registry at startup
 func (m *Manager) RegisterModelPlugin(moduleName string) error {
 	log.Info("Loading module", moduleName)
+	fmt.Println("Loading module:", moduleName)
 	modelPluginModule, err := plugin.Open(moduleName)
 	if err != nil {
 		log.Warning("Unable to load module", moduleName)
@@ -48,7 +49,7 @@ func (m *Manager) RegisterModelPlugin(moduleName string) error {
 		return fmt.Errorf("Symbol loaded from module %s is not a ModelPlugin",
 			moduleName)
 	}
-	name, version, _ := modelPlugin.ModelData()
+	name, version, _, _ := modelPlugin.ModelData()
 	modelName := toModelName(name, version)
 	m.ModelRegistry[modelName] = modelPlugin
 	fmt.Println("Model Plugin loaded:", modelName)
@@ -62,7 +63,7 @@ func (m *Manager) Capabilities() []*gnmi.ModelData {
 	// Make a map - if we get duplicates overwrite them
 	modelMap := make(map[string]*gnmi.ModelData)
 	for _, model := range m.ModelRegistry {
-		_, _, modelItem := model.ModelData()
+		_, _, modelItem, _ := model.ModelData()
 		for _, mi := range modelItem {
 			modelName := toModelName(mi.Name, mi.Version)
 			modelMap[modelName] = mi

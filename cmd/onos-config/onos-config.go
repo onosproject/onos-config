@@ -82,7 +82,7 @@ func main() {
 		"path to device store file")
 	networkStoreFile := flag.String("networkStore", networkStoreDefaultFileName,
 		"path to network store file")
-	flag.Var(&modelPlugins, "modelPlugins", "names of model plugins to load (comma separated list")
+	flag.Var(&modelPlugins, "modelPlugin", "names of model plugins to load (repeated)")
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
