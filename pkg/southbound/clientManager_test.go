@@ -23,18 +23,16 @@ import (
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
-	"log"
 	"strconv"
 	"testing"
-	"time"
 )
 
 var (
-	deviceStore                *topocache.DeviceStore
-	device                     topocache.Device
-	deviceError                bool
-	saveGnmiClientFactory      func(ctx context.Context, d client.Destination) (GnmiClient, error)
-	saveGnmiCacheClientFactory func() CacheClientInterface
+	deviceStore               *topocache.DeviceStore
+	device                    topocache.Device
+	deviceError               bool
+	saveGnmiClientFactory     func(ctx context.Context, d client.Destination) (GnmiClient, error)
+	saveGnmiBaseClientFactory func() BaseClientInterface
 )
 
 const (
@@ -126,8 +124,8 @@ func setUp(t *testing.T) {
 	deviceStore, err = topocache.LoadDeviceStore("testdata/deviceStore.json", topoChannel)
 	assert.NilError(t, err)
 
-	saveGnmiCacheClientFactory = GnmiCacheClientFactory
-	GnmiCacheClientFactory = func() CacheClientInterface {
+	saveGnmiBaseClientFactory = GnmiBaseClientFactory
+	GnmiBaseClientFactory = func() BaseClientInterface {
 		c := TestCacheClient{}
 		return c
 	}
@@ -141,7 +139,7 @@ func setUp(t *testing.T) {
 
 func tearDown() {
 	GnmiClientFactory = saveGnmiClientFactory
-	GnmiCacheClientFactory = saveGnmiCacheClientFactory
+	GnmiBaseClientFactory = saveGnmiBaseClientFactory
 }
 
 func getDevice1Target(t *testing.T) (Target, DeviceID, context.Context) {
@@ -328,18 +326,9 @@ func Test_Subscribe(t *testing.T) {
 	assert.Equal(t, request.GetSubscribe().Subscription[0].Path.Elem[2].Name, "c")
 	assert.NilError(t, requestError)
 
-	errorChan := make(chan error)
-	go func(errorChan chan error) {
-		subscribeError := target.Subscribe(ctx, request, handler)
-		errorChan <- subscribeError
-	}(errorChan)
-	var e error
-	select {
-	case e = <-errorChan:
-		log.Println("Should not be receiving error ", e)
-		t.FailNow()
-	case <-time.After(50 * time.Millisecond):
-	}
+	subscribeError := target.Subscribe(ctx, request, handler)
+
+	assert.NilError(t, subscribeError)
 
 	tearDown()
 }
