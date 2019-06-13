@@ -85,7 +85,7 @@ For example, to list all network changes submitted through the northbound gNMI i
 
 ### Rollback Network Change
 To rollback a network use the rollback admin tool. This will rollback the last network
-change unless a specific change is given with the **-changename** parameter
+change unless a specific change is given with the `changename` parameter
 ```bash
 > onos rollback Change-VgUAZI928B644v/2XQ0n24x0SjA=
 ```
