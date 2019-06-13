@@ -5,5 +5,4 @@ docs
 .travis.yml
 pkg/store/testout
 build/_output
-deployments
 !vendor
