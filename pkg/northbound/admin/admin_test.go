@@ -31,13 +31,18 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func getClient() (*grpc.ClientConn, proto.AdminServiceClient) {
+func getAdminClient() (*grpc.ClientConn, proto.AdminServiceClient) {
 	conn := northbound.Connect(northbound.Address, northbound.Opts...)
 	return conn, proto.NewAdminServiceClient(conn)
 }
 
+func getDeviceClient() (*grpc.ClientConn, proto.DeviceInventoryServiceClient) {
+	conn := northbound.Connect(northbound.Address, northbound.Opts...)
+	return conn, proto.NewDeviceInventoryServiceClient(conn)
+}
+
 func Test_GetNetworkChanges(t *testing.T) {
-	conn, client := getClient()
+	conn, client := getAdminClient()
 	defer conn.Close()
 	stream, err := client.GetNetworkChanges(context.Background(), &proto.NetworkChangesRequest{})
 	assert.Assert(t, err == nil && stream != nil, "unable to issue request")
@@ -56,15 +61,60 @@ func Test_GetNetworkChanges(t *testing.T) {
 }
 
 func Test_RollbackNetworkChange_BadName(t *testing.T) {
-	conn, client := getClient()
+	conn, client := getAdminClient()
 	defer conn.Close()
 	_, err := client.RollbackNetworkChange(context.Background(), &proto.RollbackRequest{Name: "BAD CHANGE"})
 	assert.Assert(t, err != nil, "should not rollback")
 }
 
 func Test_RollbackNetworkChange_NoChange(t *testing.T) {
-	conn, client := getClient()
+	conn, client := getAdminClient()
 	defer conn.Close()
 	_, err := client.RollbackNetworkChange(context.Background(), &proto.RollbackRequest{Name: ""})
 	assert.Assert(t, err != nil, "should not rollback")
+}
+
+func Test_AddDevice(t *testing.T) {
+	conn, client := getDeviceClient()
+	defer conn.Close()
+	resp, err := client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
+	oldCount := resp.Count
+	_, err = client.AddOrUpdateDevice(context.Background(),
+		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9"})
+	assert.Assert(t, err == nil, "should add device")
+	resp, err = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
+	assert.Assert(t, oldCount+1 == resp.Count, "should add new device")
+}
+
+func Test_GetDevices(t *testing.T) {
+	conn, client := getDeviceClient()
+	defer conn.Close()
+	stream, err := client.GetDevices(context.Background(), &proto.GetDevicesRequest{})
+	assert.Assert(t, err == nil && stream != nil, "unable to issue request")
+	var id = ""
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF || in == nil {
+			break
+		}
+		assert.Assert(t, err == nil, "unable to receive message")
+		id = in.Id
+	}
+	err = stream.CloseSend()
+	assert.Assert(t, err == nil, "unable to close stream")
+	assert.Assert(t, len(id) > 0, "wrong id received")
+}
+
+func Test_RemoveDevice(t *testing.T) {
+	conn, client := getDeviceClient()
+	defer conn.Close()
+	_, err := client.AddOrUpdateDevice(context.Background(),
+		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9"})
+	assert.Assert(t, err == nil, "should add device")
+	resp, err := client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
+	oldCount := resp.Count
+	_, err = client.RemoveDevice(context.Background(), &proto.DeviceInfo{Id: "device"})
+	assert.Assert(t, err == nil, "should remove device")
+	resp, err = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
+	assert.Assert(t, oldCount-1 == resp.Count, "should remove existing device")
 }
