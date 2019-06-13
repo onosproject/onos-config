@@ -1,0 +1,18 @@
+{{- if .Values.store.enabled }}
+apiVersion: k8s.atomix.io/v1alpha1
+kind: PartitionSet
+metadata:
+  name: {{ template "fullname" . }}-raft
+  chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  release: "{{ .Release.Name }}"
+  heritage: "{{ .Release.Service }}"
+spec:
+  partitions: {{ .Values.store.raft.partitions }}
+  template:
+    spec:
+      size: {{ .Values.store.raft.partitionSize }}
+      protocol: raft
+      config: |
+        electionTimeout: 5s
+        heartbeatInterval: 1s
+{{- end }}

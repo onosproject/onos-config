@@ -38,6 +38,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: ATOMIX_CONTROLLER
+              value: {{ .Values.store.controller | quote }}
+            - name: ATOMIX_APP
+              value: {{ template "fullname" . }}
           command:
             - onos-config
           args:
