@@ -21,6 +21,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 )
 
+// GetDeviceSummary returns the summary information about the device inventory.
+func (s Server) GetDeviceSummary(c context.Context, d *proto.DeviceSummaryRequest) (*proto.DeviceSummaryResponse, error) {
+	return &proto.DeviceSummaryResponse{Count: int32(len(manager.GetManager().DeviceStore.Store))}, nil
+}
+
 // AddOrUpdateDevice adds the specified device to the device inventory.
 func (s Server) AddOrUpdateDevice(c context.Context, d *proto.DeviceInfo) (*proto.DeviceResponse, error) {
 	err := manager.GetManager().DeviceStore.AddOrUpdateDevice(topocache.ID(d.Id), topocache.Device{

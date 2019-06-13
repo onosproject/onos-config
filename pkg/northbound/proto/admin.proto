@@ -98,8 +98,18 @@ message DeviceResponse {
 message GetDevicesRequest {
 }
 
+message DeviceSummaryRequest {
+}
+
+message DeviceSummaryResponse {
+    int32 count = 1;
+}
+
 // DeviceInventoryService provides a transient means for managing device inventory.
 service DeviceInventoryService {
+    // GetDeviceSummary returns the summary information about the device inventory.
+    rpc GetDeviceSummary(DeviceSummaryRequest) returns (DeviceSummaryResponse);
+
     // AddOrUpdateDevice adds a new or updates an existing new device in the device inventory.
     // The address field is required.
     rpc AddOrUpdateDevice(DeviceInfo) returns (DeviceResponse);

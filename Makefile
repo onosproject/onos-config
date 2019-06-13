@@ -34,8 +34,12 @@ license_check: # @HELP examine and ensure license headers exist
 gofmt: # @HELP run the go format utility against code in the pkg and cmd directories
 	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/)"
 
+docker_protos: # @HELP compile the protobuf files in a docker image
+	docker run --rm -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/golang-build:${ONOS_BUILD_VERSION} protos
+
 protos: # @HELP compile the protobuf files
 	./build/dev-docker/compile-protos.sh
+
 
 build: # @HELP build the go binary in the cmd/onos-config package
 build: test
