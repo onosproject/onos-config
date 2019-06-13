@@ -20,10 +20,8 @@ import (
 	diags "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/spf13/cobra"
 	"io"
-	"strings"
 	"time"
 )
 
@@ -72,19 +70,8 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 				changes[idx] = change.ID(ch)
 			}
 
-			modelDatas := make([]gnmi.ModelData, len(in.ModelData))
-			for idx, m := range in.ModelData {
-				mparts := strings.Split(m, "@")
-				modelDatas[idx] = gnmi.ModelData{
-					Name:         mparts[0],
-					Version:      mparts[1],
-					Organization: mparts[2],
-				}
-			}
-
 			configuration, _ := store.CreateConfiguration(
-				in.Deviceid, in.Version, in.Devicetype,
-				modelDatas, changes)
+				in.Deviceid, in.Version, in.Devicetype, changes)
 
 			configuration.Updated = time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos))
 			configuration.Created = time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos))

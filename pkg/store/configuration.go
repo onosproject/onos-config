@@ -17,7 +17,6 @@ package store
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"github.com/openconfig/gnmi/proto/gnmi"
 	"regexp"
 	"sort"
 	"strings"
@@ -40,7 +39,6 @@ type Configuration struct {
 	Created time.Time
 	Updated time.Time
 	Changes []change.ID
-	Models  []gnmi.ModelData
 }
 
 // ExtractFullConfig retrieves the full consolidated config for a Configuration
@@ -99,7 +97,7 @@ func (b Configuration) ExtractFullConfig(changeStore map[string]*change.Change, 
 // to afterwards
 // The ChangeIDs must unique, and will not be sorted. They can be added afterwards
 func CreateConfiguration(deviceName string, version string, deviceType string,
-	models []gnmi.ModelData, changes []change.ID) (*Configuration, error) {
+	changes []change.ID) (*Configuration, error) {
 
 	if deviceName == "" || version == "" || deviceType == "" {
 		return nil, fmt.Errorf("deviceName, version and deviceType must have values")
@@ -128,23 +126,6 @@ func CreateConfiguration(deviceName string, version string, deviceType string,
 
 	configName := deviceName + "-" + version
 
-	// Sort by combining name and version and org as string
-	sort.Slice(models, func(i, j int) bool {
-		return modelDataStr(&models[i]) < modelDataStr(&models[j])
-	})
-
-	modelDataStrings := make([]string, len(models))
-	for idx, m := range models {
-		modelDataStrings[idx] = modelDataStr(&m)
-	}
-
-	// Look for duplicates
-	for idx, m := range modelDataStrings {
-		if idx > 0 && modelDataStrings[idx] == modelDataStrings[idx-1] {
-			return nil, fmt.Errorf("Duplicate model %s rejected", m)
-		}
-	}
-
 	//Look for duplicates in the changeId - do not sort
 	changesStrings := make([]string, len(changes))
 	for idx, c := range changes {
@@ -164,12 +145,7 @@ func CreateConfiguration(deviceName string, version string, deviceType string,
 		Created: time.Now(),
 		Updated: time.Now(),
 		Changes: changes,
-		Models:  models,
 	}
 
 	return &deviceConfig, nil
-}
-
-func modelDataStr(md *gnmi.ModelData) string {
-	return (*md).Name + "@" + (*md).Version + "@" + (*md).Organization
 }

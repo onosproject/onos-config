@@ -10,16 +10,9 @@
       "Created": "2019-05-09T16:24:17Z",
       "Updated": "2019-05-09T16:24:17Z",
       "Changes": [
-        "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=",
-        "9h9NuN3XEorAKXv6GwLycB6yMls=",
+        "oOqIgEg82ZvVcF7Q3xEDpWAoPcw=",
+        "FBe9CDlvX9eIP1zXSgOKsiQB6YI=",
         "29U3Tp46cS6RJvIyqlos7SFOgfE="
-      ],
-      "Models": [
-        {
-          "Name": "Test",
-          "Version": "1.0.0",
-          "Organisation": "Test"
-        }
       ]
     },
     "Device2-1.0.0": {
@@ -30,16 +23,9 @@
       "Created": "2019-05-09T16:24:17.815298386Z",
       "Updated": "2019-05-09T16:24:17.815300015Z",
       "Changes": [
-        "O+qCuHMfa8ETSeTFE/tk/9ZnEu8=",
-        "9h9NuN3XEorAKXv6GwLycB6yMls=",
+        "oOqIgEg82ZvVcF7Q3xEDpWAoPcw=",
+        "FBe9CDlvX9eIP1zXSgOKsiQB6YI=",
         "FGrHfVhk8rwhJ03U5TwxFqPSB/8="
-      ],
-      "Models": [
-        {
-          "Name": "Test",
-          "Version": "1.0.0",
-          "Organisation": "Test"
-        }
       ]
     },
     "Device2-2.0.0": {
@@ -50,14 +36,7 @@
       "Created": "2019-05-09T17:00:00Z",
       "Updated": "2019-05-09T17:00:00Z",
       "Changes": [
-        "O+qCuHMfa8ETSeTFE/tk/9ZnEu8="
-      ],
-      "Models": [
-        {
-          "Name": "Test",
-          "Version": "2.0.0",
-          "Organisation": "Test"
-        }
+        "oOqIgEg82ZvVcF7Q3xEDpWAoPcw="
       ]
     },
     "localhost-1-1.0.0": {
@@ -70,28 +49,6 @@
       "Changes": [
         "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
         "i86kLjjNFr5IBa+O3YTuv9HBqJg="
-      ],
-      "Models": [
-        {
-          "Name": "openconfig-interfaces",
-          "Version": "2.0.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-openflow",
-          "Version": "0.1.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-platform",
-          "Version": "0.5.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-system",
-          "Version": "0.2.0",
-          "Organisation": "OpenConfig working group"
-        }
       ]
     },
     "localhost-2-1.0.0": {
@@ -104,28 +61,6 @@
       "Changes": [
         "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
         "UyPwBSOxDqQM/ZCohHFannSF5ME="
-      ],
-      "Models": [
-        {
-          "Name": "openconfig-interfaces",
-          "Version": "2.0.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-openflow",
-          "Version": "0.1.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-platform",
-          "Version": "0.5.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-system",
-          "Version": "0.2.0",
-          "Organisation": "OpenConfig working group"
-        }
       ]
     },
     "localhost-3-1.0.0": {
@@ -138,28 +73,6 @@
       "Changes": [
         "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
         "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y="
-      ],
-      "Models": [
-        {
-          "Name": "openconfig-interfaces",
-          "Version": "2.0.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-openflow",
-          "Version": "0.1.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-platform",
-          "Version": "0.5.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-system",
-          "Version": "0.2.0",
-          "Organisation": "OpenConfig working group"
-        }
       ]
     },
     "device-1-device-simulator-1.0.0": {
@@ -172,28 +85,6 @@
       "Changes": [
         "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
         "ZOBFNpGhCHoc9gLiJduqY1FiTzs="
-      ],
-      "Models": [
-        {
-          "Name": "openconfig-interfaces",
-          "Version": "2.0.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-openflow",
-          "Version": "0.1.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-platform",
-          "Version": "0.5.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-system",
-          "Version": "0.2.0",
-          "Organisation": "OpenConfig working group"
-        }
       ]
     },
     "device-2-device-simulator-1.0.0": {
@@ -206,28 +97,6 @@
       "Changes": [
         "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
         "ZYNxDoardxYaQwMtbFbf1qO9AjE="
-      ],
-      "Models": [
-        {
-          "Name": "openconfig-interfaces",
-          "Version": "2.0.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-openflow",
-          "Version": "0.1.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-platform",
-          "Version": "0.5.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-system",
-          "Version": "0.2.0",
-          "Organisation": "OpenConfig working group"
-        }
       ]
     },
     "device-3-device-simulator-1.0.0": {
@@ -240,126 +109,17 @@
       "Changes": [
         "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
         "pLAjo6M3icVnLsZ8ZOjSaELH8SQ="
-      ],
-      "Models": [
-        {
-          "Name": "openconfig-interfaces",
-          "Version": "2.0.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-openflow",
-          "Version": "0.1.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-platform",
-          "Version": "0.5.0",
-          "Organisation": "OpenConfig working group"
-        },
-        {
-          "Name": "openconfig-system",
-          "Version": "0.2.0",
-          "Organisation": "OpenConfig working group"
-        }
       ]
     },
-    "localhost:50001-1.0.0": {
-      "Name": "localhost:50001-1.0.0",
-      "Device": "localhost:50001",
+    "stratum-sim-1-1.0.0": {
+      "Name": "stratum-sim-1-1.0.0",
+      "Device": "stratum-sim-1",
       "Version": "1.0.0",
       "Type": "Stratum",
       "Created": "2019-06-05T10:03:17Z",
       "Updated": "2019-06-05T10:03:17Z",
       "Changes": [
         "hPE88W6rrt5TskCTxtoB1n0hr3I="
-      ],
-      "Models": [
-        {
-          "Name": "openconfig-interfaces",
-          "Organization": "OpenConfig working group",
-          "Version": "2.4.1"
-        },
-        {
-          "Name": "openconfig-if-ip",
-          "Organization": "OpenConfig working group",
-          "Version": "3.0.0"
-        },
-        {
-          "Name": "openconfig-lacp",
-          "Organization": "OpenConfig working group",
-          "Version": "1.1.1"
-        },
-        {
-          "Name": "openconfig-platform",
-          "Organization": "OpenConfig working group",
-          "Version": "0.12.2"
-        },
-        {
-          "Name": "openconfig-platform-linecard",
-          "Organization": "OpenConfig working group",
-          "Version": "0.1.1"
-        },
-        {
-          "Name": "openconfig-platform-port",
-          "Organization": "OpenConfig working group",
-          "Version": "0.3.2"
-        },
-        {
-          "Name": "openconfig-platform-transceiver",
-          "Organization": "OpenConfig working group",
-          "Version": "0.7.0"
-        },
-        {
-          "Name": "openconfig-vlan",
-          "Organization": "OpenConfig working group",
-          "Version": "3.2.0"
-        },
-        {
-          "Name": "openconfig-system",
-          "Organization": "OpenConfig working group",
-          "Version": "0.7.0"
-        },
-        {
-          "Name": "openconfig-hercules-platform-linecard",
-          "Organization": "OpenConfig working group",
-          "Version": "0.2.0"
-        },
-        {
-          "Name": "openconfig-hercules-qos",
-          "Organization": "OpenConfig working group",
-          "Version": "0.1.0"
-        },
-        {
-          "Name": "openconfig-hercules-platform",
-          "Organization": "OpenConfig working group",
-          "Version": "0.2.0"
-        },
-        {
-          "Name": "openconfig-hercules-platform-chassis",
-          "Organization": "OpenConfig working group",
-          "Version": "0.2.0"
-        },
-        {
-          "Name": "openconfig-hercules-platform-port",
-          "Organization": "OpenConfig working group",
-          "Version": "0.2.0"
-        },
-        {
-          "Name": "openconfig-hercules",
-          "Organization": "OpenConfig working group",
-          "Version": "0.2.0"
-        },
-        {
-          "Name": "openconfig-hercules-interfaces",
-          "Organization": "OpenConfig working group",
-          "Version": "0.2.0"
-        },
-        {
-          "Name": "openconfig-hercules-platform-node",
-          "Organization": "OpenConfig working group",
-          "Version": "0.2.0"
-        }
       ]
     }
   }
