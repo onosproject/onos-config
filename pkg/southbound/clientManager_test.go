@@ -16,14 +16,17 @@ package southbound
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
+	"log"
 	"strconv"
 	"testing"
+	"time"
 )
 
 var (
@@ -325,12 +328,24 @@ func Test_Subscribe(t *testing.T) {
 	assert.Equal(t, request.GetSubscribe().Subscription[0].Path.Elem[2].Name, "c")
 	assert.NilError(t, requestError)
 
-	var handler client.ProtoHandler
-	subscribeError := target.Subscribe(ctx, request, handler)
-
-	assert.NilError(t, subscribeError)
+	errorChan := make(chan error)
+	go func(errorChan chan error) {
+		subscribeError := target.Subscribe(ctx, request, handler)
+		errorChan <- subscribeError
+	}(errorChan)
+	var e error
+	select {
+	case e = <-errorChan:
+		log.Println("Should not be receiving error ", e)
+		t.FailNow()
+	case <-time.After(50 * time.Millisecond):
+	}
 
 	tearDown()
+}
+
+func handler(msg proto.Message) error {
+	return nil
 }
 
 func Test_NewSubscribeRequest(t *testing.T) {
