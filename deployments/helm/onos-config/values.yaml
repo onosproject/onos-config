@@ -11,6 +11,13 @@ image:
 
 devices: []
 
+store:
+  enabled: false
+  controller: atomix-controller.kube-system.svc.cluster.local:5679
+  raft:
+    partitions: 3
+    partitionSize: 3
+
 resources:
   requests:
     cpu: 0.5
