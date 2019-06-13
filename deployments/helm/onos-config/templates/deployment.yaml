@@ -42,6 +42,8 @@ spec:
               value: {{ .Values.store.controller | quote }}
             - name: ATOMIX_APP
               value: {{ template "fullname" . }}
+            - name: ATOMIX_RAFT_GROUP
+              value: {{ template "fullname" . }}-raft
           command:
             - onos-config
           args:
