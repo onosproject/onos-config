@@ -1,48 +1,52 @@
 # Building onos-config
+In order the build the project, developers are expected to install the 
+required [development tools](prerequisites.md). 
 
-> Steps outlined in this page assume that the [development prerequisites](prerequisites.md) are met. 
-
-## Building Locally
-
-The project provides a `Makefile` that supports all the  required to unit test,
-validate and build the project.
-The makefile supports the following targets:
-* `test` - pulls dependencies and runs tests, including lint, vet and license
-* `build` - runs `protos`, `test` and builds an executable
-* `all` - runs `protos`, and creates the run-time `onosproject/onos-config` Docker image
-  * Requires a local Docker daemon
-
-## Building via Docker Developer Image
-
-Since the build requires a number of tools for depdency generation, linting, vetting, and 
-compiling, the project provides a published Docker image `onosproject/golang-build`, which 
-includes all the required facilities to allow developers to build the project with minimum 
-requirements placed on their own machines.
- 
-To build with the build image, mount the onos-config root to the container
-and pass the desired argument to the Makefile entrypoint of the developer image as follows
-(from the onos-config directory of your development machine):
+Currently, the project build and validation is driven by a top-level `Makefile`, which supports the following usage:
 ```bash
-docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/golang-build:stable build
+> make help
+build                           build the Go binaries and run all validations (default)
+clean                           remove all the build artifacts
+coverage                        generate unit test coverage data
+deps                            ensure that the required dependencies are in place
+gofmt                           run the Go format validation
+images                          build all Docker images
+license_check                   examine and ensure license headers exist
+lint                            run the linters for Go source code
+onos-cli-docker                 build onos-cli Docker image
+onos-config-docker              build onos-config Docker image
+protos                          compile the protobuf files (using protoc-go Docker)
+run-docker                      run onos-config docker image
+test                            run the unit tests and source code validation
+vet                             examines Go source code and reports suspicious constructs
 ```
 
-See [run.md](run.md) for details on how to run the applications.
+## Building Go binaries
+To build the project, simply type `make`. This will check for required dependencies, compile the Go binaries 
+and then perform all required validation steps, which includes unit tests, Go code formating, Go lint, Go vetting
+and license header compliance check. In future, there may be other tests.
 
-## Compiling Go Locally
+## Building Docker images
+To allow deployment of onos-config in a Kubernetes cluster, the `Makefile` allows creation of two separate Docker 
+images.
 
-To build Go code locally, developers can use the Go language tools as usual using 
-`go build ...` to compile, or `go run ...` to compile and run or `go get ...` to compile and install 
-various packages and command executables.
+The main Docker image is `onosproject/onos-config`, which is the main program that acts as a server that provides 
+various gRPC interfaces to application. This include `gNMI` and the `AdminService` and `DiagnosticService`. The
+second Docker image is `onosproject/onos-cli`, which provides a command-line shell that can be deployed as an
+ephemeral container inside the Kubernetes cluster and which provides access to the `onos` CLI commands for 
+remotely interacting with the services provided by `onosproject/onos-config`.
 
-Please see Go language documentation for more information about these tools.
+You can build both images by running `make images`.
 
-## Executing Unit Tests Locally
+## Compiling protobufs
+To compile Google Protocol Buffer files (`*.proto`) and to generate Go source files from them, simply run
+`make protos`. Provided you changed the source `*.proto` files, this will modify the corresponding `*.pb.go` source
+files. Although these files are auto-generated, developers are expected to check them in, anytime they change as
+a result of changing the `*.proto` files.
 
-To run unit tests locally, run the following:
-```bash
-go test -v github.com/onosproject/onos-config/cmd/... && \
-go test -v github.com/onosproject/onos-config/pkg/...
-```
+> The protoc compiler is run using `onosproject/proto-go` Docker image, which has been published to remove the
+need for developers to install their own protoc compiler and its Go plugin. The Makefile makes this transparent.
+
 
 ## Bulding Documentation
 Documentation is published at [https://godoc.org/github.com/onosproject/onos-config](https://godoc.org/github.com/onosproject/onos-config)

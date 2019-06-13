@@ -5,18 +5,28 @@ export CGO_ENABLED=0
 ONOS_CONFIG_VERSION := latest
 ONOS_BUILD_VERSION := stable
 
-all: image
+build: # @HELP build the Go binaries and run all validations (default)
+build: test
+	export GOOS=linux
+	export GOARCH=amd64
+	go build -o build/_output/onos-config ./cmd/onos-config
+	go build -o build/_output/onos ./cmd/onos
+	go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
+	go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
 
-image: # @HELP build onos-config image
-	docker build . -f build/onos-config/Dockerfile \
-	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
-	-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
-	docker build . -f build/onos-cli/Dockerfile \
-	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
-	-t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
+test: # @HELP run the unit tests and source code validation
+test: deps lint vet license_check gofmt
+	go test github.com/onosproject/onos-config/pkg/...
+	go test github.com/onosproject/onos-config/cmd/...
+	go test github.com/onosproject/onos-config/modelplugin/...
+
+coverage: # @HELP generate unit test coverage data
+coverage: test
+	./tools/build/coveralls-coverage
 
 deps: # @HELP ensure that the required dependencies are in place
 	dep ensure -v
+	bash -c "diff -u <(echo -n) <(git diff Gopkg.lock)"
 
 lint: # @HELP run the linters for Go source code
 	golint -set_exit_status github.com/onosproject/onos-config/pkg/...
@@ -31,52 +41,41 @@ vet: # @HELP examines Go source code and reports suspicious constructs
 license_check: # @HELP examine and ensure license headers exist
 	./build/licensing/boilerplate.py -v
 
-gofmt: # @HELP run the go format utility against code in the pkg and cmd directories
+gofmt: # @HELP run the Go format validation
 	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/)"
 
-docker_protos: # @HELP compile the protobuf files in a docker image
-	docker run --rm -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/golang-build:${ONOS_BUILD_VERSION} protos
+protos: # @HELP compile the protobuf files (using protoc-go Docker)
+	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config \
+		-w /go/src/github.com/onosproject/onos-config \
+		--entrypoint pkg/northbound/proto/compile-protos.sh \
+		onosproject/protoc-go:stable
 
-protos: # @HELP compile the protobuf files
-	./build/dev-docker/compile-protos.sh
+onos-config-docker: # @HELP build onos-config Docker image
+	docker build . -f build/onos-config/Dockerfile \
+    	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
+onos-cli-docker: # @HELP build onos-cli Docker image
+	docker build . -f build/onos-cli/Dockerfile \
+        --build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+        -t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
-build: # @HELP build the go binary in the cmd/onos-config package
-build: test
-	export GOOS=linux
-	export GOARCH=amd64
-	go build -o build/_output/onos-config ./cmd/onos-config
-	go build -o build/_output/onos ./cmd/onos
-	go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
-	go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
+images: # @HELP build all Docker images
+images: onos-config-docker onos-cli-docker
 
-test: # @HELP run the unit tests
-test: deps lint vet license_check gofmt
-	go test github.com/onosproject/onos-config/pkg/...
-	go test github.com/onosproject/onos-config/cmd/...
-	go test github.com/onosproject/onos-config/modelplugin/...
-
-coverage: # @HELP generate unit test coverage data
-coverage: test
-	./tools/build/coveralls-coverage
-
-run: # @HELP run mainline in cmd/onos-config
-run: deps
-	go run cmd/onos-config/onos-config.go
+all: build images
 
 run-docker: # @HELP run onos-config docker image
 run-docker: image
 	docker run -d -p 5150:5150 -v `pwd`/configs:/etc/onos-config \
-	--name onos-config onosproject/onos-config \
-	-configStore=/etc/onos-config/configStore-sample.json \
-	-changeStore=/etc/onos-config/changeStore-sample.json \
-	-deviceStore=/etc/onos-config/deviceStore-sample.json \
-	-networkStore=/etc/onos-config/networkStore-sample.json
+    	--name onos-config onosproject/onos-config \
+    	-configStore=/etc/onos-config/configStore-sample.json \
+    	-changeStore=/etc/onos-config/changeStore-sample.json \
+    	-deviceStore=/etc/onos-config/deviceStore-sample.json \
+    	-networkStore=/etc/onos-config/networkStore-sample.json
 
 clean: # @HELP remove all the build artifacts
-	rm -rf ./build/_output
-	rm -rf ./vendor
-	rm -rf ./cmd/onos-config/onos-config
+	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
 
 help:
 	@grep -E '^.*: *# *@HELP' $(MAKEFILE_LIST) \

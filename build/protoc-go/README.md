@@ -4,8 +4,8 @@ isolated environment to free the developers from having to install protoc themse
 
 ## Using the Container
 The container can be used by running it with a mount that points to the local workspace,
-set the project-specific work directory and run the project-specific `compile-protos.sh` 
-script as an entrypoint.
+setting the project top-level directory as the work directory and specifying the 
+project-specific `compile-protos.sh` script as the entrypoint.
 
 For example, to compile the onos-config project proto files, run the following:
 

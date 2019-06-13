@@ -15,8 +15,8 @@ RUN apt-get update && \
     mkdir -p /go/src/github.com/google && \
     git clone --branch master https://github.com/google/protobuf /go/src/github.com/google/protobuf && \
     go get -u golang.org/x/lint/golint && \
-    mkdir -p /go/src/github.com/onosproject/onos-config
+    mkdir -p /go/src/github.com/
 
-WORKDIR "/go/src/github.com/onosproject/onos-config"
+WORKDIR "/go/src/github.com"
 
 ENTRYPOINT ["make"]
