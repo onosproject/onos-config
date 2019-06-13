@@ -63,5 +63,5 @@ func SetUpServer(port int16, service Service) {
 			log.Fatal("Unable to serve", err)
 		}
 	}()
-	time.Sleep(50000000) // FIXME: this is clearly a hack, we need to replace this with wait on chan
+	time.Sleep(5000000) // FIXME: this is clearly a hack, we need to replace this with wait on chan
 }
