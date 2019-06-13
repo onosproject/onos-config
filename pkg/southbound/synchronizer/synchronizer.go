@@ -156,25 +156,32 @@ func (sync Synchronizer) syncOperationalState() error {
 
 		}
 	} else {
-		path := make([]string, 0)
+		//TODO implement getting paths here leaving commented for examples of what works.
+		//path := make([]string, 0)
 		//Stratum
 		//path = append(path, "interfaces")
 		//path = append(path, "interface[name=s1-eth1]")
-		////path = append(path, "state")
-		////path = append(path, "admin-status")
+		//path = append(path, "state")
+		//path = append(path, "admin-status")
 		//path = append(path, "config")
 		//path = append(path, "enabled")
 
 		//Simulator
-		path = append(path, "system")
-		path = append(path, "openflow")
-		path = append(path, "controllers")
-		path = append(path, "controller[name=main]")
-		path = append(path, "connections")
-		path = append(path, "connection[aux-id=0]")
-		path = append(path, "state")
-		path = append(path, "address")
-		subscribePaths = append(subscribePaths, path)
+		//path = append(path, "system")
+		//path = append(path, "openflow")
+		//path = append(path, "controllers")
+		//path = append(path, "controller[name=main]")
+		//path = append(path, "connections")
+		//path = append(path, "connection[aux-id=0]")
+		//path = append(path, "state")
+		//path = append(path, "address")
+		//subscribePaths = append(subscribePaths, path)
+	}
+
+	if len(subscribePaths) == 0 {
+		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
+		log.Println(noPathErr)
+		return noPathErr
 	}
 
 	options := &southbound.SubscribeOptions{
