@@ -240,11 +240,11 @@ Once you've located the ingress IP address and configured `/etc/hosts`, you can 
 the onos-config service via the ingress load balancer:
 
 ```bash
-> go run github.com/onosproject/onos-config/cmd/diags/changes \
-    -address=config.onosproject.org:443 \
-    -keyPath=deployments/helm/onos-config/files/certs/tls.key \
-    -certPath=deployments/helm/onos-config/files/certs/tls.crt
+> onos --address=config.onosproject.org:443 changes
 ```
+
+| Note that the `onos` command-line client must be built or installed as described in 
+the [CLI documentation](cli.md#Client).
 
 Clients must connect through the HTTPS port using the certificates with which the ingress
 was configured. Currently, the certificates used by the Helm chart can be found in the
