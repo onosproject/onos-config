@@ -14,7 +14,7 @@ branches:
     - master
 
 script:
-  - docker run -e TRAVIS_JOB_ID="$TRAVIS_JOB_ID" -e TRAVIS_BRANCH="$TRAVIS_BRANCH" -it -v `pwd`:/go/src/github.com/onosproject/onos-config onosproject/golang-build:stable coverage
+  - docker run -e TRAVIS_JOB_ID="$TRAVIS_JOB_ID" -e TRAVIS_BRANCH="$TRAVIS_BRANCH" -it -v `pwd`:/go/src/github.com/onosproject/onos-config -w /go/src/github.com/onosproject/onos-config onosproject/golang-build:stable coverage
 
 
 
