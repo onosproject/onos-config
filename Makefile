@@ -4,10 +4,15 @@ export CGO_ENABLED=0
 
 ONOS_CONFIG_VERSION := latest
 ONOS_BUILD_VERSION := stable
+ONOS_CONFIG_BUILD_FLAGS := ""
 
 build: # @HELP build the Go binaries and run all validations (default)
 build: test
+ifndef DEBUG
 	go build -o build/_output/onos-config ./cmd/onos-config
+else
+	go build -gcflags "-N -l" -o build/_output/onos-config ./cmd/onos-config
+endif
 	go build -o build/_output/onos ./cmd/onos
 	go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
 	go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
@@ -50,6 +55,7 @@ protos: # @HELP compile the protobuf files (using protoc-go Docker)
 
 onos-config-docker: # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
+		--build-arg ONOS_CONFIG_DEBUG=${DEBUG} \
     	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
