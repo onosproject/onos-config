@@ -23,7 +23,7 @@ test: deps lint vet license_check gofmt
 
 coverage: # @HELP generate unit test coverage data
 coverage: test
-	./tools/build/coveralls-coverage
+	./build/bin/coveralls-coverage
 
 deps: # @HELP ensure that the required dependencies are in place
 	dep ensure -v
