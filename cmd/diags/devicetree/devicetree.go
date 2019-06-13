@@ -53,7 +53,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	conn := northbound.Connect(address, opts...)
+	conn := northbound.Connect(*address, opts...)
 	defer conn.Close()
 
 	client := proto.NewConfigDiagsClient(conn)
