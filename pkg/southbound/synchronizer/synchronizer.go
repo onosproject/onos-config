@@ -126,8 +126,7 @@ func (sync Synchronizer) syncOperationalState() error {
 	responseState, errState := target.Get(target.Ctx, requestState)
 
 	if errState != nil {
-		//log.Println("Error in requesting read-only state to target", sync.key, errState)
-		//return err
+		log.Println("Can't request read-only state to target", sync.key, errState)
 	} else {
 		notifications = append(notifications, responseState.Notification...)
 	}
@@ -139,8 +138,7 @@ func (sync Synchronizer) syncOperationalState() error {
 	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
 
 	if errOp != nil {
-		//log.Println("Error in requesting read-only state to target", sync.key, errOp)
-		//return err
+		log.Println("Can't request read-only operational paths to target", sync.key, errOp)
 	} else {
 		notifications = append(notifications, responseOperational.Notification...)
 	}
