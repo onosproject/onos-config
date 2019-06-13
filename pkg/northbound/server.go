@@ -119,13 +119,13 @@ func (s *Server) Serve() error {
 	}
 
 	opts := []grpc.ServerOption{grpc.Creds(credentials.NewTLS(tlsCfg))}
-	grpc := grpc.NewServer(opts...)
+	server := grpc.NewServer(opts...)
 	for i := range s.services {
-		s.services[i].Register(grpc)
+		s.services[i].Register(server)
 	}
 
 	log.Infof("Starting RPC server on address: %s", lis.Addr().String())
-	return grpc.Serve(lis)
+	return server.Serve(lis)
 }
 
 func getCertPoolDefault() *x509.CertPool {

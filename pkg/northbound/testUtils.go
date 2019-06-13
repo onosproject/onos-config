@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"google.golang.org/grpc"
 	"log"
+	"time"
 )
 
 var (
@@ -48,17 +49,19 @@ func SetUpServer(port int16, service Service) {
 	config.Port = port
 	s := NewServer(config)
 	s.AddService(service)
+
+	empty := ""
+	Address = fmt.Sprintf(":%d", port)
+	Opts, err = certs.HandleCertArgs(&empty, &empty)
+	if err != nil {
+		log.Fatal("Error loading cert", err)
+	}
+
 	go func() {
 		err := s.Serve()
 		if err != nil {
 			log.Fatal("Unable to serve", err)
 		}
 	}()
-
-	empty := ""
-	Address = fmt.Sprintf("127.0.0.1:%d", port)
-	Opts, err = certs.HandleCertArgs(&empty, &empty)
-	if err != nil {
-		log.Fatal("Error loading cert", err)
-	}
+	time.Sleep(50000000) // FIXME: this is clearly a hack, we need to replace this with wait on chan
 }
