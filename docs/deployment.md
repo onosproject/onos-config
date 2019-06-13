@@ -266,7 +266,7 @@ Once you've joined the container, you can connect to the `onos-config` server by
 
 ```bash
 > onos config set address something-else-onos-config:5150
-onos-config-onos-config:5150
+something-else-onos-config:5150
 ```
 Note that this is only necessary if you named your deployment something else than `onos-config`.
 Once the controller address is set, you should be able to execute any of the ONOS commands without 
