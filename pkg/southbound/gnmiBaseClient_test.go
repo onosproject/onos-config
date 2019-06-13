@@ -20,10 +20,10 @@ import (
 	"testing"
 )
 
-func Test_GnmiCacheClient(t *testing.T) {
-	cacheClient := GnmiCacheClientFactory()
-	assert.Assert(t, cacheClient != nil)
+func Test_GnmiBaseClient(t *testing.T) {
+	baseClient := GnmiBaseClientFactory()
+	assert.Assert(t, baseClient != nil)
 	query := client.Query{Type: client.Unknown}
-	err := cacheClient.Subscribe(nil, query, "XXX")
+	err := baseClient.Subscribe(nil, query, "XXX")
 	assert.ErrorContains(t, err, "Addrs is empty")
 }

@@ -60,7 +60,7 @@ func New(context context.Context, changeStore *store.ChangeStore, device *topoca
 		log.Println(err)
 		return nil, err
 	}
-	log.Println(device.Addr, "Connected over gNMI")
+	log.Println(sync.Device.Addr, "Connected over gNMI")
 
 	// Get the device capabilities
 	capResponse, capErr := target.CapabilitiesWithString(context, "")
@@ -70,6 +70,7 @@ func New(context context.Context, changeStore *store.ChangeStore, device *topoca
 	}
 
 	log.Println(sync.Device.Addr, "Capabilities", capResponse)
+
 	return sync, nil
 }
 
@@ -122,38 +123,65 @@ func (sync Synchronizer) syncOperationalState() error {
 		Type: gnmi.GetRequest_STATE,
 	}
 
-	responseState, err := target.Get(target.Ctx, requestState)
+	responseState, errState := target.Get(target.Ctx, requestState)
 
-	if err != nil {
-		log.Println("Error in requesting read-only state to target", sync.key, err)
-		return err
+	if errState != nil {
+		log.Println("Can't request read-only state to target", sync.key, errState)
+	} else {
+		notifications = append(notifications, responseState.Notification...)
 	}
-
-	notifications = append(notifications, responseState.Notification...)
 
 	requestOperational := &gnmi.GetRequest{
 		Type: gnmi.GetRequest_OPERATIONAL,
 	}
 
-	responseOperational, err := target.Get(target.Ctx, requestOperational)
+	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
 
-	if err != nil {
-		log.Println("Error in requesting read-only state to target", sync.key, err)
-		return err
+	if errOp != nil {
+		log.Println("Can't request read-only operational paths to target", sync.key, errOp)
+	} else {
+		notifications = append(notifications, responseOperational.Notification...)
 	}
-
-	notifications = append(notifications, responseOperational.Notification...)
 
 	subscribePaths := make([][]string, 0)
 
-	for _, notification := range notifications {
-		for _, update := range notification.Update {
-			pathStr := utils.StrPath(update.Path)
-			val := utils.StrVal(update.Val)
-			sync.operationalCache[pathStr] = val
-			subscribePaths = append(subscribePaths, utils.SplitPath(pathStr))
-		}
+	if len(notifications) != 0 {
+		for _, notification := range notifications {
+			for _, update := range notification.Update {
+				pathStr := utils.StrPath(update.Path)
+				val := utils.StrVal(update.Val)
+				sync.operationalCache[pathStr] = val
+				subscribePaths = append(subscribePaths, utils.SplitPath(pathStr))
+			}
 
+		}
+	} else {
+		//TODO implement getting paths here leaving commented for examples of what works.
+		//path := make([]string, 0)
+		//Stratum
+		//path = append(path, "interfaces")
+		//path = append(path, "interface[name=s1-eth1]")
+		//path = append(path, "state")
+		//path = append(path, "admin-status")
+		//path = append(path, "config")
+		//path = append(path, "enabled")
+
+		//Simulator
+		//path = append(path, "system")
+		//path = append(path, "openflow")
+		//path = append(path, "controllers")
+		//path = append(path, "controller[name=main]")
+		//path = append(path, "connections")
+		//path = append(path, "connection[aux-id=0]")
+		//path = append(path, "state")
+		//path = append(path, "address")
+		//subscribePaths = append(subscribePaths, path)
+	}
+
+	if len(subscribePaths) == 0 {
+		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
+		log.Println(noPathErr)
+		return noPathErr
 	}
 
 	options := &southbound.SubscribeOptions{
@@ -176,6 +204,8 @@ func (sync Synchronizer) syncOperationalState() error {
 }
 
 func (sync *Synchronizer) handler(msg proto.Message) error {
+
+	log.Println("Proto Message", msg)
 
 	_, err := southbound.GetTarget(sync.key)
 	if err != nil {
@@ -216,7 +246,7 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			eventValues[pathStr] = ""
 			sync.operationalCache[pathStr] = ""
 		}
-		sync.operationalStateChan <- events.CreateOperationalStateEvent(sync.Device.Target, eventValues)
+		sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), eventValues)
 	}
 	return nil
 }

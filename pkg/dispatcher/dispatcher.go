@@ -82,14 +82,8 @@ func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan event
 	log.Println("Operational State Event listener initialized")
 
 	for operationalStateEvent := range operationalStateChannel {
-		log.Println("Listener: Operational State Event", operationalStateEvent)
 		for _, nbiChan := range d.nbiOpStateListeners {
 			nbiChan <- operationalStateEvent
-		}
-
-		if len(d.nbiOpStateListeners) == 0 {
-			//TODO make sure not to flood the system
-			log.Println("Operational Event discarded", operationalStateEvent)
 		}
 	}
 }

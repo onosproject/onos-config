@@ -16,6 +16,7 @@ package southbound
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -27,11 +28,11 @@ import (
 )
 
 var (
-	deviceStore                *topocache.DeviceStore
-	device                     topocache.Device
-	deviceError                bool
-	saveGnmiClientFactory      func(ctx context.Context, d client.Destination) (GnmiClient, error)
-	saveGnmiCacheClientFactory func() CacheClientInterface
+	deviceStore               *topocache.DeviceStore
+	device                    topocache.Device
+	deviceError               bool
+	saveGnmiClientFactory     func(ctx context.Context, d client.Destination) (GnmiClient, error)
+	saveGnmiBaseClientFactory func() BaseClientInterface
 )
 
 const (
@@ -123,8 +124,8 @@ func setUp(t *testing.T) {
 	deviceStore, err = topocache.LoadDeviceStore("testdata/deviceStore.json", topoChannel)
 	assert.NilError(t, err)
 
-	saveGnmiCacheClientFactory = GnmiCacheClientFactory
-	GnmiCacheClientFactory = func() CacheClientInterface {
+	saveGnmiBaseClientFactory = GnmiBaseClientFactory
+	GnmiBaseClientFactory = func() BaseClientInterface {
 		c := TestCacheClient{}
 		return c
 	}
@@ -138,7 +139,7 @@ func setUp(t *testing.T) {
 
 func tearDown() {
 	GnmiClientFactory = saveGnmiClientFactory
-	GnmiCacheClientFactory = saveGnmiCacheClientFactory
+	GnmiBaseClientFactory = saveGnmiBaseClientFactory
 }
 
 func getDevice1Target(t *testing.T) (Target, DeviceID, context.Context) {
@@ -325,12 +326,15 @@ func Test_Subscribe(t *testing.T) {
 	assert.Equal(t, request.GetSubscribe().Subscription[0].Path.Elem[2].Name, "c")
 	assert.NilError(t, requestError)
 
-	var handler client.ProtoHandler
 	subscribeError := target.Subscribe(ctx, request, handler)
 
 	assert.NilError(t, subscribeError)
 
 	tearDown()
+}
+
+func handler(msg proto.Message) error {
+	return nil
 }
 
 func Test_NewSubscribeRequest(t *testing.T) {

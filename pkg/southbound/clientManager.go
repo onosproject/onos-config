@@ -216,15 +216,12 @@ func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeReque
 	q.Credentials = target.Destination.Credentials
 	q.TLS = target.Destination.TLS
 	q.ProtoHandler = handler
-	//TODO revisit this. is this subscribing twice ?
-	c := GnmiCacheClientFactory()
-
-	err = c.Subscribe(ctx, q, "")
+	c := GnmiBaseClientFactory()
+	err = c.Subscribe(ctx, q, "gnmi")
 	if err != nil {
 		return fmt.Errorf("could not create a gNMI for subscription: %v", err)
 	}
-
-	return target.Clt.Subscribe(ctx, q)
+	return err
 }
 
 // NewSubscribeRequest returns a SubscribeRequest for the given paths
