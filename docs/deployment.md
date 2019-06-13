@@ -250,6 +250,30 @@ Clients must connect through the HTTPS port using the certificates with which th
 was configured. Currently, the certificates used by the Helm chart can be found in the
 `deployments/helm/onos-config/files/certs` directory.
 
+
+### Command-line shell container
+
+For containerized environments like Kubernetes, a Docker image `onosproject/onos-cli` is provided.
+This image is built as part of the normal build.
+
+To use the CLI in Kubernetes, run the `onosproject/onos-cli` image in a single pod deployment:
+
+```bash
+> kubectl run onos-cli --rm -it --image onosproject/onos-cli:latest --image-pull-policy "IfNotPresent" --restart "Never"
+```
+This command will run the CLI image as a Deployment and log into the bash shell.
+Once you've joined the container, you can connect to the `onos-config` server by running:
+
+```bash
+> onos config set address onos-config-onos-config:5150
+onos-config-onos-config:5150
+```
+Note that this is only necessary if you named your deployment something other than `onos-config`.
+Once the controller address is set, you should be able to execute any of the ONOS commands without 
+specifying the controller address each time. See the [onos-cli](cli.md) for the full usage information.
+
+Once the shell is exited, the Deployment will be deleted.
+
 ### Deploying the device simulator
 
 ONOS Config provides a device simulator
