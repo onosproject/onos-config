@@ -211,20 +211,29 @@ func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeReque
 		return err
 	}
 	q.Addrs = target.Destination.Addrs
-	q.Timeout = target.Destination.Timeout
+	//q.Timeout = target.Destination.Timeout
 	q.Target = target.Destination.Target
 	q.Credentials = target.Destination.Credentials
 	q.TLS = target.Destination.TLS
 	q.ProtoHandler = handler
-	//TODO revisit this. is this subscribing twice ?
-	c := GnmiCacheClientFactory()
-
-	err = c.Subscribe(ctx, q, "")
+	//c, err := GnmiClientFactory(ctx, target.Destination)
+	//if err != nil {
+	//	return fmt.Errorf("could not create a gNMI for subscription: %v", err)
+	//}
+	//log.Println("!!!!! Queires", q.Queries)
+	//err = c.Subscribe(ctx, q)
+	//if err != nil {
+	//	return fmt.Errorf("could not create a gNMI for subscription: %v", err)
+	//}
+	ctxCl, _ := context.WithCancel(context.Background())
+    clientBase := &client.BaseClient{}
+	err = clientBase.Subscribe(ctxCl, q, "gnmi")
 	if err != nil {
-		return fmt.Errorf("could not create a gNMI for subscription: %v", err)
+		log.Println(err)
+	} else {
+		log.Println("subscribed")
 	}
-
-	return target.Clt.Subscribe(ctx, q)
+	return err
 }
 
 // NewSubscribeRequest returns a SubscribeRequest for the given paths
@@ -268,7 +277,11 @@ func NewSubscribeRequest(subscribeOptions *SubscribeOptions) (*gpb.SubscribeRequ
 		Prefix:       prefixPath,
 	}
 	for i, p := range subscribeOptions.Paths {
+		//for i, elem := range p {
+		//	p[i] = strings.ReplaceAll(elem, `"`, `'`)
+		//}
 		gnmiPath, err := utils.ParseGNMIElements(p)
+		log.Println("path", gnmiPath)
 		if err != nil {
 			return nil, err
 		}

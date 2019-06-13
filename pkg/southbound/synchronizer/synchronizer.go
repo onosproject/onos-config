@@ -60,16 +60,92 @@ func New(context context.Context, changeStore *store.ChangeStore, device *topoca
 		log.Println(err)
 		return nil, err
 	}
-	log.Println(device.Addr, "Connected over gNMI")
+	log.Println(sync.Device.Addr, "Connected over gNMI")
 
 	// Get the device capabilities
-	capResponse, capErr := target.CapabilitiesWithString(context, "")
+	_, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
 		log.Println(sync.Device.Addr, "Capabilities", err)
 		return nil, err
 	}
 
-	log.Println(sync.Device.Addr, "Capabilities", capResponse)
+	//log.Println(sync.Device.Addr, "Capabilities", capResponse)
+	//
+	//rnd := rand.Intn(4)
+	//
+	//time.Sleep(time.Duration(rnd) * time.Second)
+	//
+	//elems := make([]*gnmi.PathElem, 0)
+	//
+	//el1 := &gnmi.PathElem{
+	//	Name: "interfaces",
+	//}
+	//
+	//elems = append(elems, el1)
+	//keyGet := make(map[string]string)
+	//keyGet["name"] = "s1-eth1"
+	//el2 := &gnmi.PathElem{
+	//	Name: "interface",
+	//	Key : keyGet,
+	//}
+	//
+	//elems = append(elems, el2)
+	//
+	//elemsState := elems
+	//
+	//el3 := &gnmi.PathElem{
+	//	Name: "config",
+	//}
+	//
+	//elems = append(elems, el3)
+	//
+	//path := &gnmi.Path{
+	//	Elem: elems,
+	//
+	//}
+	//paths := make([]*gnmi.Path, 0)
+	//paths = append(paths, path)
+	//getreq := &gnmi.GetRequest{
+	//	Path: paths,
+	//	Type:gnmi.GetRequest_ALL,
+	//	Encoding: gnmi.Encoding_PROTO,
+	//
+	//}
+	//
+	////txt, err := target.GetWithString(ctx, "path: <elem: <name: 'openconfig:interfaces'>>")
+	//txt, err := target.Get(context, getreq)
+	//log.Println(device.Addr, "Response Config ", txt)
+	//
+	//el3State := &gnmi.PathElem{
+	//	Name: "state",
+	//}
+	//
+	//elemsState = append(elemsState, el3State)
+	//
+	//el4State := &gnmi.PathElem{
+	//	Name: "admin-status",
+	//}
+	//
+	//elemsState = append(elemsState, el4State)
+	//
+	//pathState := &gnmi.Path{
+	//	Elem: elemsState,
+	//
+	//}
+	//pathsState := make([]*gnmi.Path, 0)
+	//pathsState = append(pathsState, pathState)
+	//getreq = &gnmi.GetRequest{
+	//	Path: pathsState,
+	//	Type:gnmi.GetRequest_ALL,
+	//	Encoding: gnmi.Encoding_PROTO,
+	//
+	//}
+	//
+	////txt, err := target.GetWithString(ctx, "path: <elem: <name: 'openconfig:interfaces'>>")
+	//txtState, err := target.Get(context, getreq)
+	//log.Println(device.Addr, "Response State ", txtState)
+	//
+
 	return sync, nil
 }
 
@@ -122,45 +198,70 @@ func (sync Synchronizer) syncOperationalState() error {
 		Type: gnmi.GetRequest_STATE,
 	}
 
-	responseState, err := target.Get(target.Ctx, requestState)
+	responseState, errState := target.Get(target.Ctx, requestState)
 
-	if err != nil {
-		log.Println("Error in requesting read-only state to target", sync.key, err)
-		return err
+	if errState != nil {
+		//log.Println("Error in requesting read-only state to target", sync.key, errState)
+		//return err
+	} else {
+		notifications = append(notifications, responseState.Notification...)
 	}
 
-	notifications = append(notifications, responseState.Notification...)
+
 
 	requestOperational := &gnmi.GetRequest{
 		Type: gnmi.GetRequest_OPERATIONAL,
 	}
 
-	responseOperational, err := target.Get(target.Ctx, requestOperational)
+	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
 
-	if err != nil {
-		log.Println("Error in requesting read-only state to target", sync.key, err)
-		return err
+	if errOp != nil {
+		//log.Println("Error in requesting read-only state to target", sync.key, errOp)
+		//return err
+	} else {
+		notifications = append(notifications, responseOperational.Notification...)
 	}
-
-	notifications = append(notifications, responseOperational.Notification...)
 
 	subscribePaths := make([][]string, 0)
 
-	for _, notification := range notifications {
-		for _, update := range notification.Update {
-			pathStr := utils.StrPath(update.Path)
-			val := utils.StrVal(update.Val)
-			sync.operationalCache[pathStr] = val
-			subscribePaths = append(subscribePaths, utils.SplitPath(pathStr))
-		}
+	if len(notifications) != 0 {
+		for _, notification := range notifications {
+			for _, update := range notification.Update {
+				pathStr := utils.StrPath(update.Path)
+				val := utils.StrVal(update.Val)
+				sync.operationalCache[pathStr] = val
+				subscribePaths = append(subscribePaths, utils.SplitPath(pathStr))
+			}
 
+		}
+	} else {
+		path := make([]string, 0)
+		//Stratum
+		//path = append(path, "interfaces")
+		//path = append(path, "interface[name=s1-eth1]")
+		////path = append(path, "state")
+		////path = append(path, "admin-status")
+		//path = append(path, "config")
+		//path = append(path, "enabled")
+
+		//Simulator
+		path = append(path, "system")
+		path = append(path, "openflow")
+		path = append(path, "controllers")
+		path = append(path, "controller[name=main]")
+		path = append(path, "connections")
+		path = append(path, "connection[aux-id=0]")
+		path = append(path, "state")
+		path = append(path, "address")
+		subscribePaths = append(subscribePaths, path)
 	}
+
 
 	options := &southbound.SubscribeOptions{
 		UpdatesOnly:       false,
 		Prefix:            "",
 		Mode:              "stream",
-		StreamMode:        "target_defined",
+		//StreamMode:        "target_defined",
 		SampleInterval:    15,
 		HeartbeatInterval: 15,
 		Paths:             subscribePaths,
@@ -176,6 +277,8 @@ func (sync Synchronizer) syncOperationalState() error {
 }
 
 func (sync *Synchronizer) handler(msg proto.Message) error {
+
+	log.Println("response proto message", msg)
 
 	_, err := southbound.GetTarget(sync.key)
 	if err != nil {
@@ -216,7 +319,8 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			eventValues[pathStr] = ""
 			sync.operationalCache[pathStr] = ""
 		}
-		sync.operationalStateChan <- events.CreateOperationalStateEvent(sync.Device.Target, eventValues)
+		log.Println("------", sync.Device.Target)
+		sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), eventValues)
 	}
 	return nil
 }
