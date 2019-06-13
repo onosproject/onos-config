@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// A plugin for the YGOT model of TestDevice-1.0.0.
+// A plugin for the YGOT model of Devicesim-1.0.0.
 package main
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
+	"github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim_1_0_0"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/ygot/ygot"
 )
 
 type modelplugin string
 
-const modeltype = "TestDevice"
+const modeltype = "Devicesim"
 const modelversion = "1.0.0"
-const modulename = "testdevice.so.1.0.0"
+const modulename = "devicesim.so.1.0.0"
 
 var modelData = []*gnmi.ModelData{
-    {Name: "test1",Version: "2018-02-20",Organization: "Open Networking Foundation"},
+    {Name: "openconfig-interfaces",Organization: "OpenConfig working group",Version: "2017-07-14"},{Name: "openconfig-openflow",Organization: "OpenConfig working group",Version: "2017-06-01"},{Name: "openconfig-platform", Organization: "OpenConfig working group",Version: "2016-12-22"},{Name: "openconfig-system", Organization: "OpenConfig working group",Version: "2017-07-06"},
 }
 
 func (m modelplugin) ModelData() (string, string, []*gnmi.ModelData, string) {
@@ -38,11 +38,11 @@ func (m modelplugin) ModelData() (string, string, []*gnmi.ModelData, string) {
 
 // UnmarshallConfigValues allows Device to implement the Unmarshaller interface
 func (m modelplugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
-	device := &testdevice_1_0_0.Device{}
+	device := &devicesim_1_0_0.Device{}
 	vgs := ygot.ValidatedGoStruct(device)
 
-	if err := testdevice_1_0_0.Unmarshal([]byte(jsonTree), device); err != nil {
-		return nil, err
+	if err := devicesim_1_0_0.Unmarshal([]byte(jsonTree), device); err != nil {
+		panic(fmt.Sprintf("Cannot unmarshal JSON: %v", err))
 	}
 
 	return &vgs, nil
@@ -50,9 +50,9 @@ func (m modelplugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoSt
 
 func (m modelplugin) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
 	deviceDeref := *ygotModel
-	device, ok := deviceDeref.(*testdevice_1_0_0.Device)
+	device, ok := deviceDeref.(*devicesim_1_0_0.Device)
 	if !ok {
-		return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
+		return fmt.Errorf("unable to convert model in to devicesim_1_0_0")
 	}
 	return device.Validate()
 }

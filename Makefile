@@ -13,6 +13,7 @@ build: test
 	go build -o build/_output/onos ./cmd/onos
 	go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
 	go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
+	go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin ./modelplugin/Devicesim-1.0.0
 
 test: # @HELP run the unit tests and source code validation
 test: deps lint vet license_check gofmt
@@ -31,7 +32,6 @@ deps: # @HELP ensure that the required dependencies are in place
 lint: # @HELP run the linters for Go source code
 	golint -set_exit_status github.com/onosproject/onos-config/pkg/...
 	golint -set_exit_status github.com/onosproject/onos-config/cmd/...
-	golint github.com/onosproject/onos-config/modelplugin/...
 
 vet: # @HELP examines Go source code and reports suspicious constructs
 	go vet github.com/onosproject/onos-config/pkg/...

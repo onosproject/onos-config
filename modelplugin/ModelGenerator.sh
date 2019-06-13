@@ -1,11 +1,21 @@
 #!/bin/bash
 
-TYPEVERSION=TestDevice-2.0.0
-TYPEVERSIONPKG=testdevice_2_0_0
-TYPE=TestDevice
-VERSION=2.0.0
-MODELDATA="{Name: \"test1\",Version: \"2.0.0\",Organization: \"Open Networking Foundation\"},"
-YANGLIST="test1@2019-06-10.yang"
+TYPEVERSION=Devicesim-1.0.0
+TYPEVERSIONPKG=devicesim_1_0_0
+TYPEMODULE=devicesim.so.1.0.0
+TYPE=Devicesim
+VERSION=1.0.0
+MODELDATA="\
+{Name: \"openconfig-interfaces\",Organization: \"OpenConfig working group\",Version: \"2017-07-14\"},\
+{Name: \"openconfig-openflow\",Organization: \"OpenConfig working group\",Version: \"2017-06-01\"},\
+{Name: \"openconfig-platform\", Organization: \"OpenConfig working group\",Version: \"2016-12-22\"},\
+{Name: \"openconfig-system\", Organization: \"OpenConfig working group\",Version: \"2017-07-06\"},\
+"
+
+YANGLIST="openconfig-interfaces@2017-07-14.yang \
+          openconfig-openflow@2017-06-01.yang \
+          openconfig-platform@2016-12-22.yang \
+          openconfig-system@2017-07-06.yang"
 
 mkdir -p $TYPEVERSION/$TYPEVERSIONPKG
 
@@ -47,13 +57,14 @@ type modelplugin string
 
 const modeltype = "$TYPE"
 const modelversion = "$VERSION"
+const modulename = $TYPEMODULE
 
 var modelData = []*gnmi.ModelData{
     $MODELDATA
 }
 
-func (m modelplugin) ModelData() (string, string, []*gnmi.ModelData) {
-	return modeltype, modelversion, modelData
+func (m modelplugin) ModelData() (string, string, []*gnmi.ModelData, string) {
+	return modeltype, modelversion, modelData, modulename
 }
 
 // UnmarshallConfigValues allows Device to implement the Unmarshaller interface
