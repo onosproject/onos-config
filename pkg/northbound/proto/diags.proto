@@ -54,7 +54,6 @@ message Configuration {
     google.protobuf.Timestamp created = 5;
     google.protobuf.Timestamp updated = 6;
     repeated string changeIDs = 7;
-    repeated string modelData = 8; // As model@version@org
 }
 
 // ConfigDiags provides means for obtaining diagnostic information about internal system state.

@@ -20,7 +20,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"os"
 	"strings"
@@ -76,7 +75,6 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	changeStoreTest[store.B64(change1.ID)] = change1
 
 	device1config, err = store.CreateConfiguration("Device1", "1.0.0", "TestDevice",
-		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "test"}},
 		[]change.ID{change1.ID})
 	if err != nil {
 		fmt.Println(err)
@@ -246,7 +244,6 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 	mgrTest, _, configurationStoreTest := setUp()
 
 	device2config, err := store.CreateConfiguration("Device1", "1.0.1", "TestDevice",
-		[]gnmi.ModelData{{Name: "test", Version: "1.0.1", Organization: "test"}},
 		[]change.ID{})
 	assert.NilError(t, err)
 	configurationStoreTest[device2config.Name] = *device2config
@@ -287,12 +284,10 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 	mgrTest, _, configurationStoreTest := setUp()
 
 	device2config, err := store.CreateConfiguration("Device2", "1.0.0", "TestDevice",
-		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "test"}},
 		[]change.ID{})
 	assert.NilError(t, err)
 	configurationStoreTest[device2config.Name] = *device2config
 	device3config, err := store.CreateConfiguration("Device3", "1.0.0", "TestDevice",
-		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "test"}},
 		[]change.ID{})
 	assert.NilError(t, err)
 	configurationStoreTest[device3config.Name] = *device3config

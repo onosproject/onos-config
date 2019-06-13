@@ -83,11 +83,6 @@ func (s Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDia
 			changeIDs[idx] = store.B64(cid)
 		}
 
-		models := make([]string, len(c.Models))
-		for idx, m := range c.Models {
-			models[idx] = m.Name + "@" + m.Version + "@" + m.Organization
-		}
-
 		msg := &proto.Configuration{
 			Name:       string(c.Name),
 			Deviceid:   c.Device,
@@ -95,7 +90,6 @@ func (s Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDia
 			Devicetype: c.Type,
 			Updated:    &timestamp.Timestamp{Seconds: c.Updated.Unix(), Nanos: int32(c.Created.Nanosecond())},
 			ChangeIDs:  changeIDs,
-			ModelData:  models,
 		}
 		err := stream.Send(msg)
 		if err != nil {

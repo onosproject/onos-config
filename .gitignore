@@ -7,3 +7,5 @@ build/_output
 coverage.txt
 *.coverprofile
 .idea
+modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0
+modelplugin/TestDevice-2.0.0/testdevice.so.2.0.0

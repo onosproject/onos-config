@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"os"
 	"strconv"
@@ -227,7 +226,6 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	changeStore[B64(change3.ID)] = change3
 
 	device1V, err = CreateConfiguration("Device1", "1.0.0", "TestDevice",
-		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "onosproject"}},
 		[]change.ID{change1.ID, change2.ID, change3.ID})
 	if err != nil {
 		fmt.Println(err)
@@ -246,7 +244,6 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	changeStore[B64(change4.ID)] = change4
 
 	device2V, err = CreateConfiguration("Device2", "1.0.0", "TestDevice",
-		[]gnmi.ModelData{{Name: "test", Version: "1.0.0", Organization: "onosproject"}},
 		[]change.ID{change1.ID, change2.ID, change4.ID})
 	if err != nil {
 		fmt.Println(err)
@@ -276,39 +273,6 @@ func Test_device1_version(t *testing.T) {
 			Config1Paths[0:11], Config1Values[0:11])
 	}
 }
-
-//func Test_device1_version_ygot(t *testing.T) {
-//	device1V, _, changeStore := setUp()
-//
-//	modelRegistry := models.ModelRegistry(make(map[string]models.Model))
-//	modelData := make([]*gnmi.ModelData, 1)
-//	modelData[0] = &gnmi.ModelData{
-//		Name: "test1",
-//		Version: "1.0.0",
-//		Organization: "Open Networking Foundation",
-//	}
-//	modelRegistry.NewModel("testdevice_1_0_0", modelData, testdevice_1_0_0.UnmarshallConfigValues)
-//
-//	fmt.Println("Configuration", device1V.Name, " (latest) Changes YGOT:")
-//	for idx, cid := range device1V.Changes {
-//		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
-//	}
-//
-//	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
-//
-//	deviceObj, err := device1V.ExtractYgotModel(modelRegistry, changeStore)
-//	assert.NilError(t, err)
-//
-//	deviceDeref := *deviceObj
-//	device, ok := deviceDeref.(*testdevice_1_0_0.Device)
-//	assert.Assert(t, ok)
-//	assert.Equal(t, *device.Cont1A.Cont2A.Leaf2A, uint8(13))
-//	assert.Equal(t, *device.Cont1A.Cont2A.Leaf2B, float64(3.14159))
-//	assert.Equal(t, *device.Cont1A.Cont2A.Leaf2C, "def")
-//
-//	valErr := device.Validate()
-//	assert.NilError(t, valErr)
-//}
 
 func Test_device1_prev_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
@@ -509,47 +473,47 @@ func Test_loadNetworkStoreFileBadType(t *testing.T) {
 func TestCreateConfiguration_badname(t *testing.T) {
 	_, err :=
 		CreateConfiguration("", "1.0.0", "TestDevice",
-			[]gnmi.ModelData{}, []change.ID{})
+			[]change.ID{})
 	assert.ErrorContains(t, err, "deviceName, version and deviceType must have values", "Empty")
 
 	_, err =
 		CreateConfiguration("abc", "1.0.0", "TestDevice",
-			[]gnmi.ModelData{}, []change.ID{})
+			[]change.ID{})
 	assert.ErrorContains(t, err, "name abc does not match pattern", "Too short")
 
 	_, err =
 		CreateConfiguration("abc???", "1.0.0", "TestDevice",
-			[]gnmi.ModelData{}, []change.ID{})
+			[]change.ID{})
 	assert.ErrorContains(t, err, "name abc??? does not match pattern", "Illegal char")
 
 	_, err =
 		CreateConfiguration("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO",
 			"1.0.0", "TestDevice",
-			[]gnmi.ModelData{}, []change.ID{})
+			[]change.ID{})
 	assert.ErrorContains(t, err, "name abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO does not match pattern", "Too long")
 }
 
 func TestCreateConfiguration_badversion(t *testing.T) {
 	_, err :=
 		CreateConfiguration("localhost-1", "1.234567890", "TestDevice",
-			[]gnmi.ModelData{}, []change.ID{})
+			[]change.ID{})
 	assert.ErrorContains(t, err, "version 1.234567890 does not match pattern", "Too long")
 
 	_, err =
 		CreateConfiguration("localhost-1", "a", "TestDevice",
-			[]gnmi.ModelData{}, []change.ID{})
+			[]change.ID{})
 	assert.ErrorContains(t, err, "version a does not match pattern", "Too short")
 
 	_, err =
 		CreateConfiguration("localhost-1", "1:0:0", "TestDevice",
-			[]gnmi.ModelData{}, []change.ID{})
+			[]change.ID{})
 	assert.ErrorContains(t, err, "version 1:0:0 does not match pattern", "Illegal char")
 }
 
 func TestCreateConfiguration_badtype(t *testing.T) {
 	_, err :=
 		CreateConfiguration("localhost-1", "1.0.0", "TestDeviceType",
-			[]gnmi.ModelData{}, []change.ID{})
+			[]change.ID{})
 	assert.ErrorContains(t, err, "deviceType TestDeviceType does not match pattern", "Too long")
 }
 
