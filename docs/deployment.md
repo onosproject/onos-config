@@ -265,10 +265,10 @@ This command will run the CLI image as a Deployment and log into the bash shell.
 Once you've joined the container, you can connect to the `onos-config` server by running:
 
 ```bash
-> onos config set address onos-config-onos-config:5150
+> onos config set address something-else-onos-config:5150
 onos-config-onos-config:5150
 ```
-Note that this is only necessary if you named your deployment something other than `onos-config`.
+Note that this is only necessary if you named your deployment something else than `onos-config`.
 Once the controller address is set, you should be able to execute any of the ONOS commands without 
 specifying the controller address each time. See the [onos-cli](cli.md) for the full usage information.
 
