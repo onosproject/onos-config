@@ -20,8 +20,8 @@ import (
 )
 
 // Connect establishes a client-side connection to the gRPC end-point.
-func Connect(address *string, opts ...grpc.DialOption) *grpc.ClientConn {
-	conn, err := grpc.Dial(*address, opts...)
+func Connect(address string, opts ...grpc.DialOption) *grpc.ClientConn {
+	conn, err := grpc.Dial(address, opts...)
 	if err != nil {
 		fmt.Println("Can't connect", err)
 	}

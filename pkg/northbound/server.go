@@ -31,19 +31,19 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Service provides service-specific registration for grpc services
+// Service provides service-specific registration for grpc services.
 type Service interface {
 	Register(s *grpc.Server)
 }
 
-// Server provides NB gNMI server for onos-config
+// Server provides NB gNMI server for onos-config.
 type Server struct {
 	cfg      *ServerConfig
 	services []Service
 	mu       sync.Mutex
 }
 
-// ServerConfig comprises a set of server configuration options
+// ServerConfig comprises a set of server configuration options.
 type ServerConfig struct {
 	CaPath   *string
 	KeyPath  *string
@@ -52,7 +52,7 @@ type ServerConfig struct {
 	Insecure bool
 }
 
-// NewServer initializes gNMI server using the supplied configuration
+// NewServer initializes gNMI server using the supplied configuration.
 func NewServer(cfg *ServerConfig) *Server {
 	return &Server{
 		services: []Service{},
@@ -60,12 +60,23 @@ func NewServer(cfg *ServerConfig) *Server {
 	}
 }
 
-// AddService adds a Service to the server to be registered on Serve
+// NewServerConfig creates a server config created with the specified end-point security details.
+func NewServerConfig(caPath string, keyPath string, certPath string) *ServerConfig {
+	return &ServerConfig{
+		Port:     5150,
+		Insecure: true,
+		CaPath:   &caPath,
+		KeyPath:  &keyPath,
+		CertPath: &certPath,
+	}
+}
+
+// AddService adds a Service to the server to be registered on Serve.
 func (s *Server) AddService(r Service) {
 	s.services = append(s.services, r)
 }
 
-// Serve starts the NB gNMI server
+// Serve starts the NB gNMI server.
 func (s *Server) Serve() error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.cfg.Port))
 	if err != nil {

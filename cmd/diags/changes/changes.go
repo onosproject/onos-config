@@ -41,7 +41,7 @@ func main() {
 		log.Fatal("Error loading cert", err)
 	}
 
-	conn := northbound.Connect(address, opts...)
+	conn := northbound.Connect(*address, opts...)
 	defer conn.Close()
 
 	client := proto.NewConfigDiagsClient(conn)

@@ -63,5 +63,5 @@ func getConnection(cmd *cobra.Command) *grpc.ClientConn {
 	if err != nil {
 		ExitWithError(ExitError, err)
 	}
-	return northbound.Connect(&address, opts...)
+	return northbound.Connect(address, opts...)
 }
