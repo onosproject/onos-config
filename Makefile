@@ -66,7 +66,7 @@ images: onos-config-docker onos-cli-docker
 all: build images
 
 run-docker: # @HELP run onos-config docker image
-run-docker: image
+run-docker: images
 	docker run -d -p 5150:5150 -v `pwd`/configs:/etc/onos-config \
     	--name onos-config onosproject/onos-config \
     	-configStore=/etc/onos-config/configStore-sample.json \
