@@ -44,8 +44,6 @@ spec:
               value: {{ template "fullname" . }}
             - name: ATOMIX_RAFT_GROUP
               value: {{ template "fullname" . }}-raft
-          command:
-            - onos-config
           args:
             - "-caPath=/etc/onos-config/certs/tls.cacrt"
             - "-keyPath=/etc/onos-config/certs/tls.key"
@@ -61,6 +59,11 @@ spec:
           ports:
             - name: grpc
               containerPort: 5150
+            {{- if .Values.debug }}
+            - name: debug
+              containerPort: 40000
+              protocol: TCP
+            {{- end }}
           readinessProbe:
             tcpSocket:
               port: 5150
@@ -80,6 +83,12 @@ spec:
             - name: secret
               mountPath: /etc/onos-config/certs
               readOnly: true
+      {{- if .Values.debug }}
+      securityContext:
+        capabilities:
+          add:
+            - SYS_PTRACE
+      {{- end }}
       {{- if .Values.image.pullSecrets }}
       imagePullSecrets:
         {{- range .Values.image.pullSecrets }}

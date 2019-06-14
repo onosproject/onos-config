@@ -9,6 +9,8 @@ image:
   pullPolicy: IfNotPresent
   pullSecrets: []
 
+debug: false
+
 devices: []
 
 store:
