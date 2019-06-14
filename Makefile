@@ -7,8 +7,6 @@ ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
 build: test
-	export GOOS=linux
-	export GOARCH=amd64
 	go build -o build/_output/onos-config ./cmd/onos-config
 	go build -o build/_output/onos ./cmd/onos
 	go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
