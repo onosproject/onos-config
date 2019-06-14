@@ -274,3 +274,52 @@ func Test_WrongDevice(t *testing.T) {
 	}
 
 }
+
+func Test_ErrorDoubleSubsription(t *testing.T) {
+	server, _ := setUp()
+
+	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
+
+	assert.NilError(t, err, "Unexpected error doing parsing")
+
+	path.Target = "Device1"
+
+	subscription := &gnmi.Subscription{
+		Path: path,
+		Mode: gnmi.SubscriptionMode_TARGET_DEFINED,
+	}
+
+	subscriptions := make([]*gnmi.Subscription, 0)
+
+	subscriptions = append(subscriptions, subscription)
+
+	subList := &gnmi.SubscriptionList{
+		Subscription: subscriptions,
+		Mode:         gnmi.SubscriptionList_STREAM,
+	}
+
+	request := &gnmi.SubscribeRequest{
+		Request: &gnmi.SubscribeRequest_Subscribe{
+			Subscribe: subList,
+		},
+	}
+
+	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
+	serverFake := gNMISubscribeServerFake{
+		Request:   request,
+		Responses: responsesChan,
+		Signal:    make(chan struct{}),
+	}
+
+	//TODO need to block
+	go func() {
+		err = server.Subscribe(serverFake)
+	}()
+	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
+	time.Sleep(100000)
+	assert.NilError(t, err, "Unexpected error doing Subscribe")
+
+	err = server.Subscribe(serverFake)
+	log.Println("Error", err)
+	assert.ErrorContains(t, err, "is already registered")
+}

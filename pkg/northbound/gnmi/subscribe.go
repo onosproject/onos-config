@@ -52,73 +52,77 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	changesChan, err := mgr.Dispatcher.RegisterNbi(hash)
 	if err != nil {
 		log.Println("Subscription present: ", err)
-		return err
+		return status.Error(codes.Internal, err.Error())
 	}
 	opStateChan, err := mgr.Dispatcher.RegisterOpState(hash)
 	if err != nil {
 		log.Println("Subscription present: ", err)
-		return err
+		return status.Error(codes.Internal, err.Error())
 	}
+	resChan := make(chan result)
 	//Handles each subscribe request coming into the server, blocks until a new request or an error comes in
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF {
-			log.Println("Subscription Terminated")
-			//Ignoring Errors during removal
-			mgr.Dispatcher.UnregisterNbi(hash)
-			mgr.Dispatcher.UnregisterOperationalState(hash)
-			return nil
-		}
+	go func() {
+		for {
+			in, err := stream.Recv()
+			if err == io.EOF {
+				log.Println("Subscription Terminated")
+				//Ignoring Errors during removal
+				mgr.Dispatcher.UnregisterNbi(hash)
+				mgr.Dispatcher.UnregisterOperationalState(hash)
+				resChan <- result{success: true, err: nil}
+				break
+			}
 
-		if err != nil {
-			log.Println("Error in subscription", err)
-			//Ignoring Errors during removal
-			mgr.Dispatcher.UnregisterNbi(hash)
-			mgr.Dispatcher.UnregisterOperationalState(hash)
-			return err
-		}
+			if err != nil {
+				code, ok := status.FromError(err)
+				if ok && code.Code() == codes.Canceled {
+					log.Println("Subscription Terminated")
+					resChan <- result{success: true, err: nil}
+				} else {
+					log.Println("Error in subscription", err)
+					//Ignoring Errors during removal
+					mgr.Dispatcher.UnregisterNbi(hash)
+					mgr.Dispatcher.UnregisterOperationalState(hash)
+					resChan <- result{success: false, err: err}
+				}
+				break
+			}
 
-		var mode gnmi.SubscriptionList_Mode
+			var mode gnmi.SubscriptionList_Mode
 
-		if in.GetPoll() != nil {
-			mode = gnmi.SubscriptionList_POLL
-		} else {
-			subscribe = in.GetSubscribe()
-			mode = subscribe.Mode
-		}
-		//If the subscription mode is ONCE or POLL we immediately start a routine to collect the data
-		if mode != gnmi.SubscriptionList_STREAM {
-			resChan := make(chan result)
-			go collector(stream, subscribe, resChan)
-			result := <-resChan
-			if !result.success {
-				return status.Error(codes.Internal, result.err.Error())
+			if in.GetPoll() != nil {
+				mode = gnmi.SubscriptionList_POLL
+			} else {
+				subscribe = in.GetSubscribe()
+				mode = subscribe.Mode
 			}
-		} else {
-			subs := subscribe.Subscription
-			//FAST way to identify if target and subscription is present
-			subsStr := make(map[string]struct{})
-			targets := make(map[string]struct{})
-			for _, sub := range subs {
-				subscriptionPathStr := utils.StrPath(sub.Path)
-				subsStr[subscriptionPathStr] = struct{}{}
-				targets[sub.Path.Target] = struct{}{}
-			}
-			resChan := make(chan result)
-			//Each subscription request spawns a go routing listening for related events for the target and the paths
-			go listenForUpdates(changesChan, stream, mgr, targets, subsStr, resChan)
-			result := <-resChan
-			if !result.success {
-				return status.Error(codes.Internal, result.err.Error())
-			}
-			go listenForOpStateUpdates(opStateChan, stream, targets, subsStr, resChan)
-			result = <-resChan
-			if !result.success {
-				return status.Error(codes.Internal, result.err.Error())
+			//If the subscription mode is ONCE or POLL we immediately start a routine to collect the data
+			if mode != gnmi.SubscriptionList_STREAM {
+				go collector(stream, subscribe, resChan)
+			} else {
+				subs := subscribe.Subscription
+				//FAST way to identify if target and subscription is present
+				subsStr := make(map[string]struct{})
+				targets := make(map[string]struct{})
+				for _, sub := range subs {
+					subscriptionPathStr := utils.StrPath(sub.Path)
+					subsStr[subscriptionPathStr] = struct{}{}
+					targets[sub.Path.Target] = struct{}{}
+				}
+				//Each subscription request spawns a go routing listening for related events for the target and the paths
+				go listenForUpdates(changesChan, stream, mgr, targets, subsStr, resChan)
+				go listenForOpStateUpdates(opStateChan, stream, targets, subsStr, resChan)
 			}
 		}
+	}()
+
+	for result := range resChan {
+		if !result.success {
+			return status.Error(codes.Internal, result.err.Error())
+		}
+		return nil
 	}
-
+	return nil
 }
 
 func collector(stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result) {
@@ -157,15 +161,12 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
 					if err != nil {
 						log.Println("Error in parsing path", err)
-						resChan <- result{success: true, err: nil}
 						continue
 					}
 					err = buildAndSendUpdate(pathGnmi, target, changeValue.Value, stream)
 					if err != nil {
 						log.Println("Error in sending update path", err)
 						resChan <- result{success: false, err: err}
-					} else {
-						resChan <- result{success: true, err: nil}
 					}
 				}
 			}
@@ -195,8 +196,6 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 					if err != nil {
 						log.Println("Error in sending update path", err)
 						resChan <- result{success: false, err: err}
-					} else {
-						resChan <- result{success: true, err: nil}
 					}
 				}
 			}
