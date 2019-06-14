@@ -54,8 +54,10 @@ Available Commands:
   devicetree  Lists devices and their configuration in tree format
   help        Help about any command
   init        Initialize the ONOS CLI configuration
+  models      Manages model plugins
   net-changes Lists network configuration changes
   rollback    Rolls-back a network configuration change
+
 
 Flags:
   -a, --address string    the controller address (default ":5150")
@@ -118,6 +120,28 @@ device-1: localhost-1 (1.0.0)
 device-3: localhost-3 (1.0.0)
 device-4: localhost-4 (1.0.0)
 ```
+
+### Listing and Loading model plugins
+A model plugin is a shared object library that represents the YANG models of a
+particular Device Type and Version. The plugin allows user to create and load
+their own device models in to onos-config that can be used for validating that
+configuration changes observe the structure of the YANG models in use on the
+device. This improves usability by pushing information about the devices'
+model back up to the onos-config gNMI northbound interface.
+
+Model plugins can be loaded at the startup of onos-config by (repeated) --modelPlugin
+options, or they can be loaded at run time. To see the list of currently loaded
+plugins use the command:
+```bash
+> onos models list
+```
+
+To load a plugin dynamically at runtime use the command:
+```bash
+> onos models load <full path and filename of a compatible shared object library>
+```
+> NOTE: Model Plugins cannot be dynamically unloaded - a restart of onos-config
+> is required to unload.
 
 ## Other Diagnostic Commands
 There are a number of commands that provide internal view into the state the onos-config store.

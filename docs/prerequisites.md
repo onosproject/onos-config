@@ -12,6 +12,8 @@ guidelines.
 
 ## Go Dep
 [Go dep] is required to automatically manage package dependencies.
+> If using Ubuntu to do not use "apt-get install go-dep" because this is an
+> obsolete version that will clash with the version on Jenkins
 
 ## Docker
 [Docker] is required to build the project Docker images and also to compile `*.proto` files into Go source files.

@@ -48,6 +48,7 @@ func GetRootCommand() *cobra.Command {
 	cmd.AddCommand(newCompletionCommand())
 	cmd.AddCommand(newDevicesCommand())
 	cmd.AddCommand(newNetChangesCommand())
+	cmd.AddCommand(newModelsCommand())
 	cmd.AddCommand(newRollbackCommand())
 	cmd.AddCommand(newChangesCommand())
 	cmd.AddCommand(newConfigsCommand())
