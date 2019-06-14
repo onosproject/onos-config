@@ -59,11 +59,15 @@ spec:
           ports:
             - name: grpc
               containerPort: 5150
+            # Expose the debug port for debugging
             {{- if .Values.debug }}
             - name: debug
               containerPort: 40000
               protocol: TCP
             {{- end }}
+          # Disable probes for debugging since application starts paused
+          # See https://github.com/go-delve/delve/issues/245
+          {{- if not .Values.debug }}
           readinessProbe:
             tcpSocket:
               port: 5150
@@ -74,6 +78,7 @@ spec:
               port: 5150
             initialDelaySeconds: 15
             periodSeconds: 20
+          {{- end }}
           # Mount the test configuration
           # TODO: This should be removed when stores are added!
           volumeMounts:
@@ -83,6 +88,7 @@ spec:
             - name: secret
               mountPath: /etc/onos-config/certs
               readOnly: true
+      # Enable ptrace for debugging
       {{- if .Values.debug }}
       securityContext:
         capabilities:
