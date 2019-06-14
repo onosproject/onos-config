@@ -42,6 +42,6 @@ func runRollbackCommand(cmd *cobra.Command, args []string) {
 	if err != nil {
 		ExitWithErrorMessage("Failed to send request: %v", err)
 	}
-	Output("Rollback success %s", resp.Message)
+	Output("Rollback success %s\n", resp.Message)
 	ExitWithSuccess()
 }

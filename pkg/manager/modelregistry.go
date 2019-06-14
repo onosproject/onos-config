@@ -30,23 +30,24 @@ type ModelPlugin interface {
 }
 
 // RegisterModelPlugin adds an external model plugin to the model registry at startup
-func (m *Manager) RegisterModelPlugin(moduleName string) error {
+// or through the 'admin' gRPC interface. Once plugins are loaded they cannot be unloaded
+func (m *Manager) RegisterModelPlugin(moduleName string) (string, string, error) {
 	log.Info("Loading module", moduleName)
 	fmt.Println("Loading module:", moduleName)
 	modelPluginModule, err := plugin.Open(moduleName)
 	if err != nil {
 		log.Warning("Unable to load module", moduleName)
-		return err
+		return "", "", err
 	}
 	symbolMP, err := modelPluginModule.Lookup("ModelPlugin")
 	if err != nil {
 		log.Warning("Unable to find ModelPlugin in module", moduleName)
-		return err
+		return "", "", err
 	}
 	modelPlugin, ok := symbolMP.(ModelPlugin)
 	if !ok {
 		log.Warning("Unable to use ModelPlugin in ", moduleName)
-		return fmt.Errorf("Symbol loaded from module %s is not a ModelPlugin",
+		return "", "", fmt.Errorf("Symbol loaded from module %s is not a ModelPlugin",
 			moduleName)
 	}
 	name, version, _, _ := modelPlugin.ModelData()
@@ -54,7 +55,7 @@ func (m *Manager) RegisterModelPlugin(moduleName string) error {
 	m.ModelRegistry[modelName] = modelPlugin
 	fmt.Println("Model Plugin loaded:", modelName)
 
-	return nil
+	return name, version, nil
 }
 
 // Capabilities returns an aggregated set of modelData in gNMI capabilities format

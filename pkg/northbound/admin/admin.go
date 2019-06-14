@@ -45,12 +45,35 @@ type Server struct {
 
 // RegisterModel registers a new YANG model.
 func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
-	return &proto.RegisterResponse{}, nil
+	name, version, err := manager.GetManager().RegisterModelPlugin(req.SoFile)
+	if err != nil {
+		return nil, err
+	}
+	return &proto.RegisterResponse{
+		Name:    name,
+		Version: version,
+	}, nil
 }
 
-// UnregisterModel unregisters the specified YANG model.
-func (s Server) UnregisterModel(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
-	return &proto.RegisterResponse{}, nil
+// ListRegisteredModels lists the registered models..
+func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.AdminService_ListRegisteredModelsServer) error {
+	for _, model := range manager.GetManager().ModelRegistry {
+		name, version, md, plugin := model.ModelData()
+
+		// Build model message
+		msg := &proto.ModelInfo{
+			Name:      name,
+			Version:   version,
+			ModelData: md,
+			Module:    plugin,
+		}
+
+		err := stream.Send(msg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GetNetworkChanges provides a stream of submitted network changes.

@@ -20,6 +20,7 @@ syntax = "proto3";
 package proto;
 
 import "google/protobuf/timestamp.proto";
+import "github.com/openconfig/gnmi/proto/gnmi/gnmi.proto";
 
 // NetworkChangesRequest is a message for specifying GetNetworkChanges query parameters.
 message NetworkChangesRequest {
@@ -39,12 +40,27 @@ message NetChange {
     repeated ConfigChange changes = 4;
 }
 
-// RegisterRequest carries data for registering or unregistering a YANG model.
-message RegisterRequest {
+message ModelInfo {
+    string name = 1;
+    string version = 2;
+    repeated gnmi.ModelData modelData = 3;
+    string module = 4;
 }
 
-// RegisterResponse carries status of YANG model registration or unregistration.
+// RegisterRequest carries data for registering a YANG model.
+message RegisterRequest {
+    // Full path and filename of a shared object library as a model plugin
+    string soFile = 1;
+}
+
+// RegisterResponse carries status of YANG model registration.
 message RegisterResponse {
+    string name = 1;
+    string version = 2;
+}
+
+// ListModelsRequest carries data for querying registered models.
+message ListModelsRequest {
 }
 
 // RollbackRequest carries the name of a network config to rollback. If there
@@ -62,9 +78,10 @@ message RollbackResponse {
 // AdminService provides means for enhanced interactions with the configuration subsystem.
 service AdminService {
     // RegisterModel adds the specified YANG model to the list of supported models.
+    // There is no unregister because once loaded plugins cannot be unloaded
     rpc RegisterModel(RegisterRequest) returns (RegisterResponse);
-    // UnregisterModel removes the specified YANG model from the list of supported models.
-    rpc UnregisterModel(RegisterRequest) returns (RegisterResponse);
+    // ListRegisteredModels returns a stream of registered models.
+    rpc ListRegisteredModels(ListModelsRequest) returns (stream ModelInfo);
 
     // GetNetworkChanges returns a stream of network changes submitted via gNMI.
     rpc GetNetworkChanges(NetworkChangesRequest) returns (stream NetChange);

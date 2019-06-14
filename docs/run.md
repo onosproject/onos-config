@@ -10,10 +10,27 @@ go run github.com/onosproject/onos-config/cmd/onos-config \
     -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
     -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
     -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
-    -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json \
+    -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
+```
+> This does not load any of the model plugins. These can be optionally specified
+ by adding the following to the command:
+```bash
     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 \
-    -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice.so.1.0.0 \
+    -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice.so.2.0.0 \
     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim.so.1.0.0
+```
+> Alternatively these can loaded later with the
+```bash
+> onos models load <full path to shared object model>
+```
+> The plugins here were built locally with a command like
+```bash
+> go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
+```
+> When running with Docker or Kubernetes these plugins will be built and loaded
+at startup. To check the list of currently loaded plugins use:
+```bash
+> onos models list
 ```
 
 ## Run Server in Docker Image
