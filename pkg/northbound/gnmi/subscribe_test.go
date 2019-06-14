@@ -247,8 +247,9 @@ func Test_WrongDevice(t *testing.T) {
 
 	targets := make(map[string]struct{})
 	subs := make(map[string]struct{})
+	resChan := make(chan result)
 	targets["Device2"] = struct{}{}
-	go listenForUpdates(changeChan, serverFake, mgr, targets, subs)
+	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
 	changeChan <- events.CreateConfigEvent("Device1", []byte("test"), true)
 	var response *gnmi.SubscribeResponse
 	select {
@@ -260,7 +261,7 @@ func Test_WrongDevice(t *testing.T) {
 
 	targets["Device1"] = struct{}{}
 	subs["/test1:cont1a/cont2a/leaf3c"] = struct{}{}
-	go listenForUpdates(changeChan, serverFake, mgr, targets, subs)
+	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
 	config1Value05, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", "def", false)
 	config1Value09, _ := change.CreateChangeValue("/test1:cont1a/list2a[name=txout2]", "", true)
 	change1, err := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
