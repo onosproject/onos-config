@@ -1,5 +1,7 @@
 # Northbound gNMI service
-The system provides a Northboudn gNMI service. 
+The system provides a Northbound gNMI service.
+
+gNMI extensions supported on the Northbound are described in [gnmi_extensions.md](./gnmi_extensions.md) 
 
 ## gnmi_cli utility
 A simple way to issue a gNMI requests is to use the `gnmi_cli` utility from
@@ -104,6 +106,7 @@ extension: <
 > If a specific name is desired for a Network Change, the set may be given in the
 SetRequest() with the 100 extension at the end of the -proto section like:
 > ", extension: <registered_ext: <id: 100, msg: 'myfirstchange'>>"
+> See [gnmi_extensions.md](./gnmi_extensions.md) for more on gNMI extensions supported.
 
 > The corresponding -get for this require using the -proto
 > "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"

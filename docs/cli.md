@@ -138,10 +138,12 @@ plugins use the command:
 
 To load a plugin dynamically at runtime use the command:
 ```bash
-> onos models load <full path and filename of a compatible shared object library>
+> onos models load <full path and filename of a compatible shared object library on target machine>
 ```
 > NOTE: Model Plugins cannot be dynamically unloaded - a restart of onos-config
 > is required to unload.
+> In a distributed environment the ModelPlugin will have to be loaded on all
+> instances of onos-config
 
 ## Other Diagnostic Commands
 There are a number of commands that provide internal view into the state the onos-config store.
