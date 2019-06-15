@@ -2,7 +2,7 @@ ARG ONOS_BUILD_VERSION=stable
 
 FROM onosproject/golang-build:$ONOS_BUILD_VERSION as builder
 COPY . /go/src/github.com/onosproject/onos-config
-RUN cd /go/src/github.com/onosproject/onos-config && make build
+RUN cd /go/src/github.com/onosproject/onos-config && GOOS=linux GOARCH=amd64 make build
 
 FROM alpine:3.8
 
