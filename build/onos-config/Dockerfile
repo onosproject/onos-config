@@ -4,7 +4,8 @@ FROM onosproject/golang-build:$ONOS_BUILD_VERSION as builder
 COPY . /go/src/github.com/onosproject/onos-config
 RUN cd /go/src/github.com/onosproject/onos-config && GOOS=linux GOARCH=amd64 make build
 
-FROM alpine:3.8
+FROM alpine:3.9
+RUN apk add libc6-compat
 
 USER nobody
 
