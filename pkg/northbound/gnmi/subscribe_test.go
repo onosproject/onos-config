@@ -47,6 +47,29 @@ func (x gNMISubscribeServerFake) Recv() (*gnmi.SubscribeRequest, error) {
 	return x.Request, nil
 }
 
+type gNMISubscribeServerPollFake struct {
+	Request     *gnmi.SubscribeRequest
+	PollRequest *gnmi.SubscribeRequest
+	Responses   chan *gnmi.SubscribeResponse
+	Signal      chan struct{}
+	grpc.ServerStream
+	first bool
+}
+
+func (x gNMISubscribeServerPollFake) Send(m *gnmi.SubscribeResponse) error {
+	x.Responses <- m
+	return nil
+}
+
+func (x gNMISubscribeServerPollFake) Recv() (*gnmi.SubscribeRequest, error) {
+	<-x.Signal
+	if x.first {
+		return x.Request, nil
+	}
+	return x.PollRequest, nil
+
+}
+
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
 	server, _ := setUp()
@@ -57,25 +80,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 
 	path.Target = "Device1"
 
-	subscription := &gnmi.Subscription{
-		Path: path,
-		Mode: gnmi.SubscriptionMode_TARGET_DEFINED,
-	}
-
-	subscriptions := make([]*gnmi.Subscription, 0)
-
-	subscriptions = append(subscriptions, subscription)
-
-	subList := &gnmi.SubscriptionList{
-		Subscription: subscriptions,
-		Mode:         gnmi.SubscriptionList_ONCE,
-	}
-
-	request := &gnmi.SubscribeRequest{
-		Request: &gnmi.SubscribeRequest_Subscribe{
-			Subscribe: subList,
-		},
-	}
+	request := buildRequest(path, gnmi.SubscriptionList_ONCE)
 
 	responsesChan := make(chan *gnmi.SubscribeResponse)
 	serverFake := gNMISubscribeServerFake{
@@ -100,17 +105,13 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 		t.FailNow()
 	}
 
-	pathResponse := responseReq.GetUpdate().Update[0].Path
+	device1 := "Device1"
+	path1Once := "test1:cont1a"
+	path2Once := "cont2a"
+	path3Once := "leaf2a"
+	value := "13"
 
-	assert.Equal(t, pathResponse.Target, "Device1")
-
-	assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
-
-	assert.Equal(t, pathResponse.Elem[0].Name, "test1:cont1a")
-	assert.Equal(t, pathResponse.Elem[1].Name, "cont2a")
-	assert.Equal(t, pathResponse.Elem[2].Name, "leaf2a")
-
-	assert.Equal(t, responseReq.GetUpdate().Update[0].Val.GetStringVal(), "13")
+	assertResponse(t, responseReq, device1, path1Once, path2Once, path3Once, value)
 
 }
 
@@ -118,45 +119,13 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 func Test_SubscribeLeafStream(t *testing.T) {
 	server, _ := setUp()
 
-	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
+	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf4a"})
 
 	assert.NilError(t, err, "Unexpected error doing parsing")
 
 	path.Target = "Device1"
 
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
-	//augmenting pre-existing value by one
-	typedValue := gnmi.TypedValue_StringVal{StringVal: "14"}
-	value := gnmi.TypedValue{Value: &typedValue}
-	updatedPaths = append(updatedPaths, &gnmi.Update{Path: path, Val: &value})
-
-	var setRequest = gnmi.SetRequest{
-		Delete:  deletePaths,
-		Replace: replacedPaths,
-		Update:  updatedPaths,
-	}
-	log.Println(path)
-	subscription := &gnmi.Subscription{
-		Path: path,
-		Mode: gnmi.SubscriptionMode_TARGET_DEFINED,
-	}
-
-	subscriptions := make([]*gnmi.Subscription, 0)
-
-	subscriptions = append(subscriptions, subscription)
-
-	subList := &gnmi.SubscriptionList{
-		Subscription: subscriptions,
-		Mode:         gnmi.SubscriptionList_STREAM,
-	}
-
-	request := &gnmi.SubscribeRequest{
-		Request: &gnmi.SubscribeRequest_Subscribe{
-			Subscribe: subList,
-		},
-	}
+	request := buildRequest(path, gnmi.SubscriptionList_STREAM)
 
 	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
 	serverFake := gNMISubscribeServerFake{
@@ -172,35 +141,36 @@ func Test_SubscribeLeafStream(t *testing.T) {
 
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
 	time.Sleep(100000)
+
+	var deletePaths = make([]*gnmi.Path, 0)
+	var replacedPaths = make([]*gnmi.Update, 0)
+	var updatedPaths = make([]*gnmi.Update, 0)
+	//augmenting pre-existing value by one
+	typedValue := gnmi.TypedValue_StringVal{StringVal: "14"}
+	value := gnmi.TypedValue{Value: &typedValue}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: path, Val: &value})
+	setRequest := &gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+	//Sending set request
 	go func() {
-		_, err = server.Set(context.Background(), &setRequest)
+		_, err = server.Set(context.Background(), setRequest)
 		serverFake.Signal <- struct{}{}
 	}()
 	assert.NilError(t, err, "Unexpected error doing parsing")
 
+	device1 := "Device1"
+	path1Stream := "cont1a"
+	path2Stream := "cont2a"
+	path3Stream := "leaf4a"
+	valueReply := "14"
+
 	for response := range responsesChan {
 		log.Println("response", response)
 		if len(response.GetUpdate().GetUpdate()) != 0 {
-			assert.Assert(t, response.GetUpdate().GetUpdate() != nil, "Update should not be nil")
-
-			assert.Equal(t, len(response.GetUpdate().GetUpdate()), 1)
-
-			if response.GetUpdate().GetUpdate()[0] == nil {
-				log.Println("response should contain at least one update and that should not be nil")
-				t.FailNow()
-			}
-
-			pathResponse := response.GetUpdate().GetUpdate()[0].Path
-
-			assert.Equal(t, pathResponse.Target, "Device1")
-
-			assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
-
-			assert.Equal(t, pathResponse.Elem[0].Name, "cont1a")
-			assert.Equal(t, pathResponse.Elem[1].Name, "cont2a")
-			assert.Equal(t, pathResponse.Elem[2].Name, "leaf4a")
-
-			assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetStringVal(), "14")
+			assertResponse(t, response, device1, path1Stream, path2Stream, path3Stream, valueReply)
 		} else {
 			assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
 		}
@@ -217,25 +187,7 @@ func Test_WrongDevice(t *testing.T) {
 
 	path.Target = "Device1"
 
-	subscription := &gnmi.Subscription{
-		Path: path,
-		Mode: gnmi.SubscriptionMode_TARGET_DEFINED,
-	}
-
-	subscriptions := make([]*gnmi.Subscription, 0)
-
-	subscriptions = append(subscriptions, subscription)
-
-	subList := &gnmi.SubscriptionList{
-		Subscription: subscriptions,
-		Mode:         gnmi.SubscriptionList_STREAM,
-	}
-
-	request := &gnmi.SubscribeRequest{
-		Request: &gnmi.SubscribeRequest_Subscribe{
-			Subscribe: subList,
-		},
-	}
+	request := buildRequest(path, gnmi.SubscriptionList_STREAM)
 
 	changeChan := make(chan events.ConfigEvent)
 	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
@@ -284,25 +236,7 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 
 	path.Target = "Device1"
 
-	subscription := &gnmi.Subscription{
-		Path: path,
-		Mode: gnmi.SubscriptionMode_TARGET_DEFINED,
-	}
-
-	subscriptions := make([]*gnmi.Subscription, 0)
-
-	subscriptions = append(subscriptions, subscription)
-
-	subList := &gnmi.SubscriptionList{
-		Subscription: subscriptions,
-		Mode:         gnmi.SubscriptionList_STREAM,
-	}
-
-	request := &gnmi.SubscribeRequest{
-		Request: &gnmi.SubscribeRequest_Subscribe{
-			Subscribe: subList,
-		},
-	}
+	request := buildRequest(path, gnmi.SubscriptionList_STREAM)
 
 	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
 	serverFake := gNMISubscribeServerFake{
@@ -320,4 +254,95 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 
 	err = server.Subscribe(serverFake)
 	assert.ErrorContains(t, err, "is already registered")
+}
+
+func Test_Poll(t *testing.T) {
+	server, _ := setUp()
+
+	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
+
+	assert.NilError(t, err, "Unexpected error doing parsing")
+
+	path.Target = "Device1"
+
+	request := buildRequest(path, gnmi.SubscriptionList_POLL)
+
+	pollrequest := &gnmi.SubscribeRequest{
+		Request: &gnmi.SubscribeRequest_Poll{
+			Poll: &gnmi.Poll{},
+		},
+	}
+
+	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
+	serverFake := gNMISubscribeServerPollFake{
+		Request:     request,
+		Responses:   responsesChan,
+		Signal:      make(chan struct{}),
+		first:       true,
+		PollRequest: pollrequest,
+	}
+
+	//TODO need to block
+	go func() {
+		err = server.Subscribe(serverFake)
+	}()
+
+	serverFake.Signal <- struct{}{}
+	time.Sleep(100000) //waiting before sending fake poll
+	serverFake.first = false
+	serverFake.Signal <- struct{}{}
+
+	device1 := "Device1"
+	path1Poll := "test1:cont1a"
+	path2Poll := "cont2a"
+	path3Poll := "leaf2a"
+	value := "13"
+
+	for i := 1; i < 4; i++ {
+		response := <-responsesChan
+		log.Println("response", response)
+		if len(response.GetUpdate().GetUpdate()) != 0 {
+			assertResponse(t, response, device1, path1Poll, path2Poll, path3Poll, value)
+		} else {
+			assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
+		}
+	}
+
+	close(serverFake.Responses)
+
+}
+
+func buildRequest(path *gnmi.Path, mode gnmi.SubscriptionList_Mode) *gnmi.SubscribeRequest {
+	subscription := &gnmi.Subscription{
+		Path: path,
+		Mode: gnmi.SubscriptionMode_TARGET_DEFINED,
+	}
+	subscriptions := make([]*gnmi.Subscription, 0)
+	subscriptions = append(subscriptions, subscription)
+	subList := &gnmi.SubscriptionList{
+		Subscription: subscriptions,
+		Mode:         mode,
+	}
+	request := &gnmi.SubscribeRequest{
+		Request: &gnmi.SubscribeRequest_Subscribe{
+			Subscribe: subList,
+		},
+	}
+	return request
+}
+
+func assertResponse(t *testing.T, response *gnmi.SubscribeResponse, device1 string, path1 string, path2 string, path3 string, value string) {
+	assert.Assert(t, response.GetUpdate().GetUpdate() != nil, "Update should not be nil")
+	assert.Equal(t, len(response.GetUpdate().GetUpdate()), 1)
+	if response.GetUpdate().GetUpdate()[0] == nil {
+		log.Println("response should contain at least one update and that should not be nil")
+		t.FailNow()
+	}
+	pathResponse := response.GetUpdate().GetUpdate()[0].Path
+	assert.Equal(t, pathResponse.Target, device1)
+	assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
+	assert.Equal(t, pathResponse.Elem[0].Name, path1)
+	assert.Equal(t, pathResponse.Elem[1].Name, path2)
+	assert.Equal(t, pathResponse.Elem[2].Name, path3)
+	assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetStringVal(), value)
 }
