@@ -74,9 +74,9 @@ func New(context context.Context, changeStore *store.ChangeStore, device *topoca
 	return sync, nil
 }
 
-// Devicesync is a go routine that listens out for configuration events specific
+// syncConfigEventsToDevice is a go routine that listens out for configuration events specific
 // to a device and propagates them downwards through southbound interface
-func (sync *Synchronizer) syncNbConfiguration() {
+func (sync *Synchronizer) syncConfigEventsToDevice() {
 
 	for deviceConfigEvent := range sync.deviceConfigChan {
 		change := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
