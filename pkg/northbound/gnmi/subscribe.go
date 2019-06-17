@@ -90,6 +90,8 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 			code, ok := status.FromError(err)
 			if ok && code.Code() == codes.Canceled {
 				log.Println("Subscription Terminated, Canceled")
+				mgr.Dispatcher.UnregisterNbi(hash)
+				mgr.Dispatcher.UnregisterOperationalState(hash)
 				resChan <- result{success: true, err: nil}
 			} else {
 				log.Println("Error in subscription", err)
