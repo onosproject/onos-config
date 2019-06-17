@@ -58,7 +58,7 @@ onos-config-docker: # @HELP build onos-config Docker image
     	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
-onos-config-docker-debug: # @HELP build onos-config Docker debug image
+onos-config-debug-docker: # @HELP build onos-config Docker debug image
 	docker build . -f build/onos-config-debug/Dockerfile \
 		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
@@ -69,12 +69,12 @@ onos-cli-docker: # @HELP build onos-cli Docker image
         -t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
-images: onos-config-docker onos-config-docker-debug onos-cli-docker
+images: onos-config-docker onos-config-debug-docker onos-cli-docker
 
 all: build images
 
 run-docker: # @HELP run onos-config docker image
-run-docker: images
+run-docker: onos-config-docker
 	docker run -d -p 5150:5150 -v `pwd`/configs:/etc/onos-config \
     	--name onos-config onosproject/onos-config \
     	-configStore=/etc/onos-config/configStore-sample.json \
