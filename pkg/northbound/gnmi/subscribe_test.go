@@ -247,8 +247,9 @@ func Test_WrongDevice(t *testing.T) {
 
 	targets := make(map[string]struct{})
 	subs := make(map[string]struct{})
+	resChan := make(chan result)
 	targets["Device2"] = struct{}{}
-	go listenForUpdates(changeChan, serverFake, mgr, targets, subs)
+	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
 	changeChan <- events.CreateConfigEvent("Device1", []byte("test"), true)
 	var response *gnmi.SubscribeResponse
 	select {
@@ -260,7 +261,7 @@ func Test_WrongDevice(t *testing.T) {
 
 	targets["Device1"] = struct{}{}
 	subs["/test1:cont1a/cont2a/leaf3c"] = struct{}{}
-	go listenForUpdates(changeChan, serverFake, mgr, targets, subs)
+	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
 	config1Value05, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", "def", false)
 	config1Value09, _ := change.CreateChangeValue("/test1:cont1a/list2a[name=txout2]", "", true)
 	change1, err := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
@@ -272,4 +273,51 @@ func Test_WrongDevice(t *testing.T) {
 	case <-time.After(50 * time.Millisecond):
 	}
 
+}
+
+func Test_ErrorDoubleSubscription(t *testing.T) {
+	server, _ := setUp()
+
+	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
+
+	assert.NilError(t, err, "Unexpected error doing parsing")
+
+	path.Target = "Device1"
+
+	subscription := &gnmi.Subscription{
+		Path: path,
+		Mode: gnmi.SubscriptionMode_TARGET_DEFINED,
+	}
+
+	subscriptions := make([]*gnmi.Subscription, 0)
+
+	subscriptions = append(subscriptions, subscription)
+
+	subList := &gnmi.SubscriptionList{
+		Subscription: subscriptions,
+		Mode:         gnmi.SubscriptionList_STREAM,
+	}
+
+	request := &gnmi.SubscribeRequest{
+		Request: &gnmi.SubscribeRequest_Subscribe{
+			Subscribe: subList,
+		},
+	}
+
+	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
+	serverFake := gNMISubscribeServerFake{
+		Request:   request,
+		Responses: responsesChan,
+		Signal:    make(chan struct{}),
+	}
+
+	go func() {
+		err = server.Subscribe(serverFake)
+	}()
+	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
+	time.Sleep(100000)
+	assert.NilError(t, err, "Unexpected error doing Subscribe")
+
+	err = server.Subscribe(serverFake)
+	assert.ErrorContains(t, err, "is already registered")
 }

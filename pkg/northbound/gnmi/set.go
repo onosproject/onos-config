@@ -17,10 +17,6 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	"log"
-	"strings"
-	"time"
-
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -28,11 +24,111 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"log"
+	"strings"
+	"time"
 )
 
 type mapTargetUpdates map[string]map[string]string
 type mapTargetRemoves map[string][]string
 type mapNetworkChanges map[store.ConfigName]change.ID
+
+// Set implements gNMI Set
+func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
+	// There is only one set of extensions in Set request, regardless of number of
+	// updates
+	var (
+		netcfgchangename string // May be specified as 100 in extension
+		version          string // May be specified as 101 in extension
+		deviceType       string // May be specified as 102 in extension
+	)
+
+	targetUpdates := make(mapTargetUpdates)
+	targetRemoves := make(mapTargetRemoves)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	//Update
+	for _, u := range req.GetUpdate() {
+		target := u.Path.GetTarget()
+		targetUpdates[target] = s.doUpdateOrReplace(u, targetUpdates)
+	}
+
+	//Replace
+	for _, u := range req.GetReplace() {
+		target := u.Path.GetTarget()
+		targetUpdates[target] = s.doUpdateOrReplace(u, targetUpdates)
+	}
+
+	//Delete
+	for _, u := range req.GetDelete() {
+		target := u.GetTarget()
+		targetRemoves[target] = s.doDelete(u, targetRemoves)
+	}
+
+	for _, ext := range req.GetExtension() {
+		if ext.GetRegisteredExt().GetId() == GnmiExtensionNetwkChangeID {
+			netcfgchangename = string(ext.GetRegisteredExt().GetMsg())
+		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionVersion {
+			version = string(ext.GetRegisteredExt().GetMsg())
+		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionDeviceType {
+			deviceType = string(ext.GetRegisteredExt().GetMsg())
+		} else {
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("Unexpected extension %d = '%s' in Set()",
+				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
+		}
+	}
+
+	updateResults, networkChanges, err :=
+		s.buildUpdateResults(targetUpdates, targetRemoves, version, deviceType)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if len(updateResults) == 0 {
+		log.Println("All target changes were duplicated - Set rejected")
+		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a "+
+			"duplicate of the last change for all targets").Error())
+	}
+
+	if netcfgchangename == "" {
+		netcfgchangename = namesgenerator.GetRandomName(0)
+	}
+
+	// Look for use of this name already
+	for _, nwCfg := range manager.GetManager().NetworkStore.Store {
+		if nwCfg.Name == netcfgchangename {
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf(
+				"Name %s is already used for a Network Configuration", netcfgchangename).Error())
+		}
+	}
+
+	networkConfig, err := store.NewNetworkConfiguration(netcfgchangename, "User1", networkChanges)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	manager.GetManager().NetworkStore.Store =
+		append(manager.GetManager().NetworkStore.Store, *networkConfig)
+
+	setResponse := &gnmi.SetResponse{
+		Response:  updateResults,
+		Timestamp: time.Now().Unix(),
+		Extension: []*gnmi_ext.Extension{
+			{
+				Ext: &gnmi_ext.Extension_RegisteredExt{
+					RegisteredExt: &gnmi_ext.RegisteredExtension{
+						Id:  100,
+						Msg: []byte(networkConfig.Name),
+					},
+				},
+			},
+		},
+	}
+	return setResponse, nil
+}
 
 func (s *Server) doUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) map[string]string {
 	target := u.Path.GetTarget()
@@ -124,99 +220,4 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 	}
 
 	return updateResults, networkChanges, nil
-}
-
-// Set implements gNMI Set
-func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
-	// There is only one set of extensions in Set request, regardless of number of
-	// updates
-	var (
-		netcfgchangename string // May be specified as 100 in extension
-		version          string // May be specified as 101 in extension
-		deviceType       string // May be specified as 102 in extension
-	)
-
-	targetUpdates := make(mapTargetUpdates)
-	targetRemoves := make(mapTargetRemoves)
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	//Update
-	for _, u := range req.GetUpdate() {
-		target := u.Path.GetTarget()
-		targetUpdates[target] = s.doUpdateOrReplace(u, targetUpdates)
-	}
-
-	//Replace
-	for _, u := range req.GetReplace() {
-		target := u.Path.GetTarget()
-		targetUpdates[target] = s.doUpdateOrReplace(u, targetUpdates)
-	}
-
-	//Delete
-	for _, u := range req.GetDelete() {
-		target := u.GetTarget()
-		targetRemoves[target] = s.doDelete(u, targetRemoves)
-	}
-
-	for _, ext := range req.GetExtension() {
-		if ext.GetRegisteredExt().GetId() == GnmiExtensionNetwkChangeID {
-			netcfgchangename = string(ext.GetRegisteredExt().GetMsg())
-		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionVersion {
-			version = string(ext.GetRegisteredExt().GetMsg())
-		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionDeviceType {
-			deviceType = string(ext.GetRegisteredExt().GetMsg())
-		} else {
-			return nil, fmt.Errorf("Unexpected extension %d = '%s' in Set()",
-				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg())
-		}
-	}
-
-	updateResults, networkChanges, err :=
-		s.buildUpdateResults(targetUpdates, targetRemoves, version, deviceType)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(updateResults) == 0 {
-		log.Println("All target changes were duplicated - Set rejected")
-		return nil, fmt.Errorf("set change rejected as it is a " +
-			"duplicate of the last change for all targets")
-	}
-
-	if netcfgchangename == "" {
-		netcfgchangename = namesgenerator.GetRandomName(0)
-	}
-
-	// Look for use of this name already
-	for _, nwCfg := range manager.GetManager().NetworkStore.Store {
-		if nwCfg.Name == netcfgchangename {
-			return nil, fmt.Errorf("Name %s is already used for a Network Configuration",
-				netcfgchangename)
-		}
-	}
-
-	networkConfig, err := store.NewNetworkConfiguration(netcfgchangename, "User1", networkChanges)
-	if err != nil {
-		return nil, err
-	}
-
-	manager.GetManager().NetworkStore.Store =
-		append(manager.GetManager().NetworkStore.Store, *networkConfig)
-
-	setResponse := &gnmi.SetResponse{
-		Response:  updateResults,
-		Timestamp: time.Now().Unix(),
-		Extension: []*gnmi_ext.Extension{
-			{
-				Ext: &gnmi_ext.Extension_RegisteredExt{
-					RegisteredExt: &gnmi_ext.RegisteredExtension{
-						Id:  100,
-						Msg: []byte(networkConfig.Name),
-					},
-				},
-			},
-		},
-	}
-	return setResponse, nil
 }

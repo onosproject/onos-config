@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log"
 	"time"
 
@@ -38,7 +40,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	for _, path := range req.GetPath() {
 		update, err := getUpdate(prefix, path)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		notification := &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
@@ -52,7 +54,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	if len(req.GetPath()) == 0 {
 		update, err := getUpdate(prefix, nil)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		notification := &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
