@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# See ../docs/modelplugin.md for how to use this file to generate a Model Plugin
+
 TYPEVERSION=Devicesim-1.0.0
 TYPEVERSIONPKG=devicesim_1_0_0
 TYPEMODULE=devicesim.so.1.0.0

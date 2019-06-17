@@ -19,19 +19,20 @@ go run github.com/onosproject/onos-config/cmd/onos-config \
     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice.so.2.0.0 \
     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim.so.1.0.0
 ```
-> Alternatively these can loaded later with the
+> Alternatively these can loaded later with the onos cli tool - see [cli.md](./cli.md)
 ```bash
-> onos models load <full path to shared object model>
+> onos models load <full path on target machine to shared object model>
 ```
 > The plugins here were built locally with a command like
 ```bash
-> go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
+> CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
 ```
-> When running with Docker or Kubernetes these plugins will be built and loaded
+> When running with Docker or Kubernetes these plugins will be built and (optionally) loaded
 at startup. To check the list of currently loaded plugins use:
 ```bash
 > onos models list
 ```
+See [modelplugins.md](modelplugins.md) for more on how to build your own Model Plugins.
 
 ## Run Server in Docker Image
 Alternatively, to run onos-config via its Docker image like this:
