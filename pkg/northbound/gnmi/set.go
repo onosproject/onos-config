@@ -76,8 +76,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionDeviceType {
 			deviceType = string(ext.GetRegisteredExt().GetMsg())
 		} else {
-			return nil, fmt.Errorf("Unexpected extension %d = '%s' in Set()",
-				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg())
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("Unexpected extension %d = '%s' in Set()",
+				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
 		}
 	}
 
@@ -89,7 +89,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	if len(updateResults) == 0 {
 		log.Println("All target changes were duplicated - Set rejected")
-		return nil, status.Error(codes.Internal, fmt.Errorf("set change rejected as it is a "+
+		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a "+
 			"duplicate of the last change for all targets").Error())
 	}
 
@@ -100,7 +100,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	// Look for use of this name already
 	for _, nwCfg := range manager.GetManager().NetworkStore.Store {
 		if nwCfg.Name == netcfgchangename {
-			return nil, status.Error(codes.Internal, fmt.Errorf(
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf(
 				"Name %s is already used for a Network Configuration", netcfgchangename).Error())
 		}
 	}
