@@ -3,11 +3,16 @@ export CGO_ENABLED=0
 .PHONY: build
 
 ONOS_CONFIG_VERSION := latest
+ONOS_CONFIG_DEBUG_VERSION := debug
 ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
 build: test
+ifndef DEBUG
 	go build -o build/_output/onos-config ./cmd/onos-config
+else
+	go build -gcflags "all=-N -l" -o build/_output/onos-config ./cmd/onos-config
+endif
 	go build -o build/_output/onos ./cmd/onos
 	go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
 	go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
@@ -53,18 +58,23 @@ onos-config-docker: # @HELP build onos-config Docker image
     	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
+onos-config-debug-docker: # @HELP build onos-config Docker debug image
+	docker build . -f build/onos-config-debug/Dockerfile \
+		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+		-t onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
+
 onos-cli-docker: # @HELP build onos-cli Docker image
 	docker build . -f build/onos-cli/Dockerfile \
         --build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
         -t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
-images: onos-config-docker onos-cli-docker
+images: onos-config-docker onos-config-debug-docker onos-cli-docker
 
 all: build images
 
 run-docker: # @HELP run onos-config docker image
-run-docker: images
+run-docker: onos-config-docker
 	docker run -d -p 5150:5150 -v `pwd`/configs:/etc/onos-config \
     	--name onos-config onosproject/onos-config \
     	-configStore=/etc/onos-config/configStore-sample.json \
