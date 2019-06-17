@@ -45,10 +45,10 @@ func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
 				dispatcher.UnregisterDevice(deviceName)
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
-				go sync.syncNbConfiguration()
+				go sync.syncConfigEventsToDevice()
 				//TODO error handling
 				go sync.syncOperationalState()
-				//TODO push configuration to the device if any is present
+				//TODO push configuration to the device if any was set before it's connection
 			}
 		} else if dispatcher.HasListener(deviceName) && !topoEvent.Connect() {
 
