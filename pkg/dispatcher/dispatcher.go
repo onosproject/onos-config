@@ -58,7 +58,7 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 		deviceChan, ok := d.deviceListeners[topocache.ID(events.Event(configEvent).Subject())]
 		if ok {
 			log.Println("Device Simulators must be active")
-			//TODO need a timeout or be done in separate routine
+			//TODO need a timeout or be done in separate routine, blocks if there is some error underneath
 			log.Println(deviceChan)
 			deviceChan <- configEvent
 		}
