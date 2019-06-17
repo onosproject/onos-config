@@ -275,7 +275,7 @@ func Test_WrongDevice(t *testing.T) {
 
 }
 
-func Test_ErrorDoubleSubsription(t *testing.T) {
+func Test_ErrorDoubleSubscription(t *testing.T) {
 	server, _ := setUp()
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
@@ -311,7 +311,6 @@ func Test_ErrorDoubleSubsription(t *testing.T) {
 		Signal:    make(chan struct{}),
 	}
 
-	//TODO need to block
 	go func() {
 		err = server.Subscribe(serverFake)
 	}()
@@ -320,6 +319,5 @@ func Test_ErrorDoubleSubsription(t *testing.T) {
 	assert.NilError(t, err, "Unexpected error doing Subscribe")
 
 	err = server.Subscribe(serverFake)
-	log.Println("Error", err)
 	assert.ErrorContains(t, err, "is already registered")
 }
