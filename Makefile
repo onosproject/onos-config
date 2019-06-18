@@ -8,16 +8,16 @@ ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
 build: test
+	export GO111MODULE=on
 ifndef DEBUG
 	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
 else
 	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config ./cmd/onos-config
 endif
-	export GO111MODULE=on
 	go build -o build/_output/onos ./cmd/onos
-	CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
-	CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
-	CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin ./modelplugin/Devicesim-1.0.0
+	CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
+	CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
+	CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
 
 test: # @HELP run the unit tests and source code validation
 test: deps lint vet license_check gofmt
