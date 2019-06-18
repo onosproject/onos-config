@@ -70,6 +70,9 @@ func addPathToTree(path, value string, nodeif *interface{}) error {
 			(nodemap)[pathelems[1]] = numval
 		} else if strings.ToLower(value) == "true" || strings.ToLower(value) == "false" {
 			(nodemap)[pathelems[1]] = strings.ToLower(value)
+		} else if value == "openconfig-aaa-types:LOCAL" {
+			// FIXME - this is a dirty hack until we create a custom unmarshaller for Paths&Values to YGOT
+			(nodemap)[pathelems[1]] = []string{"openconfig-aaa-types:LOCAL"}
 		} else {
 			(nodemap)[pathelems[1]] = value
 		}
@@ -87,6 +90,7 @@ func addPathToTree(path, value string, nodeif *interface{}) error {
 		listName := pathelems[1][:brktIdx]
 		keyName := pathelems[1][brktIdx+1 : eqIdx]
 		keyVal := pathelems[1][eqIdx+1 : brktIdx2]
+		keyValNum, keyValNumErr := strconv.Atoi(keyVal)
 
 		listSlice, ok := nodemap[listName]
 		if !ok {
@@ -105,7 +109,7 @@ func addPathToTree(path, value string, nodeif *interface{}) error {
 			if !ok {
 				return fmt.Errorf("Failed to convert list slice %d", idx)
 			}
-			if (lsMap)[keyName] == keyVal {
+			if (lsMap)[keyName] == keyVal || (keyValNumErr == nil && (lsMap)[keyName] == keyValNum) {
 				listItemMap = lsMap
 				foundit = true
 				break
@@ -113,7 +117,11 @@ func addPathToTree(path, value string, nodeif *interface{}) error {
 		}
 		if !foundit {
 			listItemMap = make(map[string]interface{})
-			listItemMap[keyName] = keyVal
+			if keyValNumErr == nil {
+				listItemMap[keyName] = keyValNum
+			} else {
+				listItemMap[keyName] = keyVal
+			}
 		}
 		listItemIf := interface{}(listItemMap)
 		err := addPathToTree(refinePath, value, &listItemIf)
