@@ -136,8 +136,8 @@ func Test_SubscribeLeafStream(t *testing.T) {
 
 	go func() {
 		err = server.Subscribe(serverFake)
+		assert.NilError(t, err, "Unexpected error doing Subscribe")
 	}()
-	assert.NilError(t, err, "Unexpected error doing Subscribe")
 
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
 	time.Sleep(100000)
@@ -157,9 +157,9 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	//Sending set request
 	go func() {
 		_, err = server.Set(context.Background(), setRequest)
+		assert.NilError(t, err, "Unexpected error doing Set")
 		serverFake.Signal <- struct{}{}
 	}()
-	assert.NilError(t, err, "Unexpected error doing parsing")
 
 	device1 := "Device1"
 	path1Stream := "cont1a"
@@ -247,10 +247,10 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 
 	go func() {
 		err = server.Subscribe(serverFake)
+		assert.NilError(t, err, "Unexpected error doing Subscribe")
 	}()
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
 	time.Sleep(100000)
-	assert.NilError(t, err, "Unexpected error doing Subscribe")
 
 	err = server.Subscribe(serverFake)
 	assert.ErrorContains(t, err, "is already registered")
@@ -285,6 +285,7 @@ func Test_Poll(t *testing.T) {
 	//TODO need to block
 	go func() {
 		err = server.Subscribe(serverFake)
+		assert.NilError(t, err, "Unexpected error doing Subscribe")
 	}()
 
 	serverFake.Signal <- struct{}{}
