@@ -31,8 +31,8 @@ coverage: test
 
 deps: # @HELP ensure that the required dependencies are in place
 	go build -v ./...
-#	bash -c "diff -u <(echo -n) <(git diff go.mod)"
-#	bash -c "diff -u <(echo -n) <(git diff go.sum)"
+	bash -c "diff -u <(echo -n) <(git diff go.mod)"
+	bash -c "diff -u <(echo -n) <(git diff go.sum)"
 
 lint: # @HELP run the linters for Go source code
 	golint -set_exit_status github.com/onosproject/onos-config/pkg/...
