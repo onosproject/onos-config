@@ -52,7 +52,7 @@ Once the files are created:
 1) Change directory back to **onos-config**
 2) Compile the plugin with (replacing the names as appropriate)
 ```bash
-> CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
+> CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
 ```
 Follow the steps in **Loading the Model Plugin** below for how to load it.
 
