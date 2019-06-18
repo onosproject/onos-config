@@ -1,4 +1,5 @@
 export CGO_ENABLED=0
+export GO111MODULE=on
 
 .PHONY: build
 
@@ -14,9 +15,9 @@ else
 	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config ./cmd/onos-config
 endif
 	go build -o build/_output/onos ./cmd/onos
-	CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
-	CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
-	CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin ./modelplugin/Devicesim-1.0.0
+	CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
+	CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
+	CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
 
 test: # @HELP run the unit tests and source code validation
 test: deps lint vet license_check gofmt
@@ -29,8 +30,9 @@ coverage: test
 	./build/bin/coveralls-coverage
 
 deps: # @HELP ensure that the required dependencies are in place
-	dep ensure -v
-	bash -c "diff -u <(echo -n) <(git diff Gopkg.lock)"
+	go build -v ./...
+	bash -c "diff -u <(echo -n) <(git diff go.mod)"
+	bash -c "diff -u <(echo -n) <(git diff go.sum)"
 
 lint: # @HELP run the linters for Go source code
 	golint -set_exit_status github.com/onosproject/onos-config/pkg/...

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// +build modelplugin
+
 // A plugin for the YGOT model of Devicesim-1.0.0.
 package main
 

@@ -10,11 +10,6 @@ in order to build and execute the code.
 [Go lint] is required to validate that the Go source code complies with the established style 
 guidelines.
 
-## Go Dep
-[Go dep] is required to automatically manage package dependencies.
-> If using Ubuntu to do not use "apt-get install go-dep" because this is an
-> obsolete version that will clash with the version on Jenkins
-
 ## Docker
 [Docker] is required to build the project Docker images and also to compile `*.proto` files into Go source files.
 
@@ -34,7 +29,7 @@ automatically.
 
 [Go tools]: https://golang.org/doc/install
 [Go lint]: https://github.com/golang/lint
-[Go dep]: https://github.com/golang/dep
+[Go lint]: https://github.com/golang/lint
 [Docker]: https://docs.docker.com/install/
 
 [GoLand IDE]: /https://www.jetbrains.com/go/
