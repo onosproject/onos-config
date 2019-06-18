@@ -26,7 +26,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"log"
+	log "k8s.io/klog"
 )
 
 // Synchronizer enables proper configuring of a device based on store events and cache of operational data
@@ -52,24 +52,24 @@ func New(context context.Context, changeStore *store.ChangeStore, device *topoca
 		operationalStateChan: opStateChan,
 		operationalCache:     make(map[string]string),
 	}
-	log.Println("Connecting to", sync.Device.Addr, "over gNMI")
+	log.Info("Connecting to", sync.Device.Addr, "over gNMI")
 	target := southbound.Target{}
 	key, err := target.ConnectTarget(context, *sync.Device)
 	sync.key = key
 	if err != nil {
-		log.Println(err)
+		log.Warning(err)
 		return nil, err
 	}
-	log.Println(sync.Device.Addr, "Connected over gNMI")
+	log.Info(sync.Device.Addr, "Connected over gNMI")
 
 	// Get the device capabilities
 	capResponse, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
-		log.Println(sync.Device.Addr, "Capabilities", err)
+		log.Error(sync.Device.Addr, "Capabilities", err)
 		return nil, err
 	}
 
-	log.Println(sync.Device.Addr, "Capabilities", capResponse)
+	log.Info(sync.Device.Addr, "Capabilities", capResponse)
 
 	return sync, nil
 }
@@ -82,28 +82,28 @@ func (sync *Synchronizer) syncConfigEventsToDevice() {
 		change := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
 		err := change.IsValid()
 		if err != nil {
-			log.Println("Event discarded because change is invalid", err)
+			log.Warning("Event discarded because change is invalid", err)
 			continue
 		}
 		gnmiChange, parseError := change.GnmiChange()
 
 		if parseError != nil {
-			log.Println("Parsing error for Gnmi change ", parseError)
+			log.Error("Parsing error for Gnmi change ", parseError)
 			continue
 		}
 
-		log.Println("Change formatted to gNMI setRequest", gnmiChange)
+		log.Info("Change formatted to gNMI setRequest", gnmiChange)
 		target, err := southbound.GetTarget(sync.key)
 		if err != nil {
-			log.Println(err)
+			log.Warning(err)
 			continue
 		}
 		setResponse, err := target.Set(sync.Context, gnmiChange)
 		if err != nil {
-			log.Println("SetResponse ", err)
+			log.Error("SetResponse ", err)
 			continue
 		}
-		log.Println(sync.Device.Addr, "SetResponse", setResponse)
+		log.Info(sync.Device.Addr, "SetResponse", setResponse)
 
 	}
 }
@@ -113,7 +113,7 @@ func (sync Synchronizer) syncOperationalState() error {
 	target, err := southbound.GetTarget(sync.key)
 
 	if err != nil {
-		log.Println("Can't find target for key", sync.key)
+		log.Error("Can't find target for key", sync.key)
 		return err
 	}
 
@@ -126,7 +126,7 @@ func (sync Synchronizer) syncOperationalState() error {
 	responseState, errState := target.Get(target.Ctx, requestState)
 
 	if errState != nil {
-		log.Println("Can't request read-only state to target", sync.key, errState)
+		log.Warning("Can't request read-only state to target", sync.key, errState)
 	} else {
 		notifications = append(notifications, responseState.Notification...)
 	}
@@ -138,7 +138,7 @@ func (sync Synchronizer) syncOperationalState() error {
 	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
 
 	if errOp != nil {
-		log.Println("Can't request read-only operational paths to target", sync.key, errOp)
+		log.Warning("Can't request read-only operational paths to target", sync.key, errOp)
 	} else {
 		notifications = append(notifications, responseOperational.Notification...)
 	}
@@ -180,7 +180,7 @@ func (sync Synchronizer) syncOperationalState() error {
 
 	if len(subscribePaths) == 0 {
 		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
-		log.Println(noPathErr)
+		log.Warning(noPathErr)
 		return noPathErr
 	}
 
@@ -205,7 +205,7 @@ func (sync Synchronizer) syncOperationalState() error {
 
 func (sync *Synchronizer) handler(msg proto.Message) error {
 
-	log.Println("Proto Message", msg)
+	log.Info("Proto Message", msg)
 
 	_, err := southbound.GetTarget(sync.key)
 	if err != nil {

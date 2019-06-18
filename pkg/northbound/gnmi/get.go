@@ -20,7 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
+	log "k8s.io/klog"
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/manager"
@@ -85,7 +85,7 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	// Special case - if target is "*" then ignore path and just return a list
 	// of devices - note, this can be done in addition to other Paths in the same Get
 	if target == "*" {
-		log.Println("Testing subscription")
+		log.Info("Testing subscription")
 		deviceIds := make([]*gnmi.TypedValue, 0)
 
 		for _, deviceID := range *manager.GetManager().GetAllDeviceIds() {

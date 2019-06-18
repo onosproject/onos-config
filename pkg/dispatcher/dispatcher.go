@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
-	"log"
+	log "k8s.io/klog"
 )
 
 // Dispatcher manages SB and NB configuration event listeners
@@ -51,15 +51,14 @@ func NewDispatcher() Dispatcher {
 // Southbound listeners are only sent the events that matter to them
 // All events.Events are sent to northbound listeners
 func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
-	log.Println("Event listener initialized")
+	log.Info("Event listener initialized")
 
 	for configEvent := range changeChannel {
-		log.Println("Listener: Event", configEvent)
+		log.Info("Listener: Event", configEvent)
 		deviceChan, ok := d.deviceListeners[topocache.ID(events.Event(configEvent).Subject())]
 		if ok {
-			log.Println("Device Simulators must be active")
+			log.Warning("Device not connected - config event discarded", configEvent)
 			//TODO need a timeout or be done in separate routine, blocks if there is some error underneath
-			log.Println(deviceChan)
 			deviceChan <- configEvent
 		}
 
@@ -68,7 +67,7 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 		}
 
 		if len(d.deviceListeners)+len(d.nbiListeners) == 0 {
-			log.Println("Event discarded", configEvent)
+			log.Info("Event discarded", configEvent)
 		}
 	}
 }
@@ -79,7 +78,7 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 // Southbound listeners are only sent the events that matter to them
 // All events.Events are sent to northbound listeners
 func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan events.OperationalStateEvent) {
-	log.Println("Operational State Event listener initialized")
+	log.Info("Operational State Event listener initialized")
 
 	for operationalStateEvent := range operationalStateChannel {
 		for _, nbiChan := range d.nbiOpStateListeners {
@@ -96,7 +95,7 @@ func (d *Dispatcher) RegisterDevice(id topocache.ID) (chan events.ConfigEvent, e
 	}
 	channel := make(chan events.ConfigEvent)
 	d.deviceListeners[id] = channel
-	log.Printf("Registering Device %s on channel w%v", id, channel)
+	log.Infof("Registering Device %s on channel w%v", id, channel)
 	return channel, nil
 }
 
@@ -108,7 +107,7 @@ func (d *Dispatcher) RegisterNbi(subscriber string) (chan events.ConfigEvent, er
 	}
 	channel := make(chan events.ConfigEvent)
 	d.nbiListeners[subscriber] = channel
-	log.Printf("Registering NBI %s on channel w%v", subscriber, channel)
+	log.Infof("Registering NBI %s on channel w%v", subscriber, channel)
 	return channel, nil
 }
 
@@ -138,7 +137,7 @@ func (d *Dispatcher) UnregisterDevice(id topocache.ID) error {
 func (d *Dispatcher) UnregisterNbi(subscriber string) {
 	channel, ok := d.nbiListeners[subscriber]
 	if !ok {
-		log.Println(fmt.Sprintf("Subscriber %s had not been registered", subscriber))
+		log.Infof("Subscriber %s had not been registered", subscriber)
 		return
 	}
 	delete(d.nbiListeners, subscriber)
@@ -149,7 +148,7 @@ func (d *Dispatcher) UnregisterNbi(subscriber string) {
 func (d *Dispatcher) UnregisterOperationalState(subscriber string) {
 	channel, ok := d.nbiOpStateListeners[subscriber]
 	if !ok {
-		log.Println(fmt.Sprintf("Subscriber %s had not been registered", subscriber))
+		log.Infof("Subscriber %s had not been registered", subscriber)
 		return
 	}
 	delete(d.nbiOpStateListeners, subscriber)

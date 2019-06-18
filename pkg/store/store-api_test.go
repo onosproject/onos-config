@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"gotest.tools/assert"
+	log "k8s.io/klog"
 	"os"
 	"strconv"
 	"testing"
@@ -171,6 +172,11 @@ var Config2Values = [11]string{
 	ValueLeaftopWxy1234,
 }
 
+func TestMain(m *testing.M) {
+	log.SetOutput(os.Stdout)
+	os.Exit(m.Run())
+}
+
 func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.Change) {
 	var err error
 
@@ -195,7 +201,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		config1Value11,
 	}, "Original Config for test switch")
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 
@@ -206,7 +212,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		config2Value01, config2Value02, config2Value03,
 	}, "Trim power level")
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 
@@ -216,7 +222,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 
@@ -228,7 +234,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	device1V, err = CreateConfiguration("Device1", "1.0.0", "TestDevice",
 		[]change.ID{change1.ID, change2.ID, change3.ID})
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 
@@ -238,7 +244,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		config4Value01, config4Value02,
 	}, "Remove txout 1")
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 	changeStore[B64(change4.ID)] = change4
@@ -246,7 +252,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	device2V, err = CreateConfiguration("Device2", "1.0.0", "TestDevice",
 		[]change.ID{change1.ID, change2.ID, change4.ID})
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 
@@ -256,16 +262,16 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 func Test_device1_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 
-	fmt.Println("Configuration", device1V.Name, " (latest) Changes:")
+	log.Info("Configuration", device1V.Name, " (latest) Changes:")
 	for idx, cid := range device1V.Changes {
-		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
+		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
 	config := device1V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
-		fmt.Printf("Path %s = %s\n", c.Path, c.Value)
+		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}
 
 	for i := 0; i < len(Config1Paths); i++ {
@@ -278,16 +284,16 @@ func Test_device1_prev_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 
 	const changePrevious = 1
-	fmt.Println("Configuration", device1V.Name, " (n-1) Changes:")
+	log.Info("Configuration", device1V.Name, " (n-1) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
-		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
+		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
-		fmt.Printf("Path %s = %s\n", c.Path, c.Value)
+		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}
 
 	for i := 0; i < len(Config1PreviousPaths); i++ {
@@ -299,16 +305,16 @@ func Test_device1_prev_version(t *testing.T) {
 func Test_device1_first_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 	const changePrevious = 2
-	fmt.Println("Configuration", device1V.Name, " (n-2) Changes:")
+	log.Info("Configuration", device1V.Name, " (n-2) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
-		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
+		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
 	config := device1V.ExtractFullConfig(changeStore, changePrevious)
 	for _, c := range config {
-		fmt.Printf("Path %s = %s\n", c.Path, c.Value)
+		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}
 
 	for i := 0; i < len(Config1FirstPaths); i++ {
@@ -320,9 +326,9 @@ func Test_device1_first_version(t *testing.T) {
 func Test_device1_invalid_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 	const changePrevious = 3
-	fmt.Println("Configuration", device1V.Name, " (n-3) Changes:")
+	log.Info("Configuration", device1V.Name, " (n-3) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
-		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
+		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
@@ -336,16 +342,16 @@ func Test_device1_invalid_version(t *testing.T) {
 
 func Test_device2_version(t *testing.T) {
 	_, device2V, changeStore := setUp()
-	fmt.Println("Configuration", device2V.Name, " (latest) Changes:")
+	log.Info("Configuration", device2V.Name, " (latest) Changes:")
 	for idx, cid := range device2V.Changes {
-		fmt.Printf("%d: %s\n", idx, B64([]byte(cid)))
+		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
 	assert.Equal(t, device2V.Name, ConfigName("Device2-1.0.0"))
 
 	config := device2V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
-		fmt.Printf("Path %s = %s\n", c.Path, c.Value)
+		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}
 
 	for i := 0; i < len(Config2Paths); i++ {
@@ -377,7 +383,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 
@@ -416,7 +422,7 @@ func Test_writeOutChangeFile(t *testing.T) {
 		Storetype: StoreTypeChange, Store: changeStore}
 	err = jsonEncoder.Encode(csf)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 	defer changeStoreFile.Close()
@@ -528,7 +534,7 @@ func Test_writeOutConfigFile(t *testing.T) {
 	err := jsonEncoder.Encode(ConfigurationStore{Version: StoreVersion,
 		Storetype: StoreTypeConfig, Store: configurationStore})
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 	defer configStoreFile.Close()
@@ -554,7 +560,7 @@ func Test_writeOutNetworkFile(t *testing.T) {
 	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
 	nw1, err := NewNetworkConfiguration("testChange", "nw1", ccs)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 	networkStore = append(networkStore, *nw1)
@@ -564,7 +570,7 @@ func Test_writeOutNetworkFile(t *testing.T) {
 	err = jsonEncoder.Encode(NetworkStore{Version: StoreVersion,
 		Storetype: StoreTypeNetwork, Store: networkStore})
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 	defer networkStoreFile.Close()

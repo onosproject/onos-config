@@ -20,7 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
-	"log"
+	log "k8s.io/klog"
 )
 
 // Factory is a go routine thread that listens out for Device creation
@@ -33,14 +33,14 @@ func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
 			configChan, err := dispatcher.RegisterDevice(deviceName)
 			if err != nil {
-				log.Fatal(err)
+				log.Error(err)
 			}
 			device := deviceStore.Store[topocache.ID(deviceName)]
 			ctx := context.Background()
 			sync, err := New(ctx, changeStore, &device, configChan, opStateChan)
 			if err != nil {
 				//TODO propagate the ERROR
-				log.Println("Error in connecting to client", err)
+				log.Warning("Error in connecting to client: ", err)
 				//unregistering the listener for changes to the device
 				dispatcher.UnregisterDevice(deviceName)
 			} else {
@@ -54,7 +54,7 @@ func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
 
 			err := dispatcher.UnregisterDevice(deviceName)
 			if err != nil {
-				log.Fatal(err)
+				log.Error(err)
 			}
 		}
 	}

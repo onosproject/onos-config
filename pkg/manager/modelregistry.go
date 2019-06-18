@@ -33,7 +33,6 @@ type ModelPlugin interface {
 // or through the 'admin' gRPC interface. Once plugins are loaded they cannot be unloaded
 func (m *Manager) RegisterModelPlugin(moduleName string) (string, string, error) {
 	log.Info("Loading module", moduleName)
-	fmt.Println("Loading module:", moduleName)
 	modelPluginModule, err := plugin.Open(moduleName)
 	if err != nil {
 		log.Warning("Unable to load module", moduleName)
@@ -53,8 +52,6 @@ func (m *Manager) RegisterModelPlugin(moduleName string) (string, string, error)
 	name, version, _, _ := modelPlugin.ModelData()
 	modelName := toModelName(name, version)
 	m.ModelRegistry[modelName] = modelPlugin
-	fmt.Println("Model Plugin loaded:", modelName)
-
 	return name, version, nil
 }
 

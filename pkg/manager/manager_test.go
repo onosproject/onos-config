@@ -15,12 +15,12 @@
 package manager
 
 import (
-	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"gotest.tools/assert"
+	log "k8s.io/klog"
 	"os"
 	"strings"
 	"testing"
@@ -45,6 +45,7 @@ const (
 // anything is shared the order of it's modification is not deterministic
 // Also there can only be one TestMain per package
 func TestMain(m *testing.M) {
+	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
 }
 
@@ -68,7 +69,7 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	change1, err = change.CreateChange(change.ValueCollections{
 		config1Value01, config1Value02, config1Value03}, "Original Config for test switch")
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 	changeStoreTest = make(map[string]*change.Change)
@@ -77,7 +78,7 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	device1config, err = store.CreateConfiguration("Device1", "1.0.0", "TestDevice",
 		[]change.ID{change1.ID})
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 
@@ -114,7 +115,7 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 		},
 		make(chan events.TopoEvent, 10))
 	if err != nil {
-		fmt.Println(err)
+		log.Warning(err)
 		os.Exit(-1)
 	}
 	mgrTest.Run()

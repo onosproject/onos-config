@@ -15,11 +15,10 @@
 package gnmi
 
 import (
-	"fmt"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"log"
+	log "k8s.io/klog"
 	"os"
 	"testing"
 )
@@ -29,7 +28,7 @@ import (
 // anything is shared the order of it's modification is not deterministic
 // Also there can only be one TestMain per package
 func TestMain(m *testing.M) {
-	//var err error
+	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
 }
 
@@ -44,7 +43,8 @@ func setUp() (*Server, *manager.Manager) {
 		"../../../configs/networkStore-sample.json",
 	)
 	if err != nil {
-		log.Println("Expected manager to be loaded")
+		log.Error("Expected manager to be loaded", err)
+		os.Exit(-1)
 	}
 
 	mgr = manager.GetManager()
@@ -54,12 +54,12 @@ func setUp() (*Server, *manager.Manager) {
 	mgr.ChangesChannel = make(chan events.ConfigEvent)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
-	fmt.Println("Finished setUp()")
+	log.Info("Finished setUp()")
 	return server, mgr
 }
 
 func listenToTopoLoading(deviceChan <-chan events.TopoEvent) {
-	for range deviceChan {
-		// fmt.Printf("Ignoring event for testing %v\n", deviceConfigEvent)
+	for deviceConfigEvent := range deviceChan {
+		log.Info("Ignoring event for testing", deviceConfigEvent)
 	}
 }
