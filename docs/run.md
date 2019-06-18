@@ -25,7 +25,7 @@ go run github.com/onosproject/onos-config/cmd/onos-config \
 ```
 > The plugins here were built locally with a command like
 ```bash
-> CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
+> CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
 ```
 > When running with Docker or Kubernetes these plugins will be built and (optionally) loaded
 at startup. To check the list of currently loaded plugins use:
@@ -49,7 +49,7 @@ Here is an example on how to use `gnmi_cli -get` to get configuration for a part
 ```bash
 gnmi_cli -get -address localhost:5150 \
     -proto "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
-    -timeout 5s -alsologtostderr\
+    -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
     -ca_crt pkg/southbound/testdata/onfca.crt

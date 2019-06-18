@@ -77,7 +77,7 @@ func (m modelplugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoSt
 	vgs := ygot.ValidatedGoStruct(device)
 
 	if err := $TYPEVERSIONPKG.Unmarshal([]byte(jsonTree), device); err != nil {
-		panic(fmt.Sprintf("Cannot unmarshal JSON: %v", err))
+		return nil, err
 	}
 
 	return &vgs, nil

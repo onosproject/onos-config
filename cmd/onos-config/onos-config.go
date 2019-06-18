@@ -112,6 +112,11 @@ func main() {
 				log.Fatal("Unable to start onos-config ", err)
 			}
 		}
+		err = mgr.ValidateStores()
+		if err != nil {
+			log.Error("Error when validating configurations against model plugins: ", err)
+			os.Exit(-1)
+		}
 
 		mgr.Run()
 		err = startServer(*caPath, *keyPath, *certPath)

@@ -197,14 +197,14 @@
         }
       ]
     },
-    "i86kLjjNFr5IBa+O3YTuv9HBqJg=": {
-      "ID": "i86kLjjNFr5IBa+O3YTuv9HBqJg=",
+    "UwIDulssBgfXoeKco0eirkKkJUI=": {
+      "ID": "UwIDulssBgfXoeKco0eirkKkJUI=",
       "Description": "Modification of device sim 1",
       "Created": "2019-05-21T08:43:02Z",
       "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "localhost:10161"
+          "Value": "localhost-1"
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
@@ -212,14 +212,14 @@
         }
       ]
     },
-    "UyPwBSOxDqQM/ZCohHFannSF5ME=": {
-      "ID": "UyPwBSOxDqQM/ZCohHFannSF5ME=",
+    "oWFKpOajlRkQf38YTlCJivn3QlU=": {
+      "ID": "oWFKpOajlRkQf38YTlCJivn3QlU=",
       "Description": "Modification of device sim 2",
       "Created": "2019-05-21T08:43:03Z",
       "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "localhost:10162"
+          "Value": "localhost-2"
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
@@ -227,14 +227,14 @@
         }
       ]
     },
-    "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y=": {
-      "ID": "5FTJ5QDC0y/RoFnJPfdh8NsB+4Y=",
+    "1EvL+9i1ZGjKyuSjxh1hlfZ9/74=": {
+      "ID": "1EvL+9i1ZGjKyuSjxh1hlfZ9/74=",
       "Description": "Modification of device sim 3",
       "Created": "2019-05-21T08:43:04Z",
       "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "localhost:10163"
+          "Value": "localhost-3"
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",

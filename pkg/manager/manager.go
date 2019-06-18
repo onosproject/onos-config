@@ -121,6 +121,56 @@ func LoadManager(configStoreFile string, changeStoreFile string, deviceStoreFile
 	return NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
 }
 
+// ValidateStores validate configurations against their ModelPlugins at startup
+func (m *Manager) ValidateStores() error {
+
+	validationErrors := make(chan error)
+	cfgCount := len(m.ConfigStore.Store)
+	for _, configObj := range m.ConfigStore.Store {
+		go validateConfiguration(configObj, validationErrors)
+	}
+	for valErr := range validationErrors {
+		if valErr != nil {
+			return valErr
+		}
+		cfgCount--
+		if cfgCount == 1 {
+			return nil
+		}
+	}
+	return nil
+}
+
+// validateConfiguration is a go routine for validating a Configuration against it ModelPlugin
+func validateConfiguration(configObj store.Configuration, errChan chan error) {
+	modelPluginName := configObj.Type + "-" + configObj.Version
+	cfgModelPlugin, pluginExists := mgr.ModelRegistry[modelPluginName]
+	if pluginExists {
+		log.Info("Validating config ", configObj.Name, " with Model Plugin ", modelPluginName)
+		fullconfig := configObj.ExtractFullConfig(mgr.ChangeStore.Store, 0)
+		configJSON, err := store.BuildTree(fullconfig)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		ygotModelConfig, err := cfgModelPlugin.UnmarshalConfigValues(configJSON)
+		if err != nil {
+			log.Error(string(configJSON))
+			errChan <- err
+			return
+		}
+		err = cfgModelPlugin.Validate(ygotModelConfig)
+		if err != nil {
+			log.Error(string(configJSON))
+			errChan <- err
+			return
+		}
+	} else {
+		fmt.Println("No Model Plugin available for", modelPluginName)
+	}
+	errChan <- nil
+}
+
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
