@@ -127,5 +127,7 @@ func startServer(caPath string, keyPath string, certPath string) error {
 	s.AddService(diags.Service{})
 	s.AddService(gnmi.Service{})
 
-	return s.Serve()
+	return s.Serve(func(started string) {
+		log.Info("Started NBI on", started)
+	})
 }

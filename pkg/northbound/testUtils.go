@@ -20,7 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"google.golang.org/grpc"
 	"log"
-	"time"
+	"sync"
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 
 // SetUpServer sets up a test manager and a gRPC end-point
 // to which it registers the given service.
-func SetUpServer(port int16, service Service) {
+func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 	var err error
 	_, err = manager.LoadManager(
 		"../../../configs/configStore-sample.json",
@@ -56,12 +56,13 @@ func SetUpServer(port int16, service Service) {
 	if err != nil {
 		log.Fatal("Error loading cert", err)
 	}
-
 	go func() {
-		err := s.Serve()
+		err := s.Serve(func(started string) {
+			waitGroup.Done()
+			fmt.Printf("Started %v", started)
+		})
 		if err != nil {
 			log.Fatal("Unable to serve", err)
 		}
 	}()
-	time.Sleep(5000000) // FIXME: this is clearly a hack, we need to replace this with wait on chan
 }
