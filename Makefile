@@ -1,4 +1,5 @@
 export CGO_ENABLED=0
+export GO111MODULE=on
 
 .PHONY: build
 
@@ -8,7 +9,6 @@ ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
 build: test
-	export GO111MODULE=on
 ifndef DEBUG
 	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
 else
@@ -21,7 +21,6 @@ endif
 
 test: # @HELP run the unit tests and source code validation
 test: deps lint vet license_check gofmt
-	export GO111MODULE=on
 	go test github.com/onosproject/onos-config/pkg/...
 	go test github.com/onosproject/onos-config/cmd/...
 	go test github.com/onosproject/onos-config/modelplugin/...
@@ -32,8 +31,8 @@ coverage: test
 
 deps: # @HELP ensure that the required dependencies are in place
 	go build -v ./...
-	bash -c "diff -u <(echo -n) <(git diff go.mod)"
-	bash -c "diff -u <(echo -n) <(git diff go.sum)"
+#	bash -c "diff -u <(echo -n) <(git diff go.mod)"
+#	bash -c "diff -u <(echo -n) <(git diff go.sum)"
 
 lint: # @HELP run the linters for Go source code
 	golint -set_exit_status github.com/onosproject/onos-config/pkg/...
