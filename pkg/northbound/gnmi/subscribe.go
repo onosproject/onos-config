@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"
-	"log"
+	log "k8s.io/klog"
 	"time"
 )
 
@@ -51,12 +51,12 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	//Registering one listener per NB app/client on both change and opStateChan
 	changesChan, err := mgr.Dispatcher.RegisterNbi(hash)
 	if err != nil {
-		log.Println("Subscription present: ", err)
+		log.Warning("Subscription present: ", err)
 		return status.Error(codes.AlreadyExists, err.Error())
 	}
 	opStateChan, err := mgr.Dispatcher.RegisterOpState(hash)
 	if err != nil {
-		log.Println("Subscription present: ", err)
+		log.Warning("Subscription present: ", err)
 		return status.Error(codes.AlreadyExists, err.Error())
 	}
 	resChan := make(chan result)
@@ -78,7 +78,7 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
-			log.Println("Subscription Terminated EOF")
+			log.Info("Subscription Terminated EOF")
 			//Ignoring Errors during removal
 			mgr.Dispatcher.UnregisterNbi(hash)
 			mgr.Dispatcher.UnregisterOperationalState(hash)
@@ -89,12 +89,12 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 		if err != nil {
 			code, ok := status.FromError(err)
 			if ok && code.Code() == codes.Canceled {
-				log.Println("Subscription Terminated, Canceled")
+				log.Info("Subscription Terminated, Canceled")
 				mgr.Dispatcher.UnregisterNbi(hash)
 				mgr.Dispatcher.UnregisterOperationalState(hash)
 				resChan <- result{success: true, err: nil}
 			} else {
-				log.Println("Error in subscription", err)
+				log.Error("Error in subscription", err)
 				//Ignoring Errors during removal
 				mgr.Dispatcher.UnregisterNbi(hash)
 				mgr.Dispatcher.UnregisterOperationalState(hash)
@@ -136,18 +136,20 @@ func collector(stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList,
 		//We get the stated of the device, for each path we build an update and send it out.
 		update, err := getUpdate(request.Prefix, sub.Path)
 		if err != nil {
-			log.Println("Error while collecting data for subscribe once or poll", err)
+			log.Error("Error while collecting data for subscribe once or poll", err)
 			resChan <- result{success: false, err: err}
 		}
 		response := buildUpdateResponse(update)
 		err = sendResponse(response, stream)
 		if err != nil {
+			log.Error("Error sending response", err)
 			resChan <- result{success: false, err: err}
 		}
 	}
 	responseSync := buildSyncResponse()
 	err := sendResponse(responseSync, stream)
 	if err != nil {
+		log.Error("Error sending sync response", err)
 		resChan <- result{success: false, err: err}
 	} else if mode != gnmi.SubscriptionList_POLL {
 		//Sending only if we need to finish listening because of ONCE
@@ -168,12 +170,12 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 				if isPresent {
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
 					if err != nil {
-						log.Println("Error in parsing path", err)
+						log.Warning("Error in parsing path", err)
 						continue
 					}
 					err = buildAndSendUpdate(pathGnmi, target, changeValue.Value, stream)
 					if err != nil {
-						log.Println("Error in sending update path", err)
+						log.Error("Error in sending update path", err)
 						resChan <- result{success: false, err: err}
 					}
 				}
@@ -196,13 +198,13 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 					pathArr := utils.SplitPath(pathStr)
 					pathGnmi, err := utils.ParseGNMIElements(pathArr)
 					if err != nil {
-						log.Println("Error in parsing path", err)
+						log.Warning("Error in parsing path", err)
 						resChan <- result{success: true, err: nil}
 						continue
 					}
 					err = buildAndSendUpdate(pathGnmi, target, value, stream)
 					if err != nil {
-						log.Println("Error in sending update path", err)
+						log.Error("Error in sending update path", err)
 						resChan <- result{success: false, err: err}
 					}
 				}
@@ -255,10 +257,10 @@ func buildUpdateResponse(update *gnmi.Update) *gnmi.SubscribeResponse {
 }
 
 func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeServer) error {
-	log.Println("Sending SubscribeResponse out to gNMI client", response)
+	log.Info("Sending SubscribeResponse out to gNMI client", response)
 	err := stream.Send(response)
 	if err != nil {
-		log.Println("Error in sending response to client", err)
+		log.Warning("Error in sending response to client", err)
 		return status.Error(codes.Internal, err.Error())
 	}
 	return nil

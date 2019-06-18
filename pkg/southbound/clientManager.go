@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
+	log "k8s.io/klog"
 	"strings"
 	"time"
 
@@ -43,24 +43,24 @@ func createDestination(device topocache.Device) (*client.Destination, DeviceID) 
 	d.Target = device.Target
 	d.Timeout = time.Duration(device.Timeout) * time.Second
 	if device.Plain {
-		log.Println("Plain connection connection to", device.Addr)
+		log.Info("Plain connection connection to", device.Addr)
 	} else if device.Insecure {
-		log.Println("Insecure connection to", device.Addr)
+		log.Info("Insecure connection to", device.Addr)
 		d.TLS = &tls.Config{InsecureSkipVerify: true}
 	} else {
 		d.TLS = &tls.Config{}
 		if device.CaPath == "" {
-			log.Println("Loading default CA onfca")
+			log.Info("Loading default CA onfca")
 			d.TLS.RootCAs = getCertPoolDefault()
 		} else {
 			d.TLS.RootCAs = getCertPool(device.CaPath)
 		}
 		if device.CertPath == "" && device.KeyPath == "" {
 			// Load default Certificates
-			log.Println("Loading default certificates")
+			log.Info("Loading default certificates")
 			clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
 			if err != nil {
-				log.Println("Error loading default certs")
+				log.Error("Error loading default certs")
 			}
 			d.TLS.Certificates = []tls.Certificate{clientCerts}
 		} else if device.CertPath != "" && device.KeyPath != "" {
@@ -72,8 +72,8 @@ func createDestination(device topocache.Device) (*client.Destination, DeviceID) 
 			cred.Password = device.Pwd
 			d.Credentials = cred
 		} else {
-			log.Println(fmt.Sprintf("Can't load Ca=%s , Cert=%s , key=%s for %v, trying with insecure connection",
-				device.CaPath, device.CertPath, device.KeyPath, device.Addr))
+			log.Errorf("Can't load Ca=%s , Cert=%s , key=%s for %v, trying with insecure connection",
+				device.CaPath, device.CertPath, device.KeyPath, device.Addr)
 			d.TLS = &tls.Config{InsecureSkipVerify: true}
 		}
 	}
@@ -111,7 +111,7 @@ func (target *Target) ConnectTarget(ctx context.Context, device topocache.Device
 func setCertificate(pathCert string, pathKey string) tls.Certificate {
 	certificate, err := tls.LoadX509KeyPair(pathCert, pathKey)
 	if err != nil {
-		log.Println("could not load client key pair", err)
+		log.Error("could not load client key pair", err)
 	}
 	return certificate
 }
@@ -120,10 +120,10 @@ func getCertPool(CaPath string) *x509.CertPool {
 	certPool := x509.NewCertPool()
 	ca, err := ioutil.ReadFile(CaPath)
 	if err != nil {
-		log.Println("could not read", CaPath, err)
+		log.Error("could not read", CaPath, err)
 	}
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
-		log.Println("failed to append CA certificates")
+		log.Error("failed to append CA certificates")
 	}
 	return certPool
 }
@@ -131,7 +131,7 @@ func getCertPool(CaPath string) *x509.CertPool {
 func getCertPoolDefault() *x509.CertPool {
 	certPool := x509.NewCertPool()
 	if ok := certPool.AppendCertsFromPEM([]byte(certs.OnfCaCrt)); !ok {
-		log.Println("failed to append CA certificates")
+		log.Error("failed to append CA certificates")
 	}
 	return certPool
 }

@@ -15,7 +15,7 @@
 package events
 
 import (
-	"log"
+	log "k8s.io/klog"
 	"strconv"
 	"time"
 )
@@ -27,7 +27,7 @@ type TopoEvent Event
 func (topoEvent *TopoEvent) Connect() bool {
 	b, err := strconv.ParseBool(topoEvent.values[Connect])
 	if err != nil {
-		log.Println("error in conversion", err)
+		log.Warning("error in conversion", err)
 		return false
 	}
 	return b

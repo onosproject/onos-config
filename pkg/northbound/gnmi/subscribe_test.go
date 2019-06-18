@@ -22,7 +22,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
-	"log"
+	log "k8s.io/klog"
 	"testing"
 	"time"
 )
@@ -101,7 +101,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	assert.Equal(t, len(responseReq.GetUpdate().Update), 1)
 
 	if responseReq.GetUpdate().Update[0] == nil {
-		log.Println("response should contain at least one update and that should not be nil")
+		log.Error("response should contain at least one update and that should not be nil")
 		t.FailNow()
 	}
 
@@ -168,7 +168,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	valueReply := "14"
 
 	for response := range responsesChan {
-		log.Println("response", response)
+		log.Info("response", response)
 		if len(response.GetUpdate().GetUpdate()) != 0 {
 			assertResponse(t, response, device1, path1Stream, path2Stream, path3Stream, valueReply)
 		} else {
@@ -206,7 +206,7 @@ func Test_WrongDevice(t *testing.T) {
 	var response *gnmi.SubscribeResponse
 	select {
 	case response = <-responsesChan:
-		log.Println("Should not be receiving response ", response)
+		log.Error("Should not be receiving response ", response)
 		t.FailNow()
 	case <-time.After(50 * time.Millisecond):
 	}
@@ -220,7 +220,7 @@ func Test_WrongDevice(t *testing.T) {
 	changeChan <- events.CreateConfigEvent("Device1", change1.ID, true)
 	select {
 	case response = <-responsesChan:
-		log.Println("Should not be receiving response ", response)
+		log.Error("Should not be receiving response ", response)
 		t.FailNow()
 	case <-time.After(50 * time.Millisecond):
 	}
@@ -301,7 +301,7 @@ func Test_Poll(t *testing.T) {
 
 	for i := 1; i < 4; i++ {
 		response := <-responsesChan
-		log.Println("response", response)
+		log.Info("response", response)
 		if len(response.GetUpdate().GetUpdate()) != 0 {
 			assertResponse(t, response, device1, path1Poll, path2Poll, path3Poll, value)
 		} else {
@@ -336,7 +336,7 @@ func assertResponse(t *testing.T, response *gnmi.SubscribeResponse, device1 stri
 	assert.Assert(t, response.GetUpdate().GetUpdate() != nil, "Update should not be nil")
 	assert.Equal(t, len(response.GetUpdate().GetUpdate()), 1)
 	if response.GetUpdate().GetUpdate()[0] == nil {
-		log.Println("response should contain at least one update and that should not be nil")
+		log.Error("response should contain at least one update and that should not be nil")
 		t.FailNow()
 	}
 	pathResponse := response.GetUpdate().GetUpdate()[0].Path

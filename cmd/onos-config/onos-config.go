@@ -48,6 +48,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	log "k8s.io/klog"
+	"os"
 	"time"
 )
 
@@ -89,7 +90,7 @@ func main() {
 
 	flag.Parse()
 	var err error
-
+	log.SetOutput(os.Stdout)
 	log.Info("Starting onos-config")
 
 	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *deviceStoreFile, *networkStoreFile)

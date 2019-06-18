@@ -26,7 +26,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"log"
+	log "k8s.io/klog"
 	"strings"
 	"time"
 )
@@ -88,7 +88,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	if len(updateResults) == 0 {
-		log.Println("All target changes were duplicated - Set rejected")
+		log.Warning("All target changes were duplicated - Set rejected")
 		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a "+
 			"duplicate of the last change for all targets").Error())
 	}
@@ -173,20 +173,20 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 
 		if err != nil {
 			if strings.Contains(err.Error(), manager.SetConfigAlreadyApplied) {
-				log.Println(manager.SetConfigAlreadyApplied, "Change", store.B64(changeID), "to", configName)
+				log.Warning(manager.SetConfigAlreadyApplied, "Change", store.B64(changeID), "to", configName)
 				continue
 			}
 
 			//FIXME this at the moment fails at a device level. we can specify a per path failure
 			// if the store could return us that info
-			log.Println("Error in setting config:", changeID, "for target", configName, err)
+			log.Error("Error in setting config:", changeID, "for target", configName, err)
 			return nil, nil, err
 		}
 
 		for k := range updates {
 			path, errInPath := utils.ParseGNMIElements(strings.Split(k, "/")[1:])
 			if errInPath != nil {
-				log.Println("ERROR: Unable to parse path", k)
+				log.Error("ERROR: Unable to parse path", k, errInPath)
 				continue
 			}
 			path.Target = target
@@ -204,7 +204,7 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 		for _, r := range targetRemoves[target] {
 			path, errInPath := utils.ParseGNMIElements(strings.Split(r, "/")[1:])
 			if errInPath != nil {
-				log.Println("ERROR: Unable to parse path", r)
+				log.Error("ERROR: Unable to parse path", r)
 				continue
 			}
 			path.Target = target

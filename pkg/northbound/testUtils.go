@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"google.golang.org/grpc"
-	"log"
+	log "k8s.io/klog"
 	"sync"
 )
 
@@ -42,7 +42,7 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 		"../../../configs/networkStore-sample.json",
 	)
 	if err != nil {
-		log.Fatal("Unable to load manager")
+		log.Error("Unable to load manager")
 	}
 
 	config := NewServerConfig("", "", "")
@@ -54,7 +54,7 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 	Address = fmt.Sprintf(":%d", port)
 	Opts, err = certs.HandleCertArgs(&empty, &empty)
 	if err != nil {
-		log.Fatal("Error loading cert", err)
+		log.Error("Error loading cert", err)
 	}
 	go func() {
 		err := s.Serve(func(started string) {
@@ -62,7 +62,7 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 			fmt.Printf("Started %v", started)
 		})
 		if err != nil {
-			log.Fatal("Unable to serve", err)
+			log.Error("Unable to serve", err)
 		}
 	}()
 }

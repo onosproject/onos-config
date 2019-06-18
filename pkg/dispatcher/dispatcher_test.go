@@ -16,13 +16,12 @@ package dispatcher
 
 import (
 	"encoding/base64"
-	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
-	"log"
+	log "k8s.io/klog"
 	"os"
 	"strings"
 	"testing"
@@ -64,6 +63,8 @@ func tearDown(d *Dispatcher) {
 }
 
 func TestMain(m *testing.M) {
+	log.SetOutput(os.Stdout)
+
 	device1 = topocache.Device{ID: "localhost-1", Addr: "localhost:10161"}
 	device2 = topocache.Device{ID: "localhost-2", Addr: "localhost:10162"}
 	device3 = topocache.Device{ID: "localhost-3", Addr: "localhost:10163"}
@@ -71,14 +72,14 @@ func TestMain(m *testing.M) {
 	configStoreTest, err = store.LoadConfigStore(configStoreDefaultFileName)
 	if err != nil {
 		wd, _ := os.Getwd()
-		fmt.Println("Cannot load config store ", err, wd)
+		log.Warning("Cannot load config store ", err, wd)
 		return
 	}
-	fmt.Println("Configuration store loaded from", configStoreDefaultFileName)
+	log.Info("Configuration store loaded from", configStoreDefaultFileName)
 
 	changeStoreTest, err = store.LoadChangeStore(changeStoreDefaultFileName)
 	if err != nil {
-		fmt.Println("Cannot load change store ", err)
+		log.Error("Cannot load change store ", err)
 		return
 	}
 
@@ -239,23 +240,23 @@ func Test_register_dup(t *testing.T) {
 }
 
 func testSync(testChan <-chan events.ConfigEvent, changes map[string]bool) {
-	log.Println("Listen for config changes for Test")
+	log.Info("Listen for config changes for Test")
 
 	for nbiChange := range testChan {
 		changeID := nbiChange.ChangeID()
 		changes[changeID] = nbiChange.Applied()
-		fmt.Println("Change for Test", nbiChange)
+		log.Info("Change for Test", nbiChange)
 	}
 }
 
 func testSyncOpState(testChan <-chan events.OperationalStateEvent, changes map[string]string) {
-	log.Println("Listen for config changes for Test")
+	log.Info("Listen for config changes for Test")
 
 	for opStateChange := range testChan {
 		changesEvent := events.Event(opStateChange).Values()
 		for k, v := range *changesEvent {
 			changes[k] = v
 		}
-		fmt.Println("OperationalState change for Test", opStateChange)
+		log.Info("OperationalState change for Test", opStateChange)
 	}
 }

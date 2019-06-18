@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"log"
+	log "k8s.io/klog"
 	"strings"
 	"time"
 )
@@ -43,7 +43,7 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 		}
 
 		if len(similarDevices) == 1 {
-			log.Println("No exact match in Configurations for", configName,
+			log.Warning("No exact match in Configurations for", configName,
 				"using", similarDevices[0])
 			configName = similarDevices[0]
 			deviceConfig = m.ConfigStore.Store[configName]
@@ -86,16 +86,16 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 	}
 
 	if m.ChangeStore.Store[store.B64(configChange.ID)] != nil {
-		log.Println("Change ID", store.B64(configChange.ID), "already exists - not overwriting")
+		log.Info("Change ID", store.B64(configChange.ID), "already exists - not overwriting")
 	} else {
 		m.ChangeStore.Store[store.B64(configChange.ID)] = configChange
-		log.Println("Added change", store.B64(configChange.ID), "to ChangeStore (in memory)")
+		log.Info("Added change", store.B64(configChange.ID), "to ChangeStore (in memory)")
 	}
 
 	// If the last change applied to deviceConfig is the same as this one then don't apply it again
 	if len(deviceConfig.Changes) > 0 &&
 		store.B64(deviceConfig.Changes[len(deviceConfig.Changes)-1]) == store.B64(configChange.ID) {
-		log.Println("Change", store.B64(configChange.ID),
+		log.Info("Change", store.B64(configChange.ID),
 			"has already been applied to", configName, "Ignoring")
 		return configChange.ID, configName, fmt.Errorf("%s %s",
 			SetConfigAlreadyApplied, store.B64(configChange.ID))
@@ -107,23 +107,23 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 	modelName := fmt.Sprintf("%s-%s", deviceConfig.Type, deviceConfig.Version)
 	deviceModelYgotPlugin, ok := m.ModelRegistry[modelName]
 	if !ok {
-		log.Println("No model", modelName, "available as a plugin")
+		log.Warning("No model", modelName, "available as a plugin")
 	} else {
 		configValues := deviceConfig.ExtractFullConfig(m.ChangeStore.Store, 0)
 		jsonTree, err := store.BuildTree(configValues)
 		if err != nil {
-			log.Println("Error building JSON tree from Config Values", err, jsonTree)
+			log.Error("Error building JSON tree from Config Values", err, jsonTree)
 		} else {
 			ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
 			if err != nil {
-				log.Println("Error unmarshaling JSON tree in to YGOT model", err)
+				log.Error("Error unmarshaling JSON tree in to YGOT model", err)
 				return nil, configName, err
 			}
 			err = deviceModelYgotPlugin.Validate(ygotModel)
 			if err != nil {
 				return nil, configName, err
 			}
-			log.Println("Configuration is Valid according to model",
+			log.Info("Configuration is Valid according to model",
 				modelName, "after adding change", store.B64(configChange.ID))
 		}
 	}

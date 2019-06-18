@@ -17,9 +17,9 @@ package change
 import (
 	"crypto/sha1"
 	"encoding/json"
-	"fmt"
 	"gotest.tools/assert"
 	"io"
+	log "k8s.io/klog"
 	"os"
 	"strings"
 	"testing"
@@ -62,6 +62,7 @@ const (
 
 func TestMain(m *testing.M) {
 	var err error
+	log.SetOutput(os.Stdout)
 	config1Value01, _ := CreateChangeValue(Test1Cont1A, ValueEmpty, false)
 	config1Value02, _ := CreateChangeValue(Test1Cont1ACont2A, ValueEmpty, false)
 	config1Value03, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, ValueLeaf2A13, false)
@@ -79,7 +80,7 @@ func TestMain(m *testing.M) {
 		config1Value11,
 	}, "Original Config for test switch")
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(-1)
 	}
 
@@ -100,7 +101,7 @@ func Test_ConfigValue(t *testing.T) {
 
 func Test_changecreation(t *testing.T) {
 
-	fmt.Printf("Change %x created\n", change1.ID)
+	log.Infof("Change %x created\n", change1.ID)
 	h := sha1.New()
 	jsonstr, _ := json.Marshal(change1.Config)
 	_, err1 := io.WriteString(h, string(jsonstr))
