@@ -22,12 +22,16 @@ import (
 	"gotest.tools/assert"
 	"io"
 	"os"
+	"sync"
 	"testing"
 )
 
 // TestMain initializes the test suite context.
 func TestMain(m *testing.M) {
-	northbound.SetUpServer(10123, Service{})
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
+	northbound.SetUpServer(10123, Service{}, &waitGroup)
+	waitGroup.Wait()
 	os.Exit(m.Run())
 }
 
@@ -54,19 +58,19 @@ func testGetChanges(t *testing.T, changeID string) {
 	}
 
 	stream, err := client.GetChanges(context.Background(), changesReq)
-	assert.Assert(t, err == nil && stream != nil, "unable to issue request")
+	assert.NilError(t, err, "unable to issue request")
 	var id = ""
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF || in == nil {
 			break
 		}
-		assert.Assert(t, err == nil, "unable to receive message")
+		assert.NilError(t, err, "unable to receive message")
 		id = in.Id
 	}
 	err = stream.CloseSend()
-	assert.Assert(t, err == nil, "unable to close stream")
-	assert.Assert(t, len(id) > 0, "wrong id received")
+	assert.NilError(t, err, "unable to close stream")
+	assert.Assert(t, len(id) > 0, "no id received")
 }
 
 func Test_GetConfigurations_All(t *testing.T) {
@@ -86,17 +90,17 @@ func testGetConfigurations(t *testing.T, deviceID string) {
 		configReq.DeviceIds = append(configReq.DeviceIds, deviceID)
 	}
 	stream, err := client.GetConfigurations(context.Background(), configReq)
-	assert.Assert(t, err == nil && stream != nil, "unable to issue request")
+	assert.NilError(t, err, "unable to issue request")
 	var name = ""
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF || in == nil {
 			break
 		}
-		assert.Assert(t, err == nil, "unable to receive message")
+		assert.NilError(t, err, "unable to receive message")
 		name = in.Name
 	}
 	err = stream.CloseSend()
-	assert.Assert(t, err == nil, "unable to close stream")
-	assert.Assert(t, len(name) > 0, "wrong name received")
+	assert.NilError(t, err, "unable to close stream")
+	assert.Assert(t, len(name) > 0, "no name received")
 }

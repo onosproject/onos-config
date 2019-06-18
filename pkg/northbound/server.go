@@ -77,7 +77,7 @@ func (s *Server) AddService(r Service) {
 }
 
 // Serve starts the NB gNMI server.
-func (s *Server) Serve() error {
+func (s *Server) Serve(started func(string)) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.cfg.Port))
 	if err != nil {
 		return err
@@ -123,6 +123,7 @@ func (s *Server) Serve() error {
 	for i := range s.services {
 		s.services[i].Register(server)
 	}
+	started(lis.Addr().String())
 
 	log.Infof("Starting RPC server on address: %s", lis.Addr().String())
 	return server.Serve(lis)

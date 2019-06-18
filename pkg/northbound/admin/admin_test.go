@@ -22,12 +22,16 @@ import (
 	"gotest.tools/assert"
 	"io"
 	"os"
+	"sync"
 	"testing"
 )
 
 // TestMain initializes the test suite context.
 func TestMain(m *testing.M) {
-	northbound.SetUpServer(10124, Service{})
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
+	northbound.SetUpServer(10124, Service{}, &waitGroup)
+	waitGroup.Wait()
 	os.Exit(m.Run())
 }
 
@@ -45,33 +49,33 @@ func Test_GetNetworkChanges(t *testing.T) {
 	conn, client := getAdminClient()
 	defer conn.Close()
 	stream, err := client.GetNetworkChanges(context.Background(), &proto.NetworkChangesRequest{})
-	assert.Assert(t, err == nil && stream != nil, "unable to issue request")
-	var name = ""
+	assert.NilError(t, err, "unable to issue request")
+	var name string
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF || in == nil {
 			break
 		}
-		assert.Assert(t, err == nil, "unable to receive message")
+		assert.NilError(t, err, "unable to receive message")
 		name = in.Name
 	}
 	err = stream.CloseSend()
-	assert.Assert(t, err == nil, "unable to close stream")
-	assert.Assert(t, len(name) > 0, "wrong name received")
+	assert.NilError(t, err, "unable to close stream")
+	assert.Assert(t, len(name) > 0, "no name received")
 }
 
 func Test_RollbackNetworkChange_BadName(t *testing.T) {
 	conn, client := getAdminClient()
 	defer conn.Close()
 	_, err := client.RollbackNetworkChange(context.Background(), &proto.RollbackRequest{Name: "BAD CHANGE"})
-	assert.Assert(t, err != nil, "should not rollback")
+	assert.ErrorContains(t, err, "Rollback aborted. Network change BAD CHANGE not found")
 }
 
 func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 	conn, client := getAdminClient()
 	defer conn.Close()
 	_, err := client.RollbackNetworkChange(context.Background(), &proto.RollbackRequest{Name: ""})
-	assert.Assert(t, err != nil, "should not rollback")
+	assert.ErrorContains(t, err, "is not")
 }
 
 func Test_AddDevice(t *testing.T) {
@@ -81,28 +85,28 @@ func Test_AddDevice(t *testing.T) {
 	oldCount := resp.Count
 	_, err = client.AddOrUpdateDevice(context.Background(),
 		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9"})
-	assert.Assert(t, err == nil, "should add device")
+	assert.NilError(t, err, "should add device")
 	resp, err = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
-	assert.Assert(t, oldCount+1 == resp.Count, "should add new device")
+	assert.Equal(t, oldCount+1, resp.Count, "should add new device")
 }
 
 func Test_GetDevices(t *testing.T) {
 	conn, client := getDeviceClient()
 	defer conn.Close()
 	stream, err := client.GetDevices(context.Background(), &proto.GetDevicesRequest{})
-	assert.Assert(t, err == nil && stream != nil, "unable to issue request")
-	var id = ""
+	assert.NilError(t, err, "unable to issue request")
+	var id string
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF || in == nil {
 			break
 		}
-		assert.Assert(t, err == nil, "unable to receive message")
+		assert.NilError(t, err, "unable to receive message")
 		id = in.Id
 	}
 	err = stream.CloseSend()
-	assert.Assert(t, err == nil, "unable to close stream")
-	assert.Assert(t, len(id) > 0, "wrong id received")
+	assert.NilError(t, err, "unable to close stream")
+	assert.Assert(t, len(id) > 0, "no id received")
 }
 
 func Test_RemoveDevice(t *testing.T) {
@@ -110,11 +114,11 @@ func Test_RemoveDevice(t *testing.T) {
 	defer conn.Close()
 	_, err := client.AddOrUpdateDevice(context.Background(),
 		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9"})
-	assert.Assert(t, err == nil, "should add device")
+	assert.NilError(t, err, "should add device")
 	resp, err := client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
 	oldCount := resp.Count
 	_, err = client.RemoveDevice(context.Background(), &proto.DeviceInfo{Id: "device"})
-	assert.Assert(t, err == nil, "should remove device")
+	assert.NilError(t, err, "should remove device")
 	resp, err = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
-	assert.Assert(t, oldCount-1 == resp.Count, "should remove existing device")
+	assert.Equal(t, oldCount-1, resp.Count, "should remove existing device")
 }
