@@ -9,14 +9,14 @@ ONOS_BUILD_VERSION := stable
 build: # @HELP build the Go binaries and run all validations (default)
 build: test
 ifndef DEBUG
-	go build -o build/_output/onos-config ./cmd/onos-config
+	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
 else
-	go build -gcflags "all=-N -l" -o build/_output/onos-config ./cmd/onos-config
+	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config ./cmd/onos-config
 endif
 	go build -o build/_output/onos ./cmd/onos
-	go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
-	go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
-	go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin ./modelplugin/Devicesim-1.0.0
+	CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin ./modelplugin/TestDevice-1.0.0
+	CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin ./modelplugin/TestDevice-2.0.0
+	CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin ./modelplugin/Devicesim-1.0.0
 
 test: # @HELP run the unit tests and source code validation
 test: deps lint vet license_check gofmt
@@ -55,7 +55,7 @@ protos: # @HELP compile the protobuf files (using protoc-go Docker)
 
 onos-config-docker: # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
-    	--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
 onos-config-debug-docker: # @HELP build onos-config Docker debug image
@@ -65,8 +65,8 @@ onos-config-debug-docker: # @HELP build onos-config Docker debug image
 
 onos-cli-docker: # @HELP build onos-cli Docker image
 	docker build . -f build/onos-cli/Dockerfile \
-        --build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
-        -t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
+		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+		-t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
 images: onos-config-docker onos-config-debug-docker onos-cli-docker
@@ -75,15 +75,20 @@ all: build images
 
 run-docker: # @HELP run onos-config docker image
 run-docker: onos-config-docker
-	docker run -d -p 5150:5150 -v `pwd`/configs:/etc/onos-config \
-    	--name onos-config onosproject/onos-config \
-    	-configStore=/etc/onos-config/configStore-sample.json \
-    	-changeStore=/etc/onos-config/changeStore-sample.json \
-    	-deviceStore=/etc/onos-config/deviceStore-sample.json \
-    	-networkStore=/etc/onos-config/networkStore-sample.json
+	docker stop onos-config || echo "onos-config was not running"
+	docker run -d --rm -p 5150:5150 -v `pwd`/configs:/etc/onos-config \
+		--name onos-config onosproject/onos-config \
+		-configStore=/etc/onos-config/configStore-sample.json \
+		-changeStore=/etc/onos-config/changeStore-sample.json \
+		-deviceStore=/etc/onos-config/deviceStore-sample.json \
+		-networkStore=/etc/onos-config/networkStore-sample.json \
+		-modelPlugin=/usr/local/lib/testdevice.so.1.0.0 \
+		-modelPlugin=/usr/local/lib/testdevice.so.2.0.0 \
+		-modelPlugin=/usr/local/lib/devicesim.so.1.0.0
 
 clean: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
+	docker stop onos-config || echo "onos-config was not running"
 
 help:
 	@grep -E '^.*: *# *@HELP' $(MAKEFILE_LIST) \

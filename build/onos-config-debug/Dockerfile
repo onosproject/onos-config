@@ -9,6 +9,7 @@ FROM golang:1.12.6-alpine3.9 as debugBuilder
 RUN apk upgrade --update --no-cache && apk add git && go get -u github.com/go-delve/delve/cmd/dlv
 
 FROM alpine:3.9
+RUN apk add libc6-compat
 
 COPY --from=onosBuilder /go/src/github.com/onosproject/onos-config/build/_output/onos-config /usr/local/bin/onos-config
 COPY --from=onosBuilder /go/src/github.com/onosproject/onos-config/build/_output/testdevice.so.1.0.0 /usr/local/lib/testdevice.so.1.0.0
