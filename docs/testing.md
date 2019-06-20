@@ -150,7 +150,8 @@ loads the Kubernetes client from the local context and sets up the test environm
 * Creates a test namespace using a UUID
 * Deploys the [Atomix Kubernetes Controller](https://github.com/atomix/atomix-k8s-controller)
 * Creates a Raft `PartitionSet`
-* Deploys [simulators](https://github.com/onosproject/simulators) specified by the `--config`
+* Configures and deploys the [simulators](https://github.com/onosproject/simulators) specified by the `--config`
+* Configures and deploys `-n` onos-config nodes
 * Creates a test `Job` running the `onosproject/onos-config-integration-tests:latest` image
 * Streams output from the test `Job` to stdout
 * Once tests are complete, fetches the exit code from the test `Job`, cleans up test resources,
