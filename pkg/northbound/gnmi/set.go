@@ -159,65 +159,92 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 
 	networkChanges := make(mapNetworkChanges)
 	updateResults := make([]*gnmi.UpdateResult, 0)
+
 	for target, updates := range targetUpdates {
 		// target is a device name with no version
-		configName := store.ConfigName(target)
-		if version != "" {
-			configName = store.ConfigName(strings.Join([]string{target, version}, "-"))
-		}
-
-		// If there was only 1 version for that device it is found and returned here
-		changeID, configName, err := manager.GetManager().SetNetworkConfig(
-			store.ConfigName(configName), updates, targetRemoves[target])
-		var op = gnmi.UpdateResult_UPDATE
-
-		if err != nil {
-			if strings.Contains(err.Error(), manager.SetConfigAlreadyApplied) {
-				log.Warning(manager.SetConfigAlreadyApplied, "Change", store.B64(changeID), "to", configName)
-				continue
-			}
-
-			//FIXME this at the moment fails at a device level. we can specify a per path failure
-			// if the store could return us that info
-			log.Error("Error in setting config:", changeID, "for target", configName, err)
+		changeID, configName, cont, err := setChange(target, version, updates, targetRemoves[target])
+		//if the error is not nil and we need to continue do so
+		if err != nil && !cont {
 			return nil, nil, err
+		} else if err == nil && cont {
+			continue
 		}
 
 		for k := range updates {
-			path, errInPath := utils.ParseGNMIElements(strings.Split(k, "/")[1:])
-			if errInPath != nil {
-				log.Error("ERROR: Unable to parse path", k, errInPath)
+			updateResult, err := buildUpdateResult(k, target, gnmi.UpdateResult_UPDATE)
+			if err != nil {
 				continue
-			}
-			path.Target = target
-
-			updateResult := &gnmi.UpdateResult{
-				Path: path,
-				Op:   op,
 			}
 			updateResults = append(updateResults, updateResult)
 		}
 
-		if op == gnmi.UpdateResult_UPDATE {
-			op = gnmi.UpdateResult_DELETE
-		}
 		for _, r := range targetRemoves[target] {
-			path, errInPath := utils.ParseGNMIElements(strings.Split(r, "/")[1:])
-			if errInPath != nil {
-				log.Error("ERROR: Unable to parse path", r)
+			updateResult, err := buildUpdateResult(r, target, gnmi.UpdateResult_DELETE)
+			if err != nil {
 				continue
 			}
-			path.Target = target
-
-			updateResult := &gnmi.UpdateResult{
-				Path: path,
-				Op:   op,
-			}
 			updateResults = append(updateResults, updateResult)
+			//Removing from targetRemoves since a pass was already done for this target
+			delete(targetRemoves, target)
 		}
 
 		networkChanges[store.ConfigName(configName)] = changeID
 	}
 
+	for target, removes := range targetRemoves {
+		changeID, configName, cont, err := setChange(target, version, make(map[string]string), targetRemoves[target])
+		//if the error is not nil and we need to continue do so
+		if err != nil && !cont {
+			return nil, nil, err
+		} else if err == nil && cont {
+			continue
+		}
+		for _, r := range removes {
+			updateResult, err := buildUpdateResult(r, target, gnmi.UpdateResult_DELETE)
+			if err != nil {
+				continue
+			}
+			updateResults = append(updateResults, updateResult)
+		}
+		networkChanges[store.ConfigName(configName)] = changeID
+	}
+
 	return updateResults, networkChanges, nil
+}
+
+func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
+	path, errInPath := utils.ParseGNMIElements(strings.Split(pathStr, "/")[1:])
+	if errInPath != nil {
+		log.Error("ERROR: Unable to parse path ", pathStr)
+		return nil, errInPath
+	}
+	path.Target = target
+	updateResult := &gnmi.UpdateResult{
+		Path: path,
+		Op:   op,
+	}
+	return updateResult, nil
+
+}
+
+func setChange(target string, version string, targetUpdates map[string]string, targetRemoves []string) (change.ID, store.ConfigName, bool, error) {
+	configName := store.ConfigName(target)
+	// target is a device name with no version
+	if version != "" {
+		configName = store.ConfigName(strings.Join([]string{target, version}, "-"))
+	}
+	changeID, configName, err := manager.GetManager().SetNetworkConfig(
+		store.ConfigName(configName), targetUpdates, targetRemoves)
+	if err != nil {
+		if strings.Contains(err.Error(), manager.SetConfigAlreadyApplied) {
+			log.Warning(manager.SetConfigAlreadyApplied, "Change ", store.B64(changeID), " to ", configName)
+			return nil, "", true, nil
+		}
+
+		//FIXME this at the moment fails at a device level. we can specify a per path failure
+		// if the store could return us that info
+		log.Error("Error in setting config: ", changeID, " for target ", configName, err)
+		return nil, "", false, err
+	}
+	return changeID, configName, false, nil
 }
