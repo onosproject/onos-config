@@ -516,3 +516,140 @@ func Test_NetCfgSetWithDuplicateNameGiven(t *testing.T) {
 	assert.ErrorContains(t, setError2, "is already used for a Network Configuration")
 
 }
+
+// Test_doSingleDelete shows how a value of 1 path can be deleted on a target
+func Test_doSingleDelete(t *testing.T) {
+	server, _ := setUp()
+	var deletePaths = make([]*gnmi.Path, 0)
+	var replacedPaths = make([]*gnmi.Update, 0)
+	var updatedPaths = make([]*gnmi.Update, 0)
+
+	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
+	deletePath := &gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
+	deletePaths = append(deletePaths, deletePath)
+
+	ext100Name := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  GnmiExtensionNetwkChangeID,
+			Msg: []byte("TestChange"),
+		},
+	}
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+		Extension: []*gnmi_ext.Extension{{
+			Ext: &ext100Name,
+		}},
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+
+	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+
+	// Check that Response is correct
+	assert.Assert(t, setResponse != nil, "Expected setResponse to exist")
+
+	assert.Equal(t, len(setResponse.Response), 1)
+
+	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
+
+	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_DELETE.String())
+
+	path := setResponse.Response[0].Path
+
+	assert.Equal(t, path.Target, "Device1")
+
+	assert.Equal(t, len(path.Elem), 3, "Expected 3 path elements")
+
+	assert.Equal(t, path.Elem[0].Name, "cont1a")
+	assert.Equal(t, path.Elem[1].Name, "cont2a")
+	assert.Equal(t, path.Elem[2].Name, "leaf2a")
+
+	// Check that an the network change ID is given in extension 10
+	assert.Equal(t, len(setResponse.Extension), 1)
+
+	extension := setResponse.Extension[0].GetRegisteredExt()
+	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
+	assert.Equal(t, string(extension.Msg), "TestChange")
+}
+
+// Test_doUpdateDeleteSet shows how a request with a delete and an update can be applied on a target
+func Test_doUpdateDeleteSet(t *testing.T) {
+	server, _ := setUp()
+	var deletePaths = make([]*gnmi.Path, 0)
+	var replacedPaths = make([]*gnmi.Update, 0)
+	var updatedPaths = make([]*gnmi.Update, 0)
+
+	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
+	typedValue := gnmi.TypedValue_StringVal{StringVal: "newValue2a"}
+	value := gnmi.TypedValue{Value: &typedValue}
+	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
+
+	pathElemsDeleteRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2c"})
+	deletePath := &gnmi.Path{Elem: pathElemsDeleteRefs.Elem, Target: "Device1"}
+	deletePaths = append(deletePaths, deletePath)
+
+	ext100Name := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  GnmiExtensionNetwkChangeID,
+			Msg: []byte("TestChange"),
+		},
+	}
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+		Extension: []*gnmi_ext.Extension{{
+			Ext: &ext100Name,
+		}},
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+
+	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+
+	// Check that Response is correct
+	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
+
+	assert.Equal(t, len(setResponse.Response), 2)
+
+	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
+
+	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_UPDATE.String())
+
+	path := setResponse.Response[0].Path
+
+	assert.Equal(t, path.Target, "Device1")
+
+	assert.Equal(t, len(path.Elem), 3, "Expected 3 path elements")
+
+	assert.Equal(t, path.Elem[0].Name, "cont1a")
+	assert.Equal(t, path.Elem[1].Name, "cont2a")
+	assert.Equal(t, path.Elem[2].Name, "leaf2a")
+
+	assert.Equal(t, setResponse.Response[1].Op.String(), gnmi.UpdateResult_DELETE.String())
+
+	pathDelete := setResponse.Response[1].Path
+
+	assert.Equal(t, pathDelete.Target, "Device1")
+
+	assert.Equal(t, len(pathDelete.Elem), 3, "Expected 3 path elements")
+
+	assert.Equal(t, pathDelete.Elem[0].Name, "cont1a")
+	assert.Equal(t, pathDelete.Elem[1].Name, "cont2a")
+	assert.Equal(t, pathDelete.Elem[2].Name, "leaf2c")
+
+	// Check that an the network change ID is given in extension 10
+	assert.Equal(t, len(setResponse.Extension), 1)
+
+	extension := setResponse.Extension[0].GetRegisteredExt()
+	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
+	assert.Equal(t, string(extension.Msg), "TestChange")
+
+}
+
+//TODO test with update and delete at the same time.

@@ -111,11 +111,11 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	path3Once := "leaf2a"
 	value := "13"
 
-	assertResponse(t, responseReq, device1, path1Once, path2Once, path3Once, value)
+	assertUpdateResponse(t, responseReq, device1, path1Once, path2Once, path3Once, value)
 
 }
 
-// Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
+// Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with updates for that path
 func Test_SubscribeLeafStream(t *testing.T) {
 	server, _ := setUp()
 
@@ -170,7 +170,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	for response := range responsesChan {
 		log.Info("response", response)
 		if len(response.GetUpdate().GetUpdate()) != 0 {
-			assertResponse(t, response, device1, path1Stream, path2Stream, path3Stream, valueReply)
+			assertUpdateResponse(t, response, device1, path1Stream, path2Stream, path3Stream, valueReply)
 		} else {
 			assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
 		}
@@ -303,13 +303,74 @@ func Test_Poll(t *testing.T) {
 		response := <-responsesChan
 		log.Info("response", response)
 		if len(response.GetUpdate().GetUpdate()) != 0 {
-			assertResponse(t, response, device1, path1Poll, path2Poll, path3Poll, value)
+			assertUpdateResponse(t, response, device1, path1Poll, path2Poll, path3Poll, value)
 		} else {
 			assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
 		}
 	}
 
 	close(serverFake.Responses)
+
+}
+
+// Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with delete paths
+func Test_SubscribeLeafStreamDelete(t *testing.T) {
+	server, _ := setUp()
+
+	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
+
+	assert.NilError(t, err, "Unexpected error doing parsing")
+
+	path.Target = "Device1"
+
+	request := buildRequest(path, gnmi.SubscriptionList_STREAM)
+
+	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
+	serverFake := gNMISubscribeServerFake{
+		Request:   request,
+		Responses: responsesChan,
+		Signal:    make(chan struct{}),
+	}
+
+	go func() {
+		err = server.Subscribe(serverFake)
+		assert.NilError(t, err, "Unexpected error doing Subscribe")
+	}()
+
+	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
+	time.Sleep(100000)
+
+	var deletePaths = make([]*gnmi.Path, 0)
+	var replacedPaths = make([]*gnmi.Update, 0)
+	var updatedPaths = make([]*gnmi.Update, 0)
+
+	deletePaths = append(deletePaths, path)
+
+	var setRequest = &gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+	//Sending set request
+	go func() {
+		_, err = server.Set(context.Background(), setRequest)
+		assert.NilError(t, err, "Unexpected error doing Set")
+		serverFake.Signal <- struct{}{}
+	}()
+
+	device1 := "Device1"
+	path1Stream := "cont1a"
+	path2Stream := "cont2a"
+	path3Stream := "leaf2a"
+
+	for response := range responsesChan {
+		log.Info("response", response)
+		if len(response.GetUpdate().GetDelete()) != 0 {
+			assertDeleteResponse(t, response, device1, path1Stream, path2Stream, path3Stream)
+		} else {
+			assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
+		}
+	}
 
 }
 
@@ -332,7 +393,7 @@ func buildRequest(path *gnmi.Path, mode gnmi.SubscriptionList_Mode) *gnmi.Subscr
 	return request
 }
 
-func assertResponse(t *testing.T, response *gnmi.SubscribeResponse, device1 string, path1 string, path2 string, path3 string, value string) {
+func assertUpdateResponse(t *testing.T, response *gnmi.SubscribeResponse, device1 string, path1 string, path2 string, path3 string, value string) {
 	assert.Assert(t, response.GetUpdate().GetUpdate() != nil, "Update should not be nil")
 	assert.Equal(t, len(response.GetUpdate().GetUpdate()), 1)
 	if response.GetUpdate().GetUpdate()[0] == nil {
@@ -346,4 +407,19 @@ func assertResponse(t *testing.T, response *gnmi.SubscribeResponse, device1 stri
 	assert.Equal(t, pathResponse.Elem[1].Name, path2)
 	assert.Equal(t, pathResponse.Elem[2].Name, path3)
 	assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetStringVal(), value)
+}
+
+func assertDeleteResponse(t *testing.T, response *gnmi.SubscribeResponse, device1 string, path1 string, path2 string, path3 string) {
+	assert.Assert(t, response.GetUpdate() != nil, "Delete should not be nil")
+	assert.Equal(t, len(response.GetUpdate().GetDelete()), 1)
+	if response.GetUpdate().GetDelete()[0] == nil {
+		log.Error("response should contain at least one delete path")
+		t.FailNow()
+	}
+	pathResponse := response.GetUpdate().GetDelete()[0]
+	assert.Equal(t, pathResponse.Target, device1)
+	assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
+	assert.Equal(t, pathResponse.Elem[0].Name, path1)
+	assert.Equal(t, pathResponse.Elem[1].Name, path2)
+	assert.Equal(t, pathResponse.Elem[2].Name, path3)
 }

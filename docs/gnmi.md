@@ -25,7 +25,7 @@ Use `gnmi_cli -get` to get configuration for a particular device (target) from t
 > If config from several devices are required, several paths can be added
 ```bash
 gnmi_cli -get -address localhost:5150 \
-    -proto "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
+    -proto "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
     -timeout 5s -alsologtostderr\
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -114,6 +114,19 @@ SetRequest() with the 100 extension at the end of the -proto section like:
 > Currently (May '19) no checking of the contents is enforced when doing a Set operation
 > and the config is forwarded down to the southbound layer only if a device is registered
 > in the topocache (currently in the deviceStore)
+
+## Northbound Delete Request via gNMI
+A delete request in gNMI is done using the set request with `delete` paths instead of `update` or `replace`.
+To make a gNMI Set request do delete a path, use the `gnmi_cli -set` command as in the example below:
+
+```bash
+gnmi_cli -address localhost:5150 -set \
+    -proto "delete: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
+    -timeout 5s -alsologtostderr \
+    -client_crt pkg/southbound/testdata/client1.crt \
+    -client_key pkg/southbound/testdata/client1.key \
+    -ca_crt pkg/southbound/testdata/onfca.crt
+```
 
 ## Northbound Subscribe Request for Stream Notifications via gNMI
 Similarly, to make a gNMI Subscribe request for streaming, use the `gnmi_cli` command as in the example below, 
