@@ -3,7 +3,7 @@ module github.com/onosproject/onos-config
 go 1.12
 
 require (
-	github.com/atomix/atomix-k8s-controller v0.0.0-20190620014122-5847edd5ee49
+	github.com/atomix/atomix-k8s-controller v0.0.0-20190620084759-d5e65f7fbf68
 	github.com/docker/docker v1.13.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect

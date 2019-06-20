@@ -15,6 +15,8 @@ github.com/atomix/atomix-k8s-controller v0.0.0-20190620005737-4275528e4b50 h1:SD
 github.com/atomix/atomix-k8s-controller v0.0.0-20190620005737-4275528e4b50/go.mod h1:vdmRfGKhgD28STeLKeKoq3tMZOyTR0l3WSG9QCrZWs0=
 github.com/atomix/atomix-k8s-controller v0.0.0-20190620014122-5847edd5ee49 h1:Zq5x4wTi5PGLrFPyC60KIRnXUHb2zdajwLtEfbhzLe8=
 github.com/atomix/atomix-k8s-controller v0.0.0-20190620014122-5847edd5ee49/go.mod h1:vdmRfGKhgD28STeLKeKoq3tMZOyTR0l3WSG9QCrZWs0=
+github.com/atomix/atomix-k8s-controller v0.0.0-20190620084759-d5e65f7fbf68 h1:PCOXQ9q2rP/oYVNAFHR1LIqyD5JXQ19saZUKc4MkfR8=
+github.com/atomix/atomix-k8s-controller v0.0.0-20190620084759-d5e65f7fbf68/go.mod h1:vdmRfGKhgD28STeLKeKoq3tMZOyTR0l3WSG9QCrZWs0=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
