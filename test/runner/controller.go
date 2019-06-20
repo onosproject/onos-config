@@ -110,7 +110,7 @@ func (c *kubeController) Run(tests []string) {
 	}
 
 	message, status, err := c.getStatus(pod)
-	c.cleanup()
+	c.teardown()
 	if err != nil {
 		exitError(err)
 	} else {
@@ -121,54 +121,27 @@ func (c *kubeController) Run(tests []string) {
 
 // setup sets up the Kubernetes resources required to run tests
 func (c *kubeController) setup() error {
-	if err := c.createNamespace(); err != nil {
+	if err := c.setupNamespace(); err != nil {
 		return err
 	}
-	if err := c.createClusterRole(); err != nil {
+	if err := c.setupAtomixController(); err != nil {
 		return err
 	}
-	if err := c.createClusterRoleBinding(); err != nil {
+	if err := c.setupPartitions(); err != nil {
 		return err
 	}
-	if err := c.createServiceAccount(); err != nil {
+	if err := c.setupSimulators(); err != nil {
 		return err
 	}
-	if err := c.createController(); err != nil {
-		return err
-	}
-	if err := c.createService(); err != nil {
-		return err
-	}
-	if err := c.awaitControllerRunning(); err != nil {
-		return err
-	}
-	if err := c.createPartitionSet(); err != nil {
-		return err
-	}
-	if err := c.awaitPartitionsRunning(); err != nil {
-		return err
-	}
-	if err := c.createSimulators(); err != nil {
-		return err
-	}
-	if err := c.awaitSimulatorsRunning(); err != nil {
-		return err
-	}
-	if err := c.createConfigMap(); err != nil {
-		return err
-	}
-	if err := c.createDeployment(); err != nil {
-		return err
-	}
-	if err := c.awaitDeploymentRunning(); err != nil {
+	if err := c.setupOnosConfig(); err != nil {
 		return err
 	}
 	return nil
 }
 
-// createNamespace creates a uniquely named namespace with which to run tests
-func (c *kubeController) createNamespace() error {
-	log.Infof("Creating test namespace %s", c.TestName)
+// setupNamespace creates a uniquely named namespace with which to run tests
+func (c *kubeController) setupNamespace() error {
+	log.Infof("Setting up test namespace %s", c.TestName)
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: c.TestName,
@@ -178,9 +151,34 @@ func (c *kubeController) createNamespace() error {
 	return err
 }
 
-// createClusterRole creates the ClusterRole required by the Atomix controller if not yet created
-func (c *kubeController) createClusterRole() error {
-	log.Infof("Creating test controller role atomix-controller/%s", c.TestName)
+// setupAtomixController sets up the Atomix controller and associated resources
+func (c *kubeController) setupAtomixController() error {
+	log.Infof("Setting up Atomix controller atomix-controller/%s", c.TestName)
+	if err := c.createAtomixClusterRole(); err != nil {
+		return err
+	}
+	if err := c.createAtomixClusterRoleBinding(); err != nil {
+		return err
+	}
+	if err := c.createAtomixServiceAccount(); err != nil {
+		return err
+	}
+	if err := c.createAtomixDeployment(); err != nil {
+		return err
+	}
+	if err := c.createAtomixService(); err != nil {
+		return err
+	}
+
+	log.Infof("Waiting for Atomix controller atomix-controller/%s to become ready", c.TestName)
+	if err := c.awaitAtomixControllerReady(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// createAtomixClusterRole creates the ClusterRole required by the Atomix controller if not yet created
+func (c *kubeController) createAtomixClusterRole() error {
 	role := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
@@ -234,7 +232,7 @@ func (c *kubeController) createClusterRole() error {
 					"policy",
 				},
 				Resources: []string{
-					"poddisruptionbudget",
+					"poddisruptionbudgets",
 				},
 				Verbs: []string{
 					"*",
@@ -260,9 +258,8 @@ func (c *kubeController) createClusterRole() error {
 	return nil
 }
 
-// createClusterRoleBinding creates the ClusterRoleBinding required by the Atomix controller for the test namespace
-func (c *kubeController) createClusterRoleBinding() error {
-	log.Infof("Creating test controller role binding atomix-controller/%s", c.TestName)
+// createAtomixClusterRoleBinding creates the ClusterRoleBinding required by the Atomix controller for the test namespace
+func (c *kubeController) createAtomixClusterRoleBinding() error {
 	roleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
@@ -285,7 +282,7 @@ func (c *kubeController) createClusterRoleBinding() error {
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			c.deleteClusterRoleBinding()
-			return c.createClusterRoleBinding()
+			return c.createAtomixClusterRoleBinding()
 		} else {
 			return err
 		}
@@ -293,9 +290,8 @@ func (c *kubeController) createClusterRoleBinding() error {
 	return nil
 }
 
-// createServiceAccount creates a ServiceAccount used by the Atomix controller
-func (c *kubeController) createServiceAccount() error {
-	log.Infof("Creating test controller service account atomix-controller/%s", c.TestName)
+// createAtomixServiceAccount creates a ServiceAccount used by the Atomix controller
+func (c *kubeController) createAtomixServiceAccount() error {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
@@ -306,9 +302,8 @@ func (c *kubeController) createServiceAccount() error {
 	return err
 }
 
-// createController creates the Atomix controller Deployment
-func (c *kubeController) createController() error {
-	log.Infof("Creating test controller atomix-controller/%s", c.TestName)
+// createAtomixDeployment creates the Atomix controller Deployment
+func (c *kubeController) createAtomixDeployment() error {
 	replicas := int32(1)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -395,9 +390,8 @@ func (c *kubeController) createController() error {
 	return err
 }
 
-// createService creates a service for the controller
-func (c *kubeController) createService() error {
-	log.Infof("Creating test controller service atomix-controller/%s", c.TestName)
+// createAtomixService creates a service for the controller
+func (c *kubeController) createAtomixService() error {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
@@ -419,16 +413,13 @@ func (c *kubeController) createService() error {
 	return err
 }
 
-// awaitControllerRunning blocks until the Atomix controller is in the RUNNING state
-func (c *kubeController) awaitControllerRunning() error {
-	log.Infof("Awaiting test controller atomix-controller/%s", c.TestName)
+// awaitAtomixControllerReady blocks until the Atomix controller is ready
+func (c *kubeController) awaitAtomixControllerReady() error {
 	for {
-		pods, err := c.kubeclient.CoreV1().Pods(c.TestName).List(metav1.ListOptions{
-			LabelSelector: "name=atomix-controller",
-		})
+		dep, err := c.kubeclient.AppsV1().Deployments(c.TestName).Get("atomix-controller", metav1.GetOptions{})
 		if err != nil {
 			return err
-		} else if len(pods.Items) > 0 && pods.Items[0].Status.Phase == corev1.PodRunning {
+		} else if dep.Status.ReadyReplicas == 1 {
 			return nil
 		} else {
 			time.Sleep(100 * time.Millisecond)
@@ -436,9 +427,22 @@ func (c *kubeController) awaitControllerRunning() error {
 	}
 }
 
-// createPartitionSet creates a Raft partition set
+// setupPartitions creates a Raft partition set
+func (c *kubeController) setupPartitions() error {
+	log.Infof("Setting up partitions raft/%s", c.TestName)
+	if err := c.createPartitionSet(); err != nil {
+		return err
+	}
+
+	log.Infof("Waiting for partitions raft/%s to become ready", c.TestName)
+	if err := c.awaitPartitionsReady(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// createPartitionSet creates a Raft partition set from the configuration
 func (c *kubeController) createPartitionSet() error {
-	log.Infof("Creating test partition set raft/%s", c.TestName)
 	bytes, err := yaml.Marshal(&raft.RaftProtocol{})
 	if err != nil {
 		return err
@@ -465,9 +469,8 @@ func (c *kubeController) createPartitionSet() error {
 	return err
 }
 
-// awaitPartitionsRunning waits for Raft partitions to complete startup
-func (c *kubeController) awaitPartitionsRunning() error {
-	log.Infof("Awaiting test partition set raft/%s", c.TestName)
+// awaitPartitionsReady waits for Raft partitions to complete startup
+func (c *kubeController) awaitPartitionsReady() error {
 	for {
 		set, err := c.atomixclient.K8sV1alpha1().PartitionSets(c.TestName).Get("raft", metav1.GetOptions{})
 		if err != nil {
@@ -516,23 +519,31 @@ func (c *kubeController) getSimulatorConfigs() (map[string]string, error) {
 	return configs, nil
 }
 
-// createSimulators creates all simulators required for the test
-func (c *kubeController) createSimulators() error {
+// setupSimulators creates all simulators required for the test
+func (c *kubeController) setupSimulators() error {
 	simulators, err := c.getSimulatorConfigs()
 	if err != nil {
 		return err
 	}
 
 	for name, config := range simulators {
-		if err := c.createSimulator(name, config); err != nil {
+		log.Infof("Setting up simulator %s/%s", name, c.TestName)
+		if err := c.setupSimulator(name, config); err != nil {
+			return err
+		}
+	}
+
+	for name, _ := range simulators {
+		log.Infof("Waiting for simulator %s/%s to become ready", name, c.TestName)
+		if err := c.awaitSimulatorReady(name); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// createSimulators creates a simulator required for the test
-func (c *kubeController) createSimulator(name string, config string) error {
+// setupSimulators creates a simulator required for the test
+func (c *kubeController) setupSimulator(name string, config string) error {
 	if err := c.createSimulatorConfigMap(name, config); err != nil {
 		return err
 	}
@@ -647,28 +658,28 @@ func (c *kubeController) createSimulatorService(name string) error {
 	return err
 }
 
-// awaitSimulatorsRunning waits for all simulators to complete startup
-func (c *kubeController) awaitSimulatorsRunning() error {
+// awaitSimulatorsReady waits for all simulators to complete startup
+func (c *kubeController) awaitSimulatorsReady() error {
 	simulators, err := c.getSimulatorConfigs()
 	if err != nil {
 		return err
 	}
 
 	for name, _ := range simulators {
-		if err := c.awaitSimulatorRunning(name); err != nil {
+		if err := c.awaitSimulatorReady(name); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// awaitSimulatorRunning waits for the given simulator to complete startup
-func (c *kubeController) awaitSimulatorRunning(name string) error {
+// awaitSimulatorReady waits for the given simulator to complete startup
+func (c *kubeController) awaitSimulatorReady(name string) error {
 	for {
 		pod, err := c.kubeclient.CoreV1().Pods(c.TestName).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return err
-		} else if pod.Status.Phase == corev1.PodRunning {
+		} else if pod.Status.ContainerStatuses[0].Ready {
 			return nil
 		} else {
 			time.Sleep(100 * time.Millisecond)
@@ -676,8 +687,25 @@ func (c *kubeController) awaitSimulatorRunning(name string) error {
 	}
 }
 
-func (c *kubeController) createConfigMap() error {
-	log.Infof("Creating onos-config ConfigMap onos-config/%s", c.TestName)
+// setupOnosConfig sets up the onos-config Deployment
+func (c *kubeController) setupOnosConfig() error {
+	log.Infof("Setting up onos-config cluster onos-config/%s", c.TestName)
+	if err := c.createOnosConfigConfigMap(); err != nil {
+		return err
+	}
+	if err := c.createOnosConfigDeployment(); err != nil {
+		return err
+	}
+
+	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.TestName)
+	if err := c.awaitOnosConfigDeploymentReady(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// createOnosConfigConfigMap creates a ConfigMap for the onos-config Deployment
+func (c *kubeController) createOnosConfigConfigMap() error {
 	file, err := os.Open(filepath.Join(configsPath, c.config.Config+".json"))
 	if err != nil {
 		return err
@@ -765,9 +793,8 @@ func (c *kubeController) createConfigMap() error {
 	return err
 }
 
-// createDeployment creates an onos-config Deployment
-func (c *kubeController) createDeployment() error {
-	log.Infof("Creating onos-config Deployment onos-config/%s", c.TestName)
+// createOnosConfigDeployment creates an onos-config Deployment
+func (c *kubeController) createOnosConfigDeployment() error {
 	nodes := int32(c.config.Nodes)
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -866,25 +893,15 @@ func (c *kubeController) createDeployment() error {
 	return err
 }
 
-// awaitDeploymentRunning waits for the onos-config pods to complete startup
-func (c *kubeController) awaitDeploymentRunning() error {
+// awaitOnosConfigDeploymentReady waits for the onos-config pods to complete startup
+func (c *kubeController) awaitOnosConfigDeploymentReady() error {
 	for {
-		pods, err := c.kubeclient.CoreV1().Pods(c.TestName).List(metav1.ListOptions{
-			LabelSelector: "app=onos-config",
-		})
+		dep, err := c.kubeclient.AppsV1().Deployments(c.TestName).Get("onos-config", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
-		ready := true
-		for _, pod := range pods.Items {
-			if !pod.Status.ContainerStatuses[0].Ready {
-				ready = false
-				break
-			}
-		}
-
-		if ready {
+		if int(dep.Status.ReadyReplicas) == c.config.Nodes {
 			return nil
 		} else {
 			time.Sleep(100 * time.Millisecond)
@@ -894,14 +911,14 @@ func (c *kubeController) awaitDeploymentRunning() error {
 
 // start starts running the test job
 func (c *kubeController) start(args []string) (corev1.Pod, error) {
-	if err := c.createJob(args); err != nil {
+	if err := c.createTestJob(args); err != nil {
 		return corev1.Pod{}, err
 	}
-	return c.awaitJobRunning()
+	return c.awaitTestJobRunning()
 }
 
-// createJob creates the job to run tests
-func (c *kubeController) createJob(args []string) error {
+// createTestJob creates the job to run tests
+func (c *kubeController) createTestJob(args []string) error {
 	log.Infof("Starting test job %s", c.TestName)
 	one := int32(1)
 	timeout := int64(c.config.Timeout / time.Second)
@@ -925,8 +942,8 @@ func (c *kubeController) createJob(args []string) error {
 					RestartPolicy: corev1.RestartPolicyNever,
 					Containers: []corev1.Container{
 						{
-							Name:            "atomix-test",
-							Image:           "atomix/atomix-integration-tests:latest",
+							Name:            "test",
+							Image:           "onosproject/onos-config-integration-tests:latest",
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Args:            args,
 							Env: []corev1.EnvVar{
@@ -954,9 +971,9 @@ func (c *kubeController) createJob(args []string) error {
 	return err
 }
 
-// awaitJobRunning blocks until the test job creates a pod in the RUNNING state
-func (c *kubeController) awaitJobRunning() (corev1.Pod, error) {
-	log.Infof("Awaiting test job %s", c.TestName)
+// awaitTestJobRunning blocks until the test job creates a pod in the RUNNING state
+func (c *kubeController) awaitTestJobRunning() (corev1.Pod, error) {
+	log.Infof("Waiting for test job %s to become ready", c.TestName)
 	for {
 		pods, err := c.kubeclient.CoreV1().Pods(c.TestName).List(metav1.ListOptions{
 			LabelSelector: "test=" + c.TestName,
@@ -1019,8 +1036,9 @@ func (c *kubeController) getStatus(pod corev1.Pod) (string, int, error) {
 	}
 }
 
-// cleanup deletes test resources from the Kubernetes cluster
-func (c *kubeController) cleanup() error {
+// teardown deletes test resources from the Kubernetes cluster
+func (c *kubeController) teardown() error {
+	log.Infof("Tearing down test namespace %s", c.TestName)
 	if err := c.deleteNamespace(); err != nil {
 		return err
 	}
@@ -1042,7 +1060,7 @@ func (c *kubeController) deleteNamespace() error {
 
 // getTestName returns a qualified test name derived from the given test ID suitable for use in k8s resource names
 func getTestName(testId string) string {
-	return "atomix-test-" + testId
+	return "onos-test-" + testId
 }
 
 // exitError prints the given err to stdout and exits with exit code 1
