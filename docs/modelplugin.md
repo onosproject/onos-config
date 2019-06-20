@@ -31,9 +31,9 @@ project, and a wrapper **modelmain.go** implementing the ModelPlugin interface.
 They are compiled together with the **go build** command using the
 **-buildmode=plugin** option. 
 
-Many examples of Model Plugins are in the [../modelplugins](../modelplugins)
+Many examples of Model Plugins are in the [modelplugin](../modelplugin)
 folder of this project, and an example script
-[ModelGenerator.sh](../modelplugins/ModelGenerator.sh) is available for creating
+[ModelGenerator.sh](../modelplugin/ModelGenerator.sh) is available for creating
 new plugins.
 
 ### Create your own Model Plugin using script
