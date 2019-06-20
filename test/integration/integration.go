@@ -144,29 +144,24 @@ func TestIntegration(t *testing.T) {
 	// Get the first configured device from the environment.
 	device := env.GetDevices()[0]
 
-	println("1")
 	c, err := env.NewGnmiClient(context.Background(), "")
 	assert.NoError(t, err)
 	assert.True(t, c != nil, "Fetching client returned nil")
 
-	println("2")
 	// First lookup should return an error - the path has not been given a value yet
 	valueBefore, findErrorBefore := gnmiGet(context.Background(), c, device, tzPath)
 	assert.Error(t, findErrorBefore, "no value found for path")
 	assert.True(t, valueBefore == "", "Initial query did not return an error\n")
 
-	println("3")
 	// Set a value using gNMI client
 	errorSet := gnmiSet(context.Background(), c, device, tzPath, tzValue)
 	assert.NoError(t, errorSet)
 
-	println("4")
 	valueAfter, errorAfter := gnmiGet(context.Background(), c, device, tzPath)
 	assert.NoError(t, errorAfter)
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
 	assert.Equal(t, tzValue, valueAfter, "Query after set returned the wrong value: %s\n", valueAfter)
 
-	println("5")
 	// Remove the path
 	errorDelete := gnmiDelete(context.Background(), c, device, tzPath)
 	assert.NoError(t, errorDelete)
