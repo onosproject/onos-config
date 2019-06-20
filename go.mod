@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/atomix/atomix-k8s-controller v0.0.0-20190620014122-5847edd5ee49
 	github.com/docker/docker v1.13.1
+	github.com/ghodss/yaml v1.0.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/go-logr/zapr v0.1.1 // indirect
 	github.com/golang/protobuf v1.3.1
@@ -35,4 +36,5 @@ require (
 	k8s.io/client-go v0.0.0-20190202011228-6e4752048fde
 	k8s.io/klog v0.3.3
 	sigs.k8s.io/controller-runtime v0.1.12 // indirect
+	sigs.k8s.io/yaml v1.1.0 // indirect
 )

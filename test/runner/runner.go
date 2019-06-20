@@ -3,6 +3,7 @@ package runner
 import (
 	"errors"
 	"github.com/stretchr/testify/suite"
+	"os"
 	"sort"
 	"testing"
 )
@@ -66,6 +67,14 @@ func (r *TestRunner) RunTests(args []string) error {
 			})
 		}
 	}
+
+	// Hack to enable verbose testing.
+	os.Args = []string{
+		os.Args[0],
+		"-test.v",
+	}
+
+	// Run the integration tests via the testing package.
 	testing.Main(func(_, _ string) (bool, error) { return true, nil }, tests, nil, nil)
 	return nil
 }
