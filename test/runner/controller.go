@@ -699,7 +699,7 @@ func (c *kubeController) awaitSimulatorReady(name string) error {
 		pod, err := c.kubeclient.CoreV1().Pods(c.TestName).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return err
-		} else if pod.Status.ContainerStatuses[0].Ready {
+		} else if len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].Ready {
 			return nil
 		} else {
 			time.Sleep(100 * time.Millisecond)
@@ -717,6 +717,9 @@ func (c *kubeController) setupOnosConfig() error {
 		return err
 	}
 	if err := c.createOnosConfigDeployment(); err != nil {
+		return err
+	}
+	if err := c.createOnosConfigService(); err != nil {
 		return err
 	}
 
@@ -967,6 +970,29 @@ func (c *kubeController) createOnosConfigDeployment() error {
 	return err
 }
 
+// createOnosConfigService creates a Service to expose the onos-config Deployment to other pods
+func (c *kubeController) createOnosConfigService() error {
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "onos-config",
+			Namespace: c.TestName,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"app": "onos-config",
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Name: "grpc",
+					Port: 5150,
+				},
+			},
+		},
+	}
+	_, err := c.kubeclient.CoreV1().Services(c.TestName).Create(service)
+	return err
+}
+
 // awaitOnosConfigDeploymentReady waits for the onos-config pods to complete startup
 func (c *kubeController) awaitOnosConfigDeploymentReady() error {
 	for {
@@ -1070,7 +1096,7 @@ func (c *kubeController) awaitTestJobRunning() (corev1.Pod, error) {
 			return corev1.Pod{}, err
 		} else if len(pods.Items) > 0 {
 			for _, pod := range pods.Items {
-				if pod.Status.Phase == corev1.PodRunning {
+				if len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].Ready {
 					return pod, nil
 				}
 			}
