@@ -25,8 +25,19 @@ func getRunCommand(registry *TestRegistry) *cobra.Command {
 		Use:   "run [tests]",
 		Short: "Run integration tests on Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
+			configName, _ := cmd.Flags().GetString("config")
+			nodes, _ := cmd.Flags().GetInt("nodes")
+			partitions, _ := cmd.Flags().GetInt("partitions")
+			partitionSize, _ := cmd.Flags().GetInt("partitionSize")
 			timeout, _ := cmd.Flags().GetInt("timeout")
-			controller, err := NewKubeController(time.Duration(timeout) * time.Second)
+			config := &KubeControllerConfig{
+				Config:        configName,
+				Nodes:         nodes,
+				Partitions:    partitions,
+				PartitionSize: partitionSize,
+				Timeout:       time.Duration(timeout) * time.Second,
+			}
+			controller, err := NewKubeController(config)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -34,7 +45,12 @@ func getRunCommand(registry *TestRegistry) *cobra.Command {
 			controller.Run(args)
 		},
 	}
+	cmd.Flags().StringP("config", "c", "default", "test cluster configuration")
 	cmd.Flags().IntP("timeout", "t", 60*10, "test timeout in seconds")
+	cmd.Flags().IntP("nodes", "n", 1, "the number of onos-config nodes to deploy")
+	cmd.Flags().IntP("partitions", "p", 1, "the number of Raft partitions to deploy")
+	cmd.Flags().IntP("partitionSize", "r", 1, "the size of each Raft partition")
+	cmd.Flags().IntP("simulators", "s", 1, "the number of simulators to deploy")
 	return cmd
 }
 

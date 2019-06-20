@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/atomix/atomix-k8s-controller/pkg/apis/k8s/v1alpha1"
@@ -9,17 +10,20 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/google/uuid"
 	"io"
+	"io/ioutil"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	log "k8s.io/klog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 )
 
@@ -27,35 +31,55 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
+var (
+	_, path, _, _ = runtime.Caller(0)
+	configsPath   = filepath.Join(filepath.Dir(filepath.Dir(path)), "configs")
+)
+
 // Controller runs tests on a specific platform
 type Controller interface {
 	// Runs the given tests
 	Run(tests []string)
 }
 
+// KubeControllerConfig provides the configuration for the Kubernetes test controller
+type KubeControllerConfig struct {
+	Config        string
+	Nodes         int
+	Partitions    int
+	PartitionSize int
+	Timeout       time.Duration
+}
+
 // NewKubeController creates a new Kubernetes integration test controller
-func NewKubeController(timeout time.Duration) (Controller, error) {
+func NewKubeController(config *KubeControllerConfig) (Controller, error) {
 	id, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
 	}
-	return GetKubeController(id.String(), timeout)
+	return GetKubeController(id.String(), config)
 }
 
 // GetKubeController returns a Kubernetes integration test controller for the given test ID
-func GetKubeController(testId string, timeout time.Duration) (Controller, error) {
+func GetKubeController(testId string, config *KubeControllerConfig) (Controller, error) {
 	testName := getTestName(testId)
 
-	clientset, err := newKubeClient()
+	kubeclient, err := newKubeClient()
+	if err != nil {
+		return nil, err
+	}
+
+	atomixclient, err := newAtomixKubeClient()
 	if err != nil {
 		return nil, err
 	}
 
 	return &kubeController{
-		TestId:     testId,
-		TestName:   testName,
-		kubeclient: clientset,
-		timeout:    timeout,
+		TestId:       testId,
+		TestName:     testName,
+		kubeclient:   kubeclient,
+		atomixclient: atomixclient,
+		config:       config,
 	}, nil
 }
 
@@ -65,7 +89,7 @@ type kubeController struct {
 	TestName     string
 	kubeclient   *kubernetes.Clientset
 	atomixclient *atomixk8s.Clientset
-	timeout      time.Duration
+	config       *KubeControllerConfig
 }
 
 // Run runs the given tests on Kubernetes
@@ -122,6 +146,21 @@ func (c *kubeController) setup() error {
 		return err
 	}
 	if err := c.awaitPartitionsRunning(); err != nil {
+		return err
+	}
+	if err := c.createSimulators(); err != nil {
+		return err
+	}
+	if err := c.awaitSimulatorsRunning(); err != nil {
+		return err
+	}
+	if err := c.createConfigMap(); err != nil {
+		return err
+	}
+	if err := c.createDeployment(); err != nil {
+		return err
+	}
+	if err := c.awaitDeploymentRunning(); err != nil {
 		return err
 	}
 	return nil
@@ -411,13 +450,13 @@ func (c *kubeController) createPartitionSet() error {
 			Namespace: c.TestName,
 		},
 		Spec: v1alpha1.PartitionSetSpec{
-			Partitions: 3,
+			Partitions: c.config.Partitions,
 			Template: v1alpha1.PartitionTemplateSpec{
 				Spec: v1alpha1.PartitionSpec{
-					Size: 3,
+					Size:     int32(c.config.PartitionSize),
 					Protocol: "raft",
-					Image: "atomix/atomix-raft-protocol:latest",
-					Config: string(bytes),
+					Image:    "atomix/atomix-raft-protocol:latest",
+					Config:   string(bytes),
 				},
 			},
 		},
@@ -441,6 +480,418 @@ func (c *kubeController) awaitPartitionsRunning() error {
 	}
 }
 
+// getSimulatorConfigs returns a map of all simulator configurations
+func (c *kubeController) getSimulatorConfigs() (map[string]string, error) {
+	file, err := os.Open(filepath.Join(configsPath, c.config.Config+".json"))
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	jsonBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	var jsonObj map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &jsonObj)
+	if err != nil {
+		return nil, err
+	}
+
+	simulators, ok := jsonObj["simulators"].(map[string]interface{})
+	if !ok {
+		return map[string]string{}, nil
+	}
+
+	configs := make(map[string]string)
+	for name, config := range simulators {
+		jsonBytes, err = json.Marshal(config)
+		if err != nil {
+			return nil, err
+		}
+		configs[name] = string(jsonBytes)
+	}
+	return configs, nil
+}
+
+// createSimulators creates all simulators required for the test
+func (c *kubeController) createSimulators() error {
+	simulators, err := c.getSimulatorConfigs()
+	if err != nil {
+		return err
+	}
+
+	for name, config := range simulators {
+		if err := c.createSimulator(name, config); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// createSimulators creates a simulator required for the test
+func (c *kubeController) createSimulator(name string, config string) error {
+	if err := c.createSimulatorConfigMap(name, config); err != nil {
+		return err
+	}
+	if err := c.createSimulatorPod(name); err != nil {
+		return err
+	}
+	if err := c.createSimulatorService(name); err != nil {
+		return err
+	}
+	return nil
+}
+
+// createSimulatorConfigMap creates a simulator configuration
+func (c *kubeController) createSimulatorConfigMap(name string, config string) error {
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: c.TestName,
+		},
+		Data: map[string]string{
+			"config.json": config,
+		},
+	}
+	_, err := c.kubeclient.CoreV1().ConfigMaps(c.TestName).Create(cm)
+	return err
+}
+
+// createSimulatorPod creates a simulator pod
+func (c *kubeController) createSimulatorPod(name string) error {
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: c.TestName,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:            "device-simulator",
+					Image:           "onosproject/device-simulator:latest",
+					ImagePullPolicy: corev1.PullIfNotPresent,
+					Ports: []corev1.ContainerPort{
+						{
+							Name:          "gnmi",
+							ContainerPort: 10161,
+						},
+					},
+					ReadinessProbe: &corev1.Probe{
+						Handler: corev1.Handler{
+							TCPSocket: &corev1.TCPSocketAction{
+								Port: intstr.FromInt(10161),
+							},
+						},
+						InitialDelaySeconds: 5,
+						PeriodSeconds:       10,
+					},
+					LivenessProbe: &corev1.Probe{
+						Handler: corev1.Handler{
+							TCPSocket: &corev1.TCPSocketAction{
+								Port: intstr.FromInt(10161),
+							},
+						},
+						InitialDelaySeconds: 15,
+						PeriodSeconds:       20,
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      "config",
+							MountPath: "/etc/simulator/configs",
+							ReadOnly:  true,
+						},
+					},
+				},
+			},
+			Volumes: []corev1.Volume{
+				{
+					Name: "config",
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: name,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	_, err := c.kubeclient.CoreV1().Pods(c.TestName).Create(pod)
+	return err
+}
+
+// createSimulatorService creates a simulator service
+func (c *kubeController) createSimulatorService(name string) error {
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: c.TestName,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"simulator": name,
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Name: "gnmi",
+					Port: 10161,
+				},
+			},
+		},
+	}
+	_, err := c.kubeclient.CoreV1().Services(c.TestName).Create(service)
+	return err
+}
+
+// awaitSimulatorsRunning waits for all simulators to complete startup
+func (c *kubeController) awaitSimulatorsRunning() error {
+	simulators, err := c.getSimulatorConfigs()
+	if err != nil {
+		return err
+	}
+
+	for name, _ := range simulators {
+		if err := c.awaitSimulatorRunning(name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// awaitSimulatorRunning waits for the given simulator to complete startup
+func (c *kubeController) awaitSimulatorRunning(name string) error {
+	for {
+		pod, err := c.kubeclient.CoreV1().Pods(c.TestName).Get(name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		} else if pod.Status.Phase == corev1.PodRunning {
+			return nil
+		} else {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+}
+
+func (c *kubeController) createConfigMap() error {
+	log.Infof("Creating onos-config ConfigMap onos-config/%s", c.TestName)
+	file, err := os.Open(filepath.Join(configsPath, c.config.Config+".json"))
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	jsonBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	var jsonObj map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &jsonObj)
+	if err != nil {
+		return err
+	}
+
+	// Serialize the change store configuration
+	changeStore, err := json.Marshal(jsonObj["changeStore"])
+	if err != nil {
+		return err
+	}
+
+	// Serialize the config store configuration
+	configStore, err := json.Marshal(jsonObj["configStore"])
+	if err != nil {
+		return err
+	}
+
+	// Serialize the network store configuration
+	networkStore, err := json.Marshal(jsonObj["networkStore"])
+	if err != nil {
+		return err
+	}
+
+	// If a device store was provided, serialize the device store configuration.
+	// Otherwise, create a device store configuration from simulators.
+	deviceStoreJson, ok := jsonObj["deviceStore"]
+	var deviceStore []byte
+	if ok {
+		deviceStore, err = json.Marshal(deviceStoreJson)
+		if err != nil {
+			return err
+		}
+	} else {
+		simulators, ok := jsonObj["simulators"].(map[string]interface{})
+		if ok {
+			deviceStoreMap := make(map[string]interface{})
+			deviceStoreMap["Version"] = "1.0.0"
+			deviceStoreMap["Storetype"] = "device"
+			devicesMap := make(map[string]interface{})
+			for name, _ := range simulators {
+				deviceMap := make(map[string]interface{})
+				deviceMap["ID"] = name
+				deviceMap["Addr"] = fmt.Sprintf("%s:10161", name)
+				deviceMap["User"] = "test"
+				deviceMap["Pwd"] = "test"
+				deviceMap["Timeout"] = 5
+				devicesMap[name] = deviceMap
+			}
+			deviceStoreMap["Store"] = devicesMap
+			deviceStore, err = json.Marshal(deviceStoreMap)
+			if err != nil {
+				return err
+			}
+		} else {
+			deviceStore = make([]byte, 0)
+		}
+	}
+
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "onos-config",
+			Namespace: c.TestName,
+		},
+		Data: map[string]string{
+			"changeStore.json":  string(changeStore),
+			"configStore.json":  string(configStore),
+			"deviceStore.json":  string(deviceStore),
+			"networkStore.json": string(networkStore),
+		},
+	}
+	_, err = c.kubeclient.CoreV1().ConfigMaps(c.TestName).Create(cm)
+	return err
+}
+
+// createDeployment creates an onos-config Deployment
+func (c *kubeController) createDeployment() error {
+	log.Infof("Creating onos-config Deployment onos-config/%s", c.TestName)
+	nodes := int32(c.config.Nodes)
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "onos-config",
+			Namespace: c.TestName,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &nodes,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "onos-config",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "onos-config",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:            "onos-config",
+							Image:           "onosproject/onos-config:latest",
+							ImagePullPolicy: corev1.PullIfNotPresent,
+							Env: []corev1.EnvVar{
+								{
+									Name:  "ATOMIX_CONTROLLER",
+									Value: fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", c.TestName),
+								},
+								{
+									Name:  "ATOMIX_APP",
+									Value: "test",
+								},
+								{
+									Name:  "ATOMIX_NAMESPACE",
+									Value: c.TestName,
+								},
+							},
+							Args: []string{
+								"-configStore=/etc/onos-config/configs/configStore.json",
+								"-changeStore=/etc/onos-config/configs/changeStore.json",
+								"-deviceStore=/etc/onos-config/configs/deviceStore.json",
+								"-networkStore=/etc/onos-config/configs/networkStore.json",
+							},
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "grpc",
+									ContainerPort: 5150,
+								},
+							},
+							ReadinessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									TCPSocket: &corev1.TCPSocketAction{
+										Port: intstr.FromInt(5150),
+									},
+								},
+								InitialDelaySeconds: 5,
+								PeriodSeconds:       10,
+							},
+							LivenessProbe: &corev1.Probe{
+								Handler: corev1.Handler{
+									TCPSocket: &corev1.TCPSocketAction{
+										Port: intstr.FromInt(5150),
+									},
+								},
+								InitialDelaySeconds: 15,
+								PeriodSeconds:       20,
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "config",
+									MountPath: "/etc/onos-config/configs",
+									ReadOnly:  true,
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "config",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "onos-config",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	_, err := c.kubeclient.AppsV1().Deployments(c.TestName).Create(dep)
+	return err
+}
+
+// awaitDeploymentRunning waits for the onos-config pods to complete startup
+func (c *kubeController) awaitDeploymentRunning() error {
+	for {
+		pods, err := c.kubeclient.CoreV1().Pods(c.TestName).List(metav1.ListOptions{
+			LabelSelector: "app=onos-config",
+		})
+		if err != nil {
+			return err
+		}
+
+		ready := true
+		for _, pod := range pods.Items {
+			if !pod.Status.ContainerStatuses[0].Ready {
+				ready = false
+				break
+			}
+		}
+
+		if ready {
+			return nil
+		} else {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+}
+
 // start starts running the test job
 func (c *kubeController) start(args []string) (corev1.Pod, error) {
 	if err := c.createJob(args); err != nil {
@@ -453,7 +904,7 @@ func (c *kubeController) start(args []string) (corev1.Pod, error) {
 func (c *kubeController) createJob(args []string) error {
 	log.Infof("Starting test job %s", c.TestName)
 	one := int32(1)
-	timeout := int64(c.timeout / time.Second)
+	timeout := int64(c.config.Timeout / time.Second)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      c.TestName,
