@@ -49,8 +49,7 @@ func getRunCommand(registry *TestRegistry) *cobra.Command {
 	cmd.Flags().IntP("timeout", "t", 60*10, "test timeout in seconds")
 	cmd.Flags().IntP("nodes", "n", 1, "the number of onos-config nodes to deploy")
 	cmd.Flags().IntP("partitions", "p", 1, "the number of Raft partitions to deploy")
-	cmd.Flags().IntP("partitionSize", "r", 1, "the size of each Raft partition")
-	cmd.Flags().IntP("simulators", "s", 1, "the number of simulators to deploy")
+	cmd.Flags().IntP("partitionSize", "s", 1, "the size of each Raft partition")
 	return cmd
 }
 
