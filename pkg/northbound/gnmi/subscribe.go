@@ -166,9 +166,7 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 		_, targetPresent := targets[target]
 		if targetPresent {
 			for _, changeValue := range changeInternal.Config {
-				log.Info("&&&&&", changeValue)
 				_, isPresent := subs[changeValue.Path]
-				log.Info("is Present", changeValue.Path, isPresent)
 				if isPresent {
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
 					if err != nil {
@@ -219,6 +217,7 @@ func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value string, stream
 	pathGnmi.Target = target
 	var response *gnmi.SubscribeResponse
 	//if value is empty it's a delete operation, thus we issue a delete notification
+	//TODO can probably be moved to Value.Remove
 	if value != "" {
 		typedValue := gnmi.TypedValue_StringVal{StringVal: value}
 		valueGnmi := &gnmi.TypedValue{Value: &typedValue}
