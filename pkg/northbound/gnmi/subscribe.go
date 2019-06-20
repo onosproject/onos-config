@@ -166,7 +166,9 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 		_, targetPresent := targets[target]
 		if targetPresent {
 			for _, changeValue := range changeInternal.Config {
+				log.Info("&&&&&", changeValue)
 				_, isPresent := subs[changeValue.Path]
+				log.Info("is Present", changeValue.Path, isPresent)
 				if isPresent {
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
 					if err != nil {
@@ -215,13 +217,19 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 
 func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value string, stream gnmi.GNMI_SubscribeServer) error {
 	pathGnmi.Target = target
-	typedValue := gnmi.TypedValue_StringVal{StringVal: value}
-	valueGnmi := &gnmi.TypedValue{Value: &typedValue}
-	update := &gnmi.Update{
-		Path: pathGnmi,
-		Val:  valueGnmi,
+	var response *gnmi.SubscribeResponse
+	//if value is empty it's a delete operation, thus we issue a delete notification
+	if value != "" {
+		typedValue := gnmi.TypedValue_StringVal{StringVal: value}
+		valueGnmi := &gnmi.TypedValue{Value: &typedValue}
+		update := &gnmi.Update{
+			Path: pathGnmi,
+			Val:  valueGnmi,
+		}
+		response = buildUpdateResponse(update)
+	} else {
+		response = buildDeleteResponse(pathGnmi)
 	}
-	response := buildUpdateResponse(update)
 	err := sendResponse(response, stream)
 	if err != nil {
 		return err
@@ -256,11 +264,26 @@ func buildUpdateResponse(update *gnmi.Update) *gnmi.SubscribeResponse {
 	return response
 }
 
+func buildDeleteResponse(delete *gnmi.Path) *gnmi.SubscribeResponse {
+	deleteArray := []*gnmi.Path{delete}
+	notification := &gnmi.Notification{
+		Timestamp: time.Now().Unix(),
+		Delete:    deleteArray,
+	}
+	responseUpdate := &gnmi.SubscribeResponse_Update{
+		Update: notification,
+	}
+	response := &gnmi.SubscribeResponse{
+		Response: responseUpdate,
+	}
+	return response
+}
+
 func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeServer) error {
-	log.Info("Sending SubscribeResponse out to gNMI client", response)
+	log.Info("Sending SubscribeResponse out to gNMI client ", response)
 	err := stream.Send(response)
 	if err != nil {
-		log.Warning("Error in sending response to client", err)
+		log.Warning("Error in sending response to client ", err)
 		return status.Error(codes.Internal, err.Error())
 	}
 	return nil
