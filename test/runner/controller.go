@@ -33,6 +33,7 @@ func init() {
 
 var (
 	_, path, _, _ = runtime.Caller(0)
+	certsPath     = filepath.Join(filepath.Dir(filepath.Dir(path)), "certs")
 	configsPath   = filepath.Join(filepath.Dir(filepath.Dir(path)), "configs")
 )
 
@@ -690,6 +691,9 @@ func (c *kubeController) awaitSimulatorReady(name string) error {
 // setupOnosConfig sets up the onos-config Deployment
 func (c *kubeController) setupOnosConfig() error {
 	log.Infof("Setting up onos-config cluster onos-config/%s", c.TestName)
+	if err := c.createOnosConfigSecret(); err != nil {
+		return err
+	}
 	if err := c.createOnosConfigConfigMap(); err != nil {
 		return err
 	}
@@ -702,6 +706,38 @@ func (c *kubeController) setupOnosConfig() error {
 		return err
 	}
 	return nil
+}
+
+// createOnosConfigSecret creates a secret for configuring TLS in onos-config and clients
+func (c *kubeController) createOnosConfigSecret() error {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      c.TestName,
+			Namespace: c.TestName,
+		},
+		StringData: map[string]string{},
+	}
+
+	err := filepath.Walk(certsPath, func(path string, info os.FileInfo, err error) error {
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+
+		fileBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			return err
+		}
+
+		secret.StringData[info.Name()] = string(fileBytes)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = c.kubeclient.CoreV1().Secrets(c.TestName).Create(secret)
+	return err
 }
 
 // createOnosConfigConfigMap creates a ConfigMap for the onos-config Deployment
@@ -835,6 +871,9 @@ func (c *kubeController) createOnosConfigDeployment() error {
 								},
 							},
 							Args: []string{
+								"-caPath=/etc/onos-config/certs/tls.cacrt",
+								"-keyPath=/etc/onos-config/certs/tls.key",
+								"-certPath=/etc/onos-config/certs/tls.crt",
 								"-configStore=/etc/onos-config/configs/configStore.json",
 								"-changeStore=/etc/onos-config/configs/changeStore.json",
 								"-deviceStore=/etc/onos-config/configs/deviceStore.json",
@@ -870,6 +909,11 @@ func (c *kubeController) createOnosConfigDeployment() error {
 									MountPath: "/etc/onos-config/configs",
 									ReadOnly:  true,
 								},
+								{
+									Name:      "secret",
+									MountPath: "/etc/onos-config/certs",
+									ReadOnly:  true,
+								},
 							},
 						},
 					},
@@ -881,6 +925,14 @@ func (c *kubeController) createOnosConfigDeployment() error {
 									LocalObjectReference: corev1.LocalObjectReference{
 										Name: "onos-config",
 									},
+								},
+							},
+						},
+						{
+							Name: "secret",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: c.TestName,
 								},
 							},
 						},
@@ -958,6 +1010,23 @@ func (c *kubeController) createTestJob(args []string) error {
 								{
 									Name:  "ATOMIX_NAMESPACE",
 									Value: c.TestName,
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "secret",
+									MountPath: "/etc/onos-config/certs",
+									ReadOnly:  true,
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "secret",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: c.TestName,
 								},
 							},
 						},
