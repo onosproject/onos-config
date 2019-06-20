@@ -5,4 +5,4 @@ COPY . /go/src/github.com/onosproject/onos-config
 WORKDIR /go/src/github.com/onosproject/onos-config
 RUN cd /go/src/github.com/onosproject/onos-config && go build ./...
 
-ENTRYPOINT ["go", "run", "github.com/onosproject/onos-config/cmd/onos-it", "test"]
+ENTRYPOINT ["go", "run", "github.com/onosproject/onos-config/test/cmd/onos-it", "test"]
