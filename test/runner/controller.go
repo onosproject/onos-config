@@ -9,6 +9,7 @@ import (
 	raft "github.com/atomix/atomix-k8s-controller/proto/atomix/protocols/raft"
 	"github.com/ghodss/yaml"
 	"github.com/google/uuid"
+	"github.com/onosproject/onos-config/test/env"
 	"io"
 	"io/ioutil"
 	appsv1 "k8s.io/api/apps/v1"
@@ -24,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -520,6 +522,20 @@ func (c *kubeController) getSimulatorConfigs() (map[string]string, error) {
 	return configs, nil
 }
 
+// getDeviceIds returns a slice of configured simulator device IDs
+func (c *kubeController) getDeviceIds() ([]string, error) {
+	simulators, err := c.getSimulatorConfigs()
+	if err != nil {
+		return nil, err
+	}
+
+	deviceIds := make([]string, 0, len(simulators))
+	for name, _ := range simulators {
+		deviceIds = append(deviceIds, name)
+	}
+	return deviceIds, nil
+}
+
 // setupSimulators creates all simulators required for the test
 func (c *kubeController) setupSimulators() error {
 	simulators, err := c.getSimulatorConfigs()
@@ -578,6 +594,9 @@ func (c *kubeController) createSimulatorPod(name string) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: c.TestName,
+			Labels: map[string]string{
+				"simulator": name,
+			},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
@@ -719,6 +738,10 @@ func (c *kubeController) createOnosConfigSecret() error {
 	}
 
 	err := filepath.Walk(certsPath, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
 		file, err := os.Open(path)
 		if err != nil {
 			return err
@@ -798,8 +821,7 @@ func (c *kubeController) createOnosConfigConfigMap() error {
 				deviceMap := make(map[string]interface{})
 				deviceMap["ID"] = name
 				deviceMap["Addr"] = fmt.Sprintf("%s:10161", name)
-				deviceMap["User"] = "test"
-				deviceMap["Pwd"] = "test"
+				deviceMap["SoftwareVersion"] = "1.0.0"
 				deviceMap["Timeout"] = 5
 				devicesMap[name] = deviceMap
 			}
@@ -972,6 +994,11 @@ func (c *kubeController) start(args []string) (corev1.Pod, error) {
 // createTestJob creates the job to run tests
 func (c *kubeController) createTestJob(args []string) error {
 	log.Infof("Starting test job %s", c.TestName)
+	devices, err := c.getDeviceIds()
+	if err != nil {
+		return err
+	}
+
 	one := int32(1)
 	timeout := int64(c.config.Timeout / time.Second)
 	job := &batchv1.Job{
@@ -1000,16 +1027,8 @@ func (c *kubeController) createTestJob(args []string) error {
 							Args:            args,
 							Env: []corev1.EnvVar{
 								{
-									Name:  "ATOMIX_CONTROLLER",
-									Value: fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", c.TestName),
-								},
-								{
-									Name:  "ATOMIX_APP",
-									Value: "test",
-								},
-								{
-									Name:  "ATOMIX_NAMESPACE",
-									Value: c.TestName,
+									Name:  env.TestDevicesEnv,
+									Value: strings.Join(devices, ","),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
@@ -1036,7 +1055,7 @@ func (c *kubeController) createTestJob(args []string) error {
 		},
 	}
 
-	_, err := c.kubeclient.BatchV1().Jobs(c.TestName).Create(job)
+	_, err = c.kubeclient.BatchV1().Jobs(c.TestName).Create(job)
 	return err
 }
 
