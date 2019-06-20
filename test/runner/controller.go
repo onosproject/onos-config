@@ -806,12 +806,6 @@ func (c *kubeController) createOnosConfigConfigMap() error {
 		return err
 	}
 
-	// Serialize the config store configuration
-	configStore, err := json.Marshal(jsonObj["configStore"])
-	if err != nil {
-		return err
-	}
-
 	// Serialize the network store configuration
 	networkStore, err := json.Marshal(jsonObj["networkStore"])
 	if err != nil {
@@ -849,6 +843,43 @@ func (c *kubeController) createOnosConfigConfigMap() error {
 			}
 		} else {
 			deviceStore = make([]byte, 0)
+		}
+	}
+
+	// If a config store was provided, serialize the config store configuration.
+	// Otherwise, create a config store configuration from simulators.
+	configStoreJson, ok := jsonObj["configStore"]
+	var configStore []byte
+	if ok {
+		configStore, err = json.Marshal(configStoreJson)
+		if err != nil {
+			return err
+		}
+	} else {
+		simulators, ok := jsonObj["simulators"].(map[string]interface{})
+		if ok {
+			configStoreMap := make(map[string]interface{})
+			configStoreMap["Version"] = "1.0.0"
+			configStoreMap["Storetype"] = "config"
+			configsMap := make(map[string]interface{})
+			for name, _ := range simulators {
+				configMap := make(map[string]interface{})
+				configMap["Name"] = name + "-1.0.0"
+				configMap["Device"] = name
+				configMap["Version"] = "1.0.0"
+				configMap["Type"] = "Devicesim"
+				configMap["Created"] = "2019-05-09T16:24:17Z"
+				configMap["Updated"] = "2019-05-09T16:24:17Z"
+				configMap["Changes"] = []string{}
+				configsMap[name+"-1.0.0"] = configMap
+			}
+			configStoreMap["Store"] = configsMap
+			configStore, err = json.Marshal(configStoreMap)
+			if err != nil {
+				return err
+			}
+		} else {
+			configStore = make([]byte, 0)
 		}
 	}
 
