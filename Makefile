@@ -54,11 +54,9 @@ protos: # @HELP compile the protobuf files (using protoc-go Docker)
 		onosproject/protoc-go:stable
 
 onos-config-base-docker: # @HELP build onos-config base Docker image
-	@go mod vendor
 	docker build . -f build/base/Dockerfile \
 		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-config-base:${ONOS_CONFIG_VERSION}
-	@rm -rf vendor
 
 onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
