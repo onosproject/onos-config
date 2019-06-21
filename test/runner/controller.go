@@ -30,6 +30,8 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -91,22 +93,29 @@ func GetKubeController(testId string, config *KubeControllerConfig) (Controller,
 		return nil, err
 	}
 
+	extensionsclient, err := newExtensionsKubeClient()
+	if err != nil {
+		return nil, err
+	}
+
 	return &kubeController{
-		TestId:       testId,
-		TestName:     testName,
-		kubeclient:   kubeclient,
-		atomixclient: atomixclient,
-		config:       config,
+		TestId:           testId,
+		TestName:         testName,
+		kubeclient:       kubeclient,
+		atomixclient:     atomixclient,
+		extensionsclient: extensionsclient,
+		config:           config,
 	}, nil
 }
 
 // Kubernetes test controller
 type kubeController struct {
-	TestId       string
-	TestName     string
-	kubeclient   *kubernetes.Clientset
-	atomixclient *atomixk8s.Clientset
-	config       *KubeControllerConfig
+	TestId           string
+	TestName         string
+	kubeclient       *kubernetes.Clientset
+	atomixclient     *atomixk8s.Clientset
+	extensionsclient *apiextension.Clientset
+	config           *KubeControllerConfig
 }
 
 // Run runs the given tests on Kubernetes
@@ -171,6 +180,12 @@ func (c *kubeController) setupNamespace() error {
 // setupAtomixController sets up the Atomix controller and associated resources
 func (c *kubeController) setupAtomixController() error {
 	log.Infof("Setting up Atomix controller atomix-controller/%s", c.TestName)
+	if err := c.createAtomixPartitionSetResource(); err != nil {
+		return err
+	}
+	if err := c.createAtomixPartitionResource(); err != nil {
+		return err
+	}
 	if err := c.createAtomixClusterRole(); err != nil {
 		return err
 	}
@@ -189,6 +204,64 @@ func (c *kubeController) setupAtomixController() error {
 
 	log.Infof("Waiting for Atomix controller atomix-controller/%s to become ready", c.TestName)
 	if err := c.awaitAtomixControllerReady(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// createAtomixPartitionSetResource creates the PartitionSet custom resource definition in the k8s cluster
+func (c *kubeController) createAtomixPartitionSetResource() error {
+	crd := &apiextensionv1beta1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "partitionsets.k8s.atomix.io",
+		},
+		Spec: apiextensionv1beta1.CustomResourceDefinitionSpec{
+			Group: "k8s.atomix.io",
+			Names: apiextensionv1beta1.CustomResourceDefinitionNames{
+				Kind:     "PartitionSet",
+				ListKind: "PartitionSetList",
+				Plural:   "partitionsets",
+				Singular: "partitionset",
+			},
+			Scope:   apiextensionv1beta1.NamespaceScoped,
+			Version: "v1alpha1",
+			Subresources: &apiextensionv1beta1.CustomResourceSubresources{
+				Status: &apiextensionv1beta1.CustomResourceSubresourceStatus{},
+			},
+		},
+	}
+
+	_, err := c.extensionsclient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
+}
+
+// createAtomixPartitionResource creates the Partition custom resource definition in the k8s cluster
+func (c *kubeController) createAtomixPartitionResource() error {
+	crd := &apiextensionv1beta1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "partitions.k8s.atomix.io",
+		},
+		Spec: apiextensionv1beta1.CustomResourceDefinitionSpec{
+			Group: "k8s.atomix.io",
+			Names: apiextensionv1beta1.CustomResourceDefinitionNames{
+				Kind:     "Partition",
+				ListKind: "PartitionList",
+				Plural:   "partitions",
+				Singular: "partition",
+			},
+			Scope:   apiextensionv1beta1.NamespaceScoped,
+			Version: "v1alpha1",
+			Subresources: &apiextensionv1beta1.CustomResourceSubresources{
+				Status: &apiextensionv1beta1.CustomResourceSubresourceStatus{},
+			},
+		},
+	}
+
+	_, err := c.extensionsclient.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return err
 	}
 	return nil
@@ -1249,7 +1322,28 @@ func newKubeClient() (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(config)
 }
 
-// newAtomixKubeClient returns a new Kubernetes client from the environment
+// newExtensionsKubeClient returns a new extensions API server Kubernetes client from the environment
+func newExtensionsKubeClient() (*apiextension.Clientset, error) {
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		home := homeDir()
+		if home == "" {
+			return nil, errors.New("no home directory configured")
+		}
+		kubeconfig = filepath.Join(home, ".kube", "config")
+	}
+
+	// use the current context in kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// create the clientset
+	return apiextension.NewForConfig(config)
+}
+
+// newAtomixKubeClient returns a new Atomix Kubernetes client from the environment
 func newAtomixKubeClient() (*atomixk8s.Clientset, error) {
 	kubeconfig := os.Getenv("KUBECONFIG")
 	if kubeconfig == "" {
