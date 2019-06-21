@@ -8,7 +8,7 @@ ONOS_CONFIG_DEBUG_VERSION := debug
 ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
-build: test
+build:
 ifndef DEBUG
 	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
 else
@@ -20,7 +20,7 @@ endif
 	CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
 
 test: # @HELP run the unit tests and source code validation
-test: deps lint vet license_check gofmt
+test: build deps lint vet license_check gofmt
 	go test github.com/onosproject/onos-config/pkg/...
 	go test github.com/onosproject/onos-config/cmd/...
 	go test github.com/onosproject/onos-config/modelplugin/...
@@ -71,7 +71,7 @@ onos-cli-docker: # @HELP build onos-cli Docker image
 		-t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
-images: onos-config-docker onos-config-debug-docker onos-cli-docker
+images: build onos-config-docker onos-config-debug-docker onos-cli-docker
 
 all: build images
 
