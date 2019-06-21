@@ -19,22 +19,29 @@ For Minikube, ensure you build the image in the Minikube Docker context:
 > make images
 ```
 
-For kind, you must manually `load` the image into the Kubernetes cluster each time the
-tests are modified:
+For kind, you must manually `load` the `onos-config` image and the integration tests image 
+into the Kubernetes cluster each time the tests are modified:
 
 ```bash
 > make images
 ...
+> kind load docker-image onosproject/onos-config:latest
 > kind load docker-image onosproject/onos-config-integration-tests:latest
 ```
 
 ## Usage
 
-The test framework provides an `onos-it` command used for running tests in Kubernetes.
-To run a test, simply run `onos-it run`:
+The test framework provides an `onit` command used for running tests in Kubernetes.
+To install the `onit` command, use `go get`:
 
-```go
-> go run github.com/onosproject/onos-config/test/cmd/onos-it run my-test
+```bash
+> go get github.com/onosproject/onos-config/test/cmd/onit
+```
+
+Then, to run a test, simply run `onit run`:
+
+```bash
+> onit run my-test
 ...
 ```
 
@@ -42,7 +49,7 @@ When the test is run, the test controller will setup a new test cluster in Kuber
 run the specified tests:
 
 ```go
-> go run github.com/onosproject/onos-config/test/cmd/onos-it run my-test my-other-test
+> onit run my-test my-other-test
 I0620 11:59:59.990621   14783 controller.go:147] Setting up test namespace onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941
 I0620 12:00:00.011219   14783 controller.go:159] Setting up Atomix controller atomix-controller/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941
 I0620 12:00:00.099428   14783 controller.go:176] Waiting for Atomix controller atomix-controller/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941 to become ready
@@ -117,10 +124,10 @@ func init() {
 }
 ```
 
-Once a test has been registered, you should be able to see the test via the `onos-it` command:
+Once a test has been registered, you should be able to see the test via the `onit` command:
 
 ```bash
-> go run github.com/onosproject/onos-config/test/cmd/onos-it list
+> onit list
 my-test
 ...
 ```
@@ -142,8 +149,8 @@ devices := env.GetDevices()
 
 ## Architecture
 
-The integration test framework provides an `onos-it` command for controlling and running tests.
-When `onos-it` is invoked, the command creates a test `Controller` to run the test.
+The integration test framework provides an `onit` command for controlling and running tests.
+When `onit` is invoked, the command creates a test `Controller` to run the test.
 
 The default implementation of the test controller is the `kubeController`. The `kubeController`
 loads the Kubernetes client from the local context and sets up the test environment:
