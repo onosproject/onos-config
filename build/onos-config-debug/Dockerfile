@@ -1,8 +1,6 @@
-ARG ONOS_BUILD_VERSION=stable
+ARG ONOS_CONFIG_BASE_VERSION=latest
 
-FROM onosproject/golang-build:$ONOS_BUILD_VERSION as onosBuilder
-COPY . /go/src/github.com/onosproject/onos-config
-RUN cd /go/src/github.com/onosproject/onos-config && GOOS=linux GOARCH=amd64 DEBUG=true make build
+FROM onosproject/onos-config-base:$ONOS_CONFIG_BASE_VERSION as base
 
 FROM golang:1.12.6-alpine3.9 as debugBuilder
 
@@ -11,10 +9,10 @@ RUN apk upgrade --update --no-cache && apk add git && go get -u github.com/go-de
 FROM alpine:3.9
 RUN apk add libc6-compat
 
-COPY --from=onosBuilder /go/src/github.com/onosproject/onos-config/build/_output/onos-config /usr/local/bin/onos-config
-COPY --from=onosBuilder /go/src/github.com/onosproject/onos-config/build/_output/testdevice.so.1.0.0 /usr/local/lib/testdevice.so.1.0.0
-COPY --from=onosBuilder /go/src/github.com/onosproject/onos-config/build/_output/testdevice.so.2.0.0 /usr/local/lib/testdevice.so.2.0.0
-COPY --from=onosBuilder /go/src/github.com/onosproject/onos-config/build/_output/devicesim.so.1.0.0 /usr/local/lib/devicesim.so.1.0.0
+COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos-config-debug /usr/local/bin/onos-config-debug
+COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/testdevice.so.1.0.0 /usr/local/lib/testdevice.so.1.0.0
+COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/testdevice.so.2.0.0 /usr/local/lib/testdevice.so.2.0.0
+COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/devicesim.so.1.0.0 /usr/local/lib/devicesim.so.1.0.0
 COPY --from=debugBuilder /go/bin/dlv /usr/local/bin/dlv
 
 RUN echo "#!/bin/sh" >> /usr/local/bin/onos-config-debug && \

@@ -1,8 +1,11 @@
-FROM golang:1.12
+ARG ONOS_CONFIG_BASE_VERSION=latest
 
-ENV GO111MODULE=on
-COPY . /go/src/github.com/onosproject/onos-config
-WORKDIR /go/src/github.com/onosproject/onos-config
-RUN cd /go/src/github.com/onosproject/onos-config && go build ./...
+FROM onosproject/onos-config-base:$ONOS_CONFIG_BASE_VERSION as base
 
-ENTRYPOINT ["go", "run", "github.com/onosproject/onos-config/test/cmd/onit", "test"]
+FROM alpine:3.8
+
+COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onit /usr/local/bin/onit
+
+USER nobody
+
+ENTRYPOINT ["onit", "test"]
