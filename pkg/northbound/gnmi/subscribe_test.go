@@ -282,7 +282,6 @@ func Test_Poll(t *testing.T) {
 		PollRequest: pollrequest,
 	}
 
-	//TODO need to block
 	go func() {
 		err = server.Subscribe(serverFake)
 		assert.NilError(t, err, "Unexpected error doing Subscribe")
@@ -299,9 +298,9 @@ func Test_Poll(t *testing.T) {
 	path3Poll := "leaf2a"
 	value := "13"
 
-	for i := 1; i < 4; i++ {
+	for i := 0; i < 4; i++ {
 		response := <-responsesChan
-		log.Info("response", response)
+		log.Info("Response ", response)
 		if len(response.GetUpdate().GetUpdate()) != 0 {
 			assertUpdateResponse(t, response, device1, path1Poll, path2Poll, path3Poll, value)
 		} else {
