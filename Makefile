@@ -54,11 +54,11 @@ protos: # @HELP compile the protobuf files (using protoc-go Docker)
 		onosproject/protoc-go:stable
 
 onos-config-base-docker: # @HELP build onos-config base Docker image
-	go mod vendor
+	@go mod vendor
 	docker build . -f build/base/Dockerfile \
 		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-config-base:${ONOS_CONFIG_VERSION}
-	rm -rf vendor
+	@rm -rf vendor
 
 onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
@@ -75,13 +75,19 @@ onos-cli-docker: onos-config-base-docker # @HELP build onos-cli Docker image
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
-onos-it-docker: onos-config-base-docker # @HELP build onos-config-integration-tests Docker image
+onos-config-it-docker: onos-config-base-docker # @HELP build onos-config-integration-tests Docker image
 	docker build . -f build/onos-it/Dockerfile \
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
-images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-it-docker
+images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-config-it-docker
+
+kind: # @HELP build onos-config and onos-config-integration-tests images and add them to a kind cluster
+kind: onos-config-docker onos-config-it-docker
+	@if [[ ! `kind get clusters` ]]; then echo "no kind cluster found" && exit 1; fi
+	kind load docker-image onosproject/onos-config:${ONOS_CONFIG_VERSION}
+	kind load docker-image onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
 all: build images
 
