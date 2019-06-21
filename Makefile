@@ -70,8 +70,12 @@ onos-cli-docker: # @HELP build onos-cli Docker image
 		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
+onos-it-docker: # @HELP build onos-config-integration-tests Docker image
+	docker build . -f build/onos-it/Dockerfile \
+		-t onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
+
 images: # @HELP build all Docker images
-images: build onos-config-docker onos-config-debug-docker onos-cli-docker
+images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-it-docker
 
 all: build images
 
