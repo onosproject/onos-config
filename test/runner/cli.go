@@ -18,23 +18,25 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 	"time"
 )
 
 // GetCommand returns a Cobra command for tests in the given test registry
 func GetCommand(registry *TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "onos-it {list,test,run} [tests]",
+		Use:   "onit {list,test,run} [tests]",
 		Short: "Run onos-config integration tests on Kubernetes",
 	}
-	cmd.AddCommand(getRunCommand(registry))
+	cmd.AddCommand(getRunCommand())
 	cmd.AddCommand(getTestCommand(registry))
 	cmd.AddCommand(getListCommand(registry))
+	cmd.AddCommand(getConfigsCommand())
 	return cmd
 }
 
 // getRunCommand returns a cobra "run" command
-func getRunCommand(registry *TestRegistry) *cobra.Command {
+func getRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [tests]",
 		Short: "Run integration tests on Kubernetes",
@@ -98,4 +100,42 @@ func getListCommand(registry *TestRegistry) *cobra.Command {
 			}
 		},
 	}
+}
+
+// getConfigsCommand returns a cobra "configs" command to list the available cluster configurations
+func getConfigsCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "configs",
+		Short: "List cluster configurations",
+		Run: func(cmd *cobra.Command, args []string) {
+			configs, err := listConfigs()
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			for _, name := range configs {
+				fmt.Println(name)
+			}
+		},
+	}
+}
+
+func listConfigs() ([]string, error) {
+	configs := []string{}
+	err := filepath.Walk(configsPath, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		ext := filepath.Ext(info.Name())
+		if ext == ".json" {
+			configs = append(configs, info.Name()[:len(info.Name())-len(ext)])
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return configs, nil
 }

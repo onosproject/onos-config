@@ -123,7 +123,6 @@ func LoadManager(configStoreFile string, changeStoreFile string, deviceStoreFile
 
 // ValidateStores validate configurations against their ModelPlugins at startup
 func (m *Manager) ValidateStores() error {
-
 	validationErrors := make(chan error)
 	cfgCount := len(m.ConfigStore.Store)
 	for _, configObj := range m.ConfigStore.Store {
@@ -134,7 +133,7 @@ func (m *Manager) ValidateStores() error {
 			return valErr
 		}
 		cfgCount--
-		if cfgCount == 1 {
+		if cfgCount == 0 {
 			return nil
 		}
 	}
