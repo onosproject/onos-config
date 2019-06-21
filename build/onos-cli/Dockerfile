@@ -1,8 +1,6 @@
-ARG ONOS_BUILD_VERSION=stable
+ARG ONOS_CONFIG_BASE_VERSION=latest
 
-FROM onosproject/golang-build:$ONOS_BUILD_VERSION as builder
-COPY . /go/src/github.com/onosproject/onos-config
-RUN cd /go/src/github.com/onosproject/onos-config && make build
+FROM onosproject/onos-config-base:$ONOS_CONFIG_BASE_VERSION as base
 
 FROM alpine:3.8
 
@@ -12,7 +10,7 @@ RUN addgroup -S onos && adduser -S -G onos onos
 USER onos
 WORKDIR /home/onos
 
-COPY --from=builder /go/src/github.com/onosproject/onos-config/build/_output/onos /usr/local/bin/onos
+COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos /usr/local/bin/onos
 
 RUN onos init && \
     cp /etc/profile /home/onos/.bashrc && \

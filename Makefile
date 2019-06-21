@@ -9,12 +9,10 @@ ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
-ifndef DEBUG
 	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
-else
-	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config ./cmd/onos-config
-endif
+	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config-debug ./cmd/onos-config
 	go build -o build/_output/onos ./cmd/onos
+	go build -o build/_output/onit ./test/cmd/onit
 	CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
 	CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
 	CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
@@ -55,27 +53,33 @@ protos: # @HELP compile the protobuf files (using protoc-go Docker)
 		--entrypoint pkg/northbound/proto/compile-protos.sh \
 		onosproject/protoc-go:stable
 
-onos-config-docker: # @HELP build onos-config Docker image
-	docker build . -f build/onos-config/Dockerfile \
+onos-config-base-docker: # @HELP build onos-config base Docker image
+	docker build . -f build/base/Dockerfile \
 		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+		-t onosproject/onos-config-base:${ONOS_CONFIG_VERSION}
+
+onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
+	docker build . -f build/onos-config/Dockerfile \
+		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
-onos-config-debug-docker: # @HELP build onos-config Docker debug image
+onos-config-debug-docker: onos-config-base-docker # @HELP build onos-config Docker debug image
 	docker build . -f build/onos-config-debug/Dockerfile \
-		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
 
-onos-cli-docker: # @HELP build onos-cli Docker image
+onos-cli-docker: onos-config-base-docker # @HELP build onos-cli Docker image
 	docker build . -f build/onos-cli/Dockerfile \
-		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
-onos-it-docker: # @HELP build onos-config-integration-tests Docker image
+onos-it-docker: onos-config-base-docker # @HELP build onos-config-integration-tests Docker image
 	docker build . -f build/onos-it/Dockerfile \
+		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
-images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-it-docker
+images: onos-config-docker onos-config-debug-docker onos-cli-docker onos-it-docker
 
 all: build images
 
