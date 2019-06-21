@@ -54,9 +54,11 @@ protos: # @HELP compile the protobuf files (using protoc-go Docker)
 		onosproject/protoc-go:stable
 
 onos-config-base-docker: # @HELP build onos-config base Docker image
+	go mod vendor
 	docker build . -f build/base/Dockerfile \
 		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-config-base:${ONOS_CONFIG_VERSION}
+	rm -rf vendor
 
 onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
@@ -79,7 +81,7 @@ onos-it-docker: onos-config-base-docker # @HELP build onos-config-integration-te
 		-t onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
-images: onos-config-docker onos-config-debug-docker onos-cli-docker onos-it-docker
+images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-it-docker
 
 all: build images
 
