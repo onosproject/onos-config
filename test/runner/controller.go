@@ -1214,7 +1214,9 @@ func (c *kubeController) awaitTestJobRunning() (corev1.Pod, error) {
 			return corev1.Pod{}, err
 		} else if len(pods.Items) > 0 {
 			for _, pod := range pods.Items {
-				if len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].Ready {
+				if pod.Status.Phase == corev1.PodRunning && len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].Ready {
+					return pod, nil
+				} else if pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed {
 					return pod, nil
 				}
 			}
