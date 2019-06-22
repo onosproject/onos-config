@@ -345,6 +345,132 @@
       }
     }
   },
+  "configStore": {
+    "Version": "1.0.0",
+    "Storetype": "config",
+    "Store": {
+      "Device1-1.0.0": {
+        "Name": "Device1-1.0.0",
+        "Device": "Device1",
+        "Version": "1.0.0",
+        "Type": "TestDevice",
+        "Created": "2019-05-09T16:24:17Z",
+        "Updated": "2019-05-09T16:24:17Z",
+        "Changes": [
+          "oOqIgEg82ZvVcF7Q3xEDpWAoPcw=",
+          "FBe9CDlvX9eIP1zXSgOKsiQB6YI=",
+          "29U3Tp46cS6RJvIyqlos7SFOgfE="
+        ]
+      },
+      "Device2-1.0.0": {
+        "Name": "Device2-1.0.0",
+        "Device": "Device2",
+        "Version": "1.0.0",
+        "Type": "TestDevice",
+        "Created": "2019-05-09T16:24:17.815298386Z",
+        "Updated": "2019-05-09T16:24:17.815300015Z",
+        "Changes": [
+          "oOqIgEg82ZvVcF7Q3xEDpWAoPcw=",
+          "FBe9CDlvX9eIP1zXSgOKsiQB6YI=",
+          "FGrHfVhk8rwhJ03U5TwxFqPSB/8="
+        ]
+      },
+      "Device2-2.0.0": {
+        "Name": "Device2-2.0.0",
+        "Device": "Device2",
+        "Version": "2.0.0",
+        "Type": "TestDevice",
+        "Created": "2019-05-09T17:00:00Z",
+        "Updated": "2019-05-09T17:00:00Z",
+        "Changes": [
+          "oOqIgEg82ZvVcF7Q3xEDpWAoPcw="
+        ]
+      },
+      "localhost-1-1.0.0": {
+        "Name": "localhost-1-1.0.0",
+        "Device": "localhost-1",
+        "Version": "1.0.0",
+        "Type": "Devicesim",
+        "Created": "2019-05-21T08:43:17Z",
+        "Updated": "2019-05-21T08:43:17Z",
+        "Changes": [
+          "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+          "UwIDulssBgfXoeKco0eirkKkJUI="
+        ]
+      },
+      "localhost-2-1.0.0": {
+        "Name": "localhost-2-1.0.0",
+        "Device": "localhost-2",
+        "Version": "1.0.0",
+        "Type": "Devicesim",
+        "Created": "2019-05-21T08:43:18Z",
+        "Updated": "2019-05-21T08:43:18Z",
+        "Changes": [
+          "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+          "oWFKpOajlRkQf38YTlCJivn3QlU="
+        ]
+      },
+      "localhost-3-1.0.0": {
+        "Name": "localhost-3-1.0.0",
+        "Device": "localhost-3",
+        "Version": "1.0.0",
+        "Type": "Devicesim",
+        "Created": "2019-05-21T08:43:19Z",
+        "Updated": "2019-05-21T08:43:19Z",
+        "Changes": [
+          "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+          "1EvL+9i1ZGjKyuSjxh1hlfZ9/74="
+        ]
+      },
+      "device-1-device-simulator-1.0.0": {
+        "Name": "device-1-device-simulator-1.0.0",
+        "Device": "device-1-device-simulator",
+        "Version": "1.0.0",
+        "Type": "Devicesim",
+        "Created": "2019-05-30T18:03:17Z",
+        "Updated": "2019-05-30T18:03:17Z",
+        "Changes": [
+          "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+          "ZOBFNpGhCHoc9gLiJduqY1FiTzs="
+        ]
+      },
+      "device-2-device-simulator-1.0.0": {
+        "Name": "device-2-device-simulator-1.0.0",
+        "Device": "device-2-device-simulator",
+        "Version": "1.0.0",
+        "Type": "Devicesim",
+        "Created": "2019-05-30T18:03:17Z",
+        "Updated": "2019-05-30T18:03:17Z",
+        "Changes": [
+          "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+          "ZYNxDoardxYaQwMtbFbf1qO9AjE="
+        ]
+      },
+      "device-3-device-simulator-1.0.0": {
+        "Name": "device-3-device-simulator-1.0.0",
+        "Device": "device-3-device-simulator",
+        "Version": "1.0.0",
+        "Type": "Devicesim",
+        "Created": "2019-05-30T18:03:17Z",
+        "Updated": "2019-05-30T18:03:17Z",
+        "Changes": [
+          "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+          "pLAjo6M3icVnLsZ8ZOjSaELH8SQ="
+        ]
+      },
+      "stratum-sim-1-1.0.0": {
+        "Name": "stratum-sim-1-1.0.0",
+        "Device": "stratum-sim-1",
+        "Version": "1.0.0",
+        "Type": "Stratum",
+        "Created": "2019-06-05T10:03:17Z",
+        "Updated": "2019-06-05T10:03:17Z",
+        "Changes": [
+          "hPE88W6rrt5TskCTxtoB1n0hr3I="
+        ]
+      }
+    }
+  },
   "networkStore": {
     "Version": "1.0.0",
     "Storetype": "network",
@@ -359,88 +485,36 @@
       }
     ]
   },
-  "simulators": {
-    "device-simulator-1": {
-      "openconfig-interfaces:interfaces": {
-        "interface": [
-          {
-            "name": "admin",
-            "config": {
-              "name": "admin"
-            }
-          }
-        ]
+  "deviceStore": {
+    "Version": "1.0.0",
+    "Storetype": "device",
+    "Store": {
+      "localhost-1": {
+        "ID": "localhost-1",
+        "Addr": "localhost:10161",
+        "SoftwareVersion": "1.0.0",
+        "User": "devicesim",
+        "Pwd": "notused",
+        "Timeout": 5
       },
-      "openconfig-system:system": {
-        "aaa": {
-          "authentication": {
-            "admin-user": {
-              "config": {
-                "admin-password": "password"
-              }
-            },
-            "config": {
-              "authentication-method": [
-                "openconfig-aaa-types:LOCAL"
-              ]
-            }
-          }
-        },
-        "clock": {
-          "config": {
-            "timezone-name": "Europe/Dublin"
-          }
-        },
-        "config": {
-          "hostname": "replace-device-name",
-          "domain-name": "opennetworking.org",
-          "login-banner": "This device is for authorized use only",
-          "motd-banner": "replace-motd-banner"
-        },
-        "openconfig-openflow:openflow": {
-          "agent": {
-            "config": {
-              "backoff-interval": 5,
-              "datapath-id": "00:16:3e:00:00:00:00:00",
-              "failure-mode": "SECURE",
-              "inactivity-probe": 10,
-              "max-backoff": 10
-            }
-          },
-          "controllers": {
-            "controller": [
-              {
-                "config": {
-                  "name": "main"
-                },
-                "connections": {
-                  "connection": [
-                    {
-                      "aux-id": 0,
-                      "config": {
-                        "address": "192.0.2.10",
-                        "aux-id": 0,
-                        "port": 6633,
-                        "priority": 1,
-                        "source-interface": "admin",
-                        "transport": "TLS"
-                      },
-                      "state": {
-                        "address": "192.0.2.10",
-                        "aux-id": 0,
-                        "port": 6633,
-                        "priority": 1,
-                        "source-interface": "admin",
-                        "transport": "TLS"
-                      }
-                    }
-                  ]
-                },
-                "name": "main"
-              }
-            ]
-          }
-        }
+      "localhost-2": {
+        "ID": "localhost-2",
+        "Addr": "localhost:10162",
+        "SoftwareVersion": "1.0.0",
+        "Timeout": 5
+      },
+      "localhost-3": {
+        "ID": "localhost-3",
+        "Addr": "localhost:10163",
+        "SoftwareVersion": "1.0.0",
+        "Timeout": 5
+      },
+      "stratum-sim-1": {
+        "ID": "stratum-sim-1",
+        "Addr": "localhost:50001",
+        "SoftwareVersion": "1.0.0",
+        "Plain": true,
+        "Timeout": 5
       }
     }
   }
