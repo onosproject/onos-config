@@ -114,7 +114,7 @@ func getSetupClusterCommand() *cobra.Command {
 
 // getSetupSimulatorCommand returns a cobra command for deploying a device simulator
 func getSetupSimulatorCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "simulator <name>",
 		Short: "Setup a device simulator on Kubernetes",
 		Args:  cobra.ExactArgs(1),
@@ -125,7 +125,14 @@ func getSetupSimulatorCommand() *cobra.Command {
 			}
 
 			name := args[0]
-			config := &TestSimulatorConfig{}
+			configName, _ := cmd.Flags().GetString("config")
+			simulatorConfig, err := getDeviceConfig(configName)
+			if err != nil {
+				exitError(err)
+			}
+			config := &TestSimulatorConfig{
+				Config: simulatorConfig,
+			}
 
 			if err = controller.SetupSimulator(name, config); err != nil {
 				exitError(err)
@@ -134,6 +141,8 @@ func getSetupSimulatorCommand() *cobra.Command {
 			}
 		},
 	}
+	cmd.Flags().StringP("config", "c", "default", "simulator configuration")
+	return cmd
 }
 
 // getTeardownCommand returns a cobra "teardown" command for tearing down Kubernetes test resources
@@ -200,9 +209,6 @@ func getGetCommand(registry *TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get {cluster,clusters,configs,tests}",
 		Short: "Get test configurations",
-		Run: func(cmd *cobra.Command, args []string) {
-
-		},
 	}
 	cmd.AddCommand(getGetClusterCommand())
 	cmd.AddCommand(getGetClustersCommand())
@@ -242,7 +248,7 @@ func getGetClustersCommand() *cobra.Command {
 // getGetDeviceConfigsCommand returns a cobra command to get a list of available device simulator configurations
 func getGetDeviceConfigsCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "configs",
+		Use:   "device-presets",
 		Short: "Get a list of device configurations",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, name := range getDeviceConfigs() {
@@ -255,7 +261,7 @@ func getGetDeviceConfigsCommand() *cobra.Command {
 // getGetStoreConfigsCommand returns a cobra command to get a list of available store configurations
 func getGetStoreConfigsCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "configs",
+		Use:   "store-presets",
 		Short: "Get a list of store configurations",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, name := range getStoreConfigs() {
