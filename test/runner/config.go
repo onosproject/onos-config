@@ -34,13 +34,21 @@ func init() {
 }
 
 // getDeviceConfig gets a device configuration by name
-func getDeviceConfig(name string) ([]byte, error) {
+func getDeviceConfig(name string) (map[string]interface{}, error) {
 	file, err := os.Open(filepath.Join(deviceConfigsPath, name+".json"))
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	return ioutil.ReadAll(file)
+
+	jsonBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	var jsonObj map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &jsonObj)
+	return jsonObj, err
 }
 
 // getDeviceConfigs returns a list of store configurations from the configs/store directory
@@ -61,7 +69,7 @@ func getDeviceConfigs() []string {
 }
 
 // getStoreConfig returns a named store configuration from the given stores configuration
-func getStoreConfig(configName string, storeType string) ([]byte, error) {
+func getStoreConfig(configName string, storeType string) (map[string]interface{}, error) {
 	file, err := os.Open(filepath.Join(storeConfigsPath, configName+".json"))
 	if err != nil {
 		return nil, err
@@ -84,26 +92,26 @@ func getStoreConfig(configName string, storeType string) ([]byte, error) {
 		return nil, errors.New("malformed store configuration: " + storeType + " key not found")
 	}
 
-	return json.Marshal(storeObj)
+	return storeObj.(map[string]interface{}), nil
 }
 
 // getChangeStoreConfig returns the change store from the given stores configuration
-func getChangeStoreConfig(name string) ([]byte, error) {
+func getChangeStoreConfig(name string) (map[string]interface{}, error) {
 	return getStoreConfig(name, "changeStore")
 }
 
 // getConfigStoreConfig returns the config store from the given stores configuration
-func getConfigStoreConfig(name string) ([]byte, error) {
+func getConfigStoreConfig(name string) (map[string]interface{}, error) {
 	return getStoreConfig(name, "configStore")
 }
 
 // getNetworkStoreConfig returns the network store from the given stores configuration
-func getNetworkStoreConfig(name string) ([]byte, error) {
+func getNetworkStoreConfig(name string) (map[string]interface{}, error) {
 	return getStoreConfig(name, "networkStore")
 }
 
 // getDeviceStoreConfig returns the device store from the given stores configuration
-func getDeviceStoreConfig(name string) ([]byte, error) {
+func getDeviceStoreConfig(name string) (map[string]interface{}, error) {
 	return getStoreConfig(name, "deviceStore")
 }
 
@@ -124,14 +132,24 @@ func getStoreConfigs() []string {
 	return configs
 }
 
-func setDefaultCluster(name string, config *TestClusterConfig) error {
-	if err := setTestConfig(defaultClusterKey, name); err != nil {
-		return err
+func addClusterConfig(name string, config *TestClusterConfig) error {
+	return setTestConfig(fmt.Sprintf("%s.%s", clustersKey, name), config)
+}
+
+func getClusterConfig(name string) (*TestClusterConfig, error) {
+	config := &TestClusterConfig{}
+	if err := viper.UnmarshalKey(fmt.Sprintf("%s.%s", clustersKey, name), config); err != nil {
+		return nil, err
 	}
-	if err := setTestConfig(fmt.Sprintf("%s.%s", clustersKey, name), config); err != nil {
-		return err
-	}
-	return nil
+	return config, nil
+}
+
+func removeClusterConfig(name string) error {
+	return unsetTestConfig(fmt.Sprintf("%s.%s", clustersKey, name))
+}
+
+func setDefaultCluster(name string) error {
+	return setTestConfig(defaultClusterKey, name)
 }
 
 func unsetDefaultCluster(name string) error {
@@ -147,7 +165,7 @@ func removeSimulator(cluster string, name string) error {
 }
 
 func getDefaultCluster() string {
-	return getTestConfig(defaultClusterKey)
+	return getTestConfig(defaultClusterKey).(string)
 }
 
 func setTestConfig(key string, value interface{}) error {
@@ -155,8 +173,13 @@ func setTestConfig(key string, value interface{}) error {
 	return viper.WriteConfig()
 }
 
-func getTestConfig(key string) string {
+func getTestConfig(key string) interface{} {
 	return viper.GetString(key)
+}
+
+func unsetTestConfig(key string) error {
+	viper.Set(key, struct{}{})
+	return viper.WriteConfig()
 }
 
 func getTestConfigMap(key string) map[string]interface{} {

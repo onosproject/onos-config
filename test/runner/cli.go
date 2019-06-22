@@ -60,26 +60,48 @@ func getSetupClusterCommand() *cobra.Command {
 		Use:   "cluster",
 		Short: "Setup a test cluster on Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
-			configName, _ := cmd.Flags().GetString("config")
 			nodes, _ := cmd.Flags().GetInt("nodes")
 			partitions, _ := cmd.Flags().GetInt("partitions")
 			partitionSize, _ := cmd.Flags().GetInt("partitionSize")
+			configName, _ := cmd.Flags().GetString("config")
+
+			changeStore, err := getChangeStoreConfig(configName)
+			if err != nil {
+				exitError(err)
+			}
+			deviceStore, err := getDeviceStoreConfig(configName)
+			if err != nil {
+				exitError(err)
+			}
+			configStore, err := getConfigStoreConfig(configName)
+			if err != nil {
+				exitError(err)
+			}
+			networkStore, err := getNetworkStoreConfig(configName)
+			if err != nil {
+				exitError(err)
+			}
+
 			config := &TestClusterConfig{
-				Config:        configName,
+				ChangeStore:   changeStore,
+				DeviceStore:   deviceStore,
+				ConfigStore:   configStore,
+				NetworkStore:  networkStore,
 				Nodes:         nodes,
 				Partitions:    partitions,
 				PartitionSize: partitionSize,
 			}
 
-			controller, err := NewTestController()
+			controller, err := NewTestController(config)
 			if err != nil {
 				exitError(err)
 			}
 
-			if err = controller.SetupCluster(config); err != nil {
+			if err = controller.SetupCluster(); err != nil {
 				exitError(err)
 			} else {
-				setDefaultCluster(controller.TestId, config)
+				addClusterConfig(controller.TestId, config)
+				setDefaultCluster(controller.TestId)
 			}
 		},
 	}
@@ -140,11 +162,12 @@ func getTeardownClusterCommand() *cobra.Command {
 				exitError(err)
 			} else {
 				unsetDefaultCluster(controller.TestId)
+				removeClusterConfig(controller.TestId)
 			}
 		},
 	}
 
-	defaultCluster := getTestConfig("default")
+	defaultCluster := getDefaultCluster()
 	cmd.Flags().StringP("cluster", "c", defaultCluster, "the cluster to teardown")
 	viper.BindPFlag(defaultClusterKey, cmd.Flags().Lookup("cluster"))
 	return cmd
@@ -195,7 +218,7 @@ func getGetClusterCommand() *cobra.Command {
 		Use:   "cluster",
 		Short: "Get the currently configured cluster",
 		Run: func(cmd *cobra.Command, args []string) {
-			defaultCluster := getTestConfig(defaultClusterKey)
+			defaultCluster := getDefaultCluster()
 			fmt.Println(defaultCluster)
 			os.Exit(0)
 		},
@@ -293,17 +316,12 @@ func getRunCommand() *cobra.Command {
 		Use:   "run [tests]",
 		Short: "Run integration tests on Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
-			timeout, _ := cmd.Flags().GetInt("timeout")
-			defaultCluster := getTestConfig(defaultClusterKey)
-			if defaultClusterKey == "" {
-				exitError(errors.New("no test cluster configured"))
-			}
-
-			controller, err := GetTestController(defaultCluster)
+			controller, err := getDefaultController()
 			if err != nil {
 				exitError(err)
 			}
 
+			timeout, _ := cmd.Flags().GetInt("timeout")
 			message, code, err := controller.RunTests(args, time.Duration(timeout)*time.Second)
 			if err != nil {
 				exitError(err)
@@ -342,7 +360,11 @@ func getDefaultController() (*TestController, error) {
 	if defaultCluster == "" {
 		return nil, errors.New("no default cluster set")
 	}
-	return GetTestController(defaultCluster)
+	config, err := getClusterConfig(defaultCluster)
+	if err != nil {
+		return nil, err
+	}
+	return GetTestController(defaultCluster, config)
 }
 
 // exitError prints the given err to stdout and exits with exit code 1

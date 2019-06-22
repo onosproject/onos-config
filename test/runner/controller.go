@@ -46,7 +46,11 @@ import (
 
 // TestClusterConfig provides the configuration for the Kubernetes test cluster
 type TestClusterConfig struct {
-	Config        string
+	ChangeStore   map[string]interface{}
+	ConfigStore   map[string]interface{}
+	DeviceStore   map[string]interface{}
+	NetworkStore  map[string]interface{}
+	Simulators    map[string]interface{}
 	Nodes         int
 	Partitions    int
 	PartitionSize int
@@ -54,21 +58,22 @@ type TestClusterConfig struct {
 
 // TestSimulatorConfig provides the configuration for a device simulator
 type TestSimulatorConfig struct {
-	Config string
+	Config map[string]interface{}
 }
 
 // NewTestController creates a new Kubernetes integration test controller
-func NewTestController() (*TestController, error) {
+func NewTestController(config *TestClusterConfig) (*TestController, error) {
 	id, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
 	}
-	return GetTestController(id.String())
+	return GetTestController(id.String(), config)
 }
 
 // GetTestController returns a Kubernetes integration test controller for the given test ID
-func GetTestController(testId string) (*TestController, error) {
+func GetTestController(testId string, config *TestClusterConfig) (*TestController, error) {
 	testName := getTestName(testId)
+	setTestClusterConfigDefaults(config)
 
 	kubeclient, err := newKubeClient()
 	if err != nil {
@@ -91,12 +96,25 @@ func GetTestController(testId string) (*TestController, error) {
 		kubeclient:       kubeclient,
 		atomixclient:     atomixclient,
 		extensionsclient: extensionsclient,
+		config:           config,
 	}, nil
 }
 
 func setTestClusterConfigDefaults(config *TestClusterConfig) {
-	if config.Config == "" {
-		config.Config = "default"
+	if config.ChangeStore == nil {
+		config.ChangeStore = make(map[string]interface{})
+	}
+	if config.DeviceStore == nil {
+		config.DeviceStore = make(map[string]interface{})
+	}
+	if config.ConfigStore == nil {
+		config.ConfigStore = make(map[string]interface{})
+	}
+	if config.NetworkStore == nil {
+		config.NetworkStore = make(map[string]interface{})
+	}
+	if config.Simulators == nil {
+		config.Simulators = make(map[string]interface{})
 	}
 	if config.Nodes == 0 {
 		config.Nodes = 1
@@ -120,10 +138,8 @@ type TestController struct {
 }
 
 // SetupCluster sets up a test cluster with the given configuration
-func (c *TestController) SetupCluster(config *TestClusterConfig) error {
+func (c *TestController) SetupCluster() error {
 	log.Infof("Setting up test cluster %s", c.TestId)
-
-	setTestClusterConfigDefaults(config)
 	if err := c.setupNamespace(); err != nil {
 		return err
 	}
@@ -141,13 +157,8 @@ func (c *TestController) SetupCluster(config *TestClusterConfig) error {
 
 // SetupSimulator sets up a device simulator with the given configuration
 func (c *TestController) SetupSimulator(name string, config *TestSimulatorConfig) error {
-	configString, err := getDeviceConfig(config.Config)
-	if err != nil {
-		return err
-	}
-
 	log.Infof("Setting up simulator %s/%s", name, c.TestName)
-	if err := c.setupSimulator(name, configString); err != nil {
+	if err := c.setupSimulator(name, config); err != nil {
 		return err
 	}
 
@@ -155,7 +166,7 @@ func (c *TestController) SetupSimulator(name string, config *TestSimulatorConfig
 	if err := c.awaitSimulatorReady(name); err != nil {
 		return err
 	}
-	return nil
+	return c.redeployOnosConfig()
 }
 
 // RunTests runs the given tests on Kubernetes
@@ -182,7 +193,11 @@ func (c *TestController) RunTests(tests []string, timeout time.Duration) (string
 
 // TeardownSimulator tears down a device simulator with the given name
 func (c *TestController) TeardownSimulator(name string) error {
-	return nil
+	log.Infof("Tearing down simulator %s/%s", name, c.TestName)
+	if err := c.teardownSimulator(name); err != nil {
+		return err
+	}
+	return c.redeployOnosConfig()
 }
 
 // TeardownCluster tears down the test cluster
@@ -605,58 +620,20 @@ func (c *TestController) awaitPartitionsReady() error {
 	}
 }
 
-// getSimulatorConfigs returns a map of all simulator configurations
-func (c *TestController) getSimulatorConfigs() (map[string]string, error) {
-	file, err := os.Open(filepath.Join(deviceConfigsPath, c.config.Config+".json"))
-	if err != nil {
-		return nil, err
-	}
-
-	defer file.Close()
-
-	jsonBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	var jsonObj map[string]interface{}
-	err = json.Unmarshal(jsonBytes, &jsonObj)
-	if err != nil {
-		return nil, err
-	}
-
-	simulators, ok := jsonObj["simulators"].(map[string]interface{})
-	if !ok {
-		return map[string]string{}, nil
-	}
-
-	configs := make(map[string]string)
-	for name, config := range simulators {
-		jsonBytes, err = json.Marshal(config)
-		if err != nil {
-			return nil, err
-		}
-		configs[name] = string(jsonBytes)
-	}
-	return configs, nil
-}
-
 // getDeviceIds returns a slice of configured simulator device IDs
-func (c *TestController) getDeviceIds() ([]string, error) {
-	simulators, err := c.getSimulatorConfigs()
-	if err != nil {
-		return nil, err
+func (c *TestController) getDeviceIds() []string {
+	devices := []string{}
+	for name, _ := range c.config.DeviceStore {
+		devices = append(devices, name)
 	}
-
-	deviceIds := make([]string, 0, len(simulators))
-	for name, _ := range simulators {
-		deviceIds = append(deviceIds, name)
+	for name, _ := range c.config.Simulators {
+		devices = append(devices, name)
 	}
-	return deviceIds, nil
+	return devices
 }
 
-// setupSimulators creates a simulator required for the test
-func (c *TestController) setupSimulator(name string, config []byte) error {
+// setupSimulator creates a simulator required for the test
+func (c *TestController) setupSimulator(name string, config *TestSimulatorConfig) error {
 	if err := c.createSimulatorConfigMap(name, config); err != nil {
 		return err
 	}
@@ -670,17 +647,21 @@ func (c *TestController) setupSimulator(name string, config []byte) error {
 }
 
 // createSimulatorConfigMap creates a simulator configuration
-func (c *TestController) createSimulatorConfigMap(name string, config []byte) error {
+func (c *TestController) createSimulatorConfigMap(name string, config *TestSimulatorConfig) error {
+	configJson, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: c.TestName,
 		},
 		Data: map[string]string{
-			"config.json": string(config),
+			"config.json": string(configJson),
 		},
 	}
-	_, err := c.kubeclient.CoreV1().ConfigMaps(c.TestName).Create(cm)
+	_, err = c.kubeclient.CoreV1().ConfigMaps(c.TestName).Create(cm)
 	return err
 }
 
@@ -774,21 +755,6 @@ func (c *TestController) createSimulatorService(name string) error {
 	return err
 }
 
-// awaitSimulatorsReady waits for all simulators to complete startup
-func (c *TestController) awaitSimulatorsReady() error {
-	simulators, err := c.getSimulatorConfigs()
-	if err != nil {
-		return err
-	}
-
-	for name, _ := range simulators {
-		if err := c.awaitSimulatorReady(name); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // awaitSimulatorReady waits for the given simulator to complete startup
 func (c *TestController) awaitSimulatorReady(name string) error {
 	for {
@@ -801,6 +767,35 @@ func (c *TestController) awaitSimulatorReady(name string) error {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
+}
+
+// teardownSimulator tears down a simulator by name
+func (c *TestController) teardownSimulator(name string) error {
+	if err := c.deleteSimulatorPod(name); err != nil {
+		return err
+	}
+	if err := c.deleteSimulatorService(name); err != nil {
+		return err
+	}
+	if err := c.deleteSimulatorConfigMap(name); err != nil {
+		return err
+	}
+	return nil
+}
+
+// deleteSimulatorConfigMap deletes a simulator ConfigMap by name
+func (c *TestController) deleteSimulatorConfigMap(name string) error {
+	return c.kubeclient.CoreV1().ConfigMaps(c.TestName).Delete(name, &metav1.DeleteOptions{})
+}
+
+// deleteSimulatorPod deletes a simulator Pod by name
+func (c *TestController) deleteSimulatorPod(name string) error {
+	return c.kubeclient.CoreV1().Pods(c.TestName).Delete(name, &metav1.DeleteOptions{})
+}
+
+// deleteSimulatorService deletes a simulator Service by name
+func (c *TestController) deleteSimulatorService(name string) error {
+	return c.kubeclient.CoreV1().Services(c.TestName).Delete(name, &metav1.DeleteOptions{})
 }
 
 // setupOnosConfig sets up the onos-config Deployment
@@ -864,105 +859,51 @@ func (c *TestController) createOnosConfigSecret() error {
 
 // createOnosConfigConfigMap creates a ConfigMap for the onos-config Deployment
 func (c *TestController) createOnosConfigConfigMap() error {
-	file, err := os.Open(filepath.Join(deviceConfigsPath, c.config.Config+".json"))
-	if err != nil {
-		return err
-	}
-
-	defer file.Close()
-
-	jsonBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return err
-	}
-
-	var jsonObj map[string]interface{}
-	err = json.Unmarshal(jsonBytes, &jsonObj)
-	if err != nil {
-		return err
-	}
-
 	// Serialize the change store configuration
-	changeStore, err := json.Marshal(jsonObj["changeStore"])
+	changeStore, err := json.Marshal(c.config.ChangeStore)
 	if err != nil {
 		return err
 	}
 
 	// Serialize the network store configuration
-	networkStore, err := json.Marshal(jsonObj["networkStore"])
+	networkStore, err := json.Marshal(c.config.NetworkStore)
 	if err != nil {
 		return err
 	}
 
 	// If a device store was provided, serialize the device store configuration.
 	// Otherwise, create a device store configuration from simulators.
-	deviceStoreJson, ok := jsonObj["deviceStore"]
-	var deviceStore []byte
-	if ok {
-		deviceStore, err = json.Marshal(deviceStoreJson)
-		if err != nil {
-			return err
-		}
-	} else {
-		simulators, ok := jsonObj["simulators"].(map[string]interface{})
-		if ok {
-			deviceStoreMap := make(map[string]interface{})
-			deviceStoreMap["Version"] = "1.0.0"
-			deviceStoreMap["Storetype"] = "device"
-			devicesMap := make(map[string]interface{})
-			for name, _ := range simulators {
-				deviceMap := make(map[string]interface{})
-				deviceMap["ID"] = name
-				deviceMap["Addr"] = fmt.Sprintf("%s:10161", name)
-				deviceMap["SoftwareVersion"] = "1.0.0"
-				deviceMap["Timeout"] = 5
-				devicesMap[name] = deviceMap
-			}
-			deviceStoreMap["Store"] = devicesMap
-			deviceStore, err = json.Marshal(deviceStoreMap)
-			if err != nil {
-				return err
-			}
-		} else {
-			deviceStore = make([]byte, 0)
-		}
+	deviceStoreMap := c.config.DeviceStore
+	configStoreMap := c.config.ConfigStore
+	for name, _ := range c.config.Simulators {
+		deviceMap := make(map[string]interface{})
+		deviceMap["ID"] = name
+		deviceMap["Addr"] = fmt.Sprintf("%s:10161", name)
+		deviceMap["SoftwareVersion"] = "1.0.0"
+		deviceMap["Timeout"] = 5
+		deviceStoreMap[name] = deviceMap
+
+		configMap := make(map[string]interface{})
+		configMap["Name"] = name + "-1.0.0"
+		configMap["Device"] = name
+		configMap["Version"] = "1.0.0"
+		configMap["Type"] = "Devicesim"
+		configMap["Created"] = "2019-05-09T16:24:17Z"
+		configMap["Updated"] = "2019-05-09T16:24:17Z"
+		configMap["Changes"] = []string{}
+		configStoreMap[name+"-1.0.0"] = configMap
 	}
 
-	// If a config store was provided, serialize the config store configuration.
-	// Otherwise, create a config store configuration from simulators.
-	configStoreJson, ok := jsonObj["configStore"]
-	var configStore []byte
-	if ok {
-		configStore, err = json.Marshal(configStoreJson)
-		if err != nil {
-			return err
-		}
-	} else {
-		simulators, ok := jsonObj["simulators"].(map[string]interface{})
-		if ok {
-			configStoreMap := make(map[string]interface{})
-			configStoreMap["Version"] = "1.0.0"
-			configStoreMap["Storetype"] = "config"
-			configsMap := make(map[string]interface{})
-			for name, _ := range simulators {
-				configMap := make(map[string]interface{})
-				configMap["Name"] = name + "-1.0.0"
-				configMap["Device"] = name
-				configMap["Version"] = "1.0.0"
-				configMap["Type"] = "Devicesim"
-				configMap["Created"] = "2019-05-09T16:24:17Z"
-				configMap["Updated"] = "2019-05-09T16:24:17Z"
-				configMap["Changes"] = []string{}
-				configsMap[name+"-1.0.0"] = configMap
-			}
-			configStoreMap["Store"] = configsMap
-			configStore, err = json.Marshal(configStoreMap)
-			if err != nil {
-				return err
-			}
-		} else {
-			configStore = make([]byte, 0)
-		}
+	// Serialize the device store configuration
+	deviceStore, err := json.Marshal(deviceStoreMap)
+	if err != nil {
+		return err
+	}
+
+	// Serialize the config store configuration
+	configStore, err := json.Marshal(configStoreMap)
+	if err != nil {
+		return err
 	}
 
 	cm := &corev1.ConfigMap{
@@ -1136,6 +1077,38 @@ func (c *TestController) awaitOnosConfigDeploymentReady() error {
 	}
 }
 
+// teardownOnosConfig tears down the onos-config deployment
+func (c *TestController) redeployOnosConfig() error {
+	log.Infof("Redeploying onos-config cluster onos-config/%s", c.TestName)
+	if err := c.deleteOnosConfigDeployment(); err != nil {
+		return err
+	}
+	if err := c.deleteOnosConfigConfigMap(); err != nil {
+		return err
+	}
+	if err := c.createOnosConfigConfigMap(); err != nil {
+		return err
+	}
+	if err := c.createOnosConfigDeployment(); err != nil {
+		return err
+	}
+	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.TestName)
+	if err := c.awaitOnosConfigDeploymentReady(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// deleteOnosConfigConfigMap deletes the onos-config ConfigMap
+func (c *TestController) deleteOnosConfigConfigMap() error {
+	return c.kubeclient.CoreV1().ConfigMaps(c.TestName).Delete(c.TestName, &metav1.DeleteOptions{})
+}
+
+// deleteOnosConfigDeployment deletes the onos-config Deployment
+func (c *TestController) deleteOnosConfigDeployment() error {
+	return c.kubeclient.AppsV1().Deployments(c.TestName).Delete(c.TestName, &metav1.DeleteOptions{})
+}
+
 // start starts running the test job
 func (c *TestController) start(args []string, timeout time.Duration) (corev1.Pod, error) {
 	if err := c.createTestJob(args, timeout); err != nil {
@@ -1147,11 +1120,6 @@ func (c *TestController) start(args []string, timeout time.Duration) (corev1.Pod
 // createTestJob creates the job to run tests
 func (c *TestController) createTestJob(args []string, timeout time.Duration) error {
 	log.Infof("Starting test job %s", c.TestName)
-	devices, err := c.getDeviceIds()
-	if err != nil {
-		return err
-	}
-
 	one := int32(1)
 	timeoutSeconds := int64(timeout / time.Second)
 	job := &batchv1.Job{
@@ -1181,7 +1149,7 @@ func (c *TestController) createTestJob(args []string, timeout time.Duration) err
 							Env: []corev1.EnvVar{
 								{
 									Name:  env.TestDevicesEnv,
-									Value: strings.Join(devices, ","),
+									Value: strings.Join(c.getDeviceIds(), ","),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
@@ -1208,7 +1176,7 @@ func (c *TestController) createTestJob(args []string, timeout time.Duration) err
 		},
 	}
 
-	_, err = c.kubeclient.BatchV1().Jobs(c.TestName).Create(job)
+	_, err := c.kubeclient.BatchV1().Jobs(c.TestName).Create(job)
 	return err
 }
 
