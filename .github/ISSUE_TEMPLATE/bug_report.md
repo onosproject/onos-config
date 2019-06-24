@@ -19,8 +19,9 @@ Steps to reproduce the behavior:
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Logs, text or screenshots**
+If applicable, add example logs, text and/or screenshots to help explain your problem.
+As an example if there are erros in the logs or a stack trace they can be placed here. 
 
 **Additional context**
 Add any other context about the problem here.
