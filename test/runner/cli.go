@@ -15,10 +15,10 @@
 package runner
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	log "k8s.io/klog"
 	"os"
 	"time"
@@ -34,8 +34,10 @@ func GetCommand(registry *TestRegistry) *cobra.Command {
 		Use:   "onit {list,test,run} [tests]",
 		Short: "Run onos-config integration tests on Kubernetes",
 	}
-	cmd.AddCommand(getSetupCommand())
-	cmd.AddCommand(getTeardownCommand())
+	cmd.AddCommand(getCreateCommand())
+	cmd.AddCommand(getAddCommand())
+	cmd.AddCommand(getRemoveCommand())
+	cmd.AddCommand(getDeleteCommand())
 	cmd.AddCommand(getRunCommand())
 	cmd.AddCommand(getGetCommand(registry))
 	cmd.AddCommand(getSetCommand())
@@ -43,22 +45,22 @@ func GetCommand(registry *TestRegistry) *cobra.Command {
 	return cmd
 }
 
-// getSetupCommand returns a cobra "setup" command for setting up resources
-func getSetupCommand() *cobra.Command {
+// getCreateCommand returns a cobra "setup" command for setting up resources
+func getCreateCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "setup {cluster,simulator} [args]",
-		Short: "Setup a test resource on Kubernetes",
+		Use:   "create {cluster} [args]",
+		Short: "Create a test resource on Kubernetes",
 	}
-	cmd.AddCommand(getSetupClusterCommand())
-	cmd.AddCommand(getSetupSimulatorCommand())
+	cmd.AddCommand(getCreateClusterCommand())
 	return cmd
 }
 
-// getSetupClusterCommand returns a cobra command for deploying a test cluster
-func getSetupClusterCommand() *cobra.Command {
+// getCreateClusterCommand returns a cobra command for deploying a test cluster
+func getCreateClusterCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cluster",
+		Use:   "cluster [id]",
 		Short: "Setup a test cluster on Kubernetes",
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			nodes, _ := cmd.Flags().GetInt("nodes")
 			partitions, _ := cmd.Flags().GetInt("partitions")
@@ -100,8 +102,37 @@ func getSetupClusterCommand() *cobra.Command {
 				PartitionSize: partitionSize,
 			}
 
+			// Get or create a cluster ID
+			var clusterId string
+			if len(args) > 0 {
+				clusterId = args[0]
+			} else {
+				clusterId = newUuid()
+			}
+
+			// Acquire a lock on the configuration to add the cluster
+			if err := config.Lock(); err != nil {
+				exitError(err)
+			}
+
+			// If the cluster is already present in the configuration, fail
+			if _, ok := config.Clusters[clusterId]; ok {
+				exitError(errors.New("cluster already exists"))
+			}
+
+			// Add the cluster to the configuration and update the default cluster
+			config.Clusters[clusterId] = cluster
+			config.DefaultCluster = clusterId
+
+			// Write the configuration and exit
+			err = config.Write()
+			config.Unlock()
+			if err != nil {
+				exitError(err)
+			}
+
 			// Create a new controller for the test cluster
-			controller, err := NewTestController(cluster)
+			controller, err := GetClusterController(clusterId, cluster)
 			if err != nil {
 				exitError(err)
 			}
@@ -109,24 +140,6 @@ func getSetupClusterCommand() *cobra.Command {
 			// Setup the cluster and update the onit configuration
 			if err = controller.SetupCluster(); err != nil {
 				exitError(err)
-			} else {
-				// Acquire a lock on the configuration
-				if err := config.Lock(); err != nil {
-					exitError(err)
-				}
-
-				// Release the configuration lock once complete
-				defer config.Unlock()
-
-				// Add the cluster to the configuration and update the default cluster
-				config.Clusters[controller.ClusterId] = cluster
-				config.DefaultCluster = controller.ClusterId
-
-				// Write the configuration and exit
-				if err = config.Write(); err != nil {
-					exitError(err)
-				}
-				fmt.Println(controller.ClusterId)
 			}
 		},
 	}
@@ -137,11 +150,21 @@ func getSetupClusterCommand() *cobra.Command {
 	return cmd
 }
 
-// getSetupSimulatorCommand returns a cobra command for deploying a device simulator
-func getSetupSimulatorCommand() *cobra.Command {
+// getAddCommand returns a cobra "add" command for adding resources to the cluster
+func getAddCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "add {simulator} [args]",
+		Short: "Add resources to the cluster",
+	}
+	cmd.AddCommand(getAddSimulatorCommand())
+	return cmd
+}
+
+// getAddSimulatorCommand returns a cobra command for deploying a device simulator
+func getAddSimulatorCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "simulator [name]",
-		Short: "Setup a device simulator on Kubernetes",
+		Short: "Add a device simulator to the test cluster",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Load the onit configuration from disk
@@ -150,8 +173,8 @@ func getSetupSimulatorCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			// Get the default cluster ID
-			clusterId, err := config.getDefaultCluster()
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
@@ -163,7 +186,7 @@ func getSetupSimulatorCommand() *cobra.Command {
 			}
 
 			// Get the test cluster controller from the cluster configuration
-			controller, err := GetTestController(clusterId, cluster)
+			controller, err := GetClusterController(clusterId, cluster)
 			if err != nil {
 				exitError(err)
 			}
@@ -173,11 +196,7 @@ func getSetupSimulatorCommand() *cobra.Command {
 			if len(args) > 0 {
 				name = args[0]
 			} else {
-				id, err := uuid.NewUUID()
-				if err != nil {
-					exitError(err)
-				}
-				name = fmt.Sprintf("device-%s", id.String())
+				name = fmt.Sprintf("device-%s", newUuid())
 			}
 
 			// Create the simulator configuration from the configured preset
@@ -198,51 +217,56 @@ func getSetupSimulatorCommand() *cobra.Command {
 					exitError(err)
 				}
 
-				// Release the configuration lock once complete
-				defer config.Unlock()
-
 				// Fail if the cluster does not exist
 				cluster, err := config.getClusterConfig(clusterId)
 				if err != nil {
+					config.Unlock()
 					exitError(err)
 				}
 
 				// Fail if the simulator does not exist
 				_, err = cluster.getSimulator(name)
 				if err != nil {
+					config.Unlock()
 					exitError(err)
 				}
 
-				// Add the simulator to the configuration and exit
+				// Add the simulator to the configuration
 				cluster.Simulators[name] = simulator
-				if err = config.Write(); err != nil {
-					exitError(err)
-				}
 
-				fmt.Println(name)
+				// Write the configuration and exit
+				err = config.Write()
+				config.Unlock()
+				if err != nil {
+					exitError(err)
+				} else {
+					fmt.Println(name)
+				}
 			}
 		},
 	}
-	cmd.Flags().StringP("config", "c", "default", "simulator configuration")
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to which to add the simulator")
+	cmd.Flags().StringP("preset", "p", "default", "simulator preset to apply")
 	return cmd
 }
 
-// getTeardownCommand returns a cobra "teardown" command for tearing down Kubernetes test resources
-func getTeardownCommand() *cobra.Command {
+// getDeleteCommand returns a cobra "teardown" command for tearing down Kubernetes test resources
+func getDeleteCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "teardown",
-		Short: "Teardown Kubernetes test resources",
+		Use:   "delete",
+		Short: "Delete Kubernetes test resources",
 	}
-	cmd.AddCommand(getTeardownClusterCommand())
-	cmd.AddCommand(getTeardownSimulatorCommand())
+	cmd.AddCommand(getDeleteClusterCommand())
 	return cmd
 }
 
-// getTeardownClusterCommand returns a cobra "teardown" command for tearing down a test cluster
-func getTeardownClusterCommand() *cobra.Command {
+// getDeleteClusterCommand returns a cobra "teardown" command for tearing down a test cluster
+func getDeleteClusterCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cluster",
-		Short: "Teardown a test cluster on Kubernetes",
+		Use:   "cluster [id]",
+		Short: "Delete a test cluster on Kubernetes",
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Load the onit configuration from disk
 			config, err := LoadConfig()
@@ -250,10 +274,12 @@ func getTeardownClusterCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			// Get the default cluster ID
-			clusterId, err := config.getDefaultCluster()
-			if err != nil {
-				exitError(err)
+			// Get the cluster ID
+			var clusterId string
+			if len(args) > 0 {
+				clusterId = args[0]
+			} else {
+				clusterId = getDefaultCluster()
 			}
 
 			// Fail if the default cluster configuration cannot be found
@@ -263,7 +289,7 @@ func getTeardownClusterCommand() *cobra.Command {
 			}
 
 			// Get the test cluster controller from the cluster configuration
-			controller, err := GetTestController(clusterId, cluster)
+			controller, err := GetClusterController(clusterId, cluster)
 			if err != nil {
 				exitError(err)
 			}
@@ -276,12 +302,10 @@ func getTeardownClusterCommand() *cobra.Command {
 					exitError(err)
 				}
 
-				// Release the configuration lock once complete
-				defer config.Unlock()
-
 				// Fail if the cluster does not exist
 				_, err := config.getClusterConfig(clusterId)
 				if err != nil {
+					config.Unlock()
 					exitError(err)
 				}
 
@@ -294,28 +318,32 @@ func getTeardownClusterCommand() *cobra.Command {
 				}
 
 				// Write the configuration and exit
-				if err = config.Write(); err != nil {
+				err = config.Write()
+				config.Unlock()
+				if err != nil {
 					exitError(err)
 				}
 			}
 		},
 	}
-
-	// Load the onit configuration from disk
-	config, err := LoadConfig()
-	if err != nil {
-		exitError(err)
-	}
-	cmd.Flags().StringP("cluster", "c", config.DefaultCluster, "the cluster to teardown")
-	viper.BindPFlag(defaultClusterKey, cmd.Flags().Lookup("cluster"))
 	return cmd
 }
 
-// getTeardownSimulatorCommand returns a cobra command for tearing down a device simulator
-func getTeardownSimulatorCommand() *cobra.Command {
-	return &cobra.Command{
+// getRemoveCommand returns a cobra "remove" command for removing resources from the cluster
+func getRemoveCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "remove {simulator} [args]",
+		Short: "Remove resources from the cluster",
+	}
+	cmd.AddCommand(getRemoveSimulatorCommand())
+	return cmd
+}
+
+// getRemoveSimulatorCommand returns a cobra command for tearing down a device simulator
+func getRemoveSimulatorCommand() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "simulator <name>",
-		Short: "Teardown a device simulator",
+		Short: "Remove a device simulator from the cluster",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Load the onit configuration from disk
@@ -324,8 +352,8 @@ func getTeardownSimulatorCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			// Get the default cluster ID
-			clusterId, err := config.getDefaultCluster()
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
@@ -337,7 +365,7 @@ func getTeardownSimulatorCommand() *cobra.Command {
 			}
 
 			// Get the test cluster controller from the cluster configuration
-			controller, err := GetTestController(clusterId, cluster)
+			controller, err := GetClusterController(clusterId, cluster)
 			if err != nil {
 				exitError(err)
 			}
@@ -351,18 +379,17 @@ func getTeardownSimulatorCommand() *cobra.Command {
 					exitError(err)
 				}
 
-				// Release the configuration lock once complete
-				defer config.Unlock()
-
 				// Fail if the cluster does not exist
 				cluster, err = config.getClusterConfig(clusterId)
 				if err != nil {
+					config.Unlock()
 					exitError(err)
 				}
 
 				// Fail if the simulator does not exist
 				_, err := cluster.getSimulator(name)
 				if err != nil {
+					config.Unlock()
 					exitError(err)
 				}
 
@@ -370,25 +397,29 @@ func getTeardownSimulatorCommand() *cobra.Command {
 				delete(cluster.Simulators, name)
 
 				// Write the configuration and exit
-				if err = config.Write(); err != nil {
+				err = config.Write()
+				if err != nil {
 					exitError(err)
 				}
 			}
 		},
 	}
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to which to add the simulator")
+	return cmd
 }
 
 // getGetCommand returns a cobra "get" command to read test configurations
 func getGetCommand(registry *TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get {cluster,clusters,configs,tests}",
+		Use:   "get {cluster,clusters,simulators,device-presets,store-presets,tests}",
 		Short: "Get test configurations",
 	}
 	cmd.AddCommand(getGetClusterCommand())
 	cmd.AddCommand(getGetSimulatorsCommand())
 	cmd.AddCommand(getGetClustersCommand())
-	cmd.AddCommand(getGetDeviceConfigsCommand())
-	cmd.AddCommand(getGetStoreConfigsCommand())
+	cmd.AddCommand(getGetDevicePresetsCommand())
+	cmd.AddCommand(getGetStorePresetsCommand())
 	cmd.AddCommand(getGetTestsCommand(registry))
 	return cmd
 }
@@ -411,7 +442,7 @@ func getGetClusterCommand() *cobra.Command {
 
 // getGetSimulatorsCommand returns a cobra command to get the list of simulators deployed in the current cluster context
 func getGetSimulatorsCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "simulators",
 		Short: "Get the currently configured cluster's simulators",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -421,8 +452,8 @@ func getGetSimulatorsCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			// Get the default cluster ID
-			clusterId, err := config.getDefaultCluster()
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
@@ -439,6 +470,9 @@ func getGetSimulatorsCommand() *cobra.Command {
 			}
 		},
 	}
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	return cmd
 }
 
 // getGetClustersCommand returns a cobra command to get a list of available test clusters
@@ -461,8 +495,8 @@ func getGetClustersCommand() *cobra.Command {
 	}
 }
 
-// getGetDeviceConfigsCommand returns a cobra command to get a list of available device simulator configurations
-func getGetDeviceConfigsCommand() *cobra.Command {
+// getGetDevicePresetsCommand returns a cobra command to get a list of available device simulator configurations
+func getGetDevicePresetsCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "device-presets",
 		Short: "Get a list of device configurations",
@@ -474,8 +508,8 @@ func getGetDeviceConfigsCommand() *cobra.Command {
 	}
 }
 
-// getGetStoreConfigsCommand returns a cobra command to get a list of available store configurations
-func getGetStoreConfigsCommand() *cobra.Command {
+// getGetStorePresetsCommand returns a cobra command to get a list of available store configurations
+func getGetStorePresetsCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "store-presets",
 		Short: "Get a list of store configurations",
@@ -530,18 +564,18 @@ func getSetClusterCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			// Unlock the configuration lock once complete
-			defer config.Unlock()
-
 			// Verify that the cluster exists
 			_, err = config.getClusterConfig(clusterId)
 			if err != nil {
+				config.Unlock()
 				exitError(err)
 			}
 
 			// Update and write the configuration
 			config.DefaultCluster = clusterId
-			if err = config.Write(); err != nil {
+			err = config.Write()
+			config.Unlock()
+			if err != nil {
 				exitError(err)
 			} else {
 				fmt.Println(clusterId)
@@ -562,8 +596,8 @@ func getRunCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			// Get the default cluster ID
-			clusterId, err := config.getDefaultCluster()
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
@@ -575,7 +609,7 @@ func getRunCommand() *cobra.Command {
 			}
 
 			// Get the test cluster controller from the cluster configuration
-			controller, err := GetTestController(clusterId, cluster)
+			controller, err := GetClusterController(clusterId, cluster)
 			if err != nil {
 				exitError(err)
 			}
@@ -590,6 +624,8 @@ func getRunCommand() *cobra.Command {
 			}
 		},
 	}
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster on which to run the test")
 	cmd.Flags().IntP("timeout", "t", 60*10, "test timeout in seconds")
 	return cmd
 }
@@ -611,6 +647,25 @@ func getTestCommand(registry *TestRegistry) *cobra.Command {
 			}
 		},
 	}
+}
+
+// getDefaultCluster returns the default cluster ID
+func getDefaultCluster() string {
+	// Load the onit configuration from disk
+	config, err := LoadConfig()
+	if err != nil {
+		exitError(err)
+	}
+	return config.DefaultCluster
+}
+
+// newUuid returns a new UUID
+func newUuid() string {
+	id, err := uuid.NewUUID()
+	if err != nil {
+		exitError(err)
+	}
+	return id.String()
 }
 
 // exitError prints the given err to stdout and exits with exit code 1

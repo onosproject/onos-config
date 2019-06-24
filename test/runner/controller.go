@@ -44,17 +44,8 @@ import (
 	"time"
 )
 
-// NewTestController creates a new Kubernetes integration test controller
-func NewTestController(config *ClusterConfig) (*ClusterController, error) {
-	id, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-	return GetTestController(id.String(), config)
-}
-
-// GetTestController returns a Kubernetes integration test controller for the given test ID
-func GetTestController(testId string, config *ClusterConfig) (*ClusterController, error) {
+// GetClusterController returns a Kubernetes integration test controller for the given test ID
+func GetClusterController(clusterId string, config *ClusterConfig) (*ClusterController, error) {
 	setClusterConfigDefaults(config)
 
 	kubeclient, err := newKubeClient()
@@ -73,7 +64,7 @@ func GetTestController(testId string, config *ClusterConfig) (*ClusterController
 	}
 
 	return &ClusterController{
-		ClusterId:        testId,
+		ClusterId:        clusterId,
 		kubeclient:       kubeclient,
 		atomixclient:     atomixclient,
 		extensionsclient: extensionsclient,
