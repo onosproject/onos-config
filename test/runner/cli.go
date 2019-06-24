@@ -102,6 +102,7 @@ func getSetupClusterCommand() *cobra.Command {
 			} else {
 				addClusterConfig(controller.TestId, config)
 				setDefaultCluster(controller.TestId)
+				fmt.Println(controller.TestId)
 			}
 		},
 	}
@@ -138,6 +139,7 @@ func getSetupSimulatorCommand() *cobra.Command {
 				exitError(err)
 			} else {
 				addSimulator(controller.TestId, name, config)
+				fmt.Println(name)
 			}
 		},
 	}

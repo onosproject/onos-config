@@ -201,5 +201,32 @@ func initConfig() {
 		viper.AddConfigPath(".")
 	}
 
-	viper.ReadInConfig()
+	// If the configuration file is not found, initialize a configuration in the home dir.
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(*viper.ConfigFileNotFoundError); !ok {
+			home, err := homedir.Dir()
+			if err != nil {
+				exitError(err)
+			}
+
+			err = os.MkdirAll(home+"/.onos", 0777)
+			if err != nil {
+				exitError(err)
+			}
+
+			f, err := os.Create(home + "/.onos/onit.yaml")
+			if err != nil {
+				exitError(err)
+			} else {
+				f.Close()
+			}
+
+			err = viper.WriteConfig()
+			if err != nil {
+				exitError(err)
+			}
+		} else {
+			exitError(err)
+		}
+	}
 }
