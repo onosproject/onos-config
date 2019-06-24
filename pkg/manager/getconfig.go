@@ -26,7 +26,7 @@ import (
 // GetNetworkConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest
 func (m *Manager) GetNetworkConfig(target string, configname string, path string, layer int) ([]*change.ConfigValue, error) {
-	log.Info("Getting config for", target, path)
+	log.Info("Getting config for ", target, path)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
 	if target != "" {

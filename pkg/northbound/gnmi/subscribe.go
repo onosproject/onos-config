@@ -94,7 +94,7 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 				mgr.Dispatcher.UnregisterOperationalState(hash)
 				resChan <- result{success: true, err: nil}
 			} else {
-				log.Error("Error in subscription", err)
+				log.Error("Error in subscription ", err)
 				//Ignoring Errors during removal
 				mgr.Dispatcher.UnregisterNbi(hash)
 				mgr.Dispatcher.UnregisterOperationalState(hash)
@@ -136,20 +136,20 @@ func collector(stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList,
 		//We get the stated of the device, for each path we build an update and send it out.
 		update, err := getUpdate(request.Prefix, sub.Path)
 		if err != nil {
-			log.Error("Error while collecting data for subscribe once or poll", err)
+			log.Error("Error while collecting data for subscribe once or poll ", err)
 			resChan <- result{success: false, err: err}
 		}
 		response := buildUpdateResponse(update)
 		err = sendResponse(response, stream)
 		if err != nil {
-			log.Error("Error sending response", err)
+			log.Error("Error sending response ", err)
 			resChan <- result{success: false, err: err}
 		}
 	}
 	responseSync := buildSyncResponse()
 	err := sendResponse(responseSync, stream)
 	if err != nil {
-		log.Error("Error sending sync response", err)
+		log.Error("Error sending sync response ", err)
 		resChan <- result{success: false, err: err}
 	} else if mode != gnmi.SubscriptionList_POLL {
 		//Sending only if we need to finish listening because of ONCE
@@ -170,12 +170,12 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 				if isPresent {
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
 					if err != nil {
-						log.Warning("Error in parsing path", err)
+						log.Warning("Error in parsing path ", err)
 						continue
 					}
 					err = buildAndSendUpdate(pathGnmi, target, changeValue.Value, stream)
 					if err != nil {
-						log.Error("Error in sending update path", err)
+						log.Error("Error in sending update path ", err)
 						resChan <- result{success: false, err: err}
 					}
 				}
@@ -204,7 +204,7 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 					}
 					err = buildAndSendUpdate(pathGnmi, target, value, stream)
 					if err != nil {
-						log.Error("Error in sending update path", err)
+						log.Error("Error in sending update path ", err)
 						resChan <- result{success: false, err: err}
 					}
 				}

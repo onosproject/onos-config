@@ -54,7 +54,7 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 	Address = fmt.Sprintf(":%d", port)
 	Opts, err = certs.HandleCertArgs(&empty, &empty)
 	if err != nil {
-		log.Error("Error loading cert", err)
+		log.Error("Error loading cert ", err)
 	}
 	go func() {
 		err := s.Serve(func(started string) {
@@ -62,7 +62,7 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 			fmt.Printf("Started %v", started)
 		})
 		if err != nil {
-			log.Error("Unable to serve", err)
+			log.Error("Unable to serve ", err)
 		}
 	}()
 }

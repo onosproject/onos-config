@@ -65,6 +65,6 @@ func main() {
 		log.Error("Invalid change ", err)
 	}
 
-	log.Info("Finished after ", iterations, "iterations")
+	log.Info("Finished after ", iterations, " iterations")
 
 }

@@ -32,15 +32,15 @@ type ModelPlugin interface {
 // RegisterModelPlugin adds an external model plugin to the model registry at startup
 // or through the 'admin' gRPC interface. Once plugins are loaded they cannot be unloaded
 func (m *Manager) RegisterModelPlugin(moduleName string) (string, string, error) {
-	log.Info("Loading module", moduleName)
+	log.Info("Loading module ", moduleName)
 	modelPluginModule, err := plugin.Open(moduleName)
 	if err != nil {
-		log.Warning("Unable to load module", moduleName)
+		log.Warning("Unable to load module ", moduleName)
 		return "", "", err
 	}
 	symbolMP, err := modelPluginModule.Lookup("ModelPlugin")
 	if err != nil {
-		log.Warning("Unable to find ModelPlugin in module", moduleName)
+		log.Warning("Unable to find ModelPlugin in module ", moduleName)
 		return "", "", err
 	}
 	modelPlugin, ok := symbolMP.(ModelPlugin)

@@ -43,7 +43,7 @@ func setUp() (*Server, *manager.Manager) {
 		"../../../configs/networkStore-sample.json",
 	)
 	if err != nil {
-		log.Error("Expected manager to be loaded", err)
+		log.Error("Expected manager to be loaded ", err)
 		os.Exit(-1)
 	}
 
@@ -60,6 +60,6 @@ func setUp() (*Server, *manager.Manager) {
 
 func listenToTopoLoading(deviceChan <-chan events.TopoEvent) {
 	for deviceConfigEvent := range deviceChan {
-		log.Info("Ignoring event for testing", deviceConfigEvent)
+		log.Info("Ignoring event for testing ", deviceConfigEvent)
 	}
 }

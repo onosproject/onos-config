@@ -168,7 +168,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	valueReply := "14"
 
 	for response := range responsesChan {
-		log.Info("response", response)
+		log.Info("response ", response)
 		if len(response.GetUpdate().GetUpdate()) != 0 {
 			assertUpdateResponse(t, response, device1, path1Stream, path2Stream, path3Stream, valueReply)
 		} else {
@@ -363,7 +363,7 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	path3Stream := "leaf2a"
 
 	for response := range responsesChan {
-		log.Info("response", response)
+		log.Info("response ", response)
 		if len(response.GetUpdate().GetDelete()) != 0 {
 			assertDeleteResponse(t, response, device1, path1Stream, path2Stream, path3Stream)
 		} else {
