@@ -75,7 +75,7 @@ func TestMain(m *testing.M) {
 		log.Warning("Cannot load config store ", err, wd)
 		return
 	}
-	log.Info("Configuration store loaded from", configStoreDefaultFileName)
+	log.Info("Configuration store loaded from ", configStoreDefaultFileName)
 
 	changeStoreTest, err = store.LoadChangeStore(changeStoreDefaultFileName)
 	if err != nil {
@@ -245,7 +245,7 @@ func testSync(testChan <-chan events.ConfigEvent, changes map[string]bool) {
 	for nbiChange := range testChan {
 		changeID := nbiChange.ChangeID()
 		changes[changeID] = nbiChange.Applied()
-		log.Info("Change for Test", nbiChange)
+		log.Info("Change for Test ", nbiChange)
 	}
 }
 
@@ -257,6 +257,6 @@ func testSyncOpState(testChan <-chan events.OperationalStateEvent, changes map[s
 		for k, v := range *changesEvent {
 			changes[k] = v
 		}
-		log.Info("OperationalState change for Test", opStateChange)
+		log.Info("OperationalState change for Test ", opStateChange)
 	}
 }

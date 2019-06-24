@@ -47,6 +47,7 @@ func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
 				//spawning two go routines to propagate changes and to get operational state
 				go sync.syncConfigEventsToDevice()
 				//TODO error handling
+				log.Info("getting operational state")
 				go sync.syncOperationalState()
 				//TODO push configuration to the device if any was set before it's connection
 			}

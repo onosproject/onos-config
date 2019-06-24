@@ -54,10 +54,10 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 	log.Info("Event listener initialized")
 
 	for configEvent := range changeChannel {
-		log.Info("Listener: Event", configEvent)
+		log.Info("Listener: Event ", configEvent)
 		deviceChan, ok := d.deviceListeners[topocache.ID(events.Event(configEvent).Subject())]
 		if ok {
-			log.Warning("Device not connected - config event discarded", configEvent)
+			log.Warning("Device not connected - config event discarded ", configEvent)
 			//TODO need a timeout or be done in separate routine, blocks if there is some error underneath
 			deviceChan <- configEvent
 		}
@@ -67,7 +67,7 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 		}
 
 		if len(d.deviceListeners)+len(d.nbiListeners) == 0 {
-			log.Info("Event discarded", configEvent)
+			log.Info("Event discarded ", configEvent)
 		}
 	}
 }

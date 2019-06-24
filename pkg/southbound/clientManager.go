@@ -43,9 +43,9 @@ func createDestination(device topocache.Device) (*client.Destination, DeviceID) 
 	d.Target = device.Target
 	d.Timeout = time.Duration(device.Timeout) * time.Second
 	if device.Plain {
-		log.Info("Plain connection connection to", device.Addr)
+		log.Info("Plain connection connection to ", device.Addr)
 	} else if device.Insecure {
-		log.Info("Insecure connection to", device.Addr)
+		log.Info("Insecure connection to ", device.Addr)
 		d.TLS = &tls.Config{InsecureSkipVerify: true}
 	} else {
 		d.TLS = &tls.Config{}
@@ -111,7 +111,7 @@ func (target *Target) ConnectTarget(ctx context.Context, device topocache.Device
 func setCertificate(pathCert string, pathKey string) tls.Certificate {
 	certificate, err := tls.LoadX509KeyPair(pathCert, pathKey)
 	if err != nil {
-		log.Error("could not load client key pair", err)
+		log.Error("could not load client key pair ", err)
 	}
 	return certificate
 }
@@ -120,7 +120,7 @@ func getCertPool(CaPath string) *x509.CertPool {
 	certPool := x509.NewCertPool()
 	ca, err := ioutil.ReadFile(CaPath)
 	if err != nil {
-		log.Error("could not read", CaPath, err)
+		log.Error("could not read ", CaPath, err)
 	}
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
 		log.Error("failed to append CA certificates")

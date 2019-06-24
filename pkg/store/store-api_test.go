@@ -262,7 +262,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 func Test_device1_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 
-	log.Info("Configuration", device1V.Name, " (latest) Changes:")
+	log.Info("Configuration ", device1V.Name, " (latest) Changes:")
 	for idx, cid := range device1V.Changes {
 		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
@@ -284,7 +284,7 @@ func Test_device1_prev_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 
 	const changePrevious = 1
-	log.Info("Configuration", device1V.Name, " (n-1) Changes:")
+	log.Info("Configuration ", device1V.Name, " (n-1) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
 		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
@@ -305,7 +305,7 @@ func Test_device1_prev_version(t *testing.T) {
 func Test_device1_first_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 	const changePrevious = 2
-	log.Info("Configuration", device1V.Name, " (n-2) Changes:")
+	log.Info("Configuration ", device1V.Name, " (n-2) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
 		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
@@ -326,7 +326,7 @@ func Test_device1_first_version(t *testing.T) {
 func Test_device1_invalid_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 	const changePrevious = 3
-	log.Info("Configuration", device1V.Name, " (n-3) Changes:")
+	log.Info("Configuration ", device1V.Name, " (n-3) Changes:")
 	for idx, cid := range device1V.Changes[0 : len(device1V.Changes)-changePrevious] {
 		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
@@ -342,7 +342,7 @@ func Test_device1_invalid_version(t *testing.T) {
 
 func Test_device2_version(t *testing.T) {
 	_, device2V, changeStore := setUp()
-	log.Info("Configuration", device2V.Name, " (latest) Changes:")
+	log.Info("Configuration ", device2V.Name, " (latest) Changes:")
 	for idx, cid := range device2V.Changes {
 		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}

@@ -95,14 +95,14 @@ func LoadManager(configStoreFile string, changeStoreFile string, deviceStoreFile
 		log.Error("Cannot load config store ", err)
 		return nil, err
 	}
-	log.Info("Configuration store loaded from", configStoreFile)
+	log.Info("Configuration store loaded from ", configStoreFile)
 
 	changeStore, err := store.LoadChangeStore(changeStoreFile)
 	if err != nil {
 		log.Error("Cannot load change store ", err)
 		return nil, err
 	}
-	log.Info("Change store loaded from", changeStoreFile)
+	log.Info("Change store loaded from ", changeStoreFile)
 
 	deviceStore, err := topocache.LoadDeviceStore(deviceStoreFile, topoChannel)
 	if err != nil {

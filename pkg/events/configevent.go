@@ -34,7 +34,7 @@ func (cfgevent *ConfigEvent) ChangeID() string {
 func (cfgevent *ConfigEvent) Applied() bool {
 	b, err := strconv.ParseBool(cfgevent.values[Applied])
 	if err != nil {
-		log.Warning("error in conversion", err)
+		log.Warning("error in conversion ", err)
 		return false
 	}
 	return b

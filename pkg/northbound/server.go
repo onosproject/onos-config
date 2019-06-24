@@ -141,7 +141,7 @@ func getCertPool(CaPath string) *x509.CertPool {
 	certPool := x509.NewCertPool()
 	ca, err := ioutil.ReadFile(CaPath)
 	if err != nil {
-		log.Warning("could not read", CaPath, err)
+		log.Warning("could not read ", CaPath, err)
 	}
 	if ok := certPool.AppendCertsFromPEM(ca); !ok {
 		log.Warning("failed to append CA certificates")

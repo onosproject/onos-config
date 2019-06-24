@@ -52,7 +52,7 @@ func New(context context.Context, changeStore *store.ChangeStore, device *topoca
 		operationalStateChan: opStateChan,
 		operationalCache:     make(map[string]string),
 	}
-	log.Info("Connecting to", sync.Device.Addr, "over gNMI")
+	log.Info("Connecting to ", sync.Device.Addr, " over gNMI")
 	target := southbound.Target{}
 	key, err := target.ConnectTarget(context, *sync.Device)
 	sync.key = key
@@ -60,16 +60,16 @@ func New(context context.Context, changeStore *store.ChangeStore, device *topoca
 		log.Warning(err)
 		return nil, err
 	}
-	log.Info(sync.Device.Addr, "Connected over gNMI")
+	log.Info(sync.Device.Addr, " connected over gNMI")
 
 	// Get the device capabilities
 	capResponse, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
-		log.Error(sync.Device.Addr, "Capabilities", err)
+		log.Error(sync.Device.Addr, " capabilities ", err)
 		return nil, err
 	}
 
-	log.Info(sync.Device.Addr, "Capabilities", capResponse)
+	log.Info(sync.Device.Addr, " capabilities ", capResponse)
 
 	return sync, nil
 }
@@ -82,7 +82,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice() {
 		change := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
 		err := change.IsValid()
 		if err != nil {
-			log.Warning("Event discarded because change is invalid", err)
+			log.Warning("Event discarded because change is invalid ", err)
 			continue
 		}
 		gnmiChange, parseError := change.GnmiChange()
@@ -92,7 +92,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice() {
 			continue
 		}
 
-		log.Info("Change formatted to gNMI setRequest", gnmiChange)
+		log.Info("Change formatted to gNMI setRequest ", gnmiChange)
 		target, err := southbound.GetTarget(sync.key)
 		if err != nil {
 			log.Warning(err)
@@ -103,7 +103,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice() {
 			log.Error("SetResponse ", err)
 			continue
 		}
-		log.Info(sync.Device.Addr, "SetResponse", setResponse)
+		log.Info(sync.Device.Addr, " SetResponse ", setResponse)
 
 	}
 }
@@ -113,7 +113,7 @@ func (sync Synchronizer) syncOperationalState() error {
 	target, err := southbound.GetTarget(sync.key)
 
 	if err != nil {
-		log.Error("Can't find target for key", sync.key)
+		log.Error("Can't find target for key ", sync.key)
 		return err
 	}
 
@@ -126,7 +126,7 @@ func (sync Synchronizer) syncOperationalState() error {
 	responseState, errState := target.Get(target.Ctx, requestState)
 
 	if errState != nil {
-		log.Warning("Can't request read-only state to target", sync.key, errState)
+		log.Warning("Can't request read-only state paths to target ", sync.key, errState)
 	} else {
 		notifications = append(notifications, responseState.Notification...)
 	}
@@ -138,7 +138,7 @@ func (sync Synchronizer) syncOperationalState() error {
 	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
 
 	if errOp != nil {
-		log.Warning("Can't request read-only operational paths to target", sync.key, errOp)
+		log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
 	} else {
 		notifications = append(notifications, responseOperational.Notification...)
 	}
@@ -205,7 +205,7 @@ func (sync Synchronizer) syncOperationalState() error {
 
 func (sync *Synchronizer) handler(msg proto.Message) error {
 
-	log.Info("Proto Message", msg)
+	log.Info("Proto Message ", msg)
 
 	_, err := southbound.GetTarget(sync.key)
 	if err != nil {
