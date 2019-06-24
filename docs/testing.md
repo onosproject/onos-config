@@ -89,64 +89,13 @@ Once the test cluster is setup, to run a test simply run `onit run`:
 ...
 ```
 
-When the test is run, the test controller will setup a new test cluster in Kubernetes and
-run the specified tests:
+When the test is run, the test controller will run the specified tests on the current cluster:
 
 ```go
 > onit run my-test my-other-test
-I0620 11:59:59.990621   14783 controller.go:147] Setting up test namespace onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941
-I0620 12:00:00.011219   14783 controller.go:159] Setting up Atomix controller atomix-controller/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941
-I0620 12:00:00.099428   14783 controller.go:176] Waiting for Atomix controller atomix-controller/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941 to become ready
-I0620 12:00:12.060342   14783 controller.go:435] Setting up partitions raft/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941
-I0620 12:00:12.066366   14783 controller.go:440] Waiting for partitions raft/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941 to become ready
-I0620 12:01:20.270180   14783 controller.go:547] Setting up simulator device-simulator-1/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941
-I0620 12:01:20.316644   14783 controller.go:554] Waiting for simulator device-simulator-1/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941 to become ready
-I0620 12:01:27.679763   14783 controller.go:712] Setting up onos-config cluster onos-config/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941
-I0620 12:01:28.296125   14783 controller.go:726] Waiting for onos-config cluster onos-config/onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941 to become ready
 I0620 12:01:34.503488   14783 controller.go:1022] Starting test job onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941
 I0620 12:01:34.519532   14783 controller.go:1090] Waiting for test job onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941 to become ready
 ```
-
-By default, the tests will run with a single onos-config node and a single Raft partition. These options
-can be overridden by flags to the `run` subcommand:
-* `--nodes`/`-n` the number of onos-config nodes to deploy
-* `--partitions`/`-p` the number of Raft partitions to create
-* `--partitionSize`/`-s` the size of each Raft partition to create
-* `--config`/`-c` the store configuration to use
-
-By default, the tests will run with no simulators configured using the sample store configurations
-from `/configs`. The store configuration used by the test framework can be overridden by providing
-a `--config`. The `--config` flag expects a named configuration pointing to a `.json` file present
-in `test/configs`. By default, the `default` configuration is used, which means the configuration
-is loaded from `test/configs/default.json`.
-
-Simulators can be added to the test cluster by adding simulator configurations to the `simulators` 
-object in the configuration JSON:
-
-```json
-{
-  ...
-  "simulators": {
-    "device-1": {
-      "openconfig-interfaces:interfaces": {
-        "interface": [
-          {
-            "name": "admin",
-            "config": {
-              "name": "admin"
-            }
-          }
-        ]
-      },
-      ...
-    }
-  }
-}
-```
-
-The integration test framework will automatically deploy a simulator with each configuration
-when setting up the cluster. The key for each device is the device ID, so devices defined in
-the configuration can be accessed in gNMI targets by their key.
 
 ## API
 

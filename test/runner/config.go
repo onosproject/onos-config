@@ -252,7 +252,7 @@ func getConfigLock() (*flock.Flock, error) {
 
 // LoadConfig loads the onit configuration from a configuration file
 func LoadConfig() (*OnitConfig, error) {
-	config := &OnitConfig{}
+	config := &OnitConfig{Clusters: make(map[string]*ClusterConfig)}
 	if err := viper.Unmarshal(config); err != nil {
 		return nil, err
 	}
