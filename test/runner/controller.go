@@ -44,25 +44,8 @@ import (
 	"time"
 )
 
-// TestClusterConfig provides the configuration for the Kubernetes test cluster
-type TestClusterConfig struct {
-	ChangeStore   map[string]interface{}
-	ConfigStore   map[string]interface{}
-	DeviceStore   map[string]interface{}
-	NetworkStore  map[string]interface{}
-	Simulators    map[string]interface{}
-	Nodes         int
-	Partitions    int
-	PartitionSize int
-}
-
-// TestSimulatorConfig provides the configuration for a device simulator
-type TestSimulatorConfig struct {
-	Config map[string]interface{}
-}
-
 // NewTestController creates a new Kubernetes integration test controller
-func NewTestController(config *TestClusterConfig) (*TestController, error) {
+func NewTestController(config *ClusterConfig) (*ClusterController, error) {
 	id, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
@@ -71,9 +54,8 @@ func NewTestController(config *TestClusterConfig) (*TestController, error) {
 }
 
 // GetTestController returns a Kubernetes integration test controller for the given test ID
-func GetTestController(testId string, config *TestClusterConfig) (*TestController, error) {
-	testName := getTestName(testId)
-	setTestClusterConfigDefaults(config)
+func GetTestController(testId string, config *ClusterConfig) (*ClusterController, error) {
+	setClusterConfigDefaults(config)
 
 	kubeclient, err := newKubeClient()
 	if err != nil {
@@ -90,9 +72,8 @@ func GetTestController(testId string, config *TestClusterConfig) (*TestControlle
 		return nil, err
 	}
 
-	return &TestController{
-		TestId:           testId,
-		TestName:         testName,
+	return &ClusterController{
+		ClusterId:        testId,
 		kubeclient:       kubeclient,
 		atomixclient:     atomixclient,
 		extensionsclient: extensionsclient,
@@ -100,46 +81,23 @@ func GetTestController(testId string, config *TestClusterConfig) (*TestControlle
 	}, nil
 }
 
-func setTestClusterConfigDefaults(config *TestClusterConfig) {
-	if config.ChangeStore == nil {
-		config.ChangeStore = make(map[string]interface{})
-	}
-	if config.DeviceStore == nil {
-		config.DeviceStore = make(map[string]interface{})
-	}
-	if config.ConfigStore == nil {
-		config.ConfigStore = make(map[string]interface{})
-	}
-	if config.NetworkStore == nil {
-		config.NetworkStore = make(map[string]interface{})
-	}
-	if config.Simulators == nil {
-		config.Simulators = make(map[string]interface{})
-	}
-	if config.Nodes == 0 {
-		config.Nodes = 1
-	}
-	if config.Partitions == 0 {
-		config.Partitions = 1
-	}
-	if config.PartitionSize == 0 {
-		config.PartitionSize = 1
-	}
-}
-
-// Kubernetes test controller
-type TestController struct {
-	TestId           string
-	TestName         string
+// Kubernetes cluster controller
+type ClusterController struct {
+	ClusterId        string
 	kubeclient       *kubernetes.Clientset
 	atomixclient     *atomixk8s.Clientset
 	extensionsclient *apiextension.Clientset
-	config           *TestClusterConfig
+	config           *ClusterConfig
+}
+
+// getClusterName returns the qualified cluster name
+func (c *ClusterController) getClusterName() string {
+	return getClusterName(c.ClusterId)
 }
 
 // SetupCluster sets up a test cluster with the given configuration
-func (c *TestController) SetupCluster() error {
-	log.Infof("Setting up test cluster %s", c.TestId)
+func (c *ClusterController) SetupCluster() error {
+	log.Infof("Setting up test cluster %s", c.ClusterId)
 	if err := c.setupNamespace(); err != nil {
 		return err
 	}
@@ -156,13 +114,13 @@ func (c *TestController) SetupCluster() error {
 }
 
 // SetupSimulator sets up a device simulator with the given configuration
-func (c *TestController) SetupSimulator(name string, config *TestSimulatorConfig) error {
-	log.Infof("Setting up simulator %s/%s", name, c.TestName)
+func (c *ClusterController) SetupSimulator(name string, config *SimulatorConfig) error {
+	log.Infof("Setting up simulator %s/%s", name, c.getClusterName())
 	if err := c.setupSimulator(name, config); err != nil {
 		return err
 	}
 
-	log.Infof("Waiting for simulator %s/%s to become ready", name, c.TestName)
+	log.Infof("Waiting for simulator %s/%s to become ready", name, c.getClusterName())
 	if err := c.awaitSimulatorReady(name); err != nil {
 		return err
 	}
@@ -170,7 +128,7 @@ func (c *TestController) SetupSimulator(name string, config *TestSimulatorConfig
 }
 
 // RunTests runs the given tests on Kubernetes
-func (c *TestController) RunTests(tests []string, timeout time.Duration) (string, int, error) {
+func (c *ClusterController) RunTests(tests []string, timeout time.Duration) (string, int, error) {
 	// Default the test timeout to 10 minutes
 	if timeout == 0 {
 		timeout = 10 * time.Minute
@@ -192,8 +150,8 @@ func (c *TestController) RunTests(tests []string, timeout time.Duration) (string
 }
 
 // TeardownSimulator tears down a device simulator with the given name
-func (c *TestController) TeardownSimulator(name string) error {
-	log.Infof("Tearing down simulator %s/%s", name, c.TestName)
+func (c *ClusterController) TeardownSimulator(name string) error {
+	log.Infof("Tearing down simulator %s/%s", name, c.getClusterName())
 	if err := c.teardownSimulator(name); err != nil {
 		return err
 	}
@@ -201,8 +159,8 @@ func (c *TestController) TeardownSimulator(name string) error {
 }
 
 // TeardownCluster tears down the test cluster
-func (c *TestController) TeardownCluster() error {
-	log.Infof("Tearing down test namespace %s", c.TestName)
+func (c *ClusterController) TeardownCluster() error {
+	log.Infof("Tearing down test namespace %s", c.getClusterName())
 	if err := c.deleteNamespace(); err != nil {
 		return err
 	}
@@ -213,11 +171,11 @@ func (c *TestController) TeardownCluster() error {
 }
 
 // setupNamespace creates a uniquely named namespace with which to run tests
-func (c *TestController) setupNamespace() error {
-	log.Infof("Setting up test namespace %s", c.TestName)
+func (c *ClusterController) setupNamespace() error {
+	log.Infof("Setting up test namespace %s", c.getClusterName())
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: c.TestName,
+			Name: c.getClusterName(),
 		},
 	}
 	_, err := c.kubeclient.CoreV1().Namespaces().Create(namespace)
@@ -225,8 +183,8 @@ func (c *TestController) setupNamespace() error {
 }
 
 // setupAtomixController sets up the Atomix controller and associated resources
-func (c *TestController) setupAtomixController() error {
-	log.Infof("Setting up Atomix controller atomix-controller/%s", c.TestName)
+func (c *ClusterController) setupAtomixController() error {
+	log.Infof("Setting up Atomix controller atomix-controller/%s", c.getClusterName())
 	if err := c.createAtomixPartitionSetResource(); err != nil {
 		return err
 	}
@@ -249,7 +207,7 @@ func (c *TestController) setupAtomixController() error {
 		return err
 	}
 
-	log.Infof("Waiting for Atomix controller atomix-controller/%s to become ready", c.TestName)
+	log.Infof("Waiting for Atomix controller atomix-controller/%s to become ready", c.getClusterName())
 	if err := c.awaitAtomixControllerReady(); err != nil {
 		return err
 	}
@@ -257,7 +215,7 @@ func (c *TestController) setupAtomixController() error {
 }
 
 // createAtomixPartitionSetResource creates the PartitionSet custom resource definition in the k8s cluster
-func (c *TestController) createAtomixPartitionSetResource() error {
+func (c *ClusterController) createAtomixPartitionSetResource() error {
 	crd := &apiextensionv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "partitionsets.k8s.atomix.io",
@@ -286,7 +244,7 @@ func (c *TestController) createAtomixPartitionSetResource() error {
 }
 
 // createAtomixPartitionResource creates the Partition custom resource definition in the k8s cluster
-func (c *TestController) createAtomixPartitionResource() error {
+func (c *ClusterController) createAtomixPartitionResource() error {
 	crd := &apiextensionv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "partitions.k8s.atomix.io",
@@ -315,11 +273,11 @@ func (c *TestController) createAtomixPartitionResource() error {
 }
 
 // createAtomixClusterRole creates the ClusterRole required by the Atomix controller if not yet created
-func (c *TestController) createAtomixClusterRole() error {
+func (c *ClusterController) createAtomixClusterRole() error {
 	role := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -396,17 +354,17 @@ func (c *TestController) createAtomixClusterRole() error {
 }
 
 // createAtomixClusterRoleBinding creates the ClusterRoleBinding required by the Atomix controller for the test namespace
-func (c *TestController) createAtomixClusterRoleBinding() error {
+func (c *ClusterController) createAtomixClusterRoleBinding() error {
 	roleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
 				Name:      "atomix-controller",
-				Namespace: c.TestName,
+				Namespace: c.getClusterName(),
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
@@ -428,24 +386,24 @@ func (c *TestController) createAtomixClusterRoleBinding() error {
 }
 
 // createAtomixServiceAccount creates a ServiceAccount used by the Atomix controller
-func (c *TestController) createAtomixServiceAccount() error {
+func (c *ClusterController) createAtomixServiceAccount() error {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 	}
-	_, err := c.kubeclient.CoreV1().ServiceAccounts(c.TestName).Create(serviceAccount)
+	_, err := c.kubeclient.CoreV1().ServiceAccounts(c.getClusterName()).Create(serviceAccount)
 	return err
 }
 
 // createAtomixDeployment creates the Atomix controller Deployment
-func (c *TestController) createAtomixDeployment() error {
+func (c *ClusterController) createAtomixDeployment() error {
 	replicas := int32(1)
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
@@ -523,16 +481,16 @@ func (c *TestController) createAtomixDeployment() error {
 			},
 		},
 	}
-	_, err := c.kubeclient.AppsV1().Deployments(c.TestName).Create(deployment)
+	_, err := c.kubeclient.AppsV1().Deployments(c.getClusterName()).Create(deployment)
 	return err
 }
 
 // createAtomixService creates a service for the controller
-func (c *TestController) createAtomixService() error {
+func (c *ClusterController) createAtomixService() error {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
@@ -546,14 +504,14 @@ func (c *TestController) createAtomixService() error {
 			},
 		},
 	}
-	_, err := c.kubeclient.CoreV1().Services(c.TestName).Create(service)
+	_, err := c.kubeclient.CoreV1().Services(c.getClusterName()).Create(service)
 	return err
 }
 
 // awaitAtomixControllerReady blocks until the Atomix controller is ready
-func (c *TestController) awaitAtomixControllerReady() error {
+func (c *ClusterController) awaitAtomixControllerReady() error {
 	for {
-		dep, err := c.kubeclient.AppsV1().Deployments(c.TestName).Get("atomix-controller", metav1.GetOptions{})
+		dep, err := c.kubeclient.AppsV1().Deployments(c.getClusterName()).Get("atomix-controller", metav1.GetOptions{})
 		if err != nil {
 			return err
 		} else if dep.Status.ReadyReplicas == 1 {
@@ -565,13 +523,13 @@ func (c *TestController) awaitAtomixControllerReady() error {
 }
 
 // setupPartitions creates a Raft partition set
-func (c *TestController) setupPartitions() error {
-	log.Infof("Setting up partitions raft/%s", c.TestName)
+func (c *ClusterController) setupPartitions() error {
+	log.Infof("Setting up partitions raft/%s", c.getClusterName())
 	if err := c.createPartitionSet(); err != nil {
 		return err
 	}
 
-	log.Infof("Waiting for partitions raft/%s to become ready", c.TestName)
+	log.Infof("Waiting for partitions raft/%s to become ready", c.getClusterName())
 	if err := c.awaitPartitionsReady(); err != nil {
 		return err
 	}
@@ -579,7 +537,7 @@ func (c *TestController) setupPartitions() error {
 }
 
 // createPartitionSet creates a Raft partition set from the configuration
-func (c *TestController) createPartitionSet() error {
+func (c *ClusterController) createPartitionSet() error {
 	bytes, err := yaml.Marshal(&raft.RaftProtocol{})
 	if err != nil {
 		return err
@@ -588,7 +546,7 @@ func (c *TestController) createPartitionSet() error {
 	set := &v1alpha1.PartitionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "raft",
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Spec: v1alpha1.PartitionSetSpec{
 			Partitions: c.config.Partitions,
@@ -602,14 +560,14 @@ func (c *TestController) createPartitionSet() error {
 			},
 		},
 	}
-	_, err = c.atomixclient.K8sV1alpha1().PartitionSets(c.TestName).Create(set)
+	_, err = c.atomixclient.K8sV1alpha1().PartitionSets(c.getClusterName()).Create(set)
 	return err
 }
 
 // awaitPartitionsReady waits for Raft partitions to complete startup
-func (c *TestController) awaitPartitionsReady() error {
+func (c *ClusterController) awaitPartitionsReady() error {
 	for {
-		set, err := c.atomixclient.K8sV1alpha1().PartitionSets(c.TestName).Get("raft", metav1.GetOptions{})
+		set, err := c.atomixclient.K8sV1alpha1().PartitionSets(c.getClusterName()).Get("raft", metav1.GetOptions{})
 		if err != nil {
 			return err
 		} else if int(set.Status.ReadyPartitions) == set.Spec.Partitions {
@@ -621,7 +579,7 @@ func (c *TestController) awaitPartitionsReady() error {
 }
 
 // getDeviceIds returns a slice of configured simulator device IDs
-func (c *TestController) getDeviceIds() []string {
+func (c *ClusterController) getDeviceIds() []string {
 	devices := []string{}
 	for name, _ := range c.config.DeviceStore {
 		devices = append(devices, name)
@@ -633,7 +591,7 @@ func (c *TestController) getDeviceIds() []string {
 }
 
 // setupSimulator creates a simulator required for the test
-func (c *TestController) setupSimulator(name string, config *TestSimulatorConfig) error {
+func (c *ClusterController) setupSimulator(name string, config *SimulatorConfig) error {
 	if err := c.createSimulatorConfigMap(name, config); err != nil {
 		return err
 	}
@@ -647,7 +605,7 @@ func (c *TestController) setupSimulator(name string, config *TestSimulatorConfig
 }
 
 // createSimulatorConfigMap creates a simulator configuration
-func (c *TestController) createSimulatorConfigMap(name string, config *TestSimulatorConfig) error {
+func (c *ClusterController) createSimulatorConfigMap(name string, config *SimulatorConfig) error {
 	configJson, err := json.Marshal(config)
 	if err != nil {
 		return err
@@ -655,22 +613,22 @@ func (c *TestController) createSimulatorConfigMap(name string, config *TestSimul
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Data: map[string]string{
 			"config.json": string(configJson),
 		},
 	}
-	_, err = c.kubeclient.CoreV1().ConfigMaps(c.TestName).Create(cm)
+	_, err = c.kubeclient.CoreV1().ConfigMaps(c.getClusterName()).Create(cm)
 	return err
 }
 
 // createSimulatorPod creates a simulator pod
-func (c *TestController) createSimulatorPod(name string) error {
+func (c *ClusterController) createSimulatorPod(name string) error {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 			Labels: map[string]string{
 				"simulator": name,
 			},
@@ -728,16 +686,16 @@ func (c *TestController) createSimulatorPod(name string) error {
 			},
 		},
 	}
-	_, err := c.kubeclient.CoreV1().Pods(c.TestName).Create(pod)
+	_, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).Create(pod)
 	return err
 }
 
 // createSimulatorService creates a simulator service
-func (c *TestController) createSimulatorService(name string) error {
+func (c *ClusterController) createSimulatorService(name string) error {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
@@ -751,14 +709,14 @@ func (c *TestController) createSimulatorService(name string) error {
 			},
 		},
 	}
-	_, err := c.kubeclient.CoreV1().Services(c.TestName).Create(service)
+	_, err := c.kubeclient.CoreV1().Services(c.getClusterName()).Create(service)
 	return err
 }
 
 // awaitSimulatorReady waits for the given simulator to complete startup
-func (c *TestController) awaitSimulatorReady(name string) error {
+func (c *ClusterController) awaitSimulatorReady(name string) error {
 	for {
-		pod, err := c.kubeclient.CoreV1().Pods(c.TestName).Get(name, metav1.GetOptions{})
+		pod, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		} else if len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].Ready {
@@ -770,7 +728,7 @@ func (c *TestController) awaitSimulatorReady(name string) error {
 }
 
 // teardownSimulator tears down a simulator by name
-func (c *TestController) teardownSimulator(name string) error {
+func (c *ClusterController) teardownSimulator(name string) error {
 	if err := c.deleteSimulatorPod(name); err != nil {
 		return err
 	}
@@ -784,23 +742,23 @@ func (c *TestController) teardownSimulator(name string) error {
 }
 
 // deleteSimulatorConfigMap deletes a simulator ConfigMap by name
-func (c *TestController) deleteSimulatorConfigMap(name string) error {
-	return c.kubeclient.CoreV1().ConfigMaps(c.TestName).Delete(name, &metav1.DeleteOptions{})
+func (c *ClusterController) deleteSimulatorConfigMap(name string) error {
+	return c.kubeclient.CoreV1().ConfigMaps(c.getClusterName()).Delete(name, &metav1.DeleteOptions{})
 }
 
 // deleteSimulatorPod deletes a simulator Pod by name
-func (c *TestController) deleteSimulatorPod(name string) error {
-	return c.kubeclient.CoreV1().Pods(c.TestName).Delete(name, &metav1.DeleteOptions{})
+func (c *ClusterController) deleteSimulatorPod(name string) error {
+	return c.kubeclient.CoreV1().Pods(c.getClusterName()).Delete(name, &metav1.DeleteOptions{})
 }
 
 // deleteSimulatorService deletes a simulator Service by name
-func (c *TestController) deleteSimulatorService(name string) error {
-	return c.kubeclient.CoreV1().Services(c.TestName).Delete(name, &metav1.DeleteOptions{})
+func (c *ClusterController) deleteSimulatorService(name string) error {
+	return c.kubeclient.CoreV1().Services(c.getClusterName()).Delete(name, &metav1.DeleteOptions{})
 }
 
 // setupOnosConfig sets up the onos-config Deployment
-func (c *TestController) setupOnosConfig() error {
-	log.Infof("Setting up onos-config cluster onos-config/%s", c.TestName)
+func (c *ClusterController) setupOnosConfig() error {
+	log.Infof("Setting up onos-config cluster onos-config/%s", c.getClusterName())
 	if err := c.createOnosConfigSecret(); err != nil {
 		return err
 	}
@@ -814,7 +772,7 @@ func (c *TestController) setupOnosConfig() error {
 		return err
 	}
 
-	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.TestName)
+	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.getClusterName())
 	if err := c.awaitOnosConfigDeploymentReady(); err != nil {
 		return err
 	}
@@ -822,11 +780,11 @@ func (c *TestController) setupOnosConfig() error {
 }
 
 // createOnosConfigSecret creates a secret for configuring TLS in onos-config and clients
-func (c *TestController) createOnosConfigSecret() error {
+func (c *ClusterController) createOnosConfigSecret() error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      c.TestName,
-			Namespace: c.TestName,
+			Name:      c.getClusterName(),
+			Namespace: c.getClusterName(),
 		},
 		StringData: map[string]string{},
 	}
@@ -853,12 +811,12 @@ func (c *TestController) createOnosConfigSecret() error {
 		return err
 	}
 
-	_, err = c.kubeclient.CoreV1().Secrets(c.TestName).Create(secret)
+	_, err = c.kubeclient.CoreV1().Secrets(c.getClusterName()).Create(secret)
 	return err
 }
 
 // createOnosConfigConfigMap creates a ConfigMap for the onos-config Deployment
-func (c *TestController) createOnosConfigConfigMap() error {
+func (c *ClusterController) createOnosConfigConfigMap() error {
 	// Serialize the change store configuration
 	changeStore, err := json.Marshal(c.config.ChangeStore)
 	if err != nil {
@@ -909,7 +867,7 @@ func (c *TestController) createOnosConfigConfigMap() error {
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "onos-config",
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Data: map[string]string{
 			"changeStore.json":  string(changeStore),
@@ -918,17 +876,17 @@ func (c *TestController) createOnosConfigConfigMap() error {
 			"networkStore.json": string(networkStore),
 		},
 	}
-	_, err = c.kubeclient.CoreV1().ConfigMaps(c.TestName).Create(cm)
+	_, err = c.kubeclient.CoreV1().ConfigMaps(c.getClusterName()).Create(cm)
 	return err
 }
 
 // createOnosConfigDeployment creates an onos-config Deployment
-func (c *TestController) createOnosConfigDeployment() error {
+func (c *ClusterController) createOnosConfigDeployment() error {
 	nodes := int32(c.config.Nodes)
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "onos-config",
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &nodes,
@@ -952,7 +910,7 @@ func (c *TestController) createOnosConfigDeployment() error {
 							Env: []corev1.EnvVar{
 								{
 									Name:  "ATOMIX_CONTROLLER",
-									Value: fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", c.TestName),
+									Value: fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", c.getClusterName()),
 								},
 								{
 									Name:  "ATOMIX_APP",
@@ -960,7 +918,7 @@ func (c *TestController) createOnosConfigDeployment() error {
 								},
 								{
 									Name:  "ATOMIX_NAMESPACE",
-									Value: c.TestName,
+									Value: c.getClusterName(),
 								},
 							},
 							Args: []string{
@@ -1025,7 +983,7 @@ func (c *TestController) createOnosConfigDeployment() error {
 							Name: "secret",
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
-									SecretName: c.TestName,
+									SecretName: c.getClusterName(),
 								},
 							},
 						},
@@ -1034,16 +992,16 @@ func (c *TestController) createOnosConfigDeployment() error {
 			},
 		},
 	}
-	_, err := c.kubeclient.AppsV1().Deployments(c.TestName).Create(dep)
+	_, err := c.kubeclient.AppsV1().Deployments(c.getClusterName()).Create(dep)
 	return err
 }
 
 // createOnosConfigService creates a Service to expose the onos-config Deployment to other pods
-func (c *TestController) createOnosConfigService() error {
+func (c *ClusterController) createOnosConfigService() error {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "onos-config",
-			Namespace: c.TestName,
+			Namespace: c.getClusterName(),
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
@@ -1057,14 +1015,14 @@ func (c *TestController) createOnosConfigService() error {
 			},
 		},
 	}
-	_, err := c.kubeclient.CoreV1().Services(c.TestName).Create(service)
+	_, err := c.kubeclient.CoreV1().Services(c.getClusterName()).Create(service)
 	return err
 }
 
 // awaitOnosConfigDeploymentReady waits for the onos-config pods to complete startup
-func (c *TestController) awaitOnosConfigDeploymentReady() error {
+func (c *ClusterController) awaitOnosConfigDeploymentReady() error {
 	for {
-		dep, err := c.kubeclient.AppsV1().Deployments(c.TestName).Get("onos-config", metav1.GetOptions{})
+		dep, err := c.kubeclient.AppsV1().Deployments(c.getClusterName()).Get("onos-config", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -1078,8 +1036,8 @@ func (c *TestController) awaitOnosConfigDeploymentReady() error {
 }
 
 // teardownOnosConfig tears down the onos-config deployment
-func (c *TestController) redeployOnosConfig() error {
-	log.Infof("Redeploying onos-config cluster onos-config/%s", c.TestName)
+func (c *ClusterController) redeployOnosConfig() error {
+	log.Infof("Redeploying onos-config cluster onos-config/%s", c.getClusterName())
 	if err := c.deleteOnosConfigDeployment(); err != nil {
 		return err
 	}
@@ -1092,7 +1050,7 @@ func (c *TestController) redeployOnosConfig() error {
 	if err := c.createOnosConfigDeployment(); err != nil {
 		return err
 	}
-	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.TestName)
+	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.getClusterName())
 	if err := c.awaitOnosConfigDeploymentReady(); err != nil {
 		return err
 	}
@@ -1100,32 +1058,38 @@ func (c *TestController) redeployOnosConfig() error {
 }
 
 // deleteOnosConfigConfigMap deletes the onos-config ConfigMap
-func (c *TestController) deleteOnosConfigConfigMap() error {
-	return c.kubeclient.CoreV1().ConfigMaps(c.TestName).Delete(c.TestName, &metav1.DeleteOptions{})
+func (c *ClusterController) deleteOnosConfigConfigMap() error {
+	return c.kubeclient.CoreV1().ConfigMaps(c.getClusterName()).Delete(c.getClusterName(), &metav1.DeleteOptions{})
 }
 
 // deleteOnosConfigDeployment deletes the onos-config Deployment
-func (c *TestController) deleteOnosConfigDeployment() error {
-	return c.kubeclient.AppsV1().Deployments(c.TestName).Delete(c.TestName, &metav1.DeleteOptions{})
+func (c *ClusterController) deleteOnosConfigDeployment() error {
+	return c.kubeclient.AppsV1().Deployments(c.getClusterName()).Delete(c.getClusterName(), &metav1.DeleteOptions{})
 }
 
 // start starts running the test job
-func (c *TestController) start(args []string, timeout time.Duration) (corev1.Pod, error) {
-	if err := c.createTestJob(args, timeout); err != nil {
+func (c *ClusterController) start(args []string, timeout time.Duration) (corev1.Pod, error) {
+	id, err := uuid.NewUUID()
+	if err != nil {
 		return corev1.Pod{}, err
 	}
-	return c.awaitTestJobRunning()
+
+	testId := id.String()
+	if err := c.createTestJob(testId, args, timeout); err != nil {
+		return corev1.Pod{}, err
+	}
+	return c.awaitTestJobRunning(testId)
 }
 
 // createTestJob creates the job to run tests
-func (c *TestController) createTestJob(args []string, timeout time.Duration) error {
-	log.Infof("Starting test job %s", c.TestName)
+func (c *ClusterController) createTestJob(testId string, args []string, timeout time.Duration) error {
+	log.Infof("Starting test job %s", getTestName(testId))
 	one := int32(1)
 	timeoutSeconds := int64(timeout / time.Second)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      c.TestName,
-			Namespace: c.TestName,
+			Name:      getTestName(testId),
+			Namespace: c.getClusterName(),
 		},
 		Spec: batchv1.JobSpec{
 			Parallelism:           &one,
@@ -1135,7 +1099,8 @@ func (c *TestController) createTestJob(args []string, timeout time.Duration) err
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"test": c.TestName,
+						"cluster": c.ClusterId,
+						"test":    testId,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1166,7 +1131,7 @@ func (c *TestController) createTestJob(args []string, timeout time.Duration) err
 							Name: "secret",
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
-									SecretName: c.TestName,
+									SecretName: c.getClusterName(),
 								},
 							},
 						},
@@ -1176,16 +1141,16 @@ func (c *TestController) createTestJob(args []string, timeout time.Duration) err
 		},
 	}
 
-	_, err := c.kubeclient.BatchV1().Jobs(c.TestName).Create(job)
+	_, err := c.kubeclient.BatchV1().Jobs(c.getClusterName()).Create(job)
 	return err
 }
 
 // awaitTestJobRunning blocks until the test job creates a pod in the RUNNING state
-func (c *TestController) awaitTestJobRunning() (corev1.Pod, error) {
-	log.Infof("Waiting for test job %s to become ready", c.TestName)
+func (c *ClusterController) awaitTestJobRunning(testId string) (corev1.Pod, error) {
+	log.Infof("Waiting for test job %s to become ready", testId)
 	for {
-		pods, err := c.kubeclient.CoreV1().Pods(c.TestName).List(metav1.ListOptions{
-			LabelSelector: "test=" + c.TestName,
+		pods, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).List(metav1.ListOptions{
+			LabelSelector: "test=" + testId,
 		})
 		if err != nil {
 			return corev1.Pod{}, err
@@ -1204,8 +1169,8 @@ func (c *TestController) awaitTestJobRunning() (corev1.Pod, error) {
 }
 
 // streamLogs streams the logs from the given pod to stdout
-func (c *TestController) streamLogs(pod corev1.Pod) error {
-	req := c.kubeclient.CoreV1().Pods(c.TestName).GetLogs(pod.Name, &corev1.PodLogOptions{
+func (c *ClusterController) streamLogs(pod corev1.Pod) error {
+	req := c.kubeclient.CoreV1().Pods(c.getClusterName()).GetLogs(pod.Name, &corev1.PodLogOptions{
 		Follow: true,
 	})
 	readCloser, err := req.Stream()
@@ -1231,9 +1196,9 @@ func (c *TestController) streamLogs(pod corev1.Pod) error {
 }
 
 // getStatus gets the status message and exit code of the given pod
-func (c *TestController) getStatus(pod corev1.Pod) (string, int, error) {
+func (c *ClusterController) getStatus(pod corev1.Pod) (string, int, error) {
 	for {
-		obj, err := c.kubeclient.CoreV1().Pods(c.TestName).Get(pod.Name, metav1.GetOptions{})
+		obj, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).Get(pod.Name, metav1.GetOptions{})
 		if err != nil {
 			return "", 0, err
 		} else {
@@ -1248,18 +1213,23 @@ func (c *TestController) getStatus(pod corev1.Pod) (string, int, error) {
 }
 
 // deleteClusterRoleBinding deletes the ClusterRoleBinding used by the test
-func (c *TestController) deleteClusterRoleBinding() error {
+func (c *ClusterController) deleteClusterRoleBinding() error {
 	return c.kubeclient.RbacV1().ClusterRoleBindings().Delete("atomix-controller", &metav1.DeleteOptions{})
 }
 
 // deleteNamespace deletes the Namespace used by the test and all resources within it
-func (c *TestController) deleteNamespace() error {
-	return c.kubeclient.CoreV1().Namespaces().Delete(c.TestName, &metav1.DeleteOptions{})
+func (c *ClusterController) deleteNamespace() error {
+	return c.kubeclient.CoreV1().Namespaces().Delete(c.getClusterName(), &metav1.DeleteOptions{})
+}
+
+// getClusterName returns a qualified cluster name derived from the given cluster ID
+func getClusterName(clusterId string) string {
+	return fmt.Sprintf("onos-cluster-%s", clusterId)
 }
 
 // getTestName returns a qualified test name derived from the given test ID suitable for use in k8s resource names
 func getTestName(testId string) string {
-	return "onos-test-" + testId
+	return fmt.Sprintf("onos-test-%s", testId)
 }
 
 // newKubeClient returns a new Kubernetes client from the environment
