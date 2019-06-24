@@ -26,8 +26,9 @@ import (
 // Factory is a go routine thread that listens out for Device creation
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
-func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore, topoChannel <-chan events.TopoEvent,
-	opStateChan chan<- events.OperationalStateEvent, dispatcher *dispatcher.Dispatcher) {
+func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
+	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
+	dispatcher *dispatcher.Dispatcher) {
 	for topoEvent := range topoChannel {
 		deviceName := topocache.ID(events.Event(topoEvent).Subject())
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
@@ -37,7 +38,7 @@ func Factory(changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
 			}
 			device := deviceStore.Store[topocache.ID(deviceName)]
 			ctx := context.Background()
-			sync, err := New(ctx, changeStore, &device, configChan, opStateChan)
+			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan)
 			if err != nil {
 				//TODO propagate the ERROR
 				log.Warning("Error in connecting to client: ", err)

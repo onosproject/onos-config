@@ -176,7 +176,8 @@ func (m *Manager) Run() {
 	// Start the main dispatcher system
 	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
-	go synchronizer.Factory(m.ChangeStore, m.DeviceStore, m.TopoChannel, m.OperationalStateChannel, &m.Dispatcher)
+	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.DeviceStore, m.TopoChannel,
+		m.OperationalStateChannel, &m.Dispatcher)
 }
 
 //Close kills the channels and manager related objects

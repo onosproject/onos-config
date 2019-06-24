@@ -23,16 +23,20 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
+	"strings"
 )
 
 // Synchronizer enables proper configuring of a device based on store events and cache of operational data
 type Synchronizer struct {
 	context.Context
 	*store.ChangeStore
+	*store.ConfigurationStore
 	*topocache.Device
 	deviceConfigChan     <-chan events.ConfigEvent
 	operationalStateChan chan<- events.OperationalStateEvent
@@ -42,11 +46,13 @@ type Synchronizer struct {
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
-func New(context context.Context, changeStore *store.ChangeStore, device *topocache.Device,
-	deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent) (*Synchronizer, error) {
+func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
+	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent,
+	opStateChan chan<- events.OperationalStateEvent) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
+		ConfigurationStore:   configStore,
 		Device:               device,
 		deviceConfigChan:     deviceCfgChan,
 		operationalStateChan: opStateChan,
@@ -70,6 +76,42 @@ func New(context context.Context, changeStore *store.ChangeStore, device *topoca
 	}
 
 	log.Info(sync.Device.Addr, " capabilities ", capResponse)
+
+	config, err := getNetworkConfig(sync, string(sync.Device.ID), "", "/*", 0)
+
+	//Device has initial configuration saved in onos-config, trying to apply
+	if err == nil {
+
+		initialConfig, err := change.CreateChangeValuesNoRemoval(config, "Initial set to device")
+
+		if err != nil {
+			log.Error("Can't translate the initial config for ", sync.Device.Addr, err)
+			return nil, err
+		}
+
+		gnmiChange, err := initialConfig.GnmiChange()
+
+		if err != nil {
+			log.Error("Can't obtain GnmiChange for ", sync.Device.Addr, err)
+			return nil, err
+		}
+
+		resp, err := target.Set(context, gnmiChange)
+
+		if err != nil {
+			errGnmi, _ := status.FromError(err)
+			//Hack because the desc field is not available.
+			//Splitting at the desc string and getting the second element which is the description.
+			log.Errorf("Can't set initial configuration for %s due to %s", sync.Device.Addr,
+				strings.Split(errGnmi.Message(), " desc = ")[1])
+			//return nil, err
+		} else {
+			log.Info(resp)
+		}
+
+	} else {
+		log.Info(sync.Device.Addr, " has no initial configuration")
+	}
 
 	return sync, nil
 }
@@ -249,4 +291,35 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 		sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), eventValues)
 	}
 	return nil
+}
+
+func getNetworkConfig(sync *Synchronizer, target string, configname string, path string,
+	layer int) ([]*change.ConfigValue, error) {
+	log.Info("Getting config for ", target, path)
+	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
+	var config store.Configuration
+	if target != "" {
+		for _, cfg := range sync.ConfigurationStore.Store {
+			if cfg.Device == target {
+				config = cfg
+				break
+			}
+		}
+		if config.Name == "" {
+			return make([]*change.ConfigValue, 0),
+				fmt.Errorf("No Configuration found for %s", target)
+		}
+	} else if configname != "" {
+		config = sync.ConfigurationStore.Store[store.ConfigName(configname)]
+		if config.Name == "" {
+			return make([]*change.ConfigValue, 0),
+				fmt.Errorf("No Configuration found for %s", configname)
+		}
+	}
+	configValues := config.ExtractFullConfig(sync.ChangeStore.Store, layer)
+	if len(configValues) == 0 || path == "/*" {
+		return configValues, nil
+	}
+
+	return nil, fmt.Errorf("No Configuration for Device %s", target)
 }
