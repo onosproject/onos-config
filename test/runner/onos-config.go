@@ -317,6 +317,11 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 									Name:          "grpc",
 									ContainerPort: 5150,
 								},
+								{
+									Name:          "debug",
+									ContainerPort: 40000,
+									Protocol:      corev1.ProtocolTCP,
+								},
 							},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
@@ -346,6 +351,13 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 									Name:      "secret",
 									MountPath: "/etc/onos-config/certs",
 									ReadOnly:  true,
+								},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								Capabilities: &corev1.Capabilities{
+									Add: []corev1.Capability{
+										"SYS_PTRACE",
+									},
 								},
 							},
 						},
