@@ -165,7 +165,7 @@ func validateConfiguration(configObj store.Configuration, errChan chan error) {
 			return
 		}
 	} else {
-		fmt.Println("No Model Plugin available for", modelPluginName)
+		log.Warning("No Model Plugin available for ", modelPluginName)
 	}
 	errChan <- nil
 }
