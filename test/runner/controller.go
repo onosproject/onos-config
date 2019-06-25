@@ -103,14 +103,14 @@ func (c *ClusterController) SetupSimulator(name string, config *SimulatorConfig)
 }
 
 // RunTests runs the given tests on Kubernetes
-func (c *ClusterController) RunTests(tests []string, timeout time.Duration) (string, int, error) {
+func (c *ClusterController) RunTests(testId string, tests []string, timeout time.Duration) (string, int, error) {
 	// Default the test timeout to 10 minutes
 	if timeout == 0 {
 		timeout = 10 * time.Minute
 	}
 
 	// Start the test job
-	pod, err := c.startTests(tests, timeout)
+	pod, err := c.startTests(testId, tests, timeout)
 	if err != nil {
 		return "", 0, err
 	}

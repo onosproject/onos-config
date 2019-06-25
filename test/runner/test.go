@@ -17,7 +17,6 @@ package runner
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/onosproject/onos-config/test/env"
 	"io"
 	batchv1 "k8s.io/api/batch/v1"
@@ -47,13 +46,7 @@ type TestRecord struct {
 }
 
 // startTests starts running a test job
-func (c *ClusterController) startTests(tests []string, timeout time.Duration) (corev1.Pod, error) {
-	id, err := uuid.NewUUID()
-	if err != nil {
-		return corev1.Pod{}, err
-	}
-
-	testId := id.String()
+func (c *ClusterController) startTests(testId string, tests []string, timeout time.Duration) (corev1.Pod, error) {
 	if err := c.createTestJob(testId, tests, timeout); err != nil {
 		return corev1.Pod{}, err
 	}
@@ -62,12 +55,12 @@ func (c *ClusterController) startTests(tests []string, timeout time.Duration) (c
 
 // createTestJob creates the job to run tests
 func (c *ClusterController) createTestJob(testId string, args []string, timeout time.Duration) error {
-	log.Infof("Starting test job %s", getTestName(testId))
+	log.Infof("Starting test job %s", testId)
 	one := int32(1)
 	timeoutSeconds := int64(timeout / time.Second)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getTestName(testId),
+			Name:      testId,
 			Namespace: c.getClusterName(),
 			Annotations: map[string]string{
 				"test-args": strings.Join(args, ","),
@@ -205,7 +198,7 @@ func (c *ClusterController) GetHistory() ([]TestRecord, error) {
 
 // GetRecord returns a single record for the given test
 func (c *ClusterController) GetRecord(testId string) (TestRecord, error) {
-	job, err := c.kubeclient.BatchV1().Jobs(c.getClusterName()).Get(getTestName(testId), metav1.GetOptions{})
+	job, err := c.kubeclient.BatchV1().Jobs(c.getClusterName()).Get(testId, metav1.GetOptions{})
 	if err != nil {
 		return TestRecord{}, err
 	}
@@ -282,9 +275,4 @@ func (c *ClusterController) getDeviceIds() []string {
 		devices = append(devices, name)
 	}
 	return devices
-}
-
-// getTestName returns a qualified test name derived from the given test ID suitable for use in k8s resource names
-func getTestName(testId string) string {
-	return fmt.Sprintf("onos-test-%s", testId)
 }

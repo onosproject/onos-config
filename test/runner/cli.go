@@ -855,6 +855,8 @@ func getRunCommand() *cobra.Command {
 		Use:   "run [tests]",
 		Short: "Run integration tests on Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
+			testId := fmt.Sprintf("test-%d", newUuidInt())
+
 			// Load the onit configuration from disk
 			config, err := LoadConfig()
 			if err != nil {
@@ -880,7 +882,7 @@ func getRunCommand() *cobra.Command {
 			}
 
 			timeout, _ := cmd.Flags().GetInt("timeout")
-			message, code, err := controller.RunTests(args, time.Duration(timeout)*time.Second)
+			message, code, err := controller.RunTests(testId, args, time.Duration(timeout)*time.Second)
 			if err != nil {
 				exitError(err)
 			} else {
