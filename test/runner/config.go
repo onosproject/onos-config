@@ -190,6 +190,9 @@ func (c *OnitConfig) Unlock() error {
 
 // Write writes the configuration to a configuration file
 func (c *OnitConfig) Write() error {
+	if err := initConfig(); err != nil {
+		return err
+	}
 	encoded, err := yaml.Marshal(c)
 	if err != nil {
 		return err
@@ -228,28 +231,40 @@ func setClusterConfigDefaults(config *ClusterConfig) {
 			"Storetype": "change",
 			"Store":     make(map[string]interface{}),
 		}
+	} else if _, ok := config.ChangeStore["Store"]; !ok {
+		config.ChangeStore["Store"] = make(map[string]interface{})
 	}
+
 	if config.DeviceStore == nil {
 		config.DeviceStore = map[string]interface{}{
 			"Version":   "1.0.0",
 			"Storetype": "device",
 			"Store":     make(map[string]interface{}),
 		}
+	} else if _, ok := config.DeviceStore["Store"]; !ok {
+		config.DeviceStore["Store"] = make(map[string]interface{})
 	}
+
 	if config.ConfigStore == nil {
 		config.ConfigStore = map[string]interface{}{
 			"Version":   "1.0.0",
 			"Storetype": "config",
 			"Store":     make(map[string]interface{}),
 		}
+	} else if _, ok := config.ConfigStore["Store"]; !ok {
+		config.ConfigStore["Store"] = make(map[string]interface{})
 	}
+
 	if config.NetworkStore == nil {
 		config.NetworkStore = map[string]interface{}{
 			"Version":   "1.0.0",
 			"Storetype": "network",
 			"Store":     make([]interface{}, 0),
 		}
+	} else if _, ok := config.NetworkStore["Store"]; !ok {
+		config.NetworkStore["Store"] = make([]interface{}, 0)
 	}
+
 	if config.Simulators == nil {
 		config.Simulators = make(map[string]*SimulatorConfig)
 	}
@@ -269,6 +284,33 @@ type SimulatorConfig struct {
 	Config map[string]interface{} `yaml:"config" mapstructure:"config"`
 }
 
+func initConfig() error {
+	// If the configuration file is not found, initialize a configuration in the home dir.
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(*viper.ConfigFileNotFoundError); !ok {
+			home, err := homedir.Dir()
+			if err != nil {
+				return err
+			}
+
+			err = os.MkdirAll(home+"/.onos", 0777)
+			if err != nil {
+				return err
+			}
+
+			f, err := os.Create(home + "/.onos/onit.yaml")
+			if err != nil {
+				return err
+			} else {
+				f.Close()
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
 func init() {
 	home, err := homedir.Dir()
 	if err != nil {
@@ -280,32 +322,5 @@ func init() {
 	viper.AddConfigPath("/etc/onos")
 	viper.AddConfigPath(".")
 
-	// If the configuration file is not found, initialize a configuration in the home dir.
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(*viper.ConfigFileNotFoundError); !ok {
-			home, err := homedir.Dir()
-			if err != nil {
-				exitError(err)
-			}
-
-			err = os.MkdirAll(home+"/.onos", 0777)
-			if err != nil {
-				exitError(err)
-			}
-
-			f, err := os.Create(home + "/.onos/onit.yaml")
-			if err != nil {
-				exitError(err)
-			} else {
-				f.Close()
-			}
-
-			err = viper.WriteConfig()
-			if err != nil {
-				exitError(err)
-			}
-		} else {
-			exitError(err)
-		}
-	}
+	viper.ReadInConfig()
 }

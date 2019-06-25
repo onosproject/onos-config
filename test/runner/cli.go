@@ -32,7 +32,7 @@ func init() {
 // GetCommand returns a Cobra command for tests in the given test registry
 func GetCommand(registry *TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "onit {list,test,run} [tests]",
+		Use:   "onit {create,add,remove,delete,get,set,run} [args]",
 		Short: "Run onos-config integration tests on Kubernetes",
 	}
 	cmd.AddCommand(getCreateCommand())
@@ -109,7 +109,7 @@ func getCreateClusterCommand() *cobra.Command {
 			if len(args) > 0 {
 				clusterId = args[0]
 			} else {
-				clusterId = newUuid()
+				clusterId = newUuidString()
 			}
 
 			// Acquire a lock on the configuration to add the cluster
@@ -174,7 +174,7 @@ func getAddSimulatorCommand() *cobra.Command {
 			if len(args) > 0 {
 				name = args[0]
 			} else {
-				name = fmt.Sprintf("device-%s", newUuid())
+				name = fmt.Sprintf("device-%d", newUuidInt())
 			}
 
 			// Create the simulator configuration from the configured preset
@@ -642,13 +642,22 @@ func getDefaultCluster() string {
 	return config.DefaultCluster
 }
 
-// newUuid returns a new UUID
-func newUuid() string {
+// newUuidString returns a new string UUID
+func newUuidString() string {
 	id, err := uuid.NewUUID()
 	if err != nil {
 		exitError(err)
 	}
 	return id.String()
+}
+
+// newUuidInt returns a numeric UUID
+func newUuidInt() uint32 {
+	id, err := uuid.NewUUID()
+	if err != nil {
+		exitError(err)
+	}
+	return id.ID()
 }
 
 // exitError prints the given err to stdout and exits with exit code 1

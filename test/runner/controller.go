@@ -572,7 +572,7 @@ func (c *ClusterController) awaitPartitionsReady() error {
 // getDeviceIds returns a slice of configured simulator device IDs
 func (c *ClusterController) getDeviceIds() []string {
 	devices := []string{}
-	for name, _ := range c.config.DeviceStore {
+	for name, _ := range c.config.DeviceStore["Store"].(map[string]interface{}) {
 		devices = append(devices, name)
 	}
 	for name, _ := range c.config.Simulators {
@@ -822,8 +822,10 @@ func (c *ClusterController) createOnosConfigConfigMap() error {
 
 	// If a device store was provided, serialize the device store configuration.
 	// Otherwise, create a device store configuration from simulators.
-	deviceStoreMap := c.config.DeviceStore
-	configStoreMap := c.config.ConfigStore
+	deviceStoreObj := c.config.DeviceStore
+	configStoreObj := c.config.ConfigStore
+	deviceStoreMap := deviceStoreObj["Store"].(map[string]interface{})
+	configStoreMap := configStoreObj["Store"].(map[string]interface{})
 	for name, _ := range c.config.Simulators {
 		deviceMap := make(map[string]interface{})
 		deviceMap["ID"] = name
@@ -844,13 +846,13 @@ func (c *ClusterController) createOnosConfigConfigMap() error {
 	}
 
 	// Serialize the device store configuration
-	deviceStore, err := json.Marshal(deviceStoreMap)
+	deviceStore, err := json.Marshal(deviceStoreObj)
 	if err != nil {
 		return err
 	}
 
 	// Serialize the config store configuration
-	configStore, err := json.Marshal(configStoreMap)
+	configStore, err := json.Marshal(configStoreObj)
 	if err != nil {
 		return err
 	}
