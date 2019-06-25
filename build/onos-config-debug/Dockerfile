@@ -18,6 +18,7 @@ COPY --from=debugBuilder /go/bin/dlv /usr/local/bin/dlv
 
 RUN echo "#!/bin/sh" >> /usr/local/bin/onos-config-debug && \
     echo "dlv --listen=:40000 --headless=true --api-version=2 exec /usr/local/bin/onos-config -- \"\$@\"" >> /usr/local/bin/onos-config-debug && \
+    echo "dlv --init <(echo \"exit -c\") connect 127.0.0.1:40000" && \
     chmod +x /usr/local/bin/onos-config-debug
 
 RUN addgroup -S onos-config && adduser -S -G onos-config onos-config
