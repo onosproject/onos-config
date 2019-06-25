@@ -26,6 +26,7 @@ To build the project, simply type `make`. This will check for required dependenc
 and then perform all required validation steps, which includes unit tests, Go code formating, Go lint, Go vetting
 and license header compliance check. In future, there may be other tests.
 
+| Note that since the build relies on Go modules, you must `export GO111MODULE=on`.
 ## Building Docker images
 To allow deployment of onos-config in a Kubernetes cluster, the `Makefile` allows creation of two separate Docker 
 images.
