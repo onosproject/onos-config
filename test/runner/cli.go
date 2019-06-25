@@ -399,6 +399,7 @@ func getGetCommand(registry *TestRegistry) *cobra.Command {
 		Short: "Get test configurations",
 	}
 	cmd.AddCommand(getGetClusterCommand())
+	cmd.AddCommand(getGetNodesCommand())
 	cmd.AddCommand(getGetSimulatorsCommand())
 	cmd.AddCommand(getGetClustersCommand())
 	cmd.AddCommand(getGetDevicePresetsCommand())
@@ -507,6 +508,59 @@ func getGetStorePresetsCommand() *cobra.Command {
 			}
 		},
 	}
+}
+
+// getGetNodesCommand returns a cobra command to get a list of onos-config nodes in the cluster
+func getGetNodesCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "nodes",
+		Short: "Get a list of nodes in the cluster",
+		Run: func(cmd *cobra.Command, args []string) {
+			// Load the onit configuration from disk
+			config, err := LoadConfig()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the default cluster configuration
+			cluster, err := config.getClusterConfig(clusterId)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the test cluster controller from the cluster configuration
+			controller, err := GetClusterController(clusterId, cluster)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the list of nodes and output
+			nodes, err := controller.GetNodes()
+			if err != nil {
+				exitError(err)
+			} else {
+				printNodes(nodes)
+			}
+		},
+	}
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	return cmd
+}
+
+func printNodes(nodes []NodeInfo) {
+	writer := new(tabwriter.Writer)
+	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
+	fmt.Fprintln(writer, "ID\tSTATUS")
+	for _, node := range nodes {
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", node.Id, node.Status))
+	}
+	writer.Flush()
 }
 
 // getGetTestsCommand returns a cobra command to get a list of available tests
