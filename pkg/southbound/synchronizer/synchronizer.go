@@ -247,8 +247,6 @@ func (sync Synchronizer) syncOperationalState() error {
 
 func (sync *Synchronizer) handler(msg proto.Message) error {
 
-	log.Info("Proto Message ", msg)
-
 	_, err := southbound.GetTarget(sync.key)
 	if err != nil {
 		return fmt.Errorf("target not connected %#v", msg)

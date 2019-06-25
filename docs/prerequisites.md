@@ -13,6 +13,10 @@ guidelines.
 ## Docker
 [Docker] is required to build the project Docker images and also to compile `*.proto` files into Go source files.
 
+## Local kubernetes environment
+Some form of local kubernetes development environment is also needed.
+The core team uses [Kind], but there are other options such as [Minikube].
+
 ## IDE
 Some form of an integrated development environment is also recommended.
 The core team uses the [GoLand IDE] from JetBrains, but there are many other options. 
@@ -31,6 +35,8 @@ automatically.
 [Go lint]: https://github.com/golang/lint
 [Go lint]: https://github.com/golang/lint
 [Docker]: https://docs.docker.com/install/
+[Kind]: https://github.com/kubernetes-sigs/kind
+[Minikube]: https://kubernetes.io/docs/tasks/tools/install-minikube/
 
 [GoLand IDE]: /https://www.jetbrains.com/go/
 [Visual Studio Code]: /https://code.visualstudio.com
