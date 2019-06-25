@@ -15,6 +15,7 @@
 package runner
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1083,6 +1084,9 @@ func (c *ClusterController) createTestJob(testId string, args []string, timeout 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      getTestName(testId),
 			Namespace: c.getClusterName(),
+			Annotations: map[string]string{
+				"test-args": strings.Join(args, ","),
+			},
 		},
 		Spec: batchv1.JobSpec{
 			Parallelism:           &one,
@@ -1142,19 +1146,9 @@ func (c *ClusterController) createTestJob(testId string, args []string, timeout 
 func (c *ClusterController) awaitTestJobRunning(testId string) (corev1.Pod, error) {
 	log.Infof("Waiting for test job %s to become ready", testId)
 	for {
-		pods, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).List(metav1.ListOptions{
-			LabelSelector: "test=" + testId,
-		})
-		if err != nil {
-			return corev1.Pod{}, err
-		} else if len(pods.Items) > 0 {
-			for _, pod := range pods.Items {
-				if pod.Status.Phase == corev1.PodRunning && len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].Ready {
-					return pod, nil
-				} else if pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed {
-					return pod, nil
-				}
-			}
+		pod, err := c.getPod(testId)
+		if err == nil {
+			return pod, nil
 		} else {
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -1214,6 +1208,137 @@ func (c *ClusterController) deleteClusterRoleBinding() error {
 func (c *ClusterController) deleteNamespace() error {
 	return c.kubeclient.CoreV1().Namespaces().Delete(c.getClusterName(), &metav1.DeleteOptions{})
 }
+
+// GetHistory returns the history of test runs on the cluster
+func (c *ClusterController) GetHistory() ([]TestRecord, error) {
+	jobs, err := c.kubeclient.BatchV1().Jobs(c.getClusterName()).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	records := make([]TestRecord, 0, len(jobs.Items))
+	for _, job := range jobs.Items {
+		record, err := c.getRecord(job)
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+	return records, nil
+}
+
+// GetRecord returns a single record for the given test
+func (c *ClusterController) GetRecord(testId string) (TestRecord, error) {
+	job, err := c.kubeclient.BatchV1().Jobs(c.getClusterName()).Get(getTestName(testId), metav1.GetOptions{})
+	if err != nil {
+		return TestRecord{}, err
+	}
+	return c.getRecord(*job)
+}
+
+// GetRecord returns a single record for the given test
+func (c *ClusterController) getRecord(job batchv1.Job) (TestRecord, error) {
+	testId := job.Labels["test"]
+
+	var args []string
+	testArgs, ok := job.Annotations["test-args"]
+	if ok {
+		args = strings.Split(testArgs, ",")
+	} else {
+		args = make([]string, 0)
+	}
+
+	pod, err := c.getPod(testId)
+	if err != nil {
+		return TestRecord{}, nil
+	}
+
+	logs, err := c.getLogs(pod)
+	if err != nil {
+		return TestRecord{}, nil
+	}
+
+	record := TestRecord{
+		TestId: testId,
+		Args:   args,
+		Logs:   logs,
+	}
+
+	state := pod.Status.ContainerStatuses[0].State
+	if state.Terminated != nil {
+		record.Message = state.Terminated.Message
+		record.ExitCode = int(state.Terminated.ExitCode)
+		if record.ExitCode == 0 {
+			record.Status = TestPassed
+		} else {
+			record.Status = TestFailed
+		}
+	} else {
+		record.Status = TestRunning
+	}
+
+	return record, nil
+}
+
+// getLogs gets the logs from the given pod
+func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
+	req := c.kubeclient.CoreV1().Pods(c.getClusterName()).GetLogs(pod.Name, &corev1.PodLogOptions{
+		Follow: true,
+	})
+	readCloser, err := req.Stream()
+	if err != nil {
+		return nil, err
+	}
+
+	defer readCloser.Close()
+
+	logs := []string{}
+	scanner := bufio.NewScanner(readCloser)
+	for scanner.Scan() {
+		logs = append(logs, scanner.Text())
+	}
+	return logs, nil
+}
+
+// getPod finds the Pod for the given test
+func (c *ClusterController) getPod(testId string) (corev1.Pod, error) {
+	pods, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).List(metav1.ListOptions{
+		LabelSelector: "test=" + testId,
+	})
+	if err != nil {
+		return corev1.Pod{}, err
+	} else if len(pods.Items) > 0 {
+		for _, pod := range pods.Items {
+			if pod.Status.Phase == corev1.PodRunning && len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].Ready {
+				return pod, nil
+			}
+		}
+		for _, pod := range pods.Items {
+			if pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed {
+				return pod, nil
+			}
+		}
+	}
+	return corev1.Pod{}, errors.New("cannot locate test pod for test " + testId)
+}
+
+// TestRecord contains information about a test run
+type TestRecord struct {
+	TestId   string
+	Args     []string
+	Logs     []string
+	Status   TestStatus
+	Message  string
+	ExitCode int
+}
+
+type TestStatus string
+
+const (
+	TestRunning TestStatus = "RUNNING"
+	TestPassed  TestStatus = "PASSED"
+	TestFailed  TestStatus = "FAILED"
+)
 
 // getClusterName returns a qualified cluster name derived from the given cluster ID
 func getClusterName(clusterId string) string {

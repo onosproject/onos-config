@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	log "k8s.io/klog"
 	"os"
+	"strings"
 	"text/tabwriter"
 	"time"
 )
@@ -401,6 +402,8 @@ func getGetCommand(registry *TestRegistry) *cobra.Command {
 	cmd.AddCommand(getGetDevicePresetsCommand())
 	cmd.AddCommand(getGetStorePresetsCommand())
 	cmd.AddCommand(getGetTestsCommand(registry))
+	cmd.AddCommand(getGetHistoryCommand())
+	cmd.AddCommand(getGetLogsCommand())
 	return cmd
 }
 
@@ -515,6 +518,123 @@ func getGetTestsCommand(registry *TestRegistry) *cobra.Command {
 			}
 		},
 	}
+}
+
+// getGetHistoryCommand returns a cobra command to get the history of tests
+func getGetHistoryCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "history",
+		Short: "Get the history of test runs",
+		Run: func(cmd *cobra.Command, args []string) {
+			// Load the onit configuration from disk
+			config, err := LoadConfig()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the default cluster configuration
+			cluster, err := config.getClusterConfig(clusterId)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the test cluster controller from the cluster configuration
+			controller, err := GetClusterController(clusterId, cluster)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the history of test runs for the cluster
+			records, err := controller.GetHistory()
+			if err != nil {
+				exitError(err)
+			}
+
+			printHistory(records)
+		},
+	}
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	return cmd
+}
+
+// printHistory prints a test history in table format
+func printHistory(records []TestRecord) {
+	writer := new(tabwriter.Writer)
+	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
+	fmt.Fprintln(writer, "ID\tTESTS\tSTATUS\tEXIT CODE\tMESSAGE")
+	for _, record := range records {
+		var args string
+		if len(record.Args) > 0 {
+			args = strings.Join(record.Args, ",")
+		} else {
+			args = "*"
+		}
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s\t%d\t%s", record.TestId, args, record.Status, record.ExitCode, record.Message))
+	}
+	writer.Flush()
+}
+
+// getGetLogsCommand returns a cobra command to output the logs for a specific test run
+func getGetLogsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "logs [id]",
+		Short: "Get the logs for a test run",
+		Args:  cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			// Load the onit configuration from disk
+			config, err := LoadConfig()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the default cluster configuration
+			cluster, err := config.getClusterConfig(clusterId)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the test cluster controller from the cluster configuration
+			controller, err := GetClusterController(clusterId, cluster)
+			if err != nil {
+				exitError(err)
+			}
+
+			// If a test ID was provided, get the record for the test. Otherwise, get the last test record
+			var record TestRecord
+			if len(args) > 0 {
+				record, err = controller.GetRecord(args[0])
+			} else {
+				records, err := controller.GetHistory()
+				if err == nil {
+					record = records[len(records)-1]
+				}
+			}
+
+			if err != nil {
+				exitError(err)
+			} else {
+				for _, log := range record.Logs {
+					fmt.Println(log)
+				}
+			}
+		},
+	}
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	return cmd
 }
 
 // getSetCommand returns a cobra "set" command for setting configurations
