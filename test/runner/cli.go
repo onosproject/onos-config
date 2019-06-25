@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	log "k8s.io/klog"
 	"os"
+	"text/tabwriter"
 	"time"
 )
 
@@ -462,11 +463,19 @@ func getGetClustersCommand() *cobra.Command {
 			}
 
 			// Iterate and print cluster names
-			for name, _ := range config.Clusters {
-				fmt.Println(name)
-			}
+			printClusters(config.Clusters)
 		},
 	}
+}
+
+func printClusters(clusters map[string]*ClusterConfig) {
+	writer := new(tabwriter.Writer)
+	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
+	fmt.Fprintln(writer, "ID\tSIZE\tPARTITIONS")
+	for id, config := range clusters {
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%d\t%d", id, config.Nodes, config.Partitions))
+	}
+	writer.Flush()
 }
 
 // getGetDevicePresetsCommand returns a cobra command to get a list of available device simulator configurations
