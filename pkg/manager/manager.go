@@ -125,16 +125,18 @@ func LoadManager(configStoreFile string, changeStoreFile string, deviceStoreFile
 func (m *Manager) ValidateStores() error {
 	validationErrors := make(chan error)
 	cfgCount := len(m.ConfigStore.Store)
-	for _, configObj := range m.ConfigStore.Store {
-		go validateConfiguration(configObj, validationErrors)
-	}
-	for valErr := range validationErrors {
-		if valErr != nil {
-			return valErr
+	if cfgCount > 0 {
+		for _, configObj := range m.ConfigStore.Store {
+			go validateConfiguration(configObj, validationErrors)
 		}
-		cfgCount--
-		if cfgCount == 0 {
-			return nil
+		for valErr := range validationErrors {
+			if valErr != nil {
+				return valErr
+			}
+			cfgCount--
+			if cfgCount == 0 {
+				return nil
+			}
 		}
 	}
 	return nil

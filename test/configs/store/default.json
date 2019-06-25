@@ -1,0 +1,22 @@
+{
+  "changeStore": {
+    "Version": "1.0.0",
+    "Storetype": "change",
+    "Store": {}
+  },
+  "configStore": {
+    "Version": "1.0.0",
+    "Storetype": "config",
+    "Store": {}
+  },
+  "networkStore": {
+    "Version": "1.0.0",
+    "Storetype": "network",
+    "Store": []
+  },
+  "deviceStore": {
+    "Version": "1.0.0",
+    "Storetype": "device",
+    "Store": {}
+  }
+}
