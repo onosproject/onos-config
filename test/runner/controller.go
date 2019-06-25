@@ -17,7 +17,6 @@ package runner
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	atomixk8s "github.com/atomix/atomix-k8s-controller/pkg/client/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -65,11 +64,6 @@ type ClusterController struct {
 	config           *ClusterConfig
 }
 
-// getClusterName returns the qualified cluster name
-func (c *ClusterController) getClusterName() string {
-	return fmt.Sprintf("onos-cluster-%s", c.ClusterId)
-}
-
 // SetupCluster sets up a test cluster with the given configuration
 func (c *ClusterController) SetupCluster() error {
 	log.Infof("Setting up test cluster %s", c.ClusterId)
@@ -90,12 +84,12 @@ func (c *ClusterController) SetupCluster() error {
 
 // SetupSimulator sets up a device simulator with the given configuration
 func (c *ClusterController) SetupSimulator(name string, config *SimulatorConfig) error {
-	log.Infof("Setting up simulator %s/%s", name, c.getClusterName())
+	log.Infof("Setting up simulator %s/%s", name, c.ClusterId)
 	if err := c.setupSimulator(name, config); err != nil {
 		return err
 	}
 
-	log.Infof("Waiting for simulator %s/%s to become ready", name, c.getClusterName())
+	log.Infof("Waiting for simulator %s/%s to become ready", name, c.ClusterId)
 	if err := c.awaitSimulatorReady(name); err != nil {
 		return err
 	}
@@ -126,14 +120,14 @@ func (c *ClusterController) RunTests(testId string, tests []string, timeout time
 
 // GetLogs returns the logs for a test resource
 func (c *ClusterController) GetLogs(resourceId string) ([][]string, error) {
-	pod, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).Get(resourceId, metav1.GetOptions{})
+	pod, err := c.kubeclient.CoreV1().Pods(c.ClusterId).Get(resourceId, metav1.GetOptions{})
 	if err == nil {
 		return c.getAllLogs([]corev1.Pod{*pod})
 	} else if !k8serrors.IsNotFound(err) {
 		return nil, err
 	}
 
-	pods, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).List(metav1.ListOptions{
+	pods, err := c.kubeclient.CoreV1().Pods(c.ClusterId).List(metav1.ListOptions{
 		LabelSelector: "resource=" + resourceId,
 	})
 	if err != nil {
@@ -160,7 +154,7 @@ func (c *ClusterController) getAllLogs(pods []corev1.Pod) ([][]string, error) {
 
 // getLogs gets the logs from the given pod
 func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
-	req := c.kubeclient.CoreV1().Pods(c.getClusterName()).GetLogs(pod.Name, &corev1.PodLogOptions{})
+	req := c.kubeclient.CoreV1().Pods(c.ClusterId).GetLogs(pod.Name, &corev1.PodLogOptions{})
 	readCloser, err := req.Stream()
 	if err != nil {
 		return nil, err
@@ -178,7 +172,7 @@ func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
 
 // TeardownSimulator tears down a device simulator with the given name
 func (c *ClusterController) TeardownSimulator(name string) error {
-	log.Infof("Tearing down simulator %s/%s", name, c.getClusterName())
+	log.Infof("Tearing down simulator %s/%s", name, c.ClusterId)
 	if err := c.teardownSimulator(name); err != nil {
 		return err
 	}
@@ -187,7 +181,7 @@ func (c *ClusterController) TeardownSimulator(name string) error {
 
 // TeardownCluster tears down the test cluster
 func (c *ClusterController) TeardownCluster() error {
-	log.Infof("Tearing down test namespace %s", c.getClusterName())
+	log.Infof("Tearing down test namespace %s", c.ClusterId)
 	if err := c.deleteNamespace(); err != nil {
 		return err
 	}
@@ -199,10 +193,10 @@ func (c *ClusterController) TeardownCluster() error {
 
 // setupNamespace creates a uniquely named namespace with which to run tests
 func (c *ClusterController) setupNamespace() error {
-	log.Infof("Setting up test namespace %s", c.getClusterName())
+	log.Infof("Setting up test namespace %s", c.ClusterId)
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: c.getClusterName(),
+			Name: c.ClusterId,
 		},
 	}
 	_, err := c.kubeclient.CoreV1().Namespaces().Create(namespace)
@@ -216,5 +210,5 @@ func (c *ClusterController) deleteClusterRoleBinding() error {
 
 // deleteNamespace deletes the Namespace used by the test and all resources within it
 func (c *ClusterController) deleteNamespace() error {
-	return c.kubeclient.CoreV1().Namespaces().Delete(c.getClusterName(), &metav1.DeleteOptions{})
+	return c.kubeclient.CoreV1().Namespaces().Delete(c.ClusterId, &metav1.DeleteOptions{})
 }
