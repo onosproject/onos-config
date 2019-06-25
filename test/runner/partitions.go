@@ -35,7 +35,7 @@ type PartitionInfo struct {
 
 // GetPartitions returns a list of partition info
 func (c *ClusterController) GetPartitions() ([]PartitionInfo, error) {
-	partitionList, err := c.atomixclient.K8sV1alpha1().Partitions(c.getClusterName()).List(metav1.ListOptions{
+	partitionList, err := c.atomixclient.K8sV1alpha1().Partitions(c.ClusterId).List(metav1.ListOptions{
 		LabelSelector: "group=raft",
 	})
 	if err != nil {
@@ -69,7 +69,7 @@ func (c *ClusterController) GetPartitions() ([]PartitionInfo, error) {
 
 // GetPartitionNodes returns a list of node info for the given partition
 func (c *ClusterController) GetPartitionNodes(partition int) ([]NodeInfo, error) {
-	pods, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).List(metav1.ListOptions{
+	pods, err := c.kubeclient.CoreV1().Pods(c.ClusterId).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("group=raft,partition=%d", partition),
 	})
 	if err != nil {

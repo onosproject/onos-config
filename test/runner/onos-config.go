@@ -43,7 +43,7 @@ type NodeInfo struct {
 
 // GetNodes returns a list of onos-config nodes running in the cluster
 func (c *ClusterController) GetNodes() ([]NodeInfo, error) {
-	pods, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).List(metav1.ListOptions{
+	pods, err := c.kubeclient.CoreV1().Pods(c.ClusterId).List(metav1.ListOptions{
 		LabelSelector: "app=onos-config",
 	})
 	if err != nil {
