@@ -2,99 +2,234 @@
 
 The onos-config project provides an 
 [integration testing framework](https://github.com/onosproject/onos-config/pull/374) for
-running end-to-end tests on [Kubernetes]. This document describes the steps to creating
-and running tests using the integration test framework.
+running end-to-end tests on [Kubernetes]. This document describes the process for managing 
+a development/test environment and running integration tests with `onit`.
 
 ## Setup
 
-To use the integration test framework, it's recommended that you use a local cluster like
-[Minikube] or [kind]. To run integration tests, you must first build the integration-tests
-image and ensure it's available within the Kubernetes cluster on which you intend to run
-tests.
+The integration test framework is designed to operate on a Kubernetes cluster. It's recommended
+that users use a local Kubernetes cluster suitable for development, e.g. [Minikube], [kind],
+or [MicroK8s].
 
+### Configuration
 
-For Minikube, ensure you build the image in the Minikube Docker context:
-```bash
-> eval $(minikube docker-env)
-> make images
-```
-
-For kind, you must manually `load` the `onos-config` image and the integration tests image 
-into the Kubernetes cluster each time the tests are modified. The `make kind` target will
-build and load the onos-config and onos-config-integration-tests images into kind:
-
-```bash
-> make kind
-```
-
-## Usage
-
-The test framework provides an `onit` command used for running tests in Kubernetes.
-To install the `onit` command, use `go get`:
+The test framework is controlled through the `onit` command. To install the `onit` command,
+use `go get`:
 
 ```bash
 > go get github.com/onosproject/onos-config/test/cmd/onit
 ```
 
-The `onit` command provides a set of commands for managing test clusters in Kubernetes,
-adding and removing [device simulators][simulators], and running tests on the cluster.
-
-The first step to running tests is to setup a test cluster with `onit setup cluster`:
+To interact with a Kubernetes cluster, the `onit` command must have access to a local
+Kubernetes configuration. Onit expects the same configuration as `kubectl` and will connect
+to the same Kubernetes cluster as `kubectl` will connect to, so to determine which Kubernetes 
+cluster onit will use, simply run `kubectl cluster-info`:
 
 ```bash
-> onit setup cluster
+> kubectl cluster-info
+Kubernetes master is running at https://127.0.0.1:49760
+KubeDNS is running at https://127.0.0.1:49760/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+```
+
+See the [Kubernetes documentation](https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/)
+for details on configuring both `kubectl` and `onit` to connect to a new cluster or multiple
+clusters.
+
+The `onit` command also maintains some cluster metadata in a local configuration file. The search
+path for the `onit.yaml` configuration file is:
+* `~/.onos`
+* `/etc/onos`
+* `.`
+
+Users do not typically need to modify the `onit.yaml` configuration file directly. The onit 
+configuration is primarily managed through various onit commands like `onit set`, `onit create`,
+`onit add`, etc. It's recommended that users avoid modifying the onit configuration
+file, but it's nevertheless important to note that the application must have write access to one
+of the above paths.
+
+### Docker
+
+The `onit` command manages clusters and runs tests by deploying locally built [Docker] containers
+on [Kubernetes]. Docker image builds are an essential component of the `onit` workflow. **Each time a
+change is made to either the core or integration tests, Docker images must be rebuilt** and made
+available within the Kubernetes cluster in which tests are being run. The precise process for building
+Docker images and adding them to a local Kubernetes cluster is different for each setup.
+
+#### Building for Minikube
+
+[Minikube] runs a VM with its own Docker daemon running inside it. To build the Docker images
+for Minikube, ensure you use configure your shell to use Minikube Docker context before building:
+
+```bash
+> eval $(minikube docker-env)
+```
+
+Once the shell has been configured, use `make images` to build the Docker images:
+
+```bash
+> make images
+```
+
+Note that `make images` _must be run every time a change is made_ to either the core code
+or integration tests.
+
+#### Building for Kind
+
+[Kind][kind] provides an alternative to [Minikube] which runs Kubernetes in a Docker container.
+As with Minikube, kind requires specific setup to ensure Docker images modified and built
+locally can be run within the kind cluster. Rather than switching your Docker environment to
+a remote Docker server, kind requires that images be explicitly loaded into the cluster each
+time they're built. For this reason, we provide a convenience make target: `kind`:
+
+```bash
+> make kind
+```
+
+When the `kind` target is run, the `onos-config` and `onos-config-integration-tests` images will
+be built and loaded into the kind cluster, so no additional step is necessary.
+
+## Usage
+
+The primary interface for setting up test clusters and running tests is the `onit` command,
+which provides a suite of commands for setting up and tearing down test clusters, adding
+and removing [device simulators][simulators], running tests, and viewing test history.
+
+### Cluster Setup
+
+The first step to running tests is to setup a test cluster with `onit create cluster`:
+
+```bash
+> onit create cluster
 I0624 15:36:33.569276   65347 controller.go:100] Setting up test cluster 84b9795a-96d0-11e9-bd2a-784f43889941
 I0624 15:36:33.569309   65347 controller.go:175] Setting up test namespace onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941
 I0624 15:36:33.592048   65347 controller.go:187] Setting up Atomix controller atomix-controller/onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941
 I0624 15:36:33.720107   65347 controller.go:210] Waiting for Atomix controller atomix-controller/onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941 to become ready
 I0624 15:36:47.272478   65347 controller.go:527] Setting up partitions raft/onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941
 I0624 15:36:47.287600   65347 controller.go:532] Waiting for partitions raft/onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941 to become ready
+84b9795a-96d0-11e9-bd2a-784f43889941
 ```
 
-When a cluster is setup, onit creates a unique namespace within which to create test
-resources and then deploys:
-* Atomix Kubernetes controller
-* Atomix Raft partitions
-* onos-config nodes
+To setup the cluster, onit creates a unique namespace within which to create test resources,
+deploys [Atomix] inside the test namespace, and configures and deploys onos-config nodes.
+Once the cluster is setup, the command will output the name of the test namespace. The namespace
+can be used to view test resources via `kubectl`:
 
-Once the cluster is setup, the `onit` CLI will be configured to execute future commands against
-the test cluster. The current onit cluster context can be seen by running `onit get cluster`:
+```bash
+> kubectl get pods -n 84b9795a-96d0-11e9-bd2a-784f43889941
+atomix-controller-77b78fcc54-qzzps                     1/1     Running     0          11h
+onos-config-786594d4b5-tqwwr                           1/1     Running     0          29m
+raft-1-0                                               1/1     Running     0          11h
+```
+
+The `create cluster` command supports additional flags for defining the cluster architecture:
+* `--config`/`-c` - the configuration with which to bootstrap `onos-config` node stores. The configuration
+must reference a JSON file name in `test/configs/store`, e.g. `default` refers to `default.json`
+* `--nodes`/`-n` - the number of `onos-config` nodes to deploy
+* `--partitions`/`-p` - the number of Raft partitions to create for stores
+* `--partitionSize`/`-s` - the size of each Raft partition
+
+Once the cluster is setup, the cluster configuration will be added to the `onit` configuration
+and the deployed cluster will be set as the current cluster context:
 
 ```bash
 > onit get cluster
 84b9795a-96d0-11e9-bd2a-784f43889941
-```
-
-A list of deployed clusters can be retrieved via `onit get clusters`:
-
-```bash
 > onit get clusters
-84b9795a-96d0-11e9-bd2a-784f43889941
+ID                                     SIZE   PARTITIONS
+84b9795a-96d0-11e9-bd2a-784f43889941   1      1
+0e2ad27a-9720-11e9-ad72-acde48001122   1      1
 ```
 
-Once a cluster has been setup, you can add simulators to the cluster with `onit add simulator`:
+When multiple clusters are deployed, you can switch between clusters by setting the current
+cluster context:
 
 ```bash
-> onit add simulator my-simulator
+> onit set cluster 0e2ad27a-9720-11e9-ad72-acde48001122
+0e2ad27a-9720-11e9-ad72-acde48001122
 ```
 
-The `add simulator` command takes an optional name and configuration for the simulator. Once onit
-deploys the simulator, it will dynamically reconfigure and redeploy onos-config to connect to
-the simulator.
-
-Once the test cluster is setup, to run a test simply run `onit run`:
+This will run all future cluster operations on the configured cluster. Alternatively, most
+commands support a flag to override the default cluster:
 
 ```bash
-> onit run my-test
+> onit get history -c 0e2ad27a-9720-11e9-ad72-acde48001122
 ...
 ```
 
-When the test is run, the test controller will run the specified tests on the current cluster:
+To delete a cluster, run `onit delete cluster`:
+```bash
+> onit delete cluster
+```
 
-```go
-> onit run my-test my-other-test
-I0620 12:01:34.503488   14783 controller.go:1022] Starting test job onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941
-I0620 12:01:34.519532   14783 controller.go:1090] Waiting for test job onos-test-9a4c1c3c-938d-11e9-8e49-784f43889941 to become ready
+### Adding Devices
+
+Most tests require devices to be added to the cluster. The `onit` command supports adding and
+removing [device simulators][simulators] through the `add` and `remove` commands. To add a
+simulator to the current cluster, simply run `onit add simulator`:
+
+```bash
+> onit add simulator 
+I0625 12:01:54.498233   43235 controller.go:110] Setting up simulator device-2996584472/onos-cluster-0e2ad27a-9720-11e9-ad72-acde48001122
+I0625 12:01:54.602006   43235 controller.go:115] Waiting for simulator device-2996584472/onos-cluster-0e2ad27a-9720-11e9-ad72-acde48001122 to become ready
+I0625 12:02:03.107258   43235 controller.go:1034] Redeploying onos-config cluster onos-config/onos-cluster-0e2ad27a-9720-11e9-ad72-acde48001122
+I0625 12:02:03.527489   43235 controller.go:1047] Waiting for onos-config cluster onos-config/onos-cluster-0e2ad27a-9720-11e9-ad72-acde48001122 to become ready
+device-2996584472
+```
+
+When a simulator is added to the cluster, the cluster is reconfigured in two phases:
+* Bootstrap a new [device simulator][simulators] with the provided configuration
+* Reconfigure and redeploy the onos-config cluster with the new device in its stores
+
+Simulators can similarly be removed with the `remove simulator` command:
+
+```bash
+> onit remove simulator device-2996584472
+```
+
+As with the `add` command, removing a simulator requires that the onos-config cluster be reconfigured
+and redeployed.
+
+### Running Tests
+
+Once the cluster has been setup for the test, to run a test simply use `onit run`:
+
+```bash
+> onit run test-single-path-test
+I0625 12:07:14.958790   43603 controller.go:1080] Starting test job onos-test-71a0623c-977c-11e9-8478-acde48001122
+I0625 12:07:14.982862   43603 controller.go:1147] Waiting for test job 71a0623c-977c-11e9-8478-acde48001122 to become ready
+=== RUN   test-single-path-test
+--- PASS: test-single-path-test (0.04s)
+PASS
+```
+
+You can specify as many tests as desired:
+
+```bash
+> onit run test-single-path-test test-multi-path-test
+...
+```
+
+Each test run is recorded as a job in the Kubernetes cluster. This ensures that logs, statuses,
+and exit codes are retained for the lifetime of the cluster. Onit supports viewing past test
+runs and logs via the `get` command:
+
+```bash
+> onit get history
+ID                                     TESTS                   STATUS   EXIT CODE   MESSAGE
+3cf7311a-9776-11e9-bfc3-acde48001122   test-integration-test   PASSED   0
+68ad9154-977c-11e9-bcf2-acde48001122   test-integration-test   FAILED   1
+71a0623c-977c-11e9-8478-acde48001122   test-single-path-test   PASSED   0
+9e512cdc-9720-11e9-ba6e-acde48001122   *                       PASSED   0
+da629d06-9774-11e9-bb50-acde48001122   *                       PASSED   0
+```
+
+To get the logs from a specific test, use `onit get logs` with the test ID:
+
+```bash
+> onit get logs 71a0623c-977c-11e9-8478-acde48001122
+=== RUN   test-single-path-test
+--- PASS: test-single-path-test (0.04s)
+PASS
 ```
 
 ## API
@@ -140,28 +275,10 @@ the environment:
 devices := env.GetDevices()
 ```
 
-## Architecture
-
-The integration test framework provides an `onit` command for controlling and running tests.
-When `onit` is invoked, the command creates a test `Controller` to run the test.
-
-The default implementation of the test controller is the `kubeController`. The `kubeController`
-loads the Kubernetes client from the local context and sets up the test environment:
-* Creates a test namespace using a UUID
-* Deploys the [Atomix Kubernetes Controller](https://github.com/atomix/atomix-k8s-controller)
-* Creates a Raft `PartitionSet`
-* Configures and deploys the [simulators](https://github.com/onosproject/simulators) specified by the `--config`
-* Configures and deploys `-n` onos-config nodes
-* Creates a test `Job` running the `onosproject/onos-config-integration-tests:latest` image
-* Streams output from the test `Job` to stdout
-* Once tests are complete, fetches the exit code from the test `Job`, cleans up test resources,
-and exits
-
-When the `onos-config-integration-tests` image is run, the selected tests are passed to the
-container arguments, and tests are run from the test registry by name. The same APIs as are
-used by `go test` are used to run integration tests.
-
 [Kubernetes]: https://kubernetes.io
 [Minikube]: https://kubernetes.io/docs/setup/learning-environment/minikube/
 [kind]: https://github.com/kubernetes-sigs/kind
+[MicroK8s]: https://microk8s.io/
+[Docker]: https://www.docker.com/
+[Atomix]: https://atomix.io
 [simulators]: https://github.com/onosproject/simulators

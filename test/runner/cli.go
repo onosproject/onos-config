@@ -143,6 +143,8 @@ func getCreateClusterCommand() *cobra.Command {
 			// Setup the cluster and update the onit configuration
 			if err = controller.SetupCluster(); err != nil {
 				exitError(err)
+			} else {
+				fmt.Println(controller.ClusterId)
 			}
 		},
 	}
