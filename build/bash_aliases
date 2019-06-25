@@ -1,9 +1,13 @@
 # Shell aliases for developer convenience
 
 export GOPATH=$(go env GOPATH)
+export GO111MODULE=on
 
 # Changes working directory to the root of the project
 alias ocfg='cd $GOPATH/src/github.com/onosproject/onos-config'
+
+# Pull master... meaning fetch and rebase master against upstream master
+alias gpm='git fetch upstream && git checkout master && git rebase upstream/master'
 
 # Pull... meaning fetch and rebase against upstream master
 alias gp='git fetch upstream && git rebase upstream/master'
@@ -11,5 +15,6 @@ alias gp='git fetch upstream && git rebase upstream/master'
 # Review... meaning push the current branch to origin
 alias gr='git push origin $(git symbolic-ref HEAD)'
 
-
-
+# Inject shell auto-completion for the 'onos' command
+alias ocomp='eval "$(onos completion bash)"'
+ocomp
