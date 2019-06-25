@@ -100,6 +100,7 @@ func getCreateClusterCommand() *cobra.Command {
 				Nodes:         nodes,
 				Partitions:    partitions,
 				PartitionSize: partitionSize,
+				Simulators:    make(map[string]*SimulatorConfig),
 			}
 
 			// Get or create a cluster ID
@@ -430,12 +431,7 @@ func getGetClusterCommand() *cobra.Command {
 		Use:   "cluster",
 		Short: "Get the currently configured cluster",
 		Run: func(cmd *cobra.Command, args []string) {
-			// Load the onit configuration from disk
-			config, err := LoadConfig()
-			if err != nil {
-				exitError(err)
-			}
-			fmt.Println(config.DefaultCluster)
+			fmt.Println(getDefaultCluster())
 		},
 	}
 }

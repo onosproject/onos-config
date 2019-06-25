@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/gofrs/flock"
 	"github.com/mitchellh/go-homedir"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v1"
 	"io/ioutil"
@@ -30,10 +29,6 @@ var (
 var (
 	configLock *flock.Flock
 )
-
-func init() {
-	cobra.OnInitialize(initConfig)
-}
 
 // getSimulatorPreset gets a device configuration by name
 func getSimulatorPreset(name string) (map[string]interface{}, error) {
@@ -274,25 +269,11 @@ func (c *OnitConfig) getDefaultCluster() (string, error) {
 	return cluster, nil
 }
 
-// getDefaultClusterConfig returns the default cluster configuration
-func (c *OnitConfig) getDefaultClusterConfig() (*ClusterConfig, error) {
-	cluster, err := c.getDefaultCluster()
-	if err != nil {
-		return nil, err
-	}
-
-	config, ok := c.Clusters[cluster]
-	if !ok {
-		return nil, errors.New("unknown default cluster " + cluster)
-	}
-	return config, nil
-}
-
 // getClusterConfig returns the configuration for the given cluster
 func (c *OnitConfig) getClusterConfig(clusterId string) (*ClusterConfig, error) {
 	config, ok := c.Clusters[clusterId]
 	if !ok {
-		return nil, errors.New("unknown default cluster " + clusterId)
+		return nil, errors.New("unknown cluster " + clusterId)
 	}
 	return config, nil
 }
@@ -403,7 +384,7 @@ type SimulatorConfig struct {
 	Config map[string]interface{} `yaml:"config" mapstructure:"config"`
 }
 
-func initConfig() {
+func init() {
 	home, err := homedir.Dir()
 	if err != nil {
 		exitError(err)
