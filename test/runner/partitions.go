@@ -15,13 +15,82 @@
 package runner
 
 import (
+	"fmt"
 	"github.com/atomix/atomix-k8s-controller/pkg/apis/k8s/v1alpha1"
 	raft "github.com/atomix/atomix-k8s-controller/proto/atomix/protocols/raft"
 	"github.com/ghodss/yaml"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	log "k8s.io/klog"
+	"strconv"
 	"time"
 )
+
+// PartitionInfo contains information about storage partitions
+type PartitionInfo struct {
+	Group     string
+	Partition int
+	Nodes     []string
+}
+
+// GetPartitions returns a list of partition info
+func (c *ClusterController) GetPartitions() ([]PartitionInfo, error) {
+	partitionList, err := c.atomixclient.K8sV1alpha1().Partitions(c.getClusterName()).List(metav1.ListOptions{
+		LabelSelector: "group=raft",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	partitions := make([]PartitionInfo, len(partitionList.Items))
+	for i, partition := range partitionList.Items {
+		partitionId, err := strconv.ParseInt(partition.Labels["partition"], 0, 32)
+		if err != nil {
+			return nil, err
+		}
+
+		nodes, err := c.GetPartitionNodes(int(partitionId))
+		if err != nil {
+			return nil, err
+		}
+		nodeIds := make([]string, len(nodes))
+		for j, node := range nodes {
+			nodeIds[j] = node.Id
+		}
+
+		partitions[i] = PartitionInfo{
+			Group:     "raft",
+			Partition: int(partitionId),
+			Nodes:     nodeIds,
+		}
+	}
+	return partitions, nil
+}
+
+// GetPartitionNodes returns a list of node info for the given partition
+func (c *ClusterController) GetPartitionNodes(partition int) ([]NodeInfo, error) {
+	pods, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("group=raft,partition=%d", partition),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := make([]NodeInfo, len(pods.Items))
+	for i, pod := range pods.Items {
+		var status NodeStatus
+		if pod.Status.Phase == corev1.PodRunning {
+			status = NodeRunning
+		} else if pod.Status.Phase == corev1.PodFailed {
+			status = NodeFailed
+		}
+		nodes[i] = NodeInfo{
+			Id:     pod.Name,
+			Status: status,
+		}
+	}
+	return nodes, nil
+}
 
 // setupPartitions creates a Raft partition set
 func (c *ClusterController) setupPartitions() error {
@@ -52,6 +121,11 @@ func (c *ClusterController) createPartitionSet() error {
 		Spec: v1alpha1.PartitionSetSpec{
 			Partitions: c.config.Partitions,
 			Template: v1alpha1.PartitionTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"resource": "raft",
+					},
+				},
 				Spec: v1alpha1.PartitionSpec{
 					Size:     int32(c.config.PartitionSize),
 					Protocol: "raft",

@@ -28,6 +28,44 @@ import (
 	"time"
 )
 
+type NodeStatus string
+
+const (
+	NodeRunning NodeStatus = "RUNNING"
+	NodeFailed  NodeStatus = "FAILED"
+)
+
+// NodeInfo contains information about an onos-config node
+type NodeInfo struct {
+	Id     string
+	Status NodeStatus
+}
+
+// GetNodes returns a list of onos-config nodes running in the cluster
+func (c *ClusterController) GetNodes() ([]NodeInfo, error) {
+	pods, err := c.kubeclient.CoreV1().Pods(c.getClusterName()).List(metav1.ListOptions{
+		LabelSelector: "app=onos-config",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := make([]NodeInfo, len(pods.Items))
+	for i, pod := range pods.Items {
+		var status NodeStatus
+		if pod.Status.Phase == corev1.PodRunning {
+			status = NodeRunning
+		} else if pod.Status.Phase == corev1.PodFailed {
+			status = NodeFailed
+		}
+		nodes[i] = NodeInfo{
+			Id:     pod.Name,
+			Status: status,
+		}
+	}
+	return nodes, nil
+}
+
 // setupOnosConfig sets up the onos-config Deployment
 func (c *ClusterController) setupOnosConfig() error {
 	log.Infof("Setting up onos-config cluster onos-config/%s", c.getClusterName())
@@ -173,6 +211,7 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"app": "onos-config",
+						"resource": "onos-config",
 					},
 				},
 				Spec: corev1.PodSpec{

@@ -232,6 +232,59 @@ To get the logs from a specific test, use `onit get logs` with the test ID:
 PASS
 ```
 
+### Debugging
+
+The `onit` command provides a set of commands for debugging test clusters. The `onit` command
+can be used to `get logs` for every resource deployed in the test cluster. Simply pass the
+resource ID (e.g. test `ID`, node `ID`, partition `ID`, etc) to the `onit get logs` command
+to get the logs for a resource.
+
+To list the onos-config nodes running in the cluster, use `onit get nodes`:
+
+```bash
+> onit get nodes
+ID                            STATUS
+onos-config-f5b7758dc-rdbqt   RUNNING
+> onit get logs onos-config-f5b7758dc-rdbqt
+I0625 21:55:32.027255       1 onos-config.go:114] Starting onos-config
+I0625 21:55:32.030184       1 manager.go:98] Configuration store loaded from /etc/onos-config/configs/configStore.json
+I0625 21:55:32.030358       1 manager.go:105] Change store loaded from /etc/onos-config/configs/changeStore.json
+I0625 21:55:32.031087       1 manager.go:112] Device store loaded from /etc/onos-config/configs/deviceStore.json
+I0625 21:55:32.031222       1 manager.go:119] Network store loaded from /etc/onos-config/configs/networkStore.json
+I0625 21:55:32.031301       1 manager.go:47] Creating Manager
+...
+```
+
+To list the Raft partitions running in the cluster, use `onit get partitions`:
+
+```bash
+> onit get partitions
+ID   GROUP   NODES
+1    raft    raft-1-0
+> onit get logs raft-1-0
+21:10:24.466 [main] INFO  io.atomix.server.AtomixServerRunner - Node ID: raft-1-0
+21:10:24.472 [main] INFO  io.atomix.server.AtomixServerRunner - Partition Config: /etc/atomix/partition.json
+21:10:24.472 [main] INFO  io.atomix.server.AtomixServerRunner - Protocol Config: /etc/atomix/protocol.json
+21:10:24.473 [main] INFO  io.atomix.server.AtomixServerRunner - Starting server
+...
+```
+
+To list the tests that have been run, use `onit get history`:
+
+```bash
+> onit get history
+ID                                     TESTS                   STATUS   EXIT CODE   MESSAGE
+3cf7311a-9776-11e9-bfc3-acde48001122   test-integration-test   PASSED   0
+68ad9154-977c-11e9-bcf2-acde48001122   test-integration-test   FAILED   1
+71a0623c-977c-11e9-8478-acde48001122   test-single-path-test   PASSED   0
+9e512cdc-9720-11e9-ba6e-acde48001122   *                       PASSED   0
+da629d06-9774-11e9-bb50-acde48001122   *                       PASSED   0
+> onit get logs 71a0623c-977c-11e9-8478-acde48001122
+=== RUN   test-single-path-test
+--- PASS: test-single-path-test (0.04s)
+PASS
+```
+
 ## API
 
 Tests are implemented using Go's `testing` package;

@@ -15,7 +15,6 @@
 package runner
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -42,7 +41,6 @@ const (
 type TestRecord struct {
 	TestId   string
 	Args     []string
-	Logs     []string
 	Status   TestStatus
 	Message  string
 	ExitCode int
@@ -85,6 +83,7 @@ func (c *ClusterController) createTestJob(testId string, args []string, timeout 
 					Labels: map[string]string{
 						"cluster": c.ClusterId,
 						"test":    testId,
+						"resource": testId,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -230,15 +229,9 @@ func (c *ClusterController) getRecord(job batchv1.Job) (TestRecord, error) {
 		return TestRecord{}, nil
 	}
 
-	logs, err := c.getLogs(pod)
-	if err != nil {
-		return TestRecord{}, nil
-	}
-
 	record := TestRecord{
 		TestId: testId,
 		Args:   args,
-		Logs:   logs,
 	}
 
 	state := pod.Status.ContainerStatuses[0].State
@@ -255,26 +248,6 @@ func (c *ClusterController) getRecord(job batchv1.Job) (TestRecord, error) {
 	}
 
 	return record, nil
-}
-
-// getLogs gets the logs from the given pod
-func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
-	req := c.kubeclient.CoreV1().Pods(c.getClusterName()).GetLogs(pod.Name, &corev1.PodLogOptions{
-		Follow: true,
-	})
-	readCloser, err := req.Stream()
-	if err != nil {
-		return nil, err
-	}
-
-	defer readCloser.Close()
-
-	logs := []string{}
-	scanner := bufio.NewScanner(readCloser)
-	for scanner.Scan() {
-		logs = append(logs, scanner.Text())
-	}
-	return logs, nil
 }
 
 // getPod finds the Pod for the given test
