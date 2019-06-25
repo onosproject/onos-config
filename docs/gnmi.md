@@ -115,6 +115,11 @@ SetRequest() with the 100 extension at the end of the -proto section like:
 > and the config is forwarded down to the southbound layer only if a device is registered
 > in the topocache (currently in the deviceStore)
 
+If the `target` device is not currently known to `onos-config` the system will store the configuration internally and apply
+it to the `target` device when/if it becomes available.  
+When the `target` becomes availabe `onos-config` will compute the latest configuration for it based on the set of 
+applied changes and push it to the `target` with a standard `set` operation. 
+
 ## Northbound Delete Request via gNMI
 A delete request in gNMI is done using the set request with `delete` paths instead of `update` or `replace`.
 To make a gNMI Set request do delete a path, use the `gnmi_cli -set` command as in the example below:
