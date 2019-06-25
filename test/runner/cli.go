@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	log "k8s.io/klog"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -400,6 +401,8 @@ func getGetCommand(registry *TestRegistry) *cobra.Command {
 	}
 	cmd.AddCommand(getGetClusterCommand())
 	cmd.AddCommand(getGetNodesCommand())
+	cmd.AddCommand(getGetPartitionsCommand())
+	cmd.AddCommand(getGetPartitionCommand())
 	cmd.AddCommand(getGetSimulatorsCommand())
 	cmd.AddCommand(getGetClustersCommand())
 	cmd.AddCommand(getGetDevicePresetsCommand())
@@ -508,6 +511,109 @@ func getGetStorePresetsCommand() *cobra.Command {
 			}
 		},
 	}
+}
+
+// getGetPartitionsCommand returns a cobra command to get a list of Raft partitions in the cluster
+func getGetPartitionsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "partitions",
+		Short: "Get a list of partitions in the cluster",
+		Run: func(cmd *cobra.Command, args []string) {
+			// Load the onit configuration from disk
+			config, err := LoadConfig()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the default cluster configuration
+			cluster, err := config.getClusterConfig(clusterId)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the test cluster controller from the cluster configuration
+			controller, err := GetClusterController(clusterId, cluster)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the list of partitions and output
+			partitions, err := controller.GetPartitions()
+			if err != nil {
+				exitError(err)
+			} else {
+				printPartitions(partitions)
+			}
+		},
+	}
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	return cmd
+}
+
+func printPartitions(partitions []PartitionInfo) {
+	writer := new(tabwriter.Writer)
+	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
+	fmt.Fprintln(writer, "ID\tGROUP\tNODES")
+	for _, partition := range partitions {
+		fmt.Fprintln(writer, fmt.Sprintf("%d\t%s\t%s", partition.Partition, partition.Group, strings.Join(partition.Nodes, ",")))
+	}
+	writer.Flush()
+}
+
+// getGetPartitionCommand returns a cobra command to get the nodes in a partition
+func getGetPartitionCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "partition <partition>",
+		Short: "Get a list of nodes in a partition",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			// Load the onit configuration from disk
+			config, err := LoadConfig()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the default cluster configuration
+			cluster, err := config.getClusterConfig(clusterId)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the test cluster controller from the cluster configuration
+			controller, err := GetClusterController(clusterId, cluster)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Parse the partition argument
+			partition, err := strconv.ParseInt(args[0], 0, 32)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the list of nodes and output
+			nodes, err := controller.GetPartitionNodes(int(partition))
+			if err != nil {
+				exitError(err)
+			} else {
+				printNodes(nodes)
+			}
+		},
+	}
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	return cmd
 }
 
 // getGetNodesCommand returns a cobra command to get a list of onos-config nodes in the cluster
