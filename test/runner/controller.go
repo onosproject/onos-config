@@ -1050,12 +1050,12 @@ func (c *ClusterController) redeployOnosConfig() error {
 
 // deleteOnosConfigConfigMap deletes the onos-config ConfigMap
 func (c *ClusterController) deleteOnosConfigConfigMap() error {
-	return c.kubeclient.CoreV1().ConfigMaps(c.getClusterName()).Delete(c.getClusterName(), &metav1.DeleteOptions{})
+	return c.kubeclient.CoreV1().ConfigMaps(c.getClusterName()).Delete("onos-config", &metav1.DeleteOptions{})
 }
 
 // deleteOnosConfigDeployment deletes the onos-config Deployment
 func (c *ClusterController) deleteOnosConfigDeployment() error {
-	return c.kubeclient.AppsV1().Deployments(c.getClusterName()).Delete(c.getClusterName(), &metav1.DeleteOptions{})
+	return c.kubeclient.AppsV1().Deployments(c.getClusterName()).Delete("onos-config", &metav1.DeleteOptions{})
 }
 
 // start starts running the test job

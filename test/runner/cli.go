@@ -168,6 +168,24 @@ func getAddSimulatorCommand() *cobra.Command {
 		Short: "Add a device simulator to the test cluster",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			// If a simulator name was not provided, generate one from a UUID.
+			var name string
+			if len(args) > 0 {
+				name = args[0]
+			} else {
+				name = fmt.Sprintf("device-%s", newUuid())
+			}
+
+			// Create the simulator configuration from the configured preset
+			configName, _ := cmd.Flags().GetString("preset")
+			simulatorConfig, err := getSimulatorPreset(configName)
+			if err != nil {
+				exitError(err)
+			}
+			simulator := &SimulatorConfig{
+				Config: simulatorConfig,
+			}
+
 			// Load the onit configuration from disk
 			config, err := LoadConfig()
 			if err != nil {
@@ -180,8 +198,24 @@ func getAddSimulatorCommand() *cobra.Command {
 				exitError(err)
 			}
 
+			// Acquire a lock on the configuration
+			if err := config.Lock(); err != nil {
+				exitError(err)
+			}
+
 			// Fail if the default cluster configuration cannot be found
 			cluster, err := config.getClusterConfig(clusterId)
+			if err != nil {
+				config.Unlock()
+				exitError(err)
+			}
+
+			// Add the simulator to the configuration
+			cluster.Simulators[name] = simulator
+
+			// Write the configuration before setting up the simulator
+			err = config.Write()
+			config.Unlock()
 			if err != nil {
 				exitError(err)
 			}
@@ -192,57 +226,11 @@ func getAddSimulatorCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			// If a simulator name was not provided, generate one from a UUID.
-			var name string
-			if len(args) > 0 {
-				name = args[0]
-			} else {
-				name = fmt.Sprintf("device-%s", newUuid())
-			}
-
-			// Create the simulator configuration from the configured preset
-			configName, _ := cmd.Flags().GetString("config")
-			simulatorConfig, err := getSimulatorPreset(configName)
-			if err != nil {
-				exitError(err)
-			}
-			simulator := &SimulatorConfig{
-				Config: simulatorConfig,
-			}
-
+			// Setup the simulator and output the simulator name once complete
 			if err = controller.SetupSimulator(name, simulator); err != nil {
 				exitError(err)
 			} else {
-				// Acquire a lock on the configuration
-				if err := config.Lock(); err != nil {
-					exitError(err)
-				}
-
-				// Fail if the cluster does not exist
-				cluster, err := config.getClusterConfig(clusterId)
-				if err != nil {
-					config.Unlock()
-					exitError(err)
-				}
-
-				// Fail if the simulator does not exist
-				_, err = cluster.getSimulator(name)
-				if err != nil {
-					config.Unlock()
-					exitError(err)
-				}
-
-				// Add the simulator to the configuration
-				cluster.Simulators[name] = simulator
-
-				// Write the configuration and exit
-				err = config.Write()
-				config.Unlock()
-				if err != nil {
-					exitError(err)
-				} else {
-					fmt.Println(name)
-				}
+				fmt.Println(name)
 			}
 		},
 	}
@@ -347,6 +335,8 @@ func getRemoveSimulatorCommand() *cobra.Command {
 		Short: "Remove a device simulator from the cluster",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			name := args[0]
+
 			// Load the onit configuration from disk
 			config, err := LoadConfig()
 			if err != nil {
@@ -359,8 +349,24 @@ func getRemoveSimulatorCommand() *cobra.Command {
 				exitError(err)
 			}
 
+			// Acquire a lock on the configuration
+			if err := config.Lock(); err != nil {
+				exitError(err)
+			}
+
 			// Fail if the default cluster configuration cannot be found
 			cluster, err := config.getClusterConfig(clusterId)
+			if err != nil {
+				config.Unlock()
+				exitError(err)
+			}
+
+			// Remove the simulator from the configuration
+			delete(cluster.Simulators, name)
+
+			// Write the configuration before tearing down the simulator
+			err = config.Write()
+			config.Unlock()
 			if err != nil {
 				exitError(err)
 			}
@@ -371,37 +377,9 @@ func getRemoveSimulatorCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			name := args[0]
+			// Teardown the simulator and exit
 			if err = controller.TeardownSimulator(name); err != nil {
 				exitError(err)
-			} else {
-				// Acquire a lock on the configuration
-				if err := config.Lock(); err != nil {
-					exitError(err)
-				}
-
-				// Fail if the cluster does not exist
-				cluster, err = config.getClusterConfig(clusterId)
-				if err != nil {
-					config.Unlock()
-					exitError(err)
-				}
-
-				// Fail if the simulator does not exist
-				_, err := cluster.getSimulator(name)
-				if err != nil {
-					config.Unlock()
-					exitError(err)
-				}
-
-				// Remove the simulator from the cluster configuration
-				delete(cluster.Simulators, name)
-
-				// Write the configuration and exit
-				err = config.Write()
-				if err != nil {
-					exitError(err)
-				}
 			}
 		},
 	}

@@ -129,122 +129,6 @@ func getStorePresets() []string {
 	return configs
 }
 
-func addCluster(name string, cluster *ClusterConfig) error {
-	lock, err := getConfigLock()
-	if err != nil {
-		return err
-	}
-	if err = lock.Lock(); err != nil {
-		return err
-	}
-	defer lock.Unlock()
-
-	config, err := LoadConfig()
-	if err != nil {
-		return err
-	}
-
-	config.DefaultCluster = name
-	config.Clusters[name] = cluster
-	return config.Write()
-}
-
-func removeCluster(name string) error {
-	lock, err := getConfigLock()
-	if err != nil {
-		return err
-	}
-	if err = lock.Lock(); err != nil {
-		return err
-	}
-	defer lock.Unlock()
-
-	config, err := LoadConfig()
-	if err != nil {
-		return err
-	}
-
-	delete(config.Clusters, name)
-	if config.DefaultCluster == name {
-		config.DefaultCluster = ""
-	}
-	return config.Write()
-}
-
-func addSimulator(cluster string, name string, simulator *SimulatorConfig) error {
-	lock, err := getConfigLock()
-	if err != nil {
-		return err
-	}
-	if err = lock.Lock(); err != nil {
-		return err
-	}
-	defer lock.Unlock()
-
-	config, err := LoadConfig()
-	if err != nil {
-		return err
-	}
-
-	// Fail if the cluster does not exist
-	clusterConfig, ok := config.Clusters[cluster]
-	if !ok {
-		return errors.New("unknown cluster " + cluster)
-	}
-
-	// Fail if the simulator already exists
-	_, ok = clusterConfig.Simulators[name]
-	if ok {
-		return errors.New("simulator " + name + " already exists")
-	}
-
-	clusterConfig.Simulators[name] = simulator
-	return config.Write()
-}
-
-func removeSimulator(cluster string, name string) error {
-	lock, err := getConfigLock()
-	if err != nil {
-		return err
-	}
-	if err = lock.Lock(); err != nil {
-		return err
-	}
-	defer lock.Unlock()
-
-	config, err := LoadConfig()
-	if err != nil {
-		return err
-	}
-
-	// Fail if the cluster does not exist
-	clusterConfig, ok := config.Clusters[cluster]
-	if !ok {
-		return errors.New("unknown cluster " + cluster)
-	}
-
-	// Fail if the simulator does not exist
-	_, ok = clusterConfig.Simulators[name]
-	if !ok {
-		return errors.New("unknown simulator " + name)
-	}
-
-	delete(clusterConfig.Simulators, name)
-	return config.Write()
-}
-
-// getConfigLock returns a configuration file lock
-func getConfigLock() (*flock.Flock, error) {
-	_, err := LoadConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	configFile := viper.ConfigFileUsed()
-	lockFile := configFile[0:len(configFile)-len(filepath.Ext(configFile))] + ".lock"
-	return flock.New(lockFile), nil
-}
-
 // LoadConfig loads the onit configuration from a configuration file
 func LoadConfig() (*OnitConfig, error) {
 	config := &OnitConfig{Clusters: make(map[string]*ClusterConfig)}
@@ -275,6 +159,7 @@ func (c *OnitConfig) getClusterConfig(clusterId string) (*ClusterConfig, error) 
 	if !ok {
 		return nil, errors.New("unknown cluster " + clusterId)
 	}
+	setClusterConfigDefaults(config)
 	return config, nil
 }
 
