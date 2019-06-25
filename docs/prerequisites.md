@@ -22,6 +22,8 @@ Some form of an integrated development environment is also recommended.
 The core team uses the [GoLand IDE] from JetBrains, but there are many other options. 
 Microsoft's [Visual Studio Code] is one such option and is available as a free download.
 
+Note that when using [GoLand IDE] you should enable integration with Go modules in `Preferences -> Go -> Go Modules`.
+
 ## License
 The project requires that all Go source files are properly annotated using the Apache 2.0 License.
 Since this requirement is enforced by the CI process, it is strongly recommended that developers
