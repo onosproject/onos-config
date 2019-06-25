@@ -41,7 +41,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan)
 			if err != nil {
 				//TODO propagate the ERROR
-				log.Warning("Error in connecting to client: ", err)
+				log.Error("Error in connecting to client: ", err)
 				//unregistering the listener for changes to the device
 				dispatcher.UnregisterDevice(deviceName)
 			} else {
