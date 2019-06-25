@@ -211,6 +211,7 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"app": "onos-config",
+						"resource": "onos-config",
 					},
 				},
 				Spec: corev1.PodSpec{

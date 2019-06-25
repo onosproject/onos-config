@@ -637,12 +637,15 @@ func printHistory(records []TestRecord) {
 	writer.Flush()
 }
 
-// getGetLogsCommand returns a cobra command to output the logs for a specific test run
+// getGetLogsCommand returns a cobra command to output the logs for a specific resource
 func getGetLogsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "logs [id]",
-		Short: "Get the logs for a test run",
-		Args:  cobra.MaximumNArgs(1),
+		Use:   "logs <id>",
+		Short: "Get the logs for a test resource",
+		Long: `Outputs the complete logs for any test resource.
+To output the logs from an onos-config node, get the node ID via 'onit get nodes'
+To output the logs from a test, get the test ID from the test run or from 'onit get history'`,
+		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Load the onit configuration from disk
 			config, err := LoadConfig()
@@ -668,22 +671,19 @@ func getGetLogsCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			// If a test ID was provided, get the record for the test. Otherwise, get the last test record
-			var record TestRecord
-			if len(args) > 0 {
-				record, err = controller.GetRecord(args[0])
-			} else {
-				records, err := controller.GetHistory()
-				if err == nil {
-					record = records[len(records)-1]
-				}
-			}
-
+			// Get the logs for the resource and print to stdout
+			logs, err := controller.GetLogs(args[0])
 			if err != nil {
 				exitError(err)
 			} else {
-				for _, log := range record.Logs {
-					fmt.Println(log)
+				numLogs := len(logs)
+				for i, lines := range logs {
+					for _, line := range lines {
+						fmt.Println(line)
+					}
+					if i+1 < numLogs {
+						fmt.Println("----")
+					}
 				}
 			}
 		},
