@@ -66,7 +66,7 @@ func getCreateClusterCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			nodes, _ := cmd.Flags().GetInt("nodes")
 			partitions, _ := cmd.Flags().GetInt("partitions")
-			partitionSize, _ := cmd.Flags().GetInt("partitionSize")
+			partitionSize, _ := cmd.Flags().GetInt("partition-size")
 			configName, _ := cmd.Flags().GetString("config")
 
 			// Load the onit configuration from disk
@@ -151,7 +151,7 @@ func getCreateClusterCommand() *cobra.Command {
 	cmd.Flags().StringP("config", "c", "default", "test cluster configuration")
 	cmd.Flags().IntP("nodes", "n", 1, "the number of onos-config nodes to deploy")
 	cmd.Flags().IntP("partitions", "p", 1, "the number of Raft partitions to deploy")
-	cmd.Flags().IntP("partitionSize", "s", 1, "the size of each Raft partition")
+	cmd.Flags().IntP("partition-size", "s", 1, "the size of each Raft partition")
 	return cmd
 }
 

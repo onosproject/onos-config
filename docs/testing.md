@@ -126,7 +126,7 @@ The `create cluster` command supports additional flags for defining the cluster 
 must reference a JSON file name in `test/configs/store`, e.g. `default` refers to `default.json`
 * `--nodes`/`-n` - the number of `onos-config` nodes to deploy
 * `--partitions`/`-p` - the number of Raft partitions to create for stores
-* `--partitionSize`/`-s` - the size of each Raft partition
+* `--partition-size`/`-s` - the size of each Raft partition
 
 Once the cluster is setup, the cluster configuration will be added to the `onit` configuration
 and the deployed cluster will be set as the current cluster context:
