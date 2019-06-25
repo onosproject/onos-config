@@ -111,7 +111,7 @@ func getCreateClusterCommand() *cobra.Command {
 			if len(args) > 0 {
 				clusterId = args[0]
 			} else {
-				clusterId = newUuidString()
+				clusterId = fmt.Sprintf("cluster-%s", newUuidString())
 			}
 
 			// Acquire a lock on the configuration to add the cluster
