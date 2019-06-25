@@ -19,8 +19,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
+	"github.com/onosproject/onos-config/pkg/northbound"
+	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/openconfig/gnmi/client"
 	gnmi "github.com/openconfig/gnmi/client/gnmi"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -86,4 +91,34 @@ func NewGnmiClient(ctx context.Context, target string) (client.Impl, error) {
 func GetDevices() []string {
 	devices := os.Getenv(TestDevicesEnv)
 	return strings.Split(devices, ",")
+}
+
+func HandleCertArgs() ([]grpc.DialOption, error) {
+
+	var opts = []grpc.DialOption{}
+	var cert tls.Certificate
+	var err error
+
+	// Load default Certificates
+	cert, err = tls.LoadX509KeyPair(clientCrtPath, clientKeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates:       []tls.Certificate{cert},
+		InsecureSkipVerify: true,
+	}
+	opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+
+	return opts, nil
+}
+
+func GetAdminClient() (*grpc.ClientConn, proto.AdminServiceClient) {
+	opts, err := HandleCertArgs()
+	if err != nil {
+		fmt.Printf("Error loading cert %s", err)
+	}
+	conn := northbound.Connect(Address, opts...)
+	return conn, proto.NewAdminServiceClient(conn)
 }
