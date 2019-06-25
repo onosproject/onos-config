@@ -145,3 +145,51 @@ func CreateChange(config ValueCollections, desc string) (*Change, error) {
 		Created:     t,
 	}, nil
 }
+
+// CreateChangeValuesNoRemoval creates a Change object from ConfigValue
+// The ID is a has generated from the change values,and does not include
+// the description or the time. This way changes that have an identical meaning
+// can be identified
+func CreateChangeValuesNoRemoval(config []*ConfigValue, desc string) (*Change, error) {
+	h := sha1.New()
+	t := time.Now()
+
+	sort.Slice(config, func(i, j int) bool {
+		return (*config[i]).Path < (*config[j]).Path
+	})
+
+	var pathList = make([]string, len(config))
+	// If a path is repeated then reject
+	for _, cv := range config {
+		for _, p := range pathList {
+			if cv.Path == p {
+				return nil, errors.New("Error Path " + p + " is repeated in change")
+			}
+		}
+		pathList = append(pathList, cv.Path)
+	}
+
+	// Calculate a hash from the config, description and timestamp
+	jsonstr, _ := json.Marshal(config)
+	_, err1 := io.WriteString(h, string(jsonstr))
+	if err1 != nil {
+		return nil, err1
+	}
+
+	hash := h.Sum(nil)
+
+	configColl := make(ValueCollections, 0)
+
+	for _, c := range config {
+		configColl = append(configColl, &Value{
+			ConfigValue: *c,
+			Remove:      false})
+	}
+
+	return &Change{
+		Config:      configColl,
+		ID:          hash,
+		Description: desc,
+		Created:     t,
+	}, nil
+}
