@@ -15,11 +15,7 @@
 package integration
 
 import (
-	"errors"
-	"fmt"
-	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/test/env"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -29,24 +25,11 @@ const (
 	tzPath  = "/system/clock/config/timezone-name"
 )
 
-func findPathValue(response *gpb.GetResponse, path string) (string, error) {
-	if len(response.Notification) != 1 {
-		return "", errors.New("response notifications must have one entry")
-	}
-
-	pathElements := utils.SplitPath(path)
-	responsePathElements := response.Notification[0].Update[0].Path.Elem
-	for pathIndex, pathElement := range pathElements {
-		responsePathElement := responsePathElements[pathIndex]
-		if pathElement != responsePathElement.Name {
-			return "", fmt.Errorf("element at %d dos not match - want %s got %s", pathIndex, pathElement, responsePathElement.Name)
-		}
-	}
-	value := response.Notification[0].Update[0].Val
-	if value == nil {
-		return "", fmt.Errorf("no value found for path %s", path)
-	}
-	return utils.StrVal(value), nil
+func makeDevicePath(device string, path string) []DevicePath {
+	devicePath := make([]DevicePath, 1)
+	devicePath[0].deviceName = device
+	devicePath[0].path = path
+	return devicePath
 }
 
 func TestSinglePath(t *testing.T) {
@@ -59,28 +42,31 @@ func TestSinglePath(t *testing.T) {
 	assert.True(t, c != nil, "Fetching client returned nil")
 
 	// First lookup should return an error - the path has not been given a value yet
-	valueBefore, findErrorBefore := GNMIGet(MakeContext(), c, device, tzPath)
-	assert.Error(t, findErrorBefore, "no value found for path")
-	assert.True(t, valueBefore == "", "Initial query did not return an error\n")
+	valueBefore, findErrorBefore := GNMIGet(MakeContext(), c, makeDevicePath(device, tzPath))
+	assert.NoError(t, findErrorBefore)
+	assert.True(t, valueBefore[0].value == "", "Initial query did not return an empty string\n")
 
 	// Set a value using gNMI client
-	errorSet := GNMISet(MakeContext(), c, device, tzPath, tzValue)
+	setPath := makeDevicePath(device, tzPath)
+	setPath[0].value = tzValue
+	_, errorSet := GNMISet(MakeContext(), c, setPath)
 	assert.NoError(t, errorSet)
 
 	// Check that the value was set correctly
-	valueAfter, errorAfter := GNMIGet(MakeContext(), c, device, tzPath)
+	valueAfter, errorAfter := GNMIGet(MakeContext(), c, makeDevicePath(device, tzPath))
 	assert.NoError(t, errorAfter)
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, tzValue, valueAfter, "Query after set returned the wrong value: %s\n", valueAfter)
+	assert.Equal(t, tzValue, valueAfter[0].value, "Query after set returned the wrong value: %s\n", valueAfter)
 
 	// Remove the path we added
-	errorDelete := GNMIDelete(MakeContext(), c, device, tzPath)
+	errorDelete := GNMIDelete(MakeContext(), c, makeDevicePath(device, tzPath))
 	assert.NoError(t, errorDelete)
 
 	//  Make sure it got removed
-	_, errorAfterDelete := GNMIGet(MakeContext(), c, device, tzPath)
-	assert.NotNil(t, errorAfterDelete)
-	assert.EqualError(t, errorAfterDelete, "no value found for path /system/clock/config/timezone-name")
+	valueAfterDelete, errorAfterDelete := GNMIGet(MakeContext(), c, makeDevicePath(device, tzPath))
+	assert.NoError(t, errorAfterDelete)
+	assert.Equal(t, valueAfterDelete[0].value, "",
+		"incorrect value found for path /system/clock/config/timezone-name after delete")
 }
 
 func init() {
