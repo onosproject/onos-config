@@ -175,11 +175,7 @@ func (c *ClusterController) PortForward(resourceId string, localPort int, remote
 	stopChan, readyChan := make(chan struct{}, 1), make(chan struct{}, 1)
 	out, errOut := new(bytes.Buffer), new(bytes.Buffer)
 
-	ports := make([]string, 2)
-	ports[0] = fmt.Sprintf("%d", localPort)
-	ports[1] = fmt.Sprintf("%d", remotePort)
-
-	forwarder, err := portforward.New(dialer, ports, stopChan, readyChan, out, errOut)
+	forwarder, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, remotePort)}, stopChan, readyChan, out, errOut)
 	if err != nil {
 		return err
 	}
