@@ -77,7 +77,7 @@ or integration tests.
 
 [Kind][kind] provides an alternative to [Minikube] which runs Kubernetes in a Docker container.
 
-Assuming you have dowloaded kind as per [instructions][kind-install], the first time you booth the kind cluster 
+Assuming you have dowloaded kind as per [instructions][kind-install], the first time you boot the kind cluster 
 or if you have rebooted your docker deamon you need to issue:
 
 ```bash
