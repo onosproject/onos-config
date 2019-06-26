@@ -45,6 +45,7 @@ func GetCommand(registry *TestRegistry) *cobra.Command {
 	cmd.AddCommand(getRunCommand())
 	cmd.AddCommand(getGetCommand(registry))
 	cmd.AddCommand(getSetCommand())
+	cmd.AddCommand(getDebugCommand())
 	cmd.AddCommand(getTestCommand(registry))
 	cmd.AddCommand(getCompletionCommand())
 	return cmd
@@ -685,6 +686,44 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	return cmd
+}
+
+// getDebugCommand returns a cobra "debug" command to open a debugger port to the given resource
+func getDebugCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "debug <resource>",
+		Short: "Open a debugger port to the given resource",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			// Get the onit controller
+			controller, err := NewController()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster controller
+			cluster, err := controller.GetCluster(clusterId)
+			if err != nil {
+				exitError(err)
+			}
+
+			port, _ := cmd.Flags().GetInt("port")
+			if err := cluster.PortForward(args[0], port, 40000); err != nil {
+				exitError(err)
+			} else {
+				fmt.Println(port)
+			}
+		},
+	}
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	cmd.Flags().IntP("port", "p", 40000, "the local port to forward to the given resource")
 	return cmd
 }
 
