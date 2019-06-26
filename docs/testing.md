@@ -308,7 +308,7 @@ func init() {
 Once a test has been registered, you should be able to see the test via the `onit` command:
 
 ```bash
-> onit list
+> onit get tests
 my-test
 ...
 ```
