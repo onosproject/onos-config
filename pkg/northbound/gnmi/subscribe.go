@@ -111,6 +111,14 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 			subscribe = in.GetSubscribe()
 			mode = subscribe.Mode
 		}
+
+		//If there are no paths in the request such request is ignored
+		//TODO evaluate throwing error
+		if subscribe.Subscription == nil {
+			log.Warning("No subscription paths, ignoring request ", in)
+			continue
+		}
+
 		//If the subscription mode is ONCE or POLL we immediately start a routine to collect the data
 		if mode != gnmi.SubscriptionList_STREAM {
 			go collector(stream, subscribe, resChan, mode)
