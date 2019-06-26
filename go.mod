@@ -7,14 +7,11 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
-	github.com/go-logr/zapr v0.1.1 // indirect
-	github.com/go-openapi/validate v0.19.2 // indirect
 	github.com/gofrs/flock v0.7.1
 	github.com/golang/protobuf v1.3.1
 	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
@@ -27,13 +24,16 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0
+	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8 // indirect
+	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
+	golang.org/x/sys v0.0.0-20190616124812-15dcb6c0061f // indirect
+	golang.org/x/text v0.3.2 // indirect
 	google.golang.org/grpc v1.21.1
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.0.0-20190620073856-dcce3486da33
 	k8s.io/apiextensions-apiserver v0.0.0-20190325193600-475668423e9f
 	k8s.io/apimachinery v0.0.0-20190620073744-d16981aedf33
-	k8s.io/apiserver v0.0.0-20190620074708-fbed0ffc300f // indirect
 	k8s.io/client-go v0.0.0-20190620074045-585a16d2e773
 	k8s.io/klog v0.3.3
 	sigs.k8s.io/controller-runtime v0.1.12 // indirect
