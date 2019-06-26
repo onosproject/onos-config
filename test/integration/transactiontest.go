@@ -78,5 +78,5 @@ func TestTransaction(t *testing.T) {
 }
 
 func init() {
-	Registry.Register("test-transaction-test", TestTransaction)
+	Registry.Register("transaction", TestTransaction)
 }

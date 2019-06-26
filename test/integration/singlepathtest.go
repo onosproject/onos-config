@@ -70,5 +70,5 @@ func TestSinglePath(t *testing.T) {
 }
 
 func init() {
-	Registry.Register("test-single-path-test", TestSinglePath)
+	Registry.Register("single-path", TestSinglePath)
 }

@@ -33,7 +33,7 @@ const (
 )
 
 func init() {
-	Registry.Register("subscribe-test", TestSubscribe)
+	Registry.Register("subscribe", TestSubscribe)
 }
 
 func TestSubscribe(t *testing.T) {
