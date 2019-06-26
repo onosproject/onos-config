@@ -73,7 +73,6 @@ func TestTransaction(t *testing.T) {
 	assert.NotNil(t, response)
 
 	// Check that the values were really rolled back
-	// Check that the values were set correctly
 	_, errorAfterRollback := GNMIGet(MakeContext(), c, devicePathsForGet)
 	assert.Error(t, errorAfterRollback)
 }
