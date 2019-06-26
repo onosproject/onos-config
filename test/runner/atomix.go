@@ -219,13 +219,18 @@ func (c *ClusterController) createAtomixClusterRoleBinding() error {
 	_, err := c.kubeclient.RbacV1().ClusterRoleBindings().Create(roleBinding)
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			c.deleteClusterRoleBinding()
+			c.deleteAtomixClusterRoleBinding()
 			return c.createAtomixClusterRoleBinding()
 		} else {
 			return err
 		}
 	}
 	return nil
+}
+
+// deleteAtomixClusterRoleBinding deletes the ClusterRoleBinding required by the Atomix controller
+func (c *ClusterController) deleteAtomixClusterRoleBinding() error {
+	return c.kubeclient.RbacV1().ClusterRoleBindings().Delete("atomix-controller", &metav1.DeleteOptions{})
 }
 
 // createAtomixServiceAccount creates a ServiceAccount used by the Atomix controller

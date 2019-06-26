@@ -56,6 +56,12 @@ func (c *ClusterController) startTests(testId string, tests []string, timeout ti
 // createTestJob creates the job to run tests
 func (c *ClusterController) createTestJob(testId string, args []string, timeout time.Duration) error {
 	log.Infof("Starting test job %s", testId)
+
+	deviceIds, err := c.getDeviceIds()
+	if err != nil {
+		return err
+	}
+
 	one := int32(1)
 	timeoutSeconds := int64(timeout / time.Second)
 	job := &batchv1.Job{
@@ -90,7 +96,7 @@ func (c *ClusterController) createTestJob(testId string, args []string, timeout 
 							Env: []corev1.EnvVar{
 								{
 									Name:  env.TestDevicesEnv,
-									Value: strings.Join(c.getDeviceIds(), ","),
+									Value: strings.Join(deviceIds, ","),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
@@ -117,7 +123,7 @@ func (c *ClusterController) createTestJob(testId string, args []string, timeout 
 		},
 	}
 
-	_, err := c.kubeclient.BatchV1().Jobs(c.ClusterId).Create(job)
+	_, err = c.kubeclient.BatchV1().Jobs(c.ClusterId).Create(job)
 	return err
 }
 
@@ -266,13 +272,32 @@ func (c *ClusterController) getPod(testId string) (corev1.Pod, error) {
 }
 
 // getDeviceIds returns a slice of configured simulator device IDs
-func (c *ClusterController) getDeviceIds() []string {
+func (c *ClusterController) getDeviceIds() ([]string, error) {
 	devices := []string{}
-	for name, _ := range c.config.DeviceStore["Store"].(map[string]interface{}) {
+
+	// Load the cluster configuration
+	config, err := c.config.load()
+	if err != nil {
+		return nil, err
+	}
+
+	// Add devices from the device store
+	deviceStoreObj, ok := config["deviceStore"].(map[string]interface{})
+	if ok {
+		for name, _ := range deviceStoreObj["Store"].(map[string]interface{}) {
+			devices = append(devices, name)
+		}
+	}
+
+	// Get a list of simulators deployed in the cluster
+	simulators, err := c.GetSimulators()
+	if err != nil {
+		return nil, err
+	}
+
+	// Add each simulator to the devices
+	for _, name := range simulators {
 		devices = append(devices, name)
 	}
-	for name, _ := range c.config.Simulators {
-		devices = append(devices, name)
-	}
-	return devices
+	return devices, nil
 }
