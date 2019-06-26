@@ -82,10 +82,10 @@ func (c *ClusterController) setupOnosConfig() error {
 	if err := c.createOnosConfigConfigMap(); err != nil {
 		return err
 	}
-	if err := c.createOnosConfigDeployment(); err != nil {
+	if err := c.createOnosConfigService(); err != nil {
 		return err
 	}
-	if err := c.createOnosConfigService(); err != nil {
+	if err := c.createOnosConfigDeployment(); err != nil {
 		return err
 	}
 
@@ -223,41 +223,6 @@ func (c *ClusterController) removeSimulatorFromConfig(name string) error {
 func (c *ClusterController) removeSimulatorFromPod(name string, pod corev1.Pod) error {
 	command := fmt.Sprintf("onos devices remove %s --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/tls.key --certPath /etc/onos-config/certs/tls.crt", name)
 	return c.execute(pod, []string{"/bin/bash", "-c", command})
-}
-
-// execute executes a command in the given pod
-func (c *ClusterController) execute(pod corev1.Pod, command []string) error {
-	container := pod.Spec.Containers[0]
-	req := c.kubeclient.CoreV1().RESTClient().Post().
-		Resource("pods").
-		Name(pod.Name).
-		Namespace(pod.Namespace).
-		SubResource("exec").
-		Param("container", container.Name)
-	req.VersionedParams(&corev1.PodExecOptions{
-		Container: container.Name,
-		Command:   command,
-		Stdout:    true,
-		Stderr:    true,
-		Stdin:     false,
-	}, scheme.ParameterCodec)
-
-	exec, err := remotecommand.NewSPDYExecutor(c.restconfig, "POST", req.URL())
-	if err != nil {
-		return err
-	}
-
-	var stdout, stderr bytes.Buffer
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Tty:    false,
-	})
-	if err != nil {
-		print(stdout.String())
-		print(stderr.String())
-	}
-	return err
 }
 
 // createOnosConfigDeployment creates an onos-config Deployment
@@ -415,15 +380,72 @@ func (c *ClusterController) createOnosConfigService() error {
 
 // awaitOnosConfigDeploymentReady waits for the onos-config pods to complete startup
 func (c *ClusterController) awaitOnosConfigDeploymentReady() error {
+	unblocked := make(map[string]bool)
 	for {
+		// Get a list of the pods that match the deployment
+		pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
+			LabelSelector: "app=onos-config",
+		})
+		if err != nil {
+			return err
+		}
+
+		// Iterate through the pods in the deployment and unblock the debugger
+		for _, pod := range pods.Items {
+			if _, ok := unblocked[pod.Name]; !ok && pod.Status.ContainerStatuses[0].State.Running != nil {
+				err := c.execute(pod, []string{"/bin/bash", "-c", "dlv --init <(echo \"exit -c\") connect 127.0.0.1:40000"})
+				if err != nil {
+					return err
+				}
+				unblocked[pod.Name] = true
+			}
+		}
+
+		// Get the onos-config deployment
 		dep, err := c.kubeclient.AppsV1().Deployments(c.clusterID).Get("onos-config", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
+		// Return once the all replicas in the deployment are ready
 		if int(dep.Status.ReadyReplicas) == c.config.Nodes {
 			return nil
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+// execute executes a command in the given pod
+func (c *ClusterController) execute(pod corev1.Pod, command []string) error {
+	container := pod.Spec.Containers[0]
+	req := c.kubeclient.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(pod.Name).
+		Namespace(pod.Namespace).
+		SubResource("exec").
+		Param("container", container.Name)
+	req.VersionedParams(&corev1.PodExecOptions{
+		Container: container.Name,
+		Command:   command,
+		Stdout:    true,
+		Stderr:    true,
+		Stdin:     false,
+	}, scheme.ParameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(c.restconfig, "POST", req.URL())
+	if err != nil {
+		return err
+	}
+
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Tty:    false,
+	})
+	if err != nil {
+		print(stdout.String())
+		print(stderr.String())
+	}
+	return err
 }

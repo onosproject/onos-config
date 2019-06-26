@@ -22,11 +22,11 @@ import (
 	"path/filepath"
 )
 
-// getRestConfig returns the k8s rest configuration from the environment
+// getRestConfig returns the Kubernetes REST API configuration
 func getRestConfig() (*rest.Config, error) {
 	kubeconfig := os.Getenv("KUBECONFIG")
 	if kubeconfig == "" {
-		home := homeDir()
+		home := getHomeDir()
 		if home == "" {
 			return nil, errors.New("no home directory configured")
 		}
@@ -37,8 +37,8 @@ func getRestConfig() (*rest.Config, error) {
 	return clientcmd.BuildConfigFromFlags("", kubeconfig)
 }
 
-// homeDir returns the user's home directory if defined by environment variables
-func homeDir() string {
+// getHomeDir returns the user's home directory if defined by environment variables
+func getHomeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
 	}
