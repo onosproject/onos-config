@@ -71,11 +71,11 @@ func getStorePresets() []string {
 }
 
 // setDefaultCluster sets the default cluster
-func setDefaultCluster(clusterId string) error {
+func setDefaultCluster(clusterID string) error {
 	if err := initConfig(); err != nil {
 		return err
 	}
-	viper.Set("cluster", clusterId)
+	viper.Set("cluster", clusterID)
 	return viper.WriteConfig()
 }
 
@@ -153,9 +153,8 @@ func initConfig() error {
 			f, err := os.Create(home + "/.onos/onit.yaml")
 			if err != nil {
 				return err
-			} else {
-				f.Close()
 			}
+			f.Close()
 		} else {
 			return err
 		}

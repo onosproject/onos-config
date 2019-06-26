@@ -81,10 +81,10 @@ func (c *OnitController) GetClusters() (map[string]*ClusterConfig, error) {
 }
 
 // NewCluster creates a new cluster controller
-func (c *OnitController) NewCluster(clusterId string, config *ClusterConfig) (*ClusterController, error) {
+func (c *OnitController) NewCluster(clusterID string, config *ClusterConfig) (*ClusterController, error) {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: clusterId,
+			Name: clusterID,
 			Labels: map[string]string{
 				"app": "onit",
 			},
@@ -102,20 +102,20 @@ func (c *OnitController) NewCluster(clusterId string, config *ClusterConfig) (*C
 
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterId,
-			Namespace: clusterId,
+			Name:      clusterID,
+			Namespace: clusterID,
 		},
 		BinaryData: map[string][]byte{
 			"config": configString,
 		},
 	}
-	_, err = c.kubeclient.CoreV1().ConfigMaps(clusterId).Create(cm)
+	_, err = c.kubeclient.CoreV1().ConfigMaps(clusterID).Create(cm)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ClusterController{
-		ClusterId:        clusterId,
+		clusterID:        clusterID,
 		kubeclient:       c.kubeclient,
 		atomixclient:     c.atomixclient,
 		extensionsclient: c.extensionsclient,
@@ -124,13 +124,13 @@ func (c *OnitController) NewCluster(clusterId string, config *ClusterConfig) (*C
 }
 
 // GetCluster returns a cluster controller
-func (c *OnitController) GetCluster(clusterId string) (*ClusterController, error) {
-	_, err := c.kubeclient.CoreV1().Namespaces().Get(clusterId, metav1.GetOptions{})
+func (c *OnitController) GetCluster(clusterID string) (*ClusterController, error) {
+	_, err := c.kubeclient.CoreV1().Namespaces().Get(clusterID, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	cm, err := c.kubeclient.CoreV1().ConfigMaps(clusterId).Get(clusterId, metav1.GetOptions{})
+	cm, err := c.kubeclient.CoreV1().ConfigMaps(clusterID).Get(clusterID, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (c *OnitController) GetCluster(clusterId string) (*ClusterController, error
 	}
 
 	return &ClusterController{
-		ClusterId:        clusterId,
+		clusterID:        clusterID,
 		kubeclient:       c.kubeclient,
 		atomixclient:     c.atomixclient,
 		extensionsclient: c.extensionsclient,
@@ -150,11 +150,11 @@ func (c *OnitController) GetCluster(clusterId string) (*ClusterController, error
 }
 
 // DeleteCluster deletes a cluster controller
-func (c *OnitController) DeleteCluster(clusterId string) error {
+func (c *OnitController) DeleteCluster(clusterID string) error {
 	if err := c.kubeclient.RbacV1().ClusterRoleBindings().Delete("atomix-controller", &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
-	if err := c.kubeclient.CoreV1().Namespaces().Delete(clusterId, &metav1.DeleteOptions{}); err != nil {
+	if err := c.kubeclient.CoreV1().Namespaces().Delete(clusterID, &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	return nil

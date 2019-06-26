@@ -32,6 +32,7 @@ func makeDevicePath(device string, path string) []DevicePath {
 	return devicePath
 }
 
+// TestSinglePath tests query/set/delete of a single GNMI path to a single device
 func TestSinglePath(t *testing.T) {
 	// Get the first configured device from the environment.
 	device := env.GetDevices()[0]

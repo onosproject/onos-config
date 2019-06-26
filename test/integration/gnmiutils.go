@@ -29,8 +29,8 @@ import (
 // It specifies the device, path, and value
 type DevicePath struct {
 	deviceName string
-	path string
-	value string
+	path       string
+	value      string
 }
 
 func convertGetResults(response *gpb.GetResponse) ([]DevicePath, error) {
@@ -59,7 +59,7 @@ func convertGetResults(response *gpb.GetResponse) ([]DevicePath, error) {
 }
 
 func extractSetTransactionID(response *gpb.SetResponse) string {
-	return string (response.Extension[0].GetRegisteredExt().Msg)
+	return string(response.Extension[0].GetRegisteredExt().Msg)
 }
 
 // GNMIGet generates a GET request on the given client for a path on a device

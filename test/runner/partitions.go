@@ -35,7 +35,7 @@ type PartitionInfo struct {
 
 // GetPartitions returns a list of partition info
 func (c *ClusterController) GetPartitions() ([]PartitionInfo, error) {
-	partitionList, err := c.atomixclient.K8sV1alpha1().Partitions(c.ClusterId).List(metav1.ListOptions{
+	partitionList, err := c.atomixclient.K8sV1alpha1().Partitions(c.clusterID).List(metav1.ListOptions{
 		LabelSelector: "group=raft",
 	})
 	if err != nil {
@@ -44,23 +44,23 @@ func (c *ClusterController) GetPartitions() ([]PartitionInfo, error) {
 
 	partitions := make([]PartitionInfo, len(partitionList.Items))
 	for i, partition := range partitionList.Items {
-		partitionId, err := strconv.ParseInt(partition.Labels["partition"], 0, 32)
+		partitionID, err := strconv.ParseInt(partition.Labels["partition"], 0, 32)
 		if err != nil {
 			return nil, err
 		}
 
-		nodes, err := c.GetPartitionNodes(int(partitionId))
+		nodes, err := c.GetPartitionNodes(int(partitionID))
 		if err != nil {
 			return nil, err
 		}
 		nodeIds := make([]string, len(nodes))
 		for j, node := range nodes {
-			nodeIds[j] = node.Id
+			nodeIds[j] = node.ID
 		}
 
 		partitions[i] = PartitionInfo{
 			Group:     "raft",
-			Partition: int(partitionId),
+			Partition: int(partitionID),
 			Nodes:     nodeIds,
 		}
 	}
@@ -69,7 +69,7 @@ func (c *ClusterController) GetPartitions() ([]PartitionInfo, error) {
 
 // GetPartitionNodes returns a list of node info for the given partition
 func (c *ClusterController) GetPartitionNodes(partition int) ([]NodeInfo, error) {
-	pods, err := c.kubeclient.CoreV1().Pods(c.ClusterId).List(metav1.ListOptions{
+	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("group=raft,partition=%d", partition),
 	})
 	if err != nil {
@@ -85,7 +85,7 @@ func (c *ClusterController) GetPartitionNodes(partition int) ([]NodeInfo, error)
 			status = NodeFailed
 		}
 		nodes[i] = NodeInfo{
-			Id:     pod.Name,
+			ID:     pod.Name,
 			Status: status,
 		}
 	}
@@ -94,12 +94,12 @@ func (c *ClusterController) GetPartitionNodes(partition int) ([]NodeInfo, error)
 
 // setupPartitions creates a Raft partition set
 func (c *ClusterController) setupPartitions() error {
-	log.Infof("Setting up partitions raft/%s", c.ClusterId)
+	log.Infof("Setting up partitions raft/%s", c.clusterID)
 	if err := c.createPartitionSet(); err != nil {
 		return err
 	}
 
-	log.Infof("Waiting for partitions raft/%s to become ready", c.ClusterId)
+	log.Infof("Waiting for partitions raft/%s to become ready", c.clusterID)
 	if err := c.awaitPartitionsReady(); err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (c *ClusterController) createPartitionSet() error {
 	set := &v1alpha1.PartitionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "raft",
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Spec: v1alpha1.PartitionSetSpec{
 			Partitions: c.config.Partitions,
@@ -135,14 +135,14 @@ func (c *ClusterController) createPartitionSet() error {
 			},
 		},
 	}
-	_, err = c.atomixclient.K8sV1alpha1().PartitionSets(c.ClusterId).Create(set)
+	_, err = c.atomixclient.K8sV1alpha1().PartitionSets(c.clusterID).Create(set)
 	return err
 }
 
 // awaitPartitionsReady waits for Raft partitions to complete startup
 func (c *ClusterController) awaitPartitionsReady() error {
 	for {
-		set, err := c.atomixclient.K8sV1alpha1().PartitionSets(c.ClusterId).Get("raft", metav1.GetOptions{})
+		set, err := c.atomixclient.K8sV1alpha1().PartitionSets(c.clusterID).Get("raft", metav1.GetOptions{})
 		if err != nil {
 			return err
 		} else if int(set.Status.ReadyPartitions) == set.Spec.Partitions {

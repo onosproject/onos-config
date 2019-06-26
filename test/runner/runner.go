@@ -43,7 +43,7 @@ func (r *TestRegistry) Register(name string, test Test) {
 // GetNames returns a slice of test names
 func (r *TestRegistry) GetNames() []string {
 	names := make([]string, 0, len(r.tests))
-	for name, _ := range r.tests {
+	for name := range r.tests {
 		names = append(names, name)
 	}
 	sort.Slice(names, func(i, j int) bool {
@@ -60,7 +60,7 @@ type TestRunner struct {
 	Registry *TestRegistry
 }
 
-// Runs the tests
+// RunTests Runs the tests
 func (r *TestRunner) RunTests(args []string) error {
 	tests := make([]testing.InternalTest, 0, len(args))
 	if len(args) > 0 {

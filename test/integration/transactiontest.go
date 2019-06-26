@@ -26,9 +26,10 @@ const (
 	value1 = "v1"
 	path1  = "/a/b/c1"
 	value2 = "v2"
-	path2 = "/a/b/c2"
+	path2  = "/a/b/c2"
 )
 
+// TestTransaction tests setting multiple paths in a single request and rolling it back
 func TestTransaction(t *testing.T) {
 	// Get the first configured device from the environment.
 	device := env.GetDevices()[0]

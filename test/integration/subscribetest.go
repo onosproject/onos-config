@@ -36,6 +36,7 @@ func init() {
 	Registry.Register("subscribe", TestSubscribe)
 }
 
+// TestSubscribe tests a stream subscription to updates to a device
 func TestSubscribe(t *testing.T) {
 
 	// Get the first configured device from the environment.
