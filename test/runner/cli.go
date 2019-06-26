@@ -15,9 +15,11 @@
 package runner
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+	"io"
 	log "k8s.io/klog"
 	"os"
 	"strconv"
@@ -44,8 +46,45 @@ func GetCommand(registry *TestRegistry) *cobra.Command {
 	cmd.AddCommand(getGetCommand(registry))
 	cmd.AddCommand(getSetCommand())
 	cmd.AddCommand(getTestCommand(registry))
+	cmd.AddCommand(getCompletionCommand())
 	return cmd
 }
+
+
+func getCompletionCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:       "completion <shell>",
+		Short:     "Generated bash or zsh auto-completion script",
+		Args:      cobra.ExactArgs(1),
+		ValidArgs: []string{"bash", "zsh"},
+		Run:       runCompletionCommand,
+	}
+}
+
+
+func runCompletionCommand(cmd *cobra.Command, args []string) {
+	if args[0] == "bash" {
+		if err := runCompletionBash(os.Stdout, cmd.Parent()); err != nil {
+			ExitWithError(ExitError, err)
+		}
+	} else if args[0] == "zsh" {
+		if err := runCompletionZsh(os.Stdout, cmd.Parent()); err != nil {
+			ExitWithError(ExitError, err)
+		}
+
+	} else {
+		ExitWithError(ExitError, errors.New("unsupported shell type "+args[0]))
+	}
+}
+
+func runCompletionBash(out io.Writer, cmd *cobra.Command) error {
+	return cmd.GenBashCompletion(out)
+}
+
+func runCompletionZsh(out io.Writer, cmd *cobra.Command) error {
+	return cmd.GenZshCompletion(out)
+}
+
 
 // getCreateCommand returns a cobra "setup" command for setting up resources
 func getCreateCommand() *cobra.Command {
