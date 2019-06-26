@@ -22,6 +22,7 @@ import (
 	"io"
 	log "k8s.io/klog"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -46,6 +47,7 @@ func GetCommand(registry *TestRegistry) *cobra.Command {
 	cmd.AddCommand(getGetCommand(registry))
 	cmd.AddCommand(getSetCommand())
 	cmd.AddCommand(getDebugCommand())
+	cmd.AddCommand(getFetchCommand())
 	cmd.AddCommand(getTestCommand(registry))
 	cmd.AddCommand(getCompletionCommand())
 	return cmd
@@ -668,17 +670,89 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 			}
 
 			// Get the logs for the resource and print to stdout
-			logs, err := cluster.GetLogs(args[0])
+			resources, err := cluster.GetResources(args[0])
 			if err != nil {
 				exitError(err)
-			} else {
-				numLogs := len(logs)
-				for i, lines := range logs {
-					for _, line := range lines {
-						fmt.Println(line)
+			}
+
+			// Iterate through resources and get/print logs
+			numResources := len(resources)
+			for i, resource := range resources {
+				logs, err := cluster.GetLogs(resource)
+				if err != nil {
+					exitError(err)
+				}
+				os.Stdout.Write(logs)
+				if i+1 < numResources {
+					fmt.Println("----")
+				}
+			}
+		},
+	}
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	return cmd
+}
+
+// getFetchCommand returns a cobra "download" command for downloading resources from a test cluster
+func getFetchCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "fetch",
+		Short: "Fetch resources from the cluster",
+	}
+	cmd.AddCommand(getFetchLogsCommand())
+	return cmd
+}
+
+// getFetchLogsCommand returns a cobra command for downloading the logs from a node
+func getFetchLogsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "logs [node]",
+		Short: "Download logs from a node",
+		Args:  cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			// Get the onit controller
+			controller, err := NewController()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterId, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster controller
+			cluster, err := controller.GetCluster(clusterId)
+			if err != nil {
+				exitError(err)
+			}
+
+			destination, _ := cmd.Flags().GetString("destination")
+			if len(args) > 0 {
+				resourceId := args[0]
+				resources, err := cluster.GetResources(resourceId)
+				if err != nil {
+					exitError(err)
+				}
+
+				for _, resource := range resources {
+					path := filepath.Join(destination, fmt.Sprintf("%s.log", resource))
+					if err := cluster.DownloadLogs(resource, path); err != nil {
+						exitError(err)
 					}
-					if i+1 < numLogs {
-						fmt.Println("----")
+				}
+			} else {
+				nodes, err := cluster.GetNodes()
+				if err != nil {
+					exitError(err)
+				}
+
+				for _, node := range nodes {
+					path := filepath.Join(destination, fmt.Sprintf("%s.log", node.ID))
+					if err := cluster.DownloadLogs(node.ID, path); err != nil {
+						exitError(err)
 					}
 				}
 			}
@@ -686,6 +760,7 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	cmd.Flags().StringP("destination", "d", ".", "the destination to which to write the logs")
 	return cmd
 }
 

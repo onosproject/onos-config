@@ -15,11 +15,11 @@
 package runner
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
 	atomixk8s "github.com/atomix/atomix-k8s-controller/pkg/client/clientset/versioned"
+	"io"
 	corev1 "k8s.io/api/core/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -79,14 +79,14 @@ func (c *ClusterController) AddSimulator(name string, config *SimulatorConfig) e
 }
 
 // RunTests runs the given tests on Kubernetes
-func (c *ClusterController) RunTests(testID string, tests []string, timeout time.Duration) (string, int, error) {
+func (c *ClusterController) RunTests(testId string, tests []string, timeout time.Duration) (string, int, error) {
 	// Default the test timeout to 10 minutes
 	if timeout == 0 {
 		timeout = 10 * time.Minute
 	}
 
 	// Start the test job
-	pod, err := c.startTests(testID, tests, timeout)
+	pod, err := c.startTests(testId, tests, timeout)
 	if err != nil {
 		return "", 0, err
 	}
@@ -100,42 +100,42 @@ func (c *ClusterController) RunTests(testID string, tests []string, timeout time
 	return c.getStatus(pod)
 }
 
-// GetLogs returns the logs for a test resource
-func (c *ClusterController) GetLogs(resourceID string) ([][]string, error) {
-	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
+// GetResources returns a list of resource IDs matching the given resource name
+func (c *ClusterController) GetResources(name string) ([]string, error) {
+	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(name, metav1.GetOptions{})
 	if err == nil {
-		return c.getAllLogs([]corev1.Pod{*pod})
+		return []string{pod.Name}, nil
 	} else if !k8serrors.IsNotFound(err) {
 		return nil, err
 	}
 
 	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
-		LabelSelector: "resource=" + resourceID,
+		LabelSelector: "resource=" + name,
 	})
 	if err != nil {
 		return nil, err
 	} else if len(pods.Items) == 0 {
-		return nil, errors.New("unknown test resource " + resourceID)
-	} else {
-		return c.getAllLogs(pods.Items)
+		return nil, errors.New("unknown test resource " + name)
 	}
+
+	resources := make([]string, len(pods.Items))
+	for i, pod := range pods.Items {
+		resources[i] = pod.Name
+	}
+	return resources, nil
 }
 
-// getAllLogs gets the logs from all of the given pods
-func (c *ClusterController) getAllLogs(pods []corev1.Pod) ([][]string, error) {
-	allLogs := make([][]string, len(pods))
-	for i, pod := range pods {
-		logs, err := c.getLogs(pod)
-		if err != nil {
-			return nil, err
-		}
-		allLogs[i] = logs
+// GetLogs returns the logs for a single test resource
+func (c *ClusterController) GetLogs(resourceId string) ([]byte, error) {
+	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceId, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
 	}
-	return allLogs, nil
+	return c.getLogs(*pod)
 }
 
 // getLogs gets the logs from the given pod
-func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
+func (c *ClusterController) getLogs(pod corev1.Pod) ([]byte, error) {
 	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &corev1.PodLogOptions{})
 	readCloser, err := req.Stream()
 	if err != nil {
@@ -144,12 +144,42 @@ func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
 
 	defer readCloser.Close()
 
-	logs := []string{}
-	scanner := bufio.NewScanner(readCloser)
-	for scanner.Scan() {
-		logs = append(logs, scanner.Text())
+	var buf bytes.Buffer
+	if _, err = buf.ReadFrom(readCloser); err != nil {
+		return nil, err
 	}
-	return logs, nil
+	return buf.Bytes(), nil
+}
+
+// DownloadLogs downloads the logs for the given resource to the given path
+func (c *ClusterController) DownloadLogs(resourceId string, path string) error {
+	log.Infof("Downloading logs from %s", resourceId)
+	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceId, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	return c.downloadLogs(*pod, path)
+}
+
+// downloadLogs downloads the logs from the given pod to the given path
+func (c *ClusterController) downloadLogs(pod corev1.Pod, path string) error {
+	// Create the file
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	// Get a stream of logs
+	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &corev1.PodLogOptions{})
+	readCloser, err := req.Stream()
+	if err != nil {
+		return err
+	}
+
+	defer readCloser.Close()
+
+	_, err = io.Copy(file, readCloser)
+	return err
 }
 
 // PortForward forwards a local port to the given remote port on the given resource
