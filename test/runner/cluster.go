@@ -154,7 +154,7 @@ func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
 
 // PortForward forwards a local port to the given remote port on the given resource
 func (c *ClusterController) PortForward(resourceId string, localPort int, remotePort int) error {
-	pod, err := c.kubeclient.CoreV1().Pods(c.ClusterId).Get(resourceId, metav1.GetOptions{})
+	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceId, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
