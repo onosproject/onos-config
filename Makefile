@@ -82,6 +82,12 @@ onos-config-it-docker: onos-config-base-docker # @HELP build onos-config-integra
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
+# @HELP build and run integration tests
+integration: kind
+	kind --help
+	onit create cluster
+	onit add simulator
+
 images: # @HELP build all Docker images
 images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-config-it-docker
 
