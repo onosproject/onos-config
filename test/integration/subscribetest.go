@@ -32,11 +32,8 @@ const (
 	subPath  = "/system/clock/config/timezone-name"
 )
 
-var testInternal *testing.T
-
 func TestSubscribe(t *testing.T) {
-
-	testInternal = t
+	
 	// Get the first configured device from the environment.
 	device := env.GetDevices()[0]
 
