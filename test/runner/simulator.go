@@ -22,6 +22,22 @@ import (
 	"time"
 )
 
+// GetSimulators returns a list of simulators deployed in the cluster
+func (c *ClusterController) GetSimulators() ([]string, error) {
+	pods, err := c.kubeclient.CoreV1().Pods(c.ClusterId).List(metav1.ListOptions{
+		LabelSelector: "type=simulator",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	simulators := make([]string, len(pods.Items))
+	for i, pod := range pods.Items {
+		simulators[i] = pod.Name
+	}
+	return simulators, nil
+}
+
 // setupSimulator creates a simulator required for the test
 func (c *ClusterController) setupSimulator(name string, config *SimulatorConfig) error {
 	if err := c.createSimulatorConfigMap(name, config); err != nil {
@@ -38,7 +54,11 @@ func (c *ClusterController) setupSimulator(name string, config *SimulatorConfig)
 
 // createSimulatorConfigMap creates a simulator configuration
 func (c *ClusterController) createSimulatorConfigMap(name string, config *SimulatorConfig) error {
-	configJson, err := json.Marshal(config)
+	configObj, err := config.load()
+	if err != nil {
+		return err
+	}
+	configJson, err := json.Marshal(configObj)
 	if err != nil {
 		return err
 	}
@@ -62,6 +82,7 @@ func (c *ClusterController) createSimulatorPod(name string) error {
 			Name:      name,
 			Namespace: c.ClusterId,
 			Labels: map[string]string{
+				"type":      "simulator",
 				"simulator": name,
 			},
 		},

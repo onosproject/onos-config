@@ -127,25 +127,50 @@ func (c *ClusterController) createOnosConfigSecret() error {
 
 // createOnosConfigConfigMap creates a ConfigMap for the onos-config Deployment
 func (c *ClusterController) createOnosConfigConfigMap() error {
+	config, err := c.config.load()
+	if err != nil {
+		return err
+	}
+
 	// Serialize the change store configuration
-	changeStore, err := json.Marshal(c.config.ChangeStore)
+	changeStore, err := json.Marshal(config["changeStore"])
 	if err != nil {
 		return err
 	}
 
 	// Serialize the network store configuration
-	networkStore, err := json.Marshal(c.config.NetworkStore)
+	networkStore, err := json.Marshal(config["networkStore"])
 	if err != nil {
 		return err
 	}
 
 	// If a device store was provided, serialize the device store configuration.
 	// Otherwise, create a device store configuration from simulators.
-	deviceStoreObj := c.config.DeviceStore
-	configStoreObj := c.config.ConfigStore
-	deviceStoreMap := deviceStoreObj["Store"].(map[string]interface{})
-	configStoreMap := configStoreObj["Store"].(map[string]interface{})
-	for name, _ := range c.config.Simulators {
+	deviceStoreObj, ok := config["deviceStore"].(map[string]interface{})
+	if !ok {
+		deviceStoreObj = make(map[string]interface{})
+	}
+	configStoreObj, ok := config["configStore"].(map[string]interface{})
+	if !ok {
+		configStoreObj = make(map[string]interface{})
+	}
+	deviceStoreMap, ok := deviceStoreObj["Store"].(map[string]interface{})
+	if !ok {
+		deviceStoreMap = make(map[string]interface{})
+	}
+	configStoreMap, ok := configStoreObj["Store"].(map[string]interface{})
+	if !ok {
+		configStoreMap = make(map[string]interface{})
+	}
+
+	// Get a list of simulators deployed in the cluster
+	simulators, err := c.GetSimulators()
+	if err != nil {
+		return err
+	}
+
+	// Add each simulator to the device and config stores
+	for _, name := range simulators {
 		deviceMap := make(map[string]interface{})
 		deviceMap["ID"] = name
 		deviceMap["Addr"] = fmt.Sprintf("%s:10161", name)
@@ -210,7 +235,7 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": "onos-config",
+						"app":      "onos-config",
 						"resource": "onos-config",
 					},
 				},
