@@ -32,12 +32,16 @@ const (
 	subPath  = "/system/clock/config/timezone-name"
 )
 
+func init() {
+	Registry.Register("subscribe-test", TestSubscribe)
+}
+
 func TestSubscribe(t *testing.T) {
-	
+
 	// Get the first configured device from the environment.
 	device := env.GetDevices()[0]
 
-	// Make a GNMI client to use for requests
+	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
 
 	path, err := utils.ParseGNMIElements(utils.SplitPath(subPath))
@@ -64,9 +68,9 @@ func TestSubscribe(t *testing.T) {
 	q.Credentials = dest.Credentials
 	q.TLS = dest.TLS
 
-	respChan := make (chan *gnmi.SubscribeResponse)
+	respChan := make(chan *gnmi.SubscribeResponse)
 
-	q.ProtoHandler = func (msg proto.Message) error {
+	q.ProtoHandler = func(msg proto.Message) error {
 		resp, ok := msg.(*gnmi.SubscribeResponse)
 		if !ok {
 			return fmt.Errorf("failed to type assert message %#v", msg)
@@ -75,11 +79,13 @@ func TestSubscribe(t *testing.T) {
 		return nil
 	}
 
+	// Subscription has to be spawned into a separate thread as it is blocking.
 	go func() {
 		errSubscribe := subC.Subscribe(MakeContext(), q, "gnmi")
 		assert.NoError(t, errSubscribe, "Subscription Error")
 	}()
 
+	// Make a GNMI client to use for requests
 	c, err := env.NewGnmiClient(MakeContext(), "")
 	assert.NoError(t, err)
 	assert.True(t, c != nil, "Fetching client returned nil")
@@ -91,20 +97,20 @@ func TestSubscribe(t *testing.T) {
 	assert.NoError(t, errorSet)
 	var response *gnmi.SubscribeResponse
 
-	//Update response with Update
+	// Wait for the Update response with Update
 	select {
 	case response = <-respChan:
-		valiedateResponse(t,response,device, false)
+		valiedateResponse(t, response, device, false)
 	case <-time.After(50 * time.Millisecond):
-		assert.FailNow(t,"Expected Update Response")
+		assert.FailNow(t, "Expected Update Response")
 	}
 
-	//Sync response
+	// Wait for the Sync response
 	select {
 	case response = <-respChan:
-		valiedateResponse(t,response,device, false)
+		valiedateResponse(t, response, device, false)
 	case <-time.After(50 * time.Millisecond):
-		assert.FailNow(t,"Expected Sync Response")
+		assert.FailNow(t, "Expected Sync Response")
 	}
 
 	// Check that the value was set correctly
@@ -118,20 +124,20 @@ func TestSubscribe(t *testing.T) {
 	errorDelete := GNMIDelete(MakeContext(), c, makeDevicePath(device, subPath))
 	assert.NoError(t, errorDelete)
 
-	//Update response with delete
+	// Wait for the Update response with delete
 	select {
 	case response = <-respChan:
-		valiedateResponse(t,response,device, true)
+		valiedateResponse(t, response, device, true)
 	case <-time.After(50 * time.Millisecond):
-		assert.FailNow(t,"Expected Delete Response")
+		assert.FailNow(t, "Expected Delete Response")
 	}
 
-	//Sync response
+	// Wait for the Sync response
 	select {
 	case response = <-respChan:
-		valiedateResponse(t,response,device, false)
+		valiedateResponse(t, response, device, false)
 	case <-time.After(50 * time.Millisecond):
-		assert.FailNow(t,"Expected Sync Response")
+		assert.FailNow(t, "Expected Sync Response")
 	}
 
 	//  Make sure it got removed
@@ -139,10 +145,6 @@ func TestSubscribe(t *testing.T) {
 	assert.NoError(t, errorAfterDelete)
 	assert.Equal(t, valueAfterDelete[0].value, "",
 		"incorrect value found for path /system/clock/config/timezone-name after delete")
-}
-
-func init() {
-	Registry.Register("subscribe-test", TestSubscribe)
 }
 
 func buildRequest(path *gnmi.Path, mode gnmi.SubscriptionList_Mode) (*gnmi.SubscribeRequest, error) {
@@ -206,13 +208,13 @@ func assertUpdateResponse(t *testing.T, response *gnmi.SubscribeResponse_Update,
 }
 
 func assertDeleteResponse(t *testing.T, response *gnmi.SubscribeResponse_Update, device string) {
-	assert.True(t,  response.Update != nil, "Delete should not be nil")
+	assert.True(t, response.Update != nil, "Delete should not be nil")
 	assert.Equal(t, len(response.Update.GetDelete()), 1)
 	if response.Update.GetDelete()[0] == nil {
 		log.Error("response should contain at least one delete path")
 		t.FailNow()
 	}
-	pathResponse :=  response.Update.GetDelete()[0]
+	pathResponse := response.Update.GetDelete()[0]
 	assert.Equal(t, pathResponse.Target, device)
 	assert.Equal(t, len(pathResponse.Elem), 4, "Expected 3 path elements")
 	assert.Equal(t, pathResponse.Elem[0].Name, "system")
@@ -220,5 +222,3 @@ func assertDeleteResponse(t *testing.T, response *gnmi.SubscribeResponse_Update,
 	assert.Equal(t, pathResponse.Elem[2].Name, "config")
 	assert.Equal(t, pathResponse.Elem[3].Name, "timezone-name")
 }
-
-
