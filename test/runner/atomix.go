@@ -27,7 +27,7 @@ import (
 
 // setupAtomixController sets up the Atomix controller and associated resources
 func (c *ClusterController) setupAtomixController() error {
-	log.Infof("Setting up Atomix controller atomix-controller/%s", c.ClusterId)
+	log.Infof("Setting up Atomix controller atomix-controller/%s", c.clusterID)
 	if err := c.createAtomixPartitionSetResource(); err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (c *ClusterController) setupAtomixController() error {
 		return err
 	}
 
-	log.Infof("Waiting for Atomix controller atomix-controller/%s to become ready", c.ClusterId)
+	log.Infof("Waiting for Atomix controller atomix-controller/%s to become ready", c.clusterID)
 	if err := c.awaitAtomixControllerReady(); err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (c *ClusterController) createAtomixClusterRole() error {
 	role := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -201,13 +201,13 @@ func (c *ClusterController) createAtomixClusterRoleBinding() error {
 	roleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
 				Name:      "atomix-controller",
-				Namespace: c.ClusterId,
+				Namespace: c.clusterID,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
@@ -221,9 +221,8 @@ func (c *ClusterController) createAtomixClusterRoleBinding() error {
 		if k8serrors.IsAlreadyExists(err) {
 			c.deleteAtomixClusterRoleBinding()
 			return c.createAtomixClusterRoleBinding()
-		} else {
-			return err
 		}
+		return err
 	}
 	return nil
 }
@@ -238,10 +237,10 @@ func (c *ClusterController) createAtomixServiceAccount() error {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 	}
-	_, err := c.kubeclient.CoreV1().ServiceAccounts(c.ClusterId).Create(serviceAccount)
+	_, err := c.kubeclient.CoreV1().ServiceAccounts(c.clusterID).Create(serviceAccount)
 	return err
 }
 
@@ -251,7 +250,7 @@ func (c *ClusterController) createAtomixDeployment() error {
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
@@ -329,7 +328,7 @@ func (c *ClusterController) createAtomixDeployment() error {
 			},
 		},
 	}
-	_, err := c.kubeclient.AppsV1().Deployments(c.ClusterId).Create(deployment)
+	_, err := c.kubeclient.AppsV1().Deployments(c.clusterID).Create(deployment)
 	return err
 }
 
@@ -338,7 +337,7 @@ func (c *ClusterController) createAtomixService() error {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "atomix-controller",
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
@@ -352,14 +351,14 @@ func (c *ClusterController) createAtomixService() error {
 			},
 		},
 	}
-	_, err := c.kubeclient.CoreV1().Services(c.ClusterId).Create(service)
+	_, err := c.kubeclient.CoreV1().Services(c.clusterID).Create(service)
 	return err
 }
 
 // awaitAtomixControllerReady blocks until the Atomix controller is ready
 func (c *ClusterController) awaitAtomixControllerReady() error {
 	for {
-		dep, err := c.kubeclient.AppsV1().Deployments(c.ClusterId).Get("atomix-controller", metav1.GetOptions{})
+		dep, err := c.kubeclient.AppsV1().Deployments(c.clusterID).Get("atomix-controller", metav1.GetOptions{})
 		if err != nil {
 			return err
 		} else if dep.Status.ReadyReplicas == 1 {

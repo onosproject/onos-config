@@ -68,4 +68,3 @@ func MakeProtoDeletePath(target string, path string) string {
 	protoBuilder.WriteString(MakeProtoTarget(target, path))
 	return protoBuilder.String()
 }
-

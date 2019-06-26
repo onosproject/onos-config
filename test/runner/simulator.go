@@ -24,7 +24,7 @@ import (
 
 // GetSimulators returns a list of simulators deployed in the cluster
 func (c *ClusterController) GetSimulators() ([]string, error) {
-	pods, err := c.kubeclient.CoreV1().Pods(c.ClusterId).List(metav1.ListOptions{
+	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
 		LabelSelector: "type=simulator",
 	})
 	if err != nil {
@@ -58,20 +58,20 @@ func (c *ClusterController) createSimulatorConfigMap(name string, config *Simula
 	if err != nil {
 		return err
 	}
-	configJson, err := json.Marshal(configObj)
+	configJSON, err := json.Marshal(configObj)
 	if err != nil {
 		return err
 	}
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Data: map[string]string{
-			"config.json": string(configJson),
+			"config.json": string(configJSON),
 		},
 	}
-	_, err = c.kubeclient.CoreV1().ConfigMaps(c.ClusterId).Create(cm)
+	_, err = c.kubeclient.CoreV1().ConfigMaps(c.clusterID).Create(cm)
 	return err
 }
 
@@ -80,7 +80,7 @@ func (c *ClusterController) createSimulatorPod(name string) error {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 			Labels: map[string]string{
 				"type":      "simulator",
 				"simulator": name,
@@ -139,7 +139,7 @@ func (c *ClusterController) createSimulatorPod(name string) error {
 			},
 		},
 	}
-	_, err := c.kubeclient.CoreV1().Pods(c.ClusterId).Create(pod)
+	_, err := c.kubeclient.CoreV1().Pods(c.clusterID).Create(pod)
 	return err
 }
 
@@ -148,7 +148,7 @@ func (c *ClusterController) createSimulatorService(name string) error {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
@@ -162,14 +162,14 @@ func (c *ClusterController) createSimulatorService(name string) error {
 			},
 		},
 	}
-	_, err := c.kubeclient.CoreV1().Services(c.ClusterId).Create(service)
+	_, err := c.kubeclient.CoreV1().Services(c.clusterID).Create(service)
 	return err
 }
 
 // awaitSimulatorReady waits for the given simulator to complete startup
 func (c *ClusterController) awaitSimulatorReady(name string) error {
 	for {
-		pod, err := c.kubeclient.CoreV1().Pods(c.ClusterId).Get(name, metav1.GetOptions{})
+		pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		} else if len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].Ready {
@@ -196,15 +196,15 @@ func (c *ClusterController) teardownSimulator(name string) error {
 
 // deleteSimulatorConfigMap deletes a simulator ConfigMap by name
 func (c *ClusterController) deleteSimulatorConfigMap(name string) error {
-	return c.kubeclient.CoreV1().ConfigMaps(c.ClusterId).Delete(name, &metav1.DeleteOptions{})
+	return c.kubeclient.CoreV1().ConfigMaps(c.clusterID).Delete(name, &metav1.DeleteOptions{})
 }
 
 // deleteSimulatorPod deletes a simulator Pod by name
 func (c *ClusterController) deleteSimulatorPod(name string) error {
-	return c.kubeclient.CoreV1().Pods(c.ClusterId).Delete(name, &metav1.DeleteOptions{})
+	return c.kubeclient.CoreV1().Pods(c.clusterID).Delete(name, &metav1.DeleteOptions{})
 }
 
 // deleteSimulatorService deletes a simulator Service by name
 func (c *ClusterController) deleteSimulatorService(name string) error {
-	return c.kubeclient.CoreV1().Services(c.ClusterId).Delete(name, &metav1.DeleteOptions{})
+	return c.kubeclient.CoreV1().Services(c.clusterID).Delete(name, &metav1.DeleteOptions{})
 }

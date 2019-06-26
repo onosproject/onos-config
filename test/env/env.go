@@ -32,6 +32,7 @@ import (
 )
 
 const (
+	// TestDevicesEnv : environment variable name for devices
 	TestDevicesEnv = "ONOS_CONFIG_TEST_DEVICES"
 )
 
@@ -39,7 +40,7 @@ const (
 	clientKeyPath = "/etc/onos-config/certs/tls.key"
 	clientCrtPath = "/etc/onos-config/certs/tls.crt"
 	caCertPath    = "/etc/onos-config/certs/tls.cacrt"
-	Address       = "onos-config:5150"
+	address       = "onos-config:5150"
 )
 
 // GetCredentials returns gNMI client credentials for the test environment
@@ -72,7 +73,7 @@ func GetDestination(target string) (client.Destination, error) {
 		return client.Destination{}, err
 	}
 	return client.Destination{
-		Addrs:  []string{Address},
+		Addrs:  []string{address},
 		Target: target,
 		TLS:    tlsConfig,
 	}, nil
@@ -93,8 +94,7 @@ func GetDevices() []string {
 	return strings.Split(devices, ",")
 }
 
-func HandleCertArgs() ([]grpc.DialOption, error) {
-
+func handleCertArgs() ([]grpc.DialOption, error) {
 	var opts = []grpc.DialOption{}
 	var cert tls.Certificate
 	var err error
@@ -114,11 +114,12 @@ func HandleCertArgs() ([]grpc.DialOption, error) {
 	return opts, nil
 }
 
+// GetAdminClient returns a client that can be used for the admin APIs
 func GetAdminClient() (*grpc.ClientConn, proto.AdminServiceClient) {
-	opts, err := HandleCertArgs()
+	opts, err := handleCertArgs()
 	if err != nil {
 		fmt.Printf("Error loading cert %s", err)
 	}
-	conn := northbound.Connect(Address, opts...)
+	conn := northbound.Connect(address, opts...)
 	return conn, proto.NewAdminServiceClient(conn)
 }

@@ -28,17 +28,23 @@ import (
 	"time"
 )
 
+// TestStatus test status
 type TestStatus string
 
 const (
+	// TestRunning running
 	TestRunning TestStatus = "RUNNING"
+
+	// TestPassed passed
 	TestPassed  TestStatus = "PASSED"
+
+	// TestFailed failed
 	TestFailed  TestStatus = "FAILED"
 )
 
 // TestRecord contains information about a test run
 type TestRecord struct {
-	TestId   string
+	TestID   string
 	Args     []string
 	Status   TestStatus
 	Message  string
@@ -46,16 +52,16 @@ type TestRecord struct {
 }
 
 // startTests starts running a test job
-func (c *ClusterController) startTests(testId string, tests []string, timeout time.Duration) (corev1.Pod, error) {
-	if err := c.createTestJob(testId, tests, timeout); err != nil {
+func (c *ClusterController) startTests(testID string, tests []string, timeout time.Duration) (corev1.Pod, error) {
+	if err := c.createTestJob(testID, tests, timeout); err != nil {
 		return corev1.Pod{}, err
 	}
-	return c.awaitTestJobRunning(testId)
+	return c.awaitTestJobRunning(testID)
 }
 
 // createTestJob creates the job to run tests
-func (c *ClusterController) createTestJob(testId string, args []string, timeout time.Duration) error {
-	log.Infof("Starting test job %s", testId)
+func (c *ClusterController) createTestJob(testID string, args []string, timeout time.Duration) error {
+	log.Infof("Starting test job %s", testID)
 
 	deviceIds, err := c.getDeviceIds()
 	if err != nil {
@@ -66,8 +72,8 @@ func (c *ClusterController) createTestJob(testId string, args []string, timeout 
 	timeoutSeconds := int64(timeout / time.Second)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      testId,
-			Namespace: c.ClusterId,
+			Name:      testID,
+			Namespace: c.clusterID,
 			Annotations: map[string]string{
 				"test-args": strings.Join(args, ","),
 			},
@@ -80,9 +86,9 @@ func (c *ClusterController) createTestJob(testId string, args []string, timeout 
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"cluster":  c.ClusterId,
-						"test":     testId,
-						"resource": testId,
+						"cluster":  c.clusterID,
+						"test":     testID,
+						"resource": testID,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -113,7 +119,7 @@ func (c *ClusterController) createTestJob(testId string, args []string, timeout 
 							Name: "secret",
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
-									SecretName: c.ClusterId,
+									SecretName: c.clusterID,
 								},
 							},
 						},
@@ -123,26 +129,25 @@ func (c *ClusterController) createTestJob(testId string, args []string, timeout 
 		},
 	}
 
-	_, err = c.kubeclient.BatchV1().Jobs(c.ClusterId).Create(job)
+	_, err = c.kubeclient.BatchV1().Jobs(c.clusterID).Create(job)
 	return err
 }
 
 // awaitTestJobRunning blocks until the test job creates a pod in the RUNNING state
-func (c *ClusterController) awaitTestJobRunning(testId string) (corev1.Pod, error) {
-	log.Infof("Waiting for test job %s to become ready", testId)
+func (c *ClusterController) awaitTestJobRunning(testID string) (corev1.Pod, error) {
+	log.Infof("Waiting for test job %s to become ready", testID)
 	for {
-		pod, err := c.getPod(testId)
+		pod, err := c.getPod(testID)
 		if err == nil {
 			return pod, nil
-		} else {
-			time.Sleep(100 * time.Millisecond)
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
 // streamLogs streams the logs from the given pod to stdout
 func (c *ClusterController) streamLogs(pod corev1.Pod) error {
-	req := c.kubeclient.CoreV1().Pods(c.ClusterId).GetLogs(pod.Name, &corev1.PodLogOptions{
+	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &corev1.PodLogOptions{
 		Follow: true,
 	})
 	readCloser, err := req.Stream()
@@ -170,23 +175,21 @@ func (c *ClusterController) streamLogs(pod corev1.Pod) error {
 // getStatus gets the status message and exit code of the given pod
 func (c *ClusterController) getStatus(pod corev1.Pod) (string, int, error) {
 	for {
-		obj, err := c.kubeclient.CoreV1().Pods(c.ClusterId).Get(pod.Name, metav1.GetOptions{})
+		obj, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(pod.Name, metav1.GetOptions{})
 		if err != nil {
 			return "", 0, err
-		} else {
-			state := obj.Status.ContainerStatuses[0].State
-			if state.Terminated != nil {
-				return state.Terminated.Message, int(state.Terminated.ExitCode), nil
-			} else {
-				time.Sleep(100 * time.Millisecond)
-			}
 		}
+		state := obj.Status.ContainerStatuses[0].State
+		if state.Terminated != nil {
+			return state.Terminated.Message, int(state.Terminated.ExitCode), nil
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
 // GetHistory returns the history of test runs on the cluster
 func (c *ClusterController) GetHistory() ([]TestRecord, error) {
-	jobs, err := c.kubeclient.BatchV1().Jobs(c.ClusterId).List(metav1.ListOptions{})
+	jobs, err := c.kubeclient.BatchV1().Jobs(c.clusterID).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -203,8 +206,8 @@ func (c *ClusterController) GetHistory() ([]TestRecord, error) {
 }
 
 // GetRecord returns a single record for the given test
-func (c *ClusterController) GetRecord(testId string) (TestRecord, error) {
-	job, err := c.kubeclient.BatchV1().Jobs(c.ClusterId).Get(testId, metav1.GetOptions{})
+func (c *ClusterController) GetRecord(testID string) (TestRecord, error) {
+	job, err := c.kubeclient.BatchV1().Jobs(c.clusterID).Get(testID, metav1.GetOptions{})
 	if err != nil {
 		return TestRecord{}, err
 	}
@@ -213,7 +216,7 @@ func (c *ClusterController) GetRecord(testId string) (TestRecord, error) {
 
 // GetRecord returns a single record for the given test
 func (c *ClusterController) getRecord(job batchv1.Job) (TestRecord, error) {
-	testId := job.Labels["test"]
+	testID := job.Labels["test"]
 
 	var args []string
 	testArgs, ok := job.Annotations["test-args"]
@@ -223,13 +226,13 @@ func (c *ClusterController) getRecord(job batchv1.Job) (TestRecord, error) {
 		args = make([]string, 0)
 	}
 
-	pod, err := c.getPod(testId)
+	pod, err := c.getPod(testID)
 	if err != nil {
 		return TestRecord{}, nil
 	}
 
 	record := TestRecord{
-		TestId: testId,
+		TestID: testID,
 		Args:   args,
 	}
 
@@ -250,9 +253,9 @@ func (c *ClusterController) getRecord(job batchv1.Job) (TestRecord, error) {
 }
 
 // getPod finds the Pod for the given test
-func (c *ClusterController) getPod(testId string) (corev1.Pod, error) {
-	pods, err := c.kubeclient.CoreV1().Pods(c.ClusterId).List(metav1.ListOptions{
-		LabelSelector: "test=" + testId,
+func (c *ClusterController) getPod(testID string) (corev1.Pod, error) {
+	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
+		LabelSelector: "test=" + testID,
 	})
 	if err != nil {
 		return corev1.Pod{}, err
@@ -268,7 +271,7 @@ func (c *ClusterController) getPod(testId string) (corev1.Pod, error) {
 			}
 		}
 	}
-	return corev1.Pod{}, errors.New("cannot locate test pod for test " + testId)
+	return corev1.Pod{}, errors.New("cannot locate test pod for test " + testID)
 }
 
 // getDeviceIds returns a slice of configured simulator device IDs
@@ -284,7 +287,7 @@ func (c *ClusterController) getDeviceIds() ([]string, error) {
 	// Add devices from the device store
 	deviceStoreObj, ok := config["deviceStore"].(map[string]interface{})
 	if ok {
-		for name, _ := range deviceStoreObj["Store"].(map[string]interface{}) {
+		for name := range deviceStoreObj["Store"].(map[string]interface{}) {
 			devices = append(devices, name)
 		}
 	}

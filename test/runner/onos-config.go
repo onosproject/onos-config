@@ -28,22 +28,26 @@ import (
 	"time"
 )
 
+// NodeStatus node status
 type NodeStatus string
 
 const (
+	// NodeRunning node is running
 	NodeRunning NodeStatus = "RUNNING"
+
+	// NodeFailed node has failed
 	NodeFailed  NodeStatus = "FAILED"
 )
 
 // NodeInfo contains information about an onos-config node
 type NodeInfo struct {
-	Id     string
+	ID     string
 	Status NodeStatus
 }
 
 // GetNodes returns a list of onos-config nodes running in the cluster
 func (c *ClusterController) GetNodes() ([]NodeInfo, error) {
-	pods, err := c.kubeclient.CoreV1().Pods(c.ClusterId).List(metav1.ListOptions{
+	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
 		LabelSelector: "app=onos-config",
 	})
 	if err != nil {
@@ -59,7 +63,7 @@ func (c *ClusterController) GetNodes() ([]NodeInfo, error) {
 			status = NodeFailed
 		}
 		nodes[i] = NodeInfo{
-			Id:     pod.Name,
+			ID:     pod.Name,
 			Status: status,
 		}
 	}
@@ -68,7 +72,7 @@ func (c *ClusterController) GetNodes() ([]NodeInfo, error) {
 
 // setupOnosConfig sets up the onos-config Deployment
 func (c *ClusterController) setupOnosConfig() error {
-	log.Infof("Setting up onos-config cluster onos-config/%s", c.ClusterId)
+	log.Infof("Setting up onos-config cluster onos-config/%s", c.clusterID)
 	if err := c.createOnosConfigSecret(); err != nil {
 		return err
 	}
@@ -82,7 +86,7 @@ func (c *ClusterController) setupOnosConfig() error {
 		return err
 	}
 
-	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.ClusterId)
+	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.clusterID)
 	if err := c.awaitOnosConfigDeploymentReady(); err != nil {
 		return err
 	}
@@ -93,8 +97,8 @@ func (c *ClusterController) setupOnosConfig() error {
 func (c *ClusterController) createOnosConfigSecret() error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      c.ClusterId,
-			Namespace: c.ClusterId,
+			Name:      c.clusterID,
+			Namespace: c.clusterID,
 		},
 		StringData: map[string]string{},
 	}
@@ -121,7 +125,7 @@ func (c *ClusterController) createOnosConfigSecret() error {
 		return err
 	}
 
-	_, err = c.kubeclient.CoreV1().Secrets(c.ClusterId).Create(secret)
+	_, err = c.kubeclient.CoreV1().Secrets(c.clusterID).Create(secret)
 	return err
 }
 
@@ -204,7 +208,7 @@ func (c *ClusterController) createOnosConfigConfigMap() error {
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "onos-config",
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Data: map[string]string{
 			"changeStore.json":  string(changeStore),
@@ -213,7 +217,7 @@ func (c *ClusterController) createOnosConfigConfigMap() error {
 			"networkStore.json": string(networkStore),
 		},
 	}
-	_, err = c.kubeclient.CoreV1().ConfigMaps(c.ClusterId).Create(cm)
+	_, err = c.kubeclient.CoreV1().ConfigMaps(c.clusterID).Create(cm)
 	return err
 }
 
@@ -223,7 +227,7 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "onos-config",
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &nodes,
@@ -248,7 +252,7 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 							Env: []corev1.EnvVar{
 								{
 									Name:  "ATOMIX_CONTROLLER",
-									Value: fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", c.ClusterId),
+									Value: fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", c.clusterID),
 								},
 								{
 									Name:  "ATOMIX_APP",
@@ -256,7 +260,7 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 								},
 								{
 									Name:  "ATOMIX_NAMESPACE",
-									Value: c.ClusterId,
+									Value: c.clusterID,
 								},
 							},
 							Args: []string{
@@ -321,7 +325,7 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 							Name: "secret",
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
-									SecretName: c.ClusterId,
+									SecretName: c.clusterID,
 								},
 							},
 						},
@@ -330,7 +334,7 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 			},
 		},
 	}
-	_, err := c.kubeclient.AppsV1().Deployments(c.ClusterId).Create(dep)
+	_, err := c.kubeclient.AppsV1().Deployments(c.clusterID).Create(dep)
 	return err
 }
 
@@ -339,7 +343,7 @@ func (c *ClusterController) createOnosConfigService() error {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "onos-config",
-			Namespace: c.ClusterId,
+			Namespace: c.clusterID,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
@@ -353,29 +357,28 @@ func (c *ClusterController) createOnosConfigService() error {
 			},
 		},
 	}
-	_, err := c.kubeclient.CoreV1().Services(c.ClusterId).Create(service)
+	_, err := c.kubeclient.CoreV1().Services(c.clusterID).Create(service)
 	return err
 }
 
 // awaitOnosConfigDeploymentReady waits for the onos-config pods to complete startup
 func (c *ClusterController) awaitOnosConfigDeploymentReady() error {
 	for {
-		dep, err := c.kubeclient.AppsV1().Deployments(c.ClusterId).Get("onos-config", metav1.GetOptions{})
+		dep, err := c.kubeclient.AppsV1().Deployments(c.clusterID).Get("onos-config", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
 		if int(dep.Status.ReadyReplicas) == c.config.Nodes {
 			return nil
-		} else {
-			time.Sleep(100 * time.Millisecond)
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
 // teardownOnosConfig tears down the onos-config deployment
 func (c *ClusterController) redeployOnosConfig() error {
-	log.Infof("Redeploying onos-config cluster onos-config/%s", c.ClusterId)
+	log.Infof("Redeploying onos-config cluster onos-config/%s", c.clusterID)
 	if err := c.deleteOnosConfigDeployment(); err != nil {
 		return err
 	}
@@ -388,7 +391,7 @@ func (c *ClusterController) redeployOnosConfig() error {
 	if err := c.createOnosConfigDeployment(); err != nil {
 		return err
 	}
-	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.ClusterId)
+	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.clusterID)
 	if err := c.awaitOnosConfigDeploymentReady(); err != nil {
 		return err
 	}
@@ -397,10 +400,10 @@ func (c *ClusterController) redeployOnosConfig() error {
 
 // deleteOnosConfigConfigMap deletes the onos-config ConfigMap
 func (c *ClusterController) deleteOnosConfigConfigMap() error {
-	return c.kubeclient.CoreV1().ConfigMaps(c.ClusterId).Delete("onos-config", &metav1.DeleteOptions{})
+	return c.kubeclient.CoreV1().ConfigMaps(c.clusterID).Delete("onos-config", &metav1.DeleteOptions{})
 }
 
 // deleteOnosConfigDeployment deletes the onos-config Deployment
 func (c *ClusterController) deleteOnosConfigDeployment() error {
-	return c.kubeclient.AppsV1().Deployments(c.ClusterId).Delete("onos-config", &metav1.DeleteOptions{})
+	return c.kubeclient.AppsV1().Deployments(c.clusterID).Delete("onos-config", &metav1.DeleteOptions{})
 }

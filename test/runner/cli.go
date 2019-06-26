@@ -76,11 +76,11 @@ func getCreateClusterCommand() *cobra.Command {
 			}
 
 			// Get or create a cluster ID
-			var clusterId string
+			var clusterID string
 			if len(args) > 0 {
-				clusterId = args[0]
+				clusterID = args[0]
 			} else {
-				clusterId = fmt.Sprintf("cluster-%s", newUuidString())
+				clusterID = fmt.Sprintf("cluster-%s", newUUIDString())
 			}
 
 			// Create the cluster configuration
@@ -92,7 +92,7 @@ func getCreateClusterCommand() *cobra.Command {
 			}
 
 			// Create the cluster controller
-			cluster, err := controller.NewCluster(clusterId, config)
+			cluster, err := controller.NewCluster(clusterID, config)
 			if err != nil {
 				exitError(err)
 			}
@@ -101,8 +101,8 @@ func getCreateClusterCommand() *cobra.Command {
 			if err = cluster.Setup(); err != nil {
 				exitError(err)
 			} else {
-				setDefaultCluster(clusterId)
-				fmt.Println(clusterId)
+				setDefaultCluster(clusterID)
+				fmt.Println(clusterID)
 			}
 		},
 	}
@@ -135,7 +135,7 @@ func getAddSimulatorCommand() *cobra.Command {
 			if len(args) > 0 {
 				name = args[0]
 			} else {
-				name = fmt.Sprintf("device-%d", newUuidInt())
+				name = fmt.Sprintf("device-%d", newUUIDInt())
 			}
 
 			// Create the simulator configuration from the configured preset
@@ -148,13 +148,13 @@ func getAddSimulatorCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
@@ -202,15 +202,15 @@ func getDeleteClusterCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			var clusterId string
+			var clusterID string
 			if len(args) > 0 {
-				clusterId = args[0]
+				clusterID = args[0]
 			} else {
-				clusterId = getDefaultCluster()
+				clusterID = getDefaultCluster()
 			}
 
 			// Delete the cluster
-			if err = controller.DeleteCluster(clusterId); err != nil {
+			if err = controller.DeleteCluster(clusterID); err != nil {
 				exitError(err)
 			}
 		},
@@ -244,13 +244,13 @@ func getRemoveSimulatorCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
@@ -310,13 +310,13 @@ func getGetSimulatorsCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
@@ -409,13 +409,13 @@ func getGetPartitionsCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
@@ -457,13 +457,13 @@ func getGetPartitionCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
@@ -500,13 +500,13 @@ func getGetNodesCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
@@ -529,7 +529,7 @@ func printNodes(nodes []NodeInfo) {
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
 	fmt.Fprintln(writer, "ID\tSTATUS")
 	for _, node := range nodes {
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", node.Id, node.Status))
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", node.ID, node.Status))
 	}
 	writer.Flush()
 }
@@ -560,13 +560,13 @@ func getGetHistoryCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
@@ -597,7 +597,7 @@ func printHistory(records []TestRecord) {
 		} else {
 			args = "*"
 		}
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s\t%d\t%s", record.TestId, args, record.Status, record.ExitCode, record.Message))
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s\t%d\t%s", record.TestID, args, record.Status, record.ExitCode, record.Message))
 	}
 	writer.Flush()
 }
@@ -619,13 +619,13 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
@@ -669,7 +669,7 @@ func getSetClusterCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Set cluster context",
 		Run: func(cmd *cobra.Command, args []string) {
-			clusterId := args[0]
+			clusterID := args[0]
 
 			// Get the onit controller
 			controller, err := NewController()
@@ -678,16 +678,16 @@ func getSetClusterCommand() *cobra.Command {
 			}
 
 			// Get the cluster controller
-			_, err = controller.GetCluster(clusterId)
+			_, err = controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
 
 			// If we've made it this far, update the default cluster
-			if err := setDefaultCluster(clusterId); err != nil {
+			if err := setDefaultCluster(clusterID); err != nil {
 				exitError(err)
 			} else {
-				fmt.Println(clusterId)
+				fmt.Println(clusterID)
 			}
 		},
 	}
@@ -699,7 +699,7 @@ func getRunCommand() *cobra.Command {
 		Use:   "run [tests]",
 		Short: "Run integration tests on Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
-			testId := fmt.Sprintf("test-%d", newUuidInt())
+			testID := fmt.Sprintf("test-%d", newUUIDInt())
 
 			// Get the onit controller
 			controller, err := NewController()
@@ -708,19 +708,19 @@ func getRunCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
 
 			timeout, _ := cmd.Flags().GetInt("timeout")
-			message, code, err := cluster.RunTests(testId, args, time.Duration(timeout)*time.Second)
+			message, code, err := cluster.RunTests(testID, args, time.Duration(timeout)*time.Second)
 			if err != nil {
 				exitError(err)
 			} else {
@@ -754,8 +754,8 @@ func getTestCommand(registry *TestRegistry) *cobra.Command {
 	}
 }
 
-// newUuidString returns a new string UUID
-func newUuidString() string {
+// newUUIDString returns a new string UUID
+func newUUIDString() string {
 	id, err := uuid.NewUUID()
 	if err != nil {
 		exitError(err)
@@ -764,7 +764,7 @@ func newUuidString() string {
 }
 
 // newUuidInt returns a numeric UUID
-func newUuidInt() uint32 {
+func newUUIDInt() uint32 {
 	id, err := uuid.NewUUID()
 	if err != nil {
 		exitError(err)

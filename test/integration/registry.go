@@ -17,5 +17,6 @@ package integration
 import "github.com/onosproject/onos-config/test/runner"
 
 var (
+	// Registry holds the registered test names
 	Registry = runner.NewRegistry()
 )

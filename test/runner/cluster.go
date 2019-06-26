@@ -29,7 +29,7 @@ import (
 
 // ClusterController manages a single cluster in Kubernetes
 type ClusterController struct {
-	ClusterId        string
+	clusterID        string
 	kubeclient       *kubernetes.Clientset
 	atomixclient     *atomixk8s.Clientset
 	extensionsclient *apiextension.Clientset
@@ -38,7 +38,7 @@ type ClusterController struct {
 
 // Setup sets up a test cluster with the given configuration
 func (c *ClusterController) Setup() error {
-	log.Infof("Setting up test cluster %s", c.ClusterId)
+	log.Infof("Setting up test cluster %s", c.clusterID)
 	if err := c.setupAtomixController(); err != nil {
 		return err
 	}
@@ -53,12 +53,12 @@ func (c *ClusterController) Setup() error {
 
 // AddSimulator adds a device simulator with the given configuration
 func (c *ClusterController) AddSimulator(name string, config *SimulatorConfig) error {
-	log.Infof("Setting up simulator %s/%s", name, c.ClusterId)
+	log.Infof("Setting up simulator %s/%s", name, c.clusterID)
 	if err := c.setupSimulator(name, config); err != nil {
 		return err
 	}
 
-	log.Infof("Waiting for simulator %s/%s to become ready", name, c.ClusterId)
+	log.Infof("Waiting for simulator %s/%s to become ready", name, c.clusterID)
 	if err := c.awaitSimulatorReady(name); err != nil {
 		return err
 	}
@@ -66,14 +66,14 @@ func (c *ClusterController) AddSimulator(name string, config *SimulatorConfig) e
 }
 
 // RunTests runs the given tests on Kubernetes
-func (c *ClusterController) RunTests(testId string, tests []string, timeout time.Duration) (string, int, error) {
+func (c *ClusterController) RunTests(testID string, tests []string, timeout time.Duration) (string, int, error) {
 	// Default the test timeout to 10 minutes
 	if timeout == 0 {
 		timeout = 10 * time.Minute
 	}
 
 	// Start the test job
-	pod, err := c.startTests(testId, tests, timeout)
+	pod, err := c.startTests(testID, tests, timeout)
 	if err != nil {
 		return "", 0, err
 	}
@@ -88,21 +88,21 @@ func (c *ClusterController) RunTests(testId string, tests []string, timeout time
 }
 
 // GetLogs returns the logs for a test resource
-func (c *ClusterController) GetLogs(resourceId string) ([][]string, error) {
-	pod, err := c.kubeclient.CoreV1().Pods(c.ClusterId).Get(resourceId, metav1.GetOptions{})
+func (c *ClusterController) GetLogs(resourceID string) ([][]string, error) {
+	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
 	if err == nil {
 		return c.getAllLogs([]corev1.Pod{*pod})
 	} else if !k8serrors.IsNotFound(err) {
 		return nil, err
 	}
 
-	pods, err := c.kubeclient.CoreV1().Pods(c.ClusterId).List(metav1.ListOptions{
-		LabelSelector: "resource=" + resourceId,
+	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
+		LabelSelector: "resource=" + resourceID,
 	})
 	if err != nil {
 		return nil, err
 	} else if len(pods.Items) == 0 {
-		return nil, errors.New("unknown test resource " + resourceId)
+		return nil, errors.New("unknown test resource " + resourceID)
 	} else {
 		return c.getAllLogs(pods.Items)
 	}
@@ -123,7 +123,7 @@ func (c *ClusterController) getAllLogs(pods []corev1.Pod) ([][]string, error) {
 
 // getLogs gets the logs from the given pod
 func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
-	req := c.kubeclient.CoreV1().Pods(c.ClusterId).GetLogs(pod.Name, &corev1.PodLogOptions{})
+	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &corev1.PodLogOptions{})
 	readCloser, err := req.Stream()
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
 
 // RemoveSimulator removes a device simulator with the given name
 func (c *ClusterController) RemoveSimulator(name string) error {
-	log.Infof("Tearing down simulator %s/%s", name, c.ClusterId)
+	log.Infof("Tearing down simulator %s/%s", name, c.clusterID)
 	if err := c.teardownSimulator(name); err != nil {
 		return err
 	}
