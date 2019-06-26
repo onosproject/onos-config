@@ -77,7 +77,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 
 	log.Info(sync.Device.Addr, " capabilities ", capResponse)
 
-	config, err := getNetworkConfig(sync, string(sync.Device.ID), "", "/*", 0)
+	config, err := getNetworkConfig(sync, string(sync.Device.ID), "", 0)
 
 	//Device has initial configuration saved in onos-config, trying to apply
 	if err == nil {
@@ -291,9 +291,8 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 	return nil
 }
 
-func getNetworkConfig(sync *Synchronizer, target string, configname string, path string,
-	layer int) ([]*change.ConfigValue, error) {
-	log.Info("Getting config for ", target, path)
+func getNetworkConfig(sync *Synchronizer, target string, configname string, layer int) ([]*change.ConfigValue, error) {
+	log.Info("Getting saved config for ", target)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
 	if target != "" {
@@ -315,7 +314,7 @@ func getNetworkConfig(sync *Synchronizer, target string, configname string, path
 		}
 	}
 	configValues := config.ExtractFullConfig(sync.ChangeStore.Store, layer)
-	if len(configValues) == 0 || path == "/*" {
+	if len(configValues) != 0 {
 		return configValues, nil
 	}
 
