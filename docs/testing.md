@@ -76,6 +76,21 @@ or integration tests.
 #### Building for Kind
 
 [Kind][kind] provides an alternative to [Minikube] which runs Kubernetes in a Docker container.
+
+Assuming you have dowloaded kind as per [instructions][kind-install], the first time you boot the kind cluster 
+or if you have rebooted your docker deamon you need to issue:
+
+```bash
+> kind create cluster
+```
+
+and for each window you intend to use `onit` commands in you will need to export the `KUBECONFIG` 
+variable:
+
+```bash
+> export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+```
+
 As with Minikube, kind requires specific setup to ensure Docker images modified and built
 locally can be run within the kind cluster. Rather than switching your Docker environment to
 a remote Docker server, kind requires that images be explicitly loaded into the cluster each
@@ -331,6 +346,7 @@ devices := env.GetDevices()
 [Kubernetes]: https://kubernetes.io
 [Minikube]: https://kubernetes.io/docs/setup/learning-environment/minikube/
 [kind]: https://github.com/kubernetes-sigs/kind
+[kind-install]: https://github.com/kubernetes-sigs/kind#installation-and-usage
 [MicroK8s]: https://microk8s.io/
 [Docker]: https://www.docker.com/
 [Atomix]: https://atomix.io
