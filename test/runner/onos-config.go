@@ -253,7 +253,6 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 							Name:            "onos-config",
 							Image:           "onosproject/onos-config:debug",
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command:         []string{"onos-config"},
 							Env: []corev1.EnvVar{
 								{
 									Name:  "ATOMIX_CONTROLLER",
