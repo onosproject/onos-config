@@ -703,13 +703,13 @@ func getDebugCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
