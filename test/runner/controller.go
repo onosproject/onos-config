@@ -73,17 +73,19 @@ func (c *OnitController) GetClusters() (map[string]*ClusterConfig, error) {
 
 	clusters := make(map[string]*ClusterConfig)
 	for _, ns := range namespaces.Items {
-		name := ns.Name
-		cm, err := c.kubeclient.CoreV1().ConfigMaps(name).Get(name, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
+		if ns.Status.Phase == corev1.NamespaceActive {
+			name := ns.Name
+			cm, err := c.kubeclient.CoreV1().ConfigMaps(name).Get(name, metav1.GetOptions{})
+			if err != nil {
+				return nil, err
+			}
 
-		config := &ClusterConfig{}
-		if err = yaml.Unmarshal(cm.BinaryData["config"], config); err != nil {
-			return nil, err
+			config := &ClusterConfig{}
+			if err = yaml.Unmarshal(cm.BinaryData["config"], config); err != nil {
+				return nil, err
+			}
+			clusters[name] = config
 		}
-		clusters[name] = config
 	}
 	return clusters, nil
 }
