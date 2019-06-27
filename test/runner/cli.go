@@ -50,7 +50,6 @@ func GetCommand(registry *TestRegistry) *cobra.Command {
 	return cmd
 }
 
-
 func getCompletionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:       "completion <shell>",
@@ -60,7 +59,6 @@ func getCompletionCommand() *cobra.Command {
 		Run:       runCompletionCommand,
 	}
 }
-
 
 func runCompletionCommand(cmd *cobra.Command, args []string) {
 	if args[0] == "bash" {
@@ -84,7 +82,6 @@ func runCompletionBash(out io.Writer, cmd *cobra.Command) error {
 func runCompletionZsh(out io.Writer, cmd *cobra.Command) error {
 	return cmd.GenZshCompletion(out)
 }
-
 
 // getCreateCommand returns a cobra "setup" command for setting up resources
 func getCreateCommand() *cobra.Command {

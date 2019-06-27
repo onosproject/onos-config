@@ -36,7 +36,7 @@ const (
 	NodeRunning NodeStatus = "RUNNING"
 
 	// NodeFailed node has failed
-	NodeFailed  NodeStatus = "FAILED"
+	NodeFailed NodeStatus = "FAILED"
 )
 
 // NodeInfo contains information about an onos-config node
