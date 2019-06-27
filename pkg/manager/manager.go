@@ -37,6 +37,7 @@ type Manager struct {
 	TopoChannel             chan events.TopoEvent
 	ChangesChannel          chan events.ConfigEvent
 	OperationalStateChannel chan events.OperationalStateEvent
+	SouthboundErrorChan     chan error
 	Dispatcher              dispatcher.Dispatcher
 	ModelRegistry           map[string]ModelPlugin
 }
@@ -53,6 +54,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		TopoChannel:             topoCh,
 		ChangesChannel:          make(chan events.ConfigEvent, 10),
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
+		SouthboundErrorChan:     make(chan error, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
 		ModelRegistry:           make(map[string]ModelPlugin),
 	}
@@ -178,8 +180,10 @@ func (m *Manager) Run() {
 	// Start the main dispatcher system
 	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
+	// Listening for errors in the Southbound
+	go listenOnErrorChannel(m.SouthboundErrorChan)
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.DeviceStore, m.TopoChannel,
-		m.OperationalStateChannel, &m.Dispatcher)
+		m.OperationalStateChannel, m.SouthboundErrorChan, &m.Dispatcher)
 }
 
 //Close kills the channels and manager related objects
@@ -193,4 +197,14 @@ func (m *Manager) Close() {
 // Should be called only after NewManager and Run are done.
 func GetManager() *Manager {
 	return &mgr
+}
+
+func listenOnErrorChannel(errChan chan error) {
+	//TODO evaluate moving this to a specific Error struct with a type and values
+	// for easiness of usage
+	log.Info("Listening for Errors in Manager")
+	for err := range errChan {
+		log.Error("Error reported to channel ", err)
+		//TODO handle errors accordingly
+	}
 }
