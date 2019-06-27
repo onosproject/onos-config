@@ -16,14 +16,11 @@ package runner
 
 import (
 	"errors"
-	"fmt"
 	"github.com/onosproject/onos-config/test/env"
-	"io"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	log "k8s.io/klog"
-	"os"
 	"strings"
 	"time"
 )
@@ -143,33 +140,6 @@ func (c *ClusterController) awaitTestJobRunning(testID string) (corev1.Pod, erro
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-}
-
-// streamLogs streams the logs from the given pod to stdout
-func (c *ClusterController) streamLogs(pod corev1.Pod) error {
-	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &corev1.PodLogOptions{
-		Follow: true,
-	})
-	readCloser, err := req.Stream()
-	if err != nil {
-		return err
-	}
-
-	defer readCloser.Close()
-
-	buf := make([]byte, 1024)
-	for {
-		n, err := readCloser.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		fmt.Print(string(buf[:n]))
-	}
-	return nil
 }
 
 // getStatus gets the status message and exit code of the given pod

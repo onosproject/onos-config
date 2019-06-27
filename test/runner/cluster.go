@@ -91,8 +91,15 @@ func (c *ClusterController) RunTests(testID string, tests []string, timeout time
 		return "", 0, err
 	}
 
+	// Get the stream of logs for the pod
+	reader, err := c.streamLogs(pod)
+	if err != nil {
+		return "", 0, err
+	}
+	defer reader.Close()
+
 	// Stream the logs to stdout
-	if err = c.streamLogs(pod); err != nil {
+	if err = printStream(reader); err != nil {
 		return "", 0, err
 	}
 
@@ -149,6 +156,23 @@ func (c *ClusterController) getLogs(pod corev1.Pod) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// StreamLogs streams the logs for the given test resources to stdout
+func (c *ClusterController) StreamLogs(resourceID string) (io.ReadCloser, error) {
+	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return c.streamLogs(*pod)
+}
+
+// streamLogs streams the logs from the given pod to stdout
+func (c *ClusterController) streamLogs(pod corev1.Pod) (io.ReadCloser, error) {
+	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &corev1.PodLogOptions{
+		Follow: true,
+	})
+	return req.Stream()
 }
 
 // DownloadLogs downloads the logs for the given resource to the given path

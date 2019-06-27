@@ -644,13 +644,15 @@ func printHistory(records []TestRecord) {
 // getGetLogsCommand returns a cobra command to output the logs for a specific resource
 func getGetLogsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "logs <id>",
+		Use:   "logs <id> [options]",
 		Short: "Get the logs for a test resource",
 		Long: `Outputs the complete logs for any test resource.
 To output the logs from an onos-config node, get the node ID via 'onit get nodes'
 To output the logs from a test, get the test ID from the test run or from 'onit get history'`,
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			stream, _ := cmd.Flags().GetBool("stream")
+
 			// Get the onit controller
 			controller, err := NewController()
 			if err != nil {
@@ -669,29 +671,57 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 				exitError(err)
 			}
 
-			// Get the logs for the resource and print to stdout
-			resources, err := cluster.GetResources(args[0])
-			if err != nil {
-				exitError(err)
-			}
-
-			// Iterate through resources and get/print logs
-			numResources := len(resources)
-			for i, resource := range resources {
-				logs, err := cluster.GetLogs(resource)
+			// If streaming is enabled, stream the logs to stdout. Otherwise, get the logs for all resources and print them.
+			if stream {
+				reader, err := cluster.StreamLogs(args[0])
 				if err != nil {
 					exitError(err)
 				}
-				os.Stdout.Write(logs)
-				if i+1 < numResources {
-					fmt.Println("----")
+				defer reader.Close()
+				if err = printStream(reader); err != nil {
+					exitError(err)
+				}
+			} else {
+				resources, err := cluster.GetResources(args[0])
+				if err != nil {
+					exitError(err)
+				}
+
+				// Iterate through resources and get/print logs
+				numResources := len(resources)
+				for i, resource := range resources {
+					logs, err := cluster.GetLogs(resource)
+					if err != nil {
+						exitError(err)
+					}
+					os.Stdout.Write(logs)
+					if i+1 < numResources {
+						fmt.Println("----")
+					}
 				}
 			}
 		},
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	cmd.Flags().BoolP("stream", "s", false, "stream logs to stdout")
 	return cmd
+}
+
+// printStream prints a stream to stdout from the given reader
+func printStream(reader io.Reader) error {
+	buf := make([]byte, 1024)
+	for {
+		n, err := reader.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		fmt.Print(string(buf[:n]))
+	}
+	return nil
 }
 
 // getFetchCommand returns a cobra "download" command for downloading resources from a test cluster
