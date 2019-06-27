@@ -87,7 +87,9 @@ integration: kind
 	kind --help
 	onit create cluster 
 	onit add simulator
+	onit run single-path
 	onit run subscribe
+
 
 images: # @HELP build all Docker images
 images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-config-it-docker

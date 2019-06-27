@@ -37,6 +37,7 @@ script:
   #- kind create cluster
 
   # Set KUBECONFIG environment variable
+  - make coverage
   - export KUBECONFIG="$(kind get kubeconfig-path)"
   - kind create cluster
   - make integration
