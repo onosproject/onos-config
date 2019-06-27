@@ -48,9 +48,10 @@ type Device struct {
 
 // DeviceStore is the model of the Device store
 type DeviceStore struct {
-	Version   string
-	Storetype string
-	Store     map[ID]Device
+	Version     string
+	Storetype   string
+	Store       map[ID]Device
+	topoChannel chan<- events.TopoEvent
 }
 
 // LoadDeviceStore loads a device store from a file - will eventually be from onos-topology
@@ -71,7 +72,7 @@ func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceS
 		return nil,
 			fmt.Errorf("Store version invalid: " + deviceStore.Version)
 	}
-
+	deviceStore.topoChannel = topoChannel
 	// Validate that the store is OK before sending out any events
 	for id, device := range deviceStore.Store {
 		err := validateDevice(id, device)
@@ -93,6 +94,7 @@ func (store *DeviceStore) AddOrUpdateDevice(id ID, device Device) error {
 	err := validateDevice(id, device)
 	if err == nil {
 		store.Store[id] = device
+		store.topoChannel <- events.CreateTopoEvent(string(device.ID), true, device.Addr)
 	}
 	return err
 }
