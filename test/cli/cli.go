@@ -16,10 +16,6 @@ package cli
 
 import (
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/onosproject/onos-config/test/console"
-	"github.com/onosproject/onos-config/test/runner"
-	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"path/filepath"
@@ -27,6 +23,11 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/onosproject/onos-config/test/console"
+	"github.com/onosproject/onos-config/test/runner"
+	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 
 )
@@ -49,6 +50,7 @@ func GetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd.AddCommand(getFetchCommand())
 	cmd.AddCommand(getTestCommand(registry))
 	cmd.AddCommand(getCompletionCommand())
+
 	return cmd
 }
 
@@ -284,7 +286,7 @@ func getRemoveSimulatorCommand() *cobra.Command {
 // getGetCommand returns a cobra "get" command to read test configurations
 func getGetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get {cluster,clusters,simulators,device-presets,store-presets,tests}",
+		Use:   "get {cluster,clusters,simulators,device-presets,store-presets,tests,testsuites}",
 		Short: "Get test configurations",
 	}
 	cmd.AddCommand(getGetClusterCommand())
@@ -296,6 +298,7 @@ func getGetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd.AddCommand(getGetDevicePresetsCommand())
 	cmd.AddCommand(getGetStorePresetsCommand())
 	cmd.AddCommand(getGetTestsCommand(registry))
+	cmd.AddCommand(getGetTestSuitesCommand(registry))
 	cmd.AddCommand(getGetHistoryCommand())
 	cmd.AddCommand(getGetLogsCommand())
 	return cmd
@@ -576,8 +579,26 @@ func getGetTestsCommand(registry *runner.TestRegistry) *cobra.Command {
 		Use:   "tests",
 		Short: "Get a list of integration tests",
 		Run: func(cmd *cobra.Command, args []string) {
-			for _, name := range registry.GetNames() {
+			for _, name := range registry.GetTestNames() {
 				fmt.Println(name)
+			}
+		},
+	}
+}
+
+// getGetTestsCommand returns a cobra command to get a list of available tests
+func getGetTestSuitesCommand(registry *runner.TestRegistry) *cobra.Command {
+	return &cobra.Command{
+		Use:   "suites",
+		Short: "Get a list of integration testing suites",
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, name := range registry.GetTestSuiteNames() {
+				desc := name + ": "
+				suite := registry.TestSuites[name]
+				for _, name := range suite.GetTestNames() {
+					desc += "\n > " + name
+				}
+				fmt.Println(desc)
 			}
 		},
 	}
@@ -929,12 +950,22 @@ func getSetClusterCommand() *cobra.Command {
 	}
 }
 
-// getRunCommand returns a cobra "run" command
+// getGetCommand returns a cobra "get" command to read test configurations
 func getRunCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:       "run [tests]",
-		Short:     "Run integration tests on Kubernetes",
-		ValidArgs: registry.GetNames(),
+		Use:   "run {test,suite}",
+		Short: "Run integration tests",
+	}
+	cmd.AddCommand(getRunTestSuiteCommand(registry))
+	cmd.AddCommand(getRunTestCommand())
+	return cmd
+}
+
+// getRunCommand returns a cobra "run" command
+func getRunTestCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "test [tests]",
+		Short: "Run integration tests on Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
 			testID := fmt.Sprintf("test-%d", newUUIDInt())
 			// Get the onit controller
@@ -974,6 +1005,9 @@ func getRunCommand(registry *runner.TestRegistry) *cobra.Command {
 	return cmd
 }
 
+
+
+
 // getTestCommand returns a cobra "test" command for tests in the given registry
 func getTestCommand(registry *runner.TestRegistry) *cobra.Command {
 	return &cobra.Command{
@@ -984,6 +1018,25 @@ func getTestCommand(registry *runner.TestRegistry) *cobra.Command {
 				Registry: registry,
 			}
 			err := runner.RunTests(args)
+			if err != nil {
+				exitError(err)
+			} else {
+				os.Exit(0)
+			}
+		},
+	}
+}
+
+// getTestCommand returns a cobra "test" command for tests in the given registry
+func getRunTestSuiteCommand(registry *runner.TestRegistry) *cobra.Command {
+	return &cobra.Command{
+		Use:   "suite [suite]",
+		Short: "Run integration test suites on Kubernetes",
+		Run: func(cmd *cobra.Command, args []string) {
+			runner := &runner.TestRunner{
+				Registry: registry,
+			}
+			err := runner.RunTestSuites(args)
 			if err != nil {
 				exitError(err)
 			} else {

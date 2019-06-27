@@ -18,6 +18,7 @@ import (
 	"context"
 	admin "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/test/env"
+	"github.com/onosproject/onos-config/test/runner"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -79,5 +80,6 @@ func TestTransaction(t *testing.T) {
 }
 
 func init() {
-	Registry.Register("transaction", TestTransaction)
+	Registry.RegisterTest("transaction", TestTransaction, []*runner.TestSuite{AllTests,SomeTests})
+	//example of registering groups
 }

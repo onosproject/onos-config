@@ -16,6 +16,7 @@ package integration
 
 import (
 	"github.com/onosproject/onos-config/test/env"
+	"github.com/onosproject/onos-config/test/runner"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -71,5 +72,6 @@ func TestSinglePath(t *testing.T) {
 }
 
 func init() {
-	Registry.Register("single-path", TestSinglePath)
+	Registry.RegisterTest("single-path", TestSinglePath, []*runner.TestSuite{AllTests})
+
 }
