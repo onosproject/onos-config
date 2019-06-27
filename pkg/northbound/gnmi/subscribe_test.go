@@ -16,6 +16,9 @@ package gnmi
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -23,8 +26,6 @@ import (
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
-	"testing"
-	"time"
 )
 
 type gNMISubscribeServerFake struct {
@@ -216,7 +217,7 @@ func Test_WrongDevice(t *testing.T) {
 	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
 	config1Value05, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", "def", false)
 	config1Value09, _ := change.CreateChangeValue("/test1:cont1a/list2a[name=txout2]", "", true)
-	change1, err := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
+	change1, _ := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
 	changeChan <- events.CreateConfigEvent("Device1", change1.ID, true)
 	select {
 	case response = <-responsesChan:
