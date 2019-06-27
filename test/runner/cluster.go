@@ -79,14 +79,14 @@ func (c *ClusterController) AddSimulator(name string, config *SimulatorConfig) e
 }
 
 // RunTests runs the given tests on Kubernetes
-func (c *ClusterController) RunTests(testId string, tests []string, timeout time.Duration) (string, int, error) {
+func (c *ClusterController) RunTests(testID string, tests []string, timeout time.Duration) (string, int, error) {
 	// Default the test timeout to 10 minutes
 	if timeout == 0 {
 		timeout = 10 * time.Minute
 	}
 
 	// Start the test job
-	pod, err := c.startTests(testId, tests, timeout)
+	pod, err := c.startTests(testID, tests, timeout)
 	if err != nil {
 		return "", 0, err
 	}
@@ -126,8 +126,8 @@ func (c *ClusterController) GetResources(name string) ([]string, error) {
 }
 
 // GetLogs returns the logs for a single test resource
-func (c *ClusterController) GetLogs(resourceId string) ([]byte, error) {
-	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceId, metav1.GetOptions{})
+func (c *ClusterController) GetLogs(resourceID string) ([]byte, error) {
+	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -152,9 +152,9 @@ func (c *ClusterController) getLogs(pod corev1.Pod) ([]byte, error) {
 }
 
 // DownloadLogs downloads the logs for the given resource to the given path
-func (c *ClusterController) DownloadLogs(resourceId string, path string) error {
-	log.Infof("Downloading logs from %s", resourceId)
-	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceId, metav1.GetOptions{})
+func (c *ClusterController) DownloadLogs(resourceID string, path string) error {
+	log.Infof("Downloading logs from %s", resourceID)
+	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}

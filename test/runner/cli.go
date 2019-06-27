@@ -718,21 +718,21 @@ func getFetchLogsCommand() *cobra.Command {
 			}
 
 			// Get the cluster ID
-			clusterId, err := cmd.Flags().GetString("cluster")
+			clusterID, err := cmd.Flags().GetString("cluster")
 			if err != nil {
 				exitError(err)
 			}
 
 			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterId)
+			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
 				exitError(err)
 			}
 
 			destination, _ := cmd.Flags().GetString("destination")
 			if len(args) > 0 {
-				resourceId := args[0]
-				resources, err := cluster.GetResources(resourceId)
+				resourceID := args[0]
+				resources, err := cluster.GetResources(resourceID)
 				if err != nil {
 					exitError(err)
 				}
