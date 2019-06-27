@@ -16,14 +16,15 @@ package admin
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/northbound/proto"
-	"google.golang.org/grpc"
-	"gotest.tools/assert"
 	"io"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/onosproject/onos-config/pkg/northbound"
+	"github.com/onosproject/onos-config/pkg/northbound/proto"
+	"google.golang.org/grpc"
+	"gotest.tools/assert"
 )
 
 // TestMain initializes the test suite context.
@@ -77,16 +78,15 @@ func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 	_, err := client.RollbackNetworkChange(context.Background(), &proto.RollbackRequest{Name: ""})
 	assert.ErrorContains(t, err, "is not")
 }
-
 func Test_AddDevice(t *testing.T) {
 	conn, client := getDeviceClient()
 	defer conn.Close()
-	resp, err := client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
+	resp, _ := client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
 	oldCount := resp.Count
-	_, err = client.AddOrUpdateDevice(context.Background(),
+	_, err := client.AddOrUpdateDevice(context.Background(),
 		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9"})
 	assert.NilError(t, err, "should add device")
-	resp, err = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
+	resp, _ = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
 	assert.Equal(t, oldCount+1, resp.Count, "should add new device")
 }
 
@@ -115,10 +115,10 @@ func Test_RemoveDevice(t *testing.T) {
 	_, err := client.AddOrUpdateDevice(context.Background(),
 		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9"})
 	assert.NilError(t, err, "should add device")
-	resp, err := client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
+	resp, _ := client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
 	oldCount := resp.Count
 	_, err = client.RemoveDevice(context.Background(), &proto.DeviceInfo{Id: "device"})
 	assert.NilError(t, err, "should remove device")
-	resp, err = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
+	resp, _ = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
 	assert.Equal(t, oldCount-1, resp.Count, "should remove existing device")
 }
