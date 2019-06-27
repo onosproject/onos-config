@@ -16,10 +16,11 @@ package events
 
 import (
 	"encoding/base64"
-	"gotest.tools/assert"
 	"strings"
 	"testing"
 	"time"
+
+	"gotest.tools/assert"
 )
 
 const (
@@ -74,6 +75,7 @@ func Test_topoEventConstruction(t *testing.T) {
 	assert.Equal(t, Event(event).EventType(), eventTypeTopo)
 	assert.Equal(t, Event(event).Subject(), eventSubject)
 	assert.Assert(t, Event(event).Time().Before(time.Now()))
+	assert.Equal(t, event.Address(), eventAddress)
 
 	assert.Equal(t, event.Connect(), true)
 

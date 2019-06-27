@@ -16,10 +16,11 @@ package events
 
 import (
 	"encoding/base64"
-	"github.com/onosproject/onos-config/pkg/store/change"
-	log "k8s.io/klog"
 	"strconv"
 	"time"
+
+	"github.com/onosproject/onos-config/pkg/store/change"
+	log "k8s.io/klog"
 )
 
 // ConfigEvent a configuration event

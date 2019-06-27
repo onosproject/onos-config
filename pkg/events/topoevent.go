@@ -15,9 +15,10 @@
 package events
 
 import (
-	log "k8s.io/klog"
 	"strconv"
 	"time"
+
+	log "k8s.io/klog"
 )
 
 //TopoEvent is a topology event
