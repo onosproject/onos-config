@@ -70,7 +70,7 @@ onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker ima
 onos-config-debug-docker: onos-config-base-docker # @HELP build onos-config Docker debug image
 	docker build . -f build/onos-config-debug/Dockerfile \
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
-		-t onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
+		-t onosproject/onos-config-debug:${ONOS_CONFIG_VERSION}
 
 onos-cli-docker: onos-config-base-docker # @HELP build onos-cli Docker image
 	docker build . -f build/onos-cli/Dockerfile \
@@ -86,9 +86,11 @@ images: # @HELP build all Docker images
 images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-config-it-docker
 
 kind: # @HELP build onos-config and onos-config-integration-tests images and add them to a kind cluster
-kind: onos-config-docker onos-config-it-docker
+kind: images
 	@if [[ ! `kind get clusters` ]]; then echo "no kind cluster found" && exit 1; fi
+	kind load docker-image onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 	kind load docker-image onosproject/onos-config:${ONOS_CONFIG_VERSION}
+	kind load docker-image onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
 	kind load docker-image onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
 all: build images

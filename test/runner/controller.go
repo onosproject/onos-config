@@ -21,26 +21,33 @@ import (
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // NewController creates a new onit controller
 func NewController() (*OnitController, error) {
-	kubeclient, err := newKubeClient()
+	restconfig, err := getRestConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	atomixclient, err := newAtomixKubeClient()
+	kubeclient, err := kubernetes.NewForConfig(restconfig)
 	if err != nil {
 		return nil, err
 	}
 
-	extensionsclient, err := newExtensionsKubeClient()
+	atomixclient, err := atomixk8s.NewForConfig(restconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	extensionsclient, err := apiextension.NewForConfig(restconfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return &OnitController{
+		restconfig:       restconfig,
 		kubeclient:       kubeclient,
 		atomixclient:     atomixclient,
 		extensionsclient: extensionsclient,
@@ -49,6 +56,7 @@ func NewController() (*OnitController, error) {
 
 // OnitController manages clusters for onit
 type OnitController struct {
+	restconfig       *rest.Config
 	kubeclient       *kubernetes.Clientset
 	atomixclient     *atomixk8s.Clientset
 	extensionsclient *apiextension.Clientset
@@ -116,6 +124,7 @@ func (c *OnitController) NewCluster(clusterID string, config *ClusterConfig) (*C
 
 	return &ClusterController{
 		clusterID:        clusterID,
+		restconfig:       c.restconfig,
 		kubeclient:       c.kubeclient,
 		atomixclient:     c.atomixclient,
 		extensionsclient: c.extensionsclient,
@@ -142,6 +151,7 @@ func (c *OnitController) GetCluster(clusterID string) (*ClusterController, error
 
 	return &ClusterController{
 		clusterID:        clusterID,
+		restconfig:       c.restconfig,
 		kubeclient:       c.kubeclient,
 		atomixclient:     c.atomixclient,
 		extensionsclient: c.extensionsclient,
