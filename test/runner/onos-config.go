@@ -204,7 +204,9 @@ func (c *ClusterController) addSimulatorToPod(name string, pod corev1.Pod) error
 
 // removeSimulatorFromConfig removes a simulator from the onos-config configuration
 func (c *ClusterController) removeSimulatorFromConfig(name string) error {
-	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{})
+	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
+		LabelSelector: "app=onos-config",
+	})
 	if err != nil {
 		return err
 	}
