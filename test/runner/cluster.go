@@ -16,7 +16,9 @@ package runner
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
+	"fmt"
 	atomixk8s "github.com/atomix/atomix-k8s-controller/pkg/client/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -24,7 +26,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
 	log "k8s.io/klog"
+	"net/http"
+	"os"
 	"time"
 )
 
@@ -144,6 +150,48 @@ func (c *ClusterController) getLogs(pod corev1.Pod) ([]string, error) {
 		logs = append(logs, scanner.Text())
 	}
 	return logs, nil
+}
+
+// PortForward forwards a local port to the given remote port on the given resource
+func (c *ClusterController) PortForward(resourceID string, localPort int, remotePort int) error {
+	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	req := c.kubeclient.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(pod.Name).
+		Namespace(pod.Namespace).
+		SubResource("portforward")
+
+	roundTripper, upgradeRoundTripper, err := spdy.RoundTripperFor(c.restconfig)
+	if err != nil {
+		return err
+	}
+
+	dialer := spdy.NewDialer(upgradeRoundTripper, &http.Client{Transport: roundTripper}, http.MethodPost, req.URL())
+
+	stopChan, readyChan := make(chan struct{}, 1), make(chan struct{}, 1)
+	out, errOut := new(bytes.Buffer), new(bytes.Buffer)
+
+	forwarder, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, remotePort)}, stopChan, readyChan, out, errOut)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for range readyChan { // Kubernetes will close this channel when it has something to tell us.
+		}
+		if len(errOut.String()) != 0 {
+			fmt.Println(errOut.String())
+			os.Exit(1)
+		} else if len(out.String()) != 0 {
+			fmt.Println(out.String())
+		}
+	}()
+
+	return forwarder.ForwardPorts()
 }
 
 // RemoveSimulator removes a device simulator with the given name
