@@ -31,7 +31,7 @@ const modelversion = "1.0.0"
 const modulename = "devicesim.so.1.0.0"
 
 var modelData = []*gnmi.ModelData{
-    {Name: "openconfig-interfaces",Organization: "OpenConfig working group",Version: "2017-07-14"},{Name: "openconfig-openflow",Organization: "OpenConfig working group",Version: "2017-06-01"},{Name: "openconfig-platform", Organization: "OpenConfig working group",Version: "2016-12-22"},{Name: "openconfig-system", Organization: "OpenConfig working group",Version: "2017-07-06"},
+	{Name: "openconfig-interfaces", Organization: "OpenConfig working group", Version: "2017-07-14"}, {Name: "openconfig-openflow", Organization: "OpenConfig working group", Version: "2017-06-01"}, {Name: "openconfig-platform", Organization: "OpenConfig working group", Version: "2016-12-22"}, {Name: "openconfig-system", Organization: "OpenConfig working group", Version: "2017-07-06"},
 }
 
 func (m modelplugin) ModelData() (string, string, []*gnmi.ModelData, string) {

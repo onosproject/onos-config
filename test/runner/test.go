@@ -36,10 +36,10 @@ const (
 	TestRunning TestStatus = "RUNNING"
 
 	// TestPassed passed
-	TestPassed  TestStatus = "PASSED"
+	TestPassed TestStatus = "PASSED"
 
 	// TestFailed failed
-	TestFailed  TestStatus = "FAILED"
+	TestFailed TestStatus = "FAILED"
 )
 
 // TestRecord contains information about a test run

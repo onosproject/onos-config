@@ -64,7 +64,7 @@ const modelversion = "$VERSION"
 const modulename = $TYPEMODULE
 
 var modelData = []*gnmi.ModelData{
-    $MODELDATA
+      $MODELDATA	
 }
 
 func (m modelplugin) ModelData() (string, string, []*gnmi.ModelData, string) {
