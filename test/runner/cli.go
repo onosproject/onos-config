@@ -136,11 +136,13 @@ func getCreateClusterCommand() *cobra.Command {
 				exitError(err)
 			}
 
+			// Store the cluster before setting it up to ensure other shell sessions can debug setup
+			setDefaultCluster(clusterID)
+
 			// Setup the cluster
 			if err = cluster.Setup(); err != nil {
 				exitError(err)
 			} else {
-				setDefaultCluster(clusterID)
 				fmt.Println(clusterID)
 			}
 		},
