@@ -47,7 +47,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				unregErr := dispatcher.UnregisterDevice(deviceName)
 				if unregErr != nil {
 					errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceDisconnect,
-						string(deviceName), make([]byte, 0), err)
+						string(deviceName), make([]byte, 0), unregErr)
 				}
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
