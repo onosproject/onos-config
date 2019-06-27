@@ -209,18 +209,18 @@ and redeployed.
 Once the cluster has been setup for the test, to run a test simply use `onit run`:
 
 ```bash
-> onit run test-single-path-test
+> onit run single-path
 I0625 12:07:14.958790   43603 controller.go:1080] Starting test job onos-test-71a0623c-977c-11e9-8478-acde48001122
 I0625 12:07:14.982862   43603 controller.go:1147] Waiting for test job 71a0623c-977c-11e9-8478-acde48001122 to become ready
-=== RUN   test-single-path-test
---- PASS: test-single-path-test (0.04s)
+=== RUN   single-path
+--- PASS: single-path (0.04s)
 PASS
 ```
 
 You can specify as many tests as desired:
 
 ```bash
-> onit run test-single-path-test test-multi-path-test
+> onit run single-path transaction subscribe
 ...
 ```
 
