@@ -15,6 +15,7 @@
 package runner
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -22,6 +23,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/remotecommand"
 	log "k8s.io/klog"
 	"os"
 	"path/filepath"
@@ -148,59 +151,14 @@ func (c *ClusterController) createOnosConfigConfigMap() error {
 		return err
 	}
 
-	// If a device store was provided, serialize the device store configuration.
-	// Otherwise, create a device store configuration from simulators.
-	deviceStoreObj, ok := config["deviceStore"].(map[string]interface{})
-	if !ok {
-		deviceStoreObj = make(map[string]interface{})
-	}
-	configStoreObj, ok := config["configStore"].(map[string]interface{})
-	if !ok {
-		configStoreObj = make(map[string]interface{})
-	}
-	deviceStoreMap, ok := deviceStoreObj["Store"].(map[string]interface{})
-	if !ok {
-		deviceStoreMap = make(map[string]interface{})
-	}
-	configStoreMap, ok := configStoreObj["Store"].(map[string]interface{})
-	if !ok {
-		configStoreMap = make(map[string]interface{})
-	}
-
-	// Get a list of simulators deployed in the cluster
-	simulators, err := c.GetSimulators()
-	if err != nil {
-		return err
-	}
-
-	// Add each simulator to the device and config stores
-	for _, name := range simulators {
-		deviceMap := make(map[string]interface{})
-		deviceMap["ID"] = name
-		deviceMap["Addr"] = fmt.Sprintf("%s:10161", name)
-		deviceMap["SoftwareVersion"] = "1.0.0"
-		deviceMap["Timeout"] = 5
-		deviceStoreMap[name] = deviceMap
-
-		configMap := make(map[string]interface{})
-		configMap["Name"] = name + "-1.0.0"
-		configMap["Device"] = name
-		configMap["Version"] = "1.0.0"
-		configMap["Type"] = "Devicesim"
-		configMap["Created"] = "2019-05-09T16:24:17Z"
-		configMap["Updated"] = "2019-05-09T16:24:17Z"
-		configMap["Changes"] = []string{}
-		configStoreMap[name+"-1.0.0"] = configMap
-	}
-
 	// Serialize the device store configuration
-	deviceStore, err := json.Marshal(deviceStoreObj)
+	deviceStore, err := json.Marshal(config["deviceStore"])
 	if err != nil {
 		return err
 	}
 
 	// Serialize the config store configuration
-	configStore, err := json.Marshal(configStoreObj)
+	configStore, err := json.Marshal(config["configStore"])
 	if err != nil {
 		return err
 	}
@@ -218,6 +176,87 @@ func (c *ClusterController) createOnosConfigConfigMap() error {
 		},
 	}
 	_, err = c.kubeclient.CoreV1().ConfigMaps(c.clusterID).Create(cm)
+	return err
+}
+
+// addSimulatorToConfig adds a simulator to the onos-config configuration
+func (c *ClusterController) addSimulatorToConfig(name string) error {
+	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
+		LabelSelector: "app=onos-config",
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, pod := range pods.Items {
+		if err = c.addSimulatorToPod(name, pod); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// addSimulatorToPod adds the given simulator to the given pod's configuration
+func (c *ClusterController) addSimulatorToPod(name string, pod corev1.Pod) error {
+	command := fmt.Sprintf("onos devices add \"id: '%s', address: '%s:10161' version: '1.0.0'\" --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/tls.key --certPath /etc/onos-config/certs/tls.crt", name, name)
+	return c.execute(pod, []string{"/bin/bash", "-c", command})
+}
+
+// removeSimulatorFromConfig removes a simulator from the onos-config configuration
+func (c *ClusterController) removeSimulatorFromConfig(name string) error {
+	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
+		LabelSelector: "app=onos-config",
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, pod := range pods.Items {
+		if err = c.removeSimulatorFromPod(name, pod); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// removeSimulatorFromPod removes the given simulator from the given pod
+func (c *ClusterController) removeSimulatorFromPod(name string, pod corev1.Pod) error {
+	command := fmt.Sprintf("onos devices remove %s --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/tls.key --certPath /etc/onos-config/certs/tls.crt", name)
+	return c.execute(pod, []string{"/bin/bash", "-c", command})
+}
+
+// execute executes a command in the given pod
+func (c *ClusterController) execute(pod corev1.Pod, command []string) error {
+	container := pod.Spec.Containers[0]
+	req := c.kubeclient.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(pod.Name).
+		Namespace(pod.Namespace).
+		SubResource("exec").
+		Param("container", container.Name)
+	req.VersionedParams(&corev1.PodExecOptions{
+		Container: container.Name,
+		Command:   command,
+		Stdout:    true,
+		Stderr:    true,
+		Stdin:     false,
+	}, scheme.ParameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(c.restconfig, "POST", req.URL())
+	if err != nil {
+		return err
+	}
+
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Tty:    false,
+	})
+	if err != nil {
+		print(stdout.String())
+		print(stderr.String())
+	}
 	return err
 }
 
@@ -247,8 +286,9 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 					Containers: []corev1.Container{
 						{
 							Name:            "onos-config",
-							Image:           "onosproject/onos-config:latest",
+							Image:           "onosproject/onos-config:debug",
 							ImagePullPolicy: corev1.PullIfNotPresent,
+							Command:         []string{"onos-config"},
 							Env: []corev1.EnvVar{
 								{
 									Name:  "ATOMIX_CONTROLLER",
@@ -374,36 +414,4 @@ func (c *ClusterController) awaitOnosConfigDeploymentReady() error {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-}
-
-// teardownOnosConfig tears down the onos-config deployment
-func (c *ClusterController) redeployOnosConfig() error {
-	log.Infof("Redeploying onos-config cluster onos-config/%s", c.clusterID)
-	if err := c.deleteOnosConfigDeployment(); err != nil {
-		return err
-	}
-	if err := c.deleteOnosConfigConfigMap(); err != nil {
-		return err
-	}
-	if err := c.createOnosConfigConfigMap(); err != nil {
-		return err
-	}
-	if err := c.createOnosConfigDeployment(); err != nil {
-		return err
-	}
-	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.clusterID)
-	if err := c.awaitOnosConfigDeploymentReady(); err != nil {
-		return err
-	}
-	return nil
-}
-
-// deleteOnosConfigConfigMap deletes the onos-config ConfigMap
-func (c *ClusterController) deleteOnosConfigConfigMap() error {
-	return c.kubeclient.CoreV1().ConfigMaps(c.clusterID).Delete("onos-config", &metav1.DeleteOptions{})
-}
-
-// deleteOnosConfigDeployment deletes the onos-config Deployment
-func (c *ClusterController) deleteOnosConfigDeployment() error {
-	return c.kubeclient.AppsV1().Deployments(c.clusterID).Delete("onos-config", &metav1.DeleteOptions{})
 }

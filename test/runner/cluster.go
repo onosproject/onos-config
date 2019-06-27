@@ -23,6 +23,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	log "k8s.io/klog"
 	"time"
 )
@@ -30,6 +31,7 @@ import (
 // ClusterController manages a single cluster in Kubernetes
 type ClusterController struct {
 	clusterID        string
+	restconfig       *rest.Config
 	kubeclient       *kubernetes.Clientset
 	atomixclient     *atomixk8s.Clientset
 	extensionsclient *apiextension.Clientset
@@ -62,7 +64,12 @@ func (c *ClusterController) AddSimulator(name string, config *SimulatorConfig) e
 	if err := c.awaitSimulatorReady(name); err != nil {
 		return err
 	}
-	return c.redeployOnosConfig()
+
+	log.Infof("Adding simulator %s/%s to onos-config nodes", name, c.clusterID)
+	if err := c.addSimulatorToConfig(name); err != nil {
+		return err
+	}
+	return nil
 }
 
 // RunTests runs the given tests on Kubernetes
@@ -145,5 +152,10 @@ func (c *ClusterController) RemoveSimulator(name string) error {
 	if err := c.teardownSimulator(name); err != nil {
 		return err
 	}
-	return c.redeployOnosConfig()
+
+	log.Infof("Removing simulator %s/%s from onos-config nodes", name, c.clusterID)
+	if err := c.removeSimulatorFromConfig(name); err != nil {
+		return err
+	}
+	return nil
 }

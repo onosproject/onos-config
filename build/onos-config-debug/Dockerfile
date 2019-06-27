@@ -7,9 +7,10 @@ FROM golang:1.12.6-alpine3.9 as debugBuilder
 RUN apk upgrade --update --no-cache && apk add git && go get -u github.com/go-delve/delve/cmd/dlv
 
 FROM alpine:3.9
-RUN apk add libc6-compat
+RUN apk upgrade --update --no-cache && apk add bash bash-completion libc6-compat
 
-COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos-config-debug /usr/local/bin/onos-config-debug
+COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos /usr/local/bin/onos
+COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos-config-debug /usr/local/bin/onos-config
 COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/testdevice.so.1.0.0 /usr/local/lib/testdevice.so.1.0.0
 COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/testdevice.so.2.0.0 /usr/local/lib/testdevice.so.2.0.0
 COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/devicesim.so.1.0.0 /usr/local/lib/devicesim.so.1.0.0
@@ -22,5 +23,11 @@ RUN echo "#!/bin/sh" >> /usr/local/bin/onos-config-debug && \
 RUN addgroup -S onos-config && adduser -S -G onos-config onos-config
 USER onos-config
 WORKDIR /home/onos-config
+
+RUN onos init && \
+    cp /etc/profile /home/onos-config/.bashrc && \
+    onos completion bash > /home/onos-config/.onos/bash_completion.sh && \
+    onos config set address onos-config-onos-config:5150 && \
+    echo "source /home/onos-config/.onos/bash_completion.sh" >> /home/onos-config/.bashrc
 
 ENTRYPOINT ["onos-config-debug"]

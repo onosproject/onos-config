@@ -16,16 +16,14 @@ package runner
 
 import (
 	"errors"
-	atomixk8s "github.com/atomix/atomix-k8s-controller/pkg/client/clientset/versioned"
-	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"path/filepath"
 )
 
-// newKubeClient returns a new Kubernetes client from the environment
-func newKubeClient() (*kubernetes.Clientset, error) {
+// getRestConfig returns the k8s rest configuration from the environment
+func getRestConfig() (*rest.Config, error) {
 	kubeconfig := os.Getenv("KUBECONFIG")
 	if kubeconfig == "" {
 		home := homeDir()
@@ -36,55 +34,7 @@ func newKubeClient() (*kubernetes.Clientset, error) {
 	}
 
 	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	// create the clientset
-	return kubernetes.NewForConfig(config)
-}
-
-// newExtensionsKubeClient returns a new extensions API server Kubernetes client from the environment
-func newExtensionsKubeClient() (*apiextension.Clientset, error) {
-	kubeconfig := os.Getenv("KUBECONFIG")
-	if kubeconfig == "" {
-		home := homeDir()
-		if home == "" {
-			return nil, errors.New("no home directory configured")
-		}
-		kubeconfig = filepath.Join(home, ".kube", "config")
-	}
-
-	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	// create the clientset
-	return apiextension.NewForConfig(config)
-}
-
-// newAtomixKubeClient returns a new Atomix Kubernetes client from the environment
-func newAtomixKubeClient() (*atomixk8s.Clientset, error) {
-	kubeconfig := os.Getenv("KUBECONFIG")
-	if kubeconfig == "" {
-		home := homeDir()
-		if home == "" {
-			return nil, errors.New("no home directory configured")
-		}
-		kubeconfig = filepath.Join(home, ".kube", "config")
-	}
-
-	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	// create the clientset
-	return atomixk8s.NewForConfig(config)
+	return clientcmd.BuildConfigFromFlags("", kubeconfig)
 }
 
 // homeDir returns the user's home directory if defined by environment variables
