@@ -23,7 +23,7 @@ If you instead would like to add the calendar to your personal Google Calendar, 
 
 ## Daily Stand-up 
 
-The onos-config project team holds a short stand-up every day at 9 AM PST, 5 PM GMT, 6 PM CET. 
+The onos-config project team holds a short stand-up every day at 10 AM PST, 6 PM GMT, 7 PM CET. 
 Feel free to join to learn what the team is up to and discuss your latest work with us.
 [meeting link](https://meet.google.com/pcn-wbei-utz) 
 
