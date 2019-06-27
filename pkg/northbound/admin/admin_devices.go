@@ -16,9 +16,13 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
+	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change"
+	"time"
 )
 
 // GetDeviceSummary returns the summary information about the device inventory.
@@ -42,7 +46,24 @@ func (s Server) AddOrUpdateDevice(c context.Context, d *proto.DeviceInfo) (*prot
 		Plain:           d.Plain,
 		Timeout:         d.Timeout,
 	})
-	return &proto.DeviceResponse{}, err
+	if err != nil {
+		return nil, err
+	}
+
+	configStore := manager.GetManager().ConfigStore
+	name := store.ConfigName(fmt.Sprintf("%s-%s", d.Id, d.Version))
+	if _, ok := configStore.Store[name]; !ok {
+		configStore.Store[name] = store.Configuration{
+			Name: name,
+			Device: d.Id,
+			Version: d.Version,
+			Type: "Devicesim",
+			Created: time.Now(),
+			Updated: time.Now(),
+			Changes: []change.ID{},
+		}
+	}
+	return &proto.DeviceResponse{}, nil
 }
 
 // RemoveDevice removes the specified device from the inventory.
