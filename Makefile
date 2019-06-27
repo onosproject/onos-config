@@ -70,7 +70,7 @@ onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker ima
 onos-config-debug-docker: onos-config-base-docker # @HELP build onos-config Docker debug image
 	docker build . -f build/onos-config-debug/Dockerfile \
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
-		-t onosproject/onos-config-debug:${ONOS_CONFIG_VERSION}
+		-t onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
 
 onos-cli-docker: onos-config-base-docker # @HELP build onos-cli Docker image
 	docker build . -f build/onos-cli/Dockerfile \
