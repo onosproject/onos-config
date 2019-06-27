@@ -21,4 +21,16 @@ import (
 var (
 	// Registry holds the registered test names
 	Registry = runner.NewRegistry()
+
+	//AllTests is an example of a test suite
+	AllTests = runner.NewTestSuite("alltests")
+	//SomeTests is an example of a test suite
+	SomeTests = runner.NewTestSuite("sometests")
+
 )
+
+func init(){
+	//example of registering groups
+	Registry.RegisterTestSuite(*AllTests)
+	Registry.RegisterTestSuite(*SomeTests)
+}
