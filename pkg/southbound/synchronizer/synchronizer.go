@@ -48,7 +48,7 @@ type Synchronizer struct {
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent,
-	opStateChan chan<- events.OperationalStateEvent, errChan chan<- error) (*Synchronizer, error) {
+	opStateChan chan<- events.OperationalStateEvent, errChan chan<- events.ErrorEvent) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
@@ -64,7 +64,8 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	sync.key = key
 	if err != nil {
 		log.Warning(err)
-		errChan <- err
+		errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceConnect,
+			string(device.ID), make([]byte, 0), err)
 		return nil, err
 	}
 	log.Info(sync.Device.Addr, " connected over gNMI")
@@ -73,7 +74,8 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	capResponse, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
 		log.Error(sync.Device.Addr, " capabilities ", err)
-		errChan <- err
+		errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceCapabilities,
+			string(device.ID), make([]byte, 0), err)
 		return nil, err
 	}
 
@@ -88,7 +90,6 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 
 		if err != nil {
 			log.Error("Can't translate the initial config for ", sync.Device.Addr, err)
-			errChan <- err
 			return sync, nil
 		}
 
@@ -96,7 +97,6 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 
 		if err != nil {
 			log.Error("Can't obtain GnmiChange for ", sync.Device.Addr, err)
-			errChan <- err
 			return sync, nil
 		}
 
@@ -108,7 +108,8 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 			//Splitting at the desc string and getting the second element which is the description.
 			log.Errorf("Can't set initial configuration for %s due to %s", sync.Device.Addr,
 				strings.Split(errGnmi.Message(), " desc = ")[1])
-			errChan <- err
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorSetInitialConfig,
+				string(device.ID), make([]byte, 0), err)
 		} else {
 			log.Info(resp)
 		}
@@ -122,21 +123,23 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 
 // syncConfigEventsToDevice is a go routine that listens out for configuration events specific
 // to a device and propagates them downwards through southbound interface
-func (sync *Synchronizer) syncConfigEventsToDevice(errChan chan<- error) {
+func (sync *Synchronizer) syncConfigEventsToDevice(errChan chan<- events.ErrorEvent) {
 
 	for deviceConfigEvent := range sync.deviceConfigChan {
 		c := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
 		err := c.IsValid()
 		if err != nil {
 			log.Warning("Event discarded because change is invalid ", err)
-			errChan <- err
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
+				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 		gnmiChange, parseError := c.GnmiChange()
 
 		if parseError != nil {
 			log.Error("Parsing error for Gnmi change ", parseError)
-			errChan <- err
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
+				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 
@@ -144,13 +147,15 @@ func (sync *Synchronizer) syncConfigEventsToDevice(errChan chan<- error) {
 		target, err := southbound.GetTarget(sync.key)
 		if err != nil {
 			log.Warning(err)
-			errChan <- err
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceConnect,
+				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 		setResponse, err := target.Set(sync.Context, gnmiChange)
 		if err != nil {
-			log.Error("SetResponse ", err)
-			errChan <- err
+			log.Error("Error while doing set ", err)
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorSetConfig,
+				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 		log.Info(sync.Device.Addr, " SetResponse ", setResponse)
@@ -158,13 +163,14 @@ func (sync *Synchronizer) syncConfigEventsToDevice(errChan chan<- error) {
 	}
 }
 
-func (sync Synchronizer) syncOperationalState(errChan chan<- error) {
+func (sync Synchronizer) syncOperationalState(errChan chan<- events.ErrorEvent) {
 
 	target, err := southbound.GetTarget(sync.key)
 
 	if err != nil {
 		log.Error("Can't find target for key ", sync.key)
-		errChan <- err
+		errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceConnect,
+			sync.key.DeviceID, make([]byte, 0), err)
 		return
 	}
 
@@ -232,7 +238,6 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- error) {
 	if len(subscribePaths) == 0 {
 		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
 		log.Warning(noPathErr)
-		errChan <- err
 		return
 	}
 
@@ -249,13 +254,15 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- error) {
 
 	req, err := southbound.NewSubscribeRequest(options)
 	if err != nil {
-		errChan <- err
+		errChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
+			sync.key.DeviceID, make([]byte, 0), err)
 		return
 	}
 
 	subErr := target.Subscribe(sync.Context, req, sync.handler)
 	if subErr != nil {
-		errChan <- err
+		errChan <- events.CreateErrorEvent(events.EventTypeErrorSubscribe,
+			sync.key.DeviceID, make([]byte, 0), err)
 	}
 
 }

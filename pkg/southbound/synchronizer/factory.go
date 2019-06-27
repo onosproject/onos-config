@@ -27,8 +27,8 @@ import (
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
-	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent, errChan chan<- error,
-	dispatcher *dispatcher.Dispatcher) {
+	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
+	errChan chan<- events.ErrorEvent, dispatcher *dispatcher.Dispatcher) {
 	for topoEvent := range topoChannel {
 		deviceName := topocache.ID(events.Event(topoEvent).Subject())
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
@@ -41,11 +41,13 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan, errChan)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
-				errChan <- err
+				errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceConnect,
+					string(deviceName), make([]byte, 0), err)
 				//unregistering the listener for changes to the device
 				unregErr := dispatcher.UnregisterDevice(deviceName)
-				if err != nil {
-					errChan <- unregErr
+				if unregErr != nil {
+					errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceDisconnect,
+						string(deviceName), make([]byte, 0), err)
 				}
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
@@ -57,7 +59,8 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			err := dispatcher.UnregisterDevice(deviceName)
 			if err != nil {
 				log.Error(err)
-				errChan <- err
+				errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceDisconnect,
+					string(deviceName), make([]byte, 0), err)
 			}
 		}
 	}

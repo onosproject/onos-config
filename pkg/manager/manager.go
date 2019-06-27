@@ -37,7 +37,7 @@ type Manager struct {
 	TopoChannel             chan events.TopoEvent
 	ChangesChannel          chan events.ConfigEvent
 	OperationalStateChannel chan events.OperationalStateEvent
-	SouthboundErrorChan     chan error
+	SouthboundErrorChan     chan events.ErrorEvent
 	Dispatcher              dispatcher.Dispatcher
 	ModelRegistry           map[string]ModelPlugin
 }
@@ -54,7 +54,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		TopoChannel:             topoCh,
 		ChangesChannel:          make(chan events.ConfigEvent, 10),
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
-		SouthboundErrorChan:     make(chan error, 10),
+		SouthboundErrorChan:     make(chan events.ErrorEvent, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
 		ModelRegistry:           make(map[string]ModelPlugin),
 	}
@@ -199,12 +199,12 @@ func GetManager() *Manager {
 	return &mgr
 }
 
-func listenOnErrorChannel(errChan chan error) {
-	//TODO evaluate moving this to a specific Error struct with a type and values
-	// for easiness of usage
+func listenOnErrorChannel(errChan chan events.ErrorEvent) {
 	log.Info("Listening for Errors in Manager")
 	for err := range errChan {
 		log.Error("Error reported to channel ", err)
 		//TODO handle errors accordingly
+		// e.g. initial set error, remove config for that device
+		// e.g. set error needs rollback of device and network change.
 	}
 }
