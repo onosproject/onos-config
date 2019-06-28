@@ -15,6 +15,9 @@ RUN apt-get update && \
     mkdir -p /go/src/github.com/google && \
     git clone --branch master https://github.com/google/protobuf /go/src/github.com/google/protobuf && \
     go get -u golang.org/x/lint/golint && \
+    go get github.com/fzipp/gocyclo && \
+    go get -u github.com/client9/misspell/cmd/misspell && \
+    go get -u github.com/gordonklaus/ineffassign && \
     mkdir -p /go/src/github.com/
 
 WORKDIR "/go/src/github.com"
