@@ -117,7 +117,7 @@ SetRequest() with the 100 extension at the end of the -proto section like:
 
 If the `target` device is not currently known to `onos-config` the system will store the configuration internally and apply
 it to the `target` device when/if it becomes available.  
-When the `target` becomes availabe `onos-config` will compute the latest configuration for it based on the set of 
+When the `target` becomes available `onos-config` will compute the latest configuration for it based on the set of 
 applied changes and push it to the `target` with a standard `set` operation. 
 
 ## Northbound Delete Request via gNMI
