@@ -86,6 +86,9 @@ func TestSubscribe(t *testing.T) {
 		assert.NoError(t, errSubscribe, "Subscription Error")
 	}()
 
+	// Sleeping in order to make sure the subscribe request is properly stored and processed.
+	time.Sleep(100000)
+
 	// Make a GNMI client to use for requests
 	c, err := env.NewGnmiClient(MakeContext(), "")
 	assert.NoError(t, err)
