@@ -49,6 +49,9 @@ func (c *ClusterController) setupSimulator(name string, config *SimulatorConfig)
 	if err := c.createSimulatorService(name); err != nil {
 		return err
 	}
+	if err := c.awaitSimulatorReady(name); err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -21,13 +21,11 @@ import (
 	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	log "k8s.io/klog"
 	"time"
 )
 
 // setupAtomixController sets up the Atomix controller and associated resources
 func (c *ClusterController) setupAtomixController() error {
-	log.Infof("Setting up Atomix controller atomix-controller/%s", c.clusterID)
 	if err := c.createAtomixPartitionSetResource(); err != nil {
 		return err
 	}
@@ -49,8 +47,6 @@ func (c *ClusterController) setupAtomixController() error {
 	if err := c.createAtomixService(); err != nil {
 		return err
 	}
-
-	log.Infof("Waiting for Atomix controller atomix-controller/%s to become ready", c.clusterID)
 	if err := c.awaitAtomixControllerReady(); err != nil {
 		return err
 	}

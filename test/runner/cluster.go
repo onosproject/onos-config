@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	atomixk8s "github.com/atomix/atomix-k8s-controller/pkg/client/clientset/versioned"
+	"github.com/onosproject/onos-config/test/console"
 	"io"
 	corev1 "k8s.io/api/core/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -28,7 +29,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
-	log "k8s.io/klog"
 	"net/http"
 	"os"
 	"time"
@@ -42,69 +42,74 @@ type ClusterController struct {
 	atomixclient     *atomixk8s.Clientset
 	extensionsclient *apiextension.Clientset
 	config           *ClusterConfig
+	status           *console.StatusWriter
 }
 
 // Setup sets up a test cluster with the given configuration
-func (c *ClusterController) Setup() error {
-	log.Infof("Setting up test cluster %s", c.clusterID)
+func (c *ClusterController) Setup() console.ErrorStatus {
+	c.status.Start("Setting up Atomix controller")
 	if err := c.setupAtomixController(); err != nil {
-		return err
+		return c.status.Fail(err)
 	}
+	c.status.Succeed(fmt.Sprintf("atomix-controller/%s", c.clusterID))
+	c.status.Start("Starting Raft partitions")
 	if err := c.setupPartitions(); err != nil {
-		return err
+		return c.status.Fail(err)
 	}
+	c.status.Succeed(fmt.Sprintf("raft/%s", c.clusterID))
+	c.status.Start("Bootstrapping onos-config cluster")
 	if err := c.setupOnosConfig(); err != nil {
-		return err
+		return c.status.Fail(err)
 	}
-	return nil
+	return c.status.Succeed(fmt.Sprintf("onos-config/%s", c.clusterID))
 }
 
 // AddSimulator adds a device simulator with the given configuration
-func (c *ClusterController) AddSimulator(name string, config *SimulatorConfig) error {
-	log.Infof("Setting up simulator %s/%s", name, c.clusterID)
+func (c *ClusterController) AddSimulator(name string, config *SimulatorConfig) console.ErrorStatus {
+	c.status.Start("Setting up simulator")
 	if err := c.setupSimulator(name, config); err != nil {
-		return err
+		return c.status.Fail(err)
 	}
-
-	log.Infof("Waiting for simulator %s/%s to become ready", name, c.clusterID)
-	if err := c.awaitSimulatorReady(name); err != nil {
-		return err
-	}
-
-	log.Infof("Adding simulator %s/%s to onos-config nodes", name, c.clusterID)
+	c.status.Start("Reconfiguring onos-config nodes")
 	if err := c.addSimulatorToConfig(name); err != nil {
-		return err
+		return c.status.Fail(err)
 	}
-	return nil
+	return c.status.Succeed(fmt.Sprintf("%s/%s", name, c.clusterID))
 }
 
 // RunTests runs the given tests on Kubernetes
-func (c *ClusterController) RunTests(testID string, tests []string, timeout time.Duration) (string, int, error) {
+func (c *ClusterController) RunTests(testID string, tests []string, timeout time.Duration) (string, int, console.ErrorStatus) {
 	// Default the test timeout to 10 minutes
 	if timeout == 0 {
 		timeout = 10 * time.Minute
 	}
 
 	// Start the test job
+	c.status.Start("Starting test job")
 	pod, err := c.startTests(testID, tests, timeout)
 	if err != nil {
-		return "", 0, err
+		return "", 0, c.status.Fail(err)
 	}
+	c.status.Succeed(fmt.Sprintf("%s/%s", testID, c.clusterID))
 
 	// Get the stream of logs for the pod
 	reader, err := c.streamLogs(pod)
 	if err != nil {
-		return "", 0, err
+		return "", 0, c.status
 	}
 	defer reader.Close()
 
 	// Stream the logs to stdout
 	if err = printStream(reader); err != nil {
-		return "", 0, err
+		return "", 0, c.status
 	}
 
 	// Get the exit message and code
-	return c.getStatus(pod)
+	message, status, err := c.getStatus(pod)
+	if err != nil {
+		return "failed to retrieve exit code", 1, c.status
+	}
+	return message, status, c.status
 }
 
 // GetResources returns a list of resource IDs matching the given resource name
@@ -176,13 +181,16 @@ func (c *ClusterController) streamLogs(pod corev1.Pod) (io.ReadCloser, error) {
 }
 
 // DownloadLogs downloads the logs for the given resource to the given path
-func (c *ClusterController) DownloadLogs(resourceID string, path string) error {
-	log.Infof("Downloading logs from %s", resourceID)
+func (c *ClusterController) DownloadLogs(resourceID string, path string) console.ErrorStatus {
+	c.status.Start("Downloading logs")
 	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
 	if err != nil {
-		return err
+		return c.status.Fail(err)
 	}
-	return c.downloadLogs(*pod, path)
+	if err := c.downloadLogs(*pod, path); err != nil {
+		return c.status.Fail(err)
+	}
+	return c.status.Succeed(resourceID)
 }
 
 // downloadLogs downloads the logs from the given pod to the given path
@@ -249,15 +257,14 @@ func (c *ClusterController) PortForward(resourceID string, localPort int, remote
 }
 
 // RemoveSimulator removes a device simulator with the given name
-func (c *ClusterController) RemoveSimulator(name string) error {
-	log.Infof("Tearing down simulator %s/%s", name, c.clusterID)
+func (c *ClusterController) RemoveSimulator(name string) console.ErrorStatus {
+	c.status.Start("Tearing down simulator")
 	if err := c.teardownSimulator(name); err != nil {
-		return err
+		return c.status.Fail(err)
 	}
-
-	log.Infof("Removing simulator %s/%s from onos-config nodes", name, c.clusterID)
+	c.status.Start("Reconfiguring onos-config nodes")
 	if err := c.removeSimulatorFromConfig(name); err != nil {
-		return err
+		return c.status.Fail(err)
 	}
-	return nil
+	return c.status.Succeed("")
 }
