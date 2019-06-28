@@ -18,9 +18,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/onosproject/onos-config/test/console"
 	"github.com/spf13/cobra"
 	"io"
-	log "k8s.io/klog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,10 +28,6 @@ import (
 	"text/tabwriter"
 	"time"
 )
-
-func init() {
-	log.SetOutput(os.Stdout)
-}
 
 // GetCommand returns a Cobra command for tests in the given test registry
 func GetCommand(registry *TestRegistry) *cobra.Command {
@@ -131,17 +127,17 @@ func getCreateClusterCommand() *cobra.Command {
 			}
 
 			// Create the cluster controller
-			cluster, err := controller.NewCluster(clusterID, config)
-			if err != nil {
-				exitError(err)
+			cluster, status := controller.NewCluster(clusterID, config)
+			if status.Failed() {
+				exitStatus(status)
 			}
 
 			// Store the cluster before setting it up to ensure other shell sessions can debug setup
 			setDefaultCluster(clusterID)
 
 			// Setup the cluster
-			if err = cluster.Setup(); err != nil {
-				exitError(err)
+			if status := cluster.Setup(); status.Failed() {
+				exitStatus(status)
 			} else {
 				fmt.Println(clusterID)
 			}
@@ -206,8 +202,8 @@ func getAddSimulatorCommand() *cobra.Command {
 			}
 
 			// Add the simulator to the cluster
-			if err = cluster.AddSimulator(name, config); err != nil {
-				exitError(err)
+			if status := cluster.AddSimulator(name, config); status.Failed() {
+				exitStatus(status)
 			} else {
 				fmt.Println(name)
 			}
@@ -251,8 +247,8 @@ func getDeleteClusterCommand() *cobra.Command {
 			}
 
 			// Delete the cluster
-			if err = controller.DeleteCluster(clusterID); err != nil {
-				exitError(err)
+			if status := controller.DeleteCluster(clusterID); status.Failed() {
+				exitStatus(status)
 			}
 		},
 	}
@@ -297,8 +293,8 @@ func getRemoveSimulatorCommand() *cobra.Command {
 			}
 
 			// Remove the simulator from the cluster
-			if err = cluster.RemoveSimulator(name); err != nil {
-				exitError(err)
+			if status := cluster.RemoveSimulator(name); status.Failed() {
+				exitStatus(status)
 			}
 		},
 	}
@@ -769,11 +765,14 @@ func getFetchLogsCommand() *cobra.Command {
 					exitError(err)
 				}
 
+				var status console.ErrorStatus
 				for _, resource := range resources {
 					path := filepath.Join(destination, fmt.Sprintf("%s.log", resource))
-					if err := cluster.DownloadLogs(resource, path); err != nil {
-						exitError(err)
-					}
+					status = cluster.DownloadLogs(resource, path)
+				}
+
+				if status.Failed() {
+					exitStatus(status)
 				}
 			} else {
 				nodes, err := cluster.GetNodes()
@@ -781,11 +780,14 @@ func getFetchLogsCommand() *cobra.Command {
 					exitError(err)
 				}
 
+				var status console.ErrorStatus
 				for _, node := range nodes {
 					path := filepath.Join(destination, fmt.Sprintf("%s.log", node.ID))
-					if err := cluster.DownloadLogs(node.ID, path); err != nil {
-						exitError(err)
-					}
+					status = cluster.DownloadLogs(node.ID, path)
+				}
+
+				if status.Failed() {
+					exitStatus(status)
 				}
 			}
 		},
@@ -902,9 +904,9 @@ func getRunCommand() *cobra.Command {
 			}
 
 			timeout, _ := cmd.Flags().GetInt("timeout")
-			message, code, err := cluster.RunTests(testID, args, time.Duration(timeout)*time.Second)
-			if err != nil {
-				exitError(err)
+			message, code, status := cluster.RunTests(testID, args, time.Duration(timeout)*time.Second)
+			if status.Failed() {
+				exitStatus(status)
 			} else {
 				fmt.Println(message)
 				os.Exit(code)
@@ -954,7 +956,15 @@ func newUUIDInt() uint32 {
 	return id.ID()
 }
 
-// exitError prints the given err to stdout and exits with exit code 1
+// exitStatus prints the errors from the given status and exits
+func exitStatus(status console.ErrorStatus) {
+	for _, err := range status.Errors() {
+		fmt.Println(err)
+	}
+	os.Exit(1)
+}
+
+// exitError prints the given errors to stdout and exits with exit code 1
 func exitError(err error) {
 	fmt.Println(err)
 	os.Exit(1)

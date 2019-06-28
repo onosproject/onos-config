@@ -21,7 +21,6 @@ import (
 	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	log "k8s.io/klog"
 	"strconv"
 	"time"
 )
@@ -94,12 +93,9 @@ func (c *ClusterController) GetPartitionNodes(partition int) ([]NodeInfo, error)
 
 // setupPartitions creates a Raft partition set
 func (c *ClusterController) setupPartitions() error {
-	log.Infof("Setting up partitions raft/%s", c.clusterID)
 	if err := c.createPartitionSet(); err != nil {
 		return err
 	}
-
-	log.Infof("Waiting for partitions raft/%s to become ready", c.clusterID)
 	if err := c.awaitPartitionsReady(); err != nil {
 		return err
 	}

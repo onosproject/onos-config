@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
-	log "k8s.io/klog"
 	"os"
 	"path/filepath"
 	"time"
@@ -75,7 +74,6 @@ func (c *ClusterController) GetNodes() ([]NodeInfo, error) {
 
 // setupOnosConfig sets up the onos-config Deployment
 func (c *ClusterController) setupOnosConfig() error {
-	log.Infof("Setting up onos-config cluster onos-config/%s", c.clusterID)
 	if err := c.createOnosConfigSecret(); err != nil {
 		return err
 	}
@@ -88,8 +86,6 @@ func (c *ClusterController) setupOnosConfig() error {
 	if err := c.createOnosConfigDeployment(); err != nil {
 		return err
 	}
-
-	log.Infof("Waiting for onos-config cluster onos-config/%s to become ready", c.clusterID)
 	if err := c.awaitOnosConfigDeploymentReady(); err != nil {
 		return err
 	}
@@ -391,7 +387,7 @@ func (c *ClusterController) awaitOnosConfigDeploymentReady() error {
 
 		// Iterate through the pods in the deployment and unblock the debugger
 		for _, pod := range pods.Items {
-			if _, ok := unblocked[pod.Name]; !ok && pod.Status.ContainerStatuses[0].State.Running != nil {
+			if _, ok := unblocked[pod.Name]; !ok && len(pod.Status.ContainerStatuses) > 0 && pod.Status.ContainerStatuses[0].State.Running != nil {
 				err := c.execute(pod, []string{"/bin/bash", "-c", "dlv --init <(echo \"exit -c\") connect 127.0.0.1:40000"})
 				if err != nil {
 					return err

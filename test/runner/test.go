@@ -20,7 +20,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	log "k8s.io/klog"
 	"strings"
 	"time"
 )
@@ -53,13 +52,15 @@ func (c *ClusterController) startTests(testID string, tests []string, timeout ti
 	if err := c.createTestJob(testID, tests, timeout); err != nil {
 		return corev1.Pod{}, err
 	}
-	return c.awaitTestJobRunning(testID)
+	pod, err := c.awaitTestJobRunning(testID)
+	if err != nil {
+		return corev1.Pod{}, err
+	}
+	return pod, nil
 }
 
 // createTestJob creates the job to run tests
 func (c *ClusterController) createTestJob(testID string, args []string, timeout time.Duration) error {
-	log.Infof("Starting test job %s", testID)
-
 	deviceIds, err := c.getDeviceIds()
 	if err != nil {
 		return err
@@ -132,7 +133,6 @@ func (c *ClusterController) createTestJob(testID string, args []string, timeout 
 
 // awaitTestJobRunning blocks until the test job creates a pod in the RUNNING state
 func (c *ClusterController) awaitTestJobRunning(testID string) (corev1.Pod, error) {
-	log.Infof("Waiting for test job %s to become ready", testID)
 	for {
 		pod, err := c.getPod(testID)
 		if err == nil {

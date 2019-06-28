@@ -16,6 +16,7 @@ package runner
 
 import (
 	atomixk8s "github.com/atomix/atomix-k8s-controller/pkg/client/clientset/versioned"
+	"github.com/onosproject/onos-config/test/console"
 	"gopkg.in/yaml.v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -51,6 +52,7 @@ func NewController() (*OnitController, error) {
 		kubeclient:       kubeclient,
 		atomixclient:     atomixclient,
 		extensionsclient: extensionsclient,
+		status:           console.NewStatusWriter(),
 	}, nil
 }
 
@@ -60,6 +62,7 @@ type OnitController struct {
 	kubeclient       *kubernetes.Clientset
 	atomixclient     *atomixk8s.Clientset
 	extensionsclient *apiextension.Clientset
+	status           *console.StatusWriter
 }
 
 // GetClusters returns a list of onit clusters
@@ -91,7 +94,8 @@ func (c *OnitController) GetClusters() (map[string]*ClusterConfig, error) {
 }
 
 // NewCluster creates a new cluster controller
-func (c *OnitController) NewCluster(clusterID string, config *ClusterConfig) (*ClusterController, error) {
+func (c *OnitController) NewCluster(clusterID string, config *ClusterConfig) (*ClusterController, console.ErrorStatus) {
+	c.status.Start("Creating cluster namespace")
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterID,
@@ -102,12 +106,12 @@ func (c *OnitController) NewCluster(clusterID string, config *ClusterConfig) (*C
 	}
 	_, err := c.kubeclient.CoreV1().Namespaces().Create(ns)
 	if err != nil {
-		return nil, err
+		return nil, c.status.Fail(err)
 	}
 
 	configString, err := yaml.Marshal(config)
 	if err != nil {
-		return nil, err
+		return nil, c.status.Fail(err)
 	}
 
 	cm := &corev1.ConfigMap{
@@ -121,7 +125,7 @@ func (c *OnitController) NewCluster(clusterID string, config *ClusterConfig) (*C
 	}
 	_, err = c.kubeclient.CoreV1().ConfigMaps(clusterID).Create(cm)
 	if err != nil {
-		return nil, err
+		return nil, c.status.Fail(err)
 	}
 
 	return &ClusterController{
@@ -131,7 +135,8 @@ func (c *OnitController) NewCluster(clusterID string, config *ClusterConfig) (*C
 		atomixclient:     c.atomixclient,
 		extensionsclient: c.extensionsclient,
 		config:           config,
-	}, nil
+		status:           c.status,
+	}, c.status.Succeed()
 }
 
 // GetCluster returns a cluster controller
@@ -158,16 +163,18 @@ func (c *OnitController) GetCluster(clusterID string) (*ClusterController, error
 		atomixclient:     c.atomixclient,
 		extensionsclient: c.extensionsclient,
 		config:           config,
+		status:           c.status,
 	}, nil
 }
 
 // DeleteCluster deletes a cluster controller
-func (c *OnitController) DeleteCluster(clusterID string) error {
+func (c *OnitController) DeleteCluster(clusterID string) console.ErrorStatus {
+	c.status.Start("Deleting cluster namespace")
 	if err := c.kubeclient.RbacV1().ClusterRoleBindings().Delete("atomix-controller", &metav1.DeleteOptions{}); err != nil {
-		return err
+		return c.status.Fail(err)
 	}
 	if err := c.kubeclient.CoreV1().Namespaces().Delete(clusterID, &metav1.DeleteOptions{}); err != nil {
-		return err
+		return c.status.Fail(err)
 	}
-	return nil
+	return c.status.Succeed()
 }

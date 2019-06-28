@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/atomix/atomix-k8s-controller v0.0.0-20190620084759-d5e65f7fbf68
 	github.com/docker/docker v1.13.1
+	github.com/fatih/color v1.7.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/gofrs/flock v0.7.1
@@ -14,6 +15,7 @@ require (
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
+	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/openconfig/gnmi v0.0.0-20180912164834-33a1865c3029
 	github.com/openconfig/goyang v0.0.0-20190408185115-e8b0ed2cbb0c
