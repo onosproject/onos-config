@@ -100,8 +100,16 @@ func (c *ClusterController) RunTests(testID string, tests []string, timeout time
 	defer reader.Close()
 
 	// Stream the logs to stdout
-	if err = printStream(reader); err != nil {
-		return "", 0, c.status
+	buf := make([]byte, 1024)
+	for {
+		n, err := reader.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return "", 0, c.status
+		}
+		fmt.Print(string(buf[:n]))
 	}
 
 	// Get the exit message and code
