@@ -63,11 +63,11 @@ func runCompletionBash(out io.Writer, cmd *cobra.Command) error {
 }
 
 func runCompletionZsh(out io.Writer, cmd *cobra.Command) error {
-	zsh_head := "#compdef onit\n"
+	header := "#compdef onit\n"
 
-	out.Write([]byte(zsh_head))
+	out.Write([]byte(header))
 
-	zsh_initialization := `
+	init := `
 __onit_bash_source() {
 	alias shopt=':'
 	alias _expand=_bash_expand
@@ -192,19 +192,19 @@ __onit_convert_bash_to_zsh() {
 	-e "s/\\\$(type${RWORD}/\$(__onit_type/g" \
 	<<'BASH_COMPLETION_EOF'
 `
-	out.Write([]byte(zsh_initialization))
+	out.Write([]byte(init))
 
 	buf := new(bytes.Buffer)
 	cmd.GenBashCompletion(buf)
 	out.Write(buf.Bytes())
 
-	zsh_tail := `
+	tail := `
 BASH_COMPLETION_EOF
 }
 __onit_bash_source <(__onit_convert_bash_to_zsh)
 _complete onit 2>/dev/null
 `
-	out.Write([]byte(zsh_tail))
+	out.Write([]byte(tail))
 	return nil
 }
 
@@ -216,7 +216,7 @@ func getClusterIDs() []string {
 
 	clusters, err := controller.GetClusters()
 	clusterIDs := make([]string, 0, len(clusters))
-	for name, _ := range clusters {
+	for name := range clusters {
 		clusterIDs = append(clusterIDs, name)
 	}
 	return clusterIDs
