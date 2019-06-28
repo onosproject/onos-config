@@ -54,10 +54,10 @@ func (s Server) AddOrUpdateDevice(c context.Context, d *proto.DeviceInfo) (*prot
 	name := store.ConfigName(fmt.Sprintf("%s-%s", d.Id, d.Version))
 	if _, ok := configStore.Store[name]; !ok {
 		configStore.Store[name] = store.Configuration{
-			Name: name,
-			Device: d.Id,
+			Name:    name,
+			Device:  d.Id,
 			Version: d.Version,
-			Type: "Devicesim",
+			Type:    "Devicesim",
 			Created: time.Now(),
 			Updated: time.Now(),
 			Changes: []change.ID{},
