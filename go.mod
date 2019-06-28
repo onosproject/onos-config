@@ -8,6 +8,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
+	github.com/go-playground/overalls v0.0.0-20180201144345-22ec1a223b7c // indirect
 	github.com/gofrs/flock v0.7.1
 	github.com/golang/protobuf v1.3.1
 	github.com/google/uuid v1.1.1
@@ -16,6 +17,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect
+	github.com/mattn/goveralls v0.0.2 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/openconfig/gnmi v0.0.0-20180912164834-33a1865c3029
 	github.com/openconfig/goyang v0.0.0-20190408185115-e8b0ed2cbb0c
@@ -26,6 +28,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0
+	github.com/yookoala/realpath v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8 // indirect
 	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
 	golang.org/x/sys v0.0.0-20190616124812-15dcb6c0061f // indirect

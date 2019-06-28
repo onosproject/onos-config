@@ -24,7 +24,7 @@ test: build deps lint vet license_check gofmt
 	go test github.com/onosproject/onos-config/modelplugin/...
 
 coverage: # @HELP generate unit test coverage data
-coverage: test
+coverage: build deps lint vet license_check gofmt
 	./build/bin/coveralls-coverage
 
 deps: # @HELP ensure that the required dependencies are in place
@@ -109,7 +109,6 @@ run-docker: onos-config-docker
 
 clean: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
-	docker stop onos-config || echo "onos-config was not running"
 
 help:
 	@grep -E '^.*: *# *@HELP' $(MAKEFILE_LIST) \
