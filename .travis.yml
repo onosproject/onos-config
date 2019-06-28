@@ -15,11 +15,16 @@ branches:
   only:
     - master
 
+cache:
+  directories:
+    - $HOME/gopath/pkg/mod         # Cache the Go modules
+
 before_script:
   - go get -u golang.org/x/lint/golint
 
 script:
   - make coverage
+
 
 
 
