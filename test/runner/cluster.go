@@ -51,17 +51,17 @@ func (c *ClusterController) Setup() console.ErrorStatus {
 	if err := c.setupAtomixController(); err != nil {
 		return c.status.Fail(err)
 	}
-	c.status.Succeed(fmt.Sprintf("atomix-controller/%s", c.clusterID))
+	c.status.Succeed()
 	c.status.Start("Starting Raft partitions")
 	if err := c.setupPartitions(); err != nil {
 		return c.status.Fail(err)
 	}
-	c.status.Succeed(fmt.Sprintf("raft/%s", c.clusterID))
+	c.status.Succeed()
 	c.status.Start("Bootstrapping onos-config cluster")
 	if err := c.setupOnosConfig(); err != nil {
 		return c.status.Fail(err)
 	}
-	return c.status.Succeed(fmt.Sprintf("onos-config/%s", c.clusterID))
+	return c.status.Succeed()
 }
 
 // AddSimulator adds a device simulator with the given configuration
@@ -74,7 +74,7 @@ func (c *ClusterController) AddSimulator(name string, config *SimulatorConfig) c
 	if err := c.addSimulatorToConfig(name); err != nil {
 		return c.status.Fail(err)
 	}
-	return c.status.Succeed(fmt.Sprintf("%s/%s", name, c.clusterID))
+	return c.status.Succeed()
 }
 
 // RunTests runs the given tests on Kubernetes
@@ -90,7 +90,7 @@ func (c *ClusterController) RunTests(testID string, tests []string, timeout time
 	if err != nil {
 		return "", 0, c.status.Fail(err)
 	}
-	c.status.Succeed(fmt.Sprintf("%s/%s", testID, c.clusterID))
+	c.status.Succeed()
 
 	// Get the stream of logs for the pod
 	reader, err := c.streamLogs(pod)
@@ -190,7 +190,7 @@ func (c *ClusterController) DownloadLogs(resourceID string, path string) console
 	if err := c.downloadLogs(*pod, path); err != nil {
 		return c.status.Fail(err)
 	}
-	return c.status.Succeed(resourceID)
+	return c.status.Succeed()
 }
 
 // downloadLogs downloads the logs from the given pod to the given path
@@ -266,5 +266,5 @@ func (c *ClusterController) RemoveSimulator(name string) console.ErrorStatus {
 	if err := c.removeSimulatorFromConfig(name); err != nil {
 		return c.status.Fail(err)
 	}
-	return c.status.Succeed("")
+	return c.status.Succeed()
 }

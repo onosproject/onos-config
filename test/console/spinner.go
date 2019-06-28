@@ -1,4 +1,4 @@
-// Copyright 2018 The Kubernetes Authors.
+// Copyright 2019-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,9 +49,7 @@ type Spinner struct {
 	ticker *time.Ticker
 	writer io.Writer
 	mu     *sync.Mutex
-	// protected by mu
-	prefix string
-	suffix string
+	message string
 }
 
 // newSpinner initializes and returns a new Spinner that will write to
@@ -65,22 +63,15 @@ func newSpinner(w io.Writer) *Spinner {
 	}
 }
 
-// SetPrefix sets the prefix to print before the spinner
-func (s *Spinner) SetPrefix(prefix string) {
+// SetMessage sets the message to print after the spinner
+func (s *Spinner) SetMessage(message string) {
 	s.mu.Lock()
-	s.prefix = prefix
+	s.message = message
 	s.mu.Unlock()
 }
 
-// SetSuffix sets the suffix to print after the spinner
-func (s *Spinner) SetSuffix(suffix string) {
-	s.mu.Lock()
-	s.suffix = suffix
-	s.mu.Unlock()
-}
-
-// Start starts the spinner running
-func (s *Spinner) Start() {
+// Spin starts the spinner running
+func (s *Spinner) Spin() {
 	go func() {
 		for {
 			for _, frame := range s.frames {
@@ -91,7 +82,7 @@ func (s *Spinner) Start() {
 					func() {
 						s.mu.Lock()
 						defer s.mu.Unlock()
-						fmt.Fprintf(s.writer, "\r%s%s%s", s.prefix, frame, s.suffix)
+						fmt.Fprintf(s.writer, "\r%s%s", frame, s.message)
 					}()
 				}
 			}

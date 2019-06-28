@@ -35,7 +35,7 @@ type ErrorStatus interface {
 	Errors() []error
 }
 
-// Status provides real-time status output during onit setup operations
+// StatusWriter provides real-time status output during onit setup operations
 type StatusWriter struct {
 	ErrorStatus
 	spinner *Spinner
@@ -47,9 +47,9 @@ type StatusWriter struct {
 // NewStatusWriter creates a new default StatusWriter
 func NewStatusWriter() *StatusWriter {
 	writer := os.Stdout
-	spin := newSpinner(writer)
+	spinner := newSpinner(writer)
 	s := &StatusWriter{
-		spinner: spin,
+		spinner: spinner,
 		writer:  writer,
 		errors:  []error{},
 	}
@@ -58,22 +58,22 @@ func NewStatusWriter() *StatusWriter {
 
 // Start starts a new status and begins a loading spinner
 func (s *StatusWriter) Start(status string) {
-	s.Succeed("")
+	s.Succeed()
 	// set new status
 	s.status = status
-	s.spinner.SetSuffix(fmt.Sprintf(" %s ", s.status))
-	s.spinner.Start()
+	s.spinner.SetMessage(fmt.Sprintf(" %s ", s.status))
+	s.spinner.Spin()
 }
 
 // Succeed completes the current status successfully
-func (s *StatusWriter) Succeed(resource string) *StatusWriter {
+func (s *StatusWriter) Succeed() *StatusWriter {
 	if s.status == "" {
 		return s
 	}
 
 	s.spinner.Stop()
 	fmt.Fprint(s.writer, "\r")
-	fmt.Fprintf(s.writer, " %s %-40s %s\n", success, s.status, resource)
+	fmt.Fprintf(s.writer, " %s %s\n", success, s.status)
 
 	s.status = ""
 	return s

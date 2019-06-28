@@ -136,7 +136,7 @@ func (c *OnitController) NewCluster(clusterID string, config *ClusterConfig) (*C
 		extensionsclient: c.extensionsclient,
 		config:           config,
 		status:           c.status,
-	}, c.status.Succeed(clusterID)
+	}, c.status.Succeed()
 }
 
 // GetCluster returns a cluster controller
@@ -176,5 +176,5 @@ func (c *OnitController) DeleteCluster(clusterID string) console.ErrorStatus {
 	if err := c.kubeclient.CoreV1().Namespaces().Delete(clusterID, &metav1.DeleteOptions{}); err != nil {
 		return c.status.Fail(err)
 	}
-	return c.status.Succeed("")
+	return c.status.Succeed()
 }
