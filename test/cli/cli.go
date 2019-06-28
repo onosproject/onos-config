@@ -27,6 +27,8 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+	corev1 "k8s.io/api/core/v1"
+
 )
 
 // GetCommand returns a Cobra command for tests in the given test registry
@@ -685,8 +687,15 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 
 				// Iterate through resources and get/print logs
 				numResources := len(resources)
+
+				if err != nil {
+					exitError(err)
+				}
+
+				options := parseLogOptions(cmd)
+
 				for i, resource := range resources {
-					logs, err := cluster.GetLogs(resource)
+					logs, err := cluster.GetLogs(resource, options)
 					if err != nil {
 						exitError(err)
 					}
@@ -699,12 +708,36 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 		},
 	}
 
+	cmd.Flags().Int64P("since", "", -1, "Only return logs newer than a relative " +
+		"duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used")
+	cmd.Flags().Int64P("tail", "t", -1, "If set, the number of bytes to read from the " +
+		"server before terminating the log output. This may not display a complete final line of logging, and may return " +
+		"slightly more or slightly less than the specified limit.")
+
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
 	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
 		cobra.BashCompCustom: {"__onit_get_clusters"},
 	}
 	cmd.Flags().BoolP("stream", "s", false, "stream logs to stdout")
 	return cmd
+}
+
+func parseLogOptions(cmd *cobra.Command) corev1.PodLogOptions{
+	// Get the logs for the resource and print to stdout
+	options := corev1.PodLogOptions{}
+	since, err := cmd.Flags().GetInt64("since")
+	if since > 0 {
+		options.SinceSeconds = &since
+	}
+	if err != nil {
+		exitError(err)
+	}
+	tail, err := cmd.Flags().GetInt64("tail")
+	if tail > 0 {
+		options.TailLines = &tail
+	}
+	fmt.Println(options)
+	return options
 }
 
 // printStream prints a stream to stdout from the given reader
@@ -758,6 +791,9 @@ func getFetchLogsCommand() *cobra.Command {
 				exitError(err)
 			}
 
+			options := parseLogOptions(cmd)
+
+
 			destination, _ := cmd.Flags().GetString("destination")
 			if len(args) > 0 {
 				resourceID := args[0]
@@ -769,7 +805,7 @@ func getFetchLogsCommand() *cobra.Command {
 				var status console.ErrorStatus
 				for _, resource := range resources {
 					path := filepath.Join(destination, fmt.Sprintf("%s.log", resource))
-					status = cluster.DownloadLogs(resource, path)
+					status = cluster.DownloadLogs(resource, path, options)
 				}
 
 				if status.Failed() {
@@ -784,7 +820,7 @@ func getFetchLogsCommand() *cobra.Command {
 				var status console.ErrorStatus
 				for _, node := range nodes {
 					path := filepath.Join(destination, fmt.Sprintf("%s.log", node.ID))
-					status = cluster.DownloadLogs(node.ID, path)
+					status = cluster.DownloadLogs(node.ID, path,options)
 				}
 
 				if status.Failed() {
@@ -793,6 +829,12 @@ func getFetchLogsCommand() *cobra.Command {
 			}
 		},
 	}
+
+	cmd.Flags().Int64P("since", "", -1, "Only return logs newer than a relative " +
+		"duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used")
+	cmd.Flags().Int64P("tail", "t", -1, "If set, the number of bytes to read from the " +
+		"server before terminating the log output. This may not display a complete final line of logging, and may return " +
+		"slightly more or slightly less than the specified limit.")
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
 	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
@@ -892,7 +934,7 @@ func getRunCommand(registry *runner.TestRegistry) *cobra.Command {
 		ValidArgs: registry.GetNames(),
 		Run: func(cmd *cobra.Command, args []string) {
 			testID := fmt.Sprintf("test-%d", newUUIDInt())
-
+			fmt.Println(testID)
 			// Get the onit controller
 			controller, err := runner.NewController()
 			if err != nil {
