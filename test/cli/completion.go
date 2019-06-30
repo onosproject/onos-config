@@ -17,7 +17,6 @@ package cli
 import (
 	"bytes"
 	"errors"
-	"github.com/onosproject/onos-config/test/runner"
 	"github.com/spf13/cobra"
 	"io"
 	"os"
@@ -30,6 +29,37 @@ __onit_get_clusters() {
         out=($(echo "${onit_output}" | awk '{print $1}'))
         COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
     fi
+}
+__onit_get_simulators() {
+    local onit_output
+    if onit_output=$(onit get simulators 2>/dev/null); then
+        COMPREPLY=( $( compgen -W "${onit_output[*]}" -- "$cur" ) )
+    fi
+}
+__onit_get_nodes() {
+    local onit_output out
+    if onit_output=$(onit get nodes --no-headers 2>/dev/null); then
+        out=($(echo "${onit_output}" | awk '{print $1}'))
+        COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
+    fi
+}
+__onit_custom_func() {
+    case ${last_command} in
+        onit_set_cluster | onit_delete_cluster)
+            __onit_get_clusters
+            return
+            ;;
+        onit_delete_simulator)
+            __onit_get_simulators
+            return
+            ;;
+        onit_get_logs | onit_fetch_logs | onit_debug)
+            __onit_get_nodes
+            return
+            ;;
+        *)
+            ;;
+    esac
 }
 `
 
@@ -206,54 +236,4 @@ _complete onit 2>/dev/null
 `
 	out.Write([]byte(tail))
 	return nil
-}
-
-func getClusterIDs() []string {
-	controller, err := runner.NewController()
-	if err != nil {
-		return []string{}
-	}
-
-	clusters, err := controller.GetClusters()
-	clusterIDs := make([]string, 0, len(clusters))
-	for name := range clusters {
-		clusterIDs = append(clusterIDs, name)
-	}
-	return clusterIDs
-}
-
-func getSimulatorIDs() []string {
-	controller, err := runner.NewController()
-	if err != nil {
-		return []string{}
-	}
-	cluster, err := controller.GetCluster(getDefaultCluster())
-	if err != nil {
-		return []string{}
-	}
-	simulatorIDs, err := cluster.GetSimulators()
-	if err != nil {
-		return []string{}
-	}
-	return simulatorIDs
-}
-
-func getNodeIDs() []string {
-	controller, err := runner.NewController()
-	if err != nil {
-		return []string{}
-	}
-	cluster, err := controller.GetCluster(getDefaultCluster())
-	if err != nil {
-		return []string{}
-	}
-	nodes, err := cluster.GetNodes()
-	if err != nil {
-		return []string{}
-	}
-	nodeIDs := make([]string, 0, len(nodes))
-	for _, node := range nodes {
-		nodeIDs = append(nodeIDs, node.ID)
-	}
-	return nodeIDs
 }

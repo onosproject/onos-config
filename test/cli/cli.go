@@ -32,7 +32,7 @@ import (
 // GetCommand returns a Cobra command for tests in the given test registry
 func GetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                    "onit {create,add,remove,delete,get,set,run} [args]",
+		Use:                    "onit",
 		Short:                  "Run onos-config integration tests on Kubernetes",
 		BashCompletionFunction: bashCompletion,
 	}
@@ -199,10 +199,9 @@ func getDeleteCommand() *cobra.Command {
 // getDeleteClusterCommand returns a cobra "teardown" command for tearing down a test cluster
 func getDeleteClusterCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:       "cluster [id]",
-		Short:     "Delete a test cluster on Kubernetes",
-		Args:      cobra.MaximumNArgs(1),
-		ValidArgs: getClusterIDs(),
+		Use:   "cluster [id]",
+		Short: "Delete a test cluster on Kubernetes",
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Create the onit controller
 			controller, err := runner.NewController()
@@ -240,10 +239,9 @@ func getRemoveCommand() *cobra.Command {
 // getRemoveSimulatorCommand returns a cobra command for tearing down a device simulator
 func getRemoveSimulatorCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:       "simulator <name>",
-		Short:     "Remove a device simulator from the cluster",
-		Args:      cobra.ExactArgs(1),
-		ValidArgs: getSimulatorIDs(),
+		Use:   "simulator <name>",
+		Short: "Remove a device simulator from the cluster",
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			name := args[0]
 
@@ -503,7 +501,7 @@ func getGetPartitionCommand() *cobra.Command {
 			if err != nil {
 				exitError(err)
 			} else {
-				printNodes(nodes)
+				printNodes(nodes, true)
 			}
 		},
 	}
@@ -517,9 +515,8 @@ func getGetPartitionCommand() *cobra.Command {
 // getGetNodesCommand returns a cobra command to get a list of onos-config nodes in the cluster
 func getGetNodesCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:       "nodes",
-		Short:     "Get a list of nodes in the cluster",
-		ValidArgs: getNodeIDs(),
+		Use:   "nodes",
+		Short: "Get a list of nodes in the cluster",
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
 			controller, err := runner.NewController()
@@ -544,7 +541,8 @@ func getGetNodesCommand() *cobra.Command {
 			if err != nil {
 				exitError(err)
 			} else {
-				printNodes(nodes)
+				noHeaders, _ := cmd.Flags().GetBool("no-headers")
+				printNodes(nodes, !noHeaders)
 			}
 		},
 	}
@@ -552,13 +550,16 @@ func getGetNodesCommand() *cobra.Command {
 	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
 		cobra.BashCompCustom: {"__onit_get_clusters"},
 	}
+	cmd.Flags().Bool("no-headers", false, "whether to print column headers")
 	return cmd
 }
 
-func printNodes(nodes []runner.NodeInfo) {
+func printNodes(nodes []runner.NodeInfo, includeHeaders bool) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
-	fmt.Fprintln(writer, "ID\tSTATUS")
+	if includeHeaders {
+		fmt.Fprintln(writer, "ID\tSTATUS")
+	}
 	for _, node := range nodes {
 		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", node.ID, node.Status))
 	}
@@ -644,8 +645,7 @@ func getGetLogsCommand() *cobra.Command {
 		Long: `Outputs the complete logs for any test resource.
 To output the logs from an onos-config node, get the node ID via 'onit get nodes'
 To output the logs from a test, get the test ID from the test run or from 'onit get history'`,
-		Args:      cobra.ExactArgs(1),
-		ValidArgs: getNodeIDs(),
+		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			stream, _ := cmd.Flags().GetBool("stream")
 
@@ -736,10 +736,9 @@ func getFetchCommand() *cobra.Command {
 // getFetchLogsCommand returns a cobra command for downloading the logs from a node
 func getFetchLogsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:       "logs [node]",
-		Short:     "Download logs from a node",
-		Args:      cobra.MaximumNArgs(1),
-		ValidArgs: getNodeIDs(),
+		Use:   "logs [node]",
+		Short: "Download logs from a node",
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
 			controller, err := runner.NewController()
@@ -806,10 +805,9 @@ func getFetchLogsCommand() *cobra.Command {
 // getDebugCommand returns a cobra "debug" command to open a debugger port to the given resource
 func getDebugCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:       "debug <resource>",
-		Short:     "Open a debugger port to the given resource",
-		Args:      cobra.ExactArgs(1),
-		ValidArgs: getNodeIDs(),
+		Use:   "debug <resource>",
+		Short: "Open a debugger port to the given resource",
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
 			controller, err := runner.NewController()
@@ -858,10 +856,9 @@ func getSetCommand() *cobra.Command {
 // getSetClusterCommand returns a cobra command for setting the cluster context
 func getSetClusterCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:       "cluster <name>",
-		Args:      cobra.ExactArgs(1),
-		ValidArgs: getClusterIDs(),
-		Short:     "Set cluster context",
+		Use:   "cluster <name>",
+		Args:  cobra.ExactArgs(1),
+		Short: "Set cluster context",
 		Run: func(cmd *cobra.Command, args []string) {
 			clusterID := args[0]
 
