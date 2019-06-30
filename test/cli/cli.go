@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package runner
+package cli
 
 import (
-	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-config/test/console"
+	"github.com/onosproject/onos-config/test/runner"
 	"github.com/spf13/cobra"
 	"io"
 	"os"
@@ -30,16 +30,17 @@ import (
 )
 
 // GetCommand returns a Cobra command for tests in the given test registry
-func GetCommand(registry *TestRegistry) *cobra.Command {
+func GetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "onit {create,add,remove,delete,get,set,run} [args]",
-		Short: "Run onos-config integration tests on Kubernetes",
+		Use:                    "onit",
+		Short:                  "Run onos-config integration tests on Kubernetes",
+		BashCompletionFunction: bashCompletion,
 	}
 	cmd.AddCommand(getCreateCommand())
 	cmd.AddCommand(getAddCommand())
 	cmd.AddCommand(getRemoveCommand())
 	cmd.AddCommand(getDeleteCommand())
-	cmd.AddCommand(getRunCommand())
+	cmd.AddCommand(getRunCommand(registry))
 	cmd.AddCommand(getGetCommand(registry))
 	cmd.AddCommand(getSetCommand())
 	cmd.AddCommand(getDebugCommand())
@@ -47,39 +48,6 @@ func GetCommand(registry *TestRegistry) *cobra.Command {
 	cmd.AddCommand(getTestCommand(registry))
 	cmd.AddCommand(getCompletionCommand())
 	return cmd
-}
-
-func getCompletionCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:       "completion <shell>",
-		Short:     "Generated bash or zsh auto-completion script",
-		Args:      cobra.ExactArgs(1),
-		ValidArgs: []string{"bash", "zsh"},
-		Run:       runCompletionCommand,
-	}
-}
-
-func runCompletionCommand(cmd *cobra.Command, args []string) {
-	if args[0] == "bash" {
-		if err := runCompletionBash(os.Stdout, cmd.Parent()); err != nil {
-			ExitWithError(ExitError, err)
-		}
-	} else if args[0] == "zsh" {
-		if err := runCompletionZsh(os.Stdout, cmd.Parent()); err != nil {
-			ExitWithError(ExitError, err)
-		}
-
-	} else {
-		ExitWithError(ExitError, errors.New("unsupported shell type "+args[0]))
-	}
-}
-
-func runCompletionBash(out io.Writer, cmd *cobra.Command) error {
-	return cmd.GenBashCompletion(out)
-}
-
-func runCompletionZsh(out io.Writer, cmd *cobra.Command) error {
-	return cmd.GenZshCompletion(out)
 }
 
 // getCreateCommand returns a cobra "setup" command for setting up resources
@@ -105,7 +73,7 @@ func getCreateClusterCommand() *cobra.Command {
 			configName, _ := cmd.Flags().GetString("config")
 
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -119,7 +87,7 @@ func getCreateClusterCommand() *cobra.Command {
 			}
 
 			// Create the cluster configuration
-			config := &ClusterConfig{
+			config := &runner.ClusterConfig{
 				Preset:        configName,
 				Nodes:         nodes,
 				Partitions:    partitions,
@@ -179,7 +147,7 @@ func getAddSimulatorCommand() *cobra.Command {
 			configName, _ := cmd.Flags().GetString("preset")
 
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -197,7 +165,7 @@ func getAddSimulatorCommand() *cobra.Command {
 			}
 
 			// Create the simulator configuration
-			config := &SimulatorConfig{
+			config := &runner.SimulatorConfig{
 				Config: configName,
 			}
 
@@ -211,6 +179,9 @@ func getAddSimulatorCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to which to add the simulator")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	cmd.Flags().StringP("preset", "p", "default", "simulator preset to apply")
 	return cmd
 }
@@ -233,7 +204,7 @@ func getDeleteClusterCommand() *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Create the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -275,7 +246,7 @@ func getRemoveSimulatorCommand() *cobra.Command {
 			name := args[0]
 
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -300,11 +271,14 @@ func getRemoveSimulatorCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to which to add the simulator")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	return cmd
 }
 
 // getGetCommand returns a cobra "get" command to read test configurations
-func getGetCommand(registry *TestRegistry) *cobra.Command {
+func getGetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get {cluster,clusters,simulators,device-presets,store-presets,tests}",
 		Short: "Get test configurations",
@@ -341,7 +315,7 @@ func getGetSimulatorsCommand() *cobra.Command {
 		Short: "Get the currently configured cluster's simulators",
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -371,17 +345,20 @@ func getGetSimulatorsCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	return cmd
 }
 
 // getGetClustersCommand returns a cobra command to get a list of available test clusters
 func getGetClustersCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "clusters",
 		Short: "Get a list of all deployed clusters",
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -391,16 +368,21 @@ func getGetClustersCommand() *cobra.Command {
 			if err != nil {
 				exitError(err)
 			} else {
-				printClusters(clusters)
+				noHeaders, _ := cmd.Flags().GetBool("no-headers")
+				printClusters(clusters, !noHeaders)
 			}
 		},
 	}
+	cmd.Flags().Bool("no-headers", false, "whether to print column headers")
+	return cmd
 }
 
-func printClusters(clusters map[string]*ClusterConfig) {
+func printClusters(clusters map[string]*runner.ClusterConfig, includeHeaders bool) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
-	fmt.Fprintln(writer, "ID\tSIZE\tPARTITIONS")
+	if includeHeaders {
+		fmt.Fprintln(writer, "ID\tSIZE\tPARTITIONS")
+	}
 	for id, config := range clusters {
 		fmt.Fprintln(writer, fmt.Sprintf("%s\t%d\t%d", id, config.Nodes, config.Partitions))
 	}
@@ -440,7 +422,7 @@ func getGetPartitionsCommand() *cobra.Command {
 		Short: "Get a list of partitions in the cluster",
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -467,10 +449,13 @@ func getGetPartitionsCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	return cmd
 }
 
-func printPartitions(partitions []PartitionInfo) {
+func printPartitions(partitions []runner.PartitionInfo) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
 	fmt.Fprintln(writer, "ID\tGROUP\tNODES")
@@ -488,7 +473,7 @@ func getGetPartitionCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -516,11 +501,14 @@ func getGetPartitionCommand() *cobra.Command {
 			if err != nil {
 				exitError(err)
 			} else {
-				printNodes(nodes)
+				printNodes(nodes, true)
 			}
 		},
 	}
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	return cmd
 }
 
@@ -531,7 +519,7 @@ func getGetNodesCommand() *cobra.Command {
 		Short: "Get a list of nodes in the cluster",
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -553,18 +541,25 @@ func getGetNodesCommand() *cobra.Command {
 			if err != nil {
 				exitError(err)
 			} else {
-				printNodes(nodes)
+				noHeaders, _ := cmd.Flags().GetBool("no-headers")
+				printNodes(nodes, !noHeaders)
 			}
 		},
 	}
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
+	cmd.Flags().Bool("no-headers", false, "whether to print column headers")
 	return cmd
 }
 
-func printNodes(nodes []NodeInfo) {
+func printNodes(nodes []runner.NodeInfo, includeHeaders bool) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
-	fmt.Fprintln(writer, "ID\tSTATUS")
+	if includeHeaders {
+		fmt.Fprintln(writer, "ID\tSTATUS")
+	}
 	for _, node := range nodes {
 		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", node.ID, node.Status))
 	}
@@ -572,7 +567,7 @@ func printNodes(nodes []NodeInfo) {
 }
 
 // getGetTestsCommand returns a cobra command to get a list of available tests
-func getGetTestsCommand(registry *TestRegistry) *cobra.Command {
+func getGetTestsCommand(registry *runner.TestRegistry) *cobra.Command {
 	return &cobra.Command{
 		Use:   "tests",
 		Short: "Get a list of integration tests",
@@ -591,7 +586,7 @@ func getGetHistoryCommand() *cobra.Command {
 		Short: "Get the history of test runs",
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -619,11 +614,14 @@ func getGetHistoryCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	return cmd
 }
 
 // printHistory prints a test history in table format
-func printHistory(records []TestRecord) {
+func printHistory(records []runner.TestRecord) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
 	fmt.Fprintln(writer, "ID\tTESTS\tSTATUS\tEXIT CODE\tMESSAGE")
@@ -652,7 +650,7 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 			stream, _ := cmd.Flags().GetBool("stream")
 
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -702,6 +700,9 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	cmd.Flags().BoolP("stream", "s", false, "stream logs to stdout")
 	return cmd
 }
@@ -740,7 +741,7 @@ func getFetchLogsCommand() *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -794,6 +795,9 @@ func getFetchLogsCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	cmd.Flags().StringP("destination", "d", ".", "the destination to which to write the logs")
 	return cmd
 }
@@ -806,7 +810,7 @@ func getDebugCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -832,6 +836,9 @@ func getDebugCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	cmd.Flags().IntP("port", "p", 40000, "the local port to forward to the given resource")
 	return cmd
 }
@@ -856,7 +863,7 @@ func getSetClusterCommand() *cobra.Command {
 			clusterID := args[0]
 
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -878,15 +885,16 @@ func getSetClusterCommand() *cobra.Command {
 }
 
 // getRunCommand returns a cobra "run" command
-func getRunCommand() *cobra.Command {
+func getRunCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run [tests]",
-		Short: "Run integration tests on Kubernetes",
+		Use:       "run [tests]",
+		Short:     "Run integration tests on Kubernetes",
+		ValidArgs: registry.GetNames(),
 		Run: func(cmd *cobra.Command, args []string) {
 			testID := fmt.Sprintf("test-%d", newUUIDInt())
 
 			// Get the onit controller
-			controller, err := NewController()
+			controller, err := runner.NewController()
 			if err != nil {
 				exitError(err)
 			}
@@ -915,17 +923,20 @@ func getRunCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster on which to run the test")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	cmd.Flags().IntP("timeout", "t", 60*10, "test timeout in seconds")
 	return cmd
 }
 
 // getTestCommand returns a cobra "test" command for tests in the given registry
-func getTestCommand(registry *TestRegistry) *cobra.Command {
+func getTestCommand(registry *runner.TestRegistry) *cobra.Command {
 	return &cobra.Command{
 		Use:   "test [tests]",
 		Short: "Run integration tests",
 		Run: func(cmd *cobra.Command, args []string) {
-			runner := &TestRunner{
+			runner := &runner.TestRunner{
 				Registry: registry,
 			}
 			err := runner.RunTests(args)
