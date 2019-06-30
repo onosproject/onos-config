@@ -46,15 +46,21 @@ __onit_get_nodes() {
 __onit_custom_func() {
     case ${last_command} in
         onit_set_cluster | onit_delete_cluster)
-            __onit_get_clusters
+            if [[ ${#nouns[@]} -eq 0 ]]; then
+                __onit_get_clusters
+            fi
             return
             ;;
         onit_delete_simulator)
-            __onit_get_simulators
+            if [[ ${#nouns[@]} -eq 0 ]]; then
+                __onit_get_simulators
+            fi
             return
             ;;
         onit_get_logs | onit_fetch_logs | onit_debug)
-            __onit_get_nodes
+            if [[ ${#nouns[@]} -eq 0 ]]; then
+                __onit_get_nodes
+            fi
             return
             ;;
         *)
