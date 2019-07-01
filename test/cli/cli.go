@@ -723,7 +723,7 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 }
 
 func parseLogOptions(cmd *cobra.Command) corev1.PodLogOptions{
-	// Get the logs for the resource and print to stdout
+	// Parse log options from CLI
 	options := corev1.PodLogOptions{}
 	since, err := cmd.Flags().GetDuration("since")
 	sinceSeconds := int64(since / time.Second)
@@ -738,7 +738,6 @@ func parseLogOptions(cmd *cobra.Command) corev1.PodLogOptions{
 	if tail > 0 {
 		options.TailLines = &tail
 	}
-	fmt.Println(options)
 	return options
 }
 
