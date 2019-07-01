@@ -28,7 +28,7 @@ WORKDIR /home/onos-config
 RUN onos init && \
     cp /etc/profile /home/onos-config/.bashrc && \
     onos completion bash > /home/onos-config/.onos/bash_completion.sh && \
-    onos config set address onos-config-onos-config:5150 && \
+    onos config set address 127.0.0.1:5150 && \
     echo "source /home/onos-config/.onos/bash_completion.sh" >> /home/onos-config/.bashrc
 
 ENTRYPOINT ["onos-config-debug"]
