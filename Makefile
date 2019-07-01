@@ -95,7 +95,7 @@ images: # @HELP build all Docker images
 images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-config-it-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
-kind: images
+kind: build onos-config-docker onos-cli-docker onos-config-it-docker
 	@if [[ ! `kind get clusters` ]]; then echo "no kind cluster found" && exit 1; fi
 	kind load docker-image onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 	kind load docker-image onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}

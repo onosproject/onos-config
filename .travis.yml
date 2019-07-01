@@ -37,6 +37,8 @@ jobs:
         # Download and install KinD
         - GO111MODULE=on go get sigs.k8s.io/kind
         - git checkout go.mod go.sum
+        - GO111MODULE=on go get github.com/onosproject/onos-config/test/cmd/onit
+        - git checkout go.mod go.sum
         # It's possible to download and install KinD using curl, similar as for kubectl
         # This is useful in cases when Go toolchain isn't available or you prefer running stable version
         # Binaries for KinD are available on GitHub Releases: https://github.com/kubernetes-sigs/kind/releases
