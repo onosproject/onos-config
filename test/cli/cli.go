@@ -708,7 +708,7 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 		},
 	}
 
-	cmd.Flags().Int64P("since", "", -1, "Only return logs newer than a relative " +
+	cmd.Flags().DurationP("since", "", -1, "Only return logs newer than a relative " +
 		"duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used")
 	cmd.Flags().Int64P("tail", "t", -1, "If set, the number of bytes to read from the " +
 		"server before terminating the log output. This may not display a complete final line of logging, and may return " +
@@ -725,9 +725,11 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 func parseLogOptions(cmd *cobra.Command) corev1.PodLogOptions{
 	// Get the logs for the resource and print to stdout
 	options := corev1.PodLogOptions{}
-	since, err := cmd.Flags().GetInt64("since")
-	if since > 0 {
-		options.SinceSeconds = &since
+	since, err := cmd.Flags().GetDuration("since")
+	sinceSeconds := int64(since / time.Second)
+	fmt.Println(sinceSeconds)
+	if sinceSeconds > 0 {
+		options.SinceSeconds = &sinceSeconds
 	}
 	if err != nil {
 		exitError(err)
@@ -830,7 +832,7 @@ func getFetchLogsCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Int64P("since", "", -1, "Only return logs newer than a relative " +
+	cmd.Flags().DurationP("since", "", -1, "Only return logs newer than a relative " +
 		"duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used")
 	cmd.Flags().Int64P("tail", "t", -1, "If set, the number of bytes to read from the " +
 		"server before terminating the log output. This may not display a complete final line of logging, and may return " +
