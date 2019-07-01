@@ -592,14 +592,15 @@ func getGetTestSuitesCommand(registry *runner.TestRegistry) *cobra.Command {
 		Use:   "suites",
 		Short: "Get a list of integration testing suites",
 		Run: func(cmd *cobra.Command, args []string) {
-			for _, name := range registry.GetTestSuiteNames() {
-				desc := name + ": "
-				suite := registry.TestSuites[name]
-				for _, name := range suite.GetTestNames() {
-					desc += "\n > " + name
-				}
-				fmt.Println(desc)
-			}
+			registry.PrintTestSuites()
+			//for _, name := range registry.GetTestSuiteNames() {
+			//	desc := name + ": "
+			//	suite := registry.TestSuites[name]
+			//	for _, name := range suite.GetTestNames() {
+			//		desc += "\n > " + name
+			//	}
+			//	fmt.Println(desc)
+			//}
 		},
 	}
 }

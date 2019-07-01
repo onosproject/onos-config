@@ -16,10 +16,13 @@ package runner
 
 import (
 	"errors"
+	"fmt"
 	"github.com/stretchr/testify/suite"
 	"os"
 	"sort"
+	"strings"
 	"testing"
+	"text/tabwriter"
 )
 
 // NewRegistry returns a pointer to a new TestRegistry
@@ -35,7 +38,6 @@ func NewTestSuite(name string) *TestSuite {
 	return &TestSuite{
 		name: name,
 		tests: make(map[string]Test),
-		testGroups: make(map[string]TestGroup),
 	}
 }
 
@@ -53,7 +55,6 @@ type TestRegistry struct {
 type TestSuite struct {
 	name string
 	tests map[string]Test
-	testGroups map[string]TestGroup
 }
 
 //TestGroup to run multiple tests
@@ -120,8 +121,15 @@ func (r *TestRegistry) GetTestSuiteNames() []string {
 	return names
 }
 
-
-
+func (r *TestRegistry) PrintTestSuites() {
+	writer := new(tabwriter.Writer)
+	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
+	fmt.Fprintln(writer, "SUITE\tTESTS")
+	for name, suite := range r.TestSuites {
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", name,strings.Join(suite.GetTestNames(),", ")))
+	}
+	writer.Flush()
+}
 
 // TestRunner runs integration tests
 type TestRunner struct {
