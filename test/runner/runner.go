@@ -121,6 +121,7 @@ func (r *TestRegistry) GetTestSuiteNames() []string {
 	return names
 }
 
+//PrintTestSuites prints test suites in a table
 func (r *TestRegistry) PrintTestSuites() {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
