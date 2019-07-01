@@ -170,8 +170,8 @@ func (c *OnitController) GetCluster(clusterID string) (*ClusterController, error
 // DeleteCluster deletes a cluster controller
 func (c *OnitController) DeleteCluster(clusterID string) console.ErrorStatus {
 	c.status.Start("Deleting cluster namespace")
-	if err := c.kubeclient.RbacV1().ClusterRoleBindings().Delete("atomix-controller", &metav1.DeleteOptions{}); err != nil {
-		return c.status.Fail(err)
+	if err := c.kubeclient.RbacV1().ClusterRoleBindings().Delete(clusterID, &metav1.DeleteOptions{}); err != nil {
+		c.status.Fail(err)
 	}
 	if err := c.kubeclient.CoreV1().Namespaces().Delete(clusterID, &metav1.DeleteOptions{}); err != nil {
 		return c.status.Fail(err)

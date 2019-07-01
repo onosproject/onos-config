@@ -268,7 +268,7 @@ func (c *ClusterController) PortForward(resourceID string, localPort int, remote
 func (c *ClusterController) RemoveSimulator(name string) console.ErrorStatus {
 	c.status.Start("Tearing down simulator")
 	if err := c.teardownSimulator(name); err != nil {
-		return c.status.Fail(err)
+		c.status.Fail(err)
 	}
 	c.status.Start("Reconfiguring onos-config nodes")
 	if err := c.removeSimulatorFromConfig(name); err != nil {
