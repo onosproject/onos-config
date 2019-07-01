@@ -85,7 +85,7 @@ func (c *ClusterController) RunTests(testID string, tests []string, timeout time
 	}
 
 	// Start the test job
-	c.status.Start("Starting test job")
+	c.status.Start(fmt.Sprintf("[%s] Starting test job", testID))
 	pod, err := c.startTests(testID, tests, timeout)
 	if err != nil {
 		return "", 0, c.status.Fail(err)

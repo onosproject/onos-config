@@ -934,7 +934,6 @@ func getRunCommand(registry *runner.TestRegistry) *cobra.Command {
 		ValidArgs: registry.GetNames(),
 		Run: func(cmd *cobra.Command, args []string) {
 			testID := fmt.Sprintf("test-%d", newUUIDInt())
-			fmt.Println(testID)
 			// Get the onit controller
 			controller, err := runner.NewController()
 			if err != nil {
