@@ -286,7 +286,7 @@ func getRemoveSimulatorCommand() *cobra.Command {
 // getGetCommand returns a cobra "get" command to read test configurations
 func getGetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get {cluster,clusters,simulators,device-presets,store-presets,tests,testsuites}",
+		Use:   "get {cluster,clusters,simulators,device-presets,store-presets,tests,suites}",
 		Short: "Get test configurations",
 	}
 	cmd.AddCommand(getGetClusterCommand())
@@ -593,14 +593,6 @@ func getGetTestSuitesCommand(registry *runner.TestRegistry) *cobra.Command {
 		Short: "Get a list of integration testing suites",
 		Run: func(cmd *cobra.Command, args []string) {
 			registry.PrintTestSuites()
-			//for _, name := range registry.GetTestSuiteNames() {
-			//	desc := name + ": "
-			//	suite := registry.TestSuites[name]
-			//	for _, name := range suite.GetTestNames() {
-			//		desc += "\n > " + name
-			//	}
-			//	fmt.Println(desc)
-			//}
 		},
 	}
 }
@@ -951,14 +943,14 @@ func getSetClusterCommand() *cobra.Command {
 	}
 }
 
-// getGetCommand returns a cobra "get" command to read test configurations
+// getRunCommand returns a cobra "get" command to read test configurations
 func getRunCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run {test,suite}",
 		Short: "Run integration tests",
 	}
 	cmd.AddCommand(getRunTestSuiteCommand(registry))
-	cmd.AddCommand(getRunTestCommand())
+	cmd.AddCommand(getRetunTestCommand())
 	return cmd
 }
 
