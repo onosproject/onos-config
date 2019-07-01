@@ -96,23 +96,14 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	serverFake.Signal <- struct{}{}
 	assert.NilError(t, err, "Unexpected error doing Subscribe")
 
-	responseReq := <-responsesChan
-	assert.Assert(t, responseReq.GetUpdate().Update != nil, "Update should not be nil")
-
-	assert.Equal(t, len(responseReq.GetUpdate().Update), 1)
-
-	if responseReq.GetUpdate().Update[0] == nil {
-		log.Error("response should contain at least one update and that should not be nil")
-		t.FailNow()
-	}
-
 	device1 := "Device1"
 	path1Once := "test1:cont1a"
 	path2Once := "cont2a"
 	path3Once := "leaf2a"
 	value := "13"
 
-	assertUpdateResponse(t, responseReq, device1, path1Once, path2Once, path3Once, value)
+	// Wait for the Update response with Update
+	assertUpdateResponse(t, responsesChan, device1, path1Once, path2Once, path3Once, value)
 
 }
 
@@ -168,14 +159,10 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	path3Stream := "leaf4a"
 	valueReply := "14"
 
-	for response := range responsesChan {
-		log.Info("response ", response)
-		if len(response.GetUpdate().GetUpdate()) != 0 {
-			assertUpdateResponse(t, response, device1, path1Stream, path2Stream, path3Stream, valueReply)
-		} else {
-			assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
-		}
-	}
+	//Expecting 1 Update response
+	assertUpdateResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream, valueReply)
+	//And one sync response
+	assertSyncResponse(responsesChan, t)
 
 }
 
@@ -299,15 +286,15 @@ func Test_Poll(t *testing.T) {
 	path3Poll := "leaf2a"
 	value := "13"
 
-	for i := 0; i < 4; i++ {
-		response := <-responsesChan
-		log.Info("Response ", response)
-		if len(response.GetUpdate().GetUpdate()) != 0 {
-			assertUpdateResponse(t, response, device1, path1Poll, path2Poll, path3Poll, value)
-		} else {
-			assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
-		}
-	}
+	//Expecting first Update response
+	assertUpdateResponse(t, responsesChan, device1, path1Poll, path2Poll, path3Poll, value)
+	//And first sync response
+	assertSyncResponse(responsesChan, t)
+
+	//Expecting second Update response
+	assertUpdateResponse(t, responsesChan, device1, path1Poll, path2Poll, path3Poll, value)
+	//And second sync response
+	assertSyncResponse(responsesChan, t)
 
 	close(serverFake.Responses)
 
@@ -363,14 +350,10 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	path2Stream := "cont2a"
 	path3Stream := "leaf2a"
 
-	for response := range responsesChan {
-		log.Info("response ", response)
-		if len(response.GetUpdate().GetDelete()) != 0 {
-			assertDeleteResponse(t, response, device1, path1Stream, path2Stream, path3Stream)
-		} else {
-			assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
-		}
-	}
+	//Expecting one delete response
+	assertDeleteResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream)
+	// and one sync response
+	assertSyncResponse(responsesChan, t)
 
 }
 
@@ -393,33 +376,60 @@ func buildRequest(path *gnmi.Path, mode gnmi.SubscriptionList_Mode) *gnmi.Subscr
 	return request
 }
 
-func assertUpdateResponse(t *testing.T, response *gnmi.SubscribeResponse, device1 string, path1 string, path2 string, path3 string, value string) {
-	assert.Assert(t, response.GetUpdate().GetUpdate() != nil, "Update should not be nil")
-	assert.Equal(t, len(response.GetUpdate().GetUpdate()), 1)
-	if response.GetUpdate().GetUpdate()[0] == nil {
-		log.Error("response should contain at least one update and that should not be nil")
+func assertSyncResponse(responsesChan chan *gnmi.SubscribeResponse, t *testing.T) {
+	select {
+	case response := <-responsesChan:
+		log.Info("response ", response)
+		assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
+	case <-time.After(50 * time.Millisecond):
+		log.Error("Expected Sync Response")
 		t.FailNow()
 	}
-	pathResponse := response.GetUpdate().GetUpdate()[0].Path
-	assert.Equal(t, pathResponse.Target, device1)
-	assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
-	assert.Equal(t, pathResponse.Elem[0].Name, path1)
-	assert.Equal(t, pathResponse.Elem[1].Name, path2)
-	assert.Equal(t, pathResponse.Elem[2].Name, path3)
-	assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetStringVal(), value)
 }
 
-func assertDeleteResponse(t *testing.T, response *gnmi.SubscribeResponse, device1 string, path1 string, path2 string, path3 string) {
-	assert.Assert(t, response.GetUpdate() != nil, "Delete should not be nil")
-	assert.Equal(t, len(response.GetUpdate().GetDelete()), 1)
-	if response.GetUpdate().GetDelete()[0] == nil {
-		log.Error("response should contain at least one delete path")
+func assertUpdateResponse(t *testing.T, responsesChan chan *gnmi.SubscribeResponse, device1 string,
+	path1 string, path2 string, path3 string, value string) {
+	select {
+	case response := <-responsesChan:
+		assert.Assert(t, response.GetUpdate().GetUpdate() != nil, "Update should not be nil")
+		assert.Equal(t, len(response.GetUpdate().GetUpdate()), 1)
+		if response.GetUpdate().GetUpdate()[0] == nil {
+			log.Error("response should contain at least one update and that should not be nil")
+			t.FailNow()
+		}
+		pathResponse := response.GetUpdate().GetUpdate()[0].Path
+		assert.Equal(t, pathResponse.Target, device1)
+		assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
+		assert.Equal(t, pathResponse.Elem[0].Name, path1)
+		assert.Equal(t, pathResponse.Elem[1].Name, path2)
+		assert.Equal(t, pathResponse.Elem[2].Name, path3)
+		assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetStringVal(), value)
+	case <-time.After(50 * time.Millisecond):
+		log.Error("Expected Update Response")
 		t.FailNow()
 	}
-	pathResponse := response.GetUpdate().GetDelete()[0]
-	assert.Equal(t, pathResponse.Target, device1)
-	assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
-	assert.Equal(t, pathResponse.Elem[0].Name, path1)
-	assert.Equal(t, pathResponse.Elem[1].Name, path2)
-	assert.Equal(t, pathResponse.Elem[2].Name, path3)
+
+}
+
+func assertDeleteResponse(t *testing.T, responsesChan chan *gnmi.SubscribeResponse, device1 string,
+	path1 string, path2 string, path3 string) {
+	select {
+	case response := <-responsesChan:
+		log.Info("response ", response)
+		assert.Assert(t, response.GetUpdate() != nil, "Delete should not be nil")
+		assert.Equal(t, len(response.GetUpdate().GetDelete()), 1)
+		if response.GetUpdate().GetDelete()[0] == nil {
+			log.Error("response should contain at least one delete path")
+			t.FailNow()
+		}
+		pathResponse := response.GetUpdate().GetDelete()[0]
+		assert.Equal(t, pathResponse.Target, device1)
+		assert.Equal(t, len(pathResponse.Elem), 3, "Expected 3 path elements")
+		assert.Equal(t, pathResponse.Elem[0].Name, path1)
+		assert.Equal(t, pathResponse.Elem[1].Name, path2)
+		assert.Equal(t, pathResponse.Elem[2].Name, path3)
+	case <-time.After(50 * time.Millisecond):
+		log.Error("Expected Update Response")
+		t.FailNow()
+	}
 }
