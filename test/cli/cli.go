@@ -218,7 +218,9 @@ func getDeleteClusterCommand() *cobra.Command {
 			}
 
 			// Delete the cluster
-			if status := controller.DeleteCluster(clusterID); status.Failed() {
+			status := controller.DeleteCluster(clusterID)
+			setDefaultCluster("")
+			if status.Failed() {
 				exitStatus(status)
 			}
 		},
