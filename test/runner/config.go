@@ -63,6 +63,14 @@ type SimulatorConfig struct {
 	Config string `yaml:"config" mapstructure:"config"`
 }
 
+// NetworkConfig provides the configuration for a stratum network
+type NetworkConfig struct {
+	Config         string `yaml:"config" mapstructure:"config"`
+	MininetOptions []string
+	NumDevices     int
+	TopoType       TopoType
+}
+
 // load loads the simulator configuration
 func (c *SimulatorConfig) load() (map[string]interface{}, error) {
 	file, err := os.Open(filepath.Join(deviceConfigsPath, c.Config+".json"))

@@ -17,9 +17,10 @@ package cli
 import (
 	"bytes"
 	"errors"
-	"github.com/spf13/cobra"
 	"io"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 const bashCompletion = `
@@ -30,9 +31,9 @@ __onit_get_clusters() {
         COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
     fi
 }
-__onit_get_simulators() {
+__onit_get_devices() {
     local onit_output
-    if onit_output=$(onit get simulators 2>/dev/null); then
+    if onit_output=$(onit get devices 2>/dev/null); then
         COMPREPLY=( $( compgen -W "${onit_output[*]}" -- "$cur" ) )
     fi
 }
@@ -51,9 +52,9 @@ __onit_custom_func() {
             fi
             return
             ;;
-        onit_delete_simulator)
+        onit_delete_device)
             if [[ ${#nouns[@]} -eq 0 ]]; then
-                __onit_get_simulators
+                __onit_get_devices
             fi
             return
             ;;
@@ -90,7 +91,7 @@ func runCompletionCommand(cmd *cobra.Command, args []string) {
 		}
 
 	} else {
-		exitError(errors.New("unsupported shell type "+args[0]))
+		exitError(errors.New("unsupported shell type " + args[0]))
 	}
 }
 

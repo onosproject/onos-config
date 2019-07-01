@@ -204,6 +204,32 @@ Simulators can similarly be removed with the `remove simulator` command:
 As with the `add` command, removing a simulator requires that the onos-config cluster be reconfigured
 and redeployed.
 
+### Adding Networks
+To run some of the tests on stratum switches, we can create a network of stratum switches using Mininet. To create a network of stratum switches, we can use `onit add network [Name] [Mininet Options]` as follows: 
+
+* To create a single node network, simply run `onit add network`. This command creates a single node network and assigns a name to it automatically. 
+* To create a linear network topology with two switches and name it *stratum-linear*, simply run the following command:
+
+```bash
+$ onit add network stratum-linear -- --topo linear,2
+```
+
+When a network is added to the cluster, the cluster is reconfigured in two phases:
+* Bootstrap one or more than one new stratum switches with the provided configuration
+* Reconfigure and redeploy the onos-config cluster with the new switches in its stores
+
+Networks can be removed using `onit remove network` command. For example, to remove the linear topolog that is created using the above command, you should run the following command:
+```bash
+$ onit remove network stratum-linear
+```
+
+As with the `add` command, removing a network requires that the onos-config cluster be reconfigured and redeployed.
+
+**Note**: In the current implementation, we support the following network topologies:
+
+* A *Single* node network topology
+* A *Linear* network topology
+
 ### Running Tests
 
 Once the cluster has been setup for the test, to run a test simply use `onit run`:
