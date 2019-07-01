@@ -196,7 +196,7 @@ func (c *ClusterController) createAtomixClusterRole() error {
 func (c *ClusterController) createAtomixClusterRoleBinding() error {
 	roleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "atomix-controller",
+			Name:      c.clusterID,
 			Namespace: c.clusterID,
 		},
 		Subjects: []rbacv1.Subject{

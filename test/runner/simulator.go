@@ -185,16 +185,17 @@ func (c *ClusterController) awaitSimulatorReady(name string) error {
 
 // teardownSimulator tears down a simulator by name
 func (c *ClusterController) teardownSimulator(name string) error {
-	if err := c.deleteSimulatorPod(name); err != nil {
-		return err
+	var err error
+	if e := c.deleteSimulatorPod(name); e != nil {
+		err = e
 	}
-	if err := c.deleteSimulatorService(name); err != nil {
-		return err
+	if e := c.deleteSimulatorService(name); e != nil {
+		err = e
 	}
-	if err := c.deleteSimulatorConfigMap(name); err != nil {
-		return err
+	if e := c.deleteSimulatorConfigMap(name); e != nil {
+		err = e
 	}
-	return nil
+	return err
 }
 
 // deleteSimulatorConfigMap deletes a simulator ConfigMap by name
