@@ -17,7 +17,6 @@ package runner
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"os"
 	"sort"
 	"strings"
@@ -54,13 +53,6 @@ type TestRegistry struct {
 //TestSuite to run multiple tests
 type TestSuite struct {
 	name string
-	tests map[string]Test
-}
-
-//TestGroup to run multiple tests
-type TestGroup struct {
-	name string
-	suite.SetupTestSuite
 	tests map[string]Test
 }
 
