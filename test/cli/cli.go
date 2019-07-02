@@ -57,7 +57,7 @@ func GetOnitCommand(registry *runner.TestRegistry) *cobra.Command {
 func GetOnitK8sCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                    "onit-k8s",
-		Short:                  "ONLY TO BE USED ON K8S INSTANCE",
+		Short:                  "This command is only intended to be used in a k8s instance for running integration tests.",
 	}
 	cmd.AddCommand(getTestTestLocalCommand(registry))
 	cmd.AddCommand(getTestSuiteLocalCommand(registry))
@@ -952,7 +952,7 @@ func getSetClusterCommand() *cobra.Command {
 	}
 }
 
-// getRunCommand returns a cobra "get" command to read test configurations
+// getRunCommand returns a cobra run command to run integration tests
 func getRunCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run {test,suite}",
@@ -985,7 +985,6 @@ func getRunSuiteRemoteCommand(registry *runner.TestRegistry) *cobra.Command {
 		Use:   "suite [suite]",
 		Short: "Run integration tests",
 		Run: func(cmd *cobra.Command, args []string) {
-			//tests := registry.TestSuites[args[0]]
 			runTestsRemote(cmd,"suite",args)
 		},
 	}
