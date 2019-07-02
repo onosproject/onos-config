@@ -1028,9 +1028,6 @@ func runTestsRemote(cmd *cobra.Command, commandType string,tests []string){
 	}
 }
 
-
-
-
 // getTestTestLocalCommand returns a cobra "test" command for tests in the given registry
 func getTestTestLocalCommand(registry *runner.TestRegistry) *cobra.Command {
 	return &cobra.Command{
