@@ -100,7 +100,6 @@ func (r *TestSuite) GetTestNames() []string {
 	return names
 }
 
-
 // GetTestSuiteNames returns a slice of test names
 func (r *TestRegistry) GetTestSuiteNames() []string {
 	names := make([]string, 0, len(r.TestSuites))
@@ -114,10 +113,10 @@ func (r *TestRegistry) GetTestSuiteNames() []string {
 }
 
 //PrintTestSuites prints test suites in a table
-func (r *TestRegistry) PrintTestSuites(noHeaders bool) {
+func (r *TestRegistry) PrintTestSuites(includeHeaders bool) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
-	if !noHeaders {
+	if includeHeaders {
 		fmt.Fprintln(writer, "SUITE\tTESTS")
 	}
 	for name, suite := range r.TestSuites {

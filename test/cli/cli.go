@@ -603,12 +603,25 @@ func getGetTestSuitesCommand(registry *runner.TestRegistry) *cobra.Command {
 		Short: "Get a list of integration testing suites",
 		Run: func(cmd *cobra.Command, args []string) {
 			noHeaders, _ := cmd.Flags().GetBool("no-headers")
-			registry.PrintTestSuites(noHeaders)
+			printTestSuites(registry, !noHeaders)
 		},
 	}
 
 	cmd.Flags().Bool("no-headers", false, "whether to print column headers")
 	return cmd
+}
+
+//PrintTestSuites prints test suites in a table
+func printTestSuites(registry *runner.TestRegistry, includeHeaders bool) {
+	writer := new(tabwriter.Writer)
+	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
+	if includeHeaders {
+		fmt.Fprintln(writer, "SUITE\tTESTS")
+	}
+	for name, suite := range registry.TestSuites {
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", name,strings.Join(suite.GetTestNames(),", ")))
+	}
+	writer.Flush()
 }
 
 // getGetHistoryCommand returns a cobra command to get the history of tests
