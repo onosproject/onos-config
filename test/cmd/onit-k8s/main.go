@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	cmd := cli.GetOnitCommand(integration.Registry)
+	cmd := cli.GetOnitK8sCommand(integration.Registry)
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -32,8 +32,8 @@ import (
 
 )
 
-// GetCommand returns a Cobra command for tests in the given test registry
-func GetCommand(registry *runner.TestRegistry) *cobra.Command {
+// GetOnitCommand returns a Cobra command for tests in the given test registry
+func GetOnitCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                    "onit",
 		Short:                  "Run onos-config integration tests on Kubernetes",
@@ -48,9 +48,18 @@ func GetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd.AddCommand(getSetCommand())
 	cmd.AddCommand(getDebugCommand())
 	cmd.AddCommand(getFetchCommand())
-	cmd.AddCommand(getTestCommand(registry))
 	cmd.AddCommand(getCompletionCommand())
 
+	return cmd
+}
+
+func GetOnitK8sCommand(registry *runner.TestRegistry) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:                    "onit-k8s",
+		Short:                  "ONLY TO BE USED ON K8S INSTANCE",
+	}
+	cmd.AddCommand(getTestTestLocalCommand(registry))
+	cmd.AddCommand(getTestSuiteLocalCommand(registry))
 	return cmd
 }
 
@@ -949,47 +958,20 @@ func getRunCommand(registry *runner.TestRegistry) *cobra.Command {
 		Use:   "run {test,suite}",
 		Short: "Run integration tests",
 	}
-	cmd.AddCommand(getRunTestSuiteCommand(registry))
-	cmd.AddCommand(getRetunTestCommand())
+	cmd.AddCommand(getRunSuiteRemoteCommand(registry))
+	cmd.AddCommand(getRunTestRemoteCommand())
 	return cmd
 }
 
 // getRunCommand returns a cobra "run" command
-func getRunTestCommand() *cobra.Command {
+func getRunTestRemoteCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "test [tests]",
 		Short: "Run integration tests on Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
-			testID := fmt.Sprintf("test-%d", newUUIDInt())
-			// Get the onit controller
-			controller, err := runner.NewController()
-			if err != nil {
-				exitError(err)
-			}
-
-			// Get the cluster ID
-			clusterID, err := cmd.Flags().GetString("cluster")
-			if err != nil {
-				exitError(err)
-			}
-
-			// Get the cluster controller
-			cluster, err := controller.GetCluster(clusterID)
-			if err != nil {
-				exitError(err)
-			}
-
-			timeout, _ := cmd.Flags().GetInt("timeout")
-			message, code, status := cluster.RunTests(testID, args, time.Duration(timeout)*time.Second)
-			if status.Failed() {
-				exitStatus(status)
-			} else {
-				fmt.Println(message)
-				os.Exit(code)
-			}
+			runTestsRemote(cmd,"test",args)
 		},
 	}
-
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster on which to run the test")
 	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
 		cobra.BashCompCustom: {"__onit_get_clusters"},
@@ -998,11 +980,60 @@ func getRunTestCommand() *cobra.Command {
 	return cmd
 }
 
+func getRunSuiteRemoteCommand(registry *runner.TestRegistry) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "suite [suite]",
+		Short: "Run integration tests",
+		Run: func(cmd *cobra.Command, args []string) {
+			//tests := registry.TestSuites[args[0]]
+			runTestsRemote(cmd,"suite",args)
+		},
+	}
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster on which to run the test")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
+	cmd.Flags().IntP("timeout", "t", 60*10, "test timeout in seconds")
+
+	return cmd
+}
+
+func runTestsRemote(cmd *cobra.Command, commandType string,tests []string){
+	testID := fmt.Sprintf("test-%d", newUUIDInt())
+
+	// Get the onit controller
+	controller, err := runner.NewController()
+	if err != nil {
+		exitError(err)
+	}
+
+	// Get the cluster ID
+	clusterID, err := cmd.Flags().GetString("cluster")
+	if err != nil {
+		exitError(err)
+	}
+
+	// Get the cluster controller
+	cluster, err := controller.GetCluster(clusterID)
+	if err != nil {
+		exitError(err)
+	}
+
+	timeout, _ := cmd.Flags().GetInt("timeout")
+	message, code, status := cluster.RunTests(testID, append([]string{commandType}, tests...), time.Duration(timeout)*time.Second)
+	if status.Failed() {
+		exitStatus(status)
+	} else {
+		fmt.Println(message)
+		os.Exit(code)
+	}
+}
 
 
 
-// getTestCommand returns a cobra "test" command for tests in the given registry
-func getTestCommand(registry *runner.TestRegistry) *cobra.Command {
+
+// getTestTestLocalCommand returns a cobra "test" command for tests in the given registry
+func getTestTestLocalCommand(registry *runner.TestRegistry) *cobra.Command {
 	return &cobra.Command{
 		Use:   "test [tests]",
 		Short: "Run integration tests",
@@ -1020,8 +1051,8 @@ func getTestCommand(registry *runner.TestRegistry) *cobra.Command {
 	}
 }
 
-// getTestCommand returns a cobra "test" command for tests in the given registry
-func getRunTestSuiteCommand(registry *runner.TestRegistry) *cobra.Command {
+// getTestSuiteLocalCommand returns a cobra "test" command for tests in the given registry
+func getTestSuiteLocalCommand(registry *runner.TestRegistry) *cobra.Command {
 	return &cobra.Command{
 		Use:   "suite [suite]",
 		Short: "Run integration test suites on Kubernetes",
