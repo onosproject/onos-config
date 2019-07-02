@@ -25,7 +25,7 @@ test: build deps lint vet license_check gofmt cyclo misspell ineffassign
 	go test github.com/onosproject/onos-config/modelplugin/...
 
 coverage: # @HELP generate unit test coverage data
-coverage: build deps lint vet license_check gofmt
+coverage: build deps lint vet license_check gofmt cyclo misspell ineffassign
 	./build/bin/coveralls-coverage
 
 deps: # @HELP ensure that the required dependencies are in place
