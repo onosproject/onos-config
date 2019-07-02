@@ -53,6 +53,7 @@ func GetOnitCommand(registry *runner.TestRegistry) *cobra.Command {
 	return cmd
 }
 
+// GetOnitK8sCommand returns a Cobra command for running tests on k8s
 func GetOnitK8sCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                    "onit-k8s",
