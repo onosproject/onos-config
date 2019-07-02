@@ -85,7 +85,7 @@ func (c *ClusterController) RunTests(testID string, tests []string, timeout time
 	}
 
 	// Start the test job
-	c.status.Start("Starting test job")
+	c.status.Start(fmt.Sprintf("[%s] Starting test job", testID))
 	pod, err := c.startTests(testID, tests, timeout)
 	if err != nil {
 		return "", 0, c.status.Fail(err)
@@ -146,17 +146,17 @@ func (c *ClusterController) GetResources(name string) ([]string, error) {
 }
 
 // GetLogs returns the logs for a single test resource
-func (c *ClusterController) GetLogs(resourceID string) ([]byte, error) {
+func (c *ClusterController) GetLogs(resourceID string, options corev1.PodLogOptions) ([]byte, error) {
 	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	return c.getLogs(*pod)
+	return c.getLogs(*pod, options)
 }
 
 // getLogs gets the logs from the given pod
-func (c *ClusterController) getLogs(pod corev1.Pod) ([]byte, error) {
-	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &corev1.PodLogOptions{})
+func (c *ClusterController) getLogs(pod corev1.Pod, options corev1.PodLogOptions) ([]byte, error) {
+	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &options)
 	readCloser, err := req.Stream()
 	if err != nil {
 		return nil, err
@@ -189,20 +189,20 @@ func (c *ClusterController) streamLogs(pod corev1.Pod) (io.ReadCloser, error) {
 }
 
 // DownloadLogs downloads the logs for the given resource to the given path
-func (c *ClusterController) DownloadLogs(resourceID string, path string) console.ErrorStatus {
+func (c *ClusterController) DownloadLogs(resourceID string, path string, options corev1.PodLogOptions) console.ErrorStatus {
 	c.status.Start("Downloading logs")
 	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
 	if err != nil {
 		return c.status.Fail(err)
 	}
-	if err := c.downloadLogs(*pod, path); err != nil {
+	if err := c.downloadLogs(*pod, path, options); err != nil {
 		return c.status.Fail(err)
 	}
 	return c.status.Succeed()
 }
 
 // downloadLogs downloads the logs from the given pod to the given path
-func (c *ClusterController) downloadLogs(pod corev1.Pod, path string) error {
+func (c *ClusterController) downloadLogs(pod corev1.Pod, path string, options corev1.PodLogOptions) error {
 	// Create the file
 	file, err := os.Create(path)
 	if err != nil {
@@ -210,7 +210,7 @@ func (c *ClusterController) downloadLogs(pod corev1.Pod, path string) error {
 	}
 
 	// Get a stream of logs
-	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &corev1.PodLogOptions{})
+	req := c.kubeclient.CoreV1().Pods(c.clusterID).GetLogs(pod.Name, &options)
 	readCloser, err := req.Stream()
 	if err != nil {
 		return err
