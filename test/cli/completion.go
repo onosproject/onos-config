@@ -43,6 +43,23 @@ __onit_get_nodes() {
         COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
     fi
 }
+
+__onit_get_tests() {
+    local onit_output out
+    if onit_output=$(onit get tests 2>/dev/null); then
+        out=($(echo "${onit_output}" | awk '{print $1}'))
+        COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
+    fi
+}
+
+__onit_get_suites() {
+    local onit_output out
+    if onit_output=$(onit get suites --no-headers 2>/dev/null); then
+        out=($(echo "${onit_output}" | awk '{print $1}'))
+        COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
+    fi
+}
+
 __onit_custom_func() {
     case ${last_command} in
         onit_set_cluster | onit_delete_cluster)
@@ -60,6 +77,20 @@ __onit_custom_func() {
         onit_get_logs | onit_fetch_logs | onit_debug)
             if [[ ${#nouns[@]} -eq 0 ]]; then
                 __onit_get_nodes
+            fi
+            return
+            ;;
+
+        onit_run_test)
+            if [[ ${#nouns[@]} -eq 0 ]]; then
+                __onit_get_tests
+            fi
+            return
+            ;;
+
+        onit_run_suite)
+            if [[ ${#nouns[@]} -eq 0 ]]; then
+                __onit_get_suites
             fi
             return
             ;;

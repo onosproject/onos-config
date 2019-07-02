@@ -598,13 +598,17 @@ func getGetTestsCommand(registry *runner.TestRegistry) *cobra.Command {
 
 // getGetTestsCommand returns a cobra command to get a list of available tests
 func getGetTestSuitesCommand(registry *runner.TestRegistry) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "suites",
 		Short: "Get a list of integration testing suites",
 		Run: func(cmd *cobra.Command, args []string) {
-			registry.PrintTestSuites()
+			noHeaders, _ := cmd.Flags().GetBool("no-headers")
+			registry.PrintTestSuites(noHeaders)
 		},
 	}
+
+	cmd.Flags().Bool("no-headers", false, "whether to print column headers")
+	return cmd
 }
 
 // getGetHistoryCommand returns a cobra command to get the history of tests

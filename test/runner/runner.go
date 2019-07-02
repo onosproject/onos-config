@@ -114,10 +114,12 @@ func (r *TestRegistry) GetTestSuiteNames() []string {
 }
 
 //PrintTestSuites prints test suites in a table
-func (r *TestRegistry) PrintTestSuites() {
+func (r *TestRegistry) PrintTestSuites(noHeaders bool) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
-	fmt.Fprintln(writer, "SUITE\tTESTS")
+	if !noHeaders {
+		fmt.Fprintln(writer, "SUITE\tTESTS")
+	}
 	for name, suite := range r.TestSuites {
 		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", name,strings.Join(suite.GetTestNames(),", ")))
 	}
