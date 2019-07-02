@@ -752,7 +752,6 @@ func parseLogOptions(cmd *cobra.Command) corev1.PodLogOptions{
 	options := corev1.PodLogOptions{}
 	since, err := cmd.Flags().GetDuration("since")
 	sinceSeconds := int64(since / time.Second)
-	fmt.Println(sinceSeconds)
 	if sinceSeconds > 0 {
 		options.SinceSeconds = &sinceSeconds
 	}
