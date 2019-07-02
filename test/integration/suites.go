@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package integration
 
 import (
-	"fmt"
-	"github.com/onosproject/onos-config/test/cli"
-	"github.com/onosproject/onos-config/test/integration"
-	"os"
+	"github.com/onosproject/onos-config/test/runner"
 )
 
-func main() {
-	cmd := cli.GetOnitCommand(integration.Registry)
-	if err := cmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+var (
+	//AllTests is an example of a test suite
+	AllTests = runner.NewTestSuite("alltests")
+	//SomeTests is an example of a test suite
+	SomeTests = runner.NewTestSuite("sometests")
+)
+
+func init(){
+	//example of registering groups
+	Registry.RegisterTestSuite(*AllTests)
+	Registry.RegisterTestSuite(*SomeTests)
 }

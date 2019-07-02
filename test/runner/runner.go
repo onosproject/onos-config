@@ -16,32 +16,68 @@ package runner
 
 import (
 	"errors"
-	"github.com/stretchr/testify/suite"
+	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"testing"
+	"text/tabwriter"
 )
 
 // NewRegistry returns a pointer to a new TestRegistry
 func NewRegistry() *TestRegistry {
 	return &TestRegistry{
+		tests:      make(map[string]Test),
+		TestSuites: make(map[string]TestSuite),
+	}
+}
+
+//NewTestSuite returns a pointer to a new TestSuite
+func NewTestSuite(name string) *TestSuite {
+	return &TestSuite{
+		name: name,
 		tests: make(map[string]Test),
 	}
 }
 
-// TestRegistry contains a mapping of named tests
+// Test is a test function
+type Test func(t *testing.T)
+
+
+// TestRegistry contains a mapping of named test groups
 type TestRegistry struct {
-	suite.SetupTestSuite
+	tests      map[string]Test
+	TestSuites map[string]TestSuite
+}
+
+//TestSuite to run multiple tests
+type TestSuite struct {
+	name string
 	tests map[string]Test
 }
 
-// Register registers a named test
-func (r *TestRegistry) Register(name string, test Test) {
+//RegisterTest registers a test to the registry
+func (r *TestRegistry) RegisterTest(name string, test Test, suites []*TestSuite) {
+	r.tests[name] = test
+
+	for _, suite := range suites {
+		//fmt.Println("Registering test: ", name, "on suite: ",suite.name)
+		suite.registerTest(name, test)
+	}
+}
+
+//RegisterTest registers a test to a test group
+func (r *TestSuite) registerTest(name string, test Test) {
 	r.tests[name] = test
 }
 
-// GetNames returns a slice of test names
-func (r *TestRegistry) GetNames() []string {
+//RegisterTestSuite registers test suite into the registry
+func (r *TestRegistry) RegisterTestSuite(testGroup TestSuite) {
+	r.TestSuites[testGroup.name] = testGroup
+}
+
+// GetTestNames returns a slice of test names
+func (r *TestRegistry) GetTestNames() []string {
 	names := make([]string, 0, len(r.tests))
 	for name := range r.tests {
 		names = append(names, name)
@@ -52,13 +88,47 @@ func (r *TestRegistry) GetNames() []string {
 	return names
 }
 
-// Test is a test function
-type Test func(t *testing.T)
+// GetTestNames returns a slice of test names
+func (r *TestSuite) GetTestNames() []string {
+	names := make([]string, 0, len(r.tests))
+	for name := range r.tests {
+		names = append(names, name)
+	}
+	sort.Slice(names, func(i, j int) bool {
+		return names[i] < names[j]
+	})
+	return names
+}
+
+
+// GetTestSuiteNames returns a slice of test names
+func (r *TestRegistry) GetTestSuiteNames() []string {
+	names := make([]string, 0, len(r.TestSuites))
+	for name := range r.TestSuites {
+		names = append(names, name)
+	}
+	sort.Slice(names, func(i, j int) bool {
+		return names[i] < names[j]
+	})
+	return names
+}
+
+//PrintTestSuites prints test suites in a table
+func (r *TestRegistry) PrintTestSuites() {
+	writer := new(tabwriter.Writer)
+	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
+	fmt.Fprintln(writer, "SUITE\tTESTS")
+	for name, suite := range r.TestSuites {
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", name,strings.Join(suite.GetTestNames(),", ")))
+	}
+	writer.Flush()
+}
 
 // TestRunner runs integration tests
 type TestRunner struct {
 	Registry *TestRegistry
 }
+
 
 // RunTests Runs the tests
 func (r *TestRunner) RunTests(args []string) error {
@@ -81,6 +151,39 @@ func (r *TestRunner) RunTests(args []string) error {
 				F:    test,
 			})
 		}
+	}
+
+	// Hack to enable verbose testing.
+	os.Args = []string{
+		os.Args[0],
+		"-test.v",
+	}
+
+	// Run the integration tests via the testing package.
+	testing.Main(func(_, _ string) (bool, error) { return true, nil }, tests, nil, nil)
+	return nil
+}
+
+
+// RunTestSuites Runs the tests groups
+func (r *TestRunner) RunTestSuites(args []string) error {
+	tests := make([]testing.InternalTest, 0, len(args))
+	if len(args) > 0 {
+		for _, name := range args {
+			testSuite, ok := r.Registry.TestSuites[name]
+			if !ok {
+				return errors.New("unknown test suite" + name)
+			}
+
+			testNames := []string{}
+
+			for testName := range testSuite.tests {
+				testNames = append(testNames,testName)
+			}
+			r.RunTests(testNames)
+		}
+	} else {
+		return nil
 	}
 
 	// Hack to enable verbose testing.

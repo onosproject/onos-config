@@ -19,6 +19,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/test/env"
+	"github.com/onosproject/onos-config/test/runner"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,8 @@ const (
 )
 
 func init() {
-	Registry.Register("subscribe", TestSubscribe)
+	//example of registering groups
+	Registry.RegisterTest("subscribe", TestSubscribe, []*runner.TestSuite{AllTests,SomeTests})
 }
 
 // TestSubscribe tests a stream subscription to updates to a device
