@@ -104,7 +104,7 @@ func LoadManager(configStoreFile string, changeStoreFile string, deviceStoreFile
 	}
 	log.Info("Change store loaded from ", changeStoreFile)
 
-	deviceStore, err := topocache.LoadDeviceStore(deviceStoreFile, topoChannel)
+	deviceStore, err := topocache.NewDeviceStore(topoChannel)
 	if err != nil {
 		log.Error("Cannot load device store ", err)
 		return nil, err

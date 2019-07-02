@@ -3,6 +3,7 @@ module github.com/onosproject/onos-config
 go 1.12
 
 require (
+	github.com/atomix/atomix-go-client v0.0.0-20190702004429-c125153f6d88
 	github.com/atomix/atomix-k8s-controller v0.0.0-20190620084759-d5e65f7fbf68
 	github.com/docker/docker v1.13.1
 	github.com/fatih/color v1.7.0
@@ -32,7 +33,6 @@ require (
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8 // indirect
 	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
 	golang.org/x/sys v0.0.0-20190616124812-15dcb6c0061f // indirect
-	golang.org/x/text v0.3.2 // indirect
 	google.golang.org/grpc v1.21.1
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 	gotest.tools v2.2.0+incompatible

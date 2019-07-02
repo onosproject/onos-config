@@ -14,6 +14,10 @@ github.com/PuerkitoBio/urlesc v0.0.0-20160726150825-5bd2802263f2/go.mod h1:uGdko
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
+github.com/atomix/atomix-go-client v0.0.0-20190702001424-b2f7236c48b2 h1:uxolqqai+ecusu82+i2sj/83SIlpWiEDnNexAvKtxJM=
+github.com/atomix/atomix-go-client v0.0.0-20190702001424-b2f7236c48b2/go.mod h1:N8U2hD9J65jfukKa2LSf53oVFGkcNFyhW9mcEsm08zs=
+github.com/atomix/atomix-go-client v0.0.0-20190702004429-c125153f6d88 h1:6FwKdBEMsS4Brpp5kMXpL2QO88ptqiMBhjdAYxrxWO8=
+github.com/atomix/atomix-go-client v0.0.0-20190702004429-c125153f6d88/go.mod h1:N8U2hD9J65jfukKa2LSf53oVFGkcNFyhW9mcEsm08zs=
 github.com/atomix/atomix-k8s-controller v0.0.0-20190620084759-d5e65f7fbf68 h1:PCOXQ9q2rP/oYVNAFHR1LIqyD5JXQ19saZUKc4MkfR8=
 github.com/atomix/atomix-k8s-controller v0.0.0-20190620084759-d5e65f7fbf68/go.mod h1:vdmRfGKhgD28STeLKeKoq3tMZOyTR0l3WSG9QCrZWs0=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
@@ -305,6 +309,7 @@ golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190312061237-fead79001313/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20190602015325-4c4f7f33c9ed/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190616124812-15dcb6c0061f h1:25KHgbfyiSm6vwQLbM3zZIe1v9p/3ea4Rz+nnM5K/i4=
 golang.org/x/sys v0.0.0-20190616124812-15dcb6c0061f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.0.0-20160726164857-2910a502d2bf/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
@@ -368,6 +373,7 @@ k8s.io/api v0.0.0-20190620073856-dcce3486da33/go.mod h1:ldk709UQo/iedNLOW7J06V9Q
 k8s.io/apiextensions-apiserver v0.0.0-20190325193600-475668423e9f h1:+GpMltIq6SUOswgSQ3HcxgldikyBCreeRDkCYOzwfGk=
 k8s.io/apiextensions-apiserver v0.0.0-20190325193600-475668423e9f/go.mod h1:IxkesAMoaCRoLrPJdZNZUQp9NfZnzqaVzLhb2VEQzXE=
 k8s.io/apimachinery v0.0.0-20181126123746-eddba98df674/go.mod h1:ccL7Eh7zubPUSh9A3USN90/OzHNSVN6zxzde07TDCL0=
+k8s.io/apimachinery v0.0.0-20190116203031-d49e237a2683/go.mod h1:ccL7Eh7zubPUSh9A3USN90/OzHNSVN6zxzde07TDCL0=
 k8s.io/apimachinery v0.0.0-20190620073744-d16981aedf33 h1:Lkd+QNFOB3DqrDyWo796aodJgFJautn/M+t9IGearPc=
 k8s.io/apimachinery v0.0.0-20190620073744-d16981aedf33/go.mod h1:9q5NW/mMno/nwbRZd/Ks2TECgi2PTZ9cwarf4q+ze6Q=
 k8s.io/client-go v0.0.0-20181126152608-d082d5923d3c/go.mod h1:7vJpHMYJwNQCWgzmNV+VYUl1zCObLyodBc8nIyt8L5s=

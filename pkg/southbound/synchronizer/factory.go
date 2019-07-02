@@ -36,7 +36,10 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			if err != nil {
 				log.Error(err)
 			}
-			device := deviceStore.Store[topocache.ID(deviceName)]
+			device, err := deviceStore.GetDevice(topocache.ID(deviceName))
+			if err != nil {
+				continue
+			}
 			ctx := context.Background()
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan)
 			if err != nil {

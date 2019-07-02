@@ -22,8 +22,11 @@ Until then this simple cache will load a set of Device definitions from file
 package topocache
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	atomix "github.com/atomix/atomix-go-client/pkg/client"
+	"github.com/atomix/atomix-go-client/pkg/client/map_"
 	"github.com/onosproject/onos-config/pkg/events"
 	"os"
 	"regexp"
@@ -48,60 +51,94 @@ type Device struct {
 
 // DeviceStore is the model of the Device store
 type DeviceStore struct {
-	Version     string
-	Storetype   string
-	Store       map[ID]Device
+	store       map_.Map
 	topoChannel chan<- events.TopoEvent
 }
 
-// LoadDeviceStore loads a device store from a file - will eventually be from onos-topology
-func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceStore, error) {
-	storeFile, err := os.Open(file)
+func NewDeviceStore(topoChannel chan<- events.TopoEvent) (*DeviceStore, error) {
+	atomixController := os.Getenv("ATOMIX_CONTROLLER")
+	opts := []atomix.ClientOption{
+		atomix.WithNamespace(os.Getenv("ATOMIX_NAMESPACE")),
+		atomix.WithApplication(os.Getenv("ATOMIX_APP")),
+	}
+	client, err := atomix.NewClient(atomixController, opts...)
 	if err != nil {
 		return nil, err
 	}
-	defer storeFile.Close()
 
-	jsonDecoder := json.NewDecoder(storeFile)
-	var deviceStore = DeviceStore{}
-	jsonDecoder.Decode(&deviceStore)
-	if deviceStore.Storetype != storeTypeDevice {
-		return nil,
-			fmt.Errorf("Store type invalid: " + deviceStore.Storetype)
-	} else if deviceStore.Version != storeVersion {
-		return nil,
-			fmt.Errorf("Store version invalid: " + deviceStore.Version)
-	}
-	deviceStore.topoChannel = topoChannel
-	// Validate that the store is OK before sending out any events
-	for id, device := range deviceStore.Store {
-		err := validateDevice(id, device)
-		if err != nil {
-			return nil, fmt.Errorf("Error loading store: %s: %v", id, err)
-		}
+	group, err := client.GetGroup(context.Background(), "raft")
+	if err != nil {
+		return nil, err
 	}
 
-	// We send a creation event for each device in store
-	for _, device := range deviceStore.Store {
-		topoChannel <- events.CreateTopoEvent(string(device.ID), true, device.Addr)
+	map_, err := group.GetMap(context.Background(), "device-store")
+	if err != nil {
+		return nil, err
 	}
-
-	return &deviceStore, nil
+	return &DeviceStore{
+		store:       map_,
+		topoChannel: topoChannel,
+	}, nil
 }
 
 // AddOrUpdateDevice adds or updates the specified device in the device inventory.
 func (store *DeviceStore) AddOrUpdateDevice(id ID, device Device) error {
 	err := validateDevice(id, device)
 	if err == nil {
-		store.Store[id] = device
+		deviceJson, err := json.Marshal(device)
+		if err != nil {
+			return err
+		}
+		_, err = store.store.Put(context.Background(), string(id), deviceJson)
+		if err != nil {
+			return err
+		}
 		store.topoChannel <- events.CreateTopoEvent(string(device.ID), true, device.Addr)
 	}
 	return err
 }
 
+// GetDevice returns a device by ID
+func (store *DeviceStore) GetDevice(id ID) (Device, error) {
+	kv, err := store.store.Get(context.Background(), string(id))
+	if err != nil {
+		return Device{}, err
+	}
+	device := &Device{}
+	err = json.Unmarshal(kv.Value, device)
+	if err != nil {
+		return Device{}, err
+	}
+	return *device, nil
+}
+
+// GetDevices returns a list of devices in the store
+func (store *DeviceStore) GetDevices() ([]Device, error) {
+	ch := make(chan *map_.KeyValue)
+	err := store.store.Entries(context.Background(), ch)
+	if err != nil {
+		return nil, err
+	}
+
+	devices := []Device{}
+	for kv := range ch {
+		device := &Device{}
+		err := json.Unmarshal(kv.Value, device)
+		if err != nil {
+			return nil, err
+		}
+		devices = append(devices, *device)
+	}
+	return devices, nil
+}
+
 // RemoveDevice removes the device with the specified address from the device inventory.
-func (store *DeviceStore) RemoveDevice(id ID) {
-	delete(store.Store, id)
+func (store *DeviceStore) RemoveDevice(id ID) error {
+	_, err := store.store.Remove(context.Background(), string(id))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func validateDevice(id ID, device Device) error {
