@@ -27,7 +27,9 @@ jobs:
   include:
     - stage: tests
       script: make coverage
-    -
+
+    - stage: integration-tests
+      if: type != pull_request
       script:
         - date
         # Download and install kubectl
