@@ -760,7 +760,7 @@ func parseLogOptions(cmd *cobra.Command) corev1.PodLogOptions{
 		exitError(err)
 	}
 	tail, err := cmd.Flags().GetInt64("tail")
-	if tail > 0 {
+	if tail > 0 && err != nil {
 		options.TailLines = &tail
 	}
 	return options
