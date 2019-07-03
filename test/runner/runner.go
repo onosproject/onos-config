@@ -16,12 +16,9 @@ package runner
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"sort"
-	"strings"
 	"testing"
-	"text/tabwriter"
 )
 
 // NewRegistry returns a pointer to a new TestRegistry
@@ -110,19 +107,6 @@ func (r *TestRegistry) GetTestSuiteNames() []string {
 		return names[i] < names[j]
 	})
 	return names
-}
-
-//PrintTestSuites prints test suites in a table
-func (r *TestRegistry) PrintTestSuites(includeHeaders bool) {
-	writer := new(tabwriter.Writer)
-	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
-	if includeHeaders {
-		fmt.Fprintln(writer, "SUITE\tTESTS")
-	}
-	for name, suite := range r.TestSuites {
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", name,strings.Join(suite.GetTestNames(),", ")))
-	}
-	writer.Flush()
 }
 
 // TestRunner runs integration tests
