@@ -56,6 +56,9 @@ spec:
             - "-deviceStore=/etc/onos-config/test-configs/deviceStore-sample.json"
             {{ end }}
             - "-networkStore=/etc/onos-config/test-configs/networkStore-sample.json"
+            {{- range $i, $plugin := .Values.plugins }}
+            - {{ printf "-modelPlugin=/usr/local/lib/%s" $plugin }}
+            {{- end }}
           ports:
             - name: grpc
               containerPort: 5150

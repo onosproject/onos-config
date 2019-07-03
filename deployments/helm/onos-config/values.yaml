@@ -13,6 +13,8 @@ debug: false
 
 devices: []
 
+plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0]
+
 store:
   enabled: false
   controller: atomix-controller.kube-system.svc.cluster.local:5679
