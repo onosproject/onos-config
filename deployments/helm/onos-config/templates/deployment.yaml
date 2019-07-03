@@ -50,11 +50,7 @@ spec:
             - "-certPath=/etc/onos-config/certs/tls.crt"
             - "-configStore=/etc/onos-config/test-configs/configStore-sample.json"
             - "-changeStore=/etc/onos-config/test-configs/changeStore-sample.json"
-            {{ if .Values.devices }}
             - "-deviceStore=/etc/onos-config/test-configs/deviceStore.json"
-            {{ else }}
-            - "-deviceStore=/etc/onos-config/test-configs/deviceStore-sample.json"
-            {{ end }}
             - "-networkStore=/etc/onos-config/test-configs/networkStore-sample.json"
           ports:
             - name: grpc
