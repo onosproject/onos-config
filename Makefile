@@ -83,12 +83,20 @@ onos-config-it-docker: onos-config-base-docker # @HELP build onos-config-integra
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
+# integration: @HELP build and run integration tests
+integration: kind
+	onit create cluster
+	onit add simulator
+	onit run single-path
+	onit run subscribe
+
+
 images: # @HELP build all Docker images
 images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-config-it-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
-	@if [[ ! `kind get clusters` ]]; then echo "no kind cluster found" && exit 1; fi
+	@if [ `kind get clusters` = '' ]; then echo "no kind cluster found" && exit 1; fi
 	kind load docker-image onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 	kind load docker-image onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
 	kind load docker-image onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
