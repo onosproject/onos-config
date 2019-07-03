@@ -23,10 +23,14 @@ var (
 	AllTests = runner.NewTestSuite("alltests")
 	//SomeTests is an example of a test suite
 	SomeTests = runner.NewTestSuite("sometests")
+
+	//IntegrationTests is a test suite that holds CI test jobs
+	IntegrationTests = runner.NewTestSuite("integration-tests")
 )
 
 func init(){
 	//example of registering groups
 	Registry.RegisterTestSuite(*AllTests)
 	Registry.RegisterTestSuite(*SomeTests)
+	Registry.RegisterTestSuite(*IntegrationTests)
 }

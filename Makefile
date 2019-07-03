@@ -87,8 +87,7 @@ onos-config-it-docker: onos-config-base-docker # @HELP build onos-config-integra
 integration: kind
 	onit create cluster
 	onit add simulator
-	onit run single-path
-	onit run subscribe
+	onit run suite integration-tests
 
 
 images: # @HELP build all Docker images
