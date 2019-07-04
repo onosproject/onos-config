@@ -51,3 +51,16 @@ func CreateErrorEvent(eventType EventType, subject string, changeID change.ID, e
 		values:    values,
 	}
 }
+
+// CreateErrorEventNoChangeID creates a new error event object with no changeID attached
+func CreateErrorEventNoChangeID(eventType EventType, subject string, err error) ErrorEvent {
+	values := make(map[string]string)
+	values[ChangeID] = ""
+	values[Error] = string(err.Error())
+	return ErrorEvent{
+		subject:   subject,
+		time:      time.Now(),
+		eventtype: eventType,
+		values:    values,
+	}
+}

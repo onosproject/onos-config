@@ -41,13 +41,13 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan, errChan)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
-				errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceConnect,
-					string(deviceName), make([]byte, 0), err)
+				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+					string(deviceName), err)
 				//unregistering the listener for changes to the device
 				unregErr := dispatcher.UnregisterDevice(deviceName)
 				if unregErr != nil {
-					errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceDisconnect,
-						string(deviceName), make([]byte, 0), unregErr)
+					errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
+						string(deviceName), unregErr)
 				}
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
@@ -59,8 +59,8 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			err := dispatcher.UnregisterDevice(deviceName)
 			if err != nil {
 				log.Error(err)
-				errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceDisconnect,
-					string(deviceName), make([]byte, 0), err)
+				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
+					string(deviceName), err)
 			}
 		}
 	}
