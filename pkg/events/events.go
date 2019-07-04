@@ -34,6 +34,9 @@ const (
 
 	// Address :
 	Address = "Address"
+
+	//Error :
+	Error = "Error"
 )
 
 // EventType is an enumerated type
@@ -44,6 +47,13 @@ const ( // For event types
 	EventTypeConfiguration EventType = iota
 	EventTypeTopoCache
 	EventTypeOperationalState
+	EventTypeErrorSetConfig
+	EventTypeErrorParseConfig
+	EventTypeErrorSetInitialConfig
+	EventTypeErrorDeviceConnect
+	EventTypeErrorDeviceCapabilities
+	EventTypeErrorDeviceDisconnect
+	EventTypeErrorSubscribe
 )
 
 func (et EventType) String() string {

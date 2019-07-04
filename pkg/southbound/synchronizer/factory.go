@@ -28,7 +28,7 @@ import (
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
-	dispatcher *dispatcher.Dispatcher) {
+	errChan chan<- events.ErrorEvent, dispatcher *dispatcher.Dispatcher) {
 	for topoEvent := range topoChannel {
 		deviceName := topocache.ID(events.Event(topoEvent).Subject())
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
@@ -38,25 +38,29 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			}
 			device := deviceStore.Store[topocache.ID(deviceName)]
 			ctx := context.Background()
-			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan)
+			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan, errChan)
 			if err != nil {
-				//TODO propagate the ERROR
 				log.Error("Error in connecting to client: ", err)
+				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+					string(deviceName), err)
 				//unregistering the listener for changes to the device
-				dispatcher.UnregisterDevice(deviceName)
+				unregErr := dispatcher.UnregisterDevice(deviceName)
+				if unregErr != nil {
+					errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
+						string(deviceName), unregErr)
+				}
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
-				go sync.syncConfigEventsToDevice()
-				//TODO error handling
-				log.Info("getting operational state")
-				go sync.syncOperationalState()
-				//TODO push configuration to the device if any was set before it's connection
+				go sync.syncConfigEventsToDevice(errChan)
+				go sync.syncOperationalState(errChan)
 			}
 		} else if dispatcher.HasListener(deviceName) && !topoEvent.Connect() {
 
 			err := dispatcher.UnregisterDevice(deviceName)
 			if err != nil {
 				log.Error(err)
+				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
+					string(deviceName), err)
 			}
 		}
 	}

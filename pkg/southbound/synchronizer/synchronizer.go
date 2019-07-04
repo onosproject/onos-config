@@ -48,7 +48,7 @@ type Synchronizer struct {
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent,
-	opStateChan chan<- events.OperationalStateEvent) (*Synchronizer, error) {
+	opStateChan chan<- events.OperationalStateEvent, errChan chan<- events.ErrorEvent) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
@@ -64,6 +64,8 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	sync.key = key
 	if err != nil {
 		log.Warning(err)
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+			string(device.ID), err)
 		return nil, err
 	}
 	log.Info(sync.Device.Addr, " connected over gNMI")
@@ -72,6 +74,8 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	capResponse, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
 		log.Error(sync.Device.Addr, " capabilities ", err)
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceCapabilities,
+			string(device.ID), err)
 		return nil, err
 	}
 
@@ -79,21 +83,23 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 
 	config, err := getNetworkConfig(sync, string(sync.Device.ID), "", 0)
 
-	//Device has initial configuration saved in onos-config, trying to apply
-	if err == nil {
-
+	//Device does not have any stored config at the moment, skip initial set
+	if err != nil {
+		log.Info(sync.Device.Addr, " has no initial configuration")
+	} else {
+		//Device has initial configuration saved in onos-config, trying to apply
 		initialConfig, err := change.CreateChangeValuesNoRemoval(config, "Initial set to device")
 
 		if err != nil {
 			log.Error("Can't translate the initial config for ", sync.Device.Addr, err)
-			return nil, err
+			return sync, nil
 		}
 
 		gnmiChange, err := initialConfig.GnmiChange()
 
 		if err != nil {
 			log.Error("Can't obtain GnmiChange for ", sync.Device.Addr, err)
-			return nil, err
+			return sync, nil
 		}
 
 		resp, err := target.Set(context, gnmiChange)
@@ -104,13 +110,11 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 			//Splitting at the desc string and getting the second element which is the description.
 			log.Errorf("Can't set initial configuration for %s due to %s", sync.Device.Addr,
 				strings.Split(errGnmi.Message(), " desc = ")[1])
-			//return nil, err
+			errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSetInitialConfig,
+				string(device.ID), err)
 		} else {
 			log.Info(resp)
 		}
-
-	} else {
-		log.Info(sync.Device.Addr, " has no initial configuration")
 	}
 
 	return sync, nil
@@ -118,19 +122,23 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 
 // syncConfigEventsToDevice is a go routine that listens out for configuration events specific
 // to a device and propagates them downwards through southbound interface
-func (sync *Synchronizer) syncConfigEventsToDevice() {
+func (sync *Synchronizer) syncConfigEventsToDevice(errChan chan<- events.ErrorEvent) {
 
 	for deviceConfigEvent := range sync.deviceConfigChan {
-		change := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
-		err := change.IsValid()
+		c := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
+		err := c.IsValid()
 		if err != nil {
 			log.Warning("Event discarded because change is invalid ", err)
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
+				sync.key.DeviceID, c.ID, err)
 			continue
 		}
-		gnmiChange, parseError := change.GnmiChange()
+		gnmiChange, parseError := c.GnmiChange()
 
 		if parseError != nil {
 			log.Error("Parsing error for Gnmi change ", parseError)
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
+				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 
@@ -138,11 +146,15 @@ func (sync *Synchronizer) syncConfigEventsToDevice() {
 		target, err := southbound.GetTarget(sync.key)
 		if err != nil {
 			log.Warning(err)
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceConnect,
+				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 		setResponse, err := target.Set(sync.Context, gnmiChange)
 		if err != nil {
-			log.Error("SetResponse ", err)
+			log.Error("Error while doing set ", err)
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorSetConfig,
+				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 		log.Info(sync.Device.Addr, " SetResponse ", setResponse)
@@ -150,13 +162,15 @@ func (sync *Synchronizer) syncConfigEventsToDevice() {
 	}
 }
 
-func (sync Synchronizer) syncOperationalState() error {
+func (sync Synchronizer) syncOperationalState(errChan chan<- events.ErrorEvent) {
 
 	target, err := southbound.GetTarget(sync.key)
 
 	if err != nil {
 		log.Error("Can't find target for key ", sync.key)
-		return err
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+			sync.key.DeviceID, err)
+		return
 	}
 
 	notifications := make([]*gnmi.Notification, 0)
@@ -223,7 +237,7 @@ func (sync Synchronizer) syncOperationalState() error {
 	if len(subscribePaths) == 0 {
 		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
 		log.Warning(noPathErr)
-		return noPathErr
+		return
 	}
 
 	options := &southbound.SubscribeOptions{
@@ -239,9 +253,16 @@ func (sync Synchronizer) syncOperationalState() error {
 
 	req, err := southbound.NewSubscribeRequest(options)
 	if err != nil {
-		return err
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorParseConfig,
+			sync.key.DeviceID, err)
+		return
 	}
-	return target.Subscribe(sync.Context, req, sync.handler)
+
+	subErr := target.Subscribe(sync.Context, req, sync.handler)
+	if subErr != nil {
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
+			sync.key.DeviceID, err)
+	}
 
 }
 
