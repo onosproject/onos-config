@@ -21,6 +21,9 @@ cache:
 
 before_script:
   - go get -u golang.org/x/lint/golint
+  - go get -u github.com/fzipp/gocyclo
+  - go get -u github.com/client9/misspell/cmd/misspell
+  - go get -u github.com/gordonklaus/ineffassign
 
 
 jobs:
