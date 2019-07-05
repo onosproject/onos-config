@@ -172,11 +172,11 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 		} else if err == nil && cont {
 			continue
 		}
-		success, err := listenForDeviceResponse(networkChanges, target, configName)
+		responseErr := listenForDeviceResponse(networkChanges, target, configName)
 		//TODO Maybe do this with a callback mechanism --> when resposne on channel is done trigger callback
 		// that sends reply
-		if !success {
-			return nil, nil, fmt.Errorf("Can't complete set operation on target %s due to %s", target, err)
+		if responseErr != nil {
+			return nil, nil, fmt.Errorf("Can't complete set operation on target %s due to %s", target, responseErr)
 		}
 		for k := range updates {
 			updateResult, err := buildUpdateResult(k, target, gnmi.UpdateResult_UPDATE)
@@ -208,9 +208,9 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 			continue
 
 		}
-		success, err := listenForDeviceResponse(networkChanges, target, configName)
-		if !success {
-			return nil, nil, err
+		responseErr := listenForDeviceResponse(networkChanges, target, configName)
+		if responseErr != nil {
+			return nil, nil, responseErr
 		}
 		for _, r := range removes {
 			updateResult, err := buildUpdateResult(r, target, gnmi.UpdateResult_DELETE)
@@ -224,35 +224,40 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 	return updateResults, networkChanges, nil
 }
 
-func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) (bool, error) {
+func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) error {
 	mgr := manager.GetManager()
 	respChan, ok := mgr.Dispatcher.GetResponseListener(topocache.ID(target))
 	if !ok {
 		log.Infof("Device %s not properly registered, not waiting for southbound confirmation", target)
-		return true, nil
+		return nil
 	}
-	response := <-respChan
-	switch eventType := response.EventType(); eventType {
-	case events.EventTypeAchievedSetConfig:
-		return true, nil
-	case events.EventTypeErrorSetConfig:
-		//Removing previously applied Previously applied
-		for t := range changes {
-			err := mgr.ConfigStore.RemoveLastChangeEntry(t)
-			if err != nil {
-				log.Error("Can't remove last entry for ", t, err)
+	//blocking until we receive something from the channel or for 5 seconds, whatever comes first.
+	select {
+	case response := <-respChan:
+		switch eventType := response.EventType(); eventType {
+		case events.EventTypeAchievedSetConfig:
+			return nil
+		case events.EventTypeErrorSetConfig:
+			//Removing previously applied config
+			for t := range changes {
+				err := mgr.ConfigStore.RemoveLastChangeEntry(t)
+				if err != nil {
+					log.Error("Can't remove last entry for ", t, err)
+				}
+				//TODO calculate the reverse and send down.
 			}
-			//TODO calculate the reverse and send down.
-		}
-		//Removing the failed target
-		err := mgr.ConfigStore.RemoveLastChangeEntry(name)
-		if err != nil {
-			log.Error("Can't remove last entry for ", target, err)
-		}
-		return false, response.Error()
-	default:
-		return false, fmt.Errorf("undhandled Error Type")
+			//Removing the failed target
+			err := mgr.ConfigStore.RemoveLastChangeEntry(name)
+			if err != nil {
+				log.Error("Can't remove last entry for ", target, err)
+			}
+			return response.Error()
+		default:
+			return fmt.Errorf("undhandled Error Type")
 
+		}
+	case <-time.After(5 * time.Second):
+		return fmt.Errorf("Timeout on waiting for device reply %s", target)
 	}
 }
 

@@ -181,7 +181,7 @@ func (m *Manager) Run() {
 	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
 	// Listening for errors in the Southbound
-	go listenOnErrorChannel(m.SouthboundErrorChan)
+	go listenOnResponseChannel(m.SouthboundErrorChan)
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.DeviceStore, m.TopoChannel,
 		m.OperationalStateChannel, m.SouthboundErrorChan, &m.Dispatcher)
 }
@@ -199,14 +199,14 @@ func GetManager() *Manager {
 	return &mgr
 }
 
-func listenOnErrorChannel(errChan chan events.DeviceResponse) {
+func listenOnResponseChannel(respChan chan events.DeviceResponse) {
 	log.Info("Listening for Errors in Manager")
-	for err := range errChan {
+	for err := range respChan {
 		if strings.Contains(err.Error().Error(), "desc =") {
 			log.Errorf("Error reported to channel %s",
 				strings.Split(err.Error().Error(), " desc = ")[1])
 		} else {
-			log.Error("Error reported to channel ", err.Error().Error())
+			log.Error("Response reported to channel ", err.Error().Error())
 		}
 		//TODO handle device connection errors accordingly
 	}

@@ -100,7 +100,7 @@ func (d *Dispatcher) RegisterDevice(id topocache.ID) (chan events.ConfigEvent, c
 	d.deviceListeners[id] = channel
 	respChan := make(chan events.DeviceResponse)
 	d.deviceResponseListener[id] = respChan
-	log.Infof("Registering Device %s on channel w%v and w%v", id, channel, respChan)
+	log.Infof("Registering Device %s on channel %v and %v", id, channel, respChan)
 	return channel, respChan, nil
 }
 
@@ -112,7 +112,7 @@ func (d *Dispatcher) RegisterNbi(subscriber string) (chan events.ConfigEvent, er
 	}
 	channel := make(chan events.ConfigEvent)
 	d.nbiListeners[subscriber] = channel
-	log.Infof("Registering NBI %s on channel w%v", subscriber, channel)
+	log.Infof("Registering NBI %s on channel %v", subscriber, channel)
 	return channel, nil
 }
 

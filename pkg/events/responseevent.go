@@ -25,26 +25,26 @@ import (
 type DeviceResponse Event
 
 // ChangeID returns the changeId of the error event
-func (errEvent *DeviceResponse) ChangeID() string {
-	return errEvent.values[ChangeID]
+func (respEvent *DeviceResponse) ChangeID() string {
+	return respEvent.values[ChangeID]
 }
 
 // EventType returns the EventType of the error event
-func (errEvent *DeviceResponse) EventType() EventType {
-	return errEvent.eventtype
+func (respEvent *DeviceResponse) EventType() EventType {
+	return respEvent.eventtype
 }
 
 // Error returns the error of the error event
-func (errEvent *DeviceResponse) Error() error {
-	return fmt.Errorf(errEvent.values[Error])
+func (respEvent *DeviceResponse) Error() error {
+	return fmt.Errorf(respEvent.values[Error])
 }
 
 // Response returns the Response of the response event
-func (errEvent *DeviceResponse) Response() error {
-	return fmt.Errorf(errEvent.values[Response])
+func (respEvent *DeviceResponse) Response() error {
+	return fmt.Errorf(respEvent.values[Response])
 }
 
-// CreateResponseEvent creates a new respone event object
+// CreateResponseEvent creates a new response event object
 func CreateResponseEvent(eventType EventType, subject string, changeID change.ID, response string) DeviceResponse {
 	values := make(map[string]string)
 	values[ChangeID] = base64.StdEncoding.EncodeToString(changeID)
@@ -73,7 +73,6 @@ func CreateErrorEvent(eventType EventType, subject string, changeID change.ID, e
 // CreateErrorEventNoChangeID creates a new error event object with no changeID attached
 func CreateErrorEventNoChangeID(eventType EventType, subject string, err error) DeviceResponse {
 	values := make(map[string]string)
-	values[ChangeID] = ""
 	values[Error] = string(err.Error())
 	return DeviceResponse{
 		subject:   subject,

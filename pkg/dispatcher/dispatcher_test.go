@@ -90,7 +90,7 @@ func TestMain(m *testing.M) {
 func Test_getListeners(t *testing.T) {
 	d := setUp()
 	listeners := d.GetListeners()
-	assert.Assert(t, len(listeners) == 7, "Expected to find 4 listeners in list. Got %d", len(listeners))
+	assert.Equal(t, len(listeners), 7, "Expected to find 4 listeners in list. Got %d", len(listeners))
 	assert.Assert(t, d.HasListener(device1.ID), "Device 1 not registered")
 
 	listenerStr := strings.Join(listeners, ",")
