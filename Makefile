@@ -19,13 +19,13 @@ build:
 	-CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
 
 test: # @HELP run the unit tests and source code validation
-test: build deps lint vet license_check gofmt
+test: build deps lint vet license_check gofmt cyclo misspell ineffassign
 	go test github.com/onosproject/onos-config/pkg/...
 	go test github.com/onosproject/onos-config/cmd/...
 	go test github.com/onosproject/onos-config/modelplugin/...
 
 coverage: # @HELP generate unit test coverage data
-coverage: build deps lint vet license_check gofmt
+coverage: build deps lint vet license_check gofmt cyclo misspell ineffassign
 	./build/bin/coveralls-coverage
 
 deps: # @HELP ensure that the required dependencies are in place
@@ -43,6 +43,25 @@ vet: # @HELP examines Go source code and reports suspicious constructs
 	go vet github.com/onosproject/onos-config/cmd/...
 	go vet github.com/onosproject/onos-config/test/...
 	go vet github.com/onosproject/onos-config/modelplugin/...
+
+cyclo: # @HELP examines Go source code and reports complex cycles in code
+	gocyclo -over 25 pkg/
+	gocyclo -over 25 cmd/
+	gocyclo -over 25 test/
+	gocyclo -over 25 modelplugin/
+
+misspell: # @HELP examines Go source code and reports misspelled words
+	misspell -error -source=text pkg/
+	misspell -error -source=text cmd/
+	misspell -error -source=text test/
+	misspell -error -source=text modelplugin/
+	misspell -error docs/
+
+ineffassign: # @HELP examines Go source code and reports inefficient assignments
+	ineffassign pkg/
+	ineffassign cmd/
+	ineffassign test/
+	ineffassign modelplugin/
 
 license_check: # @HELP examine and ensure license headers exist
 	./build/licensing/boilerplate.py -v
