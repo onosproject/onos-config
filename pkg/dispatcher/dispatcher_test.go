@@ -30,6 +30,7 @@ import (
 
 var (
 	device1Channel, device2Channel, device3Channel chan events.ConfigEvent
+	respChannel1, respChannel2, respChannel3       chan events.DeviceResponse
 	optStateChannel                                chan events.OperationalStateEvent
 	device1, device2, device3                      topocache.Device
 	err                                            error
@@ -48,9 +49,9 @@ var (
 
 func setUp() *Dispatcher {
 	d := NewDispatcher()
-	device1Channel, err = d.RegisterDevice(device1.ID)
-	device2Channel, err = d.RegisterDevice(device2.ID)
-	device3Channel, err = d.RegisterDevice(device3.ID)
+	device1Channel, respChannel1, err = d.RegisterDevice(device1.ID)
+	device2Channel, respChannel2, err = d.RegisterDevice(device2.ID)
+	device3Channel, respChannel3, err = d.RegisterDevice(device3.ID)
 	optStateChannel, err = d.RegisterOpState(opStateTest)
 	return &d
 }
@@ -89,7 +90,7 @@ func TestMain(m *testing.M) {
 func Test_getListeners(t *testing.T) {
 	d := setUp()
 	listeners := d.GetListeners()
-	assert.Assert(t, len(listeners) == 4, "Expected to find 4 listeners in list. Got %d", len(listeners))
+	assert.Assert(t, len(listeners) == 7, "Expected to find 4 listeners in list. Got %d", len(listeners))
 	assert.Assert(t, d.HasListener(device1.ID), "Device 1 not registered")
 
 	listenerStr := strings.Join(listeners, ",")
@@ -103,7 +104,7 @@ func Test_getListeners(t *testing.T) {
 
 func Test_register(t *testing.T) {
 	d := setUp()
-	device4Channel, err := d.RegisterDevice(topocache.ID("device4"))
+	device4Channel, respChannel4, err := d.RegisterDevice(topocache.ID("device4"))
 	assert.NilError(t, err, "Unexpected error when registering device %s", err)
 
 	opStateChannel2, err := d.RegisterOpState("opStateTest2")
@@ -112,6 +113,9 @@ func Test_register(t *testing.T) {
 	var deviceChannelIf interface{} = device4Channel
 	chanType, ok := deviceChannelIf.(chan events.ConfigEvent)
 	assert.Assert(t, ok, "Unexpected channel type when registering device %v", chanType)
+	var respChannelIf interface{} = respChannel4
+	chanTypeResp, ok := respChannelIf.(chan events.DeviceResponse)
+	assert.Assert(t, ok, "Unexpected channel type when registering device %v", chanTypeResp)
 	d.UnregisterDevice(topocache.ID("device4"))
 
 	var opChannelIf interface{} = opStateChannel2

@@ -37,6 +37,9 @@ const (
 
 	//Error :
 	Error = "Error"
+
+	//Response :
+	Response = "Response"
 )
 
 // EventType is an enumerated type
@@ -47,6 +50,7 @@ const ( // For event types
 	EventTypeConfiguration EventType = iota
 	EventTypeTopoCache
 	EventTypeOperationalState
+	EventTypeAchievedSetConfig
 	EventTypeErrorSetConfig
 	EventTypeErrorParseConfig
 	EventTypeErrorSetInitialConfig

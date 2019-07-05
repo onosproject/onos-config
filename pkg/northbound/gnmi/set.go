@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/pkg/namesgenerator"
+	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -159,8 +161,9 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 
 	networkChanges := make(mapNetworkChanges)
 	updateResults := make([]*gnmi.UpdateResult, 0)
-
 	for target, updates := range targetUpdates {
+		//FIXME this is a sequential job, not paralelized
+
 		// target is a device name with no version
 		changeID, configName, cont, err := setChange(target, version, updates, targetRemoves[target])
 		//if the error is not nil and we need to continue do so
@@ -169,7 +172,12 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 		} else if err == nil && cont {
 			continue
 		}
-
+		success, err := listenForDeviceResponse(networkChanges, target, configName)
+		//TODO Maybe do this with a callback mechanism --> when resposne on channel is done trigger callback
+		// that sends reply
+		if !success {
+			return nil, nil, fmt.Errorf("Can't complete set operation on target %s due to %s", target, err)
+		}
 		for k := range updates {
 			updateResult, err := buildUpdateResult(k, target, gnmi.UpdateResult_UPDATE)
 			if err != nil {
@@ -198,6 +206,11 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 			return nil, nil, err
 		} else if err == nil && cont {
 			continue
+
+		}
+		success, err := listenForDeviceResponse(networkChanges, target, configName)
+		if !success {
+			return nil, nil, err
 		}
 		for _, r := range removes {
 			updateResult, err := buildUpdateResult(r, target, gnmi.UpdateResult_DELETE)
@@ -208,8 +221,39 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 		}
 		networkChanges[store.ConfigName(configName)] = changeID
 	}
-
 	return updateResults, networkChanges, nil
+}
+
+func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) (bool, error) {
+	mgr := manager.GetManager()
+	respChan, ok := mgr.Dispatcher.GetResponseListener(topocache.ID(target))
+	if !ok {
+		log.Infof("Device %s not properly registered, not waiting for southbound confirmation", target)
+		return true, nil
+	}
+	response := <-respChan
+	switch eventType := response.EventType(); eventType {
+	case events.EventTypeAchievedSetConfig:
+		return true, nil
+	case events.EventTypeErrorSetConfig:
+		//Removing previously applied Previously applied
+		for t := range changes {
+			err := mgr.ConfigStore.RemoveLastChangeEntry(t)
+			if err != nil {
+				log.Error("Can't remove last entry for ", t, err)
+			}
+			//TODO calculate the reverse and send down.
+		}
+		//Removing the failed target
+		err := mgr.ConfigStore.RemoveLastChangeEntry(name)
+		if err != nil {
+			log.Error("Can't remove last entry for ", target, err)
+		}
+		return false, response.Error()
+	default:
+		return false, fmt.Errorf("undhandled Error Type")
+
+	}
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
@@ -240,9 +284,6 @@ func setChange(target string, version string, targetUpdates map[string]string, t
 			log.Warning(manager.SetConfigAlreadyApplied, "Change ", store.B64(changeID), " to ", configName)
 			return nil, "", true, nil
 		}
-
-		//FIXME this at the moment fails at a device level. we can specify a per path failure
-		// if the store could return us that info
 		log.Error("Error in setting config: ", changeID, " for target ", configName, err)
 		return nil, "", false, err
 	}

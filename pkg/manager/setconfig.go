@@ -44,7 +44,7 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 
 		if len(similarDevices) == 1 {
 			log.Warning("No exact match in Configurations for ", configName,
-				"using", similarDevices[0])
+				" using ", similarDevices[0])
 			configName = similarDevices[0]
 			deviceConfig = m.ConfigStore.Store[configName]
 		} else if len(similarDevices) > 1 {
@@ -133,5 +133,6 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 	//  3) Check that the caller is authorized to make the change
 	m.ChangesChannel <- events.CreateConfigEvent(deviceConfig.Device,
 		configChange.ID, true)
+
 	return configChange.ID, configName, nil
 }
