@@ -31,17 +31,19 @@ import (
 
 // Dispatcher manages SB and NB configuration event listeners
 type Dispatcher struct {
-	deviceListeners     map[topocache.ID]chan events.ConfigEvent
-	nbiListeners        map[string]chan events.ConfigEvent
-	nbiOpStateListeners map[string]chan events.OperationalStateEvent
+	deviceListeners        map[topocache.ID]chan events.ConfigEvent
+	nbiListeners           map[string]chan events.ConfigEvent
+	nbiOpStateListeners    map[string]chan events.OperationalStateEvent
+	deviceResponseListener map[topocache.ID]chan events.DeviceResponse
 }
 
 // NewDispatcher creates and initializes a new event dispatcher
 func NewDispatcher() Dispatcher {
 	return Dispatcher{
-		deviceListeners:     make(map[topocache.ID]chan events.ConfigEvent),
-		nbiListeners:        make(map[string]chan events.ConfigEvent),
-		nbiOpStateListeners: make(map[string]chan events.OperationalStateEvent),
+		deviceListeners:        make(map[topocache.ID]chan events.ConfigEvent),
+		nbiListeners:           make(map[string]chan events.ConfigEvent),
+		nbiOpStateListeners:    make(map[string]chan events.OperationalStateEvent),
+		deviceResponseListener: make(map[topocache.ID]chan events.DeviceResponse),
 	}
 }
 
@@ -56,8 +58,9 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 	for configEvent := range changeChannel {
 		log.Info("Listener: Event ", configEvent)
 		deviceChan, ok := d.deviceListeners[topocache.ID(events.Event(configEvent).Subject())]
-		if ok {
+		if !ok {
 			log.Warning("Device not connected - config event discarded ", configEvent)
+		} else {
 			//TODO need a timeout or be done in separate routine, blocks if there is some error underneath
 			deviceChan <- configEvent
 		}
@@ -89,14 +92,16 @@ func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan event
 
 // RegisterDevice is a way for device synchronizers to register for
 // channel of config events
-func (d *Dispatcher) RegisterDevice(id topocache.ID) (chan events.ConfigEvent, error) {
+func (d *Dispatcher) RegisterDevice(id topocache.ID) (chan events.ConfigEvent, chan events.DeviceResponse, error) {
 	if d.deviceListeners[id] != nil {
-		return nil, fmt.Errorf("Device %s is already registered", id)
+		return nil, nil, fmt.Errorf("Device %s is already registered", id)
 	}
 	channel := make(chan events.ConfigEvent)
 	d.deviceListeners[id] = channel
-	log.Infof("Registering Device %s on channel w%v", id, channel)
-	return channel, nil
+	respChan := make(chan events.DeviceResponse)
+	d.deviceResponseListener[id] = respChan
+	log.Infof("Registering Device %s on channel %v and %v", id, channel, respChan)
+	return channel, respChan, nil
 }
 
 // RegisterNbi is a way for nbi instances to register for
@@ -107,7 +112,7 @@ func (d *Dispatcher) RegisterNbi(subscriber string) (chan events.ConfigEvent, er
 	}
 	channel := make(chan events.ConfigEvent)
 	d.nbiListeners[subscriber] = channel
-	log.Infof("Registering NBI %s on channel w%v", subscriber, channel)
+	log.Infof("Registering NBI %s on channel %v", subscriber, channel)
 	return channel, nil
 }
 
@@ -130,6 +135,12 @@ func (d *Dispatcher) UnregisterDevice(id topocache.ID) error {
 	}
 	delete(d.deviceListeners, id)
 	close(channel)
+	respChan, ok := d.deviceResponseListener[id]
+	if !ok {
+		return fmt.Errorf("Subscriber %s had not been registered", id)
+	}
+	delete(d.deviceResponseListener, id)
+	close(respChan)
 	return nil
 }
 
@@ -167,6 +178,9 @@ func (d *Dispatcher) GetListeners() []string {
 	for k := range d.nbiOpStateListeners {
 		listenerKeys = append(listenerKeys, k)
 	}
+	for k := range d.deviceResponseListener {
+		listenerKeys = append(listenerKeys, string(k))
+	}
 	return listenerKeys
 }
 
@@ -174,4 +188,10 @@ func (d *Dispatcher) GetListeners() []string {
 func (d *Dispatcher) HasListener(name topocache.ID) bool {
 	_, ok := d.deviceListeners[name]
 	return ok
+}
+
+// GetResponseListener returns the response listener if the named listeners has been registered
+func (d *Dispatcher) GetResponseListener(name topocache.ID) (chan events.DeviceResponse, bool) {
+	c, ok := d.deviceResponseListener[name]
+	return c, ok
 }

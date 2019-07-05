@@ -48,7 +48,7 @@ type Synchronizer struct {
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent,
-	opStateChan chan<- events.OperationalStateEvent, errChan chan<- events.ErrorEvent) (*Synchronizer, error) {
+	opStateChan chan<- events.OperationalStateEvent, errChan chan<- events.DeviceResponse) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
@@ -64,8 +64,6 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	sync.key = key
 	if err != nil {
 		log.Warning(err)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
-			string(device.ID), err)
 		return nil, err
 	}
 	log.Info(sync.Device.Addr, " connected over gNMI")
@@ -110,10 +108,12 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 			//Splitting at the desc string and getting the second element which is the description.
 			log.Errorf("Can't set initial configuration for %s due to %s", sync.Device.Addr,
 				strings.Split(errGnmi.Message(), " desc = ")[1])
-			errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSetInitialConfig,
-				string(device.ID), err)
+			errChan <- events.CreateErrorEvent(events.EventTypeErrorSetInitialConfig,
+				string(device.ID), initialConfig.ID, err)
 		} else {
 			log.Info(resp)
+			errChan <- events.CreateResponseEvent(events.EventTypeAchievedSetConfig,
+				sync.key.DeviceID, initialConfig.ID, resp.String())
 		}
 	}
 
@@ -122,14 +122,14 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 
 // syncConfigEventsToDevice is a go routine that listens out for configuration events specific
 // to a device and propagates them downwards through southbound interface
-func (sync *Synchronizer) syncConfigEventsToDevice(errChan chan<- events.ErrorEvent) {
+func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.DeviceResponse) {
 
 	for deviceConfigEvent := range sync.deviceConfigChan {
 		c := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
 		err := c.IsValid()
 		if err != nil {
 			log.Warning("Event discarded because change is invalid ", err)
-			errChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
+			respChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
@@ -137,7 +137,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(errChan chan<- events.ErrorEv
 
 		if parseError != nil {
 			log.Error("Parsing error for Gnmi change ", parseError)
-			errChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
+			respChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
@@ -146,23 +146,25 @@ func (sync *Synchronizer) syncConfigEventsToDevice(errChan chan<- events.ErrorEv
 		target, err := southbound.GetTarget(sync.key)
 		if err != nil {
 			log.Warning(err)
-			errChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceConnect,
+			respChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceConnect,
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 		setResponse, err := target.Set(sync.Context, gnmiChange)
 		if err != nil {
 			log.Error("Error while doing set ", err)
-			errChan <- events.CreateErrorEvent(events.EventTypeErrorSetConfig,
+			respChan <- events.CreateErrorEvent(events.EventTypeErrorSetConfig,
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 		log.Info(sync.Device.Addr, " SetResponse ", setResponse)
+		respChan <- events.CreateResponseEvent(events.EventTypeAchievedSetConfig,
+			sync.key.DeviceID, c.ID, setResponse.String())
 
 	}
 }
 
-func (sync Synchronizer) syncOperationalState(errChan chan<- events.ErrorEvent) {
+func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceResponse) {
 
 	target, err := southbound.GetTarget(sync.key)
 

@@ -28,11 +28,11 @@ import (
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.ErrorEvent, dispatcher *dispatcher.Dispatcher) {
+	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher) {
 	for topoEvent := range topoChannel {
 		deviceName := topocache.ID(events.Event(topoEvent).Subject())
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
-			configChan, err := dispatcher.RegisterDevice(deviceName)
+			configChan, respChan, err := dispatcher.RegisterDevice(deviceName)
 			if err != nil {
 				log.Error(err)
 			}
@@ -51,16 +51,18 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				}
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
-				go sync.syncConfigEventsToDevice(errChan)
+				go sync.syncConfigEventsToDevice(respChan)
 				go sync.syncOperationalState(errChan)
+				//respChan <- events.CreateConnectedEvent(events.EventTypeDeviceConnected, string(deviceName))
 			}
 		} else if dispatcher.HasListener(deviceName) && !topoEvent.Connect() {
 
 			err := dispatcher.UnregisterDevice(deviceName)
 			if err != nil {
 				log.Error(err)
-				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
-					string(deviceName), err)
+				//TODO evaluate if fall through without upstreaming
+				//errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
+				//	string(deviceName), err)
 			}
 		}
 	}

@@ -37,7 +37,7 @@ type Manager struct {
 	TopoChannel             chan events.TopoEvent
 	ChangesChannel          chan events.ConfigEvent
 	OperationalStateChannel chan events.OperationalStateEvent
-	SouthboundErrorChan     chan events.ErrorEvent
+	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              dispatcher.Dispatcher
 	ModelRegistry           map[string]ModelPlugin
 }
@@ -54,7 +54,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		TopoChannel:             topoCh,
 		ChangesChannel:          make(chan events.ConfigEvent, 10),
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
-		SouthboundErrorChan:     make(chan events.ErrorEvent, 10),
+		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
 		ModelRegistry:           make(map[string]ModelPlugin),
 	}
@@ -181,7 +181,7 @@ func (m *Manager) Run() {
 	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
 	// Listening for errors in the Southbound
-	go listenOnErrorChannel(m.SouthboundErrorChan)
+	go listenOnResponseChannel(m.SouthboundErrorChan)
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.DeviceStore, m.TopoChannel,
 		m.OperationalStateChannel, m.SouthboundErrorChan, &m.Dispatcher)
 }
@@ -199,12 +199,15 @@ func GetManager() *Manager {
 	return &mgr
 }
 
-func listenOnErrorChannel(errChan chan events.ErrorEvent) {
+func listenOnResponseChannel(respChan chan events.DeviceResponse) {
 	log.Info("Listening for Errors in Manager")
-	for err := range errChan {
-		log.Error("Error reported to channel ", err)
-		//TODO handle errors accordingly
-		// e.g. initial set error, remove config for that device
-		// e.g. set error needs rollback of device and network change.
+	for err := range respChan {
+		if strings.Contains(err.Error().Error(), "desc =") {
+			log.Errorf("Error reported to channel %s",
+				strings.Split(err.Error().Error(), " desc = ")[1])
+		} else {
+			log.Error("Response reported to channel ", err.Error().Error())
+		}
+		//TODO handle device connection errors accordingly
 	}
 }
