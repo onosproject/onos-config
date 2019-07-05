@@ -21,20 +21,20 @@ import (
 	"time"
 )
 
-// DeviceResponse a error event
+// DeviceResponse a response event
 type DeviceResponse Event
 
-// ChangeID returns the changeId of the error event
+// ChangeID returns the changeId of the response event
 func (respEvent *DeviceResponse) ChangeID() string {
 	return respEvent.values[ChangeID]
 }
 
-// EventType returns the EventType of the error event
+// EventType returns the EventType of the response event
 func (respEvent *DeviceResponse) EventType() EventType {
 	return respEvent.eventtype
 }
 
-// Error returns the error of the error event
+// Error returns the error of the response event
 func (respEvent *DeviceResponse) Error() error {
 	return fmt.Errorf(respEvent.values[Error])
 }

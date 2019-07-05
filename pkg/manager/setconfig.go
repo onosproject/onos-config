@@ -100,6 +100,7 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 		return configChange.ID, configName, fmt.Errorf("%s %s",
 			SetConfigAlreadyApplied, store.B64(configChange.ID))
 	}
+	//FIXME this needs to hold off until the device replies with an ok message for the change.
 	deviceConfig.Changes = append(deviceConfig.Changes, configChange.ID)
 	deviceConfig.Updated = time.Now()
 	m.ConfigStore.Store[configName] = deviceConfig
