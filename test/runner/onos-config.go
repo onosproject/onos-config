@@ -311,6 +311,9 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 						"app":      "onos-config",
 						"resource": "onos-config",
 					},
+					Annotations: map[string]string{
+						"seccomp.security.alpha.kubernetes.io/pod": "unconfined",
+					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
