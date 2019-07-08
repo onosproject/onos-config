@@ -144,8 +144,7 @@ func (s Server) RollbackNetworkChange(
 				"the last change on %s is not %s as expected. Was %s",
 				configName, changeID, store.B64(configChangeIds[len(configChangeIds)-1]))
 		}
-		targetID := manager.GetManager().ConfigStore.Store[configName].Device
-		err := manager.GetManager().RollbackTargetConfig(targetID, string(configName))
+		err := manager.GetManager().RollbackTargetConfig(string(configName))
 		if err != nil {
 			return nil, err
 		}

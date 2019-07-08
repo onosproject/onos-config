@@ -23,9 +23,10 @@ import (
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target. Only the last one is
 // restored to the previous state. Going back n changes in time requires n sequential calls of this method.
-func (m *Manager) RollbackTargetConfig(target string, configname string) error {
-	log.Infof("Rolling back last change on config %s for target %s", configname, target)
-	updates, deletes, err := computeRollback(m, target, configname)
+func (m *Manager) RollbackTargetConfig(configname string) error {
+	targetID := m.ConfigStore.Store[store.ConfigName(configname)].Device
+	log.Infof("Rolling back last change on config %s for target %s", configname, targetID)
+	updates, deletes, err := computeRollback(m, targetID, configname)
 	if err != nil {
 		return err
 	}
@@ -48,7 +49,7 @@ func computeRollback(m *Manager, target string, configname string) (map[string]s
 			return nil, nil, fmt.Errorf("Can't get last config for path %s on config %s for target %s",
 				valueColl.Path, configname, err)
 		}
-		//Previously there was no such value configured, deletring from device
+		//Previously there was no such value configured, deleting from device
 		if len(value) == 0 {
 			deletes = append(deletes, valueColl.Path)
 		} else {
