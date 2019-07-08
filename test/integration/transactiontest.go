@@ -25,9 +25,9 @@ import (
 
 const (
 	value1 = "v1"
-	path1  = "/a/b/c1"
+	path1  = "/system/clock/config/c1"
 	value2 = "v2"
-	path2  = "/a/b/c2"
+	path2  = "/system/clock/config/c2"
 )
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
