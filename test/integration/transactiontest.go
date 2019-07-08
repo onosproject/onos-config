@@ -76,7 +76,8 @@ func TestTransaction(t *testing.T) {
 
 	// Check that the values were really rolled back
 	_, errorAfterRollback := GNMIGet(MakeContext(), c, devicePathsForGet)
-	assert.Nil(t, errorAfterRollback)
+	assert.NotNil(t, errorAfterRollback)
+	assert.Contains(t, errorAfterRollback, "last config for path " + path1)
 }
 
 func init() {
