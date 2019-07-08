@@ -76,10 +76,10 @@ func TestTransaction(t *testing.T) {
 
 	// Check that the values were really rolled back
 	_, errorAfterRollback := GNMIGet(MakeContext(), c, devicePathsForGet)
-	assert.Error(t, errorAfterRollback)
+	assert.Nil(t, errorAfterRollback)
 }
 
 func init() {
-	Registry.RegisterTest("transaction", TestTransaction, []*runner.TestSuite{AllTests,SomeTests})
+	Registry.RegisterTest("transaction", TestTransaction, []*runner.TestSuite{AllTests,SomeTests,IntegrationTests})
 	//example of registering groups
 }
