@@ -356,33 +356,6 @@ func TestManager_GetManager(t *testing.T) {
 	assert.Equal(t, mgrTest, GetManager())
 }
 
-func TestManager_ComputeRollback(t *testing.T) {
-	mgrTest, _, _ := setUp()
-
-	updates := make(map[string]string)
-	deletes := make([]string, 0)
-
-	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
-
-	_, _, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
-
-	assert.NilError(t, err, "Can't create change")
-
-	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B314
-
-	changeID, configName, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
-
-	assert.NilError(t, err, "Can't create change")
-
-	changes, deletes, errRoll := computeRollback(mgrTest, "Device1", string(configName))
-	assert.Check(t, len(deletes) == 0, "no path should be deleted")
-	assert.NilError(t, errRoll, "Can't ExecuteRollback")
-	config := mgrTest.ConfigStore.Store[configName]
-	assert.Check(t, !bytes.Equal(config.Changes[len(config.Changes)-1], changeID), "Did not remove last change")
-	assert.Check(t, changes[Test1Cont1ACont2ALeaf2B] == ValueLeaf2B159, "Wrong value to set after rollback")
-
-}
-
 func TestManager_ComputeRollbackDelete(t *testing.T) {
 	mgrTest, _, _ := setUp()
 
@@ -403,7 +376,7 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 
 	assert.NilError(t, err, "Can't create change")
 
-	changes, deletesRoll, errRoll := computeRollback(mgrTest, "Device1", string(configName))
+	_, changes, deletesRoll, errRoll := computeRollback(mgrTest, "Device1", string(configName))
 	assert.NilError(t, errRoll, "Can't ExecuteRollback", errRoll)
 	config := mgrTest.ConfigStore.Store[configName]
 	assert.Check(t, !bytes.Equal(config.Changes[len(config.Changes)-1], changeID), "Did not remove last change")

@@ -239,18 +239,22 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 			return nil
 		case events.EventTypeErrorSetConfig:
 			//Removing previously applied config
+			rolledbackIDs := make([]string, 0)
 			for configName := range changes {
-				err := mgr.RollbackTargetConfig(string(configName))
+				changeID, err := mgr.RollbackTargetConfig(string(configName))
 				if err != nil {
 					log.Error("Can'configName remove last entry for ", target, err)
 				}
+				rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
 			}
 			//Removing the failed target
-			err := mgr.RollbackTargetConfig(string(name))
+			changeID, err := mgr.RollbackTargetConfig(string(name))
 			if err != nil {
 				log.Error("Can'configName remove last entry for ", target, err)
 			}
-			return response.Error()
+			rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
+			return fmt.Errorf("Issue in setting config %s, rolling back changes %s",
+				response.Error().Error(), rolledbackIDs)
 		default:
 			return fmt.Errorf("undhandled Error Type")
 

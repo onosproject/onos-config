@@ -23,22 +23,22 @@ import (
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target. Only the last one is
 // restored to the previous state. Going back n changes in time requires n sequential calls of this method.
-func (m *Manager) RollbackTargetConfig(configname string) error {
+func (m *Manager) RollbackTargetConfig(configname string) (change.ID, error) {
 	targetID := m.ConfigStore.Store[store.ConfigName(configname)].Device
 	log.Infof("Rolling back last change on config %s for target %s", configname, targetID)
-	updates, deletes, err := computeRollback(m, targetID, configname)
+	id, updates, deletes, err := computeRollback(m, targetID, configname)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	_, _, errSet := m.SetNetworkConfig(store.ConfigName(configname), updates, deletes)
 	//TODO if error we might want to take further action
-	return errSet
+	return id, errSet
 }
 
-func computeRollback(m *Manager, target string, configname string) (map[string]string, []string, error) {
+func computeRollback(m *Manager, target string, configname string) (change.ID, map[string]string, []string, error) {
 	id, err := m.ConfigStore.RemoveLastChangeEntry(store.ConfigName(configname))
 	if err != nil {
-		return nil, nil, fmt.Errorf(fmt.Sprintf("Can't remove last entry for %s", configname), err)
+		return nil, nil, nil, fmt.Errorf(fmt.Sprintf("Can't remove last entry for %s", configname), err)
 	}
 	previousValues := make([]*change.ConfigValue, 0)
 	deletes := make([]string, 0)
@@ -46,7 +46,7 @@ func computeRollback(m *Manager, target string, configname string) (map[string]s
 	for _, valueColl := range rollbackChange.Config {
 		value, err := m.GetTargetConfig(target, configname, valueColl.Path, 0)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Can't get last config for path %s on config %s for target %s",
+			return nil, nil, nil, fmt.Errorf("Can't get last config for path %s on config %s for target %s",
 				valueColl.Path, configname, err)
 		}
 		//Previously there was no such value configured, deleting from device
@@ -60,5 +60,5 @@ func computeRollback(m *Manager, target string, configname string) (map[string]s
 	for _, changeVal := range previousValues {
 		updates[changeVal.Path] = changeVal.Value
 	}
-	return updates, deletes, nil
+	return id, updates, deletes, nil
 }
