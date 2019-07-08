@@ -108,7 +108,7 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	if prefix != nil && prefix.Elem != nil {
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
-	configValues, err := manager.GetManager().GetNetworkConfig(target, "",
+	configValues, err := manager.GetManager().GetTargetConfig(target, "",
 		pathAsString, 0)
 	if err != nil {
 		return nil, err

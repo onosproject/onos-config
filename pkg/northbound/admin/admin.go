@@ -24,7 +24,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
 	"google.golang.org/grpc"
-	"strings"
 )
 
 // Service is a Service implementation for administration.
@@ -135,25 +134,26 @@ func (s Server) RollbackNetworkChange(
 		}
 	}
 
-	configNames := make([]string, 0)
+	configNames := make(map[string][]string, 0)
 	// Check all are valid before we delete anything
-	for k, v := range networkConfig.ConfigurationChanges {
-		configChangeIds := manager.GetManager().ConfigStore.Store[k].Changes
-		if store.B64(configChangeIds[len(configChangeIds)-1]) != store.B64(v) {
+	for configName, changeID := range networkConfig.ConfigurationChanges {
+		configChangeIds := manager.GetManager().ConfigStore.Store[configName].Changes
+		if store.B64(configChangeIds[len(configChangeIds)-1]) != store.B64(changeID) {
 			return nil, fmt.Errorf(
 				"the last change on %s is not %s as expected. Was %s",
-				k, v, store.B64(configChangeIds[len(configChangeIds)-1]))
+				configName, changeID, store.B64(configChangeIds[len(configChangeIds)-1]))
 		}
-		configNames = append(configNames, string(k))
-	}
-
-	for k := range networkConfig.ConfigurationChanges {
-		manager.GetManager().ConfigStore.RemoveLastChangeEntry(k)
+		changeID, err := manager.GetManager().RollbackTargetConfig(string(configName))
+		rollbackIDs := configNames[string(configName)]
+		configNames[string(configName)] = append(rollbackIDs, store.B64(changeID))
+		if err != nil {
+			return nil, err
+		}
 	}
 	manager.GetManager().NetworkStore.RemoveEntry(networkConfig.Name)
 
 	return &proto.RollbackResponse{
 		Message: fmt.Sprintf("Rolled back change '%s' Updated configs %s",
-			networkConfig.Name, strings.Join(configNames, ",")),
+			networkConfig.Name, configNames),
 	}, nil
 }
