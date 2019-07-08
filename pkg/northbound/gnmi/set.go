@@ -240,6 +240,7 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 		case events.EventTypeErrorSetConfig:
 			//Removing previously applied config
 			for t := range changes {
+				//TODO call new method herew
 				err := mgr.ConfigStore.RemoveLastChangeEntry(t)
 				if err != nil {
 					log.Error("Can't remove last entry for ", t, err)
