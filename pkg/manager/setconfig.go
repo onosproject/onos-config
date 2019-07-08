@@ -28,7 +28,7 @@ import (
 const SetConfigAlreadyApplied = "Already applied:"
 
 // SetNetworkConfig sets the given value, according to the path on the configuration for the specified target
-func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[string]string,
+func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[string]*change.TypedValue,
 	deletes []string) (change.ID, store.ConfigName, error) {
 
 	// Look for an exact match or then a partial match
@@ -66,20 +66,20 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 		}
 	}
 
-	var newChange = make([]*change.Value, 0)
+	var newChanges = make([]*change.Value, 0)
 	//updates
 	for path, value := range updates {
 		changeValue, _ := change.CreateChangeValue(path, value, false)
-		newChange = append(newChange, changeValue)
+		newChanges = append(newChanges, changeValue)
 	}
 
 	//deletes
 	for _, path := range deletes {
-		changeValue, _ := change.CreateChangeValue(path, "", true)
-		newChange = append(newChange, changeValue)
+		changeValue, _ := change.CreateChangeValue(path, change.CreateTypedValueEmpty(), true)
+		newChanges = append(newChanges, changeValue)
 	}
 
-	configChange, err := change.CreateChange(newChange,
+	configChange, err := change.CreateChange(newChanges,
 		fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339)))
 	if err != nil {
 		return nil, configName, err
@@ -111,7 +111,7 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 		log.Warning("No model ", modelName, " available as a plugin")
 	} else {
 		configValues := deviceConfig.ExtractFullConfig(m.ChangeStore.Store, 0)
-		jsonTree, err := store.BuildTree(configValues)
+		jsonTree, err := store.BuildTree(configValues, false)
 		if err != nil {
 			log.Error("Error building JSON tree from Config Values ", err, jsonTree)
 		} else {

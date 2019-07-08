@@ -100,7 +100,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	path1Once := "test1:cont1a"
 	path2Once := "cont2a"
 	path3Once := "leaf2a"
-	value := "13"
+	value := uint(13)
 
 	// Wait for the Update response with Update
 	assertUpdateResponse(t, responsesChan, device1, path1Once, path2Once, path3Once, value)
@@ -138,7 +138,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
 	//augmenting pre-existing value by one
-	typedValue := gnmi.TypedValue_StringVal{StringVal: "14"}
+	typedValue := gnmi.TypedValue_UintVal{UintVal: 14}
 	value := gnmi.TypedValue{Value: &typedValue}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: path, Val: &value})
 	setRequest := &gnmi.SetRequest{
@@ -157,7 +157,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	path1Stream := "cont1a"
 	path2Stream := "cont2a"
 	path3Stream := "leaf4a"
-	valueReply := "14"
+	valueReply := uint(14)
 
 	//Expecting 1 Update response
 	assertUpdateResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream, valueReply)
@@ -202,8 +202,8 @@ func Test_WrongDevice(t *testing.T) {
 	targets["Device1"] = struct{}{}
 	subs["/test1:cont1a/cont2a/leaf3c"] = struct{}{}
 	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
-	config1Value05, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", "def", false)
-	config1Value09, _ := change.CreateChangeValue("/test1:cont1a/list2a[name=txout2]", "", true)
+	config1Value05, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", change.CreateTypedValueString("def"), false)
+	config1Value09, _ := change.CreateChangeValue("/test1:cont1a/list2a[name=txout2]", change.CreateTypedValueEmpty(), true)
 	change1, _ := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
 	changeChan <- events.CreateConfigEvent("Device1", change1.ID, true)
 	select {
@@ -284,7 +284,7 @@ func Test_Poll(t *testing.T) {
 	path1Poll := "test1:cont1a"
 	path2Poll := "cont2a"
 	path3Poll := "leaf2a"
-	value := "13"
+	value := uint(13)
 
 	//Expecting first Update response
 	assertUpdateResponse(t, responsesChan, device1, path1Poll, path2Poll, path3Poll, value)
@@ -388,7 +388,7 @@ func assertSyncResponse(responsesChan chan *gnmi.SubscribeResponse, t *testing.T
 }
 
 func assertUpdateResponse(t *testing.T, responsesChan chan *gnmi.SubscribeResponse, device1 string,
-	path1 string, path2 string, path3 string, value string) {
+	path1 string, path2 string, path3 string, value uint) {
 	select {
 	case response := <-responsesChan:
 		assert.Assert(t, response.GetUpdate().GetUpdate() != nil, "Update should not be nil")
@@ -403,7 +403,7 @@ func assertUpdateResponse(t *testing.T, responsesChan chan *gnmi.SubscribeRespon
 		assert.Equal(t, pathResponse.Elem[0].Name, path1)
 		assert.Equal(t, pathResponse.Elem[1].Name, path2)
 		assert.Equal(t, pathResponse.Elem[2].Name, path3)
-		assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetStringVal(), value)
+		assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetUintVal(), uint64(value))
 	case <-time.After(50 * time.Millisecond):
 		log.Error("Expected Update Response")
 		t.FailNow()

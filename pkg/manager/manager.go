@@ -151,7 +151,7 @@ func validateConfiguration(configObj store.Configuration, errChan chan error) {
 	if pluginExists {
 		log.Info("Validating config ", configObj.Name, " with Model Plugin ", modelPluginName)
 		fullconfig := configObj.ExtractFullConfig(mgr.ChangeStore.Store, 0)
-		configJSON, err := store.BuildTree(fullconfig)
+		configJSON, err := store.BuildTree(fullconfig, true)
 		if err != nil {
 			errChan <- err
 			return

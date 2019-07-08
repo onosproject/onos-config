@@ -15,12 +15,12 @@
 package gnmi
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
+	"strings"
 )
 
 // See also the Test_getWithPrefixNoOtherPathsNoTarget below where the Target
@@ -152,11 +152,11 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 		"/test1:cont1a/cont2a")
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/leaf2a")
-	assert.Equal(t, utils.StrVal(result.Notification[0].Update[0].Val), "13")
+	assert.Equal(t, result.Notification[0].Update[0].GetVal().GetUintVal(), uint64(13))
 
 	assert.Equal(t, utils.StrPath(result.Notification[1].Update[0].Path),
 		"/leaf2b")
-	assert.Equal(t, utils.StrVal(result.Notification[1].Update[0].Val), "1.14159")
+	assert.Equal(t, result.Notification[1].Update[0].GetVal().GetFloatVal(), float32(1.14159))
 }
 
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
@@ -182,8 +182,8 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/")
-	assert.Check(t, strings.Contains(utils.StrVal(result.Notification[0].Update[0].Val),
-		`"leaf2b": "1.14159"`))
+	assert.Check(t, strings.Contains(string(result.Notification[0].Update[0].GetVal().GetJsonVal()),
+		`"leaf2b":1.14159`), "Got", string(result.Notification[0].Update[0].GetVal().GetJsonVal()))
 }
 
 func Test_targetDoesNotExist(t *testing.T) {

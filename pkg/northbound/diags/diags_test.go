@@ -45,7 +45,7 @@ func Test_GetChanges_All(t *testing.T) {
 }
 
 func Test_GetChanges_Change(t *testing.T) {
-	testGetChanges(t, "1EvL+9i1ZGjKyuSjxh1hlfZ9/74=")
+	testGetChanges(t, "50XCdm605t2/jZoPePGiUvboQzg=")
 }
 
 func testGetChanges(t *testing.T, changeID string) {

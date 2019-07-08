@@ -31,12 +31,12 @@ const (
 
 // BuildTree is a function that takes an ordered array of ConfigValues and
 // produces a structured formatted JSON tree
-func BuildTree(values []*change.ConfigValue) ([]byte, error) {
+func BuildTree(values []*change.ConfigValue, floatAsStr bool) ([]byte, error) {
 
 	root := make(map[string]interface{})
 	rootif := interface{}(root)
 	for _, cv := range values {
-		err := addPathToTree(cv.Path, cv.Value, &rootif)
+		err := addPathToTree(cv.Path, &cv.TypedValue, &rootif, floatAsStr)
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +54,7 @@ func BuildTree(values []*change.ConfigValue) ([]byte, error) {
 // suitable for using with json.Marshal, which in turn can be used to feed in to
 // ygot.Unmarshall
 // This follows the approach in https://blog.golang.org/json-and-go "Generic JSON with interface{}"
-func addPathToTree(path, value string, nodeif *interface{}) error {
+func addPathToTree(path string, value *change.TypedValue, nodeif *interface{}, floatAsStr bool) error {
 	pathelems := strings.Split(path, slash)
 
 	// Convert to its real type
@@ -63,19 +63,10 @@ func addPathToTree(path, value string, nodeif *interface{}) error {
 		return fmt.Errorf("Could not convert nodeif %v for %s", *nodeif, path)
 	}
 
-	if len(pathelems) == 2 && value != "" {
+	if len(pathelems) == 2 && len(value.Value) > 0 {
 		// At the end of a line - this is the leaf
-		numval, err := strconv.Atoi(value)
-		if err == nil {
-			(nodemap)[pathelems[1]] = numval
-		} else if strings.ToLower(value) == "true" || strings.ToLower(value) == "false" {
-			(nodemap)[pathelems[1]] = strings.ToLower(value)
-		} else if value == "openconfig-aaa-types:LOCAL" {
-			// FIXME - this is a dirty hack until we create a custom unmarshaller for Paths&Values to YGOT
-			(nodemap)[pathelems[1]] = []string{"openconfig-aaa-types:LOCAL"}
-		} else {
-			(nodemap)[pathelems[1]] = value
-		}
+		handleLeafValue(nodemap, value, pathelems, floatAsStr)
+
 	} else if strings.Contains(pathelems[1], equals) {
 		// To handle list index items
 		refinePath := strings.Join(pathelems[2:], slash)
@@ -124,7 +115,7 @@ func addPathToTree(path, value string, nodeif *interface{}) error {
 			}
 		}
 		listItemIf := interface{}(listItemMap)
-		err := addPathToTree(refinePath, value, &listItemIf)
+		err := addPathToTree(refinePath, value, &listItemIf, floatAsStr)
 		if err != nil {
 			return err
 		}
@@ -144,14 +135,14 @@ func addPathToTree(path, value string, nodeif *interface{}) error {
 			elemMap = make(map[string]interface{})
 			elemIf := interface{}(elemMap)
 
-			err := addPathToTree(refinePath, value, &elemIf)
+			err := addPathToTree(refinePath, value, &elemIf, floatAsStr)
 			if err != nil {
 				return err
 			}
 			(nodemap)[pathelems[1]] = elemMap
 		} else {
 			//Reuse existing elemMap
-			err := addPathToTree(refinePath, value, &elemMap)
+			err := addPathToTree(refinePath, value, &elemMap, floatAsStr)
 			if err != nil {
 				return err
 			}
@@ -159,4 +150,50 @@ func addPathToTree(path, value string, nodeif *interface{}) error {
 	}
 
 	return nil
+}
+
+func handleLeafValue(nodemap map[string]interface{}, value *change.TypedValue, pathelems []string, floatAsStr bool) {
+	switch value.Type {
+	case change.ValueTypeEMPTY:
+		// NOOP
+	case change.ValueTypeSTRING:
+		(nodemap)[pathelems[1]] = (*change.TypedString)(value).String()
+	case change.ValueTypeINT:
+		(nodemap)[pathelems[1]] = (*change.TypedInt64)(value).Int()
+	case change.ValueTypeUINT:
+		(nodemap)[pathelems[1]] = (*change.TypedUint64)(value).Uint()
+	case change.ValueTypeDECIMAL:
+		if floatAsStr {
+			(nodemap)[pathelems[1]] = (*change.TypedDecimal64)(value).String()
+		} else {
+			(nodemap)[pathelems[1]] = (*change.TypedDecimal64)(value).Float()
+		}
+	case change.ValueTypeFLOAT:
+		if floatAsStr {
+			(nodemap)[pathelems[1]] = (*change.TypedFloat)(value).String()
+		} else {
+			(nodemap)[pathelems[1]] = (*change.TypedFloat)(value).Float32()
+		}
+	case change.ValueTypeBOOL:
+		(nodemap)[pathelems[1]] = (*change.TypedBool)(value).Bool()
+	case change.ValueTypeBYTES:
+		(nodemap)[pathelems[1]] = (*change.TypedBytes)(value).Bytes()
+	case change.ValueTypeLeafListSTRING:
+		(nodemap)[pathelems[1]] = (*change.TypedLeafListString)(value).List()
+	case change.ValueTypeLeafListINT:
+		(nodemap)[pathelems[1]] = (*change.TypedLeafListInt64)(value).List()
+	case change.ValueTypeLeafListUINT:
+		(nodemap)[pathelems[1]] = (*change.TypedLeafListUint)(value).List()
+	case change.ValueTypeLeafListBOOL:
+		(nodemap)[pathelems[1]] = (*change.TypedLeafListBool)(value).List()
+	case change.ValueTypeLeafListDECIMAL:
+		(nodemap)[pathelems[1]] = (*change.TypedLeafListDecimal)(value).ListFloat()
+	case change.ValueTypeLeafListFLOAT:
+		(nodemap)[pathelems[1]] = (*change.TypedLeafListFloat)(value).List()
+	case change.ValueTypeLeafListBYTES:
+		(nodemap)[pathelems[1]] = (*change.TypedLeafListBytes)(value).List()
+	default:
+		(nodemap)[pathelems[1]] = fmt.Sprintf("unexpected %d", value.Type)
+	}
+
 }

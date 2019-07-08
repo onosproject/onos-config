@@ -24,9 +24,6 @@ import (
 	"io"
 	"sort"
 	"time"
-
-	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
 // B64 is an alias for the function encoding a byte array to a Base64 string
@@ -73,39 +70,6 @@ func (c Change) IsValid() error {
 		b64(c.ID), b64(hash))
 }
 
-// GnmiChange converts a Change object to gNMI format
-func (c Change) GnmiChange() (*gnmi.SetRequest, error) {
-	var deletePaths = []*gnmi.Path{}
-	var replacedPaths = []*gnmi.Update{}
-	var updatedPaths = []*gnmi.Update{}
-
-	for _, changeValue := range c.Config {
-		elems := utils.SplitPath(changeValue.Path)
-		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
-
-		if parseError != nil {
-			return nil, parseError
-		}
-
-		if changeValue.Remove {
-			deletePaths = append(deletePaths, &gnmi.Path{Elem: pathElemsRefs.Elem})
-		} else {
-			typedValue := gnmi.TypedValue_StringVal{StringVal: changeValue.Value}
-			value := gnmi.TypedValue{Value: &typedValue}
-			updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
-			updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
-		}
-	}
-
-	var setRequest = gnmi.SetRequest{
-		Delete:  deletePaths,
-		Replace: replacedPaths,
-		Update:  updatedPaths,
-	}
-
-	return &setRequest, nil
-}
-
 // CreateChange creates a Change object from ChangeValues
 // The ID is a has generated from the change values,and does not include
 // the description or the time. This way changes that have an identical meaning
@@ -122,7 +86,7 @@ func CreateChange(config ValueCollections, desc string) (*Change, error) {
 	// If a path is repeated then reject
 	for _, cv := range config {
 		for _, p := range pathList {
-			if cv.Path == p {
+			if cv.Path == p { // Suspend for leaf-list
 				return nil, errors.New("Error Path " + p + " is repeated in change")
 			}
 		}

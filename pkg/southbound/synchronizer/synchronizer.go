@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/status"
@@ -93,7 +94,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 			return sync, nil
 		}
 
-		gnmiChange, err := initialConfig.GnmiChange()
+		gnmiChange, err := values.NativeChangeToGnmiChange(initialConfig)
 
 		if err != nil {
 			log.Error("Can't obtain GnmiChange for ", sync.Device.Addr, err)
@@ -133,7 +134,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
-		gnmiChange, parseError := c.GnmiChange()
+		gnmiChange, parseError := values.NativeChangeToGnmiChange(c)
 
 		if parseError != nil {
 			log.Error("Parsing error for Gnmi change ", parseError)

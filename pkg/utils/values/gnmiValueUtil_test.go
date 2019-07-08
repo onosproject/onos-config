@@ -80,7 +80,7 @@ func Test_GnmiBoolToNative(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 
 func Test_NativeStringToGnmi(t *testing.T) {
-	nativeString := (*change.TypedValue)(change.CreateTypedValueString(testString))
+	nativeString := change.CreateTypedValueString(testString)
 	gnmiString, err := NativeTypeToGnmiTypedValue(nativeString)
 	assert.NilError(t, err)
 	_, ok := gnmiString.Value.(*pb.TypedValue_StringVal)
@@ -90,7 +90,7 @@ func Test_NativeStringToGnmi(t *testing.T) {
 }
 
 func Test_NativeIntToGnmi(t *testing.T) {
-	nativeInt := (*change.TypedValue)(change.CreateTypedValueInt64(testPositiveInt))
+	nativeInt := change.CreateTypedValueInt64(testPositiveInt)
 	gnmiInt, err := NativeTypeToGnmiTypedValue(nativeInt)
 	assert.NilError(t, err)
 	_, ok := gnmiInt.Value.(*pb.TypedValue_IntVal)
@@ -100,7 +100,7 @@ func Test_NativeIntToGnmi(t *testing.T) {
 }
 
 func Test_NativeUintToGnmi(t *testing.T) {
-	nativeUint := (*change.TypedValue)(change.CreateTypedValueUint64(testMaxUint))
+	nativeUint := change.CreateTypedValueUint64(testMaxUint)
 	gnmiUint, err := NativeTypeToGnmiTypedValue(nativeUint)
 	assert.NilError(t, err)
 	_, ok := gnmiUint.Value.(*pb.TypedValue_UintVal)
@@ -110,7 +110,7 @@ func Test_NativeUintToGnmi(t *testing.T) {
 }
 
 func Test_NativeBoolToGnmi(t *testing.T) {
-	nativeBool := (*change.TypedValue)(change.CreateTypedValueBool(true))
+	nativeBool := change.CreateTypedValueBool(true)
 	gnmiBool, err := NativeTypeToGnmiTypedValue(nativeBool)
 	assert.NilError(t, err)
 	_, ok := gnmiBool.Value.(*pb.TypedValue_BoolVal)
