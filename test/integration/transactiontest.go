@@ -52,6 +52,18 @@ func TestTransaction(t *testing.T) {
 	assert.NoError(t, errorSet)
 	assert.True(t, changeID != "")
 
+	//  Trial
+	devicePathsForSet[0].deviceName = device
+	devicePathsForSet[0].path = path1
+	devicePathsForSet[0].value = value2
+	devicePathsForSet[1].deviceName = device
+	devicePathsForSet[1].path = path2
+	devicePathsForSet[1].value = value1
+	changeID, errorSet = GNMISet(MakeContext(), c, devicePathsForSet)
+	assert.NoError(t, errorSet)
+	assert.True(t, changeID != "")
+	// End Trial
+
 	var devicePathsForGet = make([]DevicePath, 2)
 	devicePathsForGet[0].deviceName = device
 	devicePathsForGet[0].path = path1
