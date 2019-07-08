@@ -19,21 +19,58 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 )
 
 // Types given here are a rough approximation of those in the set of YANG types
 // and the set of gNMI types
 
-// TypedValueI is a common interface that typed values implement to allow their type be extracted
-type TypedValueI interface {
-	ValueType() TypedValueI
+// ValueType is an enum for noting the type of the value
+type ValueType int
+
+const (
+	// ValueTypeEMPTY for empty type
+	ValueTypeEMPTY ValueType = 0
+	// ValueTypeSTRING for string type
+	ValueTypeSTRING ValueType = 1
+	// ValueTypeINT for int type
+	ValueTypeINT ValueType = 2
+	// ValueTypeUINT for uint type
+	ValueTypeUINT ValueType = 3
+	// ValueTypeBOOL for bool type
+	ValueTypeBOOL ValueType = 4
+	// ValueTypeDECIMAL for decimal type
+	ValueTypeDECIMAL ValueType = 5
+	// ValueTypeFLOAT for float type
+	ValueTypeFLOAT ValueType = 6
+	// ValueTypeBYTES for bytes type
+	ValueTypeBYTES ValueType = 7
+	// ValueTypeLeafListSTRING for string leaf list
+	ValueTypeLeafListSTRING ValueType = 8
+	// ValueTypeLeafListINT for int leaf list
+	ValueTypeLeafListINT ValueType = 9
+	// ValueTypeLeafListUINT for uint leaf list
+	ValueTypeLeafListUINT ValueType = 10
+	// ValueTypeLeafListBOOL for bool leaf list
+	ValueTypeLeafListBOOL ValueType = 11
+	// ValueTypeLeafListDECIMAL for decimal leaf list
+	ValueTypeLeafListDECIMAL ValueType = 12
+	// ValueTypeLeafListFLOAT for float leaf list
+	ValueTypeLeafListFLOAT ValueType = 13
+	// ValueTypeLeafListBYTES for bytes leaf list
+	ValueTypeLeafListBYTES ValueType = 14
+)
+
+// typedValueI is a common interface that typed values implement to allow their type be extracted
+type typedValueI interface {
+	ValueType() ValueType
 }
 
 // TypedValue is a of a value, a type and a LeafList flag
 type TypedValue struct {
 	Value    []byte
-	Type     TypedValueI
+	Type     ValueType
 	TypeOpts []int
 }
 
@@ -52,13 +89,13 @@ type TypedEmpty TypedValue
 func CreateTypedValueEmpty() *TypedEmpty {
 	typedEmpty := TypedEmpty{
 		Value: make([]byte, 0),
-		Type:  TypedValueI(&TypedEmpty{}),
+		Type:  ValueTypeEMPTY,
 	}
 	return &typedEmpty
 }
 
 // ValueType gives the value type
-func (tv *TypedEmpty) ValueType() TypedValueI {
+func (tv *TypedEmpty) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -77,13 +114,13 @@ type TypedString TypedValue
 func CreateTypedValueString(value string) *TypedString {
 	typedString := TypedString{
 		Value: []byte(value),
-		Type:  TypedValueI(&TypedString{}),
+		Type:  ValueTypeSTRING,
 	}
 	return &typedString
 }
 
 // ValueType gives the value type
-func (tv *TypedString) ValueType() TypedValueI {
+func (tv *TypedString) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -105,13 +142,13 @@ func CreateTypedValueInt64(value int) *TypedInt64 {
 
 	typedInt64 := TypedInt64{
 		Value: buf,
-		Type:  TypedValueI(&TypedInt64{}),
+		Type:  ValueTypeINT,
 	}
 	return &typedInt64
 }
 
 // ValueType gives the value type
-func (tv *TypedInt64) ValueType() TypedValueI {
+func (tv *TypedInt64) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -137,13 +174,13 @@ func CreateTypedValueUint64(value uint) *TypedUint64 {
 	binary.LittleEndian.PutUint64(buf, uint64(value))
 	typedUint64 := TypedUint64{
 		Value: buf,
-		Type:  TypedValueI(&TypedUint64{}),
+		Type:  ValueTypeUINT,
 	}
 	return &typedUint64
 }
 
 // ValueType gives the value type
-func (tv *TypedUint64) ValueType() TypedValueI {
+func (tv *TypedUint64) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -171,13 +208,13 @@ func CreateTypedValueBool(value bool) *TypedBool {
 	}
 	typedBool := TypedBool{
 		Value: buf,
-		Type:  TypedValueI(&TypedBool{}),
+		Type:  ValueTypeBOOL,
 	}
 	return &typedBool
 }
 
 // ValueType gives the value type
-func (tv *TypedBool) ValueType() TypedValueI {
+func (tv *TypedBool) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -210,14 +247,14 @@ func CreateTypedValueDecimal64(digits int64, precision uint32) *TypedDecimal64 {
 	typeOpts := []int{int(precision)}
 	typedDecimal64 := TypedDecimal64{
 		Value:    buf,
-		Type:     TypedValueI(&TypedDecimal64{}),
+		Type:     ValueTypeDECIMAL,
 		TypeOpts: typeOpts,
 	}
 	return &typedDecimal64
 }
 
 // ValueType gives the value type
-func (tv *TypedDecimal64) ValueType() TypedValueI {
+func (tv *TypedDecimal64) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -234,6 +271,11 @@ func (tv *TypedDecimal64) Decimal64() (int64, uint32) {
 	return 0, 0
 }
 
+// Float extracts the unsigned decimal value as a float
+func (tv *TypedDecimal64) Float() (float64, error) {
+	return strconv.ParseFloat(strDecimal64(tv.Decimal64()), 64)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // TypedFloat
 ////////////////////////////////////////////////////////////////////////////////
@@ -247,13 +289,13 @@ func CreateTypedValueFloat(value float32) *TypedFloat {
 	binary.LittleEndian.PutUint64(buf, math.Float64bits(float64(value)))
 	typedFloat := TypedFloat{
 		Value: buf,
-		Type:  TypedValueI(&TypedFloat{}),
+		Type:  ValueTypeFLOAT,
 	}
 	return &typedFloat
 }
 
 // ValueType gives the value type
-func (tv *TypedFloat) ValueType() TypedValueI {
+func (tv *TypedFloat) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -277,14 +319,14 @@ type TypedBytes TypedValue
 func CreateTypedValueBytes(value []byte) *TypedBytes {
 	typedFloat := TypedBytes{
 		Value:    value,
-		Type:     TypedValueI(&TypedBytes{}),
+		Type:     ValueTypeBYTES,
 		TypeOpts: []int{len(value)},
 	}
 	return &typedFloat
 }
 
 // ValueType gives the value type
-func (tv *TypedBytes) ValueType() TypedValueI {
+func (tv *TypedBytes) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -320,13 +362,13 @@ func CreateLeafListString(values []string) *TypedLeafListString {
 	}
 	typedLeafListString := TypedLeafListString{
 		Value: bytes,
-		Type:  TypedValueI(&TypedLeafListString{}),
+		Type:  ValueTypeLeafListSTRING,
 	}
 	return &typedLeafListString
 }
 
 // ValueType gives the value type
-func (tv *TypedLeafListString) ValueType() TypedValueI {
+func (tv *TypedLeafListString) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -369,13 +411,13 @@ func CreateLeafListInt64(values []int) *TypedLeafListInt64 {
 	}
 	typedLeafListInt64 := TypedLeafListInt64{
 		Value: bytes,
-		Type:  TypedValueI(&TypedLeafListInt64{}),
+		Type:  ValueTypeLeafListINT,
 	}
 	return &typedLeafListInt64
 }
 
 // ValueType gives the value type
-func (tv *TypedLeafListInt64) ValueType() TypedValueI {
+func (tv *TypedLeafListInt64) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -416,13 +458,13 @@ func CreateLeafListUint64(values []uint) *TypedLeafListUint {
 	}
 	typedLeafListUint := TypedLeafListUint{
 		Value: bytes,
-		Type:  TypedValueI(&TypedLeafListUint{}),
+		Type:  ValueTypeLeafListUINT,
 	}
 	return &typedLeafListUint
 }
 
 // ValueType gives the value type
-func (tv *TypedLeafListUint) ValueType() TypedValueI {
+func (tv *TypedLeafListUint) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -465,13 +507,13 @@ func CreateLeafListBool(values []bool) *TypedLeafListBool {
 	}
 	typedLeafListBool := TypedLeafListBool{
 		Value: bytes,
-		Type:  TypedValueI(&TypedLeafListBool{}),
+		Type:  ValueTypeLeafListBOOL,
 	}
 	return &typedLeafListBool
 }
 
 // ValueType gives the value type
-func (tv *TypedLeafListBool) ValueType() TypedValueI {
+func (tv *TypedLeafListBool) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -511,14 +553,14 @@ func CreateLeafListDecimal64(digits []int64, precision uint32) *TypedLeafListDec
 	}
 	typedLeafListDecimal := TypedLeafListDecimal{
 		Value:    bytes,
-		Type:     TypedValueI(&TypedLeafListDecimal{}),
+		Type:     ValueTypeLeafListDECIMAL,
 		TypeOpts: []int{int(precision)},
 	}
 	return &typedLeafListDecimal
 }
 
 // ValueType gives the value type
-func (tv *TypedLeafListDecimal) ValueType() TypedValueI {
+func (tv *TypedLeafListDecimal) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -565,13 +607,13 @@ func CreateLeafListFloat32(values []float32) *TypedLeafListFloat {
 	}
 	typedLeafListFloat := TypedLeafListFloat{
 		Value: bytes,
-		Type:  TypedValueI(&TypedLeafListFloat{}),
+		Type:  ValueTypeLeafListFLOAT,
 	}
 	return &typedLeafListFloat
 }
 
 // ValueType gives the value type
-func (tv *TypedLeafListFloat) ValueType() TypedValueI {
+func (tv *TypedLeafListFloat) ValueType() ValueType {
 	return tv.Type
 }
 
@@ -616,14 +658,14 @@ func CreateLeafListBytes(values [][]byte) *TypedLeafListBytes {
 	}
 	typedLeafListBytes := TypedLeafListBytes{
 		Value:    bytes,
-		Type:     TypedValueI(&TypedLeafListBytes{}), // Contains the lengths of each byte array in list
+		Type:     ValueTypeLeafListBYTES, // Contains the lengths of each byte array in list
 		TypeOpts: typeopts,
 	}
 	return &typedLeafListBytes
 }
 
 // ValueType gives the value type
-func (tv *TypedLeafListBytes) ValueType() TypedValueI {
+func (tv *TypedLeafListBytes) ValueType() ValueType {
 	return tv.Type
 }
 

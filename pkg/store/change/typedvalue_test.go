@@ -16,6 +16,7 @@ package change
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"gotest.tools/assert"
 	"testing"
@@ -219,44 +220,87 @@ func Test_LeafListBytes(t *testing.T) {
 	assert.Equal(t, tv.TypeOpts[2], 5)
 }
 
+func Test_JsonSerializationDecimal(t *testing.T) {
+	tv := (*TypedValue)(CreateTypedValueDecimal64(testPositiveInt, 6))
+
+	jsonStr, err := json.Marshal(tv)
+	assert.NilError(t, err)
+
+	assert.Equal(t, string(jsonStr), `{"Value":"/////////38=","Type":5,"TypeOpts":[6]}`)
+
+	unmarshalledTv := TypedValue{}
+	err = json.Unmarshal(jsonStr, &unmarshalledTv)
+	assert.NilError(t, err)
+
+	assert.Equal(t, unmarshalledTv.Type, ValueTypeDECIMAL)
+	assert.Equal(t, len(unmarshalledTv.TypeOpts), 1)
+	assert.Equal(t, unmarshalledTv.TypeOpts[0], 6)
+	assert.DeepEqual(t, unmarshalledTv.Value, []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f})
+
+	decFloat, _ := (*TypedDecimal64)(&unmarshalledTv).Float()
+	assert.Equal(t, decFloat, 9.223372036854775e+12)
+}
+
+func Test_JsonSerializationLeafListBytes(t *testing.T) {
+	tv := (*TypedValue)(CreateLeafListBytes(testLeafListBytes))
+
+	jsonStr, err := json.Marshal(tv)
+	assert.NilError(t, err)
+
+	assert.Equal(t, string(jsonStr), `{"Value":"YWJjZGVmZ2doaWpr","Type":14,"TypeOpts":[3,4,5]}`)
+
+	unmarshalledTv := TypedValue{}
+	err = json.Unmarshal(jsonStr, &unmarshalledTv)
+	assert.NilError(t, err)
+
+	assert.Equal(t, unmarshalledTv.Type, ValueTypeLeafListBYTES)
+	assert.Equal(t, len(unmarshalledTv.TypeOpts), 3)
+	assert.Equal(t, unmarshalledTv.TypeOpts[0], 3)
+	assert.Equal(t, unmarshalledTv.TypeOpts[1], 4)
+	assert.Equal(t, unmarshalledTv.TypeOpts[2], 5)
+	assert.DeepEqual(t, unmarshalledTv.Value, []byte{0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x67, 0x68, 0x69, 0x6a, 0x6b})
+
+	assert.Equal(t, (*TypedLeafListBytes)(&unmarshalledTv).String(), "[[97 98 99] [100 101 102 103] [103 104 105 106 107]]")
+}
+
 func testConversion(t *testing.T, tv *TypedValue) {
 
-	switch v := tv.Type.(type) {
-	case *TypedEmpty:
+	switch tv.Type {
+	case ValueTypeEMPTY:
 		assert.Equal(t, (*TypedEmpty)(tv).String(), "")
-	case *TypedString:
+	case ValueTypeSTRING:
 		assert.Equal(t, (*TypedString)(tv).String(), testString)
-	case *TypedInt64:
+	case ValueTypeINT:
 		assert.Equal(t, (*TypedInt64)(tv).Int(), testNegativeInt)
-	case *TypedUint64:
+	case ValueTypeUINT:
 		assert.Equal(t, (*TypedUint64)(tv).Uint(), testMaxUint)
-	case *TypedBool:
+	case ValueTypeBOOL:
 		assert.Equal(t, (*TypedBool)(tv).Bool(), true)
-	case *TypedDecimal64:
+	case ValueTypeDECIMAL:
 		digits, precision := (*TypedDecimal64)(tv).Decimal64()
 		assert.Equal(t, digits, int64(testNegativeInt))
 		assert.Equal(t, precision, uint32(testPrecision3))
-	case *TypedFloat:
+	case ValueTypeFLOAT:
 		assert.Equal(t, (*TypedFloat)(tv).Float32(), testFloatNeg)
-	case *TypedBytes:
+	case ValueTypeBYTES:
 		assert.Equal(t, base64.StdEncoding.EncodeToString((*TypedBytes)(tv).Bytes()), testStringBytesB64)
 		assert.Equal(t, len(tv.TypeOpts), 1)
 		assert.Equal(t, tv.TypeOpts[0], 11)
-	case *TypedLeafListString:
+	case ValueTypeLeafListSTRING:
 		assert.DeepEqual(t, (*TypedLeafListString)(tv).List(), testLeafListString)
-	case *TypedLeafListInt64:
+	case ValueTypeLeafListINT:
 		assert.DeepEqual(t, (*TypedLeafListInt64)(tv).List(), testLeafListInt)
-	case *TypedLeafListUint:
+	case ValueTypeLeafListUINT:
 		assert.DeepEqual(t, (*TypedLeafListUint)(tv).List(), testLeafListUint)
-	case *TypedLeafListBool:
+	case ValueTypeLeafListBOOL:
 		assert.DeepEqual(t, (*TypedLeafListBool)(tv).List(), testLeafListBool)
-	case *TypedLeafListDecimal:
+	case ValueTypeLeafListDECIMAL:
 		digits, precision := (*TypedLeafListDecimal)(tv).List()
 		assert.DeepEqual(t, digits, testLeafListDecimal)
 		assert.Equal(t, precision, uint32(testPrecision6))
-	case *TypedLeafListFloat:
+	case ValueTypeLeafListFLOAT:
 		assert.DeepEqual(t, (*TypedLeafListFloat)(tv).List(), testLeafListFloat)
-	case *TypedLeafListBytes:
+	case ValueTypeLeafListBYTES:
 		assert.DeepEqual(t, (*TypedLeafListBytes)(tv).List(), testLeafListBytes)
 		assert.Equal(t, len(tv.TypeOpts), 3)
 		assert.Equal(t, tv.TypeOpts[0], 3)
@@ -264,7 +308,7 @@ func testConversion(t *testing.T, tv *TypedValue) {
 		assert.Equal(t, tv.TypeOpts[2], 5)
 
 	default:
-		t.Log("Unexpected type", v)
+		t.Log("Unexpected type", tv.Type)
 		t.Fail()
 	}
 
