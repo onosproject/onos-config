@@ -19,28 +19,26 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 )
 
 // Types given here are a rough approximation of those in the set of YANG types
 // and the set of gNMI types
-const (
-	TypeBool      = "bool"
-	TypeBytes     = "bytes"
-	TypeDecimal64 = "decimal64"
-	TypeEmpty     = "empty" // TODO check if this is really necessary
-	TypeFloat     = "float"
-	TypeInt       = "int"
-	TypeString    = "string"
-	TypeUint      = "uint"
-)
+
+// TypedValueI is a common interface that typed values implement to allow their type be extracted
+type TypedValueI interface {
+	ValueType() TypedValueI
+}
 
 // TypedValue is a of a value, a type and a LeafList flag
 type TypedValue struct {
 	Value    []byte
-	Type     string
-	LeafList bool
+	Type     TypedValueI
+	TypeOpts []int
+}
+
+func (tv *TypedValue) String() string {
+	return ""
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,11 +51,19 @@ type TypedEmpty TypedValue
 // CreateTypedValueEmpty decodes an empty object
 func CreateTypedValueEmpty() *TypedEmpty {
 	typedEmpty := TypedEmpty{
-		Value:    make([]byte, 0),
-		Type:     TypeEmpty,
-		LeafList: false,
+		Value: make([]byte, 0),
+		Type:  TypedValueI(&TypedEmpty{}),
 	}
 	return &typedEmpty
+}
+
+// ValueType gives the value type
+func (tv *TypedEmpty) ValueType() TypedValueI {
+	return tv.Type
+}
+
+func (tv *TypedEmpty) String() string {
+	return ""
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,11 +76,15 @@ type TypedString TypedValue
 // CreateTypedValueString decodes string value in to an object
 func CreateTypedValueString(value string) *TypedString {
 	typedString := TypedString{
-		Value:    []byte(value),
-		Type:     TypeString,
-		LeafList: false,
+		Value: []byte(value),
+		Type:  TypedValueI(&TypedString{}),
 	}
 	return &typedString
+}
+
+// ValueType gives the value type
+func (tv *TypedString) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedString) String() string {
@@ -94,11 +104,15 @@ func CreateTypedValueInt64(value int) *TypedInt64 {
 	binary.LittleEndian.PutUint64(buf, uint64(value))
 
 	typedInt64 := TypedInt64{
-		Value:    buf,
-		Type:     TypeInt,
-		LeafList: false,
+		Value: buf,
+		Type:  TypedValueI(&TypedInt64{}),
 	}
 	return &typedInt64
+}
+
+// ValueType gives the value type
+func (tv *TypedInt64) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedInt64) String() string {
@@ -122,11 +136,15 @@ func CreateTypedValueUint64(value uint) *TypedUint64 {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, uint64(value))
 	typedUint64 := TypedUint64{
-		Value:    buf,
-		Type:     TypeUint,
-		LeafList: false,
+		Value: buf,
+		Type:  TypedValueI(&TypedUint64{}),
 	}
 	return &typedUint64
+}
+
+// ValueType gives the value type
+func (tv *TypedUint64) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedUint64) String() string {
@@ -152,11 +170,15 @@ func CreateTypedValueBool(value bool) *TypedBool {
 		buf[0] = 1
 	}
 	typedBool := TypedBool{
-		Value:    buf,
-		Type:     TypeBool,
-		LeafList: false,
+		Value: buf,
+		Type:  TypedValueI(&TypedBool{}),
 	}
 	return &typedBool
+}
+
+// ValueType gives the value type
+func (tv *TypedBool) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedBool) String() string {
@@ -185,29 +207,28 @@ type TypedDecimal64 TypedValue
 func CreateTypedValueDecimal64(digits int64, precision uint32) *TypedDecimal64 {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, uint64(digits))
-	valueType := fmt.Sprintf("%s-%d", TypeDecimal64, precision)
+	typeOpts := []int{int(precision)}
 	typedDecimal64 := TypedDecimal64{
 		Value:    buf,
-		Type:     valueType,
-		LeafList: false,
+		Type:     TypedValueI(&TypedDecimal64{}),
+		TypeOpts: typeOpts,
 	}
 	return &typedDecimal64
 }
 
+// ValueType gives the value type
+func (tv *TypedDecimal64) ValueType() TypedValueI {
+	return tv.Type
+}
+
 func (tv *TypedDecimal64) String() string {
-	params := strings.Split(tv.Type, "-")
-	if len(params) > 1 {
-		precision, _ := strconv.Atoi(params[1])
-		return strDecimal64(int64(binary.LittleEndian.Uint64(tv.Value)), uint32(precision))
-	}
-	return ""
+	return strDecimal64(tv.Decimal64())
 }
 
 // Decimal64 extracts the unsigned decimal value
 func (tv *TypedDecimal64) Decimal64() (int64, uint32) {
-	params := strings.Split(tv.Type, "-")
-	if len(params) > 1 {
-		precision, _ := strconv.Atoi(params[1])
+	if len(tv.TypeOpts) > 0 {
+		precision := tv.TypeOpts[0]
 		return int64(binary.LittleEndian.Uint64(tv.Value)), uint32(precision)
 	}
 	return 0, 0
@@ -225,11 +246,15 @@ func CreateTypedValueFloat(value float32) *TypedFloat {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, math.Float64bits(float64(value)))
 	typedFloat := TypedFloat{
-		Value:    buf,
-		Type:     TypeFloat,
-		LeafList: false,
+		Value: buf,
+		Type:  TypedValueI(&TypedFloat{}),
 	}
 	return &typedFloat
+}
+
+// ValueType gives the value type
+func (tv *TypedFloat) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedFloat) String() string {
@@ -252,10 +277,15 @@ type TypedBytes TypedValue
 func CreateTypedValueBytes(value []byte) *TypedBytes {
 	typedFloat := TypedBytes{
 		Value:    value,
-		Type:     TypeBytes,
-		LeafList: false,
+		Type:     TypedValueI(&TypedBytes{}),
+		TypeOpts: []int{len(value)},
 	}
 	return &typedFloat
+}
+
+// ValueType gives the value type
+func (tv *TypedBytes) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedBytes) String() string {
@@ -289,11 +319,15 @@ func CreateLeafListString(values []string) *TypedLeafListString {
 		}
 	}
 	typedLeafListString := TypedLeafListString{
-		Value:    bytes,
-		Type:     TypeString,
-		LeafList: true,
+		Value: bytes,
+		Type:  TypedValueI(&TypedLeafListString{}),
 	}
 	return &typedLeafListString
+}
+
+// ValueType gives the value type
+func (tv *TypedLeafListString) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedLeafListString) String() string {
@@ -334,11 +368,15 @@ func CreateLeafListInt64(values []int) *TypedLeafListInt64 {
 		}
 	}
 	typedLeafListInt64 := TypedLeafListInt64{
-		Value:    bytes,
-		Type:     TypeInt,
-		LeafList: true,
+		Value: bytes,
+		Type:  TypedValueI(&TypedLeafListInt64{}),
 	}
 	return &typedLeafListInt64
+}
+
+// ValueType gives the value type
+func (tv *TypedLeafListInt64) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedLeafListInt64) String() string {
@@ -377,11 +415,15 @@ func CreateLeafListUint64(values []uint) *TypedLeafListUint {
 		}
 	}
 	typedLeafListUint := TypedLeafListUint{
-		Value:    bytes,
-		Type:     TypeUint,
-		LeafList: true,
+		Value: bytes,
+		Type:  TypedValueI(&TypedLeafListUint{}),
 	}
 	return &typedLeafListUint
+}
+
+// ValueType gives the value type
+func (tv *TypedLeafListUint) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedLeafListUint) String() string {
@@ -422,11 +464,15 @@ func CreateLeafListBool(values []bool) *TypedLeafListBool {
 		bytes[i] = intval
 	}
 	typedLeafListBool := TypedLeafListBool{
-		Value:    bytes,
-		Type:     TypeBool,
-		LeafList: true,
+		Value: bytes,
+		Type:  TypedValueI(&TypedLeafListBool{}),
 	}
 	return &typedLeafListBool
+}
+
+// ValueType gives the value type
+func (tv *TypedLeafListBool) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedLeafListBool) String() string {
@@ -463,13 +509,17 @@ func CreateLeafListDecimal64(digits []int64, precision uint32) *TypedLeafListDec
 			bytes = append(bytes, b)
 		}
 	}
-	valueType := fmt.Sprintf("%s-%d", TypeDecimal64, precision)
 	typedLeafListDecimal := TypedLeafListDecimal{
 		Value:    bytes,
-		Type:     valueType,
-		LeafList: true,
+		Type:     TypedValueI(&TypedLeafListDecimal{}),
+		TypeOpts: []int{int(precision)},
 	}
 	return &typedLeafListDecimal
+}
+
+// ValueType gives the value type
+func (tv *TypedLeafListDecimal) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedLeafListDecimal) String() string {
@@ -483,9 +533,8 @@ func (tv *TypedLeafListDecimal) List() ([]int64, uint32) {
 	digitsList := make([]int64, 0)
 	precision := 0
 
-	params := strings.Split(tv.Type, "-")
-	if len(params) > 1 {
-		precision, _ = strconv.Atoi(params[1])
+	if len(tv.TypeOpts) > 0 {
+		precision = tv.TypeOpts[0]
 	}
 
 	for i := 0; i < count; i++ {
@@ -515,11 +564,15 @@ func CreateLeafListFloat32(values []float32) *TypedLeafListFloat {
 		}
 	}
 	typedLeafListFloat := TypedLeafListFloat{
-		Value:    bytes,
-		Type:     TypeFloat,
-		LeafList: true,
+		Value: bytes,
+		Type:  TypedValueI(&TypedLeafListFloat{}),
 	}
 	return &typedLeafListFloat
+}
+
+// ValueType gives the value type
+func (tv *TypedLeafListFloat) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedLeafListFloat) String() string {
@@ -554,19 +607,24 @@ type TypedLeafListBytes TypedValue
 // CreateLeafListBytes decodes byte values in to a Leaf list
 func CreateLeafListBytes(values [][]byte) *TypedLeafListBytes {
 	bytes := make([]byte, 0)
-	typestr := TypeBytes
+	typeopts := make([]int, 0)
 	for _, v := range values {
 		for _, b := range []byte(v) {
 			bytes = append(bytes, b)
 		}
-		typestr = fmt.Sprintf("%s_%d", typestr, len(v))
+		typeopts = append(typeopts, len(v))
 	}
 	typedLeafListBytes := TypedLeafListBytes{
 		Value:    bytes,
-		Type:     typestr, // Contains the lengths of each byte array in list
-		LeafList: true,
+		Type:     TypedValueI(&TypedLeafListBytes{}), // Contains the lengths of each byte array in list
+		TypeOpts: typeopts,
 	}
 	return &typedLeafListBytes
+}
+
+// ValueType gives the value type
+func (tv *TypedLeafListBytes) ValueType() TypedValueI {
+	return tv.Type
 }
 
 func (tv *TypedLeafListBytes) String() string {
@@ -577,11 +635,10 @@ func (tv *TypedLeafListBytes) String() string {
 func (tv *TypedLeafListBytes) List() [][]byte {
 	bytes := make([][]byte, 0)
 	buf := make([]byte, 0)
-	lengths := strings.Split(tv.Type, "_")
-	idx := 1
+	idx := 0
 	startAt := 0
 	for i, b := range tv.Value {
-		valueLen, _ := strconv.Atoi(lengths[idx])
+		valueLen := tv.TypeOpts[idx]
 		if i-startAt == valueLen {
 			bytes = append(bytes, buf)
 			buf = make([]byte, 0)
