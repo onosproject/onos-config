@@ -23,9 +23,9 @@ import (
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target. Only the last one is
 // restored to the previous state. Going back n changes in time requires n sequential calls of this method.
-func (m *Manager) RollbackTargetConfig(target string, configname string, id change.ID) error {
-	log.Infof("Rolling back %s on config %s for target %s", id, configname, target)
-	updates, deletes, err := computeRollback(m, target, configname, id)
+func (m *Manager) RollbackTargetConfig(target string, configname string) error {
+	log.Infof("Rolling back last change on config %s for target %s", configname, target)
+	updates, deletes, err := computeRollback(m, target, configname)
 	if err != nil {
 		return err
 	}
@@ -34,8 +34,8 @@ func (m *Manager) RollbackTargetConfig(target string, configname string, id chan
 	return errSet
 }
 
-func computeRollback(m *Manager, target string, configname string, id change.ID) (map[string]string, []string, error) {
-	err := m.ConfigStore.RemoveLastChangeEntry(store.ConfigName(configname))
+func computeRollback(m *Manager, target string, configname string) (map[string]string, []string, error) {
+	id, err := m.ConfigStore.RemoveLastChangeEntry(store.ConfigName(configname))
 	if err != nil {
 		return nil, nil, fmt.Errorf(fmt.Sprintf("Can't remove last entry for %s", configname), err)
 	}

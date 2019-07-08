@@ -374,7 +374,7 @@ func TestManager_ComputeRollback(t *testing.T) {
 
 	assert.NilError(t, err, "Can't create change")
 
-	changes, deletes, errRoll := computeRollback(mgrTest, "Device1", string(configName), changeID)
+	changes, deletes, errRoll := computeRollback(mgrTest, "Device1", string(configName))
 	assert.Check(t, len(deletes) == 0, "no path should be deleted")
 	assert.NilError(t, errRoll, "Can't ExecuteRollback")
 	config := mgrTest.ConfigStore.Store[configName]
@@ -403,7 +403,7 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 
 	assert.NilError(t, err, "Can't create change")
 
-	changes, deletesRoll, errRoll := computeRollback(mgrTest, "Device1", string(configName), changeID)
+	changes, deletesRoll, errRoll := computeRollback(mgrTest, "Device1", string(configName))
 	assert.NilError(t, errRoll, "Can't ExecuteRollback", errRoll)
 	config := mgrTest.ConfigStore.Store[configName]
 	assert.Check(t, !bytes.Equal(config.Changes[len(config.Changes)-1], changeID), "Did not remove last change")
