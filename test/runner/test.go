@@ -16,12 +16,13 @@ package runner
 
 import (
 	"errors"
+	"strings"
+	"time"
+
 	"github.com/onosproject/onos-config/test/env"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
-	"time"
 )
 
 // TestStatus test status
@@ -262,7 +263,7 @@ func (c *ClusterController) getDeviceIds() ([]string, error) {
 		}
 	}
 
-	// Get a list of simulators deployed in the cluster
+	// Get a list of devices deployed in the cluster
 	simulators, err := c.GetSimulators()
 	if err != nil {
 		return nil, err

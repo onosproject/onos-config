@@ -18,9 +18,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"time"
+
 	atomixk8s "github.com/atomix/atomix-k8s-controller/pkg/client/clientset/versioned"
 	"github.com/onosproject/onos-config/test/console"
-	"io"
 	corev1 "k8s.io/api/core/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,9 +33,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
-	"net/http"
-	"os"
-	"time"
 )
 
 // ClusterController manages a single cluster in Kubernetes
@@ -72,6 +73,19 @@ func (c *ClusterController) AddSimulator(name string, config *SimulatorConfig) c
 	}
 	c.status.Start("Reconfiguring onos-config nodes")
 	if err := c.addSimulatorToConfig(name); err != nil {
+		return c.status.Fail(err)
+	}
+	return c.status.Succeed()
+}
+
+// AddNetwork adds a stratum network with the given configuration
+func (c *ClusterController) AddNetwork(name string, config *NetworkConfig) console.ErrorStatus {
+	c.status.Start("Setting up network")
+	if err := c.setupNetwork(name, config); err != nil {
+		return c.status.Fail(err)
+	}
+	c.status.Start("Reconfiguring onos-config nodes")
+	if err := c.addNetworkToConfig(name, config); err != nil {
 		return c.status.Fail(err)
 	}
 	return c.status.Succeed()
@@ -272,6 +286,24 @@ func (c *ClusterController) RemoveSimulator(name string) console.ErrorStatus {
 	}
 	c.status.Start("Reconfiguring onos-config nodes")
 	if err := c.removeSimulatorFromConfig(name); err != nil {
+		return c.status.Fail(err)
+	}
+	return c.status.Succeed()
+}
+
+// RemoveNetwork removes a stratum network with the given name
+func (c *ClusterController) RemoveNetwork(name string) console.ErrorStatus {
+	c.status.Start("Tearing down network")
+	label := "network=" + name
+	configMaps, _ := c.kubeclient.CoreV1().ConfigMaps(c.clusterID).List(metav1.ListOptions{
+		LabelSelector: label,
+	})
+
+	if err := c.teardownNetwork(name); err != nil {
+		c.status.Fail(err)
+	}
+	c.status.Start("Reconfiguring onos-config nodes")
+	if err := c.removeNetworkFromConfig(name, configMaps); err != nil {
 		return c.status.Fail(err)
 	}
 	return c.status.Succeed()

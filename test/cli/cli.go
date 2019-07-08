@@ -23,14 +23,24 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-config/test/console"
 	"github.com/onosproject/onos-config/test/runner"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
-
 )
+
+// Contains tells whether array contains x.
+func Contains(array []string, elem string) bool {
+	for _, n := range array {
+		if elem == n {
+			return true
+		}
+	}
+	return false
+}
 
 // GetOnitCommand returns a Cobra command for tests in the given test registry
 func GetOnitCommand(registry *runner.TestRegistry) *cobra.Command {
@@ -56,8 +66,8 @@ func GetOnitCommand(registry *runner.TestRegistry) *cobra.Command {
 // GetOnitK8sCommand returns a Cobra command for running tests on k8s
 func GetOnitK8sCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                    "onit-k8s",
-		Short:                  "This command is only intended to be used in a k8s instance for running integration tests.",
+		Use:   "onit-k8s",
+		Short: "This command is only intended to be used in a k8s instance for running integration tests.",
 	}
 	cmd.AddCommand(getTestTestLocalCommand(registry))
 	cmd.AddCommand(getTestSuiteLocalCommand(registry))
@@ -139,6 +149,76 @@ func getAddCommand() *cobra.Command {
 		Short: "Add resources to the cluster",
 	}
 	cmd.AddCommand(getAddSimulatorCommand())
+	cmd.AddCommand(getAddNetworkCommand())
+	return cmd
+}
+
+// getAddNetworkCommand returns a cobra command for deploying a stratum network
+func getAddNetworkCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "network [name]",
+		Short: "Add a stratum network to the test cluster",
+		Args:  cobra.MaximumNArgs(10),
+		Run: func(cmd *cobra.Command, args []string) {
+			// If a network name was not provided, generate one from a UUID.
+			var name string
+			if len(args) > 0 {
+				name = args[0]
+			} else {
+				name = fmt.Sprintf("network-%d", newUUIDInt())
+			}
+
+			// Create the simulator configuration from the configured preset
+			configName, _ := cmd.Flags().GetString("preset")
+
+			// Get the onit controller
+			controller, err := runner.NewController()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterID, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster controller
+			cluster, err := controller.GetCluster(clusterID)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Create the network configuration
+
+			config := &runner.NetworkConfig{
+				Config: configName,
+			}
+			if len(args) > 1 {
+				config.MininetOptions = args[1:]
+			}
+
+			// Update number of devices in the network configuration
+			runner.ParseMininetOptions(config)
+
+			if err != nil {
+				exitError(err)
+			}
+
+			// Add the network to the cluster
+			if status := cluster.AddNetwork(name, config); status.Failed() {
+				exitStatus(status)
+			} else {
+				fmt.Println(name)
+			}
+		},
+	}
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to which to add the simulator")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
+	cmd.Flags().StringP("preset", "p", "default", "simulator preset to apply")
 	return cmd
 }
 
@@ -249,6 +329,56 @@ func getRemoveCommand() *cobra.Command {
 		Short: "Remove resources from the cluster",
 	}
 	cmd.AddCommand(getRemoveSimulatorCommand())
+	cmd.AddCommand(getRemoveNetworkCommand())
+	return cmd
+}
+
+// getRemoveNetworkCommand returns a cobra command for tearing down a stratum network
+func getRemoveNetworkCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "network [name]",
+		Short: "Remove a stratum network from the cluster",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			name := args[0]
+
+			// Get the onit controller
+			controller, err := runner.NewController()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterID, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster controller
+			cluster, err := controller.GetCluster(clusterID)
+			if err != nil {
+				exitError(err)
+			}
+
+			networks, err := cluster.GetNetworks()
+			if err != nil {
+				exitError(err)
+			}
+			if Contains(networks, name) == false {
+				exitError(errors.New("The given network name does not exist"))
+			}
+
+			// Remove the network from the cluster
+			if status := cluster.RemoveNetwork(name); status.Failed() {
+				exitStatus(status)
+			}
+		},
+	}
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to which to add the network")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
 	return cmd
 }
 
@@ -279,6 +409,15 @@ func getRemoveSimulatorCommand() *cobra.Command {
 				exitError(err)
 			}
 
+			simulators, err := cluster.GetSimulators()
+			if err != nil {
+				exitError(err)
+			}
+
+			if Contains(simulators, name) == false {
+				exitError(errors.New("The given simulator name does not exist"))
+			}
+
 			// Remove the simulator from the cluster
 			if status := cluster.RemoveSimulator(name); status.Failed() {
 				exitStatus(status)
@@ -304,6 +443,7 @@ func getGetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd.AddCommand(getGetPartitionsCommand())
 	cmd.AddCommand(getGetPartitionCommand())
 	cmd.AddCommand(getGetSimulatorsCommand())
+	cmd.AddCommand(getGetNetworksCommand())
 	cmd.AddCommand(getGetClustersCommand())
 	cmd.AddCommand(getGetDevicePresetsCommand())
 	cmd.AddCommand(getGetStorePresetsCommand())
@@ -323,6 +463,49 @@ func getGetClusterCommand() *cobra.Command {
 			fmt.Println(getDefaultCluster())
 		},
 	}
+}
+
+// getGetNetworksCommand returns a cobra command to get the list of networks deployed in the current cluster context
+func getGetNetworksCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "networks",
+		Short: "Get the currently configured cluster's networks",
+		Run: func(cmd *cobra.Command, args []string) {
+			// Get the onit controller
+			controller, err := runner.NewController()
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster ID
+			clusterID, err := cmd.Flags().GetString("cluster")
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the cluster controller
+			cluster, err := controller.GetCluster(clusterID)
+			if err != nil {
+				exitError(err)
+			}
+
+			// Get the list of networks and output
+			networks, err := cluster.GetNetworks()
+			if err != nil {
+				exitError(err)
+			} else {
+				for _, name := range networks {
+					fmt.Println(name)
+				}
+			}
+		},
+	}
+
+	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
+		cobra.BashCompCustom: {"__onit_get_clusters"},
+	}
+	return cmd
 }
 
 // getGetSimulatorsCommand returns a cobra command to get the list of simulators deployed in the current cluster context
@@ -751,10 +934,10 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 		},
 	}
 
-	cmd.Flags().DurationP("since", "", -1, "Only return logs newer than a relative " +
+	cmd.Flags().DurationP("since", "", -1, "Only return logs newer than a relative "+
 		"duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used")
-	cmd.Flags().Int64P("tail", "t", -1, "If set, the number of bytes to read from the " +
-		"server before terminating the log output. This may not display a complete final line of logging, and may return " +
+	cmd.Flags().Int64P("tail", "t", -1, "If set, the number of bytes to read from the "+
+		"server before terminating the log output. This may not display a complete final line of logging, and may return "+
 		"slightly more or slightly less than the specified limit.")
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
@@ -765,7 +948,7 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 	return cmd
 }
 
-func parseLogOptions(cmd *cobra.Command) corev1.PodLogOptions{
+func parseLogOptions(cmd *cobra.Command) corev1.PodLogOptions {
 	// Parse log options from CLI
 	options := corev1.PodLogOptions{}
 	since, err := cmd.Flags().GetDuration("since")
@@ -836,7 +1019,6 @@ func getFetchLogsCommand() *cobra.Command {
 
 			options := parseLogOptions(cmd)
 
-
 			destination, _ := cmd.Flags().GetString("destination")
 			if len(args) > 0 {
 				resourceID := args[0]
@@ -863,7 +1045,7 @@ func getFetchLogsCommand() *cobra.Command {
 				var status console.ErrorStatus
 				for _, node := range nodes {
 					path := filepath.Join(destination, fmt.Sprintf("%s.log", node.ID))
-					status = cluster.DownloadLogs(node.ID, path,options)
+					status = cluster.DownloadLogs(node.ID, path, options)
 				}
 
 				if status.Failed() {
@@ -873,10 +1055,10 @@ func getFetchLogsCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().DurationP("since", "", -1, "Only return logs newer than a relative " +
+	cmd.Flags().DurationP("since", "", -1, "Only return logs newer than a relative "+
 		"duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used")
-	cmd.Flags().Int64P("tail", "t", -1, "If set, the number of bytes to read from the " +
-		"server before terminating the log output. This may not display a complete final line of logging, and may return " +
+	cmd.Flags().Int64P("tail", "t", -1, "If set, the number of bytes to read from the "+
+		"server before terminating the log output. This may not display a complete final line of logging, and may return "+
 		"slightly more or slightly less than the specified limit.")
 
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
@@ -986,7 +1168,7 @@ func getRunTestRemoteCommand() *cobra.Command {
 		Use:   "test [tests]",
 		Short: "Run integration tests on Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
-			runTestsRemote(cmd,"test",args)
+			runTestsRemote(cmd, "test", args)
 		},
 	}
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster on which to run the test")
@@ -1002,7 +1184,7 @@ func getRunSuiteRemoteCommand(registry *runner.TestRegistry) *cobra.Command {
 		Use:   "suite [suite]",
 		Short: "Run integration tests",
 		Run: func(cmd *cobra.Command, args []string) {
-			runTestsRemote(cmd,"suite",args)
+			runTestsRemote(cmd, "suite", args)
 		},
 	}
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster on which to run the test")
@@ -1014,7 +1196,7 @@ func getRunSuiteRemoteCommand(registry *runner.TestRegistry) *cobra.Command {
 	return cmd
 }
 
-func runTestsRemote(cmd *cobra.Command, commandType string,tests []string){
+func runTestsRemote(cmd *cobra.Command, commandType string, tests []string) {
 	testID := fmt.Sprintf("test-%d", newUUIDInt())
 
 	// Get the onit controller

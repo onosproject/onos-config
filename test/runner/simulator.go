@@ -16,10 +16,11 @@ package runner
 
 import (
 	"encoding/json"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"time"
 )
 
 // GetSimulators returns a list of simulators deployed in the cluster
@@ -27,6 +28,7 @@ func (c *ClusterController) GetSimulators() ([]string, error) {
 	pods, err := c.kubeclient.CoreV1().Pods(c.clusterID).List(metav1.ListOptions{
 		LabelSelector: "type=simulator",
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +82,7 @@ func (c *ClusterController) createSimulatorConfigMap(name string, config *Simula
 
 // createSimulatorPod creates a simulator pod
 func (c *ClusterController) createSimulatorPod(name string) error {
+
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -92,7 +95,7 @@ func (c *ClusterController) createSimulatorPod(name string) error {
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Name:            "device-simulator",
+					Name:            "onos-device-simulator",
 					Image:           "onosproject/device-simulator:latest",
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Ports: []corev1.ContainerPort{
@@ -142,12 +145,14 @@ func (c *ClusterController) createSimulatorPod(name string) error {
 			},
 		},
 	}
+
 	_, err := c.kubeclient.CoreV1().Pods(c.clusterID).Create(pod)
 	return err
 }
 
 // createSimulatorService creates a simulator service
 func (c *ClusterController) createSimulatorService(name string) error {
+
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -165,6 +170,7 @@ func (c *ClusterController) createSimulatorService(name string) error {
 			},
 		},
 	}
+
 	_, err := c.kubeclient.CoreV1().Services(c.clusterID).Create(service)
 	return err
 }
