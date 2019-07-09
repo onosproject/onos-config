@@ -16,15 +16,16 @@ package manager
 
 import (
 	"bytes"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
-	"os"
-	"strings"
-	"testing"
 )
 
 const (

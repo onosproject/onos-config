@@ -245,6 +245,25 @@ func (c *ClusterController) getPod(testID string) (corev1.Pod, error) {
 	return corev1.Pod{}, errors.New("cannot locate test pod for test " + testID)
 }
 
+// getNetworkDeviceIds returns a slice of configured stratum switch IDs
+func (c *ClusterController) getNetworkDeviceIds(networkName string) ([]string, error) {
+	networkDevices := []string{}
+	label := "network=" + networkName
+	serviceList, err := c.kubeclient.CoreV1().Services(c.clusterID).List(metav1.ListOptions{
+		LabelSelector: label,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, svc := range serviceList.Items {
+		networkDevices = append(networkDevices, svc.Name)
+	}
+	return networkDevices, nil
+
+}
+
 // getDeviceIds returns a slice of configured simulator device IDs
 func (c *ClusterController) getDeviceIds() ([]string, error) {
 	devices := []string{}
@@ -272,6 +291,18 @@ func (c *ClusterController) getDeviceIds() ([]string, error) {
 	// Add each simulator to the devices
 	for _, name := range simulators {
 		devices = append(devices, name)
+	}
+
+	// Get List of networks
+	networks, err := c.GetNetworks()
+	if err == nil {
+		// Get list of devices for each network and add them to the devices
+		for _, networkName := range networks {
+			networkDevices, _ := c.getNetworkDeviceIds(networkName)
+			for _, networkDevice := range networkDevices {
+				devices = append(devices, networkDevice)
+			}
+		}
 	}
 	return devices, nil
 }

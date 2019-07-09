@@ -17,10 +17,11 @@ package gnmi
 import (
 	"testing"
 
+	"strings"
+
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
-	"strings"
 )
 
 // See also the Test_getWithPrefixNoOtherPathsNoTarget below where the Target

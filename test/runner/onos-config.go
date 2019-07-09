@@ -229,7 +229,7 @@ func (c *ClusterController) addSimulatorToPod(name string, pod corev1.Pod) error
 
 // addNetworkToPod adds the given network to the given pod's configuration
 func (c *ClusterController) addNetworkToPod(name string, port int, pod corev1.Pod) error {
-	command := fmt.Sprintf("onos devices add \"id: '%s', address: '%s:%s' version: '1.0.0', devicetype: 'Stratum'\" --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/tls.key --certPath /etc/onos-config/certs/tls.crt", name, name, strconv.Itoa(port))
+	command := fmt.Sprintf("onos devices add \"id: '%s', address: '%s:%s' version: '1.0.0', devicetype: 'Stratum', plain:true\" --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/tls.key --certPath /etc/onos-config/certs/tls.crt", name, name, strconv.Itoa(port))
 	return c.execute(pod, []string{"/bin/bash", "-c", command})
 }
 

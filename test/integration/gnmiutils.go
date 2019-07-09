@@ -17,12 +17,13 @@ package integration
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
-	"strings"
 )
 
 // DevicePath describes the results of a get operation for a single path

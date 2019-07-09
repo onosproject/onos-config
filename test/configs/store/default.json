@@ -2,12 +2,92 @@
   "changeStore": {
     "Version": "1.0.0",
     "Storetype": "change",
-    "Store": {}
+    "Store": {
+      "J+CUGSfjr0npwzDN29ftbzXSG3o=": {
+        "ID": "J+CUGSfjr0npwzDN29ftbzXSG3o=",
+        "Description": "Initial configuration of Stratum Simulator",
+        "Created": "2019-06-05T12:03:17Z",
+        "Config": [
+          {
+            "Path": "/interfaces/interface[name=s1-eth1]/config/enabled",
+            "Value": "AA==",
+            "Type": 4
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth1]/config/health-indicator",
+            "Value": "R09PRA==",
+            "Type": 1
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/auto-negotiate",
+            "Value": "AQ==",
+            "Type": 4
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/forwarding-viable",
+            "Value": "AQ==",
+            "Type": 4
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/mac-address",
+            "Value": "MTE6MjI6MzM6NDQ6NTU6NjY=",
+            "Type": 1
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/port-speed",
+            "Value": "U1BFRURfMTBHQg==",
+            "Type": 1
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth2]/config/enabled",
+            "Value": "AA==",
+            "Type": 4
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth2]/config/health-indicator",
+            "Value": "R09PRA==",
+            "Type": 1
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/auto-negotiate",
+            "Value": "AQ==",
+            "Type": 4
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/forwarding-viable",
+            "Value": "AQ==",
+            "Type": 4
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/mac-address",
+            "Value": "MTE6MjI6MzM6NDQ6NTU6NjY=",
+            "Type": 1
+          },
+          {
+            "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/port-speed",
+            "Value": "U1BFRURfMTBHQg==",
+            "Type": 1
+          }
+        ]
+      }
+    }
   },
   "configStore": {
     "Version": "1.0.0",
     "Storetype": "config",
-    "Store": {}
+    "Store": {
+      "stratum-1-s0-1.0.0": {
+        "Name": "stratum-s0-1.0.0",
+        "Device": "stratum-s0",
+        "Version": "1.0.0",
+        "Type": "Stratum",
+        "Created": "2019-06-05T10:03:17Z",
+        "Updated": "2019-06-05T10:03:17Z",
+        "Changes": [
+          "J+CUGSfjr0npwzDN29ftbzXSG3o="
+        ]
+      }
+    }
   },
   "networkStore": {
     "Version": "1.0.0",
@@ -17,6 +97,14 @@
   "deviceStore": {
     "Version": "1.0.0",
     "Storetype": "device",
-    "Store": {}
+    "Store": {
+      "stratum-s0": {
+        "ID": "stratum-s0",
+        "Addr": "localhost:50001",
+        "SoftwareVersion": "1.0.0",
+        "Plain": true,
+        "Timeout": 5
+      }
+    }
   }
 }
