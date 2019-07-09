@@ -16,6 +16,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	admin "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/test/env"
 	"github.com/onosproject/onos-config/test/runner"
@@ -75,9 +76,11 @@ func TestTransaction(t *testing.T) {
 	assert.NotNil(t, response)
 
 	// Check that the values were really rolled back
-	_, errorAfterRollback := GNMIGet(MakeContext(), c, devicePathsForGet)
-	assert.NotNil(t, errorAfterRollback)
-	assert.Contains(t, errorAfterRollback, "last config for path " + path1)
+	afterRollback, errorAfterRollback := GNMIGet(MakeContext(), c, devicePathsForGet)
+	fmt.Printf("after rollback result is %s", afterRollback)
+	assert.Nil(t, errorAfterRollback)
+	assert.Equal(t, "", afterRollback[0].value, "Query after rollback returned the wrong value: %s\n", valueAfter)
+	assert.Equal(t, "", afterRollback[1].value, "Query after rollback returned the wrong value: %s\n", valueAfter)
 }
 
 func init() {
