@@ -232,23 +232,40 @@ As with the `add` command, removing a network requires that the onos-config clus
 
 ### Running Tests
 
+#### Running single Tests
+
 Once the cluster has been setup for the test, to run a test simply use `onit run`:
 
 ```bash
-> onit run single-path
-I0625 12:07:14.958790   43603 controller.go:1080] Starting test job onos-test-71a0623c-977c-11e9-8478-acde48001122
-I0625 12:07:14.982862   43603 controller.go:1147] Waiting for test job 71a0623c-977c-11e9-8478-acde48001122 to become ready
+> onit run test single-path
+ ✓ Starting test job: test-25324770
 === RUN   single-path
---- PASS: single-path (0.04s)
+--- PASS: single-path (0.46s)
+PASS
 PASS
 ```
 
 You can specify as many tests as desired:
 
 ```bash
-> onit run single-path transaction subscribe
+> onit run test single-path transaction subscribe
 ...
 ```
+
+#### Running a suite of Tests
+
+`onit` can also run a suite of tests e.g. `integration-tests` which encompasses all the active integration tests.
+```bash
+> onit run suite integration-tests
+ ✓ Starting test job: test-3109317976
+=== RUN   single-path
+--- PASS: single-path (0.20s)
+=== RUN   subscribe
+--- PASS: subscribe (0.09s)
+PASS
+```
+
+#### Test Run logs
 
 Each test run is recorded as a job in the Kubernetes cluster. This ensures that logs, statuses,
 and exit codes are retained for the lifetime of the cluster. Onit supports viewing past test
@@ -256,18 +273,16 @@ runs and logs via the `get` command:
 
 ```bash
 > onit get history
-ID                                     TESTS                   STATUS   EXIT CODE   MESSAGE
-3cf7311a-9776-11e9-bfc3-acde48001122   test-integration-test   PASSED   0
-68ad9154-977c-11e9-bcf2-acde48001122   test-integration-test   FAILED   1
-71a0623c-977c-11e9-8478-acde48001122   test-single-path-test   PASSED   0
-9e512cdc-9720-11e9-ba6e-acde48001122   *                       PASSED   0
-da629d06-9774-11e9-bb50-acde48001122   *                       PASSED   0
+ID                TESTS                     STATUS   EXIT CODE   MESSAGE
+test-25324770     test,single-path          PASSED   0
+test-2886892866   test,subscribe            PASSED   0
+test-3109317976   suite,integration-tests   PASSED   0
 ```
 
 To get the logs from a specific test, use `onit get logs` with the test ID:
 
 ```bash
-> onit get logs 71a0623c-977c-11e9-8478-acde48001122
+> onit get logs test-2886892866
 === RUN   test-single-path-test
 --- PASS: test-single-path-test (0.04s)
 PASS
@@ -352,6 +367,23 @@ Once a test has been registered, you should be able to see the test via the `oni
 > onit get tests
 my-test
 ...
+```
+
+The test framework also provides the capability of adding your test to a suite defined in `suites.go`.
+To see the suites you can execute:
+```bash
+> onit get suites
+SUITE               TESTS
+alltests            single-path, subscribe, transaction
+sometests           subscribe, transaction
+integration-tests   single-path
+```
+
+To add your test to a suite in the init function the register method must be called with the suites parameter:
+```go
+func init() {
+    Registry.RegisterTest("my-test", MyTest, []*runner.TestSuite{AllTests})
+}
 ```
 
 The test framework provides utility functions for creating clients and other resources within
