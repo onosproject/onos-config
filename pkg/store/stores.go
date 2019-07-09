@@ -68,14 +68,8 @@ func (s *ConfigurationStore) RemoveEntry(name ConfigName) {
 }
 
 // RemoveLastChangeEntry removes a change entry from a named Configuration
+// Keeps the configuration even if no changes in that config are present
 func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) (change.ID, error) {
-
-	// If it has only 1 entry remove it altogether
-	if len(s.Store[name].Changes) == 1 {
-		changeID := s.Store[name].Changes[0]
-		delete(s.Store, name)
-		return changeID, nil
-	}
 
 	changeID := s.Store[name].Changes[len(s.Store[name].Changes)-1]
 	newConf, err := CreateConfiguration(s.Store[name].Device, s.Store[name].Version, s.Store[name].Type,
