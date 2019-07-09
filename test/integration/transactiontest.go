@@ -16,7 +16,6 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	admin "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/test/env"
 	"github.com/onosproject/onos-config/test/runner"
@@ -25,11 +24,33 @@ import (
 )
 
 const (
-	value1 = "v1"
-	path1  = "/system/clock/config/timezone-name"
-	value2 = "v2"
-	path2  = "/system/config/login-banner"
+	value1 = "Europe/Dublin"
+	path1  = "/openconfig-system:system/clock/config/timezone-name"
+	value2 = "test-banner"
+	path2  = "/openconfig-system:system/config/login-banner"
 )
+
+var (
+	paths = []string {path1, path2}
+	values = []string {value1, value2}
+)
+
+func getDevicePaths(device string, paths []string) []DevicePath {
+	var devicePaths = make([]DevicePath, len(paths))
+	for pathIndex, path := range paths {
+		devicePaths[pathIndex].deviceName = device
+		devicePaths[pathIndex].path = path
+	}
+	return devicePaths
+}
+
+func getDevicePathsWithValues(device string, paths []string, values[]string) []DevicePath {
+	var devicePaths = getDevicePaths(device, paths)
+	for valueIndex, value := range values {
+		devicePaths[valueIndex].value = value
+	}
+	return devicePaths
+}
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
 func TestTransaction(t *testing.T) {
@@ -37,50 +58,42 @@ func TestTransaction(t *testing.T) {
 	device := env.GetDevices()[0]
 
 	// Make a GNMI client to use for requests
-	c, err := env.NewGnmiClient(MakeContext(), "")
-	assert.NoError(t, err)
-	assert.True(t, c != nil, "Fetching client returned nil")
+	gnmiClient, gnmiClientError := env.NewGnmiClient(MakeContext(), "")
+	assert.NoError(t, gnmiClientError)
+	assert.True(t, gnmiClient != nil, "Fetching client returned nil")
 
 	// Set values
-	var devicePathsForSet = make([]DevicePath, 2)
-	devicePathsForSet[0].deviceName = device
-	devicePathsForSet[0].path = path1
-	devicePathsForSet[0].value = value1
-	devicePathsForSet[1].deviceName = device
-	devicePathsForSet[1].path = path2
-	devicePathsForSet[1].value = value2
-	changeID, errorSet := GNMISet(MakeContext(), c, devicePathsForSet)
+	var devicePathsForSet = getDevicePathsWithValues(device, paths, values)
+
+	changeID, errorSet := GNMISet(MakeContext(), gnmiClient, devicePathsForSet)
 	assert.NoError(t, errorSet)
 	assert.True(t, changeID != "")
 
-	var devicePathsForGet = make([]DevicePath, 2)
-	devicePathsForGet[0].deviceName = device
-	devicePathsForGet[0].path = path1
-	devicePathsForGet[1].deviceName = device
-	devicePathsForGet[1].path = path2
+	var devicePathsForGet = getDevicePaths(device, paths)
 
 	// Check that the values were set correctly
-	valueAfter, errorAfter := GNMIGet(MakeContext(), c, devicePathsForGet)
-	assert.NoError(t, errorAfter)
-	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, value1, valueAfter[0].value, "Query after set returned the wrong value: %s\n", valueAfter)
-	assert.Equal(t, value2, valueAfter[1].value, "Query after set 2 returned the wrong value: %s\n", valueAfter)
+	getValuesAfterSet, getValueAfterSetError := GNMIGet(MakeContext(), gnmiClient, devicePathsForGet)
+	assert.NoError(t, getValueAfterSetError, "GNMI set operation returned an error")
+	assert.NotEqual(t, "", getValuesAfterSet, "Query after set returned an error: %s\n", getValueAfterSetError)
+	assert.Equal(t, value1, getValuesAfterSet[0].value, "Query after set returned the wrong value: %s\n", getValuesAfterSet)
+	assert.Equal(t, value2, getValuesAfterSet[1].value, "Query after set 2 returned the wrong value: %s\n", getValuesAfterSet)
 
 	// Now rollback the change
 	_, adminClient := env.GetAdminClient()
 
-	response, clientErr := adminClient.RollbackNetworkChange(
+	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
 		context.Background(), &admin.RollbackRequest{Name: changeID})
 
-	assert.NoError(t, clientErr)
-	assert.NotNil(t, response)
+	assert.NoError(t, rollbackError, "Getting admin client returned an error")
+	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
+	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
 
 	// Check that the values were really rolled back
-	afterRollback, errorAfterRollback := GNMIGet(MakeContext(), c, devicePathsForGet)
-	fmt.Printf("after rollback result is %s", afterRollback)
-	assert.Nil(t, errorAfterRollback)
-	assert.Equal(t, "", afterRollback[0].value, "Query after rollback returned the wrong value: %s\n", valueAfter)
-	assert.Equal(t, "", afterRollback[1].value, "Query after rollback returned the wrong value: %s\n", valueAfter)
+	getValuesAfterRollback, errorGetAfterRollback := GNMIGet(MakeContext(), gnmiClient, devicePathsForGet)
+	assert.NoError(t, errorGetAfterRollback, "Get after rollback returned an error")
+	assert.NotNil(t, rollbackResponse, "Response for get after rollback is nil")
+	assert.Equal(t, "", getValuesAfterRollback[0].value, "Query after rollback returned the wrong value: %s\n", getValuesAfterRollback)
+	assert.Equal(t, "", getValuesAfterRollback[1].value, "Query after rollback returned the wrong value: %s\n", getValuesAfterRollback)
 }
 
 func init() {
