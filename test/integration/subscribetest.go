@@ -35,7 +35,7 @@ const (
 
 func init() {
 	//example of registering groups
-	Registry.RegisterTest("subscribe", TestSubscribe, []*runner.TestSuite{AllTests,SomeTests})
+	Registry.RegisterTest("subscribe", TestSubscribe, []*runner.TestSuite{AllTests,SomeTests,IntegrationTests})
 }
 
 // TestSubscribe tests a stream subscription to updates to a device
