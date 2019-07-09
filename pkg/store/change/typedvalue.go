@@ -62,20 +62,11 @@ const (
 	ValueTypeLeafListBYTES ValueType = 14
 )
 
-// typedValueI is a common interface that typed values implement to allow their type be extracted
-type typedValueI interface {
-	ValueType() ValueType
-}
-
 // TypedValue is a of a value, a type and a LeafList flag
 type TypedValue struct {
 	Value    []byte
 	Type     ValueType
 	TypeOpts []int
-}
-
-func (tv *TypedValue) String() string {
-	return ""
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -86,7 +77,12 @@ func (tv *TypedValue) String() string {
 type TypedEmpty TypedValue
 
 // CreateTypedValueEmpty decodes an empty object
-func CreateTypedValueEmpty() *TypedEmpty {
+func CreateTypedValueEmpty() *TypedValue {
+	return (*TypedValue)(NewEmpty())
+}
+
+// NewEmpty creates an instance of the Empty type
+func NewEmpty() *TypedEmpty {
 	typedEmpty := TypedEmpty{
 		Value: make([]byte, 0),
 		Type:  ValueTypeEMPTY,
@@ -111,7 +107,12 @@ func (tv *TypedEmpty) String() string {
 type TypedString TypedValue
 
 // CreateTypedValueString decodes string value in to an object
-func CreateTypedValueString(value string) *TypedString {
+func CreateTypedValueString(value string) *TypedValue {
+	return (*TypedValue)(NewString(value))
+}
+
+// NewString decodes string value in to a String type
+func NewString(value string) *TypedString {
 	typedString := TypedString{
 		Value: []byte(value),
 		Type:  ValueTypeSTRING,
@@ -136,7 +137,12 @@ func (tv *TypedString) String() string {
 type TypedInt64 TypedValue
 
 // CreateTypedValueInt64 decodes an int value in to an object
-func CreateTypedValueInt64(value int) *TypedInt64 {
+func CreateTypedValueInt64(value int) *TypedValue {
+	return (*TypedValue)(NewInt64(value))
+}
+
+// NewInt64 decodes an int value in to an Int type
+func NewInt64(value int) *TypedInt64 {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, uint64(value))
 
@@ -169,7 +175,12 @@ func (tv *TypedInt64) Int() int {
 type TypedUint64 TypedValue
 
 // CreateTypedValueUint64 decodes a uint value in to an object
-func CreateTypedValueUint64(value uint) *TypedUint64 {
+func CreateTypedValueUint64(value uint) *TypedValue {
+	return (*TypedValue)(NewUint64(value))
+}
+
+// NewUint64 decodes a uint value in to a Uint type
+func NewUint64(value uint) *TypedUint64 {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, uint64(value))
 	typedUint64 := TypedUint64{
@@ -201,7 +212,12 @@ func (tv *TypedUint64) Uint() uint {
 type TypedBool TypedValue
 
 // CreateTypedValueBool decodes a bool value in to an object
-func CreateTypedValueBool(value bool) *TypedBool {
+func CreateTypedValueBool(value bool) *TypedValue {
+	return (*TypedValue)(NewBool(value))
+}
+
+// NewBool decodes a bool value in to an object
+func NewBool(value bool) *TypedBool {
 	buf := make([]byte, 1)
 	if value {
 		buf[0] = 1
@@ -241,7 +257,12 @@ func (tv *TypedBool) Bool() bool {
 type TypedDecimal64 TypedValue
 
 // CreateTypedValueDecimal64 decodes a decimal value in to an object
-func CreateTypedValueDecimal64(digits int64, precision uint32) *TypedDecimal64 {
+func CreateTypedValueDecimal64(digits int64, precision uint32) *TypedValue {
+	return (*TypedValue)(NewDecimal64(digits, precision))
+}
+
+// NewDecimal64 decodes a decimal value in to a Decimal type
+func NewDecimal64(digits int64, precision uint32) *TypedDecimal64 {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, uint64(digits))
 	typeOpts := []int{int(precision)}
@@ -272,8 +293,9 @@ func (tv *TypedDecimal64) Decimal64() (int64, uint32) {
 }
 
 // Float extracts the unsigned decimal value as a float
-func (tv *TypedDecimal64) Float() (float64, error) {
-	return strconv.ParseFloat(strDecimal64(tv.Decimal64()), 64)
+func (tv *TypedDecimal64) Float() float64 {
+	floatVal, _ := strconv.ParseFloat(strDecimal64(tv.Decimal64()), 64)
+	return floatVal
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -284,7 +306,12 @@ func (tv *TypedDecimal64) Float() (float64, error) {
 type TypedFloat TypedValue
 
 // CreateTypedValueFloat decodes a decimal value in to an object
-func CreateTypedValueFloat(value float32) *TypedFloat {
+func CreateTypedValueFloat(value float32) *TypedValue {
+	return (*TypedValue)(NewFloat(value))
+}
+
+// NewFloat decodes a decimal value in to a Bool type
+func NewFloat(value float32) *TypedFloat {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, math.Float64bits(float64(value)))
 	typedFloat := TypedFloat{
@@ -305,6 +332,9 @@ func (tv *TypedFloat) String() string {
 
 // Float32 extracts the float value
 func (tv *TypedFloat) Float32() float32 {
+	if len(tv.Value) == 0 {
+		return 0.0
+	}
 	return float32(math.Float64frombits(binary.LittleEndian.Uint64(tv.Value)))
 }
 
@@ -316,7 +346,12 @@ func (tv *TypedFloat) Float32() float32 {
 type TypedBytes TypedValue
 
 // CreateTypedValueBytes decodes an array of bytes in to an object
-func CreateTypedValueBytes(value []byte) *TypedBytes {
+func CreateTypedValueBytes(value []byte) *TypedValue {
+	return (*TypedValue)(NewBytes(value))
+}
+
+// NewBytes decodes an array of bytes in to a Bytes type
+func NewBytes(value []byte) *TypedBytes {
 	typedFloat := TypedBytes{
 		Value:    value,
 		Type:     ValueTypeBYTES,
@@ -346,8 +381,13 @@ func (tv *TypedBytes) Bytes() []byte {
 // TypedLeafListString for a string leaf list
 type TypedLeafListString TypedValue
 
-// CreateLeafListString decodes string values in to an Leaf list
-func CreateLeafListString(values []string) *TypedLeafListString {
+// CreateLeafListString decodes string values in to an object
+func CreateLeafListString(values []string) *TypedValue {
+	return (*TypedValue)(NewLeafListString(values))
+}
+
+// NewLeafListString decodes string values in to an Leaf list type
+func NewLeafListString(values []string) *TypedLeafListString {
 	first := true
 	bytes := make([]byte, 0)
 	for _, v := range values {
@@ -399,8 +439,13 @@ func (tv *TypedLeafListString) List() []string {
 // TypedLeafListInt64 for an int leaf list
 type TypedLeafListInt64 TypedValue
 
-// CreateLeafListInt64 decodes int values in to a Leaf list
-func CreateLeafListInt64(values []int) *TypedLeafListInt64 {
+// CreateLeafListInt64 decodes int values in to an object
+func CreateLeafListInt64(values []int) *TypedValue {
+	return (*TypedValue)(NewLeafListInt64(values))
+}
+
+// NewLeafListInt64 decodes int values in to a Leaf list type
+func NewLeafListInt64(values []int) *TypedLeafListInt64 {
 	bytes := make([]byte, 0)
 	for _, v := range values {
 		buf := make([]byte, 8)
@@ -447,7 +492,12 @@ func (tv *TypedLeafListInt64) List() []int {
 type TypedLeafListUint TypedValue
 
 // CreateLeafListUint64 decodes uint values in to a Leaf list
-func CreateLeafListUint64(values []uint) *TypedLeafListUint {
+func CreateLeafListUint64(values []uint) *TypedValue {
+	return (*TypedValue)(NewLeafListUint64(values))
+}
+
+// NewLeafListUint64 decodes uint values in to a Leaf list type
+func NewLeafListUint64(values []uint) *TypedLeafListUint {
 	bytes := make([]byte, 0)
 	for _, v := range values {
 		buf := make([]byte, 8)
@@ -493,8 +543,13 @@ func (tv *TypedLeafListUint) List() []uint {
 // TypedLeafListBool for an bool leaf list
 type TypedLeafListBool TypedValue
 
-// CreateLeafListBool decodes bool values in to a Leaf list
-func CreateLeafListBool(values []bool) *TypedLeafListBool {
+// CreateLeafListBool decodes bool values in to an object
+func CreateLeafListBool(values []bool) *TypedValue {
+	return (*TypedValue)(NewLeafListBool(values))
+}
+
+// NewLeafListBool decodes bool values in to a Leaf list type
+func NewLeafListBool(values []bool) *TypedLeafListBool {
 	count := len(values)
 	bytes := make([]byte, count)
 	for i, b := range values {
@@ -542,7 +597,12 @@ func (tv *TypedLeafListBool) List() []bool {
 type TypedLeafListDecimal TypedValue
 
 // CreateLeafListDecimal64 decodes decimal values in to a Leaf list
-func CreateLeafListDecimal64(digits []int64, precision uint32) *TypedLeafListDecimal {
+func CreateLeafListDecimal64(digits []int64, precision uint32) *TypedValue {
+	return (*TypedValue)(NewLeafListDecimal64(digits, precision))
+}
+
+// NewLeafListDecimal64 decodes decimal values in to a Leaf list type
+func NewLeafListDecimal64(digits []int64, precision uint32) *TypedLeafListDecimal {
 	bytes := make([]byte, 0)
 	for _, d := range digits {
 		buf := make([]byte, 8)
@@ -588,6 +648,26 @@ func (tv *TypedLeafListDecimal) List() ([]int64, uint32) {
 	return digitsList, uint32(precision)
 }
 
+// ListFloat extracts the leaf list values as floats
+func (tv *TypedLeafListDecimal) ListFloat() []float32 {
+	count := len(tv.Value) / 8
+	precision := 0
+	floatList := make([]float32, 0)
+
+	if len(tv.TypeOpts) > 0 {
+		precision = tv.TypeOpts[0]
+	}
+
+	for i := 0; i < count; i++ {
+		v := tv.Value[i*8 : i*8+8]
+		leafDigit := binary.LittleEndian.Uint64(v)
+		floatVal, _ := strconv.ParseFloat(strDecimal64(int64(leafDigit), uint32(precision)), 64)
+		floatList = append(floatList, float32(floatVal))
+	}
+
+	return floatList
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // TypedLeafListFloat
 ////////////////////////////////////////////////////////////////////////////////
@@ -596,7 +676,12 @@ func (tv *TypedLeafListDecimal) List() ([]int64, uint32) {
 type TypedLeafListFloat TypedValue
 
 // CreateLeafListFloat32 decodes float values in to a Leaf list
-func CreateLeafListFloat32(values []float32) *TypedLeafListFloat {
+func CreateLeafListFloat32(values []float32) *TypedValue {
+	return (*TypedValue)(NewLeafListFloat32(values))
+}
+
+// NewLeafListFloat32 decodes float values in to a Leaf list type
+func NewLeafListFloat32(values []float32) *TypedLeafListFloat {
 	bytes := make([]byte, 0)
 	for _, f := range values {
 		buf := make([]byte, 8)
@@ -647,7 +732,12 @@ func (tv *TypedLeafListFloat) List() []float32 {
 type TypedLeafListBytes TypedValue
 
 // CreateLeafListBytes decodes byte values in to a Leaf list
-func CreateLeafListBytes(values [][]byte) *TypedLeafListBytes {
+func CreateLeafListBytes(values [][]byte) *TypedValue {
+	return (*TypedValue)(NewLeafListBytes(values))
+}
+
+// NewLeafListBytes decodes byte values in to a Leaf list type
+func NewLeafListBytes(values [][]byte) *TypedLeafListBytes {
 	bytes := make([]byte, 0)
 	typeopts := make([]int, 0)
 	for _, v := range values {
@@ -710,5 +800,9 @@ func strDecimal64(digits int64, precision uint32) string {
 	if frac < 0 {
 		frac = -frac
 	}
-	return fmt.Sprintf("%d.%d", i, frac)
+	if precision == 0 {
+		return fmt.Sprintf("%d", i)
+	}
+	fmtString := fmt.Sprintf("%s0.%d%s", "%d.%", precision, "d")
+	return fmt.Sprintf(fmtString, i, frac)
 }

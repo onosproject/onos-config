@@ -24,6 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -33,7 +34,7 @@ import (
 	"time"
 )
 
-type mapTargetUpdates map[string]map[string]string
+type mapTargetUpdates map[string]map[string]*change.TypedValue
 type mapTargetRemoves map[string][]string
 type mapNetworkChanges map[store.ConfigName]change.ID
 
@@ -46,7 +47,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		version          string // May be specified as 101 in extension
 		deviceType       string // May be specified as 102 in extension
 	)
-
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
@@ -55,13 +55,23 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	//Update
 	for _, u := range req.GetUpdate() {
 		target := u.Path.GetTarget()
-		targetUpdates[target] = s.doUpdateOrReplace(u, targetUpdates)
+		var err error
+		targetUpdates[target], err = s.doUpdateOrReplace(u, targetUpdates)
+		if err != nil {
+			log.Warning("Error in update", err)
+			return nil, err
+		}
 	}
 
 	//Replace
 	for _, u := range req.GetReplace() {
 		target := u.Path.GetTarget()
-		targetUpdates[target] = s.doUpdateOrReplace(u, targetUpdates)
+		var err error
+		targetUpdates[target], err = s.doUpdateOrReplace(u, targetUpdates)
+		if err != nil {
+			log.Warning("Error in replace", err)
+			return nil, err
+		}
 	}
 
 	//Delete
@@ -132,15 +142,21 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	return setResponse, nil
 }
 
-func (s *Server) doUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) map[string]string {
+func (s *Server) doUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (map[string]*change.TypedValue, error) {
 	target := u.Path.GetTarget()
 	updates, ok := targetUpdates[target]
 	if !ok {
-		updates = make(map[string]string)
+		updates = make(map[string]*change.TypedValue)
 	}
 	path := utils.StrPath(u.Path)
-	updates[path] = utils.StrVal(u.Val)
-	return updates
+
+	update, err := values.GnmiTypedValueToNativeType(u.Val)
+	if err != nil {
+		return nil, err
+	}
+	updates[path] = update
+
+	return updates, nil
 
 }
 
@@ -200,7 +216,7 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 	}
 
 	for target, removes := range targetRemoves {
-		changeID, configName, cont, err := setChange(target, version, make(map[string]string), targetRemoves[target])
+		changeID, configName, cont, err := setChange(target, version, make(map[string]*change.TypedValue), targetRemoves[target])
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
 			return nil, nil, err
@@ -279,7 +295,7 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 
 }
 
-func setChange(target string, version string, targetUpdates map[string]string, targetRemoves []string) (change.ID, store.ConfigName, bool, error) {
+func setChange(target string, version string, targetUpdates map[string]*change.TypedValue, targetRemoves []string) (change.ID, store.ConfigName, bool, error) {
 	configName := store.ConfigName(target)
 	// target is a device name with no version
 	if version != "" {

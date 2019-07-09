@@ -19,10 +19,10 @@ import (
 	"regexp"
 )
 
-// ConfigValue is a of a path and a value
+// ConfigValue is a of a path, a value and a type
 type ConfigValue struct {
-	Path  string
-	Value string
+	Path string
+	TypedValue
 }
 
 // IsPathValid tests for valid paths. Path is valid if it

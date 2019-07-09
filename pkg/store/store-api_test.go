@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-config/pkg/utils/values"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
 	"os"
@@ -31,6 +32,10 @@ const (
 	Test1Cont1ACont2ALeaf2A      = "/test1:cont1a/cont2a/leaf2a"
 	Test1Cont1ACont2ALeaf2B      = "/test1:cont1a/cont2a/leaf2b"
 	Test1Cont1ACont2ALeaf2C      = "/test1:cont1a/cont2a/leaf2c"
+	Test1Cont1ACont2ALeaf2D      = "/test1:cont1a/cont2a/leaf2d"
+	Test1Cont1ACont2ALeaf2E      = "/test1:cont1a/cont2a/leaf2e"
+	Test1Cont1ACont2ALeaf2F      = "/test1:cont1a/cont2a/leaf2f"
+	Test1Cont1ACont2ALeaf2G      = "/test1:cont1a/cont2a/leaf2g"
 	Test1Cont1ALeaf1A            = "/test1:cont1a/leaf1a"
 	Test1Cont1AList2ATxout1      = "/test1:cont1a/list2a[name=txout1]"
 	Test1Cont1AList2ATxout1Txpwr = "/test1:cont1a/list2a[name=txout1]/tx-power"
@@ -42,17 +47,16 @@ const (
 )
 
 const (
-	ValueEmpty          = ""
-	ValueLeaf2A13       = "13"
-	ValueLeaf2B159      = "1.579"
-	ValueLeaf2B314      = "3.14159"
+	ValueLeaf2A13       = 13
+	ValueLeaf2B159      = 1.579   // AAAAAPohCUA=
+	ValueLeaf2B314      = 3.14159 // AAAAgJVD+T8=
 	ValueLeaf2CAbc      = "abc"
 	ValueLeaf2CDef      = "def"
 	ValueLeaf2CGhi      = "ghi"
 	ValueLeaf1AAbcdef   = "abcdef"
-	ValueTxout1Txpwr8   = "8"
-	ValueTxout2Txpwr10  = "10"
-	ValueTxout3Txpwr16  = "16"
+	ValueTxout1Txpwr8   = 8
+	ValueTxout2Txpwr10  = 10
+	ValueTxout3Txpwr16  = 16
 	ValueLeaftopWxy1234 = "WXY-1234"
 )
 
@@ -70,18 +74,32 @@ var Config1Paths = [11]string{
 	Test1Leaftoplevel,
 }
 
-var Config1Values = [11]string{
-	ValueEmpty, // 0
-	ValueEmpty,
-	ValueLeaf2A13,
-	ValueLeaf2B314, // 3
-	ValueLeaf2CDef,
-	ValueLeaf1AAbcdef, // 5
-	ValueEmpty,
-	ValueTxout1Txpwr8,
-	ValueEmpty, // 10
-	ValueTxout3Txpwr16,
-	ValueLeaftopWxy1234,
+var Config1Values = [11][]byte{
+	make([]byte, 0), // 0
+	make([]byte, 0),
+	[]byte{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
+	[]byte{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
+	[]byte{100, 101, 102},              // ValueLeaf2CDef
+	[]byte{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	make([]byte, 0),
+	[]byte{8, 0, 0, 0, 0, 0, 0, 0},         // ValueTxout1Txpwr8
+	make([]byte, 0),                        // 10
+	[]byte{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16
+	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234
+}
+
+var Config1Types = [11]change.ValueType{
+	change.ValueTypeEMPTY, // 0
+	change.ValueTypeEMPTY, // 0
+	change.ValueTypeUINT,
+	change.ValueTypeFLOAT, // 3
+	change.ValueTypeSTRING,
+	change.ValueTypeSTRING, // 5
+	change.ValueTypeEMPTY,
+	change.ValueTypeUINT,
+	change.ValueTypeEMPTY,
+	change.ValueTypeUINT,
+	change.ValueTypeSTRING, // 10
 }
 
 var Config1PreviousPaths = [13]string{
@@ -100,20 +118,36 @@ var Config1PreviousPaths = [13]string{
 	Test1Leaftoplevel,
 }
 
-var Config1PreviousValues = [13]string{
-	ValueEmpty, // 0
-	ValueEmpty,
-	ValueLeaf2A13,
-	ValueLeaf2B314, // 3
-	ValueLeaf2CAbc,
-	ValueLeaf1AAbcdef, // 5
-	ValueEmpty,
-	ValueTxout1Txpwr8,
-	ValueEmpty,
-	ValueTxout2Txpwr10,
-	ValueEmpty, // 10
-	ValueTxout3Txpwr16,
-	ValueLeaftopWxy1234,
+var Config1PreviousValues = [13][]byte{
+	[]byte{}, // 0
+	[]byte{},
+	[]byte{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
+	[]byte{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
+	[]byte{97, 98, 99},                 // ValueLeaf2CAbc
+	[]byte{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	[]byte{},
+	[]byte{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	[]byte{},
+	[]byte{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	[]byte{},                               // 10
+	[]byte{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16,
+	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234,
+}
+
+var Config1PreviousTypes = [13]change.ValueType{
+	change.ValueTypeEMPTY, // 0
+	change.ValueTypeEMPTY, // 0
+	change.ValueTypeUINT,
+	change.ValueTypeFLOAT, // 3
+	change.ValueTypeSTRING,
+	change.ValueTypeSTRING, // 5
+	change.ValueTypeEMPTY,
+	change.ValueTypeUINT,
+	change.ValueTypeEMPTY,
+	change.ValueTypeUINT,
+	change.ValueTypeEMPTY, // 10
+	change.ValueTypeUINT,
+	change.ValueTypeSTRING,
 }
 
 var Config1FirstPaths = [11]string{
@@ -130,18 +164,32 @@ var Config1FirstPaths = [11]string{
 	Test1Leaftoplevel, //10
 }
 
-var Config1FirstValues = [11]string{
-	ValueEmpty, // 0
-	ValueEmpty,
-	ValueLeaf2A13,
-	ValueLeaf2B159, // 3
-	ValueLeaf2CAbc,
-	ValueLeaf1AAbcdef, // 5
-	ValueEmpty,
-	ValueTxout1Txpwr8,
-	ValueEmpty,
-	ValueTxout2Txpwr10,
-	ValueLeaftopWxy1234, //10
+var Config1FirstValues = [11][]byte{
+	[]byte{}, // 0
+	[]byte{},
+	[]byte{13, 0, 0, 0, 0, 0, 0, 0},        // ValueLeaf2A13
+	[]byte{0, 0, 0, 128, 149, 67, 249, 63}, // ValueLeaf2B159 3
+	[]byte{97, 98, 99},                     // ValueLeaf2CAbc
+	[]byte{97, 98, 99, 100, 101, 102},      // ValueLeaf1AAbcdef 5
+	[]byte{},
+	[]byte{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	[]byte{},
+	[]byte{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
+}
+
+var Config1FirstTypes = [11]change.ValueType{
+	change.ValueTypeEMPTY, // 0
+	change.ValueTypeEMPTY, // 0
+	change.ValueTypeUINT,
+	change.ValueTypeFLOAT, // 3
+	change.ValueTypeSTRING,
+	change.ValueTypeSTRING, // 5
+	change.ValueTypeEMPTY,
+	change.ValueTypeUINT,
+	change.ValueTypeEMPTY,
+	change.ValueTypeUINT,
+	change.ValueTypeSTRING, // 10
 }
 
 var Config2Paths = [11]string{
@@ -158,18 +206,32 @@ var Config2Paths = [11]string{
 	Test1Leaftoplevel,
 }
 
-var Config2Values = [11]string{
-	ValueEmpty, // 0
-	ValueEmpty,
-	ValueLeaf2A13,
-	ValueLeaf2B314, // 3
-	ValueLeaf2CGhi,
-	ValueLeaf1AAbcdef, // 5
-	ValueEmpty,
-	ValueTxout2Txpwr10,
-	ValueEmpty, // 10
-	ValueTxout3Txpwr16,
-	ValueLeaftopWxy1234,
+var Config2Values = [11][]byte{
+	[]byte{}, // 0
+	[]byte{},
+	[]byte{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
+	[]byte{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
+	[]byte{103, 104, 105},              // ValueLeaf2CGhi
+	[]byte{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	[]byte{},
+	[]byte{10, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	[]byte{},
+	[]byte{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
+}
+
+var Config2Types = [11]change.ValueType{
+	change.ValueTypeEMPTY, // 0
+	change.ValueTypeEMPTY, // 0
+	change.ValueTypeUINT,
+	change.ValueTypeFLOAT, // 3
+	change.ValueTypeSTRING,
+	change.ValueTypeSTRING, // 5
+	change.ValueTypeEMPTY,
+	change.ValueTypeUINT,
+	change.ValueTypeEMPTY,
+	change.ValueTypeUINT,
+	change.ValueTypeSTRING, // 10
 }
 
 func TestMain(m *testing.M) {
@@ -184,17 +246,17 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		change1, change2, change3, change4 *change.Change
 	)
 
-	config1Value01, _ := change.CreateChangeValue(Test1Cont1A, ValueEmpty, false)
-	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, ValueEmpty, false)
-	config1Value03, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2A, ValueLeaf2A13, false)
-	config1Value04, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B159, false)
-	config1Value05, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CAbc, false)
-	config1Value06, _ := change.CreateChangeValue(Test1Cont1ALeaf1A, ValueLeaf1AAbcdef, false)
-	config1Value07, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, ValueEmpty, false)
-	config1Value08, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1Txpwr, ValueTxout1Txpwr8, false)
-	config1Value09, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, false)
-	config1Value10, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2Txpwr, ValueTxout2Txpwr10, false)
-	config1Value11, _ := change.CreateChangeValue(Test1Leaftoplevel, ValueLeaftopWxy1234, false)
+	config1Value01, _ := change.CreateChangeValue(Test1Cont1A, change.CreateTypedValueEmpty(), false)
+	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, change.CreateTypedValueEmpty(), false)
+	config1Value03, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2A, change.CreateTypedValueUint64(ValueLeaf2A13), false)
+	config1Value04, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2B, change.CreateTypedValueFloat(ValueLeaf2B159), false)
+	config1Value05, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, change.CreateTypedValueString(ValueLeaf2CAbc), false)
+	config1Value06, _ := change.CreateChangeValue(Test1Cont1ALeaf1A, change.CreateTypedValueString(ValueLeaf1AAbcdef), false)
+	config1Value07, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, change.CreateTypedValueEmpty(), false)
+	config1Value08, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1Txpwr, change.CreateTypedValueUint64(ValueTxout1Txpwr8), false)
+	config1Value09, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, change.CreateTypedValueEmpty(), false)
+	config1Value10, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2Txpwr, change.CreateTypedValueUint64(ValueTxout2Txpwr10), false)
+	config1Value11, _ := change.CreateChangeValue(Test1Leaftoplevel, change.CreateTypedValueString(ValueLeaftopWxy1234), false)
 	change1, err = change.CreateChange(change.ValueCollections{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
@@ -205,9 +267,9 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config2Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2B, ValueLeaf2B314, false)
-	config2Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3, ValueEmpty, false)
-	config2Value03, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3Txpwr, ValueTxout3Txpwr16, false)
+	config2Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2B, change.CreateTypedValueFloat(ValueLeaf2B314), false)
+	config2Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3, change.CreateTypedValueEmpty(), false)
+	config2Value03, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3Txpwr, change.CreateTypedValueUint64(ValueTxout3Txpwr16), false)
 	change2, err = change.CreateChange(change.ValueCollections{
 		config2Value01, config2Value02, config2Value03,
 	}, "Trim power level")
@@ -216,8 +278,8 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config3Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CDef, false)
-	config3Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, true)
+	config3Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, change.CreateTypedValueString(ValueLeaf2CDef), false)
+	config3Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, change.CreateTypedValueEmpty(), true)
 	change3, err = change.CreateChange(change.ValueCollections{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
@@ -238,8 +300,8 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config4Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CGhi, false)
-	config4Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, ValueEmpty, true)
+	config4Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, change.CreateTypedValueString(ValueLeaf2CGhi), false)
+	config4Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, change.CreateTypedValueEmpty(), true)
 	change4, err = change.CreateChange(change.ValueCollections{
 		config4Value01, config4Value02,
 	}, "Remove txout 1")
@@ -271,12 +333,12 @@ func Test_device1_version(t *testing.T) {
 
 	config := device1V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
-		log.Infof("Path %s = %s\n", c.Path, c.Value)
+		log.Infof("Path %s = %s (%d)\n", c.Path, c.Value, c.Type)
 	}
 
 	for i := 0; i < len(Config1Paths); i++ {
 		checkPathvalue(t, config, i,
-			Config1Paths[0:11], Config1Values[0:11])
+			Config1Paths[0:11], Config1Values[0:11], Config1Types[0:11])
 	}
 }
 
@@ -298,7 +360,7 @@ func Test_device1_prev_version(t *testing.T) {
 
 	for i := 0; i < len(Config1PreviousPaths); i++ {
 		checkPathvalue(t, config, i,
-			Config1PreviousPaths[0:13], Config1PreviousValues[0:13])
+			Config1PreviousPaths[0:13], Config1PreviousValues[0:13], Config1PreviousTypes[0:13])
 	}
 }
 
@@ -319,7 +381,7 @@ func Test_device1_first_version(t *testing.T) {
 
 	for i := 0; i < len(Config1FirstPaths); i++ {
 		checkPathvalue(t, config, i,
-			Config1FirstPaths[0:11], Config1FirstValues[0:11])
+			Config1FirstPaths[0:11], Config1FirstValues[0:11], Config1FirstTypes[0:11])
 	}
 }
 
@@ -356,12 +418,12 @@ func Test_device2_version(t *testing.T) {
 
 	for i := 0; i < len(Config2Paths); i++ {
 		checkPathvalue(t, config, i,
-			Config2Paths[0:11], Config2Values[0:11])
+			Config2Paths[0:11], Config2Values[0:11], Config2Types[0:11])
 	}
 }
 
 func checkPathvalue(t *testing.T, config []*change.ConfigValue, index int,
-	expPaths []string, expValues []string) {
+	expPaths []string, expValues [][]byte, expTypes []change.ValueType) {
 
 	// Check that they are kept in a consistent order
 	if config[index].Path != expPaths[index] {
@@ -369,16 +431,21 @@ func checkPathvalue(t *testing.T, config []*change.ConfigValue, index int,
 			expPaths[index], config[index].Path)
 	}
 
-	if config[index].Value != expValues[index] {
-		t.Errorf("Unexpected change %d Exp: %s, Got %s", index,
+	if B64(config[index].Value) != B64(expValues[index]) {
+		t.Errorf("Unexpected change value %d Exp: %v, Got %v", index,
 			expValues[index], config[index].Value)
+	}
+
+	if config[index].Type != expTypes[index] {
+		t.Errorf("Unexpected change type %d Exp: %d, Got %d", index,
+			expTypes[index], config[index].Type)
 	}
 }
 
 func Test_convertChangeToGnmi(t *testing.T) {
 
-	config3Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, ValueLeaf2CDef, false)
-	config3Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, ValueEmpty, true)
+	config3Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, change.CreateTypedValueString(ValueLeaf2CDef), false)
+	config3Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, change.CreateTypedValueEmpty(), true)
 	change3, err := change.CreateChange(change.ValueCollections{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
@@ -387,7 +454,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 		os.Exit(-1)
 	}
 
-	setRequest, parseError := change3.GnmiChange()
+	setRequest, parseError := values.NativeChangeToGnmiChange(change3)
 
 	assert.NilError(t, parseError, "Parsing error for Gnmi change request")
 	assert.Equal(t, len(setRequest.Update), 1)
@@ -611,7 +678,7 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test-%s", strconv.Itoa(b.N))
-		cv, _ := change.CreateChangeValue(path, strconv.Itoa(i), false)
+		cv, _ := change.CreateChangeValue(path, change.CreateTypedValueUint64(uint(i)), false)
 		err := cv.IsPathValid()
 		assert.NilError(b, err, "path not valid %s", err)
 
@@ -623,7 +690,7 @@ func BenchmarkCreateChange(b *testing.B) {
 	changeValues := change.ValueCollections{}
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test%d", i)
-		cv, _ := change.CreateChangeValue(path, strconv.Itoa(i), false)
+		cv, _ := change.CreateChangeValue(path, change.CreateTypedValueUint64(uint(i)), false)
 		changeValues = append(changeValues, cv)
 	}
 

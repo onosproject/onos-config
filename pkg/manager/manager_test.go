@@ -38,10 +38,10 @@ const (
 
 const (
 	ValueEmpty     = ""
-	ValueLeaf2A13  = "13"
-	ValueLeaf2B159 = "1.579"
-	ValueLeaf2B314 = "3.14"
-	ValueLeaf2D314 = "3.14"
+	ValueLeaf2A13  = 13
+	ValueLeaf2B159 = 1.579
+	ValueLeaf2B314 = 3.14
+	ValueLeaf2D314 = 3.14
 )
 
 // TestMain should only contain static data.
@@ -67,9 +67,9 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	)
 
 	var err error
-	config1Value01, _ := change.CreateChangeValue(Test1Cont1A, ValueEmpty, false)
-	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, ValueEmpty, false)
-	config1Value03, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2A, ValueLeaf2A13, false)
+	config1Value01, _ := change.CreateChangeValue(Test1Cont1A, change.CreateTypedValueEmpty(), false)
+	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, change.CreateTypedValueEmpty(), false)
+	config1Value03, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2A, change.CreateTypedValueFloat(ValueLeaf2B159), false)
 	change1, err = change.CreateChange(change.ValueCollections{
 		config1Value01, config1Value02, config1Value03}, "Original Config for test switch")
 	if err != nil {
@@ -133,7 +133,7 @@ func Test_LoadManager(t *testing.T) {
 		"../../configs/deviceStore-sample.json",
 		"../../configs/networkStore-sample.json",
 	)
-	assert.Assert(t, err == nil, "failed to load manager")
+	assert.NilError(t, err, "failed to load manager")
 	assert.Equal(t, len(mgr.DeviceStore.Store), 4, "wrong number of devices loaded")
 }
 
@@ -193,10 +193,10 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	mgrTest, changeStoreTest, configurationStoreTest := setUp()
 
-	updates := make(map[string]string)
+	updates := make(map[string]*change.TypedValue)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
+	updates[Test1Cont1ACont2ALeaf2B] = (*change.TypedValue)(change.CreateTypedValueFloat(ValueLeaf2B159))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -214,17 +214,17 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	//Asserting deletion 2A
 	assert.Equal(t, updatedVals[0].Path, Test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, updatedVals[0].Value, "")
+	assert.Equal(t, (*change.TypedEmpty)(&updatedVals[0].TypedValue).String(), "")
 	assert.Equal(t, updatedVals[0].Remove, true)
 
 	//Asserting Removal
 	assert.Equal(t, updatedVals[1].Path, Test1Cont1ACont2ALeaf2B)
-	assert.Equal(t, updatedVals[1].Value, ValueLeaf2B159)
+	assert.Equal(t, (*change.TypedFloat)(&updatedVals[1].TypedValue).Float32(), float32(ValueLeaf2B159))
 	assert.Equal(t, updatedVals[1].Remove, false)
 
 	//Asserting deletion of 2C
 	assert.Equal(t, updatedVals[2].Path, Test1Cont1ACont2ALeaf2C)
-	assert.Equal(t, updatedVals[2].Value, "")
+	assert.Equal(t, (*change.TypedEmpty)(&updatedVals[2].TypedValue).String(), "")
 	assert.Equal(t, updatedVals[2].Remove, true)
 
 }
@@ -233,10 +233,10 @@ func Test_SetBadNetworkConfig(t *testing.T) {
 
 	mgrTest, _, _ := setUp()
 
-	updates := make(map[string]string)
+	updates := make(map[string]*change.TypedValue)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
+	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -253,10 +253,10 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 	assert.NilError(t, err)
 	configurationStoreTest[device2config.Name] = *device2config
 
-	updates := make(map[string]string)
+	updates := make(map[string]*change.TypedValue)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
+	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -268,10 +268,10 @@ func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
 
 	mgrTest, _, _ := setUp()
 
-	updates := make(map[string]string)
+	updates := make(map[string]*change.TypedValue)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
+	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -359,17 +359,17 @@ func TestManager_GetManager(t *testing.T) {
 func TestManager_ComputeRollbackDelete(t *testing.T) {
 	mgrTest, _, _ := setUp()
 
-	updates := make(map[string]string)
+	updates := make(map[string]*change.TypedValue)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B159
+	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
 
 	_, _, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
 
 	assert.NilError(t, err, "Can't create change", err)
 
-	updates[Test1Cont1ACont2ALeaf2B] = ValueLeaf2B314
-	updates[Test1Cont1ACont2ALeaf2D] = ValueLeaf2D314
+	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B314)
+	updates[Test1Cont1ACont2ALeaf2D] = change.CreateTypedValueFloat(ValueLeaf2D314)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 
 	changeID, configName, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
@@ -380,8 +380,11 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	assert.NilError(t, errRoll, "Can't ExecuteRollback", errRoll)
 	config := mgrTest.ConfigStore.Store[configName]
 	assert.Check(t, !bytes.Equal(config.Changes[len(config.Changes)-1], changeID), "Did not remove last change")
-	assert.Check(t, changes[Test1Cont1ACont2ALeaf2B] == ValueLeaf2B159, "Wrong value to set after rollback")
-	assert.Check(t, changes[Test1Cont1ACont2ALeaf2A] == ValueLeaf2A13, "Wrong value to set after rollback")
-	assert.Check(t, deletesRoll[0] == Test1Cont1ACont2ALeaf2D, "Path should be deleted")
+	assert.Equal(t, changes[Test1Cont1ACont2ALeaf2B].Type, change.ValueTypeFLOAT, "Wrong value to set after rollback")
+	assert.Equal(t, (*change.TypedFloat)(changes[Test1Cont1ACont2ALeaf2B]).Float32(), float32(ValueLeaf2B159), "Wrong value to set after rollback")
 
+	assert.Equal(t, changes[Test1Cont1ACont2ALeaf2A].Type, change.ValueTypeFLOAT, "Wrong value to set after rollback")
+	assert.Equal(t, (*change.TypedFloat)(changes[Test1Cont1ACont2ALeaf2A]).Float32(), float32(ValueLeaf2B159), "Wrong value to set after rollback")
+
+	assert.Equal(t, deletesRoll[0], Test1Cont1ACont2ALeaf2D, "Path should be deleted")
 }

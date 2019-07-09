@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/utils/values"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
@@ -114,20 +115,23 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 		return nil, err
 	}
 
-	return buildUpdate(prefix, path, configValues), nil
+	return buildUpdate(prefix, path, configValues)
 }
 
-func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*change.ConfigValue) *gnmi.Update {
+func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*change.ConfigValue) (*gnmi.Update, error) {
 	var value *gnmi.TypedValue
+	var err error
 	if len(configValues) == 0 {
 		value = nil
 	} else if len(configValues) == 1 {
-		typedValue := &gnmi.TypedValue_StringVal{StringVal: configValues[0].Value}
-		value = &gnmi.TypedValue{
-			Value: typedValue,
+		value, err = values.NativeTypeToGnmiTypedValue(&configValues[0].TypedValue)
+		if err != nil {
+			log.Warning("Unable to convert native value to gnmi", err)
+			return nil, err
 		}
+		// These should match the assignments made in changevalue.go
 	} else {
-		json, err := store.BuildTree(configValues)
+		json, err := store.BuildTree(configValues, false)
 		if err != nil {
 
 		}
@@ -141,5 +145,5 @@ func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*change.Conf
 	return &gnmi.Update{
 		Path: path,
 		Val:  value,
-	}
+	}, nil
 }

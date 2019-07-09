@@ -2,22 +2,16 @@
 
 # See ../docs/modelplugin.md for how to use this file to generate a Model Plugin
 
-TYPEVERSION=Devicesim-1.0.0
-TYPEVERSIONPKG=devicesim_1_0_0
-TYPEMODULE=devicesim.so.1.0.0
-TYPE=Devicesim
+TYPEVERSION=TestDevice-1.0.0
+TYPEVERSIONPKG=testdevice_1_0_0
+TYPEMODULE=testdevice.so.1.0.0
+TYPE=TestDevice
 VERSION=1.0.0
 MODELDATA="\
-{Name: \"openconfig-interfaces\",Organization: \"OpenConfig working group\",Version: \"2017-07-14\"},\
-{Name: \"openconfig-openflow\",Organization: \"OpenConfig working group\",Version: \"2017-06-01\"},\
-{Name: \"openconfig-platform\", Organization: \"OpenConfig working group\",Version: \"2016-12-22\"},\
-{Name: \"openconfig-system\", Organization: \"OpenConfig working group\",Version: \"2017-07-06\"},\
+{Name: \"test1\",Organization: \"Open Networking Foundation\",Version: \"2018-02-20\"},\
 "
 
-YANGLIST="openconfig-interfaces@2017-07-14.yang \
-          openconfig-openflow@2017-06-01.yang \
-          openconfig-platform@2016-12-22.yang \
-          openconfig-system@2017-07-06.yang"
+YANGLIST="test1@2018-02-20.yang"
 
 mkdir -p $TYPEVERSION/$TYPEVERSIONPKG
 

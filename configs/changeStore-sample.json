@@ -2,343 +2,398 @@
   "Version": "1.0.0",
   "Storetype": "change",
   "Store": {
-    "29U3Tp46cS6RJvIyqlos7SFOgfE=": {
-      "ID": "29U3Tp46cS6RJvIyqlos7SFOgfE=",
+    "MY8s8Opw+xjbcARIMzIpUIzeXv0=": {
+      "ID": "MY8s8Opw+xjbcARIMzIpUIzeXv0=",
       "Description": "Remove txout 2",
       "Created": "2019-05-09T16:24:17.815274679Z",
       "Config": [
         {
           "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "def",
-          "Remove": false
+          "Value": "ZGVm",
+          "Type": 1
+        },
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2d",
+          "Value": "AgAAAAAAAAA=",
+          "Type": 5,
+          "TypeOpts": [3]
+        },
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2e",
+          "Value": "nf/////////8/////////wUAAAAAAAAAyAAAAAAAAAA=",
+          "Type": 9
+        },
+        {
+          "Path": "/test1:cont1a/cont2a/leaf2g",
+          "Value": "AA==",
+          "Type": 4
         },
         {
           "Path": "/test1:cont1a/list2a[name=txout2]",
-          "Value": "",
+          "Type": 0,
           "Remove": true
         }
       ]
     },
-    "FBe9CDlvX9eIP1zXSgOKsiQB6YI=": {
-      "ID": "FBe9CDlvX9eIP1zXSgOKsiQB6YI=",
+    "50XCdm605t2/jZoPePGiUvboQzg=": {
+      "ID": "50XCdm605t2/jZoPePGiUvboQzg=",
       "Description": "Trim power level",
       "Created": "2019-05-09T16:24:17.815259228Z",
       "Config": [
         {
           "Path": "/test1:cont1a/cont2a/leaf2b",
-          "Value": "1.14159",
-          "Remove": false
-        },
-        {
-          "Path": "/test1:cont1a/list2a[name=txout3]",
-          "Value": "",
-          "Remove": false
+          "Value": "AAAA4PND8j8=",
+          "Type": 6
         },
         {
           "Path": "/test1:cont1a/list2a[name=txout3]/tx-power",
-          "Value": "16",
-          "Remove": false
+          "Value": "EAAAAAAAAAA=",
+          "Type": 3
         }
       ]
     },
-    "FGrHfVhk8rwhJ03U5TwxFqPSB/8=": {
-      "ID": "FGrHfVhk8rwhJ03U5TwxFqPSB/8=",
+    "m4GcTrhjOCLqmuw0Jhsyx2pdHK4=": {
+      "ID": "m4GcTrhjOCLqmuw0Jhsyx2pdHK4=",
       "Description": "Remove txout 1",
       "Created": "2019-05-09T16:24:17.815294258Z",
       "Config": [
         {
           "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "ghi",
-          "Remove": false
+          "Value": "Z2hp",
+          "Type": 1
         },
         {
           "Path": "/test1:cont1a/list2a[name=txout1]",
-          "Value": "",
+          "Type": 0,
           "Remove": true
         }
       ]
     },
-    "oOqIgEg82ZvVcF7Q3xEDpWAoPcw=": {
-      "ID": "oOqIgEg82ZvVcF7Q3xEDpWAoPcw=",
+    "2uUbeEV4i3ADedjeORmgQt6CVDM=": {
+      "ID": "2uUbeEV4i3ADedjeORmgQt6CVDM=",
       "Description": "Original Config for test switch",
       "Created": "2019-05-09T16:24:17.815187669Z",
       "Config": [
         {
           "Path": "/test1:cont1a/cont2a/leaf2a",
-          "Value": "13",
-          "Remove": false
+          "Value": "DQAAAAAAAAA=",
+          "Type": 3
         },
         {
           "Path": "/test1:cont1a/cont2a/leaf2b",
-          "Value": "1.579",
-          "Remove": false
+          "Value": "AAAAgJVD+T8=",
+          "Type": 6
         },
         {
           "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "abc",
-          "Remove": false
+          "Value": "YWJj",
+          "Type": 1
         },
         {
           "Path": "/test1:cont1a/leaf1a",
-          "Value": "abcdef",
-          "Remove": false
+          "Value": "YWJjZGVm",
+          "Type": 1
         },
         {
           "Path": "/test1:cont1a/list2a[name=txout1]",
           "Value": "",
-          "Remove": false
+          "Type": 0
         },
         {
           "Path": "/test1:cont1a/list2a[name=txout1]/tx-power",
-          "Value": "8",
-          "Remove": false
+          "Value": "CAAAAAAAAAA=",
+          "Type": 3
         },
         {
           "Path": "/test1:cont1a/list2a[name=txout2]",
           "Value": "",
-          "Remove": false
+          "Type": 0
         },
         {
           "Path": "/test1:cont1a/list2a[name=txout2]/tx-power",
-          "Value": "10",
-          "Remove": false
+          "Value": "CgAAAAAAAAA=",
+          "Type": 3
         },
         {
           "Path": "/test1:leafAtTopLevel",
-          "Value": "WXY-1234",
-          "Remove": false
+          "Value": "V1hZLTEyMzQ=",
+          "Type": 1
         }
       ]
     },
-    "4cQNf/bxKWdRO0h5GG4a58q5YEQ=": {
-      "ID": "4cQNf/bxKWdRO0h5GG4a58q5YEQ=",
+    "yEeW6VaoPiXkRRuoCa0jfcW97vk=": {
+      "ID": "yEeW6VaoPiXkRRuoCa0jfcW97vk=",
       "Description": "Original configuration for devicesim",
       "Created": "2019-05-21T08:43:01Z",
       "Config": [
         {
           "Path": "/openconfig-interfaces:interfaces/interface[name=admin]/config/name",
-          "Value": "admin"
+          "Value": "YWRtaW4=",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/aaa/authentication/admin-user/config/admin-password",
-          "Value": "password"
+          "Value": "cGFzc3dvcmQ=",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/aaa/authentication/config/authentication-method",
-          "Value": "openconfig-aaa-types:LOCAL"
+          "Value": "b3BlbmNvbmZpZy1hYWEtdHlwZXM6TE9DQUw=",
+          "Type": 8
         },
         {
           "Path": "/openconfig-system:system/clock/config/timezone-name",
-          "Value": "Europe/Dublin"
+          "Value": "RXVyb3BlL0R1Ymxpbg==",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "replace-device-name"
+          "Value": "cmVwbGFjZS1kZXZpY2UtbmFtZQ==",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/domain-name",
-          "Value": "opennetworking.org"
+          "Value": "b3Blbm5ldHdvcmtpbmcub3Jn",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/login-banner",
-          "Value": "This device is for authorized use only"
+          "Value": "VGhpcyBkZXZpY2UgaXMgZm9yIGF1dGhvcml6ZWQgdXNlIG9ubHk=",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
-          "Value": "replace-motd-banner"
+          "Value": "cmVwbGFjZS1tb3RkLWJhbm5lcg==",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/backoff-interval",
-          "Value": "5"
+          "Value": "BQAAAAAAAAA=",
+          "Type": 3
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/datapath-id",
-          "Value": "00:16:3e:00:00:00:00:00"
+          "Value": "MDA6MTY6M2U6MDA6MDA6MDA6MDA6MDA=",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/failure-mode",
-          "Value": "SECURE"
+          "Value": "U0VDVVJF",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/inactivity-probe",
-          "Value": "10"
+          "Value": "CgAAAAAAAAA=",
+          "Type": 3
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/max-backoff",
-          "Value": "10"
+          "Value": "CgAAAAAAAAA=",
+          "Type": 3
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/config/name",
-          "Value": "main"
+          "Value": "bWFpbg==",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/address",
-          "Value": "192.0.2.10"
+          "Value": "MTkyLjAuMi4xMA==",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/aux-id",
-          "Value": "0"
+          "Value": "AAAAAAAAAAA=",
+          "Type": 3
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/port",
-          "Value": "6633"
+          "Value": "6RkAAAAAAAA=",
+          "Type": 3
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/priority",
-          "Value": "1"
+          "Value": "AQAAAAAAAAA=",
+          "Type": 3
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/source-interface",
-          "Value": "admin"
+          "Value": "YWRtaW4=",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/transport",
-          "Value": "TLS"
+          "Value": "VExT",
+          "Type": 1
         }
       ]
     },
-    "UwIDulssBgfXoeKco0eirkKkJUI=": {
-      "ID": "UwIDulssBgfXoeKco0eirkKkJUI=",
+    "y/8sZEp9O7pLZvWDDKTmrISVk0U=": {
+      "ID": "y/8sZEp9O7pLZvWDDKTmrISVk0U=",
       "Description": "Modification of device sim 1",
       "Created": "2019-05-21T08:43:02Z",
       "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "localhost-1"
+          "Value": "bG9jYWxob3N0LTE=",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
-          "Value": "Welcome to gNMI service on localhost:10161"
+          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYx",
+          "Type": 1
         }
       ]
     },
-    "oWFKpOajlRkQf38YTlCJivn3QlU=": {
-      "ID": "oWFKpOajlRkQf38YTlCJivn3QlU=",
+    "clnusGLfRRJx/+b8Q9uvTdAptk0=": {
+      "ID": "clnusGLfRRJx/+b8Q9uvTdAptk0=",
       "Description": "Modification of device sim 2",
       "Created": "2019-05-21T08:43:03Z",
       "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "localhost-2"
+          "Value": "bG9jYWxob3N0LTI=",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
-          "Value": "Welcome to gNMI service on localhost:10162"
+          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYy",
+          "Type": 1
         }
       ]
     },
-    "1EvL+9i1ZGjKyuSjxh1hlfZ9/74=": {
-      "ID": "1EvL+9i1ZGjKyuSjxh1hlfZ9/74=",
+    "90srsoYe5BWlmh3wKToJvOC7iIU=": {
+      "ID": "90srsoYe5BWlmh3wKToJvOC7iIU=",
       "Description": "Modification of device sim 3",
       "Created": "2019-05-21T08:43:04Z",
       "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "localhost-3"
+          "Value": "bG9jYWxob3N0LTM=",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
-          "Value": "Welcome to gNMI service on localhost:10163"
+          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYz",
+          "Type": 1
         }
       ]
     },
-    "ZOBFNpGhCHoc9gLiJduqY1FiTzs=": {
-      "ID": "ZOBFNpGhCHoc9gLiJduqY1FiTzs=",
+    "5H/7bq3MC16pF9cMQIOPcq/jhLg=": {
+      "ID": "5H/7bq3MC16pF9cMQIOPcq/jhLg=",
       "Description": "Modification of device-1-device-simulator",
       "Created": "2019-05-30T18:03:17Z",
       "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "device-1-device-simulator"
+          "Value": "ZGV2aWNlLTEtZGV2aWNlLXNpbXVsYXRvcg==",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
-          "Value": "Welcome to gNMI service on device-1-device-simulator"
+          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTEtZGV2aWNlLXNpbXVsYXRvcg==",
+          "Type": 1
         }
       ]
     },
-    "ZYNxDoardxYaQwMtbFbf1qO9AjE=": {
-      "ID": "ZYNxDoardxYaQwMtbFbf1qO9AjE=",
+    "KiZ+OLazJHyL2ycFUc/NSRjsTiE=": {
+      "ID": "KiZ+OLazJHyL2ycFUc/NSRjsTiE=",
       "Description": "Modification of device-2-device-simulator",
       "Created": "2019-05-30T18:03:17Z",
       "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "device-2-device-simulator"
+          "Value": "ZGV2aWNlLTItZGV2aWNlLXNpbXVsYXRvcg==",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
-          "Value": "Welcome to gNMI service on device-2-device-simulator"
+          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTItZGV2aWNlLXNpbXVsYXRvcg==",
+          "Type": 1
         }
       ]
     },
-    "pLAjo6M3icVnLsZ8ZOjSaELH8SQ=": {
-      "ID": "pLAjo6M3icVnLsZ8ZOjSaELH8SQ=",
+    "LJGPGbRk8dn/kqQkENTrweYkba4=": {
+      "ID": "LJGPGbRk8dn/kqQkENTrweYkba4=",
       "Description": "Modification of device-3-device-simulator",
       "Created": "2019-05-30T18:03:17Z",
       "Config": [
         {
           "Path": "/openconfig-system:system/config/hostname",
-          "Value": "device-3-device-simulator"
+          "Value": "ZGV2aWNlLTMtZGV2aWNlLXNpbXVsYXRvcg==",
+          "Type": 1
         },
         {
           "Path": "/openconfig-system:system/config/motd-banner",
-          "Value": "Welcome to gNMI service on device-3-device-simulator"
+          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTMtZGV2aWNlLXNpbXVsYXRvcg==",
+          "Type": 1
         }
       ]
     },
-    "hPE88W6rrt5TskCTxtoB1n0hr3I=": {
-      "ID": "hPE88W6rrt5TskCTxtoB1n0hr3I=",
+    "X+BEIpB9A+QuJt/oK5BYvEzOZ14=": {
+      "ID": "X+BEIpB9A+QuJt/oK5BYvEzOZ14=",
       "Description": "Initial configuration of Stratum Simulator",
       "Created": "2019-06-05T12:03:17Z",
       "Config": [
         {
           "Path": "/interfaces/interface[name=s1-eth1]/config/enabled",
-          "Value": "false"
+          "Value": "AA==",
+          "Type": 4
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/config/health-indicator",
-          "Value": "GOOD"
+          "Value": "R09PRAo=",
+          "Type": 1
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/auto-negotiate",
-          "Value": "true"
+          "Value": "AQ==",
+          "Type": 4
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/forwarding-viable",
-          "Value": "true"
+          "Value": "AQ==",
+          "Type": 4
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/mac-address",
-          "Value": "11:22:33:44:55:66"
+          "Value": "MTE6MjI6MzM6NDQ6NTU6NjYK",
+          "Type": 1
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/port-speed",
-          "Value": "SPEED_10GB"
+          "Value": "U1BFRURfMTBHQgo=",
+          "Type": 1
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/config/enabled",
-          "Value": "false"
+          "Value": "AA==",
+          "Type": 4
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/config/health-indicator",
-          "Value": "GOOD"
+          "Value": "R09PRAo=",
+          "Type": 1
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/auto-negotiate",
-          "Value": "true"
+          "Value": "AQ==",
+          "Type": 4
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/forwarding-viable",
-          "Value": "true"
+          "Value": "AQ==",
+          "Type": 4
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/mac-address",
-          "Value": "11:22:33:44:55:66"
+          "Value": "MTE6MjI6MzM6NDQ6NTU6NjYK",
+          "Type": 1
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/port-speed",
-          "Value": "SPEED_10GB"
+          "Value": "U1BFRURfMTBHQgo=",
+          "Type": 1
         }
       ]
     }

@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -172,7 +173,7 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 	for update := range changeChan {
 		target, changeInternal := getChangeFromEvent(update, mgr)
 		_, targetPresent := targets[target]
-		if targetPresent {
+		if targetPresent && changeInternal != nil {
 			for _, changeValue := range changeInternal.Config {
 				_, isPresent := subs[changeValue.Path]
 				if isPresent {
@@ -181,7 +182,7 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 						log.Warning("Error in parsing path ", err)
 						continue
 					}
-					err = buildAndSendUpdate(pathGnmi, target, changeValue.Value, stream)
+					err = buildAndSendUpdate(pathGnmi, target, &changeValue.TypedValue, stream)
 					if err != nil {
 						log.Error("Error in sending update path ", err)
 						resChan <- result{success: false, err: err}
@@ -210,7 +211,11 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 						resChan <- result{success: true, err: nil}
 						continue
 					}
-					err = buildAndSendUpdate(pathGnmi, target, value, stream)
+
+					// FIXME Change this to create a typed value of the type sent up
+					strValue := change.CreateTypedValueString(value)
+
+					err = buildAndSendUpdate(pathGnmi, target, strValue, stream)
 					if err != nil {
 						log.Error("Error in sending update path ", err)
 						resChan <- result{success: false, err: err}
@@ -221,14 +226,18 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 	}
 }
 
-func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value string, stream gnmi.GNMI_SubscribeServer) error {
+func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *change.TypedValue, stream gnmi.GNMI_SubscribeServer) error {
 	pathGnmi.Target = target
 	var response *gnmi.SubscribeResponse
 	//if value is empty it's a delete operation, thus we issue a delete notification
 	//TODO can probably be moved to Value.Remove
-	if value != "" {
-		typedValue := gnmi.TypedValue_StringVal{StringVal: value}
-		valueGnmi := &gnmi.TypedValue{Value: &typedValue}
+	if len(value.Value) > 0 {
+		valueGnmi, err := values.NativeTypeToGnmiTypedValue(value)
+		if err != nil {
+			log.Warning("Unable to convert native value to gnmiValue", err)
+			return err
+		}
+
 		update := &gnmi.Update{
 			Path: pathGnmi,
 			Val:  valueGnmi,
@@ -299,6 +308,9 @@ func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeSe
 func getChangeFromEvent(update events.ConfigEvent, mgr *manager.Manager) (string, *change.Change) {
 	target := events.Event(update).Subject()
 	changeID := update.ChangeID()
-	changeInternal := mgr.ChangeStore.Store[changeID]
+	changeInternal, ok := mgr.ChangeStore.Store[changeID]
+	if !ok {
+		log.Warning("No change found for: ", changeID)
+	}
 	return target, changeInternal
 }

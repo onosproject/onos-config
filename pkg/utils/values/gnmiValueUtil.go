@@ -26,21 +26,21 @@ func GnmiTypedValueToNativeType(gnmiTv *pb.TypedValue) (*change.TypedValue, erro
 
 	switch v := gnmiTv.GetValue().(type) {
 	case *pb.TypedValue_StringVal:
-		return (*change.TypedValue)(change.CreateTypedValueString(v.StringVal)), nil
+		return change.CreateTypedValueString(v.StringVal), nil
 	case *pb.TypedValue_AsciiVal:
-		return (*change.TypedValue)(change.CreateTypedValueString(v.AsciiVal)), nil
+		return change.CreateTypedValueString(v.AsciiVal), nil
 	case *pb.TypedValue_IntVal:
-		return (*change.TypedValue)(change.CreateTypedValueInt64(int(v.IntVal))), nil
+		return change.CreateTypedValueInt64(int(v.IntVal)), nil
 	case *pb.TypedValue_UintVal:
-		return (*change.TypedValue)(change.CreateTypedValueUint64(uint(v.UintVal))), nil
+		return change.CreateTypedValueUint64(uint(v.UintVal)), nil
 	case *pb.TypedValue_BoolVal:
-		return (*change.TypedValue)(change.CreateTypedValueBool(v.BoolVal)), nil
+		return change.CreateTypedValueBool(v.BoolVal), nil
 	case *pb.TypedValue_BytesVal:
-		return (*change.TypedValue)(change.CreateTypedValueBytes(v.BytesVal)), nil
+		return change.CreateTypedValueBytes(v.BytesVal), nil
 	case *pb.TypedValue_DecimalVal:
-		return (*change.TypedValue)(change.CreateTypedValueDecimal64(v.DecimalVal.Digits, v.DecimalVal.Precision)), nil
+		return change.CreateTypedValueDecimal64(v.DecimalVal.Digits, v.DecimalVal.Precision), nil
 	case *pb.TypedValue_FloatVal:
-		return (*change.TypedValue)(change.CreateTypedValueFloat(v.FloatVal)), nil
+		return change.CreateTypedValueFloat(v.FloatVal), nil
 	case *pb.TypedValue_LeaflistVal:
 		return handleLeafList(v)
 	default:
@@ -84,25 +84,28 @@ func handleLeafList(gnmiLl *pb.TypedValue_LeaflistVal) (*change.TypedValue, erro
 	}
 
 	if len(stringList) > 0 {
-		return (*change.TypedValue)(change.CreateLeafListString(stringList)), nil
+		return change.CreateLeafListString(stringList), nil
 	} else if len(intList) > 0 {
-		return (*change.TypedValue)(change.CreateLeafListInt64(intList)), nil
+		return change.CreateLeafListInt64(intList), nil
 	} else if len(uintList) > 0 {
-		return (*change.TypedValue)(change.CreateLeafListUint64(uintList)), nil
+		return change.CreateLeafListUint64(uintList), nil
 	} else if len(boolList) > 0 {
-		return (*change.TypedValue)(change.CreateLeafListBool(boolList)), nil
+		return change.CreateLeafListBool(boolList), nil
 	} else if len(bytesList) > 0 {
-		return (*change.TypedValue)(change.CreateLeafListBytes(bytesList)), nil
+		return change.CreateLeafListBytes(bytesList), nil
 	} else if len(digitsList) > 0 {
-		return (*change.TypedValue)(change.CreateLeafListDecimal64(digitsList, precision)), nil
+		return change.CreateLeafListDecimal64(digitsList, precision), nil
 	} else if len(floatList) > 0 {
-		return (*change.TypedValue)(change.CreateLeafListFloat32(floatList)), nil
+		return change.CreateLeafListFloat32(floatList), nil
 	}
 	return nil, fmt.Errorf("Empty leaf list given")
 }
 
 // NativeTypeToGnmiTypedValue converts native byte array based values in to gnmi types
 func NativeTypeToGnmiTypedValue(typedValue *change.TypedValue) (*pb.TypedValue, error) {
+	if len(typedValue.Value) == 0 {
+		return nil, fmt.Errorf("Invalid TypedValue Length 0")
+	}
 	switch typedValue.Type {
 	case change.ValueTypeEMPTY:
 		return nil, fmt.Errorf("Not yet implemented TypedEmpty to gnmi")

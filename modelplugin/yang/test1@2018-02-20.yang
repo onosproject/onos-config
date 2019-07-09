@@ -44,6 +44,28 @@ module test1 {
         config false;
         description "Read only leaf inside Container 2a";
       }
+      leaf leaf2d {
+        type decimal64 {
+          fraction-digits 3;
+          range 0.001..2.000;
+        }
+        description "Another decimal inside Container 2a";
+      }
+      leaf-list leaf2e {
+        type int16 {
+          range -100..200;
+        }
+        description "leaf list inside Container 2a";
+      }
+      leaf leaf2f {
+        type binary {
+          length 20;
+        }
+      }
+      leaf leaf2g {
+        type boolean;
+        description "Boolean leaf inside Container 2a";
+      }
     }
 
     leaf leaf1a {

@@ -29,13 +29,13 @@ func (c Value) String() string {
 	if c.Path == "" {
 		return "InvalidChange"
 	}
-	return fmt.Sprintf("%s %s %t", c.Path, c.Value, c.Remove)
+	return fmt.Sprintf("%s %v %t", c.Path, c.Value, c.Remove)
 }
 
 // CreateChangeValue decodes a path and value in to an object
-func CreateChangeValue(path string, value string, isRemove bool) (*Value, error) {
+func CreateChangeValue(path string, value *TypedValue, isRemove bool) (*Value, error) {
 	cv := Value{
-		ConfigValue{path, value},
+		ConfigValue{path, *value},
 		isRemove,
 	}
 	err := cv.ConfigValue.IsPathValid()

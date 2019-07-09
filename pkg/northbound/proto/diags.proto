@@ -30,11 +30,32 @@ message ConfigRequest {
     repeated string deviceIds = 1;
 }
 
+enum ChangeValueType {
+    EMPTY = 0;
+    STRING = 1;
+    INT = 2;
+    UINT = 3;
+    BOOL = 4;
+    DECIMAL = 5;
+    FLOAT = 6;
+    BYTES = 7;
+    LEAFLIST_STRING = 8;
+    LEAFLIST_INT = 9;
+    LEAFLIST_UINT = 10;
+    LEAFLIST_BOOL = 11;
+    LEAFLIST_DECIMAL = 12;
+    LEAFLIST_FLOAT = 13;
+    LEAFLIST_BYTES = 14;
+
+}
+
 // ChangeValue is an individual Path/Value combination in a Change
 message ChangeValue {
     string path = 1;
-    string value = 2;
-    bool removed = 3;
+    bytes value = 2;
+    ChangeValueType valuetype = 3;
+    repeated int32 typeopts = 4;
+    bool removed = 5;
 }
 
 // Change is a descriptor of a submitted configuration change targeted at a single device.
@@ -59,10 +80,10 @@ message Configuration {
 // ConfigDiags provides means for obtaining diagnostic information about internal system state.
 service ConfigDiags {
     // GetChanges returns a stream of submitted changes objects.
-    rpc GetChanges(ChangesRequest) returns (stream Change);
+    rpc GetChanges (ChangesRequest) returns (stream Change);
 
     // GetConfigurations returns a stream of submitted configurations aimed at individual devices.
-    rpc GetConfigurations(ConfigRequest) returns (stream Configuration);
+    rpc GetConfigurations (ConfigRequest) returns (stream Configuration);
 }
 
 

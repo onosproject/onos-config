@@ -125,7 +125,18 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 				Config:      make([]*change.Value, 0),
 			}
 			for _, cv := range in.Changevalues {
-				value, _ := change.CreateChangeValue(cv.Path, cv.Value, cv.Removed)
+				var tv *change.TypedValue
+				typeOptInt32 := make([]int, len(cv.Typeopts))
+				for i, v := range cv.Typeopts {
+					typeOptInt32[i] = int(v)
+				}
+				tv = &change.TypedValue{
+					Value:    cv.Value,
+					Type:     change.ValueType(cv.Valuetype),
+					TypeOpts: typeOptInt32,
+				}
+
+				value, _ := change.CreateChangeValue(cv.Path, tv, cv.Removed)
 				changeObj.Config = append(changeObj.Config, value)
 			}
 			changes[in.Id] = &changeObj
@@ -140,7 +151,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 	for _, configuration := range configurations {
 		Output("Config %s (Device: %s)\n", configuration.Name, configuration.Device)
 		fullDeviceConfigValues := configuration.ExtractFullConfig(changes, version)
-		jsonTree, _ := store.BuildTree(fullDeviceConfigValues)
+		jsonTree, _ := store.BuildTree(fullDeviceConfigValues, false)
 		Output("%s\n", string(jsonTree))
 	}
 
