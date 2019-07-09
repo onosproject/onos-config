@@ -25,7 +25,7 @@ Use `gnmi_cli -get` to get configuration for a particular device (target) from t
 > If config from several devices are required, several paths can be added
 ```bash
 gnmi_cli -get -address localhost:5150 \
-    -proto "path: <target: 'localhost:10161', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
+    -proto "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
     -timeout 5s -alsologtostderr\
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \

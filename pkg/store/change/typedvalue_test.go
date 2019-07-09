@@ -16,6 +16,7 @@ package change
 
 import (
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"gotest.tools/assert"
@@ -66,10 +67,11 @@ var testByteArr2 = []byte("ghijk")
 var testLeafListBytes = [][]byte{testByteArr0, testByteArr1, testByteArr2}
 
 func Test_TypedValueEmpty(t *testing.T) {
-	tv := (CreateTypedValueEmpty())
+	tv := CreateTypedValueEmpty()
 
 	assert.Equal(t, len(tv.Value), 0)
 	testConversion(t, (*TypedValue)(tv))
+	assert.Equal(t, (*TypedValue)(tv).String(), "")
 }
 
 func Test_TypedValueString(t *testing.T) {
@@ -77,6 +79,7 @@ func Test_TypedValueString(t *testing.T) {
 
 	assert.Equal(t, len(tv.Value), 14)
 	testConversion(t, (*TypedValue)(tv))
+	assert.Equal(t, (*TypedValue)(tv).String(), testString)
 }
 
 func Test_TypedValueInt(t *testing.T) {
@@ -91,6 +94,7 @@ func Test_TypedValueInt(t *testing.T) {
 
 	tv = NewInt64(testZeroInt)
 	assert.Equal(t, tv.String(), fmt.Sprintf("%d", testZeroInt))
+	assert.Equal(t, (*TypedValue)(tv).String(), "0")
 }
 
 func Test_TypedValueUint(t *testing.T) {
@@ -102,6 +106,7 @@ func Test_TypedValueUint(t *testing.T) {
 	assert.Equal(t, tv.String(), fmt.Sprintf("%d", testMaxUint))
 
 	testConversion(t, (*TypedValue)(tv))
+	assert.Equal(t, (*TypedValue)(tv).String(), "18446744073709551615")
 }
 
 func Test_TypedValueBool(t *testing.T) {
@@ -114,6 +119,7 @@ func Test_TypedValueBool(t *testing.T) {
 
 	tv = NewBool(false)
 	assert.Equal(t, tv.String(), "false")
+	assert.Equal(t, (*TypedValue)(tv).String(), "false")
 }
 
 func Test_TypedValueDecimal64(t *testing.T) {
@@ -131,6 +137,7 @@ func Test_TypedValueDecimal64(t *testing.T) {
 	tv = NewDecimal64(testDigitsZero, testPrecision0)
 	assert.Equal(t, tv.String(), "0")
 	assert.Equal(t, tv.TypeOpts[0], testPrecision0)
+	assert.Equal(t, (*TypedValue)(tv).String(), "0")
 }
 
 func Test_TypedValueFloat(t *testing.T) {
@@ -142,6 +149,7 @@ func Test_TypedValueFloat(t *testing.T) {
 
 	tv = NewFloat(testFloatPos)
 	assert.Equal(t, tv.String(), "339999995214436424907732413799364296704.000000")
+	assert.Equal(t, (*TypedValue)(tv).String(), "339999995214436424907732413799364296704.000000")
 }
 
 func Test_TypedValueBytes(t *testing.T) {
@@ -150,6 +158,7 @@ func Test_TypedValueBytes(t *testing.T) {
 	assert.Equal(t, tv.String(), testStringBytesB64)
 
 	testConversion(t, (*TypedValue)(tv))
+	assert.Equal(t, (*TypedValue)(tv).String(), testStringBytesB64)
 }
 
 func Test_LeafListString(t *testing.T) {
@@ -162,6 +171,7 @@ func Test_LeafListString(t *testing.T) {
 	tv = NewLeafListString(testArray)
 	assert.Equal(t, len(tv.Value), 3)
 	assert.Equal(t, tv.String(), "one")
+	assert.Equal(t, (*TypedValue)(tv).String(), "one")
 }
 
 func Test_LeafListInt64(t *testing.T) {
@@ -170,6 +180,7 @@ func Test_LeafListInt64(t *testing.T) {
 	assert.Equal(t, tv.String(), "[-9223372036854775808 0 9223372036854775807]")
 
 	testConversion(t, (*TypedValue)(tv))
+	assert.Equal(t, (*TypedValue)(tv).String(), "[-9223372036854775808 0 9223372036854775807]")
 }
 
 func Test_LeafListUint64(t *testing.T) {
@@ -179,6 +190,7 @@ func Test_LeafListUint64(t *testing.T) {
 	assert.Equal(t, tv.String(), "[0 11 18446744073709551615]")
 
 	testConversion(t, (*TypedValue)(tv))
+	assert.Equal(t, (*TypedValue)(tv).String(), "[0 11 18446744073709551615]")
 }
 
 func Test_LeafListBool(t *testing.T) {
@@ -188,6 +200,7 @@ func Test_LeafListBool(t *testing.T) {
 	assert.Equal(t, tv.String(), "[true false false true]")
 
 	testConversion(t, (*TypedValue)(tv))
+	assert.Equal(t, (*TypedValue)(tv).String(), "[true false false true]")
 }
 
 func Test_LeafListDecimal64(t *testing.T) {
@@ -197,6 +210,7 @@ func Test_LeafListDecimal64(t *testing.T) {
 	assert.Equal(t, tv.String(), "[-9223372036854775808 0 9223372036854775807] 6")
 
 	testConversion(t, (*TypedValue)(tv))
+	assert.Equal(t, (*TypedValue)(tv).String(), "[-9223372036854775808 0 9223372036854775807] 6")
 }
 
 func Test_LeafListFloat32(t *testing.T) {
@@ -206,6 +220,7 @@ func Test_LeafListFloat32(t *testing.T) {
 	assert.Equal(t, tv.String(), "-339999995214436424907732413799364296704.000000,0.000000,339999995214436424907732413799364296704.000000")
 
 	testConversion(t, (*TypedValue)(tv))
+	assert.Equal(t, (*TypedValue)(tv).String(), "-339999995214436424907732413799364296704.000000,0.000000,339999995214436424907732413799364296704.000000")
 }
 
 func Test_LeafListBytes(t *testing.T) {
@@ -218,6 +233,7 @@ func Test_LeafListBytes(t *testing.T) {
 	assert.Equal(t, tv.TypeOpts[0], 3)
 	assert.Equal(t, tv.TypeOpts[1], 4)
 	assert.Equal(t, tv.TypeOpts[2], 5)
+	assert.Equal(t, (*TypedValue)(tv).String(), "[[97 98 99] [100 101 102 103] [103 104 105 106 107]]")
 }
 
 func Test_JsonSerializationString(t *testing.T) {
@@ -360,6 +376,23 @@ func Test_JsonSerializationLeafListBytes(t *testing.T) {
 	assert.DeepEqual(t, unmarshalledTv.Value, []byte{0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x67, 0x68, 0x69, 0x6a, 0x6b})
 
 	assert.Equal(t, (*TypedLeafListBytes)(&unmarshalledTv).String(), "[[97 98 99] [100 101 102 103] [103 104 105 106 107]]")
+}
+
+func Test_CreateFromBytesInt(t *testing.T) {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, uint64(testPositiveInt))
+
+	tv, err := CreateTypedValue(buf, ValueTypeINT, nil)
+	assert.NilError(t, err)
+	assert.Equal(t, tv.String(), "9223372036854775807")
+}
+
+func Test_CreateFromBytesBool(t *testing.T) {
+	buf := []byte{0x01}
+
+	tv, err := CreateTypedValue(buf, ValueTypeBOOL, nil)
+	assert.NilError(t, err)
+	assert.Equal(t, tv.String(), "true")
 }
 
 func testConversion(t *testing.T, tv *TypedValue) {

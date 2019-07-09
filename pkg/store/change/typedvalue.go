@@ -69,6 +69,210 @@ type TypedValue struct {
 	TypeOpts []int
 }
 
+func (tv *TypedValue) String() string {
+	switch tv.Type {
+	case ValueTypeEMPTY:
+		return ""
+	case ValueTypeSTRING:
+		return (*TypedString)(tv).String()
+	case ValueTypeINT:
+		return (*TypedInt64)(tv).String()
+	case ValueTypeUINT:
+		return (*TypedUint64)(tv).String()
+	case ValueTypeBOOL:
+		return (*TypedBool)(tv).String()
+	case ValueTypeDECIMAL:
+		return (*TypedDecimal64)(tv).String()
+	case ValueTypeFLOAT:
+		return (*TypedFloat)(tv).String()
+	case ValueTypeBYTES:
+		return (*TypedBytes)(tv).String()
+	case ValueTypeLeafListSTRING:
+		return (*TypedLeafListString)(tv).String()
+	case ValueTypeLeafListINT:
+		return (*TypedLeafListInt64)(tv).String()
+	case ValueTypeLeafListUINT:
+		return (*TypedLeafListUint)(tv).String()
+	case ValueTypeLeafListBOOL:
+		return (*TypedLeafListBool)(tv).String()
+	case ValueTypeLeafListDECIMAL:
+		return (*TypedLeafListDecimal)(tv).String()
+	case ValueTypeLeafListFLOAT:
+		return (*TypedLeafListFloat)(tv).String()
+	case ValueTypeLeafListBYTES:
+		return (*TypedLeafListBytes)(tv).String()
+	}
+
+	return ""
+}
+
+// CreateTypedValue creates a TypeValue from a byte[] and type - used in changes.go
+func CreateTypedValue(bytes []byte, valueType ValueType, typeOpts []int) (*TypedValue, error) {
+	switch valueType {
+	case ValueTypeEMPTY:
+		return CreateTypedValueEmpty(), nil
+	case ValueTypeSTRING:
+		return CreateTypedValueString(string(bytes)), nil
+	case ValueTypeINT:
+		if len(bytes) != 8 {
+			return nil, fmt.Errorf("Expecting 8 bytes for INT. Got %d", len(bytes))
+		}
+		return CreateTypedValueInt64(int(binary.LittleEndian.Uint64(bytes))), nil
+	case ValueTypeUINT:
+		if len(bytes) != 8 {
+			return nil, fmt.Errorf("Expecting 8 bytes for UINT. Got %d", len(bytes))
+		}
+		return CreateTypedValueUint64(uint(binary.LittleEndian.Uint64(bytes))), nil
+	case ValueTypeBOOL:
+		if len(bytes) != 1 {
+			return nil, fmt.Errorf("Expecting 1 byte for BOOL. Got %d", len(bytes))
+		}
+		value := false
+		if bytes[0] == 1 {
+			value = true
+		}
+		return CreateTypedValueBool(value), nil
+	case ValueTypeDECIMAL:
+		if len(bytes) != 8 {
+			return nil, fmt.Errorf("Expecting 8 bytes for DECIMAL. Got %d", len(bytes))
+		}
+		if len(typeOpts) != 1 {
+			return nil, fmt.Errorf("Expecting 1 typeopt for DECIMAL. Got %d", len(typeOpts))
+		}
+		precision := typeOpts[0]
+		return CreateTypedValueDecimal64(int64(binary.LittleEndian.Uint64(bytes)), uint32(precision)), nil
+	case ValueTypeFLOAT:
+		if len(bytes) != 8 {
+			return nil, fmt.Errorf("Expecting 8 bytes for FLOAT. Got %d", len(bytes))
+		}
+		return CreateTypedValueFloat(float32(math.Float64frombits(binary.LittleEndian.Uint64(bytes)))), nil
+	case ValueTypeBYTES:
+		return CreateTypedValueBytes(bytes), nil
+	case ValueTypeLeafListSTRING:
+		return caseValueTypeLeafListSTRING(bytes)
+	case ValueTypeLeafListINT:
+		return caseValueTypeLeafListINT(bytes)
+	case ValueTypeLeafListUINT:
+		return caseValueTypeLeafListUINT(bytes)
+	case ValueTypeLeafListBOOL:
+		return caseValueTypeLeafListBOOL(bytes)
+	case ValueTypeLeafListDECIMAL:
+		return caseValueTypeLeafListDECIMAL(bytes, typeOpts)
+	case ValueTypeLeafListFLOAT:
+		return caseValueTypeLeafListFLOAT(bytes)
+	case ValueTypeLeafListBYTES:
+		return caseValueTypeLeafListBYTES(bytes, typeOpts)
+	}
+
+	return nil, fmt.Errorf("unexpected type %d", valueType)
+}
+
+// caseValueTypeLeafListSTRING is moved out of CreateTypedValue because of gocyclo
+func caseValueTypeLeafListSTRING(bytes []byte) (*TypedValue, error) {
+	stringList := make([]string, 0)
+	buf := make([]byte, 0)
+	for _, b := range bytes {
+		if b != 0x1D {
+			buf = append(buf, b)
+		} else {
+			stringList = append(stringList, string(buf))
+			buf = make([]byte, 0)
+		}
+	}
+	stringList = append(stringList, string(buf))
+	return CreateLeafListString(stringList), nil
+}
+
+// caseValueTypeLeafListINT is moved out of CreateTypedValue because of gocyclo
+func caseValueTypeLeafListINT(bytes []byte) (*TypedValue, error) {
+	count := len(bytes) / 8
+	intList := make([]int, 0)
+
+	for i := 0; i < count; i++ {
+		v := bytes[i*8 : i*8+8]
+		leafInt := binary.LittleEndian.Uint64(v)
+		intList = append(intList, int(leafInt))
+	}
+	return CreateLeafListInt64(intList), nil
+}
+
+// caseValueTypeLeafListUINT is moved out of CreateTypedValue because of gocyclo
+func caseValueTypeLeafListUINT(bytes []byte) (*TypedValue, error) {
+	count := len(bytes) / 8
+	uintList := make([]uint, 0)
+
+	for i := 0; i < count; i++ {
+		v := bytes[i*8 : i*8+8]
+		leafInt := binary.LittleEndian.Uint64(v)
+		uintList = append(uintList, uint(leafInt))
+	}
+	return CreateLeafListUint64(uintList), nil
+}
+
+// caseValueTypeLeafListBOOL is moved out of CreateTypedValue because of gocyclo
+func caseValueTypeLeafListBOOL(bytes []byte) (*TypedValue, error) {
+	count := len(bytes)
+	bools := make([]bool, count)
+	for i, v := range bytes {
+		if v == 1 {
+			bools[i] = true
+		}
+	}
+	return CreateLeafListBool(bools), nil
+}
+
+// caseValueTypeLeafListDECIMAL is moved out of CreateTypedValue because of gocyclo
+func caseValueTypeLeafListDECIMAL(bytes []byte, typeOpts []int) (*TypedValue, error) {
+	count := len(bytes) / 8
+	digitsList := make([]int64, 0)
+	precision := 0
+
+	if len(typeOpts) > 0 {
+		precision = typeOpts[0]
+	}
+	for i := 0; i < count; i++ {
+		v := bytes[i*8 : i*8+8]
+		leafDigit := binary.LittleEndian.Uint64(v)
+		digitsList = append(digitsList, int64(leafDigit))
+	}
+	return CreateLeafListDecimal64(digitsList, uint32(precision)), nil
+}
+
+// caseValueTypeLeafListFLOAT is moved out of CreateTypedValue because of gocyclo
+func caseValueTypeLeafListFLOAT(bytes []byte) (*TypedValue, error) {
+	count := len(bytes) / 8
+	float32s := make([]float32, 0)
+
+	for i := 0; i < count; i++ {
+		v := bytes[i*8 : i*8+8]
+		float32s = append(float32s, float32(math.Float64frombits(binary.LittleEndian.Uint64(v))))
+	}
+	return CreateLeafListFloat32(float32s), nil
+}
+
+// caseValueTypeLeafListBYTES is moved out of CreateTypedValue because of gocyclo
+func caseValueTypeLeafListBYTES(bytes []byte, typeOpts []int) (*TypedValue, error) {
+	if len(typeOpts) < 1 {
+		return nil, fmt.Errorf("Expecting 1 typeopt for LeafListBytes. Got %d", len(typeOpts))
+	}
+	byteArrays := make([][]byte, 0)
+	buf := make([]byte, 0)
+	idx := 0
+	startAt := 0
+	for i, b := range bytes {
+		valueLen := typeOpts[idx]
+		if i-startAt == valueLen {
+			byteArrays = append(byteArrays, buf)
+			buf = make([]byte, 0)
+			idx = idx + 1
+			startAt = startAt + valueLen
+		}
+		buf = append(buf, b)
+	}
+	byteArrays = append(byteArrays, buf)
+	return CreateLeafListBytes(byteArrays), nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // TypedEmpty
 ////////////////////////////////////////////////////////////////////////////////

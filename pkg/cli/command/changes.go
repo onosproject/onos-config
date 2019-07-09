@@ -16,10 +16,14 @@ package command
 
 import (
 	"context"
+	"fmt"
 	diags "github.com/onosproject/onos-config/pkg/northbound/proto"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/spf13/cobra"
 	"io"
-	"time"
+	"os"
+	"strings"
+	"text/template"
 )
 
 func newChangesCommand() *cobra.Command {
@@ -39,6 +43,21 @@ func runChangesCommand(cmd *cobra.Command, args []string) {
 		changesReq.ChangeIds = append(changesReq.ChangeIds, args[0])
 	}
 
+	funcMap := template.FuncMap{
+		"wrappath":   wrapPath,
+		"nativeType": nativeType,
+	}
+
+	const changeHeader = "Change: {{.Id}} ({{.Desc}})\n" +
+		"\t{{printf \"|%50s|%40s|%7s|\" \"PATH\" \"VALUE\" \"REMOVED\"}}\n" +
+		"{{range .Changevalues}}" +
+		"\t{{wrappath .Path 50 1| printf \"|%50s|\"}}{{nativeType . | printf \"(%s) %s\" .Valuetype | printf \"%40s|\" }}{{printf \"%7t|\" .Removed}}\n" +
+		"{{end}}\n"
+	tmplHeader, err := template.New("change").Funcs(funcMap).Parse(changeHeader)
+	if err != nil {
+		ExitWithErrorMessage("Failed to parse template: %v", err)
+	}
+
 	stream, err := client.GetChanges(context.Background(), changesReq)
 	if err != nil {
 		ExitWithErrorMessage("Failed to send request: %v", err)
@@ -55,11 +74,7 @@ func runChangesCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
-			Output("%s\t(%s)\t%s\n", in.Id, in.Desc,
-				time.Unix(in.Time.Seconds, int64(in.Time.Nanos)).Format(time.RFC3339))
-			for _, cv := range in.Changevalues {
-				Output("\t%s\t%s\t%v\n", cv.Path, cv.Value, cv.Removed)
-			}
+			tmplHeader.Execute(os.Stdout, in)
 			Output("\n")
 		}
 	}()
@@ -69,4 +84,39 @@ func runChangesCommand(cmd *cobra.Command, args []string) {
 	}
 	<-waitc
 	ExitWithSuccess()
+}
+
+func wrapPath(path string, lineLen int, tabs int) string {
+	over := len(path) % lineLen
+	linesC := len(path) / lineLen
+	var wrapped []string
+	if over > 0 {
+		wrapped = make([]string, linesC+1)
+	} else {
+		wrapped = make([]string, linesC)
+	}
+	var i int
+	for i = 0; i < linesC; i++ {
+		wrapped[i] = path[i*lineLen : i*lineLen+lineLen]
+	}
+	if over > 0 {
+		overFmt := fmt.Sprintf("%s%ds", "%", lineLen)
+		wrapped[linesC] = fmt.Sprintf(overFmt, path[linesC*lineLen:])
+	}
+
+	tabsArr := make([]string, tabs+1)
+	sep := fmt.Sprintf("\n%s  ", strings.Join(tabsArr, "\t"))
+	return strings.Join(wrapped, sep)
+}
+
+func nativeType(cv diags.ChangeValue) string {
+	to := make([]int, len(cv.Typeopts))
+	for i, t := range cv.Typeopts {
+		to[i] = int(t)
+	}
+	tv, err := change.CreateTypedValue(cv.Value, change.ValueType(cv.Valuetype), to)
+	if err != nil {
+		ExitWithErrorMessage("Failed to convert value to TypedValue %s", err)
+	}
+	return tv.String()
 }
