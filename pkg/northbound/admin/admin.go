@@ -141,7 +141,7 @@ func (s Server) RollbackNetworkChange(
 		if store.B64(configChangeIds[len(configChangeIds)-1]) != store.B64(changeID) {
 			return nil, fmt.Errorf(
 				"the last change on %s is not %s as expected. Was %s",
-				configName, changeID, store.B64(configChangeIds[len(configChangeIds)-1]))
+				configName, store.B64(changeID), store.B64(configChangeIds[len(configChangeIds)-1]))
 		}
 		changeID, err := manager.GetManager().RollbackTargetConfig(string(configName))
 		rollbackIDs := configNames[string(configName)]
