@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	subValue = "Europe/Dublin"
+	subValue = "Europe/Madrid"
 	subPath  = "/system/clock/config/timezone-name"
 )
 
