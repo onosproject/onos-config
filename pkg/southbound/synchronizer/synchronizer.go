@@ -112,7 +112,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 			errChan <- events.CreateErrorEvent(events.EventTypeErrorSetInitialConfig,
 				string(device.ID), initialConfig.ID, err)
 		} else {
-			log.Info(resp)
+			log.Infof("Loaded initial config %s for device %s", store.B64(initialConfig.ID), sync.key.DeviceID)
 			errChan <- events.CreateResponseEvent(events.EventTypeAchievedSetConfig,
 				sync.key.DeviceID, initialConfig.ID, resp.String())
 		}
@@ -264,7 +264,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	subErr := target.Subscribe(sync.Context, req, sync.handler)
 	if subErr != nil {
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
-			sync.key.DeviceID, err)
+			sync.key.DeviceID, subErr)
 	}
 
 }

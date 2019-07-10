@@ -25,7 +25,7 @@ go run github.com/onosproject/onos-config/cmd/onos-config \
 ```
 > The plugins here were built locally with a command like
 ```bash
-> CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
+> GO111MODULE=on CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
 ```
 > When running with Docker or Kubernetes these plugins will be built and (optionally) loaded
 at startup. To check the list of currently loaded plugins use:

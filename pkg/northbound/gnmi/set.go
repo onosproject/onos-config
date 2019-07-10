@@ -92,7 +92,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
 		}
 	}
-
 	updateResults, networkChanges, err :=
 		s.buildUpdateResults(targetUpdates, targetRemoves, version, deviceType)
 	if err != nil {
@@ -184,6 +183,7 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 		changeID, configName, cont, err := setChange(target, version, updates, targetRemoves[target])
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
+			//TODO Rollback needs also to happen here.
 			return nil, nil, err
 		} else if err == nil && cont {
 			continue
@@ -252,25 +252,12 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 	case response := <-respChan:
 		switch eventType := response.EventType(); eventType {
 		case events.EventTypeAchievedSetConfig:
+			log.Info("Set is properly configured", response.ChangeID())
 			return nil
 		case events.EventTypeErrorSetConfig:
 			//Removing previously applied config
-			rolledbackIDs := make([]string, 0)
-			for configName := range changes {
-				changeID, err := mgr.RollbackTargetConfig(string(configName))
-				if err != nil {
-					log.Error("Can'configName remove last entry for ", target, err)
-				}
-				rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
-			}
-			//Removing the failed target
-			changeID, err := mgr.RollbackTargetConfig(string(name))
-			if err != nil {
-				log.Error("Can'configName remove last entry for ", target, err)
-			}
-			rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
-			return fmt.Errorf("Issue in setting config %s, rolling back changes %s",
-				response.Error().Error(), rolledbackIDs)
+			return doRollback(changes, mgr, target, name, response.Error())
+
 		default:
 			return fmt.Errorf("undhandled Error Type")
 
@@ -278,6 +265,27 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 	case <-time.After(5 * time.Second):
 		return fmt.Errorf("Timeout on waiting for device reply %s", target)
 	}
+}
+
+func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
+	name store.ConfigName, errResp error) error {
+	rolledbackIDs := make([]string, 0)
+	for configName := range changes {
+		changeID, err := mgr.RollbackTargetConfig(string(configName))
+		log.Infof("Rolling back %s on %s", store.B64(changeID), configName)
+		if err != nil {
+			log.Error("Can'configName remove last entry for ", target, err)
+		}
+		rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
+	}
+	//Removing the failed target
+	changeID, errRoll := mgr.RollbackTargetConfig(string(name))
+	if errRoll != nil {
+		log.Error("Can'configName remove last entry for ", target, errRoll)
+	}
+	rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
+	return fmt.Errorf("Issue in setting config %s, rolling back changes %s",
+		errResp.Error(), rolledbackIDs)
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
