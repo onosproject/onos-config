@@ -272,16 +272,16 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 	rolledbackIDs := make([]string, 0)
 	for configName := range changes {
 		changeID, err := mgr.RollbackTargetConfig(string(configName))
-		log.Infof("Rolling back %s on %s", store.B64(changeID), configName)
 		if err != nil {
-			log.Error("Can'configName remove last entry for ", target, err)
+			log.Errorf("Can't remove last entry for %s, on config %s, err, %v", target, name, err)
 		}
+		log.Infof("Rolled back %s on %s", store.B64(changeID), configName)
 		rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
 	}
 	//Removing the failed target
 	changeID, errRoll := mgr.RollbackTargetConfig(string(name))
 	if errRoll != nil {
-		log.Error("Can'configName remove last entry for ", target, errRoll)
+		log.Errorf("Can't remove last entry for %s, on config %s, err %v", target, name, errRoll)
 	}
 	rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
 	return fmt.Errorf("Issue in setting config %s, rolling back changes %s",
