@@ -111,7 +111,7 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 		log.Warning("No model ", modelName, " available as a plugin")
 	} else {
 		configValues := deviceConfig.ExtractFullConfig(m.ChangeStore.Store, 0)
-		jsonTree, err := store.BuildTree(configValues, false)
+		jsonTree, err := store.BuildTree(configValues, true)
 		if err != nil {
 			log.Error("Error building JSON tree from Config Values ", err, jsonTree)
 		} else {

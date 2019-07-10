@@ -48,10 +48,16 @@ func (s Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_Get
 		changeValues := make([]*proto.ChangeValue, 0)
 
 		for _, cv := range c.Config {
+			to := make([]int32, len(cv.TypeOpts))
+			for i, t := range cv.TypeOpts {
+				to[i] = int32(t)
+			}
 			changeValues = append(changeValues, &proto.ChangeValue{
-				Path:    cv.Path,
-				Value:   cv.Value,
-				Removed: cv.Remove,
+				Path:      cv.Path,
+				Value:     cv.Value,
+				Valuetype: proto.ChangeValueType(cv.Type),
+				Typeopts:  to,
+				Removed:   cv.Remove,
 			})
 		}
 
