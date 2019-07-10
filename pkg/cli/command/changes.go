@@ -26,6 +26,12 @@ import (
 	"text/template"
 )
 
+const changeTemplate = "Change: {{.Id}} ({{.Desc}})\n" +
+	"\t{{printf \"|%50s|%40s|%7s|\" \"PATH\" \"VALUE\" \"REMOVED\"}}\n" +
+	"{{range .Changevalues}}" +
+	"\t{{wrappath .Path 50 1| printf \"|%50s|\"}}{{nativeType . | printf \"(%s) %s\" .Valuetype | printf \"%40s|\" }}{{printf \"%7t|\" .Removed}}\n" +
+	"{{end}}\n"
+
 func newChangesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "changes [<changeId>]",
@@ -48,15 +54,7 @@ func runChangesCommand(cmd *cobra.Command, args []string) {
 		"nativeType": nativeType,
 	}
 
-	const changeHeader = "Change: {{.Id}} ({{.Desc}})\n" +
-		"\t{{printf \"|%50s|%40s|%7s|\" \"PATH\" \"VALUE\" \"REMOVED\"}}\n" +
-		"{{range .Changevalues}}" +
-		"\t{{wrappath .Path 50 1| printf \"|%50s|\"}}{{nativeType . | printf \"(%s) %s\" .Valuetype | printf \"%40s|\" }}{{printf \"%7t|\" .Removed}}\n" +
-		"{{end}}\n"
-	tmplHeader, err := template.New("change").Funcs(funcMap).Parse(changeHeader)
-	if err != nil {
-		ExitWithErrorMessage("Failed to parse template: %v", err)
-	}
+	tmplChanges, _ := template.New("change").Funcs(funcMap).Parse(changeTemplate)
 
 	stream, err := client.GetChanges(context.Background(), changesReq)
 	if err != nil {
@@ -74,7 +72,7 @@ func runChangesCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
-			tmplHeader.Execute(os.Stdout, in)
+			tmplChanges.Execute(os.Stdout, in)
 			Output("\n")
 		}
 	}()

@@ -2,16 +2,22 @@
 
 # See ../docs/modelplugin.md for how to use this file to generate a Model Plugin
 
-TYPEVERSION=TestDevice-1.0.0
-TYPEVERSIONPKG=testdevice_1_0_0
-TYPEMODULE=testdevice.so.1.0.0
-TYPE=TestDevice
+TYPEVERSION=Devicesim-1.0.0
+TYPEVERSIONPKG=devicesim_1_0_0
+TYPEMODULE=devicesim.so.1.0.0
+TYPE=Devicesim
 VERSION=1.0.0
 MODELDATA="\
-{Name: \"test1\",Organization: \"Open Networking Foundation\",Version: \"2018-02-20\"},\
+{Name: \"openconfig-interfaces\",Organization: \"OpenConfig working group\",Version: \"2017-07-14\"},\
+{Name: \"openconfig-openflow\",Organization: \"OpenConfig working group\",Version: \"2017-06-01\"},\
+{Name: \"openconfig-platform\", Organization: \"OpenConfig working group\",Version: \"2016-12-22\"},\
+{Name: \"openconfig-system\", Organization: \"OpenConfig working group\",Version: \"2017-07-06\"},\
 "
 
-YANGLIST="test1@2018-02-20.yang"
+YANGLIST="openconfig-interfaces@2017-07-14.yang \
+          openconfig-openflow@2017-06-01.yang \
+          openconfig-platform@2016-12-22.yang \
+          openconfig-system@2017-07-06.yang"
 
 mkdir -p $TYPEVERSION/$TYPEVERSIONPKG
 
@@ -48,6 +54,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/modelplugin/$TYPEVERSION/$TYPEVERSIONPKG"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 )
 
@@ -55,7 +62,7 @@ type modelplugin string
 
 const modeltype = "$TYPE"
 const modelversion = "$VERSION"
-const modulename = $TYPEMODULE
+const modulename = "$TYPEMODULE"
 
 var modelData = []*gnmi.ModelData{
       $MODELDATA	
@@ -84,6 +91,10 @@ func (m modelplugin) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.Va
 		return fmt.Errorf("unable to convert model in to $TYPEVERSIONPKG")
 	}
 	return device.Validate()
+}
+
+func (m modelplugin) Schema() (map[string]*yang.Entry, error) {
+	return $TYPEVERSIONPKG.UnzipSchema()
 }
 
 // ModelPlugin is the exported symbol that gives an entry point to this shared module

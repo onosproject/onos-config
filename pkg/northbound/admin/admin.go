@@ -17,6 +17,7 @@ package admin
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/onosproject/onos-config/pkg/manager"
@@ -58,16 +59,33 @@ func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (
 func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.AdminService_ListRegisteredModelsServer) error {
 	for _, model := range manager.GetManager().ModelRegistry {
 		name, version, md, plugin := model.ModelData()
+		schemaMap, err := model.Schema()
+		if err != nil {
+			return err
+		}
+		schemaEntries := make([]*proto.SchemaEntry, 0)
+		for key, yangEntry := range schemaMap {
+			schemaJSON, err := json.Marshal(yangEntry)
+			if err != nil {
+				return err
+			}
+			schemaEntry := proto.SchemaEntry{
+				SchemaPath: key,
+				SchemaJson: string(schemaJSON),
+			}
+			schemaEntries = append(schemaEntries, &schemaEntry)
+		}
 
 		// Build model message
 		msg := &proto.ModelInfo{
-			Name:      name,
-			Version:   version,
-			ModelData: md,
-			Module:    plugin,
+			Name:        name,
+			Version:     version,
+			ModelData:   md,
+			Module:      plugin,
+			SchemaEntry: schemaEntries,
 		}
 
-		err := stream.Send(msg)
+		err = stream.Send(msg)
 		if err != nil {
 			return err
 		}

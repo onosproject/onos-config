@@ -17,6 +17,7 @@ package manager
 import (
 	"fmt"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	log "k8s.io/klog"
 	"plugin"
@@ -27,6 +28,7 @@ type ModelPlugin interface {
 	ModelData() (string, string, []*gnmi.ModelData, string)
 	UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error)
 	Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error
+	Schema() (map[string]*yang.Entry, error)
 }
 
 // RegisterModelPlugin adds an external model plugin to the model registry at startup
