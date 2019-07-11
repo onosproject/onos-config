@@ -177,14 +177,14 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 	networkChanges := make(mapNetworkChanges)
 	updateResults := make([]*gnmi.UpdateResult, 0)
 	for target, updates := range targetUpdates {
-		//FIXME this is a sequential job, not paralelized
+		//FIXME this is a sequential job, not parallelized
 
 		// target is a device name with no version
 		changeID, configName, cont, err := setChange(target, version, updates, targetRemoves[target])
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
-			//TODO Rollback needs also to happen here.
-			return nil, nil, err
+			//Rolling back in case of setChange error.
+			return nil, nil, doRollback(networkChanges, manager.GetManager(), target, configName, err)
 		} else if err == nil && cont {
 			continue
 		}
@@ -279,6 +279,7 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 		rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
 	}
 	//Removing the failed target
+	//TODO remove this if we require gnmi transactionality on the devices.
 	changeID, errRoll := mgr.RollbackTargetConfig(string(name))
 	if errRoll != nil {
 		log.Errorf("Can't remove last entry for %s, on config %s, err %v", target, name, errRoll)
