@@ -190,14 +190,30 @@ func Test_GetNetworkConfig(t *testing.T) {
 }
 
 func Test_SetNetworkConfig(t *testing.T) {
-
+	// First verify the value beforehand
+	const origChangeHash = "B0jBLCNC+OAgqy/6PVL+/AcTn90="
 	mgrTest, changeStoreTest, configurationStoreTest := setUp()
+	assert.Equal(t, len(changeStoreTest), 1)
+	i := 0
+	keys := make([]string, len(changeStoreTest))
+	for k := range changeStoreTest {
+		keys[i] = k
+		i++
+	}
+	assert.Equal(t, keys[0], origChangeHash)
+	originalChange, ok := changeStoreTest[origChangeHash]
+	assert.Assert(t, ok)
+	assert.Equal(t, store.B64(originalChange.ID), origChangeHash)
+	assert.Equal(t, len(originalChange.Config), 3)
+	assert.Equal(t, originalChange.Config[2].Path, Test1Cont1ACont2ALeaf2A)
+	assert.Equal(t, originalChange.Config[2].Type, change.ValueTypeFLOAT)
+	assert.Equal(t, (*change.TypedFloat)(&originalChange.Config[2].TypedValue).Float32(), float32(ValueLeaf2B159))
 
 	updates := make(map[string]*change.TypedValue)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = (*change.TypedValue)(change.CreateTypedValueFloat(ValueLeaf2B159))
-	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
+	// Making change
+	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.CreateTypedValueFloat(ValueLeaf2B314))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
 	changeID, configName, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
@@ -210,22 +226,22 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	//Done in this order because ordering on a path base in the store.
 	updatedVals := changeStoreTest[store.B64(changeID)].Config
-	assert.Equal(t, len(updatedVals), 3)
+	assert.Equal(t, len(updatedVals), 2)
 
-	//Asserting deletion 2A
+	//Asserting change
 	assert.Equal(t, updatedVals[0].Path, Test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, (*change.TypedEmpty)(&updatedVals[0].TypedValue).String(), "")
-	assert.Equal(t, updatedVals[0].Remove, true)
+	assert.Equal(t, (*change.TypedFloat)(&updatedVals[0].TypedValue).Float32(), float32(ValueLeaf2B314))
+	assert.Equal(t, updatedVals[0].Remove, false)
 
-	//Asserting Removal
-	assert.Equal(t, updatedVals[1].Path, Test1Cont1ACont2ALeaf2B)
-	assert.Equal(t, (*change.TypedFloat)(&updatedVals[1].TypedValue).Float32(), float32(ValueLeaf2B159))
-	assert.Equal(t, updatedVals[1].Remove, false)
+	// Checking original is still alright
+	originalChange, ok = changeStoreTest[origChangeHash]
+	assert.Assert(t, ok)
+	assert.Equal(t, (*change.TypedFloat)(&originalChange.Config[2].TypedValue).Float32(), float32(ValueLeaf2B159))
 
 	//Asserting deletion of 2C
-	assert.Equal(t, updatedVals[2].Path, Test1Cont1ACont2ALeaf2C)
-	assert.Equal(t, (*change.TypedEmpty)(&updatedVals[2].TypedValue).String(), "")
-	assert.Equal(t, updatedVals[2].Remove, true)
+	assert.Equal(t, updatedVals[1].Path, Test1Cont1ACont2ALeaf2C)
+	assert.Equal(t, (*change.TypedEmpty)(&updatedVals[1].TypedValue).String(), "")
+	assert.Equal(t, updatedVals[1].Remove, true)
 
 }
 

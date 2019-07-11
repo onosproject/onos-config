@@ -78,7 +78,8 @@ func (b Configuration) ExtractFullConfig(changeStore map[string]*change.Change, 
 					}
 				}
 				if !alreadyExists {
-					consolidatedConfig = append(consolidatedConfig, &changeValue.ConfigValue)
+					copyCv := changeValue.ConfigValue
+					consolidatedConfig = append(consolidatedConfig, &copyCv)
 				}
 			}
 		}

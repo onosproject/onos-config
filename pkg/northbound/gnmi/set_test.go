@@ -16,6 +16,9 @@ package gnmi
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"strconv"
 	"testing"
@@ -32,8 +35,8 @@ func Test_doSingleSet(t *testing.T) {
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
 
-	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
-	typedValue := gnmi.TypedValue_StringVal{StringVal: "newValue2a"}
+	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
+	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
 	value := gnmi.TypedValue{Value: &typedValue}
 	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
@@ -73,7 +76,7 @@ func Test_doSingleSet(t *testing.T) {
 
 	assert.Equal(t, len(path.Elem), 3, "Expected 3 path elements")
 
-	assert.Equal(t, path.Elem[0].Name, "cont1a")
+	assert.Equal(t, path.Elem[0].Name, "test1:cont1a")
 	assert.Equal(t, path.Elem[1].Name, "cont2a")
 	assert.Equal(t, path.Elem[2].Name, "leaf2a")
 
@@ -83,6 +86,28 @@ func Test_doSingleSet(t *testing.T) {
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extension.Msg), "TestChange")
+
+	//Now check the store that the change was made correctly
+	assert.Equal(t, len(manager.GetManager().NetworkStore.Store), 2)
+	var nwChange store.NetworkConfiguration
+	for _, n := range manager.GetManager().NetworkStore.Store {
+		if n.Name == "TestChange" {
+			nwChange = n
+		}
+	}
+	assert.Equal(t, nwChange.User, "User1")
+	assert.Equal(t, len(nwChange.ConfigurationChanges), 1)
+
+	changeID, ok := nwChange.ConfigurationChanges["Device1-1.0.0"]
+	assert.Assert(t, ok)
+	assert.Equal(t, store.B64(changeID), "WfJRlDpr8wXmvVzlqNe3SzDAdWw=")
+
+	assert.Equal(t, len(manager.GetManager().ChangeStore.Store), 13)
+	newChange, ok := manager.GetManager().ChangeStore.Store[store.B64(changeID)]
+	assert.Assert(t, ok)
+	assert.Equal(t, len(newChange.Config), 1)
+	assert.Equal(t, newChange.Config[0].Path, "/test1:cont1a/cont2a/leaf2a")
+	assert.Equal(t, (*change.TypedUint64)(&newChange.Config[0].TypedValue).Uint(), uint(16))
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target

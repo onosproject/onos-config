@@ -331,10 +331,25 @@ func Test_device1_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
+	//Check the value of leaf2c before
+	change1, ok := changeStore["y65WFkPuZXZgRkQ+kUL/wpjXHj8="]
+	assert.Assert(t, ok)
+	assert.Equal(t, len(change1.Config), 11)
+	leaf2c := change1.Config[4]
+	assert.Equal(t, leaf2c.TypedValue.String(), "abc")
+
 	config := device1V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
 		log.Infof("Path %s = %s (%d)\n", c.Path, c.Value, c.Type)
 	}
+
+	// Check the value of leaf2c after - the value from the early change should be the same
+	// This is here because ExtractFullConfig had been inadvertently changing the value
+	change1, ok = changeStore["y65WFkPuZXZgRkQ+kUL/wpjXHj8="]
+	assert.Assert(t, ok)
+	assert.Equal(t, len(change1.Config), 11)
+	leaf2c = change1.Config[4]
+	assert.Equal(t, leaf2c.TypedValue.String(), "abc")
 
 	for i := 0; i < len(Config1Paths); i++ {
 		checkPathvalue(t, config, i,
