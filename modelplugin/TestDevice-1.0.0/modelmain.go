@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 )
 
@@ -31,7 +32,7 @@ const modelversion = "1.0.0"
 const modulename = "testdevice.so.1.0.0"
 
 var modelData = []*gnmi.ModelData{
-	{Name: "test1", Version: "2018-02-20", Organization: "Open Networking Foundation"},
+      {Name: "test1",Organization: "Open Networking Foundation",Version: "2018-02-20"},
 }
 
 func (m modelplugin) ModelData() (string, string, []*gnmi.ModelData, string) {
@@ -57,6 +58,10 @@ func (m modelplugin) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.Va
 		return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
 	}
 	return device.Validate()
+}
+
+func (m modelplugin) Schema() (map[string]*yang.Entry, error) {
+	return testdevice_1_0_0.UnzipSchema()
 }
 
 // ModelPlugin is the exported symbol that gives an entry point to this shared module

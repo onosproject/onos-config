@@ -50,8 +50,25 @@ module test1 {
         description "Read only leaf inside Container 2a";
       }
       leaf leaf2d {
+        type decimal64 {
+          fraction-digits 3;
+          range 0.001..2.000;
+        }
+        description "Another decimal inside Container 2a";
+      }
+      leaf-list leaf2e {
+        type int16 {
+          range -100..200;
+        }
+        description "leaf list inside Container 2a";
+      }
+      leaf leaf2f {
+        type binary {
+          length 20;
+        }
+      }
+      leaf leaf2g {
         type boolean;
-        config false;
         description "Boolean leaf inside Container 2a";
       }
     }
@@ -131,6 +148,21 @@ module test1 {
       }
       units mm;
       description "A state attribute";
+    }
+
+    container cont2c {
+      description "This is a new container added in the 2019 version";
+
+      leaf leaf3a {
+        type boolean;
+        description "Another boolean variable";
+      }
+      leaf leaf3b {
+        type string {
+            length 5..10;
+        }
+        description "Another string variable";
+      }
     }
   }
 }

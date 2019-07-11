@@ -36,6 +36,18 @@ folder of this project, and an example script
 [ModelGenerator.sh](../modelplugin/ModelGenerator.sh) is available for creating
 new plugins.
 
+### ModelPlugin Interface
+The model plugin must implement the **ModelPlugin** interface. This will allow
+it to be entered in to the Model Registry.
+```go
+type ModelPlugin interface {
+	ModelData() (string, string, []*gnmi.ModelData, string)
+	UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error)
+	Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error
+	Schema() (map[string]*yang.Entry, error)
+}
+``` 
+
 ### Create your own Model Plugin using script
 1) Change directory in to onos-config/modelplugins
 1) Copy ModelGenerator.sh to a new file
@@ -133,18 +145,28 @@ onos models list
 which gives an output like:
 ```bash
 > onos models list
-TestDevice: 1.0.0 from testdevice.so.1.0.0 containing YANGs:
-	test1 2018-02-20 Open Networking Foundation
+TestDevice: 1.0.0 from testdevice.so.1.0.0 containing
+YANGS:
+	test1	2018-02-20	Open Networking Foundation
+Containers & Lists:
+	Device
+	Test1_Cont1A
+	Test1_Cont1A_Cont2A
+	Test1_Cont1A_List2A
+	Test1_Cont1BState
+	Test1_Cont1BState_List2B
 
-TestDevice: 2.0.0 from testdevice.so.2.0.0 containing YANGs:
-	test1 2019-06-10 Open Networking Foundation
-
-Devicesim: 1.0.0 from devicesim.so.1.0.0 containing YANGs:
-	openconfig-interfaces 2017-07-14 OpenConfig working group
-	openconfig-openflow 2017-06-01 OpenConfig working group
-	openconfig-platform 2016-12-22 OpenConfig working group
-	openconfig-system 2017-07-06 OpenConfig working group
-
+TestDevice: 2.0.0 from testdevice.so.2.0.0 containing
+YANGS:
+	test1	2019-06-10	Open Networking Foundation
+Containers & Lists:
+	Test1_Cont1A_Cont2A
+	Test1_Cont1BState
+	Test1_Cont1BState_Cont2C
+	Test1_Cont1BState_List2B
+	Device
+	Test1_Cont1A
+	Test1_Cont1A_List2A
 ```
 
 >In a distributed installation the ModelPlugin will have to be loaded

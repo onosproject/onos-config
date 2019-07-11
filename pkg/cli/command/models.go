@@ -19,7 +19,19 @@ import (
 	admin "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/spf13/cobra"
 	"io"
+	"os"
+	"text/template"
 )
+
+const modellistTemplate = "{{.Name}}: {{.Version}} from {{.Module}} containing\n" +
+	"YANGS:\n" +
+	"{{range .ModelData}}" +
+	"\t{{.Name}}\t{{.Version}}\t{{.Organization}}\n" +
+	"{{end}}" +
+	"Containers & Lists:\n" +
+	"{{range .SchemaEntry}}" +
+	"\t{{.SchemaPath}}\n" +
+	"{{end}}"
 
 func newModelsCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -42,6 +54,8 @@ func newListPluginsCommand() *cobra.Command {
 }
 
 func runListPluginsCommand(cmd *cobra.Command, args []string) {
+	tmplModelList, _ := template.New("change").Parse(modellistTemplate)
+
 	client := admin.NewAdminServiceClient(getConnection(cmd))
 
 	stream, err := client.ListRegisteredModels(context.Background(), &admin.ListModelsRequest{})
@@ -60,10 +74,7 @@ func runListPluginsCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
-			Output("%s: %s from %s containing YANGs:\n", in.Name, in.Version, in.Module)
-			for _, m := range in.ModelData {
-				Output("\t%s %s %s\n", m.Name, m.Version, m.Organization)
-			}
+			tmplModelList.Execute(os.Stdout, in)
 			Output("\n")
 		}
 	}()

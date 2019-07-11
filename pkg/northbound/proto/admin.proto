@@ -45,12 +45,18 @@ message ModelInfo {
     string version = 2;
     repeated gnmi.ModelData modelData = 3;
     string module = 4;
+    repeated SchemaEntry schemaEntry = 5;
 }
 
 // RegisterRequest carries data for registering a YANG model.
 message RegisterRequest {
     // Full path and filename of a shared object library as a model plugin
     string soFile = 1;
+}
+
+message SchemaEntry {
+    string schemaPath = 1;
+    string schemaJson = 2;
 }
 
 // RegisterResponse carries status of YANG model registration.

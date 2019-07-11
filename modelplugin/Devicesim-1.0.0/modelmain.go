@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim_1_0_0"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 )
 
@@ -57,6 +58,10 @@ func (m modelplugin) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.Va
 		return fmt.Errorf("unable to convert model in to devicesim_1_0_0")
 	}
 	return device.Validate()
+}
+
+func (m modelplugin) Schema() (map[string]*yang.Entry, error) {
+	return devicesim_1_0_0.UnzipSchema()
 }
 
 // ModelPlugin is the exported symbol that gives an entry point to this shared module
