@@ -33,12 +33,12 @@ func (m *Manager) RollbackTargetConfig(configname string) (change.ID, error) {
 	if err != nil {
 		return nil, err
 	}
-	configChange, err := m.computeAndStoreChange(updates, deletes)
+	changeID, err := m.computeAndStoreChange(updates, deletes)
 	if err != nil {
 		return id, err
 	}
 	m.ChangesChannel <- events.CreateConfigEvent(targetID,
-		configChange.ID, true)
+		changeID, true)
 	return id, listenForDeviceResponse(m, targetID)
 }
 

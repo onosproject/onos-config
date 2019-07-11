@@ -215,7 +215,7 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse) {
 }
 
 func (m *Manager) computeAndStoreChange(updates map[string]*change.TypedValue,
-	deletes []string) (*change.Change, error) {
+	deletes []string) (change.ID, error) {
 	var newChanges = make([]*change.Value, 0)
 	//updates
 	for path, value := range updates {
@@ -238,5 +238,5 @@ func (m *Manager) computeAndStoreChange(updates map[string]*change.TypedValue,
 		m.ChangeStore.Store[store.B64(configChange.ID)] = configChange
 		log.Info("Added change ", store.B64(configChange.ID), " to ChangeStore (in memory)")
 	}
-	return configChange, nil
+	return configChange.ID, nil
 }

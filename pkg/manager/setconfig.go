@@ -66,21 +66,21 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 		}
 	}
 
-	configChange, err := m.computeAndStoreChange(updates, deletes)
+	changeID, err := m.computeAndStoreChange(updates, deletes)
 	if err != nil {
 		return nil, configName, err
 	}
 
 	// If the last change applied to deviceConfig is the same as this one then don't apply it again
 	if len(deviceConfig.Changes) > 0 &&
-		store.B64(deviceConfig.Changes[len(deviceConfig.Changes)-1]) == store.B64(configChange.ID) {
-		log.Info("Change ", store.B64(configChange.ID),
+		store.B64(deviceConfig.Changes[len(deviceConfig.Changes)-1]) == store.B64(changeID) {
+		log.Info("Change ", store.B64(changeID),
 			"has already been applied to", configName, "Ignoring")
-		return configChange.ID, configName, fmt.Errorf("%s %s",
-			SetConfigAlreadyApplied, store.B64(configChange.ID))
+		return changeID, configName, fmt.Errorf("%s %s",
+			SetConfigAlreadyApplied, store.B64(changeID))
 	}
 	//FIXME this needs to hold off until the device replies with an ok message for the change.
-	deviceConfig.Changes = append(deviceConfig.Changes, configChange.ID)
+	deviceConfig.Changes = append(deviceConfig.Changes, changeID)
 	deviceConfig.Updated = time.Now()
 	m.ConfigStore.Store[configName] = deviceConfig
 
@@ -104,7 +104,7 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 				return nil, configName, err
 			}
 			log.Info("Configuration is Valid according to model",
-				modelName, "after adding change", store.B64(configChange.ID))
+				modelName, "after adding change", store.B64(changeID))
 		}
 	}
 
@@ -112,7 +112,7 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 	//  2) Do a precheck that the device is reachable
 	//  3) Check that the caller is authorized to make the change
 	m.ChangesChannel <- events.CreateConfigEvent(deviceConfig.Device,
-		configChange.ID, true)
+		changeID, true)
 
-	return configChange.ID, configName, nil
+	return changeID, configName, nil
 }
