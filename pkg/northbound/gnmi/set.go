@@ -281,7 +281,7 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 	//Removing the failed target but not computing the delta singe gNMI ensures device transactionality
 	id, err := mgr.ConfigStore.RemoveLastChangeEntry(store.ConfigName(name))
 	if err != nil {
-		return fmt.Errorf(fmt.Sprintf("Can't remove last entry ( $s) for %s",store.B64(id), name), err)
+		return fmt.Errorf(fmt.Sprintf("Can't remove last entry ( %s ) for %s", store.B64(id), name), err)
 	}
 	return fmt.Errorf("Issue in setting config %s, rolling back changes %s",
 		errResp.Error(), rolledbackIDs)
