@@ -37,7 +37,7 @@ folder of this project, and an example script
 new plugins.
 
 ### ModelPlugin Interface
-The a model plugin must implement the **ModelPlugin** interface. This will allow
+The model plugin must implement the **ModelPlugin** interface. This will allow
 it to be entered in to the Model Registry.
 ```go
 type ModelPlugin interface {
