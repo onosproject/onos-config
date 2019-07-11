@@ -177,14 +177,14 @@ func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
 	networkChanges := make(mapNetworkChanges)
 	updateResults := make([]*gnmi.UpdateResult, 0)
 	for target, updates := range targetUpdates {
-		//FIXME this is a sequential job, not paralelized
+		//FIXME this is a sequential job, not parallelized
 
 		// target is a device name with no version
 		changeID, configName, cont, err := setChange(target, version, updates, targetRemoves[target])
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
-			//TODO Rollback needs also to happen here.
-			return nil, nil, err
+			//Rolling back in case of setChange error.
+			return nil, nil, doRollback(networkChanges, manager.GetManager(), target, configName, err)
 		} else if err == nil && cont {
 			continue
 		}
@@ -278,12 +278,11 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 		log.Infof("Rolled back %s on %s", store.B64(changeID), configName)
 		rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
 	}
-	//Removing the failed target
-	changeID, errRoll := mgr.RollbackTargetConfig(string(name))
-	if errRoll != nil {
-		log.Errorf("Can't remove last entry for %s, on config %s, err %v", target, name, errRoll)
+	//Removing the failed target but not computing the delta singe gNMI ensures device transactionality
+	id, err := mgr.ConfigStore.RemoveLastChangeEntry(store.ConfigName(name))
+	if err != nil {
+		return fmt.Errorf(fmt.Sprintf("Can't remove last entry ( %s ) for %s", store.B64(id), name), err)
 	}
-	rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
 	return fmt.Errorf("Issue in setting config %s, rolling back changes %s",
 		errResp.Error(), rolledbackIDs)
 }
@@ -314,10 +313,10 @@ func setChange(target string, version string, targetUpdates map[string]*change.T
 	if err != nil {
 		if strings.Contains(err.Error(), manager.SetConfigAlreadyApplied) {
 			log.Warning(manager.SetConfigAlreadyApplied, "Change ", store.B64(changeID), " to ", configName)
-			return nil, "", true, nil
+			return nil, configName, true, nil
 		}
 		log.Error("Error in setting config: ", changeID, " for target ", configName, err)
-		return nil, "", false, err
+		return nil, configName, false, err
 	}
 	return changeID, configName, false, nil
 }
