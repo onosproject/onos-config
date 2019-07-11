@@ -22,8 +22,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	log "k8s.io/klog"
 	"strings"
+	"time"
 )
 
 var mgr Manager
@@ -210,4 +212,31 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse) {
 		}
 		//TODO handle device connection errors accordingly
 	}
+}
+
+func (m *Manager) computeAndStoreChange(updates map[string]*change.TypedValue,
+	deletes []string) (*change.Change, error) {
+	var newChanges = make([]*change.Value, 0)
+	//updates
+	for path, value := range updates {
+		changeValue, _ := change.CreateChangeValue(path, value, false)
+		newChanges = append(newChanges, changeValue)
+	}
+	//deletes
+	for _, path := range deletes {
+		changeValue, _ := change.CreateChangeValue(path, change.CreateTypedValueEmpty(), true)
+		newChanges = append(newChanges, changeValue)
+	}
+	configChange, err := change.CreateChange(newChanges,
+		fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339)))
+	if err != nil {
+		return nil, err
+	}
+	if m.ChangeStore.Store[store.B64(configChange.ID)] != nil {
+		log.Info("Change ID = ", store.B64(configChange.ID), " already exists - not overwriting")
+	} else {
+		m.ChangeStore.Store[store.B64(configChange.ID)] = configChange
+		log.Info("Added change ", store.B64(configChange.ID), " to ChangeStore (in memory)")
+	}
+	return configChange, nil
 }

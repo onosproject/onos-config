@@ -66,30 +66,9 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 		}
 	}
 
-	var newChanges = make([]*change.Value, 0)
-	//updates
-	for path, value := range updates {
-		changeValue, _ := change.CreateChangeValue(path, value, false)
-		newChanges = append(newChanges, changeValue)
-	}
-
-	//deletes
-	for _, path := range deletes {
-		changeValue, _ := change.CreateChangeValue(path, change.CreateTypedValueEmpty(), true)
-		newChanges = append(newChanges, changeValue)
-	}
-
-	configChange, err := change.CreateChange(newChanges,
-		fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339)))
+	configChange, err := m.computeAndStoreChange(updates, deletes)
 	if err != nil {
 		return nil, configName, err
-	}
-
-	if m.ChangeStore.Store[store.B64(configChange.ID)] != nil {
-		log.Info("Change ID = ", store.B64(configChange.ID), " already exists - not overwriting")
-	} else {
-		m.ChangeStore.Store[store.B64(configChange.ID)] = configChange
-		log.Info("Added change ", store.B64(configChange.ID), " to ChangeStore (in memory)")
 	}
 
 	// If the last change applied to deviceConfig is the same as this one then don't apply it again
