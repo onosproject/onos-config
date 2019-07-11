@@ -53,11 +53,15 @@ func (s Server) AddOrUpdateDevice(c context.Context, d *proto.DeviceInfo) (*prot
 	configStore := manager.GetManager().ConfigStore
 	name := store.ConfigName(fmt.Sprintf("%s-%s", d.Id, d.Version))
 	if _, ok := configStore.Store[name]; !ok {
+		if d.Devicetype == "" {
+			return nil, fmt.Errorf("devicetype must be specified (creating "+
+				"a new config as a side effect of creating the new device %s)", name)
+		}
 		configStore.Store[name] = store.Configuration{
 			Name:    name,
 			Device:  d.Id,
 			Version: d.Version,
-			Type:    "Devicesim",
+			Type:    d.Devicetype,
 			Created: time.Now(),
 			Updated: time.Now(),
 			Changes: []change.ID{},

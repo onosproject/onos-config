@@ -103,7 +103,7 @@ To add a new device, specify the device information protobuf encoding as the val
 For example:
 
 ```bash
-> onos devices add "id: 'device-4', address: 'localhost:10164' version: '1.0.0'"
+> onos devices add "id: 'device-4', address: 'localhost:10164' version: '1.0.0', devicetype: 'Devicesim'"
 Added device device-4
 ```
 
