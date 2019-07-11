@@ -23,7 +23,7 @@ import (
 
 const (
 	tzValue = "Europe/Dublin"
-	tzPath  = "/system/clock/config/timezone-name"
+	tzPath  = "/openconfig-system:system/clock/config/timezone-name"
 )
 
 func makeDevicePath(device string, path string) []DevicePath {
@@ -42,11 +42,6 @@ func TestSinglePath(t *testing.T) {
 	c, err := env.NewGnmiClient(MakeContext(), "")
 	assert.NoError(t, err)
 	assert.True(t, c != nil, "Fetching client returned nil")
-
-	// First lookup should return an error - the path has not been given a value yet
-	valueBefore, findErrorBefore := GNMIGet(MakeContext(), c, makeDevicePath(device, tzPath))
-	assert.NoError(t, findErrorBefore)
-	assert.True(t, valueBefore[0].value == "", "Initial query did not return an empty string\n")
 
 	// Set a value using gNMI client
 	setPath := makeDevicePath(device, tzPath)
@@ -73,5 +68,4 @@ func TestSinglePath(t *testing.T) {
 
 func init() {
 	Registry.RegisterTest("single-path", TestSinglePath, []*runner.TestSuite{AllTests,IntegrationTests})
-
 }
