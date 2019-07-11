@@ -45,6 +45,11 @@ func (s Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_Get
 			continue
 		}
 
+		errInvalid := c.IsValid()
+		if errInvalid != nil {
+			return errInvalid
+		}
+
 		changeValues := make([]*proto.ChangeValue, 0)
 
 		for _, cv := range c.Config {

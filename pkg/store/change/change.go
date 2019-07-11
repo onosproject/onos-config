@@ -66,8 +66,8 @@ func (c Change) IsValid() error {
 	if b64(hash) == b64(c.ID) {
 		return nil
 	}
-	return fmt.Errorf("Change '%s': Calculated hash '%s' does not match",
-		b64(c.ID), b64(hash))
+	return fmt.Errorf("Change '%s': Calculated hash '%s' does not match. Current: %s",
+		b64(c.ID), b64(hash), jsonstr)
 }
 
 // CreateChange creates a Change object from ChangeValues
