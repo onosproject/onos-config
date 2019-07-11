@@ -16,9 +16,12 @@ package manager
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	log "k8s.io/klog"
+	"time"
 )
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target. Only the last one is
@@ -30,9 +33,13 @@ func (m *Manager) RollbackTargetConfig(configname string) (change.ID, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, _, errSet := m.SetNetworkConfig(store.ConfigName(configname), updates, deletes)
-	//TODO if error we might want to take further action
-	return id, errSet
+	changeID, err := m.computeAndStoreChange(updates, deletes)
+	if err != nil {
+		return id, err
+	}
+	m.ChangesChannel <- events.CreateConfigEvent(targetID,
+		changeID, true)
+	return id, listenForDeviceResponse(m, targetID)
 }
 
 func computeRollback(m *Manager, target string, configname string) (change.ID, map[string]*change.TypedValue, []string, error) {
@@ -61,4 +68,31 @@ func computeRollback(m *Manager, target string, configname string) (change.ID, m
 		updates[changeVal.Path] = &changeVal.TypedValue
 	}
 	return id, updates, deletes, nil
+}
+
+func listenForDeviceResponse(mgr *Manager, target string) error {
+	respChan, ok := mgr.Dispatcher.GetResponseListener(topocache.ID(target))
+	if !ok {
+		log.Infof("Device %s not properly registered, not waiting for southbound confirmation", target)
+		return nil
+	}
+	//blocking until we receive something from the channel or for 5 seconds, whatever comes first.
+	select {
+	case response := <-respChan:
+		switch eventType := response.EventType(); eventType {
+		case events.EventTypeAchievedSetConfig:
+			log.Infof("Rollback succeeded on %s ", target)
+			return nil
+		case events.EventTypeErrorSetConfig:
+			//TODO if the device gives an error during this rollback we currently do nothing
+			return fmt.Errorf("Rollback thrown error %s, system is in inconsistent state for device %s ",
+				response.Error().Error(), target)
+
+		default:
+			return fmt.Errorf("undhandled Error Type")
+
+		}
+	case <-time.After(5 * time.Second):
+		return fmt.Errorf("Timeout on waiting for device reply %s", target)
+	}
 }
