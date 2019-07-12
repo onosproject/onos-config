@@ -381,7 +381,7 @@ func assertSyncResponse(responsesChan chan *gnmi.SubscribeResponse, t *testing.T
 	case response := <-responsesChan:
 		log.Info("response ", response)
 		assert.Equal(t, response.GetSyncResponse(), true, "Sync should be true")
-	case <-time.After(50 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		log.Error("Expected Sync Response")
 		t.FailNow()
 	}
@@ -404,7 +404,7 @@ func assertUpdateResponse(t *testing.T, responsesChan chan *gnmi.SubscribeRespon
 		assert.Equal(t, pathResponse.Elem[1].Name, path2)
 		assert.Equal(t, pathResponse.Elem[2].Name, path3)
 		assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetUintVal(), uint64(value))
-	case <-time.After(50 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		log.Error("Expected Update Response")
 		t.FailNow()
 	}
@@ -428,7 +428,7 @@ func assertDeleteResponse(t *testing.T, responsesChan chan *gnmi.SubscribeRespon
 		assert.Equal(t, pathResponse.Elem[0].Name, path1)
 		assert.Equal(t, pathResponse.Elem[1].Name, path2)
 		assert.Equal(t, pathResponse.Elem[2].Name, path3)
-	case <-time.After(50 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		log.Error("Expected Update Response")
 		t.FailNow()
 	}
