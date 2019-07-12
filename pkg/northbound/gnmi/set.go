@@ -244,7 +244,7 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 	mgr := manager.GetManager()
 	respChan, ok := mgr.Dispatcher.GetResponseListener(topocache.ID(target))
 	if !ok {
-		log.Infof("Device %s not properly registered, not waiting for southbound confirmation", target)
+		log.Infof("Device %s not properly registered, not waiting for southbound confirmation ", target)
 		return nil
 	}
 	//blocking until we receive something from the channel or for 5 seconds, whatever comes first.
@@ -252,7 +252,7 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 	case response := <-respChan:
 		switch eventType := response.EventType(); eventType {
 		case events.EventTypeAchievedSetConfig:
-			log.Info("Set is properly configured", response.ChangeID())
+			log.Info("Set is properly configured ", response.ChangeID())
 			return nil
 		case events.EventTypeErrorSetConfig:
 			//Removing previously applied config

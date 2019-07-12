@@ -31,6 +31,7 @@ func (m *Manager) RollbackTargetConfig(configname string) (change.ID, error) {
 	log.Infof("Rolling back last change on config %s for target %s", configname, targetID)
 	id, updates, deletes, err := computeRollback(m, targetID, configname)
 	if err != nil {
+		log.Errorf("Error on rollback: %s", err.Error())
 		return nil, err
 	}
 	changeID, err := m.computeAndStoreChange(updates, deletes)
@@ -45,7 +46,8 @@ func (m *Manager) RollbackTargetConfig(configname string) (change.ID, error) {
 func computeRollback(m *Manager, target string, configname string) (change.ID, map[string]*change.TypedValue, []string, error) {
 	id, err := m.ConfigStore.RemoveLastChangeEntry(store.ConfigName(configname))
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf(fmt.Sprintf("Can't remove last entry for %s", configname), err)
+		return nil, nil, nil, fmt.Errorf("Can't remove last entry on target %s in config %s, %s",
+			target, configname, err.Error())
 	}
 	previousValues := make([]*change.ConfigValue, 0)
 	deletes := make([]string, 0)

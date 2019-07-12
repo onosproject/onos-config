@@ -128,14 +128,13 @@ func CreateConfiguration(deviceName string, version string, deviceType string,
 	configName := deviceName + "-" + version
 
 	//Look for duplicates in the changeId - do not sort
-	changesStrings := make([]string, len(changes))
-	for idx, c := range changes {
-		prevCh := strings.Join(changesStrings, ",")
-		if strings.Contains(prevCh, B64(c)) {
-			return nil, fmt.Errorf("Duplicate change ID '%s' in config",
-				c)
+	var previousChange string
+	for _, c := range changes {
+		if previousChange == B64(c) {
+			return nil, fmt.Errorf("Duplicate last change ID '%s' in config", B64(c))
+
 		}
-		changesStrings[idx] = B64(c)
+		previousChange = B64(c)
 	}
 
 	deviceConfig := Configuration{
