@@ -56,7 +56,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	for _, u := range req.GetUpdate() {
 		target := u.Path.GetTarget()
 		var err error
-		targetUpdates[target], err = s.doUpdateOrReplace(u, targetUpdates)
+		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
 		if err != nil {
 			log.Warning("Error in update", err)
 			return nil, err
@@ -67,7 +67,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	for _, u := range req.GetReplace() {
 		target := u.Path.GetTarget()
 		var err error
-		targetUpdates[target], err = s.doUpdateOrReplace(u, targetUpdates)
+		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
 		if err != nil {
 			log.Warning("Error in replace", err)
 			return nil, err
@@ -92,8 +92,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
 		}
 	}
+	errRo := s.checkForReadOnly(deviceType, version, targetUpdates, targetRemoves)
+	if errRo != nil {
+		return nil, status.Error(codes.InvalidArgument, errRo.Error())
+	}
+
 	updateResults, networkChanges, err :=
-		s.buildUpdateResults(targetUpdates, targetRemoves, version, deviceType)
+		s.executeSetConfig(targetUpdates, targetRemoves, version, deviceType)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -112,7 +117,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	for _, nwCfg := range manager.GetManager().NetworkStore.Store {
 		if nwCfg.Name == netcfgchangename {
 			return nil, status.Error(codes.InvalidArgument, fmt.Errorf(
-				"Name %s is already used for a Network Configuration", netcfgchangename).Error())
+				"name %s is already used for a Network Configuration", netcfgchangename).Error())
 		}
 	}
 
@@ -141,7 +146,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	return setResponse, nil
 }
 
-func (s *Server) doUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (map[string]*change.TypedValue, error) {
+func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (map[string]*change.TypedValue, error) {
 	target := u.Path.GetTarget()
 	updates, ok := targetUpdates[target]
 	if !ok {
@@ -171,7 +176,64 @@ func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string
 
 }
 
-func (s *Server) buildUpdateResults(targetUpdates mapTargetUpdates,
+func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdates mapTargetUpdates,
+	targetRemoves mapTargetRemoves) error {
+	configs := manager.GetManager().ConfigStore.Store
+
+	// Iterate through all the updates - many may use the same target - here we
+	// create a map of the models for all of the targets
+	targetModelTypes := make(map[string][]string)
+	for t := range targetUpdates { // map - just need the key
+		if _, ok := targetModelTypes[t]; ok {
+			continue
+		}
+		for _, config := range configs {
+			if config.Device == t {
+				m, ok := manager.GetManager().ModelReadOnlyPaths[manager.ToModelName(config.Type, config.Version)]
+				if !ok {
+					log.Warningf("Cannot check for Read Only paths for %s %s because "+
+						"Model Plugin not available - continuing", config.Type, config.Version)
+					return nil
+				}
+				targetModelTypes[t] = m
+			}
+		}
+	}
+	for t := range targetRemoves { // map - just need the key
+		if _, ok := targetModelTypes[t]; ok {
+			continue
+		}
+		for _, config := range configs {
+			if config.Device == t {
+				m, ok := manager.GetManager().ModelReadOnlyPaths[manager.ToModelName(config.Type, config.Version)]
+				if !ok {
+					log.Warningf("Cannot check for Read Only paths for %s %s because "+
+						"Model Plugin not available - continuing", config.Type, config.Version)
+					return nil
+				}
+				targetModelTypes[t] = m
+			}
+		}
+	}
+
+	for t, update := range targetUpdates {
+		model := targetModelTypes[t]
+		for path := range update { // map - just need the key
+			for _, ropath := range model {
+				// Search through for list indices and replace with generic
+
+				modelPath := manager.RemovePathIndices(path)
+				if modelPath == ropath {
+					return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 	targetRemoves mapTargetRemoves, version string, deviceType string) ([]*gnmi.UpdateResult, mapNetworkChanges, error) {
 
 	networkChanges := make(mapNetworkChanges)

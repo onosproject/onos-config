@@ -42,6 +42,7 @@ type Manager struct {
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              dispatcher.Dispatcher
 	ModelRegistry           map[string]ModelPlugin
+	ModelReadOnlyPaths      map[string][]string
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -59,6 +60,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
 		ModelRegistry:           make(map[string]ModelPlugin),
+		ModelReadOnlyPaths:      make(map[string][]string),
 	}
 
 	changeIds := make([]string, 0)

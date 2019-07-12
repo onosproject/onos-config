@@ -60,8 +60,7 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 				configName, conv(similarDevices))
 		} else {
 			return nil, configName, fmt.Errorf("no configuration found matching '%s'."+
-				"Please specify version and device type in extensions 101 and 102 "+
-				"and model data in extensions 150-200 in name@ver@org format", configName)
+				"Please specify version and device type in extensions 101 and 102", configName)
 			// FIXME add in handler for actually dealing with getting version and type and modeldata
 		}
 	}
