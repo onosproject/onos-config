@@ -111,9 +111,12 @@ SetRequest() with the 100 extension at the end of the -proto section like:
 > The corresponding -get for this require using the -proto
 > "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
 
-> Currently (May '19) no checking of the contents is enforced when doing a Set operation
-> and the config is forwarded down to the southbound layer only if a device is registered
-> in the topocache (currently in the deviceStore)
+> Currently (Jul '19) checking of the contents done only when a Model Plugin is
+> loaded for the device type. 2 checks are done 1) that a attempt is not being
+> made to change a readonly attribute and 2) that valid data types and values are
+> being used.
+> The config is only forwarded down to the southbound layer only if the config is
+> correct and the device is registered in the topocache (currently in the deviceStore)
 
 If the `target` device is not currently known to `onos-config` the system will store the configuration internally and apply
 it to the `target` device when/if it becomes available.  
