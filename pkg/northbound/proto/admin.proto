@@ -111,7 +111,7 @@ message DeviceInfo {
     bool plain = 10;
     bool insecure = 11;
     int64 timeout = 12;
-    string devicetype = 13;
+    string devicetype = 13; //Used only for creating device - not populated on read - use configuration instead
 }
 
 // DeviceResponse carries the status of the add/remove operation.

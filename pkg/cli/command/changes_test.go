@@ -23,14 +23,14 @@ func Test_wrapline_over(t *testing.T) {
 	const test1 = "abcdefghijklmnopqrstuvwxyz"
 
 	test1Wrapped := wrapPath(test1, 20, 1)
-	assert.Equal(t, test1Wrapped, "abcdefghijklmnopqrst\n\t                uvwxyz")
+	assert.Equal(t, test1Wrapped, "abcdefghijklmnopqrst\n\t  uvwxyz              ")
 }
 
 func Test_wrapline_under(t *testing.T) {
 	const test1 = "abcdef"
 
 	test1Wrapped := wrapPath(test1, 20, 1)
-	assert.Equal(t, test1Wrapped, "              abcdef")
+	assert.Equal(t, test1Wrapped, "abcdef              ")
 }
 
 func Test_wrapline_exact(t *testing.T) {

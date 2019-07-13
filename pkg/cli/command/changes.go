@@ -26,17 +26,22 @@ import (
 	"text/template"
 )
 
-const changeTemplate = "Change: {{.Id}} ({{.Desc}})\n" +
-	"\t{{printf \"|%50s|%40s|%7s|\" \"PATH\" \"VALUE\" \"REMOVED\"}}\n" +
+const changeTemplate = "CHANGE: {{.Id}} ({{.Desc}})\n" +
+	"\t{{printf \"|%-50s|%-40s|%-7s|\" \"PATH\" \"VALUE\" \"REMOVED\"}}\n" +
 	"{{range .Changevalues}}" +
-	"\t{{wrappath .Path 50 1| printf \"|%50s|\"}}{{nativeType . | printf \"(%s) %s\" .Valuetype | printf \"%40s|\" }}{{printf \"%7t|\" .Removed}}\n" +
+	"\t{{wrappath .Path 50 1| printf \"|%-50s|\"}}{{nativeType . | printf \"(%s) %s\" .Valuetype | printf \"%-40s|\" }}{{printf \"%-7t|\" .Removed}}\n" +
 	"{{end}}\n"
+
+var funcMapChanges = template.FuncMap{
+	"wrappath":   wrapPath,
+	"nativeType": nativeType,
+}
 
 func newChangesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "changes [<changeId>]",
 		Short: "Lists records of configuration changes",
-		Args:  cobra.MaximumNArgs(0),
+		Args:  cobra.MaximumNArgs(1),
 		Run:   runChangesCommand,
 	}
 	return cmd
@@ -49,12 +54,7 @@ func runChangesCommand(cmd *cobra.Command, args []string) {
 		changesReq.ChangeIds = append(changesReq.ChangeIds, args[0])
 	}
 
-	funcMap := template.FuncMap{
-		"wrappath":   wrapPath,
-		"nativeType": nativeType,
-	}
-
-	tmplChanges, _ := template.New("change").Funcs(funcMap).Parse(changeTemplate)
+	tmplChanges, _ := template.New("change").Funcs(funcMapChanges).Parse(changeTemplate)
 
 	stream, err := client.GetChanges(context.Background(), changesReq)
 	if err != nil {
@@ -73,7 +73,6 @@ func runChangesCommand(cmd *cobra.Command, args []string) {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
 			tmplChanges.Execute(os.Stdout, in)
-			Output("\n")
 		}
 	}()
 	err = stream.CloseSend()
@@ -98,7 +97,7 @@ func wrapPath(path string, lineLen int, tabs int) string {
 		wrapped[i] = path[i*lineLen : i*lineLen+lineLen]
 	}
 	if over > 0 {
-		overFmt := fmt.Sprintf("%s%ds", "%", lineLen)
+		overFmt := fmt.Sprintf("%s-%ds", "%", lineLen)
 		wrapped[linesC] = fmt.Sprintf(overFmt, path[linesC*lineLen:])
 	}
 

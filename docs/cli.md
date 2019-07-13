@@ -115,10 +115,23 @@ Removed device device-2
 
 If you do not specify any options, the command will list all the devices currently in the inventory:
 ```bash
-> onos devices list
-device-1: localhost-1 (1.0.0)
-device-3: localhost-3 (1.0.0)
-device-4: localhost-4 (1.0.0)
+> onos devices list -v
+NAME			ADDRESS			VERSION
+localhost-3             localhost:10163         1.0.0
+	USER		PASSWORD	TIMEOUT	PLAIN	INSECURE
+	                                5       false	false
+
+stratum-sim-1           localhost:50001         1.0.0
+	USER		PASSWORD	TIMEOUT	PLAIN	INSECURE
+	                                5       true	false
+
+localhost-1             localhost:10161         1.0.0
+	USER		PASSWORD	TIMEOUT	PLAIN	INSECURE
+	devicesim       notused         5       false	false
+
+localhost-2             localhost:10162         1.0.0
+	USER		PASSWORD	TIMEOUT	PLAIN	INSECURE
+	                                5       false	false
 ```
 
 ### Listing and Loading model plugins
@@ -152,6 +165,7 @@ from the running onos-config process. Please note that these tools are intended 
 diagnostics and should not be relied upon for programmatic purposes as they are not subject
 to any backward compatibility guarantees.
 
+### Changes
 For example, run the following to list all changes submitted through the northbound gNMI 
 as they are tracked by the system broken-up into device specific batches:
 ```bash
@@ -160,7 +174,7 @@ as they are tracked by the system broken-up into device specific batches:
 ```
 > For a specific change specify the optional `changeId` argument.
 
-
+### Configs
 To get details from the Configuration store use
 ```bash
 > onos configs
@@ -168,11 +182,23 @@ To get details from the Configuration store use
 ```
 > For the configuration for a specific device use the optional `deviceId` argument.
 
-
-To get the aggregate configuration of a device from the store use
+### Devicetree
+To get the aggregate configuration of a device in a hierarchical JSON structure from the store use:
 ```bash
-> onos devicetree localhost-1
-...
+> onos devicetree --layer 0 Device1
+DEVICE			CONFIGURATION		TYPE		VERSION
+Device1                 Device1-1.0.0           TestDevice      1.0.0
+CHANGE:	2uUbeEV4i3ADedjeORmgQt6CVDM=
+CHANGE:	50XCdm605t2/jZoPePGiUvboQzg=
+CHANGE:	MY8s8Opw+xjbcARIMzIpUIzeXv0=
+TREE:
+{"test1:cont1a":{"cont2a":{"leaf2a":13,"leaf2b":1.14159,"leaf2c":"def","leaf2d":0.002,"leaf2e":[-99,-4,5,200],"leaf2g":false},"leaf1a":"abcdef","list2a":[{"name":"txout1","tx-power":8},{"name":"txout3","tx-power":16}]},"test1:leafAtTopLevel":"WXY-1234"}
 ```
 
-> Of course, there will be many more such commands available in the near future.
+> This displays the list of changes IDs and the aggregate effect of layering each
+> one on top of the other. This is **effective** configuration.
+
+> By default all layers are shown (**layer=0**). To show the previous **effective**
+> configuration use **layer=-1**
+
+> To display the devices trees for all devices, just omit the device name.

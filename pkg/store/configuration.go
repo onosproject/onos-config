@@ -51,7 +51,11 @@ func (b Configuration) ExtractFullConfig(changeStore map[string]*change.Change, 
 	consolidatedConfig := make([]*change.ConfigValue, 0)
 
 	for _, changeID := range b.Changes[0 : len(b.Changes)-nBack] {
-		change := changeStore[B64(changeID)]
+		change, ok := changeStore[B64(changeID)]
+		if !ok {
+			return nil
+		}
+
 		for _, changeValue := range change.Config {
 			if changeValue.Remove {
 				// Delete everything at that path and all below it
