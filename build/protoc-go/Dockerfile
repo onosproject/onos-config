@@ -6,7 +6,10 @@ RUN apt-get update && \
     mkdir -p /go/src/github.com/google && \
     git clone --branch master https://github.com/google/protobuf /go/src/github.com/google/protobuf && \
     git clone --branch master https://github.com/openconfig/gnmi /go/src/github.com/openconfig/gnmi && \
-    mkdir -p /go/src/github.com/
+    mkdir -p /go/src/github.com/ &&\
+    wget "https://github.com/grpc/grpc-web/releases/download/1.0.5/protoc-gen-grpc-web-1.0.5-linux-x86_64" --quiet && \
+    mv protoc-gen-grpc-web-1.0.5-linux-x86_64 /usr/local/bin/protoc-gen-grpc-web && \
+    chmod +x /usr/local/bin/protoc-gen-grpc-web
 
 WORKDIR "/go/src/github.com/"
 
