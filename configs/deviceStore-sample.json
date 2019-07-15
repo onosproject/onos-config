@@ -6,7 +6,7 @@
       "ID": "localhost-1",
       "Addr": "localhost:10161",
       "SoftwareVersion": "1.0.0",
-      "User": "devicesim",
+      "Usr": "devicesim",
       "Pwd": "notused",
       "Timeout": 5
     },

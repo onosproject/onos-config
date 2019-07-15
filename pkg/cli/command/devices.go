@@ -20,8 +20,13 @@ import (
 	devices "github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/spf13/cobra"
 	"io"
-	"strings"
+	"os"
+	"text/template"
 )
+
+const devicelistTemplate = "{{printf \"%-23s \" .Id}}{{printf \"%-23s \" .Address}}{{printf \"%-23s \" .Version}}\n"
+const devicelistTemplateVerbose = "\tUSER\t\tPASSWORD\tTIMEOUT\tPLAIN\tINSECURE\n" +
+	"\t{{printf \"%-15s \" .User}}{{printf \"%-15s \" .Password}}{{printf \"%-7d \" .Timeout}}{{.Plain}}\t{{.Insecure}}\n\n"
 
 func newDevicesCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -50,6 +55,10 @@ func runDevicesListCommand(cmd *cobra.Command, args []string) {
 	stream, err := client.GetDevices(context.Background(), &devices.GetDevicesRequest{})
 	verbose, _ := cmd.Flags().GetBool("verbose")
 
+	tmplDevicesList, _ := template.New("devices").Parse(devicelistTemplate)
+	tmplDevicesListVerbose, _ := template.New("devicesverbose").Parse(devicelistTemplateVerbose)
+	Output("NAME\t\t\tADDRESS\t\t\tVERSION\n")
+
 	if err != nil {
 		ExitWithErrorMessage("Failed to get devices: %v\n", err)
 	}
@@ -65,9 +74,9 @@ func runDevicesListCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive device: %v\n", err)
 			}
-			Output("%s: %s (%s)\n", in.Id, in.Address, in.Version)
+			tmplDevicesList.Execute(os.Stdout, in)
 			if verbose {
-				Output("\t%v\n", strings.Replace(proto.MarshalTextString(in), "\n", " ", -1))
+				tmplDevicesListVerbose.Execute(os.Stdout, in)
 			}
 		}
 	}()

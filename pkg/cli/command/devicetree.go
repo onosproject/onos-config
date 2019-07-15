@@ -22,17 +22,29 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/spf13/cobra"
 	"io"
+	"os"
+	"text/template"
 	"time"
 )
 
+const devicetreeTemplate = "DEVICE\t\t\tCONFIGURATION\t\tTYPE\t\tVERSION\n" +
+	"{{printf \"%-22s  \" .Device}}{{printf \"%-22s  \" .Name}}{{printf \"%-14s  \" .Type}}{{printf \"%-6s  \" .Version}}\n" +
+	"{{range .Changes}}" +
+	"CHANGE:\t{{b64 .}}\n" +
+	"{{end}}"
+
+var funcMapDeviceTree = template.FuncMap{
+	"b64": base64.StdEncoding.EncodeToString,
+}
+
 func newDeviceTreeCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "devicetree [-version #] [<deviceId>]",
+		Use:   "devicetree [--layer #] [<deviceId>]",
 		Short: "Lists devices and their configuration in tree format",
 		Args:  cobra.MaximumNArgs(1),
 		Run:   runDeviceTreeCommand,
 	}
-	cmd.Flags().Int32("version", 0, "version of the configuration to retrieve; 0 is the latest, -1 is the previous")
+	cmd.Flags().Int16("layer", 0, "layer of the configuration to retrieve; 0 is all including the latest, -1 is all up to previous")
 	return cmd
 }
 
@@ -43,7 +55,12 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 		configReq.DeviceIds = append(configReq.DeviceIds, args[0])
 	}
 
-	version, _ := cmd.Flags().GetInt("version")
+	layer, err := cmd.Flags().GetInt16("layer")
+	if err != nil {
+		ExitWithErrorMessage("Failed to parse 'layer': %v\n", err)
+	} else if layer > 0 {
+		ExitWithErrorMessage("Layer must be less than or equal 0.\n")
+	}
 
 	stream, err := client.GetConfigurations(context.Background(), configReq)
 	if err != nil {
@@ -51,6 +68,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 	}
 
 	configurations := make([]store.Configuration, 0)
+	allChangeIds := make([]string, 0)
 
 	waitc := make(chan struct{})
 	go func() {
@@ -65,9 +83,14 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
 
-			changes := make([]change.ID, len(in.ChangeIDs))
+			changes := make([]change.ID, 0)
 			for idx, ch := range in.ChangeIDs {
-				changes[idx] = change.ID(ch)
+				if idx >= len(in.ChangeIDs)+int(layer) {
+					continue
+				}
+				idBytes, _ := base64.StdEncoding.DecodeString(ch)
+				changes = append(changes, change.ID(idBytes))
+				allChangeIds = append(allChangeIds, store.B64(idBytes))
 			}
 
 			configuration, _ := store.CreateConfiguration(
@@ -75,11 +98,6 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 
 			configuration.Updated = time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos))
 			configuration.Created = time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos))
-
-			for _, cid := range in.ChangeIDs {
-				idBytes, _ := base64.StdEncoding.DecodeString(cid)
-				configuration.Changes = append(configuration.Changes, change.ID(idBytes))
-			}
 
 			configurations = append(configurations, *configuration)
 		}
@@ -90,9 +108,13 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 	}
 	<-waitc
 
+	if len(configurations) == 0 {
+		ExitWithErrorMessage("Device(s) not found: %v\n", configReq.DeviceIds)
+	}
+
 	changes := make(map[string]*change.Change)
 
-	changesReq := &diags.ChangesRequest{ChangeIds: make([]string, 0)}
+	changesReq := &diags.ChangesRequest{ChangeIds: allChangeIds}
 	if len(args) == 1 {
 		// Only add the changes for a specific device
 		for _, ch := range configurations[0].Changes {
@@ -116,7 +138,6 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
-			Output("Received change %s", in.Id)
 			idBytes, _ := base64.StdEncoding.DecodeString(in.Id)
 			changeObj := change.Change{
 				ID:          change.ID(idBytes),
@@ -148,11 +169,12 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 	}
 	<-waitc2
 
+	tmplDevicetreeList, _ := template.New("devices").Funcs(funcMapDeviceTree).Parse(devicetreeTemplate)
 	for _, configuration := range configurations {
-		Output("Config %s (Device: %s)\n", configuration.Name, configuration.Device)
-		fullDeviceConfigValues := configuration.ExtractFullConfig(changes, version)
+		tmplDevicetreeList.Execute(os.Stdout, configuration)
+		fullDeviceConfigValues := configuration.ExtractFullConfig(changes, 0) // Passing 0 as change set has already been reduced by n='layer'
 		jsonTree, _ := store.BuildTree(fullDeviceConfigValues, false)
-		Output("%s\n", string(jsonTree))
+		Output("TREE:\n%s\n\n", string(jsonTree))
 	}
 
 	ExitWithSuccess()
