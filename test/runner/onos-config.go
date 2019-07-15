@@ -293,6 +293,7 @@ func (c *ClusterController) removeNetworkFromPod(name string, pod corev1.Pod) er
 // createOnosConfigDeployment creates an onos-config Deployment
 func (c *ClusterController) createOnosConfigDeployment() error {
 	nodes := int32(c.config.Nodes)
+	zero := int64(0)
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "onos-config",
@@ -393,6 +394,9 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 								},
 							},
 						},
+					},
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsUser: &zero,
 					},
 					Volumes: []corev1.Volume{
 						{
