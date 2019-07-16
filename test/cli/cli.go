@@ -15,6 +15,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -23,7 +24,6 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
-	"errors"
 
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-config/test/console"
@@ -145,7 +145,7 @@ func getCreateClusterCommand() *cobra.Command {
 // getAddCommand returns a cobra "add" command for adding resources to the cluster
 func getAddCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "add {simulator} [args]",
+		Use:   "add {simulator,network} [args]",
 		Short: "Add resources to the cluster",
 	}
 	cmd.AddCommand(getAddSimulatorCommand())
@@ -435,7 +435,7 @@ func getRemoveSimulatorCommand() *cobra.Command {
 // getGetCommand returns a cobra "get" command to read test configurations
 func getGetCommand(registry *runner.TestRegistry) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get {cluster,clusters,simulators,device-presets,store-presets,tests,suites}",
+		Use:   "get {cluster,clusters,networks,simulators,device-presets,store-presets,tests,suites}",
 		Short: "Get test configurations",
 	}
 	cmd.AddCommand(getGetClusterCommand())
@@ -802,7 +802,7 @@ func printTestSuites(registry *runner.TestRegistry, includeHeaders bool) {
 		fmt.Fprintln(writer, "SUITE\tTESTS")
 	}
 	for name, suite := range registry.TestSuites {
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", name,strings.Join(suite.GetTestNames(),", ")))
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", name, strings.Join(suite.GetTestNames(), ", ")))
 	}
 	writer.Flush()
 }

@@ -31,12 +31,23 @@ __onit_get_clusters() {
         COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
     fi
 }
-__onit_get_devices() {
-    local onit_output
-    if onit_output=$(onit get devices 2>/dev/null); then
-        COMPREPLY=( $( compgen -W "${onit_output[*]}" -- "$cur" ) )
+
+__onit_get_networks() {
+    local onit_output out
+    if onit_output=$(onit get networks 2>/dev/null); then
+        out=($(echo "${onit_output}" | awk '{print $1}'))
+        COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
     fi
 }
+
+__onit_get_simulators() {
+    local onit_output out
+    if onit_output=$(onit get simulators 2>/dev/null); then
+        out=($(echo "${onit_output}" | awk '{print $1}'))
+        COMPREPLY=( $( compgen -W "${out[*]}" -- "$cur" ) )
+    fi
+}
+
 __onit_get_nodes() {
     local onit_output out
     if onit_output=$(onit get nodes --no-headers 2>/dev/null); then
@@ -69,12 +80,20 @@ __onit_custom_func() {
             fi
             return
             ;;
-        onit_delete_device)
+		onit_remove_simulator)
             if [[ ${#nouns[@]} -eq 0 ]]; then
-                __onit_get_devices
+                __onit_get_simulators
             fi
             return
-            ;;
+			;;
+		
+		onit_remove_network)
+            if [[ ${#nouns[@]} -eq 0 ]]; then
+                __onit_get_networks
+            fi
+            return
+            ;;	
+			
         onit_get_logs | onit_fetch_logs | onit_debug)
             if [[ ${#nouns[@]} -eq 0 ]]; then
                 __onit_get_nodes
@@ -107,7 +126,9 @@ func getCompletionCommand() *cobra.Command {
 		Short:     "Generated bash or zsh auto-completion script",
 		Args:      cobra.ExactArgs(1),
 		ValidArgs: []string{"bash", "zsh"},
-		Run:       runCompletionCommand,
+		Example: `For bash run the following command from the shell: eval $(onit completion bash).
+For zsh run the following command from the shell: source <(onit completion zsh).`,
+		Run: runCompletionCommand,
 	}
 }
 
