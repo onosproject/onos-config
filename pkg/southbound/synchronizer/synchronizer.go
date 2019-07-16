@@ -180,29 +180,29 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 
 	notifications := make([]*gnmi.Notification, 0)
 
-	//requestState := &gnmi.GetRequest{
-	//	Type: gnmi.GetRequest_STATE,
-	//}
-	//
-	//responseState, errState := target.Get(target.Ctx, requestState)
-	//
-	//if errState != nil {
-	//	log.Warning("Can't request read-only state paths to target ", sync.key, errState)
-	//} else {
-	//	notifications = append(notifications, responseState.Notification...)
-	//}
-	//
-	//requestOperational := &gnmi.GetRequest{
-	//	Type: gnmi.GetRequest_OPERATIONAL,
-	//}
-	//
-	//responseOperational, errOp := target.Get(target.Ctx, requestOperational)
-	//
-	//if errOp != nil {
-	//	log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
-	//} else {
-	//	notifications = append(notifications, responseOperational.Notification...)
-	//}
+	requestState := &gnmi.GetRequest{
+		Type: gnmi.GetRequest_STATE,
+	}
+
+	responseState, errState := target.Get(target.Ctx, requestState)
+
+	if errState != nil {
+		log.Warning("Can't request read-only state paths to target ", sync.key, errState)
+	} else {
+		notifications = append(notifications, responseState.Notification...)
+	}
+
+	requestOperational := &gnmi.GetRequest{
+		Type: gnmi.GetRequest_OPERATIONAL,
+	}
+
+	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
+
+	if errOp != nil {
+		log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
+	} else {
+		notifications = append(notifications, responseOperational.Notification...)
+	}
 
 	subscribePaths := make([][]string, 0)
 
