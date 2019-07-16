@@ -216,6 +216,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 		}
 	}
 
+	// Now iterate through the consolidated set of targets and see if any are read-only paths
 	for t, update := range targetUpdates {
 		model := targetModelTypes[t]
 		for path := range update { // map - just need the key
@@ -223,7 +224,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 				// Search through for list indices and replace with generic
 
 				modelPath := manager.RemovePathIndices(path)
-				if modelPath == ropath {
+				if strings.HasPrefix(modelPath, ropath) {
 					return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
 				}
 			}

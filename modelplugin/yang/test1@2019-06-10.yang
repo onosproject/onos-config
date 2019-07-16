@@ -1,6 +1,6 @@
 module test1 {
   namespace "http://opennetworking.org/devicesim/test1";
-  prefix test1;
+  prefix t1;
 
   organization "Open Networking Foundation.";
   contact "Sean Condon";

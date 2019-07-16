@@ -2,16 +2,11 @@
   "Version": "1.0.0",
   "Storetype": "change",
   "Store": {
-    "MY8s8Opw+xjbcARIMzIpUIzeXv0=": {
-      "ID": "MY8s8Opw+xjbcARIMzIpUIzeXv0=",
+    "TOA0Blur2YQTAdkzKkRrAPIU+9A=": {
+      "ID": "TOA0Blur2YQTAdkzKkRrAPIU+9A=",
       "Description": "Remove txout 2",
       "Created": "2019-05-09T16:24:17.815274679Z",
       "Config": [
-        {
-          "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "ZGVm",
-          "Type": 1
-        },
         {
           "Path": "/test1:cont1a/cont2a/leaf2d",
           "Value": "AgAAAAAAAAA=",
@@ -52,16 +47,11 @@
         }
       ]
     },
-    "m4GcTrhjOCLqmuw0Jhsyx2pdHK4=": {
-      "ID": "m4GcTrhjOCLqmuw0Jhsyx2pdHK4=",
+    "uOTzTiNotAGjjsl11EuVFY/lYsM=": {
+      "ID": "uOTzTiNotAGjjsl11EuVFY/lYsM=",
       "Description": "Remove txout 1",
       "Created": "2019-05-09T16:24:17.815294258Z",
       "Config": [
-        {
-          "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "Z2hp",
-          "Type": 1
-        },
         {
           "Path": "/test1:cont1a/list2a[name=txout1]",
           "Type": 0,
@@ -69,8 +59,8 @@
         }
       ]
     },
-    "2uUbeEV4i3ADedjeORmgQt6CVDM=": {
-      "ID": "2uUbeEV4i3ADedjeORmgQt6CVDM=",
+    "EQct6X4kZda3NqpW6N2TL4fFilA=": {
+      "ID": "EQct6X4kZda3NqpW6N2TL4fFilA=",
       "Description": "Original Config for test switch",
       "Created": "2019-05-09T16:24:17.815187669Z",
       "Config": [
@@ -83,11 +73,6 @@
           "Path": "/test1:cont1a/cont2a/leaf2b",
           "Value": "AAAAgJVD+T8=",
           "Type": 6
-        },
-        {
-          "Path": "/test1:cont1a/cont2a/leaf2c",
-          "Value": "YWJj",
-          "Type": 1
         },
         {
           "Path": "/test1:cont1a/leaf1a",

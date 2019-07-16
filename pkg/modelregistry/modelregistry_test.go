@@ -16,7 +16,7 @@ package modelregistry
 
 import (
 	"fmt"
-	td1 "github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
+	ds1 "github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim_1_0_0"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -40,10 +40,10 @@ func (m modelPluginTest) ModelData() (string, string, []*gnmi.ModelData, string)
 
 // UnmarshalConfigValues uses the `generated.go` of the TestDevice1 plugin module
 func (m modelPluginTest) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
-	device := &td1.Device{}
+	device := &ds1.Device{}
 	vgs := ygot.ValidatedGoStruct(device)
 
-	if err := td1.Unmarshal([]byte(jsonTree), device); err != nil {
+	if err := ds1.Unmarshal([]byte(jsonTree), device); err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func (m modelPluginTest) UnmarshalConfigValues(jsonTree []byte) (*ygot.Validated
 // Validate uses the `generated.go` of the TestDevice1 plugin module
 func (m modelPluginTest) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
 	deviceDeref := *ygotModel
-	device, ok := deviceDeref.(*td1.Device)
+	device, ok := deviceDeref.(*ds1.Device)
 	if !ok {
 		return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
 	}
@@ -62,7 +62,7 @@ func (m modelPluginTest) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygo
 
 // Schema uses the `generated.go` of the TestDevice1 plugin module
 func (m modelPluginTest) Schema() (map[string]*yang.Entry, error) {
-	return td1.UnzipSchema()
+	return ds1.UnzipSchema()
 }
 
 func Test_CastModelPlugin(t *testing.T) {
@@ -80,21 +80,54 @@ func Test_CastModelPlugin(t *testing.T) {
 func Test_Schema(t *testing.T) {
 	var modelPluginTest modelPluginTest
 
-	td1Schema, err := modelPluginTest.Schema()
+	ds1Schema, err := modelPluginTest.Schema()
 	assert.NilError(t, err)
-	assert.Equal(t, len(td1Schema), 6)
+	assert.Equal(t, len(ds1Schema), 137)
 
-	readOnlyPaths := extractReadOnlyPaths(td1Schema["Device"], yang.TSUnset, "", "")
-	assert.Equal(t, len(readOnlyPaths), 6)
+	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	assert.Equal(t, len(readOnlyPaths), 37)
 	// Can be in any order
 	for _, p := range readOnlyPaths {
 		switch p {
-		case "/test1:cont1a/cont2a/leaf2c",
-			"/test1:cont1b-state",
-			"/test1:cont1b-state/leaf2d",
-			"/test1:cont1b-state/list2b[index=*]",
-			"/test1:cont1b-state/list2b[index=*]/index",
-			"/test1:cont1b-state/list2b[index=*]/leaf3c":
+		case
+			"/openconfig-platform:components/component[name=*]/properties/property[name=*]/state",
+			"/openconfig-platform:components/component[name=*]/state",
+			"/openconfig-platform:components/component[name=*]/subcomponents/subcomponent[name=*]/state",
+			"/openconfig-interfaces:interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/state",
+			"/openconfig-interfaces:interfaces/interface[name=*]/hold-time/state",
+			"/openconfig-interfaces:interfaces/interface[name=*]/state",
+			"/openconfig-system:system/dns/host-entries/host-entry[hostname=*]/state",
+			"/openconfig-system:system/dns/servers/server[address=*]/state",
+			"/openconfig-system:system/dns/state",
+			"/openconfig-system:system/openconfig-system-logging:logging/console/state",
+			"/openconfig-system:system/openconfig-system-logging:logging/console/selectors/selector[facility severity=*]/state",
+			"/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/state",
+			"/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state",
+			"/openconfig-system:system/state",
+			"/openconfig-system:system/openconfig-system-terminal:telnet-server/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/accounting/events/event[event-type=*]/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/accounting/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/authentication/admin-user/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/authentication/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/authentication/users/user[username=*]/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/authorization/events/event[event-type=*]/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/authorization/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/tacacs/state",
+			"/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/state",
+			"/openconfig-system:system/clock/state",
+			"/openconfig-system:system/openconfig-openflow:openflow/agent/state",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/state",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/state",
+			"/openconfig-system:system/openconfig-procmon:processes/process[pid=*]",
+			"/openconfig-system:system/openconfig-system-terminal:ssh-server/state",
+			"/openconfig-system:system/memory/state",
+			"/openconfig-system:system/ntp/ntp-keys/ntp-key[key-id=*]/state",
+			"/openconfig-system:system/ntp/servers/server[address=*]/state",
+			"/openconfig-system:system/ntp/state":
+
 		default:
 			t.Fatal("Unexpected readOnlyPath", p)
 		}

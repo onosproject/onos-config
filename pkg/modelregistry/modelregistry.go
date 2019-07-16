@@ -102,15 +102,12 @@ func (registry *ModelRegistry) Capabilities() []*gnmi.ModelData {
 }
 
 // extractReadOnlyPaths is a recursive function to extract a list of read only paths from a YGOT schema
-func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPrefix string, parentPath string) []string {
+func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentNs string, parentPath string) []string {
 	readOnlyPaths := make([]string, 0)
 
 	for _, dirEntry := range deviceEntry.Dir {
-		prefix := ""
-		if dirEntry.Prefix != nil {
-			prefix = dirEntry.Prefix.Name
-		}
-		itemPath := formatName(dirEntry, false, parentPrefix, parentPath)
+		namespace := extractnamespace(dirEntry, parentNs)
+		itemPath := formatName(dirEntry, false, parentNs, parentPath)
 		if dirEntry.IsLeaf() {
 			// No need to recurse
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
@@ -119,17 +116,19 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 		} else if dirEntry.IsContainer() {
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
 				readOnlyPaths = append(readOnlyPaths, itemPath)
+				continue // No need to add child paths is this is "config false"
 			}
-			newPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, prefix, itemPath)
+			newPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
 			for _, newPath := range newPaths {
 				readOnlyPaths = append(readOnlyPaths, newPath)
 			}
 		} else if dirEntry.IsList() {
-			itemPath = formatName(dirEntry, true, parentPrefix, parentPath)
+			itemPath = formatName(dirEntry, true, parentNs, parentPath)
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
 				readOnlyPaths = append(readOnlyPaths, itemPath)
+				continue // No need to add child paths is this is "config false"
 			}
-			newPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, prefix, itemPath)
+			newPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
 			for _, newPath := range newPaths {
 				readOnlyPaths = append(readOnlyPaths, newPath)
 			}
@@ -150,21 +149,54 @@ func RemovePathIndices(path string) string {
 	return path
 }
 
-func formatName(dirEntry *yang.Entry, isList bool, parentPrefix string, parentPath string) string {
-	prefix := ""
-	if dirEntry.Prefix != nil {
-		prefix = dirEntry.Prefix.Name
-	}
+func formatName(dirEntry *yang.Entry, isList bool, parentNs string, parentPath string) string {
+	namespace := extractnamespace(dirEntry, parentNs)
+
 	var name string
-	if prefix == parentPrefix && isList {
+	if namespace == parentNs && isList {
 		name = fmt.Sprintf("%s/%s[%s=*]", parentPath, dirEntry.Name, dirEntry.Key)
 	} else if isList {
-		name = fmt.Sprintf("%s/%s:%s[%s=*]", parentPath, prefix, dirEntry.Name, dirEntry.Key)
-	} else if prefix == parentPrefix {
+		name = fmt.Sprintf("%s/%s:%s[%s=*]", parentPath, namespace, dirEntry.Name, dirEntry.Key)
+	} else if namespace == parentNs || namespace == "" {
 		name = fmt.Sprintf("%s/%s", parentPath, dirEntry.Name)
 	} else {
-		name = fmt.Sprintf("%s/%s:%s", parentPath, prefix, dirEntry.Name)
+		name = fmt.Sprintf("%s/%s:%s", parentPath, namespace, dirEntry.Name)
 	}
 
 	return name
+}
+
+func extractnamespace(dirEntry *yang.Entry, parentNs string) string {
+	namespace := dirEntry.Namespace()
+	if namespace != nil && namespace.Name != "" {
+		return namespace.Name
+	}
+
+	prefix := dirEntry.Prefix.Name
+	// Special case until YGOT gets fixed - doesn't return namespaces
+	if prefix == "openflow" {
+		return "openconfig-openflow"
+	} else if prefix == "oc-log" {
+		return "openconfig-system-logging"
+	} else if prefix == "oc-proc" {
+		return "openconfig-procmon"
+	} else if prefix == "oc-sys-term" {
+		return "openconfig-system-terminal"
+	} else if prefix == "oc-aaa" {
+		return "openconfig-aaa"
+	}
+
+	if dirEntry.Annotation != nil {
+		schemaPath, nsok := dirEntry.Annotation["schemapath"]
+		if nsok {
+			nsstr, ok := schemaPath.(string)
+			if ok {
+				nselem := strings.Split(nsstr, "/")
+				if len(nselem) > 1 {
+					return nselem[1]
+				}
+			}
+		}
+	}
+	return parentNs
 }
