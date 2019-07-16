@@ -216,15 +216,9 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			}
 
 		}
-	} else {
-
-		if sync.modelReadOnlyPaths == nil {
-			log.Warningf("Cannot check for read only paths for target %s with %s because "+
-				"Model Plugin not available - continuing", sync.Device.ID, sync.Device.SoftwareVersion)
-		} else {
-			for _, path := range sync.modelReadOnlyPaths {
-				subscribePaths = append(subscribePaths, utils.SplitPath(path))
-			}
+	} else if sync.modelReadOnlyPaths != nil {
+		for _, path := range sync.modelReadOnlyPaths {
+			subscribePaths = append(subscribePaths, utils.SplitPath(path))
 		}
 	}
 

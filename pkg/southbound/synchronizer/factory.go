@@ -41,7 +41,11 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			ctx := context.Background()
 			completeID := utils.ToConfigName(deviceName, device.SoftwareVersion)
 			cfg := configStore.Store[store.ConfigName(completeID)]
-			mReadOnlyPaths, _ := modelReadOnlyPaths[utils.ToModelName(cfg.Type, device.SoftwareVersion)]
+			mReadOnlyPaths, ok := modelReadOnlyPaths[utils.ToModelName(cfg.Type, device.SoftwareVersion)]
+			if !ok {
+				log.Warningf("Cannot check for read only paths for target %s with %s because "+
+					"Model Plugin not available - continuing", deviceName, device.SoftwareVersion)
+			}
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan,
 				errChan, mReadOnlyPaths)
 			if err != nil {
