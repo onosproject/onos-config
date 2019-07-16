@@ -189,7 +189,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 		}
 		for _, config := range configs {
 			if config.Device == t {
-				m, ok := manager.GetManager().ModelReadOnlyPaths[manager.ToModelName(config.Type, config.Version)]
+				m, ok := manager.GetManager().ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
 				if !ok {
 					log.Warningf("Cannot check for Read Only paths for %s %s because "+
 						"Model Plugin not available - continuing", config.Type, config.Version)
@@ -205,7 +205,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 		}
 		for _, config := range configs {
 			if config.Device == t {
-				m, ok := manager.GetManager().ModelReadOnlyPaths[manager.ToModelName(config.Type, config.Version)]
+				m, ok := manager.GetManager().ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
 				if !ok {
 					log.Warningf("Cannot check for Read Only paths for %s %s because "+
 						"Model Plugin not available - continuing", config.Type, config.Version)

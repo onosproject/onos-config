@@ -44,12 +44,13 @@ type Synchronizer struct {
 	key                  southbound.DeviceID
 	query                client.Query
 	operationalCache     map[string]string
+	modelReadOnlyPaths   []string
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
-	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent,
-	opStateChan chan<- events.OperationalStateEvent, errChan chan<- events.DeviceResponse) (*Synchronizer, error) {
+	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
+	errChan chan<- events.DeviceResponse, mReadOnlyPaths []string) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
@@ -58,6 +59,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 		deviceConfigChan:     deviceCfgChan,
 		operationalStateChan: opStateChan,
 		operationalCache:     make(map[string]string),
+		modelReadOnlyPaths:   mReadOnlyPaths,
 	}
 	log.Info("Connecting to ", sync.Device.Addr, " over gNMI")
 	target := southbound.Target{}
@@ -214,27 +216,10 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			}
 
 		}
-	} else {
-		//TODO implement getting paths here leaving commented for examples of what works.
-		//path := make([]string, 0)
-		//Stratum
-		//path = append(path, "interfaces")
-		//path = append(path, "interface[name=s1-eth1]")
-		//path = append(path, "state")
-		//path = append(path, "admin-status")
-		//path = append(path, "config")
-		//path = append(path, "enabled")
-
-		//Simulator
-		//path = append(path, "system")
-		//path = append(path, "openflow")
-		//path = append(path, "controllers")
-		//path = append(path, "controller[name=main]")
-		//path = append(path, "connections")
-		//path = append(path, "connection[aux-id=0]")
-		//path = append(path, "state")
-		//path = append(path, "address")
-		//subscribePaths = append(subscribePaths, path)
+	} else if sync.modelReadOnlyPaths != nil {
+		for _, path := range sync.modelReadOnlyPaths {
+			subscribePaths = append(subscribePaths, utils.SplitPath(path))
+		}
 	}
 
 	if len(subscribePaths) == 0 {
@@ -255,6 +240,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	}
 
 	req, err := southbound.NewSubscribeRequest(options)
+	log.Info(req)
 	if err != nil {
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorParseConfig,
 			sync.key.DeviceID, err)

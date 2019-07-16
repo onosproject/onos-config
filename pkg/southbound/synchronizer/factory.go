@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/utils"
 	log "k8s.io/klog"
 )
 
@@ -28,7 +29,7 @@ import (
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher) {
+	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher, modelReadOnlyPaths map[string][]string) {
 	for topoEvent := range topoChannel {
 		deviceName := topocache.ID(events.Event(topoEvent).Subject())
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
@@ -38,7 +39,15 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			}
 			device := deviceStore.Store[topocache.ID(deviceName)]
 			ctx := context.Background()
-			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan, errChan)
+			completeID := utils.ToConfigName(deviceName, device.SoftwareVersion)
+			cfg := configStore.Store[store.ConfigName(completeID)]
+			mReadOnlyPaths, ok := modelReadOnlyPaths[utils.ToModelName(cfg.Type, device.SoftwareVersion)]
+			if !ok {
+				log.Warningf("Cannot check for read only paths for target %s with %s because "+
+					"Model Plugin not available - continuing", deviceName, device.SoftwareVersion)
+			}
+			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan,
+				errChan, mReadOnlyPaths)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
 				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,

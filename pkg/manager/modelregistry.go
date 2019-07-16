@@ -16,6 +16,7 @@ package manager
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -54,7 +55,7 @@ func (m *Manager) RegisterModelPlugin(moduleName string) (string, string, error)
 			moduleName)
 	}
 	name, version, _, _ := modelPlugin.ModelData()
-	modelName := ToModelName(name, version)
+	modelName := utils.ToModelName(name, version)
 	m.ModelRegistry[modelName] = modelPlugin
 	modelschema, err := modelPlugin.Schema()
 	if err != nil {
@@ -77,7 +78,7 @@ func (m *Manager) Capabilities() []*gnmi.ModelData {
 	for _, model := range m.ModelRegistry {
 		_, _, modelItem, _ := model.ModelData()
 		for _, mi := range modelItem {
-			modelName := ToModelName(mi.Name, mi.Version)
+			modelName := utils.ToModelName(mi.Name, mi.Version)
 			modelMap[modelName] = mi
 		}
 	}
@@ -127,11 +128,6 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 	}
 
 	return readOnlyPaths
-}
-
-// ToModelName simply joins together model name and version in a consistent way
-func ToModelName(name string, version string) string {
-	return fmt.Sprintf("%s-%s", name, version)
 }
 
 // RemovePathIndices removes the index value from a path to allow it to be compared to a model path
