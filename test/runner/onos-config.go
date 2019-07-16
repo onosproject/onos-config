@@ -223,13 +223,13 @@ func (c *ClusterController) addNetworkToConfig(name string, config *NetworkConfi
 
 // addSimulatorToPod adds the given simulator to the given pod's configuration
 func (c *ClusterController) addSimulatorToPod(name string, pod corev1.Pod) error {
-	command := fmt.Sprintf("onos devices add \"id: '%s', address: '%s:10161' version: '1.0.0' devicetype: 'Devicesim'\" --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/tls.key --certPath /etc/onos-config/certs/tls.crt", name, name)
+	command := fmt.Sprintf("onos devices add \"id: '%s', address: '%s:10161' version: '1.0.0' devicetype: 'Devicesim'\" --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/client1.key --certPath /etc/onos-config/certs/client1.crt", name, name)
 	return c.execute(pod, []string{"/bin/bash", "-c", command})
 }
 
 // addNetworkToPod adds the given network to the given pod's configuration
 func (c *ClusterController) addNetworkToPod(name string, port int, pod corev1.Pod) error {
-	command := fmt.Sprintf("onos devices add \"id: '%s', address: '%s:%s' version: '1.0.0' devicetype: 'Stratum'\" --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/tls.key --certPath /etc/onos-config/certs/tls.crt", name, name, strconv.Itoa(port))
+	command := fmt.Sprintf("onos devices add \"id: '%s', address: '%s:%s' version: '1.0.0' devicetype: 'Stratum'\" --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/client1.key --certPath /etc/onos-config/certs/client1.crt", name, name, strconv.Itoa(port))
 	return c.execute(pod, []string{"/bin/bash", "-c", command})
 }
 
@@ -280,13 +280,13 @@ func (c *ClusterController) removeNetworkFromConfig(name string, configMap *core
 
 // removeSimulatorFromPod removes the given simulator from the given pod
 func (c *ClusterController) removeSimulatorFromPod(name string, pod corev1.Pod) error {
-	command := fmt.Sprintf("onos devices remove %s --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/tls.key --certPath /etc/onos-config/certs/tls.crt", name)
+	command := fmt.Sprintf("onos devices remove %s --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/client1.key --certPath /etc/onos-config/certs/client1.crt", name)
 	return c.execute(pod, []string{"/bin/bash", "-c", command})
 }
 
 // removeNetworkFromPod removes the given network from the given pod
 func (c *ClusterController) removeNetworkFromPod(name string, pod corev1.Pod) error {
-	command := fmt.Sprintf("onos devices remove %s --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/tls.key --certPath /etc/onos-config/certs/tls.crt", name)
+	command := fmt.Sprintf("onos devices remove %s --address 127.0.0.1:5150 --keyPath /etc/onos-config/certs/client1.key --certPath /etc/onos-config/certs/client1.crt", name)
 	return c.execute(pod, []string{"/bin/bash", "-c", command})
 }
 
@@ -337,9 +337,9 @@ func (c *ClusterController) createOnosConfigDeployment() error {
 								},
 							},
 							Args: []string{
-								"-caPath=/etc/onos-config/certs/tls.cacrt",
-								"-keyPath=/etc/onos-config/certs/tls.key",
-								"-certPath=/etc/onos-config/certs/tls.crt",
+								"-caPath=/etc/onos-config/certs/onf.cacrt",
+								"-keyPath=/etc/onos-config/certs/onos-config.key",
+								"-certPath=/etc/onos-config/certs/onos-config.crt",
 								"-configStore=/etc/onos-config/configs/configStore.json",
 								"-changeStore=/etc/onos-config/configs/changeStore.json",
 								"-deviceStore=/etc/onos-config/configs/deviceStore.json",

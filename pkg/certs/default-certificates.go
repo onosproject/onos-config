@@ -210,3 +210,77 @@ ZCPSExNq6PUzUjocUGdaDI2Wjjt/IY6rd5AYnjkie28wt64r1EO1MGZiHiXx/NNO
 /utYBBcAzIsc63hM3Cjo2h0uFti3Sdza1Czq1t/NlOL9/2qtxVdyyg==
 -----END CERTIFICATE-----
 `
+
+/*
+DefaultOnosConfigKey is the default onos-config server key
+openssl rsa -in onso-config.key -text -noout
+Private-Key: (2048 bit)
+*/
+const DefaultOnosConfigKey = `
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCZn2yJTuwzOI08
+3/2/OaIwzQzvzuGBnp4ttZGxrSi0KdX7r19Vu2dI5eEDbSNNYa4+9xSwT0lTf9u0
+/9i6mJYgejLNJU0CnAZDGxTLuxMHeGjPjeSpdVGuXq4qOj+kXKmdpATXZmyXwZlK
+gamh7/u66Wcrgn2y6eK1iCIvK+L0U+vwAa6NokUJwZlFtLBPmE0wwZxnW9LMyWkz
+K0KANCsua3uVBSFclREsnM+jw4V2Gk9smXxfRV1HWkP7xsZuGi8NHq8A1/JC1gE5
+CNLVsnD/ePHV3vHYFzVTu66Q9hDJLGpyu2cTpjUv44p7/3fQsaz3fYuT31nAj5//
+l9ZHJwXRAgMBAAECggEAVEwRCL+QCQNNLUxUNyxu/YxnPugtAi2B6t8pVXAJV+Nl
+EjjHfYnaQTwzXufyaTHipZZ7ecvoFrOgYg/KY4n7R1MGsV94hKgNH6Gqpai/5meC
+S/I2uW4xJhe6Rl20MoLOaDxqk7AWgqevcBz6cmv3nDcbb9qpExYYWziaWXwhi6Pv
+unvmZGzpAu9ehb4BWlQmHVqIDAcLijTKD7uxHl9yiM7zG5KLzpPCmr4drWjyrsE+
+oo7fA0GhLpjQCJ6Ye+2hBYNvMJLmvcgex++16vQDszhIy9rTtlFCqbPaADF/9bOn
+rjTMPPYWijMFx0lltHhPq09527iL/Yt6szg/PbNOyQKBgQDIZjdNfNXs128Qm7Zq
+opo6rQU3j17/QINUBOx/+xCWnNohBbo+pGHP6Z8Ld4Lx6P1LPoWUw5tX4v8fwXgJ
+Rn3gnwTAiXx/S/dHEkiDQLMU7nlpkwRNUA00DDqAz8dZIgRZeHAE1PRxBihCjXVf
+Z4PKTHsbomxOrVn+NuAV80qr2wKBgQDEPs47MTUI96Xh8BuixVAwi2QVo01QB5Dl
+x/ds1v/IDHen9sV1Yjl7gLC9YpO/7kweFDZRt6Zm1IRh4Qy9yqtDUSAQEOtoI6A1
+FvHCBC06NzYISBFNdmRnkS3AJEb9piJY62YeP9+vWJqMuVc39igIbYoGR654uszJ
+gEH2lgu6wwKBgQDHfCjU882oBBRFPhvqLo7ElfM5iXiRMtEIVBZwl6W9p8njUWZC
+cTQE2ZQ+v+sTkFCEFGq42bbLV+WK4PXylb88WE9Msg/CUAaJMwQH0+Hwlis6EuUX
+aPabtwiNrUfNzHTz81XfGXVzBSQSi+oo3Exulo99xMN31kxdKJcMgrD0PQKBgEx+
+1tDH645lSin5+CvIket6SjcNArPxXw/SlKW+YNHP2kyEqo+JDDMSBNKtvD4SW2VW
+J55O4fQvXrLwkJDikUOaOc9JaRmc2XQYT4B7NE3++3ba8LOrNJQSSS0edvWkbrsO
+dy3PZBfrh8LW9CKCNzShzi2If3/cALuC3TOLZWMVAoGAOHexq8+7EoO9FXcqyRfN
+tgv108T3UD7LNcH2Fj5sx+o/NN/OcGcCCb40I5Jrh305a+GPRG1RKW7fmD8UaMaM
+L9Q8NQ7nUfUvl0RR9vwAgcvLy1zD+IgqAzqF0MN/ejIHTACIgL4S0cXlUyCk5gQn
+wXqkSZWW53eg8HKb/cVMLoM=
+-----END PRIVATE KEY-----
+`
+
+/*
+DefaultOnosConfigCrt is the default onos-config server certificate
+Certificate:
+    Data:
+        Version: 1 (0x0)
+        Serial Number:
+            56:56:04:5e:9b:45:15:87:d7:24:3d:2a:22:21:df:87:11:e0:f2:0b
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C = US, ST = CA, L = MenloPark, O = ONF, OU = Engineering, CN = ca.opennetworking.org
+        Validity
+            Not Before: Jul 16 18:38:15 2019 GMT
+            Not After : Jul 13 18:38:15 2029 GMT
+        Subject: C = US, ST = CA, L = MenloPark, O = ONF, OU = Engineering, CN = onos-config
+*/
+const DefaultOnosConfigCrt = `
+-----BEGIN CERTIFICATE-----
+MIIDYTCCAkkCFFZWBF6bRRWH1yQ9KiIh34cR4PILMA0GCSqGSIb3DQEBCwUAMHIx
+CzAJBgNVBAYTAlVTMQswCQYDVQQIDAJDQTESMBAGA1UEBwwJTWVubG9QYXJrMQww
+CgYDVQQKDANPTkYxFDASBgNVBAsMC0VuZ2luZWVyaW5nMR4wHAYDVQQDDBVjYS5v
+cGVubmV0d29ya2luZy5vcmcwHhcNMTkwNzE2MTgzODE1WhcNMjkwNzEzMTgzODE1
+WjBoMQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExEjAQBgNVBAcMCU1lbmxvUGFy
+azEMMAoGA1UECgwDT05GMRQwEgYDVQQLDAtFbmdpbmVlcmluZzEUMBIGA1UEAwwL
+b25vcy1jb25maWcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCZn2yJ
+TuwzOI083/2/OaIwzQzvzuGBnp4ttZGxrSi0KdX7r19Vu2dI5eEDbSNNYa4+9xSw
+T0lTf9u0/9i6mJYgejLNJU0CnAZDGxTLuxMHeGjPjeSpdVGuXq4qOj+kXKmdpATX
+ZmyXwZlKgamh7/u66Wcrgn2y6eK1iCIvK+L0U+vwAa6NokUJwZlFtLBPmE0wwZxn
+W9LMyWkzK0KANCsua3uVBSFclREsnM+jw4V2Gk9smXxfRV1HWkP7xsZuGi8NHq8A
+1/JC1gE5CNLVsnD/ePHV3vHYFzVTu66Q9hDJLGpyu2cTpjUv44p7/3fQsaz3fYuT
+31nAj5//l9ZHJwXRAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAGZfTp6qKTGZGrEl
+bZWWKe8ilMqgZtcz7J93LOYk+l8nTEg5hIQ015mHY1+R+0F2gniciayjpVG2BChD
+MOHfes0StdKY0nVHy83TpG0TsY76e//DSmekZwtm+OoxualpEOLW0PgKFEE8+PdJ
+b/QlN8AyWJ3cvA7hDGlCrCNontLJS+W0VAPLDrFi/NeK0RpiQ6rI2U4B2jdGIrhw
+AJD2FhJHDcdfBeR80KHiSFlhgSSMChKBrlzYw2vdeuSuAuuzTn88CzXKaIki56xQ
+xm422D8l3cAo4W+GP6HGtwMl/UcI+WBMpa6yGtkaCaUA9v5EwKk+oceDlSnNnHS9
+tWg4SMI=
+-----END CERTIFICATE-----
+`

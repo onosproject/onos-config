@@ -37,9 +37,9 @@ const (
 )
 
 const (
-	clientKeyPath = "/etc/onos-config/certs/tls.key"
-	clientCrtPath = "/etc/onos-config/certs/tls.crt"
-	caCertPath    = "/etc/onos-config/certs/tls.cacrt"
+	clientKeyPath = "/etc/onos-config/certs/client1.key"
+	clientCrtPath = "/etc/onos-config/certs/client1.crt"
+	caCertPath    = "/etc/onos-config/certs/onf.cacrt"
 	address       = "onos-config:5150"
 )
 
