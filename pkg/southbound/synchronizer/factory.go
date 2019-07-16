@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/utils"
 	log "k8s.io/klog"
 )
 
@@ -38,8 +39,11 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			}
 			device := deviceStore.Store[topocache.ID(deviceName)]
 			ctx := context.Background()
+			completeID := utils.ToConfigName(deviceName, device.SoftwareVersion)
+			cfg := configStore.Store[store.ConfigName(completeID)]
+			mReadOnlyPaths, _ := modelReadOnlyPaths[utils.ToModelName(cfg.Type, device.SoftwareVersion)]
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan,
-				errChan, modelReadOnlyPaths)
+				errChan, mReadOnlyPaths)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
 				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,

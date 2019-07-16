@@ -25,7 +25,7 @@ func ToModelName(name string, version string) string {
 	return fmt.Sprintf("%s-%s", name, version)
 }
 
-// ToConfigName simply joins together model name and version in a consistent way
+// ToConfigName simply joins together device ID and version in a consistent way
 func ToConfigName(deviceID topocache.ID, version string) string {
 	return fmt.Sprintf("%s-%s", deviceID, version)
 }

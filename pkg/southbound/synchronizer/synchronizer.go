@@ -44,13 +44,13 @@ type Synchronizer struct {
 	key                  southbound.DeviceID
 	query                client.Query
 	operationalCache     map[string]string
-	modelReadOnlyPaths   map[string][]string
+	modelReadOnlyPaths   []string
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, mReadOnlyPaths map[string][]string) (*Synchronizer, error) {
+	errChan chan<- events.DeviceResponse, mReadOnlyPaths []string) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
@@ -180,29 +180,29 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 
 	notifications := make([]*gnmi.Notification, 0)
 
-	requestState := &gnmi.GetRequest{
-		Type: gnmi.GetRequest_STATE,
-	}
-
-	responseState, errState := target.Get(target.Ctx, requestState)
-
-	if errState != nil {
-		log.Warning("Can't request read-only state paths to target ", sync.key, errState)
-	} else {
-		notifications = append(notifications, responseState.Notification...)
-	}
-
-	requestOperational := &gnmi.GetRequest{
-		Type: gnmi.GetRequest_OPERATIONAL,
-	}
-
-	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
-
-	if errOp != nil {
-		log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
-	} else {
-		notifications = append(notifications, responseOperational.Notification...)
-	}
+	//requestState := &gnmi.GetRequest{
+	//	Type: gnmi.GetRequest_STATE,
+	//}
+	//
+	//responseState, errState := target.Get(target.Ctx, requestState)
+	//
+	//if errState != nil {
+	//	log.Warning("Can't request read-only state paths to target ", sync.key, errState)
+	//} else {
+	//	notifications = append(notifications, responseState.Notification...)
+	//}
+	//
+	//requestOperational := &gnmi.GetRequest{
+	//	Type: gnmi.GetRequest_OPERATIONAL,
+	//}
+	//
+	//responseOperational, errOp := target.Get(target.Ctx, requestOperational)
+	//
+	//if errOp != nil {
+	//	log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
+	//} else {
+	//	notifications = append(notifications, responseOperational.Notification...)
+	//}
 
 	subscribePaths := make([][]string, 0)
 
@@ -217,14 +217,12 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 
 		}
 	} else {
-		completeID := utils.ToConfigName(sync.ID, sync.SoftwareVersion)
-		cfg := sync.ConfigurationStore.Store[store.ConfigName(completeID)]
-		m, ok := sync.modelReadOnlyPaths[utils.ToModelName(cfg.Type, sync.Device.SoftwareVersion)]
-		if !ok {
-			log.Warningf("Cannot check for Read Only paths for %s %s because "+
-				"Model Plugin not available - continuing", cfg.Type, sync.Device.SoftwareVersion)
+
+		if sync.modelReadOnlyPaths == nil {
+			log.Warningf("Cannot check for read only paths for target %s with %s because "+
+				"Model Plugin not available - continuing", sync.Device.ID, sync.Device.SoftwareVersion)
 		} else {
-			for _, path := range m {
+			for _, path := range sync.modelReadOnlyPaths {
 				subscribePaths = append(subscribePaths, utils.SplitPath(path))
 			}
 		}
@@ -248,6 +246,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	}
 
 	req, err := southbound.NewSubscribeRequest(options)
+	log.Info(req)
 	if err != nil {
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorParseConfig,
 			sync.key.DeviceID, err)
