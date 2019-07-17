@@ -23,14 +23,22 @@ import (
 	"text/template"
 )
 
-const modellistTemplate = "{{.Name}}: {{.Version}} from {{.Module}} containing\n" +
+const modellistTemplate = "{{.Name}}: {{.Version}} from {{.Module}} containing:\n" +
 	"YANGS:\n" +
 	"{{range .ModelData}}" +
 	"\t{{.Name}}\t{{.Version}}\t{{.Organization}}\n" +
 	"{{end}}" +
+	"{{if .ReadOnlyPath}}" +
 	"Containers & Lists:\n" +
 	"{{range .SchemaEntry}}" +
 	"\t{{.SchemaPath}}\n" +
+	"{{end}}" +
+	"{{end}}" +
+	"{{if .ReadOnlyPath}}" +
+	"Read Only Paths:\n" +
+	"{{range .ReadOnlyPath}}" +
+	"\t{{.}}\n" +
+	"{{end}}" +
 	"{{end}}"
 
 func newModelsCommand() *cobra.Command {
@@ -47,18 +55,19 @@ func newListPluginsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list <plugin path and filename>",
 		Short: "Lists the loaded model plugins",
-		Args:  cobra.MaximumNArgs(0),
+		Args:  cobra.MaximumNArgs(1),
 		Run:   runListPluginsCommand,
 	}
+	cmd.Flags().BoolP("verbose", "v", false, "display verbose output")
 	return cmd
 }
 
 func runListPluginsCommand(cmd *cobra.Command, args []string) {
+	verbose, _ := cmd.Flags().GetBool("verbose")
 	tmplModelList, _ := template.New("change").Parse(modellistTemplate)
-
 	client := admin.NewAdminServiceClient(getConnection(cmd))
 
-	stream, err := client.ListRegisteredModels(context.Background(), &admin.ListModelsRequest{})
+	stream, err := client.ListRegisteredModels(context.Background(), &admin.ListModelsRequest{Verbose: verbose})
 	if err != nil {
 		ExitWithErrorMessage("Failed to send request: %v", err)
 	}

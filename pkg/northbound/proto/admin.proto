@@ -46,6 +46,7 @@ message ModelInfo {
     repeated gnmi.ModelData modelData = 3;
     string module = 4;
     repeated SchemaEntry schemaEntry = 5;
+    repeated string readOnlyPath = 6;
 }
 
 // RegisterRequest carries data for registering a YANG model.
@@ -67,6 +68,7 @@ message RegisterResponse {
 
 // ListModelsRequest carries data for querying registered models.
 message ListModelsRequest {
+    bool verbose = 1;
 }
 
 // RollbackRequest carries the name of a network config to rollback. If there

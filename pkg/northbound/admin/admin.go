@@ -24,7 +24,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/utils"
 	"google.golang.org/grpc"
+	log "k8s.io/klog"
 )
 
 // Service is a Service implementation for administration.
@@ -76,13 +78,23 @@ func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.
 			schemaEntries = append(schemaEntries, &schemaEntry)
 		}
 
+		roPaths := make([]string, 0)
+		if req.Verbose {
+			var ok bool
+			roPaths, ok = manager.GetManager().ModelReadOnlyPaths[utils.ToModelName(name, version)]
+			if !ok {
+				log.Warningf("no list of Read Only Paths found for %s %s\n", name, version)
+			}
+		}
+
 		// Build model message
 		msg := &proto.ModelInfo{
-			Name:        name,
-			Version:     version,
-			ModelData:   md,
-			Module:      plugin,
-			SchemaEntry: schemaEntries,
+			Name:         name,
+			Version:      version,
+			ModelData:    md,
+			Module:       plugin,
+			SchemaEntry:  schemaEntries,
+			ReadOnlyPath: roPaths,
 		}
 
 		err = stream.Send(msg)

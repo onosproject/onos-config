@@ -144,7 +144,7 @@ func (m *Manager) ValidateStores() error {
 	cfgCount := len(m.ConfigStore.Store)
 	if cfgCount > 0 {
 		for _, configObj := range m.ConfigStore.Store {
-			go validateConfiguration(configObj, validationErrors)
+			go validateConfiguration(configObj, m.ChangeStore.Store, validationErrors)
 		}
 		for valErr := range validationErrors {
 			if valErr != nil {
@@ -160,7 +160,7 @@ func (m *Manager) ValidateStores() error {
 }
 
 // validateConfiguration is a go routine for validating a Configuration against it ModelPlugin
-func validateConfiguration(configObj store.Configuration, errChan chan error) {
+func validateConfiguration(configObj store.Configuration, changeStore map[string]*change.Change, errChan chan error) {
 	modelPluginName := configObj.Type + "-" + configObj.Version
 	cfgModelPlugin, pluginExists := mgr.ModelRegistry[modelPluginName]
 	if pluginExists {
@@ -183,6 +183,28 @@ func validateConfiguration(configObj store.Configuration, errChan chan error) {
 			errChan <- err
 			return
 		}
+
+		// Also validate that configs do not contain any read only paths
+		for _, changeID := range configObj.Changes {
+			change, ok := changeStore[store.B64(changeID)]
+			if !ok {
+				err = fmt.Errorf("error retrieving paths for %s %s", store.B64(changeID), modelPluginName)
+				errChan <- err
+				return
+			}
+			for _, path := range change.Config {
+				changePath := RemovePathIndices(path.Path)
+				for _, ropath := range mgr.ModelReadOnlyPaths[modelPluginName] {
+					if strings.HasPrefix(changePath, ropath) {
+						err = fmt.Errorf("error read only path in configuration %s matches %s for %s",
+							changePath, ropath, modelPluginName)
+						errChan <- err
+						return
+					}
+				}
+			}
+		}
+
 	} else {
 		log.Warning("No Model Plugin available for ", modelPluginName)
 	}
