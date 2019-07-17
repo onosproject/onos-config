@@ -33,6 +33,14 @@ jobs:
 
     - stage: integration-tests
       if: type != pull_request
+      notifications:
+        email:
+          - andrea@opennetworking.org
+          - jordan@opennetworking.org
+          - ray@opennetworking.org
+          - sean@opennetworking.org
+          - tom@opennetworking.org
+
       script:
         - date
         # Download and install kubectl
