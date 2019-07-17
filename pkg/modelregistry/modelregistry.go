@@ -30,7 +30,7 @@ import (
 type ModelRegistry struct {
 	ModelPlugins       map[string]ModelPlugin
 	ModelReadOnlyPaths map[string][]string
-	LocationStore      []string
+	LocationStore      map[string]string
 }
 
 // ModelPlugin is a set of methods that each model plugin should implement
@@ -61,12 +61,11 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 		return "", "", fmt.Errorf("symbol loaded from module %s is not a ModelPlugin",
 			moduleName)
 	}
-	//Saving the model plugin name in a distributed list for other instances to access it.
-	registry.LocationStore = append(registry.LocationStore, moduleName)
-
 	name, version, _, _ := modelPlugin.ModelData()
 	modelName := utils.ToModelName(name, version)
 	registry.ModelPlugins[modelName] = modelPlugin
+	//Saving the model plugin name and library name in a distributed list for other instances to access it.
+	registry.LocationStore[modelName] = moduleName
 	modelschema, err := modelPlugin.Schema()
 	if err != nil {
 		log.Warning("Error loading schema from model plugin", modelName, err)
