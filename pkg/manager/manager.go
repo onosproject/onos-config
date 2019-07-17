@@ -37,15 +37,12 @@ type Manager struct {
 	ChangeStore             *store.ChangeStore
 	DeviceStore             *topocache.DeviceStore
 	NetworkStore            *store.NetworkStore
-	ModelRegistryObj        *modelregistry.ModelRegistry
+	ModelRegistry           *modelregistry.ModelRegistry
 	TopoChannel             chan events.TopoEvent
 	ChangesChannel          chan events.ConfigEvent
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              dispatcher.Dispatcher
-	//TODO remove
-	ModelRegistry      map[string]ModelPlugin
-	ModelReadOnlyPaths map[string][]string
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -64,14 +61,11 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		DeviceStore:             device,
 		NetworkStore:            network,
 		TopoChannel:             topoCh,
-		ModelRegistryObj:        modelReg,
+		ModelRegistry:           modelReg,
 		ChangesChannel:          make(chan events.ConfigEvent, 10),
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
-		//TODO remove
-		ModelRegistry:      make(map[string]ModelPlugin),
-		ModelReadOnlyPaths: make(map[string][]string),
 	}
 
 	changeIds := make([]string, 0)
@@ -162,7 +156,7 @@ func (m *Manager) ValidateStores() error {
 // validateConfiguration is a go routine for validating a Configuration against it ModelPlugin
 func validateConfiguration(configObj store.Configuration, changeStore map[string]*change.Change, errChan chan error) {
 	modelPluginName := configObj.Type + "-" + configObj.Version
-	cfgModelPlugin, pluginExists := mgr.ModelRegistry[modelPluginName]
+	cfgModelPlugin, pluginExists := mgr.ModelRegistry.ModelPlugins[modelPluginName]
 	if pluginExists {
 		log.Info("Validating config ", configObj.Name, " with Model Plugin ", modelPluginName)
 		fullconfig := configObj.ExtractFullConfig(mgr.ChangeStore.Store, 0)
@@ -193,8 +187,8 @@ func validateConfiguration(configObj store.Configuration, changeStore map[string
 				return
 			}
 			for _, path := range change.Config {
-				changePath := RemovePathIndices(path.Path)
-				for _, ropath := range mgr.ModelReadOnlyPaths[modelPluginName] {
+				changePath := modelregistry.RemovePathIndices(path.Path)
+				for _, ropath := range mgr.ModelRegistry.ModelReadOnlyPaths[modelPluginName] {
 					if strings.HasPrefix(changePath, ropath) {
 						err = fmt.Errorf("error read only path in configuration %s matches %s for %s",
 							changePath, ropath, modelPluginName)
@@ -221,7 +215,7 @@ func (m *Manager) Run() {
 	go listenOnResponseChannel(m.SouthboundErrorChan)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.DeviceStore, m.TopoChannel,
-		m.OperationalStateChannel, m.SouthboundErrorChan, &m.Dispatcher, m.ModelReadOnlyPaths)
+		m.OperationalStateChannel, m.SouthboundErrorChan, &m.Dispatcher, m.ModelRegistry.ModelReadOnlyPaths)
 }
 
 //Close kills the channels and manager related objects

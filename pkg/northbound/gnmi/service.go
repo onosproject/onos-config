@@ -50,7 +50,7 @@ type Server struct {
 func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) (*gnmi.CapabilityResponse, error) {
 	v, _ := getGNMIServiceVersion()
 	return &gnmi.CapabilityResponse{
-		SupportedModels:    manager.GetManager().Capabilities(),
+		SupportedModels:    manager.GetManager().ModelRegistry.Capabilities(),
 		SupportedEncodings: []gnmi.Encoding{gnmi.Encoding_JSON},
 		GNMIVersion:        *v,
 	}, nil

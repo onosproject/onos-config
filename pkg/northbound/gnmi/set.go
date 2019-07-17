@@ -20,6 +20,7 @@ import (
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
@@ -189,7 +190,8 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 		}
 		for _, config := range configs {
 			if config.Device == t {
-				m, ok := manager.GetManager().ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
+				m, ok := manager.GetManager().ModelRegistry.
+					ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
 				if !ok {
 					log.Warningf("Cannot check for Read Only paths for %s %s because "+
 						"Model Plugin not available - continuing", config.Type, config.Version)
@@ -205,7 +207,8 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 		}
 		for _, config := range configs {
 			if config.Device == t {
-				m, ok := manager.GetManager().ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
+				m, ok := manager.GetManager().ModelRegistry.
+					ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
 				if !ok {
 					log.Warningf("Cannot check for Read Only paths for %s %s because "+
 						"Model Plugin not available - continuing", config.Type, config.Version)
@@ -223,7 +226,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 			for _, ropath := range model {
 				// Search through for list indices and replace with generic
 
-				modelPath := manager.RemovePathIndices(path)
+				modelPath := modelregistry.RemovePathIndices(path)
 				if strings.HasPrefix(modelPath, ropath) {
 					return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
 				}

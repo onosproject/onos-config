@@ -47,7 +47,7 @@ type Server struct {
 
 // RegisterModel registers a new YANG model.
 func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
-	name, version, err := manager.GetManager().RegisterModelPlugin(req.SoFile)
+	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(req.SoFile)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (
 
 // ListRegisteredModels lists the registered models..
 func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.AdminService_ListRegisteredModelsServer) error {
-	for _, model := range manager.GetManager().ModelRegistry {
+	for _, model := range manager.GetManager().ModelRegistry.ModelPlugins {
 		name, version, md, plugin := model.ModelData()
 		schemaMap, err := model.Schema()
 		if err != nil {
@@ -81,7 +81,7 @@ func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.
 		roPaths := make([]string, 0)
 		if req.Verbose {
 			var ok bool
-			roPaths, ok = manager.GetManager().ModelReadOnlyPaths[utils.ToModelName(name, version)]
+			roPaths, ok = manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(name, version)]
 			if !ok {
 				log.Warningf("no list of Read Only Paths found for %s %s\n", name, version)
 			}
