@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -36,31 +37,41 @@ type Manager struct {
 	ChangeStore             *store.ChangeStore
 	DeviceStore             *topocache.DeviceStore
 	NetworkStore            *store.NetworkStore
+	ModelRegistryObj        *modelregistry.ModelRegistry
 	TopoChannel             chan events.TopoEvent
 	ChangesChannel          chan events.ConfigEvent
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              dispatcher.Dispatcher
-	ModelRegistry           map[string]ModelPlugin
-	ModelReadOnlyPaths      map[string][]string
+	//TODO remove
+	ModelRegistry      map[string]ModelPlugin
+	ModelReadOnlyPaths map[string][]string
 }
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, device *topocache.DeviceStore,
 	network *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
 	log.Info("Creating Manager")
+	modelReg := &modelregistry.ModelRegistry{
+		ModelPlugins:       make(map[string]modelregistry.ModelPlugin),
+		ModelReadOnlyPaths: make(map[string][]string),
+		LocationStore:      make(map[string]string),
+	}
+
 	mgr = Manager{
 		ConfigStore:             configs,
 		ChangeStore:             changes,
 		DeviceStore:             device,
 		NetworkStore:            network,
 		TopoChannel:             topoCh,
+		ModelRegistryObj:        modelReg,
 		ChangesChannel:          make(chan events.ConfigEvent, 10),
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
-		ModelRegistry:           make(map[string]ModelPlugin),
-		ModelReadOnlyPaths:      make(map[string][]string),
+		//TODO remove
+		ModelRegistry:      make(map[string]ModelPlugin),
+		ModelReadOnlyPaths: make(map[string][]string),
 	}
 
 	changeIds := make([]string, 0)
