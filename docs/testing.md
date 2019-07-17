@@ -47,6 +47,25 @@ configuration is primarily managed through various onit commands like `onit set`
 file, but it's nevertheless important to note that the application must have write access to one
 of the above paths.
 
+
+### Onit Auto-Completion
+*Onit* supports shell auto-completion for its various commands, sub-commands and flags.
+You can enable this feature for *bash* or *zsh* as follows:
+#### Bash Auto-Completion
+To enable this for **bash**, run the following from the shell:
+
+```bash
+> eval "$(onit completion bash)"
+```
+#### Zsh Auto-Completion 
+
+To enable this for **zsh**, run the following from the shell:
+```bash
+> source <(onit completion zsh)
+```
+
+**Note**: We also recomment to add the output of the above commands to *.bashrc* or *.zshrc*.
+
 ### Docker
 
 The `onit` command manages clusters and runs tests by deploying locally built [Docker] containers
@@ -107,7 +126,30 @@ be built and loaded into the kind cluster, so no additional step is necessary.
 
 The primary interface for setting up test clusters and running tests is the `onit` command,
 which provides a suite of commands for setting up and tearing down test clusters, adding
-and removing [device simulators][simulators], running tests, and viewing test history.
+and removing [device simulators][simulators], adding and removing networks of [stratum] switches, running tests, and viewing test history. To see list of `onit commands` run `onit` from the shell as follows:
+```bash
+> onit 
+Usage:
+  onit [command]
+
+Available Commands:
+  add         Add resources to the cluster
+  completion  Generated bash or zsh auto-completion script
+  create      Create a test resource on Kubernetes
+  debug       Open a debugger port to the given resource
+  delete      Delete Kubernetes test resources
+  fetch       Fetch resources from the cluster
+  get         Get test configurations
+  help        Help about any command
+  remove      Remove resources from the cluster
+  run         Run integration tests
+  set         Set test configurations
+
+Flags:
+  -h, --help   help for onit
+
+Use "onit [command] --help" for more information about a command.
+```
 
 ### Cluster Setup
 
@@ -115,13 +157,11 @@ The first step to running tests is to setup a test cluster with `onit create clu
 
 ```bash
 > onit create cluster
-I0624 15:36:33.569276   65347 controller.go:100] Setting up test cluster 84b9795a-96d0-11e9-bd2a-784f43889941
-I0624 15:36:33.569309   65347 controller.go:175] Setting up test namespace onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941
-I0624 15:36:33.592048   65347 controller.go:187] Setting up Atomix controller atomix-controller/onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941
-I0624 15:36:33.720107   65347 controller.go:210] Waiting for Atomix controller atomix-controller/onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941 to become ready
-I0624 15:36:47.272478   65347 controller.go:527] Setting up partitions raft/onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941
-I0624 15:36:47.287600   65347 controller.go:532] Waiting for partitions raft/onos-cluster-84b9795a-96d0-11e9-bd2a-784f43889941 to become ready
-84b9795a-96d0-11e9-bd2a-784f43889941
+ ✓ Creating cluster namespace
+ ✓ Setting up Atomix controller
+ ✓ Starting Raft partitions
+ ✓ Bootstrapping onos-config cluster
+cluster-b8c45834-a81c-11e9-82f4-3c15c2cff232
 ```
 
 To setup the cluster, onit creates a unique namespace within which to create test resources,
@@ -130,10 +170,11 @@ Once the cluster is setup, the command will output the name of the test namespac
 can be used to view test resources via `kubectl`:
 
 ```bash
-> kubectl get pods -n 84b9795a-96d0-11e9-bd2a-784f43889941
-atomix-controller-77b78fcc54-qzzps                     1/1     Running     0          11h
-onos-config-786594d4b5-tqwwr                           1/1     Running     0          29m
-raft-1-0                                               1/1     Running     0          11h
+> kubectl get pods -n cluster-b8c45834-a81c-11e9-82f4-3c15c2cff232
+NAME                                 READY   STATUS    RESTARTS   AGE
+atomix-controller-555dd58f9f-nsx5g   1/1     Running   0          87s
+onos-config-66d54956f5-xwpsh         1/1     Running   0          52s
+raft-1-0                             1/1     Running   0          73s
 ```
 
 The `create cluster` command supports additional flags for defining the cluster architecture:
@@ -148,35 +189,46 @@ and the deployed cluster will be set as the current cluster context:
 
 ```bash
 > onit get cluster
-84b9795a-96d0-11e9-bd2a-784f43889941
+cluster-b8c45834-a81c-11e9-82f4-3c15c2cff232
+```
+
+You can also create a cluster by passing a name to the `onit create cluster` command. To create a cluster with name `onit-2`, we run the following command:
+
+```bash
+> onit create cluster onit-2
+ ✓ Creating cluster namespace
+ ✓ Setting up Atomix controller
+ ✓ Starting Raft partitions
+ ✓ Bootstrapping onos-config cluster
+onit-2
+```
+
+if we run `onit get clusters` command, we should be able to see the two clusters that we created:
+
+```bash
 > onit get clusters
-ID                                     SIZE   PARTITIONS
-84b9795a-96d0-11e9-bd2a-784f43889941   1      1
-0e2ad27a-9720-11e9-ad72-acde48001122   1      1
+ID                                             SIZE   PARTITIONS
+cluster-b8c45834-a81c-11e9-82f4-3c15c2cff232   1      1
+onit-2
 ```
 
 When multiple clusters are deployed, you can switch between clusters by setting the current
 cluster context:
 
 ```bash
-> onit set cluster 0e2ad27a-9720-11e9-ad72-acde48001122
-0e2ad27a-9720-11e9-ad72-acde48001122
+> onit set cluster onit-2
+onit-2
 ```
 
-This will run all future cluster operations on the configured cluster. Alternatively, most
-commands support a flag to override the default cluster:
-
-```bash
-> onit get history -c 0e2ad27a-9720-11e9-ad72-acde48001122
-...
-```
+This will run all future cluster operations on the configured cluster. Alternatively, most commands support a flag to override the default cluster:
 
 To delete a cluster, run `onit delete cluster`:
 ```bash
 > onit delete cluster
+✓ Deleting cluster namespace
 ```
 
-### Adding Devices
+### Adding Simulators
 
 Most tests require devices to be added to the cluster. The `onit` command supports adding and
 removing [device simulators][simulators] through the `add` and `remove` commands. To add a
@@ -184,25 +236,39 @@ simulator to the current cluster, simply run `onit add simulator`:
 
 ```bash
 > onit add simulator 
-I0625 12:01:54.498233   43235 controller.go:110] Setting up simulator device-2996584472/onos-cluster-0e2ad27a-9720-11e9-ad72-acde48001122
-I0625 12:01:54.602006   43235 controller.go:115] Waiting for simulator device-2996584472/onos-cluster-0e2ad27a-9720-11e9-ad72-acde48001122 to become ready
-I0625 12:02:03.107258   43235 controller.go:1034] Redeploying onos-config cluster onos-config/onos-cluster-0e2ad27a-9720-11e9-ad72-acde48001122
-I0625 12:02:03.527489   43235 controller.go:1047] Waiting for onos-config cluster onos-config/onos-cluster-0e2ad27a-9720-11e9-ad72-acde48001122 to become ready
-device-2996584472
+✓ Setting up simulator
+✓ Reconfiguring onos-config nodes
+device-1186885096
 ```
 
 When a simulator is added to the cluster, the cluster is reconfigured in two phases:
 * Bootstrap a new [device simulator][simulators] with the provided configuration
 * Reconfigure and redeploy the onos-config cluster with the new device in its stores
 
+To give a name to a simulator, pass a name to `onit add simulator` command as follows
+```bash
+> onit add simulator sim-2
+✓ Setting up simulator
+✓ Reconfiguring onos-config nodes
+sim-2
+```
+
+To get list of simulators, run `onit get simulators` as follows:
+
+```bash
+> onit get simulators 
+device-1186885096
+sim-2
+```
 Simulators can similarly be removed with the `remove simulator` command:
 
 ```bash
-> onit remove simulator device-2996584472
+> onit remove simulator device-1186885096
+ ✓ Tearing down simulator
+ ✓ Reconfiguring onos-config nodes
 ```
 
-As with the `add` command, removing a simulator requires that the onos-config cluster be reconfigured
-and redeployed.
+As with the `add` command, removing a simulator requires that the onos-config cluster be reconfigured and redeployed.
 
 ### Adding Networks
 To run some of the tests on stratum switches, we can create a network of stratum switches using Mininet. To create a network of stratum switches, we can use `onit add network [Name] [Mininet Options]` as follows: 
@@ -211,16 +277,35 @@ To run some of the tests on stratum switches, we can create a network of stratum
 * To create a linear network topology with two switches and name it *stratum-linear*, simply run the following command:
 
 ```bash
-$ onit add network stratum-linear -- --topo linear,2
+> onit add network stratum-linear -- --topo linear,2
+✓ Setting up network
+✓ Reconfiguring onos-config nodes
+stratum-linear
 ```
 
 When a network is added to the cluster, the cluster is reconfigured in two phases:
 * Bootstrap one or more than one new stratum switches with the provided configuration
 * Reconfigure and redeploy the onos-config cluster with the new switches in its stores
 
+To add a single node network topology, run the following command:
+```bash
+> onit add network
+✓ Setting up network
+✓ Reconfiguring onos-config nodes
+network-2878434070
+```
+
+To get list of networks, run the following command:
+```bash
+> onit get networks
+network-2878434070
+stratum-linear
+```
 Networks can be removed using `onit remove network` command. For example, to remove the linear topolog that is created using the above command, you should run the following command:
 ```bash
-$ onit remove network stratum-linear
+> onit remove network stratum-linear
+ ✓ Tearing down network
+ ✓ Reconfiguring onos-config nodes
 ```
 
 As with the `add` command, removing a network requires that the onos-config cluster be reconfigured and redeployed.
@@ -299,9 +384,13 @@ To list the onos-config nodes running in the cluster, use `onit get nodes`:
 
 ```bash
 > onit get nodes
-ID                            STATUS
-onos-config-f5b7758dc-rdbqt   RUNNING
-> onit get logs onos-config-f5b7758dc-rdbqt
+ID                             STATUS
+onos-config-569c7d8546-jscg8   RUNNING
+```
+
+To get logs for the above node, run the following command:
+```bash
+> onit get logs onos-config-569c7d8546-jscg8
 I0625 21:55:32.027255       1 onos-config.go:114] Starting onos-config
 I0625 21:55:32.030184       1 manager.go:98] Configuration store loaded from /etc/onos-config/configs/configStore.json
 I0625 21:55:32.030358       1 manager.go:105] Change store loaded from /etc/onos-config/configs/changeStore.json
@@ -317,6 +406,9 @@ To list the Raft partitions running in the cluster, use `onit get partitions`:
 > onit get partitions
 ID   GROUP   NODES
 1    raft    raft-1-0
+```
+To get logs for the above partions, run the following command:
+```bash
 > onit get logs raft-1-0
 21:10:24.466 [main] INFO  io.atomix.server.AtomixServerRunner - Node ID: raft-1-0
 21:10:24.472 [main] INFO  io.atomix.server.AtomixServerRunner - Partition Config: /etc/atomix/partition.json
@@ -335,10 +427,23 @@ ID                                     TESTS                   STATUS   EXIT COD
 71a0623c-977c-11e9-8478-acde48001122   test-single-path-test   PASSED   0
 9e512cdc-9720-11e9-ba6e-acde48001122   *                       PASSED   0
 da629d06-9774-11e9-bb50-acde48001122   *                       PASSED   0
+```
+To get logs for one of the above histories, run the following command:
+```bash
 > onit get logs 71a0623c-977c-11e9-8478-acde48001122
 === RUN   test-single-path-test
 --- PASS: test-single-path-test (0.04s)
 PASS
+```
+
+To download logs from a node, you can run `onit fetch logs` command. For example, to download logs from *onos-config-66d54956f5-xwpsh* node, run the following command:
+```bash
+onit fetch logs onos-config-66d54956f5-xwpsh
+```
+
+To open a debugger port to the given resource, you can run `open debug` command. For example, to forwards a port to the debug port on the onos-config pod, run the following command:
+```bash
+onit debug onos-config-66d54956f5-xwpsh
 ```
 
 ## API
@@ -409,3 +514,4 @@ devices := env.GetDevices()
 [Docker]: https://www.docker.com/
 [Atomix]: https://atomix.io
 [simulators]: https://github.com/onosproject/simulators
+[stratum]: https://www.opennetworking.org/stratum/
