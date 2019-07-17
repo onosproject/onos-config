@@ -127,7 +127,7 @@ func main() {
 			if modelPlugin == "" {
 				continue
 			}
-			_, _, err := mgr.RegisterModelPlugin(modelPlugin)
+			_, _, err := mgr.ModelRegistry.RegisterModelPlugin(modelPlugin)
 			if err != nil {
 				log.Fatal("Unable to start onos-config ", err)
 			}

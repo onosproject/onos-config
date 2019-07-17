@@ -84,7 +84,7 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 	m.ConfigStore.Store[configName] = deviceConfig
 
 	modelName := fmt.Sprintf("%s-%s", deviceConfig.Type, deviceConfig.Version)
-	deviceModelYgotPlugin, ok := m.ModelRegistry[modelName]
+	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
 	if !ok {
 		log.Warning("No model ", modelName, " available as a plugin")
 	} else {
