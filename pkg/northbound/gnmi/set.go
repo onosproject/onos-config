@@ -100,7 +100,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	//Temporary map in order to not to modify the original removes but optimize calculations during validation
 	targetRemovesTmp := make(mapTargetRemoves)
-	for k,v := range targetRemoves {
+	for k, v := range targetRemoves {
 		targetRemovesTmp[k] = v
 	}
 
