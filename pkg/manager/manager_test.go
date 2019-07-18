@@ -215,9 +215,10 @@ func Test_SetNetworkConfig(t *testing.T) {
 	// Making change
 	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.CreateTypedValueFloat(ValueLeaf2B314))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
-
+	_, err := mgrTest.ValidateNetworkConfig("Device1-1.0.0", updates, deletes)
+	assert.NilError(t, err, "ValidateTargetConfig error")
 	changeID, configName, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
-	assert.NilError(t, err, "GetTargetConfig error")
+	assert.NilError(t, err, "SetTargetConfig error")
 	testUpdate := configurationStoreTest["Device1-1.0.0"]
 	changeIDTest := testUpdate.Changes[len(testUpdate.Changes)-1]
 	assert.Equal(t, store.B64(changeID), store.B64(changeIDTest), "Change Ids should correspond")
@@ -379,8 +380,9 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	deletes := make([]string, 0)
 
 	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
-
-	_, _, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
+	_, err := mgrTest.ValidateNetworkConfig("Device1-1.0.0", updates, deletes)
+	assert.NilError(t, err, "ValidateTargetConfig error")
+	_, _, err = mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
 
 	assert.NilError(t, err, "Can't create change", err)
 
@@ -388,6 +390,8 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	updates[Test1Cont1ACont2ALeaf2D] = change.CreateTypedValueFloat(ValueLeaf2D314)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 
+	_, err = mgrTest.ValidateNetworkConfig("Device1-1.0.0", updates, deletes)
+	assert.NilError(t, err, "ValidateTargetConfig error")
 	changeID, configName, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
 
 	assert.NilError(t, err, "Can't create change")

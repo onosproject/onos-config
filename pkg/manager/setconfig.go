@@ -27,10 +27,91 @@ import (
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
 const SetConfigAlreadyApplied = "Already applied:"
 
-// SetNetworkConfig sets the given value, according to the path on the configuration for the specified target
+// ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
+// for the specified target
+func (m *Manager) ValidateNetworkConfig(configName store.ConfigName, updates map[string]*change.TypedValue,
+	deletes []string) (change.ID, error) {
+
+	deviceConfig, _, err := m.getStoredConfig(configName)
+	if err != nil {
+		return nil, err
+	}
+	deviceConfigTemporary, _ := store.CreateConfiguration(deviceConfig.Device, deviceConfig.Version,
+		deviceConfig.Type, deviceConfig.Changes)
+	chg, err := m.computeChange(updates, deletes)
+	if err != nil {
+		return nil, err
+	}
+	changeID, err := m.storeChange(chg)
+	if err != nil {
+		return changeID, err
+	}
+
+	deviceConfigTemporary.Changes = append(deviceConfig.Changes, changeID)
+
+	modelName := fmt.Sprintf("%s-%s", deviceConfig.Type, deviceConfig.Version)
+	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
+	if !ok {
+		log.Warning("No model ", modelName, " available as a plugin")
+	} else {
+		configValues := deviceConfigTemporary.ExtractFullConfig(m.ChangeStore.Store, 0)
+		jsonTree, err := store.BuildTree(configValues, true)
+		if err != nil {
+			log.Error("Error building JSON tree from Config Values ", err, jsonTree)
+		} else {
+			ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
+			if err != nil {
+				log.Error("Error unmarshaling JSON tree in to YGOT model ", err)
+				return changeID, err
+			}
+			err = deviceModelYgotPlugin.Validate(ygotModel)
+			if err != nil {
+				return changeID, err
+			}
+			log.Info("Configuration is Valid according to model",
+				modelName, "after adding change", store.B64(changeID))
+		}
+	}
+	return changeID, nil
+}
+
+// SetNetworkConfig sets the given the given updates and deletes, according to the path on the configuration
+// for the specified target
 func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[string]*change.TypedValue,
 	deletes []string) (change.ID, store.ConfigName, error) {
 
+	deviceConfig, configName, err := m.getStoredConfig(configName)
+	if err != nil {
+		return nil, configName, err
+	}
+	chg, err := m.computeChange(updates, deletes)
+	if err != nil {
+		return nil, configName, err
+	}
+	changeID := chg.ID
+	// If the last change applied to deviceConfig is the same as this one then don't apply it again
+	if len(deviceConfig.Changes) > 0 &&
+		store.B64(deviceConfig.Changes[len(deviceConfig.Changes)-1]) == store.B64(changeID) {
+		log.Info("Change ", store.B64(changeID),
+			"has already been applied to", configName, "Ignoring")
+		return changeID, configName, fmt.Errorf("%s %s",
+			SetConfigAlreadyApplied, store.B64(changeID))
+	}
+	//FIXME this needs to hold off until the device replies with an ok message for the change.
+	deviceConfig.Changes = append(deviceConfig.Changes, changeID)
+	deviceConfig.Updated = time.Now()
+	m.ConfigStore.Store[configName] = deviceConfig
+
+	// TODO: At this stage
+	//  2) Do a precheck that the device is reachable
+	//  3) Check that the caller is authorized to make the change
+	m.ChangesChannel <- events.CreateConfigEvent(deviceConfig.Device,
+		changeID, true)
+
+	return changeID, configName, nil
+}
+
+func (m *Manager) getStoredConfig(configName store.ConfigName) (store.Configuration, store.ConfigName, error) {
 	// Look for an exact match or then a partial match
 	deviceConfig, ok := m.ConfigStore.Store[configName]
 	if !ok {
@@ -55,63 +136,14 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 				}
 				return strings.Join(similarDevicesStr, ", ")
 			}
-			return nil, configName, fmt.Errorf("%d configurations found for '%s': %s"+
+			return store.Configuration{}, configName, fmt.Errorf("%d configurations found for '%s': %s"+
 				". Please specify a version in extension 101", len(similarDevices),
 				configName, conv(similarDevices))
 		} else {
-			return nil, configName, fmt.Errorf("no configuration found matching '%s'."+
+			return store.Configuration{}, configName, fmt.Errorf("no configuration found matching '%s'."+
 				"Please specify version and device type in extensions 101 and 102", configName)
 			// FIXME add in handler for actually dealing with getting version and type and modeldata
 		}
 	}
-
-	changeID, err := m.computeAndStoreChange(updates, deletes)
-	if err != nil {
-		return nil, configName, err
-	}
-
-	// If the last change applied to deviceConfig is the same as this one then don't apply it again
-	if len(deviceConfig.Changes) > 0 &&
-		store.B64(deviceConfig.Changes[len(deviceConfig.Changes)-1]) == store.B64(changeID) {
-		log.Info("Change ", store.B64(changeID),
-			"has already been applied to", configName, "Ignoring")
-		return changeID, configName, fmt.Errorf("%s %s",
-			SetConfigAlreadyApplied, store.B64(changeID))
-	}
-	//FIXME this needs to hold off until the device replies with an ok message for the change.
-	deviceConfig.Changes = append(deviceConfig.Changes, changeID)
-	deviceConfig.Updated = time.Now()
-	m.ConfigStore.Store[configName] = deviceConfig
-
-	modelName := fmt.Sprintf("%s-%s", deviceConfig.Type, deviceConfig.Version)
-	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
-	if !ok {
-		log.Warning("No model ", modelName, " available as a plugin")
-	} else {
-		configValues := deviceConfig.ExtractFullConfig(m.ChangeStore.Store, 0)
-		jsonTree, err := store.BuildTree(configValues, true)
-		if err != nil {
-			log.Error("Error building JSON tree from Config Values ", err, jsonTree)
-		} else {
-			ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
-			if err != nil {
-				log.Error("Error unmarshaling JSON tree in to YGOT model ", err)
-				return nil, configName, err
-			}
-			err = deviceModelYgotPlugin.Validate(ygotModel)
-			if err != nil {
-				return nil, configName, err
-			}
-			log.Info("Configuration is Valid according to model",
-				modelName, "after adding change", store.B64(changeID))
-		}
-	}
-
-	// TODO: At this stage
-	//  2) Do a precheck that the device is reachable
-	//  3) Check that the caller is authorized to make the change
-	m.ChangesChannel <- events.CreateConfigEvent(deviceConfig.Device,
-		changeID, true)
-
-	return changeID, configName, nil
+	return deviceConfig, configName, nil
 }
