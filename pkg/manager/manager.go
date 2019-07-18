@@ -244,8 +244,8 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse) {
 	}
 }
 
-func (m *Manager) computeAndStoreChange(updates map[string]*change.TypedValue,
-	deletes []string) (change.ID, error) {
+func (m *Manager) computeChange(updates map[string]*change.TypedValue,
+	deletes []string) (*change.Change, error) {
 	var newChanges = make([]*change.Value, 0)
 	//updates
 	for path, value := range updates {
@@ -257,11 +257,11 @@ func (m *Manager) computeAndStoreChange(updates map[string]*change.TypedValue,
 		changeValue, _ := change.CreateChangeValue(path, change.CreateTypedValueEmpty(), true)
 		newChanges = append(newChanges, changeValue)
 	}
-	configChange, err := change.CreateChange(newChanges,
+	return change.CreateChange(newChanges,
 		fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339)))
-	if err != nil {
-		return nil, err
-	}
+}
+
+func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
 	if m.ChangeStore.Store[store.B64(configChange.ID)] != nil {
 		log.Info("Change ID = ", store.B64(configChange.ID), " already exists - not overwriting")
 	} else {

@@ -34,7 +34,11 @@ func (m *Manager) RollbackTargetConfig(configname string) (change.ID, error) {
 		log.Errorf("Error on rollback: %s", err.Error())
 		return nil, err
 	}
-	changeID, err := m.computeAndStoreChange(updates, deletes)
+	chg, err := m.computeChange(updates, deletes)
+	if err != nil {
+		return id, err
+	}
+	changeID, err := m.storeChange(chg)
 	if err != nil {
 		return id, err
 	}
