@@ -14,9 +14,7 @@ RUN apk upgrade --update --no-cache && apk add bash bash-completion libc6-compat
 
 COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos /usr/local/bin/onos
 COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos-config-debug /usr/local/bin/onos-config
-COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/testdevice.so.1.0.0 /usr/local/lib/testdevice.so.1.0.0
-COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/testdevice.so.2.0.0 /usr/local/lib/testdevice.so.2.0.0
-COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/devicesim.so.1.0.0 /usr/local/lib/devicesim.so.1.0.0
+COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/*-debug.so.* /usr/local/lib/
 COPY --from=debugBuilder /go/bin/dlv /usr/local/bin/dlv
 COPY --from=debugBuilder /go/bin/atomix /usr/local/bin/atomix
 

@@ -7,16 +7,27 @@ ONOS_CONFIG_VERSION := latest
 ONOS_CONFIG_DEBUG_VERSION := debug
 ONOS_BUILD_VERSION := stable
 
+MODELPLUGINS = build/_output/testdevice.so.1.0.0 build/_output/testdevice.so.2.0.0 build/_output/devicesim.so.1.0.0
+
 build: # @HELP build the Go binaries and run all validations (default)
-build:
+build: $(MODELPLUGINS)
 	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
 	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config-debug ./cmd/onos-config
 	go build -o build/_output/onos ./cmd/onos
 	go build -o build/_output/onit ./test/cmd/onit
 	go build -o build/_output/onit-k8s ./test/cmd/onit-k8s
+
+build/_output/testdevice.so.1.0.0: modelplugin/TestDevice-1.0.0/modelmain.go modelplugin/TestDevice-1.0.0/testdevice_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
+	-CGO_ENABLED=1 go build -o build/_output/testdevice-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
+
+build/_output/testdevice.so.2.0.0: modelplugin/TestDevice-2.0.0/modelmain.go modelplugin/TestDevice-2.0.0/testdevice_2_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
+	-CGO_ENABLED=1 go build -o build/_output/testdevice-debug.so.2.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
+
+build/_output/devicesim.so.1.0.0: modelplugin/Devicesim-1.0.0/modelmain.go modelplugin/Devicesim-1.0.0/devicesim_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
+	-CGO_ENABLED=1 go build -o build/_output/devicesim-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
 
 test: # @HELP run the unit tests and source code validation
 test: build deps lint vet license_check gofmt cyclo misspell ineffassign
