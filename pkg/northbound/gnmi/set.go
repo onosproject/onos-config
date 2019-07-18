@@ -98,18 +98,24 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, status.Error(codes.InvalidArgument, errRo.Error())
 	}
 
+	//Temporary map in order to not to modify the original removes but optimize calculations during validation
+	targetRemovesTmp := make(mapTargetRemoves)
+	for k,v := range targetRemoves {
+		targetRemovesTmp[k] = v
+	}
+
+	//TODO this can be parallelized with a pattern manager.go ValidateStores()
 	//Checking for wrong configuration against the device models for updates
 	for target, updates := range targetUpdates {
-		_, err := validateChange(target, version, updates, targetRemoves[target])
+		err := validateChange(target, version, updates, targetRemoves[target])
 		if err != nil {
 			return nil, err
 		}
-		//TODO copy targetRemoves into a temporary set and delete from that and use it at line 112
-		//delete(targetRemoves, target)
+		delete(targetRemovesTmp, target)
 	}
 	//Checking for wrong configuration against the device models for deletes
-	for target, removes := range targetRemoves {
-		_, err := validateChange(target, version, make(map[string]*change.TypedValue), removes)
+	for target, removes := range targetRemovesTmp {
+		err := validateChange(target, version, make(map[string]*change.TypedValue), removes)
 		if err != nil {
 			return nil, err
 		}
@@ -404,17 +410,18 @@ func setChange(target string, version string, targetUpdates map[string]*change.T
 	return changeID, configName, false, nil
 }
 
-func validateChange(target string, version string, targetUpdates map[string]*change.TypedValue, targetRemoves []string) (change.ID, error) {
+func validateChange(target string, version string, targetUpdates map[string]*change.TypedValue, targetRemoves []string) error {
 	configName := store.ConfigName(target)
 	// target is a device name with no version
 	if version != "" {
 		configName = store.ConfigName(strings.Join([]string{target, version}, "-"))
 	}
-	changeID, err := manager.GetManager().ValidateNetworkConfig(
+	err := manager.GetManager().ValidateNetworkConfig(
 		store.ConfigName(configName), targetUpdates, targetRemoves)
 	if err != nil {
-		log.Error("Error in validating config: ", store.B64(changeID), " for target ", configName, err)
-		return nil, err
+		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
+			targetRemoves, configName, err)
+		return err
 	}
-	return changeID, nil
+	return nil
 }

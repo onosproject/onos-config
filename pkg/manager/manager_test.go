@@ -215,7 +215,7 @@ func Test_SetNetworkConfig(t *testing.T) {
 	// Making change
 	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.CreateTypedValueFloat(ValueLeaf2B314))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
-	_, err := mgrTest.ValidateNetworkConfig("Device1-1.0.0", updates, deletes)
+	err := mgrTest.ValidateNetworkConfig("Device1-1.0.0", updates, deletes)
 	assert.NilError(t, err, "ValidateTargetConfig error")
 	changeID, configName, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
 	assert.NilError(t, err, "SetTargetConfig error")
@@ -380,7 +380,7 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	deletes := make([]string, 0)
 
 	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
-	_, err := mgrTest.ValidateNetworkConfig("Device1-1.0.0", updates, deletes)
+	err := mgrTest.ValidateNetworkConfig("Device1-1.0.0", updates, deletes)
 	assert.NilError(t, err, "ValidateTargetConfig error")
 	_, _, err = mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
 
@@ -390,7 +390,7 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	updates[Test1Cont1ACont2ALeaf2D] = change.CreateTypedValueFloat(ValueLeaf2D314)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 
-	_, err = mgrTest.ValidateNetworkConfig("Device1-1.0.0", updates, deletes)
+	err = mgrTest.ValidateNetworkConfig("Device1-1.0.0", updates, deletes)
 	assert.NilError(t, err, "ValidateTargetConfig error")
 	changeID, configName, err := mgrTest.SetNetworkConfig("Device1-1.0.0", updates, deletes)
 

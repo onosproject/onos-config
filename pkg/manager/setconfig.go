@@ -30,21 +30,21 @@ const SetConfigAlreadyApplied = "Already applied:"
 // ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target
 func (m *Manager) ValidateNetworkConfig(configName store.ConfigName, updates map[string]*change.TypedValue,
-	deletes []string) (change.ID, error) {
+	deletes []string) error {
 
 	deviceConfig, _, err := m.getStoredConfig(configName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	deviceConfigTemporary, _ := store.CreateConfiguration(deviceConfig.Device, deviceConfig.Version,
 		deviceConfig.Type, deviceConfig.Changes)
 	chg, err := m.computeChange(updates, deletes)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	changeID, err := m.storeChange(chg)
 	if err != nil {
-		return changeID, err
+		return err
 	}
 
 	deviceConfigTemporary.Changes = append(deviceConfig.Changes, changeID)
@@ -62,17 +62,17 @@ func (m *Manager) ValidateNetworkConfig(configName store.ConfigName, updates map
 			ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
 			if err != nil {
 				log.Error("Error unmarshaling JSON tree in to YGOT model ", err)
-				return changeID, err
+				return err
 			}
 			err = deviceModelYgotPlugin.Validate(ygotModel)
 			if err != nil {
-				return changeID, err
+				return err
 			}
 			log.Info("Configuration is Valid according to model",
 				modelName, "after adding change", store.B64(changeID))
 		}
 	}
-	return changeID, nil
+	return nil
 }
 
 // SetNetworkConfig sets the given the given updates and deletes, according to the path on the configuration
@@ -111,8 +111,8 @@ func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[stri
 	return changeID, configName, nil
 }
 
+// getStoredConfig looks for an exact match for the config name or then a partial match based on the device name
 func (m *Manager) getStoredConfig(configName store.ConfigName) (store.Configuration, store.ConfigName, error) {
-	// Look for an exact match or then a partial match
 	deviceConfig, ok := m.ConfigStore.Store[configName]
 	if !ok {
 		similarDevices := make([]store.ConfigName, 0)
