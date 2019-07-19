@@ -21,6 +21,7 @@ import (
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	"gotest.tools/assert"
+	"log"
 	"testing"
 )
 
@@ -85,9 +86,11 @@ func Test_Schema(t *testing.T) {
 	assert.Equal(t, len(ds1Schema), 137)
 
 	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
-	assert.Equal(t, len(readOnlyPaths), 37)
+	readOnlyPathsKeys := Paths(readOnlyPaths)
+	log.Println(readOnlyPathsKeys)
+	assert.Equal(t, len(readOnlyPathsKeys), 37)
 	// Can be in any order
-	for _, p := range readOnlyPaths {
+	for _, p := range readOnlyPathsKeys {
 		switch p {
 		case
 			"/openconfig-platform:components/component[name=*]/properties/property[name=*]/state",

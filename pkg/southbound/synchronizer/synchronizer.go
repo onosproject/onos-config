@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -44,13 +45,13 @@ type Synchronizer struct {
 	key                  southbound.DeviceID
 	query                client.Query
 	operationalCache     map[string]string
-	modelReadOnlyPaths   []string
+	modelReadOnlyPaths   map[string]map[string]change.ValueType
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, mReadOnlyPaths []string) (*Synchronizer, error) {
+	errChan chan<- events.DeviceResponse, mReadOnlyPaths map[string]map[string]change.ValueType) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
@@ -217,7 +218,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 
 		}
 	} else if sync.modelReadOnlyPaths != nil {
-		for _, path := range sync.modelReadOnlyPaths {
+		for _, path := range modelregistry.Paths(sync.modelReadOnlyPaths) {
 			subscribePaths = append(subscribePaths, utils.SplitPath(path))
 		}
 	}

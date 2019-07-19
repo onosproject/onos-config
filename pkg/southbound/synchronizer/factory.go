@@ -18,6 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -29,7 +30,7 @@ import (
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher, modelReadOnlyPaths map[string][]string) {
+	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher, modelReadOnlyPaths modelregistry.GlobalReadOnlyPaths) {
 	for topoEvent := range topoChannel {
 		deviceName := topocache.ID(events.Event(topoEvent).Subject())
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {

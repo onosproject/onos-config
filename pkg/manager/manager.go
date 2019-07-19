@@ -51,7 +51,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:       make(map[string]modelregistry.ModelPlugin),
-		ModelReadOnlyPaths: make(map[string][]string),
+		ModelReadOnlyPaths: make(map[string]map[string]map[string]change.ValueType),
 		LocationStore:      make(map[string]string),
 	}
 
@@ -188,7 +188,12 @@ func validateConfiguration(configObj store.Configuration, changeStore map[string
 			}
 			for _, path := range change.Config {
 				changePath := modelregistry.RemovePathIndices(path.Path)
-				for _, ropath := range mgr.ModelRegistry.ModelReadOnlyPaths[modelPluginName] {
+				roPathsAndValues, ok := mgr.ModelRegistry.ModelReadOnlyPaths[modelPluginName]
+				if !ok {
+					continue
+				}
+				roPaths := modelregistry.Paths(roPathsAndValues)
+				for _, ropath := range roPaths {
 					if strings.HasPrefix(changePath, ropath) {
 						err = fmt.Errorf("error read only path in configuration %s matches %s for %s",
 							changePath, ropath, modelPluginName)

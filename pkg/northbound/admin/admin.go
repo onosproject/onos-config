@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -80,8 +81,8 @@ func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.
 
 		roPaths := make([]string, 0)
 		if req.Verbose {
-			var ok bool
-			roPaths, ok = manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(name, version)]
+			roPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(name, version)]
+			roPaths = modelregistry.Paths(roPathsAndValues)
 			if !ok {
 				log.Warningf("no list of Read Only Paths found for %s %s\n", name, version)
 			}
