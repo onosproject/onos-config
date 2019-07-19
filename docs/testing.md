@@ -441,10 +441,8 @@ To download logs from a node, you can run `onit fetch logs` command. For example
 onit fetch logs onos-config-66d54956f5-xwpsh
 ```
 
-To open a debugger port to the given resource, you can run `open debug` command. For example, to forwards a port to the debug port on the onos-config pod, run the following command:
-```bash
-onit debug onos-config-66d54956f5-xwpsh
-```
+You can refer to [Debug onos-config in Onit Using Delve](debugging.md) to learn more about debugging of onos-config pod using [*Delve*](https://github.com/go-delve/delve) debugger.
+
 
 ## API
 

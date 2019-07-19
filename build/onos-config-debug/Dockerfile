@@ -22,7 +22,7 @@ RUN echo "#!/bin/sh" >> /usr/local/bin/onos-config-debug && \
     echo "atomix controller set \$ATOMIX_CONTROLLER" >> /usr/local/bin/onos-config-debug && \
     echo "atomix config set namespace \$ATOMIX_NAMESPACE" >> /usr/local/bin/onos-config-debug && \
     echo "atomix config set app \$ATOMIX_APP" >> /usr/local/bin/onos-config-debug && \
-    echo "dlv --listen=:40000 --headless=true --accept-multiclient=true --api-version=2 exec /usr/local/bin/onos-config -- \"\$@\"" >> /usr/local/bin/onos-config-debug && \
+    echo "dlv --listen=:40000 --headless=true --accept-multiclient=true --api-version=2 --log exec /usr/local/bin/onos-config -- \"\$@\"" >> /usr/local/bin/onos-config-debug && \
     chmod +x /usr/local/bin/onos-config-debug
 
 RUN addgroup -S onos-config && adduser -S -G onos-config onos-config
