@@ -15,7 +15,9 @@
 package integration
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"os"
 	"strings"
 )
 
@@ -47,15 +49,29 @@ func MakeProtoPath(target string, path string) string {
 	return protoBuilder.String()
 }
 
+func makeProtoValue(value string) string {
+	var protoBuilder strings.Builder
+
+	if strings.Contains(value, ":") {
+		protoBuilder.WriteString(" val: <")
+		protoBuilder.WriteString(value)
+		protoBuilder.WriteString(">")
+	} else {
+		protoBuilder.WriteString(" val: <string_val: '")
+		protoBuilder.WriteString(value)
+		protoBuilder.WriteString("'>")
+	}
+	fmt.Fprintf(os.Stderr, "update proto for %s is %s\n", value, protoBuilder.String())
+	return protoBuilder.String()
+}
+
 // MakeProtoUpdatePath returns an update: element for a target, path, and new value
 func MakeProtoUpdatePath(target string, path string, value string) string {
 	var protoBuilder strings.Builder
 
 	protoBuilder.WriteString("update: <")
 	protoBuilder.WriteString(MakeProtoPath(target, path))
-	protoBuilder.WriteString(" val: <string_val: '")
-	protoBuilder.WriteString(value)
-	protoBuilder.WriteString("'>")
+	protoBuilder.WriteString(makeProtoValue(value))
 	protoBuilder.WriteString(">")
 	return protoBuilder.String()
 }

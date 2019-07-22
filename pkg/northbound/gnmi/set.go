@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
+	"os"
 	"strings"
 	"time"
 )
@@ -56,6 +57,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	//Update
 	for _, u := range req.GetUpdate() {
 		target := u.Path.GetTarget()
+		fmt.Fprintf(os.Stderr, "update %x\n", target)
 		var err error
 		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
 		if err != nil {
@@ -202,6 +204,7 @@ func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string
 
 func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdates mapTargetUpdates,
 	targetRemoves mapTargetRemoves) error {
+	fmt.Fprintf(os.Stderr, "checkForReadOnly()\n")
 	configs := manager.GetManager().ConfigStore.Store
 
 	// Iterate through all the updates - many may use the same target - here we
@@ -250,6 +253,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 				// Search through for list indices and replace with generic
 
 				modelPath := modelregistry.RemovePathIndices(path)
+				fmt.Fprintf(os.Stderr, "read only check I have %s checking against %s\n", modelPath, ropath)
 				if strings.HasPrefix(modelPath, ropath) {
 					return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
 				}

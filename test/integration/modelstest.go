@@ -22,22 +22,16 @@ import (
 )
 
 const (
-	//value1 = "test-motd-banner"
-	//path1  = "/openconfig-system:system/config/motd-banner"
-	//value2 = "test-login-banner"
-	//path2  = "/openconfig-system:system/config/login-banner"
-)
-
-var (
-	//paths = []string {path1, path2}
-	//values = []string {value1, value2}
+	badPath  = "/openconfig-system:system/config/no-such-path"
+	readOnlyPath = "/openconfig-system:system/ntp/state/enable-ntp-auth"
+	goodPath = "/openconfig-system:system/clock/config/timezone-name"
 )
 
 func init() {
 	Registry.RegisterTest("models", TestModels, []*runner.TestSuite{AllTests,SomeTests,IntegrationTests})
 }
 
-// TestTransaction tests setting multiple paths in a single request and rolling it back
+// TestModels tests GNMI operation involving unknown or illegal paths
 func TestModels(t *testing.T) {
 	// Get the configured devices from the environment.
 	device1 := env.GetDevices()[0]
@@ -50,5 +44,24 @@ func TestModels(t *testing.T) {
 	gnmiClient, gnmiClientError := env.NewGnmiClient(MakeContext(), "gnmi")
 	assert.NoError(t, gnmiClientError)
 	assert.True(t, gnmiClient != nil, "Fetching client returned nil")
+
+	// Try to set a bad path
+	setBadPath := makeDevicePath(device1, badPath)
+	setBadPath[0].value = "123456"
+	_, errorBadSet := GNMISet(MakeContext(), gnmiClient, setBadPath)
+	assert.NotNil(t, errorBadSet, "Set operation on unknown path does not generate an error")
+	assert.Contains(t, errorBadSet.Error(),
+		"JSON contains unexpected field no-such-path",
+		"set operation on unknown path generates wrong error")
+
+	// Try to set a read-only path
+	setReadOnlyPath := makeDevicePath(device1, readOnlyPath)
+	setReadOnlyPath[0].value = "bool_val:false"
+	_, errorReadOnlySet := GNMISet(MakeContext(), gnmiClient, setReadOnlyPath)
+	assert.NotNil(t, errorReadOnlySet, "Set operation on read-only path does not generate an error")
+	assert.Contains(t, errorReadOnlySet.Error(),
+		"read only",
+		"set operation on unknown path generates wrong error")
+
 }
 
