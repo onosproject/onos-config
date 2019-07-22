@@ -81,7 +81,7 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 		log.Warning("Error loading schema from model plugin", modelName, err)
 		return "", "", err
 	}
-	readOnlyPaths := extractReadOnlyPaths(modelschema["Device"],
+	readOnlyPaths := ExtractReadOnlyPaths(modelschema["Device"],
 		yang.TSUnset, "", "")
 	registry.ModelReadOnlyPaths[modelName] = readOnlyPaths
 	log.Info(registry.ModelReadOnlyPaths[modelName])
@@ -112,8 +112,8 @@ func (registry *ModelRegistry) Capabilities() []*gnmi.ModelData {
 	return outputList
 }
 
-// extractReadOnlyPaths is a recursive function to extract a list of read only paths from a YGOT schema
-func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentNs string,
+// ExtractReadOnlyPaths is a recursive function to extract a list of read only paths from a YGOT schema
+func ExtractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentNs string,
 	parentPath string) ReadOnlyPathMap {
 	readOnlyPaths := make(ReadOnlyPathMap)
 	for _, dirEntry := range deviceEntry.Dir {
@@ -142,7 +142,7 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 			}
 		} else if dirEntry.IsContainer() {
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
-				subPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+				subPaths := ExtractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
 				subPathsMap := make(ReadOnlySubPathMap)
 				for _, v := range subPaths {
 					for k, u := range v {
@@ -152,14 +152,14 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 				readOnlyPaths[itemPath] = subPathsMap
 				continue
 			}
-			readOnlyPathsTemp := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+			readOnlyPathsTemp := ExtractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
 			for k, v := range readOnlyPathsTemp {
 				readOnlyPaths[k] = v
 			}
 		} else if dirEntry.IsList() {
 			itemPath = formatName(dirEntry, true, parentNs, parentPath)
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
-				subPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+				subPaths := ExtractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
 				subPathsMap := make(ReadOnlySubPathMap)
 				for _, v := range subPaths {
 					for k, u := range v {
@@ -169,7 +169,7 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 				readOnlyPaths[itemPath] = subPathsMap
 				continue
 			}
-			readOnlyPathsTemp := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+			readOnlyPathsTemp := ExtractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
 			for k, v := range readOnlyPathsTemp {
 				readOnlyPaths[k] = v
 			}
@@ -268,6 +268,8 @@ func toValueType(entry *yang.YangType) (change.ValueType, error) {
 	case "uint32":
 		return change.ValueTypeUINT, nil
 	case "uint64":
+		return change.ValueTypeUINT, nil
+	case "counter64":
 		return change.ValueTypeUINT, nil
 	case "decimal64":
 		return change.ValueTypeDECIMAL, nil

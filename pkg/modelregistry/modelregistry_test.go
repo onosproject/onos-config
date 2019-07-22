@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 	var modelPluginTest modelPluginTest
 
 	ds1Schema, _ = modelPluginTest.Schema()
-	readOnlyPaths = extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths = ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 }
 
 func (m modelPluginTest) ModelData() (string, string, []*gnmi.ModelData, string) {
