@@ -16,6 +16,7 @@ package modelregistry
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -26,10 +27,19 @@ import (
 	"strings"
 )
 
+// ReadOnlySubPathMap abstracts the read only subpath
+type ReadOnlySubPathMap map[string]change.ValueType
+
+// ReadOnlyPathMap abstracts the read only path
+type ReadOnlyPathMap map[string]ReadOnlySubPathMap
+
+// GlobalReadOnlyPaths abstracts the map for the read only paths
+type GlobalReadOnlyPaths map[string]ReadOnlyPathMap
+
 // ModelRegistry is the object for the saving information about device models
 type ModelRegistry struct {
 	ModelPlugins       map[string]ModelPlugin
-	ModelReadOnlyPaths map[string][]string
+	ModelReadOnlyPaths map[string]ReadOnlyPathMap
 	LocationStore      map[string]string
 }
 
@@ -71,9 +81,10 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 		log.Warning("Error loading schema from model plugin", modelName, err)
 		return "", "", err
 	}
-
-	registry.ModelReadOnlyPaths[modelName] = extractReadOnlyPaths(modelschema["Device"],
+	readOnlyPaths := extractReadOnlyPaths(modelschema["Device"],
 		yang.TSUnset, "", "")
+	registry.ModelReadOnlyPaths[modelName] = readOnlyPaths
+	log.Info(registry.ModelReadOnlyPaths[modelName])
 	log.Infof("Model %s %s loaded. %d read only paths", name, version,
 		len(registry.ModelReadOnlyPaths[modelName]))
 	return name, version, nil
@@ -102,39 +113,68 @@ func (registry *ModelRegistry) Capabilities() []*gnmi.ModelData {
 }
 
 // extractReadOnlyPaths is a recursive function to extract a list of read only paths from a YGOT schema
-func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentNs string, parentPath string) []string {
-	readOnlyPaths := make([]string, 0)
-
+func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentNs string,
+	parentPath string) ReadOnlyPathMap {
+	readOnlyPaths := make(ReadOnlyPathMap)
 	for _, dirEntry := range deviceEntry.Dir {
 		namespace := extractnamespace(dirEntry, parentNs)
 		itemPath := formatName(dirEntry, false, parentNs, parentPath)
 		if dirEntry.IsLeaf() {
 			// No need to recurse
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
-				readOnlyPaths = append(readOnlyPaths, itemPath)
+				leafMap, ok := readOnlyPaths[parentPath]
+				if !ok {
+					leafMap = make(ReadOnlySubPathMap)
+					readOnlyPaths[parentPath] = leafMap
+					t, err := toValueType(dirEntry.Type)
+					if err != nil {
+						log.Errorf(err.Error())
+					}
+					leafMap[strings.Replace(itemPath, parentPath, "", 1)] = t
+				} else {
+					t, err := toValueType(dirEntry.Type)
+					if err != nil {
+						log.Errorf(err.Error())
+					}
+					leafMap[strings.Replace(itemPath, parentPath, "", 1)] = t
+				}
+
 			}
 		} else if dirEntry.IsContainer() {
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
-				readOnlyPaths = append(readOnlyPaths, itemPath)
-				continue // No need to add child paths is this is "config false"
+				subPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+				subPathsMap := make(ReadOnlySubPathMap)
+				for _, v := range subPaths {
+					for k, u := range v {
+						subPathsMap[k] = u
+					}
+				}
+				readOnlyPaths[itemPath] = subPathsMap
+				continue
 			}
-			newPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
-			for _, newPath := range newPaths {
-				readOnlyPaths = append(readOnlyPaths, newPath)
+			readOnlyPathsTemp := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+			for k, v := range readOnlyPathsTemp {
+				readOnlyPaths[k] = v
 			}
 		} else if dirEntry.IsList() {
 			itemPath = formatName(dirEntry, true, parentNs, parentPath)
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
-				readOnlyPaths = append(readOnlyPaths, itemPath)
-				continue // No need to add child paths is this is "config false"
+				subPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+				subPathsMap := make(ReadOnlySubPathMap)
+				for _, v := range subPaths {
+					for k, u := range v {
+						subPathsMap[k] = u
+					}
+				}
+				readOnlyPaths[itemPath] = subPathsMap
+				continue
 			}
-			newPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
-			for _, newPath := range newPaths {
-				readOnlyPaths = append(readOnlyPaths, newPath)
+			readOnlyPathsTemp := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+			for k, v := range readOnlyPathsTemp {
+				readOnlyPaths[k] = v
 			}
 		}
 	}
-
 	return readOnlyPaths
 }
 
@@ -199,4 +239,59 @@ func extractnamespace(dirEntry *yang.Entry, parentNs string) string {
 		}
 	}
 	return parentNs
+}
+
+//Paths extract the read only path up to the first read only container
+func Paths(readOnly ReadOnlyPathMap) []string {
+	keys := make([]string, 0, len(readOnly))
+	for k := range readOnly {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func toValueType(entry *yang.YangType) (change.ValueType, error) {
+	//TODO evaluate better types and error return
+	switch entry.Name {
+	case "int8":
+		return change.ValueTypeINT, nil
+	case "int16":
+		return change.ValueTypeINT, nil
+	case "int32":
+		return change.ValueTypeINT, nil
+	case "int64":
+		return change.ValueTypeINT, nil
+	case "uint8":
+		return change.ValueTypeUINT, nil
+	case "uint16":
+		return change.ValueTypeUINT, nil
+	case "uint32":
+		return change.ValueTypeUINT, nil
+	case "uint64":
+		return change.ValueTypeUINT, nil
+	case "decimal64":
+		return change.ValueTypeDECIMAL, nil
+	case "string":
+		return change.ValueTypeSTRING, nil
+	case "boolean":
+		return change.ValueTypeBOOL, nil
+	case "bits":
+		return change.ValueTypeBYTES, nil
+	case "binary":
+		return change.ValueTypeBYTES, nil
+	case "empty":
+		return change.ValueTypeEMPTY, nil
+	case "enumeration":
+		return change.ValueTypeSTRING, nil
+	case "leafref":
+		return change.ValueTypeSTRING, nil
+	case "identityref":
+		return change.ValueTypeSTRING, nil
+	case "union":
+		return change.ValueTypeSTRING, nil
+	case "instance-identifier":
+		return change.ValueTypeSTRING, nil
+	default:
+		return change.ValueTypeSTRING, nil
+	}
 }

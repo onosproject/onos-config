@@ -60,7 +60,7 @@ func addPathToTree(path string, value *change.TypedValue, nodeif *interface{}, f
 	// Convert to its real type
 	nodemap, ok := (*nodeif).(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("Could not convert nodeif %v for %s", *nodeif, path)
+		return fmt.Errorf("could not convert nodeif %v for %s", *nodeif, path)
 	}
 
 	if len(pathelems) == 2 && len(value.Value) > 0 {

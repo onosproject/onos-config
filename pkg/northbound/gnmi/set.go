@@ -220,7 +220,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 						"Model Plugin not available - continuing", config.Type, config.Version)
 					return nil
 				}
-				targetModelTypes[t] = m
+				targetModelTypes[t] = modelregistry.Paths(m)
 			}
 		}
 	}
@@ -237,7 +237,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 						"Model Plugin not available - continuing", config.Type, config.Version)
 					return nil
 				}
-				targetModelTypes[t] = m
+				targetModelTypes[t] = modelregistry.Paths(m)
 			}
 		}
 	}

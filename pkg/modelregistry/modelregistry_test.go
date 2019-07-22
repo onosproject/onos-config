@@ -34,6 +34,17 @@ var modelData = []*gnmi.ModelData{
 	{Name: "testmodel", Organization: "Open Networking Lab", Version: "2019-07-10"},
 }
 
+var readOnlyPaths ReadOnlyPathMap
+
+var ds1Schema map[string]*yang.Entry
+
+func TestMain(m *testing.M) {
+	var modelPluginTest modelPluginTest
+
+	ds1Schema, _ = modelPluginTest.Schema()
+	readOnlyPaths = extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+}
+
 func (m modelPluginTest) ModelData() (string, string, []*gnmi.ModelData, string) {
 	return modelTypeTest, modelVersionTest, modelData, moduleNameTest
 }
@@ -78,16 +89,13 @@ func Test_CastModelPlugin(t *testing.T) {
 }
 
 func Test_Schema(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
 	assert.Equal(t, len(ds1Schema), 137)
 
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
-	assert.Equal(t, len(readOnlyPaths), 37)
+	readOnlyPathsKeys := Paths(readOnlyPaths)
+	assert.Equal(t, len(readOnlyPathsKeys), 37)
 	// Can be in any order
-	for _, p := range readOnlyPaths {
+	for _, p := range readOnlyPathsKeys {
 		switch p {
 		case
 			"/openconfig-platform:components/component[name=*]/properties/property[name=*]/state",
@@ -130,6 +138,433 @@ func Test_Schema(t *testing.T) {
 
 		default:
 			t.Fatal("Unexpected readOnlyPath", p)
+		}
+	}
+}
+
+func Test_State(t *testing.T) {
+
+	k := "/openconfig-platform:components/component[name=*]/properties/property[name=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/configurable", "/name", "/value":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_Component(t *testing.T) {
+
+	k := "/openconfig-platform:components/component[name=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/description", "/id", "/mfg-name", "/name", "/part-no", "/serial-no", "/type", "/version":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_SubComponent(t *testing.T) {
+
+	k := "/openconfig-platform:components/component[name=*]/subcomponents/subcomponent[name=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/name":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_hold_time(t *testing.T) {
+
+	k := "/openconfig-interfaces:interfaces/interface[name=*]/hold-time/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/down", "/up":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_SubInterfaces(t *testing.T) {
+
+	k := "/openconfig-interfaces:interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/admin-status", "/description", "/enabled", "/ifindex", "/index", "/last-change", "/name", "/oper-status":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_InterfaceName(t *testing.T) {
+
+	k := "/openconfig-interfaces:interfaces/interface[name=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/admin-status", "/description", "/enabled", "/hardware-port", "/ifindex", "/last-change", "/mtu", "/name", "/oper-status", "/type":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_DnsHost(t *testing.T) {
+
+	k := "/openconfig-system:system/dns/host-entries/host-entry[hostname=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/hostname":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_DnsServer(t *testing.T) {
+
+	k := "/openconfig-system:system/dns/servers/server[address=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/address", "/port":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_Dns(t *testing.T) {
+
+	k := "/openconfig-system:system/dns/state"
+	if len(readOnlyPaths[k]) != 0 {
+		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	}
+}
+
+func Test_LoggingConsole(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-system-logging:logging/console/state"
+	if len(readOnlyPaths[k]) != 0 {
+		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	}
+}
+
+func Test_LoggingSelector(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-system-logging:logging/console/selectors/selector[facility severity=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/facility", "/severity":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_LoggingServer(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/host", "/remote-port", "/source-address":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_Logging(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/facility", "/severity":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_SysState(t *testing.T) {
+
+	k := "/openconfig-system:system/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/boot-time", "/current-datetime", "/domain-name", "/hostname", "/login-banner", "/motd-banner":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_Telnet(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-system-terminal:telnet-server/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/enable", "/rate-limit", "/session-limit", "/timeout":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_AAA(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/state"
+	if len(readOnlyPaths[k]) != 0 {
+		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	}
+}
+
+func Test_AccountingEvents(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/accounting/events/event[event-type=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/event-type", "/record":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_Accounting(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/accounting/state"
+	if len(readOnlyPaths[k]) != 0 {
+		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	}
+}
+
+func Test_AuthAdmin(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/authentication/admin-user/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/admin-password", "/admin-password-hashed", "/admin-username":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_AuthState(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/authentication/state"
+	if len(readOnlyPaths[k]) != 0 {
+		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	}
+}
+
+func Test_AuthUser(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/authentication/users/user[username=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/password", "/password-hashed", "/role", "/ssh-key", "/username":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_AuthEvent(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/authorization/events/event[event-type=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/event-type":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_Auth(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/authorization/state"
+	if len(readOnlyPaths[k]) != 0 {
+		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	}
+}
+
+func Test_Radius(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/acct-port", "/auth-port", "/retransmit-attempts", "/secret-key", "/source-address":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_AAAServerGroup(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/address", "/connection-aborts", "/connection-closes", "/connection-failures", "/connection-opens",
+			"/connection-timeouts", "/errors-received", "/messages-received", "/messages-sent", "/name", "/timeout":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_AAAtacacs(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/tacacs/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/port", "/secret-key", "/source-address":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_AAAServer(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/name", "/type":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_Clock(t *testing.T) {
+
+	k := "/openconfig-system:system/clock/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/timezone-name":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_OfAgent(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-openflow:openflow/agent/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/backoff-interval", "/datapath-id", "/failure-mode", "/inactivity-probe", "/max-backoff":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_OFControllerConnection(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/address", "/aux-id", "/connected", "/port", "/priority", "/source-interface", "/transport":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_OfControllers(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/name":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_ProcMonProcess(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-procmon:processes/process[pid=*]"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/cpu-usage-system", "/cpu-usage-user", "/cpu-utilization", "/memory-usage", "/memory-utilization",
+			"/name", "/pid", "/start-time", "/uptime":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_SshServer(t *testing.T) {
+
+	k := "/openconfig-system:system/openconfig-system-terminal:ssh-server/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/enable", "/protocol-version", "/rate-limit", "/session-limit", "/timeout":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_SystemMemory(t *testing.T) {
+
+	k := "/openconfig-system:system/memory/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/physical", "/reserved":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_NtpKeys(t *testing.T) {
+
+	k := "/openconfig-system:system/ntp/ntp-keys/ntp-key[key-id=*]/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/key-id", "/key-type", "/key-value":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_NtpServer(t *testing.T) {
+
+	k := "/openconfig-system:system/ntp/servers/server[address=*]/state"
+	for p, v := range readOnlyPaths[k] {
+		switch p {
+		case "/address", "/association-type", "/port":
+			assert.Equal(t, v, 1, "Unexpected type %i", v)
+		case "/iburst", "/prefer":
+			assert.Equal(t, v, 4, "Unexpected type %i", v)
+		case "/offset", "/poll-interval", "/root-delay", "/root-dispersion", "/stratum", "/version":
+			assert.Equal(t, v, 3, "Unexpected type %i", v)
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
+	}
+}
+
+func Test_Ntp(t *testing.T) {
+
+	k := "/openconfig-system:system/ntp/state"
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/auth-mismatch", "/enable-ntp-auth", "/enabled", "/ntp-source-address":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
 		}
 	}
 }
