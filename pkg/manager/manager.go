@@ -190,6 +190,7 @@ func validateConfiguration(configObj store.Configuration, changeStore map[string
 				changePath := modelregistry.RemovePathIndices(path.Path)
 				roPathsAndValues, ok := mgr.ModelRegistry.ModelReadOnlyPaths[modelPluginName]
 				if !ok {
+					log.Warningf("Can't find read only paths for %s", modelPluginName)
 					continue
 				}
 				roPaths := modelregistry.Paths(roPathsAndValues)
