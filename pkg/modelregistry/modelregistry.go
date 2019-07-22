@@ -241,7 +241,7 @@ func extractnamespace(dirEntry *yang.Entry, parentNs string) string {
 	return parentNs
 }
 
-//Paths extract the rad only path up to the first read only container
+//Paths extract the read only path up to the first read only container
 func Paths(readOnly ReadOnlyPathMap) []string {
 	keys := make([]string, 0, len(readOnly))
 	for k := range readOnly {

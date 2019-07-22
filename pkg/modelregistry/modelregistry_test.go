@@ -34,6 +34,17 @@ var modelData = []*gnmi.ModelData{
 	{Name: "testmodel", Organization: "Open Networking Lab", Version: "2019-07-10"},
 }
 
+var readOnlyPaths ReadOnlyPathMap
+
+var ds1Schema map[string]*yang.Entry
+
+func TestMain(m *testing.M) {
+	var modelPluginTest modelPluginTest
+
+	ds1Schema, _ = modelPluginTest.Schema()
+	readOnlyPaths = extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+}
+
 func (m modelPluginTest) ModelData() (string, string, []*gnmi.ModelData, string) {
 	return modelTypeTest, modelVersionTest, modelData, moduleNameTest
 }
@@ -78,13 +89,9 @@ func Test_CastModelPlugin(t *testing.T) {
 }
 
 func Test_Schema(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
 	assert.Equal(t, len(ds1Schema), 137)
 
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	readOnlyPathsKeys := Paths(readOnlyPaths)
 	assert.Equal(t, len(readOnlyPathsKeys), 37)
 	// Can be in any order
@@ -136,12 +143,7 @@ func Test_Schema(t *testing.T) {
 }
 
 func Test_State(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-platform:components/component[name=*]/properties/property[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -153,12 +155,7 @@ func Test_State(t *testing.T) {
 }
 
 func Test_Component(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-platform:components/component[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -170,12 +167,7 @@ func Test_Component(t *testing.T) {
 }
 
 func Test_SubComponent(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-platform:components/component[name=*]/subcomponents/subcomponent[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -187,12 +179,7 @@ func Test_SubComponent(t *testing.T) {
 }
 
 func Test_hold_time(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-interfaces:interfaces/interface[name=*]/hold-time/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -204,12 +191,7 @@ func Test_hold_time(t *testing.T) {
 }
 
 func Test_SubInterfaces(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-interfaces:interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -221,12 +203,7 @@ func Test_SubInterfaces(t *testing.T) {
 }
 
 func Test_InterfaceName(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-interfaces:interfaces/interface[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -238,12 +215,7 @@ func Test_InterfaceName(t *testing.T) {
 }
 
 func Test_DnsHost(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/dns/host-entries/host-entry[hostname=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -255,12 +227,7 @@ func Test_DnsHost(t *testing.T) {
 }
 
 func Test_DnsServer(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/dns/servers/server[address=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -272,12 +239,7 @@ func Test_DnsServer(t *testing.T) {
 }
 
 func Test_Dns(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/dns/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
@@ -285,12 +247,7 @@ func Test_Dns(t *testing.T) {
 }
 
 func Test_LoggingConsole(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-system-logging:logging/console/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
@@ -298,12 +255,7 @@ func Test_LoggingConsole(t *testing.T) {
 }
 
 func Test_LoggingSelector(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-system-logging:logging/console/selectors/selector[facility severity=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -315,12 +267,7 @@ func Test_LoggingSelector(t *testing.T) {
 }
 
 func Test_LoggingServer(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -332,12 +279,7 @@ func Test_LoggingServer(t *testing.T) {
 }
 
 func Test_Logging(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -349,12 +291,7 @@ func Test_Logging(t *testing.T) {
 }
 
 func Test_SysState(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -366,12 +303,7 @@ func Test_SysState(t *testing.T) {
 }
 
 func Test_Telnet(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-system-terminal:telnet-server/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -383,12 +315,7 @@ func Test_Telnet(t *testing.T) {
 }
 
 func Test_AAA(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
@@ -396,12 +323,7 @@ func Test_AAA(t *testing.T) {
 }
 
 func Test_AccountingEvents(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/accounting/events/event[event-type=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -413,12 +335,7 @@ func Test_AccountingEvents(t *testing.T) {
 }
 
 func Test_Accounting(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/accounting/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
@@ -426,12 +343,7 @@ func Test_Accounting(t *testing.T) {
 }
 
 func Test_AuthAdmin(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/authentication/admin-user/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -443,12 +355,7 @@ func Test_AuthAdmin(t *testing.T) {
 }
 
 func Test_AuthState(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/authentication/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
@@ -456,12 +363,7 @@ func Test_AuthState(t *testing.T) {
 }
 
 func Test_AuthUser(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/authentication/users/user[username=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -473,12 +375,7 @@ func Test_AuthUser(t *testing.T) {
 }
 
 func Test_AuthEvent(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/authorization/events/event[event-type=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -490,12 +387,7 @@ func Test_AuthEvent(t *testing.T) {
 }
 
 func Test_Auth(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/authorization/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
@@ -503,12 +395,7 @@ func Test_Auth(t *testing.T) {
 }
 
 func Test_Radius(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -520,12 +407,7 @@ func Test_Radius(t *testing.T) {
 }
 
 func Test_AAAServerGroup(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -538,12 +420,7 @@ func Test_AAAServerGroup(t *testing.T) {
 }
 
 func Test_AAAtacacs(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/tacacs/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -555,12 +432,7 @@ func Test_AAAtacacs(t *testing.T) {
 }
 
 func Test_AAAServer(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -572,12 +444,7 @@ func Test_AAAServer(t *testing.T) {
 }
 
 func Test_Clock(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/clock/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -589,12 +456,7 @@ func Test_Clock(t *testing.T) {
 }
 
 func Test_OfAgent(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-openflow:openflow/agent/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -606,12 +468,7 @@ func Test_OfAgent(t *testing.T) {
 }
 
 func Test_OFControllerConnection(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -623,12 +480,7 @@ func Test_OFControllerConnection(t *testing.T) {
 }
 
 func Test_OfControllers(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -640,12 +492,7 @@ func Test_OfControllers(t *testing.T) {
 }
 
 func Test_ProcMonProcess(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-procmon:processes/process[pid=*]"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -658,12 +505,7 @@ func Test_ProcMonProcess(t *testing.T) {
 }
 
 func Test_SshServer(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/openconfig-system-terminal:ssh-server/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -675,12 +517,7 @@ func Test_SshServer(t *testing.T) {
 }
 
 func Test_SystemMemory(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/memory/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -692,12 +529,7 @@ func Test_SystemMemory(t *testing.T) {
 }
 
 func Test_NtpKeys(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/ntp/ntp-keys/ntp-key[key-id=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
@@ -709,17 +541,16 @@ func Test_NtpKeys(t *testing.T) {
 }
 
 func Test_NtpServer(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/ntp/servers/server[address=*]/state"
-	for p := range readOnlyPaths[k] {
+	for p, v := range readOnlyPaths[k] {
 		switch p {
-		case "/address", "/association-type", "/iburst", "/offset", "/poll-interval", "/port", "/prefer",
-			"/root-delay", "/root-dispersion", "/stratum", "/version":
+		case "/address", "/association-type", "/port":
+			assert.Equal(t, v, 1, "Unexpected type %i", v)
+		case "/iburst", "/prefer":
+			assert.Equal(t, v, 4, "Unexpected type %i", v)
+		case "/offset", "/poll-interval", "/root-delay", "/root-dispersion", "/stratum", "/version":
+			assert.Equal(t, v, 3, "Unexpected type %i", v)
 		default:
 			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
 		}
@@ -727,12 +558,7 @@ func Test_NtpServer(t *testing.T) {
 }
 
 func Test_Ntp(t *testing.T) {
-	var modelPluginTest modelPluginTest
 
-	ds1Schema, err := modelPluginTest.Schema()
-	assert.NilError(t, err)
-
-	readOnlyPaths := extractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	k := "/openconfig-system:system/ntp/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
