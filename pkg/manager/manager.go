@@ -51,7 +51,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:       make(map[string]modelregistry.ModelPlugin),
-		ModelReadOnlyPaths: make(map[string]map[string]map[string]change.ValueType),
+		ModelReadOnlyPaths: make(map[string]modelregistry.ReadOnlyPathMap),
 		LocationStore:      make(map[string]string),
 	}
 
