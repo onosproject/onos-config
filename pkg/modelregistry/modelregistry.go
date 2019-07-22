@@ -29,8 +29,10 @@ import (
 
 // ReadOnlySubPathMap abstracts the read only subpath
 type ReadOnlySubPathMap map[string]change.ValueType
+
 // ReadOnlyPathMap abstracts the read only path
 type ReadOnlyPathMap map[string]ReadOnlySubPathMap
+
 // GlobalReadOnlyPaths abstracts the map for the read only paths
 type GlobalReadOnlyPaths map[string]ReadOnlyPathMap
 
@@ -142,8 +144,10 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
 				subPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
 				subPathsMap := make(ReadOnlySubPathMap)
-				for k, v := range subPaths {
-					subPathsMap[k] = v[k]
+				for _, v := range subPaths {
+					for k, u := range v {
+						subPathsMap[k] = u
+					}
 				}
 				readOnlyPaths[itemPath] = subPathsMap
 				continue
@@ -152,20 +156,15 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 			for k, v := range readOnlyPathsTemp {
 				readOnlyPaths[k] = v
 			}
-			//for k, v := range readOnlyPathsNew {
-			//	readOnlyPaths[k] = v
-			//}
-			//for _, newPath := range newPaths {
-			//	readOnlyPaths[] = append(readOnlyPaths, newPath)
-			//}
 		} else if dirEntry.IsList() {
 			itemPath = formatName(dirEntry, true, parentNs, parentPath)
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
 				subPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
 				subPathsMap := make(ReadOnlySubPathMap)
-				for k, v := range subPaths {
-					fmt.Println("k", k, "v", v)
-					subPathsMap[k] = v[k]
+				for _, v := range subPaths {
+					for k, u := range v {
+						subPathsMap[k] = u
+					}
 				}
 				readOnlyPaths[itemPath] = subPathsMap
 				continue
@@ -174,9 +173,6 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 			for k, v := range readOnlyPathsTemp {
 				readOnlyPaths[k] = v
 			}
-			//for k, v := range readOnlyPathsNew {
-			//	readOnlyPaths[k] = v
-			//}
 		}
 	}
 	return readOnlyPaths
@@ -255,6 +251,7 @@ func Paths(readOnly ReadOnlyPathMap) []string {
 }
 
 func toValueType(entry *yang.YangType) (change.ValueType, error) {
+	//TODO evaluate better types and error return
 	switch entry.Name {
 	case "int8":
 		return change.ValueTypeINT, nil
@@ -285,16 +282,16 @@ func toValueType(entry *yang.YangType) (change.ValueType, error) {
 	case "empty":
 		return change.ValueTypeEMPTY, nil
 	case "enumeration":
-		return -1, fmt.Errorf("Unknown type %s", entry.Name)
+		return change.ValueTypeSTRING, nil
 	case "leafref":
-		return -1, fmt.Errorf("Unknown type %s", entry.Name)
+		return change.ValueTypeSTRING, nil
 	case "identityref":
-		return -1, fmt.Errorf("Unknown type %s", entry.Name)
+		return change.ValueTypeSTRING, nil
 	case "union":
-		return -1, fmt.Errorf("Unknown type %s", entry.Name)
+		return change.ValueTypeSTRING, nil
 	case "instance-identifier":
-		return -1, fmt.Errorf("Unknown type %s", entry.Name)
+		return change.ValueTypeSTRING, nil
 	default:
-		return -1, fmt.Errorf("Unknown type %s", entry.Name)
+		return change.ValueTypeSTRING, nil
 	}
 }
