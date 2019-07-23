@@ -20,7 +20,10 @@ import (
 )
 
 const (
+	// StripNamespaces will remove namespaces from path elements
 	StripNamespaces = true
+
+	// LeaveNamespaces doesn't change namespaces
 	LeaveNamespaces = false
 	)
 
