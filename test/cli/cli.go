@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"text/tabwriter"
 	"time"
 
@@ -1074,7 +1075,7 @@ func getDebugCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "debug <resource>",
 		Short: "Open a debugger port to the given resource",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Get the onit controller
 			controller, err := runner.NewController()
@@ -1095,18 +1096,49 @@ func getDebugCommand() *cobra.Command {
 			}
 
 			port, _ := cmd.Flags().GetInt("port")
-			if err := cluster.PortForward(args[0], port, 40000); err != nil {
+			nodes, err := cluster.GetNodes()
+			if err != nil {
 				exitError(err)
-			} else {
-				fmt.Println(port)
 			}
+
+			errC := make(chan error)
+			if len(args) == 0 {
+				var wg sync.WaitGroup
+				wg.Add(len(nodes))
+
+				for index := range nodes {
+					go func(node runner.NodeInfo) {
+						cluster.PortForward(node.ID, port, 40000, errC)
+						wg.Done()
+					}(nodes[index])
+
+				}
+
+				go func() {
+					wg.Wait()
+					close(errC)
+				}()
+				fmt.Println("here")
+
+				for err := range errC {
+					fmt.Println(err)
+				}
+
+			} else {
+				if err := cluster.PortForward(args[0], port, 40000, errC); err != nil {
+					exitError(err)
+				} else {
+					fmt.Println(port)
+				}
+			}
+
 		},
 	}
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster for which to load the history")
 	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
 		cobra.BashCompCustom: {"__onit_get_clusters"},
 	}
-	cmd.Flags().IntP("port", "p", 40000, "the local port to forward to the given resource")
+	cmd.Flags().IntP("port", "p", 0, "the local port to forward to the given resource")
 	return cmd
 }
 

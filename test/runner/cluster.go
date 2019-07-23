@@ -237,7 +237,8 @@ func (c *ClusterController) downloadLogs(pod corev1.Pod, path string, options co
 }
 
 // PortForward forwards a local port to the given remote port on the given resource
-func (c *ClusterController) PortForward(resourceID string, localPort int, remotePort int) error {
+func (c *ClusterController) PortForward(resourceID string, localPort int, remotePort int, errC chan error) error {
+
 	pod, err := c.kubeclient.CoreV1().Pods(c.clusterID).Get(resourceID, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -258,8 +259,14 @@ func (c *ClusterController) PortForward(resourceID string, localPort int, remote
 
 	stopChan, readyChan := make(chan struct{}, 1), make(chan struct{}, 1)
 	out, errOut := new(bytes.Buffer), new(bytes.Buffer)
+	ports := make([]string, 1)
+	if localPort == 0 {
+		ports[0] = fmt.Sprintf(":%d", remotePort)
+	} else {
+		ports[0] = fmt.Sprintf("%d:%d", localPort, remotePort)
+	}
 
-	forwarder, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, remotePort)}, stopChan, readyChan, out, errOut)
+	forwarder, err := portforward.New(dialer, ports, stopChan, readyChan, out, errOut)
 	if err != nil {
 		return err
 	}
@@ -275,6 +282,7 @@ func (c *ClusterController) PortForward(resourceID string, localPort int, remote
 		}
 	}()
 
+	errC <- forwarder.ForwardPorts()
 	return forwarder.ForwardPorts()
 }
 
