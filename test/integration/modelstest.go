@@ -48,7 +48,7 @@ func TestModels(t *testing.T) {
 	// Try to set a bad path
 	setBadPath := makeDevicePath(device1, badPath)
 	setBadPath[0].value = "123456"
-	_, errorBadSet := GNMISet(MakeContext(), gnmiClient, setBadPath)
+	_, errorBadSet := GNMISet(MakeContext(), gnmiClient, setBadPath, LeaveNamespaces)
 	assert.NotNil(t, errorBadSet, "Set operation on unknown path does not generate an error")
 	assert.Contains(t, errorBadSet.Error(),
 		"JSON contains unexpected field no-such-path",
@@ -57,7 +57,7 @@ func TestModels(t *testing.T) {
 	// Try to set a read-only path
 	setReadOnlyPath := makeDevicePath(device1, readOnlyPath)
 	setReadOnlyPath[0].value = "bool_val:false"
-	_, errorReadOnlySet := GNMISet(MakeContext(), gnmiClient, setReadOnlyPath)
+	_, errorReadOnlySet := GNMISet(MakeContext(), gnmiClient, setReadOnlyPath, LeaveNamespaces)
 	assert.NotNil(t, errorReadOnlySet, "Set operation on read-only path does not generate an error")
 	assert.Contains(t, errorReadOnlySet.Error(),
 		"read only",

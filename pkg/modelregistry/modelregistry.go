@@ -87,9 +87,6 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 	log.Info(registry.ModelReadOnlyPaths[modelName])
 	log.Infof("Model %s %s loaded. %d read only paths", name, version,
 		len(registry.ModelReadOnlyPaths[modelName]))
-	for _, path := range registry.ModelReadOnlyPaths {
-		log.Infof("   %s is read only", path)
-	}
 	return name, version, nil
 }
 

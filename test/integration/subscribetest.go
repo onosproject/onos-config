@@ -99,7 +99,7 @@ func TestSubscribe(t *testing.T) {
 	// Set a value using gNMI client
 	setPath := makeDevicePath(device, subPath)
 	setPath[0].value = subValue
-	_, errorSet := GNMISet(MakeContext(), c, setPath)
+	_, errorSet := GNMISet(MakeContext(), c, setPath, StripNamespaces)
 	assert.NoError(t, errorSet)
 	var response *gnmi.SubscribeResponse
 
@@ -120,7 +120,7 @@ func TestSubscribe(t *testing.T) {
 	}
 
 	// Check that the value was set correctly
-	valueAfter, errorAfter := GNMIGet(MakeContext(), c, makeDevicePath(device, subPath))
+	valueAfter, errorAfter := GNMIGet(MakeContext(), c, makeDevicePath(device, subPath), StripNamespaces)
 	assert.NoError(t, errorAfter)
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
 	assert.Equal(t, subValue, valueAfter[0].value,
@@ -147,7 +147,7 @@ func TestSubscribe(t *testing.T) {
 	}
 
 	//  Make sure it got removed
-	valueAfterDelete, errorAfterDelete := GNMIGet(MakeContext(), c, makeDevicePath(device, subPath))
+	valueAfterDelete, errorAfterDelete := GNMIGet(MakeContext(), c, makeDevicePath(device, subPath), StripNamespaces)
 	assert.NoError(t, errorAfterDelete)
 	assert.Equal(t, valueAfterDelete[0].value, "",
 		"incorrect value found for path /system/clock/config/timezone-name after delete")
