@@ -16,6 +16,7 @@ package store
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"gotest.tools/assert"
 	"io/ioutil"
 	"regexp"
@@ -23,8 +24,8 @@ import (
 	"testing"
 )
 
-func setUpJSONToValues() ([]byte, error) {
-	sampleTree, err := ioutil.ReadFile("./testdata/sample-tree.json")
+func setUpJSONToValues(filename string) ([]byte, error) {
+	sampleTree, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +35,7 @@ func setUpJSONToValues() ([]byte, error) {
 func Test_DecomposeTree(t *testing.T) {
 	const matchAllChars = `(/[a-zA-Z0-9\-:\[\]]*)*`
 	const matchOnIndex = `(\[[0-9]]).*?`
-	sampleTree, err := setUpJSONToValues()
+	sampleTree, err := setUpJSONToValues("./testdata/sample-tree.json")
 	assert.NilError(t, err)
 
 	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree", (len(sampleTree)))
@@ -63,16 +64,67 @@ func Test_DecomposeTree(t *testing.T) {
 		case
 			"/openconfig-interfaces:interfaces/default-type",
 			"/openconfig-interfaces:interfaces/interface[*]/type",
-			"/openconfig-interfaces:interfaces/interface[*]/name",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/aux-id",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/discombobulator",
 			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/name",
 			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/type",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connections-type",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connections-freq",
 			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/example-ll[*]",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/conn-type":
-			//NOOP
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/conn-type",
+			"/openconfig-interfaces:interfaces/interface[*]/name":
+			assert.Equal(t, v.Type, change.ValueTypeSTRING, newPath)
+		case
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/discombobulator":
+			assert.Equal(t, v.Type, change.ValueTypeBOOL, newPath)
+		case
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connections-type",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/aux-id",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connections-freq":
+			assert.Equal(t, v.Type, change.ValueTypeFLOAT, newPath)
+		default:
+			t.Fatal("Unexpected jsonPath", newPath)
+		}
+	}
+}
+
+func Test_DecomposeTree2(t *testing.T) {
+	const matchAllChars = `(/[a-zA-Z0-9\-:\[\]]*)*`
+	const matchOnIndex = `(\[[0-9]]).*?`
+	sampleTree, err := setUpJSONToValues("./testdata/sample-tree-from-devicesim.json")
+	assert.NilError(t, err)
+
+	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree", (len(sampleTree)))
+
+	values, err := DecomposeTree(sampleTree)
+	assert.NilError(t, err)
+
+	for _, v := range values {
+		fmt.Printf("%s %s\n", (*v).Path, (*v).String())
+	}
+	assert.Equal(t, len(values), 31)
+
+	rAllChars := regexp.MustCompile(matchAllChars)
+	rOnIndex := regexp.MustCompile(matchOnIndex)
+	for _, v := range values {
+		match := rAllChars.FindString(v.Path)
+		assert.Equal(t, match, v.Path)
+
+		matches := rOnIndex.FindAllStringSubmatch(v.Path, -1)
+		newPath := v.Path
+		for _, m := range matches {
+			newPath = strings.Replace(newPath, m[1], "[*]", -1)
+		}
+
+		switch newPath {
+		case "/openconfig-interfaces:interfaces/interface[*]/name",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/name",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/address",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/source-interface",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/transport":
+			assert.Equal(t, v.Type, change.ValueTypeSTRING, newPath)
+		case
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/aux-id",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/aux-id",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/priority",
+			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/port":
+			assert.Equal(t, v.Type, change.ValueTypeFLOAT, newPath)
 		default:
 			t.Fatal("Unexpected jsonPath", newPath)
 		}
