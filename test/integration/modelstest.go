@@ -22,9 +22,10 @@ import (
 )
 
 const (
-	badPath  = "/openconfig-system:system/config/no-such-path"
-	readOnlyPath = "/openconfig-system:system/ntp/state/enable-ntp-auth"
-	goodPath = "/openconfig-system:system/clock/config/timezone-name"
+	badPath           = "/openconfig-system:system/config/no-such-path"
+	ntpPath           = "/openconfig-system:system/ntp/state/enable-ntp-auth"
+	hostnamePath      = "/openconfig-system:system/config/hostname"
+	clockTimeZonePath = "/openconfig-system:system/clock/config/timezone-name"
 )
 
 func init() {
@@ -55,7 +56,7 @@ func TestModels(t *testing.T) {
 		"set operation on unknown path generates wrong error")
 
 	// Try to set a read-only path
-	setReadOnlyPath := makeDevicePath(device1, readOnlyPath)
+	setReadOnlyPath := makeDevicePath(device1, ntpPath)
 	setReadOnlyPath[0].value = "bool_val:false"
 	_, errorReadOnlySet := GNMISet(MakeContext(), gnmiClient, setReadOnlyPath, LeaveNamespaces)
 	assert.NotNil(t, errorReadOnlySet, "Set operation on read-only path does not generate an error")
@@ -63,5 +64,22 @@ func TestModels(t *testing.T) {
 		"read only",
 		"set operation on unknown path generates wrong error")
 
+	// Try to set the wrong type
+	setWrongType := makeDevicePath(device1, clockTimeZonePath)
+	setWrongType[0].value = "int_val:11111"
+	_, errorWrongTypeSet := GNMISet(MakeContext(), gnmiClient, setWrongType, LeaveNamespaces)
+	assert.NotNil(t, errorWrongTypeSet, "Set operation with bad type does not generate an error")
+	assert.Contains(t, errorWrongTypeSet.Error(),
+		"expect string",
+		"set operation on unknown path generates wrong error")
+
+	// Try to set a value that does not match constraints
+	setWrongValue := makeDevicePath(device1, hostnamePath)
+	setWrongValue[0].value = "not a host name"
+	_, errorWrongValueSet := GNMISet(MakeContext(), gnmiClient, setWrongValue, LeaveNamespaces)
+	assert.NotNil(t, errorWrongValueSet, "Set operation with bad type does not generate an error")
+	assert.Contains(t, errorWrongValueSet.Error(),
+		"does not match regular expression pattern",
+		"set operation on unknown path generates wrong error")
 }
 
