@@ -43,6 +43,7 @@ type Manager struct {
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              dispatcher.Dispatcher
+	OperationalStateCache   map[topocache.ID]map[string]*change.TypedValue
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -66,6 +67,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
+		OperationalStateCache:   make(map[topocache.ID]map[string]*change.TypedValue),
 	}
 
 	changeIds := make([]string, 0)
@@ -221,7 +223,7 @@ func (m *Manager) Run() {
 	go listenOnResponseChannel(m.SouthboundErrorChan)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.DeviceStore, m.TopoChannel,
-		m.OperationalStateChannel, m.SouthboundErrorChan, &m.Dispatcher, m.ModelRegistry.ModelReadOnlyPaths)
+		m.OperationalStateChannel, m.SouthboundErrorChan, &m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)
 }
 
 //Close kills the channels and manager related objects

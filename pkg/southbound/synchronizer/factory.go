@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	log "k8s.io/klog"
 )
@@ -30,7 +31,8 @@ import (
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher, modelReadOnlyPaths modelregistry.GlobalReadOnlyPaths) {
+	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
+	registry *modelregistry.ModelRegistry, operationalStateCache map[topocache.ID]map[string]*change.TypedValue) {
 	for topoEvent := range topoChannel {
 		deviceName := topocache.ID(events.Event(topoEvent).Subject())
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
@@ -42,13 +44,16 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			ctx := context.Background()
 			completeID := utils.ToConfigName(deviceName, device.SoftwareVersion)
 			cfg := configStore.Store[store.ConfigName(completeID)]
-			mReadOnlyPaths, ok := modelReadOnlyPaths[utils.ToModelName(cfg.Type, device.SoftwareVersion)]
+			modelName := utils.ToModelName(cfg.Type, device.SoftwareVersion)
+			mReadOnlyPaths, ok := registry.ModelReadOnlyPaths[modelName]
+			modelPlugin := registry.ModelPlugins[modelName]
 			if !ok {
 				log.Warningf("Cannot check for read only paths for target %s with %s because "+
 					"Model Plugin not available - continuing", deviceName, device.SoftwareVersion)
 			}
+			operationalStateCache[deviceName] = make(map[string]*change.TypedValue)
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan,
-				errChan, mReadOnlyPaths)
+				errChan, operationalStateCache, mReadOnlyPaths, modelPlugin)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
 				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,

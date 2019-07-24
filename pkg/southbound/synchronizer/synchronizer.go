@@ -21,6 +21,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -44,14 +45,16 @@ type Synchronizer struct {
 	operationalStateChan chan<- events.OperationalStateEvent
 	key                  southbound.DeviceID
 	query                client.Query
-	operationalCache     map[string]string
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
+	operationalCache     map[topocache.ID]map[string]*change.TypedValue
+	modelPlugin          modelregistry.ModelPlugin
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, mReadOnlyPaths modelregistry.ReadOnlyPathMap) (*Synchronizer, error) {
+	errChan chan<- events.DeviceResponse, opStateCache map[topocache.ID]map[string]*change.TypedValue,
+	mReadOnlyPaths modelregistry.ReadOnlyPathMap, plugin modelregistry.ModelPlugin) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
@@ -59,8 +62,9 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 		Device:               device,
 		deviceConfigChan:     deviceCfgChan,
 		operationalStateChan: opStateChan,
-		operationalCache:     make(map[string]string),
+		operationalCache:     opStateCache,
 		modelReadOnlyPaths:   mReadOnlyPaths,
+		modelPlugin:          plugin,
 	}
 	log.Info("Connecting to ", sync.Device.Addr, " over gNMI")
 	target := southbound.Target{}
@@ -185,7 +189,12 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		Type: gnmi.GetRequest_STATE,
 	}
 
+	log.Info("req state ", requestState)
+
 	responseState, errState := target.Get(target.Ctx, requestState)
+
+	log.Info("resp state ", responseState)
+
 
 	if errState != nil {
 		log.Warning("Can't request read-only state paths to target ", sync.key, errState)
@@ -197,7 +206,11 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		Type: gnmi.GetRequest_OPERATIONAL,
 	}
 
+	log.Info("req operation ", requestOperational)
+
 	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
+
+	log.Info("resp operation ", responseOperational)
 
 	if errOp != nil {
 		log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
@@ -210,24 +223,33 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	if len(notifications) != 0 {
 		for _, notification := range notifications {
 			for _, update := range notification.Update {
-				pathStr := utils.StrPath(update.Path)
-				val := utils.StrVal(update.Val)
-				sync.operationalCache[pathStr] = val
-				subscribePaths = append(subscribePaths, utils.SplitPath(pathStr))
-			}
+				pathsAndValues := populateCache(update, sync)
+				if pathsAndValues == nil {
+					break
+				}
+				sync.operationalCache[sync.ID] = pathsAndValues
 
+			}
 		}
-	} else if sync.modelReadOnlyPaths != nil {
+	}
+	if sync.modelReadOnlyPaths != nil {
 		for _, path := range modelregistry.Paths(sync.modelReadOnlyPaths) {
 			subscribePaths = append(subscribePaths, utils.SplitPath(path))
 		}
+	} else {
+		//TODO handle error
+		log.Error("No model plugin, cant work in operational state cache")
 	}
+
+	//log.Info("sub paths", subscribePaths)
 
 	if len(subscribePaths) == 0 {
 		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
 		log.Warning(noPathErr)
 		return
 	}
+
+	//TODO do get for subscribePaths
 
 	options := &southbound.SubscribeOptions{
 		UpdatesOnly:       false,
@@ -256,6 +278,30 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 
 }
 
+func populateCache(update *gnmi.Update, sync Synchronizer) map[string]*change.TypedValue {
+	//TODO check that this i really a json
+	jsonVal := update.Val.GetJsonVal()
+	//strVla := utils.StrVal(update.Val)
+	//log.Info(strVla)
+	configValuesUnparsed, err := store.DecomposeTree(jsonVal)
+	if err != nil {
+		//TODO what do we do with this err
+		log.Error("Can't translate from json to values", err)
+		return nil
+	}
+	configValues, err := jsonvalues.CorrectJSONPaths(configValuesUnparsed, sync.modelReadOnlyPaths)
+	if err != nil {
+		//TODO what do we do with this err
+		log.Error("Can't translate from config values to typed values", err)
+		return nil
+	}
+	pathsAndValues := make(map[string]*change.TypedValue)
+	for _, p := range configValues {
+		pathsAndValues[p.Path] = &p.TypedValue
+	}
+	return pathsAndValues
+}
+
 func (sync *Synchronizer) handler(msg proto.Message) error {
 
 	_, err := southbound.GetTarget(sync.key)
@@ -277,6 +323,7 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			return client.ErrStopReading
 		}
 	case *gnmi.SubscribeResponse_Update:
+		log.Info("Response", v)
 		eventValues := make(map[string]string)
 		notification := v.Update
 		for _, update := range notification.Update {
@@ -284,18 +331,23 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 				return fmt.Errorf("invalid nil path in update: %v", update)
 			}
 			pathStr := utils.StrPath(update.Path)
-			val := utils.StrVal(update.Val)
-			eventValues[pathStr] = val
-			sync.operationalCache[pathStr] = val
+			valStr := utils.StrVal(update.Val)
+			val, err := values.GnmiTypedValueToNativeType(update.Val)
+			if err != nil {
+
+			}
+			eventValues[pathStr] = valStr
+			log.Info("Added ", val, " for path ", pathStr, " for device ", sync.ID)
+			sync.operationalCache[sync.ID][pathStr] = val
 		}
 		for _, del := range notification.Delete {
 			if del.Elem == nil {
 				return fmt.Errorf("invalid nil path in update: %v", del)
 			}
-			//deletedPaths := delete.Elem
 			pathStr := utils.StrPathElem(del.Elem)
 			eventValues[pathStr] = ""
-			sync.operationalCache[pathStr] = ""
+			log.Info("Delete path ", pathStr, " for device ", sync.ID)
+			delete(sync.operationalCache[sync.ID], pathStr)
 		}
 		sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), eventValues)
 	}
