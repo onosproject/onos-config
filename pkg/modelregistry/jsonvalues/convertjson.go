@@ -30,7 +30,10 @@ type indexEntry struct {
 	key  string
 }
 
-func correctJSONPaths(jsonPathValues []*change.ConfigValue, roPaths modelregistry.ReadOnlyPathMap) ([]*change.ConfigValue, error) {
+//CorrectJSONPaths takes configuration values extracted from a json, of which we are not sure about the type and,
+// through the model plugin assigns them the correct type according to the YANG model provided, returning an
+// updated set of configuration values.
+func CorrectJSONPaths(jsonPathValues []*change.ConfigValue, roPaths modelregistry.ReadOnlyPathMap) ([]*change.ConfigValue, error) {
 	correctedPathValues := make([]*change.ConfigValue, 0)
 	rOnIndex := regexp.MustCompile(matchOnIndex)
 	indexTable := make([]indexEntry, 0)
@@ -87,6 +90,8 @@ func correctJSONPaths(jsonPathValues []*change.ConfigValue, roPaths modelregistr
 								//case change.ValueTypeDECIMAL:
 								// TODO add a conversion from float to D64 will also need number of decimal places from Read Only SubPath
 								//	newTypeValue = change.CreateTypedValueDecimal64()
+							default:
+								newTypeValue = &jsonPathValue.TypedValue
 							}
 
 						default:
@@ -117,7 +122,6 @@ func correctJSONPaths(jsonPathValues []*change.ConfigValue, roPaths modelregistr
 	})
 
 	for _, index := range indexTable {
-		fmt.Println("Idxtable", index.path, index.key)
 		for _, cv := range correctedPathValues {
 			if strings.HasPrefix(cv.Path, index.path) {
 				suffix := cv.Path[len(index.path)+1:]
