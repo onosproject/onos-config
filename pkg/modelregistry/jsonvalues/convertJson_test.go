@@ -159,7 +159,7 @@ func Test_correctJsonPathValues(t *testing.T) {
 		&val05, &val06, &val07, &val08, &val09, &val10, &val11, &val12, &val13,
 		&val14, &val15, &val16, &val17}
 
-	correctedPathValues, err := correctJSONPaths(jsonPathValues, readOnlyPaths)
+	correctedPathValues, err := CorrectJSONPaths(jsonPathValues, readOnlyPaths)
 	assert.NilError(t, err)
 
 	for _, v := range correctedPathValues {
