@@ -65,7 +65,6 @@ misspell: # @HELP examines Go source code and reports misspelled words
 	misspell -error -source=text pkg/
 	misspell -error -source=text cmd/
 	misspell -error -source=text test/
-	misspell -error -source=text modelplugin/
 	misspell -error docs/
 
 ineffassign: # @HELP examines Go source code and reports inefficient assignments
