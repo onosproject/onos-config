@@ -55,6 +55,7 @@ func TestModels(t *testing.T) {
 	assert.NoError(t, gnmiClientError)
 	assert.True(t, gnmiClient != nil, "Fetching client returned nil")
 
+	// Run the test cases
 	for _, testCase := range testCases {
 		t.Run(testCase.description,
 			func(t *testing.T) {
@@ -73,7 +74,7 @@ func TestModels(t *testing.T) {
 				assert.Contains(t, errorSet.Error(),
 					expectedError,
 					"set operation for %s generates wrong error", description)
-		})
+			})
 	}
 }
 
