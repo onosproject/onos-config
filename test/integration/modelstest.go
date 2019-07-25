@@ -42,12 +42,13 @@ func TestModels(t *testing.T) {
 		description   string
 		path          string
 		value         string
+		valueType     string
 		expectedError string
 	}{
-		{description: "Unknown path", path: unknownPath, value: "123456", expectedError: "JSON contains unexpected field no-such-path"},
-		{description: "Read only path", path: ntpPath, value: "bool_val:false", expectedError: "read only"},
-		{description: "Wrong type", path: clockTimeZonePath, value: "int_val:11111", expectedError: "expect string"},
-		{description: "Constraint violation", path: hostNamePath, value: "not a host name", expectedError: "does not match regular expression pattern"},
+		{description: "Unknown path", path: unknownPath, valueType: StringVal, value: "123456", expectedError: "JSON contains unexpected field no-such-path"},
+		{description: "Read only path", path: ntpPath, valueType: BoolVal, value: "false", expectedError: "read only"},
+		{description: "Wrong type", path: clockTimeZonePath, valueType: IntVal, value: "11111", expectedError: "expect string"},
+		{description: "Constraint violation", path: hostNamePath, valueType: StringVal, value: "not a host name", expectedError: "does not match regular expression pattern"},
 	}
 
 	// Make a GNMI client to use for requests
@@ -62,13 +63,15 @@ func TestModels(t *testing.T) {
 				description := testCase.description
 				path := testCase.path
 				value := testCase.value
+				valueType := testCase.valueType
 				expectedError := testCase.expectedError
 				t.Parallel()
 
 				t.Logf("testing %q", description)
 
 				setResult := makeDevicePath(device, path)
-				setResult[0].value = value
+				setResult[0].pathDataValue = value
+				setResult[0].pathDataType = valueType
 				_, errorSet := GNMISet(MakeContext(), gnmiClient, setResult, LeaveNamespaces)
 				assert.NotNil(t, errorSet, "Set operation for %s does not generate an error", description)
 				assert.Contains(t, errorSet.Error(),

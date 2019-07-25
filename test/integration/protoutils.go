@@ -25,7 +25,16 @@ const (
 
 	// LeaveNamespaces doesn't change namespaces
 	LeaveNamespaces = false
-	)
+
+	// StringVal :
+	StringVal = "string_val"
+
+	// IntVal :
+	IntVal = "int_val"
+
+	// BoolVal :
+	BoolVal = "bool_val"
+)
 
 // MakeProtoTarget returns a GNMI proto path for a given target
 func MakeProtoTarget(target string, path string, stripNamespaces bool) string {
@@ -63,28 +72,31 @@ func MakeProtoPath(target string, path string, stripNamespaces bool) string {
 	return protoBuilder.String()
 }
 
-func makeProtoValue(value string) string {
+func makeProtoValue(value string, valueType string) string {
 	var protoBuilder strings.Builder
 
-	if strings.Contains(value, ":") {
-		protoBuilder.WriteString(" val: <")
-		protoBuilder.WriteString(value)
-		protoBuilder.WriteString(">")
+	var valueString string
+
+	if valueType == StringVal {
+		valueString = "'" + value + "'"
 	} else {
-		protoBuilder.WriteString(" val: <string_val: '")
-		protoBuilder.WriteString(value)
-		protoBuilder.WriteString("'>")
+		valueString = value
 	}
+	protoBuilder.WriteString(" val: <")
+	protoBuilder.WriteString(valueType)
+	protoBuilder.WriteString(":")
+	protoBuilder.WriteString(valueString)
+	protoBuilder.WriteString(">")
 	return protoBuilder.String()
 }
 
 // MakeProtoUpdatePath returns an update: element for a target, path, and new value
-func MakeProtoUpdatePath(target string, path string, value string, stripNamespaces bool) string {
+func MakeProtoUpdatePath(devicePath DevicePath, stripNamespaces bool) string {
 	var protoBuilder strings.Builder
 
 	protoBuilder.WriteString("update: <")
-	protoBuilder.WriteString(MakeProtoPath(target, path, stripNamespaces))
-	protoBuilder.WriteString(makeProtoValue(value))
+	protoBuilder.WriteString(MakeProtoPath(devicePath.deviceName, devicePath.path, stripNamespaces))
+	protoBuilder.WriteString(makeProtoValue(devicePath.pathDataValue, devicePath.pathDataType))
 	protoBuilder.WriteString(">")
 	return protoBuilder.String()
 }

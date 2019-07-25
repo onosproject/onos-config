@@ -45,7 +45,8 @@ func TestSinglePath(t *testing.T) {
 
 	// Set a value using gNMI client
 	setPath := makeDevicePath(device, tzPath)
-	setPath[0].value = tzValue
+	setPath[0].pathDataValue = tzValue
+	setPath[0].pathDataType = StringVal
 	_, errorSet := GNMISet(MakeContext(), c, setPath, StripNamespaces)
 	assert.NoError(t, errorSet)
 
@@ -53,7 +54,7 @@ func TestSinglePath(t *testing.T) {
 	valueAfter, errorAfter := GNMIGet(MakeContext(), c, makeDevicePath(device, tzPath), StripNamespaces)
 	assert.NoError(t, errorAfter)
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, tzValue, valueAfter[0].value, "Query after set returned the wrong value: %s\n", valueAfter)
+	assert.Equal(t, tzValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
 
 	// Remove the path we added
 	errorDelete := GNMIDelete(MakeContext(), c, makeDevicePath(device, tzPath))
@@ -62,7 +63,7 @@ func TestSinglePath(t *testing.T) {
 	//  Make sure it got removed
 	valueAfterDelete, errorAfterDelete := GNMIGet(MakeContext(), c, makeDevicePath(device, tzPath), StripNamespaces)
 	assert.NoError(t, errorAfterDelete)
-	assert.Equal(t, valueAfterDelete[0].value, "",
+	assert.Equal(t, valueAfterDelete[0].pathDataValue, "",
 		"incorrect value found for path /system/clock/config/timezone-name after delete")
 }
 

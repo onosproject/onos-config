@@ -28,9 +28,10 @@ import (
 // DevicePath describes the results of a get operation for a single path
 // It specifies the device, path, and value
 type DevicePath struct {
-	deviceName string
-	path       string
-	value      string
+	deviceName    string
+	path          string
+	pathDataType  string
+	pathDataValue string
 }
 
 func convertGetResults(response *gpb.GetResponse) ([]DevicePath, error) {
@@ -48,10 +49,11 @@ func convertGetResults(response *gpb.GetResponse) ([]DevicePath, error) {
 		}
 		result[index].path = pathString
 
+		result[index].pathDataType = "string_val"
 		if value != nil {
-			result[index].value = utils.StrVal(value)
+			result[index].pathDataValue = utils.StrVal(value)
 		} else {
-			result[index].value = ""
+			result[index].pathDataValue = ""
 		}
 	}
 
@@ -88,7 +90,7 @@ func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath, stripNamesp
 func GNMISet(ctx context.Context, c client.Impl, devicePaths []DevicePath, stripNamespaces bool) (string, error) {
 	var protoBuilder strings.Builder
 	for _, devicePath := range devicePaths {
-		protoBuilder.WriteString(MakeProtoUpdatePath(devicePath.deviceName, devicePath.path, devicePath.value, stripNamespaces))
+		protoBuilder.WriteString(MakeProtoUpdatePath(devicePath, stripNamespaces))
 	}
 
 	setTZRequest := &gpb.SetRequest{}
