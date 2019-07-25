@@ -151,7 +151,7 @@ module test1 {
     }
 
     container cont2c {
-      description "This is a new container added in the 2019 version";
+      description "This is a new container added in the 2019 version.  We don't have to say it's 'config false' - implied by parent";
 
       leaf leaf3a {
         type boolean;
