@@ -28,9 +28,10 @@ import (
 // DevicePath describes the results of a get operation for a single path
 // It specifies the device, path, and value
 type DevicePath struct {
-	deviceName string
-	path       string
-	value      string
+	deviceName    string
+	path          string
+	pathDataType  string
+	pathDataValue string
 }
 
 func convertGetResults(response *gpb.GetResponse) ([]DevicePath, error) {
@@ -48,10 +49,11 @@ func convertGetResults(response *gpb.GetResponse) ([]DevicePath, error) {
 		}
 		result[index].path = pathString
 
+		result[index].pathDataType = "string_val"
 		if value != nil {
-			result[index].value = utils.StrVal(value)
+			result[index].pathDataValue = utils.StrVal(value)
 		} else {
-			result[index].value = ""
+			result[index].pathDataValue = ""
 		}
 	}
 
@@ -63,11 +65,11 @@ func extractSetTransactionID(response *gpb.SetResponse) string {
 }
 
 // GNMIGet generates a GET request on the given client for a path on a device
-func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePath, error) {
+func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath, stripNamespaces bool) ([]DevicePath, error) {
 	var protoString string
 	protoString = ""
 	for _, devicePath := range paths {
-		protoString = protoString + MakeProtoPath(devicePath.deviceName, devicePath.path)
+		protoString = protoString + MakeProtoPath(devicePath.deviceName, devicePath.path, stripNamespaces)
 	}
 
 	getTZRequest := &gpb.GetRequest{}
@@ -85,10 +87,10 @@ func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePa
 }
 
 // GNMISet generates a SET request on the given client for a path on a device
-func GNMISet(ctx context.Context, c client.Impl, devicePaths []DevicePath) (string, error) {
+func GNMISet(ctx context.Context, c client.Impl, devicePaths []DevicePath, stripNamespaces bool) (string, error) {
 	var protoBuilder strings.Builder
 	for _, devicePath := range devicePaths {
-		protoBuilder.WriteString(MakeProtoUpdatePath(devicePath.deviceName, devicePath.path, devicePath.value))
+		protoBuilder.WriteString(MakeProtoUpdatePath(devicePath, stripNamespaces))
 	}
 
 	setTZRequest := &gpb.SetRequest{}
