@@ -107,7 +107,7 @@ func TestSubscribe(t *testing.T) {
 	// Wait for the Update response with Update
 	select {
 	case response = <-respChan:
-		valiedateResponse(t, response, device, false)
+		validateResponse(t, response, device, false)
 	case <-time.After(1 * time.Second):
 		assert.FailNow(t, "Expected Update Response")
 	}
@@ -115,7 +115,7 @@ func TestSubscribe(t *testing.T) {
 	// Wait for the Sync response
 	select {
 	case response = <-respChan:
-		valiedateResponse(t, response, device, false)
+		validateResponse(t, response, device, false)
 	case <-time.After(1 * time.Second):
 		assert.FailNow(t, "Expected Sync Response")
 	}
@@ -134,7 +134,7 @@ func TestSubscribe(t *testing.T) {
 	// Wait for the Update response with delete
 	select {
 	case response = <-respChan:
-		valiedateResponse(t, response, device, true)
+		validateResponse(t, response, device, true)
 	case <-time.After(1 * time.Second):
 		assert.FailNow(t, "Expected Delete Response")
 	}
@@ -142,7 +142,7 @@ func TestSubscribe(t *testing.T) {
 	// Wait for the Sync response
 	select {
 	case response = <-respChan:
-		valiedateResponse(t, response, device, false)
+		validateResponse(t, response, device, false)
 	case <-time.After(1 * time.Second):
 		assert.FailNow(t, "Expected Sync Response")
 	}
@@ -179,7 +179,7 @@ func buildRequest(path *gnmi.Path, mode gnmi.SubscriptionList_Mode) (*gnmi.Subsc
 	return request, nil
 }
 
-func valiedateResponse(t *testing.T, resp *gnmi.SubscribeResponse, device string, delete bool) {
+func validateResponse(t *testing.T, resp *gnmi.SubscribeResponse, device string, delete bool) {
 	switch v := resp.Response.(type) {
 	default:
 		assert.Fail(t, "Unknown type", v)
