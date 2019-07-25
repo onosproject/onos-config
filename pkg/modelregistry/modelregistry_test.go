@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 	var modelPluginTest modelPluginTest
 
 	ds1Schema, _ = modelPluginTest.Schema()
-	readOnlyPaths = ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths = ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "", "")
 }
 
 func (m modelPluginTest) ModelData() (string, string, []*gnmi.ModelData, string) {
@@ -593,7 +593,7 @@ func Test_formatName1(t *testing.T) {
 		Name:   "testname",
 		Prefix: &yang.Value{Name: "pfx1"},
 	}
-	assert.Equal(t, formatName(&dirEntry1, false, "pfx1", "/pfx1:testpath/testpath2"), "/pfx1:testpath/testpath2/testname")
+	assert.Equal(t, formatName(&dirEntry1, false, "pfx1", "/pfx1:testpath/testpath2", ""), "/pfx1:testpath/testpath2/testname")
 }
 
 func Test_formatName2(t *testing.T) {
@@ -602,5 +602,5 @@ func Test_formatName2(t *testing.T) {
 		Key:    "name",
 		Prefix: &yang.Value{Name: "pfx1"},
 	}
-	assert.Equal(t, formatName(&dirEntry1, true, "pfx1", "/pfx1:testpath/testpath2"), "/pfx1:testpath/testpath2/testname[name=*]")
+	assert.Equal(t, formatName(&dirEntry1, true, "pfx1", "/pfx1:testpath/testpath2", ""), "/pfx1:testpath/testpath2/testname[name=*]")
 }
