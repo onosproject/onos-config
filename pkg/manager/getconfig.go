@@ -64,9 +64,9 @@ func (m *Manager) GetTargetConfig(target string, configname string, path string,
 		if ok {
 			value, ok := m.OperationalStateCache[topocache.ID(target)][path]
 			if ok {
-				cachedValues := make([]*change.ConfigValue,0)
+				cachedValues := make([]*change.ConfigValue, 0)
 				cachedValues = append(cachedValues, &change.ConfigValue{
-					Path: path,
+					Path:       path,
 					TypedValue: *value,
 				})
 				return cachedValues, nil
