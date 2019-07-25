@@ -195,7 +195,6 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 
 	log.Info("resp state ", responseState)
 
-
 	if errState != nil {
 		log.Warning("Can't request read-only state paths to target ", sync.key, errState)
 	} else {
@@ -223,9 +222,23 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	if len(notifications) != 0 {
 		for _, notification := range notifications {
 			for _, update := range notification.Update {
-				pathsAndValues := populateCache(update, sync)
-				if pathsAndValues == nil {
+
+				jsonVal := update.Val.GetJsonVal()
+				//strVla := utils.StrVal(update.Val)
+				//log.Info(strVla)
+				configValuesUnparsed, err := store.DecomposeTree(jsonVal)
+				if err != nil {
+					log.Error("Can't translate from json to values, skipping to next update", err)
 					break
+				}
+				configValues, err := jsonvalues.CorrectJSONPaths(configValuesUnparsed, sync.modelReadOnlyPaths)
+				if err != nil {
+					log.Error("Can't translate from config values to typed values, skipping to next update", err)
+					break
+				}
+				pathsAndValues := make(map[string]*change.TypedValue)
+				for _, p := range configValues {
+					pathsAndValues[p.Path] = &p.TypedValue
 				}
 				sync.operationalCache[sync.ID] = pathsAndValues
 
@@ -237,14 +250,17 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			subscribePaths = append(subscribePaths, utils.SplitPath(path))
 		}
 	} else {
-		//TODO handle error
-		log.Error("No model plugin, cant work in operational state cache")
+		errMp := fmt.Errorf("No model plugin, cant work in operational state cache")
+		log.Error(errMp)
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorMissingModelPlugin,
+			sync.key.DeviceID, errMp)
+		return
 	}
-
-	//log.Info("sub paths", subscribePaths)
 
 	if len(subscribePaths) == 0 {
 		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
+			sync.key.DeviceID, noPathErr)
 		log.Warning(noPathErr)
 		return
 	}
@@ -276,30 +292,6 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			sync.key.DeviceID, subErr)
 	}
 
-}
-
-func populateCache(update *gnmi.Update, sync Synchronizer) map[string]*change.TypedValue {
-	//TODO check that this i really a json
-	jsonVal := update.Val.GetJsonVal()
-	//strVla := utils.StrVal(update.Val)
-	//log.Info(strVla)
-	configValuesUnparsed, err := store.DecomposeTree(jsonVal)
-	if err != nil {
-		//TODO what do we do with this err
-		log.Error("Can't translate from json to values", err)
-		return nil
-	}
-	configValues, err := jsonvalues.CorrectJSONPaths(configValuesUnparsed, sync.modelReadOnlyPaths)
-	if err != nil {
-		//TODO what do we do with this err
-		log.Error("Can't translate from config values to typed values", err)
-		return nil
-	}
-	pathsAndValues := make(map[string]*change.TypedValue)
-	for _, p := range configValues {
-		pathsAndValues[p.Path] = &p.TypedValue
-	}
-	return pathsAndValues
 }
 
 func (sync *Synchronizer) handler(msg proto.Message) error {
