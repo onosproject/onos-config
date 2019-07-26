@@ -23,7 +23,7 @@ import (
 
 const (
 	tzValue = "Europe/Dublin"
-	tzPath  = "/openconfig-system:system/clock/config/timezone-name"
+	tzPath  = "/system/clock/config/timezone-name"
 )
 
 func makeDevicePath(device string, path string) []DevicePath {

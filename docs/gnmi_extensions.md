@@ -29,7 +29,7 @@ Therefore when using a gNMI client like gnmi_cli (see [gnmi.md](./gnmi.md)) the
 target can be specified like
 ```bash
 gnmi_cli -get -address localhost:5150 \
-    -proto "path: <target: 'stratum-sim-1', elem: <name: 'openconfig-system:system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
+    -proto "path: <target: 'stratum-sim-1', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
 ...
 ```
 

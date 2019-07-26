@@ -26,9 +26,9 @@ import (
 
 const (
 	value1 = "test-motd-banner"
-	path1  = "/openconfig-system:system/config/motd-banner"
+	path1  = "/system/config/motd-banner"
 	value2 = "test-login-banner"
-	path2  = "/openconfig-system:system/config/login-banner"
+	path2  = "/system/config/login-banner"
 )
 
 var (

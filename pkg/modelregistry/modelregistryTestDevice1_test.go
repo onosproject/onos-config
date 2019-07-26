@@ -24,7 +24,7 @@ import (
 
 func Test_SchemaTestDevice1(t *testing.T) {
 	td1Schema, _ := td1.UnzipSchema()
-	readOnlyPathsTestDevice1 := ExtractReadOnlyPaths(td1Schema["Device"], yang.TSUnset, "", "", "")
+	readOnlyPathsTestDevice1 := ExtractReadOnlyPaths(td1Schema["Device"], yang.TSUnset, "", "")
 
 	readOnlyPathsKeys := Paths(readOnlyPathsTestDevice1)
 	assert.Equal(t, len(readOnlyPathsKeys), 2)

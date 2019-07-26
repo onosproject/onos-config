@@ -236,7 +236,7 @@ should give an appropriate error
 
 ```bash
 gnmi_cli -address localhost:5150 -set \
-    -proto "update: <path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'openconfig-openflow:openflow'> elem: <name: 'controllers'> elem: <name: 'controller' key: <key: 'name' value: 'main'>> elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>> elem: <name: 'state'> elem: <name: 'address'>> val: <string_val: '192.0.2.11'>>" \
+    -proto "update: <path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'openflow'> elem: <name: 'controllers'> elem: <name: 'controller' key: <key: 'name' value: 'main'>> elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>> elem: <name: 'state'> elem: <name: 'address'>> val: <string_val: '192.0.2.11'>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -245,7 +245,7 @@ gnmi_cli -address localhost:5150 -set \
 gives the error:
 ```
 rpc error: code = InvalidArgument desc = update contains a change to a read only
-  path /openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/address. Rejected
+  path /system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/address. Rejected
 ```
 
 
