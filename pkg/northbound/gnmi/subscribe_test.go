@@ -75,7 +75,7 @@ func (x gNMISubscribeServerPollFake) Recv() (*gnmi.SubscribeRequest, error) {
 func Test_SubscribeLeafOnce(t *testing.T) {
 	server, _ := setUp()
 
-	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
+	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 
 	assert.NilError(t, err, "Unexpected error doing parsing")
 
@@ -97,7 +97,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	assert.NilError(t, err, "Unexpected error doing Subscribe")
 
 	device1 := "Device1"
-	path1Once := "test1:cont1a"
+	path1Once := "cont1a"
 	path2Once := "cont2a"
 	path3Once := "leaf2a"
 	value := uint(13)
@@ -111,7 +111,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 func Test_SubscribeLeafStream(t *testing.T) {
 	server, _ := setUp()
 
-	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf4a"})
+	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
 	assert.NilError(t, err, "Unexpected error doing parsing")
 
@@ -200,10 +200,10 @@ func Test_WrongDevice(t *testing.T) {
 	}
 
 	targets["Device1"] = struct{}{}
-	subs["/test1:cont1a/cont2a/leaf3c"] = struct{}{}
+	subs["/cont1a/cont2a/leaf3c"] = struct{}{}
 	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
-	config1Value05, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", change.CreateTypedValueString("def"), false)
-	config1Value09, _ := change.CreateChangeValue("/test1:cont1a/list2a[name=txout2]", change.CreateTypedValueEmpty(), true)
+	config1Value05, _ := change.CreateChangeValue("/cont1a/cont2a/leaf2c", change.CreateTypedValueString("def"), false)
+	config1Value09, _ := change.CreateChangeValue("/cont1a/list2a[name=txout2]", change.CreateTypedValueEmpty(), true)
 	change1, _ := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
 	changeChan <- events.CreateConfigEvent("Device1", change1.ID, true)
 	select {
@@ -247,7 +247,7 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 func Test_Poll(t *testing.T) {
 	server, _ := setUp()
 
-	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
+	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 
 	assert.NilError(t, err, "Unexpected error doing parsing")
 
@@ -281,7 +281,7 @@ func Test_Poll(t *testing.T) {
 	serverFake.Signal <- struct{}{}
 
 	device1 := "Device1"
-	path1Poll := "test1:cont1a"
+	path1Poll := "cont1a"
 	path2Poll := "cont2a"
 	path3Poll := "leaf2a"
 	value := uint(13)
@@ -304,7 +304,7 @@ func Test_Poll(t *testing.T) {
 func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	server, _ := setUp()
 
-	path, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
+	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 
 	assert.NilError(t, err, "Unexpected error doing parsing")
 

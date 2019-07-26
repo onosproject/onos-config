@@ -62,21 +62,21 @@ func Test_DecomposeTree(t *testing.T) {
 
 		switch newPath {
 		case
-			"/openconfig-interfaces:interfaces/default-type",
-			"/openconfig-interfaces:interfaces/interface[*]/type",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/name",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/type",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/example-ll[*]",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/conn-type",
-			"/openconfig-interfaces:interfaces/interface[*]/name":
+			"/interfaces/default-type",
+			"/interfaces/interface[*]/type",
+			"/system/openflow/controllers/controller[*]/name",
+			"/system/openflow/controllers/controller[*]/type",
+			"/system/openflow/controllers/controller[*]/connections/example-ll[*]",
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/conn-type",
+			"/interfaces/interface[*]/name":
 			assert.Equal(t, v.Type, change.ValueTypeSTRING, newPath)
 		case
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/discombobulator":
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/discombobulator":
 			assert.Equal(t, v.Type, change.ValueTypeBOOL, newPath)
 		case
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connections-type",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/aux-id",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connections-freq":
+			"/system/openflow/controllers/controller[*]/connections/connections-type",
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/aux-id",
+			"/system/openflow/controllers/controller[*]/connections/connections-freq":
 			assert.Equal(t, v.Type, change.ValueTypeFLOAT, newPath)
 		default:
 			t.Fatal("Unexpected jsonPath", newPath)
@@ -113,17 +113,17 @@ func Test_DecomposeTree2(t *testing.T) {
 		}
 
 		switch newPath {
-		case "/openconfig-interfaces:interfaces/interface[*]/name",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/name",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/address",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/source-interface",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/transport":
+		case "/interfaces/interface[*]/name",
+			"/system/openflow/controllers/controller[*]/name",
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/address",
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/source-interface",
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/transport":
 			assert.Equal(t, v.Type, change.ValueTypeSTRING, newPath)
 		case
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/aux-id",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/aux-id",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/priority",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[*]/connections/connection[*]/state/port":
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/aux-id",
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/aux-id",
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/priority",
+			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/port":
 			assert.Equal(t, v.Type, change.ValueTypeFLOAT, newPath)
 		default:
 			t.Fatal("Unexpected jsonPath", newPath)

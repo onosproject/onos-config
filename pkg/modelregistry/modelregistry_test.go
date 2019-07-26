@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 	var modelPluginTest modelPluginTest
 
 	ds1Schema, _ = modelPluginTest.Schema()
-	readOnlyPaths = ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "", "")
+	readOnlyPaths = ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 }
 
 func (m modelPluginTest) ModelData() (string, string, []*gnmi.ModelData, string) {
@@ -98,43 +98,43 @@ func Test_Schema(t *testing.T) {
 	for _, p := range readOnlyPathsKeys {
 		switch p {
 		case
-			"/openconfig-platform:components/component[name=*]/properties/property[name=*]/state",
-			"/openconfig-platform:components/component[name=*]/state",
-			"/openconfig-platform:components/component[name=*]/subcomponents/subcomponent[name=*]/state",
-			"/openconfig-interfaces:interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/state",
-			"/openconfig-interfaces:interfaces/interface[name=*]/hold-time/state",
-			"/openconfig-interfaces:interfaces/interface[name=*]/state",
-			"/openconfig-system:system/dns/host-entries/host-entry[hostname=*]/state",
-			"/openconfig-system:system/dns/servers/server[address=*]/state",
-			"/openconfig-system:system/dns/state",
-			"/openconfig-system:system/openconfig-system-logging:logging/console/state",
-			"/openconfig-system:system/openconfig-system-logging:logging/console/selectors/selector[facility severity=*]/state",
-			"/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/state",
-			"/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state",
-			"/openconfig-system:system/state",
-			"/openconfig-system:system/openconfig-system-terminal:telnet-server/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/accounting/events/event[event-type=*]/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/accounting/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/authentication/admin-user/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/authentication/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/authentication/users/user[username=*]/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/authorization/events/event[event-type=*]/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/authorization/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/tacacs/state",
-			"/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/state",
-			"/openconfig-system:system/clock/state",
-			"/openconfig-system:system/openconfig-openflow:openflow/agent/state",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/state",
-			"/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/state",
-			"/openconfig-system:system/openconfig-procmon:processes/process[pid=*]",
-			"/openconfig-system:system/openconfig-system-terminal:ssh-server/state",
-			"/openconfig-system:system/memory/state",
-			"/openconfig-system:system/ntp/ntp-keys/ntp-key[key-id=*]/state",
-			"/openconfig-system:system/ntp/servers/server[address=*]/state",
-			"/openconfig-system:system/ntp/state":
+			"/components/component[name=*]/properties/property[name=*]/state",
+			"/components/component[name=*]/state",
+			"/components/component[name=*]/subcomponents/subcomponent[name=*]/state",
+			"/interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/state",
+			"/interfaces/interface[name=*]/hold-time/state",
+			"/interfaces/interface[name=*]/state",
+			"/system/dns/host-entries/host-entry[hostname=*]/state",
+			"/system/dns/servers/server[address=*]/state",
+			"/system/dns/state",
+			"/system/logging/console/state",
+			"/system/logging/console/selectors/selector[facility severity=*]/state",
+			"/system/logging/remote-servers/remote-server[host=*]/state",
+			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state",
+			"/system/state",
+			"/system/telnet-server/state",
+			"/system/aaa/state",
+			"/system/aaa/accounting/events/event[event-type=*]/state",
+			"/system/aaa/accounting/state",
+			"/system/aaa/authentication/admin-user/state",
+			"/system/aaa/authentication/state",
+			"/system/aaa/authentication/users/user[username=*]/state",
+			"/system/aaa/authorization/events/event[event-type=*]/state",
+			"/system/aaa/authorization/state",
+			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/state",
+			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/state",
+			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/tacacs/state",
+			"/system/aaa/server-groups/server-group[name=*]/state",
+			"/system/clock/state",
+			"/system/openflow/agent/state",
+			"/system/openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/state",
+			"/system/openflow/controllers/controller[name=*]/state",
+			"/system/processes/process[pid=*]",
+			"/system/ssh-server/state",
+			"/system/memory/state",
+			"/system/ntp/ntp-keys/ntp-key[key-id=*]/state",
+			"/system/ntp/servers/server[address=*]/state",
+			"/system/ntp/state":
 
 		default:
 			t.Fatal("Unexpected readOnlyPath", p)
@@ -144,7 +144,7 @@ func Test_Schema(t *testing.T) {
 
 func Test_State(t *testing.T) {
 
-	k := "/openconfig-platform:components/component[name=*]/properties/property[name=*]/state"
+	k := "/components/component[name=*]/properties/property[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/configurable", "/name", "/value":
@@ -156,7 +156,7 @@ func Test_State(t *testing.T) {
 
 func Test_Component(t *testing.T) {
 
-	k := "/openconfig-platform:components/component[name=*]/state"
+	k := "/components/component[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/description", "/id", "/mfg-name", "/name", "/part-no", "/serial-no", "/type", "/version":
@@ -168,7 +168,7 @@ func Test_Component(t *testing.T) {
 
 func Test_SubComponent(t *testing.T) {
 
-	k := "/openconfig-platform:components/component[name=*]/subcomponents/subcomponent[name=*]/state"
+	k := "/components/component[name=*]/subcomponents/subcomponent[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/name":
@@ -180,7 +180,7 @@ func Test_SubComponent(t *testing.T) {
 
 func Test_hold_time(t *testing.T) {
 
-	k := "/openconfig-interfaces:interfaces/interface[name=*]/hold-time/state"
+	k := "/interfaces/interface[name=*]/hold-time/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/down", "/up":
@@ -192,7 +192,7 @@ func Test_hold_time(t *testing.T) {
 
 func Test_SubInterfaces(t *testing.T) {
 
-	k := "/openconfig-interfaces:interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/state"
+	k := "/interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/admin-status", "/description", "/enabled", "/ifindex", "/index", "/last-change", "/name", "/oper-status":
@@ -204,7 +204,7 @@ func Test_SubInterfaces(t *testing.T) {
 
 func Test_InterfaceName(t *testing.T) {
 
-	k := "/openconfig-interfaces:interfaces/interface[name=*]/state"
+	k := "/interfaces/interface[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/admin-status", "/description", "/enabled", "/hardware-port", "/ifindex", "/last-change", "/mtu", "/name", "/oper-status", "/type":
@@ -216,7 +216,7 @@ func Test_InterfaceName(t *testing.T) {
 
 func Test_DnsHost(t *testing.T) {
 
-	k := "/openconfig-system:system/dns/host-entries/host-entry[hostname=*]/state"
+	k := "/system/dns/host-entries/host-entry[hostname=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/hostname":
@@ -228,7 +228,7 @@ func Test_DnsHost(t *testing.T) {
 
 func Test_DnsServer(t *testing.T) {
 
-	k := "/openconfig-system:system/dns/servers/server[address=*]/state"
+	k := "/system/dns/servers/server[address=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/address", "/port":
@@ -240,7 +240,7 @@ func Test_DnsServer(t *testing.T) {
 
 func Test_Dns(t *testing.T) {
 
-	k := "/openconfig-system:system/dns/state"
+	k := "/system/dns/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
 	}
@@ -248,7 +248,7 @@ func Test_Dns(t *testing.T) {
 
 func Test_LoggingConsole(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-system-logging:logging/console/state"
+	k := "/system/logging/console/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
 	}
@@ -256,7 +256,7 @@ func Test_LoggingConsole(t *testing.T) {
 
 func Test_LoggingSelector(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-system-logging:logging/console/selectors/selector[facility severity=*]/state"
+	k := "/system/logging/console/selectors/selector[facility severity=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/facility", "/severity":
@@ -268,7 +268,7 @@ func Test_LoggingSelector(t *testing.T) {
 
 func Test_LoggingServer(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/state"
+	k := "/system/logging/remote-servers/remote-server[host=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/host", "/remote-port", "/source-address":
@@ -280,7 +280,7 @@ func Test_LoggingServer(t *testing.T) {
 
 func Test_Logging(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-system-logging:logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state"
+	k := "/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/facility", "/severity":
@@ -292,7 +292,7 @@ func Test_Logging(t *testing.T) {
 
 func Test_SysState(t *testing.T) {
 
-	k := "/openconfig-system:system/state"
+	k := "/system/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/boot-time", "/current-datetime", "/domain-name", "/hostname", "/login-banner", "/motd-banner":
@@ -304,7 +304,7 @@ func Test_SysState(t *testing.T) {
 
 func Test_Telnet(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-system-terminal:telnet-server/state"
+	k := "/system/telnet-server/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/enable", "/rate-limit", "/session-limit", "/timeout":
@@ -316,7 +316,7 @@ func Test_Telnet(t *testing.T) {
 
 func Test_AAA(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/state"
+	k := "/system/aaa/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
 	}
@@ -324,7 +324,7 @@ func Test_AAA(t *testing.T) {
 
 func Test_AccountingEvents(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/accounting/events/event[event-type=*]/state"
+	k := "/system/aaa/accounting/events/event[event-type=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/event-type", "/record":
@@ -336,7 +336,7 @@ func Test_AccountingEvents(t *testing.T) {
 
 func Test_Accounting(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/accounting/state"
+	k := "/system/aaa/accounting/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
 	}
@@ -344,7 +344,7 @@ func Test_Accounting(t *testing.T) {
 
 func Test_AuthAdmin(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/authentication/admin-user/state"
+	k := "/system/aaa/authentication/admin-user/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/admin-password", "/admin-password-hashed", "/admin-username":
@@ -356,7 +356,7 @@ func Test_AuthAdmin(t *testing.T) {
 
 func Test_AuthState(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/authentication/state"
+	k := "/system/aaa/authentication/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
 	}
@@ -364,7 +364,7 @@ func Test_AuthState(t *testing.T) {
 
 func Test_AuthUser(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/authentication/users/user[username=*]/state"
+	k := "/system/aaa/authentication/users/user[username=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/password", "/password-hashed", "/role", "/ssh-key", "/username":
@@ -376,7 +376,7 @@ func Test_AuthUser(t *testing.T) {
 
 func Test_AuthEvent(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/authorization/events/event[event-type=*]/state"
+	k := "/system/aaa/authorization/events/event[event-type=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/event-type":
@@ -388,7 +388,7 @@ func Test_AuthEvent(t *testing.T) {
 
 func Test_Auth(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/authorization/state"
+	k := "/system/aaa/authorization/state"
 	if len(readOnlyPaths[k]) != 0 {
 		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
 	}
@@ -396,7 +396,7 @@ func Test_Auth(t *testing.T) {
 
 func Test_Radius(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/state"
+	k := "/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/acct-port", "/auth-port", "/retransmit-attempts", "/secret-key", "/source-address":
@@ -408,7 +408,7 @@ func Test_Radius(t *testing.T) {
 
 func Test_AAAServerGroup(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/state"
+	k := "/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/address", "/connection-aborts", "/connection-closes", "/connection-failures", "/connection-opens",
@@ -421,7 +421,7 @@ func Test_AAAServerGroup(t *testing.T) {
 
 func Test_AAAtacacs(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/servers/server[address=*]/tacacs/state"
+	k := "/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/tacacs/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/port", "/secret-key", "/source-address":
@@ -433,7 +433,7 @@ func Test_AAAtacacs(t *testing.T) {
 
 func Test_AAAServer(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=*]/state"
+	k := "/system/aaa/server-groups/server-group[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/name", "/type":
@@ -445,7 +445,7 @@ func Test_AAAServer(t *testing.T) {
 
 func Test_Clock(t *testing.T) {
 
-	k := "/openconfig-system:system/clock/state"
+	k := "/system/clock/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/timezone-name":
@@ -457,7 +457,7 @@ func Test_Clock(t *testing.T) {
 
 func Test_OfAgent(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-openflow:openflow/agent/state"
+	k := "/system/openflow/agent/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/backoff-interval", "/datapath-id", "/failure-mode", "/inactivity-probe", "/max-backoff":
@@ -469,7 +469,7 @@ func Test_OfAgent(t *testing.T) {
 
 func Test_OFControllerConnection(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/state"
+	k := "/system/openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/address", "/aux-id", "/connected", "/port", "/priority", "/source-interface", "/transport":
@@ -481,7 +481,7 @@ func Test_OFControllerConnection(t *testing.T) {
 
 func Test_OfControllers(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=*]/state"
+	k := "/system/openflow/controllers/controller[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/name":
@@ -493,7 +493,7 @@ func Test_OfControllers(t *testing.T) {
 
 func Test_ProcMonProcess(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-procmon:processes/process[pid=*]"
+	k := "/system/processes/process[pid=*]"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/cpu-usage-system", "/cpu-usage-user", "/cpu-utilization", "/memory-usage", "/memory-utilization",
@@ -506,7 +506,7 @@ func Test_ProcMonProcess(t *testing.T) {
 
 func Test_SshServer(t *testing.T) {
 
-	k := "/openconfig-system:system/openconfig-system-terminal:ssh-server/state"
+	k := "/system/ssh-server/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/enable", "/protocol-version", "/rate-limit", "/session-limit", "/timeout":
@@ -518,7 +518,7 @@ func Test_SshServer(t *testing.T) {
 
 func Test_SystemMemory(t *testing.T) {
 
-	k := "/openconfig-system:system/memory/state"
+	k := "/system/memory/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/physical", "/reserved":
@@ -530,7 +530,7 @@ func Test_SystemMemory(t *testing.T) {
 
 func Test_NtpKeys(t *testing.T) {
 
-	k := "/openconfig-system:system/ntp/ntp-keys/ntp-key[key-id=*]/state"
+	k := "/system/ntp/ntp-keys/ntp-key[key-id=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/key-id", "/key-type", "/key-value":
@@ -542,7 +542,7 @@ func Test_NtpKeys(t *testing.T) {
 
 func Test_NtpServer(t *testing.T) {
 
-	k := "/openconfig-system:system/ntp/servers/server[address=*]/state"
+	k := "/system/ntp/servers/server[address=*]/state"
 	for p, v := range readOnlyPaths[k] {
 		switch p {
 		case "/address", "/association-type", "/port":
@@ -559,7 +559,7 @@ func Test_NtpServer(t *testing.T) {
 
 func Test_Ntp(t *testing.T) {
 
-	k := "/openconfig-system:system/ntp/state"
+	k := "/system/ntp/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/auth-mismatch", "/enable-ntp-auth", "/enabled", "/ntp-source-address":
@@ -571,20 +571,20 @@ func Test_Ntp(t *testing.T) {
 
 func Test_RemovePathIndices(t *testing.T) {
 	assert.Equal(t,
-		RemovePathIndices("/test1:cont1b-state"),
-		"/test1:cont1b-state")
+		RemovePathIndices("/cont1b-state"),
+		"/cont1b-state")
 
 	assert.Equal(t,
-		RemovePathIndices("/test1:cont1b-state/list2b[index=test1]/index"),
-		"/test1:cont1b-state/list2b[index=*]/index")
+		RemovePathIndices("/cont1b-state/list2b[index=test1]/index"),
+		"/cont1b-state/list2b[index=*]/index")
 
 	assert.Equal(t,
-		RemovePathIndices("/test1:cont1b-state/list2b[index=test1,test2]/index"),
-		"/test1:cont1b-state/list2b[index=*]/index")
+		RemovePathIndices("/cont1b-state/list2b[index=test1,test2]/index"),
+		"/cont1b-state/list2b[index=*]/index")
 
 	assert.Equal(t,
-		RemovePathIndices("/test1:cont1b-state/list2b[index=test1]/index/t3[name=5]"),
-		"/test1:cont1b-state/list2b[index=*]/index/t3[name=*]")
+		RemovePathIndices("/cont1b-state/list2b[index=test1]/index/t3[name=5]"),
+		"/cont1b-state/list2b[index=*]/index/t3[name=*]")
 
 }
 
@@ -593,7 +593,7 @@ func Test_formatName1(t *testing.T) {
 		Name:   "testname",
 		Prefix: &yang.Value{Name: "pfx1"},
 	}
-	assert.Equal(t, formatName(&dirEntry1, false, "pfx1", "/pfx1:testpath/testpath2", ""), "/pfx1:testpath/testpath2/testname")
+	assert.Equal(t, formatName(&dirEntry1, false, "/testpath/testpath2", ""), "/testpath/testpath2/testname")
 }
 
 func Test_formatName2(t *testing.T) {
@@ -602,5 +602,5 @@ func Test_formatName2(t *testing.T) {
 		Key:    "name",
 		Prefix: &yang.Value{Name: "pfx1"},
 	}
-	assert.Equal(t, formatName(&dirEntry1, true, "pfx1", "/pfx1:testpath/testpath2", ""), "/pfx1:testpath/testpath2/testname[name=*]")
+	assert.Equal(t, formatName(&dirEntry1, true, "/testpath/testpath2", ""), "/testpath/testpath2/testname[name=*]")
 }

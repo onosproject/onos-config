@@ -28,12 +28,12 @@ import (
 )
 
 const (
-	Test1Cont1A             = "/test1:cont1a"
-	Test1Cont1ACont2A       = "/test1:cont1a/cont2a"
-	Test1Cont1ACont2ALeaf2A = "/test1:cont1a/cont2a/leaf2a"
-	Test1Cont1ACont2ALeaf2B = "/test1:cont1a/cont2a/leaf2b"
-	Test1Cont1ACont2ALeaf2C = "/test1:cont1a/cont2a/leaf2c"
-	Test1Cont1ACont2ALeaf2D = "/test1:cont1a/cont2a/leaf2d"
+	Test1Cont1A             = "/cont1a"
+	Test1Cont1ACont2A       = "/cont1a/cont2a"
+	Test1Cont1ACont2ALeaf2A = "/cont1a/cont2a/leaf2a"
+	Test1Cont1ACont2ALeaf2B = "/cont1a/cont2a/leaf2b"
+	Test1Cont1ACont2ALeaf2C = "/cont1a/cont2a/leaf2c"
+	Test1Cont1ACont2ALeaf2D = "/cont1a/cont2a/leaf2d"
 )
 
 const (
@@ -191,7 +191,7 @@ func Test_GetNetworkConfig(t *testing.T) {
 
 func Test_SetNetworkConfig(t *testing.T) {
 	// First verify the value beforehand
-	const origChangeHash = "B0jBLCNC+OAgqy/6PVL+/AcTn90="
+	const origChangeHash = "65MwjiKdV5lnh19sKeapnlAUxGw="
 	mgrTest, changeStoreTest, configurationStoreTest := setUp()
 	assert.Equal(t, len(changeStoreTest), 1)
 	i := 0
@@ -344,24 +344,24 @@ func TestManager_GetAllConfig(t *testing.T) {
 	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*", 0)
 	assert.Assert(t, len(result) == 3, "Get of device all paths does not return proper array")
 	assert.NilError(t, err, "Configuration not found")
-	assert.Assert(t, networkConfigContainsPath(result, "/test1:cont1a"), "/test1:cont1a not found")
-	assert.Assert(t, networkConfigContainsPath(result, "/test1:cont1a/cont2a"), "/test1:cont1a/cont2a not found")
-	assert.Assert(t, networkConfigContainsPath(result, "/test1:cont1a/cont2a/leaf2a"), "/test1:cont1a/cont2a/leaf2a not found")
+	assert.Assert(t, networkConfigContainsPath(result, "/cont1a"), "/cont1a not found")
+	assert.Assert(t, networkConfigContainsPath(result, "/cont1a/cont2a"), "/cont1a/cont2a not found")
+	assert.Assert(t, networkConfigContainsPath(result, "/cont1a/cont2a/leaf2a"), "/cont1a/cont2a/leaf2a not found")
 }
 
 func TestManager_GetOneConfig(t *testing.T) {
 	mgrTest, _, _ := setUp()
 
-	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/test1:cont1a/cont2a/leaf2a", 0)
+	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
 	assert.NilError(t, err, "Configuration not found")
-	assert.Assert(t, networkConfigContainsPath(result, "/test1:cont1a/cont2a/leaf2a"), "/test1:cont1a/cont2a/leaf2a not found")
+	assert.Assert(t, networkConfigContainsPath(result, "/cont1a/cont2a/leaf2a"), "/cont1a/cont2a/leaf2a not found")
 }
 
 func TestManager_GetConfigNoTarget(t *testing.T) {
 	mgrTest, _, _ := setUp()
 
-	result, err := mgrTest.GetTargetConfig("", "Running", "/test1:cont1a/cont2a/leaf2a", 0)
+	result, err := mgrTest.GetTargetConfig("", "Running", "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 0, "Get of device one path does not return proper array")
 	assert.ErrorContains(t, err, "No Configuration found for Running")
 }

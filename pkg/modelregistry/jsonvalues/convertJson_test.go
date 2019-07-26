@@ -75,83 +75,83 @@ func Test_correctJsonPathValues(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(ds1Schema), 137)
 
-	readOnlyPaths := modelregistry.ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "", "")
+	readOnlyPaths := modelregistry.ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	assert.Equal(t, len(readOnlyPaths), 37)
 
 	// All values are taken from testdata/sample-openconfig.json and defined
 	// here in the intermediate jsonToValues format
-	const systemNtpAuthMismatch = "/openconfig-system:system/ntp/state/auth-mismatch"
+	const systemNtpAuthMismatch = "/system/ntp/state/auth-mismatch"
 	const systemNtpAuthMismatchValue = 123456.00000
 	val01 := change.ConfigValue{Path: systemNtpAuthMismatch,
 		TypedValue: *change.CreateTypedValueFloat(systemNtpAuthMismatchValue)}
 
-	const systemNtpEnableAuth = "/openconfig-system:system/ntp/state/enable-ntp-auth"
+	const systemNtpEnableAuth = "/system/ntp/state/enable-ntp-auth"
 	const systemNtpEnableAuthValue = true
 	val02 := change.ConfigValue{Path: systemNtpEnableAuth,
 		TypedValue: *change.CreateTypedValueBool(systemNtpEnableAuthValue)}
 
-	const systemNtpSourceAddr = "/openconfig-system:system/ntp/state/ntp-source-address"
+	const systemNtpSourceAddr = "/system/ntp/state/ntp-source-address"
 	const systemNtpSourceAddrValue = "192.168.0.17"
 	val03 := change.ConfigValue{Path: systemNtpSourceAddr,
 		TypedValue: *change.CreateTypedValueString(systemNtpSourceAddrValue)}
 
-	const iface1Mtu = "/openconfig-interfaces:interfaces/interface[1]/state/mtu"
+	const iface1Mtu = "/interfaces/interface[1]/state/mtu"
 	const iface1MtuValue = 960.0
 	val04 := change.ConfigValue{Path: iface1Mtu,
 		TypedValue: *change.CreateTypedValueFloat(iface1MtuValue)}
-	const iface1Name = "/openconfig-interfaces:interfaces/interface[1]/name"
+	const iface1Name = "/interfaces/interface[1]/name"
 	const iface1NameValue = "eth1"
 	val05 := change.ConfigValue{Path: iface1Name,
 		TypedValue: *change.CreateTypedValueString(iface1NameValue)}
-	const iface1Desc = "/openconfig-interfaces:interfaces/interface[1]/state/description"
+	const iface1Desc = "/interfaces/interface[1]/state/description"
 	const iface1DescValue = "new if desc"
 	val06 := change.ConfigValue{Path: iface1Desc,
 		TypedValue: *change.CreateTypedValueString(iface1DescValue)}
 
-	const iface1Sub15IfaceIdx = "/openconfig-interfaces:interfaces/interface[1]/subinterfaces/subinterface[15]/state/ifindex"
+	const iface1Sub15IfaceIdx = "/interfaces/interface[1]/subinterfaces/subinterface[15]/state/ifindex"
 	const iface1Sub15IfaceIdxValue = 10.0
 	val07 := change.ConfigValue{Path: iface1Sub15IfaceIdx,
 		TypedValue: *change.CreateTypedValueFloat(iface1Sub15IfaceIdxValue)}
-	const iface1Sub15Idx = "/openconfig-interfaces:interfaces/interface[1]/subinterfaces/subinterface[15]/index"
+	const iface1Sub15Idx = "/interfaces/interface[1]/subinterfaces/subinterface[15]/index"
 	const iface1Sub15IdxValue = "120"
 	val08 := change.ConfigValue{Path: iface1Sub15Idx,
 		TypedValue: *change.CreateTypedValueString(iface1Sub15IdxValue)}
-	const iface1Sub15AdSt = "/openconfig-interfaces:interfaces/interface[1]/subinterfaces/subinterface[15]/state/admin-status"
+	const iface1Sub15AdSt = "/interfaces/interface[1]/subinterfaces/subinterface[15]/state/admin-status"
 	const iface1Sub15AdStValue = "UP"
 	val09 := change.ConfigValue{Path: iface1Sub15AdSt,
 		TypedValue: *change.CreateTypedValueString(iface1Sub15AdStValue)}
 
-	const sysAaaGr10Svr199Ca = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[10]/servers/server[199]/state/connection-aborts"
+	const sysAaaGr10Svr199Ca = "/system/aaa/server-groups/server-group[10]/servers/server[199]/state/connection-aborts"
 	const sysAaaGr10Svr199CaValue = 12.00
 	val10 := change.ConfigValue{Path: sysAaaGr10Svr199Ca,
 		TypedValue: *change.CreateTypedValueFloat(sysAaaGr10Svr199CaValue)}
-	const sysAaaGr10Name = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[10]/name"
+	const sysAaaGr10Name = "/system/aaa/server-groups/server-group[10]/name"
 	const sysAaaGr10NameValue = "g1"
 	val11 := change.ConfigValue{Path: sysAaaGr10Name,
 		TypedValue: *change.CreateTypedValueString(sysAaaGr10NameValue)}
-	const sysAaaGr10Svr199Addr = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[10]/servers/server[199]/address"
+	const sysAaaGr10Svr199Addr = "/system/aaa/server-groups/server-group[10]/servers/server[199]/address"
 	const sysAaaGr10Svr199AddrValue = "192.168.0.7"
 	val12 := change.ConfigValue{Path: sysAaaGr10Svr199Addr,
 		TypedValue: *change.CreateTypedValueString(sysAaaGr10Svr199AddrValue)}
 
-	const sysAaaGr12Svr199Ca = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[12]/servers/server[199]/state/connection-aborts"
+	const sysAaaGr12Svr199Ca = "/system/aaa/server-groups/server-group[12]/servers/server[199]/state/connection-aborts"
 	const sysAaaGr12Svr199CaValue = 4.0
 	val13 := change.ConfigValue{Path: sysAaaGr12Svr199Ca,
 		TypedValue: *change.CreateTypedValueFloat(sysAaaGr12Svr199CaValue)}
-	const sysAaaGr12Name = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[12]/name"
+	const sysAaaGr12Name = "/system/aaa/server-groups/server-group[12]/name"
 	const sysAaaGr12NameValue = "g2"
 	val14 := change.ConfigValue{Path: sysAaaGr12Name,
 		TypedValue: *change.CreateTypedValueString(sysAaaGr12NameValue)}
-	const sysAaaGr12Svr199Addr = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[12]/servers/server[199]/address"
+	const sysAaaGr12Svr199Addr = "/system/aaa/server-groups/server-group[12]/servers/server[199]/address"
 	const sysAaaGr12Svr199AddrValue = "192.168.0.4"
 	val15 := change.ConfigValue{Path: sysAaaGr12Svr199Addr,
 		TypedValue: *change.CreateTypedValueString(sysAaaGr12Svr199AddrValue)}
 
-	const sysAaaGr12Svr200Ca = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[12]/servers/server[200]/state/connection-aborts"
+	const sysAaaGr12Svr200Ca = "/system/aaa/server-groups/server-group[12]/servers/server[200]/state/connection-aborts"
 	const sysAaaGr12Svr200CaValue = 5.0
 	val16 := change.ConfigValue{Path: sysAaaGr12Svr200Ca,
 		TypedValue: *change.CreateTypedValueFloat(sysAaaGr12Svr200CaValue)}
-	const sysAaaGr12Svr200Addr = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[12]/servers/server[200]/address"
+	const sysAaaGr12Svr200Addr = "/system/aaa/server-groups/server-group[12]/servers/server[200]/address"
 	const sysAaaGr12Svr200AddrValue = "192.168.0.5"
 	val17 := change.ConfigValue{Path: sysAaaGr12Svr200Addr,
 		TypedValue: *change.CreateTypedValueString(sysAaaGr12Svr200AddrValue)}
@@ -168,13 +168,13 @@ func Test_correctJsonPathValues(t *testing.T) {
 	assert.Equal(t, len(correctedPathValues), 10)
 
 	for _, correctedPathValue := range correctedPathValues {
-		const ifEth1Mtu = "/openconfig-interfaces:interfaces/interface[name=eth1]/state/mtu"
-		const ifEth1Desc = "/openconfig-interfaces:interfaces/interface[name=eth1]/state/description"
-		const ifEth1Sub120IfIdx = "/openconfig-interfaces:interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/state/ifindex"
-		const ifEth1Sub120AdSt = "/openconfig-interfaces:interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/state/admin-status"
-		const sysAaaGrG1Srv7Ca = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=g1]/servers/server[address=192.168.0.7]/state/connection-aborts"
-		const sysAaaGrG2Srv4Ca = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=g2]/servers/server[address=192.168.0.4]/state/connection-aborts"
-		const sysAaaGrG2Srv5Ca = "/openconfig-system:system/openconfig-aaa:aaa/server-groups/server-group[name=g2]/servers/server[address=192.168.0.5]/state/connection-aborts"
+		const ifEth1Mtu = "/interfaces/interface[name=eth1]/state/mtu"
+		const ifEth1Desc = "/interfaces/interface[name=eth1]/state/description"
+		const ifEth1Sub120IfIdx = "/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/state/ifindex"
+		const ifEth1Sub120AdSt = "/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/state/admin-status"
+		const sysAaaGrG1Srv7Ca = "/system/aaa/server-groups/server-group[name=g1]/servers/server[address=192.168.0.7]/state/connection-aborts"
+		const sysAaaGrG2Srv4Ca = "/system/aaa/server-groups/server-group[name=g2]/servers/server[address=192.168.0.4]/state/connection-aborts"
+		const sysAaaGrG2Srv5Ca = "/system/aaa/server-groups/server-group[name=g2]/servers/server[address=192.168.0.5]/state/connection-aborts"
 		switch correctedPathValue.Path {
 		case systemNtpAuthMismatch:
 			assert.Equal(t, correctedPathValue.Type, change.ValueTypeUINT)
@@ -224,11 +224,11 @@ func Test_correctJsonPathValues(t *testing.T) {
 
 func Test_hasPrefixMultipleIdx(t *testing.T) {
 
-	const a = "/openconfig-interfaces:interfaces/interface[*]/subinterfaces/subinterface[*]/state/mtu"
-	const b = "/openconfig-interfaces:interfaces/interface[*]/subinterfaces/subinterface[*]/state"
+	const a = "/interfaces/interface[*]/subinterfaces/subinterface[*]/state/mtu"
+	const b = "/interfaces/interface[*]/subinterfaces/subinterface[*]/state"
 
 	assert.Assert(t, hasPrefixMultipleIdx(a, b), "a should match b", a, b)
 
-	const c = "/openconfig-interfaces:interfaces/interface[*]/state"
+	const c = "/interfaces/interface[*]/state"
 	assert.Assert(t, !hasPrefixMultipleIdx(a, c), "a should NOT match b", a, c)
 }

@@ -83,6 +83,11 @@ Follow the steps in **Loading the Model Plugin** below for how to load it.
 The YANG files to be used with generator.go should be collected together in a
 folder and named in the style: **\<modulename>@\<latestrevision>.yang**
 
+> **Note** The Yang files provided are required not to contain overlapping or clashing namespaces at the same path level.
+> This requirement is necessary during the model compilation in YGOT because this tool offers no support for namespaces 
+> in the form of `/namespace:path/path2`, e.g. `/openconfig-system:system/clock`. YGOT compilation of a model containing 
+> `/openconfig-system:system/clock` will result in the path being `/system/clock`
+
 Running the generator command in the form:
 ```bash
 go run $GOPATH/src/github.com/openconfig/ygot/generator/generator.go \
@@ -236,7 +241,7 @@ should give an appropriate error
 
 ```bash
 gnmi_cli -address localhost:5150 -set \
-    -proto "update: <path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'openconfig-openflow:openflow'> elem: <name: 'controllers'> elem: <name: 'controller' key: <key: 'name' value: 'main'>> elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>> elem: <name: 'state'> elem: <name: 'address'>> val: <string_val: '192.0.2.11'>>" \
+    -proto "update: <path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'openflow'> elem: <name: 'controllers'> elem: <name: 'controller' key: <key: 'name' value: 'main'>> elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>> elem: <name: 'state'> elem: <name: 'address'>> val: <string_val: '192.0.2.11'>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -245,7 +250,7 @@ gnmi_cli -address localhost:5150 -set \
 gives the error:
 ```
 rpc error: code = InvalidArgument desc = update contains a change to a read only
-  path /openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/address. Rejected
+  path /system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/address. Rejected
 ```
 
 

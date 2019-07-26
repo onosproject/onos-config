@@ -10,6 +10,10 @@ the [OpenConfig](https://github.com/openconfig/gnmi) project. If it's not on you
 go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
 ```
 > For troubleshooting information see [gnmi_user_manual.md](https://github.com/onosproject/simulators/blob/master/docs/gnmi/gnmi_user_manual.md)
+## Namespaces
+**onos-config** follows the YGOT project in simplification by not using namespaces in paths. This can be achieved 
+because the YANG models used do not have clashing device names that need to be qualified by namespaces. 
+This helps developers, avoiding un-needed complication and redundancy. 
 
 ## Northbound gNMI Get Request 
 __onos-config__ extends standard gNMI as a method of accessing a complete
@@ -25,7 +29,7 @@ Use `gnmi_cli -get` to get configuration for a particular device (target) from t
 > If config from several devices are required, several paths can be added
 ```bash
 gnmi_cli -get -address localhost:5150 \
-    -proto "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
+    -proto "path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
     -timeout 5s -alsologtostderr\
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -53,8 +57,8 @@ gnmi_cli -get -address localhost:5150 \
 ### Get a keyed index in a list
 Use a proto value like:
 >    -proto "path: <target: 'localhost-1',
->         elem: <name: 'openconfig-system:system'>
->         elem: <name: 'openconfig-openflow:openflow'> elem: <name: 'controllers'>
+>         elem: <name: 'system'>
+>         elem: <name: 'openflow'> elem: <name: 'controllers'>
 >         elem: <name: 'controller' key: <key: 'name' value: 'main'>>
 >         elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>>
 >         elem: <name: 'config'> elem: <name: 'address'>>"
@@ -64,7 +68,7 @@ Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the
 
 ```bash
 gnmi_cli -address localhost:5150 -set \
-    -proto "update: <path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
+    -proto "update: <path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -75,7 +79,7 @@ giving a response like
 response: <
   path: <
     elem: <
-      name: "openconfig-system:system"
+      name: "system"
     >
     elem: <
       name: "clock"
@@ -109,7 +113,7 @@ SetRequest() with the 100 extension at the end of the -proto section like:
 > See [gnmi_extensions.md](./gnmi_extensions.md) for more on gNMI extensions supported.
 
 > The corresponding -get for this require using the -proto
-> "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
+> "path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
 
 > Currently (Jul '19) checking of the contents done only when a Model Plugin is
 > loaded for the device type. 2 checks are done 1) that a attempt is not being
@@ -129,7 +133,7 @@ To make a gNMI Set request do delete a path, use the `gnmi_cli -set` command as 
 
 ```bash
 gnmi_cli -address localhost:5150 -set \
-    -proto "delete: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
+    -proto "delete: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -142,7 +146,7 @@ please note the `0` as subscription mode to indicate streaming:
 
 ```bash
 gnmi_cli -address localhost:5150 \
-    -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -158,7 +162,7 @@ please note the `1` as subscription mode to indicate to send the response once:
 
 ```bash
 gnmi_cli -address localhost:5150 \
-    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
     -client_key pkg/southbound/testdata/client1.key \
@@ -173,7 +177,7 @@ please note the `2` as subscription mode to indicate to send the response in a p
 
 ```bash
 gnmi_cli -address localhost:5150 \
-     -proto "subscribe:<mode: 2, prefix:<>, subscription:<sample_interval: 5, path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+     -proto "subscribe:<mode: 2, prefix:<>, subscription:<sample_interval: 5, path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
      -timeout 5s \
      -polling_interval 5s \
      -client_crt pkg/southbound/testdata/client1.crt \

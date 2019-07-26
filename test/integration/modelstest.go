@@ -28,10 +28,10 @@ func init() {
 // TestModels tests GNMI operation involving unknown or illegal paths
 func TestModels(t *testing.T) {
 	const (
-		unknownPath       = "/openconfig-system:system/config/no-such-path"
-		ntpPath           = "/openconfig-system:system/ntp/state/enable-ntp-auth"
-		hostNamePath      = "/openconfig-system:system/config/hostname"
-		clockTimeZonePath = "/openconfig-system:system/clock/config/timezone-name"
+		unknownPath       = "/system/config/no-such-path"
+		ntpPath           = "/system/ntp/state/enable-ntp-auth"
+		hostNamePath      = "/system/config/hostname"
+		clockTimeZonePath = "/system/clock/config/timezone-name"
 	)
 
 	// Get the configured device from the environment.

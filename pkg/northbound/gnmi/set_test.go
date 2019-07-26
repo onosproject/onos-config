@@ -35,7 +35,7 @@ func Test_doSingleSet(t *testing.T) {
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
 
-	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a", "leaf2a"})
+	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
 	value := gnmi.TypedValue{Value: &typedValue}
 	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
@@ -76,7 +76,7 @@ func Test_doSingleSet(t *testing.T) {
 
 	assert.Equal(t, len(path.Elem), 3, "Expected 3 path elements")
 
-	assert.Equal(t, path.Elem[0].Name, "test1:cont1a")
+	assert.Equal(t, path.Elem[0].Name, "cont1a")
 	assert.Equal(t, path.Elem[1].Name, "cont2a")
 	assert.Equal(t, path.Elem[2].Name, "leaf2a")
 
@@ -100,13 +100,13 @@ func Test_doSingleSet(t *testing.T) {
 
 	changeID, ok := nwChange.ConfigurationChanges["Device1-1.0.0"]
 	assert.Assert(t, ok)
-	assert.Equal(t, store.B64(changeID), "WfJRlDpr8wXmvVzlqNe3SzDAdWw=")
+	assert.Equal(t, store.B64(changeID), "few5qsScVH0YFFapIqfq+dyvuks=")
 
 	assert.Equal(t, len(manager.GetManager().ChangeStore.Store), 13)
 	newChange, ok := manager.GetManager().ChangeStore.Store[store.B64(changeID)]
 	assert.Assert(t, ok)
 	assert.Equal(t, len(newChange.Config), 1)
-	assert.Equal(t, newChange.Config[0].Path, "/test1:cont1a/cont2a/leaf2a")
+	assert.Equal(t, newChange.Config[0].Path, "/cont1a/cont2a/leaf2a")
 	assert.Equal(t, (*change.TypedUint64)(&newChange.Config[0].TypedValue).Uint(), uint(16))
 }
 

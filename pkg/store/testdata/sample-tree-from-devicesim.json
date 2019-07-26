@@ -1,13 +1,13 @@
 {
-  "openconfig-interfaces:interfaces": {
+  "interfaces": {
     "interface": [
       {
         "name": "admin"
       }
     ]
   },
-  "openconfig-system:system": {
-    "openconfig-openflow:openflow": {
+  "system": {
+    "openflow": {
       "controllers": {
         "controller": [
           {

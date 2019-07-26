@@ -189,10 +189,10 @@ To get the aggregate configuration of a device in a hierarchical JSON structure 
 DEVICE			CONFIGURATION		TYPE		VERSION
 Device1                 Device1-1.0.0           TestDevice      1.0.0
 CHANGE:	2uUbeEV4i3ADedjeORmgQt6CVDM=
-CHANGE:	50XCdm605t2/jZoPePGiUvboQzg=
+CHANGE:	tAk3GZSh1qbdhdm5414r46RLvqw=
 CHANGE:	MY8s8Opw+xjbcARIMzIpUIzeXv0=
 TREE:
-{"test1:cont1a":{"cont2a":{"leaf2a":13,"leaf2b":1.14159,"leaf2c":"def","leaf2d":0.002,"leaf2e":[-99,-4,5,200],"leaf2g":false},"leaf1a":"abcdef","list2a":[{"name":"txout1","tx-power":8},{"name":"txout3","tx-power":16}]},"test1:leafAtTopLevel":"WXY-1234"}
+{"cont1a":{"cont2a":{"leaf2a":13,"leaf2b":1.14159,"leaf2c":"def","leaf2d":0.002,"leaf2e":[-99,-4,5,200],"leaf2g":false},"leaf1a":"abcdef","list2a":[{"name":"txout1","tx-power":8},{"name":"txout3","tx-power":16}]},"test1:leafAtTopLevel":"WXY-1234"}
 ```
 
 > This displays the list of changes IDs and the aggregate effect of layering each

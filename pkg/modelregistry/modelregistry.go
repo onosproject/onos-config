@@ -81,8 +81,7 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 		log.Warning("Error loading schema from model plugin", modelName, err)
 		return "", "", err
 	}
-	readOnlyPaths := ExtractReadOnlyPaths(modelschema["Device"],
-		yang.TSUnset, "", "", "")
+	readOnlyPaths := ExtractReadOnlyPaths(modelschema["Device"], yang.TSUnset, "", "")
 	registry.ModelReadOnlyPaths[modelName] = readOnlyPaths
 	log.Info(registry.ModelReadOnlyPaths[modelName])
 	log.Infof("Model %s %s loaded. %d read only paths", name, version,
@@ -113,12 +112,11 @@ func (registry *ModelRegistry) Capabilities() []*gnmi.ModelData {
 }
 
 // ExtractReadOnlyPaths is a recursive function to extract a list of read only paths from a YGOT schema
-func ExtractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentNs string,
-	parentPath string, subpathPrefix string) ReadOnlyPathMap {
+func ExtractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath string,
+	subpathPrefix string) ReadOnlyPathMap {
 	readOnlyPaths := make(ReadOnlyPathMap)
 	for _, dirEntry := range deviceEntry.Dir {
-		namespace := extractnamespace(dirEntry, parentNs)
-		itemPath := formatName(dirEntry, false, parentNs, parentPath, subpathPrefix)
+		itemPath := formatName(dirEntry, false, parentPath, subpathPrefix)
 		if dirEntry.IsLeaf() {
 			// No need to recurse
 			if parentState == yang.TSFalse {
@@ -153,7 +151,7 @@ func ExtractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 				if parentState == yang.TSFalse {
 					subpathPfx = itemPath[len(parentPath):]
 				}
-				subPaths := ExtractReadOnlyPaths(dirEntry, yang.TSFalse, namespace, itemPath, subpathPfx)
+				subPaths := ExtractReadOnlyPaths(dirEntry, yang.TSFalse, itemPath, subpathPfx)
 				subPathsMap := make(ReadOnlySubPathMap)
 				for _, v := range subPaths {
 					for k, u := range v {
@@ -163,18 +161,18 @@ func ExtractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 				readOnlyPaths[itemPath] = subPathsMap
 				continue
 			}
-			readOnlyPathsTemp := ExtractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath, "")
+			readOnlyPathsTemp := ExtractReadOnlyPaths(dirEntry, dirEntry.Config, itemPath, "")
 			for k, v := range readOnlyPathsTemp {
 				readOnlyPaths[k] = v
 			}
 		} else if dirEntry.IsList() {
-			itemPath = formatName(dirEntry, true, parentNs, parentPath, subpathPrefix)
+			itemPath = formatName(dirEntry, true, parentPath, subpathPrefix)
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
 				subpathPfx := subpathPrefix
 				if parentState == yang.TSFalse {
 					subpathPfx = itemPath[len(parentPath):]
 				}
-				subPaths := ExtractReadOnlyPaths(dirEntry, yang.TSFalse, namespace, parentPath, subpathPfx)
+				subPaths := ExtractReadOnlyPaths(dirEntry, yang.TSFalse, parentPath, subpathPfx)
 				subPathsMap := make(ReadOnlySubPathMap)
 				for _, v := range subPaths {
 					for k, u := range v {
@@ -184,7 +182,7 @@ func ExtractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 				readOnlyPaths[itemPath] = subPathsMap
 				continue
 			}
-			readOnlyPathsTemp := ExtractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath, "")
+			readOnlyPathsTemp := ExtractReadOnlyPaths(dirEntry, dirEntry.Config, itemPath, "")
 			for k, v := range readOnlyPathsTemp {
 				readOnlyPaths[k] = v
 			}
@@ -204,60 +202,20 @@ func RemovePathIndices(path string) string {
 	return path
 }
 
-func formatName(dirEntry *yang.Entry, isList bool, parentNs string, parentPath string, subpathPrefix string) string {
-	namespace := extractnamespace(dirEntry, parentNs)
+func formatName(dirEntry *yang.Entry, isList bool, parentPath string, subpathPrefix string) string {
 	parentAndSubPath := parentPath
 	if subpathPrefix != "/" {
 		parentAndSubPath = fmt.Sprintf("%s%s", parentPath, subpathPrefix)
 	}
 
 	var name string
-	if namespace == parentNs && isList {
+	if isList {
 		name = fmt.Sprintf("%s/%s[%s=*]", parentAndSubPath, dirEntry.Name, dirEntry.Key)
-	} else if isList {
-		name = fmt.Sprintf("%s/%s:%s[%s=*]", parentAndSubPath, namespace, dirEntry.Name, dirEntry.Key)
-	} else if namespace == parentNs || namespace == "" {
-		name = fmt.Sprintf("%s/%s", parentAndSubPath, dirEntry.Name)
 	} else {
-		name = fmt.Sprintf("%s/%s:%s", parentAndSubPath, namespace, dirEntry.Name)
+		name = fmt.Sprintf("%s/%s", parentAndSubPath, dirEntry.Name)
 	}
 
 	return name
-}
-
-func extractnamespace(dirEntry *yang.Entry, parentNs string) string {
-	namespace := dirEntry.Namespace()
-	if namespace != nil && namespace.Name != "" {
-		return namespace.Name
-	}
-
-	prefix := dirEntry.Prefix.Name
-	// Special case until YGOT gets fixed - doesn't return namespaces
-	if prefix == "openflow" {
-		return "openconfig-openflow"
-	} else if prefix == "oc-log" {
-		return "openconfig-system-logging"
-	} else if prefix == "oc-proc" {
-		return "openconfig-procmon"
-	} else if prefix == "oc-sys-term" {
-		return "openconfig-system-terminal"
-	} else if prefix == "oc-aaa" {
-		return "openconfig-aaa"
-	}
-
-	if dirEntry.Annotation != nil {
-		schemaPath, nsok := dirEntry.Annotation["schemapath"]
-		if nsok {
-			nsstr, ok := schemaPath.(string)
-			if ok {
-				nselem := strings.Split(nsstr, "/")
-				if len(nselem) > 1 {
-					return nselem[1]
-				}
-			}
-		}
-	}
-	return parentNs
 }
 
 //Paths extract the read only path up to the first read only container

@@ -2,314 +2,314 @@
   "Version": "1.0.0",
   "Storetype": "change",
   "Store": {
-    "TOA0Blur2YQTAdkzKkRrAPIU+9A=": {
-      "ID": "TOA0Blur2YQTAdkzKkRrAPIU+9A=",
+    "WCqhR1nJn3ZGFdaeN3DBLeYO6ks=": {
+      "ID": "WCqhR1nJn3ZGFdaeN3DBLeYO6ks=",
       "Description": "Remove txout 2",
       "Created": "2019-05-09T16:24:17.815274679Z",
       "Config": [
         {
-          "Path": "/test1:cont1a/cont2a/leaf2d",
+          "Path": "/cont1a/cont2a/leaf2d",
           "Value": "AgAAAAAAAAA=",
           "Type": 5,
           "TypeOpts": [3]
         },
         {
-          "Path": "/test1:cont1a/cont2a/leaf2e",
+          "Path": "/cont1a/cont2a/leaf2e",
           "Value": "nf/////////8/////////wUAAAAAAAAAyAAAAAAAAAA=",
           "Type": 9
         },
         {
-          "Path": "/test1:cont1a/cont2a/leaf2g",
+          "Path": "/cont1a/cont2a/leaf2g",
           "Value": "AA==",
           "Type": 4
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout2]",
+          "Path": "/cont1a/list2a[name=txout2]",
           "Type": 0,
           "Remove": true
         }
       ]
     },
-    "50XCdm605t2/jZoPePGiUvboQzg=": {
-      "ID": "50XCdm605t2/jZoPePGiUvboQzg=",
+    "tAk3GZSh1qbdhdm5414r46RLvqw=": {
+      "ID": "tAk3GZSh1qbdhdm5414r46RLvqw=",
       "Description": "Trim power level",
       "Created": "2019-05-09T16:24:17.815259228Z",
       "Config": [
         {
-          "Path": "/test1:cont1a/cont2a/leaf2b",
+          "Path": "/cont1a/cont2a/leaf2b",
           "Value": "AAAA4PND8j8=",
           "Type": 6
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout3]/tx-power",
+          "Path": "/cont1a/list2a[name=txout3]/tx-power",
           "Value": "EAAAAAAAAAA=",
           "Type": 3
         }
       ]
     },
-    "uOTzTiNotAGjjsl11EuVFY/lYsM=": {
-      "ID": "uOTzTiNotAGjjsl11EuVFY/lYsM=",
+    "Rc4/gKAMmgJfNPMC6+zLxvcMTwg=": {
+      "ID": "Rc4/gKAMmgJfNPMC6+zLxvcMTwg=",
       "Description": "Remove txout 1",
       "Created": "2019-05-09T16:24:17.815294258Z",
       "Config": [
         {
-          "Path": "/test1:cont1a/list2a[name=txout1]",
+          "Path": "/cont1a/list2a[name=txout1]",
           "Type": 0,
           "Remove": true
         }
       ]
     },
-    "EQct6X4kZda3NqpW6N2TL4fFilA=": {
-      "ID": "EQct6X4kZda3NqpW6N2TL4fFilA=",
+    "e3tYWHBz7OYGt5e3SlfjfpxcwZ4=": {
+      "ID": "e3tYWHBz7OYGt5e3SlfjfpxcwZ4=",
       "Description": "Original Config for test switch",
       "Created": "2019-05-09T16:24:17.815187669Z",
       "Config": [
         {
-          "Path": "/test1:cont1a/cont2a/leaf2a",
+          "Path": "/cont1a/cont2a/leaf2a",
           "Value": "DQAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/test1:cont1a/cont2a/leaf2b",
+          "Path": "/cont1a/cont2a/leaf2b",
           "Value": "AAAAgJVD+T8=",
           "Type": 6
         },
         {
-          "Path": "/test1:cont1a/leaf1a",
+          "Path": "/cont1a/leaf1a",
           "Value": "YWJjZGVm",
           "Type": 1
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout1]",
+          "Path": "/cont1a/list2a[name=txout1]",
           "Value": "",
           "Type": 0
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout1]/tx-power",
+          "Path": "/cont1a/list2a[name=txout1]/tx-power",
           "Value": "CAAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout2]",
+          "Path": "/cont1a/list2a[name=txout2]",
           "Value": "",
           "Type": 0
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout2]/tx-power",
+          "Path": "/cont1a/list2a[name=txout2]/tx-power",
           "Value": "CgAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/test1:leafAtTopLevel",
+          "Path": "/leafAtTopLevel",
           "Value": "V1hZLTEyMzQ=",
           "Type": 1
         }
       ]
     },
-    "yEeW6VaoPiXkRRuoCa0jfcW97vk=": {
-      "ID": "yEeW6VaoPiXkRRuoCa0jfcW97vk=",
+    "OcRNRKUFjQCgntMb26WVe0iu23U=": {
+      "ID": "OcRNRKUFjQCgntMb26WVe0iu23U=",
       "Description": "Original configuration for devicesim",
       "Created": "2019-05-21T08:43:01Z",
       "Config": [
         {
-          "Path": "/openconfig-interfaces:interfaces/interface[name=admin]/config/name",
+          "Path": "/interfaces/interface[name=admin]/config/name",
           "Value": "YWRtaW4=",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/aaa/authentication/admin-user/config/admin-password",
+          "Path": "/system/aaa/authentication/admin-user/config/admin-password",
           "Value": "cGFzc3dvcmQ=",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/aaa/authentication/config/authentication-method",
+          "Path": "/system/aaa/authentication/config/authentication-method",
           "Value": "b3BlbmNvbmZpZy1hYWEtdHlwZXM6TE9DQUw=",
           "Type": 8
         },
         {
-          "Path": "/openconfig-system:system/clock/config/timezone-name",
+          "Path": "/system/clock/config/timezone-name",
           "Value": "RXVyb3BlL0R1Ymxpbg==",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/hostname",
+          "Path": "/system/config/hostname",
           "Value": "cmVwbGFjZS1kZXZpY2UtbmFtZQ==",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/domain-name",
+          "Path": "/system/config/domain-name",
           "Value": "b3Blbm5ldHdvcmtpbmcub3Jn",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/login-banner",
+          "Path": "/system/config/login-banner",
           "Value": "VGhpcyBkZXZpY2UgaXMgZm9yIGF1dGhvcml6ZWQgdXNlIG9ubHk=",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/motd-banner",
+          "Path": "/system/config/motd-banner",
           "Value": "cmVwbGFjZS1tb3RkLWJhbm5lcg==",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/backoff-interval",
+          "Path": "/system/openflow/agent/config/backoff-interval",
           "Value": "BQAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/datapath-id",
+          "Path": "/system/openflow/agent/config/datapath-id",
           "Value": "MDA6MTY6M2U6MDA6MDA6MDA6MDA6MDA=",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/failure-mode",
+          "Path": "/system/openflow/agent/config/failure-mode",
           "Value": "U0VDVVJF",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/inactivity-probe",
+          "Path": "/system/openflow/agent/config/inactivity-probe",
           "Value": "CgAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/agent/config/max-backoff",
+          "Path": "/system/openflow/agent/config/max-backoff",
           "Value": "CgAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/config/name",
+          "Path": "/system/openflow/controllers/controller[name=main]/config/name",
           "Value": "bWFpbg==",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/address",
+          "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/address",
           "Value": "MTkyLjAuMi4xMA==",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/aux-id",
+          "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/aux-id",
           "Value": "AAAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/port",
+          "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/port",
           "Value": "6RkAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/priority",
+          "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/priority",
           "Value": "AQAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/source-interface",
+          "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/source-interface",
           "Value": "YWRtaW4=",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/openconfig-openflow:openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/transport",
+          "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/transport",
           "Value": "VExT",
           "Type": 1
         }
       ]
     },
-    "y/8sZEp9O7pLZvWDDKTmrISVk0U=": {
-      "ID": "y/8sZEp9O7pLZvWDDKTmrISVk0U=",
+    "6u5DggH8SyMQaikerhclgBmneO0=": {
+      "ID": "6u5DggH8SyMQaikerhclgBmneO0=",
       "Description": "Modification of device sim 1",
       "Created": "2019-05-21T08:43:02Z",
       "Config": [
         {
-          "Path": "/openconfig-system:system/config/hostname",
+          "Path": "/system/config/hostname",
           "Value": "bG9jYWxob3N0LTE=",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/motd-banner",
+          "Path": "/system/config/motd-banner",
           "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYx",
           "Type": 1
         }
       ]
     },
-    "clnusGLfRRJx/+b8Q9uvTdAptk0=": {
-      "ID": "clnusGLfRRJx/+b8Q9uvTdAptk0=",
+    "wRmAtg1c8ATNeFK8Shiwc1N0gdw=": {
+      "ID": "wRmAtg1c8ATNeFK8Shiwc1N0gdw=",
       "Description": "Modification of device sim 2",
       "Created": "2019-05-21T08:43:03Z",
       "Config": [
         {
-          "Path": "/openconfig-system:system/config/hostname",
+          "Path": "/system/config/hostname",
           "Value": "bG9jYWxob3N0LTI=",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/motd-banner",
+          "Path": "/system/config/motd-banner",
           "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYy",
           "Type": 1
         }
       ]
     },
-    "90srsoYe5BWlmh3wKToJvOC7iIU=": {
-      "ID": "90srsoYe5BWlmh3wKToJvOC7iIU=",
+    "z/uj5QRBaxP9ndgko8XUDkQR6kM=": {
+      "ID": "z/uj5QRBaxP9ndgko8XUDkQR6kM=",
       "Description": "Modification of device sim 3",
       "Created": "2019-05-21T08:43:04Z",
       "Config": [
         {
-          "Path": "/openconfig-system:system/config/hostname",
+          "Path": "/system/config/hostname",
           "Value": "bG9jYWxob3N0LTM=",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/motd-banner",
+          "Path": "/system/config/motd-banner",
           "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYz",
           "Type": 1
         }
       ]
     },
-    "5H/7bq3MC16pF9cMQIOPcq/jhLg=": {
-      "ID": "5H/7bq3MC16pF9cMQIOPcq/jhLg=",
+    "HSG6Jf6bM1vfexEnSoMcNGJ68QE=": {
+      "ID": "HSG6Jf6bM1vfexEnSoMcNGJ68QE=",
       "Description": "Modification of device-1-device-simulator",
       "Created": "2019-05-30T18:03:17Z",
       "Config": [
         {
-          "Path": "/openconfig-system:system/config/hostname",
+          "Path": "/system/config/hostname",
           "Value": "ZGV2aWNlLTEtZGV2aWNlLXNpbXVsYXRvcg==",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/motd-banner",
+          "Path": "/system/config/motd-banner",
           "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTEtZGV2aWNlLXNpbXVsYXRvcg==",
           "Type": 1
         }
       ]
     },
-    "KiZ+OLazJHyL2ycFUc/NSRjsTiE=": {
-      "ID": "KiZ+OLazJHyL2ycFUc/NSRjsTiE=",
+    "aJIBGic9ci3G3KmJpuJxHEkteso=": {
+      "ID": "aJIBGic9ci3G3KmJpuJxHEkteso=",
       "Description": "Modification of device-2-device-simulator",
       "Created": "2019-05-30T18:03:17Z",
       "Config": [
         {
-          "Path": "/openconfig-system:system/config/hostname",
+          "Path": "/system/config/hostname",
           "Value": "ZGV2aWNlLTItZGV2aWNlLXNpbXVsYXRvcg==",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/motd-banner",
+          "Path": "/system/config/motd-banner",
           "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTItZGV2aWNlLXNpbXVsYXRvcg==",
           "Type": 1
         }
       ]
     },
-    "LJGPGbRk8dn/kqQkENTrweYkba4=": {
-      "ID": "LJGPGbRk8dn/kqQkENTrweYkba4=",
+    "EgnVE0n7/B6EF+GY/ismFIcbTbk=": {
+      "ID": "EgnVE0n7/B6EF+GY/ismFIcbTbk=",
       "Description": "Modification of device-3-device-simulator",
       "Created": "2019-05-30T18:03:17Z",
       "Config": [
         {
-          "Path": "/openconfig-system:system/config/hostname",
+          "Path": "/system/config/hostname",
           "Value": "ZGV2aWNlLTMtZGV2aWNlLXNpbXVsYXRvcg==",
           "Type": 1
         },
         {
-          "Path": "/openconfig-system:system/config/motd-banner",
+          "Path": "/system/config/motd-banner",
           "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTMtZGV2aWNlLXNpbXVsYXRvcg==",
           "Type": 1
         }

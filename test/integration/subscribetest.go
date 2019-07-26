@@ -30,7 +30,7 @@ import (
 
 const (
 	subValue = "Europe/Madrid"
-	subPath  = "/openconfig-system:system/clock/config/timezone-name"
+	subPath  = "/system/clock/config/timezone-name"
 )
 
 func init() {

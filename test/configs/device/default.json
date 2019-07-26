@@ -1,5 +1,5 @@
 {
-  "openconfig-interfaces:interfaces": {
+  "interfaces": {
     "interface": [
       {
         "name": "admin",
@@ -9,7 +9,7 @@
       }
     ]
   },
-  "openconfig-system:system": {
+  "system": {
     "aaa": {
       "authentication": {
         "admin-user": {
@@ -35,7 +35,7 @@
       "login-banner": "This device is for authorized use only",
       "motd-banner": "replace-motd-banner"
     },
-    "openconfig-openflow:openflow": {
+    "openflow": {
       "agent": {
         "config": {
           "backoff-interval": 5,

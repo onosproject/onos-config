@@ -1,5 +1,5 @@
 {
-  "openconfig-interfaces:interfaces": {
+  "interfaces": {
     "interface": [
       {
         "name": "eth1",
@@ -19,7 +19,7 @@
       }
     ]
   },
-  "openconfig-system:system": {
+  "system": {
     "ntp": {
       "state": {
         "auth-mismatch": 123456,
@@ -27,7 +27,7 @@
         "ntp-source-address": "192.168.0.17"
       }
     },
-    "openconfig-aaa:aaa": {
+    "aaa": {
       "server-groups": {
         "server-group": [
           {
