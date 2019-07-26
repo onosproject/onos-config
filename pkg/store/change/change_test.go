@@ -33,20 +33,20 @@ var (
 )
 
 const (
-	Test1Cont1A                  = "/test1:cont1a"
-	Test1Cont1ACont2A            = "/test1:cont1a/cont2a"
-	Test1Cont1ACont2ALeaf2A      = "/test1:cont1a/cont2a/leaf2a"
-	Test1Cont1ACont2ALeaf2B      = "/test1:cont1a/cont2a/leaf2b"
-	Test1Cont1ACont2ALeaf2C      = "/test1:cont1a/cont2a/leaf2c"
-	Test1Cont1ACont2ALeaf2D      = "/test1:cont1a/cont2a/leaf2d"
-	Test1Cont1ACont2ALeaf2E      = "/test1:cont1a/cont2a/leaf2e"
-	Test1Cont1ACont2ALeaf2F      = "/test1:cont1a/cont2a/leaf2f"
-	Test1Cont1ALeaf1A            = "/test1:cont1a/leaf1a"
-	Test1Cont1AList2ATxout1      = "/test1:cont1a/list2a[name=txout1]"
-	Test1Cont1AList2ATxout1Txpwr = "/test1:cont1a/list2a[name=txout1]/tx-power"
-	Test1Cont1AList2ATxout2      = "/test1:cont1a/list2a[name=txout2]"
-	Test1Cont1AList2ATxout2Txpwr = "/test1:cont1a/list2a[name=txout2]/tx-power"
-	Test1Leaftoplevel            = "/test1:leafAtTopLevel"
+	Test1Cont1A                  = "/cont1a"
+	Test1Cont1ACont2A            = "/cont1a/cont2a"
+	Test1Cont1ACont2ALeaf2A      = "/cont1a/cont2a/leaf2a"
+	Test1Cont1ACont2ALeaf2B      = "/cont1a/cont2a/leaf2b"
+	Test1Cont1ACont2ALeaf2C      = "/cont1a/cont2a/leaf2c"
+	Test1Cont1ACont2ALeaf2D      = "/cont1a/cont2a/leaf2d"
+	Test1Cont1ACont2ALeaf2E      = "/cont1a/cont2a/leaf2e"
+	Test1Cont1ACont2ALeaf2F      = "/cont1a/cont2a/leaf2f"
+	Test1Cont1ALeaf1A            = "/cont1a/leaf1a"
+	Test1Cont1AList2ATxout1      = "/cont1a/list2a[name=txout1]"
+	Test1Cont1AList2ATxout1Txpwr = "/cont1a/list2a[name=txout1]/tx-power"
+	Test1Cont1AList2ATxout2      = "/cont1a/list2a[name=txout2]"
+	Test1Cont1AList2ATxout2Txpwr = "/cont1a/list2a[name=txout2]/tx-power"
+	Test1Leaftoplevel            = "/leafAtTopLevel"
 )
 
 const (
@@ -101,14 +101,14 @@ func TestMain(m *testing.M) {
 
 func Test_ConfigValue(t *testing.T) {
 	// Create ConfigValue from strings
-	path := "/test1:cont1a/cont2a/leaf2a"
+	path := "/cont1a/cont2a/leaf2a"
 	value := 13
 
 	configValue2a, _ := CreateChangeValue(path, CreateTypedValueUint64(uint(value)), false)
 
 	assert.Equal(t, configValue2a.Path, path)
 
-	assert.Equal(t, configValue2a.String(), "/test1:cont1a/cont2a/leaf2a [13 0 0 0 0 0 0 0] false")
+	assert.Equal(t, configValue2a.String(), "/cont1a/cont2a/leaf2a [13 0 0 0 0 0 0 0] false")
 }
 
 func Test_changecreation(t *testing.T) {
@@ -183,10 +183,10 @@ func Test_changeString(t *testing.T) {
 	changeObj, _ := CreateChange(ValueCollections{cv1, cv2, cv3, cv4}, "Test Change")
 
 	var expected = `"Config":[` +
-		`{"Path":"/test1:cont1a/cont2a/leaf2a","Value":"ewAAAAAAAAA=","Type":3,"TypeOpts":null,"Remove":false},` +
-		`{"Path":"/test1:cont1a/cont2a/leaf2b","Value":"QUJD","Type":1,"TypeOpts":null,"Remove":false},` +
-		`{"Path":"/test1:cont1a/cont2a/leaf2c","Value":"SGVsbG8=","Type":1,"TypeOpts":null,"Remove":false},` +
-		`{"Path":"/test1:cont1a/cont2a/leaf2d","Value":"AQ==","Type":4,"TypeOpts":null,"Remove":false}]}`
+		`{"Path":"/cont1a/cont2a/leaf2a","Value":"ewAAAAAAAAA=","Type":3,"TypeOpts":null,"Remove":false},` +
+		`{"Path":"/cont1a/cont2a/leaf2b","Value":"QUJD","Type":1,"TypeOpts":null,"Remove":false},` +
+		`{"Path":"/cont1a/cont2a/leaf2c","Value":"SGVsbG8=","Type":1,"TypeOpts":null,"Remove":false},` +
+		`{"Path":"/cont1a/cont2a/leaf2d","Value":"AQ==","Type":4,"TypeOpts":null,"Remove":false}]}`
 
 	assert.Assert(t, strings.Contains(changeObj.String(), expected),
 		"Expected change to produce string. Got", changeObj.String())

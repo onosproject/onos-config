@@ -32,34 +32,34 @@ func Test_SchemaTestDevice2(t *testing.T) {
 	for _, p := range readOnlyPathsKeys {
 		switch p {
 		case
-			"/test1:cont1b-state",
-			"/test1:cont1a/cont2a/leaf2c":
+			"/cont1b-state",
+			"/cont1a/cont2a/leaf2c":
 
 		default:
 			t.Fatal("Unexpected readOnlyPath", p)
 		}
 	}
 
-	leaf2c, leaf2cOk := readOnlyPathsTestDevice1["/test1:cont1a/cont2a/leaf2c"]
-	assert.Assert(t, leaf2cOk, "expected to get /test1:cont1a/cont2a/leaf2c")
-	assert.Equal(t, len(leaf2c), 1, "expected /test1:cont1a/cont2a/leaf2c to have only 1 subpath")
+	leaf2c, leaf2cOk := readOnlyPathsTestDevice1["/cont1a/cont2a/leaf2c"]
+	assert.Assert(t, leaf2cOk, "expected to get /cont1a/cont2a/leaf2c")
+	assert.Equal(t, len(leaf2c), 1, "expected /cont1a/cont2a/leaf2c to have only 1 subpath")
 	leaf2cVt, leaf2cVtOk := leaf2c["/"]
-	assert.Assert(t, leaf2cVtOk, "expected /test1:cont1a/cont2a/leaf2c to have subpath /")
+	assert.Assert(t, leaf2cVtOk, "expected /cont1a/cont2a/leaf2c to have subpath /")
 	assert.Equal(t, leaf2cVt, change.ValueTypeSTRING)
 
-	cont1b, cont1bOk := readOnlyPathsTestDevice1["/test1:cont1b-state"]
-	assert.Assert(t, cont1bOk, "expected to get /test1:cont1b-state")
-	assert.Equal(t, len(cont1b), 5, "expected /test1:cont1b-state to have 5 subpaths")
+	cont1b, cont1bOk := readOnlyPathsTestDevice1["/cont1b-state"]
+	assert.Assert(t, cont1bOk, "expected to get /cont1b-state")
+	assert.Equal(t, len(cont1b), 5, "expected /cont1b-state to have 5 subpaths")
 
 	cont1bVt, cont1bVtOk := cont1b["/leaf2d"]
-	assert.Assert(t, cont1bVtOk, "expected /test1:cont1b-state to have subpath /leaf2d")
+	assert.Assert(t, cont1bVtOk, "expected /cont1b-state to have subpath /leaf2d")
 	assert.Equal(t, cont1bVt, change.ValueTypeUINT)
 
 	l2bIdxVt, l2bIdxVtOk := cont1b["/list2b[index=*]/index"]
-	assert.Assert(t, l2bIdxVtOk, "expected /test1:cont1b-state to have subpath /list2b[index[*]/index")
+	assert.Assert(t, l2bIdxVtOk, "expected /cont1b-state to have subpath /list2b[index[*]/index")
 	assert.Equal(t, l2bIdxVt, change.ValueTypeUINT)
 
 	l2bLeaf3cVt, l2bLeaf3cVtOk := cont1b["/list2b[index=*]/leaf3c"]
-	assert.Assert(t, l2bLeaf3cVtOk, "expected /test1:cont1b-state to have subpath /list2b[index[*]/leaf3c")
+	assert.Assert(t, l2bLeaf3cVtOk, "expected /cont1b-state to have subpath /list2b[index[*]/leaf3c")
 	assert.Equal(t, l2bLeaf3cVt, change.ValueTypeSTRING)
 }

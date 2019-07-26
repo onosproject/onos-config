@@ -27,23 +27,23 @@ import (
 )
 
 const (
-	Test1Cont1A                  = "/test1:cont1a"
-	Test1Cont1ACont2A            = "/test1:cont1a/cont2a"
-	Test1Cont1ACont2ALeaf2A      = "/test1:cont1a/cont2a/leaf2a"
-	Test1Cont1ACont2ALeaf2B      = "/test1:cont1a/cont2a/leaf2b"
-	Test1Cont1ACont2ALeaf2C      = "/test1:cont1a/cont2a/leaf2c"
-	Test1Cont1ACont2ALeaf2D      = "/test1:cont1a/cont2a/leaf2d"
-	Test1Cont1ACont2ALeaf2E      = "/test1:cont1a/cont2a/leaf2e"
-	Test1Cont1ACont2ALeaf2F      = "/test1:cont1a/cont2a/leaf2f"
-	Test1Cont1ACont2ALeaf2G      = "/test1:cont1a/cont2a/leaf2g"
-	Test1Cont1ALeaf1A            = "/test1:cont1a/leaf1a"
-	Test1Cont1AList2ATxout1      = "/test1:cont1a/list2a[name=txout1]"
-	Test1Cont1AList2ATxout1Txpwr = "/test1:cont1a/list2a[name=txout1]/tx-power"
-	Test1Cont1AList2ATxout2      = "/test1:cont1a/list2a[name=txout2]"
-	Test1Cont1AList2ATxout2Txpwr = "/test1:cont1a/list2a[name=txout2]/tx-power"
-	Test1Cont1AList2ATxout3      = "/test1:cont1a/list2a[name=txout3]"
-	Test1Cont1AList2ATxout3Txpwr = "/test1:cont1a/list2a[name=txout3]/tx-power"
-	Test1Leaftoplevel            = "/test1:leafAtTopLevel"
+	Test1Cont1A                  = "/cont1a"
+	Test1Cont1ACont2A            = "/cont1a/cont2a"
+	Test1Cont1ACont2ALeaf2A      = "/cont1a/cont2a/leaf2a"
+	Test1Cont1ACont2ALeaf2B      = "/cont1a/cont2a/leaf2b"
+	Test1Cont1ACont2ALeaf2C      = "/cont1a/cont2a/leaf2c"
+	Test1Cont1ACont2ALeaf2D      = "/cont1a/cont2a/leaf2d"
+	Test1Cont1ACont2ALeaf2E      = "/cont1a/cont2a/leaf2e"
+	Test1Cont1ACont2ALeaf2F      = "/cont1a/cont2a/leaf2f"
+	Test1Cont1ACont2ALeaf2G      = "/cont1a/cont2a/leaf2g"
+	Test1Cont1ALeaf1A            = "/cont1a/leaf1a"
+	Test1Cont1AList2ATxout1      = "/cont1a/list2a[name=txout1]"
+	Test1Cont1AList2ATxout1Txpwr = "/cont1a/list2a[name=txout1]/tx-power"
+	Test1Cont1AList2ATxout2      = "/cont1a/list2a[name=txout2]"
+	Test1Cont1AList2ATxout2Txpwr = "/cont1a/list2a[name=txout2]/tx-power"
+	Test1Cont1AList2ATxout3      = "/cont1a/list2a[name=txout3]"
+	Test1Cont1AList2ATxout3Txpwr = "/cont1a/list2a[name=txout3]/tx-power"
+	Test1Leaftoplevel            = "/leafAtTopLevel"
 )
 
 const (
@@ -234,6 +234,8 @@ var Config2Types = [11]change.ValueType{
 	change.ValueTypeSTRING, // 10
 }
 
+var c1ID, c2ID, c3ID change.ID
+
 func TestMain(m *testing.M) {
 	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
@@ -293,6 +295,10 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	changeStore[B64(change2.ID)] = change2
 	changeStore[B64(change3.ID)] = change3
 
+	c1ID = change1.ID
+	c2ID = change2.ID
+	c3ID = change2.ID
+
 	device1V, err = CreateConfiguration("Device1", "1.0.0", "TestDevice",
 		[]change.ID{change1.ID, change2.ID, change3.ID})
 	if err != nil {
@@ -332,7 +338,7 @@ func Test_device1_version(t *testing.T) {
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
 	//Check the value of leaf2c before
-	change1, ok := changeStore["y65WFkPuZXZgRkQ+kUL/wpjXHj8="]
+	change1, ok := changeStore[B64(c1ID)]
 	assert.Assert(t, ok)
 	assert.Equal(t, len(change1.Config), 11)
 	leaf2c := change1.Config[4]
@@ -345,7 +351,7 @@ func Test_device1_version(t *testing.T) {
 
 	// Check the value of leaf2c after - the value from the early change should be the same
 	// This is here because ExtractFullConfig had been inadvertently changing the value
-	change1, ok = changeStore["y65WFkPuZXZgRkQ+kUL/wpjXHj8="]
+	change1, ok = changeStore[B64(c1ID)]
 	assert.Assert(t, ok)
 	assert.Equal(t, len(change1.Config), 11)
 	leaf2c = change1.Config[4]

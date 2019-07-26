@@ -2,105 +2,105 @@
   "Version": "1.0.0",
   "Storetype": "change",
   "Store": {
-    "TOA0Blur2YQTAdkzKkRrAPIU+9A=": {
-      "ID": "TOA0Blur2YQTAdkzKkRrAPIU+9A=",
+    "WCqhR1nJn3ZGFdaeN3DBLeYO6ks=": {
+      "ID": "WCqhR1nJn3ZGFdaeN3DBLeYO6ks=",
       "Description": "Remove txout 2",
       "Created": "2019-05-09T16:24:17.815274679Z",
       "Config": [
         {
-          "Path": "/test1:cont1a/cont2a/leaf2d",
+          "Path": "/cont1a/cont2a/leaf2d",
           "Value": "AgAAAAAAAAA=",
           "Type": 5,
           "TypeOpts": [3]
         },
         {
-          "Path": "/test1:cont1a/cont2a/leaf2e",
+          "Path": "/cont1a/cont2a/leaf2e",
           "Value": "nf/////////8/////////wUAAAAAAAAAyAAAAAAAAAA=",
           "Type": 9
         },
         {
-          "Path": "/test1:cont1a/cont2a/leaf2g",
+          "Path": "/cont1a/cont2a/leaf2g",
           "Value": "AA==",
           "Type": 4
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout2]",
+          "Path": "/cont1a/list2a[name=txout2]",
           "Type": 0,
           "Remove": true
         }
       ]
     },
-    "50XCdm605t2/jZoPePGiUvboQzg=": {
-      "ID": "50XCdm605t2/jZoPePGiUvboQzg=",
+    "tAk3GZSh1qbdhdm5414r46RLvqw=": {
+      "ID": "tAk3GZSh1qbdhdm5414r46RLvqw=",
       "Description": "Trim power level",
       "Created": "2019-05-09T16:24:17.815259228Z",
       "Config": [
         {
-          "Path": "/test1:cont1a/cont2a/leaf2b",
+          "Path": "/cont1a/cont2a/leaf2b",
           "Value": "AAAA4PND8j8=",
           "Type": 6
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout3]/tx-power",
+          "Path": "/cont1a/list2a[name=txout3]/tx-power",
           "Value": "EAAAAAAAAAA=",
           "Type": 3
         }
       ]
     },
-    "uOTzTiNotAGjjsl11EuVFY/lYsM=": {
-      "ID": "uOTzTiNotAGjjsl11EuVFY/lYsM=",
+    "Rc4/gKAMmgJfNPMC6+zLxvcMTwg=": {
+      "ID": "Rc4/gKAMmgJfNPMC6+zLxvcMTwg=",
       "Description": "Remove txout 1",
       "Created": "2019-05-09T16:24:17.815294258Z",
       "Config": [
         {
-          "Path": "/test1:cont1a/list2a[name=txout1]",
+          "Path": "/cont1a/list2a[name=txout1]",
           "Type": 0,
           "Remove": true
         }
       ]
     },
-    "EQct6X4kZda3NqpW6N2TL4fFilA=": {
-      "ID": "EQct6X4kZda3NqpW6N2TL4fFilA=",
+    "e3tYWHBz7OYGt5e3SlfjfpxcwZ4=": {
+      "ID": "e3tYWHBz7OYGt5e3SlfjfpxcwZ4=",
       "Description": "Original Config for test switch",
       "Created": "2019-05-09T16:24:17.815187669Z",
       "Config": [
         {
-          "Path": "/test1:cont1a/cont2a/leaf2a",
+          "Path": "/cont1a/cont2a/leaf2a",
           "Value": "DQAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/test1:cont1a/cont2a/leaf2b",
+          "Path": "/cont1a/cont2a/leaf2b",
           "Value": "AAAAgJVD+T8=",
           "Type": 6
         },
         {
-          "Path": "/test1:cont1a/leaf1a",
+          "Path": "/cont1a/leaf1a",
           "Value": "YWJjZGVm",
           "Type": 1
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout1]",
+          "Path": "/cont1a/list2a[name=txout1]",
           "Value": "",
           "Type": 0
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout1]/tx-power",
+          "Path": "/cont1a/list2a[name=txout1]/tx-power",
           "Value": "CAAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout2]",
+          "Path": "/cont1a/list2a[name=txout2]",
           "Value": "",
           "Type": 0
         },
         {
-          "Path": "/test1:cont1a/list2a[name=txout2]/tx-power",
+          "Path": "/cont1a/list2a[name=txout2]/tx-power",
           "Value": "CgAAAAAAAAA=",
           "Type": 3
         },
         {
-          "Path": "/test1:leafAtTopLevel",
+          "Path": "/leafAtTopLevel",
           "Value": "V1hZLTEyMzQ=",
           "Type": 1
         }
