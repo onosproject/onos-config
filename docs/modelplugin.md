@@ -83,6 +83,11 @@ Follow the steps in **Loading the Model Plugin** below for how to load it.
 The YANG files to be used with generator.go should be collected together in a
 folder and named in the style: **\<modulename>@\<latestrevision>.yang**
 
+> **Note** The Yang files provided are required not to contain overlapping or clashing namespaces at the same path level.
+> This requirement is necessary during the model compilation in YGOT because this tool offers no support for namespaces 
+> in the form of `/namespace:path/path2`, e.g. `/openconfig-system:system/clock`. YGOT compilation of a model containing 
+> `/openconfig-system:system/clock` will result in the path being `/system/clock`
+
 Running the generator command in the form:
 ```bash
 go run $GOPATH/src/github.com/openconfig/ygot/generator/generator.go \

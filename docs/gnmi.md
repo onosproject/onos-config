@@ -10,6 +10,10 @@ the [OpenConfig](https://github.com/openconfig/gnmi) project. If it's not on you
 go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
 ```
 > For troubleshooting information see [gnmi_user_manual.md](https://github.com/onosproject/simulators/blob/master/docs/gnmi/gnmi_user_manual.md)
+## Namespaces
+**onos-config** follows the YGOT project in simplification by not using namespaces in paths. This can be achieved 
+because the YANG models used do not have clashing device names that need to be qualified by namespaces. 
+This helps developers, avoiding un-needed complication and redundancy. 
 
 ## Northbound gNMI Get Request 
 __onos-config__ extends standard gNMI as a method of accessing a complete
