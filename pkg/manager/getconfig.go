@@ -29,7 +29,6 @@ import (
 func (m *Manager) GetTargetConfig(target string, configname string, path string, layer int) ([]*change.ConfigValue, error) {
 	log.Info("Getting config for ", target, path)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
-
 	var config store.Configuration
 	if target != "" {
 		for _, cfg := range m.ConfigStore.Store {
@@ -49,33 +48,6 @@ func (m *Manager) GetTargetConfig(target string, configname string, path string,
 				fmt.Errorf("No Configuration found for %s", configname)
 		}
 	}
-
-	readOnlyPaths, ok := m.ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
-
-	if !ok {
-		log.Warningf("Cannot check for Read Only paths for %s %s because "+
-			"Model Plugin not available - continuing", config.Type, config.Version)
-	} else {
-		//TODO does this account for list values?
-		log.Info("path ", path)
-		log.Info("readonlypaths ", readOnlyPaths)
-		log.Info("Op state cache", m.OperationalStateCache[topocache.ID(target)])
-		_, ok := readOnlyPaths[path]
-		if ok {
-			value, ok := m.OperationalStateCache[topocache.ID(target)][path]
-			if ok {
-				cachedValues := make([]*change.ConfigValue, 0)
-				cachedValues = append(cachedValues, &change.ConfigValue{
-					Path:       path,
-					TypedValue: *value,
-				})
-				return cachedValues, nil
-			}
-		} else {
-			log.Error("Not in read only paths")
-		}
-	}
-
 	configValues := config.ExtractFullConfig(m.ChangeStore.Store, layer)
 	if len(configValues) == 0 {
 		return configValues, nil

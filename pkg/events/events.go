@@ -59,13 +59,14 @@ const ( // For event types
 	EventTypeErrorDeviceDisconnect
 	EventTypeErrorSubscribe
 	EventTypeErrorMissingModelPlugin
+	EventTypeErrorTranslation
 )
 
 func (et EventType) String() string {
 	return [...]string{"Configuration", "TopoCache", "OperationalState", "EventTypeAchievedSetConfig",
 		"EventTypeErrorSetConfig", "EventTypeErrorParseConfig", "EventTypeErrorSetInitialConfig",
 		"EventTypeErrorDeviceConnect", "EventTypeErrorDeviceCapabilities", "EventTypeErrorDeviceDisconnect",
-		"EventTypeErrorSubscribe, EventTypeErrorMissingModelPlugin"}[et]
+		"EventTypeErrorSubscribe, EventTypeErrorMissingModelPlugin, EventTypeErrorTranslation"}[et]
 }
 
 // Event is a general purpose base type of event

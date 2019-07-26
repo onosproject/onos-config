@@ -47,14 +47,13 @@ type Synchronizer struct {
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
 	operationalCache     map[topocache.ID]map[string]*change.TypedValue
-	modelPlugin          modelregistry.ModelPlugin
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache map[topocache.ID]map[string]*change.TypedValue,
-	mReadOnlyPaths modelregistry.ReadOnlyPathMap, plugin modelregistry.ModelPlugin) (*Synchronizer, error) {
+	mReadOnlyPaths modelregistry.ReadOnlyPathMap) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
@@ -64,7 +63,6 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 		operationalStateChan: opStateChan,
 		operationalCache:     opStateCache,
 		modelReadOnlyPaths:   mReadOnlyPaths,
-		modelPlugin:          plugin,
 	}
 	log.Info("Connecting to ", sync.Device.Addr, " over gNMI")
 	target := southbound.Target{}
@@ -183,6 +181,28 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		return
 	}
 
+	subscribePaths := make([][]string, 0)
+
+	if sync.modelReadOnlyPaths != nil {
+		for _, path := range modelregistry.Paths(sync.modelReadOnlyPaths) {
+			subscribePaths = append(subscribePaths, utils.SplitPath(path))
+		}
+	} else {
+		errMp := fmt.Errorf("No model plugin, cant work in operational state cache")
+		log.Error(errMp)
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorMissingModelPlugin,
+			sync.key.DeviceID, errMp)
+		return
+	}
+
+	if len(subscribePaths) == 0 {
+		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
+			sync.key.DeviceID, noPathErr)
+		log.Warning(noPathErr)
+		return
+	}
+
 	notifications := make([]*gnmi.Notification, 0)
 
 	requestState := &gnmi.GetRequest{
@@ -217,52 +237,35 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		notifications = append(notifications, responseOperational.Notification...)
 	}
 
-	subscribePaths := make([][]string, 0)
-
 	if len(notifications) != 0 {
 		for _, notification := range notifications {
 			for _, update := range notification.Update {
-
+				//TODO check that this is json
 				jsonVal := update.Val.GetJsonVal()
 				//strVla := utils.StrVal(update.Val)
 				//log.Info(strVla)
 				configValuesUnparsed, err := store.DecomposeTree(jsonVal)
 				if err != nil {
 					log.Error("Can't translate from json to values, skipping to next update", err)
+					errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
+						sync.key.DeviceID, err)
 					break
 				}
 				configValues, err := jsonvalues.CorrectJSONPaths(configValuesUnparsed, sync.modelReadOnlyPaths)
 				if err != nil {
 					log.Error("Can't translate from config values to typed values, skipping to next update", err)
+					errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
+						sync.key.DeviceID, err)
 					break
 				}
 				pathsAndValues := make(map[string]*change.TypedValue)
-				for _, p := range configValues {
-					pathsAndValues[p.Path] = &p.TypedValue
+				for _, cv := range configValues {
+					pathsAndValues[cv.Path] = &cv.TypedValue
 				}
 				sync.operationalCache[sync.ID] = pathsAndValues
 
 			}
 		}
-	}
-	if sync.modelReadOnlyPaths != nil {
-		for _, path := range modelregistry.Paths(sync.modelReadOnlyPaths) {
-			subscribePaths = append(subscribePaths, utils.SplitPath(path))
-		}
-	} else {
-		errMp := fmt.Errorf("No model plugin, cant work in operational state cache")
-		log.Error(errMp)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorMissingModelPlugin,
-			sync.key.DeviceID, errMp)
-		return
-	}
-
-	if len(subscribePaths) == 0 {
-		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
-			sync.key.DeviceID, noPathErr)
-		log.Warning(noPathErr)
-		return
 	}
 
 	//TODO do get for subscribePaths
@@ -326,7 +329,7 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			valStr := utils.StrVal(update.Val)
 			val, err := values.GnmiTypedValueToNativeType(update.Val)
 			if err != nil {
-
+				return fmt.Errorf("can't translate to Typed value %s", err)
 			}
 			eventValues[pathStr] = valStr
 			log.Info("Added ", val, " for path ", pathStr, " for device ", sync.ID)
