@@ -32,7 +32,7 @@ import (
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	registry *modelregistry.ModelRegistry, operationalStateCache map[topocache.ID]map[string]*change.TypedValue) {
+	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[topocache.ID]map[string]*change.TypedValue) {
 	for topoEvent := range topoChannel {
 		deviceName := topocache.ID(events.Event(topoEvent).Subject())
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
@@ -45,15 +45,14 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			completeID := utils.ToConfigName(deviceName, device.SoftwareVersion)
 			cfg := configStore.Store[store.ConfigName(completeID)]
 			modelName := utils.ToModelName(cfg.Type, device.SoftwareVersion)
-			mReadOnlyPaths, ok := registry.ModelReadOnlyPaths[modelName]
-			modelPlugin := registry.ModelPlugins[modelName]
+			mReadOnlyPaths, ok := readOnlyPaths[modelName]
 			if !ok {
 				log.Warningf("Cannot check for read only paths for target %s with %s because "+
 					"Model Plugin not available - continuing", deviceName, device.SoftwareVersion)
 			}
 			operationalStateCache[deviceName] = make(map[string]*change.TypedValue)
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan,
-				errChan, operationalStateCache, mReadOnlyPaths, modelPlugin)
+				errChan, operationalStateCache, mReadOnlyPaths)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
 				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,

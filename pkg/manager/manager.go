@@ -223,7 +223,7 @@ func (m *Manager) Run() {
 	go listenOnResponseChannel(m.SouthboundErrorChan)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.DeviceStore, m.TopoChannel,
-		m.OperationalStateChannel, m.SouthboundErrorChan, &m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)
+		m.OperationalStateChannel, m.SouthboundErrorChan, &m.Dispatcher, m.ModelRegistry.ModelReadOnlyPaths, m.OperationalStateCache)
 }
 
 //Close kills the channels and manager related objects
