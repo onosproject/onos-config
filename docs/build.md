@@ -32,7 +32,7 @@ To allow deployment of onos-config in a Kubernetes cluster, the `Makefile` allow
 images.
 
 The main Docker image is `onosproject/onos-config`, which is the main program that acts as a server that provides 
-various gRPC interfaces to application. This include `gNMI` and the `AdminService` and `DiagnosticService`. The
+various gRPC interfaces to application. This include `gNMI` and the `ConfigAdminService` and `DiagnosticService`. The
 second Docker image is `onosproject/onos-cli`, which provides a command-line shell that can be deployed as an
 ephemeral container inside the Kubernetes cluster and which provides access to the `onos` CLI commands for 
 remotely interacting with the services provided by `onosproject/onos-config`.
