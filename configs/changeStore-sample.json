@@ -106,15 +106,25 @@
         }
       ]
     },
-    "rNJujq4KQi+7IB6BjESTprq61Pg=": {
-      "ID": "rNJujq4KQi+7IB6BjESTprq61Pg=",
+    "IONQSGxVn7XY5/KZI+/407mGk6c=": {
+      "ID": "IONQSGxVn7XY5/KZI+/407mGk6c=",
       "Description": "Original configuration for devicesim",
       "Created": "2019-05-21T08:43:01Z",
       "Config": [
         {
+          "Path": "/interfaces/interface[name=admin]/config/name",
+          "Value": "YWRtaW4=",
+          "Type": 1
+        },
+        {
           "Path": "/interfaces/interface[name=admin]/config/enabled",
           "Value": "AA==",
           "Type": 4
+        },
+        {
+          "Path": "/interfaces/interface[name=eth1]/config/name",
+          "Value": "ZXRoMQ==",
+          "Type": 1
         },
         {
           "Path": "/interfaces/interface[name=eth1]/config/enabled",
