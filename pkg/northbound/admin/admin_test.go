@@ -84,7 +84,7 @@ func Test_AddDevice(t *testing.T) {
 	resp, _ := client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
 	oldCount := resp.Count
 	_, err := client.AddOrUpdateDevice(context.Background(),
-		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9"})
+		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9", Devicetype: "Devicesim"})
 	assert.NilError(t, err, "should add device")
 	resp, _ = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
 	assert.Equal(t, oldCount+1, resp.Count, "should add new device")
