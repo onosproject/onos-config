@@ -209,11 +209,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		Type: gnmi.GetRequest_STATE,
 	}
 
-	log.Info("req state ", requestState)
-
 	responseState, errState := target.Get(target.Ctx, requestState)
-
-	log.Info("resp state ", responseState)
 
 	if errState != nil {
 		log.Warning("Can't request read-only state paths to target ", sync.key, errState)
@@ -225,11 +221,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		Type: gnmi.GetRequest_OPERATIONAL,
 	}
 
-	log.Info("req operation ", requestOperational)
-
 	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
-
-	log.Info("resp operation ", responseOperational)
 
 	if errOp != nil {
 		log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
@@ -242,8 +234,6 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			for _, update := range notification.Update {
 				//TODO check that this is json
 				jsonVal := update.Val.GetJsonVal()
-				//strVla := utils.StrVal(update.Val)
-				//log.Info(strVla)
 				configValuesUnparsed, err := store.DecomposeTree(jsonVal)
 				if err != nil {
 					log.Error("Can't translate from json to values, skipping to next update", err)
@@ -262,11 +252,16 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 				for _, cv := range configValues {
 					pathsAndValues[cv.Path] = &cv.TypedValue
 				}
-				sync.operationalCache[sync.ID] = pathsAndValues
-
+				for path, value := range pathsAndValues {
+					if value != nil {
+						sync.operationalCache[sync.ID][path] = value
+					}
+				}
 			}
 		}
 	}
+
+	log.Info("Operational state cahce", sync.operationalCache)
 
 	//TODO do get for subscribePaths
 
@@ -282,7 +277,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	}
 
 	req, err := southbound.NewSubscribeRequest(options)
-	log.Info(req)
+	//log.Info(req)
 	if err != nil {
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorParseConfig,
 			sync.key.DeviceID, err)

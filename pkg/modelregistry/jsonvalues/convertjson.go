@@ -49,6 +49,7 @@ func CorrectJSONPaths(jsonPathValues []*change.ConfigValue,
 			for _, ns := range nsMatches {
 				jsonPathStr = strings.Replace(jsonPathStr, ns[1], "/", -1)
 			}
+			//log.Info(jsonPathStr)
 		}
 
 		jsonMatches := rOnIndex.FindAllStringSubmatch(jsonPathStr, -1)
@@ -110,7 +111,6 @@ func CorrectJSONPaths(jsonPathValues []*change.ConfigValue,
 				indexTable = append(indexTable, indexEntry{path: jsonRoPath, key: indexName + "=" + index})
 				break
 			}
-
 		}
 	}
 
