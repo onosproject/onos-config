@@ -358,6 +358,15 @@ func TestManager_GetOneConfig(t *testing.T) {
 	assert.Assert(t, networkConfigContainsPath(result, "/cont1a/cont2a/leaf2a"), "/cont1a/cont2a/leaf2a not found")
 }
 
+func TestManager_GetWildcardConfig(t *testing.T) {
+	mgrTest, _, _ := setUp()
+
+	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*/*/leaf2a", 0)
+	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
+	assert.NilError(t, err, "Configuration not found")
+	assert.Assert(t, networkConfigContainsPath(result, "/cont1a/cont2a/leaf2a"), "/cont1a/cont2a/leaf2a not found")
+}
+
 func TestManager_GetConfigNoTarget(t *testing.T) {
 	mgrTest, _, _ := setUp()
 

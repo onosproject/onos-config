@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"regexp"
 	"testing"
 	"time"
 
@@ -186,7 +187,7 @@ func Test_WrongDevice(t *testing.T) {
 	}
 
 	targets := make(map[string]struct{})
-	subs := make(map[string]struct{})
+	subs := make([]*regexp.Regexp, 0)
 	resChan := make(chan result)
 	targets["Device2"] = struct{}{}
 	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
@@ -200,7 +201,7 @@ func Test_WrongDevice(t *testing.T) {
 	}
 
 	targets["Device1"] = struct{}{}
-	subs["/cont1a/cont2a/leaf3c"] = struct{}{}
+	subs = append(subs, utils.MatchWildcardRegexp("/cont1a/*/leaf3c"))
 	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
 	config1Value05, _ := change.CreateChangeValue("/cont1a/cont2a/leaf2c", change.CreateTypedValueString("def"), false)
 	config1Value09, _ := change.CreateChangeValue("/cont1a/list2a[name=txout2]", change.CreateTypedValueEmpty(), true)

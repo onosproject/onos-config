@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/status"
 	"io"
 	log "k8s.io/klog"
+	"regexp"
 	"time"
 )
 
@@ -126,11 +127,11 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 		} else {
 			subs := subscribe.Subscription
 			//FAST way to identify if target and subscription is present
-			subsStr := make(map[string]struct{})
+			subsStr := make([]*regexp.Regexp, 0)
 			targets := make(map[string]struct{})
 			for _, sub := range subs {
 				subscriptionPathStr := utils.StrPath(sub.Path)
-				subsStr[subscriptionPathStr] = struct{}{}
+				subsStr = append(subsStr, utils.MatchWildcardRegexp(subscriptionPathStr))
 				targets[sub.Path.Target] = struct{}{}
 			}
 			//Each subscription request spawns a go routing listening for related events for the target and the paths
@@ -169,14 +170,13 @@ func collector(stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList,
 
 //For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
 func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
-	targets map[string]struct{}, subs map[string]struct{}, resChan chan result) {
+	targets map[string]struct{}, subs []*regexp.Regexp, resChan chan result) {
 	for update := range changeChan {
 		target, changeInternal := getChangeFromEvent(update, mgr)
 		_, targetPresent := targets[target]
 		if targetPresent && changeInternal != nil {
 			for _, changeValue := range changeInternal.Config {
-				_, isPresent := subs[changeValue.Path]
-				if isPresent {
+				if matchRegex(changeValue.Path, subs) {
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
 					if err != nil {
 						log.Warning("Error in parsing path ", err)
@@ -195,15 +195,14 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 
 //For each update coming from the state channel we check if it's for a valid target and path then, if so, we send it NB
 func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stream gnmi.GNMI_SubscribeServer,
-	targets map[string]struct{}, subs map[string]struct{}, resChan chan result) {
+	targets map[string]struct{}, subs []*regexp.Regexp, resChan chan result) {
 	for opStateChange := range opStateChan {
 		target := events.Event(opStateChange).Subject()
 		_, targetPresent := targets[target]
 		if targetPresent {
 			changeInternal := events.Event(opStateChange).Values()
 			for pathStr, value := range *changeInternal {
-				_, isPresent := subs[pathStr]
-				if isPresent {
+				if matchRegex(pathStr, subs) {
 					pathArr := utils.SplitPath(pathStr)
 					pathGnmi, err := utils.ParseGNMIElements(pathArr)
 					if err != nil {
@@ -224,6 +223,15 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 			}
 		}
 	}
+}
+
+func matchRegex(path string, subs []*regexp.Regexp) bool {
+	for _, s := range subs {
+		if s.MatchString(path) {
+			return true
+		}
+	}
+	return false
 }
 
 func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *change.TypedValue, stream gnmi.GNMI_SubscribeServer) error {
