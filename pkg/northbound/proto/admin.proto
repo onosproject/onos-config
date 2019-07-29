@@ -45,19 +45,12 @@ message ModelInfo {
     string version = 2;
     repeated gnmi.ModelData modelData = 3;
     string module = 4;
-    repeated SchemaEntry schemaEntry = 5;
-    repeated string readOnlyPath = 6;
 }
 
 // RegisterRequest carries data for registering a YANG model.
 message RegisterRequest {
     // Full path and filename of a shared object library as a model plugin
     string soFile = 1;
-}
-
-message SchemaEntry {
-    string schemaPath = 1;
-    string schemaJson = 2;
 }
 
 // RegisterResponse carries status of YANG model registration.
@@ -68,7 +61,6 @@ message RegisterResponse {
 
 // ListModelsRequest carries data for querying registered models.
 message ListModelsRequest {
-    bool verbose = 1;
 }
 
 // RollbackRequest carries the name of a network config to rollback. If there
@@ -83,8 +75,8 @@ message RollbackResponse {
     string message = 1;
 }
 
-// AdminService provides means for enhanced interactions with the configuration subsystem.
-service AdminService {
+// ConfigAdminService provides means for enhanced interactions with the configuration subsystem.
+service ConfigAdminService {
     // RegisterModel adds the specified YANG model to the list of supported models.
     // There is no unregister because once loaded plugins cannot be unloaded
     rpc RegisterModel(RegisterRequest) returns (RegisterResponse);
@@ -113,7 +105,6 @@ message DeviceInfo {
     bool plain = 10;
     bool insecure = 11;
     int64 timeout = 12;
-    string devicetype = 13; //Used only for creating device - not populated on read - use configuration instead
 }
 
 // DeviceResponse carries the status of the add/remove operation.
@@ -147,4 +138,3 @@ service DeviceInventoryService {
     // GetDevices returns a stream of devices in the device inventory.
     rpc GetDevices(GetDevicesRequest) returns (stream DeviceInfo);
 }
-
