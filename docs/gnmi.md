@@ -63,6 +63,36 @@ Use a proto value like:
 >         elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>>
 >         elem: <name: 'config'> elem: <name: 'address'>>"
 
+### Use wildcards in a path
+onos-config supports the wildcards __*__ and **...** in gNMI paths, meaning match
+one item of match all items respectively as defined in the gNMI
+[specification](https://github.com/openconfig/reference/blob/master/rpc/gnmi/gnmi-path-conventions.md#wildcards-in-paths).
+
+For instance to retrieve all instances of an interface use __*__ as the key: 
+```bash
+gnmi_cli -get -address localhost:5150 \
+    -proto "path:<target: 'localhost-1', elem:<name:'interfaces' > elem:<name:'interface' key:<key:'name' value:'*' > > elem:<name:'config'> elem:<name:'enabled' >>" \
+        -timeout 5s -alsologtostderr \
+        -client_crt pkg/southbound/testdata/client1.crt \
+        -client_key pkg/southbound/testdata/client1.key \
+        -ca_crt pkg/southbound/testdata/onfca.crt
+```
+> This returns the **enabled** config attribute of both interfaces 'eth1' and 'admin'
+
+To retrieve both the config and state values of both then additionally the use
+__*__ in place of **config**:
+```bash
+gnmi_cli -get -address localhost:5150 \
+    -proto "path:<target: 'localhost-1', elem:<name:'interfaces' > elem:<name:'interface' key:<key:'name' value:'*' > > elem:<name:'*'> elem:<name:'enabled' >>" \
+        -timeout 5s -alsologtostderr \
+        -client_crt pkg/southbound/testdata/client1.crt \
+        -client_key pkg/southbound/testdata/client1.key \
+        -ca_crt pkg/southbound/testdata/onfca.crt
+```
+> If the device is connected and the OperationState cache is populated this returns
+> 4 values - **eth1** config and state enabled values and **admin** config and
+> state enabled values.
+
 ## Northbound Set Request via gNMI
 Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
 
