@@ -36,9 +36,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func getAdminClient() (*grpc.ClientConn, proto.AdminServiceClient) {
+func getAdminClient() (*grpc.ClientConn, proto.ConfigAdminServiceClient) {
 	conn := northbound.Connect(northbound.Address, northbound.Opts...)
-	return conn, proto.NewAdminServiceClient(conn)
+	return conn, proto.NewConfigAdminServiceClient(conn)
 }
 
 func getDeviceClient() (*grpc.ClientConn, proto.DeviceInventoryServiceClient) {
