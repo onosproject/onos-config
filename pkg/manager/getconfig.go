@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-config/pkg/utils"
 	log "k8s.io/klog"
 	"sort"
-	"strings"
 )
 
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
@@ -48,12 +48,13 @@ func (m *Manager) GetTargetConfig(target string, configname string, path string,
 		}
 	}
 	configValues := config.ExtractFullConfig(m.ChangeStore.Store, layer)
-	if len(configValues) == 0 || path == "/*" {
+	if len(configValues) == 0 {
 		return configValues, nil
 	}
 	filteredValues := make([]*change.ConfigValue, 0)
+	pathRegexp := utils.MatchWildcardRegexp(path)
 	for _, cv := range configValues {
-		if strings.Contains(cv.Path, path) {
+		if pathRegexp.MatchString(cv.Path) {
 			filteredValues = append(filteredValues, cv)
 		}
 	}
