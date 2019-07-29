@@ -141,11 +141,11 @@ func handleCertArgs() ([]grpc.DialOption, error) {
 }
 
 // GetAdminClient returns a client that can be used for the admin APIs
-func GetAdminClient() (*grpc.ClientConn, proto.AdminServiceClient) {
+func GetAdminClient() (*grpc.ClientConn, proto.ConfigAdminServiceClient) {
 	opts, err := handleCertArgs()
 	if err != nil {
 		fmt.Printf("Error loading cert %s", err)
 	}
 	conn := northbound.Connect(address, opts...)
-	return conn, proto.NewAdminServiceClient(conn)
+	return conn, proto.NewConfigAdminServiceClient(conn)
 }

@@ -38,7 +38,7 @@ type Service struct {
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	server := Server{}
-	proto.RegisterAdminServiceServer(r, server)
+	proto.RegisterConfigAdminServiceServer(r, server)
 	proto.RegisterDeviceInventoryServiceServer(r, server)
 }
 
@@ -59,7 +59,7 @@ func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (
 }
 
 // ListRegisteredModels lists the registered models..
-func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.AdminService_ListRegisteredModelsServer) error {
+func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.ConfigAdminService_ListRegisteredModelsServer) error {
 	for _, model := range manager.GetManager().ModelRegistry.ModelPlugins {
 		name, version, md, plugin := model.ModelData()
 		schemaMap, err := model.Schema()
@@ -107,7 +107,7 @@ func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.
 }
 
 // GetNetworkChanges provides a stream of submitted network changes.
-func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.AdminService_GetNetworkChangesServer) error {
+func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.ConfigAdminService_GetNetworkChangesServer) error {
 	for _, nc := range manager.GetManager().NetworkStore.Store {
 
 		// Build net change message
