@@ -64,7 +64,7 @@ To enable this for **zsh**, run the following from the shell:
 > source <(onit completion zsh)
 ```
 
-**Note**: We also recomment to add the output of the above commands to *.bashrc* or *.zshrc*.
+**Note**: We also recommend to add the output of the above commands to *.bashrc* or *.zshrc*.
 
 ### Docker
 
@@ -157,11 +157,19 @@ The first step to running tests is to setup a test cluster with `onit create clu
 
 ```bash
 > onit create cluster
- ✓ Creating cluster namespace
- ✓ Setting up Atomix controller
- ✓ Starting Raft partitions
- ✓ Bootstrapping onos-config cluster
+✓ Creating cluster namespace
+✓ Setting up Atomix controller
+✓ Starting Raft partitions
+✓ Creating secret for onos nodes
+✓ Bootstrapping onos-config cluster
+✓ Bootstrapping onos-topo cluster
 cluster-b8c45834-a81c-11e9-82f4-3c15c2cff232
+```
+
+You can also specify the number of nodes for each onos subsystem, for example, to create a cluster which runs 
+two onos-config and two onos-topo pods, run the following command:
+```bash
+onit create cluster onit-1 --config-nodes 2 --topo-nodes 2
 ```
 
 To setup the cluster, onit creates a unique namespace within which to create test resources,
@@ -380,13 +388,18 @@ can be used to `get logs` for every resource deployed in the test cluster. Simpl
 resource ID (e.g. test `ID`, node `ID`, partition `ID`, etc) to the `onit get logs` command
 to get the logs for a resource.
 
-To list the onos-config nodes running in the cluster, use `onit get nodes`:
+To list all types of nodes (e.g. onos-topo, onos-config, etc) running in the cluster, use `onit get nodes`, the output will be like the following:
 
 ```bash
 > onit get nodes
-ID                             STATUS
-onos-config-569c7d8546-jscg8   RUNNING
+onit get nodes
+ID                             TYPE     STATUS
+onos-topo-7cd788fb7f-2zvsp     topo     RUNNING
+onos-topo-7cd788fb7f-rc6m5     topo     RUNNING
+onos-config-6f8fcf5954-55zn2   config   RUNNING
+onos-config-6f8fcf5954-pglkz   config   RUNNING
 ```
+
 
 To get logs for the above node, run the following command:
 ```bash
