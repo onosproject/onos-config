@@ -64,7 +64,7 @@ func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceS
 
 	jsonDecoder := json.NewDecoder(storeFile)
 	var deviceStore = DeviceStore{}
-	jsonDecoder.Decode(&deviceStore)
+	_ = jsonDecoder.Decode(&deviceStore)
 	if deviceStore.Storetype != storeTypeDevice {
 		return nil,
 			fmt.Errorf("Store type invalid: " + deviceStore.Storetype)

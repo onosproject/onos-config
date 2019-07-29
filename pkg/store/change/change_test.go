@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	change1, change2, change3, change4 *Change
+	change1 *Change
 )
 
 const (
@@ -53,9 +53,7 @@ const (
 	ValueLeaf2A13       = 13
 	ValueLeaf2B159D     = 1579
 	ValueLeaf2B159P     = 3
-	ValueLeaf2B314      = float64(3.14159)
 	ValueLeaf2CAbc      = "abc"
-	ValueLeaf2D         = true
 	ValueLeaf2E1        = -32
 	ValueLeaf2E2        = 99
 	ValueLeaf2E3        = 123
@@ -63,7 +61,6 @@ const (
 	ValueLeaf1AAbcdef   = "abcdef"
 	ValueTxout1Txpwr8   = 8
 	ValueTxout2Txpwr10  = 10
-	ValueTxout3Txpwr16  = 16
 	ValueLeaftopWxy1234 = "WXY-1234"
 )
 

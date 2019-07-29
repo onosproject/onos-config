@@ -39,9 +39,9 @@ func GetRootCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("certPath", "c", viper.GetString("certPath"), "path to client certificate")
 	cmd.PersistentFlags().String("config", "", "config file (default: $HOME/.onos/config.yaml)")
 
-	viper.BindPFlag("address", cmd.PersistentFlags().Lookup("address"))
-	viper.BindPFlag("keyPath", cmd.PersistentFlags().Lookup("keyPath"))
-	viper.BindPFlag("certPath", cmd.PersistentFlags().Lookup("certPath"))
+	_ = viper.BindPFlag("address", cmd.PersistentFlags().Lookup("address"))
+	_ = viper.BindPFlag("keyPath", cmd.PersistentFlags().Lookup("keyPath"))
+	_ = viper.BindPFlag("certPath", cmd.PersistentFlags().Lookup("certPath"))
 
 	cmd.AddCommand(newInitCommand())
 	cmd.AddCommand(newConfigCommand())

@@ -270,8 +270,6 @@ func (c *ClusterController) getDeviceIds() ([]string, error) {
 	}
 
 	// Add each simulator to the devices
-	for _, name := range simulators {
-		devices = append(devices, name)
-	}
+	devices = append(devices, simulators...)
 	return devices, nil
 }

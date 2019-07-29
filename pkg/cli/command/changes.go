@@ -72,7 +72,7 @@ func runChangesCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
-			tmplChanges.Execute(os.Stdout, in)
+			_ = tmplChanges.Execute(os.Stdout, in)
 		}
 	}()
 	err = stream.CloseSend()

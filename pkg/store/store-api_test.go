@@ -77,15 +77,15 @@ var Config1Paths = [11]string{
 var Config1Values = [11][]byte{
 	make([]byte, 0), // 0
 	make([]byte, 0),
-	[]byte{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
-	[]byte{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
-	[]byte{100, 101, 102},              // ValueLeaf2CDef
-	[]byte{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
+	{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
+	{100, 101, 102},              // ValueLeaf2CDef
+	{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
 	make([]byte, 0),
-	[]byte{8, 0, 0, 0, 0, 0, 0, 0},         // ValueTxout1Txpwr8
-	make([]byte, 0),                        // 10
-	[]byte{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16
-	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234
+	{8, 0, 0, 0, 0, 0, 0, 0},         // ValueTxout1Txpwr8
+	make([]byte, 0),                  // 10
+	{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16
+	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234
 }
 
 var Config1Types = [11]change.ValueType{
@@ -119,19 +119,19 @@ var Config1PreviousPaths = [13]string{
 }
 
 var Config1PreviousValues = [13][]byte{
-	[]byte{}, // 0
-	[]byte{},
-	[]byte{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
-	[]byte{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
-	[]byte{97, 98, 99},                 // ValueLeaf2CAbc
-	[]byte{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
-	[]byte{},
-	[]byte{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
-	[]byte{},
-	[]byte{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
-	[]byte{},                               // 10
-	[]byte{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16,
-	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234,
+	{}, // 0
+	{},
+	{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
+	{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
+	{97, 98, 99},                 // ValueLeaf2CAbc
+	{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	{},
+	{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	{},
+	{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	{},                               // 10
+	{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16,
+	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234,
 }
 
 var Config1PreviousTypes = [13]change.ValueType{
@@ -165,17 +165,17 @@ var Config1FirstPaths = [11]string{
 }
 
 var Config1FirstValues = [11][]byte{
-	[]byte{}, // 0
-	[]byte{},
-	[]byte{13, 0, 0, 0, 0, 0, 0, 0},        // ValueLeaf2A13
-	[]byte{0, 0, 0, 128, 149, 67, 249, 63}, // ValueLeaf2B159 3
-	[]byte{97, 98, 99},                     // ValueLeaf2CAbc
-	[]byte{97, 98, 99, 100, 101, 102},      // ValueLeaf1AAbcdef 5
-	[]byte{},
-	[]byte{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
-	[]byte{},
-	[]byte{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
-	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
+	{}, // 0
+	{},
+	{13, 0, 0, 0, 0, 0, 0, 0},        // ValueLeaf2A13
+	{0, 0, 0, 128, 149, 67, 249, 63}, // ValueLeaf2B159 3
+	{97, 98, 99},                     // ValueLeaf2CAbc
+	{97, 98, 99, 100, 101, 102},      // ValueLeaf1AAbcdef 5
+	{},
+	{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	{},
+	{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
 var Config1FirstTypes = [11]change.ValueType{
@@ -207,17 +207,17 @@ var Config2Paths = [11]string{
 }
 
 var Config2Values = [11][]byte{
-	[]byte{}, // 0
-	[]byte{},
-	[]byte{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
-	[]byte{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
-	[]byte{103, 104, 105},              // ValueLeaf2CGhi
-	[]byte{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
-	[]byte{},
-	[]byte{10, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
-	[]byte{},
-	[]byte{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
-	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
+	{}, // 0
+	{},
+	{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
+	{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
+	{103, 104, 105},              // ValueLeaf2CGhi
+	{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	{},
+	{10, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	{},
+	{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
 var Config2Types = [11]change.ValueType{
@@ -498,7 +498,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 func Test_writeOutChangeFile(t *testing.T) {
 	_, _, changeStore := setUp()
 	if _, err := os.Stat("testout"); os.IsNotExist(err) {
-		os.Mkdir("testout", os.ModePerm)
+		_ = os.Mkdir("testout", os.ModePerm)
 	}
 	changeStoreFile, err := os.Create("testout/changeStore-sample.json")
 	if err != nil {
@@ -715,8 +715,8 @@ func BenchmarkCreateChange(b *testing.B) {
 		changeValues = append(changeValues, cv)
 	}
 
-	change, _ := change.CreateChange(changeValues, "Benchmarked Change")
+	newChange, _ := change.CreateChange(changeValues, "Benchmarked Change")
 
-	err := change.IsValid()
+	err := newChange.IsValid()
 	assert.NilError(b, err, "Invalid change %s", err)
 }

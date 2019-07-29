@@ -154,7 +154,7 @@ func runCompletionBash(out io.Writer, cmd *cobra.Command) error {
 func runCompletionZsh(out io.Writer, cmd *cobra.Command) error {
 	header := "#compdef onit\n"
 
-	out.Write([]byte(header))
+	_, _ = out.Write([]byte(header))
 
 	init := `
 __onit_bash_source() {
@@ -281,11 +281,11 @@ __onit_convert_bash_to_zsh() {
 	-e "s/\\\$(type${RWORD}/\$(__onit_type/g" \
 	<<'BASH_COMPLETION_EOF'
 `
-	out.Write([]byte(init))
+	_, _ = out.Write([]byte(init))
 
 	buf := new(bytes.Buffer)
-	cmd.GenBashCompletion(buf)
-	out.Write(buf.Bytes())
+	_ = cmd.GenBashCompletion(buf)
+	_, _ = out.Write(buf.Bytes())
 
 	tail := `
 BASH_COMPLETION_EOF
@@ -293,6 +293,6 @@ BASH_COMPLETION_EOF
 __onit_bash_source <(__onit_convert_bash_to_zsh)
 _complete onit 2>/dev/null
 `
-	out.Write([]byte(tail))
+	_, _ = out.Write([]byte(tail))
 	return nil
 }

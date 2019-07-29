@@ -74,9 +74,9 @@ func runDevicesListCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive device: %v\n", err)
 			}
-			tmplDevicesList.Execute(os.Stdout, in)
+			_ = tmplDevicesList.Execute(os.Stdout, in)
 			if verbose {
-				tmplDevicesListVerbose.Execute(os.Stdout, in)
+				_ = tmplDevicesListVerbose.Execute(os.Stdout, in)
 			}
 		}
 	}()

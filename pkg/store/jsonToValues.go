@@ -45,20 +45,14 @@ func extractValuesIntermediate(f interface{}, parentPath string) []*change.Confi
 	switch value := f.(type) {
 	case map[string]interface{}:
 		for key, v := range value {
-			var objs []*change.ConfigValue
-			objs = extractValuesIntermediate(v, fmt.Sprintf("%s/%s", parentPath, key))
-			for _, o := range objs {
-				changes = append(changes, o)
-			}
+			objs := extractValuesIntermediate(v, fmt.Sprintf("%s/%s", parentPath, key))
+			changes = append(changes, objs...)
 		}
 	case []interface{}:
 		// Iterate through to look for indexes first
 		for idx, v := range value {
-			var objs []*change.ConfigValue
-			objs = extractValuesIntermediate(v, fmt.Sprintf("%s[%d]", parentPath, idx))
-			for _, o := range objs {
-				changes = append(changes, o)
-			}
+			objs := extractValuesIntermediate(v, fmt.Sprintf("%s[%d]", parentPath, idx))
+			changes = append(changes, objs...)
 		}
 	case string:
 		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.CreateTypedValueString(value)}

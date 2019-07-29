@@ -32,14 +32,13 @@ func NewRegistry() *TestRegistry {
 //NewTestSuite returns a pointer to a new TestSuite
 func NewTestSuite(name string) *TestSuite {
 	return &TestSuite{
-		name: name,
+		name:  name,
 		tests: make(map[string]Test),
 	}
 }
 
 // Test is a test function
 type Test func(t *testing.T)
-
 
 // TestRegistry contains a mapping of named test groups
 type TestRegistry struct {
@@ -49,7 +48,7 @@ type TestRegistry struct {
 
 //TestSuite to run multiple tests
 type TestSuite struct {
-	name string
+	name  string
 	tests map[string]Test
 }
 
@@ -114,7 +113,6 @@ type TestRunner struct {
 	Registry *TestRegistry
 }
 
-
 // RunTests Runs the tests
 func (r *TestRunner) RunTests(args []string) error {
 	tests := make([]testing.InternalTest, 0, len(args))
@@ -149,7 +147,6 @@ func (r *TestRunner) RunTests(args []string) error {
 	return nil
 }
 
-
 // RunTestSuites Runs the tests groups
 func (r *TestRunner) RunTestSuites(args []string) error {
 	tests := make([]testing.InternalTest, 0, len(args))
@@ -163,9 +160,9 @@ func (r *TestRunner) RunTestSuites(args []string) error {
 			testNames := []string{}
 
 			for testName := range testSuite.tests {
-				testNames = append(testNames,testName)
+				testNames = append(testNames, testName)
 			}
-			r.RunTests(testNames)
+			_ = r.RunTests(testNames)
 		}
 	} else {
 		return nil
