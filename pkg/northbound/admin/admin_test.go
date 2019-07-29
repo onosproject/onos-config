@@ -36,9 +36,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func getAdminClient() (*grpc.ClientConn, proto.AdminServiceClient) {
+func getAdminClient() (*grpc.ClientConn, proto.ConfigAdminServiceClient) {
 	conn := northbound.Connect(northbound.Address, northbound.Opts...)
-	return conn, proto.NewAdminServiceClient(conn)
+	return conn, proto.NewConfigAdminServiceClient(conn)
 }
 
 func getDeviceClient() (*grpc.ClientConn, proto.DeviceInventoryServiceClient) {
@@ -84,7 +84,7 @@ func Test_AddDevice(t *testing.T) {
 	resp, _ := client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
 	oldCount := resp.Count
 	_, err := client.AddOrUpdateDevice(context.Background(),
-		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9", Devicetype: "Devicesim"})
+		&proto.DeviceInfo{Id: "device", Address: "address", Version: "0.9"})
 	assert.NilError(t, err, "should add device")
 	resp, _ = client.GetDeviceSummary(context.Background(), &proto.DeviceSummaryRequest{})
 	assert.Equal(t, oldCount+1, resp.Count, "should add new device")
