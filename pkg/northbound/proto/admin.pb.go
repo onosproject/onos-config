@@ -905,7 +905,7 @@ type ConfigAdminServiceServer interface {
 }
 
 // UnimplementedAdminServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedComfigAdminServiceServer struct {
+type UnimplementedConfigAdminServiceServer struct {
 }
 
 func (*UnimplementedConfigAdminServiceServer) RegisterModel(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
@@ -1005,7 +1005,7 @@ func _ConfigAdminService_RollbackNetworkChange_Handler(srv interface{}, ctx cont
 
 var _ConfigAdminService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.ConfigAdminService",
-	HandlerType: (*AdminServiceServer)(nil),
+	HandlerType: (*ConfigAdminServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "RegisterModel",
