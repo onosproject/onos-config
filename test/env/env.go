@@ -29,7 +29,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-	"time"
 )
 
 const (
@@ -38,9 +37,9 @@ const (
 )
 
 const (
-	clientKeyPath = "/etc/onos-config/certs/client1.key"
-	clientCrtPath = "/etc/onos-config/certs/client1.crt"
-	caCertPath    = "/etc/onos-config/certs/onf.cacrt"
+	clientKeyPath = "/etc/onos-config/certs/tls.key"
+	clientCrtPath = "/etc/onos-config/certs/tls.crt"
+	caCertPath    = "/etc/onos-config/certs/tls.cacrt"
 	address       = "onos-config:5150"
 )
 
@@ -64,7 +63,6 @@ func GetCredentials() (*tls.Config, error) {
 	return &tls.Config{
 		RootCAs:      certPool,
 		Certificates: []tls.Certificate{cert},
-		InsecureSkipVerify: true,
 	}, nil
 }
 
@@ -78,36 +76,12 @@ func GetDestination(target string) (client.Destination, error) {
 		Addrs:  []string{address},
 		Target: target,
 		TLS:    tlsConfig,
-		Timeout:  10 * time.Second,
-	}, nil
-}
-
-// GetDestinationForDevice returns a gNMI client destination for the test environment
-func GetDestinationForDevice(addr string, target string) (client.Destination, error) {
-	tlsConfig, err := GetCredentials()
-	if err != nil {
-		return client.Destination{}, err
-	}
-	return client.Destination{
-		Addrs:  []string{addr},
-		Target: target,
-		TLS:    tlsConfig,
-		Timeout:  10 * time.Second,
 	}, nil
 }
 
 // NewGnmiClient returns a new gNMI client for the test environment
 func NewGnmiClient(ctx context.Context, target string) (client.Impl, error) {
 	dest, err := GetDestination(target)
-	if err != nil {
-		return nil, err
-	}
-	return gnmi.New(ctx, dest)
-}
-
-// NewGnmiClientForDevice returns a new gNMI client for the test environment
-func NewGnmiClientForDevice(ctx context.Context, address string, target string) (client.Impl, error) {
-	dest, err := GetDestinationForDevice(address, target)
 	if err != nil {
 		return nil, err
 	}
@@ -141,11 +115,11 @@ func handleCertArgs() ([]grpc.DialOption, error) {
 }
 
 // GetAdminClient returns a client that can be used for the admin APIs
-func GetAdminClient() (*grpc.ClientConn, proto.AdminServiceClient) {
+func GetAdminClient() (*grpc.ClientConn, proto.ConfigAdminServiceClient) {
 	opts, err := handleCertArgs()
 	if err != nil {
 		fmt.Printf("Error loading cert %s", err)
 	}
 	conn := northbound.Connect(address, opts...)
-	return conn, proto.NewAdminServiceClient(conn)
+	return conn, proto.NewConfigAdminServiceClient(conn)
 }
