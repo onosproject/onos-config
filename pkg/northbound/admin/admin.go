@@ -17,17 +17,14 @@ package admin
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/utils"
 	"google.golang.org/grpc"
-	log "k8s.io/klog"
+	"strings"
 )
 
 // Service is a Service implementation for administration.
@@ -38,7 +35,7 @@ type Service struct {
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	server := Server{}
-	proto.RegisterAdminServiceServer(r, server)
+	proto.RegisterConfigAdminServiceServer(r, server)
 	proto.RegisterDeviceInventoryServiceServer(r, server)
 }
 
@@ -48,7 +45,7 @@ type Server struct {
 
 // RegisterModel registers a new YANG model.
 func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
-	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(req.SoFile)
+	name, version, err := manager.GetManager().RegisterModelPlugin(req.SoFile)
 	if err != nil {
 		return nil, err
 	}
@@ -59,46 +56,19 @@ func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (
 }
 
 // ListRegisteredModels lists the registered models..
-func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.AdminService_ListRegisteredModelsServer) error {
-	for _, model := range manager.GetManager().ModelRegistry.ModelPlugins {
+func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.ConfigAdminService_ListRegisteredModelsServer) error {
+	for _, model := range manager.GetManager().ModelRegistry {
 		name, version, md, plugin := model.ModelData()
-		schemaMap, err := model.Schema()
-		if err != nil {
-			return err
-		}
-		schemaEntries := make([]*proto.SchemaEntry, 0)
-		for key, yangEntry := range schemaMap {
-			schemaJSON, err := json.Marshal(yangEntry)
-			if err != nil {
-				return err
-			}
-			schemaEntry := proto.SchemaEntry{
-				SchemaPath: key,
-				SchemaJson: string(schemaJSON),
-			}
-			schemaEntries = append(schemaEntries, &schemaEntry)
-		}
-
-		roPaths := make([]string, 0)
-		if req.Verbose {
-			roPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(name, version)]
-			roPaths = modelregistry.Paths(roPathsAndValues)
-			if !ok {
-				log.Warningf("no list of Read Only Paths found for %s %s\n", name, version)
-			}
-		}
 
 		// Build model message
 		msg := &proto.ModelInfo{
-			Name:         name,
-			Version:      version,
-			ModelData:    md,
-			Module:       plugin,
-			SchemaEntry:  schemaEntries,
-			ReadOnlyPath: roPaths,
+			Name:      name,
+			Version:   version,
+			ModelData: md,
+			Module:    plugin,
 		}
 
-		err = stream.Send(msg)
+		err := stream.Send(msg)
 		if err != nil {
 			return err
 		}
@@ -107,7 +77,7 @@ func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.
 }
 
 // GetNetworkChanges provides a stream of submitted network changes.
-func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.AdminService_GetNetworkChangesServer) error {
+func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.ConfigAdminService_GetNetworkChangesServer) error {
 	for _, nc := range manager.GetManager().NetworkStore.Store {
 
 		// Build net change message
@@ -165,26 +135,25 @@ func (s Server) RollbackNetworkChange(
 		}
 	}
 
-	configNames := make(map[string][]string, 0)
+	configNames := make([]string, 0)
 	// Check all are valid before we delete anything
-	for configName, changeID := range networkConfig.ConfigurationChanges {
-		configChangeIds := manager.GetManager().ConfigStore.Store[configName].Changes
-		if store.B64(configChangeIds[len(configChangeIds)-1]) != store.B64(changeID) {
+	for k, v := range networkConfig.ConfigurationChanges {
+		configChangeIds := manager.GetManager().ConfigStore.Store[k].Changes
+		if store.B64(configChangeIds[len(configChangeIds)-1]) != store.B64(v) {
 			return nil, fmt.Errorf(
 				"the last change on %s is not %s as expected. Was %s",
-				configName, store.B64(changeID), store.B64(configChangeIds[len(configChangeIds)-1]))
+				k, v, store.B64(configChangeIds[len(configChangeIds)-1]))
 		}
-		changeID, err := manager.GetManager().RollbackTargetConfig(string(configName))
-		rollbackIDs := configNames[string(configName)]
-		configNames[string(configName)] = append(rollbackIDs, store.B64(changeID))
-		if err != nil {
-			return nil, err
-		}
+		configNames = append(configNames, string(k))
+	}
+
+	for k := range networkConfig.ConfigurationChanges {
+		manager.GetManager().ConfigStore.RemoveLastChangeEntry(k)
 	}
 	manager.GetManager().NetworkStore.RemoveEntry(networkConfig.Name)
 
 	return &proto.RollbackResponse{
 		Message: fmt.Sprintf("Rolled back change '%s' Updated configs %s",
-			networkConfig.Name, configNames),
+			networkConfig.Name, strings.Join(configNames, ",")),
 	}, nil
 }
