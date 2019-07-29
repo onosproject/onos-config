@@ -115,7 +115,7 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	if err != nil {
 		return nil, err
 	}
-	stateValues, err := manager.GetManager().GetTargetState(target, pathAsString)
+	stateValues := manager.GetManager().GetTargetState(target, pathAsString)
 	//Merging the two results
 	for _, value := range stateValues {
 		configValues = append(configValues, value)
