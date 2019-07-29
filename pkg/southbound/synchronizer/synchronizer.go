@@ -326,6 +326,8 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 				return fmt.Errorf("invalid nil path in update: %v", update)
 			}
 			pathStr := utils.StrPath(update.Path)
+			//TODO this currently supports only leaf values, and no * paths,
+			// parsing of json is needed and a per path storage
 			valStr := utils.StrVal(update.Val)
 			val, err := values.GnmiTypedValueToNativeType(update.Val)
 			if err != nil {
