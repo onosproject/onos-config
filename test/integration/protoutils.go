@@ -20,12 +20,6 @@ import (
 )
 
 const (
-	// StripNamespaces will remove namespaces from path elements
-	StripNamespaces = true
-
-	// LeaveNamespaces doesn't change namespaces
-	LeaveNamespaces = false
-
 	// StringVal :
 	StringVal = "string_val"
 
@@ -37,7 +31,7 @@ const (
 )
 
 // MakeProtoTarget returns a GNMI proto path for a given target
-func MakeProtoTarget(target string, path string, stripNamespaces bool) string {
+func MakeProtoTarget(target string, path string) string {
 	var protoBuilder strings.Builder
 	var pathElements []string
 
@@ -45,13 +39,7 @@ func MakeProtoTarget(target string, path string, stripNamespaces bool) string {
 	protoBuilder.WriteString(target)
 	protoBuilder.WriteString("', ")
 
-	//  This is a temporary hack. Some of the tests want namespaces stripped, so allowing this
-	//  for now and will remove this when the stripping is removed everywhere.
-	if !stripNamespaces {
-		pathElements = strings.Split(path[1:], "/")
-	} else {
-		pathElements = utils.SplitPath(path)
-	}
+	pathElements = utils.SplitPath(path)
 
 	for _, pathElement := range pathElements {
 		protoBuilder.WriteString("elem: <name: '")
@@ -63,11 +51,11 @@ func MakeProtoTarget(target string, path string, stripNamespaces bool) string {
 }
 
 // MakeProtoPath returns a path: element for a given target and path
-func MakeProtoPath(target string, path string, stripNamespaces bool) string {
+func MakeProtoPath(target string, path string) string {
 	var protoBuilder strings.Builder
 
 	protoBuilder.WriteString("path: ")
-	gnmiPath := MakeProtoTarget(target, path, stripNamespaces)
+	gnmiPath := MakeProtoTarget(target, path)
 	protoBuilder.WriteString(gnmiPath)
 	return protoBuilder.String()
 }
@@ -91,11 +79,11 @@ func makeProtoValue(value string, valueType string) string {
 }
 
 // MakeProtoUpdatePath returns an update: element for a target, path, and new value
-func MakeProtoUpdatePath(devicePath DevicePath, stripNamespaces bool) string {
+func MakeProtoUpdatePath(devicePath DevicePath) string {
 	var protoBuilder strings.Builder
 
 	protoBuilder.WriteString("update: <")
-	protoBuilder.WriteString(MakeProtoPath(devicePath.deviceName, devicePath.path, stripNamespaces))
+	protoBuilder.WriteString(MakeProtoPath(devicePath.deviceName, devicePath.path))
 	protoBuilder.WriteString(makeProtoValue(devicePath.pathDataValue, devicePath.pathDataType))
 	protoBuilder.WriteString(">")
 	return protoBuilder.String()
@@ -106,6 +94,6 @@ func MakeProtoDeletePath(target string, path string) string {
 	var protoBuilder strings.Builder
 
 	protoBuilder.WriteString("delete: ")
-	protoBuilder.WriteString(MakeProtoTarget(target, path, true))
+	protoBuilder.WriteString(MakeProtoTarget(target, path))
 	return protoBuilder.String()
 }

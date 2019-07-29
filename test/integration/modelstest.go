@@ -72,7 +72,7 @@ func TestModels(t *testing.T) {
 				setResult := makeDevicePath(device, path)
 				setResult[0].pathDataValue = value
 				setResult[0].pathDataType = valueType
-				_, errorSet := GNMISet(MakeContext(), gnmiClient, setResult, LeaveNamespaces)
+				_, errorSet := GNMISet(MakeContext(), gnmiClient, setResult)
 				assert.NotNil(t, errorSet, "Set operation for %s does not generate an error", description)
 				assert.Contains(t, errorSet.Error(),
 					expectedError,

@@ -65,11 +65,11 @@ func extractSetTransactionID(response *gpb.SetResponse) string {
 }
 
 // GNMIGet generates a GET request on the given client for a path on a device
-func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath, stripNamespaces bool) ([]DevicePath, error) {
+func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePath, error) {
 	var protoString string
 	protoString = ""
 	for _, devicePath := range paths {
-		protoString = protoString + MakeProtoPath(devicePath.deviceName, devicePath.path, stripNamespaces)
+		protoString = protoString + MakeProtoPath(devicePath.deviceName, devicePath.path)
 	}
 
 	getTZRequest := &gpb.GetRequest{}
@@ -87,10 +87,10 @@ func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath, stripNamesp
 }
 
 // GNMISet generates a SET request on the given client for a path on a device
-func GNMISet(ctx context.Context, c client.Impl, devicePaths []DevicePath, stripNamespaces bool) (string, error) {
+func GNMISet(ctx context.Context, c client.Impl, devicePaths []DevicePath) (string, error) {
 	var protoBuilder strings.Builder
 	for _, devicePath := range devicePaths {
-		protoBuilder.WriteString(MakeProtoUpdatePath(devicePath, stripNamespaces))
+		protoBuilder.WriteString(MakeProtoUpdatePath(devicePath))
 	}
 
 	setTZRequest := &gpb.SetRequest{}
