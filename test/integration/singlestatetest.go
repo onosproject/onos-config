@@ -36,7 +36,7 @@ func TestSingleState(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, c != nil, "Fetching client returned nil")
 
-	// Check that the value was set correctly
+	// Check that the value was correctly retrieved from the device and store in the state cache
 	valueAfter, errorAfter := GNMIGet(MakeContext(), c, makeDevicePath(device, stateControllersPath))
 	assert.NoError(t, errorAfter)
 	assert.NotEqual(t, "", valueAfter, "Query after state returned an error: %s\n", errorAfter)
