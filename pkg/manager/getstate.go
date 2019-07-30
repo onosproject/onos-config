@@ -25,9 +25,6 @@ import (
 func (m *Manager) GetTargetState(target string, path string) []*change.ConfigValue {
 	log.Info("Getting State for ", target, path)
 	configValues := make([]*change.ConfigValue, 0)
-	//TODO remove these
-	log.Info("path ", path)
-	log.Info("Op state cache", m.OperationalStateCache[topocache.ID(target)])
 	//First check the cache, if it's not empty for this path we read that and return,
 	pathRegexp := utils.MatchWildcardRegexp(path)
 	for pathCache, value := range m.OperationalStateCache[topocache.ID(target)] {

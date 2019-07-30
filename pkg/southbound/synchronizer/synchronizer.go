@@ -277,7 +277,6 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	}
 
 	req, err := southbound.NewSubscribeRequest(options)
-	//log.Info(req)
 	if err != nil {
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorParseConfig,
 			sync.key.DeviceID, err)
