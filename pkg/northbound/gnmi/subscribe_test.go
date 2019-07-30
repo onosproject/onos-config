@@ -291,7 +291,6 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 			log.Error("Should not be receiving response ", response)
 			t.FailNow()
 		case <-time.After(50 * time.Millisecond):
-			log.Info("$$$ Returning from function")
 		}
 	}()
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
