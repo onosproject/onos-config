@@ -93,6 +93,17 @@ gnmi_cli -get -address localhost:5150 \
 > 4 values - **eth1** config and state enabled values and **admin** config and
 > state enabled values.
 
+### Device read only state get
+To retrieve state, non-configurable values, there is no difference with a normal gNMI get request.
+An example follows:
+```bash
+gnmi_cli -get -address localhost:5150 \
+   -proto "path: <target: 'localhost-1',elem:<name:'system' > elem:<name:'openflow' > elem:<name:'controllers' > elem:<name:'controller' key:<key:'name' value:'main' > > elem:<name:'connections' > elem:<name:'connection' key:<key:'aux-id' value:'0' > > elem:<name:'state' > elem:<name:'address'>>" \
+   -timeout 5s -alsologtostderr \
+   -client_crt pkg/southbound/testdata/client1.crt \
+   -client_key pkg/southbound/testdata/client1.key \
+   -ca_crt pkg/southbound/testdata/onfca.crt
+```
 ## Northbound Set Request via gNMI
 Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
 
