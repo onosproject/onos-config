@@ -46,13 +46,13 @@ type Synchronizer struct {
 	key                  southbound.DeviceID
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
-	operationalCache     map[string]*change.TypedValue
+	operationalCache     change.TypedValueMap
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, opStateCache map[string]*change.TypedValue,
+	errChan chan<- events.DeviceResponse, opStateCache change.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
@@ -248,7 +248,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 						sync.key.DeviceID, err)
 					break
 				}
-				pathsAndValues := make(map[string]*change.TypedValue)
+				pathsAndValues := make(change.TypedValueMap)
 				for _, cv := range configValues {
 					pathsAndValues[cv.Path] = &cv.TypedValue
 				}

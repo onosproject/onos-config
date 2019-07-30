@@ -30,7 +30,7 @@ func (m *Manager) GetTargetState(target string, path string) []*change.ConfigVal
 	for pathCache, value := range m.OperationalStateCache[topocache.ID(target)] {
 		if pathRegexp.MatchString(pathCache) {
 			configValues = append(configValues, &change.ConfigValue{
-				Path:       path,
+				Path:       pathCache,
 				TypedValue: *value,
 			})
 		}

@@ -35,7 +35,7 @@ import (
 	"time"
 )
 
-type mapTargetUpdates map[string]map[string]*change.TypedValue
+type mapTargetUpdates map[string]change.TypedValueMap
 type mapTargetRemoves map[string][]string
 type mapNetworkChanges map[store.ConfigName]change.ID
 
@@ -115,7 +115,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 	//Checking for wrong configuration against the device models for deletes
 	for target, removes := range targetRemovesTmp {
-		err := validateChange(target, version, make(map[string]*change.TypedValue), removes)
+		err := validateChange(target, version, make(change.TypedValueMap), removes)
 		if err != nil {
 			return nil, err
 		}
@@ -170,11 +170,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	return setResponse, nil
 }
 
-func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (map[string]*change.TypedValue, error) {
+func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (change.TypedValueMap, error) {
 	target := u.Path.GetTarget()
 	updates, ok := targetUpdates[target]
 	if !ok {
-		updates = make(map[string]*change.TypedValue)
+		updates = make(change.TypedValueMap)
 	}
 	path := utils.StrPath(u.Path)
 
@@ -305,7 +305,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 	}
 
 	for target, removes := range targetRemoves {
-		changeID, configName, cont, err := setChange(target, version, make(map[string]*change.TypedValue), removes)
+		changeID, configName, cont, err := setChange(target, version, make(change.TypedValueMap), removes)
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
 			return nil, nil, err
@@ -391,7 +391,7 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 
 }
 
-func setChange(target string, version string, targetUpdates map[string]*change.TypedValue, targetRemoves []string) (change.ID, store.ConfigName, bool, error) {
+func setChange(target string, version string, targetUpdates change.TypedValueMap, targetRemoves []string) (change.ID, store.ConfigName, bool, error) {
 	configName := store.ConfigName(target)
 	// target is a device name with no version
 	if version != "" {
@@ -410,7 +410,7 @@ func setChange(target string, version string, targetUpdates map[string]*change.T
 	return changeID, configName, false, nil
 }
 
-func validateChange(target string, version string, targetUpdates map[string]*change.TypedValue, targetRemoves []string) error {
+func validateChange(target string, version string, targetUpdates change.TypedValueMap, targetRemoves []string) error {
 	configName := store.ConfigName(target)
 	// target is a device name with no version
 	if version != "" {

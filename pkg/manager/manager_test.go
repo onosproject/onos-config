@@ -209,7 +209,7 @@ func Test_SetNetworkConfig(t *testing.T) {
 	assert.Equal(t, originalChange.Config[2].Type, change.ValueTypeFLOAT)
 	assert.Equal(t, (*change.TypedFloat)(&originalChange.Config[2].TypedValue).Float32(), float32(ValueLeaf2B159))
 
-	updates := make(map[string]*change.TypedValue)
+	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
 
 	// Making change
@@ -250,7 +250,7 @@ func Test_SetBadNetworkConfig(t *testing.T) {
 
 	mgrTest, _, _ := setUp()
 
-	updates := make(map[string]*change.TypedValue)
+	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
 
 	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
@@ -270,7 +270,7 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 	assert.NilError(t, err)
 	configurationStoreTest[device2config.Name] = *device2config
 
-	updates := make(map[string]*change.TypedValue)
+	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
 
 	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
@@ -285,7 +285,7 @@ func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
 
 	mgrTest, _, _ := setUp()
 
-	updates := make(map[string]*change.TypedValue)
+	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
 
 	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
@@ -385,7 +385,7 @@ func TestManager_GetManager(t *testing.T) {
 func TestManager_ComputeRollbackDelete(t *testing.T) {
 	mgrTest, _, _ := setUp()
 
-	updates := make(map[string]*change.TypedValue)
+	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
 
 	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
