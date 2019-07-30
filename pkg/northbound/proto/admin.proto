@@ -83,8 +83,8 @@ message RollbackResponse {
     string message = 1;
 }
 
-// AdminService provides means for enhanced interactions with the configuration subsystem.
-service AdminService {
+// ConfigAdminService provides means for enhanced interactions with the configuration subsystem.
+service ConfigAdminService {
     // RegisterModel adds the specified YANG model to the list of supported models.
     // There is no unregister because once loaded plugins cannot be unloaded
     rpc RegisterModel(RegisterRequest) returns (RegisterResponse);
