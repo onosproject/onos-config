@@ -33,9 +33,6 @@ type ReadOnlySubPathMap map[string]change.ValueType
 // ReadOnlyPathMap abstracts the read only path
 type ReadOnlyPathMap map[string]ReadOnlySubPathMap
 
-// GlobalReadOnlyPaths abstracts the map for the read only paths
-type GlobalReadOnlyPaths map[string]ReadOnlyPathMap
-
 // ModelRegistry is the object for the saving information about device models
 type ModelRegistry struct {
 	ModelPlugins       map[string]ModelPlugin

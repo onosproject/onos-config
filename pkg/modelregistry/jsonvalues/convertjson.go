@@ -110,7 +110,6 @@ func CorrectJSONPaths(jsonPathValues []*change.ConfigValue,
 				indexTable = append(indexTable, indexEntry{path: jsonRoPath, key: indexName + "=" + index})
 				break
 			}
-
 		}
 	}
 
