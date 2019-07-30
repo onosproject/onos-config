@@ -180,7 +180,7 @@ func (c *ClusterController) removeNetworkFromConfig(name string, configMap *core
 	}
 	dataMap := configMap.Items[0].BinaryData["config"]
 	m := make(map[string]interface{})
-	yaml.Unmarshal(dataMap, &m)
+	_ = yaml.Unmarshal(dataMap, &m)
 	numDevices := m["numdevices"].(int)
 
 	for _, pod := range pods.Items {

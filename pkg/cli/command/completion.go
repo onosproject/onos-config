@@ -53,7 +53,7 @@ func runCompletionBash(out io.Writer, cmd *cobra.Command) error {
 func runCompletionZsh(out io.Writer, cmd *cobra.Command) error {
 	zshHead := "#compdef onos\n"
 
-	out.Write([]byte(zshHead))
+	_, _ = out.Write([]byte(zshHead))
 
 	zshInitialization := `
 __onos_bash_source() {
@@ -180,11 +180,11 @@ __onos_convert_bash_to_zsh() {
 	-e "s/\\\$(type${RWORD}/\$(__onos_type/g" \
 	<<'BASH_COMPLETION_EOF'
 `
-	out.Write([]byte(zshInitialization))
+	_, _ = out.Write([]byte(zshInitialization))
 
 	buf := new(bytes.Buffer)
-	cmd.GenBashCompletion(buf)
-	out.Write(buf.Bytes())
+	_ = cmd.GenBashCompletion(buf)
+	_, _ = out.Write(buf.Bytes())
 
 	zshTail := `
 BASH_COMPLETION_EOF
@@ -192,6 +192,6 @@ BASH_COMPLETION_EOF
 __onos_bash_source <(__onos_convert_bash_to_zsh)
 _complete onos 2>/dev/null
 `
-	out.Write([]byte(zshTail))
+	_, _ = out.Write([]byte(zshTail))
 	return nil
 }

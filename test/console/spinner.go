@@ -44,11 +44,11 @@ var spinnerFrames = []string{
 // It is simplistic and assumes that the line length will not change.
 // It is best used indirectly via log.Status (see parent package)
 type Spinner struct {
-	frames []string
-	stop   chan struct{}
-	ticker *time.Ticker
-	writer io.Writer
-	mu     *sync.Mutex
+	frames  []string
+	stop    chan struct{}
+	ticker  *time.Ticker
+	writer  io.Writer
+	mu      *sync.Mutex
 	message string
 }
 

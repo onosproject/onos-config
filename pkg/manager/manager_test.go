@@ -37,8 +37,6 @@ const (
 )
 
 const (
-	ValueEmpty     = ""
-	ValueLeaf2A13  = 13
 	ValueLeaf2B159 = 1.579
 	ValueLeaf2B314 = 3.14
 	ValueLeaf2D314 = 3.14

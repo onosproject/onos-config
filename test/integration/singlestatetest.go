@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	stateValue = "192.0.2.10"
-	stateControllersPath  = "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/address"
+	stateValue           = "192.0.2.10"
+	stateControllersPath = "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/address"
 )
 
 // TestSingleState tests query of a single GNMI path of a read/only value to a single device
@@ -44,5 +44,5 @@ func TestSingleState(t *testing.T) {
 }
 
 func init() {
-	Registry.RegisterTest("single-state", TestSingleState, []*runner.TestSuite{AllTests,IntegrationTests})
+	Registry.RegisterTest("single-state", TestSingleState, []*runner.TestSuite{AllTests, IntegrationTests})
 }

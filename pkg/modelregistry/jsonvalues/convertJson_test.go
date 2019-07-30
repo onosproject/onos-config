@@ -82,7 +82,6 @@ func Test_correctJsonPathValues(t *testing.T) {
 
 	// All values are taken from testdata/sample-openconfig.json and defined
 	// here in the intermediate jsonToValues format
-	const systemNtpAuthMismatch = "/openconfig-system:system/ntp/state/auth-mismatch"
 	const systemNtpAuthMismatchNoNs = "/system/ntp/state/auth-mismatch"
 	const systemNtpAuthMismatchValue = 123456.00000
 	val01 := change.ConfigValue{Path: systemNtpAuthMismatchNoNs,

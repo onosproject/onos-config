@@ -215,7 +215,7 @@ func (c *ClusterController) createAtomixClusterRoleBinding() error {
 	_, err := c.kubeclient.RbacV1().ClusterRoleBindings().Create(roleBinding)
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			c.deleteAtomixClusterRoleBinding()
+			_ = c.deleteAtomixClusterRoleBinding()
 			return c.createAtomixClusterRoleBinding()
 		}
 		return err

@@ -32,16 +32,16 @@ const (
 )
 
 var (
-	paths = []string {path1, path2}
-	values = []string {value1, value2}
+	paths  = []string{path1, path2}
+	values = []string{value1, value2}
 )
 
 func init() {
-	Registry.RegisterTest("transaction", TestTransaction, []*runner.TestSuite{AllTests,SomeTests,IntegrationTests})
+	Registry.RegisterTest("transaction", TestTransaction, []*runner.TestSuite{AllTests, SomeTests, IntegrationTests})
 }
 
 func getDevicePaths(devices []string, paths []string) []DevicePath {
-	var devicePaths = make([]DevicePath, len(paths) * len(devices))
+	var devicePaths = make([]DevicePath, len(paths)*len(devices))
 	pathIndex := 0
 	for _, device := range devices {
 		for _, path := range paths {
@@ -53,7 +53,7 @@ func getDevicePaths(devices []string, paths []string) []DevicePath {
 	return devicePaths
 }
 
-func getDevicePathsWithValues(devices []string, paths []string, values[]string) []DevicePath {
+func getDevicePathsWithValues(devices []string, paths []string, values []string) []DevicePath {
 	var devicePaths = getDevicePaths(devices, paths)
 	valueIndex := 0
 	for range devices {
@@ -73,7 +73,7 @@ func checkDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []
 }
 
 func getDeviceGNMIClient(t *testing.T, device string) client.Impl {
-	deviceGnmiClient, deviceGnmiClientError := env.NewGnmiClientForDevice(MakeContext(), device + ":10161", "gnmi")
+	deviceGnmiClient, deviceGnmiClientError := env.NewGnmiClientForDevice(MakeContext(), device+":10161", "gnmi")
 	assert.NoError(t, deviceGnmiClientError)
 	assert.True(t, deviceGnmiClient != nil, "Fetching device client returned nil")
 	return deviceGnmiClient
@@ -132,4 +132,3 @@ func TestTransaction(t *testing.T) {
 	assert.Equal(t, "", getValuesAfterRollback[0].pathDataValue, "Query after rollback returned the wrong value: %s\n", getValuesAfterRollback)
 	assert.Equal(t, "", getValuesAfterRollback[1].pathDataValue, "Query after rollback returned the wrong value: %s\n", getValuesAfterRollback)
 }
-

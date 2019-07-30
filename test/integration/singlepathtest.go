@@ -68,5 +68,5 @@ func TestSinglePath(t *testing.T) {
 }
 
 func init() {
-	Registry.RegisterTest("single-path", TestSinglePath, []*runner.TestSuite{AllTests,IntegrationTests})
+	Registry.RegisterTest("single-path", TestSinglePath, []*runner.TestSuite{AllTests, IntegrationTests})
 }

@@ -28,7 +28,7 @@ var (
 	IntegrationTests = runner.NewTestSuite("integration-tests")
 )
 
-func init(){
+func init() {
 	//example of registering groups
 	Registry.RegisterTestSuite(*AllTests)
 	Registry.RegisterTestSuite(*SomeTests)

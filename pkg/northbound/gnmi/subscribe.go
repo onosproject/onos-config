@@ -65,11 +65,10 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	//Handles each subscribe request coming into the server, blocks until a new request or an error comes in
 	go listenOnChannel(stream, mgr, hash, resChan, subscribe, changesChan, opStateChan)
 
-	for result := range resChan {
-		if !result.success {
-			return status.Error(codes.Internal, result.err.Error())
-		}
-		return nil
+	res := <-resChan
+
+	if !res.success {
+		return status.Error(codes.Internal, res.err.Error())
 	}
 	return nil
 }

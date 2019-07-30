@@ -289,7 +289,7 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 		select {
 		case response = <-responsesChan:
 			log.Error("Should not be receiving response ", response)
-			t.FailNow()
+			t.Fail()
 		case <-time.After(50 * time.Millisecond):
 		}
 	}()

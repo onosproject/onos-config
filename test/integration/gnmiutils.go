@@ -66,8 +66,7 @@ func extractSetTransactionID(response *gpb.SetResponse) string {
 
 // GNMIGet generates a GET request on the given client for a path on a device
 func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePath, error) {
-	var protoString string
-	protoString = ""
+	protoString := ""
 	for _, devicePath := range paths {
 		protoString = protoString + MakeProtoPath(devicePath.deviceName, devicePath.path)
 	}

@@ -83,7 +83,7 @@ func runListPluginsCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
-			tmplModelList.Execute(os.Stdout, in)
+			_ = tmplModelList.Execute(os.Stdout, in)
 			Output("\n")
 		}
 	}()

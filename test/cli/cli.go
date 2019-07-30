@@ -127,7 +127,7 @@ func getCreateClusterCommand() *cobra.Command {
 			}
 
 			// Store the cluster before setting it up to ensure other shell sessions can debug setup
-			setDefaultCluster(clusterID)
+			_ = setDefaultCluster(clusterID)
 
 			// Setup the cluster
 			if status := cluster.Setup(); status.Failed() {
@@ -316,7 +316,7 @@ func getDeleteClusterCommand() *cobra.Command {
 
 			// Delete the cluster
 			status := controller.DeleteCluster(clusterID)
-			setDefaultCluster("")
+			_ = setDefaultCluster("")
 			if status.Failed() {
 				exitStatus(status)
 			}
@@ -367,7 +367,7 @@ func getRemoveNetworkCommand() *cobra.Command {
 			if err != nil {
 				exitError(err)
 			}
-			if Contains(networks, name) == false {
+			if !Contains(networks, name) {
 				exitError(errors.New("The given network name does not exist"))
 			}
 
@@ -417,7 +417,7 @@ func getRemoveSimulatorCommand() *cobra.Command {
 				exitError(err)
 			}
 
-			if Contains(simulators, name) == false {
+			if !Contains(simulators, name) {
 				exitError(errors.New("The given simulator name does not exist"))
 			}
 
@@ -584,12 +584,12 @@ func printClusters(clusters map[string]*runner.ClusterConfig, includeHeaders boo
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
 	if includeHeaders {
-		fmt.Fprintln(writer, "ID\tSIZE\tPARTITIONS")
+		_, _ = fmt.Fprintln(writer, "ID\tSIZE\tPARTITIONS")
 	}
 	for id, config := range clusters {
 		fmt.Fprintln(writer, fmt.Sprintf("%s\t%d\t%d\t%d", id, config.ConfigNodes, config.TopoNodes, config.Partitions))
 	}
-	writer.Flush()
+	_ = writer.Flush()
 }
 
 // getGetDevicePresetsCommand returns a cobra command to get a list of available device simulator configurations
@@ -661,11 +661,11 @@ func getGetPartitionsCommand() *cobra.Command {
 func printPartitions(partitions []runner.PartitionInfo) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
-	fmt.Fprintln(writer, "ID\tGROUP\tNODES")
+	_, _ = fmt.Fprintln(writer, "ID\tGROUP\tNODES")
 	for _, partition := range partitions {
-		fmt.Fprintln(writer, fmt.Sprintf("%d\t%s\t%s", partition.Partition, partition.Group, strings.Join(partition.Nodes, ",")))
+		_, _ = fmt.Fprintln(writer, fmt.Sprintf("%d\t%s\t%s", partition.Partition, partition.Group, strings.Join(partition.Nodes, ",")))
 	}
-	writer.Flush()
+	_ = writer.Flush()
 }
 
 // getGetPartitionCommand returns a cobra command to get the nodes in a partition
@@ -792,7 +792,7 @@ func printNodes(nodes []runner.NodeInfo, includeHeaders bool) {
 	for _, node := range nodes {
 		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s", node.ID, node.Type, node.Status))
 	}
-	writer.Flush()
+	_ = writer.Flush()
 }
 
 // getGetTestsCommand returns a cobra command to get a list of available tests
@@ -828,12 +828,12 @@ func printTestSuites(registry *runner.TestRegistry, includeHeaders bool) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
 	if includeHeaders {
-		fmt.Fprintln(writer, "SUITE\tTESTS")
+		_, _ = fmt.Fprintln(writer, "SUITE\tTESTS")
 	}
 	for name, suite := range registry.TestSuites {
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", name, strings.Join(suite.GetTestNames(), ", ")))
+		_, _ = fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", name, strings.Join(suite.GetTestNames(), ", ")))
 	}
-	writer.Flush()
+	_ = writer.Flush()
 }
 
 // getGetHistoryCommand returns a cobra command to get the history of tests
@@ -881,7 +881,7 @@ func getGetHistoryCommand() *cobra.Command {
 func printHistory(records []runner.TestRecord) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
-	fmt.Fprintln(writer, "ID\tTESTS\tSTATUS\tEXIT CODE\tMESSAGE")
+	_, _ = fmt.Fprintln(writer, "ID\tTESTS\tSTATUS\tEXIT CODE\tMESSAGE")
 	for _, record := range records {
 		var args string
 		if len(record.Args) > 0 {
@@ -889,9 +889,9 @@ func printHistory(records []runner.TestRecord) {
 		} else {
 			args = "*"
 		}
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s\t%d\t%s", record.TestID, args, record.Status, record.ExitCode, record.Message))
+		_, _ = fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s\t%d\t%s", record.TestID, args, record.Status, record.ExitCode, record.Message))
 	}
-	writer.Flush()
+	_ = writer.Flush()
 }
 
 // getGetLogsCommand returns a cobra command to output the logs for a specific resource
@@ -954,7 +954,7 @@ To output the logs from a test, get the test ID from the test run or from 'onit 
 					if err != nil {
 						exitError(err)
 					}
-					os.Stdout.Write(logs)
+					_, _ = os.Stdout.Write(logs)
 					if i+1 < numResources {
 						fmt.Println("----")
 					}
@@ -1262,10 +1262,10 @@ func getTestTestLocalCommand(registry *runner.TestRegistry) *cobra.Command {
 		Use:   "test [tests]",
 		Short: "Run integration tests",
 		Run: func(cmd *cobra.Command, args []string) {
-			runner := &runner.TestRunner{
+			testRunner := &runner.TestRunner{
 				Registry: registry,
 			}
-			err := runner.RunTests(args)
+			err := testRunner.RunTests(args)
 			if err != nil {
 				exitError(err)
 			} else {
@@ -1281,10 +1281,10 @@ func getTestSuiteLocalCommand(registry *runner.TestRegistry) *cobra.Command {
 		Use:   "suite [suite]",
 		Short: "Run integration test suites on Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
-			runner := &runner.TestRunner{
+			testRunner := &runner.TestRunner{
 				Registry: registry,
 			}
-			err := runner.RunTestSuites(args)
+			err := testRunner.RunTestSuites(args)
 			if err != nil {
 				exitError(err)
 			} else {

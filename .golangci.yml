@@ -1,0 +1,17 @@
+linters:
+  enable:
+    - gofmt
+    - gocyclo
+    - golint
+    - misspell
+    - typecheck
+    - errcheck
+run:
+  skip-dirs:
+    - modelplugin
+
+issues:
+  exclude-rules:
+    - path: pkg/northbound/gnmi/set.go
+      linters:
+        - typecheck

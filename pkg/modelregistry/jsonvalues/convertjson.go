@@ -130,7 +130,8 @@ func CorrectJSONPaths(jsonPathValues []*change.ConfigValue,
 	return correctedPathValues, nil
 }
 
-func subPathType(jsonPathValue *change.ConfigValue, spType change.ValueType, newTypeValue *change.TypedValue) *change.TypedValue {
+func subPathType(jsonPathValue *change.ConfigValue, spType change.ValueType, typeValue *change.TypedValue) *change.TypedValue {
+	var newTypeValue *change.TypedValue
 	switch jsonPathValue.Type {
 	case change.ValueTypeFLOAT:
 		// Could be int, uint, or float from json - convert to numeric

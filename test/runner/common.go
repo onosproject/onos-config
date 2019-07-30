@@ -114,7 +114,7 @@ func (c *ClusterController) createOnosSecret() error {
 		StringData: map[string]string{},
 	}
 
-	err := filepath.Walk(certsPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(certsPath, func(path string, info os.FileInfo, walkError error) error {
 		if info.IsDir() {
 			return nil
 		}

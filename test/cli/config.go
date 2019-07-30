@@ -31,7 +31,7 @@ var (
 // getSimulatorPresets returns a list of store configurations from the configs/store directory
 func getSimulatorPresets() []string {
 	configs := []string{}
-	filepath.Walk(deviceConfigsPath, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(deviceConfigsPath, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
@@ -48,7 +48,7 @@ func getSimulatorPresets() []string {
 // getStorePresets returns a list of store configurations from the configs/store directory
 func getStorePresets() []string {
 	configs := []string{}
-	filepath.Walk(storeConfigsPath, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(storeConfigsPath, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
@@ -94,7 +94,7 @@ func initConfig() error {
 			if err != nil {
 				return err
 			}
-			f.Close()
+			_ = f.Close()
 		} else {
 			return err
 		}
@@ -113,5 +113,5 @@ func init() {
 	viper.AddConfigPath("/etc/onos")
 	viper.AddConfigPath(".")
 
-	viper.ReadInConfig()
+	_ = viper.ReadInConfig()
 }

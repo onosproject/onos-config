@@ -62,8 +62,8 @@ func GetCredentials() (*tls.Config, error) {
 	}
 
 	return &tls.Config{
-		RootCAs:      certPool,
-		Certificates: []tls.Certificate{cert},
+		RootCAs:            certPool,
+		Certificates:       []tls.Certificate{cert},
 		InsecureSkipVerify: true,
 	}, nil
 }
@@ -75,10 +75,10 @@ func GetDestination(target string) (client.Destination, error) {
 		return client.Destination{}, err
 	}
 	return client.Destination{
-		Addrs:  []string{address},
-		Target: target,
-		TLS:    tlsConfig,
-		Timeout:  10 * time.Second,
+		Addrs:   []string{address},
+		Target:  target,
+		TLS:     tlsConfig,
+		Timeout: 10 * time.Second,
 	}, nil
 }
 
@@ -89,10 +89,10 @@ func GetDestinationForDevice(addr string, target string) (client.Destination, er
 		return client.Destination{}, err
 	}
 	return client.Destination{
-		Addrs:  []string{addr},
-		Target: target,
-		TLS:    tlsConfig,
-		Timeout:  10 * time.Second,
+		Addrs:   []string{addr},
+		Target:  target,
+		TLS:     tlsConfig,
+		Timeout: 10 * time.Second,
 	}, nil
 }
 

@@ -126,7 +126,7 @@ func newInitCommand() *cobra.Command {
 			if err != nil {
 				ExitWithError(ExitError, err)
 			} else {
-				f.Close()
+				_ = f.Close()
 			}
 
 			err = viper.WriteConfig()
@@ -137,11 +137,6 @@ func newInitCommand() *cobra.Command {
 			}
 		},
 	}
-}
-
-func setConfig(key string, value string) error {
-	viper.Set(key, value)
-	return viper.WriteConfig()
 }
 
 func getConfig(key string) string {
@@ -163,5 +158,5 @@ func initConfig() {
 		viper.AddConfigPath(".")
 	}
 
-	viper.ReadInConfig()
+	_ = viper.ReadInConfig()
 }

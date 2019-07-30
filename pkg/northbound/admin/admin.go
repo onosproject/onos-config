@@ -165,7 +165,7 @@ func (s Server) RollbackNetworkChange(
 		}
 	}
 
-	configNames := make(map[string][]string, 0)
+	configNames := make(map[string][]string)
 	// Check all are valid before we delete anything
 	for configName, changeID := range networkConfig.ConfigurationChanges {
 		configChangeIds := manager.GetManager().ConfigStore.Store[configName].Changes
@@ -181,7 +181,7 @@ func (s Server) RollbackNetworkChange(
 			return nil, err
 		}
 	}
-	manager.GetManager().NetworkStore.RemoveEntry(networkConfig.Name)
+	_ = manager.GetManager().NetworkStore.RemoveEntry(networkConfig.Name)
 
 	return &proto.RollbackResponse{
 		Message: fmt.Sprintf("Rolled back change '%s' Updated configs %s",

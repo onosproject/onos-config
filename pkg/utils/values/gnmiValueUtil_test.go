@@ -26,13 +26,8 @@ import (
 const testString = "This is a test"
 const (
 	testNegativeInt = -9223372036854775808
-	testZeroInt     = 0
 	testPositiveInt = 9223372036854775807
-)
-const (
-	testZeroUint   = uint(0)
-	testElevenUint = uint(11)
-	testMaxUint    = uint(18446744073709551615)
+	testMaxUint     = uint(18446744073709551615)
 )
 
 ////////////////////////////////////////////////////////////////////////////////

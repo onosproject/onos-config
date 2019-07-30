@@ -251,7 +251,7 @@ func Test_Get(t *testing.T) {
 		Path: []*gnmi.Path{&allDevicesPath},
 	}
 
-	response, err := target.Get(nil, &request)
+	response, err := target.Get(context.TODO(), &request)
 	assert.NilError(t, err)
 	assert.Assert(t, response != nil)
 	assert.Equal(t, response.Notification[0].Update[0].Path.Target, "*", "Expected target")
@@ -371,12 +371,12 @@ func Test_NewSubscribeRequest(t *testing.T) {
 	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_SAMPLE)
 
 	options.Mode = "Test_Error"
-	request, requestError = NewSubscribeRequest(options)
+	_, requestError = NewSubscribeRequest(options)
 	assert.ErrorContains(t, requestError, "invalid")
 
 	options.Mode = "Poll"
 	options.StreamMode = "test_error"
-	request, requestError = NewSubscribeRequest(options)
+	_, requestError = NewSubscribeRequest(options)
 	assert.ErrorContains(t, requestError, "invalid")
 
 }

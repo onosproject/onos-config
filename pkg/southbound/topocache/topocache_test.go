@@ -83,7 +83,7 @@ func Test_DeviceStoreDuplicates(t *testing.T) {
 
 func Test_AddDevice(t *testing.T) {
 	deviceStore := loadDeviceStore(t)
-	deviceStore.AddOrUpdateDevice("foobar", Device{ID: "foobar", Addr: "foobar:123", SoftwareVersion: "1.0"})
+	assert.NilError(t, deviceStore.AddOrUpdateDevice("foobar", Device{ID: "foobar", Addr: "foobar:123", SoftwareVersion: "1.0"}))
 	d, ok := deviceStore.Store["foobar"]
 	assert.Assert(t, ok, "device not added")
 	assert.Assert(t, d.Addr == "foobar:123", "wrong device added")

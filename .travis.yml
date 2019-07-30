@@ -24,6 +24,7 @@ before_script:
   - go get -u github.com/fzipp/gocyclo
   - go get -u github.com/client9/misspell/cmd/misspell
   - go get -u github.com/gordonklaus/ineffassign
+  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin latest
 
 
 jobs:

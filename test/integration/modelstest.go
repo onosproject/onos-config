@@ -22,7 +22,7 @@ import (
 )
 
 func init() {
-	Registry.RegisterTest("models", TestModels, []*runner.TestSuite{AllTests,SomeTests,IntegrationTests})
+	Registry.RegisterTest("models", TestModels, []*runner.TestSuite{AllTests, SomeTests, IntegrationTests})
 }
 
 // TestModels tests GNMI operation involving unknown or illegal paths
@@ -80,4 +80,3 @@ func TestModels(t *testing.T) {
 			})
 	}
 }
-

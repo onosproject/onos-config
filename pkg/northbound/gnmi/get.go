@@ -117,9 +117,7 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	}
 	stateValues := manager.GetManager().GetTargetState(target, pathAsString)
 	//Merging the two results
-	for _, value := range stateValues {
-		configValues = append(configValues, value)
-	}
+	configValues = append(configValues, stateValues...)
 
 	return buildUpdate(prefix, path, configValues)
 }
@@ -139,7 +137,7 @@ func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*change.Conf
 	} else {
 		json, err := store.BuildTree(configValues, false)
 		if err != nil {
-
+			return nil, err
 		}
 		typedValue := &gnmi.TypedValue_JsonVal{
 			JsonVal: json,
