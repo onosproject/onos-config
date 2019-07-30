@@ -8,6 +8,8 @@ RUN apk upgrade --update --no-cache && apk add curl
 
 COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onit-k8s /usr/local/bin/onit-k8s
 
+COPY --from=base /go/src/github.com/onosproject/onos-config/test/integration/_resources /etc/onos-config/test/integration/_resources
+
 USER nobody
 
 ENTRYPOINT ["onit-k8s"]
