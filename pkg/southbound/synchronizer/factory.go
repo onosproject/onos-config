@@ -52,7 +52,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			}
 			operationalStateCache[deviceName] = make(map[string]*change.TypedValue)
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan,
-				errChan, operationalStateCache, mReadOnlyPaths)
+				errChan, operationalStateCache[deviceName], mReadOnlyPaths)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
 				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,

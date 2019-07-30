@@ -46,13 +46,13 @@ type Synchronizer struct {
 	key                  southbound.DeviceID
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
-	operationalCache     map[topocache.ID]map[string]*change.TypedValue
+	operationalCache     map[string]*change.TypedValue
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, opStateCache map[topocache.ID]map[string]*change.TypedValue,
+	errChan chan<- events.DeviceResponse, opStateCache map[string]*change.TypedValue,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
@@ -254,7 +254,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 				}
 				for path, value := range pathsAndValues {
 					if value != nil {
-						sync.operationalCache[sync.ID][path] = value
+						sync.operationalCache[path] = value
 					}
 				}
 			}
@@ -326,7 +326,7 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			}
 			eventValues[pathStr] = valStr
 			log.Info("Added ", val, " for path ", pathStr, " for device ", sync.ID)
-			sync.operationalCache[sync.ID][pathStr] = val
+			sync.operationalCache[pathStr] = val
 		}
 		for _, del := range notification.Delete {
 			if del.Elem == nil {
@@ -335,7 +335,7 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			pathStr := utils.StrPathElem(del.Elem)
 			eventValues[pathStr] = ""
 			log.Info("Delete path ", pathStr, " for device ", sync.ID)
-			delete(sync.operationalCache[sync.ID], pathStr)
+			delete(sync.operationalCache, pathStr)
 		}
 		sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), eventValues)
 	}
