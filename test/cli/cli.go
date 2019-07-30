@@ -91,7 +91,8 @@ func getCreateClusterCommand() *cobra.Command {
 		Short: "Setup a test cluster on Kubernetes",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			nodes, _ := cmd.Flags().GetInt("nodes")
+			configNodes, _ := cmd.Flags().GetInt("config-nodes")
+			topoNodes, _ := cmd.Flags().GetInt("topo-nodes")
 			partitions, _ := cmd.Flags().GetInt("partitions")
 			partitionSize, _ := cmd.Flags().GetInt("partition-size")
 			configName, _ := cmd.Flags().GetString("config")
@@ -113,7 +114,8 @@ func getCreateClusterCommand() *cobra.Command {
 			// Create the cluster configuration
 			config := &runner.ClusterConfig{
 				Preset:        configName,
-				Nodes:         nodes,
+				ConfigNodes:   configNodes,
+				TopoNodes:     topoNodes,
 				Partitions:    partitions,
 				PartitionSize: partitionSize,
 			}
@@ -136,7 +138,8 @@ func getCreateClusterCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringP("config", "c", "default", "test cluster configuration")
-	cmd.Flags().IntP("nodes", "n", 1, "the number of onos-config nodes to deploy")
+	cmd.Flags().IntP("config-nodes", "", 1, "the number of onos-config nodes to deploy")
+	cmd.Flags().IntP("topo-nodes", "", 0, "the number of onos-topo nodes to deploy")
 	cmd.Flags().IntP("partitions", "p", 1, "the number of Raft partitions to deploy")
 	cmd.Flags().IntP("partition-size", "s", 1, "the size of each Raft partition")
 	return cmd
@@ -584,7 +587,7 @@ func printClusters(clusters map[string]*runner.ClusterConfig, includeHeaders boo
 		fmt.Fprintln(writer, "ID\tSIZE\tPARTITIONS")
 	}
 	for id, config := range clusters {
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%d\t%d", id, config.Nodes, config.Partitions))
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%d\t%d\t%d", id, config.ConfigNodes, config.TopoNodes, config.Partitions))
 	}
 	writer.Flush()
 }
@@ -712,7 +715,7 @@ func getGetPartitionCommand() *cobra.Command {
 	return cmd
 }
 
-// getGetNodesCommand returns a cobra command to get a list of onos-config nodes in the cluster
+// getGetNodesCommand returns a cobra command to get a list of onos nodes in the cluster
 func getGetNodesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "nodes",
@@ -730,6 +733,11 @@ func getGetNodesCommand() *cobra.Command {
 				exitError(err)
 			}
 
+			nodeType, err := cmd.Flags().GetString("type")
+			if err != nil {
+				exitError(err)
+			}
+
 			// Get the cluster controller
 			cluster, err := controller.GetCluster(clusterID)
 			if err != nil {
@@ -737,16 +745,37 @@ func getGetNodesCommand() *cobra.Command {
 			}
 
 			// Get the list of nodes and output
-			nodes, err := cluster.GetNodes()
-			if err != nil {
-				exitError(err)
-			} else {
-				noHeaders, _ := cmd.Flags().GetBool("no-headers")
-				printNodes(nodes, !noHeaders)
+			if strings.Compare(nodeType, string(runner.OnosAll)) == 0 {
+				nodes, err := cluster.GetNodes()
+				if err != nil {
+					exitError(err)
+				} else {
+					noHeaders, _ := cmd.Flags().GetBool("no-headers")
+					printNodes(nodes, !noHeaders)
+				}
+			} else if strings.Compare(nodeType, string(runner.OnosConfig)) == 0 {
+				nodes, err := cluster.GetOnosConfigNodes()
+				if err != nil {
+					exitError(err)
+				} else {
+					noHeaders, _ := cmd.Flags().GetBool("no-headers")
+					printNodes(nodes, !noHeaders)
+				}
+
+			} else if strings.Compare(nodeType, string(runner.OnosTopo)) == 0 {
+				nodes, err := cluster.GetOnosTopoNodes()
+				if err != nil {
+					exitError(err)
+				} else {
+					noHeaders, _ := cmd.Flags().GetBool("no-headers")
+					printNodes(nodes, !noHeaders)
+				}
+
 			}
 		},
 	}
 	cmd.Flags().StringP("cluster", "c", getDefaultCluster(), "the cluster to query")
+	cmd.Flags().StringP("type", "t", "all", "To get list of nodes based on their types")
 	cmd.Flags().Lookup("cluster").Annotations = map[string][]string{
 		cobra.BashCompCustom: {"__onit_get_clusters"},
 	}
@@ -758,10 +787,10 @@ func printNodes(nodes []runner.NodeInfo, includeHeaders bool) {
 	writer := new(tabwriter.Writer)
 	writer.Init(os.Stdout, 0, 0, 3, ' ', tabwriter.FilterHTML)
 	if includeHeaders {
-		fmt.Fprintln(writer, "ID\tSTATUS")
+		fmt.Fprintln(writer, "ID\tTYPE\tSTATUS")
 	}
 	for _, node := range nodes {
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", node.ID, node.Status))
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s", node.ID, node.Type, node.Status))
 	}
 	writer.Flush()
 }
