@@ -38,8 +38,8 @@ type Dispatcher struct {
 }
 
 // NewDispatcher creates and initializes a new event dispatcher
-func NewDispatcher() Dispatcher {
-	return Dispatcher{
+func NewDispatcher() *Dispatcher {
+	return &Dispatcher{
 		deviceListeners:        make(map[topocache.ID]chan events.ConfigEvent),
 		nbiListeners:           make(map[string]chan events.ConfigEvent),
 		nbiOpStateListeners:    make(map[string]chan events.OperationalStateEvent),
@@ -133,6 +133,7 @@ func (d *Dispatcher) UnregisterDevice(id topocache.ID) error {
 	if !ok {
 		return fmt.Errorf("Subscriber %s had not been registered", id)
 	}
+	//Accessing device listener in concurrency with Listen()
 	delete(d.deviceListeners, id)
 	close(channel)
 	respChan, ok := d.deviceResponseListener[id]

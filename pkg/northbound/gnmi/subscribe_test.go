@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -74,7 +75,10 @@ func (x gNMISubscribeServerPollFake) Recv() (*gnmi.SubscribeRequest, error) {
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
-	server, _ := setUp()
+	server, mgr := setUp()
+
+	var wg sync.WaitGroup
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 
@@ -110,7 +114,10 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with updates for that path
 func Test_SubscribeLeafStream(t *testing.T) {
-	server, _ := setUp()
+	server, mgr := setUp()
+
+	var wg sync.WaitGroup
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -199,7 +206,6 @@ func Test_WrongDevice(t *testing.T) {
 		t.FailNow()
 	case <-time.After(50 * time.Millisecond):
 	}
-
 	targets["Device1"] = struct{}{}
 	subs = append(subs, utils.MatchWildcardRegexp("/cont1a/*/leaf3c"))
 	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
@@ -216,8 +222,50 @@ func Test_WrongDevice(t *testing.T) {
 
 }
 
+func Test_WrongPath(t *testing.T) {
+	_, mgr := setUp()
+
+	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
+
+	assert.NilError(t, err, "Unexpected error doing parsing")
+
+	path.Target = "Device1"
+
+	request := buildRequest(path, gnmi.SubscriptionList_STREAM)
+
+	changeChan := make(chan events.ConfigEvent)
+	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
+	serverFake := gNMISubscribeServerFake{
+		Request:   request,
+		Responses: responsesChan,
+		Signal:    make(chan struct{}),
+	}
+
+	targets := make(map[string]struct{})
+	resChan := make(chan result)
+	var response *gnmi.SubscribeResponse
+	targets["Device1"] = struct{}{}
+	subscriptionPathStr := "/test1:cont1a/cont2a/leaf3c"
+	subsStr := make([]*regexp.Regexp, 0)
+	subsStr = append(subsStr, utils.MatchWildcardRegexp(subscriptionPathStr))
+	go listenForUpdates(changeChan, serverFake, mgr, targets, subsStr, resChan)
+	config1Value05, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", change.CreateTypedValueString("def"), false)
+	config1Value09, _ := change.CreateChangeValue("/test1:cont1a/list2a[name=txout2]", change.CreateTypedValueEmpty(), true)
+	change1, _ := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
+	changeChan <- events.CreateConfigEvent("Device1", change1.ID, true)
+	select {
+	case response = <-responsesChan:
+		log.Error("Should not be receiving response ", response)
+		t.FailNow()
+	case <-time.After(50 * time.Millisecond):
+	}
+
+}
+
 func Test_ErrorDoubleSubscription(t *testing.T) {
-	server, _ := setUp()
+	server, mgr := setUp()
+	var wg sync.WaitGroup
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -237,6 +285,13 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 	go func() {
 		err = server.Subscribe(serverFake)
 		assert.NilError(t, err, "Unexpected error doing Subscribe")
+		var response *gnmi.SubscribeResponse
+		select {
+		case response = <-responsesChan:
+			log.Error("Should not be receiving response ", response)
+			t.FailNow()
+		case <-time.After(50 * time.Millisecond):
+		}
 	}()
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
 	time.Sleep(100000)
@@ -246,7 +301,10 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 }
 
 func Test_Poll(t *testing.T) {
-	server, _ := setUp()
+	server, mgr := setUp()
+
+	var wg sync.WaitGroup
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 
@@ -303,7 +361,10 @@ func Test_Poll(t *testing.T) {
 
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with delete paths
 func Test_SubscribeLeafStreamDelete(t *testing.T) {
-	server, _ := setUp()
+	server, mgr := setUp()
+
+	var wg sync.WaitGroup
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 

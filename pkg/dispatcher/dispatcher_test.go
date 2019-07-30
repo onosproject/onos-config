@@ -53,7 +53,7 @@ func setUp() *Dispatcher {
 	device2Channel, respChannel2, err = d.RegisterDevice(device2.ID)
 	device3Channel, respChannel3, err = d.RegisterDevice(device3.ID)
 	optStateChannel, err = d.RegisterOpState(opStateTest)
-	return &d
+	return d
 }
 
 func tearDown(d *Dispatcher) {
@@ -146,6 +146,7 @@ func Test_unregister(t *testing.T) {
 
 func Test_listen_device(t *testing.T) {
 	d := setUp()
+	defer tearDown(d)
 	changes := make(map[string]bool)
 	// Start the main listener system
 	go testSync(device1Channel, changes)
@@ -161,7 +162,7 @@ func Test_listen_device(t *testing.T) {
 
 	// Wait for the changes to get distributed
 	time.Sleep(time.Second)
-	tearDown(d)
+
 }
 
 func Test_listen_nbi(t *testing.T) {
