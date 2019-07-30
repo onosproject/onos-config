@@ -30,13 +30,13 @@ build/_output/devicesim.so.1.0.0: modelplugin/Devicesim-1.0.0/modelmain.go model
 	-CGO_ENABLED=1 go build -o build/_output/devicesim-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
 
 test: # @HELP run the unit tests and source code validation
-test: build deps linters
+test: build deps linters license_check
 	go test github.com/onosproject/onos-config/pkg/...
 	go test github.com/onosproject/onos-config/cmd/...
 	go test github.com/onosproject/onos-config/modelplugin/...
 
 coverage: # @HELP generate unit test coverage data
-coverage: build deps linters
+coverage: build deps linters license_check
 	./build/bin/coveralls-coverage
 
 deps: # @HELP ensure that the required dependencies are in place
