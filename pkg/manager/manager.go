@@ -43,7 +43,7 @@ type Manager struct {
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              dispatcher.Dispatcher
-	OperationalStateCache   map[topocache.ID]map[string]*change.TypedValue
+	OperationalStateCache   map[topocache.ID]change.TypedValueMap
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -67,7 +67,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
-		OperationalStateCache:   make(map[topocache.ID]map[string]*change.TypedValue),
+		OperationalStateCache:   make(map[topocache.ID]change.TypedValueMap),
 	}
 
 	changeIds := make([]string, 0)
@@ -252,7 +252,7 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse) {
 	}
 }
 
-func (m *Manager) computeChange(updates map[string]*change.TypedValue,
+func (m *Manager) computeChange(updates change.TypedValueMap,
 	deletes []string) (*change.Change, error) {
 	var newChanges = make([]*change.Value, 0)
 	//updates

@@ -23,6 +23,9 @@ import (
 	"strings"
 )
 
+// TypedValueMap is an alias for a map of paths and values
+type TypedValueMap map[string]*TypedValue
+
 // Types given here are a rough approximation of those in the set of YANG types
 // and the set of gNMI types
 

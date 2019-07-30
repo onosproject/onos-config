@@ -29,7 +29,7 @@ const SetConfigAlreadyApplied = "Already applied:"
 
 // ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target
-func (m *Manager) ValidateNetworkConfig(configName store.ConfigName, updates map[string]*change.TypedValue,
+func (m *Manager) ValidateNetworkConfig(configName store.ConfigName, updates change.TypedValueMap,
 	deletes []string) error {
 
 	deviceConfig, _, err := m.getStoredConfig(configName)
@@ -77,7 +77,7 @@ func (m *Manager) ValidateNetworkConfig(configName store.ConfigName, updates map
 
 // SetNetworkConfig sets the given the given updates and deletes, according to the path on the configuration
 // for the specified target
-func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates map[string]*change.TypedValue,
+func (m *Manager) SetNetworkConfig(configName store.ConfigName, updates change.TypedValueMap,
 	deletes []string) (change.ID, store.ConfigName, error) {
 
 	deviceConfig, configName, err := m.getStoredConfig(configName)
