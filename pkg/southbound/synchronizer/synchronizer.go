@@ -261,8 +261,6 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		}
 	}
 
-	log.Info("Operational state cahce", sync.operationalCache)
-
 	//TODO do get for subscribePaths
 
 	options := &southbound.SubscribeOptions{
@@ -312,7 +310,6 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			return client.ErrStopReading
 		}
 	case *gnmi.SubscribeResponse_Update:
-		log.Info("Response", v)
 		eventValues := make(map[string]string)
 		notification := v.Update
 		for _, update := range notification.Update {
