@@ -18,11 +18,13 @@ import (
 	"fmt"
 	ds1 "github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim_1_0_0"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	"gotest.tools/assert"
+	"io/ioutil"
 	"testing"
 )
 
@@ -80,9 +82,10 @@ func Test_correctJsonPathValues(t *testing.T) {
 
 	// All values are taken from testdata/sample-openconfig.json and defined
 	// here in the intermediate jsonToValues format
-	const systemNtpAuthMismatch = "/system/ntp/state/auth-mismatch"
+	const systemNtpAuthMismatch = "/openconfig-system:system/ntp/state/auth-mismatch"
+	const systemNtpAuthMismatchNoNs = "/system/ntp/state/auth-mismatch"
 	const systemNtpAuthMismatchValue = 123456.00000
-	val01 := change.ConfigValue{Path: systemNtpAuthMismatch,
+	val01 := change.ConfigValue{Path: systemNtpAuthMismatchNoNs,
 		TypedValue: *change.CreateTypedValueFloat(systemNtpAuthMismatchValue)}
 
 	const systemNtpEnableAuth = "/system/ntp/state/enable-ntp-auth"
@@ -159,7 +162,7 @@ func Test_correctJsonPathValues(t *testing.T) {
 		&val05, &val06, &val07, &val08, &val09, &val10, &val11, &val12, &val13,
 		&val14, &val15, &val16, &val17}
 
-	correctedPathValues, err := CorrectJSONPaths(jsonPathValues, readOnlyPaths)
+	correctedPathValues, err := CorrectJSONPaths(jsonPathValues, readOnlyPaths, true)
 	assert.NilError(t, err)
 
 	for _, v := range correctedPathValues {
@@ -176,7 +179,7 @@ func Test_correctJsonPathValues(t *testing.T) {
 		const sysAaaGrG2Srv4Ca = "/system/aaa/server-groups/server-group[name=g2]/servers/server[address=192.168.0.4]/state/connection-aborts"
 		const sysAaaGrG2Srv5Ca = "/system/aaa/server-groups/server-group[name=g2]/servers/server[address=192.168.0.5]/state/connection-aborts"
 		switch correctedPathValue.Path {
-		case systemNtpAuthMismatch:
+		case systemNtpAuthMismatchNoNs:
 			assert.Equal(t, correctedPathValue.Type, change.ValueTypeUINT)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
 			assert.Equal(t, (*change.TypedUint64)(&correctedPathValue.TypedValue).Uint(), uint(systemNtpAuthMismatchValue))
@@ -216,6 +219,72 @@ func Test_correctJsonPathValues(t *testing.T) {
 			assert.Equal(t, correctedPathValue.Type, change.ValueTypeUINT)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
 			assert.Equal(t, (*change.TypedUint64)(&correctedPathValue.TypedValue).Uint(), uint(sysAaaGr12Svr200CaValue))
+		default:
+			t.Fatal("Unexpected path", correctedPathValue.Path)
+		}
+	}
+}
+
+func Test_correctJsonPathValues2(t *testing.T) {
+
+	var modelPluginTest modelPluginTest
+
+	ds1Schema, err := modelPluginTest.Schema()
+	assert.NilError(t, err)
+	assert.Equal(t, len(ds1Schema), 137)
+
+	readOnlyPaths := modelregistry.ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	assert.Equal(t, len(readOnlyPaths), 37)
+
+	// All values are taken from testdata/sample-openconfig.json and defined
+	// here in the intermediate jsonToValues format
+	sampleTree, err := ioutil.ReadFile("./testdata/sample-openconfig2.json")
+	assert.NilError(t, err)
+
+	values, err := store.DecomposeTree(sampleTree)
+	assert.NilError(t, err)
+	assert.Equal(t, len(values), 31)
+
+	correctedPathValues, err := CorrectJSONPaths(values, readOnlyPaths, true)
+	assert.NilError(t, err)
+
+	for _, v := range correctedPathValues {
+		fmt.Printf("%s %v\n", (*v).Path, v.String())
+	}
+	assert.Equal(t, len(correctedPathValues), 24)
+
+	for _, correctedPathValue := range correctedPathValues {
+		switch correctedPathValue.Path {
+		case
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/source-interface",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/transport",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/address",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/aux-id",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/port",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/source-interface",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/transport",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/address",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/aux-id",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/port",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/source-interface",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/transport",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/address",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/aux-id",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/port",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/source-interface",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/transport",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/address",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/aux-id",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/port":
+			assert.Equal(t, correctedPathValue.Type, change.ValueTypeSTRING, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
+		case
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/priority",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/priority",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/priority",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/priority":
+			assert.Equal(t, correctedPathValue.Type, change.ValueTypeUINT, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
 		}

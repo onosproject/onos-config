@@ -251,7 +251,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 						sync.key.DeviceID, err)
 					break
 				}
-				configValues, err := jsonvalues.CorrectJSONPaths(configValuesUnparsed, sync.modelReadOnlyPaths)
+				configValues, err := jsonvalues.CorrectJSONPaths(configValuesUnparsed, sync.modelReadOnlyPaths, true)
 				if err != nil {
 					log.Error("Can't translate from config values to typed values, skipping to next update", err)
 					errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
