@@ -65,15 +65,13 @@ func setUp() (*Server, *manager.Manager) {
 	return server, mgr
 }
 
-func tearDown(mgr *manager.Manager, wg sync.WaitGroup) {
+func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
 	// `wg.Wait` blocks until `wg.Done` is called the same number of times
 	// as the amount of tasks we have (in this case, 1 time)
 	wg.Wait()
 
 	mgr.Dispatcher = &dispatcher.Dispatcher{}
 	log.Infof("Dispatcher Teardown %p", mgr.Dispatcher)
-
-
 
 }
 

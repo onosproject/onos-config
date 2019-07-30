@@ -78,7 +78,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	server, mgr := setUp()
 
 	var wg sync.WaitGroup
-	defer tearDown(mgr, wg)
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 
@@ -117,7 +117,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	server, mgr := setUp()
 
 	var wg sync.WaitGroup
-	defer tearDown(mgr, wg)
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -265,7 +265,7 @@ func Test_WrongPath(t *testing.T) {
 func Test_ErrorDoubleSubscription(t *testing.T) {
 	server, mgr := setUp()
 	var wg sync.WaitGroup
-	defer tearDown(mgr, wg)
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -305,7 +305,7 @@ func Test_Poll(t *testing.T) {
 	server, mgr := setUp()
 
 	var wg sync.WaitGroup
-	defer tearDown(mgr, wg)
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 
@@ -365,7 +365,7 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	server, mgr := setUp()
 
 	var wg sync.WaitGroup
-	defer tearDown(mgr, wg)
+	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 
