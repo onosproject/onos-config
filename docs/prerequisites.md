@@ -6,9 +6,12 @@ Developers are expected to have these tools installed on the machine where the p
 Since the project is authored mainly in the Go programming language, the project requires [Go tools] 
 in order to build and execute the code.
 
-## Go Lint
-[Go lint] is required to validate that the Go source code complies with the established style 
-guidelines.
+## Go Linters
+[golangci-lint] is required to validate that the Go source code complies with the established style 
+guidelines. To install the tool, use this command:
+```bash
+curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin latest
+```
 
 ## Docker
 [Docker] is required to build the project Docker images and also to compile `*.proto` files into Go source files.
@@ -34,8 +37,7 @@ automatically.
 
 
 [Go tools]: https://golang.org/doc/install
-[Go lint]: https://github.com/golang/lint
-[Go lint]: https://github.com/golang/lint
+[golangci-lint]: https://github.com/golangci/golangci-lint
 [Docker]: https://docs.docker.com/install/
 [Kind]: https://github.com/kubernetes-sigs/kind
 [Minikube]: https://kubernetes.io/docs/tasks/tools/install-minikube/

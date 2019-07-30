@@ -11,14 +11,14 @@ coverage                        generate unit test coverage data
 deps                            ensure that the required dependencies are in place
 gofmt                           run the Go format validation
 images                          build all Docker images
+kind                            build Docker images and add them to the currently configured kind cluster
 license_check                   examine and ensure license headers exist
-lint                            run the linters for Go source code
-onos-cli-docker                 build onos-cli Docker image
-onos-config-docker              build onos-config Docker image
+linters                         examines Go source code and reports coding problems
+onos-config-base-docker         build onos-config base Docker image
 protos                          compile the protobuf files (using protoc-go Docker)
 run-docker                      run onos-config docker image
 test                            run the unit tests and source code validation
-vet                             examines Go source code and reports suspicious constructs
+
 ```
 
 ## Building Go binaries
