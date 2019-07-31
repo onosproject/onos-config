@@ -64,25 +64,31 @@ func extractSetTransactionID(response *gpb.SetResponse) string {
 	return string(response.Extension[0].GetRegisteredExt().Msg)
 }
 
-// GNMIGet generates a GET request on the given client for a path on a device
+// GNMIGet generates a GET request on the given client for a path on a device returning an array of values
 func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePath, error) {
+	response, err := GNMIGetResponse(ctx, c, paths)
+	if err != nil {
+		return nil, err
+	}
+	return convertGetResults(response)
+}
+
+// GNMIGetResponse generates a GET request on the given client for a path on a device returning a gnmi response
+func GNMIGetResponse(ctx context.Context, c client.Impl, devicePaths []DevicePath) (*gpb.GetResponse, error) {
 	protoString := ""
-	for _, devicePath := range paths {
+	for _, devicePath := range devicePaths {
 		protoString = protoString + MakeProtoPath(devicePath.deviceName, devicePath.path)
 	}
-
 	getTZRequest := &gpb.GetRequest{}
 	if err := proto.UnmarshalText(protoString, getTZRequest); err != nil {
 		fmt.Printf("unable to parse gnmi.GetRequest from %q : %v", protoString, err)
 		return nil, err
 	}
-
 	response, err := c.(*gclient.Client).Get(ctx, getTZRequest)
 	if err != nil || response == nil {
 		return nil, err
 	}
-
-	return convertGetResults(response)
+	return response, nil
 }
 
 // GNMISet generates a SET request on the given client for a path on a device
