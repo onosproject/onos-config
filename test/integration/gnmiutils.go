@@ -82,7 +82,7 @@ func GNMIGetResponse(ctx context.Context, c client.Impl, devicePaths []DevicePat
 	getTZRequest := &gpb.GetRequest{}
 	if err := proto.UnmarshalText(protoString, getTZRequest); err != nil {
 		fmt.Printf("unable to parse gnmi.GetRequest from %q : %v", protoString, err)
-		//return nil, err
+		return nil, err
 	}
 	response, err := c.(*gclient.Client).Get(ctx, getTZRequest)
 	if err != nil || response == nil {
