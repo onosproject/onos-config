@@ -7,31 +7,23 @@
             "connections": {
               "connection": [
                 {
-                  "aux-id": 0,
-                  "config": {
-                    "address": "192.0.2.10",
-                    "aux-id": 0,
-                    "port": 6633,
-                    "priority": 1,
-                    "source-interface": "admin",
-                    "transport": "TLS"
-                  },
-                  "state": {
-                    "address": "192.0.2.10",
-                    "aux-id": "0",
-                    "port": "6633",
-                    "priority": 1,
-                    "source-interface": "admin",
-                    "transport": "TLS"
-                  }
-                },
-                {
                   "aux-id": 1,
                   "state": {
                     "address": "192.0.2.11",
                     "aux-id": "1",
                     "port": "6653",
                     "priority": 2,
+                    "source-interface": "admin",
+                    "transport": "TLS"
+                  }
+                },
+                {
+                  "aux-id": 0,
+                  "state": {
+                    "address": "192.0.2.10",
+                    "aux-id": "0",
+                    "port": "6633",
+                    "priority": 1,
                     "source-interface": "admin",
                     "transport": "TLS"
                   }
@@ -44,23 +36,23 @@
             "connections": {
               "connection": [
                 {
-                  "aux-id": 1,
-                  "state": {
-                    "address": "192.0.3.11",
-                    "aux-id": "1",
-                    "port": "6653",
-                    "priority": 2,
-                    "source-interface": "admin",
-                    "transport": "TLS"
-                  }
-                },
-                {
                   "aux-id": 0,
                   "state": {
                     "address": "192.0.3.10",
                     "aux-id": "0",
                     "port": "6633",
                     "priority": 1,
+                    "source-interface": "admin",
+                    "transport": "TLS"
+                  }
+                },
+                {
+                  "aux-id": 1,
+                  "state": {
+                    "address": "192.0.3.11",
+                    "aux-id": "1",
+                    "port": "6653",
+                    "priority": 2,
                     "source-interface": "admin",
                     "transport": "TLS"
                   }

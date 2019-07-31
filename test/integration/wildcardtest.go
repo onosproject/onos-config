@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/onosproject/onos-config/test/env"
 	"github.com/onosproject/onos-config/test/runner"
@@ -26,7 +27,6 @@ import (
 	"testing"
 )
 
-
 // TestWildcard tests multiple types of wildcard requests
 func TestWildcard(t *testing.T) {
 	const (
@@ -36,16 +36,10 @@ func TestWildcard(t *testing.T) {
 		addressState      = "/system/openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/state/address"
 	)
 
-	//_, basePath, _, _     := runtime.Caller(0)
-	//allStatePath         := filepath.Join(filepath.Join(filepath.Join(filepath.Dir(filepath.Dir(basePath)), "integration"), "_resources"), "allState.json")
-	//allStateAndConfigPath := filepath.Join(filepath.Join(filepath.Join(filepath.Dir(filepath.Dir(basePath)), "integration"), "_resources"), "allStateAndConfig.json")
-	//addressPath  := filepath.Join(filepath.Join(filepath.Join(filepath.Dir(filepath.Dir(basePath)), "integration"), "_resources"), "address.json")
-	//addressStatePath  := filepath.Join(filepath.Join(filepath.Join(filepath.Dir(filepath.Dir(basePath)), "integration"), "_resources"), "addressState.json")
-	allStatePath         := filepath.Join("/etc/onos-config/test/integration/_resources", "allState.json")
-	allStateAndConfigPath := filepath.Join("/etc/onos-config/test/integration/_resources", "allStateAndConfig.json")
-	addressPath  := filepath.Join("/etc/onos-config/test/integration/_resources",  "address.json")
-	addressStatePath  := filepath.Join("/etc/onos-config/test/integration/_resources",  "addressState.json")
-	//"onos-config/test/integration/_resources"
+	allStatePath := filepath.Join("/etc/onos-config/test/integration/_resources/", "allState.json")
+	allStateAndConfigPath := filepath.Join("/etc/onos-config/test/integration/_resources/", "allStateAndConfig.json")
+	addressPath := filepath.Join("/etc/onos-config/test/integration/_resources/", "address.json")
+	addressStatePath := filepath.Join("/etc/onos-config/test/integration/_resources/", "addressState.json")
 	// Get the configured device from the environment.
 	device := env.GetDevices()[0]
 
@@ -57,7 +51,7 @@ func TestWildcard(t *testing.T) {
 	}{
 		{description: "All state", path: allState, expectedJSON: allStatePath},
 		{description: "All state and config", path: allStateAndConfig, expectedJSON: allStateAndConfigPath},
-		{description: "Address ", path: address, expectedJSON: addressPath},
+		{description: "Address", path: address, expectedJSON: addressPath},
 		{description: "Address state", path: addressState, expectedJSON: addressStatePath},
 	}
 
@@ -77,38 +71,30 @@ func TestWildcard(t *testing.T) {
 
 				t.Logf("testing %q", description)
 				// Open our jsonFile
-				directory,_ := os.Getwd()
-				t.Logf(directory)
-				files, err := ioutil.ReadDir(directory)
-				if err != nil {
-					t.Logf(err.Error())
-				}
-
-				for _, file := range files {
-					t.Logf(file.Name())
-				}
-				files, err = ioutil.ReadDir("/etc/onos-config/test/integration/_resources")
-				if err != nil {
-					t.Logf(err.Error())
-				}
-
-				for _, file := range files {
-					t.Logf(file.Name())
-				}
 				jsonFile, err := os.Open(jsonFilePath)
 				// if we os.Open returns an error then handle it
 				assert.NoError(t, err, "unexpected error while opening ", jsonFilePath)
 				// defer the closing of our jsonFile so that we can parse it later on
 				defer jsonFile.Close()
+
+				//Read the json into byte array
 				expectedJSONBytes, _ := ioutil.ReadAll(jsonFile)
 
+				//compact the json removing spaces and new lines and get in byte[] form
+				buffer := new(bytes.Buffer)
+				errCompact := json.Compact(buffer, expectedJSONBytes)
+				expectedJSONBytesCompact := buffer.Bytes()
+				assert.NoError(t, errCompact, "unexpected error while compacting ", jsonFilePath)
+
+				//Issuing a get request to the GNMI NB of ONOS-Config
 				reply, errorGet := GNMIGetResponse(MakeContext(), gnmiClient, makeDevicePath(device, path))
 				assert.NoError(t, errorGet)
 				jsonReply := reply.Notification[0].Update[0].Val.GetJsonVal()
-				same, err := JSONBytesEqual(expectedJSONBytes, jsonReply)
-				t.Logf("expectd json %s", string(expectedJSONBytes))
-				t.Logf("got json %s", string(jsonReply))
-				assert.True(t, same, "Json should be equal", string(expectedJSONBytes), string(jsonReply))
+
+				//Checking the equality of jsons independently of the order of k/v pairs
+				same, errEqual := JSONBytesEqual(expectedJSONBytesCompact, jsonReply)
+				assert.NoError(t, errEqual, "unexpected error while doing equals	 ", jsonFilePath)
+				assert.True(t, same, "Json should be equal", string(expectedJSONBytesCompact), string(jsonReply))
 			})
 	}
 }
@@ -122,9 +108,60 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 	if err := json.Unmarshal(b, &j2); err != nil {
 		return false, err
 	}
-	return reflect.DeepEqual(j2, j), nil
+	return Equal(j, j2), nil
+}
+
+// Equal checks equality between 2 Body-encoded data, independently on order.
+func Equal(vx, vy interface{}) bool {
+	if reflect.TypeOf(vx) != reflect.TypeOf(vy) {
+		return false
+	}
+
+	switch x := vx.(type) {
+	case map[string]interface{}:
+		y := vy.(map[string]interface{})
+
+		if len(x) != len(y) {
+			return false
+		}
+
+		for k, v := range x {
+			val2 := y[k]
+
+			if (v == nil) != (val2 == nil) {
+				return false
+			}
+
+			if !Equal(v, val2) {
+				return false
+			}
+		}
+
+		return true
+	case []interface{}:
+		y := vy.([]interface{})
+
+		if len(x) != len(y) {
+			return false
+		}
+
+		var matches int
+		flagged := make([]bool, len(y))
+		for _, v := range x {
+			for i, v2 := range y {
+				if Equal(v, v2) && !flagged[i] {
+					matches++
+					flagged[i] = true
+					break
+				}
+			}
+		}
+		return matches == len(x)
+	default:
+		return vx == vy
+	}
 }
 
 func init() {
-	Registry.RegisterTest("wildcard", TestWildcard, []*runner.TestSuite{AllTests,IntegrationTests})
+	Registry.RegisterTest("wildcard", TestWildcard, []*runner.TestSuite{AllTests, IntegrationTests})
 }

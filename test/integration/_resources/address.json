@@ -8,9 +8,6 @@
               "connection": [
                 {
                   "aux-id": 0,
-                  "config": {
-                    "address": "192.0.2.10"
-                  },
                   "state": {
                     "address": "192.0.2.10"
                   }

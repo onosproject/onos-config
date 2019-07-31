@@ -9,6 +9,25 @@
                 {
                   "aux-id": 1,
                   "state": {
+                    "address": "192.0.3.11"
+                  }
+                },
+                {
+                  "aux-id": 0,
+                  "state": {
+                    "address": "192.0.3.10"
+                  }
+                }
+              ]
+            },
+            "name": "second"
+          },
+          {
+            "connections": {
+              "connection": [
+                {
+                  "aux-id": 1,
+                  "state": {
                     "address": "192.0.2.11"
                   }
                 },
@@ -21,25 +40,6 @@
               ]
             },
             "name": "main"
-          },
-          {
-            "connections": {
-              "connection": [
-                {
-                  "aux-id": 0,
-                  "state": {
-                    "address": "192.0.3.10"
-                  }
-                },
-                {
-                  "aux-id": 1,
-                  "state": {
-                    "address": "192.0.3.11"
-                  }
-                }
-              ]
-            },
-            "name": "second"
           }
         ]
       }
