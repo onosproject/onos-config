@@ -6,7 +6,8 @@ FROM golang:1.12.6-alpine3.9 as debugBuilder
 
 RUN apk upgrade --update --no-cache && apk add git && \
     go get -u github.com/go-delve/delve/cmd/dlv && \
-    go get -u github.com/atomix/atomix-cli/cmd/atomix
+    go get -u github.com/atomix/atomix-cli/cmd/atomix && \
+    go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
 
 FROM alpine:3.9
 
@@ -17,6 +18,7 @@ COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos-c
 COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/*-debug.so.* /usr/local/lib/
 COPY --from=debugBuilder /go/bin/dlv /usr/local/bin/dlv
 COPY --from=debugBuilder /go/bin/atomix /usr/local/bin/atomix
+COPY --from=debugBuilder /go/bin/gnmi_cli /usr/local/bin/gnmi_cli
 
 RUN echo "#!/bin/sh" >> /usr/local/bin/onos-config-debug && \
     echo "atomix controller set \$ATOMIX_CONTROLLER" >> /usr/local/bin/onos-config-debug && \
