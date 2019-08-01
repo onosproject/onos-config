@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+make images
+docker push onosproject/onos-config:latest
+docker push onosproject/onos-config:debug

@@ -29,8 +29,10 @@ before_script:
 
 jobs:
   include:
-    - stage: tests
-      script: make coverage
+    - stage: buikd
+      script:
+        - make coverage
+        - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash ./build/bin/push-images; fi'
 
     - stage: integration-tests
       if: type != pull_request
@@ -68,7 +70,5 @@ jobs:
         - date
         - make integration
         - date
-
-
 
 
