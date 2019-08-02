@@ -140,7 +140,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	}()
 
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
-	time.Sleep(100000)
+	time.Sleep(15 * time.Second)
 
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
@@ -294,7 +294,7 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 		}
 	}()
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
-	time.Sleep(100000)
+	time.Sleep(15 * time.Second)
 
 	err = server.Subscribe(serverFake)
 	assert.ErrorContains(t, err, "is already registered")
@@ -335,7 +335,7 @@ func Test_Poll(t *testing.T) {
 	}()
 
 	serverFake.Signal <- struct{}{}
-	time.Sleep(100000) //waiting before sending fake poll
+	time.Sleep(15 * time.Second) //waiting before sending fake poll
 	serverFake.first = false
 	serverFake.Signal <- struct{}{}
 
@@ -387,7 +387,7 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	}()
 
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
-	time.Sleep(100000)
+	time.Sleep(15 * time.Second)
 
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
