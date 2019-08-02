@@ -34,7 +34,10 @@ var modelData = []*gnmi.ModelData{
 	{Name: "testmodel", Organization: "Open Networking Lab", Version: "2019-07-10"},
 }
 
-var readOnlyPaths ReadOnlyPathMap
+var (
+	readOnlyPaths  ReadOnlyPathMap
+	readWritePaths ReadWritePathMap
+)
 
 var ds1Schema map[string]*yang.Entry
 
@@ -42,7 +45,7 @@ func TestMain(m *testing.M) {
 	var modelPluginTest modelPluginTest
 
 	ds1Schema, _ = modelPluginTest.Schema()
-	readOnlyPaths = ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, readWritePaths = ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 }
 
 func (m modelPluginTest) ModelData() (string, string, []*gnmi.ModelData, string) {

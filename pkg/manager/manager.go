@@ -51,9 +51,10 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 	network *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
-		ModelPlugins:       make(map[string]modelregistry.ModelPlugin),
-		ModelReadOnlyPaths: make(map[string]modelregistry.ReadOnlyPathMap),
-		LocationStore:      make(map[string]string),
+		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
+		ModelReadOnlyPaths:  make(map[string]modelregistry.ReadOnlyPathMap),
+		ModelReadWritePaths: make(map[string]modelregistry.ReadWritePathMap),
+		LocationStore:       make(map[string]string),
 	}
 
 	mgr = Manager{

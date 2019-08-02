@@ -29,15 +29,15 @@ const modellistTemplate = "{{.Name}}: {{.Version}} from {{.Module}} containing:\
 	"\t{{.Name}}\t{{.Version}}\t{{.Organization}}\n" +
 	"{{end}}" +
 	"{{if .ReadOnlyPath}}" +
-	"Containers & Lists:\n" +
-	"{{range .SchemaEntry}}" +
-	"\t{{.SchemaPath}}\n" +
-	"{{end}}" +
-	"{{end}}" +
-	"{{if .ReadOnlyPath}}" +
-	"Read Only Paths:\n" +
+	"Read Only Paths (subpaths not shown):\n" +
 	"{{range .ReadOnlyPath}}" +
-	"\t{{.}}\n" +
+	"\t{{.Path}}\n" +
+	"{{end}}" +
+	"{{end}}" +
+	"{{if .ReadWritePath}}" +
+	"Read Write Paths (details not shown):\n" +
+	"{{range .ReadWritePath}}" +
+	"\t{{.Path}}\n" +
 	"{{end}}" +
 	"{{end}}"
 
