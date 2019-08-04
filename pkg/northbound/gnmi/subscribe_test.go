@@ -30,6 +30,8 @@ import (
 	log "k8s.io/klog"
 )
 
+const subscribeDelay = 100 * time.Millisecond
+
 type gNMISubscribeServerFake struct {
 	Request   *gnmi.SubscribeRequest
 	Responses chan *gnmi.SubscribeResponse
@@ -140,7 +142,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	}()
 
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
-	time.Sleep(100000)
+	time.Sleep(subscribeDelay)
 
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
@@ -294,7 +296,7 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 		}
 	}()
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
-	time.Sleep(100000)
+	time.Sleep(subscribeDelay)
 
 	err = server.Subscribe(serverFake)
 	assert.ErrorContains(t, err, "is already registered")
@@ -335,7 +337,7 @@ func Test_Poll(t *testing.T) {
 	}()
 
 	serverFake.Signal <- struct{}{}
-	time.Sleep(100000) //waiting before sending fake poll
+	time.Sleep(subscribeDelay) //waiting before sending fake poll
 	serverFake.first = false
 	serverFake.Signal <- struct{}{}
 
@@ -387,7 +389,7 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	}()
 
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
-	time.Sleep(100000)
+	time.Sleep(subscribeDelay)
 
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
@@ -466,7 +468,7 @@ func assertUpdateResponse(t *testing.T, responsesChan chan *gnmi.SubscribeRespon
 		assert.Equal(t, pathResponse.Elem[1].Name, path2)
 		assert.Equal(t, pathResponse.Elem[2].Name, path3)
 		assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetUintVal(), uint64(value))
-	case <-time.After(1 * time.Second):
+	case <-time.After(5 * time.Second):
 		log.Error("Expected Update Response")
 		t.FailNow()
 	}
