@@ -29,7 +29,7 @@ before_script:
 
 jobs:
   include:
-    - stage: buikd
+    - stage: build
       script:
         - make coverage
         - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash ./build/bin/push-images; fi'
