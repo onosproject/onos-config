@@ -17,17 +17,16 @@ package admin
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
+	"strings"
 )
 
 // Service is a Service implementation for administration.
@@ -60,45 +59,75 @@ func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (
 
 // ListRegisteredModels lists the registered models..
 func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.ConfigAdminService_ListRegisteredModelsServer) error {
+	requestedModel := req.ModelName
+	requestedVersion := req.ModelVersion
+
 	for _, model := range manager.GetManager().ModelRegistry.ModelPlugins {
 		name, version, md, plugin := model.ModelData()
-		schemaMap, err := model.Schema()
-		if err != nil {
-			return err
+		if requestedModel != "" && !strings.HasPrefix(name, requestedModel) {
+			continue
 		}
-		schemaEntries := make([]*proto.SchemaEntry, 0)
-		for key, yangEntry := range schemaMap {
-			schemaJSON, err := json.Marshal(yangEntry)
-			if err != nil {
-				return err
-			}
-			schemaEntry := proto.SchemaEntry{
-				SchemaPath: key,
-				SchemaJson: string(schemaJSON),
-			}
-			schemaEntries = append(schemaEntries, &schemaEntry)
+		if requestedVersion != "" && !strings.HasPrefix(version, requestedVersion) {
+			continue
 		}
 
-		roPaths := make([]string, 0)
+		roPaths := make([]*proto.ReadOnlyPath, 0)
 		if req.Verbose {
 			roPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(name, version)]
-			roPaths = modelregistry.Paths(roPathsAndValues)
 			if !ok {
 				log.Warningf("no list of Read Only Paths found for %s %s\n", name, version)
+			} else {
+				for path, subpathList := range roPathsAndValues {
+					subPathsPb := make([]*proto.ReadOnlySubPath, 0)
+					for subPath, subPathType := range subpathList {
+						subPathPb := proto.ReadOnlySubPath{
+							Subpath:   subPath,
+							ValueType: proto.ChangeValueType(subPathType),
+						}
+						subPathsPb = append(subPathsPb, &subPathPb)
+					}
+					pathPb := proto.ReadOnlyPath{
+						Path:    path,
+						Subpath: subPathsPb,
+					}
+					roPaths = append(roPaths, &pathPb)
+				}
+			}
+		}
+
+		rwPaths := make([]*proto.ReadWritePath, 0)
+		if req.Verbose {
+			rwPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadWritePaths[utils.ToModelName(name, version)]
+			if !ok {
+				log.Warningf("no list of Read Write Paths found for %s %s\n", name, version)
+			} else {
+				for path, rwObj := range rwPathsAndValues {
+					rwObjProto := proto.ReadWritePath{
+						Path:        path,
+						ValueType:   proto.ChangeValueType(rwObj.ValueType),
+						Description: rwObj.Description,
+						Default:     rwObj.Default,
+						Units:       rwObj.Units,
+						Mandatory:   rwObj.Mandatory,
+						Range:       rwObj.Range,
+						Length:      rwObj.Length,
+					}
+					rwPaths = append(rwPaths, &rwObjProto)
+				}
 			}
 		}
 
 		// Build model message
 		msg := &proto.ModelInfo{
-			Name:         name,
-			Version:      version,
-			ModelData:    md,
-			Module:       plugin,
-			SchemaEntry:  schemaEntries,
-			ReadOnlyPath: roPaths,
+			Name:          name,
+			Version:       version,
+			ModelData:     md,
+			Module:        plugin,
+			ReadOnlyPath:  roPaths,
+			ReadWritePath: rwPaths,
 		}
 
-		err = stream.Send(msg)
+		err := stream.Send(msg)
 		if err != nil {
 			return err
 		}

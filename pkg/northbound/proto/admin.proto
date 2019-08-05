@@ -21,6 +21,7 @@ package proto;
 
 import "google/protobuf/timestamp.proto";
 import "github.com/openconfig/gnmi/proto/gnmi/gnmi.proto";
+import "pkg/northbound/proto/diags.proto";
 
 // NetworkChangesRequest is a message for specifying GetNetworkChanges query parameters.
 message NetworkChangesRequest {
@@ -40,13 +41,34 @@ message NetChange {
     repeated ConfigChange changes = 4;
 }
 
+message ReadOnlySubPath {
+    string subpath = 1;
+    ChangeValueType valueType = 2; // from diags.proto
+}
+
+message ReadOnlyPath {
+    string path = 1;
+    repeated ReadOnlySubPath subpath = 2;
+}
+
+message ReadWritePath {
+    string path = 1;
+    ChangeValueType valueType = 2; // from diags.proto
+    string units = 3;
+    string description = 4;
+    bool mandatory = 5;
+    string default = 6;
+    repeated string range = 7;
+    repeated string length = 8;
+}
+
 message ModelInfo {
     string name = 1;
     string version = 2;
     repeated gnmi.ModelData modelData = 3;
     string module = 4;
-    repeated SchemaEntry schemaEntry = 5;
-    repeated string readOnlyPath = 6;
+    repeated ReadOnlyPath readOnlyPath = 7; // 5 and 6 were used previously
+    repeated ReadWritePath readWritePath = 8;
 }
 
 // RegisterRequest carries data for registering a YANG model.
@@ -69,6 +91,8 @@ message RegisterResponse {
 // ListModelsRequest carries data for querying registered models.
 message ListModelsRequest {
     bool verbose = 1;
+    string modelName = 2; // If blank all are listed
+    string modelVersion = 3; // If blank all are listed
 }
 
 // RollbackRequest carries the name of a network config to rollback. If there
@@ -88,6 +112,7 @@ service ConfigAdminService {
     // RegisterModel adds the specified YANG model to the list of supported models.
     // There is no unregister because once loaded plugins cannot be unloaded
     rpc RegisterModel(RegisterRequest) returns (RegisterResponse);
+
     // ListRegisteredModels returns a stream of registered models.
     rpc ListRegisteredModels(ListModelsRequest) returns (stream ModelInfo);
 

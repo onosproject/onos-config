@@ -77,7 +77,7 @@ func Test_correctJsonPathValues(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(ds1Schema), 137)
 
-	readOnlyPaths := modelregistry.ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, _ := modelregistry.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	assert.Equal(t, len(readOnlyPaths), 37)
 
 	// All values are taken from testdata/sample-openconfig.json and defined
@@ -232,7 +232,7 @@ func Test_correctJsonPathValues2(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(ds1Schema), 137)
 
-	readOnlyPaths := modelregistry.ExtractReadOnlyPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, _ := modelregistry.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 	assert.Equal(t, len(readOnlyPaths), 37)
 
 	// All values are taken from testdata/sample-openconfig.json and defined
