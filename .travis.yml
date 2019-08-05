@@ -33,4 +33,4 @@ jobs:
       if: type != pull_request
       script:
           curl -LO --retry 3 https://raw.githubusercontent.com/plume-lib/trigger-travis/master/trigger-travis.sh
-          sh trigger-travis.sh onos-builder onosproject/onos-test $TRAVIS_ACCESS_TOKEN
+          trigger-travis.sh onos-builder onosproject/onos-test $TRAVIS_ACCESS_TOKEN
