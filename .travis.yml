@@ -32,43 +32,5 @@ jobs:
     - stage: tests
       script: make coverage
 
-    - stage: integration-tests
-      if: type != pull_request
-      notifications:
-        email:
-          - andrea@opennetworking.org
-          - jordan@opennetworking.org
-          - ray@opennetworking.org
-          - sean@opennetworking.org
-          - tom@opennetworking.org
-
-      script:
-        - date
-        # Download and install kubectl
-        - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-
-        #- go get github.com/onosproject/onos-config/test/cmd/onit
-        # Download and install KinD
-        - GO111MODULE=on go get sigs.k8s.io/kind
-        - git checkout go.mod go.sum
-        - GO111MODULE=on go get github.com/onosproject/onos-config/test/cmd/onit
-        - git checkout go.mod go.sum
-        # It's possible to download and install KinD using curl, similar as for kubectl
-        # This is useful in cases when Go toolchain isn't available or you prefer running stable version
-        # Binaries for KinD are available on GitHub Releases: https://github.com/kubernetes-sigs/kind/releases
-        #- curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/0.3.0/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
-
-        # Create a new Kubernetes cluster using KinD
-        #- kind create cluster
-
-        # Set KUBECONFIG environment variable
-        - export KUBECONFIG="$(kind get kubeconfig-path)"
-        - date
-        - kind create cluster
-        - date
-        - make integration
-        - date
-
-
 
 

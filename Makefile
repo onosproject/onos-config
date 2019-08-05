@@ -14,8 +14,6 @@ build: $(MODELPLUGINS)
 	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
 	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config-debug ./cmd/onos-config
 	go build -o build/_output/onos ./cmd/onos
-	go build -o build/_output/onit ./test/cmd/onit
-	go build -o build/_output/onit-k8s ./test/cmd/onit-k8s
 
 build/_output/testdevice.so.1.0.0: modelplugin/TestDevice-1.0.0/modelmain.go modelplugin/TestDevice-1.0.0/testdevice_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
@@ -86,12 +84,6 @@ onos-config-it-docker: onos-config-base-docker # @HELP build onos-config-integra
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
-# integration: @HELP build and run integration tests
-integration: kind
-	onit create cluster
-	onit add simulator
-	onit add simulator
-	onit run suite integration-tests
 
 
 images: # @HELP build all Docker images
