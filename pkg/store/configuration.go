@@ -45,7 +45,7 @@ type Configuration struct {
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func (b Configuration) ExtractFullConfig(changeStore map[string]*change.Change, nBack int) []*change.ConfigValue {
+func (b Configuration) ExtractFullConfig(changeStore map[change.ID]*change.Change, nBack int) []*change.ConfigValue {
 
 	// Have to use a slice to have a consistent output order
 	consolidatedConfig := make([]*change.ConfigValue, 0)

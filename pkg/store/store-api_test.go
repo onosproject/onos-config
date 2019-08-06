@@ -241,7 +241,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.Change) {
+func setUp() (device1V, device2V *Configuration, changeStore map[change.ID]*change.Change) {
 	var err error
 
 	var (
@@ -290,7 +290,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	changeStore = make(map[string]*change.Change)
+	changeStore = make(map[change.ID]*change.Change)
 	changeStore[B64(change1.ID)] = change1
 	changeStore[B64(change2.ID)] = change2
 	changeStore[B64(change3.ID)] = change3

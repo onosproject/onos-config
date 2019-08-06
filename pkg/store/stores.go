@@ -86,7 +86,7 @@ func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) (change.ID, 
 type ChangeStore struct {
 	Version   string
 	Storetype string
-	Store     map[string]*change.Change
+	Store     map[change.ID]*change.Change
 }
 
 // LoadChangeStore loads the change store from a file

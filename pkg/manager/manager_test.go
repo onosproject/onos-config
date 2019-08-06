@@ -53,14 +53,14 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Configuration) {
+func setUp() (*Manager, map[change.ID]*change.Change, map[store.ConfigName]store.Configuration) {
 
 	var change1 *change.Change
 	var device1config *store.Configuration
 	var mgrTest *Manager
 
 	var (
-		changeStoreTest        map[string]*change.Change
+		changeStoreTest        map[change.ID]*change.Change
 		configurationStoreTest map[store.ConfigName]store.Configuration
 		networkStoreTest       []store.NetworkConfiguration
 		deviceStoreTest        map[topocache.ID]topocache.Device
@@ -76,7 +76,7 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 		log.Error(err)
 		os.Exit(-1)
 	}
-	changeStoreTest = make(map[string]*change.Change)
+	changeStoreTest = make(map[change.ID]*change.Change)
 	changeStoreTest[store.B64(change1.ID)] = change1
 
 	device1config, err = store.CreateConfiguration("Device1", "1.0.0", "TestDevice",

@@ -154,7 +154,7 @@ func (m *Manager) ValidateStores() error {
 }
 
 // validateConfiguration is a go routine for validating a Configuration against it ModelPlugin
-func validateConfiguration(configObj store.Configuration, changeStore map[string]*change.Change, errChan chan error) {
+func validateConfiguration(configObj store.Configuration, changeStore map[change.ID]*change.Change, errChan chan error) {
 	modelPluginName := configObj.Type + "-" + configObj.Version
 	cfgModelPlugin, pluginExists := mgr.ModelRegistry.ModelPlugins[modelPluginName]
 	if pluginExists {
