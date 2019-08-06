@@ -79,13 +79,9 @@ onos-cli-docker: onos-config-base-docker # @HELP build onos-cli Docker image
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 
-onos-config-it-docker: onos-config-base-docker # @HELP build onos-config-integration-tests Docker image
-	docker build . -f build/onos-it/Dockerfile \
-		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
-		-t onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
-images: build onos-config-docker onos-config-debug-docker onos-cli-docker onos-config-it-docker
+images: build onos-config-docker onos-config-debug-docker onos-cli-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
