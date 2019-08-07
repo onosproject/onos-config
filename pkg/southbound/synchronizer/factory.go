@@ -23,6 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
+	topopb "github.com/onosproject/onos-topo/pkg/northbound/proto"
 	log "k8s.io/klog"
 )
 
@@ -32,15 +33,15 @@ import (
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[topocache.ID]change.TypedValueMap) {
+	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[string]change.TypedValueMap) {
 	for topoEvent := range topoChannel {
-		deviceName := topocache.ID(events.Event(topoEvent).Subject())
+		deviceName := events.Event(topoEvent).Subject()
 		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
 			configChan, respChan, err := dispatcher.RegisterDevice(deviceName)
 			if err != nil {
 				log.Error(err)
 			}
-			device := deviceStore.Store[topocache.ID(deviceName)]
+			device := events.Event(topoEvent).Object().(*topopb.Device)
 			ctx := context.Background()
 			completeID := utils.ToConfigName(deviceName, device.SoftwareVersion)
 			cfg := configStore.Store[store.ConfigName(completeID)]
@@ -51,7 +52,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 					"Model Plugin not available - continuing", deviceName, device.SoftwareVersion)
 			}
 			operationalStateCache[deviceName] = make(change.TypedValueMap)
-			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan,
+			sync, err := New(ctx, changeStore, configStore, device, configChan, opStateChan,
 				errChan, operationalStateCache[deviceName], mReadOnlyPaths)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)

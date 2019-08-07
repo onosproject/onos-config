@@ -27,35 +27,35 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/certs"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/utils"
 
 	"github.com/golang/protobuf/proto"
+	topopb "github.com/onosproject/onos-topo/pkg/northbound/proto"
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 var targets = make(map[DeviceID]interface{})
 
-func createDestination(device topocache.Device) (*client.Destination, DeviceID) {
+func createDestination(device *topopb.Device) (*client.Destination, DeviceID) {
 	d := &client.Destination{}
-	d.Addrs = []string{device.Addr}
+	d.Addrs = []string{device.Address}
 	d.Target = device.Target
 	d.Timeout = time.Duration(device.Timeout) * time.Second
-	if device.Plain {
-		log.Info("Plain connection connection to ", device.Addr)
-	} else if device.Insecure {
-		log.Info("Insecure connection to ", device.Addr)
+	if device.Tls != nil && device.Tls.Plain {
+		log.Info("Plain connection connection to ", device.Address)
+	} else if device.Tls != nil && device.Tls.Insecure {
+		log.Info("Insecure connection to ", device.Address)
 		d.TLS = &tls.Config{InsecureSkipVerify: true}
 	} else {
 		d.TLS = &tls.Config{}
-		if device.CaPath == "" {
+		if device.Tls == nil || device.Tls.CaCert == "" {
 			log.Info("Loading default CA onfca")
 			d.TLS.RootCAs = getCertPoolDefault()
 		} else {
-			d.TLS.RootCAs = getCertPool(device.CaPath)
+			d.TLS.RootCAs = getCertPool(device.Tls.CaCert)
 		}
-		if device.CertPath == "" && device.KeyPath == "" {
+		if device.Tls == nil || (device.Tls.Cert == "" && device.Tls.Key == "") {
 			// Load default Certificates
 			log.Info("Loading default certificates")
 			clientCerts, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
@@ -63,21 +63,21 @@ func createDestination(device topocache.Device) (*client.Destination, DeviceID) 
 				log.Error("Error loading default certs")
 			}
 			d.TLS.Certificates = []tls.Certificate{clientCerts}
-		} else if device.CertPath != "" && device.KeyPath != "" {
+		} else if device.Tls != nil && device.Tls.Cert != "" && device.Tls.Key != "" {
 			// Load certs given for device
-			d.TLS.Certificates = []tls.Certificate{setCertificate(device.CertPath, device.KeyPath)}
-		} else if device.Usr != "" && device.Pwd != "" {
+			d.TLS.Certificates = []tls.Certificate{setCertificate(device.Tls.Cert, device.Tls.Key)}
+		} else if device.Credentials != nil && device.Credentials.User != "" && device.Credentials.Password != "" {
 			cred := &client.Credentials{}
-			cred.Username = device.Usr
-			cred.Password = device.Pwd
+			cred.Username = device.Credentials.User
+			cred.Password = device.Credentials.Password
 			d.Credentials = cred
 		} else {
 			log.Errorf("Can't load Ca=%s , Cert=%s , key=%s for %v, trying with insecure connection",
-				device.CaPath, device.CertPath, device.KeyPath, device.Addr)
+				device.Tls.CaCert, device.Tls.Cert, device.Tls.Key, device.Address)
 			d.TLS = &tls.Config{InsecureSkipVerify: true}
 		}
 	}
-	return d, DeviceID{DeviceID: device.Addr}
+	return d, DeviceID{DeviceID: device.Address}
 }
 
 // GetTarget attempts to get a specific target from the targets cache
@@ -93,7 +93,7 @@ func GetTarget(key DeviceID) (*Target, error) {
 // ConnectTarget connects to a given Device according to the passed information establishing a channel to it.
 //TODO make asyc
 //TODO lock channel to allow one request to device at each time
-func (target *Target) ConnectTarget(ctx context.Context, device topocache.Device) (DeviceID, error) {
+func (target *Target) ConnectTarget(ctx context.Context, device *topopb.Device) (DeviceID, error) {
 	dest, key := createDestination(device)
 	c, err := GnmiClientFactory(ctx, *dest)
 

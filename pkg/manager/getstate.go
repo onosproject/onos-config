@@ -15,7 +15,6 @@
 package manager
 
 import (
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	log "k8s.io/klog"
@@ -27,7 +26,7 @@ func (m *Manager) GetTargetState(target string, path string) []*change.ConfigVal
 	configValues := make([]*change.ConfigValue, 0)
 	//First check the cache, if it's not empty for this path we read that and return,
 	pathRegexp := utils.MatchWildcardRegexp(path)
-	for pathCache, value := range m.OperationalStateCache[topocache.ID(target)] {
+	for pathCache, value := range m.OperationalStateCache[target] {
 		if pathRegexp.MatchString(pathCache) {
 			configValues = append(configValues, &change.ConfigValue{
 				Path:       pathCache,

@@ -24,6 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"google.golang.org/grpc"
 	log "k8s.io/klog"
 	"strings"
 	"time"
@@ -43,7 +44,7 @@ type Manager struct {
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              *dispatcher.Dispatcher
-	OperationalStateCache   map[topocache.ID]change.TypedValueMap
+	OperationalStateCache   map[string]change.TypedValueMap
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -68,7 +69,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
-		OperationalStateCache:   make(map[topocache.ID]change.TypedValueMap),
+		OperationalStateCache:   make(map[string]change.TypedValueMap),
 	}
 
 	changeIds := make([]string, 0)
@@ -101,7 +102,7 @@ func NewManager(configs *store.ConfigurationStore, changes *store.ChangeStore, d
 }
 
 // LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
-func LoadManager(configStoreFile string, changeStoreFile string, deviceStoreFile string, networkStoreFile string) (*Manager, error) {
+func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFile string, opts ...grpc.DialOption) (*Manager, error) {
 	topoChannel := make(chan events.TopoEvent, 10)
 
 	configStore, err := store.LoadConfigStore(configStoreFile)
@@ -118,12 +119,12 @@ func LoadManager(configStoreFile string, changeStoreFile string, deviceStoreFile
 	}
 	log.Info("Change store loaded from ", changeStoreFile)
 
-	deviceStore, err := topocache.LoadDeviceStore(deviceStoreFile, topoChannel)
+	deviceStore, err := topocache.LoadDeviceStore(topoChannel, opts...)
 	if err != nil {
 		log.Error("Cannot load device store ", err)
 		return nil, err
 	}
-	log.Info("Device store loaded from ", deviceStoreFile)
+	log.Info("Device store loaded ")
 
 	networkStore, err := store.LoadNetworkStore(networkStoreFile)
 	if err != nil {

@@ -17,7 +17,6 @@ package utils
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 )
 
 // ToModelName simply joins together model name and version in a consistent way
@@ -26,6 +25,6 @@ func ToModelName(name string, version string) string {
 }
 
 // ToConfigName simply joins together device ID and version in a consistent way
-func ToConfigName(deviceID topocache.ID, version string) string {
+func ToConfigName(deviceID string, version string) string {
 	return fmt.Sprintf("%s-%s", deviceID, version)
 }
