@@ -28,7 +28,6 @@ import (
 	"google.golang.org/grpc"
 	"io"
 	log "k8s.io/klog"
-	"time"
 )
 
 const (
@@ -83,36 +82,6 @@ func (s *DeviceStore) start(ch chan<- events.TopoEvent) error {
 		}
 	}()
 	return nil
-}
-
-// AddOrUpdateDevice adds or updates the specified device in the device inventory.
-func (s *DeviceStore) AddOrUpdateDevice(device *deviceproto.Device) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	if device.Metadata == nil {
-		response, err := s.client.Add(ctx, &deviceproto.AddDeviceRequest{
-			Device: device,
-		})
-		if err == nil {
-			device.Metadata = response.Metadata
-		}
-		return err
-	} else {
-		_, err := s.client.Update(ctx, &deviceproto.UpdateDeviceRequest{
-			Device: device,
-		})
-		return err
-	}
-}
-
-// RemoveDevice removes the device with the specified address from the device inventory.
-func (s *DeviceStore) RemoveDevice(device *deviceproto.Device) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	_, err := s.client.Remove(ctx, &deviceproto.RemoveDeviceRequest{
-		Device: device,
-	})
-	return err
 }
 
 // getTopoConn gets a gRPC connection to the topology service

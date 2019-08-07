@@ -26,3 +26,5 @@ require (
 	k8s.io/client-go v0.0.0-20190620074045-585a16d2e773
 	k8s.io/klog v0.3.3
 )
+
+replace github.com/onosproject/onos-topo => ../onos-topo
