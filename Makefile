@@ -88,7 +88,6 @@ kind: images
 	@if [ `kind get clusters` = '' ]; then echo "no kind cluster found" && exit 1; fi
 	kind load docker-image onosproject/onos-cli:${ONOS_CONFIG_VERSION}
 	kind load docker-image onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
-	kind load docker-image onosproject/onos-config-integration-tests:${ONOS_CONFIG_VERSION}
 
 all: build images
 
