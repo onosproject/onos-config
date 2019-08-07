@@ -161,7 +161,7 @@ func Test_correctJsonPathValues(t *testing.T) {
 		&val05, &val06, &val07, &val08, &val09, &val10, &val11, &val12, &val13,
 		&val14, &val15, &val16, &val17}
 
-	correctedPathValues, err := CorrectJSONPaths(jsonPathValues, readOnlyPaths, true)
+	correctedPathValues, err := CorrectJSONPaths("", jsonPathValues, readOnlyPaths, true)
 	assert.NilError(t, err)
 
 	for _, v := range correctedPathValues {
@@ -244,7 +244,7 @@ func Test_correctJsonPathValues2(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(values), 31)
 
-	correctedPathValues, err := CorrectJSONPaths(values, readOnlyPaths, true)
+	correctedPathValues, err := CorrectJSONPaths("", values, readOnlyPaths, true)
 	assert.NilError(t, err)
 
 	for _, v := range correctedPathValues {

@@ -188,7 +188,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			subscribePaths = append(subscribePaths, utils.SplitPath(path))
 		}
 	} else {
-		errMp := fmt.Errorf("No model plugin, cant work in operational state cache")
+		errMp := fmt.Errorf("no model plugin, cant work in operational state cache")
 		log.Error(errMp)
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorMissingModelPlugin,
 			sync.key.DeviceID, errMp)
@@ -229,6 +229,41 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		notifications = append(notifications, responseOperational.Notification...)
 	}
 
+	//TODO do get for subscribePaths (the paths we get out of the model)
+	// This is because the previous 2 gets we have done might be empty or unimplemented
+	// There is a risk that the device might return everything (including config)
+	// If the device does not support wildcards GET of the whole tree and we need
+	// to take the burden of parsing it
+	//   so the following should be considered in the if statement:
+	// 1) GET of STATE with no path - assuming this will return JSON of RO attributes
+	// * Could be empty (device might not have any state - valid but unlikely)
+	// * or this qualified GET is not supported by device - do we get error to this effect?
+	// * These paths are compared to RO paths and any that should not be there are quietly dropped
+	// * THIS IS CURRENTLY IMPLEMENTED 01/Aug
+	// 2) GET of OPERATIONAL with no path - assuming this will return JSON of RO attributes
+	// * same as above
+	// * THIS IS CURRENTLY IMPLEMENTED 01/Aug
+	// 3) GET of paths as extracted from the RO paths of the model
+	// * This is a specific set of gNMI Paths in a GetRequest with wildcards for list keys
+	// * This has wildcards because we don't know the instances
+	// * This requires the device to support wildcards
+	// * This gives us the instances of RO lists that currently exist
+	// * The result of this will be several gNMI notifications or updates and anyone
+	//   of these could be an int or string value instead of JSON_VAL
+	// * THIS IS NOT CURRENTLY IMPLEMENTED 01/Aug
+	// * Do we need to call this at all if the result from 1) and 2) is valid? The
+	//    only reason to do this is if we don't trust the device.
+	// 4) GET against the whole tree without a path (empty)
+	// * this is needed if we get no response from 1), 2) or 3)
+	// * This will include Config and RO values
+	// * We assume this is needed for Stratum but need to prove it
+	// * In this case we parse the JSON result and weed out only the RO values
+	// * This gives us the instances of RO lists that currently exist
+	// * THIS IS NOT CURRENTLY IMPLEMENTED 01/Aug
+
+	// TODO Parse the GET result to get actual instances of list items (replacing
+	//  wildcarded paths - assuming that stratum does not support wildcarded GET
+	//  and SUBSCRIBE)
 	if len(notifications) != 0 {
 		for _, notification := range notifications {
 			for _, update := range notification.Update {
@@ -241,7 +276,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 						sync.key.DeviceID, err)
 					break
 				}
-				configValues, err := jsonvalues.CorrectJSONPaths(configValuesUnparsed, sync.modelReadOnlyPaths, true)
+				configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, sync.modelReadOnlyPaths, true)
 				if err != nil {
 					log.Error("Can't translate from config values to typed values, skipping to next update", err)
 					errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
@@ -261,8 +296,27 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		}
 	}
 
-	//TODO do get for subscribePaths
+	// TODO We do a subscribe here based on wildcards and the RO paths calculated
+	//  from the model - subscribePaths
+	//  * The subscribe must go down to the leaf, so the subpaths of the
+	//  readonly paths must be included too
+	//  * If wildcards are supported by the device they will notify us about the
+	//  insertion of new items in a list in this case
+	//  * If the device does NOT support wildcards in subscribe we
+	//  will not get an error response - so how do we know it doesn't support wildcards?
+	//  //
+	//  Instead we should
+	//  ** Use this list of paths in the subscribe below to replace
+	//  the wildcards in subscribePaths
+	//  ** The caveat with that is that we will will not get notified of
+	//   items that are added to lists after the initial subscribe is done
 
+	// TODO check if it's possible to do a Subscribe with a qualifier of
+	//  OPERATIONAL or STATE like you can do for GET (unlikely). This is a moot
+	//  point if we had to go down to the leaf anyway.
+	//  //
+	//  The easiest fix here for the subscribe is to use the paths and values
+	//  from above and populate it as best you can from the GET options above
 	options := &southbound.SubscribeOptions{
 		UpdatesOnly:       false,
 		Prefix:            "",
