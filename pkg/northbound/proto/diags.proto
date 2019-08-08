@@ -81,7 +81,7 @@ message Configuration {
     repeated string changeIDs = 7;
 }
 
-// OpState is a descriptor of a submitted OperationStateCache targeted at a single device.
+// OpState is a descriptor of a OperationStateCache targeted at a single device.
 message OpState {
     string subject = 1;
     google.protobuf.Timestamp time = 6;
