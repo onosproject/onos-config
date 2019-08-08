@@ -101,6 +101,10 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 					return nil, err
 				}
 				jsonPathValue.TypedValue = *newTypeValue
+				err = jsonPathValue.IsPathValid()
+				if err != nil {
+					return nil, fmt.Errorf("invalid value %s", err)
+				}
 				correctedPathValues = append(correctedPathValues, jsonPathValue)
 				break
 
@@ -111,10 +115,15 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 				if err != nil {
 					return nil, err
 				}
-				correctedPathValues = append(correctedPathValues, &change.ConfigValue{
+				cv := change.ConfigValue{
 					Path:       jsonPathStr,
 					TypedValue: *newTypeValue,
-				})
+				}
+				err = cv.IsPathValid()
+				if err != nil {
+					return nil, fmt.Errorf("invalid value %s", err)
+				}
+				correctedPathValues = append(correctedPathValues, &cv)
 				break
 			} else if hasPrefixMultipleIdx(modelPathOnlyLastIndex, jsonPathIdx) ||
 				hasPrefixMultipleIdx(modelPathOnlySecondIndex, jsonPathIdx) {
@@ -141,6 +150,9 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 	indexTable := make([]indexEntry, len(indexMap))
 	i := 0
 	for path, idxElem := range indexMap {
+		sort.Slice(idxElem, func(i, j int) bool {
+			return idxElem[i] < idxElem[j]
+		})
 		indexTable[i] = indexEntry{
 			path: path,
 			key:  idxElem,
@@ -152,7 +164,6 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 	})
 
 	for _, index := range indexTable {
-		fmt.Println("Index", index)
 		for _, cv := range correctedPathValues {
 			if strings.HasPrefix(cv.Path, index.path) {
 				suffix := cv.Path[len(index.path)+1:]
