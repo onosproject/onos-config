@@ -30,6 +30,11 @@ message ConfigRequest {
     repeated string deviceIds = 1;
 }
 
+// OpStateRequest is a message for specifying GetOpState query parameters.
+message OpStateRequest {
+    repeated string OpStateService = 1;
+}
+
 enum ChangeValueType {
     EMPTY = 0;
     STRING = 1;
@@ -74,6 +79,14 @@ message Configuration {
     google.protobuf.Timestamp created = 5;
     google.protobuf.Timestamp updated = 6;
     repeated string changeIDs = 7;
+}
+
+// Change is a descriptor of a submitted configuration change targeted at a single device.
+message OpState {
+    string subject = 1;
+    google.protobuf.Timestamp time = 6;
+    bytes eventType = 2;
+    string values = 8;
 }
 
 
