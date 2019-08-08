@@ -78,6 +78,10 @@ func CreateChange(config ValueCollections, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
+	if len(config) == 0 {
+		return nil, fmt.Errorf("invalid change %s - no config values found", desc)
+	}
+
 	sort.Slice(config, func(i, j int) bool {
 		return (*config[i]).Path < (*config[j]).Path
 	})

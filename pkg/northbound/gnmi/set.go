@@ -182,7 +182,7 @@ func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUp
 
 	jsonVal := u.GetVal().GetJsonVal()
 	if jsonVal != nil {
-		log.Warning("Processing Json Value in set", string(jsonVal))
+		log.Info("Processing Json Value in set", string(jsonVal))
 
 		intermediateConfigValues, err := store.DecomposeTree(jsonVal)
 		if err != nil {
@@ -452,6 +452,10 @@ func setChange(target string, version string, targetUpdates change.TypedValueMap
 
 func validateChange(target string, version string, targetUpdates change.TypedValueMap, targetRemoves []string) error {
 	configName := store.ConfigName(target)
+	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
+		return fmt.Errorf("no updates found in change on %s - invalid", target)
+	}
+
 	// target is a device name with no version
 	if version != "" {
 		configName = store.ConfigName(strings.Join([]string{target, version}, "-"))

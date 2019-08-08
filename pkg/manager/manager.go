@@ -258,7 +258,11 @@ func (m *Manager) computeChange(updates change.TypedValueMap,
 	var newChanges = make([]*change.Value, 0)
 	//updates
 	for path, value := range updates {
-		changeValue, _ := change.CreateChangeValue(path, value, false)
+		changeValue, err := change.CreateChangeValue(path, value, false)
+		if err != nil {
+			log.Warningf("Error creating value for %s %v", path, err)
+			continue
+		}
 		newChanges = append(newChanges, changeValue)
 	}
 	//deletes
