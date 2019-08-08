@@ -32,7 +32,7 @@ message ConfigRequest {
 
 // OpStateRequest is a message for specifying GetOpState query parameters.
 message OpStateRequest {
-    repeated string deviceId = 1;
+    string deviceId = 1;
 }
 
 enum ChangeValueType {
