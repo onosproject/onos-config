@@ -27,11 +27,26 @@ import (
 	"strings"
 )
 
+// PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
+type PathMap interface {
+	JustPaths() []string
+}
+
 // ReadOnlySubPathMap abstracts the read only subpath
 type ReadOnlySubPathMap map[string]change.ValueType
 
 // ReadOnlyPathMap abstracts the read only path
 type ReadOnlyPathMap map[string]ReadOnlySubPathMap
+
+func (ro ReadOnlyPathMap) JustPaths() []string {
+	keys := make([]string, len(ro))
+	i := 0
+	for k := range ro {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
 
 // ReadWritePathElem holds data about a leaf or container
 type ReadWritePathElem struct {
@@ -46,6 +61,16 @@ type ReadWritePathElem struct {
 
 // ReadWritePathMap is a map of ReadWrite paths a their metadata
 type ReadWritePathMap map[string]ReadWritePathElem
+
+func (rw ReadWritePathMap) JustPaths() []string {
+	keys := make([]string, len(rw))
+	i := 0
+	for k := range rw {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
 
 // ModelRegistry is the object for the saving information about device models
 type ModelRegistry struct {
@@ -96,8 +121,6 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 	readOnlyPaths, readWritePaths := ExtractPaths(modelschema["Device"], yang.TSUnset, "", "")
 	registry.ModelReadOnlyPaths[modelName] = readOnlyPaths
 	registry.ModelReadWritePaths[modelName] = readWritePaths
-	log.Info(registry.ModelReadOnlyPaths[modelName])
-	log.Info(registry.ModelReadWritePaths[modelName])
 	log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", name, version,
 		len(registry.ModelReadOnlyPaths[modelName]), len(registry.ModelReadWritePaths[modelName]))
 	return name, version, nil

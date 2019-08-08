@@ -61,7 +61,7 @@ func (m *Manager) ValidateNetworkConfig(configName store.ConfigName, updates cha
 		} else {
 			ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
 			if err != nil {
-				log.Error("Error unmarshaling JSON tree in to YGOT model ", err)
+				log.Error("Error unmarshaling JSON tree in to YGOT model ", err, string(jsonTree))
 				return err
 			}
 			err = deviceModelYgotPlugin.Validate(ygotModel)

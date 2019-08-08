@@ -28,34 +28,35 @@ const matchNamespace = `(/.*?:).*?`
 
 type indexEntry struct {
 	path string
-	key  string
+	key  []string
 }
 
-//CorrectJSONPaths takes configuration values extracted from a json, of which we are not sure about the type and,
+// CorrectJSONPaths takes configuration values extracted from a json, of which we are not sure about the type and,
 // through the model plugin assigns them the correct type according to the YANG model provided, returning an
 // updated set of configuration values.
-func CorrectJSONPaths(jsonPathValues []*change.ConfigValue,
-	roPaths modelregistry.ReadOnlyPathMap, stripNamespaces bool) ([]*change.ConfigValue, error) {
+func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
+	paths modelregistry.PathMap, stripNamespaces bool) ([]*change.ConfigValue, error) {
 
 	correctedPathValues := make([]*change.ConfigValue, 0)
 	rOnIndex := regexp.MustCompile(matchOnIndex)
 	rOnNamespace := regexp.MustCompile(matchNamespace)
-	indexTable := make([]indexEntry, 0)
+	indexMap := make(map[string][]string)
 
 	for _, jsonPathValue := range jsonPathValues {
-		jsonPathStr := jsonPathValue.Path
+		jsonPathStr := fmt.Sprintf("%s%s", jsonBase, jsonPathValue.Path)
 		if stripNamespaces {
-			nsMatches := rOnNamespace.FindAllStringSubmatch(jsonPathValue.Path, -1)
+			nsMatches := rOnNamespace.FindAllStringSubmatch(jsonPathStr, -1)
 			for _, ns := range nsMatches {
-				jsonPathStr = strings.Replace(jsonPathStr, ns[1], "/", -1)
+				jsonPathStr = strings.Replace(jsonPathStr, ns[1], "/", 1)
 			}
 		}
+		jsonPathValue.Path = jsonPathStr
 
 		jsonMatches := rOnIndex.FindAllStringSubmatch(jsonPathStr, -1)
 		jsonPathWildIndex := jsonPathStr
 		jsonPathIdx := jsonPathStr
 		for idx, m := range jsonMatches {
-			jsonPathWildIndex = strings.Replace(jsonPathWildIndex, m[1], "[*]", -1)
+			jsonPathWildIndex = strings.Replace(jsonPathWildIndex, m[1], "[*]", 1)
 			if idx == len(jsonMatches)-1 { //Last one only
 				jsonPathIdx = strings.Replace(jsonPathIdx, m[1]+"/", "[", 1)
 			} else {
@@ -63,65 +64,99 @@ func CorrectJSONPaths(jsonPathValues []*change.ConfigValue,
 			}
 		}
 
-		for ropath, subpaths := range roPaths {
-			roMatches := rOnIndex.FindAllStringSubmatch(ropath, -1)
-			roPathWildIndex := ropath
-			roPathOnlyLastIndex := ropath
-			for idx, m := range roMatches {
-				roPathWildIndex = strings.Replace(roPathWildIndex, m[1], "[*]", -1)
-				if idx != len(roMatches)-1 { // Not the last one
-					roPathOnlyLastIndex = strings.Replace(roPathOnlyLastIndex, m[1], "[*]", -1)
+		for _, modelPath := range paths.JustPaths() {
+			modelMatches := rOnIndex.FindAllStringSubmatch(modelPath, -1)
+			modelPathWildIndex := modelPath
+			modelPathOnlyLastIndex := modelPath
+			modelPathOnlySecondIndex := modelPath
+			modelLeafAfterIndex := ""
+			modelLastIndices := make([]string, 0) // There could be multiple keys
+			for idx, m := range modelMatches {
+				modelPathWildIndex = strings.Replace(modelPathWildIndex, m[1], "[*]", 1)
+				modelLastIndices = extractIndices(m[1])
+				if len(modelLastIndices) == 2 {
+					modelPathOnlySecondIndex = strings.Replace(modelPathOnlyLastIndex, modelLastIndices[0][1:]+" ", "", 1)
+				}
+				if idx != len(modelMatches)-1 { // Not the last one
+					modelPathOnlyLastIndex = strings.Replace(modelPathOnlyLastIndex, m[1], "[*]", 1)
+				} else {
+					modelLeafAfterIndex = modelPath[strings.LastIndex(modelPath, "]")+1:]
 				}
 			}
-
-			if ropath == jsonPathStr {
-				// Simple read-only path is leaf
-				if len(subpaths) != 1 {
-					return nil, fmt.Errorf("expected RO path %s to have only 1 subpath. Found %d", ropath, len(subpaths))
+			// RW paths include an entry for the index - should be ignored
+			ignoreLeaf := false
+			for _, li := range modelLastIndices {
+				if li == modelLeafAfterIndex {
+					ignoreLeaf = true // Need to get the continue to outer for
+					continue
 				}
-				// FIXME - there is no support at present for setting the type when ReadOnly leaf is "config false"
+			}
+			if ignoreLeaf {
+				continue
+			}
+
+			if modelPath == jsonPathStr {
+				newTypeValue, err := assignModelType(paths, modelPath, "", jsonPathValue)
+				if err != nil {
+					return nil, err
+				}
+				jsonPathValue.TypedValue = *newTypeValue
 				correctedPathValues = append(correctedPathValues, jsonPathValue)
 				break
-			} else if hasPrefixMultipleIdx(jsonPathWildIndex, roPathWildIndex) {
-				jsonSubPath := jsonPathWildIndex[len(roPathWildIndex):]
-				for subPath, spType := range subpaths {
-					if jsonSubPath == subPath {
-						var newTypeValue *change.TypedValue
-						newTypeValue = subPathType(jsonPathValue, spType, newTypeValue)
 
-						jsonPathValue.TypedValue = *newTypeValue
-						break
-					}
+			} else if hasPrefixMultipleIdx(jsonPathWildIndex, modelPathWildIndex) {
+				jsonSubPath := jsonPathWildIndex[len(modelPathWildIndex):]
 
+				newTypeValue, err := assignModelType(paths, modelPath, jsonSubPath, jsonPathValue)
+				if err != nil {
+					return nil, err
 				}
-
 				correctedPathValues = append(correctedPathValues, &change.ConfigValue{
 					Path:       jsonPathStr,
-					TypedValue: jsonPathValue.TypedValue,
+					TypedValue: *newTypeValue,
 				})
 				break
-			} else if hasPrefixMultipleIdx(roPathOnlyLastIndex, jsonPathIdx) {
+			} else if hasPrefixMultipleIdx(modelPathOnlyLastIndex, jsonPathIdx) ||
+				hasPrefixMultipleIdx(modelPathOnlySecondIndex, jsonPathIdx) {
 				indexName := jsonPathIdx[strings.LastIndex(jsonPathIdx, "[")+1:]
 				index := jsonPathValue.TypedValue.String()
 				if jsonPathValue.Type == change.ValueTypeFLOAT {
 					index = fmt.Sprintf("%.0f", (*change.TypedFloat)(&jsonPathValue.TypedValue).Float32())
 				}
 				jsonRoPath := jsonPathStr[:strings.LastIndex(jsonPathStr, "/")]
-				indexTable = append(indexTable, indexEntry{path: jsonRoPath, key: indexName + "=" + index})
+				idx, ok := indexMap[jsonRoPath]
+				if ok {
+					indexMap[jsonRoPath] = append(idx, indexName+"="+index)
+				} else {
+					arr := make([]string, 0)
+					arr = append(arr, indexName+"="+index)
+					indexMap[jsonRoPath] = arr
+				}
 				break
 			}
 		}
 	}
 
+	// Entries need to be compared in alphabetical order - copy in to Array and sort
+	indexTable := make([]indexEntry, len(indexMap))
+	i := 0
+	for path, idxElem := range indexMap {
+		indexTable[i] = indexEntry{
+			path: path,
+			key:  idxElem,
+		}
+		i++
+	}
 	sort.Slice(indexTable, func(i, j int) bool {
 		return indexTable[i].path > indexTable[j].path
 	})
 
 	for _, index := range indexTable {
+		fmt.Println("Index", index)
 		for _, cv := range correctedPathValues {
 			if strings.HasPrefix(cv.Path, index.path) {
 				suffix := cv.Path[len(index.path)+1:]
-				newPath := index.path[:strings.LastIndex(index.path, "[")] + "[" + index.key + "]/" + suffix
+				newPath := fmt.Sprintf("%s[%s]/%s", index.path[:strings.LastIndex(index.path, "[")], strings.Join(index.key, ","), suffix)
 				cv.Path = newPath
 			}
 		}
@@ -130,8 +165,53 @@ func CorrectJSONPaths(jsonPathValues []*change.ConfigValue,
 	return correctedPathValues, nil
 }
 
-func subPathType(jsonPathValue *change.ConfigValue, spType change.ValueType, typeValue *change.TypedValue) *change.TypedValue {
+func extractIndices(indexStr string) []string {
+	indices := make([]string, 0)
+	indicesTrimmed := indexStr[1:strings.LastIndex(indexStr, "=")]
+	for _, i := range strings.Split(indicesTrimmed, " ") {
+		indices = append(indices, fmt.Sprintf("/%s", i))
+	}
+	return indices
+}
+
+func assignModelType(paths modelregistry.PathMap, modelPath string, jsonSubPath string, jsonPathValue *change.ConfigValue) (*change.TypedValue, error) {
+	// If it's a RO path then have to go in to the subpaths to find
+	// the right type
+	ro, ok := paths.(modelregistry.ReadOnlyPathMap)
+	if ok {
+		subPaths, pathok := ro[modelPath]
+		if pathok {
+			for subPath, spType := range subPaths {
+				if jsonSubPath == subPath {
+					newTypeValue, err := pathType(jsonPathValue, spType)
+					if err != nil {
+						return nil, err
+					}
+					return newTypeValue, nil
+				}
+			}
+		}
+	}
+
+	// If it's a RW path then extract the object and find its type
+	rw, ok := paths.(modelregistry.ReadWritePathMap)
+	if ok {
+		rwObj, pathok := rw[modelPath]
+		if pathok {
+			newTypeValue, err := pathType(jsonPathValue, rwObj.ValueType)
+			if err != nil {
+				return nil, err
+			}
+			return newTypeValue, nil
+		}
+	}
+
+	return &jsonPathValue.TypedValue, nil
+}
+
+func pathType(jsonPathValue *change.ConfigValue, spType change.ValueType) (*change.TypedValue, error) {
 	var newTypeValue *change.TypedValue
+	var err error
 	switch jsonPathValue.Type {
 	case change.ValueTypeFLOAT:
 		// Could be int, uint, or float from json - convert to numeric
@@ -154,9 +234,12 @@ func subPathType(jsonPathValue *change.ConfigValue, spType change.ValueType, typ
 		}
 
 	default:
-		newTypeValue, _ = change.CreateTypedValue(jsonPathValue.Value, spType, []int{})
+		newTypeValue, err = change.CreateTypedValue(jsonPathValue.Value, spType, []int{})
+		if err != nil {
+			return nil, err
+		}
 	}
-	return newTypeValue
+	return newTypeValue, nil
 }
 
 func hasPrefixMultipleIdx(a string, b string) bool {

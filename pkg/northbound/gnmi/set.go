@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
@@ -59,7 +60,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		var err error
 		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
 		if err != nil {
-			log.Warning("Error in update", err)
+			log.Warning("Error in update ", err)
 			return nil, err
 		}
 	}
@@ -170,19 +171,58 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	return setResponse, nil
 }
 
+// This deals with either a path and a value (simple case) or a path with
+// a JSON body which implies multiple paths and values.
 func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (change.TypedValueMap, error) {
 	target := u.Path.GetTarget()
 	updates, ok := targetUpdates[target]
 	if !ok {
 		updates = make(change.TypedValueMap)
 	}
-	path := utils.StrPath(u.Path)
 
-	update, err := values.GnmiTypedValueToNativeType(u.Val)
-	if err != nil {
-		return nil, err
+	jsonVal := u.GetVal().GetJsonVal()
+	if jsonVal != nil {
+		log.Warning("Processing Json Value in set", string(jsonVal))
+
+		intermediateConfigValues, err := store.DecomposeTree(jsonVal)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON payload %s", string(jsonVal))
+		}
+
+		configs := manager.GetManager().ConfigStore.Store
+
+		var rwPaths modelregistry.ReadWritePathMap
+		// Iterate through configs to find match for target
+		for _, config := range configs {
+			if config.Device == target {
+				rwPaths, ok = manager.GetManager().ModelRegistry.
+					ModelReadWritePaths[utils.ToModelName(config.Type, config.Version)]
+				if !ok {
+					return nil, fmt.Errorf("Cannot process JSON payload  on %s %s because "+
+						"Model Plugin not available", config.Type, config.Version)
+				}
+				break
+			}
+		}
+
+		correctedValues, err := jsonvalues.CorrectJSONPaths(
+			utils.StrPath(u.Path), intermediateConfigValues, rwPaths, true)
+		if err != nil {
+			log.Warning("Json value in Set could not be parsed", err)
+			return nil, err
+		}
+
+		for _, cv := range correctedValues {
+			updates[cv.Path] = &cv.TypedValue
+		}
+	} else {
+		path := utils.StrPath(u.Path)
+		update, err := values.GnmiTypedValueToNativeType(u.Val)
+		if err != nil {
+			return nil, err
+		}
+		updates[path] = update
 	}
-	updates[path] = update
 
 	return updates, nil
 
