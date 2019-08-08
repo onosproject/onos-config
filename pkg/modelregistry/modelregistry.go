@@ -24,6 +24,7 @@ import (
 	log "k8s.io/klog"
 	"plugin"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -267,7 +268,12 @@ func formatName(dirEntry *yang.Entry, isList bool, parentPath string, subpathPre
 
 	var name string
 	if isList {
-		name = fmt.Sprintf("%s/%s[%s=*]", parentAndSubPath, dirEntry.Name, dirEntry.Key)
+		//have to ensure index order is consistent where there's more than one
+		keyParts := strings.Split(dirEntry.Key, " ")
+		sort.Slice(keyParts, func(i, j int) bool {
+			return keyParts[i] < keyParts[j]
+		})
+		name = fmt.Sprintf("%s/%s[%s=*]", parentAndSubPath, dirEntry.Name, strings.Join(keyParts, " "))
 	} else {
 		name = fmt.Sprintf("%s/%s", parentAndSubPath, dirEntry.Name)
 	}
