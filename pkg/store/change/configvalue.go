@@ -32,7 +32,7 @@ type ConfigValue struct {
 // Two contiguous slashes are not allowed
 // Paths not starting with slash are not allowed
 func (c ConfigValue) IsPathValid() error {
-	r1 := regexp.MustCompile(`(/[a-zA-Z0-9:=\-_[\]]+)+`)
+	r1 := regexp.MustCompile(`(/[a-zA-Z0-9:=\-_,[\]]+)+`)
 
 	match := r1.FindString(c.Path)
 	if c.Path != match {
