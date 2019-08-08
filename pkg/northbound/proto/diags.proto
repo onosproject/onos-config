@@ -46,7 +46,6 @@ enum ChangeValueType {
     LEAFLIST_DECIMAL = 12;
     LEAFLIST_FLOAT = 13;
     LEAFLIST_BYTES = 14;
-
 }
 
 // ChangeValue is an individual Path/Value combination in a Change
@@ -66,7 +65,7 @@ message Change {
     repeated ChangeValue changevalues = 4;
 }
 
-// Change is a descriptor of a submitted configuration change targeted at a single device.
+// Configuration is a descriptor of a submitted configuration change targeted at a single device.
 message Configuration {
     string name = 1;
     string deviceid = 2;
@@ -77,6 +76,7 @@ message Configuration {
     repeated string changeIDs = 7;
 }
 
+
 // ConfigDiags provides means for obtaining diagnostic information about internal system state.
 service ConfigDiags {
     // GetChanges returns a stream of submitted changes objects.
@@ -86,4 +86,15 @@ service ConfigDiags {
     rpc GetConfigurations (ConfigRequest) returns (stream Configuration);
 }
 
+
+service OpStateDiags {
+    // GetChanges returns a stream of submitted changes objects.
+    rpc GetChanges (ChangesRequest) returns (stream Change);
+
+    // GetConfigurations returns a stream of submitted configurations aimed at individual devices.
+    rpc GetConfigurations (ConfigRequest) returns (stream Configuration);
+
+    // GetConfigurations returns a stream of submitted configurations aimed at individual devices.
+    rpc GetOpState (OpStateRequest) returns (stream OpState);
+}
 
