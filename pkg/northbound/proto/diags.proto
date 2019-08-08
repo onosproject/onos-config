@@ -32,7 +32,7 @@ message ConfigRequest {
 
 // OpStateRequest is a message for specifying GetOpState query parameters.
 message OpStateRequest {
-    repeated string OpStateService = 1;
+    repeated string deviceId = 1;
 }
 
 enum ChangeValueType {
@@ -81,15 +81,6 @@ message Configuration {
     repeated string changeIDs = 7;
 }
 
-// OpState is a descriptor of a submitted OperationStateCache query.
-message OpState {
-    string subject = 1;
-    google.protobuf.Timestamp time = 6;
-    bytes eventType = 2;
-    string values = 8;
-}
-
-
 // ConfigDiags provides means for obtaining diagnostic information about internal system state.
 service ConfigDiags {
     // GetChanges returns a stream of submitted changes objects.
@@ -101,12 +92,6 @@ service ConfigDiags {
 
 // OpStateDiags provides means for obtaining diagnostic information about internal system state.
 service OpStateDiags {
-    // GetChanges returns a stream of submitted changes objects.
-    rpc GetChanges (ChangesRequest) returns (stream Change);
-
-    // GetConfigurations returns a stream of submitted configurations aimed at individual devices.
-    rpc GetConfigurations (ConfigRequest) returns (stream Configuration);
-
     // GetOpState returns a stream of submitted OperationalStateCache aimed at individual devices.
-    rpc GetOpState (OpStateRequest) returns (stream OpState);
+    rpc GetOpState (OpStateRequest) returns (stream ChangeValue);
 }
