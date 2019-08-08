@@ -81,7 +81,7 @@ message Configuration {
     repeated string changeIDs = 7;
 }
 
-// Change is a descriptor of a submitted configuration change targeted at a single device.
+// OpState is a descriptor of a submitted OperationStateCache targeted at a single device.
 message OpState {
     string subject = 1;
     google.protobuf.Timestamp time = 6;
@@ -99,7 +99,7 @@ service ConfigDiags {
     rpc GetConfigurations (ConfigRequest) returns (stream Configuration);
 }
 
-
+// ConfigDiags provides means for obtaining diagnostic information about internal system state.
 service OpStateDiags {
     // GetChanges returns a stream of submitted changes objects.
     rpc GetChanges (ChangesRequest) returns (stream Change);
@@ -107,7 +107,8 @@ service OpStateDiags {
     // GetConfigurations returns a stream of submitted configurations aimed at individual devices.
     rpc GetConfigurations (ConfigRequest) returns (stream Configuration);
 
-    // GetConfigurations returns a stream of submitted configurations aimed at individual devices.
+    // GetOpState returns a stream of submitted OperationalStateCache aimed at individual devices.
     rpc GetOpState (OpStateRequest) returns (stream OpState);
 }
+
 
