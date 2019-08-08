@@ -99,7 +99,7 @@ service ConfigDiags {
     rpc GetConfigurations (ConfigRequest) returns (stream Configuration);
 }
 
-// ConfigDiags provides means for obtaining diagnostic information about internal system state.
+// OpStateDiags provides means for obtaining diagnostic information about internal system state.
 service OpStateDiags {
     // GetChanges returns a stream of submitted changes objects.
     rpc GetChanges (ChangesRequest) returns (stream Change);
