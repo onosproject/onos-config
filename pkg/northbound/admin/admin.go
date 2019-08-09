@@ -37,8 +37,8 @@ type Service struct {
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	server := Server{}
-	proto.RegisterConfigAdminServiceServer(r, server)
-	proto.RegisterDeviceInventoryServiceServer(r, server)
+	proto.RegisterConfigAdminServiceServer(r, &server)
+	proto.RegisterDeviceInventoryServiceServer(r, &server)
 }
 
 // Server implements the gRPC service for administrative facilities.
@@ -46,7 +46,7 @@ type Server struct {
 }
 
 // RegisterModel registers a new YANG model.
-func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+func (s *Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
 	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(req.SoFile)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (s Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (
 }
 
 // ListRegisteredModels lists the registered models..
-func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.ConfigAdminService_ListRegisteredModelsServer) error {
+func (s *Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.ConfigAdminService_ListRegisteredModelsServer) error {
 	requestedModel := req.ModelName
 	requestedVersion := req.ModelVersion
 
@@ -136,7 +136,7 @@ func (s Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.
 }
 
 // GetNetworkChanges provides a stream of submitted network changes.
-func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.ConfigAdminService_GetNetworkChangesServer) error {
+func (s *Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.ConfigAdminService_GetNetworkChangesServer) error {
 	for _, nc := range manager.GetManager().NetworkStore.Store {
 
 		// Build net change message
@@ -161,7 +161,7 @@ func (s Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.C
 }
 
 // RollbackNetworkChange rolls back a named network changes.
-func (s Server) RollbackNetworkChange(
+func (s *Server) RollbackNetworkChange(
 	ctx context.Context, req *proto.RollbackRequest) (*proto.RollbackResponse, error) {
 	var networkConfig *store.NetworkConfiguration
 	var ncIdx int

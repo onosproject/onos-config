@@ -31,7 +31,7 @@ type Service struct {
 
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
-	proto.RegisterConfigDiagsServer(r, Server{})
+	proto.RegisterConfigDiagsServer(r, &Server{})
 }
 
 // Server implements the gRPC service for diagnostic facilities.
@@ -39,7 +39,7 @@ type Server struct {
 }
 
 // GetChanges provides a stream of submitted network changes.
-func (s Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_GetChangesServer) error {
+func (s *Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_GetChangesServer) error {
 	for _, c := range manager.GetManager().ChangeStore.Store {
 		if len(r.ChangeIds) > 0 && !stringInList(r.ChangeIds, store.B64(c.ID)) {
 			continue
@@ -82,7 +82,7 @@ func (s Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_Get
 }
 
 // GetConfigurations provides a stream of submitted network changes.
-func (s Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDiags_GetConfigurationsServer) error {
+func (s *Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDiags_GetConfigurationsServer) error {
 	for _, c := range manager.GetManager().ConfigStore.Store {
 		if len(r.DeviceIds) > 0 && !stringInList(r.DeviceIds, c.Device) {
 			continue
