@@ -1,16 +1,23 @@
 FROM golang:1.12
 
 RUN apt-get update && \
-    apt-get install -y protobuf-compiler && \
-    go get -u github.com/golang/protobuf/protoc-gen-go && \
+    apt-get install unzip
+
+RUN curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.9.1/protoc-3.9.1-linux-x86_64.zip && \
+    unzip -o protoc-3.9.1-linux-x86_64.zip -d /usr/local bin/protoc && \
+    unzip -o protoc-3.9.1-linux-x86_64.zip -d /usr/local include/* && \
+    rm -rf protoc-3.9.1-linux-x86_64.zip
+
+RUN go get -u github.com/golang/protobuf/protoc-gen-go && \
     go get -u github.com/gogo/protobuf/proto && \
     go get -u github.com/gogo/protobuf/gogoproto && \
     go get -u github.com/gogo/protobuf/protoc-gen-gofast && \
     go get -u github.com/gogo/protobuf/protoc-gen-gogo && \
     go get -u github.com/gogo/protobuf/protoc-gen-gogofast && \
     go get -u github.com/gogo/protobuf/protoc-gen-gogofaster && \
-    go get -u github.com/gogo/protobuf/protoc-gen-gogoslick && \
-    mkdir -p /go/src/github.com/google && \
+    go get -u github.com/gogo/protobuf/protoc-gen-gogoslick
+
+RUN mkdir -p /go/src/github.com/google && \
     git clone --branch master https://github.com/google/protobuf /go/src/github.com/google/protobuf && \
     git clone --branch master https://github.com/openconfig/gnmi /go/src/github.com/openconfig/gnmi && \
     mkdir -p /go/src/github.com/ &&\
