@@ -3,7 +3,10 @@ FROM golang:1.12
 RUN apt-get update && \
     apt-get install -y protobuf-compiler && \
     go get -u github.com/golang/protobuf/protoc-gen-go && \
+    go get -u github.com/gogo/protobuf/proto && \
+    go get -u github.com/gogo/protobuf/gogoproto && \
     go get -u github.com/gogo/protobuf/protoc-gen-gofast && \
+    go get -u github.com/gogo/protobuf/protoc-gen-gogo && \
     go get -u github.com/gogo/protobuf/protoc-gen-gogofast && \
     go get -u github.com/gogo/protobuf/protoc-gen-gogofaster && \
     go get -u github.com/gogo/protobuf/protoc-gen-gogoslick && \
