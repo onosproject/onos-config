@@ -7,7 +7,7 @@ ONOS_CONFIG_VERSION := latest
 ONOS_CONFIG_DEBUG_VERSION := debug
 ONOS_BUILD_VERSION := stable
 
-MODELPLUGINS = build/_output/testdevice.so.1.0.0 build/_output/testdevice.so.2.0.0 build/_output/devicesim.so.1.0.0
+MODELPLUGINS = build/_output/testdevice.so.1.0.0 build/_output/testdevice.so.2.0.0 build/_output/devicesim.so.1.0.0 build/_output/stratum.so.1.0.0
 
 build: # @HELP build the Go binaries and run all validations (default)
 build: $(MODELPLUGINS)
@@ -26,6 +26,10 @@ build/_output/testdevice.so.2.0.0: modelplugin/TestDevice-2.0.0/modelmain.go mod
 build/_output/devicesim.so.1.0.0: modelplugin/Devicesim-1.0.0/modelmain.go modelplugin/Devicesim-1.0.0/devicesim_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
 	-CGO_ENABLED=1 go build -o build/_output/devicesim-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
+
+build/_output/stratum.so.1.0.0: modelplugin/Stratum-1.0.0/modelmain.go modelplugin/Stratum-1.0.0/stratum_1_0_0/generated.go
+	-CGO_ENABLED=1 go build -o build/_output/stratum.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Stratum-1.0.0
+	-CGO_ENABLED=1 go build -o build/_output/stratum-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Stratum-1.0.0
 
 test: # @HELP run the unit tests and source code validation
 test: build deps linters license_check
@@ -102,7 +106,8 @@ run-docker: onos-config-docker
 		-networkStore=/etc/onos-config/networkStore-sample.json \
 		-modelPlugin=/usr/local/lib/testdevice.so.1.0.0 \
 		-modelPlugin=/usr/local/lib/testdevice.so.2.0.0 \
-		-modelPlugin=/usr/local/lib/devicesim.so.1.0.0
+		-modelPlugin=/usr/local/lib/devicesim.so.1.0.0 \
+		-modelPlugin=/usr/local/lib/stratum.so.1.0.0
 
 clean: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos

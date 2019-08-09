@@ -330,8 +330,8 @@
         }
       ]
     },
-    "J+CUGSfjr0npwzDN29ftbzXSG3o=": {
-      "ID": "J+CUGSfjr0npwzDN29ftbzXSG3o=",
+    "5xbA8GGgS7Io0EUEpdTz9o6rzDU=": {
+      "ID": "5xbA8GGgS7Io0EUEpdTz9o6rzDU=",
       "Description": "Initial configuration of Stratum Simulator",
       "Created": "2019-06-05T12:03:17Z",
       "Config": [
@@ -339,6 +339,11 @@
           "Path": "/interfaces/interface[name=s1-eth1]/config/enabled",
           "Value": "AA==",
           "Type": 4
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth1]/config/name",
+          "Value": "czEtZXRoMQ==",
+          "Type": 1
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/config/health-indicator",
@@ -369,6 +374,11 @@
           "Path": "/interfaces/interface[name=s1-eth2]/config/enabled",
           "Value": "AA==",
           "Type": 4
+        },
+        {
+          "Path": "/interfaces/interface[name=s1-eth2]/config/name",
+          "Value": "czEtZXRoMg==",
+          "Type": 1
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/config/health-indicator",
