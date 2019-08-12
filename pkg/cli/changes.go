@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package command
+package cli
 
 import (
 	"context"
@@ -38,7 +38,7 @@ var funcMapChanges = template.FuncMap{
 	"nativeType": nativeType,
 }
 
-func newChangesCommand() *cobra.Command {
+func getGetChangesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "changes [<changeId>]",
 		Short: "Lists records of configuration changes",
@@ -49,7 +49,7 @@ func newChangesCommand() *cobra.Command {
 }
 
 func runChangesCommand(cmd *cobra.Command, args []string) {
-	client := diags.NewConfigDiagsClient(getConnection(cmd))
+	client := diags.NewConfigDiagsClient(getConnection())
 	changesReq := &diags.ChangesRequest{ChangeIDs: make([]string, 0)}
 	if len(args) == 1 {
 		changesReq.ChangeIDs = append(changesReq.ChangeIDs, args[0])

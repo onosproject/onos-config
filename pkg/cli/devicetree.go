@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package command
+package cli
 
 import (
 	"context"
@@ -36,7 +36,7 @@ var funcMapDeviceTree = template.FuncMap{
 	"b64": base64.StdEncoding.EncodeToString,
 }
 
-func newDeviceTreeCommand() *cobra.Command {
+func getGetDeviceTreeCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "devicetree [--layer #] [<deviceId>]",
 		Short: "Lists devices and their configuration in tree format",
@@ -48,7 +48,7 @@ func newDeviceTreeCommand() *cobra.Command {
 }
 
 func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
-	client := diags.NewConfigDiagsClient(getConnection(cmd))
+	client := diags.NewConfigDiagsClient(getConnection())
 	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
 	if len(args) > 0 {
 		configReq.DeviceIDs = append(configReq.DeviceIDs, args[0])

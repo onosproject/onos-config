@@ -12,12 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+// Package command holds ONOS command-line command implementations.
+package cli
 
-import (
-	"github.com/onosproject/onos-config/pkg/cli"
-)
+import "github.com/spf13/cobra"
 
-func main() {
-	cli.Execute()
+// GetCommand returns the root command for the config service.
+func GetCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "config {get,add} [args]",
+		Short: "ONOS configuration subsystem commands",
+	}
+
+	cmd.AddCommand(getConfigCommand())
+	cmd.AddCommand(getGetCommand())
+	cmd.AddCommand(getAddCommand())
+	//cmd.AddCommand(getRemoveCommand())
+	cmd.AddCommand(getRollbackCommand())
+	return cmd
 }

@@ -12,30 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package command
+package cli
 
-import (
-	"gotest.tools/assert"
-	"testing"
-)
+const bashCompletion = `
+# add stuff later
+`
 
-func Test_wrapline_over(t *testing.T) {
-	const test1 = "abcdefghijklmnopqrstuvwxyz"
-
-	test1Wrapped := wrapPath(test1, 20, 1)
-	assert.Equal(t, test1Wrapped, "abcdefghijklmnopqrst\n\t  uvwxyz              ")
-}
-
-func Test_wrapline_under(t *testing.T) {
-	const test1 = "abcdef"
-
-	test1Wrapped := wrapPath(test1, 20, 1)
-	assert.Equal(t, test1Wrapped, "abcdef              ")
-}
-
-func Test_wrapline_exact(t *testing.T) {
-	const test1 = "abcdefghijklmnopqrst"
-
-	test1Wrapped := wrapPath(test1, 20, 1)
-	assert.Equal(t, test1Wrapped, test1)
+// GetBashCompletion returns the bash completion script
+func GetBashCompletion() string {
+	return bashCompletion
 }
