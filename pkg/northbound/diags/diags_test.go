@@ -17,7 +17,6 @@ package diags
 import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
 	"io"
@@ -35,9 +34,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func getClient() (*grpc.ClientConn, proto.ConfigDiagsClient) {
+func getClient() (*grpc.ClientConn, ConfigDiagsClient) {
 	conn := northbound.Connect(northbound.Address, northbound.Opts...)
-	return conn, proto.NewConfigDiagsClient(conn)
+	return conn, NewConfigDiagsClient(conn)
 }
 
 func Test_GetChanges_All(t *testing.T) {
@@ -52,9 +51,9 @@ func testGetChanges(t *testing.T, changeID string) {
 	conn, client := getClient()
 	defer conn.Close()
 
-	changesReq := &proto.ChangesRequest{ChangeIds: make([]string, 0)}
+	changesReq := &ChangesRequest{ChangeIDs: make([]string, 0)}
 	if changeID != "" {
-		changesReq.ChangeIds = append(changesReq.ChangeIds, changeID)
+		changesReq.ChangeIDs = append(changesReq.ChangeIDs, changeID)
 	}
 
 	stream, err := client.GetChanges(context.Background(), changesReq)
@@ -85,9 +84,9 @@ func testGetConfigurations(t *testing.T, deviceID string) {
 	conn, client := getClient()
 	defer conn.Close()
 
-	configReq := &proto.ConfigRequest{DeviceIds: make([]string, 0)}
+	configReq := &ConfigRequest{DeviceIDs: make([]string, 0)}
 	if deviceID != "" {
-		configReq.DeviceIds = append(configReq.DeviceIds, deviceID)
+		configReq.DeviceIDs = append(configReq.DeviceIDs, deviceID)
 	}
 	stream, err := client.GetConfigurations(context.Background(), configReq)
 	assert.NilError(t, err, "unable to issue request")

@@ -17,7 +17,8 @@ package command
 import (
 	"context"
 	"fmt"
-	diags "github.com/onosproject/onos-config/pkg/northbound/proto"
+	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/spf13/cobra"
 	"io"
@@ -49,9 +50,9 @@ func newChangesCommand() *cobra.Command {
 
 func runChangesCommand(cmd *cobra.Command, args []string) {
 	client := diags.NewConfigDiagsClient(getConnection(cmd))
-	changesReq := &diags.ChangesRequest{ChangeIds: make([]string, 0)}
+	changesReq := &diags.ChangesRequest{ChangeIDs: make([]string, 0)}
 	if len(args) == 1 {
-		changesReq.ChangeIds = append(changesReq.ChangeIds, args[0])
+		changesReq.ChangeIDs = append(changesReq.ChangeIDs, args[0])
 	}
 
 	tmplChanges, _ := template.New("change").Funcs(funcMapChanges).Parse(changeTemplate)
@@ -106,12 +107,12 @@ func wrapPath(path string, lineLen int, tabs int) string {
 	return strings.Join(wrapped, sep)
 }
 
-func nativeType(cv diags.ChangeValue) string {
-	to := make([]int, len(cv.Typeopts))
-	for i, t := range cv.Typeopts {
+func nativeType(cv admin.ChangeValue) string {
+	to := make([]int, len(cv.TypeOpts))
+	for i, t := range cv.TypeOpts {
 		to[i] = int(t)
 	}
-	tv, err := change.CreateTypedValue(cv.Value, change.ValueType(cv.Valuetype), to)
+	tv, err := change.CreateTypedValue(cv.Value, change.ValueType(cv.ValueType), to)
 	if err != nil {
 		ExitWithErrorMessage("Failed to convert value to TypedValue %s", err)
 	}

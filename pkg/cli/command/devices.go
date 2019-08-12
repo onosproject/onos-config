@@ -17,7 +17,7 @@ package command
 import (
 	"context"
 	"github.com/golang/protobuf/proto"
-	devices "github.com/onosproject/onos-config/pkg/northbound/proto"
+	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/spf13/cobra"
 	"io"
 	"os"
@@ -51,8 +51,8 @@ func newDevicesListCommand() *cobra.Command {
 }
 
 func runDevicesListCommand(cmd *cobra.Command, args []string) {
-	client := devices.NewDeviceInventoryServiceClient(getConnection(cmd))
-	stream, err := client.GetDevices(context.Background(), &devices.GetDevicesRequest{})
+	client := admin.NewDeviceInventoryServiceClient(getConnection(cmd))
+	stream, err := client.GetDevices(context.Background(), &admin.GetDevicesRequest{})
 	verbose, _ := cmd.Flags().GetBool("verbose")
 
 	tmplDevicesList, _ := template.New("devices").Parse(devicelistTemplate)
@@ -98,8 +98,8 @@ func newDevicesAddCommand() *cobra.Command {
 }
 
 func runDeviceAddCommand(cmd *cobra.Command, args []string) {
-	client := devices.NewDeviceInventoryServiceClient(getConnection(cmd))
-	deviceInfo := &devices.DeviceInfo{}
+	client := admin.NewDeviceInventoryServiceClient(getConnection(cmd))
+	deviceInfo := &admin.DeviceInfo{}
 	if err := proto.UnmarshalText(args[0], deviceInfo); err == nil {
 		_, err = client.AddOrUpdateDevice(context.Background(), deviceInfo)
 		if err != nil {
@@ -108,7 +108,7 @@ func runDeviceAddCommand(cmd *cobra.Command, args []string) {
 	} else {
 		ExitWithErrorMessage("Unable to parse device info from %s: %v\n", args[0], err)
 	}
-	ExitWithOutput("Added device %s\n", deviceInfo.Id)
+	ExitWithOutput("Added device %s\n", deviceInfo.ID)
 }
 
 func newDevicesRemoveCommand() *cobra.Command {
@@ -121,8 +121,8 @@ func newDevicesRemoveCommand() *cobra.Command {
 }
 
 func runDeviceRemoveCommand(cmd *cobra.Command, args []string) {
-	client := devices.NewDeviceInventoryServiceClient(getConnection(cmd))
-	_, err := client.RemoveDevice(context.Background(), &devices.DeviceInfo{Id: args[0]})
+	client := admin.NewDeviceInventoryServiceClient(getConnection(cmd))
+	_, err := client.RemoveDevice(context.Background(), &admin.DeviceInfo{ID: args[0]})
 	if err != nil {
 		ExitWithErrorMessage("Unable to remove device: %v\n", err)
 	}

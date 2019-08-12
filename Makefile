@@ -58,7 +58,7 @@ gofmt: # @HELP run the Go format validation
 protos: # @HELP compile the protobuf files (using protoc-go Docker)
 	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config \
 		-w /go/src/github.com/onosproject/onos-config \
-		--entrypoint pkg/northbound/proto/compile-protos.sh \
+		--entrypoint build/bin/compile-protos.sh \
 		onosproject/protoc-go:stable
 
 onos-config-base-docker: # @HELP build onos-config base Docker image

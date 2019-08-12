@@ -16,10 +16,9 @@ package command
 
 import (
 	"context"
-	admin "github.com/onosproject/onos-config/pkg/northbound/proto"
+	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/spf13/cobra"
 	"io"
-	"time"
 )
 
 func newNetChangesCommand() *cobra.Command {
@@ -51,7 +50,7 @@ func runNetChangesCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
-			Output("%s: %s (%s)\n", time.Unix(in.Time.Seconds, int64(in.Time.Nanos)),
+			Output("%s: %s (%s)\n", in.Time,
 				in.Name, in.User)
 			for _, c := range in.Changes {
 				Output("\t%s: %s\n", c.Id, c.Hash)
