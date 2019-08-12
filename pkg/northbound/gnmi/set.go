@@ -130,8 +130,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	if len(updateResults) == 0 {
 		log.Warning("All target changes were duplicated - Set rejected")
-		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a " +
-			"duplicate of the last change for all targets").Error())
+		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a duplicate of the last change for all targets").Error())
 	}
 
 	if netcfgchangename == "" {

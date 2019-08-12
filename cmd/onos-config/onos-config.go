@@ -119,6 +119,9 @@ func main() {
 	log.Info("Starting onos-config")
 
 	opts, err := newDialOptions(certPath, keyPath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, opts...)
 	if err != nil {

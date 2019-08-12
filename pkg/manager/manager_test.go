@@ -113,7 +113,7 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 }
 
 func Test_LoadManager(t *testing.T) {
-	mgr, err := LoadManager(
+	_, err := LoadManager(
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sample.json",

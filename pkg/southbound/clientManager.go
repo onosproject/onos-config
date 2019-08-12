@@ -21,7 +21,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"io/ioutil"
 	log "k8s.io/klog"
 	"strings"
@@ -37,7 +37,7 @@ import (
 
 var targets = make(map[DeviceID]interface{})
 
-func createDestination(device device.Device) (*client.Destination, DeviceID) {
+func createDestination(device devicepb.Device) (*client.Destination, DeviceID) {
 	d := &client.Destination{}
 	d.Addrs = []string{device.Address}
 	d.Target = device.Target
@@ -95,7 +95,7 @@ func GetTarget(key DeviceID) (*Target, error) {
 // ConnectTarget connects to a given Device according to the passed information establishing a channel to it.
 //TODO make asyc
 //TODO lock channel to allow one request to device at each time
-func (target *Target) ConnectTarget(ctx context.Context, device device.Device) (DeviceID, error) {
+func (target *Target) ConnectTarget(ctx context.Context, device devicepb.Device) (DeviceID, error) {
 	dest, key := createDestination(device)
 	c, err := GnmiClientFactory(ctx, *dest)
 

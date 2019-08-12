@@ -125,7 +125,7 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 		log.Error("Cannot load device store ", err)
 		return nil, err
 	}
-	log.Info("Device store loaded", )
+	log.Info("Device store loaded")
 
 	networkStore, err := store.LoadNetworkStore(networkStoreFile)
 	if err != nil {

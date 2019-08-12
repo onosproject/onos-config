@@ -40,7 +40,6 @@ func setUp() (*Server, *manager.Manager) {
 	mgr, err := manager.LoadManager(
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
-		"../../../configs/deviceStore-sample.json",
 		"../../../configs/networkStore-sample.json",
 	)
 	if err != nil {

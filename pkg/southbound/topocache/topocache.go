@@ -41,6 +41,10 @@ type DeviceStore struct {
 
 // LoadDeviceStore loads a device store
 func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOption) (*DeviceStore, error) {
+	if len(opts) == 0 {
+		return nil, nil
+	}
+
 	conn, err := getTopoConn(opts...)
 	if err != nil {
 		return nil, err

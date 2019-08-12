@@ -17,7 +17,6 @@ package southbound
 import (
 	"context"
 	"github.com/golang/protobuf/proto"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/client"
@@ -25,18 +24,13 @@ import (
 	"gotest.tools/assert"
 	"strconv"
 	"testing"
+	"time"
 )
 
 var (
-	deviceStore               *topocache.DeviceStore
 	device                    devicepb.Device
-	deviceError               bool
 	saveGnmiClientFactory     func(ctx context.Context, d client.Destination) (GnmiClient, error)
 	saveGnmiBaseClientFactory func() BaseClientInterface
-)
-
-const (
-	device1 = "localhost-1"
 )
 
 // Test Client to stub out the gnmiClient
@@ -126,6 +120,17 @@ func setUp(t *testing.T) {
 		return c
 	}
 
+	timeout := 1 * time.Hour
+	device = devicepb.Device{
+		ID:      devicepb.ID("localhost-1"),
+		Address: "localhost:10161",
+		Version: "1.0.0",
+		Credentials: devicepb.Credentials{
+			User:     "devicesim",
+			Password: "notused",
+		},
+		Timeout: &timeout,
+	}
 }
 
 func tearDown() {
