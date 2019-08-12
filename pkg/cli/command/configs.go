@@ -16,7 +16,7 @@ package command
 
 import (
 	"context"
-	diags "github.com/onosproject/onos-config/pkg/northbound/proto"
+	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/spf13/cobra"
 	"io"
 	"time"
@@ -35,9 +35,9 @@ func newConfigsCommand() *cobra.Command {
 func runConfigsCommand(cmd *cobra.Command, args []string) {
 	client := diags.NewConfigDiagsClient(getConnection(cmd))
 
-	configReq := &diags.ConfigRequest{DeviceIds: make([]string, 0)}
+	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
 	if len(args) == 1 {
-		configReq.DeviceIds = append(configReq.DeviceIds, args[0])
+		configReq.DeviceIDs = append(configReq.DeviceIDs, args[0])
 	}
 	stream, err := client.GetConfigurations(context.Background(), configReq)
 	if err != nil {
@@ -55,8 +55,8 @@ func runConfigsCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
-			Output("%s\t(%s)\t%s\t%s\t%s\n", in.Name, in.Deviceid, in.Version, in.Devicetype,
-				time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos)).Format(time.RFC3339))
+			Output("%s\t(%s)\t%s\t%s\t%s\n", in.Name, in.DeviceID, in.Version, in.DeviceType,
+				in.Updated.Format(time.RFC3339))
 			for _, cid := range in.ChangeIDs {
 				Output("\t%s", cid)
 			}
