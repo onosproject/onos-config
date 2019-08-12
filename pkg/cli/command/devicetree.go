@@ -17,14 +17,13 @@ package command
 import (
 	"context"
 	"encoding/base64"
-	diags "github.com/onosproject/onos-config/pkg/northbound/proto"
+	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"text/template"
-	"time"
 )
 
 const devicetreeTemplate = "DEVICE\t\t\tCONFIGURATION\t\tTYPE\t\tVERSION\n" +
@@ -50,9 +49,9 @@ func newDeviceTreeCommand() *cobra.Command {
 
 func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 	client := diags.NewConfigDiagsClient(getConnection(cmd))
-	configReq := &diags.ConfigRequest{DeviceIds: make([]string, 0)}
+	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
 	if len(args) > 0 {
-		configReq.DeviceIds = append(configReq.DeviceIds, args[0])
+		configReq.DeviceIDs = append(configReq.DeviceIDs, args[0])
 	}
 
 	layer, err := cmd.Flags().GetInt16("layer")
@@ -94,10 +93,10 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 			}
 
 			configuration, _ := store.CreateConfiguration(
-				in.Deviceid, in.Version, in.Devicetype, changes)
+				in.DeviceID, in.Version, in.DeviceType, changes)
 
-			configuration.Updated = time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos))
-			configuration.Created = time.Unix(in.Updated.Seconds, int64(in.Updated.Nanos))
+			configuration.Updated = *in.Updated
+			configuration.Created = *in.Updated
 
 			configurations = append(configurations, *configuration)
 		}
@@ -109,16 +108,16 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 	<-waitc
 
 	if len(configurations) == 0 {
-		ExitWithErrorMessage("Device(s) not found: %v\n", configReq.DeviceIds)
+		ExitWithErrorMessage("Device(s) not found: %v\n", configReq.DeviceIDs)
 	}
 
 	changes := make(map[string]*change.Change)
 
-	changesReq := &diags.ChangesRequest{ChangeIds: allChangeIds}
+	changesReq := &diags.ChangesRequest{ChangeIDs: allChangeIds}
 	if len(args) == 1 {
 		// Only add the changes for a specific device
 		for _, ch := range configurations[0].Changes {
-			changesReq.ChangeIds = append(changesReq.ChangeIds, base64.StdEncoding.EncodeToString(ch))
+			changesReq.ChangeIDs = append(changesReq.ChangeIDs, base64.StdEncoding.EncodeToString(ch))
 		}
 	}
 
@@ -142,18 +141,18 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 			changeObj := change.Change{
 				ID:          change.ID(idBytes),
 				Description: in.Desc,
-				Created:     time.Unix(in.Time.Seconds, int64(in.Time.Nanos)),
+				Created:     *in.Time,
 				Config:      make([]*change.Value, 0),
 			}
-			for _, cv := range in.Changevalues {
+			for _, cv := range in.ChangeValues {
 				var tv *change.TypedValue
-				typeOptInt32 := make([]int, len(cv.Typeopts))
-				for i, v := range cv.Typeopts {
+				typeOptInt32 := make([]int, len(cv.TypeOpts))
+				for i, v := range cv.TypeOpts {
 					typeOptInt32[i] = int(v)
 				}
 				tv = &change.TypedValue{
 					Value:    cv.Value,
-					Type:     change.ValueType(cv.Valuetype),
+					Type:     change.ValueType(cv.ValueType),
 					TypeOpts: typeOptInt32,
 				}
 

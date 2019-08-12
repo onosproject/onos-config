@@ -17,7 +17,8 @@ go run github.com/onosproject/onos-config/cmd/onos-config \
 ```bash
     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 \
     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice.so.2.0.0 \
-    -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim.so.1.0.0
+    -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim.so.1.0.0 \
+    -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Stratum-1.0.0/stratum.so.1.0.0
 ```
 > Alternatively these can loaded later with the onos cli tool - see [cli.md](./cli.md)
 ```bash

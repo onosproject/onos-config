@@ -19,15 +19,17 @@ syntax = "proto3";
 package proto;
 
 import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "github.com/onosproject/onos-config/pkg/northbound/admin/admin.proto";
 
 // ChangesRequest is a message for specifying GetChanges query parameters.
 message ChangesRequest {
-    repeated string changeIds = 1;
+    repeated string change_ids = 1 [(gogoproto.customname) = "ChangeIDs"];
 }
 
 // ConfigRequest is a message for specifying GetConfigurations query parameters.
 message ConfigRequest {
-    repeated string deviceIds = 1;
+    repeated string device_ids = 1 [(gogoproto.customname) = "DeviceIDs"];
 }
 
 // OpStateRequest is a message for specifying GetOpState query parameters.
@@ -35,50 +37,15 @@ message OpStateRequest {
     string deviceId = 1;
 }
 
-enum ChangeValueType {
-    EMPTY = 0;
-    STRING = 1;
-    INT = 2;
-    UINT = 3;
-    BOOL = 4;
-    DECIMAL = 5;
-    FLOAT = 6;
-    BYTES = 7;
-    LEAFLIST_STRING = 8;
-    LEAFLIST_INT = 9;
-    LEAFLIST_UINT = 10;
-    LEAFLIST_BOOL = 11;
-    LEAFLIST_DECIMAL = 12;
-    LEAFLIST_FLOAT = 13;
-    LEAFLIST_BYTES = 14;
-}
-
-// ChangeValue is an individual Path/Value combination in a Change
-message ChangeValue {
-    string path = 1;
-    bytes value = 2;
-    ChangeValueType valuetype = 3;
-    repeated int32 typeopts = 4;
-    bool removed = 5;
-}
-
-// Change is a descriptor of a submitted configuration change targeted at a single device.
-message Change {
-    google.protobuf.Timestamp time = 1;
-    string id = 2;
-    string desc = 3;
-    repeated ChangeValue changevalues = 4;
-}
-
 // Configuration is a descriptor of a submitted configuration change targeted at a single device.
 message Configuration {
     string name = 1;
-    string deviceid = 2;
+    string device_id = 2 [(gogoproto.customname) = "DeviceID"];
     string version = 3;
-    string devicetype = 4;
-    google.protobuf.Timestamp created = 5;
-    google.protobuf.Timestamp updated = 6;
-    repeated string changeIDs = 7;
+    string device_type = 4;
+    google.protobuf.Timestamp created = 5 [(gogoproto.stdtime) = true];
+    google.protobuf.Timestamp updated = 6 [(gogoproto.stdtime) = true];
+    repeated string change_ids = 7 [(gogoproto.customname) = "ChangeIDs"];
 }
 
 // ConfigDiags provides means for obtaining diagnostic information about internal system state.

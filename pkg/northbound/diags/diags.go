@@ -16,10 +16,9 @@
 package diags
 
 import (
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/northbound/proto"
+	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store"
 	"google.golang.org/grpc"
 )
@@ -31,7 +30,7 @@ type Service struct {
 
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
-	proto.RegisterConfigDiagsServer(r, &Server{})
+	RegisterConfigDiagsServer(r, Server{})
 }
 
 // Server implements the gRPC service for diagnostic facilities.
@@ -39,9 +38,9 @@ type Server struct {
 }
 
 // GetChanges provides a stream of submitted network changes.
-func (s *Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_GetChangesServer) error {
+func (s Server) GetChanges(r *ChangesRequest, stream ConfigDiags_GetChangesServer) error {
 	for _, c := range manager.GetManager().ChangeStore.Store {
-		if len(r.ChangeIds) > 0 && !stringInList(r.ChangeIds, store.B64(c.ID)) {
+		if len(r.ChangeIDs) > 0 && !stringInList(r.ChangeIDs, store.B64(c.ID)) {
 			continue
 		}
 
@@ -50,28 +49,28 @@ func (s *Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_Ge
 			return errInvalid
 		}
 
-		changeValues := make([]*proto.ChangeValue, 0)
+		changeValues := make([]*admin.ChangeValue, 0)
 
 		for _, cv := range c.Config {
 			to := make([]int32, len(cv.TypeOpts))
 			for i, t := range cv.TypeOpts {
 				to[i] = int32(t)
 			}
-			changeValues = append(changeValues, &proto.ChangeValue{
+			changeValues = append(changeValues, &admin.ChangeValue{
 				Path:      cv.Path,
 				Value:     cv.Value,
-				Valuetype: proto.ChangeValueType(cv.Type),
-				Typeopts:  to,
+				ValueType: admin.ChangeValueType(cv.Type),
+				TypeOpts:  to,
 				Removed:   cv.Remove,
 			})
 		}
 
 		// Build a change message
-		msg := &proto.Change{
-			Time:         &timestamp.Timestamp{Seconds: c.Created.Unix(), Nanos: int32(c.Created.Nanosecond())},
+		msg := &admin.Change{
+			Time:         &c.Created,
 			Id:           store.B64(c.ID),
 			Desc:         c.Description,
-			Changevalues: changeValues,
+			ChangeValues: changeValues,
 		}
 		err := stream.Send(msg)
 		if err != nil {
@@ -82,9 +81,9 @@ func (s *Server) GetChanges(r *proto.ChangesRequest, stream proto.ConfigDiags_Ge
 }
 
 // GetConfigurations provides a stream of submitted network changes.
-func (s *Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDiags_GetConfigurationsServer) error {
+func (s Server) GetConfigurations(r *ConfigRequest, stream ConfigDiags_GetConfigurationsServer) error {
 	for _, c := range manager.GetManager().ConfigStore.Store {
-		if len(r.DeviceIds) > 0 && !stringInList(r.DeviceIds, c.Device) {
+		if len(r.DeviceIDs) > 0 && !stringInList(r.DeviceIDs, c.Device) {
 			continue
 		}
 
@@ -94,12 +93,12 @@ func (s *Server) GetConfigurations(r *proto.ConfigRequest, stream proto.ConfigDi
 			changeIDs[idx] = store.B64(cid)
 		}
 
-		msg := &proto.Configuration{
+		msg := &Configuration{
 			Name:       string(c.Name),
-			Deviceid:   c.Device,
+			DeviceID:   c.Device,
 			Version:    c.Version,
-			Devicetype: c.Type,
-			Updated:    &timestamp.Timestamp{Seconds: c.Updated.Unix(), Nanos: int32(c.Created.Nanosecond())},
+			DeviceType: c.Type,
+			Updated:    &c.Updated,
 			ChangeIDs:  changeIDs,
 		}
 		err := stream.Send(msg)

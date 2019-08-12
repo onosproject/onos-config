@@ -18,10 +18,8 @@ package admin
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/northbound/proto"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"google.golang.org/grpc"
@@ -37,8 +35,8 @@ type Service struct {
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	server := Server{}
-	proto.RegisterConfigAdminServiceServer(r, &server)
-	proto.RegisterDeviceInventoryServiceServer(r, &server)
+	RegisterConfigAdminServiceServer(r, server)
+	RegisterDeviceInventoryServiceServer(r, server)
 }
 
 // Server implements the gRPC service for administrative facilities.
@@ -46,19 +44,19 @@ type Server struct {
 }
 
 // RegisterModel registers a new YANG model.
-func (s *Server) RegisterModel(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+func (s Server) RegisterModel(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
 	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(req.SoFile)
 	if err != nil {
 		return nil, err
 	}
-	return &proto.RegisterResponse{
+	return &RegisterResponse{
 		Name:    name,
 		Version: version,
 	}, nil
 }
 
 // ListRegisteredModels lists the registered models..
-func (s *Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto.ConfigAdminService_ListRegisteredModelsServer) error {
+func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminService_ListRegisteredModelsServer) error {
 	requestedModel := req.ModelName
 	requestedVersion := req.ModelVersion
 
@@ -71,40 +69,40 @@ func (s *Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto
 			continue
 		}
 
-		roPaths := make([]*proto.ReadOnlyPath, 0)
+		roPaths := make([]*ReadOnlyPath, 0)
 		if req.Verbose {
 			roPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(name, version)]
 			if !ok {
 				log.Warningf("no list of Read Only Paths found for %s %s\n", name, version)
 			} else {
 				for path, subpathList := range roPathsAndValues {
-					subPathsPb := make([]*proto.ReadOnlySubPath, 0)
+					subPathsPb := make([]*ReadOnlySubPath, 0)
 					for subPath, subPathType := range subpathList {
-						subPathPb := proto.ReadOnlySubPath{
-							Subpath:   subPath,
-							ValueType: proto.ChangeValueType(subPathType),
+						subPathPb := ReadOnlySubPath{
+							SubPath:   subPath,
+							ValueType: ChangeValueType(subPathType),
 						}
 						subPathsPb = append(subPathsPb, &subPathPb)
 					}
-					pathPb := proto.ReadOnlyPath{
+					pathPb := ReadOnlyPath{
 						Path:    path,
-						Subpath: subPathsPb,
+						SubPath: subPathsPb,
 					}
 					roPaths = append(roPaths, &pathPb)
 				}
 			}
 		}
 
-		rwPaths := make([]*proto.ReadWritePath, 0)
+		rwPaths := make([]*ReadWritePath, 0)
 		if req.Verbose {
 			rwPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadWritePaths[utils.ToModelName(name, version)]
 			if !ok {
 				log.Warningf("no list of Read Write Paths found for %s %s\n", name, version)
 			} else {
 				for path, rwObj := range rwPathsAndValues {
-					rwObjProto := proto.ReadWritePath{
+					rwObjProto := ReadWritePath{
 						Path:        path,
-						ValueType:   proto.ChangeValueType(rwObj.ValueType),
+						ValueType:   ChangeValueType(rwObj.ValueType),
 						Description: rwObj.Description,
 						Default:     rwObj.Default,
 						Units:       rwObj.Units,
@@ -118,7 +116,7 @@ func (s *Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto
 		}
 
 		// Build model message
-		msg := &proto.ModelInfo{
+		msg := &ModelInfo{
 			Name:          name,
 			Version:       version,
 			ModelData:     md,
@@ -136,20 +134,20 @@ func (s *Server) ListRegisteredModels(req *proto.ListModelsRequest, stream proto
 }
 
 // GetNetworkChanges provides a stream of submitted network changes.
-func (s *Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.ConfigAdminService_GetNetworkChangesServer) error {
+func (s Server) GetNetworkChanges(r *NetworkChangesRequest, stream ConfigAdminService_GetNetworkChangesServer) error {
 	for _, nc := range manager.GetManager().NetworkStore.Store {
 
 		// Build net change message
-		msg := &proto.NetChange{
-			Time:    &timestamp.Timestamp{Seconds: nc.Created.Unix(), Nanos: int32(nc.Created.Nanosecond())},
+		msg := &NetChange{
+			Time:    &nc.Created,
 			Name:    nc.Name,
 			User:    nc.User,
-			Changes: make([]*proto.ConfigChange, 0),
+			Changes: make([]*ConfigChange, 0),
 		}
 
 		// Build list of config change messages.
 		for k, v := range nc.ConfigurationChanges {
-			msg.Changes = append(msg.Changes, &proto.ConfigChange{Id: string(k), Hash: store.B64(v)})
+			msg.Changes = append(msg.Changes, &ConfigChange{Id: string(k), Hash: store.B64(v)})
 		}
 
 		err := stream.Send(msg)
@@ -161,8 +159,8 @@ func (s *Server) GetNetworkChanges(r *proto.NetworkChangesRequest, stream proto.
 }
 
 // RollbackNetworkChange rolls back a named network changes.
-func (s *Server) RollbackNetworkChange(
-	ctx context.Context, req *proto.RollbackRequest) (*proto.RollbackResponse, error) {
+func (s Server) RollbackNetworkChange(
+	ctx context.Context, req *RollbackRequest) (*RollbackResponse, error) {
 	var networkConfig *store.NetworkConfiguration
 	var ncIdx int
 
@@ -212,7 +210,7 @@ func (s *Server) RollbackNetworkChange(
 	}
 	_ = manager.GetManager().NetworkStore.RemoveEntry(networkConfig.Name)
 
-	return &proto.RollbackResponse{
+	return &RollbackResponse{
 		Message: fmt.Sprintf("Rolled back change '%s' Updated configs %s",
 			networkConfig.Name, configNames),
 	}, nil
