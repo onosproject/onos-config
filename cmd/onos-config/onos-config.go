@@ -41,12 +41,15 @@ See ../../docs/run.md for how to run the application.
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	log "k8s.io/klog"
 	"os"
 	"time"
@@ -79,10 +82,13 @@ func main() {
 		"path to config store file")
 	changeStoreFile := flag.String("changeStore", changeStoreDefaultFileName,
 		"path to change store file")
-	deviceStoreFile := flag.String("deviceStore", deviceStoreDefaultFileName,
-		"path to device store file")
 	networkStoreFile := flag.String("networkStore", networkStoreDefaultFileName,
 		"path to network store file")
+
+	// TODO: This flag is preserved for backwards compatibility
+	_ = flag.String("deviceStore", deviceStoreDefaultFileName,
+		"path to device store file")
+
 	flag.Var(&modelPlugins, "modelPlugin", "names of model plugins to load (repeated)")
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
@@ -112,7 +118,9 @@ func main() {
 	})
 	log.Info("Starting onos-config")
 
-	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *deviceStoreFile, *networkStoreFile)
+	opts, err := newDialOptions(certPath, keyPath)
+
+	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, opts...)
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {
@@ -143,6 +151,27 @@ func main() {
 			log.Fatal("Unable to start onos-config ", err)
 		}
 	}
+}
+
+func newDialOptions(clientCrtPath, clientKeyPath *string) ([]grpc.DialOption, error) {
+	if clientCrtPath == nil || clientKeyPath == nil {
+		return []grpc.DialOption{
+			grpc.WithInsecure(),
+		}, nil
+	}
+
+	cert, err := tls.LoadX509KeyPair(*clientCrtPath, *clientKeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates:       []tls.Certificate{cert},
+		InsecureSkipVerify: true,
+	}
+	return []grpc.DialOption{
+		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+	}, nil
 }
 
 // Creates gRPC server and registers various services; then serves.

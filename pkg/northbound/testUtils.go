@@ -42,7 +42,6 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 	_, err = manager.LoadManager(
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
-		"../../../configs/deviceStore-sample.json",
 		"../../../configs/networkStore-sample.json",
 	)
 	if err != nil {

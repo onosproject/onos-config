@@ -22,11 +22,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -130,7 +130,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	if len(updateResults) == 0 {
 		log.Warning("All target changes were duplicated - Set rejected")
-		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a "+
+		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a " +
 			"duplicate of the last change for all targets").Error())
 	}
 
@@ -371,7 +371,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 
 func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) error {
 	mgr := manager.GetManager()
-	respChan, ok := mgr.Dispatcher.GetResponseListener(topocache.ID(target))
+	respChan, ok := mgr.Dispatcher.GetResponseListener(device.ID(target))
 	if !ok {
 		log.Infof("Device %s not properly registered, not waiting for southbound confirmation ", target)
 		return nil

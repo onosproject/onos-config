@@ -17,9 +17,9 @@ package southbound
 import (
 	"context"
 	"github.com/golang/protobuf/proto"
-	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/utils"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
@@ -29,7 +29,7 @@ import (
 
 var (
 	deviceStore               *topocache.DeviceStore
-	device                    topocache.Device
+	device                    devicepb.Device
 	deviceError               bool
 	saveGnmiClientFactory     func(ctx context.Context, d client.Destination) (GnmiClient, error)
 	saveGnmiBaseClientFactory func() BaseClientInterface
@@ -119,21 +119,12 @@ func setUp(t *testing.T) {
 	GnmiClientFactory = func(ctx context.Context, d client.Destination) (GnmiClient, error) {
 		return TestClientImpl{}, nil
 	}
-	topoChannel := make(chan events.TopoEvent, 10)
-	var err error
-	deviceStore, err = topocache.LoadDeviceStore("testdata/deviceStore.json", topoChannel)
-	assert.NilError(t, err)
 
 	saveGnmiBaseClientFactory = GnmiBaseClientFactory
 	GnmiBaseClientFactory = func() BaseClientInterface {
 		c := TestCacheClient{}
 		return c
 	}
-
-	device, deviceError = deviceStore.Store[device1]
-
-	assert.Assert(t, deviceError)
-	assert.Equal(t, device.Addr, "localhost:10161")
 
 }
 
@@ -177,10 +168,10 @@ func Test_BadTarget(t *testing.T) {
 func Test_ConnectTargetUserPassword(t *testing.T) {
 	setUp(t)
 
-	device.CertPath = "cert path"
-	device.KeyPath = ""
-	device.Usr = "User"
-	device.Pwd = "Password"
+	device.TLS.Cert = "cert path"
+	device.TLS.Key = ""
+	device.Credentials.User = "User"
+	device.Credentials.Password = "Password"
 	target, key, _ := getDevice1Target(t)
 
 	targetFetch, fetchError := GetTarget(key)
@@ -195,8 +186,8 @@ func Test_ConnectTargetUserPassword(t *testing.T) {
 func Test_ConnectTargetInsecurePaths(t *testing.T) {
 	setUp(t)
 
-	device.CertPath = "cert path"
-	device.KeyPath = ""
+	device.TLS.Cert = "cert path"
+	device.TLS.Key = ""
 	target, key, _ := getDevice1Target(t)
 
 	targetFetch, fetchError := GetTarget(key)
@@ -210,7 +201,7 @@ func Test_ConnectTargetInsecurePaths(t *testing.T) {
 func Test_ConnectTargetInsecureFlag(t *testing.T) {
 	setUp(t)
 
-	device.Insecure = true
+	device.TLS.Insecure = true
 	target, key, _ := getDevice1Target(t)
 
 	targetFetch, fetchError := GetTarget(key)
@@ -224,9 +215,9 @@ func Test_ConnectTargetInsecureFlag(t *testing.T) {
 func Test_ConnectTargetWithCert(t *testing.T) {
 	setUp(t)
 
-	device.CertPath = "testdata/client1.crt"
-	device.KeyPath = "testdata/client1.key"
-	device.CaPath = "testdata/onfca.crt"
+	device.TLS.Cert = "testdata/client1.crt"
+	device.TLS.Key = "testdata/client1.key"
+	device.TLS.CaCert = "testdata/onfca.crt"
 	target, key, _ := getDevice1Target(t)
 
 	targetFetch, fetchError := GetTarget(key)

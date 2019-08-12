@@ -23,11 +23,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/southbound"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/status"
@@ -40,7 +40,7 @@ type Synchronizer struct {
 	context.Context
 	*store.ChangeStore
 	*store.ConfigurationStore
-	*topocache.Device
+	*device.Device
 	deviceConfigChan     <-chan events.ConfigEvent
 	operationalStateChan chan<- events.OperationalStateEvent
 	key                  southbound.DeviceID
@@ -51,7 +51,7 @@ type Synchronizer struct {
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
-	device *topocache.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
+	device *device.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache change.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap) (*Synchronizer, error) {
 	sync := &Synchronizer{
@@ -64,7 +64,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 		operationalCache:     opStateCache,
 		modelReadOnlyPaths:   mReadOnlyPaths,
 	}
-	log.Info("Connecting to ", sync.Device.Addr, " over gNMI")
+	log.Info("Connecting to ", sync.Device.Address, " over gNMI")
 	target := southbound.Target{}
 	key, err := target.ConnectTarget(context, *sync.Device)
 	sync.key = key
@@ -72,37 +72,37 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 		log.Warning(err)
 		return nil, err
 	}
-	log.Info(sync.Device.Addr, " connected over gNMI")
+	log.Info(sync.Device.Address, " connected over gNMI")
 
 	// Get the device capabilities
 	capResponse, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
-		log.Error(sync.Device.Addr, " capabilities ", err)
+		log.Error(sync.Device.Address, " capabilities ", err)
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceCapabilities,
 			string(device.ID), err)
 		return nil, err
 	}
 
-	log.Info(sync.Device.Addr, " capabilities ", capResponse)
+	log.Info(sync.Device.Address, " capabilities ", capResponse)
 
 	config, err := getNetworkConfig(sync, string(sync.Device.ID), "", 0)
 
 	//Device does not have any stored config at the moment, skip initial set
 	if err != nil {
-		log.Info(sync.Device.Addr, " has no initial configuration")
+		log.Info(sync.Device.Address, " has no initial configuration")
 	} else {
 		//Device has initial configuration saved in onos-config, trying to apply
 		initialConfig, err := change.CreateChangeValuesNoRemoval(config, "Initial set to device")
 
 		if err != nil {
-			log.Error("Can't translate the initial config for ", sync.Device.Addr, err)
+			log.Error("Can't translate the initial config for ", sync.Device.Address, err)
 			return sync, nil
 		}
 
 		gnmiChange, err := values.NativeChangeToGnmiChange(initialConfig)
 
 		if err != nil {
-			log.Error("Can't obtain GnmiChange for ", sync.Device.Addr, err)
+			log.Error("Can't obtain GnmiChange for ", sync.Device.Address, err)
 			return sync, nil
 		}
 
@@ -112,7 +112,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 			errGnmi, _ := status.FromError(err)
 			//Hack because the desc field is not available.
 			//Splitting at the desc string and getting the second element which is the description.
-			log.Errorf("Can't set initial configuration for %s due to %s", sync.Device.Addr,
+			log.Errorf("Can't set initial configuration for %s due to %s", sync.Device.Address,
 				strings.Split(errGnmi.Message(), " desc = ")[1])
 			errChan <- events.CreateErrorEvent(events.EventTypeErrorSetInitialConfig,
 				string(device.ID), initialConfig.ID, err)
@@ -163,7 +163,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
-		log.Info(sync.Device.Addr, " SetResponse ", setResponse)
+		log.Info(sync.Device.Address, " SetResponse ", setResponse)
 		respChan <- events.CreateResponseEvent(events.EventTypeAchievedSetConfig,
 			sync.key.DeviceID, c.ID, setResponse.String())
 
