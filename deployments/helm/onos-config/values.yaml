@@ -13,7 +13,7 @@ debug: false
 
 devices: []
 
-plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0]
+plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0,stratum.so.1.0.0]
 
 store:
   enabled: false
