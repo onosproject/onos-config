@@ -15,7 +15,7 @@ In the onos-config NBI this target represents the **name of the device** as it
 is held in the configuration system. Configurations can be explored through the
 onos cli like:
 ```bash
-> onos configs
+> onos config get configs
 Device2-2.0.0	(Device2)	2.0.0	TestDevice	2019-05-09T18:00:00+01:00
 	oOqIgEg82ZvVcF7Q3xEDpWAoPcw=
 stratum-sim-1-1.0.0	(stratum-sim-1)	1.0.0	Stratum	2019-06-05T11:03:17+01:00

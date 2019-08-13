@@ -91,7 +91,7 @@ folder and named in the style: **\<modulename>@\<latestrevision>.yang**
 
 Running the generator command in the form:
 ```bash
-go run $GOPATH/src/github.com/openconfig/ygot/generator/generator.go \
+> go run $GOPATH/src/github.com/openconfig/ygot/generator/generator.go \
 -path yang -output_file=$TYPEVERSION/$TYPEVERSIONPKG/generated.go -package_name=$TYPEVERSIONPKG \
 -generate_fakeroot $YANGLIST
 ```
@@ -103,7 +103,7 @@ generated as a single file: **generated.go**.
 To visualize and further validate the collection of YANG files, the
 **[pyang](https://github.com/mbj4668/pyang)** tool can be used like:
 ```bash
-pyang -f tree $YANGLIST
+> pyang -f tree $YANGLIST
 ```
 > Once the generator has run there is no need to persist the YANG files - the
 > generated.go file contains all the information in an object model.
@@ -150,18 +150,18 @@ The Model Plugin can be loaded at the start up of onos-config by specifying the
 -modelPlugin argument (see [run.md](./run.md)), or it can be loaded dynamically
 at runtime using the [CLI](./cli.md) command:
 ```
-onos models load <full path and filename to plugin file on the system where onos-config runs>
+> onos config add plugin <full path and filename to plugin file on the system where onos-config runs>
 ```
 
 > Model Plugins cannot be unloaded once loaded, without restarting onos-config.
 
 To see a list of loaded plugins use the command:
 ```bash
-go run github.com/onosproject/onos-config/cmd/onos models list
+> onos config get plugins
 ```
 which gives an output like:
 ```bash
-> onos models list
+> onos config get plugins
 TestDevice: 1.0.0 from testdevice.so.1.0.0 containing:
 YANGS:
 	test1	2018-02-20	Open Networking Foundation
@@ -201,7 +201,7 @@ YANGS:
 
 To see a list of Read-Only and Read-Write paths use the command:
 ```bash
-go run github.com/onosproject/onos-config/cmd/onos models list -v
+> onos config get plugins -v
 ```
 
 >In a distributed installation the ModelPlugin will have to be loaded
@@ -258,14 +258,14 @@ throughout the YANG model.
 
 To see a list of Read Only paths use the command:
 ```bash
-go run github.com/onosproject/onos-config/cmd/onos models list -v
+> onos config get plugins -v
 ```
 
 When the Model Plugin is loaded, setting of an attribute like **state/address**
 should give an appropriate error
 
 ```bash
-gnmi_cli -address localhost:5150 -set \
+> gnmi_cli -address localhost:5150 -set \
     -proto "update: <path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'openflow'> elem: <name: 'controllers'> elem: <name: 'controller' key: <key: 'name' value: 'main'>> elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>> elem: <name: 'state'> elem: <name: 'address'>> val: <string_val: '192.0.2.11'>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \

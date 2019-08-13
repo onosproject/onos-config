@@ -10,7 +10,7 @@ in order to build and execute the code.
 [golangci-lint] is required to validate that the Go source code complies with the established style 
 guidelines. To install the tool, use this command:
 ```bash
-curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin latest
+> curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin latest
 ```
 
 ## Docker
