@@ -17,7 +17,7 @@ The test framework is controlled through the `onit` command. To install the `oni
 use `go get`:
 
 ```bash
-> go get github.com/onosproject/onos-config/test/cmd/onit
+> go get github.com/onosproject/onos-test/cmd/onit
 ```
 
 To interact with a Kubernetes cluster, the `onit` command must have access to a local
@@ -186,12 +186,18 @@ raft-1-0                             1/1     Running   0          73s
 ```
 
 The `create cluster` command supports additional flags for defining the cluster architecture:
-* `--config`/`-c` - the configuration with which to bootstrap `onos-config` node stores. The configuration
-must reference a JSON file name in `test/configs/store`, e.g. `default` refers to `default.json`
-* `--nodes`/`-n` - the number of `onos-config` nodes to deploy
-* `--partitions`/`-p` - the number of Raft partitions to create for stores
-* `--partition-size`/`-s` - the size of each Raft partition
-
+```bash
+  Flags:
+    -c, --config string               test cluster configuration (default "default")
+        --config-nodes int            the number of onos-config nodes to deploy (default 1)
+        --docker-registry string      an optional host:port for a private Docker registry
+    -h, --help                        help for cluster
+        --image-pull-policy string    the Docker image pull policy (default "IfNotPresent")
+        --image-tags stringToString   the image docker container tag for each node in the cluster (default [topo=debug,simulator=latest,stratum=latest,test=latest,atomix=latest,raft=latest,config=debug])
+    -s, --partition-size int          the size of each Raft partition (default 1)
+    -p, --partitions int              the number of Raft partitions to deploy (default 1)
+        --topo-nodes int              the number of onos-topo nodes to deploy (default 1) 
+```
 Once the cluster is setup, the cluster configuration will be added to the `onit` configuration
 and the deployed cluster will be set as the current cluster context:
 
