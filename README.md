@@ -65,7 +65,7 @@ provided as additional layers:
 * [How to build](docs/build.md) onos-config server, related commands and Docker image
 * [How to run](docs/run.md) onos-config server and related commands
 * [How to deploy](docs/deployment.md) onos-config in a Kubernetes cluster
-* [How to test](docs/testing.md) onos-config integration tests with onit
+* [How to test](https://github.com/onosproject/onos-test/blob/master/docs/testing.md) onos-config integration tests with onit
 * [How to onboard your device](docs/modelplugin.md) extending onos-config with Model Plugins
 * [Developer workflow summary](docs/dev_workflow.md) for onos-config project
 * [Contacts and Meetings](docs/community-info.md) for onos-config project
