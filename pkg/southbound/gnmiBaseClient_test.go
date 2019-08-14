@@ -26,5 +26,5 @@ func Test_GnmiBaseClient(t *testing.T) {
 	assert.Assert(t, baseClient != nil)
 	query := client.Query{Type: client.Unknown}
 	err := baseClient.Subscribe(context.TODO(), query, "XXX")
-	assert.ErrorContains(t, err, "Addrs is empty")
+	assert.ErrorContains(t, err, "Destination.Addrs is empty")
 }

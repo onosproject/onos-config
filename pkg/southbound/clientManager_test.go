@@ -120,7 +120,7 @@ func setUp(t *testing.T) {
 		return c
 	}
 
-	timeout := 1 * time.Hour
+	timeout := 10 * time.Second
 	device = devicepb.Device{
 		ID:      devicepb.ID("localhost-1"),
 		Address: "localhost:10161",
@@ -197,7 +197,7 @@ func Test_ConnectTargetInsecurePaths(t *testing.T) {
 
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
-	assert.Equal(t, targetFetch.Destination.TLS.InsecureSkipVerify, true)
+	assert.Equal(t, targetFetch.Destination.TLS.InsecureSkipVerify, false)
 	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
 
 	tearDown()
