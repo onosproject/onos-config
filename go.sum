@@ -16,8 +16,7 @@ github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuy
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf h1:qet1QNfXsQxTZqLG4oE62mJzwPIB8+Tee4RNCL9ulrY=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
-github.com/atomix/atomix-go-client v0.0.0-20190807011524-58b4352273d7 h1:XE+KsvclmfZjbqYDhBqeK8wHDDHYB/FiwGeLcBurYoM=
-github.com/atomix/atomix-go-client v0.0.0-20190807011524-58b4352273d7/go.mod h1:P/m0xcEzXviZLULk78gYlJr0mHjXCZAcem3kOkvwzhA=
+github.com/atomix/atomix-go-client v0.0.0-20190814013624-2b7049842ee1 h1:SW6b1TIATnNmsKrnGaoweY+uLezgUEKT61z3IGLKOts=
 github.com/atomix/atomix-go-client v0.0.0-20190814013624-2b7049842ee1/go.mod h1:P/m0xcEzXviZLULk78gYlJr0mHjXCZAcem3kOkvwzhA=
 github.com/atomix/atomix-k8s-controller v0.0.0-20190620084759-d5e65f7fbf68 h1:PCOXQ9q2rP/oYVNAFHR1LIqyD5JXQ19saZUKc4MkfR8=
 github.com/atomix/atomix-k8s-controller v0.0.0-20190620084759-d5e65f7fbf68/go.mod h1:vdmRfGKhgD28STeLKeKoq3tMZOyTR0l3WSG9QCrZWs0=
@@ -185,8 +184,6 @@ github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/onosproject/onos-config v0.0.0-20190715180819-079d3a8dc433/go.mod h1:1G4gt12sBESqda8mrmAmOjqfV7PT0CLle9VVm8Qtfp8=
 github.com/onosproject/onos-control v0.0.0-20190715190020-706a2ee0d37b/go.mod h1:pHxuBLlYpyZbiaBDKFkO+O9RixBd/qMPR8t5mizwbQY=
-github.com/onosproject/onos-topo v0.0.0-20190809180402-2931d9c31bf5 h1:tKu/NnNxCT2RdBtMKgrocYCEpsRIUnR9o8gvt8qoT20=
-github.com/onosproject/onos-topo v0.0.0-20190809180402-2931d9c31bf5/go.mod h1:qIMVOeHN111lHBmYqNmNExmkBDljozg580QM3M75sSo=
 github.com/onosproject/onos-topo v0.0.0-20190814180759-8f2851513bf5 h1:OAiMgbQnvmCFQf2QgqgfKiOx2szYwRVepANVKwloYFE=
 github.com/onosproject/onos-topo v0.0.0-20190814180759-8f2851513bf5/go.mod h1:Ul5CDW2WwSa7VjA0RkhVuK1AA3GzM5D+sS7+/xrHPRA=
 github.com/onsi/ginkgo v0.0.0-20170829012221-11459a886d9c/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=

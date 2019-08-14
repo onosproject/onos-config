@@ -19,31 +19,46 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
+	"time"
 )
 
 // Factory is a go routine thread that listens out for Device creation
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
-func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
+func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[device.ID]change.TypedValueMap) {
+	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[devicepb.ID]change.TypedValueMap) {
 	for topoEvent := range topoChannel {
-		device := events.Event(topoEvent).Object().(device.Device)
+		device := events.Event(topoEvent).Object().(devicepb.Device)
 		if !dispatcher.HasListener(device.ID) && topoEvent.Connect() {
 			configChan, respChan, err := dispatcher.RegisterDevice(device.ID)
 			if err != nil {
 				log.Error(err)
 			}
 			ctx := context.Background()
-			completeID := utils.ToConfigName(device.ID, device.Version)
-			cfg := configStore.Store[store.ConfigName(completeID)]
+			configName := store.ConfigName(utils.ToConfigName(device.ID, device.Version))
+			cfg, ok := configStore.Store[configName]
+			if !ok {
+				if device.Type == "" {
+					log.Warningf("No device type specified for device %s", configName)
+				}
+				configStore.Store[configName] = store.Configuration{
+					Name:    configName,
+					Device:  string(device.ID),
+					Version: device.Version,
+					Type:    string(device.Type),
+					Created: time.Now(),
+					Updated: time.Now(),
+					Changes: []change.ID{},
+				}
+			}
+
 			modelName := utils.ToModelName(cfg.Type, device.Version)
 			mReadOnlyPaths, ok := readOnlyPaths[modelName]
 			if !ok {

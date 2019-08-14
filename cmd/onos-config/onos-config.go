@@ -41,15 +41,13 @@ See ../../docs/run.md for how to run the application.
 package main
 
 import (
-	"crypto/tls"
 	"flag"
+	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	log "k8s.io/klog"
 	"os"
 	"time"
@@ -118,7 +116,7 @@ func main() {
 	})
 	log.Info("Starting onos-config")
 
-	opts, err := newDialOptions(certPath, keyPath)
+	opts, err := certs.HandleCertArgs(keyPath, certPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -154,27 +152,6 @@ func main() {
 			log.Fatal("Unable to start onos-config ", err)
 		}
 	}
-}
-
-func newDialOptions(clientCrtPath, clientKeyPath *string) ([]grpc.DialOption, error) {
-	if clientCrtPath == nil || clientKeyPath == nil {
-		return []grpc.DialOption{
-			grpc.WithInsecure(),
-		}, nil
-	}
-
-	cert, err := tls.LoadX509KeyPair(*clientCrtPath, *clientKeyPath)
-	if err != nil {
-		return nil, err
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates:       []tls.Certificate{cert},
-		InsecureSkipVerify: true,
-	}
-	return []grpc.DialOption{
-		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
-	}, nil
 }
 
 // Creates gRPC server and registers various services; then serves.
