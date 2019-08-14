@@ -13,7 +13,6 @@ FROM alpine:3.9
 
 RUN apk upgrade --update --no-cache && apk add bash bash-completion libc6-compat
 
-COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos /usr/local/bin/onos
 COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/onos-config-debug /usr/local/bin/onos-config
 COPY --from=base /go/src/github.com/onosproject/onos-config/build/_output/*-debug.so.* /usr/local/lib/
 COPY --from=debugBuilder /go/bin/dlv /usr/local/bin/dlv
@@ -34,11 +33,7 @@ WORKDIR /home/onos-config
 ENV ATOMIX_CONTROLLER=atomix-controller.kube-system.svc.cluster.local:5679
 ENV ATOMIX_NAMESPACE=default
 
-RUN onos init && \
-    cp /etc/profile /home/onos-config/.bashrc && \
-    onos completion bash > /home/onos-config/.onos/bash_completion.sh && \
-    echo "source /home/onos-config/.onos/bash_completion.sh" >> /home/onos-config/.bashrc && \
-    onos config set address 127.0.0.1:5150 && \
+RUN cp /etc/profile /home/onos-config/.bashrc && \
     atomix init && \
     atomix completion bash > /home/onos-config/.atomix/bash_completion.sh && \
     echo "source /home/onos-config/.atomix/bash_completion.sh" >> /home/onos-config/.bashrc
