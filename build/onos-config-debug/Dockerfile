@@ -33,11 +33,7 @@ WORKDIR /home/onos-config
 ENV ATOMIX_CONTROLLER=atomix-controller.kube-system.svc.cluster.local:5679
 ENV ATOMIX_NAMESPACE=default
 
-RUN onos init && \
-    cp /etc/profile /home/onos-config/.bashrc && \
-    onos completion bash > /home/onos-config/.onos/bash_completion.sh && \
-    echo "source /home/onos-config/.onos/bash_completion.sh" >> /home/onos-config/.bashrc && \
-    onos config set address 127.0.0.1:5150 && \
+RUN cp /etc/profile /home/onos-config/.bashrc && \
     atomix init && \
     atomix completion bash > /home/onos-config/.atomix/bash_completion.sh && \
     echo "source /home/onos-config/.atomix/bash_completion.sh" >> /home/onos-config/.bashrc
