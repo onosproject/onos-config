@@ -33,3 +33,7 @@ jobs:
       if: type != pull_request
       script:
         - sh build/bin/trigger-tests-travis $TRAVIS_ACCESS_TOKEN
+    - stage: CLI build
+      if: type != pull_request
+      script:
+        - sh build/bin/trigger-cli-travis $TRAVIS_ACCESS_TOKEN
