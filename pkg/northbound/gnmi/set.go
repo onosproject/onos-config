@@ -90,7 +90,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionDeviceType {
 			deviceType = string(ext.GetRegisteredExt().GetMsg())
 		} else {
-			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("Unexpected extension %d = '%s' in Set()",
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("unexpected extension %d = '%s' in Set()",
 				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
 		}
 	}

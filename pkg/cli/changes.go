@@ -29,8 +29,8 @@ import (
 
 const changeTemplate = "CHANGE: {{.Id}} ({{.Desc}})\n" +
 	"\t{{printf \"|%-50s|%-40s|%-7s|\" \"PATH\" \"VALUE\" \"REMOVED\"}}\n" +
-	"{{range .Changevalues}}" +
-	"\t{{wrappath .Path 50 1| printf \"|%-50s|\"}}{{nativeType . | printf \"(%s) %s\" .Valuetype | printf \"%-40s|\" }}{{printf \"%-7t|\" .Removed}}\n" +
+	"{{range .ChangeValues}}" +
+	"\t{{wrappath .Path 50 1| printf \"|%-50s|\"}}{{nativeType . | printf \"(%s) %s\" .ValueType | printf \"%-40s|\" }}{{printf \"%-7t|\" .Removed}}\n" +
 	"{{end}}\n"
 
 var funcMapChanges = template.FuncMap{

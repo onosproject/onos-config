@@ -34,7 +34,20 @@ message ConfigRequest {
 
 // OpStateRequest is a message for specifying GetOpState query parameters.
 message OpStateRequest {
+    // The request is always in the context of a Device ID. If the device does
+    // not exist or is disconnected an error will be returned.
     string deviceId = 1;
+    // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
+    // after all paths for the device have been streamed to the client
+    bool subscribe = 2;
+}
+
+message OpStateResponse {
+    // type is the type of the event
+    Type type = 1;
+
+    // device is the device on which the event occurred
+    ChangeValue pathvalue = 2;
 }
 
 // Configuration is a descriptor of a submitted configuration change targeted at a single device.
@@ -60,5 +73,6 @@ service ConfigDiags {
 // OpStateDiags provides means for obtaining diagnostic information about internal system state.
 service OpStateDiags {
     // GetOpState returns a stream of submitted OperationalStateCache aimed at individual devices.
-    rpc GetOpState (OpStateRequest) returns (stream ChangeValue);
+    // If subscribe is true keep on streaming after the initial set are finished
+    rpc GetOpState (OpStateRequest) returns (stream OpStateResponse);
 }
