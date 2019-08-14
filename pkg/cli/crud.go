@@ -18,7 +18,7 @@ import "github.com/spf13/cobra"
 
 func getGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get {configs,changes,devicetree,net-changes,plugins,device} [args]",
+		Use:   "get {configs,changes,devicetree,net-changes,plugins,device,opstate} [args]",
 		Short: "Get config resources",
 	}
 	cmd.AddCommand(getGetConfigsCommand())
@@ -26,6 +26,7 @@ func getGetCommand() *cobra.Command {
 	cmd.AddCommand(getGetDeviceTreeCommand())
 	cmd.AddCommand(getGetNetChangesCommand())
 	cmd.AddCommand(getGetPluginsCommand())
+	cmd.AddCommand(getGetOpstateCommand())
 	return cmd
 }
 

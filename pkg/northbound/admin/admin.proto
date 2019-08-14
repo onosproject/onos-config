@@ -51,6 +51,21 @@ enum ChangeValueType {
     LEAFLIST_BYTES = 14;
 }
 
+// Streaming event type
+enum Type {
+    // NONE indicates this response does not represent a state change
+    NONE = 0;
+
+    // ADDED is an event which occurs when an item is added
+    ADDED = 1;
+
+    // UPDATED is an event which occurs when an item is updated
+    UPDATED = 2;
+
+    // REMOVED is an event which occurs when an item is removed
+    REMOVED = 3;
+}
+
 // ChangeValue is an individual Path/Value combination in a Change
 message ChangeValue {
     string path = 1;
