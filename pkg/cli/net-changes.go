@@ -12,34 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package command
+package cli
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
+	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/spf13/cobra"
 	"io"
-	"time"
 )
 
-func newConfigsCommand() *cobra.Command {
+func getGetNetChangesCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "configs [<deviceId>]",
-		Short: "Lists details of device configuration changes",
-		Args:  cobra.MaximumNArgs(0),
-		Run:   runConfigsCommand,
+		Use:   "net-changes",
+		Short: "Lists network configuration changes",
+		Args:  cobra.ExactArgs(0),
+		Run:   runNetChangesCommand,
 	}
 	return cmd
 }
 
-func runConfigsCommand(cmd *cobra.Command, args []string) {
-	client := diags.NewConfigDiagsClient(getConnection(cmd))
+func runNetChangesCommand(cmd *cobra.Command, args []string) {
+	client := admin.NewConfigAdminServiceClient(getConnection())
 
-	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
-	if len(args) == 1 {
-		configReq.DeviceIDs = append(configReq.DeviceIDs, args[0])
-	}
-	stream, err := client.GetConfigurations(context.Background(), configReq)
+	stream, err := client.GetNetworkChanges(context.Background(), &admin.NetworkChangesRequest{})
 	if err != nil {
 		ExitWithErrorMessage("Failed to send request: %v", err)
 	}
@@ -55,12 +50,11 @@ func runConfigsCommand(cmd *cobra.Command, args []string) {
 			if err != nil {
 				ExitWithErrorMessage("Failed to receive response : %v", err)
 			}
-			Output("%s\t(%s)\t%s\t%s\t%s\n", in.Name, in.DeviceID, in.Version, in.DeviceType,
-				in.Updated.Format(time.RFC3339))
-			for _, cid := range in.ChangeIDs {
-				Output("\t%s", cid)
+			Output("%s: %s (%s)\n", in.Time,
+				in.Name, in.User)
+			for _, c := range in.Changes {
+				Output("\t%s: %s\n", c.Id, c.Hash)
 			}
-			Output("\n")
 		}
 	}()
 	err = stream.CloseSend()

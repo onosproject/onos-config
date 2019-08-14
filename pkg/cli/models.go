@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package command
+package cli
 
 import (
 	"context"
@@ -41,19 +41,9 @@ const modellistTemplate = "{{.Name}}: {{.Version}} from {{.Module}} containing:\
 	"{{end}}" +
 	"{{end}}"
 
-func newModelsCommand() *cobra.Command {
+func getGetPluginsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "models {list|load}",
-		Short: "Manages model plugins",
-	}
-	cmd.AddCommand(newListPluginsCommand())
-	cmd.AddCommand(newLoadPluginCommand())
-	return cmd
-}
-
-func newListPluginsCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list <plugin path and filename>",
+		Use:   "plugins",
 		Short: "Lists the loaded model plugins",
 		Args:  cobra.MaximumNArgs(1),
 		Run:   runListPluginsCommand,
@@ -65,7 +55,7 @@ func newListPluginsCommand() *cobra.Command {
 func runListPluginsCommand(cmd *cobra.Command, args []string) {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	tmplModelList, _ := template.New("change").Parse(modellistTemplate)
-	client := admin.NewConfigAdminServiceClient(getConnection(cmd))
+	client := admin.NewConfigAdminServiceClient(getConnection())
 
 	stream, err := client.ListRegisteredModels(context.Background(), &admin.ListModelsRequest{Verbose: verbose})
 	if err != nil {
@@ -95,18 +85,18 @@ func runListPluginsCommand(cmd *cobra.Command, args []string) {
 	ExitWithSuccess()
 }
 
-func newLoadPluginCommand() *cobra.Command {
+func getAddPluginCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "load <plugin path and filename>",
+		Use:   "plugin <plugin path and filename>",
 		Short: "Loads a new model plugin",
 		Args:  cobra.MaximumNArgs(1),
-		Run:   runLoadPluginCommand,
+		Run:   runAddPluginCommand,
 	}
 	return cmd
 }
 
-func runLoadPluginCommand(cmd *cobra.Command, args []string) {
-	client := admin.NewConfigAdminServiceClient(getConnection(cmd))
+func runAddPluginCommand(cmd *cobra.Command, args []string) {
+	client := admin.NewConfigAdminServiceClient(getConnection())
 	pluginFileName := ""
 	if len(args) == 1 {
 		pluginFileName = args[0]

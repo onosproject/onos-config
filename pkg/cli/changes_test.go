@@ -12,20 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cli holds ONOS command-line interface.
 package cli
 
 import (
-	"fmt"
-	"github.com/onosproject/onos-config/pkg/cli/command"
-	"os"
+	"gotest.tools/assert"
+	"testing"
 )
 
-// Execute runs the root command and any sub-commands.
-func Execute() {
-	rootCmd := command.GetRootCommand()
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+func Test_wrapline_over(t *testing.T) {
+	const test1 = "abcdefghijklmnopqrstuvwxyz"
+
+	test1Wrapped := wrapPath(test1, 20, 1)
+	assert.Equal(t, test1Wrapped, "abcdefghijklmnopqrst\n\t  uvwxyz              ")
+}
+
+func Test_wrapline_under(t *testing.T) {
+	const test1 = "abcdef"
+
+	test1Wrapped := wrapPath(test1, 20, 1)
+	assert.Equal(t, test1Wrapped, "abcdef              ")
+}
+
+func Test_wrapline_exact(t *testing.T) {
+	const test1 = "abcdefghijklmnopqrst"
+
+	test1Wrapped := wrapPath(test1, 20, 1)
+	assert.Equal(t, test1Wrapped, test1)
 }

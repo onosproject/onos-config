@@ -6,7 +6,7 @@
 ## Run Server Locally
 The onos-config server can be run as follows:
 ```bash
-go run github.com/onosproject/onos-config/cmd/onos-config \
+> go run github.com/onosproject/onos-config/cmd/onos-config \
     -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
     -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
     -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
@@ -22,7 +22,7 @@ go run github.com/onosproject/onos-config/cmd/onos-config \
 ```
 > Alternatively these can loaded later with the onos cli tool - see [cli.md](./cli.md)
 ```bash
-> onos models load <full path on target machine to shared object model>
+> onos config add plugin <full path on target machine to shared object model>
 ```
 > The plugins here were built locally with a command like
 ```bash
@@ -31,7 +31,7 @@ go run github.com/onosproject/onos-config/cmd/onos-config \
 > When running with Docker or Kubernetes these plugins will be built and (optionally) loaded
 at startup. To check the list of currently loaded plugins use:
 ```bash
-> onos models list
+> onos config get plugins
 ```
 See [modelplugins.md](modelplugins.md) for more on how to build your own Model Plugins.
 
@@ -48,7 +48,7 @@ The system provides a full implementation of the gNMI spec as a northbound servi
 
 Here is an example on how to use `gnmi_cli -get` to get configuration for a particular device (target) from the system.
 ```bash
-gnmi_cli -get -address localhost:5150 \
+> gnmi_cli -get -address localhost:5150 \
     -proto "path: <target: 'localhost-1', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
     -timeout 5s -alsologtostderr \
     -client_crt pkg/southbound/testdata/client1.crt \
@@ -63,13 +63,13 @@ diagnostic tools, which are integrated into the consolidated `onos` command.
 
 For example, to list all network changes submitted through the northbound gNMI interface run:
 ```bash
-go run github.com/onosproject/onos-config/cmd/onos net-changes
+> onos config get net-changes
 ```
 
 Or, run the following to list all changes submitted through the northbound gNMI 
 as they are tracked by the system broken-up into device specific batches:
 ```bash
-go run github.com/onosproject/onos-config/cmd/onos changes
+> onos config get changes
 ```
 
 You can read more comprehensive documentation of the various 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package command
+package cli
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newRollbackCommand() *cobra.Command {
+func getRollbackCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rollback <changeId>",
 		Short: "Rolls-back a network configuration change",
@@ -31,7 +31,7 @@ func newRollbackCommand() *cobra.Command {
 }
 
 func runRollbackCommand(cmd *cobra.Command, args []string) {
-	client := admin.NewConfigAdminServiceClient(getConnection(cmd))
+	client := admin.NewConfigAdminServiceClient(getConnection())
 	changeID := ""
 	if len(args) == 1 {
 		changeID = args[0]

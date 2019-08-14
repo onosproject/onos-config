@@ -457,7 +457,7 @@ PASS
 
 To download logs from a node, you can run `onit fetch logs` command. For example, to download logs from *onos-config-66d54956f5-xwpsh* node, run the following command:
 ```bash
-onit fetch logs onos-config-66d54956f5-xwpsh
+> onit fetch logs onos-config-66d54956f5-xwpsh
 ```
 
 You can refer to [Debug onos-config in Onit Using Delve](debugging.md) to learn more about debugging of onos-config pod using [*Delve*](https://github.com/go-delve/delve) debugger.
