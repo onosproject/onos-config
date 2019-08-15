@@ -19,49 +19,64 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
+	"time"
 )
 
 // Factory is a go routine thread that listens out for Device creation
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
-func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore, deviceStore *topocache.DeviceStore,
+func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[topocache.ID]change.TypedValueMap) {
+	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[devicepb.ID]change.TypedValueMap) {
 	for topoEvent := range topoChannel {
-		deviceName := topocache.ID(events.Event(topoEvent).Subject())
-		if !dispatcher.HasListener(deviceName) && topoEvent.Connect() {
-			configChan, respChan, err := dispatcher.RegisterDevice(deviceName)
+		device := events.Event(topoEvent).Object().(devicepb.Device)
+		if !dispatcher.HasListener(device.ID) && topoEvent.Connect() {
+			configChan, respChan, err := dispatcher.RegisterDevice(device.ID)
 			if err != nil {
 				log.Error(err)
 			}
-			device := deviceStore.Store[topocache.ID(deviceName)]
 			ctx := context.Background()
-			completeID := utils.ToConfigName(deviceName, device.SoftwareVersion)
-			cfg := configStore.Store[store.ConfigName(completeID)]
-			modelName := utils.ToModelName(cfg.Type, device.SoftwareVersion)
+			configName := store.ConfigName(utils.ToConfigName(device.ID, device.Version))
+			cfg, ok := configStore.Store[configName]
+			if !ok {
+				if device.Type == "" {
+					log.Warningf("No device type specified for device %s", configName)
+				}
+				configStore.Store[configName] = store.Configuration{
+					Name:    configName,
+					Device:  string(device.ID),
+					Version: device.Version,
+					Type:    string(device.Type),
+					Created: time.Now(),
+					Updated: time.Now(),
+					Changes: []change.ID{},
+				}
+			}
+
+			modelName := utils.ToModelName(cfg.Type, device.Version)
 			mReadOnlyPaths, ok := readOnlyPaths[modelName]
 			if !ok {
 				log.Warningf("Cannot check for read only paths for target %s with %s because "+
-					"Model Plugin not available - continuing", deviceName, device.SoftwareVersion)
+					"Model Plugin not available - continuing", device.ID, device.Version)
 			}
-			operationalStateCache[deviceName] = make(change.TypedValueMap)
+			operationalStateCache[device.ID] = make(change.TypedValueMap)
 			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan,
-				errChan, operationalStateCache[deviceName], mReadOnlyPaths)
+				errChan, operationalStateCache[device.ID], mReadOnlyPaths)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
 				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
-					string(deviceName), err)
+					string(device.ID), err)
 				//unregistering the listener for changes to the device
-				unregErr := dispatcher.UnregisterDevice(deviceName)
+				unregErr := dispatcher.UnregisterDevice(device.ID)
 				if unregErr != nil {
 					errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
-						string(deviceName), unregErr)
+						string(device.ID), unregErr)
 				}
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
@@ -69,9 +84,9 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				go sync.syncOperationalState(errChan)
 				//respChan <- events.CreateConnectedEvent(events.EventTypeDeviceConnected, string(deviceName))
 			}
-		} else if dispatcher.HasListener(deviceName) && !topoEvent.Connect() {
+		} else if dispatcher.HasListener(device.ID) && !topoEvent.Connect() {
 
-			err := dispatcher.UnregisterDevice(deviceName)
+			err := dispatcher.UnregisterDevice(device.ID)
 			if err != nil {
 				log.Error(err)
 				//TODO evaluate if fall through without upstreaming

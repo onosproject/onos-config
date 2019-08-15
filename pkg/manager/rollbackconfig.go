@@ -17,9 +17,9 @@ package manager
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"time"
 )
@@ -77,7 +77,7 @@ func computeRollback(m *Manager, target string, configname string) (change.ID, c
 }
 
 func listenForDeviceResponse(mgr *Manager, target string) error {
-	respChan, ok := mgr.Dispatcher.GetResponseListener(topocache.ID(target))
+	respChan, ok := mgr.Dispatcher.GetResponseListener(device.ID(target))
 	if !ok {
 		log.Infof("Device %s not properly registered, not waiting for southbound confirmation", target)
 		return nil
