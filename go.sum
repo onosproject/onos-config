@@ -186,6 +186,8 @@ github.com/onosproject/onos-config v0.0.0-20190715180819-079d3a8dc433/go.mod h1:
 github.com/onosproject/onos-control v0.0.0-20190715190020-706a2ee0d37b/go.mod h1:pHxuBLlYpyZbiaBDKFkO+O9RixBd/qMPR8t5mizwbQY=
 github.com/onosproject/onos-topo v0.0.0-20190814180759-8f2851513bf5 h1:OAiMgbQnvmCFQf2QgqgfKiOx2szYwRVepANVKwloYFE=
 github.com/onosproject/onos-topo v0.0.0-20190814180759-8f2851513bf5/go.mod h1:Ul5CDW2WwSa7VjA0RkhVuK1AA3GzM5D+sS7+/xrHPRA=
+github.com/onosproject/onos-topo v0.0.0-20190814235916-567580ff7720 h1:Y59IT1BUJHVp6Pp1zplkZ0MG12gaGJzjQLBBSWKDi3Q=
+github.com/onosproject/onos-topo v0.0.0-20190814235916-567580ff7720/go.mod h1:OdpECWGQ3Fm96sQjse0E9hatoBiCga4VD8jnxadi5Ik=
 github.com/onsi/ginkgo v0.0.0-20170829012221-11459a886d9c/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.8.0 h1:VkHVNpR4iVnU8XQR6DBm8BqYjN7CRzw+xKUbVVbbW9w=

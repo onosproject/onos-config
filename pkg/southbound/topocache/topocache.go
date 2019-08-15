@@ -25,9 +25,9 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
-	"github.com/prometheus/common/log"
 	"google.golang.org/grpc"
 	"io"
+	log "k8s.io/klog"
 )
 
 const (
