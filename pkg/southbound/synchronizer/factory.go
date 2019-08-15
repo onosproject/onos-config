@@ -48,7 +48,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				if device.Type == "" {
 					log.Warningf("No device type specified for device %s", configName)
 				}
-				configStore.Store[configName] = store.Configuration{
+				cfg = store.Configuration{
 					Name:    configName,
 					Device:  string(device.ID),
 					Version: device.Version,
@@ -57,6 +57,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 					Updated: time.Now(),
 					Changes: []change.ID{},
 				}
+				configStore.Store[configName] = cfg
 			}
 
 			modelName := utils.ToModelName(cfg.Type, device.Version)
