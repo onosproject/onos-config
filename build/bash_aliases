@@ -18,3 +18,6 @@ alias gr='git push origin $(git symbolic-ref HEAD)'
 # Inject shell auto-completion for the 'onos' command
 alias ocomp='eval "$(onos completion bash)"'
 ocomp
+
+# kubectl cluster-info... meaning show which cluster this terminal is pointing at
+alias ki='kubectl cluster-info'

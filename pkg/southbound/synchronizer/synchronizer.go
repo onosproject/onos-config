@@ -47,6 +47,7 @@ type Synchronizer struct {
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
 	operationalCache     change.TypedValueMap
+	encoding             gnmi.Encoding
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
@@ -77,13 +78,23 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	// Get the device capabilities
 	capResponse, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
-		log.Error(sync.Device.Address, " capabilities ", err)
+		log.Error(sync.Device.Address, " capabilities ", capErr)
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceCapabilities,
-			string(device.ID), err)
-		return nil, err
+			string(device.ID), capErr)
+		return nil, capErr
 	}
-
-	log.Info(sync.Device.Address, " capabilities ", capResponse)
+	sync.encoding = gnmi.Encoding_PROTO // Default
+	// Currently stratum does not return capabilities (Aug 19)
+	if capResponse != nil {
+		for _, enc := range capResponse.SupportedEncodings {
+			if enc == gnmi.Encoding_PROTO {
+				sync.encoding = enc
+				break // We prefer PROTO if possible
+			}
+			sync.encoding = enc // Will take alternatives or last
+		}
+	}
+	log.Info(sync.Device.Address, " Encoding:", sync.encoding, " Capabilities ", capResponse)
 
 	config, err := getNetworkConfig(sync, string(sync.Device.ID), "", 0)
 
@@ -171,23 +182,16 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 }
 
 func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceResponse) {
-
 	target, err := southbound.GetTarget(sync.key)
-
 	if err != nil {
 		log.Error("Can't find target for key ", sync.key)
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
 			sync.key.DeviceID, err)
 		return
 	}
+	log.Info("Syncing Op & State of  ", sync.key.DeviceID, " started")
 
-	subscribePaths := make([][]string, 0)
-
-	if sync.modelReadOnlyPaths != nil {
-		for _, path := range modelregistry.Paths(sync.modelReadOnlyPaths) {
-			subscribePaths = append(subscribePaths, utils.SplitPath(path))
-		}
-	} else {
+	if sync.modelReadOnlyPaths == nil {
 		errMp := fmt.Errorf("no model plugin, cant work in operational state cache")
 		log.Error(errMp)
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorMissingModelPlugin,
@@ -195,38 +199,19 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		return
 	}
 
-	if len(subscribePaths) == 0 {
-		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
-			sync.key.DeviceID, noPathErr)
-		log.Warning(noPathErr)
-		return
-	}
-
 	notifications := make([]*gnmi.Notification, 0)
-
-	requestState := &gnmi.GetRequest{
-		Type: gnmi.GetRequest_STATE,
-	}
-
-	responseState, errState := target.Get(target.Ctx, requestState)
-
+	stateNotif, errState := sync.getOpStatePathsByType(target, gnmi.GetRequest_STATE)
 	if errState != nil {
 		log.Warning("Can't request read-only state paths to target ", sync.key, errState)
 	} else {
-		notifications = append(notifications, responseState.Notification...)
+		notifications = append(notifications, stateNotif...)
 	}
 
-	requestOperational := &gnmi.GetRequest{
-		Type: gnmi.GetRequest_OPERATIONAL,
-	}
-
-	responseOperational, errOp := target.Get(target.Ctx, requestOperational)
-
-	if errOp != nil {
+	operNotif, errOp := sync.getOpStatePathsByType(target, gnmi.GetRequest_OPERATIONAL)
+	if errState != nil {
 		log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
 	} else {
-		notifications = append(notifications, responseOperational.Notification...)
+		notifications = append(notifications, operNotif...)
 	}
 
 	//TODO do get for subscribePaths (the paths we get out of the model)
@@ -264,59 +249,179 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	// TODO Parse the GET result to get actual instances of list items (replacing
 	//  wildcarded paths - assuming that stratum does not support wildcarded GET
 	//  and SUBSCRIBE)
+	log.Infof("%d ReadOnly paths for %s", len(sync.modelReadOnlyPaths), sync.key.DeviceID)
+	if len(sync.modelReadOnlyPaths) == 0 {
+		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
+			sync.key.DeviceID, noPathErr)
+		log.Warning(noPathErr)
+		return
+	}
+
+	wildExpandedPaths := make([]string, 0)
+	if len(notifications) == 0 {
+		log.Infof("No notifications received - trying Get on the readonly paths instead %s", sync.key.DeviceID)
+		getPaths := make([]*gnmi.Path, 0)
+		for _, path := range modelregistry.Paths(sync.modelReadOnlyPaths) {
+			gnmiPath, err := utils.ParseGNMIElements(utils.SplitPath(path))
+			if err != nil {
+				log.Warning("Error converting RO path to gNMI")
+				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
+					sync.key.DeviceID, err)
+				return
+			}
+			getPaths = append(getPaths, gnmiPath)
+		}
+
+		requestRoPaths := &gnmi.GetRequest{
+			Encoding: sync.encoding,
+			Path:     getPaths,
+		}
+
+		responseRoPaths, errRoPaths := target.Get(target.Ctx, requestRoPaths)
+		if errRoPaths != nil {
+			log.Warning("Error on request for read-only paths", sync.key, errRoPaths)
+			errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
+				sync.key.DeviceID, errRoPaths)
+			return
+		}
+
+		notifications = append(notifications, responseRoPaths.Notification...)
+
+		////////////////////////////////////////////////////////////////////////
+		// Special case for Stratum Aug'19 - the notification will only contain
+		// the ifindex and name of the interface - to get the other state attributes
+		// it has to be called again with the wildcard values expanded out. This
+		// is because Stratum does not support wildcards properly.
+		// Fortunately these can be also used for subscribe
+		////////////////////////////////////////////////////////////////////////
+		if sync.Type == "Stratum" {
+			ewGetPaths := make([]*gnmi.Path, 0)
+			for _, n := range responseRoPaths.Notification {
+				for _, u := range n.Update {
+					updatepath := utils.StrPath(u.Path)
+					if strings.HasPrefix(updatepath, "/interfaces/interface[") {
+						newPathStr := updatepath[:strings.LastIndex(updatepath, "/ifindex")]
+						wildExpandedPaths = append(wildExpandedPaths, newPathStr)
+						newGnmiPath, errNewPath := utils.ParseGNMIElements(utils.SplitPath(newPathStr))
+						if errNewPath != nil {
+							log.Warning("Error on request for read-only paths", sync.key, errNewPath)
+							errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
+								sync.key.DeviceID, errNewPath)
+							return
+						}
+						log.Info("Making special expanded wildcard call to ", newPathStr, " for ", sync.key)
+						ewGetPaths = append(ewGetPaths, newGnmiPath)
+					}
+				}
+			}
+
+			requestEwRoPaths := &gnmi.GetRequest{
+				Encoding: sync.encoding,
+				Path:     ewGetPaths,
+			}
+
+			log.Infof("Calling Get again for %s with expanded %d wildcard read-only paths", sync.key, len(ewGetPaths))
+			responseEwRoPaths, errRoPaths := target.Get(target.Ctx, requestEwRoPaths)
+			if errRoPaths != nil {
+				log.Warning("Error on request for expanded wildcard read-only paths", sync.key, errRoPaths)
+				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
+					sync.key.DeviceID, errRoPaths)
+				return
+			}
+			notifications = append(notifications, responseEwRoPaths.Notification...)
+		}
+
+	}
+
+	log.Infof("Handling %d received OpState paths. %s", len(notifications), sync.key.DeviceID)
 	if len(notifications) != 0 {
 		for _, notification := range notifications {
 			for _, update := range notification.Update {
-				//TODO check that this is json
-				jsonVal := update.Val.GetJsonVal()
-				configValuesUnparsed, err := store.DecomposeTree(jsonVal)
-				if err != nil {
-					log.Error("Can't translate from json to values, skipping to next update", err)
-					errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
-						sync.key.DeviceID, err)
-					break
-				}
-				configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, sync.modelReadOnlyPaths, true)
-				if err != nil {
-					log.Error("Can't translate from config values to typed values, skipping to next update", err)
-					errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
-						sync.key.DeviceID, err)
-					break
-				}
-				pathsAndValues := make(change.TypedValueMap)
-				for _, cv := range configValues {
-					pathsAndValues[cv.Path] = &cv.TypedValue
-				}
-				for path, value := range pathsAndValues {
-					if value != nil {
-						sync.operationalCache[path] = value
+				if sync.encoding == gnmi.Encoding_JSON || sync.encoding == gnmi.Encoding_JSON_IETF {
+					jsonVal := update.Val.GetJsonVal()
+					configValuesUnparsed, err := store.DecomposeTree(jsonVal)
+					if err != nil {
+						log.Error("Can't translate from json to values, skipping to next update", err)
+						errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
+							sync.key.DeviceID, err)
+						break
+					}
+					configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, sync.modelReadOnlyPaths, true)
+					if err != nil {
+						log.Error("Can't translate from config values to typed values, skipping to next update", err)
+						errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
+							sync.key.DeviceID, err)
+						break
+					}
+					pathsAndValues := make(change.TypedValueMap)
+					for _, cv := range configValues {
+						pathsAndValues[cv.Path] = &cv.TypedValue
+					}
+					for path, value := range pathsAndValues {
+						if value != nil {
+							sync.operationalCache[path] = value
+						}
+					}
+				} else if sync.encoding == gnmi.Encoding_PROTO {
+					typedVal, err := values.GnmiTypedValueToNativeType(update.Val)
+					if err != nil {
+						log.Warning("Error converting gnmi value to Typed"+
+							" Value", update.Val, " for ", update.Path)
+					} else {
+						sync.operationalCache[utils.StrPath(update.Path)] = typedVal
 					}
 				}
 			}
 		}
+	} else {
+		log.Warning("No Op or State results received from ", sync.key.DeviceID)
 	}
 
-	// TODO We do a subscribe here based on wildcards and the RO paths calculated
-	//  from the model - subscribePaths
-	//  * The subscribe must go down to the leaf, so the subpaths of the
-	//  readonly paths must be included too
-	//  * If wildcards are supported by the device they will notify us about the
-	//  insertion of new items in a list in this case
-	//  * If the device does NOT support wildcards in subscribe we
-	//  will not get an error response - so how do we know it doesn't support wildcards?
-	//  //
-	//  Instead we should
-	//  ** Use this list of paths in the subscribe below to replace
-	//  the wildcards in subscribePaths
-	//  ** The caveat with that is that we will will not get notified of
-	//   items that are added to lists after the initial subscribe is done
+	// Now try the subscribe with the read only paths and the expanded wildcard
+	// paths (if any) from above
+	sync.subscribeOpState(wildExpandedPaths, errChan)
+}
 
-	// TODO check if it's possible to do a Subscribe with a qualifier of
-	//  OPERATIONAL or STATE like you can do for GET (unlikely). This is a moot
-	//  point if we had to go down to the leaf anyway.
-	//  //
-	//  The easiest fix here for the subscribe is to use the paths and values
-	//  from above and populate it as best you can from the GET options above
+// TODO We do a subscribe here based on wildcards and the RO paths calculated
+//  from the model - subscribePaths
+//  * The subscribe must go down to the leaf, so the subpaths of the
+//  readonly paths must be included too
+//  * If wildcards are supported by the device they will notify us about the
+//  insertion of new items in a list in this case
+//  * If the device does NOT support wildcards in subscribe we
+//  will not get an error response - so how do we know it doesn't support wildcards?
+//  //
+//  Instead we should
+//  ** Use this list of paths in the subscribe below to replace
+//  the wildcards in subscribePaths
+//  ** The caveat with that is that we will will not get notified of
+//   items that are added to lists after the initial subscribe is done
+
+// TODO check if it's possible to do a Subscribe with a qualifier of
+//  OPERATIONAL or STATE like you can do for GET (unlikely). This is a moot
+//  point if we had to go down to the leaf anyway.
+//  //
+//  The easiest fix here for the subscribe is to use the paths and values
+//  from above and populate it as best you can from the GET options above
+func (sync *Synchronizer) subscribeOpState(wildExpandedPaths []string, errChan chan<- events.DeviceResponse) {
+	target, err := southbound.GetTarget(sync.key)
+	if err != nil {
+		log.Error("Can't find target for key ", sync.key)
+		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+			sync.key.DeviceID, err)
+		return
+	}
+	log.Info("Syncing Op & State of  ", sync.key.DeviceID, " started")
+
+	subscribePaths := make([][]string, 0)
+	for _, path := range modelregistry.Paths(sync.modelReadOnlyPaths) {
+		subscribePaths = append(subscribePaths, utils.SplitPath(path))
+	}
+	for _, w := range wildExpandedPaths {
+		subscribePaths = append(subscribePaths, utils.SplitPath(w))
+	}
+
 	options := &southbound.SubscribeOptions{
 		UpdatesOnly:       false,
 		Prefix:            "",
@@ -328,6 +433,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		Origin:            "",
 	}
 
+	log.Infof("Subscribing to %d paths. %s", len(subscribePaths), sync.key.DeviceID)
 	req, err := southbound.NewSubscribeRequest(options)
 	if err != nil {
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorParseConfig,
@@ -337,10 +443,27 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 
 	subErr := target.Subscribe(sync.Context, req, sync.handler)
 	if subErr != nil {
+		log.Warning("Error in subscribe", subErr)
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
 			sync.key.DeviceID, subErr)
+		return
+	}
+	log.Info("Subscribe for OpState notifications on ", sync.key.DeviceID, " started")
+}
+
+func (sync *Synchronizer) getOpStatePathsByType(target *southbound.Target, reqtype gnmi.GetRequest_DataType) ([]*gnmi.Notification, error) {
+	log.Infof("Getting %s partition for %s", reqtype, sync.key.DeviceID)
+	requestState := &gnmi.GetRequest{
+		Type:     reqtype,
+		Encoding: sync.encoding,
 	}
 
+	responseState, err := target.Get(target.Ctx, requestState)
+	if err != nil {
+		return nil, err
+	}
+
+	return responseState.Notification, nil
 }
 
 func (sync *Synchronizer) handler(msg proto.Message) error {
