@@ -317,7 +317,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	}
 	changeStore[B64(change4.ID)] = change4
 
-	device2V, err = CreateConfiguration("Device2", "1.0.0", "TestDevice",
+	device2V, err = CreateConfiguration("Device2", "10.0.100", "TestDevice",
 		[]change.ID{change1.ID, change2.ID, change4.ID})
 	if err != nil {
 		log.Error(err)
@@ -430,7 +430,7 @@ func Test_device2_version(t *testing.T) {
 		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device2V.Name, ConfigName("Device2-1.0.0"))
+	assert.Equal(t, device2V.Name, ConfigName("Device2-10.0.100"))
 
 	config := device2V.ExtractFullConfig(changeStore, 0)
 	for _, c := range config {
@@ -596,7 +596,7 @@ func TestCreateConfiguration_badversion(t *testing.T) {
 	_, err =
 		CreateConfiguration("localhost-1", "a", "TestDevice",
 			[]change.ID{})
-	assert.ErrorContains(t, err, "version a does not match pattern", "Too short")
+	assert.ErrorContains(t, err, "version a does not match pattern", "has letter")
 
 	_, err =
 		CreateConfiguration("localhost-1", "1:0:0", "TestDevice",
@@ -606,9 +606,9 @@ func TestCreateConfiguration_badversion(t *testing.T) {
 
 func TestCreateConfiguration_badtype(t *testing.T) {
 	_, err :=
-		CreateConfiguration("localhost-1", "1.0.0", "TestDeviceType",
+		CreateConfiguration("localhost-1", "1.0.0", "TestD&eviceType",
 			[]change.ID{})
-	assert.ErrorContains(t, err, "deviceType TestDeviceType does not match pattern", "Too long")
+	assert.ErrorContains(t, err, "does not match pattern", "bad char")
 }
 
 func Test_writeOutConfigFile(t *testing.T) {

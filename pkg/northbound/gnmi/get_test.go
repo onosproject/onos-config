@@ -199,7 +199,7 @@ func Test_targetDoesNotExist(t *testing.T) {
 	}
 
 	_, err = server.Get(context.TODO(), &request)
-	assert.ErrorContains(t, err, "No Configuration found for")
+	assert.ErrorContains(t, err, "no Configuration found for")
 }
 
 // Target does exist, but specified path does not

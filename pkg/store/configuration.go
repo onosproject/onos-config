@@ -23,8 +23,8 @@ import (
 	"time"
 )
 
-const configurationNamePattern = `[a-zA-Z0-9\-:_]{4,40}`
-const configurationVersionPattern = `[a-zA-Z0-9_\.]{2,10}`
+const configurationNamePattern = `^[a-zA-Z0-9\-:_]{4,40}$`
+const configurationVersionPattern = `^(\d+\.\d+\.\d+)$`
 
 // ConfigName is an alias for string - is used to qualify identifier for Configuration
 type ConfigName string
@@ -111,22 +111,19 @@ func CreateConfiguration(deviceName string, version string, deviceType string,
 	rname := regexp.MustCompile(configurationNamePattern)
 	rversion := regexp.MustCompile(configurationVersionPattern)
 
-	matchName := rname.FindString(string(deviceName))
-	if string(deviceName) != matchName {
+	if !rname.MatchString(deviceName) || len(deviceName) > 40 {
 		return nil, fmt.Errorf("name %s does not match pattern %s",
 			deviceName, configurationNamePattern)
 	}
 
-	matchVer := rversion.FindString(string(version))
-	if string(version) != matchVer {
+	if !rversion.MatchString(version) {
 		return nil, fmt.Errorf("version %s does not match pattern %s",
 			version, configurationVersionPattern)
 	}
 
-	matchType := rversion.FindString(string(deviceType))
-	if string(deviceType) != matchType {
+	if !rname.MatchString(deviceType) || len(deviceType) > 40 {
 		return nil, fmt.Errorf("deviceType %s does not match pattern %s",
-			deviceType, configurationVersionPattern)
+			deviceType, configurationNamePattern)
 	}
 
 	configName := deviceName + "-" + version
@@ -135,7 +132,7 @@ func CreateConfiguration(deviceName string, version string, deviceType string,
 	var previousChange string
 	for _, c := range changes {
 		if previousChange == B64(c) {
-			return nil, fmt.Errorf("Duplicate last change ID '%s' in config", B64(c))
+			return nil, fmt.Errorf("duplicate last change ID '%s' in config", B64(c))
 
 		}
 		previousChange = B64(c)
