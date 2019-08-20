@@ -110,6 +110,86 @@ func Test_doSingleSet(t *testing.T) {
 	assert.Equal(t, (*change.TypedUint64)(&newChange.Config[0].TypedValue).Uint(), uint(16))
 }
 
+// Test_doSingleSet shows how a value of 1 list can be set on a target
+func Test_doSingleSetList(t *testing.T) {
+	server, _ := setUp()
+	var deletePaths = make([]*gnmi.Path, 0)
+	var replacedPaths = make([]*gnmi.Update, 0)
+	var updatedPaths = make([]*gnmi.Update, 0)
+	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a/list2a[name=a/b]/tx-power"))
+	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
+	value := gnmi.TypedValue{Value: &typedValue}
+	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
+
+	ext100Name := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  GnmiExtensionNetwkChangeID,
+			Msg: []byte("TestChange"),
+		},
+	}
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+		Extension: []*gnmi_ext.Extension{{
+			Ext: &ext100Name,
+		}},
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+
+	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+
+	// Check that Response is correct
+	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
+
+	assert.Equal(t, len(setResponse.Response), 1)
+
+	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
+
+	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_UPDATE.String())
+
+	path := setResponse.Response[0].Path
+
+	assert.Equal(t, path.Target, "Device1")
+	assert.Equal(t, len(path.Elem), 3, "Expected 3 path elements")
+
+	assert.Equal(t, path.Elem[0].Name, "cont1a")
+	assert.Equal(t, path.Elem[1].Name, "list2a")
+	assert.Equal(t, path.Elem[2].Name, "tx-power")
+
+	// Check that an the network change ID is given in extension 10
+	assert.Equal(t, len(setResponse.Extension), 1)
+
+	extension := setResponse.Extension[0].GetRegisteredExt()
+	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
+	assert.Equal(t, string(extension.Msg), "TestChange")
+
+	//Now check the store that the change was made correctly
+	assert.Equal(t, len(manager.GetManager().NetworkStore.Store), 2)
+	var nwChange store.NetworkConfiguration
+	for _, n := range manager.GetManager().NetworkStore.Store {
+		if n.Name == "TestChange" {
+			nwChange = n
+		}
+	}
+	assert.Equal(t, nwChange.User, "User1")
+	assert.Equal(t, len(nwChange.ConfigurationChanges), 1)
+
+	changeID, ok := nwChange.ConfigurationChanges["Device1-1.0.0"]
+	assert.Assert(t, ok)
+	assert.Equal(t, store.B64(changeID), "q4PV/7tyqIiflh6NIpgRiDis5ms=")
+
+	assert.Equal(t, len(manager.GetManager().ChangeStore.Store), 13)
+	newChange, ok := manager.GetManager().ChangeStore.Store[store.B64(changeID)]
+	assert.Assert(t, ok)
+	assert.Equal(t, len(newChange.Config), 1)
+	assert.Equal(t, newChange.Config[0].Path, "/cont1a/list2a[name=a/b]/tx-power")
+	assert.Equal(t, (*change.TypedUint64)(&newChange.Config[0].TypedValue).Uint(), uint(16))
+}
+
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
 func Test_do2SetsOnSameTarget(t *testing.T) {
 	server, _ := setUp()

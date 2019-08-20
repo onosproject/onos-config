@@ -416,7 +416,7 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
-	path, errInPath := utils.ParseGNMIElements(strings.Split(pathStr, "/")[1:])
+	path, errInPath := utils.ParseGNMIElements(utils.SplitPath(pathStr))
 	if errInPath != nil {
 		log.Error("ERROR: Unable to parse path ", pathStr)
 		return nil, errInPath
