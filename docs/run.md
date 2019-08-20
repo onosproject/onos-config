@@ -23,14 +23,22 @@ at startup. To check the list of currently loaded plugins use:
 ## Northbound gNMI service
 The system provides a full implementation of the gNMI spec as a northbound service.
 
+> On a deployed cluster the onos-cli pod has a gNMI client that can be used to
+> format and send gNMI messages.
+To access the CLI use
+```
+onit onos-cli
+```
+to get in to the **onos-cli** pod and then run gnmi_cli from there.
+
 Here is an example on how to use `gnmi_cli -get` to get configuration for a particular device (target) from the system.
 ```bash
-> gnmi_cli -get -address localhost:5150 \
+> gnmi_cli -get -address onos-config:5150 \
     -proto "path: <target: 'localhost-1', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
     -timeout 5s -alsologtostderr \
-    -client_crt pkg/southbound/testdata/client1.crt \
-    -client_key pkg/southbound/testdata/client1.key \
-    -ca_crt pkg/southbound/testdata/onfca.crt
+    -client_crt /etc/ssl/certs/client1.crt \
+    -client_key /etc/ssl/certs/client1.key \
+    -ca_crt /etc/ssl/certs/onfca.crt
 ```
 [Full list of the gNMI northbound endpoints](gnmi.md)
 
