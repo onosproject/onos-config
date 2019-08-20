@@ -147,12 +147,17 @@ format YYYY-MM-DD
 
 # Loading the Model Plugin
 The Model Plugin can be loaded at the start up of onos-config by specifying the
--modelPlugin argument (see [run.md](./run.md)), or it can be loaded dynamically
-at runtime using the [CLI](./cli.md) command:
-```
-> onos config add plugin <full path and filename to plugin file on the system where onos-config runs>
-```
-
+-modelPlugin argument.
+ ```bash
+     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 \
+     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice.so.2.0.0 \
+     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim.so.1.0.0 \
+     -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Stratum-1.0.0/stratum.so.1.0.0
+ ```
+ Alternatively these can loaded later with the onos cli tool - see [cli.md](./cli.md).
+ ```bash
+ > onos config add plugin <full path on target machine to shared object model>
+ ```
 > Model Plugins cannot be unloaded once loaded, without restarting onos-config.
 
 To see a list of loaded plugins use the command:
