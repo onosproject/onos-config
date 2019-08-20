@@ -16,7 +16,6 @@ license_check                   examine and ensure license headers exist
 linters                         examines Go source code and reports coding problems
 onos-config-base-docker         build onos-config base Docker image
 protos                          compile the protobuf files (using protoc-go Docker)
-run-docker                      run onos-config docker image
 test                            run the unit tests and source code validation
 
 ```

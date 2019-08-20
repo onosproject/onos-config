@@ -87,20 +87,6 @@ kind: images
 
 all: build images
 
-run-docker: # @HELP run onos-config docker image
-run-docker: onos-config-docker
-	docker stop onos-config || echo "onos-config was not running"
-	docker run -d --rm -p 5150:5150 -v `pwd`/configs:/etc/onos-config \
-		--name onos-config onosproject/onos-config \
-		-configStore=/etc/onos-config/configStore-sample.json \
-		-changeStore=/etc/onos-config/changeStore-sample.json \
-		-deviceStore=/etc/onos-config/deviceStore-sample.json \
-		-networkStore=/etc/onos-config/networkStore-sample.json \
-		-modelPlugin=/usr/local/lib/testdevice.so.1.0.0 \
-		-modelPlugin=/usr/local/lib/testdevice.so.2.0.0 \
-		-modelPlugin=/usr/local/lib/devicesim.so.1.0.0 \
-		-modelPlugin=/usr/local/lib/stratum.so.1.0.0
-
 clean: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
 
