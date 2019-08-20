@@ -120,6 +120,41 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 		return "", "", err
 	}
 	readOnlyPaths, readWritePaths := ExtractPaths(modelschema["Device"], yang.TSUnset, "", "")
+
+	/////////////////////////////////////////////////////////////////////
+	// Stratum - special case
+	// It has 139 Read Only paths in its YANG but as of Aug'19 only 1 is
+	// supported by the actual device - /interfaces/interface[name=*]/state
+	// Either the YANG should be adjusted or the device should implement
+	// the paths. As a workaround just add the working path here
+	// In addition Stratum does not fully support wildcards, and so calling this
+	// path will only retrieve the ifindex and name under this branch - other paths
+	// will have to be called explicitly by their interface name without wildcard
+	/////////////////////////////////////////////////////////////////////
+	if name == "Stratum" && version == "1.0.0" {
+		stratumIfRwPaths := make(ReadWritePathMap)
+		const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
+		stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
+		stratumIfRwPaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
+		stratumIfRwPaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
+		stratumIfRwPaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
+		stratumIfRwPaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
+		stratumIfRwPaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
+		stratumIfRwPaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
+		stratumIfRwPaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
+		stratumIfRwPaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
+		registry.ModelReadWritePaths[modelName] = stratumIfRwPaths
+
+		stratumIfPath := make(ReadOnlyPathMap)
+		const StratumIfPath = "/interfaces/interface[name=*]/state"
+		stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
+		registry.ModelReadOnlyPaths[modelName] = stratumIfPath
+		log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
+			"%d read only paths. %d read write paths", name, version,
+			len(registry.ModelReadOnlyPaths[modelName]), len(registry.ModelReadWritePaths[modelName]))
+		return name, version, nil
+	}
+
 	registry.ModelReadOnlyPaths[modelName] = readOnlyPaths
 	registry.ModelReadWritePaths[modelName] = readWritePaths
 	log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", name, version,

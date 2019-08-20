@@ -60,6 +60,7 @@ const ( // For event types
 	EventTypeErrorSubscribe
 	EventTypeErrorMissingModelPlugin
 	EventTypeErrorTranslation
+	EventTypeErrorGetWithRoPaths
 )
 
 func (et EventType) String() string {
