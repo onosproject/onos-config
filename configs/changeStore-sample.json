@@ -106,8 +106,8 @@
         }
       ]
     },
-    "m9jEA7cfJXhYyFZEyKfnqs9zQho=": {
-      "ID": "m9jEA7cfJXhYyFZEyKfnqs9zQho=",
+    "Ic0FLA5vVnTqL6893OtyNvzMpss=": {
+      "ID": "Ic0FLA5vVnTqL6893OtyNvzMpss=",
       "Description": "Original configuration for devicesim",
       "Created": "2019-05-21T08:43:01Z",
       "Config": [
@@ -130,6 +130,11 @@
           "Path": "/interfaces/interface[name=eth1]/config/enabled",
           "Value": "AQ==",
           "Type": 4
+        },
+        {
+          "Path": "/interfaces/interface[name=eth1/1]/config/name",
+          "Value": "ZXRoMS8x",
+          "Type": 1
         },
         {
           "Path": "/interfaces/interface[name=eth1/1]/config/enabled",

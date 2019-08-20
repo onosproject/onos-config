@@ -116,7 +116,7 @@ func Test_doSingleSetList(t *testing.T) {
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
-	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a/cont2a[lista/b=c]/leafList"))
+	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a/list2a[name=a/b]/tx-power"))
 	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
 	value := gnmi.TypedValue{Value: &typedValue}
 	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
@@ -157,8 +157,8 @@ func Test_doSingleSetList(t *testing.T) {
 	assert.Equal(t, len(path.Elem), 3, "Expected 3 path elements")
 
 	assert.Equal(t, path.Elem[0].Name, "cont1a")
-	assert.Equal(t, path.Elem[1].Name, "cont2a")
-	assert.Equal(t, path.Elem[2].Name, "leafList")
+	assert.Equal(t, path.Elem[1].Name, "list2a")
+	assert.Equal(t, path.Elem[2].Name, "tx-power")
 
 	// Check that an the network change ID is given in extension 10
 	assert.Equal(t, len(setResponse.Extension), 1)
@@ -180,13 +180,13 @@ func Test_doSingleSetList(t *testing.T) {
 
 	changeID, ok := nwChange.ConfigurationChanges["Device1-1.0.0"]
 	assert.Assert(t, ok)
-	assert.Equal(t, store.B64(changeID), "R8uX5L2ieSzqKjJZVGh8pWvLIl4=")
+	assert.Equal(t, store.B64(changeID), "q4PV/7tyqIiflh6NIpgRiDis5ms=")
 
 	assert.Equal(t, len(manager.GetManager().ChangeStore.Store), 13)
 	newChange, ok := manager.GetManager().ChangeStore.Store[store.B64(changeID)]
 	assert.Assert(t, ok)
 	assert.Equal(t, len(newChange.Config), 1)
-	assert.Equal(t, newChange.Config[0].Path, "/cont1a/cont2a[lista/b=c]/leafList")
+	assert.Equal(t, newChange.Config[0].Path, "/cont1a/list2a[name=a/b]/tx-power")
 	assert.Equal(t, (*change.TypedUint64)(&newChange.Config[0].TypedValue).Uint(), uint(16))
 }
 
