@@ -256,7 +256,7 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse) {
 }
 
 func (m *Manager) computeChange(updates change.TypedValueMap,
-	deletes []string) (*change.Change, error) {
+	deletes []string, description string) (*change.Change, error) {
 	var newChanges = make([]*change.Value, 0)
 	//updates
 	for path, value := range updates {
@@ -272,8 +272,10 @@ func (m *Manager) computeChange(updates change.TypedValueMap,
 		changeValue, _ := change.CreateChangeValue(path, change.CreateTypedValueEmpty(), true)
 		newChanges = append(newChanges, changeValue)
 	}
-	return change.CreateChange(newChanges,
-		fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339)))
+	if description == "" {
+		description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
+	}
+	return change.CreateChange(newChanges, description)
 }
 
 func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {

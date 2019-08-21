@@ -25,7 +25,7 @@ import (
 
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest
-func (m *Manager) GetTargetConfig(target string, configname string, path string, layer int) ([]*change.ConfigValue, error) {
+func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, path string, layer int) ([]*change.ConfigValue, error) {
 	log.Info("Getting config for ", target, path)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
@@ -38,13 +38,13 @@ func (m *Manager) GetTargetConfig(target string, configname string, path string,
 		}
 		if config.Name == "" {
 			return make([]*change.ConfigValue, 0),
-				fmt.Errorf("No Configuration found for %s", target)
+				fmt.Errorf("no Configuration found for %s", target)
 		}
 	} else if configname != "" {
-		config = m.ConfigStore.Store[store.ConfigName(configname)]
+		config = m.ConfigStore.Store[configname]
 		if config.Name == "" {
 			return make([]*change.ConfigValue, 0),
-				fmt.Errorf("No Configuration found for %s", configname)
+				fmt.Errorf("no Configuration found for %s", configname)
 		}
 	}
 	configValues := config.ExtractFullConfig(m.ChangeStore.Store, layer)

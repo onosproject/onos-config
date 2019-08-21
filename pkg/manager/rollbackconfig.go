@@ -26,7 +26,8 @@ import (
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target. Only the last one is
 // restored to the previous state. Going back n changes in time requires n sequential calls of this method.
-func (m *Manager) RollbackTargetConfig(configname string) (change.ID, error) {
+// A change is created so that it can be passed down to the real device
+func (m *Manager) RollbackTargetConfig(configname store.ConfigName) (change.ID, error) {
 	targetID := m.ConfigStore.Store[store.ConfigName(configname)].Device
 	log.Infof("Rolling back last change on config %s for target %s", configname, targetID)
 	id, updates, deletes, err := computeRollback(m, targetID, configname)
@@ -34,7 +35,8 @@ func (m *Manager) RollbackTargetConfig(configname string) (change.ID, error) {
 		log.Errorf("Error on rollback: %s", err.Error())
 		return nil, err
 	}
-	chg, err := m.computeChange(updates, deletes)
+	chg, err := m.computeChange(updates, deletes,
+		fmt.Sprintf("Rollback of %s at %s", string(configname), time.Now().Format(time.RFC3339)))
 	if err != nil {
 		return id, err
 	}
@@ -47,10 +49,10 @@ func (m *Manager) RollbackTargetConfig(configname string) (change.ID, error) {
 	return id, listenForDeviceResponse(m, targetID)
 }
 
-func computeRollback(m *Manager, target string, configname string) (change.ID, change.TypedValueMap, []string, error) {
-	id, err := m.ConfigStore.RemoveLastChangeEntry(store.ConfigName(configname))
+func computeRollback(m *Manager, target string, configname store.ConfigName) (change.ID, change.TypedValueMap, []string, error) {
+	id, err := m.ConfigStore.RemoveLastChangeEntry(configname)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Can't remove last entry on target %s in config %s, %s",
+		return nil, nil, nil, fmt.Errorf("can't remove last entry on target %s in config %s, %s",
 			target, configname, err.Error())
 	}
 	previousValues := make([]*change.ConfigValue, 0)
@@ -59,7 +61,7 @@ func computeRollback(m *Manager, target string, configname string) (change.ID, c
 	for _, valueColl := range rollbackChange.Config {
 		value, err := m.GetTargetConfig(target, configname, valueColl.Path, 0)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("Can't get last config for path %s on config %s for target %s",
+			return nil, nil, nil, fmt.Errorf("can't get last config for path %s on config %s for target %s",
 				valueColl.Path, configname, err)
 		}
 		//Previously there was no such value configured, deleting from device

@@ -340,9 +340,12 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			for _, update := range notification.Update {
 				if sync.encoding == gnmi.Encoding_JSON || sync.encoding == gnmi.Encoding_JSON_IETF {
 					jsonVal := update.Val.GetJsonVal()
+					if jsonVal == nil {
+						jsonVal = update.Val.GetJsonIetfVal()
+					}
 					configValuesUnparsed, err := store.DecomposeTree(jsonVal)
 					if err != nil {
-						log.Error("Can't translate from json to values, skipping to next update", err)
+						log.Error("Can't translate from json to values, skipping to next update ", err, jsonVal)
 						errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
 							sync.key.DeviceID, err)
 						break
