@@ -22,8 +22,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"io"
 	log "k8s.io/klog"
+	"os"
 	"strings"
 )
 
@@ -42,7 +45,7 @@ func (s Service) Register(r *grpc.Server) {
 type Server struct {
 }
 
-// RegisterModel registers a new YANG model.
+// RegisterModel registers a model plugin already on the onos-configs file system.
 func (s Server) RegisterModel(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
 	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(req.SoFile)
 	if err != nil {
@@ -52,6 +55,62 @@ func (s Server) RegisterModel(ctx context.Context, req *RegisterRequest) (*Regis
 		Name:    name,
 		Version: version,
 	}, nil
+}
+
+// UploadRegisterModel uploads and registers a new model plugin.
+func (s Server) UploadRegisterModel(stream ConfigAdminService_UploadRegisterModelServer) error {
+	response := RegisterResponse{Name: "Unknown"}
+	soFileName := ""
+
+	const TEMPFILE = "/tmp/uploaded_model_plugin.tmp"
+	f, err := os.Create(TEMPFILE)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create temporary file %s", TEMPFILE)
+	}
+	defer f.Close()
+
+	// while there are messages coming
+	i := 0
+	for {
+		chunk, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
+			err = errors.Wrapf(err,
+				"failed while reading chunks from stream")
+			return err
+		}
+		n2, err := f.Write(chunk.Content)
+		if err != nil {
+			return errors.Wrapf(err, "failed to write chunk %d to %s", i, TEMPFILE)
+		}
+		log.Infof("Wrote %d bytes to file %s. Chunk %d", n2, TEMPFILE, i)
+		soFileName = chunk.SoFile
+		i++
+	}
+	f.Close()
+	soFileName = "/tmp/" + soFileName
+	log.Infof("File %s written from %d chunks. Renaming to %s", TEMPFILE, i, soFileName)
+	err = os.Rename(TEMPFILE, soFileName)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to rename temporary file")
+	}
+
+	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(soFileName)
+	if err != nil {
+		return err
+	}
+	response.Name = name
+	response.Version = version
+
+	err = stream.SendAndClose(&response)
+	if err != nil {
+		return errors.Wrapf(err, "failed to send the close message %v", response)
+	}
+
+	return nil
 }
 
 // ListRegisteredModels lists the registered models..
