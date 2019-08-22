@@ -36,8 +36,11 @@ func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 	if err != nil {
 		return err
 	}
-	deviceConfigTemporary, _ := store.CreateConfiguration(deviceConfig.Device, deviceConfig.Version,
+	deviceConfigTemporary, err := store.CreateConfiguration(deviceConfig.Device, deviceConfig.Version,
 		deviceConfig.Type, deviceConfig.Changes)
+	if err != nil {
+		return err
+	}
 	chg, err := m.computeChange(updates, deletes, "Generated for validation")
 	if err != nil {
 		return err
