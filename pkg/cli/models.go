@@ -88,8 +88,8 @@ func runListPluginsCommand(cmd *cobra.Command, args []string) {
 func getAddPluginCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "plugin <plugin path and filename>",
-		Short: "Loads a new model plugin",
-		Args:  cobra.MaximumNArgs(1),
+		Short: "Loads a new model plugin from server",
+		Args:  cobra.ExactArgs(1),
 		Run:   runAddPluginCommand,
 	}
 	return cmd

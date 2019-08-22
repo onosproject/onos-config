@@ -11,6 +11,7 @@ require (
 	github.com/openconfig/gnmi v0.0.0-20180912164834-33a1865c3029
 	github.com/openconfig/goyang v0.0.0-20190408185115-e8b0ed2cbb0c
 	github.com/openconfig/ygot v0.5.1-0.20190427030428-68346f97239f
+	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	google.golang.org/grpc v1.22.1
