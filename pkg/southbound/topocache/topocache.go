@@ -23,11 +23,13 @@ package topocache
 
 import (
 	"context"
+	"errors"
+	"github.com/cenkalti/backoff"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
-	"io"
 	log "k8s.io/klog"
+	"time"
 )
 
 const (
@@ -37,6 +39,7 @@ const (
 // DeviceStore is the model of the Device store
 type DeviceStore struct {
 	client device.DeviceServiceClient
+	cache  map[device.ID]*device.Device
 }
 
 // LoadDeviceStore loads a device store
@@ -53,39 +56,69 @@ func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOptio
 	client := device.NewDeviceServiceClient(conn)
 	deviceStore := &DeviceStore{
 		client: client,
+		cache:  make(map[device.ID]*device.Device),
 	}
-
-	err = deviceStore.start(topoChannel)
-	if err != nil {
-		return nil, err
-	}
+	go deviceStore.start(topoChannel)
 	return deviceStore, nil
 }
 
-// start subscribes the device store to device events via the DeviceService
-func (s *DeviceStore) start(ch chan<- events.TopoEvent) error {
+// start starts listening for events from the DeviceService
+func (s *DeviceStore) start(ch chan<- events.TopoEvent) {
+	// Retry continuously to listen for devices from the device service. The root retry loop is constant, so
+	// when the device listener disconnects, a new connection will be attempted a second later. Each connection
+	// iteration is performed using an exponential backoff algorithm, ensuring the client doesn't attempt to connect
+	// to a missing service constantly.
+	_ = backoff.Retry(func() error {
+		operation := func() error {
+			return s.watchEvents(ch)
+		}
+
+		// Use exponential backoff until the client is able to list devices. This operation should never return
+		// an error since we don't use the error type required to fail the exponential backoff operation.
+		_ = backoff.Retry(operation, backoff.NewExponentialBackOff())
+
+		// Return a placeholder error to ensure the connection is retried.
+		return errors.New("retry")
+	}, backoff.NewConstantBackOff(1*time.Second))
+}
+
+// watchEvents listens for events from the DeviceService
+func (s *DeviceStore) watchEvents(ch chan<- events.TopoEvent) error {
 	list, err := s.client.List(context.Background(), &device.ListRequest{
 		Subscribe: true,
 	})
+
+	// Return an error if the client was unable to connect to the service.
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
-	go func() {
-		defer close(ch)
-		for {
-			response, err := list.Recv()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				log.Error(err)
-				break
-			}
-			ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+	for {
+		response, err := list.Recv()
+
+		// When an error occurs, log the error and return nil to reset the exponential backoff algorithm.
+		if err != nil {
+			log.Error(err)
+			return nil
 		}
-	}()
-	return nil
+
+		switch response.Type {
+		case device.ListResponse_NONE:
+			if _, ok := s.cache[response.Device.ID]; !ok {
+				s.cache[response.Device.ID] = response.Device
+				ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+			}
+		case device.ListResponse_ADDED:
+			s.cache[response.Device.ID] = response.Device
+			ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+		case device.ListResponse_UPDATED:
+			s.cache[response.Device.ID] = response.Device
+			ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+		case device.ListResponse_REMOVED:
+			ch <- events.CreateTopoEvent(response.Device.ID, false, response.Device.Address, *response.Device)
+		}
+	}
 }
 
 // getTopoConn gets a gRPC connection to the topology service
