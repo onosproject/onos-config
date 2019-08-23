@@ -78,7 +78,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	// Get the device capabilities
 	capResponse, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
-		log.Error(sync.Device.Address, " capabilities ", capErr)
+		log.Error(sync.Device.Address, " capabilities: ", capErr)
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceCapabilities,
 			string(device.ID), capErr)
 		return nil, capErr
@@ -106,14 +106,14 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 		initialConfig, err := change.CreateChangeValuesNoRemoval(config, "Initial set to device")
 
 		if err != nil {
-			log.Error("Can't translate the initial config for ", sync.Device.Address, err)
+			log.Errorf("Can't translate the initial config for %s due to: %s", sync.Device.Address, err)
 			return sync, nil
 		}
 
 		gnmiChange, err := values.NativeChangeToGnmiChange(initialConfig)
 
 		if err != nil {
-			log.Error("Can't obtain GnmiChange for ", sync.Device.Address, err)
+			log.Errorf("Can't obtain GnmiChange for %s due to: %s", sync.Device.Address, err)
 			return sync, nil
 		}
 
@@ -123,7 +123,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 			errGnmi, _ := status.FromError(err)
 			//Hack because the desc field is not available.
 			//Splitting at the desc string and getting the second element which is the description.
-			log.Errorf("Can't set initial configuration for %s due to %s", sync.Device.Address,
+			log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address,
 				strings.Split(errGnmi.Message(), " desc = ")[1])
 			errChan <- events.CreateErrorEvent(events.EventTypeErrorSetInitialConfig,
 				string(device.ID), initialConfig.ID, err)
@@ -145,7 +145,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 		c := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
 		err := c.IsValid()
 		if err != nil {
-			log.Warning("Event discarded because change is invalid ", err)
+			log.Warning("Event discarded because change is invalid: ", err)
 			respChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
 				sync.key.DeviceID, c.ID, err)
 			continue
@@ -153,7 +153,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 		gnmiChange, parseError := values.NativeChangeToGnmiChange(c)
 
 		if parseError != nil {
-			log.Error("Parsing error for Gnmi change ", parseError)
+			log.Error("Parsing error for gNMI change: ", parseError)
 			respChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
 				sync.key.DeviceID, c.ID, err)
 			continue
@@ -169,7 +169,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 		}
 		setResponse, err := target.Set(sync.Context, gnmiChange)
 		if err != nil {
-			log.Error("Error while doing set ", err)
+			log.Error("Error while doing set: ", err)
 			respChan <- events.CreateErrorEvent(events.EventTypeErrorSetConfig,
 				sync.key.DeviceID, c.ID, err)
 			continue
@@ -184,7 +184,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceResponse) {
 	target, err := southbound.GetTarget(sync.key)
 	if err != nil {
-		log.Error("Can't find target for key ", sync.key)
+		log.Error("Can't find target for key: ", sync.key)
 		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
 			sync.key.DeviceID, err)
 		return
@@ -345,14 +345,14 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 					}
 					configValuesUnparsed, err := store.DecomposeTree(jsonVal)
 					if err != nil {
-						log.Error("Can't translate from json to values, skipping to next update ", err, jsonVal)
+						log.Error("Can't translate from json to values, skipping to next update: ", err, jsonVal)
 						errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
 							sync.key.DeviceID, err)
 						break
 					}
 					configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, sync.modelReadOnlyPaths, true)
 					if err != nil {
-						log.Error("Can't translate from config values to typed values, skipping to next update", err)
+						log.Error("Can't translate from config values to typed values, skipping to next update: ", err)
 						errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
 							sync.key.DeviceID, err)
 						break
