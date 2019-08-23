@@ -21,14 +21,12 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/certs"
+	"github.com/onosproject/onos-config/pkg/utils"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"io/ioutil"
 	log "k8s.io/klog"
 	"strings"
-	"time"
-
-	"github.com/onosproject/onos-config/pkg/certs"
-	"github.com/onosproject/onos-config/pkg/utils"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/openconfig/gnmi/client"
@@ -42,7 +40,7 @@ func createDestination(device devicepb.Device) (*client.Destination, DeviceID) {
 	d.Addrs = []string{device.Address}
 	d.Target = device.Target
 	if device.Timeout != nil {
-		d.Timeout = *device.Timeout * time.Second
+		d.Timeout = *device.Timeout
 	}
 	if device.TLS.Plain {
 		log.Info("Plain connection connection to ", device.Address)
