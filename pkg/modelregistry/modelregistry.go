@@ -39,6 +39,7 @@ type ReadOnlySubPathMap map[string]change.ValueType
 // ReadOnlyPathMap abstracts the read only path
 type ReadOnlyPathMap map[string]ReadOnlySubPathMap
 
+// JustPaths extracts keys from a read only path map
 func (ro ReadOnlyPathMap) JustPaths() []string {
 	keys := make([]string, len(ro))
 	i := 0
@@ -63,6 +64,7 @@ type ReadWritePathElem struct {
 // ReadWritePathMap is a map of ReadWrite paths a their metadata
 type ReadWritePathMap map[string]ReadWritePathElem
 
+// JustPaths extracts keys from a read write path map
 func (rw ReadWritePathMap) JustPaths() []string {
 	keys := make([]string, len(rw))
 	i := 0
