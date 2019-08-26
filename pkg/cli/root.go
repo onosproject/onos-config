@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package command holds ONOS command-line command implementations.
+// Package cli holds ONOS command-line command implementations.
 package cli
 
 import "github.com/spf13/cobra"

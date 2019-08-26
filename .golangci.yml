@@ -11,6 +11,8 @@ run:
     - modelplugin
 
 issues:
+  exclude-use-default: false
+  exclude: Error return value of `.*Close` is not checked
   exclude-rules:
     - path: pkg/northbound/gnmi/set.go
       linters:
