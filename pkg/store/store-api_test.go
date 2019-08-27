@@ -344,7 +344,7 @@ func Test_device1_version(t *testing.T) {
 	leaf2c := change1.Config[4]
 	assert.Equal(t, leaf2c.TypedValue.String(), "abc")
 
-	config := device1V.ExtractFullConfig(changeStore, 0)
+	config := device1V.ExtractFullConfig(change1, changeStore, 0)
 	for _, c := range config {
 		log.Infof("Path %s = %s (%d)\n", c.Path, c.Value, c.Type)
 	}
@@ -374,7 +374,7 @@ func Test_device1_prev_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
-	config := device1V.ExtractFullConfig(changeStore, changePrevious)
+	config := device1V.ExtractFullConfig(nil, changeStore, changePrevious)
 	for _, c := range config {
 		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}
@@ -395,7 +395,7 @@ func Test_device1_first_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
-	config := device1V.ExtractFullConfig(changeStore, changePrevious)
+	config := device1V.ExtractFullConfig(nil, changeStore, changePrevious)
 	for _, c := range config {
 		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}
@@ -416,7 +416,7 @@ func Test_device1_invalid_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
-	config := device1V.ExtractFullConfig(changeStore, changePrevious)
+	config := device1V.ExtractFullConfig(nil, changeStore, changePrevious)
 	if len(config) > 0 {
 		t.Errorf("Not expecting any values for change (n-3). Got %d", len(config))
 	}
@@ -432,7 +432,7 @@ func Test_device2_version(t *testing.T) {
 
 	assert.Equal(t, device2V.Name, ConfigName("Device2-10.0.100"))
 
-	config := device2V.ExtractFullConfig(changeStore, 0)
+	config := device2V.ExtractFullConfig(nil, changeStore, 0)
 	for _, c := range config {
 		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}

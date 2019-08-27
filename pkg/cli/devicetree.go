@@ -171,7 +171,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 	tmplDevicetreeList, _ := template.New("devices").Funcs(funcMapDeviceTree).Parse(devicetreeTemplate)
 	for _, configuration := range configurations {
 		_ = tmplDevicetreeList.Execute(os.Stdout, configuration)
-		fullDeviceConfigValues := configuration.ExtractFullConfig(changes, 0) // Passing 0 as change set has already been reduced by n='layer'
+		fullDeviceConfigValues := configuration.ExtractFullConfig(nil, changes, 0) // Passing 0 as change set has already been reduced by n='layer'
 		jsonTree, _ := store.BuildTree(fullDeviceConfigValues, false)
 		Output("TREE:\n%s\n\n", string(jsonTree))
 	}

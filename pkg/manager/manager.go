@@ -164,7 +164,7 @@ func validateConfiguration(configObj store.Configuration, changeStore map[string
 	cfgModelPlugin, pluginExists := mgr.ModelRegistry.ModelPlugins[modelPluginName]
 	if pluginExists {
 		log.Info("Validating config ", configObj.Name, " with Model Plugin ", modelPluginName)
-		fullconfig := configObj.ExtractFullConfig(mgr.ChangeStore.Store, 0)
+		fullconfig := configObj.ExtractFullConfig(nil, mgr.ChangeStore.Store, 0)
 		configJSON, err := store.BuildTree(fullconfig, true)
 		if err != nil {
 			errChan <- err

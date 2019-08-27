@@ -17,6 +17,7 @@ package store
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	log "k8s.io/klog"
 	"regexp"
 	"sort"
 	"strings"
@@ -45,18 +46,25 @@ type Configuration struct {
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func (b Configuration) ExtractFullConfig(changeStore map[string]*change.Change, nBack int) []*change.ConfigValue {
+func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore map[string]*change.Change, nBack int) []*change.ConfigValue {
 
 	// Have to use a slice to have a consistent output order
 	consolidatedConfig := make([]*change.ConfigValue, 0)
 
 	for _, changeID := range b.Changes[0 : len(b.Changes)-nBack] {
-		change, ok := changeStore[B64(changeID)]
+		log.Infof("ChangeId %s", B64(changeID))
+		existingChange, ok := changeStore[B64(changeID)]
 		if !ok {
-			return nil
+			if newChange != nil && B64(newChange.ID) == B64(changeID) {
+				existingChange = newChange
+			} else {
+				log.Error("No existing change with ID ", B64(changeID))
+				return nil
+			}
 		}
+		log.Infof("Change desc %s", existingChange.Description)
 
-		for _, changeValue := range change.Config {
+		for _, changeValue := range existingChange.Config {
 			if changeValue.Remove {
 				// Delete everything at that path and all below it
 				// Have to search through consolidated config
@@ -76,6 +84,7 @@ func (b Configuration) ExtractFullConfig(changeStore map[string]*change.Change, 
 				var alreadyExists bool
 				for idx, cv := range consolidatedConfig {
 					if changeValue.Path == cv.Path {
+						log.Infof("change value %s, prev value %s", changeValue.Value, cv.Value)
 						consolidatedConfig[idx].Value = changeValue.Value
 						alreadyExists = true
 						break

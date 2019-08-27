@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 	"strings"
+	"time"
 )
 
 // Synchronizer enables proper configuring of a device based on store events and cache of operational data
@@ -497,17 +498,67 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 				return fmt.Errorf("invalid nil path in update: %v", update)
 			}
 			pathStr := utils.StrPath(update.Path)
+
 			//TODO this currently supports only leaf values, and no * paths,
 			// parsing of json is needed and a per path storage
 			valStr := utils.StrVal(update.Val)
-			val, err := values.GnmiTypedValueToNativeType(update.Val)
-			if err != nil {
-				return fmt.Errorf("can't translate to Typed value %s", err)
+
+			// FIXMI: this is a hack to ignore bogus values in phantom notifications coming from Stratum for some reason
+			if valStr != "unsupported yet" {
+				val, err := values.GnmiTypedValueToNativeType(update.Val)
+				if err != nil {
+					return fmt.Errorf("can't translate to Typed value %s", err)
+				}
+				eventValues[pathStr] = valStr
+				log.Info("Added ", val, " for path ", pathStr, " for device ", sync.ID)
+
+				//TODO this is a hack for Stratum Sept 19
+				if strings.HasPrefix(pathStr, "/interfaces/interface[") && strings.HasSuffix(pathStr, "]/state/name") {
+					pathChange := strings.Replace(pathStr, "/state/", "/config/", 1)
+					log.Infof("Adding placeholder config node for %s as %s", pathStr, pathChange)
+					var newChanges = make([]*change.Value, 0)
+					changeValue, _ := change.CreateChangeValue(pathChange, val, false)
+					newChanges = append(newChanges, changeValue)
+					chg, err := change.CreateChange(newChanges, "Setting config name")
+					if err != nil {
+						log.Error("Unable to add placeholder node due to: ", err)
+						continue
+					}
+					sync.ChangeStore.Store[store.B64(chg.ID)] = chg
+					var newConfig *store.Configuration
+					for _, cfg := range sync.ConfigurationStore.Store {
+						if cfg.Device == sync.Target {
+							log.Infof("Tying placeholder config node to %s", sync.GetTarget())
+							newConfig = &cfg
+							break
+						}
+					}
+					if newConfig == nil {
+						log.Infof("Creating new configuration for %s-%s to hold the placeholder config change %s",
+							sync.GetTarget(), sync.GetVersion(), store.B64(chg.ID))
+						newConfig, _ = store.CreateConfiguration(sync.GetTarget(), sync.GetVersion(), string(sync.GetType()), []change.ID{})
+					}
+					if newConfig != nil {
+						found := false
+						chID := store.B64(chg.ID)
+						for _, id := range newConfig.Changes {
+							if store.B64(id) == chID {
+								found = true
+								break
+							}
+						}
+						if !found {
+							log.Infof("Appending placeholder config change %s to config store", chID)
+							newConfig.Changes = append(newConfig.Changes, chg.ID)
+							newConfig.Updated = time.Now()
+							sync.ConfigurationStore.Store[newConfig.Name] = *newConfig
+						}
+					}
+				}
+				sync.operationalCache[pathStr] = val
 			}
-			eventValues[pathStr] = valStr
-			log.Info("Added ", val, " for path ", pathStr, " for device ", sync.ID)
-			sync.operationalCache[pathStr] = val
 		}
+
 		for _, del := range notification.Delete {
 			if del.Elem == nil {
 				return fmt.Errorf("invalid nil path in update: %v", del)
@@ -544,7 +595,7 @@ func getNetworkConfig(sync *Synchronizer, target string, configname string, laye
 				fmt.Errorf("No Configuration found for %s", configname)
 		}
 	}
-	configValues := config.ExtractFullConfig(sync.ChangeStore.Store, layer)
+	configValues := config.ExtractFullConfig(nil, sync.ChangeStore.Store, layer)
 	if len(configValues) != 0 {
 		return configValues, nil
 	}
