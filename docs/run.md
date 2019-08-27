@@ -4,7 +4,7 @@
 > and the GOPATH environment variable is set, e.g. `export GOPATH=~/go`
 
 ## Run with Helm charts
-`onos-config` can run through Helm Charts as defined in the [deplooyment.md](deployment.md) page.
+`onos-config` can run through Helm Charts as defined in the [deployment.md](deployment.md) page.
 > Running with Helm is Work in Progress
 
 ## Run with `onit`
