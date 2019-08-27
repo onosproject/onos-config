@@ -18,7 +18,7 @@ COPY --from=debugBuilder /go/bin/dlv /usr/local/bin/dlv
 COPY --from=debugBuilder /go/bin/gnmi_cli /usr/local/bin/gnmi_cli
 
 RUN echo "#!/bin/sh" >> /usr/local/bin/onos-config-debug && \
-    echo "dlv --listen=:40000 --headless=true --accept-multiclient=true --api-version=2 --log exec /usr/local/bin/onos-config -- \"\$@\"" >> /usr/local/bin/onos-config-debug && \
+    echo "dlv --listen=:40000 --headless=true --accept-multiclient=true --continue --api-version=2 --log exec /usr/local/bin/onos-config -- \"\$@\"" >> /usr/local/bin/onos-config-debug && \
     chmod +x /usr/local/bin/onos-config-debug
 
 RUN addgroup -S onos-config && adduser -S -G onos-config onos-config
