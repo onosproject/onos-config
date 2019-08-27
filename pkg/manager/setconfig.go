@@ -52,7 +52,7 @@ func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 	if !ok {
 		log.Warning("No model ", modelName, " available as a plugin")
 	} else {
-		configValues := deviceConfigTemporary.ExtractFullConfig(m.ChangeStore.Store, 0)
+		configValues := deviceConfigTemporary.ExtractFullConfig(chg, m.ChangeStore.Store, 0)
 		jsonTree, err := store.BuildTree(configValues, true)
 		if err != nil {
 			log.Error("Error building JSON tree from Config Values ", err, jsonTree)

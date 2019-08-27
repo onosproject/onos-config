@@ -47,7 +47,7 @@ func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, pa
 				fmt.Errorf("no Configuration found for %s", configname)
 		}
 	}
-	configValues := config.ExtractFullConfig(m.ChangeStore.Store, layer)
+	configValues := config.ExtractFullConfig(nil, m.ChangeStore.Store, layer)
 	if len(configValues) == 0 {
 		return configValues, nil
 	}

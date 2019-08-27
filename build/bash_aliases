@@ -44,7 +44,7 @@ function oklog {
 
 function oklogw {
     while true; do
-        klog $1
+        oklog $1
         sleep 5
     done
 }
