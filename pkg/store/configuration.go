@@ -52,7 +52,6 @@ func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore m
 	consolidatedConfig := make([]*change.ConfigValue, 0)
 
 	for _, changeID := range b.Changes[0 : len(b.Changes)-nBack] {
-		log.Infof("ChangeId %s", B64(changeID))
 		existingChange, ok := changeStore[B64(changeID)]
 		if !ok {
 			if newChange != nil && B64(newChange.ID) == B64(changeID) {
@@ -84,7 +83,6 @@ func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore m
 				var alreadyExists bool
 				for idx, cv := range consolidatedConfig {
 					if changeValue.Path == cv.Path {
-						log.Infof("change value %s, prev value %s", changeValue.Value, cv.Value)
 						consolidatedConfig[idx].Value = changeValue.Value
 						alreadyExists = true
 						break

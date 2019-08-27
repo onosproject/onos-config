@@ -503,7 +503,7 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			// parsing of json is needed and a per path storage
 			valStr := utils.StrVal(update.Val)
 
-			// FIXMI: this is a hack to ignore bogus values in phantom notifications coming from Stratum for some reason
+			// FIXME: this is a hack to ignore bogus values in phantom notifications coming from Stratum for some reason
 			if valStr != "unsupported yet" {
 				val, err := values.GnmiTypedValueToNativeType(update.Val)
 				if err != nil {
