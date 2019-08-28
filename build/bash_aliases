@@ -3,15 +3,14 @@
 export GOPATH=$(go env GOPATH)
 export GO111MODULE=on
 
+export CDPATH="$GOPATH/src/github.com/onosproject:$CDPATH"
+
 # Changes working directory to the root of the projects
 function ocd {
     cd $GOPATH/src/github.com/onosproject/
     p=$(ls -1 | grep $1 | head -n 1)
     [ -n "$p" ] && cd $GOPATH/src/github.com/onosproject/$p
 }
-
-# Deprecated!
-alias ocfg='ocd onos-config'
 
 # Pull master... meaning fetch and rebase master against upstream master
 alias gpm='git fetch upstream && git checkout master && git rebase upstream/master'
@@ -32,6 +31,7 @@ alias ki='kubectl cluster-info'
 
 # onit shortcuts
 alias okctl='kubectl -n $(onit get cluster)'
+alias ocli='onit onos-cli --'
 
 function okpid {
     okctl get pods | cut -d\  -f 1 | grep -v envoy | grep $1 2>/dev/null
