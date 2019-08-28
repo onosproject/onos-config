@@ -63,7 +63,7 @@ func tearDown(t *testing.T, d *Dispatcher) {
 	d.UnregisterOperationalState(opStateTest)
 }
 
-func init() {
+func TestMain(m *testing.M) {
 	log.SetOutput(os.Stdout)
 
 	device1 = device.Device{ID: "localhost-1", Address: "localhost:10161"}
@@ -83,6 +83,8 @@ func init() {
 		log.Error("Cannot load change store ", err)
 		return
 	}
+
+	os.Exit(m.Run())
 }
 
 func Test_getListeners(t *testing.T) {
