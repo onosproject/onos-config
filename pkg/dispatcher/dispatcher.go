@@ -169,7 +169,8 @@ func (d *Dispatcher) UnregisterOperationalState(subscriber string) {
 
 // GetListeners returns a list of registered listeners names
 func (d *Dispatcher) GetListeners() []string {
-	listenerKeys := make([]string, 0)
+	x := 0
+	listenerKeys := make([]string, x)
 	for k := range d.deviceListeners {
 		listenerKeys = append(listenerKeys, string(k))
 	}
