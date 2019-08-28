@@ -86,27 +86,42 @@ func Test_TypedValueInt(t *testing.T) {
 	tv := NewInt64(testNegativeInt)
 	assert.Equal(t, tv.String(), fmt.Sprintf("%d", testNegativeInt))
 	assert.Equal(t, len(tv.Value), 8)
+	assert.DeepEqual(t, tv.Value, []uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x80})
 
 	testConversion(t, (*TypedValue)(tv))
 
+	tv = NewInt64(12345678)
+	assert.Equal(t, tv.String(), fmt.Sprintf("%d", 12345678))
+	assert.DeepEqual(t, tv.Value, []uint8{0x4E, 0x61, 0xBC, 0x0, 0x0, 0x0, 0x0, 0x0})
+
 	tv = NewInt64(testPositiveInt)
 	assert.Equal(t, tv.String(), fmt.Sprintf("%d", testPositiveInt))
+	assert.DeepEqual(t, tv.Value, []uint8{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F})
 
 	tv = NewInt64(testZeroInt)
 	assert.Equal(t, tv.String(), fmt.Sprintf("%d", testZeroInt))
 	assert.Equal(t, (*TypedValue)(tv).String(), "0")
+	assert.DeepEqual(t, tv.Value, []uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0})
 }
 
 func Test_TypedValueUint(t *testing.T) {
 	tv := NewUint64(testZeroUint)
 	assert.Equal(t, tv.String(), fmt.Sprintf("%d", testZeroUint))
 	assert.Equal(t, len(tv.Value), 8)
+	assert.DeepEqual(t, tv.Value, []uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0})
+
+	tv = NewUint64(12345678)
+	assert.Equal(t, tv.String(), fmt.Sprintf("%d", 12345678))
+	assert.Equal(t, len(tv.Value), 8)
+	assert.DeepEqual(t, tv.Value, []uint8{0x4E, 0x61, 0xBC, 0x0, 0x0, 0x0, 0x0, 0x0})
 
 	tv = NewUint64(testMaxUint)
 	assert.Equal(t, tv.String(), fmt.Sprintf("%d", testMaxUint))
+	assert.DeepEqual(t, tv.Value, []uint8{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF})
 
 	testConversion(t, (*TypedValue)(tv))
 	assert.Equal(t, (*TypedValue)(tv).String(), "18446744073709551615")
+
 }
 
 func Test_TypedValueBool(t *testing.T) {
@@ -114,6 +129,7 @@ func Test_TypedValueBool(t *testing.T) {
 
 	assert.Equal(t, len(tv.Value), 1)
 	assert.Equal(t, tv.String(), "true")
+	assert.DeepEqual(t, tv.Value, []uint8{0x01})
 
 	testConversion(t, (*TypedValue)(tv))
 
@@ -127,29 +143,36 @@ func Test_TypedValueDecimal64(t *testing.T) {
 	assert.Equal(t, len(tv.Value), 8)
 	assert.Equal(t, tv.String(), "-9223372036854775.808")
 	assert.Equal(t, tv.TypeOpts[0], testPrecision3)
+	assert.DeepEqual(t, tv.Value, []uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x80})
 
 	testConversion(t, (*TypedValue)(tv))
 
 	tv = NewDecimal64(testPositiveInt, testPrecision6)
 	assert.Equal(t, tv.String(), "9223372036854.775807")
 	assert.Equal(t, tv.TypeOpts[0], testPrecision6)
+	assert.DeepEqual(t, tv.Value, []uint8{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F})
 
 	tv = NewDecimal64(testDigitsZero, testPrecision0)
 	assert.Equal(t, tv.String(), "0")
 	assert.Equal(t, tv.TypeOpts[0], testPrecision0)
 	assert.Equal(t, (*TypedValue)(tv).String(), "0")
+	assert.DeepEqual(t, tv.Value, []uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x00})
 }
 
 func Test_TypedValueFloat(t *testing.T) {
 	tv := NewFloat(testFloatNeg)
 	assert.Equal(t, len(tv.Value), 8)
 	assert.Equal(t, tv.String(), "-339999995214436424907732413799364296704.000000")
+	assert.Equal(t, len(tv.TypeOpts), 0)
+	assert.DeepEqual(t, tv.Value, []uint8{0x0, 0x0, 0x0, 0xC0, 0x33, 0xF9, 0xEF, 0xC7})
 
 	testConversion(t, (*TypedValue)(tv))
 
 	tv = NewFloat(testFloatPos)
 	assert.Equal(t, tv.String(), "339999995214436424907732413799364296704.000000")
 	assert.Equal(t, (*TypedValue)(tv).String(), "339999995214436424907732413799364296704.000000")
+	assert.Equal(t, len(tv.TypeOpts), 0)
+	assert.DeepEqual(t, tv.Value, []uint8{0x0, 0x0, 0x0, 0xC0, 0x33, 0xF9, 0xEF, 0x47})
 }
 
 func Test_TypedValueBytes(t *testing.T) {
