@@ -37,8 +37,8 @@ var (
 )
 
 const (
-	configStoreDefaultFileName = "../store/testout/configStore-sample.json"
-	changeStoreDefaultFileName = "../store/testout/changeStore-sample.json"
+	configStoreDefaultFileName = "testdata/configStore-sample.json"
+	changeStoreDefaultFileName = "testdata/changeStore-sample.json"
 	opStateTest                = "opStateListener"
 )
 
@@ -74,14 +74,14 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		wd, _ := os.Getwd()
 		log.Warning("Cannot load config store ", err, wd)
-		return
+		os.Exit(1)
 	}
 	log.Info("Configuration store loaded from ", configStoreDefaultFileName)
 
 	changeStoreTest, err = store.LoadChangeStore(changeStoreDefaultFileName)
 	if err != nil {
 		log.Error("Cannot load change store ", err)
-		return
+		os.Exit(1)
 	}
 
 	os.Exit(m.Run())
