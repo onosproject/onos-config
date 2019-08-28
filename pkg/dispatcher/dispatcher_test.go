@@ -74,14 +74,14 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		wd, _ := os.Getwd()
 		log.Warning("Cannot load config store ", err, wd)
-		return
+		os.Exit(2)
 	}
 	log.Info("Configuration store loaded from ", configStoreDefaultFileName)
 
 	changeStoreTest, err = store.LoadChangeStore(changeStoreDefaultFileName)
 	if err != nil {
 		log.Error("Cannot load change store ", err)
-		return
+		os.Exit(2)
 	}
 
 	os.Exit(m.Run())
