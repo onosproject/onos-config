@@ -48,26 +48,6 @@ var (
 )
 
 func setUp() *Dispatcher {
-	log.SetOutput(os.Stdout)
-
-	device1 = device.Device{ID: "localhost-1", Address: "localhost:10161"}
-	device2 = device.Device{ID: "localhost-2", Address: "localhost:10162"}
-	device3 = device.Device{ID: "localhost-3", Address: "localhost:10163"}
-
-	configStoreTest, err = store.LoadConfigStore(configStoreDefaultFileName)
-	if err != nil {
-		wd, _ := os.Getwd()
-		log.Warning("Cannot load config store ", err, wd)
-		return nil
-	}
-	log.Info("Configuration store loaded from ", configStoreDefaultFileName)
-
-	changeStoreTest, err = store.LoadChangeStore(changeStoreDefaultFileName)
-	if err != nil {
-		log.Error("Cannot load change store ", err)
-		return nil
-	}
-
 	d := NewDispatcher()
 	device1Channel, respChannel1, err = d.RegisterDevice(device1.ID)
 	device2Channel, respChannel2, err = d.RegisterDevice(device2.ID)
@@ -81,6 +61,28 @@ func tearDown(t *testing.T, d *Dispatcher) {
 	assert.NilError(t, d.UnregisterDevice(device2.ID))
 	assert.NilError(t, d.UnregisterDevice(device3.ID))
 	d.UnregisterOperationalState(opStateTest)
+}
+
+func init() {
+	log.SetOutput(os.Stdout)
+
+	device1 = device.Device{ID: "localhost-1", Address: "localhost:10161"}
+	device2 = device.Device{ID: "localhost-2", Address: "localhost:10162"}
+	device3 = device.Device{ID: "localhost-3", Address: "localhost:10163"}
+
+	configStoreTest, err = store.LoadConfigStore(configStoreDefaultFileName)
+	if err != nil {
+		wd, _ := os.Getwd()
+		log.Warning("Cannot load config store ", err, wd)
+		return
+	}
+	log.Info("Configuration store loaded from ", configStoreDefaultFileName)
+
+	changeStoreTest, err = store.LoadChangeStore(changeStoreDefaultFileName)
+	if err != nil {
+		log.Error("Cannot load change store ", err)
+		return
+	}
 }
 
 func Test_getListeners(t *testing.T) {
