@@ -21,6 +21,7 @@ import (
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	"gotest.tools/assert"
+	"os"
 	"testing"
 )
 
@@ -41,11 +42,18 @@ var (
 
 var ds1Schema map[string]*yang.Entry
 
+/**
+ * Please refer to the tree view of DeviceSim at
+ * ../../modelplugin/Devicesim-1.0.0/devicesim-1.0.0.tree
+ * to see how the YANG files are rendered together in the model plugin
+ */
 func TestMain(m *testing.M) {
 	var modelPluginTest modelPluginTest
 
 	ds1Schema, _ = modelPluginTest.Schema()
 	readOnlyPaths, readWritePaths = ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+
+	os.Exit(m.Run())
 }
 
 func (m modelPluginTest) ModelData() (string, string, []*gnmi.ModelData, string) {
@@ -162,7 +170,8 @@ func Test_Component(t *testing.T) {
 	k := "/components/component[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
-		case "/description", "/id", "/mfg-name", "/name", "/part-no", "/serial-no", "/type", "/version":
+		case "/description", "/id", "/mfg-name", "/name", "/part-no", "/serial-no", "/type", "/version",
+			"/temperature/instant", "/temperature/avg", "/temperature/min", "/temperature/max":
 		default:
 			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
 		}
@@ -198,7 +207,14 @@ func Test_SubInterfaces(t *testing.T) {
 	k := "/interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
-		case "/admin-status", "/description", "/enabled", "/ifindex", "/index", "/last-change", "/name", "/oper-status":
+		case "/admin-status", "/description", "/enabled", "/ifindex", "/index",
+			"/last-change", "/name", "/oper-status", "/counters/in-octets",
+			"/counters/in-unicast-pkts", "/counters/in-broadcast-pkts",
+			"/counters/in-multicast-pkts", "/counters/in-discards", "/counters/in-errors",
+			"/counters/in-unknown-protos", "/counters/in-fcs-errors",
+			"/counters/out-octets", "/counters/out-unicast-pkts", "/counters/out-broadcast-pkts",
+			"/counters/out-multicast-pkts", "/counters/out-discards", "/counters/out-errors",
+			"/counters/carrier-transitions", "/counters/last-clear":
 		default:
 			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
 		}
@@ -210,7 +226,14 @@ func Test_InterfaceName(t *testing.T) {
 	k := "/interfaces/interface[name=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
-		case "/admin-status", "/description", "/enabled", "/hardware-port", "/ifindex", "/last-change", "/mtu", "/name", "/oper-status", "/type":
+		case "/admin-status", "/description", "/enabled", "/hardware-port", "/ifindex",
+			"/last-change", "/mtu", "/name", "/oper-status", "/type", "/counters/in-octets",
+			"/counters/in-unicast-pkts", "/counters/in-broadcast-pkts",
+			"/counters/in-multicast-pkts", "/counters/in-discards", "/counters/in-errors",
+			"/counters/in-unknown-protos", "/counters/in-fcs-errors",
+			"/counters/out-octets", "/counters/out-unicast-pkts", "/counters/out-broadcast-pkts",
+			"/counters/out-multicast-pkts", "/counters/out-discards", "/counters/out-errors",
+			"/counters/carrier-transitions", "/counters/last-clear":
 		default:
 			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
 		}
@@ -222,7 +245,7 @@ func Test_DnsHost(t *testing.T) {
 	k := "/system/dns/host-entries/host-entry[hostname=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
-		case "/hostname":
+		case "/hostname", "/alias", "/ipv4-address", "/ipv6-address":
 		default:
 			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
 		}
@@ -244,8 +267,12 @@ func Test_DnsServer(t *testing.T) {
 func Test_Dns(t *testing.T) {
 
 	k := "/system/dns/state"
-	if len(readOnlyPaths[k]) != 0 {
-		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/search":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
 	}
 }
 
@@ -340,8 +367,12 @@ func Test_AccountingEvents(t *testing.T) {
 func Test_Accounting(t *testing.T) {
 
 	k := "/system/aaa/accounting/state"
-	if len(readOnlyPaths[k]) != 0 {
-		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/accounting-method":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
 	}
 }
 
@@ -360,8 +391,12 @@ func Test_AuthAdmin(t *testing.T) {
 func Test_AuthState(t *testing.T) {
 
 	k := "/system/aaa/authentication/state"
-	if len(readOnlyPaths[k]) != 0 {
-		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/authentication-method":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
 	}
 }
 
@@ -392,8 +427,12 @@ func Test_AuthEvent(t *testing.T) {
 func Test_Auth(t *testing.T) {
 
 	k := "/system/aaa/authorization/state"
-	if len(readOnlyPaths[k]) != 0 {
-		t.Fatalf("Unexpected readOnlyPath sub path %v for %s", readOnlyPaths, k)
+	for p := range readOnlyPaths[k] {
+		switch p {
+		case "/authorization-method":
+		default:
+			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
+		}
 	}
 }
 
@@ -402,7 +441,9 @@ func Test_Radius(t *testing.T) {
 	k := "/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
-		case "/acct-port", "/auth-port", "/retransmit-attempts", "/secret-key", "/source-address":
+		case "/acct-port", "/auth-port", "/retransmit-attempts", "/secret-key", "/source-address",
+			"/counters/retried-access-requests", "/counters/access-accepts",
+			"/counters/access-rejects", "/counters/timeout-access-requests":
 		default:
 			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
 		}
@@ -496,7 +537,7 @@ func Test_OfControllers(t *testing.T) {
 
 func Test_ProcMonProcess(t *testing.T) {
 
-	k := "/system/processes/process[pid=*]"
+	k := "/system/processes/process[pid=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/cpu-usage-system", "/cpu-usage-user", "/cpu-utilization", "/memory-usage", "/memory-utilization",
@@ -549,11 +590,11 @@ func Test_NtpServer(t *testing.T) {
 	for p, v := range readOnlyPaths[k] {
 		switch p {
 		case "/address", "/association-type", "/port":
-			assert.Equal(t, v, 1, "Unexpected type %i", v)
+			assert.Equal(t, int(v), 1, "Unexpected type %i for %s", v, p)
 		case "/iburst", "/prefer":
-			assert.Equal(t, v, 4, "Unexpected type %i", v)
+			assert.Equal(t, int(v), 4, "Unexpected type %i for %s", v, p)
 		case "/offset", "/poll-interval", "/root-delay", "/root-dispersion", "/stratum", "/version":
-			assert.Equal(t, v, 3, "Unexpected type %i", v)
+			assert.Equal(t, int(v), 3, "Unexpected type %i for %s", v, p)
 		default:
 			t.Fatalf("Unexpected readOnlyPath sub path %s for %s", p, k)
 		}
