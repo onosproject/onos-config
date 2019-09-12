@@ -1,5 +1,5 @@
 {
-  "openconfig-interfaces:interfaces": {
+  "interfaces": {
     "default-type": "ethernet",
     "interface": [
       {
@@ -12,8 +12,8 @@
       }
     ]
   },
-  "openconfig-system:system": {
-    "openconfig-openflow:openflow": {
+  "system": {
+    "openflow": {
       "controllers": {
         "controller": [
           {

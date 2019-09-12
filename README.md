@@ -1,5 +1,6 @@
 # onos-config
 [![Build Status](https://travis-ci.org/onosproject/onos-config.svg?branch=master)](https://travis-ci.org/onosproject/onos-config)
+[![Integration Test Status](https://img.shields.io/travis/onosproject/onos-config?label=Integration%20Tests&logo=Integration)](https://travis-ci.org/onosproject/onos-test)
 [![Go Report Card](https://goreportcard.com/badge/github.com/onosproject/onos-config)](https://goreportcard.com/report/github.com/onosproject/onos-config)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/gojp/goreportcard/blob/master/LICENSE)
 [![Coverage Status](https://img.shields.io/coveralls/github/onosproject/onos-config/badge.svg)](https://coveralls.io/github/onosproject/onos-config?branch=master)
@@ -64,7 +65,7 @@ provided as additional layers:
 * [How to build](docs/build.md) onos-config server, related commands and Docker image
 * [How to run](docs/run.md) onos-config server and related commands
 * [How to deploy](docs/deployment.md) onos-config in a Kubernetes cluster
-* [How to test](docs/testing.md) onos-config integration tests with onit
+* [How to test](https://github.com/onosproject/onos-test/blob/master/docs/testing.md) onos-config integration tests with onit
 * [How to onboard your device](docs/modelplugin.md) extending onos-config with Model Plugins
 * [Developer workflow summary](docs/dev_workflow.md) for onos-config project
 * [Contacts and Meetings](docs/community-info.md) for onos-config project

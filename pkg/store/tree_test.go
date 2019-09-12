@@ -20,14 +20,14 @@ import (
 	"testing"
 )
 
-const testJSON1 = `{"test1:cont1a":{"cont2a":{"leaf2a":12,"leaf2b":1.14159,"leaf2c":"myvalue1a2c","leaf2d":1.14159,"leaf2e":12,"leaf2f":"YXMgYnl0ZSBhcnJheQ==","leaf2g":true},"leaf1a":"myvalue1a1a","list2a":[{"name":"First","rx-power":6,"tx-power":5},{"name":"Second","rx-power":8,"tx-power":7}]},"test1:leafAtTopLevel":"WXY-1234"}`
+const testJSON1 = `{"cont1a":{"cont2a":{"leaf2a":12,"leaf2b":1.14159,"leaf2c":"myvalue1a2c","leaf2d":1.14159,"leaf2e":12,"leaf2f":"YXMgYnl0ZSBhcnJheQ==","leaf2g":true},"leaf1a":"myvalue1a1a","list2a":[{"name":"First","rx-power":6,"tx-power":5},{"name":"Second","rx-power":8,"tx-power":7}]},"leafAtTopLevel":"WXY-1234"}`
 
 const (
-	Test1Cont1ALeaf1a   = "/test1:cont1a/leaf1a"
-	Test1Cont1AList2a1t = "/test1:cont1a/list2a[name=First]/tx-power"
-	Test1Cont1AList2a1r = "/test1:cont1a/list2a[name=First]/rx-power"
-	Test1Cont1AList2a2t = "/test1:cont1a/list2a[name=Second]/tx-power"
-	Test1Cont1AList2a2r = "/test1:cont1a/list2a[name=Second]/rx-power"
+	Test1Cont1ALeaf1a   = "/cont1a/leaf1a"
+	Test1Cont1AList2a1t = "/cont1a/list2a[name=First]/tx-power"
+	Test1Cont1AList2a1r = "/cont1a/list2a[name=First]/rx-power"
+	Test1Cont1AList2a2t = "/cont1a/list2a[name=Second]/tx-power"
+	Test1Cont1AList2a2r = "/cont1a/list2a[name=Second]/rx-power"
 )
 
 const (

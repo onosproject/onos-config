@@ -22,114 +22,106 @@ Until then this simple cache will load a set of Device definitions from file
 package topocache
 
 import (
-	"encoding/json"
-	"fmt"
+	"context"
+	"errors"
+	"github.com/cenkalti/backoff"
 	"github.com/onosproject/onos-config/pkg/events"
-	"os"
-	"regexp"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	"google.golang.org/grpc"
+	log "k8s.io/klog"
+	"time"
 )
 
-const storeTypeDevice = "device"
-const storeVersion = "1.0.0"
-const deviceIDNamePattern = `[a-zA-Z0-9\-:_]{4,40}`
-const deviceVersionPattern = `[a-zA-Z0-9_\.]{2,10}` //same as configuration.go
-
-// ID is an alias for string
-type ID string
-
-// Device - the definition of Device will ultimately come from onos-topology
-type Device struct {
-	ID                                                ID
-	Addr, Target, Usr, Pwd, CaPath, CertPath, KeyPath string
-	Plain, Insecure                                   bool
-	Timeout                                           int64
-	SoftwareVersion                                   string
-}
+const (
+	topoAddress = "onos-topo:5150"
+)
 
 // DeviceStore is the model of the Device store
 type DeviceStore struct {
-	Version     string
-	Storetype   string
-	Store       map[ID]Device
-	topoChannel chan<- events.TopoEvent
+	client device.DeviceServiceClient
+	cache  map[device.ID]*device.Device
 }
 
-// LoadDeviceStore loads a device store from a file - will eventually be from onos-topology
-func LoadDeviceStore(file string, topoChannel chan<- events.TopoEvent) (*DeviceStore, error) {
-	storeFile, err := os.Open(file)
+// LoadDeviceStore loads a device store
+func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOption) (*DeviceStore, error) {
+	if len(opts) == 0 {
+		return nil, nil
+	}
+
+	conn, err := getTopoConn(opts...)
 	if err != nil {
 		return nil, err
 	}
-	defer storeFile.Close()
 
-	jsonDecoder := json.NewDecoder(storeFile)
-	var deviceStore = DeviceStore{}
-	jsonDecoder.Decode(&deviceStore)
-	if deviceStore.Storetype != storeTypeDevice {
-		return nil,
-			fmt.Errorf("Store type invalid: " + deviceStore.Storetype)
-	} else if deviceStore.Version != storeVersion {
-		return nil,
-			fmt.Errorf("Store version invalid: " + deviceStore.Version)
+	client := device.NewDeviceServiceClient(conn)
+	deviceStore := &DeviceStore{
+		client: client,
+		cache:  make(map[device.ID]*device.Device),
 	}
-	deviceStore.topoChannel = topoChannel
-	// Validate that the store is OK before sending out any events
-	for id, device := range deviceStore.Store {
-		err := validateDevice(id, device)
+	go deviceStore.start(topoChannel)
+	return deviceStore, nil
+}
+
+// start starts listening for events from the DeviceService
+func (s *DeviceStore) start(ch chan<- events.TopoEvent) {
+	// Retry continuously to listen for devices from the device service. The root retry loop is constant, so
+	// when the device listener disconnects, a new connection will be attempted a second later. Each connection
+	// iteration is performed using an exponential backoff algorithm, ensuring the client doesn't attempt to connect
+	// to a missing service constantly.
+	_ = backoff.Retry(func() error {
+		operation := func() error {
+			return s.watchEvents(ch)
+		}
+
+		// Use exponential backoff until the client is able to list devices. This operation should never return
+		// an error since we don't use the error type required to fail the exponential backoff operation.
+		_ = backoff.Retry(operation, backoff.NewExponentialBackOff())
+
+		// Return a placeholder error to ensure the connection is retried.
+		return errors.New("retry")
+	}, backoff.NewConstantBackOff(1*time.Second))
+}
+
+// watchEvents listens for events from the DeviceService
+func (s *DeviceStore) watchEvents(ch chan<- events.TopoEvent) error {
+	list, err := s.client.List(context.Background(), &device.ListRequest{
+		Subscribe: true,
+	})
+
+	// Return an error if the client was unable to connect to the service.
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	for {
+		response, err := list.Recv()
+
+		// When an error occurs, log the error and return nil to reset the exponential backoff algorithm.
 		if err != nil {
-			return nil, fmt.Errorf("Error loading store: %s: %v", id, err)
+			log.Error(err)
+			return nil
+		}
+
+		switch response.Type {
+		case device.ListResponse_NONE:
+			if _, ok := s.cache[response.Device.ID]; !ok {
+				s.cache[response.Device.ID] = response.Device
+				ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+			}
+		case device.ListResponse_ADDED:
+			s.cache[response.Device.ID] = response.Device
+			ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+		case device.ListResponse_UPDATED:
+			s.cache[response.Device.ID] = response.Device
+			ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+		case device.ListResponse_REMOVED:
+			ch <- events.CreateTopoEvent(response.Device.ID, false, response.Device.Address, *response.Device)
 		}
 	}
-
-	// We send a creation event for each device in store
-	for _, device := range deviceStore.Store {
-		topoChannel <- events.CreateTopoEvent(string(device.ID), true, device.Addr)
-	}
-
-	return &deviceStore, nil
 }
 
-// AddOrUpdateDevice adds or updates the specified device in the device inventory.
-func (store *DeviceStore) AddOrUpdateDevice(id ID, device Device) error {
-	err := validateDevice(id, device)
-	if err == nil {
-		store.Store[id] = device
-		store.topoChannel <- events.CreateTopoEvent(string(device.ID), true, device.Addr)
-	}
-	return err
-}
-
-// RemoveDevice removes the device with the specified address from the device inventory.
-func (store *DeviceStore) RemoveDevice(id ID) {
-	delete(store.Store, id)
-}
-
-func validateDevice(id ID, device Device) error {
-	if device.ID == "" {
-		return fmt.Errorf("device %v has blank ID", device)
-	}
-	if device.ID != id {
-		return fmt.Errorf("device %v ID mismatch with key: %v", device, id)
-	}
-
-	rname := regexp.MustCompile(deviceIDNamePattern)
-	matchName := rname.FindString(string(id))
-	if string(id) != matchName {
-		return fmt.Errorf("name %s does not match pattern %s",
-			id, deviceIDNamePattern)
-	}
-
-	if device.Addr == "" {
-		return fmt.Errorf("device %v has blank address", device)
-	}
-	if device.SoftwareVersion == "" {
-		return fmt.Errorf("device %v has blank software version", device)
-	}
-	rversion := regexp.MustCompile(deviceVersionPattern)
-	matchVer := rversion.FindString(device.SoftwareVersion)
-	if device.SoftwareVersion != matchVer {
-		return fmt.Errorf("version %s does not match pattern %s",
-			device.SoftwareVersion, deviceVersionPattern)
-	}
-	return nil
+// getTopoConn gets a gRPC connection to the topology service
+func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	return grpc.Dial(topoAddress, opts...)
 }

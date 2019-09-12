@@ -41,7 +41,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	pprof.StartCPUProfile(cpuFile)
+	_ = pprof.StartCPUProfile(cpuFile)
 	defer pprof.StopCPUProfile()
 
 	changeValues := change.ValueCollections{}
@@ -53,14 +53,14 @@ func main() {
 		changeValues = append(changeValues, cv)
 	}
 
-	change, err := change.CreateChange(changeValues, "Benchmarked Change")
+	newChange, err := change.CreateChange(changeValues, "Benchmarked Change")
 	if err != nil {
-		log.Error("Cannot create a change object from ChangeValues ", err)
+		log.Error("Cannot create a newChange object from ChangeValues ", err)
 	}
 
-	err = change.IsValid()
+	err = newChange.IsValid()
 	if err != nil {
-		log.Error("Invalid change ", err)
+		log.Error("Invalid newChange ", err)
 	}
 
 	log.Info("Finished after ", iterations, " iterations")

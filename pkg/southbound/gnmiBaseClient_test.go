@@ -15,6 +15,7 @@
 package southbound
 
 import (
+	"context"
 	"github.com/openconfig/gnmi/client"
 	"gotest.tools/assert"
 	"testing"
@@ -24,6 +25,6 @@ func Test_GnmiBaseClient(t *testing.T) {
 	baseClient := GnmiBaseClientFactory()
 	assert.Assert(t, baseClient != nil)
 	query := client.Query{Type: client.Unknown}
-	err := baseClient.Subscribe(nil, query, "XXX")
-	assert.ErrorContains(t, err, "Addrs is empty")
+	err := baseClient.Subscribe(context.TODO(), query, "XXX")
+	assert.ErrorContains(t, err, "Destination.Addrs is empty")
 }

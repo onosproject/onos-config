@@ -20,13 +20,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/certs"
 	"google.golang.org/grpc/credentials"
 	"io/ioutil"
 	log "k8s.io/klog"
 	"net"
-	"sync"
-
-	"github.com/onosproject/onos-config/pkg/certs"
 
 	"google.golang.org/grpc"
 )
@@ -40,7 +38,6 @@ type Service interface {
 type Server struct {
 	cfg      *ServerConfig
 	services []Service
-	mu       sync.Mutex
 }
 
 // ServerConfig comprises a set of server configuration options.

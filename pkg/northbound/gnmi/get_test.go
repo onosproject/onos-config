@@ -15,6 +15,7 @@
 package gnmi
 
 import (
+	"context"
 	"testing"
 
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -35,21 +36,21 @@ func Test_getNoTarget(t *testing.T) {
 		Path: []*gnmi.Path{&noTargetPath1, &noTargetPath2},
 	}
 
-	_, err := server.Get(nil, &request)
+	_, err := server.Get(context.TODO(), &request)
 	assert.ErrorContains(t, err, "has no target")
 }
 
 func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
 	server, _ := setUp()
 
-	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
+	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)
 
 	request := gnmi.GetRequest{
 		Prefix: prefixPath,
 	}
 
-	_, err = server.Get(nil, &request)
+	_, err = server.Get(context.TODO(), &request)
 	assert.ErrorContains(t, err, "has no target")
 
 }
@@ -65,7 +66,7 @@ func Test_getNoPathElems(t *testing.T) {
 		Path: []*gnmi.Path{&noPath1, &noPath2},
 	}
 
-	result, err := server.Get(nil, &request)
+	result, err := server.Get(context.TODO(), &request)
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 2)
@@ -86,7 +87,7 @@ func Test_getAllDevices(t *testing.T) {
 		Path: []*gnmi.Path{&allDevicesPath},
 	}
 
-	result, err := server.Get(nil, &request)
+	result, err := server.Get(context.TODO(), &request)
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
@@ -109,7 +110,7 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 		Prefix: &gnmi.Path{Target: "*"},
 	}
 
-	result, err := server.Get(nil, &request)
+	result, err := server.Get(context.TODO(), &request)
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
@@ -125,7 +126,7 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 func Test_get2PathsWithPrefix(t *testing.T) {
 	server, _ := setUp()
 
-	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
+	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)
 
 	leafAPath, err := utils.ParseGNMIElements([]string{"leaf2a"})
@@ -141,7 +142,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 		Path:   []*gnmi.Path{leafAPath, leafBPath},
 	}
 
-	result, err := server.Get(nil, &request)
+	result, err := server.Get(context.TODO(), &request)
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 2)
@@ -149,7 +150,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 	assert.Equal(t, len(result.Notification[0].Update), 1)
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Prefix),
-		"/test1:cont1a/cont2a")
+		"/cont1a/cont2a")
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/leaf2a")
 	assert.Equal(t, result.Notification[0].Update[0].GetVal().GetUintVal(), uint64(13))
@@ -162,7 +163,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	server, _ := setUp()
 
-	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
+	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)
 	prefixPath.Target = "Device1"
 
@@ -170,7 +171,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 		Prefix: prefixPath,
 	}
 
-	result, err := server.Get(nil, &request)
+	result, err := server.Get(context.TODO(), &request)
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
@@ -178,7 +179,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	assert.Equal(t, len(result.Notification[0].Update), 1)
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Prefix),
-		"/test1:cont1a/cont2a")
+		"/cont1a/cont2a")
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/")
@@ -189,7 +190,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 func Test_targetDoesNotExist(t *testing.T) {
 	server, _ := setUp()
 
-	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
+	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)
 	prefixPath.Target = "Device3"
 
@@ -197,8 +198,8 @@ func Test_targetDoesNotExist(t *testing.T) {
 		Prefix: prefixPath,
 	}
 
-	_, err = server.Get(nil, &request)
-	assert.ErrorContains(t, err, "No Configuration found for")
+	_, err = server.Get(context.TODO(), &request)
+	assert.ErrorContains(t, err, "no Configuration found for")
 }
 
 // Target does exist, but specified path does not
@@ -206,7 +207,7 @@ func Test_targetDoesNotExist(t *testing.T) {
 func Test_pathDoesNotExist(t *testing.T) {
 	server, _ := setUp()
 
-	prefixPath, err := utils.ParseGNMIElements([]string{"test1:cont1a", "cont2a"})
+	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)
 	prefixPath.Target = "Device1"
 	path, err := utils.ParseGNMIElements([]string{"leaf2w"})
@@ -217,7 +218,7 @@ func Test_pathDoesNotExist(t *testing.T) {
 		Path:   []*gnmi.Path{path},
 	}
 
-	result, err := server.Get(nil, &request)
+	result, err := server.Get(context.TODO(), &request)
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
@@ -225,7 +226,7 @@ func Test_pathDoesNotExist(t *testing.T) {
 	assert.Equal(t, len(result.Notification[0].Update), 1)
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Prefix),
-		"/test1:cont1a/cont2a")
+		"/cont1a/cont2a")
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/leaf2w")

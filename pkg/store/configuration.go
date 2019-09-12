@@ -17,14 +17,15 @@ package store
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	log "k8s.io/klog"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
 )
 
-const configurationNamePattern = `[a-zA-Z0-9\-:_]{4,40}`
-const configurationVersionPattern = `[a-zA-Z0-9_\.]{2,10}`
+const configurationNamePattern = `^[a-zA-Z0-9\-:_]{4,40}$`
+const configurationVersionPattern = `^(\d+\.\d+\.\d+)$`
 
 // ConfigName is an alias for string - is used to qualify identifier for Configuration
 type ConfigName string
@@ -45,18 +46,24 @@ type Configuration struct {
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func (b Configuration) ExtractFullConfig(changeStore map[string]*change.Change, nBack int) []*change.ConfigValue {
+func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore map[string]*change.Change, nBack int) []*change.ConfigValue {
 
 	// Have to use a slice to have a consistent output order
 	consolidatedConfig := make([]*change.ConfigValue, 0)
 
 	for _, changeID := range b.Changes[0 : len(b.Changes)-nBack] {
-		change, ok := changeStore[B64(changeID)]
+		existingChange, ok := changeStore[B64(changeID)]
 		if !ok {
-			return nil
+			if newChange != nil && B64(newChange.ID) == B64(changeID) {
+				existingChange = newChange
+			} else {
+				log.Error("No existing change with ID ", B64(changeID))
+				return nil
+			}
 		}
+		log.Infof("Change desc %s", existingChange.Description)
 
-		for _, changeValue := range change.Config {
+		for _, changeValue := range existingChange.Config {
 			if changeValue.Remove {
 				// Delete everything at that path and all below it
 				// Have to search through consolidated config
@@ -111,22 +118,19 @@ func CreateConfiguration(deviceName string, version string, deviceType string,
 	rname := regexp.MustCompile(configurationNamePattern)
 	rversion := regexp.MustCompile(configurationVersionPattern)
 
-	matchName := rname.FindString(string(deviceName))
-	if string(deviceName) != matchName {
+	if !rname.MatchString(deviceName) || len(deviceName) > 40 {
 		return nil, fmt.Errorf("name %s does not match pattern %s",
 			deviceName, configurationNamePattern)
 	}
 
-	matchVer := rversion.FindString(string(version))
-	if string(version) != matchVer {
+	if !rversion.MatchString(version) {
 		return nil, fmt.Errorf("version %s does not match pattern %s",
 			version, configurationVersionPattern)
 	}
 
-	matchType := rversion.FindString(string(deviceType))
-	if string(deviceType) != matchType {
+	if !rname.MatchString(deviceType) || len(deviceType) > 40 {
 		return nil, fmt.Errorf("deviceType %s does not match pattern %s",
-			deviceType, configurationVersionPattern)
+			deviceType, configurationNamePattern)
 	}
 
 	configName := deviceName + "-" + version
@@ -135,7 +139,7 @@ func CreateConfiguration(deviceName string, version string, deviceType string,
 	var previousChange string
 	for _, c := range changes {
 		if previousChange == B64(c) {
-			return nil, fmt.Errorf("Duplicate last change ID '%s' in config", B64(c))
+			return nil, fmt.Errorf("duplicate last change ID '%s' in config", B64(c))
 
 		}
 		previousChange = B64(c)

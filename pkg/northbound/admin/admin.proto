@@ -1,0 +1,185 @@
+/*
+Copyright 2019-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+// Package admin defines the administrative and diagnostic gRPC interfaces.
+package proto;
+
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "github.com/openconfig/gnmi/proto/gnmi/gnmi.proto";
+
+// NetworkChangesRequest is a message for specifying GetNetworkChanges query parameters.
+message NetworkChangesRequest {
+}
+
+// ConfigChange is a descriptor of a submitted configuration change targeted as a single device.
+message ConfigChange {
+    string id = 1;
+    string hash = 2;
+}
+
+enum ChangeValueType {
+    EMPTY = 0;
+    STRING = 1;
+    INT = 2;
+    UINT = 3;
+    BOOL = 4;
+    DECIMAL = 5;
+    FLOAT = 6;
+    BYTES = 7;
+    LEAFLIST_STRING = 8;
+    LEAFLIST_INT = 9;
+    LEAFLIST_UINT = 10;
+    LEAFLIST_BOOL = 11;
+    LEAFLIST_DECIMAL = 12;
+    LEAFLIST_FLOAT = 13;
+    LEAFLIST_BYTES = 14;
+}
+
+// Streaming event type
+enum Type {
+    // NONE indicates this response does not represent a state change
+    NONE = 0;
+
+    // ADDED is an event which occurs when an item is added
+    ADDED = 1;
+
+    // UPDATED is an event which occurs when an item is updated
+    UPDATED = 2;
+
+    // REMOVED is an event which occurs when an item is removed
+    REMOVED = 3;
+}
+
+// ChangeValue is an individual Path/Value combination in a Change
+message ChangeValue {
+    string path = 1;
+    bytes value = 2;
+    ChangeValueType value_type = 3;
+    repeated int32 type_opts = 4;
+    bool removed = 5;
+}
+
+// Change is a descriptor of a submitted configuration change targeted at a single device.
+message Change {
+    google.protobuf.Timestamp time = 1 [(gogoproto.stdtime) = true];
+    string id = 2;
+    string desc = 3;
+    repeated ChangeValue change_values = 4;
+}
+
+// NetChange is a descriptor of a configuration change submitted via gNMI.
+message NetChange {
+    google.protobuf.Timestamp time = 1 [(gogoproto.stdtime) = true];
+    string name = 2;
+    string user = 3;
+    repeated ConfigChange changes = 4;
+}
+
+message ReadOnlySubPath {
+    string sub_path = 1;
+    ChangeValueType value_type = 2; // from diags.proto
+}
+
+message ReadOnlyPath {
+    string path = 1;
+    repeated ReadOnlySubPath sub_path = 2;
+}
+
+message ReadWritePath {
+    string path = 1;
+    ChangeValueType value_type = 2; // from diags.proto
+    string units = 3;
+    string description = 4;
+    bool mandatory = 5;
+    string default = 6;
+    repeated string range = 7;
+    repeated string length = 8;
+}
+
+message ModelInfo {
+    string name = 1;
+    string version = 2;
+    repeated gnmi.ModelData model_data = 3;
+    string module = 4;
+    repeated ReadOnlyPath read_only_path = 7; // 5 and 6 were used previously
+    repeated ReadWritePath read_write_path = 8;
+}
+
+// Chunk is for streaming a model plugin file to the server
+// There is a built in limit in gRPC of 4MB - plugin is usually around 20MB
+// so break in to chunks of approx 1MB
+message Chunk {
+    string so_file = 1;
+    bytes Content = 2;
+}
+
+// RegisterRequest carries data for registering a YANG model.
+message RegisterRequest {
+    // Full path and filename of a shared object library as a model plugin
+    string so_file = 1;
+}
+
+message SchemaEntry {
+    string schema_path = 1;
+    string schema_json = 2;
+}
+
+// RegisterResponse carries status of YANG model registration.
+message RegisterResponse {
+    string name = 1;
+    string version = 2;
+}
+
+// ListModelsRequest carries data for querying registered models.
+message ListModelsRequest {
+    bool verbose = 1;
+    string model_name = 2; // If blank all are listed
+    string model_version = 3; // If blank all are listed
+}
+
+// RollbackRequest carries the name of a network config to rollback. If there
+// are subsequent changes to any of the devices in that config, the rollback will
+// be rejected. If no name is given the last network change will be rolled back.
+message RollbackRequest {
+    string name = 1;
+    string comment = 2;
+}
+
+message RollbackResponse {
+    string message = 1;
+}
+
+// ConfigAdminService provides means for enhanced interactions with the configuration subsystem.
+service ConfigAdminService {
+    // RegisterModel adds the specified YANG model to the list of supported models.
+    // There is no unregister because once loaded plugins cannot be unloaded
+    rpc RegisterModel(RegisterRequest) returns (RegisterResponse);
+
+    // UploadRegisterModel uploads and adds the model plugin to the list of supported models.
+    rpc UploadRegisterModel(stream Chunk) returns (RegisterResponse);
+
+    // ListRegisteredModels returns a stream of registered models.
+    rpc ListRegisteredModels(ListModelsRequest) returns (stream ModelInfo);
+
+    // GetNetworkChanges returns a stream of network changes submitted via gNMI.
+    rpc GetNetworkChanges(NetworkChangesRequest) returns (stream NetChange);
+
+    // RollbackNetworkChange rolls back the specified network change (or the latest one).
+    rpc RollbackNetworkChange(RollbackRequest) returns (RollbackResponse);
+}

@@ -1,0 +1,69 @@
+{
+  "interfaces": {
+    "interface": [
+      {
+        "name": "eth1",
+        "description": "new if desc",
+        "mtu": 960,
+        "subinterfaces": {
+          "subinterface": [
+            {
+              "index": 120,
+              "state": {
+                "admin-status": "UP",
+                "ifindex": 10
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "system": {
+    "ntp": {
+      "state": {
+        "auth-mismatch": 123456,
+        "enable-ntp-auth": true,
+        "ntp-source-address": "192.168.0.17"
+      }
+    },
+    "aaa": {
+      "server-groups": {
+        "server-group": [
+          {
+            "name": "g1",
+            "servers": {
+              "server": [
+                {
+                  "address": "192.168.0.7",
+                  "state": {
+                    "connection-aborts": 12
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "g2",
+            "servers": {
+              "server": [
+                {
+                  "address": "192.168.0.4",
+                  "state": {
+                    "connection-aborts": 4
+                  }
+                },
+                {
+                  "address": "192.168.0.5",
+                  "state": {
+                    "connection-aborts": 5
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

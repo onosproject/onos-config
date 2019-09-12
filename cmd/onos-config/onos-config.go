@@ -42,6 +42,7 @@ package main
 
 import (
 	"flag"
+	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
@@ -79,22 +80,24 @@ func main() {
 		"path to config store file")
 	changeStoreFile := flag.String("changeStore", changeStoreDefaultFileName,
 		"path to change store file")
-	deviceStoreFile := flag.String("deviceStore", deviceStoreDefaultFileName,
-		"path to device store file")
 	networkStoreFile := flag.String("networkStore", networkStoreDefaultFileName,
 		"path to network store file")
+
+	// TODO: This flag is preserved for backwards compatibility
+	_ = flag.String("deviceStore", deviceStoreDefaultFileName,
+		"path to device store file")
+
 	flag.Var(&modelPlugins, "modelPlugin", "names of model plugins to load (repeated)")
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
-	var err error
 
 	//lines 93-109 are implemented according to
 	// https://github.com/kubernetes/klog/blob/master/examples/coexist_glog/coexist_glog.go
 	// because of libraries importing glog. With glog import we can't call log.InitFlags(nil) as per klog readme
 	// thus the alsologtostderr is not set properly and we issue multiple logs.
 	// Calling log.InitFlags(nil) throws panic with error `flag redefined: log_dir`
-	err = flag.Set("alsologtostderr", "true")
+	err := flag.Set("alsologtostderr", "true")
 	if err != nil {
 		log.Error("Cant' avoid double Error logging ", err)
 	}
@@ -108,12 +111,17 @@ func main() {
 		f2 := klogFlags.Lookup(f1.Name)
 		if f2 != nil {
 			value := f1.Value.String()
-			f2.Value.Set(value)
+			_ = f2.Value.Set(value)
 		}
 	})
 	log.Info("Starting onos-config")
 
-	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *deviceStoreFile, *networkStoreFile)
+	opts, err := certs.HandleCertArgs(keyPath, certPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, opts...)
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {

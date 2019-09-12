@@ -3,56 +3,42 @@
 > The commands shown below can be run from anywhere on your PC provided that go tools are installed
 > and the GOPATH environment variable is set, e.g. `export GOPATH=~/go`
 
-## Run Server Locally
-The onos-config server can be run as follows:
-```bash
-go run github.com/onosproject/onos-config/cmd/onos-config \
-    -configStore=$HOME/go/src/github.com/onosproject/onos-config/configs/configStore-sample.json \
-    -changeStore=$HOME/go/src/github.com/onosproject/onos-config/configs/changeStore-sample.json \
-    -deviceStore=$HOME/go/src/github.com/onosproject/onos-config/configs/deviceStore-sample.json \
-    -networkStore=$HOME/go/src/github.com/onosproject/onos-config/configs/networkStore-sample.json
-```
-> This does not load any of the model plugins. These can be optionally specified
- by adding the following to the command:
-```bash
-    -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 \
-    -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice.so.2.0.0 \
-    -modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim.so.1.0.0
-```
-> Alternatively these can loaded later with the onos cli tool - see [cli.md](./cli.md)
-```bash
-> onos models load <full path on target machine to shared object model>
-```
-> The plugins here were built locally with a command like
-```bash
-> GO111MODULE=on CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
-```
+## Run with Helm charts
+`onos-config` can run through Helm Charts as defined in the [deployment.md](deployment.md) page.
+> Running with Helm is Work in Progress
+
+## Run with `onit`
+`onos-config` can run through the `onit` tool. You can find more information on how to setup `onit` in the
+ [setup.md](https://github.com/onosproject/onos-test/blob/master/docs/setup.md) page,
+ and how to run `onit` at [run.md](https://github.com/onosproject/onos-test/blob/master/docs/run.md)
+
+## Loading Model Plugins 
+The model-plugin for your device can be built and loaded as outlined in the [modelplugins.md](modelplugins.md) guide.
 > When running with Docker or Kubernetes these plugins will be built and (optionally) loaded
 at startup. To check the list of currently loaded plugins use:
 ```bash
-> onos models list
+> onos config get plugins
 ```
-See [modelplugins.md](modelplugins.md) for more on how to build your own Model Plugins.
-
-## Run Server in Docker Image
-Alternatively, to run onos-config via its Docker image like this:
-```
-make run-docker
-```
-Note that the local config directory is mounted from the container to allow access to local
-test configuration files. This command will build a docker image from source.
 
 ## Northbound gNMI service
 The system provides a full implementation of the gNMI spec as a northbound service.
 
+> On a deployed cluster the onos-cli pod has a gNMI client that can be used to
+> format and send gNMI messages.
+To access the CLI use
+```
+onit onos-cli
+```
+to get in to the **onos-cli** pod and then run gnmi_cli from there.
+
 Here is an example on how to use `gnmi_cli -get` to get configuration for a particular device (target) from the system.
 ```bash
-gnmi_cli -get -address localhost:5150 \
-    -proto "path: <target: 'localhost-1', elem: <name: 'openconfig-system:system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
+> gnmi_cli -get -address onos-config:5150 \
+    -proto "path: <target: 'localhost-1', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
     -timeout 5s -alsologtostderr \
-    -client_crt pkg/southbound/testdata/client1.crt \
-    -client_key pkg/southbound/testdata/client1.key \
-    -ca_crt pkg/southbound/testdata/onfca.crt
+    -client_crt /etc/ssl/certs/client1.crt \
+    -client_key /etc/ssl/certs/client1.key \
+    -ca_crt /etc/ssl/certs/onfca.crt
 ```
 [Full list of the gNMI northbound endpoints](gnmi.md)
 
@@ -62,13 +48,13 @@ diagnostic tools, which are integrated into the consolidated `onos` command.
 
 For example, to list all network changes submitted through the northbound gNMI interface run:
 ```bash
-go run github.com/onosproject/onos-config/cmd/onos net-changes
+> onos config get net-changes
 ```
 
 Or, run the following to list all changes submitted through the northbound gNMI 
 as they are tracked by the system broken-up into device specific batches:
 ```bash
-go run github.com/onosproject/onos-config/cmd/onos changes
+> onos config get changes
 ```
 
 You can read more comprehensive documentation of the various 

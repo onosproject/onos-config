@@ -1,0 +1,78 @@
+/*
+Copyright 2019-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+package proto;
+
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "github.com/onosproject/onos-config/pkg/northbound/admin/admin.proto";
+
+// ChangesRequest is a message for specifying GetChanges query parameters.
+message ChangesRequest {
+    repeated string change_ids = 1 [(gogoproto.customname) = "ChangeIDs"];
+}
+
+// ConfigRequest is a message for specifying GetConfigurations query parameters.
+message ConfigRequest {
+    repeated string device_ids = 1 [(gogoproto.customname) = "DeviceIDs"];
+}
+
+// OpStateRequest is a message for specifying GetOpState query parameters.
+message OpStateRequest {
+    // The request is always in the context of a Device ID. If the device does
+    // not exist or is disconnected an error will be returned.
+    string deviceId = 1;
+    // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
+    // after all paths for the device have been streamed to the client
+    bool subscribe = 2;
+}
+
+message OpStateResponse {
+    // type is the type of the event
+    Type type = 1;
+
+    // device is the device on which the event occurred
+    ChangeValue pathvalue = 2;
+}
+
+// Configuration is a descriptor of a submitted configuration change targeted at a single device.
+message Configuration {
+    string name = 1;
+    string device_id = 2 [(gogoproto.customname) = "DeviceID"];
+    string version = 3;
+    string device_type = 4;
+    google.protobuf.Timestamp created = 5 [(gogoproto.stdtime) = true];
+    google.protobuf.Timestamp updated = 6 [(gogoproto.stdtime) = true];
+    repeated string change_ids = 7 [(gogoproto.customname) = "ChangeIDs"];
+}
+
+// ConfigDiags provides means for obtaining diagnostic information about internal system state.
+service ConfigDiags {
+    // GetChanges returns a stream of submitted changes objects.
+    rpc GetChanges (ChangesRequest) returns (stream Change);
+
+    // GetConfigurations returns a stream of submitted configurations aimed at individual devices.
+    rpc GetConfigurations (ConfigRequest) returns (stream Configuration);
+}
+
+// OpStateDiags provides means for obtaining diagnostic information about internal system state.
+service OpStateDiags {
+    // GetOpState returns a stream of submitted OperationalStateCache aimed at individual devices.
+    // If subscribe is true keep on streaming after the initial set are finished
+    rpc GetOpState (OpStateRequest) returns (stream OpStateResponse);
+}

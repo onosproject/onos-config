@@ -3,8 +3,14 @@
 export GOPATH=$(go env GOPATH)
 export GO111MODULE=on
 
-# Changes working directory to the root of the project
-alias ocfg='cd $GOPATH/src/github.com/onosproject/onos-config'
+export CDPATH="$GOPATH/src/github.com/onosproject:$CDPATH"
+
+# Changes working directory to the root of the projects
+function ocd {
+    cd $GOPATH/src/github.com/onosproject/
+    p=$(ls -1 | grep $1 | head -n 1)
+    [ -n "$p" ] && cd $GOPATH/src/github.com/onosproject/$p
+}
 
 # Pull master... meaning fetch and rebase master against upstream master
 alias gpm='git fetch upstream && git checkout master && git rebase upstream/master'
@@ -18,3 +24,56 @@ alias gr='git push origin $(git symbolic-ref HEAD)'
 # Inject shell auto-completion for the 'onos' command
 alias ocomp='eval "$(onos completion bash)"'
 ocomp
+
+# kubectl cluster-info... meaning show which cluster this terminal is pointing at
+alias ki='kubectl cluster-info'
+
+
+# onit shortcuts
+alias okctl='kubectl -n $(onit get cluster)'
+alias ocli='onit onos-cli --'
+
+function okpid {
+    okctl get pods | cut -d\  -f 1 | grep -v envoy | grep $1 2>/dev/null
+}
+
+function oklog {
+    n=$(okpid $1)
+    [ -n "$n" ] && kubectl logs -n $(onit get cluster) --follow $n
+}
+
+function oklogw {
+    while true; do
+        oklog $1
+        sleep 5
+    done
+}
+
+export ONOS_REPOS="onos-topo onos-config onos-control onos-ztp onos-cli onos-test"
+
+# Pull All Repos
+function par {
+    for p in $ONOS_REPOS; do
+        cd $GOPATH/src/github.com/onosproject/$p
+        echo -e "\033[0;32m$p\033[0m:"
+        if git status | grep -q "nothing to commit"; then
+            gpm && git push
+        else
+            echo "Skipping due to work in progress..."
+        fi
+    done
+}
+
+# eXec in All Repos
+function xar {
+    for p in $ONOS_REPOS; do
+        cd $GOPATH/src/github.com/onosproject/$p
+        echo -e "\033[0;32m$p\033[0m:"
+        $@
+    done
+}
+
+# Make All Repos
+function mar {
+    xar make $1
+}

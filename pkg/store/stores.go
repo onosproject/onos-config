@@ -50,7 +50,7 @@ func LoadConfigStore(file string) (ConfigurationStore, error) {
 
 	jsonDecoder := json.NewDecoder(storeFile)
 	var configStore = ConfigurationStore{}
-	jsonDecoder.Decode(&configStore)
+	_ = jsonDecoder.Decode(&configStore)
 	if configStore.Storetype != StoreTypeConfig {
 		return ConfigurationStore{},
 			fmt.Errorf("Store type invalid: " + configStore.Storetype)
@@ -99,7 +99,7 @@ func LoadChangeStore(file string) (ChangeStore, error) {
 
 	jsonDecoder := json.NewDecoder(storeFile)
 	var changeStore = ChangeStore{}
-	jsonDecoder.Decode(&changeStore)
+	_ = jsonDecoder.Decode(&changeStore)
 	if changeStore.Storetype != StoreTypeChange {
 		return ChangeStore{},
 			fmt.Errorf("Store type invalid: " + changeStore.Storetype)
@@ -143,7 +143,7 @@ func LoadNetworkStore(file string) (*NetworkStore, error) {
 
 	jsonDecoder := json.NewDecoder(storeFile)
 	var networkStore = NetworkStore{}
-	jsonDecoder.Decode(&networkStore)
+	_ = jsonDecoder.Decode(&networkStore)
 	if networkStore.Storetype != StoreTypeNetwork {
 		return nil,
 			fmt.Errorf("Store type invalid: " + networkStore.Storetype)

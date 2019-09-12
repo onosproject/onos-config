@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	log "k8s.io/klog"
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -39,7 +40,6 @@ func setUp() (*Server, *manager.Manager) {
 	mgr, err := manager.LoadManager(
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
-		"../../../configs/deviceStore-sample.json",
 		"../../../configs/networkStore-sample.json",
 	)
 	if err != nil {
@@ -47,15 +47,22 @@ func setUp() (*Server, *manager.Manager) {
 		os.Exit(-1)
 	}
 
-	mgr = manager.GetManager()
-	mgr.Dispatcher = dispatcher.NewDispatcher()
-	mgr.TopoChannel = make(chan events.TopoEvent)
+	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)
-	mgr.ChangesChannel = make(chan events.ConfigEvent)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	log.Info("Finished setUp()")
 	return server, mgr
+}
+
+func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
+	// `wg.Wait` blocks until `wg.Done` is called the same number of times
+	// as the amount of tasks we have (in this case, 1 time)
+	wg.Wait()
+
+	mgr.Dispatcher = &dispatcher.Dispatcher{}
+	log.Infof("Dispatcher Teardown %p", mgr.Dispatcher)
+
 }
 
 func listenToTopoLoading(deviceChan <-chan events.TopoEvent) {

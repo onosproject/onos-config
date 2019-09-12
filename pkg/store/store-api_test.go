@@ -27,23 +27,23 @@ import (
 )
 
 const (
-	Test1Cont1A                  = "/test1:cont1a"
-	Test1Cont1ACont2A            = "/test1:cont1a/cont2a"
-	Test1Cont1ACont2ALeaf2A      = "/test1:cont1a/cont2a/leaf2a"
-	Test1Cont1ACont2ALeaf2B      = "/test1:cont1a/cont2a/leaf2b"
-	Test1Cont1ACont2ALeaf2C      = "/test1:cont1a/cont2a/leaf2c"
-	Test1Cont1ACont2ALeaf2D      = "/test1:cont1a/cont2a/leaf2d"
-	Test1Cont1ACont2ALeaf2E      = "/test1:cont1a/cont2a/leaf2e"
-	Test1Cont1ACont2ALeaf2F      = "/test1:cont1a/cont2a/leaf2f"
-	Test1Cont1ACont2ALeaf2G      = "/test1:cont1a/cont2a/leaf2g"
-	Test1Cont1ALeaf1A            = "/test1:cont1a/leaf1a"
-	Test1Cont1AList2ATxout1      = "/test1:cont1a/list2a[name=txout1]"
-	Test1Cont1AList2ATxout1Txpwr = "/test1:cont1a/list2a[name=txout1]/tx-power"
-	Test1Cont1AList2ATxout2      = "/test1:cont1a/list2a[name=txout2]"
-	Test1Cont1AList2ATxout2Txpwr = "/test1:cont1a/list2a[name=txout2]/tx-power"
-	Test1Cont1AList2ATxout3      = "/test1:cont1a/list2a[name=txout3]"
-	Test1Cont1AList2ATxout3Txpwr = "/test1:cont1a/list2a[name=txout3]/tx-power"
-	Test1Leaftoplevel            = "/test1:leafAtTopLevel"
+	Test1Cont1A                  = "/cont1a"
+	Test1Cont1ACont2A            = "/cont1a/cont2a"
+	Test1Cont1ACont2ALeaf2A      = "/cont1a/cont2a/leaf2a"
+	Test1Cont1ACont2ALeaf2B      = "/cont1a/cont2a/leaf2b"
+	Test1Cont1ACont2ALeaf2C      = "/cont1a/cont2a/leaf2c"
+	Test1Cont1ACont2ALeaf2D      = "/cont1a/cont2a/leaf2d"
+	Test1Cont1ACont2ALeaf2E      = "/cont1a/cont2a/leaf2e"
+	Test1Cont1ACont2ALeaf2F      = "/cont1a/cont2a/leaf2f"
+	Test1Cont1ACont2ALeaf2G      = "/cont1a/cont2a/leaf2g"
+	Test1Cont1ALeaf1A            = "/cont1a/leaf1a"
+	Test1Cont1AList2ATxout1      = "/cont1a/list2a[name=txout1]"
+	Test1Cont1AList2ATxout1Txpwr = "/cont1a/list2a[name=txout1]/tx-power"
+	Test1Cont1AList2ATxout2      = "/cont1a/list2a[name=txout2]"
+	Test1Cont1AList2ATxout2Txpwr = "/cont1a/list2a[name=txout2]/tx-power"
+	Test1Cont1AList2ATxout3      = "/cont1a/list2a[name=txout3]"
+	Test1Cont1AList2ATxout3Txpwr = "/cont1a/list2a[name=txout3]/tx-power"
+	Test1Leaftoplevel            = "/leafAtTopLevel"
 )
 
 const (
@@ -77,15 +77,15 @@ var Config1Paths = [11]string{
 var Config1Values = [11][]byte{
 	make([]byte, 0), // 0
 	make([]byte, 0),
-	[]byte{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
-	[]byte{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
-	[]byte{100, 101, 102},              // ValueLeaf2CDef
-	[]byte{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
+	{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
+	{100, 101, 102},              // ValueLeaf2CDef
+	{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
 	make([]byte, 0),
-	[]byte{8, 0, 0, 0, 0, 0, 0, 0},         // ValueTxout1Txpwr8
-	make([]byte, 0),                        // 10
-	[]byte{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16
-	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234
+	{8, 0, 0, 0, 0, 0, 0, 0},         // ValueTxout1Txpwr8
+	make([]byte, 0),                  // 10
+	{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16
+	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234
 }
 
 var Config1Types = [11]change.ValueType{
@@ -119,19 +119,19 @@ var Config1PreviousPaths = [13]string{
 }
 
 var Config1PreviousValues = [13][]byte{
-	[]byte{}, // 0
-	[]byte{},
-	[]byte{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
-	[]byte{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
-	[]byte{97, 98, 99},                 // ValueLeaf2CAbc
-	[]byte{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
-	[]byte{},
-	[]byte{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
-	[]byte{},
-	[]byte{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
-	[]byte{},                               // 10
-	[]byte{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16,
-	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234,
+	{}, // 0
+	{},
+	{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
+	{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
+	{97, 98, 99},                 // ValueLeaf2CAbc
+	{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	{},
+	{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	{},
+	{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	{},                               // 10
+	{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16,
+	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234,
 }
 
 var Config1PreviousTypes = [13]change.ValueType{
@@ -165,17 +165,17 @@ var Config1FirstPaths = [11]string{
 }
 
 var Config1FirstValues = [11][]byte{
-	[]byte{}, // 0
-	[]byte{},
-	[]byte{13, 0, 0, 0, 0, 0, 0, 0},        // ValueLeaf2A13
-	[]byte{0, 0, 0, 128, 149, 67, 249, 63}, // ValueLeaf2B159 3
-	[]byte{97, 98, 99},                     // ValueLeaf2CAbc
-	[]byte{97, 98, 99, 100, 101, 102},      // ValueLeaf1AAbcdef 5
-	[]byte{},
-	[]byte{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
-	[]byte{},
-	[]byte{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
-	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
+	{}, // 0
+	{},
+	{13, 0, 0, 0, 0, 0, 0, 0},        // ValueLeaf2A13
+	{0, 0, 0, 128, 149, 67, 249, 63}, // ValueLeaf2B159 3
+	{97, 98, 99},                     // ValueLeaf2CAbc
+	{97, 98, 99, 100, 101, 102},      // ValueLeaf1AAbcdef 5
+	{},
+	{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	{},
+	{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
 var Config1FirstTypes = [11]change.ValueType{
@@ -207,17 +207,17 @@ var Config2Paths = [11]string{
 }
 
 var Config2Values = [11][]byte{
-	[]byte{}, // 0
-	[]byte{},
-	[]byte{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
-	[]byte{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
-	[]byte{103, 104, 105},              // ValueLeaf2CGhi
-	[]byte{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
-	[]byte{},
-	[]byte{10, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
-	[]byte{},
-	[]byte{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
-	[]byte{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
+	{}, // 0
+	{},
+	{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
+	{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
+	{103, 104, 105},              // ValueLeaf2CGhi
+	{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	{},
+	{10, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	{},
+	{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
 var Config2Types = [11]change.ValueType{
@@ -233,6 +233,8 @@ var Config2Types = [11]change.ValueType{
 	change.ValueTypeUINT,
 	change.ValueTypeSTRING, // 10
 }
+
+var c1ID, c2ID, c3ID change.ID
 
 func TestMain(m *testing.M) {
 	log.SetOutput(os.Stdout)
@@ -293,6 +295,10 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	changeStore[B64(change2.ID)] = change2
 	changeStore[B64(change3.ID)] = change3
 
+	c1ID = change1.ID
+	c2ID = change2.ID
+	c3ID = change2.ID
+
 	device1V, err = CreateConfiguration("Device1", "1.0.0", "TestDevice",
 		[]change.ID{change1.ID, change2.ID, change3.ID})
 	if err != nil {
@@ -311,7 +317,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	}
 	changeStore[B64(change4.ID)] = change4
 
-	device2V, err = CreateConfiguration("Device2", "1.0.0", "TestDevice",
+	device2V, err = CreateConfiguration("Device2", "10.0.100", "TestDevice",
 		[]change.ID{change1.ID, change2.ID, change4.ID})
 	if err != nil {
 		log.Error(err)
@@ -332,20 +338,20 @@ func Test_device1_version(t *testing.T) {
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
 	//Check the value of leaf2c before
-	change1, ok := changeStore["y65WFkPuZXZgRkQ+kUL/wpjXHj8="]
+	change1, ok := changeStore[B64(c1ID)]
 	assert.Assert(t, ok)
 	assert.Equal(t, len(change1.Config), 11)
 	leaf2c := change1.Config[4]
 	assert.Equal(t, leaf2c.TypedValue.String(), "abc")
 
-	config := device1V.ExtractFullConfig(changeStore, 0)
+	config := device1V.ExtractFullConfig(change1, changeStore, 0)
 	for _, c := range config {
 		log.Infof("Path %s = %s (%d)\n", c.Path, c.Value, c.Type)
 	}
 
 	// Check the value of leaf2c after - the value from the early change should be the same
 	// This is here because ExtractFullConfig had been inadvertently changing the value
-	change1, ok = changeStore["y65WFkPuZXZgRkQ+kUL/wpjXHj8="]
+	change1, ok = changeStore[B64(c1ID)]
 	assert.Assert(t, ok)
 	assert.Equal(t, len(change1.Config), 11)
 	leaf2c = change1.Config[4]
@@ -368,7 +374,7 @@ func Test_device1_prev_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
-	config := device1V.ExtractFullConfig(changeStore, changePrevious)
+	config := device1V.ExtractFullConfig(nil, changeStore, changePrevious)
 	for _, c := range config {
 		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}
@@ -389,7 +395,7 @@ func Test_device1_first_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
-	config := device1V.ExtractFullConfig(changeStore, changePrevious)
+	config := device1V.ExtractFullConfig(nil, changeStore, changePrevious)
 	for _, c := range config {
 		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}
@@ -410,7 +416,7 @@ func Test_device1_invalid_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
 
-	config := device1V.ExtractFullConfig(changeStore, changePrevious)
+	config := device1V.ExtractFullConfig(nil, changeStore, changePrevious)
 	if len(config) > 0 {
 		t.Errorf("Not expecting any values for change (n-3). Got %d", len(config))
 	}
@@ -424,9 +430,9 @@ func Test_device2_version(t *testing.T) {
 		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
 	}
 
-	assert.Equal(t, device2V.Name, ConfigName("Device2-1.0.0"))
+	assert.Equal(t, device2V.Name, ConfigName("Device2-10.0.100"))
 
-	config := device2V.ExtractFullConfig(changeStore, 0)
+	config := device2V.ExtractFullConfig(nil, changeStore, 0)
 	for _, c := range config {
 		log.Infof("Path %s = %s\n", c.Path, c.Value)
 	}
@@ -492,7 +498,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 func Test_writeOutChangeFile(t *testing.T) {
 	_, _, changeStore := setUp()
 	if _, err := os.Stat("testout"); os.IsNotExist(err) {
-		os.Mkdir("testout", os.ModePerm)
+		_ = os.Mkdir("testout", os.ModePerm)
 	}
 	changeStoreFile, err := os.Create("testout/changeStore-sample.json")
 	if err != nil {
@@ -590,7 +596,7 @@ func TestCreateConfiguration_badversion(t *testing.T) {
 	_, err =
 		CreateConfiguration("localhost-1", "a", "TestDevice",
 			[]change.ID{})
-	assert.ErrorContains(t, err, "version a does not match pattern", "Too short")
+	assert.ErrorContains(t, err, "version a does not match pattern", "has letter")
 
 	_, err =
 		CreateConfiguration("localhost-1", "1:0:0", "TestDevice",
@@ -600,9 +606,9 @@ func TestCreateConfiguration_badversion(t *testing.T) {
 
 func TestCreateConfiguration_badtype(t *testing.T) {
 	_, err :=
-		CreateConfiguration("localhost-1", "1.0.0", "TestDeviceType",
+		CreateConfiguration("localhost-1", "1.0.0", "TestD&eviceType",
 			[]change.ID{})
-	assert.ErrorContains(t, err, "deviceType TestDeviceType does not match pattern", "Too long")
+	assert.ErrorContains(t, err, "does not match pattern", "bad char")
 }
 
 func Test_writeOutConfigFile(t *testing.T) {
@@ -709,8 +715,8 @@ func BenchmarkCreateChange(b *testing.B) {
 		changeValues = append(changeValues, cv)
 	}
 
-	change, _ := change.CreateChange(changeValues, "Benchmarked Change")
+	newChange, _ := change.CreateChange(changeValues, "Benchmarked Change")
 
-	err := change.IsValid()
+	err := newChange.IsValid()
 	assert.NilError(b, err, "Invalid change %s", err)
 }

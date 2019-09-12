@@ -21,11 +21,12 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
+	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -35,7 +36,7 @@ import (
 	"time"
 )
 
-type mapTargetUpdates map[string]map[string]*change.TypedValue
+type mapTargetUpdates map[string]change.TypedValueMap
 type mapTargetRemoves map[string][]string
 type mapNetworkChanges map[store.ConfigName]change.ID
 
@@ -59,7 +60,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		var err error
 		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
 		if err != nil {
-			log.Warning("Error in update", err)
+			log.Warning("Error in update ", err)
 			return nil, err
 		}
 	}
@@ -89,13 +90,19 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		} else if ext.GetRegisteredExt().GetId() == GnmiExtensionDeviceType {
 			deviceType = string(ext.GetRegisteredExt().GetMsg())
 		} else {
-			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("Unexpected extension %d = '%s' in Set()",
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("unexpected extension %d = '%s' in Set()",
 				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
 		}
 	}
+	log.Infof("Set called with extensions; 100: %s, 101: %s, 102: %s",
+		netcfgchangename, version, deviceType)
 	errRo := s.checkForReadOnly(deviceType, version, targetUpdates, targetRemoves)
 	if errRo != nil {
 		return nil, status.Error(codes.InvalidArgument, errRo.Error())
+	}
+
+	if netcfgchangename == "" {
+		netcfgchangename = namesgenerator.GetRandomName(0)
 	}
 
 	//Temporary map in order to not to modify the original removes but optimize calculations during validation
@@ -107,7 +114,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	//TODO this can be parallelized with a pattern manager.go ValidateStores()
 	//Checking for wrong configuration against the device models for updates
 	for target, updates := range targetUpdates {
-		err := validateChange(target, version, updates, targetRemoves[target])
+		err := validateChange(target, version, deviceType, updates, targetRemoves[target])
 		if err != nil {
 			return nil, err
 		}
@@ -115,26 +122,21 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 	//Checking for wrong configuration against the device models for deletes
 	for target, removes := range targetRemovesTmp {
-		err := validateChange(target, version, make(map[string]*change.TypedValue), removes)
+		err := validateChange(target, version, deviceType, make(change.TypedValueMap), removes)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	updateResults, networkChanges, err :=
-		s.executeSetConfig(targetUpdates, targetRemoves, version, deviceType)
+		s.executeSetConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if len(updateResults) == 0 {
 		log.Warning("All target changes were duplicated - Set rejected")
-		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a "+
-			"duplicate of the last change for all targets").Error())
-	}
-
-	if netcfgchangename == "" {
-		netcfgchangename = namesgenerator.GetRandomName(0)
+		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a duplicate of the last change for all targets").Error())
 	}
 
 	// Look for use of this name already
@@ -170,19 +172,58 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	return setResponse, nil
 }
 
-func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (map[string]*change.TypedValue, error) {
+// This deals with either a path and a value (simple case) or a path with
+// a JSON body which implies multiple paths and values.
+func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (change.TypedValueMap, error) {
 	target := u.Path.GetTarget()
 	updates, ok := targetUpdates[target]
 	if !ok {
-		updates = make(map[string]*change.TypedValue)
+		updates = make(change.TypedValueMap)
 	}
-	path := utils.StrPath(u.Path)
 
-	update, err := values.GnmiTypedValueToNativeType(u.Val)
-	if err != nil {
-		return nil, err
+	jsonVal := u.GetVal().GetJsonVal()
+	if jsonVal != nil {
+		log.Info("Processing Json Value in set", string(jsonVal))
+
+		intermediateConfigValues, err := store.DecomposeTree(jsonVal)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON payload %s", string(jsonVal))
+		}
+
+		configs := manager.GetManager().ConfigStore.Store
+
+		var rwPaths modelregistry.ReadWritePathMap
+		// Iterate through configs to find match for target
+		for _, config := range configs {
+			if config.Device == target {
+				rwPaths, ok = manager.GetManager().ModelRegistry.
+					ModelReadWritePaths[utils.ToModelName(config.Type, config.Version)]
+				if !ok {
+					return nil, fmt.Errorf("Cannot process JSON payload  on %s %s because "+
+						"Model Plugin not available", config.Type, config.Version)
+				}
+				break
+			}
+		}
+
+		correctedValues, err := jsonvalues.CorrectJSONPaths(
+			utils.StrPath(u.Path), intermediateConfigValues, rwPaths, true)
+		if err != nil {
+			log.Warning("Json value in Set could not be parsed", err)
+			return nil, err
+		}
+
+		for _, cv := range correctedValues {
+			updates[cv.Path] = &cv.TypedValue
+		}
+	} else {
+		path := utils.StrPath(u.Path)
+		update, err := values.GnmiTypedValueToNativeType(u.Val)
+		if err != nil {
+			return nil, err
+		}
+		updates[path] = update
 	}
-	updates[path] = update
 
 	return updates, nil
 
@@ -261,7 +302,8 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 }
 
 func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
-	targetRemoves mapTargetRemoves, version string, deviceType string) ([]*gnmi.UpdateResult, mapNetworkChanges, error) {
+	targetRemoves mapTargetRemoves, version string, deviceType string,
+	description string) ([]*gnmi.UpdateResult, mapNetworkChanges, error) {
 
 	networkChanges := make(mapNetworkChanges)
 	updateResults := make([]*gnmi.UpdateResult, 0)
@@ -269,19 +311,20 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 		//FIXME this is a sequential job, not parallelized
 
 		// target is a device name with no version
-		changeID, configName, cont, err := setChange(target, version, updates, targetRemoves[target])
+		changeID, configName, cont, err := setChange(target, version, deviceType,
+			updates, targetRemoves[target], description)
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
 			//Rolling back in case of setChange error.
-			return nil, nil, doRollback(networkChanges, manager.GetManager(), target, configName, err)
+			return nil, nil, doRollback(networkChanges, manager.GetManager(), target, *configName, err)
 		} else if err == nil && cont {
 			continue
 		}
-		responseErr := listenForDeviceResponse(networkChanges, target, configName)
+		responseErr := listenForDeviceResponse(networkChanges, target, *configName)
 		//TODO Maybe do this with a callback mechanism --> when resposne on channel is done trigger callback
 		// that sends reply
 		if responseErr != nil {
-			return nil, nil, fmt.Errorf("Can't complete set operation on target %s due to %s", target, responseErr)
+			return nil, nil, fmt.Errorf("can't complete set operation on target %s due to %s", target, responseErr)
 		}
 		for k := range updates {
 			updateResult, err := buildUpdateResult(k, target, gnmi.UpdateResult_UPDATE)
@@ -301,11 +344,12 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 			delete(targetRemoves, target)
 		}
 
-		networkChanges[store.ConfigName(configName)] = changeID
+		networkChanges[*configName] = changeID
 	}
 
 	for target, removes := range targetRemoves {
-		changeID, configName, cont, err := setChange(target, version, make(map[string]*change.TypedValue), removes)
+		changeID, configName, cont, err := setChange(target, version, deviceType,
+			make(change.TypedValueMap), removes, description)
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
 			return nil, nil, err
@@ -313,7 +357,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 			continue
 
 		}
-		responseErr := listenForDeviceResponse(networkChanges, target, configName)
+		responseErr := listenForDeviceResponse(networkChanges, target, *configName)
 		if responseErr != nil {
 			return nil, nil, responseErr
 		}
@@ -324,14 +368,14 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 			}
 			updateResults = append(updateResults, updateResult)
 		}
-		networkChanges[store.ConfigName(configName)] = changeID
+		networkChanges[*configName] = changeID
 	}
 	return updateResults, networkChanges, nil
 }
 
 func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) error {
 	mgr := manager.GetManager()
-	respChan, ok := mgr.Dispatcher.GetResponseListener(topocache.ID(target))
+	respChan, ok := mgr.Dispatcher.GetResponseListener(device.ID(target))
 	if !ok {
 		log.Infof("Device %s not properly registered, not waiting for southbound confirmation ", target)
 		return nil
@@ -360,7 +404,7 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 	name store.ConfigName, errResp error) error {
 	rolledbackIDs := make([]string, 0)
 	for configName := range changes {
-		changeID, err := mgr.RollbackTargetConfig(string(configName))
+		changeID, err := mgr.RollbackTargetConfig(configName)
 		if err != nil {
 			log.Errorf("Can't remove last entry for %s, on config %s, err, %v", target, name, err)
 		}
@@ -377,7 +421,7 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
-	path, errInPath := utils.ParseGNMIElements(strings.Split(pathStr, "/")[1:])
+	path, errInPath := utils.ParseGNMIElements(utils.SplitPath(pathStr))
 	if errInPath != nil {
 		log.Error("ERROR: Unable to parse path ", pathStr)
 		return nil, errInPath
@@ -391,36 +435,30 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 
 }
 
-func setChange(target string, version string, targetUpdates map[string]*change.TypedValue, targetRemoves []string) (change.ID, store.ConfigName, bool, error) {
-	configName := store.ConfigName(target)
-	// target is a device name with no version
-	if version != "" {
-		configName = store.ConfigName(strings.Join([]string{target, version}, "-"))
-	}
+func setChange(target string, version string, devicetype string, targetUpdates change.TypedValueMap,
+	targetRemoves []string, description string) (change.ID, *store.ConfigName, bool, error) {
 	changeID, configName, err := manager.GetManager().SetNetworkConfig(
-		store.ConfigName(configName), targetUpdates, targetRemoves)
+		target, version, devicetype, targetUpdates, targetRemoves, description)
 	if err != nil {
 		if strings.Contains(err.Error(), manager.SetConfigAlreadyApplied) {
 			log.Warning(manager.SetConfigAlreadyApplied, "Change ", store.B64(changeID), " to ", configName)
-			return nil, configName, true, nil
+			return nil, nil, true, nil
 		}
 		log.Error("Error in setting config: ", changeID, " for target ", configName, err)
-		return nil, configName, false, err
+		return nil, nil, false, err
 	}
 	return changeID, configName, false, nil
 }
 
-func validateChange(target string, version string, targetUpdates map[string]*change.TypedValue, targetRemoves []string) error {
-	configName := store.ConfigName(target)
-	// target is a device name with no version
-	if version != "" {
-		configName = store.ConfigName(strings.Join([]string{target, version}, "-"))
+func validateChange(target string, version string, deviceType string, targetUpdates change.TypedValueMap, targetRemoves []string) error {
+	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
+		return fmt.Errorf("no updates found in change on %s - invalid", target)
 	}
-	err := manager.GetManager().ValidateNetworkConfig(
-		store.ConfigName(configName), targetUpdates, targetRemoves)
+
+	err := manager.GetManager().ValidateNetworkConfig(target, version, deviceType, targetUpdates, targetRemoves)
 	if err != nil {
 		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
-			targetRemoves, configName, err)
+			targetRemoves, target, err)
 		return err
 	}
 	return nil

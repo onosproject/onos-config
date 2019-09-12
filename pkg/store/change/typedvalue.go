@@ -23,6 +23,9 @@ import (
 	"strings"
 )
 
+// TypedValueMap is an alias for a map of paths and values
+type TypedValueMap map[string]*TypedValue
+
 // Types given here are a rough approximation of those in the set of YANG types
 // and the set of gNMI types
 
@@ -447,10 +450,7 @@ func (tv *TypedBool) String() string {
 
 // Bool extracts the unsigned bool value
 func (tv *TypedBool) Bool() bool {
-	if tv.Value[0] == 1 {
-		return true
-	}
-	return false
+	return tv.Value[0] == 1
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -600,9 +600,7 @@ func NewLeafListString(values []string) *TypedLeafListString {
 		} else {
 			bytes = append(bytes, 0x1D) // Group separator
 		}
-		for _, s := range []byte(v) {
-			bytes = append(bytes, s)
-		}
+		bytes = append(bytes, []byte(v)...)
 	}
 	typedLeafListString := TypedLeafListString{
 		Value: bytes,
@@ -654,9 +652,7 @@ func NewLeafListInt64(values []int) *TypedLeafListInt64 {
 	for _, v := range values {
 		buf := make([]byte, 8)
 		binary.LittleEndian.PutUint64(buf, uint64(v))
-		for _, b := range buf {
-			bytes = append(bytes, b)
-		}
+		bytes = append(bytes, buf...)
 	}
 	typedLeafListInt64 := TypedLeafListInt64{
 		Value: bytes,
@@ -706,9 +702,7 @@ func NewLeafListUint64(values []uint) *TypedLeafListUint {
 	for _, v := range values {
 		buf := make([]byte, 8)
 		binary.LittleEndian.PutUint64(buf, uint64(v))
-		for _, b := range buf {
-			bytes = append(bytes, b)
-		}
+		bytes = append(bytes, buf...)
 	}
 	typedLeafListUint := TypedLeafListUint{
 		Value: bytes,
@@ -811,9 +805,7 @@ func NewLeafListDecimal64(digits []int64, precision uint32) *TypedLeafListDecima
 	for _, d := range digits {
 		buf := make([]byte, 8)
 		binary.LittleEndian.PutUint64(buf, uint64(d))
-		for _, b := range buf {
-			bytes = append(bytes, b)
-		}
+		bytes = append(bytes, buf...)
 	}
 	typedLeafListDecimal := TypedLeafListDecimal{
 		Value:    bytes,
@@ -890,9 +882,7 @@ func NewLeafListFloat32(values []float32) *TypedLeafListFloat {
 	for _, f := range values {
 		buf := make([]byte, 8)
 		binary.LittleEndian.PutUint64(buf, math.Float64bits(float64(f)))
-		for _, b := range buf {
-			bytes = append(bytes, b)
-		}
+		bytes = append(bytes, buf...)
 	}
 	typedLeafListFloat := TypedLeafListFloat{
 		Value: bytes,
@@ -945,9 +935,7 @@ func NewLeafListBytes(values [][]byte) *TypedLeafListBytes {
 	bytes := make([]byte, 0)
 	typeopts := make([]int, 0)
 	for _, v := range values {
-		for _, b := range []byte(v) {
-			bytes = append(bytes, b)
-		}
+		bytes = append(bytes, []byte(v)...)
 		typeopts = append(typeopts, len(v))
 	}
 	typedLeafListBytes := TypedLeafListBytes{

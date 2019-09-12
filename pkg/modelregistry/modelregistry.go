@@ -24,8 +24,14 @@ import (
 	log "k8s.io/klog"
 	"plugin"
 	"regexp"
+	"sort"
 	"strings"
 )
+
+// PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
+type PathMap interface {
+	JustPaths() []string
+}
 
 // ReadOnlySubPathMap abstracts the read only subpath
 type ReadOnlySubPathMap map[string]change.ValueType
@@ -33,14 +39,48 @@ type ReadOnlySubPathMap map[string]change.ValueType
 // ReadOnlyPathMap abstracts the read only path
 type ReadOnlyPathMap map[string]ReadOnlySubPathMap
 
-// GlobalReadOnlyPaths abstracts the map for the read only paths
-type GlobalReadOnlyPaths map[string]ReadOnlyPathMap
+// JustPaths extracts keys from a read only path map
+func (ro ReadOnlyPathMap) JustPaths() []string {
+	keys := make([]string, len(ro))
+	i := 0
+	for k := range ro {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
+
+// ReadWritePathElem holds data about a leaf or container
+type ReadWritePathElem struct {
+	ValueType   change.ValueType
+	Units       string
+	Description string
+	Mandatory   bool
+	Default     string
+	Range       []string
+	Length      []string
+}
+
+// ReadWritePathMap is a map of ReadWrite paths a their metadata
+type ReadWritePathMap map[string]ReadWritePathElem
+
+// JustPaths extracts keys from a read write path map
+func (rw ReadWritePathMap) JustPaths() []string {
+	keys := make([]string, len(rw))
+	i := 0
+	for k := range rw {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
 
 // ModelRegistry is the object for the saving information about device models
 type ModelRegistry struct {
-	ModelPlugins       map[string]ModelPlugin
-	ModelReadOnlyPaths map[string]ReadOnlyPathMap
-	LocationStore      map[string]string
+	ModelPlugins        map[string]ModelPlugin
+	ModelReadOnlyPaths  map[string]ReadOnlyPathMap
+	ModelReadWritePaths map[string]ReadWritePathMap
+	LocationStore       map[string]string
 }
 
 // ModelPlugin is a set of methods that each model plugin should implement
@@ -81,12 +121,46 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 		log.Warning("Error loading schema from model plugin", modelName, err)
 		return "", "", err
 	}
-	readOnlyPaths := extractReadOnlyPaths(modelschema["Device"],
-		yang.TSUnset, "", "")
+	readOnlyPaths, readWritePaths := ExtractPaths(modelschema["Device"], yang.TSUnset, "", "")
+
+	/////////////////////////////////////////////////////////////////////
+	// Stratum - special case
+	// It has 139 Read Only paths in its YANG but as of Aug'19 only 1 is
+	// supported by the actual device - /interfaces/interface[name=*]/state
+	// Either the YANG should be adjusted or the device should implement
+	// the paths. As a workaround just add the working path here
+	// In addition Stratum does not fully support wildcards, and so calling this
+	// path will only retrieve the ifindex and name under this branch - other paths
+	// will have to be called explicitly by their interface name without wildcard
+	/////////////////////////////////////////////////////////////////////
+	if name == "Stratum" && version == "1.0.0" {
+		stratumIfRwPaths := make(ReadWritePathMap)
+		const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
+		stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
+		stratumIfRwPaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
+		stratumIfRwPaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
+		stratumIfRwPaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
+		stratumIfRwPaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
+		stratumIfRwPaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
+		stratumIfRwPaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
+		stratumIfRwPaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
+		stratumIfRwPaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
+		registry.ModelReadWritePaths[modelName] = stratumIfRwPaths
+
+		stratumIfPath := make(ReadOnlyPathMap)
+		const StratumIfPath = "/interfaces/interface[name=*]/state"
+		stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
+		registry.ModelReadOnlyPaths[modelName] = stratumIfPath
+		log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
+			"%d read only paths. %d read write paths", name, version,
+			len(registry.ModelReadOnlyPaths[modelName]), len(registry.ModelReadWritePaths[modelName]))
+		return name, version, nil
+	}
+
 	registry.ModelReadOnlyPaths[modelName] = readOnlyPaths
-	log.Info(registry.ModelReadOnlyPaths[modelName])
-	log.Infof("Model %s %s loaded. %d read only paths", name, version,
-		len(registry.ModelReadOnlyPaths[modelName]))
+	registry.ModelReadWritePaths[modelName] = readWritePaths
+	log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", name, version,
+		len(registry.ModelReadOnlyPaths[modelName]), len(registry.ModelReadWritePaths[modelName]))
 	return name, version, nil
 }
 
@@ -112,37 +186,59 @@ func (registry *ModelRegistry) Capabilities() []*gnmi.ModelData {
 	return outputList
 }
 
-// extractReadOnlyPaths is a recursive function to extract a list of read only paths from a YGOT schema
-func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentNs string,
-	parentPath string) ReadOnlyPathMap {
+// ExtractPaths is a recursive function to extract a list of read only paths from a YGOT schema
+func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath string,
+	subpathPrefix string) (ReadOnlyPathMap, ReadWritePathMap) {
 	readOnlyPaths := make(ReadOnlyPathMap)
+	readWritePaths := make(ReadWritePathMap)
 	for _, dirEntry := range deviceEntry.Dir {
-		namespace := extractnamespace(dirEntry, parentNs)
-		itemPath := formatName(dirEntry, false, parentNs, parentPath)
-		if dirEntry.IsLeaf() {
+		itemPath := formatName(dirEntry, false, parentPath, subpathPrefix)
+		if dirEntry.IsLeaf() || dirEntry.IsLeafList() {
 			// No need to recurse
-			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
+			t, err := toValueType(dirEntry.Type, dirEntry.IsLeafList())
+			if err != nil {
+				log.Errorf(err.Error())
+			}
+			if parentState == yang.TSFalse {
 				leafMap, ok := readOnlyPaths[parentPath]
 				if !ok {
 					leafMap = make(ReadOnlySubPathMap)
 					readOnlyPaths[parentPath] = leafMap
-					t, err := toValueType(dirEntry.Type)
-					if err != nil {
-						log.Errorf(err.Error())
-					}
 					leafMap[strings.Replace(itemPath, parentPath, "", 1)] = t
 				} else {
-					t, err := toValueType(dirEntry.Type)
-					if err != nil {
-						log.Errorf(err.Error())
-					}
 					leafMap[strings.Replace(itemPath, parentPath, "", 1)] = t
 				}
-
+			} else if dirEntry.Config == yang.TSFalse {
+				leafMap := make(ReadOnlySubPathMap)
+				leafMap["/"] = t
+				readOnlyPaths[itemPath] = leafMap
+			} else {
+				ranges := make([]string, 0)
+				for _, r := range dirEntry.Type.Range {
+					ranges = append(ranges, fmt.Sprintf("%v", r))
+				}
+				lengths := make([]string, 0)
+				for _, l := range dirEntry.Type.Length {
+					lengths = append(lengths, fmt.Sprintf("%v", l))
+				}
+				rwElem := ReadWritePathElem{
+					ValueType:   t,
+					Description: dirEntry.Description,
+					Mandatory:   dirEntry.Mandatory == yang.TSTrue,
+					Units:       dirEntry.Units,
+					Default:     dirEntry.Default,
+					Range:       ranges,
+					Length:      lengths,
+				}
+				readWritePaths[itemPath] = rwElem
 			}
 		} else if dirEntry.IsContainer() {
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
-				subPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+				subpathPfx := subpathPrefix
+				if parentState == yang.TSFalse {
+					subpathPfx = itemPath[len(parentPath):]
+				}
+				subPaths, _ := ExtractPaths(dirEntry, yang.TSFalse, itemPath, subpathPfx)
 				subPathsMap := make(ReadOnlySubPathMap)
 				for _, v := range subPaths {
 					for k, u := range v {
@@ -152,14 +248,21 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 				readOnlyPaths[itemPath] = subPathsMap
 				continue
 			}
-			readOnlyPathsTemp := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+			readOnlyPathsTemp, readWritePathTemp := ExtractPaths(dirEntry, dirEntry.Config, itemPath, "")
 			for k, v := range readOnlyPathsTemp {
 				readOnlyPaths[k] = v
+			}
+			for k, v := range readWritePathTemp {
+				readWritePaths[k] = v
 			}
 		} else if dirEntry.IsList() {
-			itemPath = formatName(dirEntry, true, parentNs, parentPath)
+			itemPath = formatName(dirEntry, true, parentPath, subpathPrefix)
 			if dirEntry.Config == yang.TSFalse || parentState == yang.TSFalse {
-				subPaths := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+				subpathPfx := subpathPrefix
+				if parentState == yang.TSFalse {
+					subpathPfx = itemPath[len(parentPath):]
+				}
+				subPaths, _ := ExtractPaths(dirEntry, yang.TSFalse, parentPath, subpathPfx)
 				subPathsMap := make(ReadOnlySubPathMap)
 				for _, v := range subPaths {
 					for k, u := range v {
@@ -169,13 +272,18 @@ func extractReadOnlyPaths(deviceEntry *yang.Entry, parentState yang.TriState, pa
 				readOnlyPaths[itemPath] = subPathsMap
 				continue
 			}
-			readOnlyPathsTemp := extractReadOnlyPaths(dirEntry, dirEntry.Config, namespace, itemPath)
+			readOnlyPathsTemp, readWritePathsTemp := ExtractPaths(dirEntry, dirEntry.Config, itemPath, "")
 			for k, v := range readOnlyPathsTemp {
 				readOnlyPaths[k] = v
 			}
+			for k, v := range readWritePathsTemp {
+				readWritePaths[k] = v
+			}
+		} else {
+			log.Errorf("Unexpected type of leaf for %s", itemPath)
 		}
 	}
-	return readOnlyPaths
+	return readOnlyPaths, readWritePaths
 }
 
 // RemovePathIndices removes the index value from a path to allow it to be compared to a model path
@@ -189,56 +297,25 @@ func RemovePathIndices(path string) string {
 	return path
 }
 
-func formatName(dirEntry *yang.Entry, isList bool, parentNs string, parentPath string) string {
-	namespace := extractnamespace(dirEntry, parentNs)
+func formatName(dirEntry *yang.Entry, isList bool, parentPath string, subpathPrefix string) string {
+	parentAndSubPath := parentPath
+	if subpathPrefix != "/" {
+		parentAndSubPath = fmt.Sprintf("%s%s", parentPath, subpathPrefix)
+	}
 
 	var name string
-	if namespace == parentNs && isList {
-		name = fmt.Sprintf("%s/%s[%s=*]", parentPath, dirEntry.Name, dirEntry.Key)
-	} else if isList {
-		name = fmt.Sprintf("%s/%s:%s[%s=*]", parentPath, namespace, dirEntry.Name, dirEntry.Key)
-	} else if namespace == parentNs || namespace == "" {
-		name = fmt.Sprintf("%s/%s", parentPath, dirEntry.Name)
+	if isList {
+		//have to ensure index order is consistent where there's more than one
+		keyParts := strings.Split(dirEntry.Key, " ")
+		sort.Slice(keyParts, func(i, j int) bool {
+			return keyParts[i] < keyParts[j]
+		})
+		name = fmt.Sprintf("%s/%s[%s=*]", parentAndSubPath, dirEntry.Name, strings.Join(keyParts, " "))
 	} else {
-		name = fmt.Sprintf("%s/%s:%s", parentPath, namespace, dirEntry.Name)
+		name = fmt.Sprintf("%s/%s", parentAndSubPath, dirEntry.Name)
 	}
 
 	return name
-}
-
-func extractnamespace(dirEntry *yang.Entry, parentNs string) string {
-	namespace := dirEntry.Namespace()
-	if namespace != nil && namespace.Name != "" {
-		return namespace.Name
-	}
-
-	prefix := dirEntry.Prefix.Name
-	// Special case until YGOT gets fixed - doesn't return namespaces
-	if prefix == "openflow" {
-		return "openconfig-openflow"
-	} else if prefix == "oc-log" {
-		return "openconfig-system-logging"
-	} else if prefix == "oc-proc" {
-		return "openconfig-procmon"
-	} else if prefix == "oc-sys-term" {
-		return "openconfig-system-terminal"
-	} else if prefix == "oc-aaa" {
-		return "openconfig-aaa"
-	}
-
-	if dirEntry.Annotation != nil {
-		schemaPath, nsok := dirEntry.Annotation["schemapath"]
-		if nsok {
-			nsstr, ok := schemaPath.(string)
-			if ok {
-				nselem := strings.Split(nsstr, "/")
-				if len(nselem) > 1 {
-					return nselem[1]
-				}
-			}
-		}
-	}
-	return parentNs
 }
 
 //Paths extract the read only path up to the first read only container
@@ -250,47 +327,50 @@ func Paths(readOnly ReadOnlyPathMap) []string {
 	return keys
 }
 
-func toValueType(entry *yang.YangType) (change.ValueType, error) {
+//PathsRW extract the read write path
+func PathsRW(rwPathMap ReadWritePathMap) []string {
+	keys := make([]string, 0, len(rwPathMap))
+	for k := range rwPathMap {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func toValueType(entry *yang.YangType, isLeafList bool) (change.ValueType, error) {
 	//TODO evaluate better types and error return
 	switch entry.Name {
-	case "int8":
+	case "int8", "int16", "int32", "int64":
+		if isLeafList {
+			return change.ValueTypeLeafListINT, nil
+		}
 		return change.ValueTypeINT, nil
-	case "int16":
-		return change.ValueTypeINT, nil
-	case "int32":
-		return change.ValueTypeINT, nil
-	case "int64":
-		return change.ValueTypeINT, nil
-	case "uint8":
-		return change.ValueTypeUINT, nil
-	case "uint16":
-		return change.ValueTypeUINT, nil
-	case "uint32":
-		return change.ValueTypeUINT, nil
-	case "uint64":
+	case "uint8", "uint16", "uint32", "uint64", "counter64":
+		if isLeafList {
+			return change.ValueTypeLeafListUINT, nil
+		}
 		return change.ValueTypeUINT, nil
 	case "decimal64":
+		if isLeafList {
+			return change.ValueTypeLeafListDECIMAL, nil
+		}
 		return change.ValueTypeDECIMAL, nil
-	case "string":
+	case "string", "enumeration", "leafref", "identityref", "union", "instance-identifier":
+		if isLeafList {
+			return change.ValueTypeLeafListSTRING, nil
+		}
 		return change.ValueTypeSTRING, nil
 	case "boolean":
+		if isLeafList {
+			return change.ValueTypeLeafListBOOL, nil
+		}
 		return change.ValueTypeBOOL, nil
-	case "bits":
-		return change.ValueTypeBYTES, nil
-	case "binary":
+	case "bits", "binary":
+		if isLeafList {
+			return change.ValueTypeLeafListBYTES, nil
+		}
 		return change.ValueTypeBYTES, nil
 	case "empty":
 		return change.ValueTypeEMPTY, nil
-	case "enumeration":
-		return change.ValueTypeSTRING, nil
-	case "leafref":
-		return change.ValueTypeSTRING, nil
-	case "identityref":
-		return change.ValueTypeSTRING, nil
-	case "union":
-		return change.ValueTypeSTRING, nil
-	case "instance-identifier":
-		return change.ValueTypeSTRING, nil
 	default:
 		return change.ValueTypeSTRING, nil
 	}

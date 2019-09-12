@@ -58,13 +58,16 @@ const ( // For event types
 	EventTypeErrorDeviceCapabilities
 	EventTypeErrorDeviceDisconnect
 	EventTypeErrorSubscribe
+	EventTypeErrorMissingModelPlugin
+	EventTypeErrorTranslation
+	EventTypeErrorGetWithRoPaths
 )
 
 func (et EventType) String() string {
 	return [...]string{"Configuration", "TopoCache", "OperationalState", "EventTypeAchievedSetConfig",
 		"EventTypeErrorSetConfig", "EventTypeErrorParseConfig", "EventTypeErrorSetInitialConfig",
 		"EventTypeErrorDeviceConnect", "EventTypeErrorDeviceCapabilities", "EventTypeErrorDeviceDisconnect",
-		"EventTypeErrorSubscribe"}[et]
+		"EventTypeErrorSubscribe, EventTypeErrorMissingModelPlugin, EventTypeErrorTranslation"}[et]
 }
 
 // Event is a general purpose base type of event
@@ -73,6 +76,7 @@ type Event struct {
 	time      time.Time
 	eventtype EventType
 	values    map[string]string
+	object    interface{}
 }
 
 func (e Event) String() string {
@@ -107,6 +111,11 @@ func (e Event) Values() *map[string]string {
 // Value extracts a single value from the event
 func (e Event) Value(name string) string {
 	return e.values[name]
+}
+
+// Object returns the object associated with the event
+func (e Event) Object() interface{} {
+	return e.object
 }
 
 // createEvent creates a new event object

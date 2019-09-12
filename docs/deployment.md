@@ -240,7 +240,7 @@ Once you've located the ingress IP address and configured `/etc/hosts`, you can 
 the onos-config service via the ingress load balancer:
 
 ```bash
-> onos --address=config.onosproject.org:443 changes
+> onos config --address=config.onosproject.org:443 get changes
 ```
 
 | Note that the `onos` command-line client must be built or installed as described in 
@@ -265,7 +265,7 @@ This command will run the CLI image as a Deployment and log into the bash shell.
 Once you've joined the container, you can connect to the `onos-config` server by running:
 
 ```bash
-> onos config set address something-else-onos-config:5150
+> onos config config set address something-else-onos-config:5150
 something-else-onos-config:5150
 ```
 Note that this is only necessary if you named your deployment something else than `onos-config`.

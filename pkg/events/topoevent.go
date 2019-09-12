@@ -15,6 +15,7 @@
 package events
 
 import (
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"strconv"
 	"time"
 
@@ -42,14 +43,15 @@ func (topoEvent *TopoEvent) Address() string {
 // CreateTopoEvent creates a new topo event object
 // It is important not to depend on topocache package here or we will get a
 // circular dependency - we take the device.ID and treat it as a string
-func CreateTopoEvent(subject string, connect bool, address string) TopoEvent {
+func CreateTopoEvent(subject device.ID, connect bool, address string, dev device.Device) TopoEvent {
 	values := make(map[string]string)
 	values[Connect] = strconv.FormatBool(connect)
 	values[Address] = address
 	return TopoEvent{
-		subject:   subject,
+		subject:   string(subject),
 		time:      time.Now(),
 		eventtype: EventTypeTopoCache,
 		values:    values,
+		object:    dev,
 	}
 }

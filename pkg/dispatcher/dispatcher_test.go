@@ -17,8 +17,8 @@ package dispatcher
 import (
 	"encoding/base64"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
 	log "k8s.io/klog"
@@ -32,13 +32,13 @@ var (
 	device1Channel, device2Channel, device3Channel chan events.ConfigEvent
 	respChannel1, respChannel2, respChannel3       chan events.DeviceResponse
 	optStateChannel                                chan events.OperationalStateEvent
-	device1, device2, device3                      topocache.Device
+	device1, device2, device3                      device.Device
 	err                                            error
 )
 
 const (
-	configStoreDefaultFileName = "../store/testout/configStore-sample.json"
-	changeStoreDefaultFileName = "../store/testout/changeStore-sample.json"
+	configStoreDefaultFileName = "testdata/configStore-sample.json"
+	changeStoreDefaultFileName = "testdata/changeStore-sample.json"
 	opStateTest                = "opStateListener"
 )
 
@@ -53,35 +53,35 @@ func setUp() *Dispatcher {
 	device2Channel, respChannel2, err = d.RegisterDevice(device2.ID)
 	device3Channel, respChannel3, err = d.RegisterDevice(device3.ID)
 	optStateChannel, err = d.RegisterOpState(opStateTest)
-	return &d
+	return d
 }
 
-func tearDown(d *Dispatcher) {
-	d.UnregisterDevice(device1.ID)
-	d.UnregisterDevice(device2.ID)
-	d.UnregisterDevice(device3.ID)
+func tearDown(t *testing.T, d *Dispatcher) {
+	assert.NilError(t, d.UnregisterDevice(device1.ID))
+	assert.NilError(t, d.UnregisterDevice(device2.ID))
+	assert.NilError(t, d.UnregisterDevice(device3.ID))
 	d.UnregisterOperationalState(opStateTest)
 }
 
 func TestMain(m *testing.M) {
 	log.SetOutput(os.Stdout)
 
-	device1 = topocache.Device{ID: "localhost-1", Addr: "localhost:10161"}
-	device2 = topocache.Device{ID: "localhost-2", Addr: "localhost:10162"}
-	device3 = topocache.Device{ID: "localhost-3", Addr: "localhost:10163"}
+	device1 = device.Device{ID: "localhost-1", Address: "localhost:10161"}
+	device2 = device.Device{ID: "localhost-2", Address: "localhost:10162"}
+	device3 = device.Device{ID: "localhost-3", Address: "localhost:10163"}
 
 	configStoreTest, err = store.LoadConfigStore(configStoreDefaultFileName)
 	if err != nil {
 		wd, _ := os.Getwd()
 		log.Warning("Cannot load config store ", err, wd)
-		return
+		os.Exit(1)
 	}
 	log.Info("Configuration store loaded from ", configStoreDefaultFileName)
 
 	changeStoreTest, err = store.LoadChangeStore(changeStoreDefaultFileName)
 	if err != nil {
 		log.Error("Cannot load change store ", err)
-		return
+		os.Exit(1)
 	}
 
 	os.Exit(m.Run())
@@ -99,12 +99,12 @@ func Test_getListeners(t *testing.T) {
 	assert.Assert(t, is.Contains(listenerStr, "localhost-2"), "Expected to find device2 in list. Got %s", listeners)
 	assert.Assert(t, is.Contains(listenerStr, "localhost-3"), "Expected to find device3 in list. Got %s", listeners)
 	assert.Assert(t, is.Contains(listenerStr, opStateTest), "Expected to find %s in list. Got %s", opStateTest, listeners)
-	tearDown(d)
+	tearDown(t, d)
 }
 
 func Test_register(t *testing.T) {
 	d := setUp()
-	device4Channel, respChannel4, err := d.RegisterDevice(topocache.ID("device4"))
+	device4Channel, respChannel4, err := d.RegisterDevice(device.ID("device4"))
 	assert.NilError(t, err, "Unexpected error when registering device %s", err)
 
 	opStateChannel2, err := d.RegisterOpState("opStateTest2")
@@ -116,36 +116,37 @@ func Test_register(t *testing.T) {
 	var respChannelIf interface{} = respChannel4
 	chanTypeResp, ok := respChannelIf.(chan events.DeviceResponse)
 	assert.Assert(t, ok, "Unexpected channel type when registering device %v", chanTypeResp)
-	d.UnregisterDevice(topocache.ID("device4"))
+	_ = d.UnregisterDevice(device.ID("device4"))
 
 	var opChannelIf interface{} = opStateChannel2
 	chanTypeOp, ok := opChannelIf.(chan events.OperationalStateEvent)
 	assert.Assert(t, ok, "Unexpected channel type when registering device %v", chanTypeOp)
-	d.UnregisterDevice(topocache.ID("opStateTest2"))
+	_ = d.UnregisterDevice(device.ID("opStateTest2"))
 
-	tearDown(d)
+	tearDown(t, d)
 }
 
 func Test_unregister(t *testing.T) {
 	d := setUp()
-	err1 := d.UnregisterDevice(topocache.ID("device5"))
+	err1 := d.UnregisterDevice(device.ID("device5"))
 
 	assert.Assert(t, err1 != nil, "Unexpected lack of error when unregistering non existent device")
 	assert.Assert(t, is.Contains(err1.Error(), "had not been registered"),
 		"Unexpected error text when unregistering non existent device %s", err1)
 
-	d.RegisterDevice(topocache.ID("device6"))
-	d.RegisterDevice(topocache.ID("device7"))
+	_, _, _ = d.RegisterDevice(device.ID("device6"))
+	_, _, _ = d.RegisterDevice(device.ID("device7"))
 
-	err2 := d.UnregisterDevice(topocache.ID("device6"))
+	err2 := d.UnregisterDevice(device.ID("device6"))
 	assert.NilError(t, err2, "Unexpected error when unregistering device6 %s", err2)
-	d.UnregisterDevice(topocache.ID("device7"))
+	_ = d.UnregisterDevice(device.ID("device7"))
 
-	tearDown(d)
+	tearDown(t, d)
 }
 
 func Test_listen_device(t *testing.T) {
 	d := setUp()
+	defer tearDown(t, d)
 	changes := make(map[string]bool)
 	// Start the main listener system
 	go testSync(device1Channel, changes)
@@ -154,14 +155,13 @@ func Test_listen_device(t *testing.T) {
 	changeID := []byte("test")
 	// Send down some changes
 	for i := 1; i < 3; i++ {
-		event := events.CreateConfigEvent(device1.Addr, changeID, true)
+		event := events.CreateConfigEvent(device1.Address, changeID, true)
 		changesChannel <- event
 	}
 	close(changesChannel)
 
 	// Wait for the changes to get distributed
 	time.Sleep(time.Second)
-	tearDown(d)
 }
 
 func Test_listen_nbi(t *testing.T) {
@@ -234,12 +234,12 @@ func Test_listen_none(t *testing.T) {
 
 func Test_register_dup(t *testing.T) {
 	d := NewDispatcher()
-	d.RegisterNbi("nbi")
-	d.RegisterDevice(topocache.ID("dev1"))
+	_, _ = d.RegisterNbi("nbi")
+	_, _, _ = d.RegisterDevice(device.ID("dev1"))
 	i := len(d.GetListeners())
-	d.RegisterNbi("nbi")
+	_, _ = d.RegisterNbi("nbi")
 	assert.Equal(t, i, len(d.GetListeners()), "Duplicate NBI listener added")
-	d.RegisterDevice(topocache.ID("dev1"))
+	_, _, _ = d.RegisterDevice(device.ID("dev1"))
 	assert.Equal(t, i, len(d.GetListeners()), "Duplicate device listener added")
 }
 

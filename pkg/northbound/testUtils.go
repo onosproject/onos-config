@@ -17,10 +17,14 @@ package northbound
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/certs"
+	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 	"sync"
+	"time"
 )
 
 var (
@@ -38,12 +42,18 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 	_, err = manager.LoadManager(
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
-		"../../../configs/deviceStore-sample.json",
 		"../../../configs/networkStore-sample.json",
 	)
 	if err != nil {
 		log.Error("Unable to load manager")
 	}
+
+	opStateValuesDevice2 := make(map[string]*change.TypedValue)
+	opStateValuesDevice2["/cont1a/cont2a/leaf2c"] = change.CreateTypedValueString("test1")
+	opStateValuesDevice2["/cont1b-state/leaf2d"] = change.CreateTypedValueUint64(12345)
+
+	manager.GetManager().OperationalStateCache[device.ID("Device2")] = opStateValuesDevice2
+	go manager.GetManager().Dispatcher.ListenOperationalState(manager.GetManager().OperationalStateChannel)
 
 	config := NewServerConfig("", "", "")
 	config.Port = port
@@ -64,5 +74,19 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 		if err != nil {
 			log.Error("Unable to serve ", err)
 		}
+	}()
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		updatedLeaf2d := make(map[string]string)
+		updatedLeaf2d["/cont1a/cont2a/leaf2d"] = "testNotRelevant"
+		opStateEventWrong := events.CreateOperationalStateEvent("Device1", updatedLeaf2d)
+		manager.GetManager().OperationalStateChannel <- opStateEventWrong
+
+		time.Sleep(100 * time.Millisecond)
+		updatedLeaf2c := make(map[string]string)
+		updatedLeaf2c["/cont1a/cont2a/leaf2c"] = "test2"
+		opStateEvent := events.CreateOperationalStateEvent("Device2", updatedLeaf2c)
+		manager.GetManager().OperationalStateChannel <- opStateEvent
 	}()
 }

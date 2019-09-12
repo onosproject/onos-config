@@ -1,0 +1,35 @@
+{
+  "interface": [
+    {
+      "name": "eth1",
+      "config": {
+        "description": "new if desc",
+        "mtu": 960
+      },
+      "hold-time": {
+        "config": {
+          "up": 10,
+          "down": 11
+        }
+      },
+      "subinterfaces": {
+        "subinterface": [
+          {
+            "index": 120,
+            "config": {
+              "enabled": true,
+              "description": "SI 120"
+            }
+          },
+          {
+            "index": 121,
+            "config": {
+              "enabled": false,
+              "description": "SI 121"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -28,8 +28,10 @@ const (
 	elemNameEscaped1a = "netwo\\r\\k\\-\\instances"
 	elemNameEscaped1b = "net\\w\\o\\r\\k-instance"
 	elemKeyName1      = "name"
+	elemKeyNameSlash  = "name/value"
 	elemKeyValue1     = "DEFAULT"
 	path1             = "/" + elemName1a + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]/" + elemName1b
+	pathSlashKey      = "/" + elemName1a + "[" + elemKeyNameSlash + "=" + elemKeyValue1 + "]/" + elemName1b
 	escapedPath1      = "/" + elemNameEscaped1a + "[" + elemKeyName1 + "=" + elemKeyValue1 + "]/" + elemNameEscaped1b
 
 	pathSegment1 = "1"
@@ -66,6 +68,16 @@ func Test_ParseSimple(t *testing.T) {
 	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
 
 	checkElement(t, parsed, 0, elemName1a, elemKeyName1, elemKeyValue1)
+}
+
+func Test_ParseSimpleSlash(t *testing.T) {
+	print(pathSlashKey)
+	elements := SplitPath(pathSlashKey)
+	parsed, err := ParseGNMIElements(elements)
+
+	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
+
+	checkElement(t, parsed, 0, elemName1a, elemKeyNameSlash, elemKeyValue1)
 }
 
 func Test_ParseEscape(t *testing.T) {
@@ -122,6 +134,15 @@ func Test_StrPath(t *testing.T) {
 
 	generatedPath := StrPath(parsed)
 	assert.Equal(t, generatedPath, path1)
+}
+
+func Test_StrPathSlash(t *testing.T) {
+	elements := SplitPath(pathSlashKey)
+	parsed, err := ParseGNMIElements(elements)
+	assert.NilError(t, err)
+
+	generatedPath := StrPath(parsed)
+	assert.Equal(t, generatedPath, pathSlashKey)
 }
 
 func Test_StrPathV03(t *testing.T) {

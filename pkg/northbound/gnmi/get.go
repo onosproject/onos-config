@@ -109,11 +109,15 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	if prefix != nil && prefix.Elem != nil {
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
+	//TODO the following can be optimized by looking if the path is in the read only
 	configValues, err := manager.GetManager().GetTargetConfig(target, "",
 		pathAsString, 0)
 	if err != nil {
 		return nil, err
 	}
+	stateValues := manager.GetManager().GetTargetState(target, pathAsString)
+	//Merging the two results
+	configValues = append(configValues, stateValues...)
 
 	return buildUpdate(prefix, path, configValues)
 }
@@ -133,7 +137,7 @@ func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*change.Conf
 	} else {
 		json, err := store.BuildTree(configValues, false)
 		if err != nil {
-
+			return nil, err
 		}
 		typedValue := &gnmi.TypedValue_JsonVal{
 			JsonVal: json,
