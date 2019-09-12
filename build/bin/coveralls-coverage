@@ -2,5 +2,5 @@
 
 go get github.com/go-playground/overalls && go get github.com/mattn/goveralls
 
-overalls -project=github.com/onosproject/onos-config -covermode=count -ignore=".git,vendor,models,tools"
+overalls -project=github.com/onosproject/onos-config -covermode=count -ignore=".git,vendor,models,tools,pkg/northbound/admin,pkg/northbound/admin/admin.pb.go"
 goveralls -coverprofile=overalls.coverprofile -service travis-ci
