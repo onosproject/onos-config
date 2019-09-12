@@ -2,7 +2,7 @@
 
 go get github.com/go-playground/overalls && go get github.com/mattn/goveralls
 
-overalls -project=github.com/onosproject/onos-config -covermode=count -ignore=".git,vendor,models,tools" -- -race
+overalls -project=github.com/onosproject/onos-config -covermode=atomic -ignore=".git,vendor,models,tools" -- -race
 mv overalls.coverprofile overalls.coverprofile.orig
 grep -v .pb.go overalls.coverprofile.orig >overalls.coverprofile
 goveralls -coverprofile=overalls.coverprofile -service travis-ci
