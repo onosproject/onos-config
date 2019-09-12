@@ -22,6 +22,7 @@ import (
 	"testing"
 )
 
+// TestToConfigName : ToConfigName() simple test
 func TestToConfigName(t *testing.T) {
 	const (
 		deviceID      = "device"
@@ -32,6 +33,7 @@ func TestToConfigName(t *testing.T) {
 	assert.Assert(t, strings.Contains(configName, deviceVersion))
 }
 
+// TestToModelName : ToModelName() simple test
 func TestToModelName(t *testing.T) {
 	const (
 		deviceName    = "abc"
