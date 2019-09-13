@@ -27,5 +27,5 @@ func ToModelName(name string, version string) string {
 
 // ToConfigName simply joins together device ID and version in a consistent way
 func ToConfigName(deviceID device.ID, version string) string {
-	return fmt.Sprintf("-%s", deviceID)
+	return fmt.Sprintf("%s-%s", deviceID, version)
 }
