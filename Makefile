@@ -11,8 +11,8 @@ MODELPLUGINS = build/_output/testdevice.so.1.0.0 build/_output/testdevice.so.2.0
 
 build: # @HELP build the Go binaries and run all validations (default)
 build: $(MODELPLUGINS)
-	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
-	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config-debug ./cmd/onos-config
+	CGO_ENABLED=1 go build -race -o build/_output/onos-config ./cmd/onos-config
+	CGO_ENABLED=1 go build -race -gcflags "all=-N -l" -o build/_output/onos-config-debug ./cmd/onos-config
 
 build/_output/testdevice.so.1.0.0: modelplugin/TestDevice-1.0.0/modelmain.go modelplugin/TestDevice-1.0.0/testdevice_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
@@ -32,9 +32,9 @@ build/_output/stratum.so.1.0.0: modelplugin/Stratum-1.0.0/modelmain.go modelplug
 
 test: # @HELP run the unit tests and source code validation
 test: build deps linters license_check
-	go test github.com/onosproject/onos-config/pkg/...
-	go test github.com/onosproject/onos-config/cmd/...
-	go test github.com/onosproject/onos-config/modelplugin/...
+	go test -race github.com/onosproject/onos-config/pkg/...
+	go test -race github.com/onosproject/onos-config/cmd/...
+	go test -race github.com/onosproject/onos-config/modelplugin/...
 
 coverage: # @HELP generate unit test coverage data
 coverage: build deps linters license_check
