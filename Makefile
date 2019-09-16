@@ -11,8 +11,8 @@ MODELPLUGINS = build/_output/testdevice.so.1.0.0 build/_output/testdevice.so.2.0
 
 build: # @HELP build the Go binaries and run all validations (default)
 build: $(MODELPLUGINS)
-	CGO_ENABLED=1 go build -race -o build/_output/onos-config ./cmd/onos-config
-	CGO_ENABLED=1 go build -race -gcflags "all=-N -l" -o build/_output/onos-config-debug ./cmd/onos-config
+	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
+	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config-debug ./cmd/onos-config
 
 build/_output/testdevice.so.1.0.0: modelplugin/TestDevice-1.0.0/modelmain.go modelplugin/TestDevice-1.0.0/testdevice_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
@@ -86,6 +86,20 @@ kind: images
 	kind load docker-image onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
 
 all: build images
+
+run-docker: # @HELP run onos-config docker image
+run-docker: onos-config-docker
+	docker stop onos-config || echo "onos-config was not running"
+	docker run -d --rm -p 5150:5150 -v `pwd`/configs:/etc/onos-config \
+		--name onos-config onosproject/onos-config \
+		-configStore=/etc/onos-config/configStore-sample.json \
+		-changeStore=/etc/onos-config/changeStore-sample.json \
+		-deviceStore=/etc/onos-config/deviceStore-sample.json \
+		-networkStore=/etc/onos-config/networkStore-sample.json \
+		-modelPlugin=/usr/local/lib/testdevice.so.1.0.0 \
+		-modelPlugin=/usr/local/lib/testdevice.so.2.0.0 \
+		-modelPlugin=/usr/local/lib/devicesim.so.1.0.0 \
+		-modelPlugin=/usr/local/lib/stratum.so.1.0.0
 
 clean: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
