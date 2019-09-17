@@ -10,9 +10,12 @@ ONOS_BUILD_VERSION := stable
 MODELPLUGINS = build/_output/testdevice.so.1.0.0 build/_output/testdevice.so.2.0.0 build/_output/devicesim.so.1.0.0 build/_output/stratum.so.1.0.0
 
 build: # @HELP build the Go binaries and run all validations (default)
-build: $(MODELPLUGINS)
+build:
 	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
 	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config-debug ./cmd/onos-config
+
+build-plugins: # @HELP build plugin binaries
+build-plugins: $(MODELPLUGINS)
 
 build/_output/testdevice.so.1.0.0: modelplugin/TestDevice-1.0.0/modelmain.go modelplugin/TestDevice-1.0.0/testdevice_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
@@ -66,6 +69,14 @@ onos-config-base-docker: # @HELP build onos-config base Docker image
 		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		-t onosproject/onos-config-base:${ONOS_CONFIG_VERSION}
 	@rm -rf vendor
+
+onos-config-plugins-docker: # @HELP build onos-config plugins Docker image
+onos-config-plugins-docker:
+	@go mod vendor
+		docker build . -f build/plugins/Dockerfile \
+			--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+			-t onosproject/onos-config-plugins:${ONOS_CONFIG_VERSION}
+		@rm -rf vendor
 
 onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
