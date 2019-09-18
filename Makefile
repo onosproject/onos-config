@@ -19,19 +19,19 @@ build-plugins: $(MODELPLUGINS)
 
 build/_output/testdevice.so.1.0.0: modelplugin/TestDevice-1.0.0/modelmain.go modelplugin/TestDevice-1.0.0/testdevice_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
-	-CGO_ENABLED=1 go build -o build/_output/testdevice-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
+	-CGO_ENABLED=1 go build -o build/_output/debug/testdevice-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
 
 build/_output/testdevice.so.2.0.0: modelplugin/TestDevice-2.0.0/modelmain.go modelplugin/TestDevice-2.0.0/testdevice_2_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
-	-CGO_ENABLED=1 go build -o build/_output/testdevice-debug.so.2.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
+	-CGO_ENABLED=1 go build -o build/_output/debug/testdevice-debug.so.2.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
 
 build/_output/devicesim.so.1.0.0: modelplugin/Devicesim-1.0.0/modelmain.go modelplugin/Devicesim-1.0.0/devicesim_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
-	-CGO_ENABLED=1 go build -o build/_output/devicesim-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
+	-CGO_ENABLED=1 go build -o build/_output/debug/devicesim-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
 
 build/_output/stratum.so.1.0.0: modelplugin/Stratum-1.0.0/modelmain.go modelplugin/Stratum-1.0.0/stratum_1_0_0/generated.go
 	-CGO_ENABLED=1 go build -o build/_output/stratum.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Stratum-1.0.0
-	-CGO_ENABLED=1 go build -o build/_output/stratum-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Stratum-1.0.0
+	-CGO_ENABLED=1 go build -o build/_output/debug/stratum-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Stratum-1.0.0
 
 test: # @HELP run the unit tests and source code validation
 test: build deps linters license_check
@@ -71,19 +71,18 @@ onos-config-base-docker: # @HELP build onos-config base Docker image
 	@rm -rf vendor
 
 onos-config-plugins-docker: # @HELP build onos-config plugins Docker image
-onos-config-plugins-docker:
 	@go mod vendor
-		docker build . -f build/plugins/Dockerfile \
-			--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
-			-t onosproject/onos-config-plugins:${ONOS_CONFIG_VERSION}
-		@rm -rf vendor
+	docker build . -f build/plugins/Dockerfile \
+		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
+		-t onosproject/onos-config-plugins:${ONOS_CONFIG_VERSION}
+	@rm -rf vendor
 
-onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
+onos-config-docker: onos-config-base-docker onos-config-plugins-docker # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
-onos-config-debug-docker: onos-config-base-docker # @HELP build onos-config Docker debug image
+onos-config-debug-docker: onos-config-base-docker onos-config-plugins-docker # @HELP build onos-config Docker debug image
 	docker build . -f build/onos-config-debug/Dockerfile \
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
