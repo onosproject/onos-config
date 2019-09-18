@@ -89,7 +89,7 @@ onos-config-debug-docker: onos-config-base-docker # @HELP build onos-config Dock
 		-t onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
 
 images: # @HELP build all Docker images
-images: build onos-config-docker onos-config-debug-docker
+images: build onos-config-docker onos-config-debug-docker onos-config-plugins-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
