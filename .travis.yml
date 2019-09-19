@@ -37,3 +37,7 @@ jobs:
       if: type != pull_request
       script:
         - sh build/bin/trigger-cli-travis $TRAVIS_ACCESS_TOKEN
+    - stage: docs build
+      if: type != pull_request
+      script:
+        - sh build/bin/trigger-docs-travis $TRAVIS_ACCESS_TOKEN
