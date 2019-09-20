@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 
 func getAdminClient() (*grpc.ClientConn, ConfigAdminServiceClient) {
 	conn := northbound.Connect(northbound.Address, northbound.Opts...)
-	return conn, NewConfigAdminServiceClient(conn)
+	return conn, CreateConfigAdminServiceClient(conn)
 }
 
 func Test_GetNetworkChanges(t *testing.T) {
