@@ -16,50 +16,16 @@
 package cli
 
 import (
-	"context"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"google.golang.org/grpc"
 	"gotest.tools/assert"
 	"testing"
 )
 
-type MockConfigAdminServiceClient struct{}
-
-func (c MockConfigAdminServiceClient) RegisterModel(ctx context.Context, in *admin.RegisterRequest, opts ...grpc.CallOption) (*admin.RegisterResponse, error) {
-	return nil, nil
-}
-
-func (c MockConfigAdminServiceClient) UploadRegisterModel(ctx context.Context, opts ...grpc.CallOption) (admin.ConfigAdminService_UploadRegisterModelClient, error) {
-	return nil, nil
-}
-
-func (c MockConfigAdminServiceClient) ListRegisteredModels(ctx context.Context, in *admin.ListModelsRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_ListRegisteredModelsClient, error) {
-	return nil, nil
-}
-
-func (c MockConfigAdminServiceClient) GetNetworkChanges(ctx context.Context, in *admin.NetworkChangesRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_GetNetworkChangesClient, error) {
-	return nil, nil
-}
-
-func (c MockConfigAdminServiceClient) RollbackNetworkChange(ctx context.Context, in *admin.RollbackRequest, opts ...grpc.CallOption) (*admin.RollbackResponse, error) {
-	response := &admin.RollbackResponse{
-		Message:              "Rollback was successful",
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     nil,
-		XXX_sizecache:        0,
-	}
-	return response, nil
-}
-
-func setUp() {
-	admin.ConfigAdminClientFactory = func(cc *grpc.ClientConn) admin.ConfigAdminServiceClient {
-		return MockConfigAdminServiceClient{}
-	}
-}
-
 func Test_rollback(t *testing.T) {
-	setUp()
+	setUpMockClients()
 	rollback := getRollbackCommand()
-	err := rollback.Execute()
+	args := make([]string, 1)
+	args[0] = "ABCD1234"
+	err := rollback.RunE(rollback, args)
 	assert.NilError(t, err)
+	assert.Equal(t, LastCreatedClient.rollBackID, "ABCD1234")
 }
