@@ -16,6 +16,8 @@ package events
 
 import (
 	"encoding/base64"
+	"fmt"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"strings"
 	"testing"
@@ -29,77 +31,110 @@ const (
 	eventAddress  = "device22:10161"
 	eventTypeCfg  = EventTypeConfiguration
 	eventTypeTopo = EventTypeTopoCache
-	eventValueKey = ChangeID
+	eventValueKey = "ChangeID"
 	eventValue    = "test-event"
 	path1         = "test1/cont1a/cont2a/leaf2a"
 	value1        = "value1"
-	path2         = "test1/cont1a/cont2a/leaf2a"
-	value2        = "value1"
+	testChangeID  = "dGVzdDE="
+	testResponse  = "test response"
 )
 
 func Test_eventConstruction(t *testing.T) {
 	values := make(map[string]string)
 	values[eventValueKey] = eventValue
-	event := createEvent(eventSubject, eventTypeCfg, values)
+	event := NewEvent(eventSubject, eventTypeCfg, values)
 
 	assert.Equal(t, event.EventType(), eventTypeCfg)
 	assert.Equal(t, event.Subject(), eventSubject)
 	assert.Assert(t, event.Time().Before(time.Now()))
 
-	assert.Equal(t, (*event.Values())[eventValueKey], eventValue)
-	assert.Equal(t, event.Value(eventValueKey), eventValue)
-
 	assert.Assert(t, strings.Contains(event.String(), eventSubject))
+	assert.Equal(t, len(event.Object().(map[string]string)), 1)
 }
 
 func Test_configEventConstruction(t *testing.T) {
 
 	b := []byte(eventValue)
 
-	event := CreateConfigEvent(eventSubject, b, true)
+	event := NewConfigEvent(eventSubject, b, true)
 
-	assert.Equal(t, Event(event).EventType(), eventTypeCfg)
-	assert.Equal(t, Event(event).Subject(), eventSubject)
-	assert.Assert(t, Event(event).Time().Before(time.Now()))
+	assert.Equal(t, event.EventType(), eventTypeCfg)
+	assert.Equal(t, event.Subject(), eventSubject)
+	assert.Assert(t, event.Time().Before(time.Now()))
 
 	assert.Equal(t, event.ChangeID(), base64.StdEncoding.EncodeToString(b))
 	assert.Equal(t, event.Applied(), true)
 
-	assert.Assert(t, strings.Contains(Event(event).String(), eventSubject))
+	assert.Assert(t, strings.Contains(event.String(), eventSubject))
 	assert.Assert(t, strings.Contains(EventTypeConfiguration.String(), "Configuration"))
 }
 
 func Test_topoEventConstruction(t *testing.T) {
 
-	event := CreateTopoEvent(eventSubject, true, eventAddress, device.Device{ID: device.ID("foo")})
+	event := NewTopoEvent(eventSubject, EventItemAdded, &device.Device{ID: device.ID("foo"), Address: eventAddress})
 
-	assert.Equal(t, Event(event).EventType(), eventTypeTopo)
-	assert.Equal(t, Event(event).Subject(), eventSubject)
-	assert.Assert(t, Event(event).Time().Before(time.Now()))
-	assert.Equal(t, event.Address(), eventAddress)
-	assert.Equal(t, device.ID("foo"), Event(event).Object().(device.Device).ID)
+	assert.Equal(t, event.EventType(), eventTypeTopo)
+	assert.Equal(t, event.Subject(), eventSubject)
+	assert.Assert(t, event.Time().Before(time.Now()))
+	assert.Equal(t, event.Device().Address, eventAddress)
+	assert.Equal(t, device.ID("foo"), event.Device().ID)
 
-	assert.Equal(t, event.Connect(), true)
+	assert.Equal(t, event.ItemAction(), EventItemAdded)
 
-	assert.Assert(t, strings.Contains(Event(event).String(), eventSubject))
+	assert.Assert(t, strings.Contains(event.String(), eventSubject))
 	assert.Assert(t, strings.Contains(EventTypeTopoCache.String(), "Topo"))
 }
 
 func Test_operationalStateEventConstruction(t *testing.T) {
 
-	values := make(map[string]string)
-	values[path1] = value1
-	values[path2] = value2
+	event := NewOperationalStateEvent(eventSubject, path1, change.CreateTypedValueString(value1), EventItemAdded)
 
-	event := CreateOperationalStateEvent(eventSubject, values)
+	assert.Equal(t, event.EventType(), EventTypeOperationalState)
+	assert.Equal(t, event.Subject(), eventSubject)
+	assert.Assert(t, event.Time().Before(time.Now()))
 
-	assert.Equal(t, Event(event).EventType(), EventTypeOperationalState)
-	assert.Equal(t, Event(event).Subject(), eventSubject)
-	assert.Assert(t, Event(event).Time().Before(time.Now()))
-
-	assert.Equal(t, (*Event(event).Values())[path1], value1)
-	assert.Equal(t, (*Event(event).Values())[path2], value2)
-
-	assert.Assert(t, strings.Contains(Event(event).String(), eventSubject))
+	assert.Assert(t, strings.Contains(event.String(), eventSubject))
 	assert.Assert(t, strings.Contains(EventTypeOperationalState.String(), "OperationalState"))
+	assert.Equal(t, event.ItemAction(), EventItemAdded)
+
+	assert.Equal(t, event.Path(), path1)
+	assert.Equal(t, event.Value().String(), value1)
+}
+
+func Test_responseEventConstruction(t *testing.T) {
+	cid1, _ := base64.StdEncoding.DecodeString(testChangeID)
+	event := NewResponseEvent(EventTypeAchievedSetConfig, eventSubject, cid1, testResponse)
+
+	assert.Equal(t, event.EventType(), EventTypeAchievedSetConfig)
+	assert.Equal(t, event.Subject(), eventSubject)
+	assert.Assert(t, event.Time().Before(time.Now()))
+
+	assert.Equal(t, event.ChangeID(), testChangeID)
+	assert.Equal(t, event.Response(), testResponse)
+	assert.NilError(t, event.Error())
+}
+
+func Test_errorEventConstruction(t *testing.T) {
+	cid1, _ := base64.StdEncoding.DecodeString(testChangeID)
+	event := NewErrorEvent(EventTypeErrorGetWithRoPaths, eventSubject, cid1, fmt.Errorf(testResponse))
+
+	assert.Equal(t, event.EventType(), EventTypeErrorGetWithRoPaths)
+	assert.Equal(t, event.Subject(), eventSubject)
+	assert.Assert(t, event.Time().Before(time.Now()))
+
+	assert.Equal(t, event.ChangeID(), testChangeID)
+	assert.Equal(t, event.Response(), "")
+	assert.Error(t, event.Error(), testResponse, "expected an error")
+}
+
+func Test_errorEventBoChangeIDConstruction(t *testing.T) {
+	event := NewErrorEventNoChangeID(EventTypeErrorDeviceConnect, eventSubject, fmt.Errorf(testResponse))
+
+	assert.Equal(t, event.EventType(), EventTypeErrorDeviceConnect)
+	assert.Equal(t, event.Subject(), eventSubject)
+	assert.Assert(t, event.Time().Before(time.Now()))
+
+	assert.Equal(t, event.ChangeID(), "")
+	assert.Equal(t, event.Response(), "")
+	assert.Error(t, event.Error(), testResponse, "expected an error")
 }

@@ -200,7 +200,7 @@ func Test_WrongDevice(t *testing.T) {
 	resChan := make(chan result)
 	targets["Device2"] = struct{}{}
 	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
-	changeChan <- events.CreateConfigEvent("Device1", []byte("test"), true)
+	changeChan <- events.NewConfigEvent("Device1", []byte("test"), true)
 	var response *gnmi.SubscribeResponse
 	select {
 	case response = <-responsesChan:
@@ -214,7 +214,7 @@ func Test_WrongDevice(t *testing.T) {
 	config1Value05, _ := change.CreateChangeValue("/cont1a/cont2a/leaf2c", change.CreateTypedValueString("def"), false)
 	config1Value09, _ := change.CreateChangeValue("/cont1a/list2a[name=txout2]", change.CreateTypedValueEmpty(), true)
 	change1, _ := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
-	changeChan <- events.CreateConfigEvent("Device1", change1.ID, true)
+	changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
 	select {
 	case response = <-responsesChan:
 		log.Error("Should not be receiving response ", response)
@@ -254,7 +254,7 @@ func Test_WrongPath(t *testing.T) {
 	config1Value05, _ := change.CreateChangeValue("/test1:cont1a/cont2a/leaf2c", change.CreateTypedValueString("def"), false)
 	config1Value09, _ := change.CreateChangeValue("/test1:cont1a/list2a[name=txout2]", change.CreateTypedValueEmpty(), true)
 	change1, _ := change.CreateChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
-	changeChan <- events.CreateConfigEvent("Device1", change1.ID, true)
+	changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
 	select {
 	case response = <-responsesChan:
 		log.Error("Should not be receiving response ", response)

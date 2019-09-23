@@ -16,40 +16,58 @@ package events
 
 import (
 	"encoding/base64"
-	"strconv"
-	"time"
-
 	"github.com/onosproject/onos-config/pkg/store/change"
-	log "k8s.io/klog"
+	"time"
 )
 
-// ConfigEvent a configuration event
-type ConfigEvent Event
+// ConfigEvent a configuration event. It is a specialization of Event, by adding
+// 2 new methods to interface
+type ConfigEvent interface {
+	Event
+	ChangeID() string
+	Applied() bool // TODO: See if this can be removed
+}
 
-// ChangeID returns the changeId of the event
-func (cfgevent *ConfigEvent) ChangeID() string {
-	return cfgevent.values[ChangeID]
+// An object type to contain extra attributes
+type configEventObj struct {
+	changeID string
+	applied  bool
+}
+
+// extend the original event struct.
+// Any new attributes will be stored in the object, so don't store them here
+type configEventImpl struct {
+	eventImpl
+}
+
+// ChangeID returns the changeID of the event
+func (e configEventImpl) ChangeID() string {
+	ce, ok := e.object.(configEventObj)
+	if ok {
+		return ce.changeID
+	}
+	return ""
 }
 
 // Applied returns if the event is for an application or a rollback
-func (cfgevent *ConfigEvent) Applied() bool {
-	b, err := strconv.ParseBool(cfgevent.values[Applied])
-	if err != nil {
-		log.Warning("error in conversion ", err)
-		return false
+func (e configEventImpl) Applied() bool {
+	ce, ok := e.object.(configEventObj)
+	if ok {
+		return ce.applied
 	}
-	return b
+	return false
 }
 
-// CreateConfigEvent creates a new config event object
-func CreateConfigEvent(subject string, changeID change.ID, applied bool) ConfigEvent {
-	values := make(map[string]string)
-	values[ChangeID] = base64.StdEncoding.EncodeToString(changeID)
-	values[Applied] = strconv.FormatBool(applied)
-	return ConfigEvent{
+// NewConfigEvent creates a new config event object
+func NewConfigEvent(subject string, changeID change.ID, applied bool) ConfigEvent {
+	ce := configEventImpl{eventImpl{
 		subject:   subject,
 		time:      time.Now(),
-		eventtype: EventTypeConfiguration,
-		values:    values,
-	}
+		eventType: EventTypeConfiguration,
+		object: configEventObj{
+			changeID: base64.StdEncoding.EncodeToString(changeID),
+			applied:  applied,
+		},
+	}}
+	return ce
 }

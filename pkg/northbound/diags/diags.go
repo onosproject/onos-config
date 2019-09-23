@@ -17,12 +17,10 @@ package diags
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
@@ -58,15 +56,11 @@ func (s Server) GetChanges(r *ChangesRequest, stream ConfigDiags_GetChangesServe
 		changeValues := make([]*admin.ChangeValue, 0)
 
 		for _, cv := range c.Config {
-			to := make([]int32, len(cv.TypeOpts))
-			for i, t := range cv.TypeOpts {
-				to[i] = int32(t)
-			}
 			changeValues = append(changeValues, &admin.ChangeValue{
 				Path:      cv.Path,
 				Value:     cv.Value,
 				ValueType: admin.ChangeValueType(cv.Type),
-				TypeOpts:  to,
+				TypeOpts:  typeOpts32(cv.TypeOpts),
 				Removed:   cv.Remove,
 			})
 		}
@@ -124,16 +118,11 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 	}
 
 	for path, value := range deviceCache {
-		typeOpts := make([]int32, len(value.TypeOpts))
-		for i, v := range value.TypeOpts {
-			typeOpts[i] = int32(v)
-		}
-
 		pathValue := &admin.ChangeValue{
 			Path:      path,
 			ValueType: admin.ChangeValueType(value.Type),
 			Value:     value.Value,
-			TypeOpts:  typeOpts,
+			TypeOpts:  typeOpts32(value.TypeOpts),
 		}
 
 		msg := &OpStateResponse{Type: admin.Type_NONE, Pathvalue: pathValue}
@@ -154,31 +143,26 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 		for {
 			select {
 			case opStateEvent := <-listener:
-				event := events.Event(opStateEvent)
 				log.Infof("Event received NBI Diags OpState subscribe channel %s for %s",
 					streamID, r.DeviceId)
-				if event.Subject() != r.DeviceId {
+				if opStateEvent.Subject() != r.DeviceId {
 					// If the event is not for this device then ignore it
 					continue
 				}
-				// At the moment the event is capable of holding many paths
-				// send one message each
-				for k, v := range *event.Values() {
-					// Do the best we can - the event only holds a string version of the value at the moment
-					pathValue := &admin.ChangeValue{
-						Path:      k,
-						ValueType: admin.ChangeValueType(change.ValueTypeSTRING),
-						Value:     []byte(v),
-						TypeOpts:  []int32{},
-					}
 
-					msg := &OpStateResponse{Type: admin.Type_ADDED, Pathvalue: pathValue}
-					err = stream.SendMsg(msg)
-					if err != nil {
-						log.Warningf("Error sending message on stream %s. Closing. %v",
-							streamID, msg)
-						return err
-					}
+				pathValue := &admin.ChangeValue{
+					Path:      opStateEvent.Path(),
+					ValueType: admin.ChangeValueType(opStateEvent.Value().Type),
+					Value:     opStateEvent.Value().Value,
+					TypeOpts:  typeOpts32(opStateEvent.Value().TypeOpts),
+				}
+
+				msg := &OpStateResponse{Type: admin.Type_ADDED, Pathvalue: pathValue}
+				err = stream.SendMsg(msg)
+				if err != nil {
+					log.Warningf("Error sending message on stream %s. Closing. %v",
+						streamID, msg)
+					return err
 				}
 			case <-stream.Context().Done():
 				manager.GetManager().Dispatcher.UnregisterOperationalState(streamID)
@@ -200,4 +184,12 @@ func stringInList(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+func typeOpts32(typeOptsInt []int) []int32 {
+	typeOpts32 := make([]int32, len(typeOptsInt))
+	for i, v := range typeOptsInt {
+		typeOpts32[i] = int32(v)
+	}
+	return typeOpts32
 }

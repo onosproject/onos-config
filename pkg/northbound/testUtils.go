@@ -78,15 +78,17 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		updatedLeaf2d := make(map[string]string)
-		updatedLeaf2d["/cont1a/cont2a/leaf2d"] = "testNotRelevant"
-		opStateEventWrong := events.CreateOperationalStateEvent("Device1", updatedLeaf2d)
+		opStateEventWrong := events.NewOperationalStateEvent("Device1",
+			"/cont1a/cont2a/leaf2d",
+			change.CreateTypedValueString("testNotRelevant"),
+			events.EventItemUpdated)
 		manager.GetManager().OperationalStateChannel <- opStateEventWrong
 
 		time.Sleep(100 * time.Millisecond)
-		updatedLeaf2c := make(map[string]string)
-		updatedLeaf2c["/cont1a/cont2a/leaf2c"] = "test2"
-		opStateEvent := events.CreateOperationalStateEvent("Device2", updatedLeaf2c)
+		opStateEvent := events.NewOperationalStateEvent("Device2",
+			"/cont1a/cont2a/leaf2c",
+			change.CreateTypedValueString("test2"),
+			events.EventItemUpdated)
 		manager.GetManager().OperationalStateChannel <- opStateEvent
 	}()
 }
