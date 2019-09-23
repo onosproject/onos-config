@@ -1,6 +1,6 @@
 # Building onos-config
 In order the build the project, developers are expected to install the 
-required [development tools](prerequisites.md). 
+required [development tools](../../developers/prerequisites.md). 
 
 Currently, the project build and validation is driven by a top-level `Makefile`, which supports the following usage:
 ```bash

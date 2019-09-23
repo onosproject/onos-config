@@ -46,7 +46,7 @@ They are compiled together with the `go build` command using the
 
 Many examples of Model Plugins are in the [modelplugin](../modelplugin)
 folder of this project, and an example script
-[ModelGenerator.sh](../modelplugin/ModelGenerator.sh) is available for creating
+[ModelGenerator.sh](https://github.com/onosproject/onos-config/blob/master/modelplugin/ModelGenerator.sh) is available for creating
 new plugins.
 
 ### ModelPlugin Interface
