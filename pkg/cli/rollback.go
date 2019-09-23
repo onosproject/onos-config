@@ -25,12 +25,12 @@ func getRollbackCommand() *cobra.Command {
 		Use:   "rollback <changeId>",
 		Short: "Rolls-back a network configuration change",
 		Args:  cobra.MaximumNArgs(1),
-		Run:   runRollbackCommand,
+		RunE:  runRollbackCommand,
 	}
 	return cmd
 }
 
-func runRollbackCommand(cmd *cobra.Command, args []string) {
+func runRollbackCommand(cmd *cobra.Command, args []string) error {
 	client := admin.NewConfigAdminServiceClient(getConnection())
 	changeID := ""
 	if len(args) == 1 {
@@ -40,8 +40,8 @@ func runRollbackCommand(cmd *cobra.Command, args []string) {
 	resp, err := client.RollbackNetworkChange(
 		context.Background(), &admin.RollbackRequest{Name: changeID})
 	if err != nil {
-		ExitWithErrorMessage("Failed to send request: %v", err)
+		return err
 	}
 	Output("Rollback success %s\n", resp.Message)
-	ExitWithSuccess()
+	return nil
 }

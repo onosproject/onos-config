@@ -17,6 +17,7 @@ package cli
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
@@ -41,13 +42,13 @@ func getGetDeviceTreeCommand() *cobra.Command {
 		Use:   "devicetree [--layer #] [<deviceId>]",
 		Short: "Lists devices and their configuration in tree format",
 		Args:  cobra.MaximumNArgs(1),
-		Run:   runDeviceTreeCommand,
+		RunE:  runDeviceTreeCommand,
 	}
 	cmd.Flags().Int16("layer", 0, "layer of the configuration to retrieve; 0 is all including the latest, -1 is all up to previous")
 	return cmd
 }
 
-func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
+func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 	client := diags.NewConfigDiagsClient(getConnection())
 	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
 	if len(args) > 0 {
@@ -56,56 +57,47 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 
 	layer, err := cmd.Flags().GetInt16("layer")
 	if err != nil {
-		ExitWithErrorMessage("Failed to parse 'layer': %v\n", err)
+		return fmt.Errorf("failed to parse 'layer': %v", err)
 	} else if layer > 0 {
-		ExitWithErrorMessage("Layer must be less than or equal 0.\n")
+		return fmt.Errorf("layer must be less than or equal 0")
 	}
 
 	stream, err := client.GetConfigurations(context.Background(), configReq)
 	if err != nil {
-		ExitWithErrorMessage("Failed to send request: %v", err)
+		return fmt.Errorf("Failed to send request: %v", err)
 	}
 
 	configurations := make([]store.Configuration, 0)
 	allChangeIds := make([]string, 0)
 
-	waitc := make(chan struct{})
-	go func() {
-		for {
-			in, err := stream.Recv()
-			if err == io.EOF {
-				// read done.
-				close(waitc)
-				return
-			}
-			if err != nil {
-				ExitWithErrorMessage("Failed to receive response : %v", err)
-			}
-
-			changes := make([]change.ID, 0)
-			for idx, ch := range in.ChangeIDs {
-				if idx >= len(in.ChangeIDs)+int(layer) {
-					continue
-				}
-				idBytes, _ := base64.StdEncoding.DecodeString(ch)
-				changes = append(changes, change.ID(idBytes))
-				allChangeIds = append(allChangeIds, store.B64(idBytes))
-			}
-
-			configuration, _ := store.CreateConfiguration(
-				in.DeviceID, in.Version, in.DeviceType, changes)
-
-			configuration.Updated = *in.Updated
-			configuration.Created = *in.Updated
-
-			configurations = append(configurations, *configuration)
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			// read done.
+			break
 		}
-	}()
-	err = stream.CloseSend()
-	if err != nil {
-		ExitWithErrorMessage("Failed to close: %v", err)
+		if err != nil {
+			return err
+		}
+
+		changes := make([]change.ID, 0)
+		for idx, ch := range in.ChangeIDs {
+			if idx >= len(in.ChangeIDs)+int(layer) {
+				continue
+			}
+			idBytes, _ := base64.StdEncoding.DecodeString(ch)
+			changes = append(changes, change.ID(idBytes))
+			allChangeIds = append(allChangeIds, store.B64(idBytes))
+		}
+
+		configuration, _ := store.CreateConfiguration(
+			in.DeviceID, in.Version, in.DeviceType, changes)
+
+		configuration.Updated = *in.Updated
+		configuration.Created = *in.Updated
+
+		configurations = append(configurations, *configuration)
 	}
-	<-waitc
 
 	if len(configurations) == 0 {
 		ExitWithErrorMessage("Device(s) not found: %v\n", configReq.DeviceIDs)
@@ -123,50 +115,42 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 
 	stream2, err := client.GetChanges(context.Background(), changesReq)
 	if err != nil {
-		ExitWithErrorMessage("Failed to send request: %v", err)
+		return fmt.Errorf("failed to send request: %v", err)
 	}
-	waitc2 := make(chan struct{})
-	go func() {
-		for {
-			in, err := stream2.Recv()
-			if err == io.EOF {
-				// read done.
-				close(waitc2)
-				return
-			}
-			if err != nil {
-				ExitWithErrorMessage("Failed to receive response : %v", err)
-			}
-			idBytes, _ := base64.StdEncoding.DecodeString(in.Id)
-			changeObj := change.Change{
-				ID:          change.ID(idBytes),
-				Description: in.Desc,
-				Created:     *in.Time,
-				Config:      make([]*change.Value, 0),
-			}
-			for _, cv := range in.ChangeValues {
-				var tv *change.TypedValue
-				typeOptInt32 := make([]int, len(cv.TypeOpts))
-				for i, v := range cv.TypeOpts {
-					typeOptInt32[i] = int(v)
-				}
-				tv = &change.TypedValue{
-					Value:    cv.Value,
-					Type:     change.ValueType(cv.ValueType),
-					TypeOpts: typeOptInt32,
-				}
 
-				value, _ := change.CreateChangeValue(cv.Path, tv, cv.Removed)
-				changeObj.Config = append(changeObj.Config, value)
-			}
-			changes[in.Id] = &changeObj
+	for {
+		in, err := stream2.Recv()
+		if err == io.EOF {
+			// read done.
+			break
 		}
-	}()
-	err = stream2.CloseSend()
-	if err != nil {
-		ExitWithErrorMessage("Failed to close: %v", err)
+		if err != nil {
+			return fmt.Errorf("failed to receive response : %v", err)
+		}
+		idBytes, _ := base64.StdEncoding.DecodeString(in.Id)
+		changeObj := change.Change{
+			ID:          change.ID(idBytes),
+			Description: in.Desc,
+			Created:     *in.Time,
+			Config:      make([]*change.Value, 0),
+		}
+		for _, cv := range in.ChangeValues {
+			var tv *change.TypedValue
+			typeOptInt32 := make([]int, len(cv.TypeOpts))
+			for i, v := range cv.TypeOpts {
+				typeOptInt32[i] = int(v)
+			}
+			tv = &change.TypedValue{
+				Value:    cv.Value,
+				Type:     change.ValueType(cv.ValueType),
+				TypeOpts: typeOptInt32,
+			}
+
+			value, _ := change.CreateChangeValue(cv.Path, tv, cv.Removed)
+			changeObj.Config = append(changeObj.Config, value)
+		}
+		changes[in.Id] = &changeObj
 	}
-	<-waitc2
 
 	tmplDevicetreeList, _ := template.New("devices").Funcs(funcMapDeviceTree).Parse(devicetreeTemplate)
 	for _, configuration := range configurations {
@@ -176,5 +160,5 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) {
 		Output("TREE:\n%s\n\n", string(jsonTree))
 	}
 
-	ExitWithSuccess()
+	return nil
 }
