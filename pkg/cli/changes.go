@@ -43,12 +43,12 @@ func getGetChangesCommand() *cobra.Command {
 		Use:   "changes [<changeId>]",
 		Short: "Lists records of configuration changes",
 		Args:  cobra.MaximumNArgs(1),
-		Run:   runChangesCommand,
+		RunE:  runChangesCommand,
 	}
 	return cmd
 }
 
-func runChangesCommand(cmd *cobra.Command, args []string) {
+func runChangesCommand(cmd *cobra.Command, args []string) error {
 	client := diags.NewConfigDiagsClient(getConnection())
 	changesReq := &diags.ChangesRequest{ChangeIDs: make([]string, 0)}
 	if len(args) == 1 {
@@ -59,29 +59,31 @@ func runChangesCommand(cmd *cobra.Command, args []string) {
 
 	stream, err := client.GetChanges(context.Background(), changesReq)
 	if err != nil {
-		ExitWithErrorMessage("Failed to send request: %v", err)
+		return err
 	}
-	waitc := make(chan struct{})
+	waitc := make(chan error)
 	go func() {
 		for {
 			in, err := stream.Recv()
 			if err == io.EOF {
 				// read done.
+				waitc <- nil
 				close(waitc)
 				return
 			}
 			if err != nil {
-				ExitWithErrorMessage("Failed to receive response : %v", err)
+				waitc <- err
+				close(waitc)
+				return
 			}
 			_ = tmplChanges.Execute(os.Stdout, in)
 		}
 	}()
 	err = stream.CloseSend()
 	if err != nil {
-		ExitWithErrorMessage("Failed to close: %v", err)
+		return err
 	}
-	<-waitc
-	ExitWithSuccess()
+	return <-waitc
 }
 
 func wrapPath(path string, lineLen int, tabs int) string {

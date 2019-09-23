@@ -16,6 +16,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/spf13/cobra"
 	"io"
@@ -46,32 +47,35 @@ func getGetPluginsCommand() *cobra.Command {
 		Use:   "plugins",
 		Short: "Lists the loaded model plugins",
 		Args:  cobra.MaximumNArgs(1),
-		Run:   runListPluginsCommand,
+		RunE:  runListPluginsCommand,
 	}
 	cmd.Flags().BoolP("verbose", "v", false, "display verbose output")
 	return cmd
 }
 
-func runListPluginsCommand(cmd *cobra.Command, args []string) {
+func runListPluginsCommand(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	tmplModelList, _ := template.New("change").Parse(modellistTemplate)
 	client := admin.NewConfigAdminServiceClient(getConnection())
 
 	stream, err := client.ListRegisteredModels(context.Background(), &admin.ListModelsRequest{Verbose: verbose})
 	if err != nil {
-		ExitWithErrorMessage("Failed to send request: %v", err)
+		return fmt.Errorf("Failed to send request: %v", err)
 	}
-	waitc := make(chan struct{})
+	waitc := make(chan error)
 	go func() {
 		for {
 			in, err := stream.Recv()
 			if err == io.EOF {
 				// read done.
+				waitc <- nil
 				close(waitc)
 				return
 			}
 			if err != nil {
-				ExitWithErrorMessage("Failed to receive response : %v", err)
+				waitc <- fmt.Errorf("Failed to receive response : %v", err)
+				close(waitc)
+				return
 			}
 			_ = tmplModelList.Execute(os.Stdout, in)
 			Output("\n")
@@ -79,10 +83,9 @@ func runListPluginsCommand(cmd *cobra.Command, args []string) {
 	}()
 	err = stream.CloseSend()
 	if err != nil {
-		ExitWithErrorMessage("Failed to close: %v", err)
+		return err
 	}
-	<-waitc
-	ExitWithSuccess()
+	return <-waitc
 }
 
 func getAddPluginCommand() *cobra.Command {
@@ -90,12 +93,12 @@ func getAddPluginCommand() *cobra.Command {
 		Use:   "plugin <plugin path and filename>",
 		Short: "Loads a new model plugin from server",
 		Args:  cobra.ExactArgs(1),
-		Run:   runAddPluginCommand,
+		RunE:  runAddPluginCommand,
 	}
 	return cmd
 }
 
-func runAddPluginCommand(cmd *cobra.Command, args []string) {
+func runAddPluginCommand(cmd *cobra.Command, args []string) error {
 	client := admin.NewConfigAdminServiceClient(getConnection())
 	pluginFileName := ""
 	if len(args) == 1 {
@@ -105,8 +108,8 @@ func runAddPluginCommand(cmd *cobra.Command, args []string) {
 	resp, err := client.RegisterModel(
 		context.Background(), &admin.RegisterRequest{SoFile: pluginFileName})
 	if err != nil {
-		ExitWithErrorMessage("Failed to send request: %v", err)
+		return err
 	}
 	Output("load plugin success %s %s\n", resp.Name, resp.Version)
-	ExitWithSuccess()
+	return nil
 }

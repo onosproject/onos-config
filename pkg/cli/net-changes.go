@@ -16,6 +16,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/spf13/cobra"
 	"io"
@@ -26,29 +27,32 @@ func getGetNetChangesCommand() *cobra.Command {
 		Use:   "net-changes",
 		Short: "Lists network configuration changes",
 		Args:  cobra.ExactArgs(0),
-		Run:   runNetChangesCommand,
+		RunE:  runNetChangesCommand,
 	}
 	return cmd
 }
 
-func runNetChangesCommand(cmd *cobra.Command, args []string) {
+func runNetChangesCommand(cmd *cobra.Command, args []string) error {
 	client := admin.NewConfigAdminServiceClient(getConnection())
 
 	stream, err := client.GetNetworkChanges(context.Background(), &admin.NetworkChangesRequest{})
 	if err != nil {
-		ExitWithErrorMessage("Failed to send request: %v", err)
+		return fmt.Errorf("Failed to send request: %v", err)
 	}
-	waitc := make(chan struct{})
+	waitc := make(chan error)
 	go func() {
 		for {
 			in, err := stream.Recv()
 			if err == io.EOF {
 				// read done.
+				waitc <- nil
 				close(waitc)
 				return
 			}
 			if err != nil {
-				ExitWithErrorMessage("Failed to receive response : %v", err)
+				waitc <- err
+				close(waitc)
+				return
 			}
 			Output("%s: %s (%s)\n", in.Time,
 				in.Name, in.User)
@@ -59,8 +63,7 @@ func runNetChangesCommand(cmd *cobra.Command, args []string) {
 	}()
 	err = stream.CloseSend()
 	if err != nil {
-		ExitWithErrorMessage("Failed to close: %v", err)
+		return err
 	}
-	<-waitc
-	ExitWithSuccess()
+	return <-waitc
 }

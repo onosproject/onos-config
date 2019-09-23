@@ -32,13 +32,13 @@ func getGetOpstateCommand() *cobra.Command {
 		Use:   "opstate <deviceid> [--subscribe]",
 		Short: "Gets the Opstate cache for a device",
 		Args:  cobra.ExactArgs(1),
-		Run:   runOpstateCommand,
+		RunE:  runOpstateCommand,
 	}
 	cmd.Flags().BoolP("subscribe", "s", false, "subscribe for subsequent changes")
 	return cmd
 }
 
-func runOpstateCommand(cmd *cobra.Command, args []string) {
+func runOpstateCommand(cmd *cobra.Command, args []string) error {
 	deviceID := args[0]
 	subscribe, _ := cmd.Flags().GetBool("subscribe")
 	tmplGetOpState, _ := template.New("change").Funcs(funcMapChanges).Parse(opstateTemplate)
@@ -51,17 +51,20 @@ func runOpstateCommand(cmd *cobra.Command, args []string) {
 	if err != nil {
 		ExitWithErrorMessage("Failed to send request: %v", err)
 	}
-	waitc := make(chan struct{})
+	waitc := make(chan error)
 	go func() {
 		for {
 			in, err := stream.Recv()
 			if err == io.EOF {
 				// read done.
+				waitc <- nil
 				close(waitc)
 				return
 			}
 			if err != nil {
-				ExitWithErrorMessage("Failed to receive response : %v", err)
+				waitc <- err
+				close(waitc)
+				return
 			}
 			_ = tmplGetOpState.Execute(os.Stdout, in)
 			Output("\n")
@@ -69,8 +72,7 @@ func runOpstateCommand(cmd *cobra.Command, args []string) {
 	}()
 	err = stream.CloseSend()
 	if err != nil {
-		ExitWithErrorMessage("Failed to close: %v", err)
+		return err
 	}
-	<-waitc
-	ExitWithSuccess()
+	return <-waitc
 }

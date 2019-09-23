@@ -27,12 +27,12 @@ func getGetConfigsCommand() *cobra.Command {
 		Use:   "configs [<deviceId>]",
 		Short: "Lists details of device configuration changes",
 		Args:  cobra.MaximumNArgs(0),
-		Run:   runGetConfigsCommand,
+		RunE:  runGetConfigsCommand,
 	}
 	return cmd
 }
 
-func runGetConfigsCommand(cmd *cobra.Command, args []string) {
+func runGetConfigsCommand(cmd *cobra.Command, args []string) error {
 	client := diags.NewConfigDiagsClient(getConnection())
 
 	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
@@ -41,19 +41,22 @@ func runGetConfigsCommand(cmd *cobra.Command, args []string) {
 	}
 	stream, err := client.GetConfigurations(context.Background(), configReq)
 	if err != nil {
-		ExitWithErrorMessage("Failed to send request: %v", err)
+		return err
 	}
-	waitc := make(chan struct{})
+	waitc := make(chan error)
 	go func() {
 		for {
 			in, err := stream.Recv()
 			if err == io.EOF {
 				// read done.
+				waitc <- nil
 				close(waitc)
 				return
 			}
 			if err != nil {
-				ExitWithErrorMessage("Failed to receive response : %v", err)
+				waitc <- err
+				close(waitc)
+				return
 			}
 			Output("%s\t(%s)\t%s\t%s\t%s\n", in.Name, in.DeviceID, in.Version, in.DeviceType,
 				in.Updated.Format(time.RFC3339))
@@ -65,8 +68,7 @@ func runGetConfigsCommand(cmd *cobra.Command, args []string) {
 	}()
 	err = stream.CloseSend()
 	if err != nil {
-		ExitWithErrorMessage("Failed to close: %v", err)
+		return err
 	}
-	<-waitc
-	ExitWithSuccess()
+	return <-waitc
 }
