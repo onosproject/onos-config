@@ -39,31 +39,20 @@ func runNetChangesCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to send request: %v", err)
 	}
-	waitc := make(chan error)
-	go func() {
-		for {
-			in, err := stream.Recv()
-			if err == io.EOF {
-				// read done.
-				waitc <- nil
-				close(waitc)
-				return
-			}
-			if err != nil {
-				waitc <- err
-				close(waitc)
-				return
-			}
-			Output("%s: %s (%s)\n", in.Time,
-				in.Name, in.User)
-			for _, c := range in.Changes {
-				Output("\t%s: %s\n", c.Id, c.Hash)
-			}
+
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			// read done.
+			return nil
 		}
-	}()
-	err = stream.CloseSend()
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		Output("%s: %s (%s)\n", in.Time,
+			in.Name, in.User)
+		for _, c := range in.Changes {
+			Output("\t%s: %s\n", c.Id, c.Hash)
+		}
 	}
-	return <-waitc
 }

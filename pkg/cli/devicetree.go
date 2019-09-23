@@ -70,49 +70,33 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 	configurations := make([]store.Configuration, 0)
 	allChangeIds := make([]string, 0)
 
-	waitc := make(chan error)
-	go func() {
-		for {
-			in, err := stream.Recv()
-			if err == io.EOF {
-				// read done.
-				waitc <- nil
-				close(waitc)
-				return
-			}
-			if err != nil {
-				waitc <- err
-				close(waitc)
-				return
-			}
-
-			changes := make([]change.ID, 0)
-			for idx, ch := range in.ChangeIDs {
-				if idx >= len(in.ChangeIDs)+int(layer) {
-					continue
-				}
-				idBytes, _ := base64.StdEncoding.DecodeString(ch)
-				changes = append(changes, change.ID(idBytes))
-				allChangeIds = append(allChangeIds, store.B64(idBytes))
-			}
-
-			configuration, _ := store.CreateConfiguration(
-				in.DeviceID, in.Version, in.DeviceType, changes)
-
-			configuration.Updated = *in.Updated
-			configuration.Created = *in.Updated
-
-			configurations = append(configurations, *configuration)
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			// read done.
+			break
 		}
-	}()
-	err = stream.CloseSend()
-	if err != nil {
-		return fmt.Errorf("Failed to close: %v", err)
-	}
-	channelError := <-waitc
+		if err != nil {
+			return err
+		}
 
-	if channelError != nil {
-		return channelError
+		changes := make([]change.ID, 0)
+		for idx, ch := range in.ChangeIDs {
+			if idx >= len(in.ChangeIDs)+int(layer) {
+				continue
+			}
+			idBytes, _ := base64.StdEncoding.DecodeString(ch)
+			changes = append(changes, change.ID(idBytes))
+			allChangeIds = append(allChangeIds, store.B64(idBytes))
+		}
+
+		configuration, _ := store.CreateConfiguration(
+			in.DeviceID, in.Version, in.DeviceType, changes)
+
+		configuration.Updated = *in.Updated
+		configuration.Created = *in.Updated
+
+		configurations = append(configurations, *configuration)
 	}
 
 	if len(configurations) == 0 {
@@ -133,53 +117,39 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to send request: %v", err)
 	}
-	waitc2 := make(chan error)
-	go func() {
-		for {
-			in, err := stream2.Recv()
-			if err == io.EOF {
-				// read done.
-				waitc2 <- nil
-				close(waitc2)
-				return
-			}
-			if err != nil {
-				waitc2 <- fmt.Errorf("failed to receive response : %v", err)
-				close(waitc2)
-				return
-			}
-			idBytes, _ := base64.StdEncoding.DecodeString(in.Id)
-			changeObj := change.Change{
-				ID:          change.ID(idBytes),
-				Description: in.Desc,
-				Created:     *in.Time,
-				Config:      make([]*change.Value, 0),
-			}
-			for _, cv := range in.ChangeValues {
-				var tv *change.TypedValue
-				typeOptInt32 := make([]int, len(cv.TypeOpts))
-				for i, v := range cv.TypeOpts {
-					typeOptInt32[i] = int(v)
-				}
-				tv = &change.TypedValue{
-					Value:    cv.Value,
-					Type:     change.ValueType(cv.ValueType),
-					TypeOpts: typeOptInt32,
-				}
 
-				value, _ := change.CreateChangeValue(cv.Path, tv, cv.Removed)
-				changeObj.Config = append(changeObj.Config, value)
-			}
-			changes[in.Id] = &changeObj
+	for {
+		in, err := stream2.Recv()
+		if err == io.EOF {
+			// read done.
+			break
 		}
-	}()
-	err = stream2.CloseSend()
-	if err != nil {
-		return fmt.Errorf("Failed to close: %v", err)
-	}
-	channelError2 := <-waitc2
-	if channelError2 != nil {
-		return channelError2
+		if err != nil {
+			return fmt.Errorf("failed to receive response : %v", err)
+		}
+		idBytes, _ := base64.StdEncoding.DecodeString(in.Id)
+		changeObj := change.Change{
+			ID:          change.ID(idBytes),
+			Description: in.Desc,
+			Created:     *in.Time,
+			Config:      make([]*change.Value, 0),
+		}
+		for _, cv := range in.ChangeValues {
+			var tv *change.TypedValue
+			typeOptInt32 := make([]int, len(cv.TypeOpts))
+			for i, v := range cv.TypeOpts {
+				typeOptInt32[i] = int(v)
+			}
+			tv = &change.TypedValue{
+				Value:    cv.Value,
+				Type:     change.ValueType(cv.ValueType),
+				TypeOpts: typeOptInt32,
+			}
+
+			value, _ := change.CreateChangeValue(cv.Path, tv, cv.Removed)
+			changeObj.Config = append(changeObj.Config, value)
+		}
+		changes[in.Id] = &changeObj
 	}
 
 	tmplDevicetreeList, _ := template.New("devices").Funcs(funcMapDeviceTree).Parse(devicetreeTemplate)

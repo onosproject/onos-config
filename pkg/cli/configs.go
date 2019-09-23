@@ -43,32 +43,21 @@ func runGetConfigsCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	waitc := make(chan error)
-	go func() {
-		for {
-			in, err := stream.Recv()
-			if err == io.EOF {
-				// read done.
-				waitc <- nil
-				close(waitc)
-				return
-			}
-			if err != nil {
-				waitc <- err
-				close(waitc)
-				return
-			}
-			Output("%s\t(%s)\t%s\t%s\t%s\n", in.Name, in.DeviceID, in.Version, in.DeviceType,
-				in.Updated.Format(time.RFC3339))
-			for _, cid := range in.ChangeIDs {
-				Output("\t%s", cid)
-			}
-			Output("\n")
+
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			// read done.
+			return nil
 		}
-	}()
-	err = stream.CloseSend()
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		Output("%s\t(%s)\t%s\t%s\t%s\n", in.Name, in.DeviceID, in.Version, in.DeviceType,
+			in.Updated.Format(time.RFC3339))
+		for _, cid := range in.ChangeIDs {
+			Output("\t%s", cid)
+		}
+		Output("\n")
 	}
-	return <-waitc
 }

@@ -51,28 +51,17 @@ func runOpstateCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		ExitWithErrorMessage("Failed to send request: %v", err)
 	}
-	waitc := make(chan error)
-	go func() {
-		for {
-			in, err := stream.Recv()
-			if err == io.EOF {
-				// read done.
-				waitc <- nil
-				close(waitc)
-				return
-			}
-			if err != nil {
-				waitc <- err
-				close(waitc)
-				return
-			}
-			_ = tmplGetOpState.Execute(os.Stdout, in)
-			Output("\n")
+
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			// read done.
+			return nil
 		}
-	}()
-	err = stream.CloseSend()
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		_ = tmplGetOpState.Execute(os.Stdout, in)
+		Output("\n")
 	}
-	return <-waitc
 }

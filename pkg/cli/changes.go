@@ -61,29 +61,17 @@ func runChangesCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	waitc := make(chan error)
-	go func() {
-		for {
-			in, err := stream.Recv()
-			if err == io.EOF {
-				// read done.
-				waitc <- nil
-				close(waitc)
-				return
-			}
-			if err != nil {
-				waitc <- err
-				close(waitc)
-				return
-			}
-			_ = tmplChanges.Execute(os.Stdout, in)
+
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
 		}
-	}()
-	err = stream.CloseSend()
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		_ = tmplChanges.Execute(os.Stdout, in)
 	}
-	return <-waitc
 }
 
 func wrapPath(path string, lineLen int, tabs int) string {

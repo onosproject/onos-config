@@ -62,30 +62,18 @@ func runListPluginsCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to send request: %v", err)
 	}
-	waitc := make(chan error)
-	go func() {
-		for {
-			in, err := stream.Recv()
-			if err == io.EOF {
-				// read done.
-				waitc <- nil
-				close(waitc)
-				return
-			}
-			if err != nil {
-				waitc <- fmt.Errorf("Failed to receive response : %v", err)
-				close(waitc)
-				return
-			}
-			_ = tmplModelList.Execute(os.Stdout, in)
-			Output("\n")
+
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
 		}
-	}()
-	err = stream.CloseSend()
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		_ = tmplModelList.Execute(os.Stdout, in)
+		Output("\n")
 	}
-	return <-waitc
 }
 
 func getAddPluginCommand() *cobra.Command {
