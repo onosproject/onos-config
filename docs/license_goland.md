@@ -15,6 +15,7 @@ Go source files. Steps to do this are shown below:
 * Click `Apply`
 
 Once the new copyright profile is created, it needs to be applied to the project:
+
 * Select `Editor->Copyright`
 * Choose `onos` in the `Default Project Copyright` drop-down list
 * Click `OK`

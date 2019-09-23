@@ -18,6 +18,7 @@ the work and assign it to an appropriate project, e.g. Core, Northbound.
 
 ### Work on an Issue
 After you found or created an issue to work on, you should:
+
 * assign that issue to yourself
 * go to the [projects](https://github.com/onosproject/onos-config/projects)
 * select the project you have assigned the issue to
@@ -33,7 +34,7 @@ To automatically link your pull request an issue, before pushing a commit to you
 onos-config please insert `fixes #<issue-number>` into the commit message.
 
 The following is an example of a complete commit message:
-```
+```vi
 Adding pull request workflow
 Fixes #90
 
@@ -61,6 +62,7 @@ More information on opening pull requests can be found [in the GitHub documentat
 ### Track a Pull Request
 After your pull request is included into a onos-config _project_ you can find it under the `In Progress` tab.  
 At this point in time the PR will go through a lifecycle:
+
 * Review from different people --> your PR will go into `Review in progress` state
 * if changes are requested you will have to go back and address them
 * when your PR is approved and Testing is passed it will go under `Reviewer approved` state
