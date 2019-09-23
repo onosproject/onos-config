@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
@@ -196,20 +197,21 @@ func Test_listen_operational(t *testing.T) {
 	ch, err := d.RegisterOpState("nbiOpState")
 	assert.NilError(t, err, "Unexpected error when registering nbi %s", err)
 	assert.Equal(t, 1, len(d.GetListeners()), "One OpState listener expected")
-	changes := make(map[string]string)
 	// Start the main listener system
-	go testSyncOpState(ch, changes)
+	go testSyncOpState(ch, func(path string, action events.EventAction) {
+		assert.Equal(t, path, "testpath")
+		assert.Equal(t, action, events.EventItemUpdated)
+	})
+	// Create a channel on which to send these
 	opStateCh := make(chan events.OperationalStateEvent, 10)
 	go d.ListenOperationalState(opStateCh)
-	changesEvent := make(map[string]string)
 	// Send down some changes
-	changesEvent["test"] = "testValue"
-	event := events.CreateOperationalStateEvent("foobar", changesEvent)
+	event := events.CreateOperationalStateEvent("foobar", "testpath",
+		change.CreateTypedValueString("testValue"), events.EventItemUpdated)
 	opStateCh <- event
 
 	// Wait for the changes to get distributed
 	time.Sleep(time.Second)
-	assert.Equal(t, changes["test"], "testValue", "Wrong key/value pair")
 
 	close(opStateCh)
 
@@ -253,14 +255,11 @@ func testSync(testChan <-chan events.ConfigEvent, changes map[string]bool) {
 	}
 }
 
-func testSyncOpState(testChan <-chan events.OperationalStateEvent, changes map[string]string) {
+func testSyncOpState(testChan <-chan events.OperationalStateEvent, callback func(string, events.EventAction)) {
 	log.Info("Listen for config changes for Test")
 
 	for opStateChange := range testChan {
-		changesEvent := events.Event(opStateChange).Values()
-		for k, v := range *changesEvent {
-			changes[k] = v
-		}
+		callback(opStateChange.Path(), opStateChange.ItemAction())
 		log.Info("OperationalState change for Test ", opStateChange)
 	}
 }

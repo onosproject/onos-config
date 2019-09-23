@@ -107,16 +107,16 @@ func (s *DeviceStore) watchEvents(ch chan<- events.TopoEvent) error {
 		case device.ListResponse_NONE:
 			if _, ok := s.cache[response.Device.ID]; !ok {
 				s.cache[response.Device.ID] = response.Device
-				ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+				ch <- events.CreateTopoEvent(response.Device.ID, events.EventItemNone, response.Device)
 			}
 		case device.ListResponse_ADDED:
 			s.cache[response.Device.ID] = response.Device
-			ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+			ch <- events.CreateTopoEvent(response.Device.ID, events.EventItemAdded, response.Device)
 		case device.ListResponse_UPDATED:
 			s.cache[response.Device.ID] = response.Device
-			ch <- events.CreateTopoEvent(response.Device.ID, true, response.Device.Address, *response.Device)
+			ch <- events.CreateTopoEvent(response.Device.ID, events.EventItemUpdated, response.Device)
 		case device.ListResponse_REMOVED:
-			ch <- events.CreateTopoEvent(response.Device.ID, false, response.Device.Address, *response.Device)
+			ch <- events.CreateTopoEvent(response.Device.ID, events.EventItemDeleted, response.Device)
 		}
 	}
 }

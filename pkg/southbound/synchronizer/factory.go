@@ -35,8 +35,8 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
 	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[devicepb.ID]change.TypedValueMap) {
 	for topoEvent := range topoChannel {
-		device := events.Event(topoEvent).Object().(devicepb.Device)
-		if !dispatcher.HasListener(device.ID) && topoEvent.Connect() {
+		device := topoEvent.Device()
+		if !dispatcher.HasListener(device.ID) && topoEvent.ItemAction() != events.EventItemDeleted {
 			configChan, respChan, err := dispatcher.RegisterDevice(device.ID)
 			if err != nil {
 				log.Error(err)
@@ -67,7 +67,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 					"Model Plugin not available - continuing", device.ID, device.Version)
 			}
 			operationalStateCache[device.ID] = make(change.TypedValueMap)
-			sync, err := New(ctx, changeStore, configStore, &device, configChan, opStateChan,
+			sync, err := New(ctx, changeStore, configStore, device, configChan, opStateChan,
 				errChan, operationalStateCache[device.ID], mReadOnlyPaths)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
@@ -85,7 +85,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				go sync.syncOperationalState(errChan)
 				//respChan <- events.CreateConnectedEvent(events.EventTypeDeviceConnected, string(deviceName))
 			}
-		} else if dispatcher.HasListener(device.ID) && !topoEvent.Connect() {
+		} else if dispatcher.HasListener(device.ID) && topoEvent.ItemAction() == events.EventItemDeleted {
 
 			err := dispatcher.UnregisterDevice(device.ID)
 			if err != nil {

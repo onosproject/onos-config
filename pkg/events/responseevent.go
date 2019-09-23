@@ -16,68 +16,102 @@ package events
 
 import (
 	"encoding/base64"
-	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"time"
 )
 
 // DeviceResponse a response event
-type DeviceResponse Event
-
-// ChangeID returns the changeId of the response event
-func (respEvent *DeviceResponse) ChangeID() string {
-	return respEvent.values[ChangeID]
+type DeviceResponse interface {
+	Event
+	ChangeID() string
+	Error() error
+	Response() string
 }
 
-// EventType returns the EventType of the response event
-func (respEvent *DeviceResponse) EventType() EventType {
-	return respEvent.eventtype
+type deviceResponseObj struct {
+	changeID string
+	error    error
+	response string
 }
 
-// Error returns the error of the response event
-func (respEvent *DeviceResponse) Error() error {
-	return fmt.Errorf(respEvent.values[Error])
+type deviceResponseImpl struct {
+	eventImpl
 }
 
-// Response returns the Response of the response event
-func (respEvent *DeviceResponse) Response() error {
-	return fmt.Errorf(respEvent.values[Response])
+// ChangeID returns the changeID of the response event
+func (respEvent deviceResponseImpl) ChangeID() string {
+	re, ok := respEvent.object.(deviceResponseObj)
+	if ok {
+		return re.changeID
+	}
+	return ""
+}
+
+// Error returns the error object of the response event
+func (respEvent deviceResponseImpl) Error() error {
+	err, ok := respEvent.object.(deviceResponseObj)
+	if ok {
+		return err.error
+	}
+	return nil
+}
+
+// Response returns the response object of the response event
+func (respEvent deviceResponseImpl) Response() string {
+	err, ok := respEvent.object.(deviceResponseObj)
+	if ok {
+		return err.response
+	}
+	return ""
 }
 
 // CreateResponseEvent creates a new response event object
 func CreateResponseEvent(eventType EventType, subject string, changeID change.ID, response string) DeviceResponse {
-	values := make(map[string]string)
-	values[ChangeID] = base64.StdEncoding.EncodeToString(changeID)
-	values[Response] = response
-	return DeviceResponse{
-		subject:   subject,
-		time:      time.Now(),
-		eventtype: eventType,
-		values:    values,
+	dr := deviceResponseImpl{
+		eventImpl: eventImpl{
+			subject:   subject,
+			time:      time.Now(),
+			eventType: eventType,
+			object: deviceResponseObj{
+				changeID: base64.StdEncoding.EncodeToString(changeID),
+				error:    nil,
+				response: response,
+			},
+		},
 	}
+	return &dr
 }
 
 // CreateErrorEvent creates a new error event object
 func CreateErrorEvent(eventType EventType, subject string, changeID change.ID, err error) DeviceResponse {
-	values := make(map[string]string)
-	values[ChangeID] = base64.StdEncoding.EncodeToString(changeID)
-	values[Error] = string(err.Error())
-	return DeviceResponse{
-		subject:   subject,
-		time:      time.Now(),
-		eventtype: eventType,
-		values:    values,
+	dr := deviceResponseImpl{
+		eventImpl: eventImpl{
+			subject:   subject,
+			time:      time.Now(),
+			eventType: eventType,
+			object: deviceResponseObj{
+				changeID: base64.StdEncoding.EncodeToString(changeID),
+				error:    err,
+				response: "",
+			},
+		},
 	}
+	return &dr
 }
 
 // CreateErrorEventNoChangeID creates a new error event object with no changeID attached
 func CreateErrorEventNoChangeID(eventType EventType, subject string, err error) DeviceResponse {
-	values := make(map[string]string)
-	values[Error] = string(err.Error())
-	return DeviceResponse{
-		subject:   subject,
-		time:      time.Now(),
-		eventtype: eventType,
-		values:    values,
+	dr := deviceResponseImpl{
+		eventImpl: eventImpl{
+			subject:   subject,
+			time:      time.Now(),
+			eventType: eventType,
+			object: deviceResponseObj{
+				changeID: "",
+				error:    err,
+				response: "",
+			},
+		},
 	}
+	return &dr
 }

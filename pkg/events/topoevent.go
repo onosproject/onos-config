@@ -16,42 +16,56 @@ package events
 
 import (
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
-	"strconv"
 	"time"
-
-	log "k8s.io/klog"
 )
 
 //TopoEvent is a topology event
-type TopoEvent Event
+type TopoEvent interface {
+	Event
+	Device() *device.Device
+	ItemAction() EventAction
+}
 
-// Connect represents if the device connected or disconnected
-func (topoEvent *TopoEvent) Connect() bool {
-	b, err := strconv.ParseBool(topoEvent.values[Connect])
-	if err != nil {
-		log.Warning("error in conversion", err)
-		return false
-	}
-	return b
+type topoEventObj struct {
+	dev        *device.Device
+	itemAction EventAction
+}
+
+type topoEventImpl struct {
+	eventImpl
 }
 
 // Address represents the device address
-func (topoEvent *TopoEvent) Address() string {
-	return topoEvent.values[Address]
+func (topoEvent topoEventImpl) Device() *device.Device {
+	to, ok := topoEvent.object.(topoEventObj)
+	if ok {
+		return to.dev
+	}
+	return nil
+}
+
+func (topoEvent topoEventImpl) ItemAction() EventAction {
+	to, ok := topoEvent.object.(topoEventObj)
+	if ok {
+		return to.itemAction
+	}
+	return EventItemNone
 }
 
 // CreateTopoEvent creates a new topo event object
 // It is important not to depend on topocache package here or we will get a
 // circular dependency - we take the device.ID and treat it as a string
-func CreateTopoEvent(subject device.ID, connect bool, address string, dev device.Device) TopoEvent {
-	values := make(map[string]string)
-	values[Connect] = strconv.FormatBool(connect)
-	values[Address] = address
-	return TopoEvent{
-		subject:   string(subject),
-		time:      time.Now(),
-		eventtype: EventTypeTopoCache,
-		values:    values,
-		object:    dev,
+func CreateTopoEvent(subject device.ID, eventAction EventAction, dev *device.Device) TopoEvent {
+	te := topoEventImpl{
+		eventImpl: eventImpl{
+			subject:   string(subject),
+			time:      time.Time{},
+			eventType: EventTypeTopoCache,
+			object: topoEventObj{
+				dev:        dev,
+				itemAction: eventAction,
+			},
+		},
 	}
+	return &te
 }

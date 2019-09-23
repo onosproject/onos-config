@@ -491,7 +491,6 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			return client.ErrStopReading
 		}
 	case *gnmi.SubscribeResponse_Update:
-		eventValues := make(map[string]string)
 		notification := v.Update
 		for _, update := range notification.Update {
 			if update.Path == nil {
@@ -509,7 +508,7 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 				if err != nil {
 					return fmt.Errorf("can't translate to Typed value %s", err)
 				}
-				eventValues[pathStr] = valStr
+				sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), pathStr, val, events.EventItemUpdated)
 				log.Info("Added ", val, " for path ", pathStr, " for device ", sync.ID)
 
 				//TODO this is a hack for Stratum Sept 19
@@ -564,11 +563,11 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 				return fmt.Errorf("invalid nil path in update: %v", del)
 			}
 			pathStr := utils.StrPathElem(del.Elem)
-			eventValues[pathStr] = ""
 			log.Info("Delete path ", pathStr, " for device ", sync.ID)
+			sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), pathStr, nil, events.EventItemDeleted)
 			delete(sync.operationalCache, pathStr)
 		}
-		sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), eventValues)
+
 	}
 	return nil
 }
