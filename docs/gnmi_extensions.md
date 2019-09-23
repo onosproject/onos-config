@@ -5,9 +5,9 @@ with the extra functionality to do network wide configuration management
 across many devices requires some extension.
 
 Some functions (e.g. rollback and version management) are far beyond what gNMI is
-designed for, and have been given their own gRPC definitons as
-[admin](../pkg/northbound/proto/admin.proto) and
-[diags](../pkg/northbound/proto/diags.proto).
+designed for, and have been given their own gRPC definitions as
+[admin](https://github.com/onosproject/onos-config/blob/master/pkg/northbound/admin/admin.proto) and
+[diags](https://github.com/onosproject/onos-config/blob/master/pkg/northbound/diags/diags.proto).
 
 ## Use of target in the NBI
 In gNMI the Path type is comprised of a set of path elements and a `target`.
