@@ -57,9 +57,9 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 
 	layer, err := cmd.Flags().GetInt16("layer")
 	if err != nil {
-		return fmt.Errorf("Failed to parse 'layer': %v\n", err)
+		return fmt.Errorf("failed to parse 'layer': %v", err)
 	} else if layer > 0 {
-		return fmt.Errorf("Layer must be less than or equal 0.\n")
+		return fmt.Errorf("layer must be less than or equal 0")
 	}
 
 	stream, err := client.GetConfigurations(context.Background(), configReq)
@@ -131,7 +131,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 
 	stream2, err := client.GetChanges(context.Background(), changesReq)
 	if err != nil {
-		return fmt.Errorf("Failed to send request: %v", err)
+		return fmt.Errorf("failed to send request: %v", err)
 	}
 	waitc2 := make(chan error)
 	go func() {
@@ -144,7 +144,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 				return
 			}
 			if err != nil {
-				waitc2 <- fmt.Errorf("Failed to receive response : %v", err)
+				waitc2 <- fmt.Errorf("failed to receive response : %v", err)
 				close(waitc2)
 				return
 			}
