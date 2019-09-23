@@ -14,7 +14,7 @@ To access the CLI use
 ```
 onit onos-cli
 ```
-to get in to the **onos-cli** pod and then run gnmi_cli from there.
+to get in to the `onos-cli` pod and then run gnmi_cli from there.
 
 ### Accessing from local machine
 An alternative is to install on your system, install as follows:
@@ -23,7 +23,7 @@ go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
 ```
 > For troubleshooting information see [gnmi_user_manual.md](https://github.com/onosproject/simulators/blob/master/docs/gnmi/gnmi_user_manual.md)
 ## Namespaces
-**onos-config** follows the YGOT project in simplification by not using namespaces in paths. This can be achieved 
+__onos-config__ follows the YGOT project in simplification by not using namespaces in paths. This can be achieved 
 because the YANG models used do not have clashing device names that need to be qualified by namespaces. 
 This helps developers, avoiding un-needed complication and redundancy. 
 
@@ -76,11 +76,11 @@ Use a proto value like:
 >         elem: <name: 'config'> elem: <name: 'address'>>"
 
 ### Use wildcards in a path
-onos-config supports the wildcards __*__ and **...** in gNMI paths, meaning match
+onos-config supports the wildcards `*` and `...` in gNMI paths, meaning match
 one item of match all items respectively as defined in the gNMI
 [specification](https://github.com/openconfig/reference/blob/master/rpc/gnmi/gnmi-path-conventions.md#wildcards-in-paths).
 
-For instance to retrieve all instances of an interface use __*__ as the key: 
+For instance to retrieve all instances of an interface use `*` as the key: 
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path:<target: 'localhost-1', elem:<name:'interfaces' > elem:<name:'interface' key:<key:'name' value:'*' > > elem:<name:'config'> elem:<name:'enabled' >>" \
@@ -89,10 +89,10 @@ gnmi_cli -get -address onos-config:5150 \
         -client_key /etc/ssl/certs/client1.key \
         -ca_crt /etc/ssl/certs/onfca.crt
 ```
-> This returns the **enabled** config attribute of both interfaces 'eth1' and 'admin'
+> This returns the `enabled` config attribute of both interfaces 'eth1' and 'admin'
 
 To retrieve both the config and state values of both then additionally the use
-__*__ in place of **config**:
+`*` in place of `config`:
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path:<target: 'localhost-1', elem:<name:'interfaces' > elem:<name:'interface' key:<key:'name' value:'*' > > elem:<name:'*'> elem:<name:'enabled' >>" \
@@ -102,7 +102,7 @@ gnmi_cli -get -address onos-config:5150 \
         -ca_crt /etc/ssl/certs/onfca.crt
 ```
 > If the device is connected and the OperationState cache is populated this returns
-> 4 values - **eth1** config and state enabled values and **admin** config and
+> 4 values - `eth1` config and state enabled values and `admin` config and
 > state enabled values.
 
 ### Device read only state get
@@ -162,23 +162,26 @@ extension: <
 
 > If a specific name is desired for a Network Change, the set may be given in the
 SetRequest() with the 100 extension at the end of the -proto section like:
-> ", extension: <registered_ext: <id: 100, msg: 'myfirstchange'>>"
+> `, extension: <registered_ext: <id: 100, msg: 'myfirstchange'>>`
 > See [gnmi_extensions.md](./gnmi_extensions.md) for more on gNMI extensions supported.
 
 > The corresponding -get for this require using the -proto
-> "path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>"
+> `path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>`
 
 > Currently (Jul '19) checking of the contents done only when a Model Plugin is
-> loaded for the device type. 2 checks are done 1) that a attempt is not being
-> made to change a readonly attribute and 2) that valid data types and values are
-> being used.
+> loaded for the device type. 2 checks are done
+>
+>   1. that a attempt is not being made to change a readonly attribute and
+>   2. that valid data types and values are being used.
+>
 > The config is only forwarded down to the southbound layer only if the config is
 > correct and the device is registered in the topocache (currently in the deviceStore)
 
 If the `target` device is not currently known to `onos-config` the system will store the configuration internally and apply
-it to the `target` device when/if it becomes available.  
+it to the `target` device when/if it becomes available.
+
 When the `target` becomes available `onos-config` will compute the latest configuration for it based on the set of 
-applied changes and push it to the `target` with a standard `set` operation. 
+applied changes and push it to the `target` with a standard `set` operation.
 
 ## Northbound Delete Request via gNMI
 A delete request in gNMI is done using the set request with `delete` paths instead of `update` or `replace`.

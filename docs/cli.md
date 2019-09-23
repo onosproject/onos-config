@@ -9,7 +9,7 @@ The documentation about building and deploying the consolidate `onos` client or 
 is available in the `onos-cli` GitHub repository.
 
 ## Usage
-```
+```bash
 > onos config --help
 ONOS configuration subsystem commands
 
@@ -67,7 +67,7 @@ configuration changes observe the structure of the YANG models in use on the
 device. This improves usability by pushing information about the devices'
 model back up to the onos-config gNMI northbound interface.
 
-Model plugins can be loaded at the startup of onos-config by (repeated) --modelPlugin
+Model plugins can be loaded at the startup of onos-config by (repeated) `--modelPlugin`
 options, or they can be loaded at run time. To see the list of currently loaded
 plugins use the command:
 ```bash
@@ -121,9 +121,9 @@ TREE:
 ```
 
 > This displays the list of changes IDs and the aggregate effect of layering each
-> one on top of the other. This is **effective** configuration.
+> one on top of the other. This is the _effective_ configuration.
 
-> By default all layers are shown (**layer=0**). To show the previous **effective**
-> configuration use **layer=-1**
+> By default all layers are shown (`layer=0`). To show the previous _effective_
+> configuration use `layer=-1`
 
 > To display the devices trees for all devices, just omit the device name.
