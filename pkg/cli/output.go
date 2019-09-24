@@ -36,6 +36,7 @@ const (
 
 var outputWriter io.Writer
 
+// CaptureOutput allows a test harness to redirect output to an alternate source for testing
 func CaptureOutput(capture io.Writer) {
 	outputWriter = capture
 }

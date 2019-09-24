@@ -23,8 +23,8 @@ import (
 )
 
 func Test_rollback(t *testing.T) {
-	b := bytes.NewBufferString("")
-	CaptureOutput(b)
+	outputBuffer := bytes.NewBufferString("")
+	CaptureOutput(outputBuffer)
 
 	setUpMockClients()
 	rollback := getRollbackCommand()
@@ -33,6 +33,6 @@ func Test_rollback(t *testing.T) {
 	err := rollback.RunE(rollback, args)
 	assert.NilError(t, err)
 	assert.Equal(t, LastCreatedClient.rollBackID, "ABCD1234")
-	output := string(b.Bytes())
+	output := outputBuffer.String()
 	assert.Assert(t, strings.Contains(output, "Rollback was successful"))
 }
