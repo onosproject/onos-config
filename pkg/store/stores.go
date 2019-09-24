@@ -72,7 +72,7 @@ func (s *ConfigurationStore) RemoveEntry(name ConfigName) {
 func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) (change.ID, error) {
 
 	changeID := s.Store[name].Changes[len(s.Store[name].Changes)-1]
-	newConf, err := CreateConfiguration(s.Store[name].Device, s.Store[name].Version, s.Store[name].Type,
+	newConf, err := NewConfiguration(s.Store[name].Device, s.Store[name].Version, s.Store[name].Type,
 		s.Store[name].Changes[:len(s.Store[name].Changes)-1])
 	if err != nil {
 		return nil, err

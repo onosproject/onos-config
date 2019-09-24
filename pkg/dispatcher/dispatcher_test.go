@@ -207,7 +207,7 @@ func Test_listen_operational(t *testing.T) {
 	go d.ListenOperationalState(opStateCh)
 	// Send down some changes
 	event := events.NewOperationalStateEvent("foobar", "testpath",
-		change.CreateTypedValueString("testValue"), events.EventItemUpdated)
+		change.NewTypedValueString("testValue"), events.EventItemUpdated)
 	opStateCh <- event
 
 	// Wait for the changes to get distributed

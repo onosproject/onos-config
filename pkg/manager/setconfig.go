@@ -36,7 +36,7 @@ func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 	if err != nil {
 		return err
 	}
-	deviceConfigTemporary, err := store.CreateConfiguration(deviceConfig.Device, deviceConfig.Version,
+	deviceConfigTemporary, err := store.NewConfiguration(deviceConfig.Device, deviceConfig.Version,
 		deviceConfig.Type, deviceConfig.Changes)
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func (m *Manager) getStoredConfig(deviceName string, version string,
 				". Please specify a version in extension 101", len(similarDevices),
 				deviceName, conv(similarDevices))
 		} else if version != "" && deviceType != "" {
-			newConfig, err := store.CreateConfiguration(
+			newConfig, err := store.NewConfiguration(
 				deviceName, version, deviceType, []change.ID{})
 			if err != nil {
 				return nil, nil, err

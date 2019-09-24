@@ -232,20 +232,20 @@ func pathType(jsonPathValue *change.ConfigValue, spType change.ValueType) (*chan
 		case change.ValueTypeFLOAT:
 			newTypeValue = &jsonPathValue.TypedValue
 		case change.ValueTypeINT:
-			newTypeValue = change.CreateTypedValueInt64(int(floatVal))
+			newTypeValue = change.NewTypedValueInt64(int(floatVal))
 		case change.ValueTypeUINT:
-			newTypeValue = change.CreateTypedValueUint64(uint(floatVal))
+			newTypeValue = change.NewTypedValueUint64(uint(floatVal))
 			//case change.ValueTypeDECIMAL:
 			// TODO add a conversion from float to D64 will also need number of decimal places from Read Only SubPath
-			//	newTypeValue = change.CreateTypedValueDecimal64()
+			//	newTypeValue = change.NewTypedValueDecimal64()
 		case change.ValueTypeSTRING:
-			newTypeValue = change.CreateTypedValueString(fmt.Sprintf("%.0f", float64(floatVal)))
+			newTypeValue = change.NewTypedValueString(fmt.Sprintf("%.0f", float64(floatVal)))
 		default:
 			newTypeValue = &jsonPathValue.TypedValue
 		}
 
 	default:
-		newTypeValue, err = change.CreateTypedValue(jsonPathValue.Value, spType, []int{})
+		newTypeValue, err = change.NewTypedValue(jsonPathValue.Value, spType, []int{})
 		if err != nil {
 			return nil, err
 		}

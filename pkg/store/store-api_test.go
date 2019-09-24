@@ -248,18 +248,18 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		change1, change2, change3, change4 *change.Change
 	)
 
-	config1Value01, _ := change.CreateChangeValue(Test1Cont1A, change.CreateTypedValueEmpty(), false)
-	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, change.CreateTypedValueEmpty(), false)
-	config1Value03, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2A, change.CreateTypedValueUint64(ValueLeaf2A13), false)
-	config1Value04, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2B, change.CreateTypedValueFloat(ValueLeaf2B159), false)
-	config1Value05, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, change.CreateTypedValueString(ValueLeaf2CAbc), false)
-	config1Value06, _ := change.CreateChangeValue(Test1Cont1ALeaf1A, change.CreateTypedValueString(ValueLeaf1AAbcdef), false)
-	config1Value07, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, change.CreateTypedValueEmpty(), false)
-	config1Value08, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1Txpwr, change.CreateTypedValueUint64(ValueTxout1Txpwr8), false)
-	config1Value09, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, change.CreateTypedValueEmpty(), false)
-	config1Value10, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2Txpwr, change.CreateTypedValueUint64(ValueTxout2Txpwr10), false)
-	config1Value11, _ := change.CreateChangeValue(Test1Leaftoplevel, change.CreateTypedValueString(ValueLeaftopWxy1234), false)
-	change1, err = change.CreateChange(change.ValueCollections{
+	config1Value01, _ := change.NewChangeValue(Test1Cont1A, change.NewTypedValueEmpty(), false)
+	config1Value02, _ := change.NewChangeValue(Test1Cont1ACont2A, change.NewTypedValueEmpty(), false)
+	config1Value03, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2A, change.NewTypedValueUint64(ValueLeaf2A13), false)
+	config1Value04, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2B, change.NewTypedValueFloat(ValueLeaf2B159), false)
+	config1Value05, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, change.NewTypedValueString(ValueLeaf2CAbc), false)
+	config1Value06, _ := change.NewChangeValue(Test1Cont1ALeaf1A, change.NewTypedValueString(ValueLeaf1AAbcdef), false)
+	config1Value07, _ := change.NewChangeValue(Test1Cont1AList2ATxout1, change.NewTypedValueEmpty(), false)
+	config1Value08, _ := change.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, change.NewTypedValueUint64(ValueTxout1Txpwr8), false)
+	config1Value09, _ := change.NewChangeValue(Test1Cont1AList2ATxout2, change.NewTypedValueEmpty(), false)
+	config1Value10, _ := change.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, change.NewTypedValueUint64(ValueTxout2Txpwr10), false)
+	config1Value11, _ := change.NewChangeValue(Test1Leaftoplevel, change.NewTypedValueString(ValueLeaftopWxy1234), false)
+	change1, err = change.NewChange(change.ValueCollections{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11,
@@ -269,10 +269,10 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config2Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2B, change.CreateTypedValueFloat(ValueLeaf2B314), false)
-	config2Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3, change.CreateTypedValueEmpty(), false)
-	config2Value03, _ := change.CreateChangeValue(Test1Cont1AList2ATxout3Txpwr, change.CreateTypedValueUint64(ValueTxout3Txpwr16), false)
-	change2, err = change.CreateChange(change.ValueCollections{
+	config2Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2B, change.NewTypedValueFloat(ValueLeaf2B314), false)
+	config2Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout3, change.NewTypedValueEmpty(), false)
+	config2Value03, _ := change.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, change.NewTypedValueUint64(ValueTxout3Txpwr16), false)
+	change2, err = change.NewChange(change.ValueCollections{
 		config2Value01, config2Value02, config2Value03,
 	}, "Trim power level")
 	if err != nil {
@@ -280,9 +280,9 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config3Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, change.CreateTypedValueString(ValueLeaf2CDef), false)
-	config3Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, change.CreateTypedValueEmpty(), true)
-	change3, err = change.CreateChange(change.ValueCollections{
+	config3Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, change.NewTypedValueString(ValueLeaf2CDef), false)
+	config3Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout2, change.NewTypedValueEmpty(), true)
+	change3, err = change.NewChange(change.ValueCollections{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
 	if err != nil {
@@ -299,16 +299,16 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	c2ID = change2.ID
 	c3ID = change2.ID
 
-	device1V, err = CreateConfiguration("Device1", "1.0.0", "TestDevice",
+	device1V, err = NewConfiguration("Device1", "1.0.0", "TestDevice",
 		[]change.ID{change1.ID, change2.ID, change3.ID})
 	if err != nil {
 		log.Error(err)
 		os.Exit(-1)
 	}
 
-	config4Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, change.CreateTypedValueString(ValueLeaf2CGhi), false)
-	config4Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout1, change.CreateTypedValueEmpty(), true)
-	change4, err = change.CreateChange(change.ValueCollections{
+	config4Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, change.NewTypedValueString(ValueLeaf2CGhi), false)
+	config4Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout1, change.NewTypedValueEmpty(), true)
+	change4, err = change.NewChange(change.ValueCollections{
 		config4Value01, config4Value02,
 	}, "Remove txout 1")
 	if err != nil {
@@ -317,7 +317,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	}
 	changeStore[B64(change4.ID)] = change4
 
-	device2V, err = CreateConfiguration("Device2", "10.0.100", "TestDevice",
+	device2V, err = NewConfiguration("Device2", "10.0.100", "TestDevice",
 		[]change.ID{change1.ID, change2.ID, change4.ID})
 	if err != nil {
 		log.Error(err)
@@ -465,9 +465,9 @@ func checkPathvalue(t *testing.T, config []*change.ConfigValue, index int,
 
 func Test_convertChangeToGnmi(t *testing.T) {
 
-	config3Value01, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2C, change.CreateTypedValueString(ValueLeaf2CDef), false)
-	config3Value02, _ := change.CreateChangeValue(Test1Cont1AList2ATxout2, change.CreateTypedValueEmpty(), true)
-	change3, err := change.CreateChange(change.ValueCollections{
+	config3Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, change.NewTypedValueString(ValueLeaf2CDef), false)
+	config3Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout2, change.NewTypedValueEmpty(), true)
+	change3, err := change.NewChange(change.ValueCollections{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
 	if err != nil {
@@ -566,22 +566,22 @@ func Test_loadNetworkStoreFileBadType(t *testing.T) {
 
 func TestCreateConfiguration_badname(t *testing.T) {
 	_, err :=
-		CreateConfiguration("", "1.0.0", "TestDevice",
+		NewConfiguration("", "1.0.0", "TestDevice",
 			[]change.ID{})
 	assert.ErrorContains(t, err, "deviceName, version and deviceType must have values", "Empty")
 
 	_, err =
-		CreateConfiguration("abc", "1.0.0", "TestDevice",
+		NewConfiguration("abc", "1.0.0", "TestDevice",
 			[]change.ID{})
 	assert.ErrorContains(t, err, "name abc does not match pattern", "Too short")
 
 	_, err =
-		CreateConfiguration("abc???", "1.0.0", "TestDevice",
+		NewConfiguration("abc???", "1.0.0", "TestDevice",
 			[]change.ID{})
 	assert.ErrorContains(t, err, "name abc??? does not match pattern", "Illegal char")
 
 	_, err =
-		CreateConfiguration("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO",
+		NewConfiguration("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO",
 			"1.0.0", "TestDevice",
 			[]change.ID{})
 	assert.ErrorContains(t, err, "name abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO does not match pattern", "Too long")
@@ -589,24 +589,24 @@ func TestCreateConfiguration_badname(t *testing.T) {
 
 func TestCreateConfiguration_badversion(t *testing.T) {
 	_, err :=
-		CreateConfiguration("localhost-1", "1.234567890", "TestDevice",
+		NewConfiguration("localhost-1", "1.234567890", "TestDevice",
 			[]change.ID{})
 	assert.ErrorContains(t, err, "version 1.234567890 does not match pattern", "Too long")
 
 	_, err =
-		CreateConfiguration("localhost-1", "a", "TestDevice",
+		NewConfiguration("localhost-1", "a", "TestDevice",
 			[]change.ID{})
 	assert.ErrorContains(t, err, "version a does not match pattern", "has letter")
 
 	_, err =
-		CreateConfiguration("localhost-1", "1:0:0", "TestDevice",
+		NewConfiguration("localhost-1", "1:0:0", "TestDevice",
 			[]change.ID{})
 	assert.ErrorContains(t, err, "version 1:0:0 does not match pattern", "Illegal char")
 }
 
 func TestCreateConfiguration_badtype(t *testing.T) {
 	_, err :=
-		CreateConfiguration("localhost-1", "1.0.0", "TestD&eviceType",
+		NewConfiguration("localhost-1", "1.0.0", "TestD&eviceType",
 			[]change.ID{})
 	assert.ErrorContains(t, err, "does not match pattern", "bad char")
 }
@@ -699,7 +699,7 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test-%s", strconv.Itoa(b.N))
-		cv, _ := change.CreateChangeValue(path, change.CreateTypedValueUint64(uint(i)), false)
+		cv, _ := change.NewChangeValue(path, change.NewTypedValueUint64(uint(i)), false)
 		err := cv.IsPathValid()
 		assert.NilError(b, err, "path not valid %s", err)
 
@@ -711,11 +711,11 @@ func BenchmarkCreateChange(b *testing.B) {
 	changeValues := change.ValueCollections{}
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test%d", i)
-		cv, _ := change.CreateChangeValue(path, change.CreateTypedValueUint64(uint(i)), false)
+		cv, _ := change.NewChangeValue(path, change.NewTypedValueUint64(uint(i)), false)
 		changeValues = append(changeValues, cv)
 	}
 
-	newChange, _ := change.CreateChange(changeValues, "Benchmarked Change")
+	newChange, _ := change.NewChange(changeValues, "Benchmarked Change")
 
 	err := newChange.IsValid()
 	assert.NilError(b, err, "Invalid change %s", err)

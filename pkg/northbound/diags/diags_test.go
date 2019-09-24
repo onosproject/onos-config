@@ -123,7 +123,7 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 		}
 		assert.NilError(t, err, "unable to receive message")
 		pv = in.Pathvalue
-		value, err := change.CreateTypedValue(pv.Value, change.ValueType(pv.ValueType), []int{})
+		value, err := change.NewTypedValue(pv.Value, change.ValueType(pv.ValueType), []int{})
 		assert.NilError(t, err)
 
 		switch pv.Path {

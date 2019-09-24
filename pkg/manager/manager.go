@@ -260,7 +260,7 @@ func (m *Manager) computeChange(updates change.TypedValueMap,
 	var newChanges = make([]*change.Value, 0)
 	//updates
 	for path, value := range updates {
-		changeValue, err := change.CreateChangeValue(path, value, false)
+		changeValue, err := change.NewChangeValue(path, value, false)
 		if err != nil {
 			log.Warningf("Error creating value for %s %v", path, err)
 			continue
@@ -269,13 +269,13 @@ func (m *Manager) computeChange(updates change.TypedValueMap,
 	}
 	//deletes
 	for _, path := range deletes {
-		changeValue, _ := change.CreateChangeValue(path, change.CreateTypedValueEmpty(), true)
+		changeValue, _ := change.NewChangeValue(path, change.NewTypedValueEmpty(), true)
 		newChanges = append(newChanges, changeValue)
 	}
 	if description == "" {
 		description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
 	}
-	return change.CreateChange(newChanges, description)
+	return change.NewChange(newChanges, description)
 }
 
 func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {

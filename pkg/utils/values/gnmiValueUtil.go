@@ -26,21 +26,21 @@ func GnmiTypedValueToNativeType(gnmiTv *pb.TypedValue) (*change.TypedValue, erro
 
 	switch v := gnmiTv.GetValue().(type) {
 	case *pb.TypedValue_StringVal:
-		return change.CreateTypedValueString(v.StringVal), nil
+		return change.NewTypedValueString(v.StringVal), nil
 	case *pb.TypedValue_AsciiVal:
-		return change.CreateTypedValueString(v.AsciiVal), nil
+		return change.NewTypedValueString(v.AsciiVal), nil
 	case *pb.TypedValue_IntVal:
-		return change.CreateTypedValueInt64(int(v.IntVal)), nil
+		return change.NewTypedValueInt64(int(v.IntVal)), nil
 	case *pb.TypedValue_UintVal:
-		return change.CreateTypedValueUint64(uint(v.UintVal)), nil
+		return change.NewTypedValueUint64(uint(v.UintVal)), nil
 	case *pb.TypedValue_BoolVal:
-		return change.CreateTypedValueBool(v.BoolVal), nil
+		return change.NewTypedValueBool(v.BoolVal), nil
 	case *pb.TypedValue_BytesVal:
-		return change.CreateTypedValueBytes(v.BytesVal), nil
+		return change.NewTypedValueBytes(v.BytesVal), nil
 	case *pb.TypedValue_DecimalVal:
-		return change.CreateTypedValueDecimal64(v.DecimalVal.Digits, v.DecimalVal.Precision), nil
+		return change.NewTypedValueDecimal64(v.DecimalVal.Digits, v.DecimalVal.Precision), nil
 	case *pb.TypedValue_FloatVal:
-		return change.CreateTypedValueFloat(v.FloatVal), nil
+		return change.NewTypedValueFloat(v.FloatVal), nil
 	case *pb.TypedValue_LeaflistVal:
 		return handleLeafList(v)
 	default:
@@ -84,19 +84,19 @@ func handleLeafList(gnmiLl *pb.TypedValue_LeaflistVal) (*change.TypedValue, erro
 	}
 
 	if len(stringList) > 0 {
-		return change.CreateLeafListString(stringList), nil
+		return change.NewLeafListStringTv(stringList), nil
 	} else if len(intList) > 0 {
-		return change.CreateLeafListInt64(intList), nil
+		return change.NewLeafListInt64Tv(intList), nil
 	} else if len(uintList) > 0 {
-		return change.CreateLeafListUint64(uintList), nil
+		return change.NewLeafListUint64Tv(uintList), nil
 	} else if len(boolList) > 0 {
-		return change.CreateLeafListBool(boolList), nil
+		return change.NewLeafListBoolTv(boolList), nil
 	} else if len(bytesList) > 0 {
-		return change.CreateLeafListBytes(bytesList), nil
+		return change.NewLeafListBytesTv(bytesList), nil
 	} else if len(digitsList) > 0 {
-		return change.CreateLeafListDecimal64(digitsList, precision), nil
+		return change.NewLeafListDecimal64Tv(digitsList, precision), nil
 	} else if len(floatList) > 0 {
-		return change.CreateLeafListFloat32(floatList), nil
+		return change.NewLeafListFloat32Tv(floatList), nil
 	}
 	return nil, fmt.Errorf("Empty leaf list given")
 }

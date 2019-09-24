@@ -87,7 +87,7 @@ func Test_topoEventConstruction(t *testing.T) {
 
 func Test_operationalStateEventConstruction(t *testing.T) {
 
-	event := NewOperationalStateEvent(eventSubject, path1, change.CreateTypedValueString(value1), EventItemAdded)
+	event := NewOperationalStateEvent(eventSubject, path1, change.NewTypedValueString(value1), EventItemAdded)
 
 	assert.Equal(t, event.EventType(), EventTypeOperationalState)
 	assert.Equal(t, event.Subject(), eventSubject)
