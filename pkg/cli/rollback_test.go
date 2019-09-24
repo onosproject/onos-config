@@ -16,11 +16,16 @@
 package cli
 
 import (
+	"bytes"
 	"gotest.tools/assert"
+	"strings"
 	"testing"
 )
 
 func Test_rollback(t *testing.T) {
+	b := bytes.NewBufferString("")
+	CaptureOutput(b)
+
 	setUpMockClients()
 	rollback := getRollbackCommand()
 	args := make([]string, 1)
@@ -28,4 +33,6 @@ func Test_rollback(t *testing.T) {
 	err := rollback.RunE(rollback, args)
 	assert.NilError(t, err)
 	assert.Equal(t, LastCreatedClient.rollBackID, "ABCD1234")
+	output := string(b.Bytes())
+	assert.Assert(t, strings.Contains(output, "Rollback was successful"))
 }

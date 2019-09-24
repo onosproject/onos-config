@@ -16,6 +16,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -33,14 +34,24 @@ const (
 	ExitBadArgs = 128
 )
 
+var outputWriter io.Writer
+
+func CaptureOutput(capture io.Writer) {
+	outputWriter = capture
+}
+
+func init() {
+	CaptureOutput(os.Stdout)
+}
+
 // Output prints the specified format message with arguments to stdout.
 func Output(msg string, args ...interface{}) {
-	fmt.Fprintf(os.Stdout, msg, args...)
+	fmt.Fprintf(outputWriter, msg, args...)
 }
 
 // ExitWithOutput prints the specified entity and exits program with success.
 func ExitWithOutput(msg string, output ...interface{}) {
-	fmt.Fprintf(os.Stdout, msg, output...)
+	fmt.Fprintf(outputWriter, msg, output...)
 	os.Exit(ExitSuccess)
 }
 
