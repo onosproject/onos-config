@@ -44,7 +44,7 @@ func (m *Manager) RollbackTargetConfig(configname store.ConfigName) (change.ID, 
 	if err != nil {
 		return id, err
 	}
-	m.ChangesChannel <- events.CreateConfigEvent(targetID,
+	m.ChangesChannel <- events.NewConfigEvent(targetID,
 		changeID, true)
 	return id, listenForDeviceResponse(m, targetID)
 }

@@ -15,18 +15,66 @@
 package events
 
 import (
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"time"
 )
 
 // OperationalStateEvent represents an event for an update in operational state on a device
-type OperationalStateEvent Event
+type OperationalStateEvent interface {
+	Event
+	ItemAction() EventAction
+	Path() string
+	Value() *change.TypedValue
+}
 
-// CreateOperationalStateEvent creates a new operational state event object
-func CreateOperationalStateEvent(subject string, pathsAndValues map[string]string) OperationalStateEvent {
-	return OperationalStateEvent{
-		subject:   subject,
-		time:      time.Now(),
-		eventtype: EventTypeOperationalState,
-		values:    pathsAndValues,
+type operationalStateEventObj struct {
+	path       string
+	value      *change.TypedValue
+	itemAction EventAction
+}
+
+type operationalStateEventImpl struct {
+	eventImpl
+}
+
+func (e operationalStateEventImpl) ItemAction() EventAction {
+	oe, ok := e.object.(operationalStateEventObj)
+	if ok {
+		return oe.itemAction
 	}
+	return EventItemNone
+}
+
+func (e operationalStateEventImpl) Path() string {
+	oe, ok := e.object.(operationalStateEventObj)
+	if ok {
+		return oe.path
+	}
+	return ""
+}
+
+func (e operationalStateEventImpl) Value() *change.TypedValue {
+	oe, ok := e.object.(operationalStateEventObj)
+	if ok {
+		return oe.value
+	}
+	return nil
+}
+
+// NewOperationalStateEvent creates a new operational state event object
+func NewOperationalStateEvent(subject string, path string, value *change.TypedValue,
+	eventAction EventAction) OperationalStateEvent {
+	opStateEvent := operationalStateEventImpl{
+		eventImpl: eventImpl{
+			subject:   subject,
+			time:      time.Now(),
+			eventType: EventTypeOperationalState,
+			object: operationalStateEventObj{
+				itemAction: eventAction,
+				path:       path,
+				value:      value,
+			},
+		},
+	}
+	return opStateEvent
 }

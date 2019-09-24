@@ -109,7 +109,7 @@ func (m *Manager) SetNetworkConfig(deviceName string, version string,
 	// TODO: At this stage
 	//  2) Do a precheck that the device is reachable
 	//  3) Check that the caller is authorized to make the change
-	m.ChangesChannel <- events.CreateConfigEvent(deviceConfig.Device,
+	m.ChangesChannel <- events.NewConfigEvent(deviceConfig.Device,
 		changeID, true)
 
 	return changeID, configName, nil

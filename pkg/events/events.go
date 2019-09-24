@@ -22,26 +22,6 @@ import (
 	"time"
 )
 
-const (
-	// ChangeID :
-	ChangeID = "ChangeID"
-
-	// Applied :
-	Applied = "Applied"
-
-	// Connect :
-	Connect = "Connect"
-
-	// Address :
-	Address = "Address"
-
-	//Error :
-	Error = "Error"
-
-	//Response :
-	Response = "Response"
-)
-
 // EventType is an enumerated type
 type EventType int
 
@@ -63,6 +43,17 @@ const ( // For event types
 	EventTypeErrorGetWithRoPaths
 )
 
+// EventAction is an enumerated type
+type EventAction int
+
+// Values of the EventItem enumeration
+const (
+	EventItemNone EventAction = iota
+	EventItemAdded
+	EventItemUpdated
+	EventItemDeleted
+)
+
 func (et EventType) String() string {
 	return [...]string{"Configuration", "TopoCache", "OperationalState", "EventTypeAchievedSetConfig",
 		"EventTypeErrorSetConfig", "EventTypeErrorParseConfig", "EventTypeErrorSetInitialConfig",
@@ -71,59 +62,51 @@ func (et EventType) String() string {
 }
 
 // Event is a general purpose base type of event
-type Event struct {
+// Specializations of Event are possible by extending the interface
+// See configEvent for more details
+type Event interface {
+	Subject() string
+	Time() time.Time
+	EventType() EventType
+	Object() interface{}
+	fmt.Stringer
+}
+
+type eventImpl struct {
 	subject   string
 	time      time.Time
-	eventtype EventType
-	values    map[string]string
+	eventType EventType
 	object    interface{}
 }
 
-func (e Event) String() string {
-	var evtValues string
-	for k, v := range e.values {
-		evtValues = evtValues + k + ":" + v + ","
-	}
-	return fmt.Sprintf("%s %s %s {%s}",
-		e.subject, e.eventtype, e.time.Format(time.RFC3339), evtValues)
-}
-
-// Subject extracts the subject field from the event
-func (e Event) Subject() string {
+func (e eventImpl) Subject() string {
 	return e.subject
 }
 
-// Time extracts the time field from the event
-func (e Event) Time() time.Time {
+func (e eventImpl) Time() time.Time {
 	return e.time
 }
 
-// EventType extracts the eventtype field from the event
-func (e Event) EventType() EventType {
-	return e.eventtype
-}
-
-// Values extracts a map of values from the event
-func (e Event) Values() *map[string]string {
-	return &e.values
-}
-
-// Value extracts a single value from the event
-func (e Event) Value(name string) string {
-	return e.values[name]
+func (e eventImpl) EventType() EventType {
+	return e.eventType
 }
 
 // Object returns the object associated with the event
-func (e Event) Object() interface{} {
+func (e eventImpl) Object() interface{} {
 	return e.object
 }
 
-// createEvent creates a new event object
-func createEvent(subject string, eventType EventType, values map[string]string) Event {
-	return Event{
+func (e eventImpl) String() string {
+	return fmt.Sprintf("%s %s %s {%s}",
+		e.subject, e.eventType, e.time.Format(time.RFC3339), e.object)
+}
+
+// NewEvent creates a new event object
+func NewEvent(subject string, eventType EventType, obj interface{}) Event {
+	return eventImpl{
 		subject:   subject,
 		time:      time.Now(),
-		eventtype: eventType,
-		values:    values,
+		eventType: eventType,
+		object:    obj,
 	}
 }

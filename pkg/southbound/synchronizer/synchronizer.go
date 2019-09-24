@@ -80,7 +80,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	capResponse, capErr := target.CapabilitiesWithString(context, "")
 	if capErr != nil {
 		log.Error(sync.Device.Address, " capabilities: ", capErr)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceCapabilities,
+		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceCapabilities,
 			string(device.ID), capErr)
 		return nil, capErr
 	}
@@ -126,11 +126,11 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 			//Splitting at the desc string and getting the second element which is the description.
 			log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address,
 				strings.Split(errGnmi.Message(), " desc = ")[1])
-			errChan <- events.CreateErrorEvent(events.EventTypeErrorSetInitialConfig,
+			errChan <- events.NewErrorEvent(events.EventTypeErrorSetInitialConfig,
 				string(device.ID), initialConfig.ID, err)
 		} else {
 			log.Infof("Loaded initial config %s for device %s", store.B64(initialConfig.ID), sync.key.DeviceID)
-			errChan <- events.CreateResponseEvent(events.EventTypeAchievedSetConfig,
+			errChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig,
 				sync.key.DeviceID, initialConfig.ID, resp.String())
 		}
 	}
@@ -147,7 +147,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 		err := c.IsValid()
 		if err != nil {
 			log.Warning("Event discarded because change is invalid: ", err)
-			respChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
+			respChan <- events.NewErrorEvent(events.EventTypeErrorParseConfig,
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
@@ -155,7 +155,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 
 		if parseError != nil {
 			log.Error("Parsing error for gNMI change: ", parseError)
-			respChan <- events.CreateErrorEvent(events.EventTypeErrorParseConfig,
+			respChan <- events.NewErrorEvent(events.EventTypeErrorParseConfig,
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
@@ -164,19 +164,19 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 		target, err := southbound.GetTarget(sync.key)
 		if err != nil {
 			log.Warning(err)
-			respChan <- events.CreateErrorEvent(events.EventTypeErrorDeviceConnect,
+			respChan <- events.NewErrorEvent(events.EventTypeErrorDeviceConnect,
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 		setResponse, err := target.Set(sync.Context, gnmiChange)
 		if err != nil {
 			log.Error("Error while doing set: ", err)
-			respChan <- events.CreateErrorEvent(events.EventTypeErrorSetConfig,
+			respChan <- events.NewErrorEvent(events.EventTypeErrorSetConfig,
 				sync.key.DeviceID, c.ID, err)
 			continue
 		}
 		log.Info(sync.Device.Address, " SetResponse ", setResponse)
-		respChan <- events.CreateResponseEvent(events.EventTypeAchievedSetConfig,
+		respChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig,
 			sync.key.DeviceID, c.ID, setResponse.String())
 
 	}
@@ -186,7 +186,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	target, err := southbound.GetTarget(sync.key)
 	if err != nil {
 		log.Error("Can't find target for key: ", sync.key)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
 			sync.key.DeviceID, err)
 		return
 	}
@@ -195,7 +195,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	if sync.modelReadOnlyPaths == nil {
 		errMp := fmt.Errorf("no model plugin, cant work in operational state cache")
 		log.Error(errMp)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorMissingModelPlugin,
+		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorMissingModelPlugin,
 			sync.key.DeviceID, errMp)
 		return
 	}
@@ -253,7 +253,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	log.Infof("%d ReadOnly paths for %s", len(sync.modelReadOnlyPaths), sync.key.DeviceID)
 	if len(sync.modelReadOnlyPaths) == 0 {
 		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
+		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorSubscribe,
 			sync.key.DeviceID, noPathErr)
 		log.Warning(noPathErr)
 		return
@@ -267,7 +267,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			gnmiPath, err := utils.ParseGNMIElements(utils.SplitPath(path))
 			if err != nil {
 				log.Warning("Error converting RO path to gNMI")
-				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
+				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
 					sync.key.DeviceID, err)
 				return
 			}
@@ -282,7 +282,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 		responseRoPaths, errRoPaths := target.Get(target.Ctx, requestRoPaths)
 		if errRoPaths != nil {
 			log.Warning("Error on request for read-only paths", sync.key, errRoPaths)
-			errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
+			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
 				sync.key.DeviceID, errRoPaths)
 			return
 		}
@@ -307,7 +307,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 						newGnmiPath, errNewPath := utils.ParseGNMIElements(utils.SplitPath(newPathStr))
 						if errNewPath != nil {
 							log.Warning("Error on request for read-only paths", sync.key, errNewPath)
-							errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
+							errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
 								sync.key.DeviceID, errNewPath)
 							return
 						}
@@ -326,7 +326,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			responseEwRoPaths, errRoPaths := target.Get(target.Ctx, requestEwRoPaths)
 			if errRoPaths != nil {
 				log.Warning("Error on request for expanded wildcard read-only paths", sync.key, errRoPaths)
-				errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
+				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
 					sync.key.DeviceID, errRoPaths)
 				return
 			}
@@ -347,14 +347,14 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 					configValuesUnparsed, err := store.DecomposeTree(jsonVal)
 					if err != nil {
 						log.Error("Can't translate from json to values, skipping to next update: ", err, jsonVal)
-						errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
+						errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
 							sync.key.DeviceID, err)
 						break
 					}
 					configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, sync.modelReadOnlyPaths, true)
 					if err != nil {
 						log.Error("Can't translate from config values to typed values, skipping to next update: ", err)
-						errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorTranslation,
+						errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
 							sync.key.DeviceID, err)
 						break
 					}
@@ -412,7 +412,7 @@ func (sync *Synchronizer) subscribeOpState(wildExpandedPaths []string, errChan c
 	target, err := southbound.GetTarget(sync.key)
 	if err != nil {
 		log.Error("Can't find target for key ", sync.key)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
 			sync.key.DeviceID, err)
 		return
 	}
@@ -440,7 +440,7 @@ func (sync *Synchronizer) subscribeOpState(wildExpandedPaths []string, errChan c
 	log.Infof("Subscribing to %d paths. %s", len(subscribePaths), sync.key.DeviceID)
 	req, err := southbound.NewSubscribeRequest(options)
 	if err != nil {
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorParseConfig,
+		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorParseConfig,
 			sync.key.DeviceID, err)
 		return
 	}
@@ -448,7 +448,7 @@ func (sync *Synchronizer) subscribeOpState(wildExpandedPaths []string, errChan c
 	subErr := target.Subscribe(sync.Context, req, sync.handler)
 	if subErr != nil {
 		log.Warning("Error in subscribe", subErr)
-		errChan <- events.CreateErrorEventNoChangeID(events.EventTypeErrorSubscribe,
+		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorSubscribe,
 			sync.key.DeviceID, subErr)
 		return
 	}
@@ -491,7 +491,6 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 			return client.ErrStopReading
 		}
 	case *gnmi.SubscribeResponse_Update:
-		eventValues := make(map[string]string)
 		notification := v.Update
 		for _, update := range notification.Update {
 			if update.Path == nil {
@@ -509,7 +508,7 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 				if err != nil {
 					return fmt.Errorf("can't translate to Typed value %s", err)
 				}
-				eventValues[pathStr] = valStr
+				sync.operationalStateChan <- events.NewOperationalStateEvent(string(sync.Device.ID), pathStr, val, events.EventItemUpdated)
 				log.Info("Added ", val, " for path ", pathStr, " for device ", sync.ID)
 
 				//TODO this is a hack for Stratum Sept 19
@@ -564,11 +563,11 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 				return fmt.Errorf("invalid nil path in update: %v", del)
 			}
 			pathStr := utils.StrPathElem(del.Elem)
-			eventValues[pathStr] = ""
 			log.Info("Delete path ", pathStr, " for device ", sync.ID)
+			sync.operationalStateChan <- events.NewOperationalStateEvent(string(sync.Device.ID), pathStr, nil, events.EventItemDeleted)
 			delete(sync.operationalCache, pathStr)
 		}
-		sync.operationalStateChan <- events.CreateOperationalStateEvent(string(sync.Device.ID), eventValues)
+
 	}
 	return nil
 }

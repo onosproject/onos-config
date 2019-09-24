@@ -196,29 +196,21 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stream gnmi.GNMI_SubscribeServer,
 	targets map[string]struct{}, subs []*regexp.Regexp, resChan chan result) {
 	for opStateChange := range opStateChan {
-		target := events.Event(opStateChange).Subject()
+		target := opStateChange.Subject()
 		_, targetPresent := targets[target]
-		if targetPresent {
-			changeInternal := events.Event(opStateChange).Values()
-			for pathStr, value := range *changeInternal {
-				if matchRegex(pathStr, subs) {
-					pathArr := utils.SplitPath(pathStr)
-					pathGnmi, err := utils.ParseGNMIElements(pathArr)
-					if err != nil {
-						log.Warning("Error in parsing path", err)
-						resChan <- result{success: true, err: nil}
-						continue
-					}
+		if targetPresent && matchRegex(opStateChange.Path(), subs) {
+			pathArr := utils.SplitPath(opStateChange.Path())
+			pathGnmi, err := utils.ParseGNMIElements(pathArr)
+			if err != nil {
+				log.Warning("Error in parsing path", err)
+				resChan <- result{success: true, err: nil}
+				continue
+			}
 
-					// FIXME Change this to create a typed value of the type sent up
-					strValue := change.CreateTypedValueString(value)
-
-					err = buildAndSendUpdate(pathGnmi, target, strValue, stream)
-					if err != nil {
-						log.Error("Error in sending update path ", err)
-						resChan <- result{success: false, err: err}
-					}
-				}
+			err = buildAndSendUpdate(pathGnmi, target, opStateChange.Value(), stream)
+			if err != nil {
+				log.Error("Error in sending update path ", err)
+				resChan <- result{success: false, err: err}
 			}
 		}
 	}
@@ -313,7 +305,7 @@ func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeSe
 }
 
 func getChangeFromEvent(update events.ConfigEvent, mgr *manager.Manager) (string, *change.Change) {
-	target := events.Event(update).Subject()
+	target := update.Subject()
 	changeID := update.ChangeID()
 	changeInternal, ok := mgr.ChangeStore.Store[changeID]
 	if !ok {

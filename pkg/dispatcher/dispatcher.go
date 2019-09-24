@@ -57,7 +57,7 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 
 	for configEvent := range changeChannel {
 		log.Info("Listener: Event ", configEvent)
-		deviceChan, ok := d.deviceListeners[device.ID(events.Event(configEvent).Subject())]
+		deviceChan, ok := d.deviceListeners[device.ID(configEvent.Subject())]
 		if !ok {
 			log.Warning("Device not connected - config event discarded ", configEvent)
 		} else {
