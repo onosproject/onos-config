@@ -105,7 +105,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(configurations) == 0 {
-		ExitWithErrorMessage("Device(s) not found: %v\n", configReq.DeviceIDs)
+		return fmt.Errorf("device(s) not found: %v", configReq.DeviceIDs)
 	}
 
 	changes := make(map[string]*change.Change)

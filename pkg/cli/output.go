@@ -49,9 +49,3 @@ func init() {
 func Output(msg string, args ...interface{}) {
 	_, _ = fmt.Fprintf(outputWriter, msg, args...)
 }
-
-// ExitWithErrorMessage prints the specified message and exits program with the given error code.
-func ExitWithErrorMessage(msg string, args ...interface{}) {
-	_, _ = fmt.Fprintf(os.Stderr, msg, args...)
-	os.Exit(ExitError)
-}

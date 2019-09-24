@@ -109,7 +109,8 @@ func nativeType(cv admin.ChangeValue) string {
 	}
 	tv, err := change.CreateTypedValue(cv.Value, change.ValueType(cv.ValueType), to)
 	if err != nil {
-		ExitWithErrorMessage("Failed to convert value to TypedValue %s", err)
+		fmt.Fprintf(os.Stderr, "Failed to convert value to TypedValue %s", err)
+		os.Exit(1)
 	}
 	return tv.String()
 }
