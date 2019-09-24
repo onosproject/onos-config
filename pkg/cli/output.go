@@ -47,17 +47,17 @@ func init() {
 
 // Output prints the specified format message with arguments to stdout.
 func Output(msg string, args ...interface{}) {
-	fmt.Fprintf(outputWriter, msg, args...)
+	_, _ = fmt.Fprintf(outputWriter, msg, args...)
 }
 
 // ExitWithError prints the specified error and exits program with the given error code.
 func ExitWithError(code int, err error) {
-	fmt.Fprintln(os.Stderr, "Error:", err)
+	_, _ = fmt.Fprintln(os.Stderr, "Error:", err)
 	os.Exit(code)
 }
 
 // ExitWithErrorMessage prints the specified message and exits program with the given error code.
 func ExitWithErrorMessage(msg string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, msg, args...)
+	_, _ = fmt.Fprintf(os.Stderr, msg, args...)
 	os.Exit(ExitError)
 }
