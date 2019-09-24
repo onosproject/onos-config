@@ -20,7 +20,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/spf13/cobra"
 	"io"
-	"os"
 	"text/template"
 )
 
@@ -76,7 +75,7 @@ func runListPluginsCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		_ = tmplModelList.Execute(os.Stdout, in)
+		_ = tmplModelList.Execute(GetOutput(), in)
 		Output("\n")
 	}
 }

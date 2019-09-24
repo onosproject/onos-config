@@ -75,7 +75,7 @@ func runChangesCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		_ = tmplChanges.Execute(os.Stdout, in)
+		_ = tmplChanges.Execute(GetOutput(), in)
 	}
 }
 

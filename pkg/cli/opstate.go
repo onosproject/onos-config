@@ -20,7 +20,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/spf13/cobra"
 	"io"
-	"os"
 	"text/template"
 )
 
@@ -66,7 +65,7 @@ func runOpstateCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		_ = tmplGetOpState.Execute(os.Stdout, in)
+		_ = tmplGetOpState.Execute(GetOutput(), in)
 		Output("\n")
 	}
 }
