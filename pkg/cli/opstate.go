@@ -42,7 +42,12 @@ func runOpstateCommand(cmd *cobra.Command, args []string) error {
 	deviceID := args[0]
 	subscribe, _ := cmd.Flags().GetBool("subscribe")
 	tmplGetOpState, _ := template.New("change").Funcs(funcMapChanges).Parse(opstateTemplate)
-	client := diags.NewOpStateDiagsClient(getConnection())
+	clientConnection, clientConnectionError := getConnection()
+
+	if clientConnectionError != nil {
+		return clientConnectionError
+	}
+	client := diags.NewOpStateDiagsClient(clientConnection)
 
 	fmt.Printf("OPSTATE CACHE: %s\n", deviceID)
 	fmt.Printf("%-82s|%-20s|\n", "PATH", "VALUE")

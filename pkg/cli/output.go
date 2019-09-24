@@ -50,12 +50,6 @@ func Output(msg string, args ...interface{}) {
 	_, _ = fmt.Fprintf(outputWriter, msg, args...)
 }
 
-// ExitWithError prints the specified error and exits program with the given error code.
-func ExitWithError(code int, err error) {
-	_, _ = fmt.Fprintln(os.Stderr, "Error:", err)
-	os.Exit(code)
-}
-
 // ExitWithErrorMessage prints the specified message and exits program with the given error code.
 func ExitWithErrorMessage(msg string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stderr, msg, args...)

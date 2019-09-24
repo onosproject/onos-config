@@ -49,7 +49,12 @@ func getGetChangesCommand() *cobra.Command {
 }
 
 func runChangesCommand(cmd *cobra.Command, args []string) error {
-	client := diags.NewConfigDiagsClient(getConnection())
+	clientConnection, clientConnectionError := getConnection()
+
+	if clientConnectionError != nil {
+		return clientConnectionError
+	}
+	client := diags.NewConfigDiagsClient(clientConnection)
 	changesReq := &diags.ChangesRequest{ChangeIDs: make([]string, 0)}
 	if len(args) == 1 {
 		changesReq.ChangeIDs = append(changesReq.ChangeIDs, args[0])
