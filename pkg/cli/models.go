@@ -56,7 +56,7 @@ func getGetPluginsCommand() *cobra.Command {
 func runListPluginsCommand(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	tmplModelList, _ := template.New("change").Parse(modellistTemplate)
-	client := admin.NewConfigAdminServiceClient(getConnection())
+	client := admin.CreateConfigAdminServiceClient(getConnection())
 
 	stream, err := client.ListRegisteredModels(context.Background(), &admin.ListModelsRequest{Verbose: verbose})
 	if err != nil {
@@ -87,7 +87,8 @@ func getAddPluginCommand() *cobra.Command {
 }
 
 func runAddPluginCommand(cmd *cobra.Command, args []string) error {
-	client := admin.NewConfigAdminServiceClient(getConnection())
+	client := admin.CreateConfigAdminServiceClient(getConnection())
+
 	pluginFileName := ""
 	if len(args) == 1 {
 		pluginFileName = args[0]

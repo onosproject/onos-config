@@ -45,6 +45,16 @@ func (s Service) Register(r *grpc.Server) {
 type Server struct {
 }
 
+// ConfigAdminClientFactory : Default ConfigAdminClient creation.
+var ConfigAdminClientFactory = func(cc *grpc.ClientConn) ConfigAdminServiceClient {
+	return NewConfigAdminServiceClient(cc)
+}
+
+// CreateConfigAdminServiceClient creates and returns a new config admin client
+func CreateConfigAdminServiceClient(cc *grpc.ClientConn) ConfigAdminServiceClient {
+	return ConfigAdminClientFactory(cc)
+}
+
 // RegisterModel registers a model plugin already on the onos-configs file system.
 func (s Server) RegisterModel(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
 	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(req.SoFile)
