@@ -20,7 +20,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/spf13/cobra"
 	"io"
-	"os"
 	"text/template"
 )
 
@@ -56,7 +55,12 @@ func getGetPluginsCommand() *cobra.Command {
 func runListPluginsCommand(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	tmplModelList, _ := template.New("change").Parse(modellistTemplate)
-	client := admin.CreateConfigAdminServiceClient(getConnection())
+	clientConnection, clientConnectionError := getConnection()
+
+	if clientConnectionError != nil {
+		return clientConnectionError
+	}
+	client := admin.CreateConfigAdminServiceClient(clientConnection)
 
 	stream, err := client.ListRegisteredModels(context.Background(), &admin.ListModelsRequest{Verbose: verbose})
 	if err != nil {
@@ -71,7 +75,7 @@ func runListPluginsCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		_ = tmplModelList.Execute(os.Stdout, in)
+		_ = tmplModelList.Execute(GetOutput(), in)
 		Output("\n")
 	}
 }
@@ -87,7 +91,12 @@ func getAddPluginCommand() *cobra.Command {
 }
 
 func runAddPluginCommand(cmd *cobra.Command, args []string) error {
-	client := admin.CreateConfigAdminServiceClient(getConnection())
+	clientConnection, clientConnectionError := getConnection()
+
+	if clientConnectionError != nil {
+		return clientConnectionError
+	}
+	client := admin.CreateConfigAdminServiceClient(clientConnection)
 
 	pluginFileName := ""
 	if len(args) == 1 {

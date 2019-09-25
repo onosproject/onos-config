@@ -20,21 +20,12 @@ import (
 	"os"
 )
 
-const (
-	// ExitSuccess means nominal status
-	ExitSuccess = iota
-
-	// ExitError means general error
-	ExitError
-
-	// ExitBadConnection means failed connection to remote service
-	ExitBadConnection
-
-	// ExitBadArgs means invalid argument values were given
-	ExitBadArgs = 128
-)
-
 var outputWriter io.Writer
+
+// GetOutput returns the current output writer
+func GetOutput() io.Writer {
+	return outputWriter
+}
 
 // CaptureOutput allows a test harness to redirect output to an alternate source for testing
 func CaptureOutput(capture io.Writer) {
@@ -47,28 +38,5 @@ func init() {
 
 // Output prints the specified format message with arguments to stdout.
 func Output(msg string, args ...interface{}) {
-	fmt.Fprintf(outputWriter, msg, args...)
-}
-
-// ExitWithOutput prints the specified entity and exits program with success.
-func ExitWithOutput(msg string, output ...interface{}) {
-	fmt.Fprintf(outputWriter, msg, output...)
-	os.Exit(ExitSuccess)
-}
-
-// ExitWithSuccess exits program with success without any output.
-func ExitWithSuccess() {
-	os.Exit(ExitSuccess)
-}
-
-// ExitWithError prints the specified error and exits program with the given error code.
-func ExitWithError(code int, err error) {
-	fmt.Fprintln(os.Stderr, "Error:", err)
-	os.Exit(code)
-}
-
-// ExitWithErrorMessage prints the specified message and exits program with the given error code.
-func ExitWithErrorMessage(msg string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, msg, args...)
-	os.Exit(ExitError)
+	_, _ = fmt.Fprintf(outputWriter, msg, args...)
 }

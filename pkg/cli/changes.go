@@ -49,7 +49,12 @@ func getGetChangesCommand() *cobra.Command {
 }
 
 func runChangesCommand(cmd *cobra.Command, args []string) error {
-	client := diags.NewConfigDiagsClient(getConnection())
+	clientConnection, clientConnectionError := getConnection()
+
+	if clientConnectionError != nil {
+		return clientConnectionError
+	}
+	client := diags.NewConfigDiagsClient(clientConnection)
 	changesReq := &diags.ChangesRequest{ChangeIDs: make([]string, 0)}
 	if len(args) == 1 {
 		changesReq.ChangeIDs = append(changesReq.ChangeIDs, args[0])
@@ -70,7 +75,7 @@ func runChangesCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		_ = tmplChanges.Execute(os.Stdout, in)
+		_ = tmplChanges.Execute(GetOutput(), in)
 	}
 }
 
@@ -104,7 +109,8 @@ func nativeType(cv admin.ChangeValue) string {
 	}
 	tv, err := change.CreateTypedValue(cv.Value, change.ValueType(cv.ValueType), to)
 	if err != nil {
-		ExitWithErrorMessage("Failed to convert value to TypedValue %s", err)
+		fmt.Fprintf(os.Stderr, "Failed to convert value to TypedValue %s", err)
+		os.Exit(1)
 	}
 	return tv.String()
 }

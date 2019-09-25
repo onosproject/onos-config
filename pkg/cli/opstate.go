@@ -20,7 +20,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/spf13/cobra"
 	"io"
-	"os"
 	"text/template"
 )
 
@@ -42,14 +41,19 @@ func runOpstateCommand(cmd *cobra.Command, args []string) error {
 	deviceID := args[0]
 	subscribe, _ := cmd.Flags().GetBool("subscribe")
 	tmplGetOpState, _ := template.New("change").Funcs(funcMapChanges).Parse(opstateTemplate)
-	client := diags.NewOpStateDiagsClient(getConnection())
+	clientConnection, clientConnectionError := getConnection()
+
+	if clientConnectionError != nil {
+		return clientConnectionError
+	}
+	client := diags.NewOpStateDiagsClient(clientConnection)
 
 	fmt.Printf("OPSTATE CACHE: %s\n", deviceID)
 	fmt.Printf("%-82s|%-20s|\n", "PATH", "VALUE")
 
 	stream, err := client.GetOpState(context.Background(), &diags.OpStateRequest{DeviceId: deviceID, Subscribe: subscribe})
 	if err != nil {
-		ExitWithErrorMessage("Failed to send request: %v", err)
+		return fmt.Errorf("failed to send request: %v", err)
 	}
 
 	for {
@@ -61,7 +65,7 @@ func runOpstateCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		_ = tmplGetOpState.Execute(os.Stdout, in)
+		_ = tmplGetOpState.Execute(GetOutput(), in)
 		Output("\n")
 	}
 }

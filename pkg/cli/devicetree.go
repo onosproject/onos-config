@@ -23,7 +23,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/spf13/cobra"
 	"io"
-	"os"
 	"text/template"
 )
 
@@ -49,7 +48,12 @@ func getGetDeviceTreeCommand() *cobra.Command {
 }
 
 func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
-	client := diags.NewConfigDiagsClient(getConnection())
+	clientConnection, clientConnectionError := getConnection()
+
+	if clientConnectionError != nil {
+		return clientConnectionError
+	}
+	client := diags.NewConfigDiagsClient(clientConnection)
 	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
 	if len(args) > 0 {
 		configReq.DeviceIDs = append(configReq.DeviceIDs, args[0])
@@ -100,7 +104,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(configurations) == 0 {
-		ExitWithErrorMessage("Device(s) not found: %v\n", configReq.DeviceIDs)
+		return fmt.Errorf("device(s) not found: %v", configReq.DeviceIDs)
 	}
 
 	changes := make(map[string]*change.Change)
@@ -154,7 +158,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 
 	tmplDevicetreeList, _ := template.New("devices").Funcs(funcMapDeviceTree).Parse(devicetreeTemplate)
 	for _, configuration := range configurations {
-		_ = tmplDevicetreeList.Execute(os.Stdout, configuration)
+		_ = tmplDevicetreeList.Execute(GetOutput(), configuration)
 		fullDeviceConfigValues := configuration.ExtractFullConfig(nil, changes, 0) // Passing 0 as change set has already been reduced by n='layer'
 		jsonTree, _ := store.BuildTree(fullDeviceConfigValues, false)
 		Output("TREE:\n%s\n\n", string(jsonTree))

@@ -33,7 +33,12 @@ func getGetNetChangesCommand() *cobra.Command {
 }
 
 func runNetChangesCommand(cmd *cobra.Command, args []string) error {
-	client := admin.CreateConfigAdminServiceClient(getConnection())
+	clientConnection, clientConnectionError := getConnection()
+
+	if clientConnectionError != nil {
+		return clientConnectionError
+	}
+	client := admin.CreateConfigAdminServiceClient(clientConnection)
 
 	stream, err := client.GetNetworkChanges(context.Background(), &admin.NetworkChangesRequest{})
 	if err != nil {

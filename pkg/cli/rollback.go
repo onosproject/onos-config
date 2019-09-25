@@ -31,7 +31,12 @@ func getRollbackCommand() *cobra.Command {
 }
 
 func runRollbackCommand(cmd *cobra.Command, args []string) error {
-	client := admin.CreateConfigAdminServiceClient(getConnection())
+	clientConnection, clientConnectionError := getConnection()
+
+	if clientConnectionError != nil {
+		return clientConnectionError
+	}
+	client := admin.CreateConfigAdminServiceClient(clientConnection)
 
 	changeID := ""
 	if len(args) == 1 {
