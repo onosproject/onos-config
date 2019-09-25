@@ -17,12 +17,69 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	"io"
 )
 
 type mockConfigAdminServiceClient struct {
 	rollBackID string
+}
+
+type mockConfigAdminService_ListRegisteredModelsClient struct{}
+
+var called = 1 //  hack
+func (c mockConfigAdminService_ListRegisteredModelsClient) Recv() (*admin.ModelInfo, error) {
+	if called <= 2 {
+		index := called
+		called++
+		roPaths := make ([]*admin.ReadOnlyPath, 1)
+		roPaths[0] = &admin.ReadOnlyPath{
+			Path:                 fmt.Sprintf("/root/ropath/path%d", index),
+			SubPath:              nil,
+		}
+		modelData := make ([]*gnmi.ModelData, 1)
+		modelData[0] = &gnmi.ModelData{
+			Name:                 "UT NAME",
+			Organization:         "UT ORG",
+			Version:              "3.3.3",
+		}
+		return &admin.ModelInfo{
+			Name: fmt.Sprintf("Model-%d", index),
+			Version: "1.0",
+			Module: fmt.Sprintf("Module-%d", index),
+			ReadOnlyPath: roPaths,
+			ModelData: modelData,
+		}, nil
+	}
+	return nil, io.EOF
+}
+
+func (c mockConfigAdminService_ListRegisteredModelsClient) Header() (metadata.MD, error) {
+	panic("implement me")
+}
+
+func (c mockConfigAdminService_ListRegisteredModelsClient) Trailer() metadata.MD {
+	panic("implement me")
+}
+
+func (c mockConfigAdminService_ListRegisteredModelsClient) CloseSend() error {
+	panic("implement me")
+}
+
+func (c mockConfigAdminService_ListRegisteredModelsClient) Context() context.Context {
+	panic("implement me")
+}
+
+func (c mockConfigAdminService_ListRegisteredModelsClient) SendMsg(m interface{}) error {
+	panic("implement me")
+}
+
+func (c mockConfigAdminService_ListRegisteredModelsClient) RecvMsg(m interface{}) error {
+	panic("implement me")
 }
 
 var LastCreatedClient *mockConfigAdminServiceClient
@@ -36,7 +93,8 @@ func (c mockConfigAdminServiceClient) UploadRegisterModel(ctx context.Context, o
 }
 
 func (c mockConfigAdminServiceClient) ListRegisteredModels(ctx context.Context, in *admin.ListModelsRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_ListRegisteredModelsClient, error) {
-	return nil, nil
+	client := mockConfigAdminService_ListRegisteredModelsClient{}
+	return client, nil
 }
 
 func (c mockConfigAdminServiceClient) GetNetworkChanges(ctx context.Context, in *admin.NetworkChangesRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_GetNetworkChangesClient, error) {
