@@ -17,69 +17,52 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-	"io"
 )
 
 type mockConfigAdminServiceClient struct {
-	rollBackID string
+	rollBackID             string
+	registeredModelsClient MockConfigAdminServiceListRegisteredModelsClient
 }
 
-type mockConfigAdminService_ListRegisteredModelsClient struct{}
-
-var called = 1 //  hack
-func (c mockConfigAdminService_ListRegisteredModelsClient) Recv() (*admin.ModelInfo, error) {
-	if called <= 2 {
-		index := called
-		called++
-		roPaths := make ([]*admin.ReadOnlyPath, 1)
-		roPaths[0] = &admin.ReadOnlyPath{
-			Path:                 fmt.Sprintf("/root/ropath/path%d", index),
-			SubPath:              nil,
-		}
-		modelData := make ([]*gnmi.ModelData, 1)
-		modelData[0] = &gnmi.ModelData{
-			Name:                 "UT NAME",
-			Organization:         "UT ORG",
-			Version:              "3.3.3",
-		}
-		return &admin.ModelInfo{
-			Name: fmt.Sprintf("Model-%d", index),
-			Version: "1.0",
-			Module: fmt.Sprintf("Module-%d", index),
-			ReadOnlyPath: roPaths,
-			ModelData: modelData,
-		}, nil
-	}
-	return nil, io.EOF
+type MockConfigAdminServiceListRegisteredModelsClient struct {
+	recvFn      func() (*admin.ModelInfo, error)
+	headerFn    func() (metadata.MD, error)
+	trailerFn   func() metadata.MD
+	closeSendFn func() error
+	contextFn   func() context.Context
+	sendMsgFn   func(interface{}) error
+	recvMsgFn   func(interface{}) error
 }
 
-func (c mockConfigAdminService_ListRegisteredModelsClient) Header() (metadata.MD, error) {
-	panic("implement me")
+func (c MockConfigAdminServiceListRegisteredModelsClient) Recv() (*admin.ModelInfo, error) {
+	return c.recvFn()
 }
 
-func (c mockConfigAdminService_ListRegisteredModelsClient) Trailer() metadata.MD {
-	panic("implement me")
+func (c MockConfigAdminServiceListRegisteredModelsClient) Header() (metadata.MD, error) {
+	return c.headerFn()
 }
 
-func (c mockConfigAdminService_ListRegisteredModelsClient) CloseSend() error {
-	panic("implement me")
+func (c MockConfigAdminServiceListRegisteredModelsClient) Trailer() metadata.MD {
+	return c.trailerFn()
 }
 
-func (c mockConfigAdminService_ListRegisteredModelsClient) Context() context.Context {
-	panic("implement me")
+func (c MockConfigAdminServiceListRegisteredModelsClient) CloseSend() error {
+	return c.closeSendFn()
 }
 
-func (c mockConfigAdminService_ListRegisteredModelsClient) SendMsg(m interface{}) error {
-	panic("implement me")
+func (c MockConfigAdminServiceListRegisteredModelsClient) Context() context.Context {
+	return c.contextFn()
 }
 
-func (c mockConfigAdminService_ListRegisteredModelsClient) RecvMsg(m interface{}) error {
-	panic("implement me")
+func (c MockConfigAdminServiceListRegisteredModelsClient) SendMsg(m interface{}) error {
+	return c.sendMsgFn(m)
+}
+
+func (c MockConfigAdminServiceListRegisteredModelsClient) RecvMsg(m interface{}) error {
+	return c.recvMsgFn(m)
 }
 
 var LastCreatedClient *mockConfigAdminServiceClient
@@ -93,8 +76,7 @@ func (c mockConfigAdminServiceClient) UploadRegisterModel(ctx context.Context, o
 }
 
 func (c mockConfigAdminServiceClient) ListRegisteredModels(ctx context.Context, in *admin.ListModelsRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_ListRegisteredModelsClient, error) {
-	client := mockConfigAdminService_ListRegisteredModelsClient{}
-	return client, nil
+	return c.registeredModelsClient, nil
 }
 
 func (c mockConfigAdminServiceClient) GetNetworkChanges(ctx context.Context, in *admin.NetworkChangesRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_GetNetworkChangesClient, error) {
@@ -112,10 +94,11 @@ func (c mockConfigAdminServiceClient) RollbackNetworkChange(ctx context.Context,
 	return response, nil
 }
 
-func setUpMockClients() {
+func setUpMockClients(registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient) {
 	admin.ConfigAdminClientFactory = func(cc *grpc.ClientConn) admin.ConfigAdminServiceClient {
 		LastCreatedClient = &mockConfigAdminServiceClient{
-			rollBackID: "",
+			rollBackID:             "",
+			registeredModelsClient: *registeredModelsClient,
 		}
 		return LastCreatedClient
 	}

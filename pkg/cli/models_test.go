@@ -16,15 +16,73 @@ package cli
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
+	"io"
 	"strings"
 	"testing"
 )
+
+var called = 1 //  hack
+func (c MockConfigAdminServiceListRegisteredModelsClient) RecvMock() (*admin.ModelInfo, error) {
+	if called <= 2 {
+		index := called
+		called++
+		roPaths := make([]*admin.ReadOnlyPath, 1)
+		roPaths[0] = &admin.ReadOnlyPath{
+			Path:    fmt.Sprintf("/root/ropath/path%d", index),
+			SubPath: nil,
+		}
+		modelData := make([]*gnmi.ModelData, 1)
+		modelData[0] = &gnmi.ModelData{
+			Name:         "UT NAME",
+			Organization: "UT ORG",
+			Version:      "3.3.3",
+		}
+		return &admin.ModelInfo{
+			Name:         fmt.Sprintf("Model-%d", index),
+			Version:      "1.0",
+			Module:       fmt.Sprintf("Module-%d", index),
+			ReadOnlyPath: roPaths,
+			ModelData:    modelData,
+		}, nil
+	}
+	return nil, io.EOF
+}
+
 func Test_ListPlugins(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
 	CaptureOutput(outputBuffer)
 
-	setUpMockClients()
+	modelsClient := MockConfigAdminServiceListRegisteredModelsClient{}
+	modelsClient.recvFn = func() (*admin.ModelInfo, error) {
+		if called <= 2 {
+			index := called
+			called++
+			roPaths := make([]*admin.ReadOnlyPath, 1)
+			roPaths[0] = &admin.ReadOnlyPath{
+				Path:    fmt.Sprintf("/root/ropath/path%d", index),
+				SubPath: nil,
+			}
+			modelData := make([]*gnmi.ModelData, 1)
+			modelData[0] = &gnmi.ModelData{
+				Name:         "UT NAME",
+				Organization: "UT ORG",
+				Version:      "3.3.3",
+			}
+			return &admin.ModelInfo{
+				Name:         fmt.Sprintf("Model-%d", index),
+				Version:      "1.0",
+				Module:       fmt.Sprintf("Module-%d", index),
+				ReadOnlyPath: roPaths,
+				ModelData:    modelData,
+			}, nil
+		}
+		return nil, io.EOF
+	}
+	setUpMockClients(&modelsClient)
 	plugins := getGetPluginsCommand()
 	args := make([]string, 1)
 	args[0] = "-v"
