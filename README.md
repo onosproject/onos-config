@@ -61,12 +61,12 @@ provided as additional layers:
 
 
 ## Additional Documentation
-* [How to contribute](https://github.com/onosproject/onos-docs/docs/contributing.md) to onos-config project
+* [How to contribute](https://github.com/onosproject/onos-docs/blob/master/docs/developers/contributing.md) to onos-config project
 * [How to build](docs/build.md) onos-config server, related commands and Docker image
 * [How to run](docs/run.md) onos-config server and related commands
 * [How to deploy](docs/deployment.md) onos-config in a Kubernetes cluster
 * [How to test](https://github.com/onosproject/onos-test/blob/master/docs/testing.md) onos-config integration tests with onit
 * [How to onboard your device](docs/modelplugin.md) extending onos-config with Model Plugins
-* [Developer workflow summary](https://github.com/onosproject/onos-docs/docs/dev_workflow.md) for onos-config project
-* [Contacts and Meetings](https://github.com/onosproject/onos-docs/docs/community-info.md) for onos-config project
+* [Developer workflow summary](https://github.com/onosproject/onos-docs/blob/master/docs/developers/dev_workflow.md) for onos-config project
+* [Contacts and Meetings](https://github.com/onosproject/onos-docs/blob/master/docs/developers/community-info.md) for onos-config project
 
