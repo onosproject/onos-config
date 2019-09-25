@@ -52,7 +52,8 @@ func generateModelData(count int) {
 }
 
 var nextInfoIndex = 0
-func RecvMock() (*admin.ModelInfo, error) {
+
+func recvMock() (*admin.ModelInfo, error) {
 	if nextInfoIndex < len(modelInfo) {
 		info := modelInfo[nextInfoIndex]
 		nextInfoIndex++
@@ -68,7 +69,7 @@ func Test_ListPlugins(t *testing.T) {
 	generateModelData(4)
 
 	modelsClient := MockConfigAdminServiceListRegisteredModelsClient{
-		recvFn: RecvMock,
+		recvFn: recvMock,
 	}
 
 	setUpMockClients(&modelsClient)
@@ -78,5 +79,10 @@ func Test_ListPlugins(t *testing.T) {
 	err := plugins.RunE(plugins, args)
 	assert.NilError(t, err)
 	output := outputBuffer.String()
+	assert.Equal(t, strings.Count(output, "YANGS:"), len(modelInfo))
+	assert.Equal(t, strings.Count(output, "Model-"), len(modelInfo))
+	assert.Equal(t, strings.Count(output, "Read Only Paths ("), len(modelInfo))
+	assert.Assert(t, strings.Contains(output, "Model-1: 1.0 from Module-1"))
+	assert.Assert(t, strings.Contains(output, "UT NAME	3.3.3"))
 	assert.Assert(t, strings.Contains(output, "/root/ropath/path1"))
 }
