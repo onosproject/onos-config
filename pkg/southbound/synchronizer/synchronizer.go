@@ -104,7 +104,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 		log.Info(sync.Device.Address, " has no initial configuration")
 	} else {
 		//Device has initial configuration saved in onos-config, trying to apply
-		initialConfig, err := change.CreateChangeValuesNoRemoval(config, "Initial set to device")
+		initialConfig, err := change.NewChangeValuesNoRemoval(config, "Initial set to device")
 
 		if err != nil {
 			log.Errorf("Can't translate the initial config for %s due to: %s", sync.Device.Address, err)
@@ -516,9 +516,9 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 					pathChange := strings.Replace(pathStr, "/state/", "/config/", 1)
 					log.Infof("Adding placeholder config node for %s as %s", pathStr, pathChange)
 					var newChanges = make([]*change.Value, 0)
-					changeValue, _ := change.CreateChangeValue(pathChange, val, false)
+					changeValue, _ := change.NewChangeValue(pathChange, val, false)
 					newChanges = append(newChanges, changeValue)
-					chg, err := change.CreateChange(newChanges, "Setting config name")
+					chg, err := change.NewChange(newChanges, "Setting config name")
 					if err != nil {
 						log.Error("Unable to add placeholder node due to: ", err)
 						continue
@@ -535,7 +535,7 @@ func (sync *Synchronizer) handler(msg proto.Message) error {
 					if newConfig == nil {
 						log.Infof("Creating new configuration for %s-%s to hold the placeholder config change %s",
 							sync.GetTarget(), sync.GetVersion(), store.B64(chg.ID))
-						newConfig, _ = store.CreateConfiguration(sync.GetTarget(), sync.GetVersion(), string(sync.GetType()), []change.ID{})
+						newConfig, _ = store.NewConfiguration(sync.GetTarget(), sync.GetVersion(), string(sync.GetType()), []change.ID{})
 					}
 					if newConfig != nil {
 						found := false

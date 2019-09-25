@@ -103,12 +103,12 @@ func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore m
 	return consolidatedConfig
 }
 
-// CreateConfiguration is a convenient method of creating a Configuration.
+// NewConfiguration is a convenient method of creating a Configuration.
 // The configuration name is a concatenation of device name and version
 // Model data items must be unique and will be sorted. They should not be added
 // to afterwards
 // The ChangeIDs must unique, and will not be sorted. They can be added afterwards
-func CreateConfiguration(deviceName string, version string, deviceType string,
+func NewConfiguration(deviceName string, version string, deviceType string,
 	changes []change.ID) (*Configuration, error) {
 
 	if deviceName == "" || version == "" || deviceType == "" {

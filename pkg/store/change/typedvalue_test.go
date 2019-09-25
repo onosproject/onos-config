@@ -67,7 +67,7 @@ var testByteArr2 = []byte("ghijk")
 var testLeafListBytes = [][]byte{testByteArr0, testByteArr1, testByteArr2}
 
 func Test_TypedValueEmpty(t *testing.T) {
-	tv := CreateTypedValueEmpty()
+	tv := NewTypedValueEmpty()
 
 	assert.Equal(t, len(tv.Value), 0)
 	testConversion(t, (*TypedValue)(tv))
@@ -75,7 +75,7 @@ func Test_TypedValueEmpty(t *testing.T) {
 }
 
 func Test_TypedValueString(t *testing.T) {
-	tv := CreateTypedValueString(testString)
+	tv := NewTypedValueString(testString)
 
 	assert.Equal(t, len(tv.Value), 14)
 	testConversion(t, (*TypedValue)(tv))
@@ -260,7 +260,7 @@ func Test_LeafListBytes(t *testing.T) {
 }
 
 func Test_JsonSerializationString(t *testing.T) {
-	tv := CreateTypedValueString(testString)
+	tv := NewTypedValueString(testString)
 
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
@@ -279,7 +279,7 @@ func Test_JsonSerializationString(t *testing.T) {
 }
 
 func Test_JsonSerializationDecimal(t *testing.T) {
-	tv := CreateTypedValueDecimal64(1232, 6)
+	tv := NewTypedValueDecimal64(1232, 6)
 
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
@@ -300,7 +300,7 @@ func Test_JsonSerializationDecimal(t *testing.T) {
 }
 
 func Test_JsonSerializationInt(t *testing.T) {
-	tv := CreateTypedValueInt64(testNegativeInt)
+	tv := NewTypedValueInt64(testNegativeInt)
 
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
@@ -320,7 +320,7 @@ func Test_JsonSerializationInt(t *testing.T) {
 }
 
 func Test_JsonSerializationUint(t *testing.T) {
-	tv := CreateTypedValueUint64(16)
+	tv := NewTypedValueUint64(16)
 
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
@@ -340,7 +340,7 @@ func Test_JsonSerializationUint(t *testing.T) {
 }
 
 func Test_JsonSerializationBool(t *testing.T) {
-	tv := CreateTypedValueBool(true)
+	tv := NewTypedValueBool(true)
 
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
@@ -360,7 +360,7 @@ func Test_JsonSerializationBool(t *testing.T) {
 }
 
 func Test_JsonSerializationLeafListInt(t *testing.T) {
-	tv := CreateLeafListInt64(testLeafListInt)
+	tv := NewLeafListInt64Tv(testLeafListInt)
 
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
@@ -380,7 +380,7 @@ func Test_JsonSerializationLeafListInt(t *testing.T) {
 }
 
 func Test_JsonSerializationLeafListBytes(t *testing.T) {
-	tv := CreateLeafListBytes(testLeafListBytes)
+	tv := NewLeafListBytesTv(testLeafListBytes)
 
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
@@ -405,7 +405,7 @@ func Test_CreateFromBytesInt(t *testing.T) {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, uint64(testPositiveInt))
 
-	tv, err := CreateTypedValue(buf, ValueTypeINT, nil)
+	tv, err := NewTypedValue(buf, ValueTypeINT, nil)
 	assert.NilError(t, err)
 	assert.Equal(t, tv.String(), "9223372036854775807")
 }
@@ -413,7 +413,7 @@ func Test_CreateFromBytesInt(t *testing.T) {
 func Test_CreateFromBytesBool(t *testing.T) {
 	buf := []byte{0x01}
 
-	tv, err := CreateTypedValue(buf, ValueTypeBOOL, nil)
+	tv, err := NewTypedValue(buf, ValueTypeBOOL, nil)
 	assert.NilError(t, err)
 	assert.Equal(t, tv.String(), "true")
 }

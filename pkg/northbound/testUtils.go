@@ -49,8 +49,8 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 	}
 
 	opStateValuesDevice2 := make(map[string]*change.TypedValue)
-	opStateValuesDevice2["/cont1a/cont2a/leaf2c"] = change.CreateTypedValueString("test1")
-	opStateValuesDevice2["/cont1b-state/leaf2d"] = change.CreateTypedValueUint64(12345)
+	opStateValuesDevice2["/cont1a/cont2a/leaf2c"] = change.NewTypedValueString("test1")
+	opStateValuesDevice2["/cont1b-state/leaf2d"] = change.NewTypedValueUint64(12345)
 
 	manager.GetManager().OperationalStateCache[device.ID("Device2")] = opStateValuesDevice2
 	go manager.GetManager().Dispatcher.ListenOperationalState(manager.GetManager().OperationalStateChannel)
@@ -80,14 +80,14 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 		time.Sleep(100 * time.Millisecond)
 		opStateEventWrong := events.NewOperationalStateEvent("Device1",
 			"/cont1a/cont2a/leaf2d",
-			change.CreateTypedValueString("testNotRelevant"),
+			change.NewTypedValueString("testNotRelevant"),
 			events.EventItemUpdated)
 		manager.GetManager().OperationalStateChannel <- opStateEventWrong
 
 		time.Sleep(100 * time.Millisecond)
 		opStateEvent := events.NewOperationalStateEvent("Device2",
 			"/cont1a/cont2a/leaf2c",
-			change.CreateTypedValueString("test2"),
+			change.NewTypedValueString("test2"),
 			events.EventItemUpdated)
 		manager.GetManager().OperationalStateChannel <- opStateEvent
 	}()

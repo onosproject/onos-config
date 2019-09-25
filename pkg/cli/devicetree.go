@@ -94,7 +94,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 			allChangeIds = append(allChangeIds, store.B64(idBytes))
 		}
 
-		configuration, _ := store.CreateConfiguration(
+		configuration, _ := store.NewConfiguration(
 			in.DeviceID, in.Version, in.DeviceType, changes)
 
 		configuration.Updated = *in.Updated
@@ -150,7 +150,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 				TypeOpts: typeOptInt32,
 			}
 
-			value, _ := change.CreateChangeValue(cv.Path, tv, cv.Removed)
+			value, _ := change.NewChangeValue(cv.Path, tv, cv.Removed)
 			changeObj.Config = append(changeObj.Config, value)
 		}
 		changes[in.Id] = &changeObj

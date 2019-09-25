@@ -67,23 +67,23 @@ const (
 func TestMain(m *testing.M) {
 	var err error
 	log.SetOutput(os.Stdout)
-	config1Value01, _ := CreateChangeValue(Test1Cont1A, CreateTypedValueEmpty(), false)
-	config1Value02, _ := CreateChangeValue(Test1Cont1ACont2A, CreateTypedValueEmpty(), false)
-	config1Value03, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, CreateTypedValueUint64(ValueLeaf2A13), false)
-	config1Value04, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, CreateTypedValueDecimal64(ValueLeaf2B159D, ValueLeaf2B159P), false)
-	config1Value05, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2C, CreateTypedValueString(ValueLeaf2CAbc), false)
-	config1Value06, _ := CreateChangeValue(Test1Cont1ALeaf1A, CreateTypedValueString(ValueLeaf1AAbcdef), false)
-	config1Value07, _ := CreateChangeValue(Test1Cont1AList2ATxout1, CreateTypedValueEmpty(), false)
-	config1Value08, _ := CreateChangeValue(Test1Cont1AList2ATxout1Txpwr, CreateTypedValueUint64(ValueTxout1Txpwr8), false)
-	config1Value09, _ := CreateChangeValue(Test1Cont1AList2ATxout2, CreateTypedValueEmpty(), false)
-	config1Value10, _ := CreateChangeValue(Test1Cont1AList2ATxout2Txpwr, CreateTypedValueUint64(ValueTxout2Txpwr10), false)
-	config1Value11, _ := CreateChangeValue(Test1Leaftoplevel, CreateTypedValueString(ValueLeaftopWxy1234), false)
-	config1Value12, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2D, CreateTypedValueBool(true), false)
-	config1Value13, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2E, CreateLeafListInt64([]int{ValueLeaf2E1, ValueLeaf2E2, ValueLeaf2E3}), false)
+	config1Value01, _ := NewChangeValue(Test1Cont1A, NewTypedValueEmpty(), false)
+	config1Value02, _ := NewChangeValue(Test1Cont1ACont2A, NewTypedValueEmpty(), false)
+	config1Value03, _ := NewChangeValue(Test1Cont1ACont2ALeaf2A, NewTypedValueUint64(ValueLeaf2A13), false)
+	config1Value04, _ := NewChangeValue(Test1Cont1ACont2ALeaf2B, NewTypedValueDecimal64(ValueLeaf2B159D, ValueLeaf2B159P), false)
+	config1Value05, _ := NewChangeValue(Test1Cont1ACont2ALeaf2C, NewTypedValueString(ValueLeaf2CAbc), false)
+	config1Value06, _ := NewChangeValue(Test1Cont1ALeaf1A, NewTypedValueString(ValueLeaf1AAbcdef), false)
+	config1Value07, _ := NewChangeValue(Test1Cont1AList2ATxout1, NewTypedValueEmpty(), false)
+	config1Value08, _ := NewChangeValue(Test1Cont1AList2ATxout1Txpwr, NewTypedValueUint64(ValueTxout1Txpwr8), false)
+	config1Value09, _ := NewChangeValue(Test1Cont1AList2ATxout2, NewTypedValueEmpty(), false)
+	config1Value10, _ := NewChangeValue(Test1Cont1AList2ATxout2Txpwr, NewTypedValueUint64(ValueTxout2Txpwr10), false)
+	config1Value11, _ := NewChangeValue(Test1Leaftoplevel, NewTypedValueString(ValueLeaftopWxy1234), false)
+	config1Value12, _ := NewChangeValue(Test1Cont1ACont2ALeaf2D, NewTypedValueBool(true), false)
+	config1Value13, _ := NewChangeValue(Test1Cont1ACont2ALeaf2E, NewLeafListInt64Tv([]int{ValueLeaf2E1, ValueLeaf2E2, ValueLeaf2E3}), false)
 	valueLeaf2FBa, _ := base64.StdEncoding.DecodeString(ValueLeaf2F)
-	config1Value14, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2F, CreateTypedValueBytes(valueLeaf2FBa), false)
+	config1Value14, _ := NewChangeValue(Test1Cont1ACont2ALeaf2F, NewTypedValueBytes(valueLeaf2FBa), false)
 
-	change1, err = CreateChange(ValueCollections{
+	change1, err = NewChange(ValueCollections{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11, config1Value12, config1Value13, config1Value14,
@@ -101,7 +101,7 @@ func Test_ConfigValue(t *testing.T) {
 	path := "/cont1a/cont2a/leaf2a"
 	value := 13
 
-	configValue2a, _ := CreateChangeValue(path, CreateTypedValueUint64(uint(value)), false)
+	configValue2a, _ := NewChangeValue(path, NewTypedValueUint64(uint(value)), false)
 
 	assert.Equal(t, configValue2a.Path, path)
 
@@ -140,23 +140,23 @@ func Test_changecreation(t *testing.T) {
 
 func Test_badpath(t *testing.T) {
 	badpath := "does_not_have_any_slash"
-	conf1, err1 := CreateChangeValue(badpath, CreateTypedValueString("123"), false)
+	conf1, err1 := NewChangeValue(badpath, NewTypedValueString("123"), false)
 
 	assert.Error(t, err1, badpath, "Expected error on ", badpath)
 
 	assert.Assert(t, conf1 == nil, "Expected config to be empty on error")
 
 	badpath = "//two/contiguous/slashes"
-	_, err2 := CreateChangeValue(badpath, CreateTypedValueString("123"), false)
+	_, err2 := NewChangeValue(badpath, NewTypedValueString("123"), false)
 	assert.ErrorContains(t, err2, badpath, "Expected error on path", badpath)
 
 	badpath = "/test*"
-	_, err3 := CreateChangeValue(badpath, CreateTypedValueString("123"), false)
+	_, err3 := NewChangeValue(badpath, NewTypedValueString("123"), false)
 	assert.ErrorContains(t, err3, badpath, "Expected error on path", badpath)
 }
 
 func Test_changeValueString(t *testing.T) {
-	cv1, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, CreateTypedValueUint64(123), false)
+	cv1, _ := NewChangeValue(Test1Cont1ACont2ALeaf2A, NewTypedValueUint64(123), false)
 	var buf [8]byte
 	binary.LittleEndian.PutUint64(buf[:], 123)
 	byteArr123 := fmt.Sprintf("%v", buf)
@@ -172,12 +172,12 @@ func Test_changeValueString(t *testing.T) {
 }
 
 func Test_changeString(t *testing.T) {
-	cv1, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2A, CreateTypedValueUint64(123), false)
-	cv2, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2B, CreateTypedValueString("ABC"), false)
-	cv3, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2C, CreateTypedValueString("Hello"), false)
-	cv4, _ := CreateChangeValue(Test1Cont1ACont2ALeaf2D, CreateTypedValueBool(true), false)
+	cv1, _ := NewChangeValue(Test1Cont1ACont2ALeaf2A, NewTypedValueUint64(123), false)
+	cv2, _ := NewChangeValue(Test1Cont1ACont2ALeaf2B, NewTypedValueString("ABC"), false)
+	cv3, _ := NewChangeValue(Test1Cont1ACont2ALeaf2C, NewTypedValueString("Hello"), false)
+	cv4, _ := NewChangeValue(Test1Cont1ACont2ALeaf2D, NewTypedValueBool(true), false)
 
-	changeObj, _ := CreateChange(ValueCollections{cv1, cv2, cv3, cv4}, "Test Change")
+	changeObj, _ := NewChange(ValueCollections{cv1, cv2, cv3, cv4}, "Test Change")
 
 	var expected = `"Config":[` +
 		`{"Path":"/cont1a/cont2a/leaf2a","Value":"ewAAAAAAAAA=","Type":3,"TypeOpts":null,"Remove":false},` +

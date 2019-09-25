@@ -107,7 +107,7 @@ func nativeType(cv admin.ChangeValue) string {
 	for i, t := range cv.TypeOpts {
 		to[i] = int(t)
 	}
-	tv, err := change.CreateTypedValue(cv.Value, change.ValueType(cv.ValueType), to)
+	tv, err := change.NewTypedValue(cv.Value, change.ValueType(cv.ValueType), to)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to convert value to TypedValue %s", err)
 		os.Exit(1)

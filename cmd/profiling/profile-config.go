@@ -49,11 +49,11 @@ func main() {
 
 	for i := 0; i < iterations; i++ {
 		path := fmt.Sprintf("/test%d", i)
-		cv, _ := change.CreateChangeValue(path, (*change.TypedValue)(change.CreateTypedValueInt64(i)), false)
+		cv, _ := change.NewChangeValue(path, (*change.TypedValue)(change.NewTypedValueInt64(i)), false)
 		changeValues = append(changeValues, cv)
 	}
 
-	newChange, err := change.CreateChange(changeValues, "Benchmarked Change")
+	newChange, err := change.NewChange(changeValues, "Benchmarked Change")
 	if err != nil {
 		log.Error("Cannot create a newChange object from ChangeValues ", err)
 	}

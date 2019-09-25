@@ -32,8 +32,8 @@ func (c Value) String() string {
 	return fmt.Sprintf("%s %v %t", c.Path, c.Value, c.Remove)
 }
 
-// CreateChangeValue decodes a path and value in to an object
-func CreateChangeValue(path string, value *TypedValue, isRemove bool) (*Value, error) {
+// NewChangeValue decodes a path and value in to an object
+func NewChangeValue(path string, value *TypedValue, isRemove bool) (*Value, error) {
 	cv := Value{
 		ConfigValue{path, *value},
 		isRemove,

@@ -55,13 +55,13 @@ func extractValuesIntermediate(f interface{}, parentPath string) []*change.Confi
 			changes = append(changes, objs...)
 		}
 	case string:
-		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.CreateTypedValueString(value)}
+		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.NewTypedValueString(value)}
 		changes = append(changes, &newCv)
 	case bool:
-		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.CreateTypedValueBool(value)}
+		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.NewTypedValueBool(value)}
 		changes = append(changes, &newCv)
 	case float64:
-		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.CreateTypedValueFloat(float32(value))}
+		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.NewTypedValueFloat(float32(value))}
 		changes = append(changes, &newCv)
 	default:
 		fmt.Println("Unexpected type", value)

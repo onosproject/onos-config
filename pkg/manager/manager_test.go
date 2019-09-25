@@ -64,10 +64,10 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	)
 
 	var err error
-	config1Value01, _ := change.CreateChangeValue(Test1Cont1A, change.CreateTypedValueEmpty(), false)
-	config1Value02, _ := change.CreateChangeValue(Test1Cont1ACont2A, change.CreateTypedValueEmpty(), false)
-	config1Value03, _ := change.CreateChangeValue(Test1Cont1ACont2ALeaf2A, change.CreateTypedValueFloat(ValueLeaf2B159), false)
-	change1, err = change.CreateChange(change.ValueCollections{
+	config1Value01, _ := change.NewChangeValue(Test1Cont1A, change.NewTypedValueEmpty(), false)
+	config1Value02, _ := change.NewChangeValue(Test1Cont1ACont2A, change.NewTypedValueEmpty(), false)
+	config1Value03, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2A, change.NewTypedValueFloat(ValueLeaf2B159), false)
+	change1, err = change.NewChange(change.ValueCollections{
 		config1Value01, config1Value02, config1Value03}, "Original Config for test switch")
 	if err != nil {
 		log.Error(err)
@@ -76,7 +76,7 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	changeStoreTest = make(map[string]*change.Change)
 	changeStoreTest[store.B64(change1.ID)] = change1
 
-	device1config, err = store.CreateConfiguration("Device1", "1.0.0", "TestDevice",
+	device1config, err = store.NewConfiguration("Device1", "1.0.0", "TestDevice",
 		[]change.ID{change1.ID})
 	if err != nil {
 		log.Error(err)
@@ -184,7 +184,7 @@ func Test_SetNetworkConfig(t *testing.T) {
 	deletes := make([]string, 0)
 
 	// Making change
-	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.CreateTypedValueFloat(ValueLeaf2B314))
+	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.NewTypedValueFloat(ValueLeaf2B314))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 	err := mgrTest.ValidateNetworkConfig("Device1", "1.0.0", "", updates, deletes)
 	assert.NilError(t, err, "ValidateTargetConfig error")
@@ -228,7 +228,7 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 	deletes := make([]string, 0)
 
 	// Making change
-	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.CreateTypedValueFloat(ValueLeaf2B314))
+	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.NewTypedValueFloat(ValueLeaf2B314))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
 	changeID, configName, err := mgrTest.SetNetworkConfig("Device5", "1.0.0", "Devicesim", updates, deletes, "Test_SetNetworkConfig_NewConfig")
@@ -251,7 +251,7 @@ func Test_SetNetworkConfig_NewConfig102Missing(t *testing.T) {
 	deletes := make([]string, 0)
 
 	// Making change
-	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.CreateTypedValueFloat(ValueLeaf2B314))
+	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.NewTypedValueFloat(ValueLeaf2B314))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
 	_, _, err := mgrTest.SetNetworkConfig("Device6", "1.0.0", "", updates, deletes, "Test_SetNetworkConfig_NewConfig")
@@ -267,7 +267,7 @@ func Test_SetBadNetworkConfig(t *testing.T) {
 	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
+	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B159)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -279,7 +279,7 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 
 	mgrTest, _, configurationStoreTest := setUp()
 
-	device2config, err := store.CreateConfiguration("Device1", "1.0.1", "TestDevice",
+	device2config, err := store.NewConfiguration("Device1", "1.0.1", "TestDevice",
 		[]change.ID{})
 	assert.NilError(t, err)
 	configurationStoreTest[device2config.Name] = *device2config
@@ -287,7 +287,7 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
+	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B159)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -302,7 +302,7 @@ func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
 	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
+	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B159)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -319,11 +319,11 @@ func matchDeviceID(deviceID string, deviceName string) bool {
 func TestManager_GetAllDeviceIds(t *testing.T) {
 	mgrTest, _, configurationStoreTest := setUp()
 
-	device2config, err := store.CreateConfiguration("Device2", "1.0.0", "TestDevice",
+	device2config, err := store.NewConfiguration("Device2", "1.0.0", "TestDevice",
 		[]change.ID{})
 	assert.NilError(t, err)
 	configurationStoreTest[device2config.Name] = *device2config
-	device3config, err := store.CreateConfiguration("Device3", "1.0.0", "TestDevice",
+	device3config, err := store.NewConfiguration("Device3", "1.0.0", "TestDevice",
 		[]change.ID{})
 	assert.NilError(t, err)
 	configurationStoreTest[device3config.Name] = *device3config
@@ -402,15 +402,15 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B159)
+	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B159)
 	err := mgrTest.ValidateNetworkConfig("Device1", "1.0.0", "", updates, deletes)
 	assert.NilError(t, err, "ValidateTargetConfig error")
 	_, _, err = mgrTest.SetNetworkConfig("Device1", "1.0.0", "", updates, deletes, "Testing rollback")
 
 	assert.NilError(t, err, "Can't create change", err)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.CreateTypedValueFloat(ValueLeaf2B314)
-	updates[Test1Cont1ACont2ALeaf2D] = change.CreateTypedValueFloat(ValueLeaf2D314)
+	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B314)
+	updates[Test1Cont1ACont2ALeaf2D] = change.NewTypedValueFloat(ValueLeaf2D314)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 
 	err = mgrTest.ValidateNetworkConfig("Device1", "1.0.0", "", updates, deletes)

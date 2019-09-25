@@ -70,11 +70,11 @@ func (c Change) IsValid() error {
 		b64(c.ID), b64(hash), jsonstr)
 }
 
-// CreateChange creates a Change object from ChangeValues
+// NewChange creates a Change object from ChangeValues
 // The ID is a has generated from the change values,and does not include
 // the description or the time. This way changes that have an identical meaning
 // can be identified
-func CreateChange(config ValueCollections, desc string) (*Change, error) {
+func NewChange(config ValueCollections, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
@@ -114,11 +114,11 @@ func CreateChange(config ValueCollections, desc string) (*Change, error) {
 	}, nil
 }
 
-// CreateChangeValuesNoRemoval creates a Change object from ConfigValue
+// NewChangeValuesNoRemoval creates a Change object from ConfigValue
 // The ID is a has generated from the change values,and does not include
 // the description or the time. This way changes that have an identical meaning
 // can be identified
-func CreateChangeValuesNoRemoval(config []*ConfigValue, desc string) (*Change, error) {
+func NewChangeValuesNoRemoval(config []*ConfigValue, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
