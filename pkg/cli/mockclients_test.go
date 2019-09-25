@@ -22,6 +22,10 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+type MockClientsConfig struct {
+	registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient
+}
+
 type mockConfigAdminServiceClient struct {
 	rollBackID             string
 	registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient
@@ -68,7 +72,11 @@ func (c MockConfigAdminServiceListRegisteredModelsClient) RecvMsg(m interface{})
 var LastCreatedClient *mockConfigAdminServiceClient
 
 func (c mockConfigAdminServiceClient) RegisterModel(ctx context.Context, in *admin.RegisterRequest, opts ...grpc.CallOption) (*admin.RegisterResponse, error) {
-	return nil, nil
+	response := &admin.RegisterResponse{
+		Name:    in.GetSoFile(),
+		Version: "1.0",
+	}
+	return response, nil
 }
 
 func (c mockConfigAdminServiceClient) UploadRegisterModel(ctx context.Context, opts ...grpc.CallOption) (admin.ConfigAdminService_UploadRegisterModelClient, error) {
@@ -91,11 +99,11 @@ func (c mockConfigAdminServiceClient) RollbackNetworkChange(ctx context.Context,
 	return response, nil
 }
 
-func setUpMockClients(registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient) {
+func setUpMockClients(config MockClientsConfig) {
 	admin.ConfigAdminClientFactory = func(cc *grpc.ClientConn) admin.ConfigAdminServiceClient {
 		LastCreatedClient = &mockConfigAdminServiceClient{
 			rollBackID:             "",
-			registeredModelsClient: registeredModelsClient,
+			registeredModelsClient: config.registeredModelsClient,
 		}
 		return LastCreatedClient
 	}

@@ -72,7 +72,7 @@ func Test_ListPlugins(t *testing.T) {
 		recvFn: recvMock,
 	}
 
-	setUpMockClients(&modelsClient)
+	setUpMockClients(MockClientsConfig{registeredModelsClient: &modelsClient})
 	plugins := getGetPluginsCommand()
 	args := make([]string, 1)
 	args[0] = "-v"
@@ -85,4 +85,25 @@ func Test_ListPlugins(t *testing.T) {
 	assert.Assert(t, strings.Contains(output, "Model-1: 1.0 from Module-1"))
 	assert.Assert(t, strings.Contains(output, "UT NAME	3.3.3"))
 	assert.Assert(t, strings.Contains(output, "/root/ropath/path1"))
+}
+
+func Test_AddPlugin(t *testing.T) {
+	const (
+		pluginName    = "MyNewPlugin.file"
+		pluginVersion = "1.0"
+	)
+
+	outputBuffer := bytes.NewBufferString("")
+	CaptureOutput(outputBuffer)
+
+	setUpMockClients(MockClientsConfig{})
+	addPlugin := getAddPluginCommand()
+	args := make([]string, 1)
+
+	args[0] = pluginName
+	err := addPlugin.RunE(addPlugin, args)
+	assert.NilError(t, err)
+	output := outputBuffer.String()
+	assert.Assert(t, strings.Contains(output, pluginName))
+	assert.Assert(t, strings.Contains(output, pluginVersion))
 }
