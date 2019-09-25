@@ -24,7 +24,7 @@ import (
 
 type mockConfigAdminServiceClient struct {
 	rollBackID             string
-	registeredModelsClient MockConfigAdminServiceListRegisteredModelsClient
+	registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient
 }
 
 type MockConfigAdminServiceListRegisteredModelsClient struct {
@@ -98,7 +98,7 @@ func setUpMockClients(registeredModelsClient *MockConfigAdminServiceListRegister
 	admin.ConfigAdminClientFactory = func(cc *grpc.ClientConn) admin.ConfigAdminServiceClient {
 		LastCreatedClient = &mockConfigAdminServiceClient{
 			rollBackID:             "",
-			registeredModelsClient: *registeredModelsClient,
+			registeredModelsClient: registeredModelsClient,
 		}
 		return LastCreatedClient
 	}

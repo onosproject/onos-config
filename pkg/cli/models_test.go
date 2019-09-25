@@ -25,14 +25,14 @@ import (
 	"testing"
 )
 
-var called = 1 //  hack
-func (c MockConfigAdminServiceListRegisteredModelsClient) RecvMock() (*admin.ModelInfo, error) {
-	if called <= 2 {
-		index := called
-		called++
+var modelInfo []admin.ModelInfo
+
+func generateModelData(count int) {
+	modelInfo = make([]admin.ModelInfo, count)
+	for modelIndex := range modelInfo {
 		roPaths := make([]*admin.ReadOnlyPath, 1)
 		roPaths[0] = &admin.ReadOnlyPath{
-			Path:    fmt.Sprintf("/root/ropath/path%d", index),
+			Path:    fmt.Sprintf("/root/ropath/path%d", modelIndex),
 			SubPath: nil,
 		}
 		modelData := make([]*gnmi.ModelData, 1)
@@ -41,13 +41,23 @@ func (c MockConfigAdminServiceListRegisteredModelsClient) RecvMock() (*admin.Mod
 			Organization: "UT ORG",
 			Version:      "3.3.3",
 		}
-		return &admin.ModelInfo{
-			Name:         fmt.Sprintf("Model-%d", index),
+		modelInfo[modelIndex] = admin.ModelInfo{
+			Name:         fmt.Sprintf("Model-%d", modelIndex),
 			Version:      "1.0",
-			Module:       fmt.Sprintf("Module-%d", index),
+			Module:       fmt.Sprintf("Module-%d", modelIndex),
 			ReadOnlyPath: roPaths,
 			ModelData:    modelData,
-		}, nil
+		}
+	}
+}
+
+var nextInfoIndex = 0
+func RecvMock() (*admin.ModelInfo, error) {
+	if nextInfoIndex < len(modelInfo) {
+		info := modelInfo[nextInfoIndex]
+		nextInfoIndex++
+
+		return &info, nil
 	}
 	return nil, io.EOF
 }
@@ -55,33 +65,12 @@ func (c MockConfigAdminServiceListRegisteredModelsClient) RecvMock() (*admin.Mod
 func Test_ListPlugins(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
 	CaptureOutput(outputBuffer)
+	generateModelData(4)
 
-	modelsClient := MockConfigAdminServiceListRegisteredModelsClient{}
-	modelsClient.recvFn = func() (*admin.ModelInfo, error) {
-		if called <= 2 {
-			index := called
-			called++
-			roPaths := make([]*admin.ReadOnlyPath, 1)
-			roPaths[0] = &admin.ReadOnlyPath{
-				Path:    fmt.Sprintf("/root/ropath/path%d", index),
-				SubPath: nil,
-			}
-			modelData := make([]*gnmi.ModelData, 1)
-			modelData[0] = &gnmi.ModelData{
-				Name:         "UT NAME",
-				Organization: "UT ORG",
-				Version:      "3.3.3",
-			}
-			return &admin.ModelInfo{
-				Name:         fmt.Sprintf("Model-%d", index),
-				Version:      "1.0",
-				Module:       fmt.Sprintf("Module-%d", index),
-				ReadOnlyPath: roPaths,
-				ModelData:    modelData,
-			}, nil
-		}
-		return nil, io.EOF
+	modelsClient := MockConfigAdminServiceListRegisteredModelsClient{
+		recvFn: RecvMock,
 	}
+
 	setUpMockClients(&modelsClient)
 	plugins := getGetPluginsCommand()
 	args := make([]string, 1)

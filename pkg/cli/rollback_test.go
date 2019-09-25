@@ -26,7 +26,7 @@ func Test_rollback(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
 	CaptureOutput(outputBuffer)
 
-	setUpMockClients(&MockConfigAdminServiceListRegisteredModelsClient{})
+	setUpMockClients(nil)
 	rollback := getRollbackCommand()
 	args := make([]string, 1)
 	args[0] = "ABCD1234"
