@@ -19,16 +19,64 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
+type MockClientsConfig struct {
+	registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient
+}
+
 type mockConfigAdminServiceClient struct {
-	rollBackID string
+	rollBackID             string
+	registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient
+}
+
+type MockConfigAdminServiceListRegisteredModelsClient struct {
+	recvFn      func() (*admin.ModelInfo, error)
+	headerFn    func() (metadata.MD, error)
+	trailerFn   func() metadata.MD
+	closeSendFn func() error
+	contextFn   func() context.Context
+	sendMsgFn   func(interface{}) error
+	recvMsgFn   func(interface{}) error
+}
+
+func (c MockConfigAdminServiceListRegisteredModelsClient) Recv() (*admin.ModelInfo, error) {
+	return c.recvFn()
+}
+
+func (c MockConfigAdminServiceListRegisteredModelsClient) Header() (metadata.MD, error) {
+	return c.headerFn()
+}
+
+func (c MockConfigAdminServiceListRegisteredModelsClient) Trailer() metadata.MD {
+	return c.trailerFn()
+}
+
+func (c MockConfigAdminServiceListRegisteredModelsClient) CloseSend() error {
+	return c.closeSendFn()
+}
+
+func (c MockConfigAdminServiceListRegisteredModelsClient) Context() context.Context {
+	return c.contextFn()
+}
+
+func (c MockConfigAdminServiceListRegisteredModelsClient) SendMsg(m interface{}) error {
+	return c.sendMsgFn(m)
+}
+
+func (c MockConfigAdminServiceListRegisteredModelsClient) RecvMsg(m interface{}) error {
+	return c.recvMsgFn(m)
 }
 
 var LastCreatedClient *mockConfigAdminServiceClient
 
 func (c mockConfigAdminServiceClient) RegisterModel(ctx context.Context, in *admin.RegisterRequest, opts ...grpc.CallOption) (*admin.RegisterResponse, error) {
-	return nil, nil
+	response := &admin.RegisterResponse{
+		Name:    in.GetSoFile(),
+		Version: "1.0",
+	}
+	return response, nil
 }
 
 func (c mockConfigAdminServiceClient) UploadRegisterModel(ctx context.Context, opts ...grpc.CallOption) (admin.ConfigAdminService_UploadRegisterModelClient, error) {
@@ -36,7 +84,7 @@ func (c mockConfigAdminServiceClient) UploadRegisterModel(ctx context.Context, o
 }
 
 func (c mockConfigAdminServiceClient) ListRegisteredModels(ctx context.Context, in *admin.ListModelsRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_ListRegisteredModelsClient, error) {
-	return nil, nil
+	return c.registeredModelsClient, nil
 }
 
 func (c mockConfigAdminServiceClient) GetNetworkChanges(ctx context.Context, in *admin.NetworkChangesRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_GetNetworkChangesClient, error) {
@@ -45,19 +93,17 @@ func (c mockConfigAdminServiceClient) GetNetworkChanges(ctx context.Context, in 
 
 func (c mockConfigAdminServiceClient) RollbackNetworkChange(ctx context.Context, in *admin.RollbackRequest, opts ...grpc.CallOption) (*admin.RollbackResponse, error) {
 	response := &admin.RollbackResponse{
-		Message:              "Rollback was successful",
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     nil,
-		XXX_sizecache:        0,
+		Message: "Rollback was successful",
 	}
 	LastCreatedClient.rollBackID = in.Name
 	return response, nil
 }
 
-func setUpMockClients() {
+func setUpMockClients(config MockClientsConfig) {
 	admin.ConfigAdminClientFactory = func(cc *grpc.ClientConn) admin.ConfigAdminServiceClient {
 		LastCreatedClient = &mockConfigAdminServiceClient{
-			rollBackID: "",
+			rollBackID:             "",
+			registeredModelsClient: config.registeredModelsClient,
 		}
 		return LastCreatedClient
 	}
