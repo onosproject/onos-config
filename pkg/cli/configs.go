@@ -26,19 +26,18 @@ func getGetConfigsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "configs [<deviceId>]",
 		Short: "Lists details of device configuration changes",
-		Args:  cobra.MaximumNArgs(0),
+		Args:  cobra.MaximumNArgs(1),
 		RunE:  runGetConfigsCommand,
 	}
 	return cmd
 }
 
 func runGetConfigsCommand(cmd *cobra.Command, args []string) error {
-	clientConnection, clientConnectionError := getConnection()
-
-	if clientConnectionError != nil {
-		return clientConnectionError
+	conn, err := getConnection()
+	if err != nil {
+		return err
 	}
-	client := diags.NewConfigDiagsClient(clientConnection)
+	client := diags.NewConfigDiagsClient(conn)
 
 	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
 	if len(args) == 1 {
