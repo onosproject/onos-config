@@ -53,10 +53,10 @@ provided as additional layers:
 
 ## Additional Documentation
 * [How to contribute](https://docs.onosproject.org/developers/contributing/) to onos-config project
-* [How to build](docs/build.md) onos-config server, related commands and Docker image
-* [How to run](docs/run.md) onos-config server and related commands
-* [How to deploy](docs/deployment.md) onos-config in a Kubernetes cluster
+* [How to build](https://docs.onosproject.org/onos-config/docs/build/) onos-config server, related commands and Docker image
+* [How to run](https://docs.onosproject.org/onos-config/docs/run/) onos-config server and related commands
+* [How to deploy](https://docs.onosproject.org/onos-config/docs/deployment/) onos-config in a Kubernetes cluster
 * [How to test](https://docs.onosproject.org/onos-test/docs/testing/) onos-config integration tests with onit
-* [How to onboard your device](docs/modelplugin.md) extending onos-config with Model Plugins
+* [How to onboard your device](https://docs.onosproject.org/onos-config/docs/modelpugin/) extending onos-config with Model Plugins
 * [Developer workflow summary](https://docs.onosproject.org/developers/dev_workflow/) for onos-config project
 * [Contacts and Meetings](https://docs.onosproject.org/developers/community-info/) for onos-config project
