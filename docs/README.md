@@ -1,4 +1,4 @@
-#ONOS configuration overview
+# ONOS configuration overview
 ## Design Objectives
 gNMI provides transactionality with respect to a single device; all configuration operations specified as part of a 
 single batch are all applied or none of them are. The core capability of the configuration platform should build on 
@@ -48,7 +48,7 @@ provided as additional layers:
   ONOS 2.0 architecture and to fit with the NG ONOS architecture.
 
 ## High-Level Design
-![design](docs/images/design.png)
+![design](images/design.png)
 
 
 ## Additional Documentation
@@ -57,6 +57,6 @@ provided as additional layers:
 * [How to run](https://docs.onosproject.org/onos-config/docs/run/) onos-config server and related commands
 * [How to deploy](https://docs.onosproject.org/onos-config/docs/deployment/) onos-config in a Kubernetes cluster
 * [How to test](https://docs.onosproject.org/onos-test/docs/testing/) onos-config integration tests with onit
-* [How to onboard your device](https://docs.onosproject.org/onos-config/docs/modelpugin/) extending onos-config with Model Plugins
+* [How to onboard your device](https://docs.onosproject.org/onos-config/docs/modelplugin/) extending onos-config with Model Plugins
 * [Developer workflow summary](https://docs.onosproject.org/developers/dev_workflow/) for onos-config project
 * [Contacts and Meetings](https://docs.onosproject.org/developers/community-info/) for onos-config project
