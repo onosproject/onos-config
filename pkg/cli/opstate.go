@@ -46,7 +46,7 @@ func runOpstateCommand(cmd *cobra.Command, args []string) error {
 	if clientConnectionError != nil {
 		return clientConnectionError
 	}
-	client := diags.NewOpStateDiagsClient(clientConnection)
+	client := diags.CreateOpStateDiagsClient(clientConnection)
 
 	fmt.Printf("OPSTATE CACHE: %s\n", deviceID)
 	fmt.Printf("%-82s|%-20s|\n", "PATH", "VALUE")

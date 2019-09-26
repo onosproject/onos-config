@@ -18,12 +18,14 @@ package cli
 import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
 type MockClientsConfig struct {
 	registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient
+	opstateClient          *MockOpStateDiagsGetOpStateClient
 }
 
 type mockConfigAdminServiceClient struct {
@@ -69,6 +71,44 @@ func (c MockConfigAdminServiceListRegisteredModelsClient) RecvMsg(m interface{})
 	return c.recvMsgFn(m)
 }
 
+type MockOpStateDiagsGetOpStateClient struct {
+	recvFn      func() (*diags.OpStateResponse, error)
+	headerFn    func() (metadata.MD, error)
+	trailerFn   func() metadata.MD
+	closeSendFn func() error
+	contextFn   func() context.Context
+	sendMsgFn   func(interface{}) error
+	recvMsgFn   func(interface{}) error
+}
+
+func (c MockOpStateDiagsGetOpStateClient) Recv() (*diags.OpStateResponse, error) {
+	return c.recvFn()
+}
+
+func (c MockOpStateDiagsGetOpStateClient) Header() (metadata.MD, error) {
+	return c.headerFn()
+}
+
+func (c MockOpStateDiagsGetOpStateClient) Trailer() metadata.MD {
+	return c.trailerFn()
+}
+
+func (c MockOpStateDiagsGetOpStateClient) CloseSend() error {
+	return c.closeSendFn()
+}
+
+func (c MockOpStateDiagsGetOpStateClient) Context() context.Context {
+	return c.contextFn()
+}
+
+func (c MockOpStateDiagsGetOpStateClient) SendMsg(m interface{}) error {
+	return c.sendMsgFn(m)
+}
+
+func (c MockOpStateDiagsGetOpStateClient) RecvMsg(m interface{}) error {
+	return c.recvMsgFn(m)
+}
+
 var LastCreatedClient *mockConfigAdminServiceClient
 
 func (c mockConfigAdminServiceClient) RegisterModel(ctx context.Context, in *admin.RegisterRequest, opts ...grpc.CallOption) (*admin.RegisterResponse, error) {
@@ -99,6 +139,14 @@ func (c mockConfigAdminServiceClient) RollbackNetworkChange(ctx context.Context,
 	return response, nil
 }
 
+type mockOpStateDiagsClient struct {
+	getOpStateClient diags.OpStateDiags_GetOpStateClient
+}
+
+func (m mockOpStateDiagsClient) GetOpState(ctx context.Context, in *diags.OpStateRequest, opts ...grpc.CallOption) (diags.OpStateDiags_GetOpStateClient, error) {
+	return m.getOpStateClient, nil
+}
+
 func setUpMockClients(config MockClientsConfig) {
 	admin.ConfigAdminClientFactory = func(cc *grpc.ClientConn) admin.ConfigAdminServiceClient {
 		LastCreatedClient = &mockConfigAdminServiceClient{
@@ -106,5 +154,10 @@ func setUpMockClients(config MockClientsConfig) {
 			registeredModelsClient: config.registeredModelsClient,
 		}
 		return LastCreatedClient
+	}
+	diags.OpStateDiagsClientFactory = func(cc *grpc.ClientConn) diags.OpStateDiagsClient {
+		return mockOpStateDiagsClient{
+			getOpStateClient: config.opstateClient,
+		}
 	}
 }
