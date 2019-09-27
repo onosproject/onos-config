@@ -224,6 +224,8 @@ func (m *Manager) Run() {
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
 	// Listening for errors in the Southbound
 	go listenOnResponseChannel(m.SouthboundErrorChan)
+	//TODO listen on the deviceResponseListener for events of device connected and call method on topochace.go to notify
+	// topo of success connectivity
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.TopoChannel,
 		m.OperationalStateChannel, m.SouthboundErrorChan, m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)
@@ -245,6 +247,7 @@ func GetManager() *Manager {
 func listenOnResponseChannel(respChan chan events.DeviceResponse) {
 	log.Info("Listening for Errors in Manager")
 	for err := range respChan {
+		//TODO hande connection errors by calling topo method to report connection faliure
 		if strings.Contains(err.Error().Error(), "desc =") {
 			log.Errorf("Error reported to channel %s",
 				strings.Split(err.Error().Error(), " desc = ")[1])

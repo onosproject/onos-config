@@ -125,3 +125,5 @@ func (s *DeviceStore) watchEvents(ch chan<- events.TopoEvent) error {
 func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	return grpc.Dial(topoAddress, opts...)
 }
+
+//TODO use device updated method of onos-topo-service
