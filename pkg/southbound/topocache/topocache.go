@@ -126,4 +126,19 @@ func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	return grpc.Dial(topoAddress, opts...)
 }
 
-//TODO use device updated method of onos-topo-service
+// DeviceConnected signal the local cache and the corresponding topology service that the device connected.
+func (s *DeviceStore) DeviceConnected(id device.ID) error {
+	//TODO update local cache
+	//TODO use device updated method of onos-topo-service
+	log.Infof("Device %s connected", id)
+	return nil
+}
+
+// DeviceDisconnected signal the local cache and the corresponding topology service that the device disconnected.
+func (s *DeviceStore) DeviceDisconnected(id device.ID) error {
+	//TODO update local cache
+	//TODO use device updated method of onos-topo-service
+	log.Infof("Device %s not connected or disconnected", id)
+	return nil
+}
+

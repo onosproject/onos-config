@@ -79,6 +79,11 @@ func (m *Manager) SetNetworkConfig(deviceName string, version string,
 	deviceType string, updates change.TypedValueMap,
 	deletes []string, description string) (change.ID, *store.ConfigName, error) {
 
+	//TODO check with topo that the device is available and connected
+	// if available and conencted send down
+	// if available and connecting blok
+	// if not available send down
+
 	deviceConfig, configName, err := m.getStoredConfig(deviceName, version, deviceType, false)
 	if err != nil {
 		return nil, nil, err
