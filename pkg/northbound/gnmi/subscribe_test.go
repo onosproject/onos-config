@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"regexp"
 	"sync"
 	"testing"
@@ -24,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
@@ -417,6 +419,83 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	//Expecting one delete response
 	assertDeleteResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream)
 	// and one sync response
+	assertSyncResponse(responsesChan, t)
+
+}
+
+// Test_SubscribeLeafStreamWithDeviceLoaded tests subscribing with mode STREAM for an existing device
+// and then issuing a set request with updates for that path
+func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
+	server, mgr := setUp()
+	mgr.DeviceStore = &topocache.DeviceStore{
+		Cache: make(map[device.ID]*device.Device),
+	}
+	targetStr := "Device1"
+	target := device.ID(targetStr)
+	log.Info(mgr.DeviceStore)
+	mgr.DeviceStore.Cache[target] = &device.Device{
+		ID: target,
+	}
+	configChan, respChan, err := mgr.Dispatcher.RegisterDevice(target)
+	var wg sync.WaitGroup
+	defer tearDown(mgr, &wg)
+
+	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
+
+	assert.NilError(t, err, "Unexpected error doing parsing")
+
+	path.Target = targetStr
+
+	request := buildRequest(path, gnmi.SubscriptionList_STREAM)
+
+	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
+	serverFake := gNMISubscribeServerFake{
+		Request:   request,
+		Responses: responsesChan,
+		Signal:    make(chan struct{}),
+	}
+
+	go func() {
+		err = server.Subscribe(serverFake)
+		assert.NilError(t, err, "Unexpected error doing Subscribe")
+	}()
+
+	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
+	time.Sleep(subscribeDelay)
+
+	var deletePaths = make([]*gnmi.Path, 0)
+	var replacedPaths = make([]*gnmi.Update, 0)
+	var updatedPaths = make([]*gnmi.Update, 0)
+	//augmenting pre-existing value by one
+	typedValue := gnmi.TypedValue_UintVal{UintVal: 14}
+	value := gnmi.TypedValue{Value: &typedValue}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: path, Val: &value})
+	setRequest := &gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+	//Sending set request
+	go func() {
+		_, err = server.Set(context.Background(), setRequest)
+		assert.NilError(t, err, "Unexpected error doing Set")
+		serverFake.Signal <- struct{}{}
+		cfg := <-configChan
+		log.Info("config ", cfg)
+		go func() {
+			respChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig, targetStr, []byte(cfg.ChangeID()), "")
+		}()
+	}()
+
+	device1 := "Device1"
+	path1Stream := "cont1a"
+	path2Stream := "cont2a"
+	path3Stream := "leaf4a"
+	valueReply := uint(14)
+
+	//Expecting 1 Update response
+	assertUpdateResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream, valueReply)
+	//And one sync response
 	assertSyncResponse(responsesChan, t)
 
 }

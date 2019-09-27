@@ -39,7 +39,7 @@ const (
 // DeviceStore is the model of the Device store
 type DeviceStore struct {
 	client device.DeviceServiceClient
-	cache  map[device.ID]*device.Device
+	Cache  map[device.ID]*device.Device
 }
 
 // LoadDeviceStore loads a device store
@@ -56,7 +56,7 @@ func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOptio
 	client := device.NewDeviceServiceClient(conn)
 	deviceStore := &DeviceStore{
 		client: client,
-		cache:  make(map[device.ID]*device.Device),
+		Cache:  make(map[device.ID]*device.Device),
 	}
 	go deviceStore.start(topoChannel)
 	return deviceStore, nil
@@ -105,15 +105,15 @@ func (s *DeviceStore) watchEvents(ch chan<- events.TopoEvent) error {
 
 		switch response.Type {
 		case device.ListResponse_NONE:
-			if _, ok := s.cache[response.Device.ID]; !ok {
-				s.cache[response.Device.ID] = response.Device
+			if _, ok := s.Cache[response.Device.ID]; !ok {
+				s.Cache[response.Device.ID] = response.Device
 				ch <- events.NewTopoEvent(response.Device.ID, events.EventItemNone, response.Device)
 			}
 		case device.ListResponse_ADDED:
-			s.cache[response.Device.ID] = response.Device
+			s.Cache[response.Device.ID] = response.Device
 			ch <- events.NewTopoEvent(response.Device.ID, events.EventItemAdded, response.Device)
 		case device.ListResponse_UPDATED:
-			s.cache[response.Device.ID] = response.Device
+			s.Cache[response.Device.ID] = response.Device
 			ch <- events.NewTopoEvent(response.Device.ID, events.EventItemUpdated, response.Device)
 		case device.ListResponse_REMOVED:
 			ch <- events.NewTopoEvent(response.Device.ID, events.EventItemDeleted, response.Device)
