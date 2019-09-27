@@ -432,13 +432,10 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 	}
 	targetStr := "Device1"
 	target := device.ID(targetStr)
-	log.Info(mgr.DeviceStore)
 	mgr.DeviceStore.Cache[target] = &device.Device{
 		ID: target,
 	}
 	configChan, respChan, err := mgr.Dispatcher.RegisterDevice(target)
-	var wg sync.WaitGroup
-	defer tearDown(mgr, &wg)
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -459,10 +456,9 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 		err = server.Subscribe(serverFake)
 		assert.NilError(t, err, "Unexpected error doing Subscribe")
 	}()
-
+	serverFake.Signal <- struct{}{}
 	//FIXME Waiting for subscribe to finish properly --> when event is issued assuring state consistency we can remove
 	time.Sleep(subscribeDelay)
-
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
@@ -475,16 +471,18 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 		Replace: replacedPaths,
 		Update:  updatedPaths,
 	}
+
+	go func() {
+		cfg := <-configChan
+		assert.Assert(t, cfg.Applied())
+		go func() {
+			respChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig, targetStr, []byte(cfg.ChangeID()), "")
+		}()
+	}()
 	//Sending set request
 	go func() {
 		_, err = server.Set(context.Background(), setRequest)
 		assert.NilError(t, err, "Unexpected error doing Set")
-		serverFake.Signal <- struct{}{}
-		cfg := <-configChan
-		log.Info("config ", cfg)
-		go func() {
-			respChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig, targetStr, []byte(cfg.ChangeID()), "")
-		}()
 	}()
 
 	device1 := "Device1"
@@ -497,7 +495,8 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 	assertUpdateResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream, valueReply)
 	//And one sync response
 	assertSyncResponse(responsesChan, t)
-
+	var wg sync.WaitGroup
+	tearDown(mgr, &wg)
 }
 
 func buildRequest(path *gnmi.Path, mode gnmi.SubscriptionList_Mode) *gnmi.SubscribeRequest {

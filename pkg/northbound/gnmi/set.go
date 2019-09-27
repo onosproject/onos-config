@@ -386,6 +386,10 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 		switch eventType := response.EventType(); eventType {
 		case events.EventTypeAchievedSetConfig:
 			log.Info("Set is properly configured ", response.ChangeID())
+			//Passing by the event to subscribe subsystem
+			go func() {
+				respChan <- response
+			}()
 			return nil
 		case events.EventTypeErrorSetConfig:
 			//Removing previously applied config
