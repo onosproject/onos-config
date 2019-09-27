@@ -53,8 +53,15 @@ const (
 	GetStateExplicitRoPathsExpandWildcards
 )
 
+// ReadOnlyAttrib is the known metadata about a Read Only leaf
+type ReadOnlyAttrib struct {
+	Datatype    change.ValueType
+	Description string
+	Units       string
+}
+
 // ReadOnlySubPathMap abstracts the read only subpath
-type ReadOnlySubPathMap map[string]change.ValueType
+type ReadOnlySubPathMap map[string]ReadOnlyAttrib
 
 // ReadOnlyPathMap abstracts the read only path
 type ReadOnlyPathMap map[string]ReadOnlySubPathMap
@@ -80,11 +87,11 @@ func (ro ReadOnlyPathMap) TypeForPath(path string) (change.ValueType, error) {
 		for k1, sp := range subPaths {
 			if k1 == "/" {
 				if k == path {
-					return sp, nil
+					return sp.Datatype, nil
 				}
 			} else {
 				if k+k1 == path {
-					return sp, nil
+					return sp.Datatype, nil
 				}
 			}
 		}
@@ -142,6 +149,7 @@ type ModelPlugin interface {
 	UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error)
 	Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error
 	Schema() (map[string]*yang.Entry, error)
+	GetStateMode() GetStateMode
 }
 
 // RegisterModelPlugin adds an external model plugin to the model registry at startup
@@ -249,6 +257,7 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 		if dirEntry.IsLeaf() || dirEntry.IsLeafList() {
 			// No need to recurse
 			t, err := toValueType(dirEntry.Type, dirEntry.IsLeafList())
+			tObj := ReadOnlyAttrib{Datatype: t, Description: dirEntry.Description, Units: dirEntry.Units}
 			if err != nil {
 				log.Errorf(err.Error())
 			}
@@ -257,13 +266,11 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 				if !ok {
 					leafMap = make(ReadOnlySubPathMap)
 					readOnlyPaths[parentPath] = leafMap
-					leafMap[strings.Replace(itemPath, parentPath, "", 1)] = t
-				} else {
-					leafMap[strings.Replace(itemPath, parentPath, "", 1)] = t
 				}
+				leafMap[strings.Replace(itemPath, parentPath, "", 1)] = tObj
 			} else if dirEntry.Config == yang.TSFalse {
 				leafMap := make(ReadOnlySubPathMap)
-				leafMap["/"] = t
+				leafMap["/"] = tObj
 				readOnlyPaths[itemPath] = leafMap
 			} else {
 				ranges := make([]string, 0)
