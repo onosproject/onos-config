@@ -23,6 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -174,19 +175,53 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 		target, changeInternal := getChangeFromEvent(update, mgr)
 		_, targetPresent := targets[target]
 		if targetPresent && changeInternal != nil {
-			for _, changeValue := range changeInternal.Config {
-				if matchRegex(changeValue.Path, subs) {
-					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
-					if err != nil {
-						log.Warning("Error in parsing path ", err)
-						continue
-					}
-					err = buildAndSendUpdate(pathGnmi, target, &changeValue.TypedValue, stream)
-					if err != nil {
-						log.Error("Error in sending update path ", err)
-						resChan <- result{success: false, err: err}
-					}
-				}
+			//if the device is registered it has a listener, if not we assume the device is not in the system and
+			// send an immediate response
+			respChan, ok := mgr.Dispatcher.GetResponseListener(device.ID(target))
+			if ok {
+				go listenForDeviceUpdates(respChan, changeInternal, subs, target, stream, resChan)
+			} else {
+				log.Infof("Device %s not registered, reporting update to subscribers immediately ", target)
+				sendSubscribeResponse(changeInternal, subs, target, stream, resChan)
+			}
+		}
+	}
+}
+
+//Listens for an update from the device after a config has been changed, if update does not arrive after 5 secs
+// (same as set.go) we consider the device as un-responsive and do not send the update to subscribers.
+// Also if there is an error we do not send it up.
+func listenForDeviceUpdates(respChan <-chan events.DeviceResponse, changeInternal *change.Change,
+	subs []*regexp.Regexp, target string, stream gnmi.GNMI_SubscribeServer, resChan chan result) {
+	select {
+	case response := <-respChan:
+		switch eventType := response.EventType(); eventType {
+		case events.EventTypeAchievedSetConfig:
+			log.Info("Set is properly configured ", response.ChangeID())
+			sendSubscribeResponse(changeInternal, subs, target, stream, resChan)
+		case events.EventTypeErrorSetConfig:
+			log.Error("Set is not properly configured, not sending subscribe update ", response.ChangeID())
+		default:
+			log.Error("Unrecognized reply, not sending subscribe update ", response.ChangeID())
+		}
+	case <-time.After(5 * time.Second):
+		log.Error("Timeout on waiting for device reply ", target)
+	}
+}
+
+func sendSubscribeResponse(changeInternal *change.Change, subs []*regexp.Regexp, target string,
+	stream gnmi.GNMI_SubscribeServer, resChan chan result) {
+	for _, changeValue := range changeInternal.Config {
+		if matchRegex(changeValue.Path, subs) {
+			pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
+			if err != nil {
+				log.Warning("Error in parsing path ", err)
+				continue
+			}
+			err = buildAndSendUpdate(pathGnmi, target, &changeValue.TypedValue, stream)
+			if err != nil {
+				log.Error("Error in sending update path ", err)
+				resChan <- result{success: false, err: err}
 			}
 		}
 	}
