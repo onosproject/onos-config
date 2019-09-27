@@ -48,8 +48,8 @@ func runOpstateCommand(cmd *cobra.Command, args []string) error {
 	}
 	client := diags.CreateOpStateDiagsClient(clientConnection)
 
-	fmt.Printf("OPSTATE CACHE: %s\n", deviceID)
-	fmt.Printf("%-82s|%-20s|\n", "PATH", "VALUE")
+	Output("OPSTATE CACHE: %s\n", deviceID)
+	Output("%-82s|%-20s|\n", "PATH", "VALUE")
 
 	stream, err := client.GetOpState(context.Background(), &diags.OpStateRequest{DeviceId: deviceID, Subscribe: subscribe})
 	if err != nil {
