@@ -69,20 +69,28 @@ func Test_Opstate(t *testing.T) {
 
 	setUpMockClients(MockClientsConfig{opstateClient: &opStateClient})
 	generateOpstate(3)
-	opstate := getGetOpstateCommand()
+	opstateCmd := getGetOpstateCommand()
 	args := make([]string, 1)
-	args[0] = "-v"
-	err := opstate.RunE(opstate, args)
-	assert.NilError(t, err)
+	args[0] = "My Device"
+	err := opstateCmd.RunE(opstateCmd, args)
+	assert.NilError(t, err, "Error fetching opstate command")
 	outputString := outputBuffer.String()
 	output := strings.Split(strings.TrimSuffix(outputString, "\n"), "\n")
-	assert.Equal(t, len(output), 3)
-	re0 := regexp.MustCompile(`/root/system/path0\s+\|\(STRING\) value0 +\|`)
-	assert.Assert(t, re0.FindString(output[0]) != "", "path0 incorrect")
 
-	re1 := regexp.MustCompile(`/root/system/path1\s+\|\(STRING\) value1 +\|`)
-	assert.Assert(t, re1.FindString(output[1]) != "", "path0 incorrect")
+	testCases := []struct {
+		description string
+		index       int
+		regexp      string
+	}{
+		{description: "Path 0", index: 2, regexp: `/root/system/path0\s+\|\(STRING\) value0 +\|`},
+		{description: "Path 1", index: 3, regexp: `/root/system/path1\s+\|\(STRING\) value1 +\|`},
+		{description: "Path 2", index: 4, regexp: `/root/system/path2\s+\|\(STRING\) value2 +\|`},
+		{description: "Header", index: 0, regexp: `OPSTATE CACHE: My Device`},
+		{description: "Column Headers", index: 1, regexp: `PATH +\|VALUE`},
+	}
 
-	re2 := regexp.MustCompile(`/root/system/path2\s+\|\(STRING\) value2 +\|`)
-	assert.Assert(t, re2.FindString(output[2]) != "", "path0 incorrect")
+	for _, testCase := range testCases {
+		re := regexp.MustCompile(testCase.regexp)
+		assert.Assert(t, re.MatchString(output[testCase.index]), testCase.description)
+	}
 }
