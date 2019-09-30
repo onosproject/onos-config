@@ -383,9 +383,13 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 	//blocking until we receive something from the channel or for 5 seconds, whatever comes first.
 	select {
 	case response := <-respChan:
+		go func() {
+			respChan <- response
+		}()
 		switch eventType := response.EventType(); eventType {
 		case events.EventTypeAchievedSetConfig:
 			log.Info("Set is properly configured ", response.ChangeID())
+			//Passing by the event to subscribe subsystem
 			return nil
 		case events.EventTypeErrorSetConfig:
 			//Removing previously applied config
