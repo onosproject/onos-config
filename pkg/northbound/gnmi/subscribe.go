@@ -196,13 +196,14 @@ func listenForDeviceUpdates(respChan <-chan events.DeviceResponse, changeInterna
 	select {
 	case response := <-respChan:
 		switch eventType := response.EventType(); eventType {
-		case events.EventTypeAchievedSetConfig:
+		case events.EventTypeSubscribeNotificationSetConfig:
 			log.Info("Set is properly configured ", response.ChangeID())
 			sendSubscribeResponse(changeInternal, subs, target, stream, resChan)
-		case events.EventTypeErrorSetConfig:
+		case events.EventTypeSubscribeErrorNotificationSetConfig:
 			log.Error("Set is not properly configured, not sending subscribe update ", response.ChangeID())
 		default:
-			log.Error("Unrecognized reply, not sending subscribe update ", response.ChangeID())
+			log.Errorf("Unrecognized reply, not sending subscribe update for %s. error %s", response.ChangeID(),
+				response.Error())
 		}
 	case <-time.After(5 * time.Second):
 		log.Error("Timeout on waiting for device reply ", target)

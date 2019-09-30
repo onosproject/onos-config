@@ -90,14 +90,25 @@ func listenForDeviceResponse(mgr *Manager, target string) error {
 		switch eventType := response.EventType(); eventType {
 		case events.EventTypeAchievedSetConfig:
 			log.Infof("Rollback succeeded on %s ", target)
+			go func() {
+				respChan <- events.NewResponseEvent(events.EventTypeSubscribeNotificationSetConfig,
+					response.Subject(), []byte(response.ChangeID()), response.String())
+			}()
 			return nil
 		case events.EventTypeErrorSetConfig:
 			//TODO if the device gives an error during this rollback we currently do nothing
+			go func() {
+				respChan <- events.NewResponseEvent(events.EventTypeSubscribeErrorNotificationSetConfig,
+					response.Subject(), []byte(response.ChangeID()), response.String())
+			}()
 			return fmt.Errorf("Rollback thrown error %s, system is in inconsistent state for device %s ",
 				response.Error().Error(), target)
-
+		case events.EventTypeSubscribeNotificationSetConfig:
+			return nil
+		case events.EventTypeSubscribeErrorNotificationSetConfig:
+			return nil
 		default:
-			return fmt.Errorf("undhandled Error Type")
+			return fmt.Errorf("undhandled Error Type %s, error %s", response.EventType(), response.Error())
 
 		}
 	case <-time.After(5 * time.Second):
