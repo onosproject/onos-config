@@ -46,7 +46,7 @@ func getConfigGetCommand() *cobra.Command {
 func runConfigGetCommand(cmd *cobra.Command, args []string) error {
 	value := getConfig(args[0])
 	if value != nil {
-		fmt.Printf("%+v", value)
+		Output("%+v", value)
 	}
 	return nil
 }

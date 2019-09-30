@@ -31,6 +31,16 @@ type Service struct {
 	northbound.Service
 }
 
+// OpStateDiagsClientFactory : Default OpStateDiagsClient creation.
+var OpStateDiagsClientFactory = func(cc *grpc.ClientConn) OpStateDiagsClient {
+	return NewOpStateDiagsClient(cc)
+}
+
+// CreateOpStateDiagsClient creates and returns a new op state diags client
+func CreateOpStateDiagsClient(cc *grpc.ClientConn) OpStateDiagsClient {
+	return OpStateDiagsClientFactory(cc)
+}
+
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	RegisterConfigDiagsServer(r, Server{})
