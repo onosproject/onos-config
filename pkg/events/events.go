@@ -31,7 +31,9 @@ const ( // For event types
 	EventTypeTopoCache
 	EventTypeOperationalState
 	EventTypeAchievedSetConfig
+	EventTypeSubscribeNotificationSetConfig
 	EventTypeErrorSetConfig
+	EventTypeSubscribeErrorNotificationSetConfig
 	EventTypeErrorParseConfig
 	EventTypeErrorSetInitialConfig
 	EventTypeErrorDeviceConnect

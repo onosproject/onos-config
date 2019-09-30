@@ -383,20 +383,38 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 	//blocking until we receive something from the channel or for 5 seconds, whatever comes first.
 	select {
 	case response := <-respChan:
-		go func() {
-			respChan <- response
-		}()
+		//go func() {
+		//	respChan <- response
+		//}()
 		switch eventType := response.EventType(); eventType {
 		case events.EventTypeAchievedSetConfig:
 			log.Info("Set is properly configured ", response.ChangeID())
 			//Passing by the event to subscribe subsystem
+			go func() {
+				respChan <- events.NewResponseEvent(events.EventTypeSubscribeNotificationSetConfig,
+					response.Subject(), []byte(response.ChangeID()), response.String())
+			}()
 			return nil
 		case events.EventTypeErrorSetConfig:
+			log.Infof("Error during set %s, rolling back", response.ChangeID())
 			//Removing previously applied config
-			return doRollback(changes, mgr, target, name, response.Error())
-
+			err := doRollback(changes, mgr, target, name, response.Error())
+			if err != nil {
+				return err
+			}
+			go func() {
+				respChan <- events.NewResponseEvent(events.EventTypeSubscribeErrorNotificationSetConfig,
+					response.Subject(), []byte(response.ChangeID()), response.String())
+			}()
+			return nil
+		case events.EventTypeSubscribeNotificationSetConfig:
+			//do nothing
+			return nil
+		case events.EventTypeSubscribeErrorNotificationSetConfig:
+			//do nothing
+			return nil
 		default:
-			return fmt.Errorf("undhandled Error Type")
+			return fmt.Errorf("undhandled Error Type %s, error %s", response.EventType(), response.Error())
 
 		}
 	case <-time.After(5 * time.Second):
