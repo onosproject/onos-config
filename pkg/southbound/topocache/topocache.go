@@ -34,12 +34,16 @@ import (
 
 const (
 	topoAddress = "onos-topo:5150"
+	STATE = "gnmi_state"
+	CONNECTED = "connected"
+	DISCONNECTED = "disconnected"
 )
 
 // DeviceStore is the model of the Device store
 type DeviceStore struct {
 	client device.DeviceServiceClient
 	Cache  map[device.ID]*device.Device
+	requestClient device.DeviceServiceClient
 }
 
 // LoadDeviceStore loads a device store
@@ -53,10 +57,19 @@ func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOptio
 		return nil, err
 	}
 
+	requestConn, err := getTopoConn(opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	client := device.NewDeviceServiceClient(conn)
+
+	requestClient := device.NewDeviceServiceClient(requestConn)
+
 	deviceStore := &DeviceStore{
 		client: client,
 		Cache:  make(map[device.ID]*device.Device),
+		requestClient: requestClient,
 	}
 	go deviceStore.start(topoChannel)
 	return deviceStore, nil
@@ -90,7 +103,7 @@ func (s *DeviceStore) watchEvents(ch chan<- events.TopoEvent) error {
 
 	// Return an error if the client was unable to connect to the service.
 	if err != nil {
-		log.Error(err)
+		log.Error("error from watch topo events ", err)
 		return err
 	}
 
@@ -128,17 +141,41 @@ func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 
 // DeviceConnected signal the local cache and the corresponding topology service that the device connected.
 func (s *DeviceStore) DeviceConnected(id device.ID) error {
-	//TODO update local cache
-	//TODO use device updated method of onos-topo-service
 	log.Infof("Device %s connected", id)
+	return s.updateDevice(id, CONNECTED)
+}
+
+func (s *DeviceStore) updateDevice(id device.ID, state string) error {
+	connectedDevice := s.Cache[id]
+	var attributes map[string] string
+	if connectedDevice.Attributes == nil {
+		attributes = make(map[string] string)
+	} else {
+		attributes = connectedDevice.Attributes
+	}
+	attributes[STATE] = state
+	connectedDevice.Attributes = attributes
+	updateReq := device.UpdateRequest{
+		Device: connectedDevice,
+	}
+	log.Info("request", updateReq)
+	log.Info("client, request client", s.client, s.requestClient)
+	response, err := s.requestClient.Update(context.Background(), &updateReq)
+	if err != nil {
+		log.Errorf("Device %s is not updated locally ", id, err)
+		return err
+	}
+	s.Cache[id] = response.Device
+	log.Infof("Device %s is updated locally with state %s", id, state)
+
+	//TODO timeout from topo
+
 	return nil
 }
 
 // DeviceDisconnected signal the local cache and the corresponding topology service that the device disconnected.
 func (s *DeviceStore) DeviceDisconnected(id device.ID) error {
-	//TODO update local cache
-	//TODO use device updated method of onos-topo-service
-	log.Infof("Device %s not connected or disconnected", id)
-	return nil
+	log.Infof("Device %s disconnected or had error in connection", id)
+	return s.updateDevice(id, DISCONNECTED)
 }
 
