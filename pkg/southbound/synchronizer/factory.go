@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -67,8 +68,9 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 					"Model Plugin not available - continuing", device.ID, device.Version)
 			}
 			operationalStateCache[device.ID] = make(change.TypedValueMap)
+			target := southbound.NewTarget()
 			sync, err := New(ctx, changeStore, configStore, device, configChan, opStateChan,
-				errChan, operationalStateCache[device.ID], mReadOnlyPaths)
+				errChan, operationalStateCache[device.ID], mReadOnlyPaths, target)
 			if err != nil {
 				log.Error("Error in connecting to client: ", err)
 				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
@@ -79,6 +81,9 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 					errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
 						string(device.ID), unregErr)
 				}
+				//unregistering the listener for changes to the device
+				dispatcher.UnregisterOperationalState(string(device.ID))
+				delete(operationalStateCache, device.ID)
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
 				go sync.syncConfigEventsToDevice(respChan)

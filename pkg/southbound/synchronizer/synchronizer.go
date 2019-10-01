@@ -55,7 +55,7 @@ type Synchronizer struct {
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *device.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache change.TypedValueMap,
-	mReadOnlyPaths modelregistry.ReadOnlyPathMap) (*Synchronizer, error) {
+	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		ChangeStore:          changeStore,
@@ -67,7 +67,6 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 		modelReadOnlyPaths:   mReadOnlyPaths,
 	}
 	log.Info("Connecting to ", sync.Device.Address, " over gNMI")
-	target := southbound.Target{}
 	key, err := target.ConnectTarget(context, *sync.Device)
 	sync.key = key
 	if err != nil {
