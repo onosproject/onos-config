@@ -86,7 +86,7 @@ func GetTarget(key DeviceID) (*Target, error) {
 	if ok {
 		return targets[key].(*Target), nil
 	}
-	return &Target{}, fmt.Errorf("Client for %v does not exist, create first", key)
+	return nil, fmt.Errorf("client for %v does not exist, create first", key)
 
 }
 

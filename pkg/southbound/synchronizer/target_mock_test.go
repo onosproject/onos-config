@@ -9,6 +9,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	southbound "github.com/onosproject/onos-config/pkg/southbound"
 	device "github.com/onosproject/onos-topo/pkg/northbound/device"
+	client "github.com/openconfig/gnmi/client"
 	gnmi "github.com/openconfig/gnmi/proto/gnmi"
 	reflect "reflect"
 )
@@ -66,6 +67,21 @@ func (mr *MockTargetIfMockRecorder) ConnectTarget(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectTarget", reflect.TypeOf((*MockTargetIf)(nil).ConnectTarget), arg0, arg1)
 }
 
+// Get mocks base method
+func (m *MockTargetIf) Get(arg0 context.Context, arg1 *gnmi.GetRequest) (*gnmi.GetResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret0, _ := ret[0].(*gnmi.GetResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get
+func (mr *MockTargetIfMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockTargetIf)(nil).Get), arg0, arg1)
+}
+
 // GetWithString mocks base method
 func (m *MockTargetIf) GetWithString(arg0 context.Context, arg1 string) (*gnmi.GetResponse, error) {
 	m.ctrl.T.Helper()
@@ -109,4 +125,18 @@ func (m *MockTargetIf) SetWithString(arg0 context.Context, arg1 string) (*gnmi.S
 func (mr *MockTargetIfMockRecorder) SetWithString(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWithString", reflect.TypeOf((*MockTargetIf)(nil).SetWithString), arg0, arg1)
+}
+
+// Subscribe mocks base method
+func (m *MockTargetIf) Subscribe(arg0 context.Context, arg1 *gnmi.SubscribeRequest, arg2 client.ProtoHandler) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Subscribe", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Subscribe indicates an expected call of Subscribe
+func (mr *MockTargetIfMockRecorder) Subscribe(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockTargetIf)(nil).Subscribe), arg0, arg1, arg2)
 }

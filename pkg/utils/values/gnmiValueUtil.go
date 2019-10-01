@@ -103,12 +103,14 @@ func handleLeafList(gnmiLl *pb.TypedValue_LeaflistVal) (*change.TypedValue, erro
 
 // NativeTypeToGnmiTypedValue converts native byte array based values in to gnmi types
 func NativeTypeToGnmiTypedValue(typedValue *change.TypedValue) (*pb.TypedValue, error) {
-	if len(typedValue.Value) == 0 {
-		return nil, fmt.Errorf("Invalid TypedValue Length 0")
+	if len(typedValue.Value) == 0 && typedValue.Type != change.ValueTypeEMPTY {
+		return nil, fmt.Errorf("invalid TypedValue Length 0")
 	}
 	switch typedValue.Type {
 	case change.ValueTypeEMPTY:
-		return nil, fmt.Errorf("Not yet implemented TypedEmpty to gnmi")
+		gnmiValue := &pb.TypedValue_AnyVal{AnyVal: nil}
+		return &pb.TypedValue{Value: gnmiValue}, nil
+
 	case change.ValueTypeSTRING:
 		gnmiValue := pb.TypedValue_StringVal{StringVal: (*change.TypedString)(typedValue).String()}
 		return &pb.TypedValue{Value: &gnmiValue}, nil

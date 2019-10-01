@@ -86,8 +86,8 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				delete(operationalStateCache, device.ID)
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
-				go sync.syncConfigEventsToDevice(respChan)
-				go sync.syncOperationalState(errChan)
+				go sync.syncConfigEventsToDevice(target, respChan)
+				go sync.syncOperationalState(ctx, target, errChan)
 				//respChan <- events.CreateConnectedEvent(events.EventTypeDeviceConnected, string(deviceName))
 			}
 		} else if dispatcher.HasListener(device.ID) && topoEvent.ItemAction() == events.EventItemDeleted {
