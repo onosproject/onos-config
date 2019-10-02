@@ -63,14 +63,15 @@ type ModelPlugin interface {
 
 ### Create your own Model Plugin using script
 1. Change directory in to onos-config/modelplugins
-1. Copy ModelGenerator.sh to a new file
+1. Copy anyone of the `.env` files to a new file
 1. Edit the variables at the top of the file to suit your plugin (see
 `modelmain.go` Definitions below for specifics), taking special care that the
-entries in MODELDATA and YANGLIST match each other and are in alphabetical order
+entries in MODELDATA are in alphabetical order (YANGDATA is derived from the
+MODELDATA but can be overridden if required)
 1. Make sure the required Yang files are present in the `./yang` folder and named properly
 1. Run the script like
 ```bash
-> ./ModelGenerator.sh
+> ./ModelGenerator.sh <filename>.env
 ```
 
 Once the files are created:
@@ -80,6 +81,10 @@ Once the files are created:
 ```bash
 > GO111MODULE=on CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
 ```
+
+Edit the Makefile to include the Model Plugin in the build (or alternatively
+create a new Makefile if you want to keep it in a separate project)
+
 Follow the steps in **Loading the Model Plugin** below for how to load it.
 
 ## YANG files
@@ -112,7 +117,7 @@ To visualize and further validate the collection of YANG files, the
 
 
 ## modelmain.go definitions
-> Examples of these definitions are given in [ModelGenerator.sh](../modelplugins/ModelGenerator.sh)
+Examples of these definitions are given in the `*.env` files in the modelplugins folder.
 
 ### modeltype
 This should be a name that defines the type of device, but should not include
