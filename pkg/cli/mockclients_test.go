@@ -156,7 +156,6 @@ func (m mockOpStateDiagsClient) GetOpState(ctx context.Context, in *diags.OpStat
 	return m.getOpStateClient, nil
 }
 
-
 // MockConfigAdminServiceGetNetworkChangesClient is a mock of the ConfigAdminService_GetNetworkChangesClient
 // Function pointers are used to allow mocking specific APIs
 type MockConfigAdminServiceGetNetworkChangesClient struct {
