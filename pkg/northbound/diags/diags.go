@@ -41,6 +41,16 @@ func CreateOpStateDiagsClient(cc *grpc.ClientConn) OpStateDiagsClient {
 	return OpStateDiagsClientFactory(cc)
 }
 
+// ConfigDiagsClientFactory : Default OpStateDiagsClient creation.
+var ConfigDiagsClientFactory = func(cc *grpc.ClientConn) ConfigDiagsClient {
+	return NewConfigDiagsClient(cc)
+}
+
+// CreateConfigDiagsClient creates and returns a new op state diags client
+func CreateConfigDiagsClient(cc *grpc.ClientConn) ConfigDiagsClient {
+	return ConfigDiagsClientFactory(cc)
+}
+
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	RegisterConfigDiagsServer(r, Server{})
