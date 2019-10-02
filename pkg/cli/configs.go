@@ -37,7 +37,7 @@ func runGetConfigsCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	client := diags.NewConfigDiagsClient(conn)
+	client := diags.CreateConfigDiagsClient(conn)
 
 	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
 	if len(args) == 1 {
