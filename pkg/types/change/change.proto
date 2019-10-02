@@ -47,37 +47,37 @@ enum Reason {
 
 // Change represents a configuration change to a single device
 message Change {
-    // id is the ID of the change
+    // The identifier of the change
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
-    // config_id is the ID of the parent NetworkConfig
+    // The ID of the parent NetworkConfig
     string config_id = 2 [(gogoproto.customname) = "ConfigID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
 
-    // revision is the configuration revision number
+    // The configuration revision number
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
-    // device_id is the ID of the device to change
+    // The ID of the device to change
     string device_id = 4 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
 
-    // device_version is the version of the device to change
+    // The version of the device to change
     string device_version = 5;
 
-    // status is the current status of the configuration
+    // The current status of the configuration
     Status status = 6;
 
-    // reason indicates the reason the change failed
+    // The reason the change failed
     Reason reason = 7;
 
-    // message is an optional status message
+    // An optional status message
     string message = 8;
 
-    // created is the time at which the configuration was created
+    // The time at which the configuration was created
     google.protobuf.Timestamp created = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
-    // updated is the time at which the configuration was last updated
+    // The time at which the configuration was last updated
     google.protobuf.Timestamp updated = 10 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
-    // values is the values to change
+    // The values to change
     repeated Value values = 11;
 }
 

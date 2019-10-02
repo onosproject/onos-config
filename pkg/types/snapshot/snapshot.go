@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package snapshot
 
-// ID is an identifier type
-type ID string
+import "github.com/onosproject/onos-config/pkg/types"
 
-// Index is the index of an object
-type Index uint64
+// ID is a snapshot request identifier
+type ID types.ID
 
-// Revision is a revision number
-type Revision uint64
+// Index is the index of a snapshot request
+type Index types.Index

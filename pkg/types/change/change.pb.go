@@ -160,27 +160,27 @@ func (ValueType) EnumDescriptor() ([]byte, []int) {
 
 // Change represents a configuration change to a single device
 type Change struct {
-	// id is the ID of the change
+	// The identifier of the change
 	ID ID `protobuf:"bytes,1,opt,name=id,proto3,casttype=ID" json:"id,omitempty"`
-	// config_id is the ID of the parent NetworkConfig
+	// The ID of the parent NetworkConfig
 	ConfigID github_com_onosproject_onos_config_pkg_types.ID `protobuf:"bytes,2,opt,name=config_id,json=configId,proto3,casttype=github.com/onosproject/onos-config/pkg/types.ID" json:"config_id,omitempty"`
-	// revision is the configuration revision number
+	// The configuration revision number
 	Revision Revision `protobuf:"varint,3,opt,name=revision,proto3,casttype=Revision" json:"revision,omitempty"`
-	// device_id is the ID of the device to change
+	// The ID of the device to change
 	DeviceID github_com_onosproject_onos_topo_pkg_northbound_device.ID `protobuf:"bytes,4,opt,name=device_id,json=deviceId,proto3,casttype=github.com/onosproject/onos-topo/pkg/northbound/device.ID" json:"device_id,omitempty"`
-	// device_version is the version of the device to change
+	// The version of the device to change
 	DeviceVersion string `protobuf:"bytes,5,opt,name=device_version,json=deviceVersion,proto3" json:"device_version,omitempty"`
-	// status is the current status of the configuration
+	// The current status of the configuration
 	Status Status `protobuf:"varint,6,opt,name=status,proto3,enum=onos.config.change.Status" json:"status,omitempty"`
-	// reason indicates the reason the change failed
+	// The reason the change failed
 	Reason Reason `protobuf:"varint,7,opt,name=reason,proto3,enum=onos.config.change.Reason" json:"reason,omitempty"`
-	// message is an optional status message
+	// An optional status message
 	Message string `protobuf:"bytes,8,opt,name=message,proto3" json:"message,omitempty"`
-	// created is the time at which the configuration was created
+	// The time at which the configuration was created
 	Created time.Time `protobuf:"bytes,9,opt,name=created,proto3,stdtime" json:"created"`
-	// updated is the time at which the configuration was last updated
+	// The time at which the configuration was last updated
 	Updated time.Time `protobuf:"bytes,10,opt,name=updated,proto3,stdtime" json:"updated"`
-	// values is the values to change
+	// The values to change
 	Values []*Value `protobuf:"bytes,11,rep,name=values,proto3" json:"values,omitempty"`
 }
 
