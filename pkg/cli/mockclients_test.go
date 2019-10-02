@@ -27,12 +27,14 @@ import (
 type MockClientsConfig struct {
 	registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient
 	opstateClient          *MockOpStateDiagsGetOpStateClient
+	netChangesClient       *MockConfigAdminServiceGetNetworkChangesClient
 }
 
 // mockConfigAdminServiceClient is the mock for the ConfigAdminServiceClient
 type mockConfigAdminServiceClient struct {
 	rollBackID             string
 	registeredModelsClient *MockConfigAdminServiceListRegisteredModelsClient
+	netChangesClient       *MockConfigAdminServiceGetNetworkChangesClient
 }
 
 var LastCreatedClient *mockConfigAdminServiceClient
@@ -54,7 +56,7 @@ func (c mockConfigAdminServiceClient) ListRegisteredModels(ctx context.Context, 
 }
 
 func (c mockConfigAdminServiceClient) GetNetworkChanges(ctx context.Context, in *admin.NetworkChangesRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_GetNetworkChangesClient, error) {
-	return nil, nil
+	return c.netChangesClient, nil
 }
 
 func (c mockConfigAdminServiceClient) RollbackNetworkChange(ctx context.Context, in *admin.RollbackRequest, opts ...grpc.CallOption) (*admin.RollbackResponse, error) {
@@ -154,12 +156,53 @@ func (m mockOpStateDiagsClient) GetOpState(ctx context.Context, in *diags.OpStat
 	return m.getOpStateClient, nil
 }
 
+// MockConfigAdminServiceGetNetworkChangesClient is a mock of the ConfigAdminService_GetNetworkChangesClient
+// Function pointers are used to allow mocking specific APIs
+type MockConfigAdminServiceGetNetworkChangesClient struct {
+	recvFn      func() (*admin.NetChange, error)
+	headerFn    func() (metadata.MD, error)
+	trailerFn   func() metadata.MD
+	closeSendFn func() error
+	contextFn   func() context.Context
+	sendMsgFn   func(m interface{}) error
+	recvMsgFn   func(m interface{}) error
+}
+
+func (c MockConfigAdminServiceGetNetworkChangesClient) Recv() (*admin.NetChange, error) {
+	return c.recvFn()
+}
+
+func (c MockConfigAdminServiceGetNetworkChangesClient) Header() (metadata.MD, error) {
+	return c.headerFn()
+}
+
+func (c MockConfigAdminServiceGetNetworkChangesClient) Trailer() metadata.MD {
+	return c.trailerFn()
+}
+
+func (c MockConfigAdminServiceGetNetworkChangesClient) CloseSend() error {
+	return c.closeSendFn()
+}
+
+func (c MockConfigAdminServiceGetNetworkChangesClient) Context() context.Context {
+	return c.contextFn()
+}
+
+func (c MockConfigAdminServiceGetNetworkChangesClient) SendMsg(m interface{}) error {
+	return c.sendMsgFn(m)
+}
+
+func (c MockConfigAdminServiceGetNetworkChangesClient) RecvMsg(m interface{}) error {
+	return c.recvMsgFn(m)
+}
+
 // setUpMockClients sets up factories to create mocks of top level clients used by the CLI
 func setUpMockClients(config MockClientsConfig) {
 	admin.ConfigAdminClientFactory = func(cc *grpc.ClientConn) admin.ConfigAdminServiceClient {
 		LastCreatedClient = &mockConfigAdminServiceClient{
 			rollBackID:             "",
 			registeredModelsClient: config.registeredModelsClient,
+			netChangesClient:       config.netChangesClient,
 		}
 		return LastCreatedClient
 	}
