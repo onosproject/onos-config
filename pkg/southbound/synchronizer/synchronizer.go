@@ -139,7 +139,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 
 // syncConfigEventsToDevice is a go routine that listens out for configuration events specific
 // to a device and propagates them downwards through southbound interface
-func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.DeviceResponse) {
+func (sync *Synchronizer) syncConfigEventsToDevice(target southbound.TargetIf, respChan chan<- events.DeviceResponse) {
 
 	for deviceConfigEvent := range sync.deviceConfigChan {
 		c := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
@@ -160,13 +160,6 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 		}
 
 		log.Info("Change formatted to gNMI setRequest ", gnmiChange)
-		target, err := southbound.GetTarget(sync.key)
-		if err != nil {
-			log.Warning(err)
-			respChan <- events.NewErrorEvent(events.EventTypeErrorDeviceConnect,
-				sync.key.DeviceID, c.ID, err)
-			continue
-		}
 		setResponse, err := target.Set(sync.Context, gnmiChange)
 		if err != nil {
 			log.Error("Error while doing set: ", err)
@@ -181,14 +174,9 @@ func (sync *Synchronizer) syncConfigEventsToDevice(respChan chan<- events.Device
 	}
 }
 
-func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceResponse) {
-	target, err := southbound.GetTarget(sync.key)
-	if err != nil {
-		log.Error("Can't find target for key: ", sync.key)
-		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
-			sync.key.DeviceID, err)
-		return
-	}
+func (sync Synchronizer) syncOperationalState(ctx context.Context, target southbound.TargetIf,
+	errChan chan<- events.DeviceResponse) {
+
 	log.Info("Syncing Op & State of  ", sync.key.DeviceID, " started")
 
 	if sync.modelReadOnlyPaths == nil {
@@ -200,14 +188,14 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 	}
 
 	notifications := make([]*gnmi.Notification, 0)
-	stateNotif, errState := sync.getOpStatePathsByType(target, gnmi.GetRequest_STATE)
+	stateNotif, errState := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_STATE)
 	if errState != nil {
 		log.Warning("Can't request read-only state paths to target ", sync.key, errState)
 	} else {
 		notifications = append(notifications, stateNotif...)
 	}
 
-	operNotif, errOp := sync.getOpStatePathsByType(target, gnmi.GetRequest_OPERATIONAL)
+	operNotif, errOp := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_OPERATIONAL)
 	if errState != nil {
 		log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
 	} else {
@@ -278,7 +266,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			Path:     getPaths,
 		}
 
-		responseRoPaths, errRoPaths := target.Get(target.Ctx, requestRoPaths)
+		responseRoPaths, errRoPaths := target.Get(ctx, requestRoPaths)
 		if errRoPaths != nil {
 			log.Warning("Error on request for read-only paths", sync.key, errRoPaths)
 			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
@@ -322,7 +310,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 			}
 
 			log.Infof("Calling Get again for %s with expanded %d wildcard read-only paths", sync.key, len(ewGetPaths))
-			responseEwRoPaths, errRoPaths := target.Get(target.Ctx, requestEwRoPaths)
+			responseEwRoPaths, errRoPaths := target.Get(ctx, requestEwRoPaths)
 			if errRoPaths != nil {
 				log.Warning("Error on request for expanded wildcard read-only paths", sync.key, errRoPaths)
 				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
@@ -383,7 +371,7 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 
 	// Now try the subscribe with the read only paths and the expanded wildcard
 	// paths (if any) from above
-	sync.subscribeOpState(wildExpandedPaths, errChan)
+	sync.subscribeOpState(target, wildExpandedPaths, errChan)
 }
 
 // TODO We do a subscribe here based on wildcards and the RO paths calculated
@@ -407,14 +395,9 @@ func (sync Synchronizer) syncOperationalState(errChan chan<- events.DeviceRespon
 //  //
 //  The easiest fix here for the subscribe is to use the paths and values
 //  from above and populate it as best you can from the GET options above
-func (sync *Synchronizer) subscribeOpState(wildExpandedPaths []string, errChan chan<- events.DeviceResponse) {
-	target, err := southbound.GetTarget(sync.key)
-	if err != nil {
-		log.Error("Can't find target for key ", sync.key)
-		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
-			sync.key.DeviceID, err)
-		return
-	}
+func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf,
+	wildExpandedPaths []string, errChan chan<- events.DeviceResponse) {
+
 	log.Info("Syncing Op & State of  ", sync.key.DeviceID, " started")
 
 	subscribePaths := make([][]string, 0)
@@ -454,14 +437,17 @@ func (sync *Synchronizer) subscribeOpState(wildExpandedPaths []string, errChan c
 	log.Info("Subscribe for OpState notifications on ", sync.key.DeviceID, " started")
 }
 
-func (sync *Synchronizer) getOpStatePathsByType(target *southbound.Target, reqtype gnmi.GetRequest_DataType) ([]*gnmi.Notification, error) {
+func (sync *Synchronizer) getOpStatePathsByType(ctx context.Context,
+	target southbound.TargetIf,
+	reqtype gnmi.GetRequest_DataType) ([]*gnmi.Notification, error) {
+
 	log.Infof("Getting %s partition for %s", reqtype, sync.key.DeviceID)
 	requestState := &gnmi.GetRequest{
 		Type:     reqtype,
 		Encoding: sync.encoding,
 	}
 
-	responseState, err := target.Get(target.Ctx, requestState)
+	responseState, err := target.Get(ctx, requestState)
 	if err != nil {
 		return nil, err
 	}
@@ -470,11 +456,6 @@ func (sync *Synchronizer) getOpStatePathsByType(target *southbound.Target, reqty
 }
 
 func (sync *Synchronizer) handler(msg proto.Message) error {
-
-	_, err := southbound.GetTarget(sync.key)
-	if err != nil {
-		return fmt.Errorf("target not connected %#v", msg)
-	}
 
 	resp, ok := msg.(*gnmi.SubscribeResponse)
 	if !ok {

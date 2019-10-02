@@ -31,9 +31,11 @@ type TargetIf interface {
 	ConnectTarget(ctx context.Context, device devicepb.Device) (DeviceID, error)
 	//Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error)
 	CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error)
+	Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error)
 	GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error)
 	Set(ctx context.Context, request *gpb.SetRequest) (*gpb.SetResponse, error)
 	SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error)
+	Subscribe(ctx context.Context, request *gpb.SubscribeRequest, handler client.ProtoHandler) error
 }
 
 // Target struct for connecting to gNMI
