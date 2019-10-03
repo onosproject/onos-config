@@ -34,15 +34,12 @@ import (
 
 const (
 	topoAddress = "onos-topo:5150"
-	STATE = "gnmi_state"
-	CONNECTED = "connected"
-	DISCONNECTED = "disconnected"
 )
 
 // DeviceStore is the model of the Device store
 type DeviceStore struct {
-	client device.DeviceServiceClient
-	Cache  map[device.ID]*device.Device
+	client        device.DeviceServiceClient
+	Cache         map[device.ID]*device.Device
 	requestClient device.DeviceServiceClient
 }
 
@@ -67,8 +64,8 @@ func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOptio
 	requestClient := device.NewDeviceServiceClient(requestConn)
 
 	deviceStore := &DeviceStore{
-		client: client,
-		Cache:  make(map[device.ID]*device.Device),
+		client:        client,
+		Cache:         make(map[device.ID]*device.Device),
 		requestClient: requestClient,
 	}
 	go deviceStore.start(topoChannel)
@@ -142,10 +139,10 @@ func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 // DeviceConnected signal the local cache and the corresponding topology service that the device connected.
 func (s *DeviceStore) DeviceConnected(id device.ID) error {
 	log.Infof("Device %s connected", id)
-	return s.updateDevice(id, CONNECTED)
+	return s.updateDevice(id, device.State_CONNECTED)
 }
 
-func (s *DeviceStore) updateDevice(id device.ID, state string) error {
+func (s *DeviceStore) updateDevice(id device.ID, state device.State) error {
 	connectedDevice := s.Cache[id]
 	var states []*device.ProtocolState
 	if connectedDevice.Protocols == nil {
@@ -154,18 +151,16 @@ func (s *DeviceStore) updateDevice(id device.ID, state string) error {
 		states = connectedDevice.Protocols
 	}
 	states = append(states, &device.ProtocolState{
-		Protocol:device.Protocol_GNMI,
-		State:device.State_CONNECTED,
+		Protocol: device.Protocol_GNMI,
+		State:    state,
 	})
 	connectedDevice.Protocols = states
 	updateReq := device.UpdateRequest{
 		Device: connectedDevice,
 	}
-	log.Info("request", updateReq)
-	log.Info("client, request client", s.client, s.requestClient)
 	response, err := s.requestClient.Update(context.Background(), &updateReq)
 	if err != nil {
-		log.Errorf("Device %s is not updated locally ", id, err)
+		log.Errorf("Device %s is not updated locally %s", id, err.Error())
 		return err
 	}
 	s.Cache[id] = response.Device
@@ -179,6 +174,5 @@ func (s *DeviceStore) updateDevice(id device.ID, state string) error {
 // DeviceDisconnected signal the local cache and the corresponding topology service that the device disconnected.
 func (s *DeviceStore) DeviceDisconnected(id device.ID) error {
 	log.Infof("Device %s disconnected or had error in connection", id)
-	return s.updateDevice(id, DISCONNECTED)
+	return s.updateDevice(id, device.State_DISCONNECTED)
 }
-

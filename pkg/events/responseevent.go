@@ -82,7 +82,7 @@ func NewResponseEvent(eventType EventType, subject string, changeID change.ID, r
 	return &dr
 }
 
-// NewDeviceConnected creates a new response event object
+// NewDeviceConnectedEvent creates a new response event object
 func NewDeviceConnectedEvent(eventType EventType, subject string) DeviceResponse {
 	dr := deviceResponseImpl{
 		eventImpl: eventImpl{
