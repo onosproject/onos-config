@@ -16,8 +16,8 @@ package config
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/types"
+	"github.com/onosproject/onos-config/pkg/types/change"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 )
 
