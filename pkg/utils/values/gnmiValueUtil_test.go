@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
+	"reflect"
 	"testing"
 )
 
@@ -68,6 +69,128 @@ func Test_GnmiBoolToNative(t *testing.T) {
 
 	nativeBool := (*change.TypedBool)(nativeType)
 	assert.Equal(t, nativeBool.Bool(), true)
+}
+
+var intTestValue = &pb.TypedValue{
+	Value: &pb.TypedValue_LeaflistVal{
+		LeaflistVal: &pb.ScalarArray{
+			Element: []*pb.TypedValue{
+				{Value: &pb.TypedValue_IntVal{IntVal: 100}},
+				{Value: &pb.TypedValue_IntVal{IntVal: 101}},
+				{Value: &pb.TypedValue_IntVal{IntVal: 102}},
+				{Value: &pb.TypedValue_IntVal{IntVal: 103}},
+			},
+		},
+	},
+}
+
+var uintTestValue = &pb.TypedValue{
+	Value: &pb.TypedValue_LeaflistVal{
+		LeaflistVal: &pb.ScalarArray{
+			Element: []*pb.TypedValue{
+				{Value: &pb.TypedValue_UintVal{UintVal: 100}},
+				{Value: &pb.TypedValue_UintVal{UintVal: 101}},
+				{Value: &pb.TypedValue_UintVal{UintVal: 102}},
+				{Value: &pb.TypedValue_UintVal{UintVal: 103}},
+			},
+		},
+	},
+}
+
+var decimalTestValue = &pb.TypedValue{
+	Value: &pb.TypedValue_LeaflistVal{
+		LeaflistVal: &pb.ScalarArray{
+			Element: []*pb.TypedValue{
+				{
+					Value: &pb.TypedValue_DecimalVal{
+						DecimalVal: &pb.Decimal64{
+							Digits:    6,
+							Precision: 0,
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var booleanTestValue = &pb.TypedValue{
+	Value: &pb.TypedValue_LeaflistVal{
+		LeaflistVal: &pb.ScalarArray{
+			Element: []*pb.TypedValue{
+				{Value: &pb.TypedValue_BoolVal{BoolVal: true}},
+				{Value: &pb.TypedValue_BoolVal{BoolVal: false}},
+				{Value: &pb.TypedValue_BoolVal{BoolVal: true}},
+				{Value: &pb.TypedValue_BoolVal{BoolVal: false}},
+			},
+		},
+	},
+}
+
+var floatTestValue = &pb.TypedValue{
+	Value: &pb.TypedValue_LeaflistVal{
+		LeaflistVal: &pb.ScalarArray{
+			Element: []*pb.TypedValue{
+				{Value: &pb.TypedValue_FloatVal{FloatVal: 1.0}},
+				{Value: &pb.TypedValue_FloatVal{FloatVal: 2.0}},
+				{Value: &pb.TypedValue_FloatVal{FloatVal: 3.0}},
+				{Value: &pb.TypedValue_FloatVal{FloatVal: 4.0}},
+			},
+		},
+	},
+}
+
+var bytesTestValue = &pb.TypedValue{
+	Value: &pb.TypedValue_LeaflistVal{
+		LeaflistVal: &pb.ScalarArray{
+			Element: []*pb.TypedValue{
+				{Value: &pb.TypedValue_BytesVal{BytesVal: []byte("abc")}},
+				{Value: &pb.TypedValue_BytesVal{BytesVal: []byte("def")}},
+				{Value: &pb.TypedValue_BytesVal{BytesVal: []byte("ghi")}},
+				{Value: &pb.TypedValue_BytesVal{BytesVal: []byte("jkl")}},
+			},
+		},
+	},
+}
+
+var stringTestValue = &pb.TypedValue{
+	Value: &pb.TypedValue_LeaflistVal{
+		LeaflistVal: &pb.ScalarArray{
+			Element: []*pb.TypedValue{
+				{Value: &pb.TypedValue_StringVal{StringVal: "abc"}},
+				{Value: &pb.TypedValue_StringVal{StringVal: "def"}},
+				{Value: &pb.TypedValue_StringVal{StringVal: "ghi"}},
+				{Value: &pb.TypedValue_StringVal{StringVal: "jkl"}},
+			},
+		},
+	},
+}
+
+func Test_Leaflists(t *testing.T) {
+	testCases := []struct {
+		description  string
+		expectedType change.ValueType
+		testValue    *pb.TypedValue
+	}{
+		{description: "Int", expectedType: change.ValueTypeLeafListINT, testValue: intTestValue},
+		{description: "Uint", expectedType: change.ValueTypeLeafListUINT, testValue: uintTestValue},
+		{description: "Decimal", expectedType: change.ValueTypeLeafListDECIMAL, testValue: decimalTestValue},
+		{description: "Boolean", expectedType: change.ValueTypeLeafListBOOL, testValue: booleanTestValue},
+		{description: "Float", expectedType: change.ValueTypeLeafListFLOAT, testValue: floatTestValue},
+		{description: "Bytes", expectedType: change.ValueTypeLeafListBYTES, testValue: bytesTestValue},
+		{description: "Strings", expectedType: change.ValueTypeLeafListSTRING, testValue: stringTestValue},
+	}
+
+	for _, testCase := range testCases {
+		nativeType, err := GnmiTypedValueToNativeType(testCase.testValue)
+		assert.NilError(t, err)
+		assert.Assert(t, nativeType != nil)
+		assert.Equal(t, nativeType.Type, testCase.expectedType)
+
+		convertedValue, convertedErr := NativeTypeToGnmiTypedValue(nativeType)
+		assert.NilError(t, convertedErr)
+		assert.Assert(t, reflect.DeepEqual(*convertedValue, *testCase.testValue), "%s", testCase.description)
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
