@@ -17,6 +17,7 @@ package change
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/client/counter"
 	"github.com/atomix/atomix-go-client/pkg/client/map"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
@@ -34,8 +35,8 @@ import (
 	"time"
 )
 
-const counterName = "config-ids"
-const configsName = "configs"
+const counterName = "network-change-indexes"
+const configsName = "network-changes"
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore() (Store, error) {
@@ -60,7 +61,7 @@ func NewAtomixStore() (Store, error) {
 	}
 
 	return &atomixStore{
-		ids:     ids,
+		indexes: ids,
 		configs: configs,
 		closer:  configs,
 	}, nil
@@ -89,7 +90,7 @@ func NewLocalStore() (Store, error) {
 	}
 
 	return &atomixStore{
-		ids:     ids,
+		indexes: ids,
 		configs: configs,
 		closer:  utils.NewNodeCloser(node),
 	}, nil
@@ -119,6 +120,9 @@ type Store interface {
 	// Get gets a network configuration
 	Get(id change.ID) (*change.NetworkChange, error)
 
+	// GetByIndex gets a network change by index
+	GetByIndex(index change.Index) (*change.NetworkChange, error)
+
 	// Create creates a new network configuration
 	Create(config *change.NetworkChange) error
 
@@ -137,7 +141,7 @@ type Store interface {
 
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
-	ids     counter.Counter
+	indexes counter.Counter
 	configs _map.Map
 	closer  io.Closer
 }
@@ -155,19 +159,37 @@ func (s *atomixStore) Get(id change.ID) (*change.NetworkChange, error) {
 	return decodeConfig(entry)
 }
 
+func getChangeID(index change.Index) change.ID {
+	return change.ID(fmt.Sprintf("change-%d", index))
+}
+
+func (s *atomixStore) GetByIndex(index change.Index) (*change.NetworkChange, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	entry, err := s.configs.Get(ctx, string(getChangeID(index)))
+	if err != nil {
+		return nil, err
+	} else if entry == nil {
+		return nil, nil
+	}
+	return decodeConfig(entry)
+}
+
 func (s *atomixStore) Create(config *change.NetworkChange) error {
 	if config.Revision != 0 {
 		return errors.New("not a new object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	id, err := s.ids.Increment(ctx, 1)
+	index, err := s.indexes.Increment(ctx, 1)
 	cancel()
 	if err != nil {
 		return err
 	}
 
-	config.Index = change.Index(id)
+	config.Index = change.Index(index)
+	config.ID = getChangeID(config.Index)
 
 	bytes, err := proto.Marshal(config)
 	if err != nil {
