@@ -31,6 +31,7 @@ import (
 // PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
 type PathMap interface {
 	JustPaths() []string
+	TypeForPath(path string) (change.ValueType, error)
 }
 
 // GetStateMode defines the Getstate handling
@@ -60,13 +61,35 @@ type ReadOnlyPathMap map[string]ReadOnlySubPathMap
 
 // JustPaths extracts keys from a read only path map
 func (ro ReadOnlyPathMap) JustPaths() []string {
-	keys := make([]string, len(ro))
-	i := 0
-	for k := range ro {
-		keys[i] = k
-		i++
+	keys := make([]string, 0)
+	for k, subPaths := range ro {
+		for k1 := range subPaths {
+			if k1 == "/" {
+				keys = append(keys, k)
+			} else {
+				keys = append(keys, k+k1)
+			}
+		}
 	}
 	return keys
+}
+
+// TypeForPath finds the type from the model for a particular path
+func (ro ReadOnlyPathMap) TypeForPath(path string) (change.ValueType, error) {
+	for k, subPaths := range ro {
+		for k1, sp := range subPaths {
+			if k1 == "/" {
+				if k == path {
+					return sp, nil
+				}
+			} else {
+				if k+k1 == path {
+					return sp, nil
+				}
+			}
+		}
+	}
+	return change.ValueTypeEMPTY, fmt.Errorf("path %s not found in RO paths of model", path)
 }
 
 // ReadWritePathElem holds data about a leaf or container
@@ -84,6 +107,7 @@ type ReadWritePathElem struct {
 type ReadWritePathMap map[string]ReadWritePathElem
 
 // JustPaths extracts keys from a read write path map
+// expandSubPaths is not relevant for RW paths
 func (rw ReadWritePathMap) JustPaths() []string {
 	keys := make([]string, len(rw))
 	i := 0
@@ -92,6 +116,16 @@ func (rw ReadWritePathMap) JustPaths() []string {
 		i++
 	}
 	return keys
+}
+
+// TypeForPath finds the type from the model for a particular path
+func (rw ReadWritePathMap) TypeForPath(path string) (change.ValueType, error) {
+	for k, elem := range rw {
+		if k == path {
+			return elem.ValueType, nil
+		}
+	}
+	return change.ValueTypeEMPTY, fmt.Errorf("path %s not found in RW paths of model", path)
 }
 
 // ModelRegistry is the object for the saving information about device models

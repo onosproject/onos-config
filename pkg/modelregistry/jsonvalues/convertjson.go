@@ -96,7 +96,7 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 			}
 
 			if modelPath == jsonPathStr {
-				newTypeValue, err := assignModelType(paths, modelPath, "", jsonPathValue)
+				newTypeValue, err := assignModelType(paths, modelPath, jsonPathValue)
 				if err != nil {
 					return nil, err
 				}
@@ -109,9 +109,7 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 				break
 
 			} else if hasPrefixMultipleIdx(jsonPathWildIndex, modelPathWildIndex) {
-				jsonSubPath := jsonPathWildIndex[len(modelPathWildIndex):]
-
-				newTypeValue, err := assignModelType(paths, modelPath, jsonSubPath, jsonPathValue)
+				newTypeValue, err := assignModelType(paths, modelPath, jsonPathValue)
 				if err != nil {
 					return nil, err
 				}
@@ -185,39 +183,20 @@ func extractIndices(indexStr string) []string {
 	return indices
 }
 
-func assignModelType(paths modelregistry.PathMap, modelPath string, jsonSubPath string, jsonPathValue *change.ConfigValue) (*change.TypedValue, error) {
-	// If it's a RO path then have to go in to the subpaths to find
-	// the right type
-	ro, ok := paths.(modelregistry.ReadOnlyPathMap)
-	if ok {
-		subPaths, pathok := ro[modelPath]
-		if pathok {
-			for subPath, spType := range subPaths {
-				if jsonSubPath == subPath {
-					newTypeValue, err := pathType(jsonPathValue, spType)
-					if err != nil {
-						return nil, err
-					}
-					return newTypeValue, nil
-				}
-			}
-		}
+func assignModelType(paths modelregistry.PathMap, modelPath string,
+	jsonPathValue *change.ConfigValue) (*change.TypedValue, error) {
+
+	modelType, err := paths.TypeForPath(modelPath)
+	if err != nil {
+		return nil, err
 	}
 
-	// If it's a RW path then extract the object and find its type
-	rw, ok := paths.(modelregistry.ReadWritePathMap)
-	if ok {
-		rwObj, pathok := rw[modelPath]
-		if pathok {
-			newTypeValue, err := pathType(jsonPathValue, rwObj.ValueType)
-			if err != nil {
-				return nil, err
-			}
-			return newTypeValue, nil
-		}
+	newTypeValue, err := pathType(jsonPathValue, modelType)
+	if err != nil {
+		return nil, err
 	}
 
-	return &jsonPathValue.TypedValue, nil
+	return newTypeValue, nil
 }
 
 func pathType(jsonPathValue *change.ConfigValue, spType change.ValueType) (*change.TypedValue, error) {

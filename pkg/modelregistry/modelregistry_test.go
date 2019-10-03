@@ -17,6 +17,7 @@ package modelregistry
 import (
 	"fmt"
 	ds1 "github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim_1_0_0"
+	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -97,6 +98,28 @@ func Test_CastModelPlugin(t *testing.T) {
 	assert.Equal(t, name, modelTypeTest)
 	assert.Equal(t, version, modelVersionTest)
 
+}
+
+func Test_JustPaths(t *testing.T) {
+	roPaths := readOnlyPaths.JustPaths() // From Devicesim 1.0.0
+	assert.Equal(t, len(roPaths), 181)
+
+	rwPaths := readWritePaths.JustPaths() // From Devicesim 1.0.0
+	assert.Equal(t, len(rwPaths), 113)
+}
+
+func Test_TypeForPath(t *testing.T) {
+	modelType1, err := readOnlyPaths.TypeForPath("/system/clock/state/timezone-name")
+	assert.NilError(t, err, "Unexpected error on TypeForPath RO")
+	assert.Equal(t, modelType1, change.ValueTypeSTRING)
+
+	modelType2, err := readWritePaths.TypeForPath("/system/clock/config/timezone-name")
+	assert.NilError(t, err, "Unexpected error on TypeForPath RW")
+	assert.Equal(t, modelType2, change.ValueTypeSTRING)
+
+	modelType3, err := readWritePaths.TypeForPath("/system/clock/config/timezone-name1")
+	assert.ErrorContains(t, err, "not found in RW paths of model")
+	assert.Equal(t, modelType3, change.ValueTypeEMPTY)
 }
 
 func Test_Schema(t *testing.T) {
