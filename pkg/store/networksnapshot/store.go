@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package snapshot
+package networksnapshot
 
 import (
 	"context"
@@ -21,19 +21,24 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/map"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
+	"github.com/atomix/atomix-go-local/pkg/atomix/local"
+	"github.com/atomix/atomix-go-node/pkg/atomix"
+	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/store/utils"
-	snapshottype "github.com/onosproject/onos-config/pkg/types/snapshot"
+	networksnapshottype "github.com/onosproject/onos-config/pkg/types/networksnapshot"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/test/bufconn"
 	"io"
+	"net"
 	"time"
 )
 
 const networkRequestsIDsName = "network-request-ids"
 const networkRequestsName = "network-requests"
 
-// NewAtomixNetworkRequestStore returns a new persistent NetworkRequestStore
-func NewAtomixNetworkRequestStore() (NetworkRequestStore, error) {
+// NewAtomixNetworkRequestStore returns a new persistent Store
+func NewAtomixNetworkRequestStore() (Store, error) {
 	client, err := utils.GetAtomixClient()
 	if err != nil {
 		return nil, err
@@ -54,7 +59,7 @@ func NewAtomixNetworkRequestStore() (NetworkRequestStore, error) {
 		return nil, err
 	}
 
-	return &atomixNetworkRequestStore{
+	return &atomixStore{
 		ids:     ids,
 		configs: configs,
 		closer:  configs,
@@ -62,7 +67,7 @@ func NewAtomixNetworkRequestStore() (NetworkRequestStore, error) {
 }
 
 // NewLocalNetworkRequestStore returns a new local network snapshot requests store
-func NewLocalNetworkRequestStore() (NetworkRequestStore, error) {
+func NewLocalNetworkRequestStore() (Store, error) {
 	node, conn := startLocalNode()
 
 	counterName := primitive.Name{
@@ -83,44 +88,61 @@ func NewLocalNetworkRequestStore() (NetworkRequestStore, error) {
 		return nil, err
 	}
 
-	return &atomixNetworkRequestStore{
+	return &atomixStore{
 		ids:     ids,
 		configs: configs,
 		closer:  utils.NewNodeCloser(node),
 	}, nil
 }
 
-// NetworkRequestStore is the interface for the network snapshot request store
-type NetworkRequestStore interface {
+// startLocalNode starts a single local node
+func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
+	lis := bufconn.Listen(1024 * 1024)
+	node := local.NewNode(lis, registry.Registry)
+	_ = node.Start()
+
+	dialer := func(ctx context.Context, address string) (net.Conn, error) {
+		return lis.Dial()
+	}
+
+	conn, err := grpc.DialContext(context.Background(), networkRequestsName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	if err != nil {
+		panic("Failed to dial network configurations")
+	}
+	return node, conn
+}
+
+// Store is the interface for the network snapshot request store
+type Store interface {
 	io.Closer
 
 	// Get gets a network snapshot request
-	Get(id snapshottype.ID) (*snapshottype.NetworkSnapshotRequest, error)
+	Get(id networksnapshottype.ID) (*networksnapshottype.NetworkSnapshot, error)
 
 	// Create creates a new network snapshot request
-	Create(config *snapshottype.NetworkSnapshotRequest) error
+	Create(config *networksnapshottype.NetworkSnapshot) error
 
 	// Update updates an existing network snapshot request
-	Update(config *snapshottype.NetworkSnapshotRequest) error
+	Update(config *networksnapshottype.NetworkSnapshot) error
 
 	// Delete deletes a network snapshot request
-	Delete(config *snapshottype.NetworkSnapshotRequest) error
+	Delete(config *networksnapshottype.NetworkSnapshot) error
 
 	// List lists network snapshot request
-	List(chan<- *snapshottype.NetworkSnapshotRequest) error
+	List(chan<- *networksnapshottype.NetworkSnapshot) error
 
 	// Watch watches the network snapshot request store for changes
-	Watch(chan<- *snapshottype.NetworkSnapshotRequest) error
+	Watch(chan<- *networksnapshottype.NetworkSnapshot) error
 }
 
-// atomixNetworkRequestStore is the default implementation of the NetworkSnapshotRequest store
-type atomixNetworkRequestStore struct {
+// atomixStore is the default implementation of the NetworkSnapshot store
+type atomixStore struct {
 	ids     counter.Counter
 	configs _map.Map
 	closer  io.Closer
 }
 
-func (s *atomixNetworkRequestStore) Get(id snapshottype.ID) (*snapshottype.NetworkSnapshotRequest, error) {
+func (s *atomixStore) Get(id networksnapshottype.ID) (*networksnapshottype.NetworkSnapshot, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -130,10 +152,10 @@ func (s *atomixNetworkRequestStore) Get(id snapshottype.ID) (*snapshottype.Netwo
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeNetworkSnapshotRequest(entry)
+	return decodeNetworkSnapshot(entry)
 }
 
-func (s *atomixNetworkRequestStore) Create(request *snapshottype.NetworkSnapshotRequest) error {
+func (s *atomixStore) Create(request *networksnapshottype.NetworkSnapshot) error {
 	if request.Revision != 0 {
 		return errors.New("not a new object")
 	}
@@ -145,7 +167,7 @@ func (s *atomixNetworkRequestStore) Create(request *snapshottype.NetworkSnapshot
 		return err
 	}
 
-	request.Index = snapshottype.Index(id)
+	request.Index = networksnapshottype.Index(id)
 
 	bytes, err := proto.Marshal(request)
 	if err != nil {
@@ -159,13 +181,13 @@ func (s *atomixNetworkRequestStore) Create(request *snapshottype.NetworkSnapshot
 		return err
 	}
 
-	request.Revision = snapshottype.Revision(entry.Version)
+	request.Revision = networksnapshottype.Revision(entry.Version)
 	request.Created = entry.Created
 	request.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixNetworkRequestStore) Update(request *snapshottype.NetworkSnapshotRequest) error {
+func (s *atomixStore) Update(request *networksnapshottype.NetworkSnapshot) error {
 	if request.Revision == 0 {
 		return errors.New("not a stored object")
 	}
@@ -183,12 +205,12 @@ func (s *atomixNetworkRequestStore) Update(request *snapshottype.NetworkSnapshot
 		return err
 	}
 
-	request.Revision = snapshottype.Revision(entry.Version)
+	request.Revision = networksnapshottype.Revision(entry.Version)
 	request.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixNetworkRequestStore) Delete(request *snapshottype.NetworkSnapshotRequest) error {
+func (s *atomixStore) Delete(request *networksnapshottype.NetworkSnapshot) error {
 	if request.Revision == 0 {
 		return errors.New("not a stored object")
 	}
@@ -204,7 +226,7 @@ func (s *atomixNetworkRequestStore) Delete(request *snapshottype.NetworkSnapshot
 	return nil
 }
 
-func (s *atomixNetworkRequestStore) List(ch chan<- *snapshottype.NetworkSnapshotRequest) error {
+func (s *atomixStore) List(ch chan<- *networksnapshottype.NetworkSnapshot) error {
 	mapCh := make(chan *_map.Entry)
 	if err := s.configs.Entries(context.Background(), mapCh); err != nil {
 		return err
@@ -213,7 +235,7 @@ func (s *atomixNetworkRequestStore) List(ch chan<- *snapshottype.NetworkSnapshot
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if device, err := decodeNetworkSnapshotRequest(entry); err == nil {
+			if device, err := decodeNetworkSnapshot(entry); err == nil {
 				ch <- device
 			}
 		}
@@ -221,7 +243,7 @@ func (s *atomixNetworkRequestStore) List(ch chan<- *snapshottype.NetworkSnapshot
 	return nil
 }
 
-func (s *atomixNetworkRequestStore) Watch(ch chan<- *snapshottype.NetworkSnapshotRequest) error {
+func (s *atomixStore) Watch(ch chan<- *networksnapshottype.NetworkSnapshot) error {
 	mapCh := make(chan *_map.Event)
 	if err := s.configs.Watch(context.Background(), mapCh, _map.WithReplay()); err != nil {
 		return err
@@ -230,7 +252,7 @@ func (s *atomixNetworkRequestStore) Watch(ch chan<- *snapshottype.NetworkSnapsho
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if request, err := decodeNetworkSnapshotRequest(event.Entry); err == nil {
+			if request, err := decodeNetworkSnapshot(event.Entry); err == nil {
 				ch <- request
 			}
 		}
@@ -238,18 +260,18 @@ func (s *atomixNetworkRequestStore) Watch(ch chan<- *snapshottype.NetworkSnapsho
 	return nil
 }
 
-func (s *atomixNetworkRequestStore) Close() error {
+func (s *atomixStore) Close() error {
 	_ = s.configs.Close()
 	return s.closer.Close()
 }
 
-func decodeNetworkSnapshotRequest(entry *_map.Entry) (*snapshottype.NetworkSnapshotRequest, error) {
-	request := &snapshottype.NetworkSnapshotRequest{}
+func decodeNetworkSnapshot(entry *_map.Entry) (*networksnapshottype.NetworkSnapshot, error) {
+	request := &networksnapshottype.NetworkSnapshot{}
 	if err := proto.Unmarshal(entry.Value, request); err != nil {
 		return nil, err
 	}
-	request.ID = snapshottype.ID(entry.Key)
-	request.Revision = snapshottype.Revision(entry.Version)
+	request.ID = networksnapshottype.ID(entry.Key)
+	request.Revision = networksnapshottype.Revision(entry.Version)
 	request.Created = entry.Created
 	request.Updated = entry.Updated
 	return request, nil

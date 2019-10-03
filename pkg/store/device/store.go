@@ -30,15 +30,16 @@ type Store interface {
 	// Get gets a device by ID
 	Get(devicepb.ID) (*devicepb.Device, error)
 
+	// List lists the devices in the store
+	List(chan<- *devicepb.Device) error
+
 	// Watch watches the device store for changes
 	Watch(chan<- *devicepb.Device) error
 }
 
 // NewTopoStore returns a new topo-based device store
 func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
-	opts = append(opts,
-		grpc.WithUnaryInterceptor(util.RetryingUnaryClientInterceptor()),
-		grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(100*time.Millisecond)))
+	opts = append(opts, grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(100*time.Millisecond)))
 	conn, err := getTopoConn(opts...)
 	if err != nil {
 		return nil, err
@@ -65,6 +66,27 @@ func (s *topoStore) Get(id devicepb.ID) (*devicepb.Device, error) {
 		return nil, err
 	}
 	return response.Device, nil
+}
+
+func (s *topoStore) List(ch chan<- *devicepb.Device) error {
+	list, err := s.client.List(context.Background(), &devicepb.ListRequest{})
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			response, err := list.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				break
+			}
+			ch <- response.Device
+		}
+	}()
+	return nil
 }
 
 func (s *topoStore) Watch(ch chan<- *devicepb.Device) error {

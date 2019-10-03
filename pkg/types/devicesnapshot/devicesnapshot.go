@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package snapshot
+package devicesnapshot
 
 import "github.com/onosproject/onos-config/pkg/types"
 
-// ID is a snapshot identifier
+// ID is a snapshot request identifier
 type ID types.ID
 
 // Revision is a snapshot revision number
