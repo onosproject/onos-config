@@ -147,14 +147,17 @@ func (s *DeviceStore) DeviceConnected(id device.ID) error {
 
 func (s *DeviceStore) updateDevice(id device.ID, state string) error {
 	connectedDevice := s.Cache[id]
-	var attributes map[string] string
-	if connectedDevice.Attributes == nil {
-		attributes = make(map[string] string)
+	var states []*device.ProtocolState
+	if connectedDevice.Protocols == nil {
+		states = make([]*device.ProtocolState, 0)
 	} else {
-		attributes = connectedDevice.Attributes
+		states = connectedDevice.Protocols
 	}
-	attributes[STATE] = state
-	connectedDevice.Attributes = attributes
+	states = append(states, &device.ProtocolState{
+		Protocol:device.Protocol_GNMI,
+		State:device.State_CONNECTED,
+	})
+	connectedDevice.Protocols = states
 	updateReq := device.UpdateRequest{
 		Device: connectedDevice,
 	}
