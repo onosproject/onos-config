@@ -33,6 +33,25 @@ type PathMap interface {
 	JustPaths() []string
 }
 
+// GetStateMode defines the Getstate handling
+type GetStateMode int
+
+const (
+	// GetStateNone - device type does not support Operational State at all
+	GetStateNone GetStateMode = iota
+	// GetStateOpState - device returns all its op state attributes by querying
+	// GetRequest_STATE and GetRequest_OPERATIONAL
+	GetStateOpState
+	// GetStateExplicitRoPaths - device returns all its op state attributes by querying
+	// exactly what the ReadOnly paths from YANG - wildcards are handled by device
+	GetStateExplicitRoPaths
+	// GetStateExplicitRoPathsExpandWildcards - where there are wildcards in the
+	// ReadOnly paths 2 calls have to be made - 1) to expand the wildcards in to
+	// real paths (since the device doesn't do it) and 2) to query those expanded
+	// wildcard paths - this is the Stratum 1.0.0 method
+	GetStateExplicitRoPathsExpandWildcards
+)
+
 // ReadOnlySubPathMap abstracts the read only subpath
 type ReadOnlySubPathMap map[string]change.ValueType
 
