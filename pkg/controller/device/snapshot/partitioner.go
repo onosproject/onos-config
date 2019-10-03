@@ -12,27 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rollback
+package snapshot
 
 import (
-	"fmt"
+	"github.com/onosproject/onos-config/pkg/controller"
 	"github.com/onosproject/onos-config/pkg/types"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
-	"strings"
+	snapshottypes "github.com/onosproject/onos-config/pkg/types/device/snapshot"
 )
 
-// ID is a change ID type
-type ID types.ID
-
-// NewID returns a new device change ID from the given network change ID and device
-func NewID(networkID types.ID, deviceID device.ID) ID {
-	return ID(fmt.Sprintf("%s-%s", networkID, deviceID))
+// Partitioner is a WorkPartitioner for devices
+type Partitioner struct {
 }
 
-// GetDeviceID returns the device ID
-func (i ID) GetDeviceID() device.ID {
-	return device.ID(strings.SplitAfterN(string(i), "-", 3)[2])
+// Partition returns the device as a partition key
+func (p *Partitioner) Partition(id types.ID) (controller.PartitionKey, error) {
+	return controller.PartitionKey(snapshottypes.ID(id).GetDeviceID()), nil
 }
 
-// Revision is a change revision number
-type Revision types.Revision
+var _ controller.WorkPartitioner = &Partitioner{}

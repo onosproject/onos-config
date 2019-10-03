@@ -19,13 +19,26 @@ import (
 	"github.com/onosproject/onos-config/pkg/types"
 	devicechange "github.com/onosproject/onos-config/pkg/types/device/change"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	"strconv"
+	"strings"
 )
 
 // ID is a network configuration identifier type
 type ID types.ID
 
+// GetIndex returns the Index
+func (i ID) GetIndex() Index {
+	index, _ := strconv.Atoi(strings.Split(string(i), "-")[1])
+	return Index(index)
+}
+
 // Index is the index of a network configuration
 type Index uint64
+
+// GetID returns the ID for the index
+func (i Index) GetID() ID {
+	return ID(fmt.Sprintf("network-%d", i))
+}
 
 // Revision is a network configuration revision number
 type Revision types.Revision
@@ -46,5 +59,5 @@ func (c *NetworkChange) GetChangeIDs() []devicechange.ID {
 
 // GetChangeID returns the ID for the change to the given device
 func (c *NetworkChange) GetChangeID(deviceID device.ID) devicechange.ID {
-	return devicechange.ID(fmt.Sprintf("%s-%s", c.ID, deviceID))
+	return devicechange.NewID(types.ID(c.ID), deviceID)
 }

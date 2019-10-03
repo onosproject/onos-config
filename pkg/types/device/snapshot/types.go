@@ -14,10 +14,25 @@
 
 package snapshot
 
-import "github.com/onosproject/onos-config/pkg/types"
+import (
+	"fmt"
+	"github.com/onosproject/onos-config/pkg/types"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	"strings"
+)
 
 // ID is a snapshot identifier
 type ID types.ID
+
+// NewID returns a new device change ID from the given network change ID and device
+func NewID(networkID types.ID, deviceID device.ID) ID {
+	return ID(fmt.Sprintf("%s-%s", networkID, deviceID))
+}
+
+// GetDeviceID returns the device ID
+func (i ID) GetDeviceID() device.ID {
+	return device.ID(strings.SplitAfterN(string(i), "-", 3)[2])
+}
 
 // Revision is a snapshot revision number
 type Revision types.Revision

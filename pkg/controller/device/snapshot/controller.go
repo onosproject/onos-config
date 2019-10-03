@@ -28,6 +28,7 @@ func NewController(mastership mastershipstore.Store, snapshots snapshotstore.Sto
 	c.Filter(&controller.MastershipFilter{
 		Store: mastership,
 	})
+	c.Partition(&Partitioner{})
 	c.Watch(&Watcher{
 		Store: snapshots,
 	})

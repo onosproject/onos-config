@@ -16,6 +16,8 @@ package rollback
 
 import (
 	"github.com/onosproject/onos-config/pkg/types"
+	"github.com/onosproject/onos-config/pkg/types/device/rollback"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 )
 
 // ID is a network configuration identifier type
@@ -26,3 +28,8 @@ type Index uint64
 
 // Revision is a network configuration revision number
 type Revision types.Revision
+
+// GetDeviceRollbackID returns the device rollback ID for the given device
+func (s *NetworkRollback) GetDeviceRollbackID(deviceID device.ID) rollback.ID {
+	return rollback.NewID(types.ID(s.ID), deviceID)
+}

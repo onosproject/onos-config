@@ -17,7 +17,6 @@ package change
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/client/counter"
 	"github.com/atomix/atomix-go-client/pkg/client/map"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
@@ -159,15 +158,11 @@ func (s *atomixStore) Get(id change.ID) (*change.NetworkChange, error) {
 	return decodeConfig(entry)
 }
 
-func getChangeID(index change.Index) change.ID {
-	return change.ID(fmt.Sprintf("change-%d", index))
-}
-
 func (s *atomixStore) GetByIndex(index change.Index) (*change.NetworkChange, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Get(ctx, string(getChangeID(index)))
+	entry, err := s.configs.Get(ctx, string(index.GetID()))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
@@ -189,7 +184,7 @@ func (s *atomixStore) Create(config *change.NetworkChange) error {
 	}
 
 	config.Index = change.Index(index)
-	config.ID = getChangeID(config.Index)
+	config.ID = config.Index.GetID()
 
 	bytes, err := proto.Marshal(config)
 	if err != nil {
