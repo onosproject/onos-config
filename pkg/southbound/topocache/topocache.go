@@ -26,7 +26,9 @@ import (
 	"errors"
 	"github.com/cenkalti/backoff"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-topo/pkg/service/device"
+	deviceservice "github.com/onosproject/onos-topo/pkg/service/device"
+	devicetypes "github.com/onosproject/onos-topo/pkg/types/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 	"time"
@@ -38,8 +40,8 @@ const (
 
 // DeviceStore is the model of the Device store
 type DeviceStore struct {
-	client device.DeviceServiceClient
-	Cache  map[device.ID]*device.Device
+	client deviceservice.DeviceServiceClient
+	Cache  map[devicetypes.ID]*devicetypes.Device
 }
 
 // LoadDeviceStore loads a device store
@@ -56,7 +58,7 @@ func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOptio
 	client := device.NewDeviceServiceClient(conn)
 	deviceStore := &DeviceStore{
 		client: client,
-		Cache:  make(map[device.ID]*device.Device),
+		Cache:  make(map[devicetypes.ID]*devicetypes.Device),
 	}
 	go deviceStore.start(topoChannel)
 	return deviceStore, nil

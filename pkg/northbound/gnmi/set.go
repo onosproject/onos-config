@@ -26,7 +26,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -375,7 +375,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 
 func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) error {
 	mgr := manager.GetManager()
-	respChan, ok := mgr.Dispatcher.GetResponseListener(device.ID(target))
+	respChan, ok := mgr.Dispatcher.GetResponseListener(devicetype.ID(target))
 	if !ok {
 		log.Infof("Device %s not properly registered, not waiting for southbound confirmation ", target)
 		return nil

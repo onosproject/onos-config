@@ -21,7 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 )
@@ -132,7 +132,7 @@ func (s Server) GetConfigurations(r *ConfigRequest, stream ConfigDiags_GetConfig
 
 // GetOpState provides a stream of Operational and State data
 func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServer) error {
-	deviceCache, ok := manager.GetManager().OperationalStateCache[device.ID(r.DeviceId)]
+	deviceCache, ok := manager.GetManager().OperationalStateCache[devicetype.ID(r.DeviceId)]
 	if !ok {
 		return fmt.Errorf("no Operational State cache available for %s", r.DeviceId)
 	}

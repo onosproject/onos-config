@@ -79,7 +79,7 @@ message DeviceSnapshotRequest {
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
     // device_id is the device to which the snapshot applies
-    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/types/device.ID"];
 
     // status is the snapshot status
     Status status = 3;

@@ -57,7 +57,7 @@ message Change {
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
     // The ID of the device to change
-    string device_id = 4 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+    string device_id = 4 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/types/device.ID"];
 
     // The version of the device to change
     string device_version = 5;

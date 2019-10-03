@@ -15,19 +15,19 @@
 package events
 
 import (
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
 	"time"
 )
 
 //TopoEvent is a topology event
 type TopoEvent interface {
 	Event
-	Device() *device.Device
+	Device() *devicetype.Device
 	ItemAction() EventAction
 }
 
 type topoEventObj struct {
-	dev        *device.Device
+	dev        *devicetype.Device
 	itemAction EventAction
 }
 
@@ -36,7 +36,7 @@ type topoEventImpl struct {
 }
 
 // Address represents the device address
-func (topoEvent topoEventImpl) Device() *device.Device {
+func (topoEvent topoEventImpl) Device() *devicetype.Device {
 	to, ok := topoEvent.object.(topoEventObj)
 	if ok {
 		return to.dev
@@ -55,7 +55,7 @@ func (topoEvent topoEventImpl) ItemAction() EventAction {
 // NewTopoEvent creates a new topo event object
 // It is important not to depend on topocache package here or we will get a
 // circular dependency - we take the device.ID and treat it as a string
-func NewTopoEvent(subject device.ID, eventAction EventAction, dev *device.Device) TopoEvent {
+func NewTopoEvent(subject devicetype.ID, eventAction EventAction, dev *devicetype.Device) TopoEvent {
 	te := topoEventImpl{
 		eventImpl: eventImpl{
 			subject:   string(subject),

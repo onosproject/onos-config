@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/types"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
 )
 
 // ID is a network configuration identifier type
@@ -45,6 +45,6 @@ func (c *NetworkConfig) GetChangeIDs() []change.ID {
 }
 
 // GetChangeID returns the ID for the change to the given device
-func (c *NetworkConfig) GetChangeID(deviceID device.ID) change.ID {
+func (c *NetworkConfig) GetChangeID(deviceID devicetype.ID) change.ID {
 	return change.ID(fmt.Sprintf("%s-%s", c.ID, deviceID))
 }

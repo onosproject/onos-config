@@ -23,7 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -177,7 +177,7 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 		if targetPresent && changeInternal != nil {
 			//if the device is registered it has a listener, if not we assume the device is not in the system and
 			// send an immediate response
-			respChan, ok := mgr.Dispatcher.GetResponseListener(device.ID(target))
+			respChan, ok := mgr.Dispatcher.GetResponseListener(devicetype.ID(target))
 			if ok {
 				go listenForDeviceUpdates(respChan, changeInternal, subs, target, stream, resChan)
 			} else {
