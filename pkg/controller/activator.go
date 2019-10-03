@@ -29,22 +29,22 @@ type Activator interface {
 	Stop()
 }
 
-// AlwaysActivator allows any node to handle a request
-type AlwaysActivator struct {
+// UnconditionalActivator activates controllers on all nodes
+type UnconditionalActivator struct {
 }
 
 // Start starts the activator
-func (a *AlwaysActivator) Start(ch chan<- bool) error {
+func (a *UnconditionalActivator) Start(ch chan<- bool) error {
 	ch <- true
 	return nil
 }
 
 // Stop stops the activator
-func (a *AlwaysActivator) Stop() {
+func (a *UnconditionalActivator) Stop() {
 
 }
 
-var _ Activator = &AlwaysActivator{}
+var _ Activator = &UnconditionalActivator{}
 
 // LeadershipActivator is an Activator for activating a controller on leadership
 type LeadershipActivator struct {
