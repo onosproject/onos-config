@@ -54,14 +54,44 @@ message NetworkSnapshotRequest {
     // the request index
     uint64 index = 2 [(gogoproto.casttype) = "Index"];
 
+    // revision is the request revision number
+    uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
+
     // status is the snapshot status
-    Status status = 3;
+    Status status = 4;
 
     // reason is the snapshot failure reason
-    Reason reason = 4;
+    Reason reason = 5;
 
     // values is a list of values to set
-    repeated string devices = 5;
+    repeated string devices = 6;
+
+    // timestamp is the time at which to take the snapshot
+    google.protobuf.Timestamp timestamp = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+    // created is the time at which the configuration was created
+    google.protobuf.Timestamp created = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+    // updated is the time at which the configuration was last updated
+    google.protobuf.Timestamp updated = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// DeviceSnapshotRequest is a device snapshot request
+message DeviceSnapshotRequest {
+    // the request identifier
+    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
+
+    // device_id is the device to which the snapshot applies
+    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/types/device.ID"];
+
+    // revision is the request revision number
+    uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
+
+    // status is the snapshot status
+    Status status = 4;
+
+    // reason is the snapshot failure reason
+    Reason reason = 5;
 
     // timestamp is the time at which to take the snapshot
     google.protobuf.Timestamp timestamp = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
@@ -73,35 +103,17 @@ message NetworkSnapshotRequest {
     google.protobuf.Timestamp updated = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }
 
-// DeviceSnapshotRequest is a device snapshot request
-message DeviceSnapshotRequest {
+// DeviceSnapshot is a snapshot of a single device
+message DeviceSnapshot {
     // the request identifier
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
     // device_id is the device to which the snapshot applies
     string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/types/device.ID"];
 
-    // status is the snapshot status
-    Status status = 3;
-
-    // reason is the snapshot failure reason
-    Reason reason = 4;
-
-    // timestamp is the time at which to take the snapshot
-    google.protobuf.Timestamp timestamp = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-
-    // created is the time at which the configuration was created
-    google.protobuf.Timestamp created = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-
-    // updated is the time at which the configuration was last updated
-    google.protobuf.Timestamp updated = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-}
-
-// DeviceSnapshot is a snapshot of a single device
-message DeviceSnapshot {
     // values is a list of values to set
-    repeated onos.config.change.Value values = 4;
+    repeated onos.config.change.Value values = 3;
 
     // timestamp is the time at which to take the snapshot
-    google.protobuf.Timestamp timestamp = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp timestamp = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }

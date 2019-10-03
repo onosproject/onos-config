@@ -21,3 +21,6 @@ type ID types.ID
 
 // Index is the index of a snapshot request
 type Index types.Index
+
+// Revision is a snapshot revision number
+type Revision types.Revision
