@@ -18,18 +18,13 @@ import (
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	"regexp"
 )
 
 // Filter filters individual events for a node
 type Filter interface {
 	// Accept indicates whether to accept the given object
 	Accept(id types.ID) bool
-}
-
-// DeviceResolver resolves a device from a type ID
-type DeviceResolver interface {
-	// Resolve resolves a device
-	Resolve(id types.ID) (device.ID, error)
 }
 
 // MastershipFilter activates a controller on acquiring mastership
@@ -52,3 +47,21 @@ func (f *MastershipFilter) Accept(id types.ID) bool {
 }
 
 var _ Filter = &MastershipFilter{}
+
+// DeviceResolver resolves a device from a type ID
+type DeviceResolver interface {
+	// Resolve resolves a device
+	Resolve(id types.ID) (device.ID, error)
+}
+
+// RegexpDeviceResolver is a DeviceResolver that reads a device ID from a regexp
+type RegexpDeviceResolver struct {
+	Regexp regexp.Regexp
+}
+
+// Resolve resolves a device ID from the configured regexp
+func (r *RegexpDeviceResolver) Resolve(id types.ID) (device.ID, error) {
+	return device.ID(r.Regexp.FindString(string(id))), nil
+}
+
+var _ DeviceResolver = &RegexpDeviceResolver{}
