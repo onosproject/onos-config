@@ -161,14 +161,22 @@ func (s *atomixStore) Create(conf *config.NetworkConfig) error {
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	id, err := s.ids.Increment(ctx, 1)
+	cancel()
+	if err != nil {
+		return err
+	}
+
+	conf.Index = config.Index(id)
 
 	bytes, err := proto.Marshal(conf)
 	if err != nil {
 		return err
 	}
 
+	ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)
 	entry, err := s.configs.Put(ctx, string(conf.ID), bytes, _map.IfNotSet())
+	cancel()
 	if err != nil {
 		return err
 	}
