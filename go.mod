@@ -3,7 +3,7 @@ module github.com/onosproject/onos-config
 go 1.12
 
 require (
-	github.com/atomix/atomix-go-client v0.0.0-20191002230432-0dc7585a607b
+	github.com/atomix/atomix-go-client v0.0.0-20191003001725-858dcf9a0ea0
 	github.com/atomix/atomix-go-local v0.0.0-20191002230335-39d2b157c446
 	github.com/atomix/atomix-go-node v0.0.0-20191002230317-dabfbb700511
 	github.com/cenkalti/backoff v2.2.1+incompatible
