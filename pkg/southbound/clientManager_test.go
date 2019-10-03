@@ -18,7 +18,7 @@ import (
 	"context"
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	device                    devicetype.Device
+	device                    devicepb.Device
 	saveGnmiClientFactory     func(ctx context.Context, d client.Destination) (GnmiClient, error)
 	saveGnmiBaseClientFactory func() BaseClientInterface
 )
@@ -121,11 +121,11 @@ func setUp(t *testing.T) {
 	}
 
 	timeout := 10 * time.Second
-	device = devicetype.Device{
-		ID:      devicetype.ID("localhost-1"),
+	device = devicepb.Device{
+		ID:      devicepb.ID("localhost-1"),
 		Address: "localhost:10161",
 		Version: "1.0.0",
-		Credentials: devicetype.Credentials{
+		Credentials: devicepb.Credentials{
 			User:     "devicesim",
 			Password: "notused",
 		},

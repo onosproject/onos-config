@@ -25,7 +25,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	snapshottype "github.com/onosproject/onos-config/pkg/types/snapshot"
-	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"io"
@@ -101,7 +101,7 @@ type Store interface {
 	Store(snapshot *snapshottype.DeviceSnapshot) error
 
 	// Load loads a snapshot
-	Load(deviceID devicetype.ID) (*snapshottype.DeviceSnapshot, error)
+	Load(deviceID device.ID) (*snapshottype.DeviceSnapshot, error)
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
@@ -123,7 +123,7 @@ func (s *atomixStore) Store(snapshot *snapshottype.DeviceSnapshot) error {
 	return err
 }
 
-func (s *atomixStore) Load(deviceID devicetype.ID) (*snapshottype.DeviceSnapshot, error) {
+func (s *atomixStore) Load(deviceID device.ID) (*snapshottype.DeviceSnapshot, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

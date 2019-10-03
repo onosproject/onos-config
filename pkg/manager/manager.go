@@ -24,7 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 	"strings"
@@ -45,7 +45,7 @@ type Manager struct {
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              *dispatcher.Dispatcher
-	OperationalStateCache   map[devicetype.ID]change.TypedValueMap
+	OperationalStateCache   map[device.ID]change.TypedValueMap
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -70,7 +70,7 @@ func NewManager(configStore *store.ConfigurationStore, changeStore *store.Change
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
-		OperationalStateCache:   make(map[devicetype.ID]change.TypedValueMap),
+		OperationalStateCache:   make(map[device.ID]change.TypedValueMap),
 	}
 
 	changeIds := make([]string, 0)

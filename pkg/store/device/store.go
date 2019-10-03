@@ -17,9 +17,7 @@ package device
 import (
 	"context"
 	"github.com/atomix/atomix-go-client/pkg/client/util"
-	"github.com/onosproject/onos-topo/pkg/service/device"
-	deviceservice "github.com/onosproject/onos-topo/pkg/service/device"
-	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	"io"
 	"time"
@@ -30,10 +28,10 @@ const topoAddress = "onos-topo:5150"
 // Store is a device store
 type Store interface {
 	// Get gets a device by ID
-	Get(devicetype.ID) (*devicetype.Device, error)
+	Get(devicepb.ID) (*devicepb.Device, error)
 
 	// Watch watches the device store for changes
-	Watch(chan<- *devicetype.Device) error
+	Watch(chan<- *devicepb.Device) error
 }
 
 // NewTopoStore returns a new topo-based device store
@@ -46,7 +44,7 @@ func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
 		return nil, err
 	}
 
-	client := deviceservice.NewDeviceServiceClient(conn)
+	client := devicepb.NewDeviceServiceClient(conn)
 	return &topoStore{
 		client: client,
 	}, nil
@@ -54,13 +52,13 @@ func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
 
 // A device Store that uses the topo service to propagate devices
 type topoStore struct {
-	client deviceservice.DeviceServiceClient
+	client devicepb.DeviceServiceClient
 }
 
-func (s *topoStore) Get(id devicetype.ID) (*devicetype.Device, error) {
+func (s *topoStore) Get(id devicepb.ID) (*devicepb.Device, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	response, err := s.client.Get(ctx, &deviceservice.GetRequest{
+	response, err := s.client.Get(ctx, &devicepb.GetRequest{
 		ID: id,
 	})
 	if err != nil {
@@ -69,8 +67,8 @@ func (s *topoStore) Get(id devicetype.ID) (*devicetype.Device, error) {
 	return response.Device, nil
 }
 
-func (s *topoStore) Watch(ch chan<- *devicetype.Device) error {
-	list, err := s.client.List(context.Background(), &device.ListRequest{
+func (s *topoStore) Watch(ch chan<- *devicepb.Device) error {
+	list, err := s.client.List(context.Background(), &devicepb.ListRequest{
 		Subscribe: true,
 	})
 	if err != nil {

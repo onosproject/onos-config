@@ -17,7 +17,7 @@ package utils
 
 import (
 	"fmt"
-	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 )
 
 // ToModelName simply joins together model name and version in a consistent way
@@ -26,6 +26,6 @@ func ToModelName(name string, version string) string {
 }
 
 // ToConfigName simply joins together device ID and version in a consistent way
-func ToConfigName(deviceID devicetype.ID, version string) string {
+func ToConfigName(deviceID device.ID, version string) string {
 	return fmt.Sprintf("%s-%s", deviceID, version)
 }

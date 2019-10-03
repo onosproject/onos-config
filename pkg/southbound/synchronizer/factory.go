@@ -23,7 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetypes "github.com/onosproject/onos-topo/pkg/types/device"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"time"
 )
@@ -34,7 +34,7 @@ import (
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[devicetypes.ID]change.TypedValueMap) {
+	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[device.ID]change.TypedValueMap) {
 	for topoEvent := range topoChannel {
 		device := topoEvent.Device()
 		if !dispatcher.HasListener(device.ID) && topoEvent.ItemAction() != events.EventItemDeleted {

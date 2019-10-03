@@ -21,7 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
 	"testing"
 	"time"
@@ -30,7 +30,7 @@ import (
 func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
 	chan events.TopoEvent, chan<- events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
-	*modelregistry.ModelRegistry, map[devicetype.ID]change.TypedValueMap, error) {
+	*modelregistry.ModelRegistry, map[device.ID]change.TypedValueMap, error) {
 
 	changeStore, err := store.LoadChangeStore("../../../configs/changeStore-sample.json")
 	if err != nil {
@@ -43,7 +43,7 @@ func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
 
 	dispatcher := dispatcher.NewDispatcher()
 	modelregistry := new(modelregistry.ModelRegistry)
-	opStateCache := make(map[devicetype.ID]change.TypedValueMap)
+	opStateCache := make(map[device.ID]change.TypedValueMap)
 	return &changeStore, &configStore,
 		make(chan events.TopoEvent),
 		make(chan events.OperationalStateEvent),
@@ -74,15 +74,15 @@ func TestFactory_Revert(t *testing.T) {
 
 	timeout := time.Millisecond * 500
 	device1NameStr := "factoryTd"
-	device1 := devicetype.Device{
-		ID:          devicetype.ID(device1NameStr),
+	device1 := device.Device{
+		ID:          device.ID(device1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:11161",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: devicetype.Credentials{},
-		TLS:         devicetype.TlsConfig{},
+		Credentials: device.Credentials{},
+		TLS:         device.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
