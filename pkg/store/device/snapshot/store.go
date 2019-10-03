@@ -219,6 +219,8 @@ func (s *atomixStore) Delete(request *snapshot.DeviceSnapshot) error {
 	if err != nil {
 		return err
 	}
+
+	request.Revision = 0
 	request.Updated = entry.Updated
 	return nil
 }

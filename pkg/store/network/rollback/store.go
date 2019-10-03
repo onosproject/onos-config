@@ -222,6 +222,8 @@ func (s *atomixStore) Delete(config *rollback.NetworkRollback) error {
 	if err != nil {
 		return err
 	}
+
+	config.Revision = 0
 	config.Updated = entry.Updated
 	return nil
 }

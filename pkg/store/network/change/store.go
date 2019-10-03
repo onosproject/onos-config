@@ -239,6 +239,8 @@ func (s *atomixStore) Delete(config *change.NetworkChange) error {
 	if err != nil {
 		return err
 	}
+
+	config.Revision = 0
 	config.Updated = entry.Updated
 	return nil
 }
