@@ -53,7 +53,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 	if clientConnectionError != nil {
 		return clientConnectionError
 	}
-	client := diags.NewConfigDiagsClient(clientConnection)
+	client := diags.CreateConfigDiagsClient(clientConnection)
 	configReq := &diags.ConfigRequest{DeviceIDs: make([]string, 0)}
 	if len(args) > 0 {
 		configReq.DeviceIDs = append(configReq.DeviceIDs, args[0])
