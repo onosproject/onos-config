@@ -85,7 +85,7 @@ func Test_DeviceTreeCommand(t *testing.T) {
 		configDiagsClientChanges:        &changesClient,
 	})
 	cmd := getGetDeviceTreeCommand()
-	args := []string {"device1"}
+	args := []string{"device1"}
 	err := cmd.RunE(cmd, args)
 	assert.NilError(t, err)
 	output := strings.Split(strings.TrimSuffix(outputBuffer.String(), "\n"), "\n")
