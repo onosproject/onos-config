@@ -17,7 +17,6 @@ package mastership
 import (
 	"context"
 	"fmt"
-	"github.com/atomix/atomix-go-client/pkg/client"
 	"github.com/atomix/atomix-go-client/pkg/client/election"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-local/pkg/atomix/local"
@@ -118,7 +117,6 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
 	electionFactory func(devicetype.ID) (election.Election, error)
-	group           *client.PartitionGroup
 	closer          io.Closer
 	elections       map[devicetype.ID]election.Election
 	masterships     map[devicetype.ID]Mastership
@@ -197,7 +195,8 @@ func (s *atomixStore) Watch(deviceID devicetype.ID, ch chan<- Mastership) error 
 	mastershipElection, ok := s.elections[deviceID]
 	s.mu.RUnlock()
 	if !ok {
-		mastershipElection, err := s.electionFactory(deviceID)
+		var err error
+		mastershipElection, err = s.electionFactory(deviceID)
 		if err != nil {
 			return err
 		}

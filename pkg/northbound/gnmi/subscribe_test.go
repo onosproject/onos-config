@@ -25,7 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
@@ -428,11 +428,11 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 	server, mgr := setUp()
 	mgr.DeviceStore = &topocache.DeviceStore{
-		Cache: make(map[device.ID]*device.Device),
+		Cache: make(map[devicetype.ID]*devicetype.Device),
 	}
 	targetStr := "Device1"
-	target := device.ID(targetStr)
-	mgr.DeviceStore.Cache[target] = &device.Device{
+	target := devicetype.ID(targetStr)
+	mgr.DeviceStore.Cache[target] = &devicetype.Device{
 		ID: target,
 	}
 	configChan, respChan, err := mgr.Dispatcher.RegisterDevice(target)

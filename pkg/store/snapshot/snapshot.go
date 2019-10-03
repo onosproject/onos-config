@@ -16,7 +16,6 @@ package snapshot
 
 import (
 	"context"
-	"github.com/atomix/atomix-go-client/pkg/client/counter"
 	"github.com/atomix/atomix-go-client/pkg/client/map"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
@@ -107,7 +106,6 @@ type Store interface {
 
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
-	ids     counter.Counter
 	configs _map.Map
 	closer  io.Closer
 }

@@ -26,7 +26,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -98,15 +98,15 @@ func TestNew(t *testing.T) {
 	}
 	timeout := time.Millisecond * 200
 	mock1NameStr := "mockTd"
-	mockDevice1 := device.Device{
-		ID:          device.ID(mock1NameStr),
+	mockDevice1 := devicetype.Device{
+		ID:          devicetype.ID(mock1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:11161",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: device.Credentials{},
-		TLS:         device.TlsConfig{},
+		Credentials: devicetype.Credentials{},
+		TLS:         devicetype.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
@@ -211,7 +211,7 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, os1.String(), "10002")
 }
 
-func synchronizerBootstrap(t *testing.T) (*MockTargetIf, *device.Device, *gnmi.CapabilityResponse) {
+func synchronizerBootstrap(t *testing.T) (*MockTargetIf, *devicetype.Device, *gnmi.CapabilityResponse) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockTarget := NewMockTargetIf(ctrl)
@@ -228,15 +228,15 @@ func synchronizerBootstrap(t *testing.T) (*MockTargetIf, *device.Device, *gnmi.C
 
 	timeout := time.Millisecond * 200
 	device1NameStr := "Device1" // Exists in configStore-sample.json
-	device1 := device.Device{
-		ID:          device.ID(device1NameStr),
+	device1 := devicetype.Device{
+		ID:          devicetype.ID(device1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:11161",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: device.Credentials{},
-		TLS:         device.TlsConfig{},
+		Credentials: devicetype.Credentials{},
+		TLS:         devicetype.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,

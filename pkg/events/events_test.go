@@ -18,7 +18,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetype "github.com/onosproject/onos-topo/pkg/types/device"
 	"strings"
 	"testing"
 	"time"
@@ -71,13 +71,13 @@ func Test_configEventConstruction(t *testing.T) {
 
 func Test_topoEventConstruction(t *testing.T) {
 
-	event := NewTopoEvent(eventSubject, EventItemAdded, &device.Device{ID: device.ID("foo"), Address: eventAddress})
+	event := NewTopoEvent(eventSubject, EventItemAdded, &devicetype.Device{ID: devicetype.ID("foo"), Address: eventAddress})
 
 	assert.Equal(t, event.EventType(), eventTypeTopo)
 	assert.Equal(t, event.Subject(), eventSubject)
 	assert.Assert(t, event.Time().Before(time.Now()))
 	assert.Equal(t, event.Device().Address, eventAddress)
-	assert.Equal(t, device.ID("foo"), event.Device().ID)
+	assert.Equal(t, devicetype.ID("foo"), event.Device().ID)
 
 	assert.Equal(t, event.ItemAction(), EventItemAdded)
 
