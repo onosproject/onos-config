@@ -60,3 +60,8 @@ provided as additional layers:
 * [How to onboard your device](https://docs.onosproject.org/onos-config/docs/modelplugin/) extending onos-config with Model Plugins
 * [Developer workflow summary](https://docs.onosproject.org/developers/dev_workflow/) for onos-config project
 * [Contacts and Meetings](https://docs.onosproject.org/developers/community-info/) for onos-config project
+
+## Additional Resources
+### µONOS talks at ONF Connect 2019
+* [µONOS Project Wide Videos](https://docs.onosproject.org/#additional-resources)
+* [Device Configuration in µONOS](https://vimeo.com/360886688)
