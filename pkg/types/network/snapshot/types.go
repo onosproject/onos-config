@@ -15,30 +15,44 @@
 package snapshot
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/types"
 	devicesnapshot "github.com/onosproject/onos-config/pkg/types/device/snapshot"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	"strconv"
+	"strings"
 )
 
-// ID is a snapshot request identifier
+// ID is a network configuration identifier type
 type ID types.ID
 
-// Index is the index of a snapshot request
-type Index types.Index
-
-// Revision is a snapshot revision number
-type Revision types.Revision
-
-// GetDeviceSnapshotID returns the device snapshot ID for the given device
-func (s *NetworkSnapshot) GetDeviceSnapshotID(deviceID device.ID) devicesnapshot.ID {
-	return devicesnapshot.NewID(types.ID(s.ID), deviceID)
+// GetIndex returns the Index
+func (i ID) GetIndex() Index {
+	index, _ := strconv.Atoi(strings.Split(string(i), "-")[1])
+	return Index(index)
 }
 
-// GetDeviceSnapshots returns a list of device snapshot IDs
-func (s *NetworkSnapshot) GetDeviceSnapshots() []devicesnapshot.ID {
+// Index is the index of a network configuration
+type Index uint64
+
+// GetID returns the ID for the index
+func (i Index) GetID() ID {
+	return ID(fmt.Sprintf("network-snapshot-%d", i))
+}
+
+// Revision is a network configuration revision number
+type Revision types.Revision
+
+// GetDeviceSnapshotID gets the device snapshot ID for the given device
+func (s *NetworkSnapshot) GetDeviceSnapshotID(deviceID device.ID) devicesnapshot.ID {
+	return devicesnapshot.ID(fmt.Sprintf("device-snapshot-%d-%s", s.Index, deviceID))
+}
+
+// GetDeviceSnapshotIDs returns a list of snapshot IDs for the devices in the snapshot
+func (s *NetworkSnapshot) GetDeviceSnapshotIDs() []devicesnapshot.ID {
 	snapshotIDs := make([]devicesnapshot.ID, len(s.Devices))
-	for i, deviceID := range s.Devices {
-		snapshotIDs[i] = s.GetDeviceSnapshotID(deviceID)
+	for i, device := range s.Devices {
+		snapshotIDs[i] = s.GetDeviceSnapshotID(device)
 	}
 	return snapshotIDs
 }

@@ -119,6 +119,9 @@ type Store interface {
 	// Get gets a network snapshot request
 	Get(id snapshot.ID) (*snapshot.NetworkSnapshot, error)
 
+	// GetByIndex gets a network change by index
+	GetByIndex(index snapshot.Index) (*snapshot.NetworkSnapshot, error)
+
 	// Create creates a new network snapshot request
 	Create(config *snapshot.NetworkSnapshot) error
 
@@ -147,6 +150,19 @@ func (s *atomixStore) Get(id snapshot.ID) (*snapshot.NetworkSnapshot, error) {
 	defer cancel()
 
 	entry, err := s.configs.Get(ctx, string(id))
+	if err != nil {
+		return nil, err
+	} else if entry == nil {
+		return nil, nil
+	}
+	return decodeNetworkSnapshot(entry)
+}
+
+func (s *atomixStore) GetByIndex(index snapshot.Index) (*snapshot.NetworkSnapshot, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	entry, err := s.configs.Get(ctx, string(index.GetID()))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {

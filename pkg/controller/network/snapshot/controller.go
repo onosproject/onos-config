@@ -23,7 +23,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/types"
 	devicesnapshottype "github.com/onosproject/onos-config/pkg/types/device/snapshot"
 	networksnapshottype "github.com/onosproject/onos-config/pkg/types/network/snapshot"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
 )
 
 // NewController returns a new network snapshot request controller
@@ -48,67 +47,165 @@ type Reconciler struct {
 	devices         devicestore.Store
 	networkRequests networksnapshotstore.Store
 	deviceRequests  devicesnapshotstore.Store
+	snapshotIndex   networksnapshottype.Index
 }
 
-// Reconcile reconciles a network snapshot request
+// Reconcile reconciles the state of a network snapshot
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
-	networkRequest, err := r.networkRequests.Get(networksnapshottype.ID(id))
+	config, err := r.networkRequests.Get(networksnapshottype.ID(id))
 	if err != nil {
 		return false, err
 	}
 
-	// If the list of devices in the request is empty, set the devices
-	if networkRequest.Devices == nil || len(networkRequest.Devices) == 0 {
-		deviceIDs := make([]device.ID, 0)
-		ch := make(chan *device.Device)
-		if err := r.devices.List(ch); err != nil {
-			return false, err
-		}
-
-		for device := range ch {
-			deviceIDs = append(deviceIDs, device.ID)
-		}
-		networkRequest.Devices = deviceIDs
-		if err := r.networkRequests.Update(networkRequest); err != nil {
-			return false, err
-		}
+	// If the revision number is 0, the change has been removed
+	if config.Revision == 0 {
+		return r.deleteDeviceSnapshots(config)
 	}
 
-	// Loop through devices and ensure device snapshots have been created
-	for _, deviceID := range networkRequest.Devices {
-		snapshotID := networkRequest.GetDeviceSnapshotID(deviceID)
-		deviceRequest, err := r.deviceRequests.Get(devicesnapshottype.ID(snapshotID))
+	// Ensure changes have been created in the device change store
+	succeeded, err := r.createDeviceSnapshots(config)
+	if !succeeded || err != nil {
+		return succeeded, err
+	}
+
+	// If the change is in the PENDING state, check if it can be applied and apply it if so.
+	if config.Status == networksnapshottype.Status_PENDING {
+		apply, err := r.canApplyNetworkSnapshot(config)
 		if err != nil {
 			return false, err
-		} else if deviceRequest == nil {
-			deviceRequest = &devicesnapshottype.DeviceSnapshot{
-				ID:        devicesnapshottype.ID(snapshotID),
+		} else if !apply {
+			return true, nil
+		}
+		return r.applyNetworkSnapshot(config)
+	}
+
+	// If the change is the APPLYING state, ensure all device changes are in the APPLYING
+	// state and check results
+	if config.Status == networksnapshottype.Status_APPLYING {
+		return r.applyDeviceSnapshots(config)
+	}
+
+	// If the snapshot is SUCCEEDED or FAILED, apply the next snapshot in the queue
+	if config.Status == networksnapshottype.Status_SUCCEEDED || config.Status == networksnapshottype.Status_FAILED {
+		return r.applyNextNetworkSnapshot(config)
+	}
+	return true, nil
+}
+
+func (r *Reconciler) canApplyNetworkSnapshot(config *networksnapshottype.NetworkSnapshot) (bool, error) {
+	for index := r.snapshotIndex; index < config.Index; index++ {
+		snapshot, err := r.networkRequests.GetByIndex(index)
+		if err != nil {
+			return false, err
+		} else if snapshot.Status == networksnapshottype.Status_PENDING || snapshot.Status == networksnapshottype.Status_APPLYING {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func (r *Reconciler) applyNetworkSnapshot(config *networksnapshottype.NetworkSnapshot) (bool, error) {
+	config.Status = networksnapshottype.Status_APPLYING
+	err := r.networkRequests.Update(config)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *Reconciler) createDeviceSnapshots(config *networksnapshottype.NetworkSnapshot) (bool, error) {
+	for _, deviceID := range config.Devices {
+		snapshotID := config.GetDeviceSnapshotID(deviceID)
+		deviceSnapshot, err := r.deviceRequests.Get(snapshotID)
+		if err != nil {
+			return false, err
+		} else if deviceSnapshot == nil {
+			deviceSnapshot = &devicesnapshottype.DeviceSnapshot{
+				ID:        snapshotID,
 				DeviceID:  deviceID,
-				Timestamp: networkRequest.Timestamp,
-				Status:    devicesnapshottype.Status_PENDING,
+				Timestamp: config.Timestamp,
 			}
-			if err := r.deviceRequests.Create(deviceRequest); err != nil {
+			if err := r.deviceRequests.Create(deviceSnapshot); err != nil {
 				return false, err
 			}
 		}
+	}
+	return true, nil
+}
 
-		// Ensure the device status matches the network status.
-		if networkRequest.Status == networksnapshottype.Status_PENDING {
-			if deviceRequest.Status != devicesnapshottype.Status_PENDING {
-				deviceRequest.Status = devicesnapshottype.Status_PENDING
-				if err := r.deviceRequests.Update(deviceRequest); err != nil {
-					return false, err
-				}
+func (r *Reconciler) applyDeviceSnapshots(config *networksnapshottype.NetworkSnapshot) (bool, error) {
+	status := networksnapshottype.Status_SUCCEEDED
+	reason := networksnapshottype.Reason_ERROR
+	for _, snapshotID := range config.GetDeviceSnapshotIDs() {
+		deviceSnapshot, err := r.deviceRequests.Get(snapshotID)
+		if err != nil {
+			return false, err
+		}
+
+		// If the snapshot is PENDING then snapshot it to APPLYING
+		if deviceSnapshot.Status == devicesnapshottype.Status_PENDING {
+			deviceSnapshot.Status = devicesnapshottype.Status_APPLYING
+			status = networksnapshottype.Status_APPLYING
+			err = r.deviceRequests.Update(deviceSnapshot)
+			if err != nil {
+				return false, err
 			}
-		} else if networkRequest.Status == networksnapshottype.Status_APPLYING {
-			if deviceRequest.Status == devicesnapshottype.Status_PENDING {
-				deviceRequest.Status = devicesnapshottype.Status_APPLYING
-				if err := r.deviceRequests.Update(deviceRequest); err != nil {
-					return false, err
+		} else if deviceSnapshot.Status == devicesnapshottype.Status_APPLYING {
+			// If the snapshot is APPLYING then ensure the network status is APPLYING
+			status = networksnapshottype.Status_APPLYING
+		} else if deviceSnapshot.Status == devicesnapshottype.Status_FAILED {
+			// If the snapshot is FAILED then set the network to FAILED
+			// If the snapshot failure reason is UNAVAILABLE then all snapshots must be UNAVAILABLE, otherwise
+			// the network must be failed with an ERROR.
+			if status != networksnapshottype.Status_FAILED {
+				switch deviceSnapshot.Reason {
+				case devicesnapshottype.Reason_ERROR:
+					reason = networksnapshottype.Reason_ERROR
+				case devicesnapshottype.Reason_UNAVAILABLE:
+					reason = networksnapshottype.Reason_UNAVAILABLE
 				}
+			} else if reason == networksnapshottype.Reason_UNAVAILABLE && deviceSnapshot.Reason == devicesnapshottype.Reason_ERROR {
+				reason = networksnapshottype.Reason_ERROR
+			} else if reason == networksnapshottype.Reason_ERROR && deviceSnapshot.Reason == devicesnapshottype.Reason_UNAVAILABLE {
+				reason = networksnapshottype.Reason_ERROR
 			}
-		} else {
-			return true, nil
+			status = networksnapshottype.Status_FAILED
+		}
+	}
+
+	// If the status has changed, update the network config
+	if config.Status != status || config.Reason != reason {
+		config.Status = status
+		config.Reason = reason
+		if err := r.networkRequests.Update(config); err != nil {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func (r *Reconciler) deleteDeviceSnapshots(config *networksnapshottype.NetworkSnapshot) (bool, error) {
+	for _, snapshotID := range config.GetDeviceSnapshotIDs() {
+		deviceSnapshot, err := r.deviceRequests.Get(snapshotID)
+		if err != nil {
+			return false, err
+		}
+		err = r.deviceRequests.Delete(deviceSnapshot)
+		if err != nil {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func (r *Reconciler) applyNextNetworkSnapshot(config *networksnapshottype.NetworkSnapshot) (bool, error) {
+	nextSnapshot, err := r.networkRequests.GetByIndex(config.Index + 1)
+	if err != nil {
+		return false, err
+	} else if nextSnapshot != nil && nextSnapshot.Status == networksnapshottype.Status_PENDING {
+		nextSnapshot.Status = networksnapshottype.Status_APPLYING
+		if err := r.networkRequests.Update(nextSnapshot); err != nil {
+			return false, err
 		}
 	}
 	return true, nil
