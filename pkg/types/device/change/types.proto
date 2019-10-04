@@ -50,35 +50,38 @@ message Change {
     // The identifier of the change
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
-    // The ID of the parent NetworkConfig
-    string config_id = 2 [(gogoproto.customname) = "ConfigID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+    // index is the index of the configuration
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
 
     // The configuration revision number
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
+    // The ID of the parent NetworkConfig
+    string config_id = 4 [(gogoproto.customname) = "ConfigID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+
     // The ID of the device to change
-    string device_id = 4 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+    string device_id = 5 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
 
     // The version of the device to change
-    string device_version = 5;
+    string device_version = 6;
 
     // The current status of the configuration
-    Status status = 6;
+    Status status = 7;
 
     // The reason the change failed
-    Reason reason = 7;
+    Reason reason = 8;
 
     // An optional status message
-    string message = 8;
+    string message = 9;
 
     // The time at which the configuration was created
-    google.protobuf.Timestamp created = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp created = 10 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // The time at which the configuration was last updated
-    google.protobuf.Timestamp updated = 10 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp updated = 11 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // The values to change
-    repeated Value values = 11;
+    repeated Value values = 12;
 }
 
 // ValueType is the type for a value

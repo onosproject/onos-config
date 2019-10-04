@@ -50,14 +50,14 @@ message NetworkRollback {
     // id is the ID of the rollback
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
-    // The ID if the change to rollback
-    string change_id = 2 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
-
     // index is the index of the rollback
-    uint64 index = 3 [(gogoproto.casttype) = "Index"];
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
 
     // revision is the rollback revision number
-    uint64 revision = 4 [(gogoproto.casttype) = "Revision"];
+    uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
+
+    // The ID if the change to rollback
+    string change_id = 4 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
 
     // status is the current status of the rollback
     Status status = 5;

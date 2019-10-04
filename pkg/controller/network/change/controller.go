@@ -119,17 +119,25 @@ func (r *Reconciler) applyNetworkChange(config *networktypes.NetworkChange) (boo
 }
 
 func (r *Reconciler) createDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
+	updated := false
 	for _, change := range config.Changes {
-		deviceChange, err := r.deviceChanges.Get(config.GetChangeID(change.DeviceID))
-		if err != nil {
-			return false, err
-		} else if deviceChange == nil {
-			deviceChange = change
-			deviceChange.Status = devicetypes.Status_PENDING
-			err = r.deviceChanges.Create(deviceChange)
-			if err != nil {
+		// If the change index is not set, the change needs to be stored
+		if change.Index == 0 {
+			change.Status = devicetypes.Status_PENDING
+			if err := r.deviceChanges.Create(change); err != nil {
 				return false, err
 			}
+			updated = true
+		}
+	}
+
+	// Update the network change if device changes have been updated
+	// TODO: There's a race in this controller wherein a device change could be created
+	// without the network change every being updated. To avoid this, the network change
+	// should be updated with a new device change ID prior to the device change being created.
+	if updated {
+		if err := r.networkChanges.Update(config); err != nil {
+			return false, err
 		}
 	}
 	return true, nil
@@ -138,8 +146,8 @@ func (r *Reconciler) createDeviceChanges(config *networktypes.NetworkChange) (bo
 func (r *Reconciler) applyDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
 	status := networktypes.Status_SUCCEEDED
 	reason := networktypes.Reason_ERROR
-	for _, id := range config.GetChangeIDs() {
-		change, err := r.deviceChanges.Get(id)
+	for _, deviceChange := range config.Changes {
+		change, err := r.deviceChanges.Get(deviceChange.ID)
 		if err != nil {
 			return false, err
 		}
@@ -188,7 +196,7 @@ func (r *Reconciler) applyDeviceChanges(config *networktypes.NetworkChange) (boo
 
 func (r *Reconciler) deleteDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
 	for _, change := range config.Changes {
-		deviceChange, err := r.deviceChanges.Get(config.GetChangeID(change.DeviceID))
+		deviceChange, err := r.deviceChanges.Get(change.ID)
 		if err != nil {
 			return false, err
 		}

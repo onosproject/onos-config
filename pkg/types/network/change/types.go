@@ -17,8 +17,6 @@ package change
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/types"
-	devicechange "github.com/onosproject/onos-config/pkg/types/device/change"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"strconv"
 	"strings"
 )
@@ -42,22 +40,3 @@ func (i Index) GetID() ID {
 
 // Revision is a network configuration revision number
 type Revision types.Revision
-
-// GetChangeIDs returns a list of change IDs for the network
-func (c *NetworkChange) GetChangeIDs() []devicechange.ID {
-	changes := c.GetChanges()
-	if changes == nil {
-		return nil
-	}
-
-	ids := make([]devicechange.ID, len(changes))
-	for i, change := range changes {
-		ids[i] = c.GetChangeID(change.DeviceID)
-	}
-	return ids
-}
-
-// GetChangeID returns the ID for the change to the given device
-func (c *NetworkChange) GetChangeID(deviceID device.ID) devicechange.ID {
-	return devicechange.NewID(types.ID(c.ID), deviceID)
-}
