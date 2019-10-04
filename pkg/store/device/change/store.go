@@ -124,6 +124,9 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 type Store interface {
 	io.Closer
 
+	// LastIndex returns the last index for the given device
+	LastIndex(device.ID) (change.Index, error)
+
 	// NextID returns the next snapshot index
 	NextIndex(device.ID) (change.Index, error)
 
@@ -176,6 +179,18 @@ func (s *atomixStore) getIndexCounter(deviceID device.ID) (counter.Counter, erro
 		s.mu.Unlock()
 	}
 	return counter, nil
+}
+
+func (s *atomixStore) LastIndex(deviceID device.ID) (change.Index, error) {
+	indexes, err := s.getIndexCounter(deviceID)
+	if err != nil {
+		return 0, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	index, err := indexes.Get(ctx)
+	return change.Index(index), err
 }
 
 func (s *atomixStore) NextIndex(deviceID device.ID) (change.Index, error) {

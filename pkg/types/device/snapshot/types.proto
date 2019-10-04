@@ -81,9 +81,15 @@ message Snapshot {
     // device_id is the device to which the snapshot applies
     string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
 
+    // snapshot_id is the ID of the snapshot
+    string snapshot_id = 3 [(gogoproto.customname) = "SnapshotID", (gogoproto.casttype) = "ID"];
+
+    // index is the index at which the snapshot was taken
+    uint64 index = 4 [(gogoproto.casttype) = "Index"];
+
     // values is a list of values to set
-    repeated onos.config.device.change.Value values = 3;
+    repeated onos.config.device.change.Value values = 5;
 
     // timestamp is the time at which to take the snapshot
-    google.protobuf.Timestamp timestamp = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp timestamp = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }

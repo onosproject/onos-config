@@ -16,14 +16,16 @@ package snapshot
 
 import (
 	"github.com/onosproject/onos-config/pkg/controller"
+	changestore "github.com/onosproject/onos-config/pkg/store/device/change"
 	snapshotstore "github.com/onosproject/onos-config/pkg/store/device/snapshot"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/types"
+	changetype "github.com/onosproject/onos-config/pkg/types/device/change"
 	snapshottype "github.com/onosproject/onos-config/pkg/types/device/snapshot"
 )
 
 // NewController returns a new network controller
-func NewController(mastership mastershipstore.Store, snapshots snapshotstore.Store) *controller.Controller {
+func NewController(mastership mastershipstore.Store, changes changestore.Store, snapshots snapshotstore.Store) *controller.Controller {
 	c := controller.NewController()
 	c.Filter(&controller.MastershipFilter{
 		Store: mastership,
@@ -34,6 +36,7 @@ func NewController(mastership mastershipstore.Store, snapshots snapshotstore.Sto
 	})
 	c.Reconcile(&Reconciler{
 		snapshots: snapshots,
+		changes:   changes,
 	})
 	return c
 }
@@ -41,6 +44,7 @@ func NewController(mastership mastershipstore.Store, snapshots snapshotstore.Sto
 // Reconciler is the change reconciler
 type Reconciler struct {
 	snapshots snapshotstore.Store
+	changes   changestore.Store
 }
 
 // Reconcile reconciles a change
@@ -52,18 +56,90 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 
 	// If the request is APPLYING, take the snapshot
 	if request.Status == snapshottype.Status_APPLYING {
-		if err := r.takeSnapshot(request); err != nil {
-			return false, err
-		}
+		return r.takeSnapshot(request)
 	}
 	return true, nil
 }
 
 // takeSnapshot takes a snapshot
-func (r *Reconciler) takeSnapshot(request *snapshottype.DeviceSnapshot) error {
-	// TODO
-	snapshot := &snapshottype.Snapshot{}
-	return r.snapshots.Store(snapshot)
+func (r *Reconciler) takeSnapshot(request *snapshottype.DeviceSnapshot) (bool, error) {
+	index := changetype.Index(0)
+
+	// Determine the starting index for the snapshot
+	currentSnapshot, err := r.snapshots.Load(request.DeviceID)
+	if err != nil {
+		return false, err
+	} else if currentSnapshot != nil {
+		index = changetype.Index(currentSnapshot.Index + 1)
+	}
+	snapshotIndex := snapshottype.Index(index)
+
+	// If the snapshot has not been stored, take and store the snapshot
+	if currentSnapshot != nil && currentSnapshot.SnapshotID != request.ID {
+		// Get the index up to which to iterate
+		lastIndex, err := r.changes.LastIndex(request.DeviceID)
+		if err != nil {
+			return false, err
+		}
+
+		// Loop through device changes and populate the change values state from all changes
+		snapshotValues := make(map[string]*changetype.Value)
+		for i := index; i < changetype.Index(lastIndex); i++ {
+			change, err := r.changes.Get(i.GetID(request.DeviceID))
+			if err != nil {
+				return false, err
+			}
+
+			// If the change occurred after the snapshot time, stop processing snapshots
+			if change.Created.UnixNano() < request.Timestamp.UnixNano() {
+				break
+			}
+
+			for _, value := range change.Values {
+				snapshotValues[value.Path] = value
+			}
+			snapshotIndex = snapshottype.Index(change.Index)
+		}
+
+		// Convert the snapshot values to a list for storage
+		values := make([]*changetype.Value, 0, len(snapshotValues))
+		for _, value := range snapshotValues {
+			values = append(values, value)
+		}
+
+		// Store the snapshot
+		snapshot := &snapshottype.Snapshot{
+			ID:        snapshottype.ID(request.DeviceID),
+			DeviceID:  request.DeviceID,
+			Index:     snapshotIndex,
+			Timestamp: request.Timestamp,
+			Values:    values,
+		}
+		if err := r.snapshots.Store(snapshot); err != nil {
+			return false, err
+		}
+	} else {
+		snapshotIndex = currentSnapshot.Index
+	}
+
+	// Update the snapshot state
+	request.Status = snapshottype.Status_SUCCEEDED
+	if err := r.snapshots.Update(request); err != nil {
+		return false, err
+	}
+
+	// Once the snapshot is successful, delete changes
+	for i := index; i <= changetype.Index(snapshotIndex); i++ {
+		change, err := r.changes.Get(i.GetID(request.DeviceID))
+		if err != nil {
+			return false, err
+		} else if change != nil {
+			if err := r.changes.Delete(change); err != nil {
+				return false, err
+			}
+		}
+	}
+	return true, nil
 }
 
 var _ controller.Reconciler = &Reconciler{}

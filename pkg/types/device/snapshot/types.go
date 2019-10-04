@@ -28,5 +28,8 @@ func (i ID) GetDeviceID() device.ID {
 	return device.ID(string(i)[:strings.LastIndex(string(i), "-")])
 }
 
+// Index is the index of a snapshot
+type Index uint64
+
 // Revision is a network configuration revision number
 type Revision types.Revision
