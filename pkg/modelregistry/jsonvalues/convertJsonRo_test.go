@@ -42,7 +42,7 @@ func (m modelPluginTest) ModelData() (string, string, []*gnmi.ModelData, string)
 	return modelTypeTest, modelVersionTest, modelData, moduleNameTest
 }
 
-// UnmarshalConfigValues uses the `generated.go` of the TestDevice1 plugin module
+// UnmarshalConfigValues uses the `generated.go` of the DeviceSim-1.0.0 plugin module
 func (m modelPluginTest) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
 	device := &ds1.Device{}
 	vgs := ygot.ValidatedGoStruct(device)
@@ -54,7 +54,7 @@ func (m modelPluginTest) UnmarshalConfigValues(jsonTree []byte) (*ygot.Validated
 	return &vgs, nil
 }
 
-// Validate uses the `generated.go` of the TestDevice1 plugin module
+// Validate uses the `generated.go` of the DeviceSim-1.0.0 plugin module
 func (m modelPluginTest) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
 	deviceDeref := *ygotModel
 	device, ok := deviceDeref.(*ds1.Device)
@@ -64,7 +64,7 @@ func (m modelPluginTest) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygo
 	return device.Validate()
 }
 
-// Schema uses the `generated.go` of the TestDevice1 plugin module
+// Schema uses the `generated.go` of the DeviceSim-1.0.0 plugin module
 func (m modelPluginTest) Schema() (map[string]*yang.Entry, error) {
 	return ds1.UnzipSchema()
 }
