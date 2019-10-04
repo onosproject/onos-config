@@ -24,6 +24,7 @@ package topocache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/cenkalti/backoff"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -145,19 +146,46 @@ func (s *DeviceStore) DeviceConnected(id device.ID) error {
 func (s *DeviceStore) updateDevice(id device.ID, state device.State) error {
 	connectedDevice := s.Cache[id]
 	var states []*device.ProtocolState
-	if connectedDevice.Protocols == nil {
-		states = make([]*device.ProtocolState, 0)
-	} else {
-		states = connectedDevice.Protocols
-	}
-	states = append(states, &device.ProtocolState{
+	log.Info("state", state)
+	log.Info("previous protocols ", connectedDevice.Protocols)
+	//if connectedDevice.Protocols == nil {
+	//	log.Info("nil value.", connectedDevice.Protocols)
+	//	states = make([]*device.ProtocolState, 0)
+	//	log.Info("nil value. initialized state", states)
+	//} else {
+	//	states = connectedDevice.Protocols
+	//	log.Info("not nil value. initialized state", states)
+	//}
+	//if connectedDevice.Protocols == nil {
+	//	log.Info("nil value", connectedDevice.Protocols)
+	//	connectedDevice.Protocols = make([]*device.ProtocolState, 0)
+	//}
+	//connectedDevice.Protocols = append(connectedDevice.Protocols, &device.ProtocolState{
+	//	Protocol: device.Protocol_GNMI,
+	//	State:    state,
+	//})
+	//log.Info("current protocols ", connectedDevice.Protocols)
+	protocol := device.ProtocolState{
 		Protocol: device.Protocol_GNMI,
 		State:    state,
-	})
+	}
+	log.Info("protocol ", protocol)
+	log.Infof("pointer to protocol with format %v", &protocol)
+	log.Info("pointer to protocol ", &protocol)
+	log.Info("pointer nil check ", &protocol != nil)
+	log.Infof("pointer +v %+v", &protocol)
+	println(fmt.Sprintf("%v", &protocol))
+	protocolPointer := &protocol
+	log.Info("prtocolPointer", protocolPointer)
+	log.Info("prtocolPointer nil check ", protocolPointer != nil)
+	println(fmt.Sprintf("%v", protocolPointer))
+	states = append(states, protocolPointer)
+	log.Info("states", states)
 	connectedDevice.Protocols = states
 	updateReq := device.UpdateRequest{
 		Device: connectedDevice,
 	}
+	log.Info("Updated req", updateReq)
 	response, err := s.requestClient.Update(context.Background(), &updateReq)
 	if err != nil {
 		log.Errorf("Device %s is not updated locally %s", id, err.Error())
