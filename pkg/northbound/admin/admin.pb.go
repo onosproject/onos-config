@@ -671,6 +671,8 @@ func (m *ModelInfo) GetReadWritePath() []*ReadWritePath {
 }
 
 // Chunk is for streaming a model plugin file to the server
+// There is a built in limit in gRPC of 4MB - plugin is usually around 20MB
+// so break in to chunks of approx 1MB
 type Chunk struct {
 	SoFile               string   `protobuf:"bytes,1,opt,name=so_file,json=soFile,proto3" json:"so_file,omitempty"`
 	Content              []byte   `protobuf:"bytes,2,opt,name=Content,proto3" json:"Content,omitempty"`
