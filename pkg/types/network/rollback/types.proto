@@ -16,7 +16,7 @@ limitations under the License.
 
 syntax = "proto3";
 
-package onos.config.network.change;
+package onos.config.network.rollback;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";

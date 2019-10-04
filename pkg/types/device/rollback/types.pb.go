@@ -95,7 +95,7 @@ func (Reason) EnumDescriptor() ([]byte, []int) {
 // Rollback configures a rollback of a Change to a single device
 // The Rollback configuration must reference the 'id' of the Change to roll back via the 'change_id'
 type Rollback struct {
-	// 'id' is the identifier of the change
+	// 'id' is the identifier of the rollback
 	ID ID `protobuf:"bytes,1,opt,name=id,proto3,casttype=ID" json:"id,omitempty"`
 	// 'revision' is the rollback revision number
 	// Each time the rollback state is updated, a new revision number will be assigned. The revision
