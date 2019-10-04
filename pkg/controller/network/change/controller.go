@@ -119,25 +119,35 @@ func (r *Reconciler) applyNetworkChange(config *networktypes.NetworkChange) (boo
 }
 
 func (r *Reconciler) createDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
+	// Loop through changes and assign any indexes that are missing
 	updated := false
 	for _, change := range config.Changes {
-		// If the change index is not set, the change needs to be stored
 		if change.Index == 0 {
-			change.Status = devicetypes.Status_PENDING
-			if err := r.deviceChanges.Create(change); err != nil {
+			index, err := r.deviceChanges.NextIndex(change.DeviceID)
+			if err != nil {
 				return false, err
 			}
+			change.Index = index
 			updated = true
 		}
 	}
 
-	// Update the network change if device changes have been updated
-	// TODO: There's a race in this controller wherein a device change could be created
-	// without the network change every being updated. To avoid this, the network change
-	// should be updated with a new device change ID prior to the device change being created.
+	// If indexes have been updated, store the indexes first in the network change
 	if updated {
 		if err := r.networkChanges.Update(config); err != nil {
 			return false, err
+		}
+	}
+
+	// Once the indexes have been stored, ensure each individual change exists in the store
+	for _, change := range config.Changes {
+		deviceChange, err := r.deviceChanges.Get(change.Index.GetID(change.DeviceID))
+		if err != nil {
+			return false, err
+		} else if deviceChange == nil {
+			if err := r.deviceChanges.Create(change); err != nil {
+				return false, err
+			}
 		}
 	}
 	return true, nil

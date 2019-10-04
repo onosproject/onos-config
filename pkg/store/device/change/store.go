@@ -38,11 +38,11 @@ import (
 	"time"
 )
 
-const primitiveName = "device-change"
+const primitiveName = "device-changes"
 
 // getCounterName returns the name of the given device ID counter
 func getCounterName(deviceID device.ID) string {
-	return fmt.Sprintf("device-change-ids-%s", deviceID)
+	return fmt.Sprintf("device-change-index-%s", deviceID)
 }
 
 // NewAtomixStore returns a new persistent Store
@@ -124,6 +124,9 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 type Store interface {
 	io.Closer
 
+	// NextID returns the next snapshot index
+	NextIndex(device.ID) (change.Index, error)
+
 	// Get gets a device change
 	Get(id change.ID) (*change.Change, error)
 
@@ -155,19 +158,6 @@ type atomixStore struct {
 	closer       io.Closer
 }
 
-func (s *atomixStore) Get(id change.ID) (*change.Change, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	entry, err := s.configs.Get(ctx, string(id))
-	if err != nil {
-		return nil, err
-	} else if entry == nil {
-		return nil, nil
-	}
-	return decodeChange(entry)
-}
-
 func (s *atomixStore) getIndexCounter(deviceID device.ID) (counter.Counter, error) {
 	s.mu.RLock()
 	counter, ok := s.indexes[deviceID]
@@ -188,20 +178,29 @@ func (s *atomixStore) getIndexCounter(deviceID device.ID) (counter.Counter, erro
 	return counter, nil
 }
 
-func (s *atomixStore) nextIndex(config *change.Change) (change.Index, error) {
-	indexes, err := s.getIndexCounter(config.DeviceID)
+func (s *atomixStore) NextIndex(deviceID device.ID) (change.Index, error) {
+	indexes, err := s.getIndexCounter(deviceID)
 	if err != nil {
 		return 0, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-
 	index, err := indexes.Increment(ctx, 1)
+	return change.Index(index), err
+}
+
+func (s *atomixStore) Get(id change.ID) (*change.Change, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	entry, err := s.configs.Get(ctx, string(id))
 	if err != nil {
-		return 0, err
+		return nil, err
+	} else if entry == nil {
+		return nil, nil
 	}
-	return change.Index(index), nil
+	return decodeChange(entry)
 }
 
 func (s *atomixStore) Create(config *change.Change) error {
@@ -209,13 +208,7 @@ func (s *atomixStore) Create(config *change.Change) error {
 		return errors.New("not a new object")
 	}
 
-	index, err := s.nextIndex(config)
-	if err != nil {
-		return err
-	}
-
-	config.ID = index.GetID(config.DeviceID)
-	config.Index = index
+	config.ID = config.Index.GetID(config.DeviceID)
 	config.Created = time.Now()
 	config.Updated = time.Now()
 
