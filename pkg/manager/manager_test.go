@@ -17,9 +17,13 @@ package manager
 import (
 	"bytes"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/goyang/pkg/yang"
+	"github.com/openconfig/ygot/ygot"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
 	"os"
@@ -462,4 +466,52 @@ func TestManager_GetTargetState(t *testing.T) {
 	stateBad := mgrTest.GetTargetState(device1, badPath)
 	assert.Assert(t, stateBad != nil, "Bad Path Entry returns nil")
 	assert.Assert(t, len(stateBad) == 0, "Bad path entry has incorrect length %d", len(stateBad))
+}
+
+type MockModelPlugin struct{}
+
+func (m MockModelPlugin) ModelData() (string, string, []*gnmi.ModelData, string) {
+	panic("implement me")
+}
+
+func (m MockModelPlugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
+	return nil, nil
+}
+
+func (m MockModelPlugin) Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error {
+	return nil
+}
+
+func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
+	panic("implement me")
+}
+
+func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
+	mgrTest, _, _ := setUp()
+
+	plugin := MockModelPlugin{}
+	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
+
+	roPathMap := make(modelregistry.ReadOnlyPathMap)
+	roSubPath1 := make(modelregistry.ReadOnlySubPathMap)
+	roSubPath1["/"] = change.ValueTypeSTRING
+	roPathMap["/cont1a"] = roSubPath1
+	roSubPath2 := make(modelregistry.ReadOnlySubPathMap)
+	roSubPath2["/leaf2d"] = change.ValueTypeUINT
+	roPathMap["/cont1b-state"] = roSubPath2
+
+	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-1.0.0"] = roPathMap
+
+	validationError := mgrTest.ValidateStores()
+	assert.ErrorContains(t, validationError, "read only path in configuration /cont1a matches /cont1a for TestDevice-1.0.0")
+}
+
+func TestManager_ValidateStores(t *testing.T) {
+	mgrTest, _, _ := setUp()
+
+	plugin := MockModelPlugin{}
+	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
+
+	validationError := mgrTest.ValidateStores()
+	assert.NilError(t, validationError)
 }
