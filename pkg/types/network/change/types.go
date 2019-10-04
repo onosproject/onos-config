@@ -21,21 +21,24 @@ import (
 	"strings"
 )
 
+const separator = ":"
+
 // ID is a network configuration identifier type
 type ID types.ID
 
 // GetIndex returns the Index
 func (i ID) GetIndex() Index {
-	index, _ := strconv.Atoi(strings.Split(string(i), "-")[1])
+	indexStr := string(i)[strings.LastIndex(string(i), separator)+1:]
+	index, _ := strconv.Atoi(indexStr)
 	return Index(index)
 }
 
 // Index is the index of a network configuration
 type Index uint64
 
-// GetID returns the ID for the index
-func (i Index) GetID() ID {
-	return ID(fmt.Sprintf("network-%d", i))
+// GetChangeID returns the network change ID for the index
+func (i Index) GetChangeID() ID {
+	return ID(fmt.Sprintf("network%s%d", separator, i))
 }
 
 // Revision is a network configuration revision number
