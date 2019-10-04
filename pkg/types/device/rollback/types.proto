@@ -1,0 +1,86 @@
+/*
+Copyright 2019-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+package onos.config.device.rollback;
+
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
+// Status is the status of a rollback object
+enum Status {
+    // PENDING indicates the rollback is waiting to be applied
+    PENDING = 0;
+
+    // APPLYING indicates the rollback is being applied
+    APPLYING = 1;
+
+    // SUCCEEDED indicates the rollback was applied successfully
+    SUCCEEDED = 2;
+
+    // FAILED indicates the rollback failed
+    FAILED = 3;
+}
+
+// Reason is a failure reason
+enum Reason {
+    // ERROR indicates an error occurred during rollback
+    ERROR = 0;
+
+    // UNAVAILABLE indicates the device was unavailable for rollback
+    UNAVAILABLE = 1;
+}
+
+// Rollback configures a rollback of a Change to a single device
+// The Rollback configuration must reference the 'id' of the Change to roll back via the 'change_id'
+message Rollback {
+    // 'id' is the identifier of the change
+    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
+
+    // 'revision' is the rollback revision number
+    // Each time the rollback state is updated, a new revision number will be assigned. The revision
+    // is guaranteed to be unique and monotonically increasing and is thus suitable for optimistic
+    // concurrency control.
+    uint64 revision = 2 [(gogoproto.casttype) = "Revision"];
+
+    // 'rollback_id' is a foreign key to the 'id' field of the parent NetworkRollback
+    string rollback_id = 3 [(gogoproto.customname) = "RollbackID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+
+    // 'change_id' is a foreign key to the 'id' field of the device Change to rollback
+    string change_id = 4 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+
+    // 'status' is the current status of the rollback
+    // The rollback will be initialized with the 'PENDING' status and will progress through the 'APPLYING'
+    // status and ultimately marked 'SUCCEEDED' or 'FAILED' once the rollback is complete. If the rollback
+    // fails, a 'reason' and optional 'message' will be provided.
+    Status status = 5;
+
+    // 'reason' is the reason the rollback failed
+    // The 'reason' field will be set to 'ERROR' by default and is invalid unless the 'status' is 'FAILED'.
+    Reason reason = 6;
+
+    // 'message' is an optional status message
+    // The message will be empty unless the rollback is failed with a 'FAILED' status, in which case the
+    // 'message' field may be used to provide a failure message.
+    string message = 7;
+
+    // 'created' is the time at which the rollback was created
+    google.protobuf.Timestamp created = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+    // 'updated' is the time at which the rollback was last updated
+    google.protobuf.Timestamp updated = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
