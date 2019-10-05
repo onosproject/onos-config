@@ -16,6 +16,7 @@ package leadership
 
 import (
 	"context"
+	"errors"
 	"github.com/atomix/atomix-go-client/pkg/client/election"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
@@ -39,6 +40,8 @@ type Term uint64
 
 // Store is the cluster wide leadership store
 type Store interface {
+	io.Closer
+
 	// IsLeader returns a boolean indicating whether the local node is the leader
 	IsLeader() (bool, error)
 
@@ -67,34 +70,45 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	election, err := group.GetElection(context.Background(), primitiveName, session.WithTimeout(30*time.Second))
+	election, err := group.GetElection(context.Background(), primitiveName, session.WithID(string(cluster.GetNodeID())), session.WithTimeout(30*time.Second))
 	if err != nil {
 		return nil, err
 	}
 
-	return &atomixStore{
+	store := &atomixStore{
 		election: election,
-		closer:   election,
-	}, nil
+	}
+	if err := store.enter(); err != nil {
+		return nil, err
+	}
+	return store, nil
 }
 
-// NewLocalStore returns a new local device store
-func NewLocalStore() (Store, error) {
-	node, conn := startLocalNode()
+// NewLocalStore returns a new local election store
+func NewLocalStore(nodeID cluster.NodeID) (Store, error) {
+	_, conn := startLocalNode()
+	return newLocalStore(nodeID, conn)
+}
+
+// newLocalStore returns a new local election store
+func newLocalStore(nodeID cluster.NodeID, conn *grpc.ClientConn) (Store, error) {
 	name := primitive.Name{
 		Namespace: "local",
 		Name:      primitiveName,
 	}
 
-	election, err := election.New(context.Background(), name, []*grpc.ClientConn{conn})
+	election, err := election.New(context.Background(), name, []*grpc.ClientConn{conn}, session.WithID(string(nodeID)))
 	if err != nil {
 		return nil, err
 	}
 
-	return &atomixStore{
+	store := &atomixStore{
 		election: election,
-		closer:   utils.NewNodeCloser(node),
-	}, nil
+	}
+	if err := store.enter(); err != nil {
+		return nil, err
+	}
+	return store, nil
 }
 
 // startLocalNode starts a single local node
@@ -109,7 +123,7 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 
 	conn, err := grpc.DialContext(context.Background(), primitiveName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
 	if err != nil {
-		panic("Failed to dial network configurations")
+		panic("Failed to dial leadership store")
 	}
 	return node, conn
 }
@@ -122,27 +136,60 @@ type atomixStore struct {
 	mu         sync.RWMutex
 }
 
-func (s *atomixStore) IsLeader() (bool, error) {
-	if s.leadership == nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
+// enter enters the election
+func (s *atomixStore) enter() error {
+	ch := make(chan *election.Event)
+	if err := s.election.Watch(context.Background(), ch); err != nil {
+		return err
+	}
 
-		term, err := s.election.GetTerm(ctx)
-		if err != nil {
-			return false, err
-		} else if term != nil {
-			s.mu.Lock()
-			s.leadership = &Leadership{
-				Term:   Term(term.ID),
-				Leader: cluster.NodeID(term.Leader),
-			}
-			s.mu.Unlock()
+	// Enter the election to get the current leadership term
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	term, err := s.election.Enter(ctx)
+	if err != nil {
+		_ = s.election.Close()
+		return err
+	}
+	cancel()
+
+	// Set the leadership term
+	s.mu.Lock()
+	s.leadership = &Leadership{
+		Term:   Term(term.ID),
+		Leader: cluster.NodeID(term.Leader),
+	}
+	s.mu.Unlock()
+
+	// Wait for the election event to be received before returning
+	for event := range ch {
+		if event.Term.ID == term.ID {
+			go s.watchElection(ch)
+			return nil
 		}
 	}
 
+	_ = s.election.Close()
+	return errors.New("failed to enter election")
+}
+
+// watchElection watches the election events and updates leadership info
+func (s *atomixStore) watchElection(ch <-chan *election.Event) {
+	for event := range ch {
+		s.mu.Lock()
+		if uint64(s.leadership.Term) != event.Term.ID {
+			s.leadership = &Leadership{
+				Term:   Term(event.Term.ID),
+				Leader: cluster.NodeID(event.Term.Leader),
+			}
+		}
+		s.mu.Unlock()
+	}
+}
+
+func (s *atomixStore) IsLeader() (bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if s.leadership == nil || s.leadership.Leader != cluster.GetNodeID() {
+	if s.leadership == nil || string(s.leadership.Leader) != s.election.ID() {
 		return false, nil
 	}
 	return true, nil
@@ -166,6 +213,5 @@ func (s *atomixStore) Watch(ch chan<- Leadership) error {
 }
 
 func (s *atomixStore) Close() error {
-	_ = s.election.Close()
-	return s.closer.Close()
+	return s.election.Close()
 }
