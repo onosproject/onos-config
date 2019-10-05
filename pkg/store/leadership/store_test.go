@@ -25,8 +25,6 @@ func TestLeadershipStore(t *testing.T) {
 	logrus.SetLevel(logrus.TraceLevel)
 
 	node, conn := startLocalNode()
-	defer node.Stop()
-	defer conn.Close()
 
 	store1, err := newLocalStore("a", conn)
 	assert.NoError(t, err)
@@ -40,7 +38,6 @@ func TestLeadershipStore(t *testing.T) {
 
 	store3, err := newLocalStore("c", conn)
 	assert.NoError(t, err)
-	defer store3.Close()
 
 	leader, err := store1.IsLeader()
 	assert.NoError(t, err)
@@ -70,4 +67,8 @@ func TestLeadershipStore(t *testing.T) {
 	leader, err = store3.IsLeader()
 	assert.NoError(t, err)
 	assert.False(t, leader)
+
+	_ = store3.Close()
+	_ = conn.Close()
+	_ = node.Stop()
 }

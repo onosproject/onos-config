@@ -131,7 +131,6 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
 	election   election.Election
-	closer     io.Closer
 	leadership *Leadership
 	mu         sync.RWMutex
 }
@@ -146,11 +145,11 @@ func (s *atomixStore) enter() error {
 	// Enter the election to get the current leadership term
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	term, err := s.election.Enter(ctx)
+	cancel()
 	if err != nil {
 		_ = s.election.Close()
 		return err
 	}
-	cancel()
 
 	// Set the leadership term
 	s.mu.Lock()
