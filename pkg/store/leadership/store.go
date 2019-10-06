@@ -77,6 +77,7 @@ func NewAtomixStore() (Store, error) {
 
 	store := &atomixStore{
 		election: election,
+		watchers: make([]chan<- Leadership, 0, 1),
 	}
 	if err := store.enter(); err != nil {
 		return nil, err
@@ -104,6 +105,7 @@ func newLocalStore(nodeID cluster.NodeID, conn *grpc.ClientConn) (Store, error) 
 
 	store := &atomixStore{
 		election: election,
+		watchers: make([]chan<- Leadership, 0, 1),
 	}
 	if err := store.enter(); err != nil {
 		return nil, err
@@ -132,6 +134,7 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 type atomixStore struct {
 	election   election.Election
 	leadership *Leadership
+	watchers   []chan<- Leadership
 	mu         sync.RWMutex
 }
 
@@ -174,14 +177,24 @@ func (s *atomixStore) enter() error {
 // watchElection watches the election events and updates leadership info
 func (s *atomixStore) watchElection(ch <-chan *election.Event) {
 	for event := range ch {
+		var leadership *Leadership
 		s.mu.Lock()
 		if uint64(s.leadership.Term) != event.Term.ID {
-			s.leadership = &Leadership{
+			leadership = &Leadership{
 				Term:   Term(event.Term.ID),
 				Leader: cluster.NodeID(event.Term.Leader),
 			}
+			s.leadership = leadership
 		}
 		s.mu.Unlock()
+
+		if leadership != nil {
+			s.mu.RLock()
+			for _, watcher := range s.watchers {
+				watcher <- *leadership
+			}
+			s.mu.RUnlock()
+		}
 	}
 }
 
@@ -195,20 +208,10 @@ func (s *atomixStore) IsLeader() (bool, error) {
 }
 
 func (s *atomixStore) Watch(ch chan<- Leadership) error {
-	electionCh := make(chan *election.Event)
-	go func() {
-		for event := range electionCh {
-			leadership := Leadership{
-				Term:   Term(event.Term.ID),
-				Leader: cluster.NodeID(event.Term.Leader),
-			}
-			s.mu.Lock()
-			s.leadership = &leadership
-			s.mu.Unlock()
-			ch <- leadership
-		}
-	}()
-	return s.election.Watch(context.Background(), electionCh)
+	s.mu.Lock()
+	s.watchers = append(s.watchers, ch)
+	s.mu.Unlock()
+	return nil
 }
 
 func (s *atomixStore) Close() error {

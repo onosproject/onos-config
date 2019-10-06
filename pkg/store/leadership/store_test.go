@@ -39,6 +39,10 @@ func TestLeadershipStore(t *testing.T) {
 	store3, err := newLocalStore("c", conn)
 	assert.NoError(t, err)
 
+	store3Ch := make(chan Leadership)
+	err = store3.Watch(store3Ch)
+	assert.NoError(t, err)
+
 	leader, err := store1.IsLeader()
 	assert.NoError(t, err)
 	assert.True(t, leader)
@@ -54,19 +58,29 @@ func TestLeadershipStore(t *testing.T) {
 	err = store1.Close()
 	assert.NoError(t, err)
 
-	for leadership := range store2Ch {
-		if leadership.Leader == cluster.NodeID("b") {
-			break
-		}
-	}
+	leadership := <-store2Ch
+	assert.Equal(t, cluster.NodeID("b"), leadership.Leader)
 
 	leader, err = store2.IsLeader()
 	assert.NoError(t, err)
 	assert.True(t, leader)
 
+	leadership = <-store3Ch
+	assert.Equal(t, cluster.NodeID("b"), leadership.Leader)
+
 	leader, err = store3.IsLeader()
 	assert.NoError(t, err)
 	assert.False(t, leader)
+
+	err = store2.Close()
+	assert.NoError(t, err)
+
+	leadership = <-store3Ch
+	assert.Equal(t, cluster.NodeID("c"), leadership.Leader)
+
+	leader, err = store3.IsLeader()
+	assert.NoError(t, err)
+	assert.True(t, leader)
 
 	_ = store3.Close()
 	_ = conn.Close()
