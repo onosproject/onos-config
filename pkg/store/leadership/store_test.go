@@ -16,14 +16,11 @@ package leadership
 
 import (
 	"github.com/onosproject/onos-config/pkg/store/cluster"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestLeadershipStore(t *testing.T) {
-	logrus.SetLevel(logrus.TraceLevel)
-
 	node, conn := startLocalNode()
 
 	store1, err := newLocalStore("a", conn)
