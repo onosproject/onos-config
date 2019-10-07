@@ -16,7 +16,7 @@ limitations under the License.
 
 syntax = "proto3";
 
-package onos.config.meta;
+package onos.config.change;
 
 // Status is the lifecycle status of a resource
 enum Status {

@@ -16,11 +16,11 @@ limitations under the License.
 
 syntax = "proto3";
 
-package onos.config.device.change;
+package onos.config.change.device;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
-import "github.com/onosproject/onos-config/pkg/types/meta/types.proto";
+import "github.com/onosproject/onos-config/pkg/types/change/types.proto";
 
 // Change represents a configuration change to a single device
 message Change {
@@ -48,10 +48,10 @@ message Change {
     string device_version = 6;
 
     // 'status' is the lifecycle status of the change
-    onos.config.meta.Status status = 7;
+    onos.config.change.Status status = 7;
 
     // 'reason' is the reason the change failed if in the FAILED state
-    onos.config.meta.FailureReason reason = 8;
+    onos.config.change.FailureReason reason = 8;
 
     // 'message' is an optional status message
     string message = 9;
