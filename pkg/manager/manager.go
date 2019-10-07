@@ -223,7 +223,7 @@ func (m *Manager) Run() {
 	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
 	// Listening for errors in the Southbound
-	go listenOnResponseChannel(m.SouthboundErrorChan)
+	go listenOnResponseChannel(m.SouthboundErrorChan, m.DeviceStore)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.TopoChannel,
 		m.OperationalStateChannel, m.SouthboundErrorChan, m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)
@@ -242,16 +242,31 @@ func GetManager() *Manager {
 	return &mgr
 }
 
-func listenOnResponseChannel(respChan chan events.DeviceResponse) {
+func listenOnResponseChannel(respChan chan events.DeviceResponse, deviceStore *topocache.DeviceStore) {
 	log.Info("Listening for Errors in Manager")
-	for err := range respChan {
-		if strings.Contains(err.Error().Error(), "desc =") {
-			log.Errorf("Error reported to channel %s",
-				strings.Split(err.Error().Error(), " desc = ")[1])
-		} else {
-			log.Error("Response reported to channel ", err.Error().Error())
+	for event := range respChan {
+		subject := device.ID(event.Subject())
+		switch event.EventType() {
+		case events.EventTypeDeviceConnected:
+			err := deviceStore.DeviceConnected(subject)
+			if err != nil {
+				log.Error("Can't notify connection", err)
+			}
+			//TODO unblock config
+		case events.EventTypeErrorDeviceConnect:
+			err := deviceStore.DeviceDisconnected(subject, event.Error())
+			if err != nil {
+				log.Error("Can't notify disconnection", err)
+			}
+			//TODO unblock config
+		default:
+			if strings.Contains(event.Error().Error(), "desc =") {
+				log.Errorf("Error reported to channel %s",
+					strings.Split(event.Error().Error(), " desc = ")[1])
+			} else {
+				log.Error("Response reported to channel ", event.Error().Error())
+			}
 		}
-		//TODO handle device connection errors accordingly
 	}
 }
 

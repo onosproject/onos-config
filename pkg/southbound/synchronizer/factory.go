@@ -33,8 +33,9 @@ import (
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
+	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
 	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[device.ID]change.TypedValueMap) {
+
 	for topoEvent := range topoChannel {
 		device := topoEvent.Device()
 		if !dispatcher.HasListener(device.ID) && topoEvent.ItemAction() != events.EventItemDeleted {
@@ -77,16 +78,17 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			}
 			operationalStateCache[device.ID] = make(change.TypedValueMap)
 			target := southbound.NewTarget()
+			//TODO configuration needs to be blocked at this point in time to allow for device connection.
 			sync, err := New(ctx, changeStore, configStore, device, configChan, opStateChan,
-				errChan, operationalStateCache[device.ID], mReadOnlyPaths, target, mStateGetMode)
+				southboundErrorChan, operationalStateCache[device.ID], mReadOnlyPaths, target, mStateGetMode)
 			if err != nil {
 				log.Errorf("Error connecting to device %v: %v", device, err)
-				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+				southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
 					string(device.ID), err)
 				//unregistering the listener for changes to the device
 				unregErr := dispatcher.UnregisterDevice(device.ID)
 				if unregErr != nil {
-					errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
+					southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
 						string(device.ID), unregErr)
 				}
 				//unregistering the listener for changes to the device
@@ -96,11 +98,12 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				//spawning two go routines to propagate changes and to get operational state
 				go sync.syncConfigEventsToDevice(target, respChan)
 				if sync.getStateMode == modelregistry.GetStateOpState {
-					go sync.syncOperationalStateByPartition(ctx, target, errChan)
+					go sync.syncOperationalStateByPartition(ctx, target, southboundErrorChan)
 				} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||
 					sync.getStateMode == modelregistry.GetStateExplicitRoPathsExpandWildcards {
-					go sync.syncOperationalStateByPaths(ctx, target, errChan)
+					go sync.syncOperationalStateByPaths(ctx, target, southboundErrorChan)
 				}
+				southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(device.ID))
 			}
 		} else if dispatcher.HasListener(device.ID) && topoEvent.ItemAction() == events.EventItemDeleted {
 
@@ -108,7 +111,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			if err != nil {
 				log.Error(err)
 				//TODO evaluate if fall through without upstreaming
-				//errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
+				//southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
 				//	string(deviceName), err)
 			}
 		}

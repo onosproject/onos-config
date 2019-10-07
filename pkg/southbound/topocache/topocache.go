@@ -38,8 +38,9 @@ const (
 
 // DeviceStore is the model of the Device store
 type DeviceStore struct {
-	client device.DeviceServiceClient
-	Cache  map[device.ID]*device.Device
+	client        device.DeviceServiceClient
+	Cache         map[device.ID]*device.Device
+	requestClient device.DeviceServiceClient
 }
 
 // LoadDeviceStore loads a device store
@@ -53,10 +54,19 @@ func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOptio
 		return nil, err
 	}
 
+	requestConn, err := getTopoConn(opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	client := device.NewDeviceServiceClient(conn)
+
+	requestClient := device.NewDeviceServiceClient(requestConn)
+
 	deviceStore := &DeviceStore{
-		client: client,
-		Cache:  make(map[device.ID]*device.Device),
+		client:        client,
+		Cache:         make(map[device.ID]*device.Device),
+		requestClient: requestClient,
 	}
 	go deviceStore.start(topoChannel)
 	return deviceStore, nil
@@ -90,7 +100,7 @@ func (s *DeviceStore) watchEvents(ch chan<- events.TopoEvent) error {
 
 	// Return an error if the client was unable to connect to the service.
 	if err != nil {
-		log.Error(err)
+		log.Error("error from watch topo events ", err)
 		return err
 	}
 
@@ -124,4 +134,41 @@ func (s *DeviceStore) watchEvents(ch chan<- events.TopoEvent) error {
 // getTopoConn gets a gRPC connection to the topology service
 func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	return grpc.Dial(topoAddress, opts...)
+}
+
+// DeviceConnected signal the local cache and the corresponding topology service that the device connected.
+func (s *DeviceStore) DeviceConnected(id device.ID) error {
+	log.Infof("Device %s connected", id)
+	return s.updateDevice(id, device.ConnectivityState_REACHABLE, device.ChannelState_CONNECTED,
+		device.ServiceState_AVAILABLE)
+}
+
+// DeviceDisconnected signal the local cache and the corresponding topology service that the device disconnected.
+func (s *DeviceStore) DeviceDisconnected(id device.ID, err error) error {
+	log.Infof("Device %s disconnected or had error in connection %s", id, err)
+	//TODO check different possible availabilities based on error
+	return s.updateDevice(id, device.ConnectivityState_UNREACHABLE, device.ChannelState_DISCONNECTED,
+		device.ServiceState_UNAVAILABLE)
+}
+
+func (s *DeviceStore) updateDevice(id device.ID, connectivity device.ConnectivityState, channel device.ChannelState,
+	service device.ServiceState) error {
+	connectedDevice := s.Cache[id]
+	protocolState := new(device.ProtocolState)
+	protocolState.Protocol = device.Protocol_GNMI
+	protocolState.ConnectivityState = connectivity
+	protocolState.ChannelState = channel
+	protocolState.ServiceState = service
+	connectedDevice.Protocols = append(connectedDevice.Protocols, protocolState)
+	updateReq := device.UpdateRequest{
+		Device: connectedDevice,
+	}
+	response, err := s.requestClient.Update(context.Background(), &updateReq)
+	if err != nil {
+		log.Errorf("Device %s is not updated locally %s", id, err.Error())
+		return err
+	}
+	s.Cache[id] = response.Device
+	log.Infof("Device %s is updated locally with states %s, %s, %s", id, connectivity, channel, service)
+	return nil
 }

@@ -82,6 +82,23 @@ func NewResponseEvent(eventType EventType, subject string, changeID change.ID, r
 	return &dr
 }
 
+// NewDeviceConnectedEvent creates a new response event object
+func NewDeviceConnectedEvent(eventType EventType, subject string) DeviceResponse {
+	dr := deviceResponseImpl{
+		eventImpl: eventImpl{
+			subject:   subject,
+			time:      time.Now(),
+			eventType: eventType,
+			object: deviceResponseObj{
+				changeID: "",
+				error:    nil,
+				response: "",
+			},
+		},
+	}
+	return &dr
+}
+
 // NewErrorEvent creates a new error event object
 func NewErrorEvent(eventType EventType, subject string, changeID change.ID, err error) DeviceResponse {
 	dr := deviceResponseImpl{

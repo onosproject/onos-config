@@ -13,7 +13,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onosproject/onos-control v0.0.0-20190715190020-706a2ee0d37b // indirect
-	github.com/onosproject/onos-topo v0.0.0-20191003071657-8bcd1fd812c5
+	github.com/onosproject/onos-topo v0.0.0-20191007162302-b2f95b144981
 	github.com/openconfig/gnmi v0.0.0-20180912164834-33a1865c3029
 	github.com/openconfig/goyang v0.0.0-20190408185115-e8b0ed2cbb0c
 	github.com/openconfig/ygot v0.5.1-0.20190427030428-68346f97239f

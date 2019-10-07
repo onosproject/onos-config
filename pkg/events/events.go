@@ -32,6 +32,7 @@ const ( // For event types
 	EventTypeOperationalState
 	EventTypeAchievedSetConfig
 	EventTypeSubscribeNotificationSetConfig
+	EventTypeDeviceConnected
 	EventTypeErrorSetConfig
 	EventTypeSubscribeErrorNotificationSetConfig
 	EventTypeErrorParseConfig
