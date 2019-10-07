@@ -1,0 +1,104 @@
+/*
+Copyright 2019-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+package onos.config.device.change;
+
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "github.com/onosproject/onos-config/pkg/types/meta/types.proto";
+
+// Change represents a configuration change to a single device
+message Change {
+    // 'id' is the unique identifier of the change
+    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
+
+    // 'index' is a monotonically increasing, globally unique index of the change
+    // The index is provided by the store, is static and unique for each unique change identifier,
+    // and should not be modified by client code.
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    // 'revision' is the change revision number
+    // The revision number is provided by the store and should not be modified by client code.
+    // Each unique state of the change will be assigned a unique revision number which can be
+    // used for optimistic concurrency control when updating or deleting the change state.
+    uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
+
+    // 'network_change_id' is the identifier of the network change from which this change was created
+    string network_change_id = 4 [(gogoproto.customname) = "NetworkChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+
+    // 'device_id' is the identifier of the device to which this change applies
+    string device_id = 5 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+
+    // 'device_version' is an optional device version to which to apply this change
+    string device_version = 6;
+
+    // 'status' is the lifecycle status of the change
+    onos.config.meta.Status status = 7;
+
+    // 'reason' is the reason the change failed if in the FAILED state
+    onos.config.meta.FailureReason reason = 8;
+
+    // 'message' is an optional status message
+    string message = 9;
+
+    // 'created' is the time at which the change was created
+    google.protobuf.Timestamp created = 10 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+    // 'updated' is the time at which the change was last updated
+    google.protobuf.Timestamp updated = 11 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+    // 'values' is a set of change values to apply
+    repeated Value values = 12;
+}
+
+// ValueType is the type for a value
+enum ValueType {
+    EMPTY = 0;
+    STRING = 1;
+    INT = 2;
+    UINT = 3;
+    BOOL = 4;
+    DECIMAL = 5;
+    FLOAT = 6;
+    BYTES = 7;
+    LEAFLIST_STRING = 8;
+    LEAFLIST_INT = 9;
+    LEAFLIST_UINT = 10;
+    LEAFLIST_BOOL = 11;
+    LEAFLIST_DECIMAL = 12;
+    LEAFLIST_FLOAT = 13;
+    LEAFLIST_BYTES = 14;
+}
+
+// Value is an individual Path/Value combination in a Change
+message Value {
+    // 'path' is the path to change
+    string path = 1;
+
+    // 'value' is the change value
+    bytes value = 2;
+
+    // 'type' is the value type
+    ValueType type = 3;
+
+    // 'type_opts' is a set of type options
+    repeated int32 type_opts = 4;
+
+    // 'removed' indicates whether this is a delete
+    bool removed = 5;
+}
