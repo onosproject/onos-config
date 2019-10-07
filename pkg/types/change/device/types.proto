@@ -50,20 +50,14 @@ message Change {
     // 'status' is the lifecycle status of the change
     onos.config.change.Status status = 7;
 
-    // 'reason' is the reason the change failed if in the FAILED state
-    onos.config.change.FailureReason reason = 8;
-
-    // 'message' is an optional status message
-    string message = 9;
-
     // 'created' is the time at which the change was created
-    google.protobuf.Timestamp created = 10 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp created = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'updated' is the time at which the change was last updated
-    google.protobuf.Timestamp updated = 11 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp updated = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'values' is a set of change values to apply
-    repeated Value values = 12;
+    repeated Value values = 10;
 }
 
 // ValueType is the type for a value

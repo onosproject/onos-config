@@ -18,26 +18,44 @@ syntax = "proto3";
 
 package onos.config.change;
 
-// Status is the lifecycle status of a change
-enum Status {
-    // PENDING indicates the resource is waiting to be applied
-    PENDING = 0;
+// Status provides status information for a change
+message Status {
+    // 'state' indicates the state of the change
+    State state = 1;
 
-    // APPLYING indicates the resource is being applied
-    APPLYING = 1;
+    // 'deleted' indicates whether the object has been deleted
+    bool deleted = 2;
 
-    // SUCCEEDED indicates the resource was applied successfully
-    SUCCEEDED = 2;
+    // 'reason' is a status reason
+    Reason reason = 3;
 
-    // FAILED indicates the resource failed
-    FAILED = 3;
+    // 'message' is a status message
+    string message = 4;
 }
 
-// FailureReason is a change failure reason
-enum FailureReason {
-    // ERROR indicates an error occurred
-    ERROR = 0;
+// Reason is a reason for the status message
+enum Reason {
+    // UNKNOWN is the default reason indicating no reason was provided
+    UNKNOWN = 0;
+
+    // ERROR indicates an error occurred while handling the change
+    ERROR = 1;
 
     // UNAVAILABLE indicates a device was unavailable
-    UNAVAILABLE = 1;
+    UNAVAILABLE = 2;
+}
+
+// State indicates the state of a change
+enum State {
+    // PENDING indicates the change is pending
+    PENDING = 0;
+
+    // APPLYING indicates the change is being applied
+    APPLYING = 1;
+
+    // SUCCEEDED indicates the change has been applied successfully
+    SUCCEEDED = 2;
+
+    // FAILED indicates the change failed
+    FAILED = 3;
 }
