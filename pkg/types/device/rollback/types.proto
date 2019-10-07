@@ -20,35 +20,12 @@ package onos.config.device.rollback;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
-
-// Status is the status of a rollback object
-enum Status {
-    // PENDING indicates the rollback is waiting to be applied
-    PENDING = 0;
-
-    // APPLYING indicates the rollback is being applied
-    APPLYING = 1;
-
-    // SUCCEEDED indicates the rollback was applied successfully
-    SUCCEEDED = 2;
-
-    // FAILED indicates the rollback failed
-    FAILED = 3;
-}
-
-// Reason is a failure reason
-enum Reason {
-    // ERROR indicates an error occurred during rollback
-    ERROR = 0;
-
-    // UNAVAILABLE indicates the device was unavailable for rollback
-    UNAVAILABLE = 1;
-}
+import "github.com/onosproject/onos-config/pkg/types/meta/types.proto";
 
 // Rollback configures a rollback of a Change to a single device
 // The Rollback configuration must reference the 'id' of the Change to roll back via the 'change_id'
 message Rollback {
-    // 'id' is the identifier of the rollback
+    // 'id' is the unique identifier of the rollback
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
     // 'revision' is the rollback revision number
@@ -67,11 +44,11 @@ message Rollback {
     // The rollback will be initialized with the 'PENDING' status and will progress through the 'APPLYING'
     // status and ultimately marked 'SUCCEEDED' or 'FAILED' once the rollback is complete. If the rollback
     // fails, a 'reason' and optional 'message' will be provided.
-    Status status = 5;
+    onos.config.meta.Status status = 5;
 
     // 'reason' is the reason the rollback failed
     // The 'reason' field will be set to 'ERROR' by default and is invalid unless the 'status' is 'FAILED'.
-    Reason reason = 6;
+    onos.config.meta.FailureReason reason = 6;
 
     // 'message' is an optional status message
     // The message will be empty unless the rollback is failed with a 'FAILED' status, in which case the
