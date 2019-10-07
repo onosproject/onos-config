@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package onos.config.change;
 
-// Status is the lifecycle status of a resource
+// Status is the lifecycle status of a change
 enum Status {
     // PENDING indicates the resource is waiting to be applied
     PENDING = 0;
@@ -33,11 +33,11 @@ enum Status {
     FAILED = 3;
 }
 
-// FailureReason is a failure reason
+// FailureReason is a change failure reason
 enum FailureReason {
     // ERROR indicates an error occurred
     ERROR = 0;
 
-    // UNAVAILABLE indicates the target was unavailable
+    // UNAVAILABLE indicates a device was unavailable
     UNAVAILABLE = 1;
 }

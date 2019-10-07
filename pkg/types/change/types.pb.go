@@ -20,7 +20,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// Status is the lifecycle status of a resource
+// Status is the lifecycle status of a change
 type Status int32
 
 const (
@@ -56,13 +56,13 @@ func (Status) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_12f7eaf625e420c6, []int{0}
 }
 
-// FailureReason is a failure reason
+// FailureReason is a change failure reason
 type FailureReason int32
 
 const (
 	// ERROR indicates an error occurred
 	FailureReason_ERROR FailureReason = 0
-	// UNAVAILABLE indicates the target was unavailable
+	// UNAVAILABLE indicates a device was unavailable
 	FailureReason_UNAVAILABLE FailureReason = 1
 )
 
