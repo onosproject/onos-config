@@ -254,7 +254,7 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, deviceStore *t
 			}
 			//TODO unblock config
 		case events.EventTypeErrorDeviceConnect:
-			err := deviceStore.DeviceDisconnected(subject)
+			err := deviceStore.DeviceDisconnected(subject, event.Error())
 			if err != nil {
 				log.Error("Can't notify disconnection", err)
 			}

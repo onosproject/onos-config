@@ -24,7 +24,6 @@ package topocache
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/cenkalti/backoff"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -140,67 +139,36 @@ func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 // DeviceConnected signal the local cache and the corresponding topology service that the device connected.
 func (s *DeviceStore) DeviceConnected(id device.ID) error {
 	log.Infof("Device %s connected", id)
-	return s.updateDevice(id, device.State_CONNECTED)
+	return s.updateDevice(id, device.ConnectivityState_REACHABLE, device.ChannelState_CONNECTED,
+		device.ServiceState_AVAILABLE)
 }
 
-func (s *DeviceStore) updateDevice(id device.ID, state device.State) error {
+// DeviceDisconnected signal the local cache and the corresponding topology service that the device disconnected.
+func (s *DeviceStore) DeviceDisconnected(id device.ID, err error) error {
+	log.Infof("Device %s disconnected or had error in connection %s", id, err)
+	//TODO check different possible availabilities based on error
+	return s.updateDevice(id, device.ConnectivityState_UNREACHABLE, device.ChannelState_DISCONNECTED,
+		device.ServiceState_UNAVAILABLE)
+}
+
+func (s *DeviceStore) updateDevice(id device.ID, connectivity device.ConnectivityState, channel device.ChannelState,
+	service device.ServiceState) error {
 	connectedDevice := s.Cache[id]
-	var states []*device.ProtocolState
-	log.Info("state", state)
-	log.Info("previous protocols ", connectedDevice.Protocols)
-	//if connectedDevice.Protocols == nil {
-	//	log.Info("nil value.", connectedDevice.Protocols)
-	//	states = make([]*device.ProtocolState, 0)
-	//	log.Info("nil value. initialized state", states)
-	//} else {
-	//	states = connectedDevice.Protocols
-	//	log.Info("not nil value. initialized state", states)
-	//}
-	//if connectedDevice.Protocols == nil {
-	//	log.Info("nil value", connectedDevice.Protocols)
-	//	connectedDevice.Protocols = make([]*device.ProtocolState, 0)
-	//}
-	//connectedDevice.Protocols = append(connectedDevice.Protocols, &device.ProtocolState{
-	//	Protocol: device.Protocol_GNMI,
-	//	State:    state,
-	//})
-	//log.Info("current protocols ", connectedDevice.Protocols)
-	protocol := device.ProtocolState{
-		Protocol: device.Protocol_GNMI,
-		State:    state,
-	}
-	log.Info("protocol ", protocol)
-	log.Infof("pointer to protocol with format %v", &protocol)
-	log.Info("pointer to protocol ", &protocol)
-	log.Info("pointer nil check ", &protocol != nil)
-	log.Infof("pointer +v %+v", &protocol)
-	println(fmt.Sprintf("%v", &protocol))
-	protocolPointer := &protocol
-	log.Info("prtocolPointer", protocolPointer)
-	log.Info("prtocolPointer nil check ", protocolPointer != nil)
-	println(fmt.Sprintf("%v", protocolPointer))
-	states = append(states, protocolPointer)
-	log.Info("states", states)
-	connectedDevice.Protocols = states
+	protocolState := new(device.ProtocolState)
+	protocolState.Protocol = device.Protocol_GNMI
+	protocolState.ConnectivityState = connectivity
+	protocolState.ChannelState = channel
+	protocolState.ServiceState = service
+	connectedDevice.Protocols = append(connectedDevice.Protocols, protocolState)
 	updateReq := device.UpdateRequest{
 		Device: connectedDevice,
 	}
-	log.Info("Updated req", updateReq)
 	response, err := s.requestClient.Update(context.Background(), &updateReq)
 	if err != nil {
 		log.Errorf("Device %s is not updated locally %s", id, err.Error())
 		return err
 	}
 	s.Cache[id] = response.Device
-	log.Infof("Device %s is updated locally with state %s", id, state)
-
-	//TODO timeout from topo
-
+	log.Infof("Device %s is updated locally with states %s, %s, %s", id, connectivity, channel, service)
 	return nil
-}
-
-// DeviceDisconnected signal the local cache and the corresponding topology service that the device disconnected.
-func (s *DeviceStore) DeviceDisconnected(id device.ID) error {
-	log.Infof("Device %s disconnected or had error in connection", id)
-	return s.updateDevice(id, device.State_DISCONNECTED)
 }
