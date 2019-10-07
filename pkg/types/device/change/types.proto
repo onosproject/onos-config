@@ -20,67 +20,49 @@ package onos.config.device.change;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
-
-// Status is the status of a configuration object
-enum Status {
-    // PENDING indicates the configuration is waiting to be applied
-    PENDING = 0;
-
-    // APPLYING indicates the configuration is in the process of being applied
-    APPLYING = 1;
-
-    // SUCCEEDED indicates the configuration was applied successfully
-    SUCCEEDED = 2;
-
-    // FAILED indicates the configuration failed
-    FAILED = 3;
-}
-
-// Reason is a failure reason
-enum Reason {
-    // ERROR indicates an error occurred
-    ERROR = 0;
-
-    // UNAVAILABLE indicates the device was unavailable
-    UNAVAILABLE = 1;
-}
+import "github.com/onosproject/onos-config/pkg/types/meta/types.proto";
 
 // Change represents a configuration change to a single device
 message Change {
-    // The identifier of the change
+    // 'id' is the unique identifier of the change
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
-    // index is the index of the configuration
+    // 'index' is a monotonically increasing, globally unique index of the change
+    // The index is provided by the store, is static and unique for each unique change identifier,
+    // and should not be modified by client code.
     uint64 index = 2 [(gogoproto.casttype) = "Index"];
 
-    // The configuration revision number
+    // 'revision' is the change revision number
+    // The revision number is provided by the store and should not be modified by client code.
+    // Each unique state of the change will be assigned a unique revision number which can be
+    // used for optimistic concurrency control when updating or deleting the change state.
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
-    // The ID of the parent NetworkConfig
-    string config_id = 4 [(gogoproto.customname) = "ConfigID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+    // 'network_change_id' is the identifier of the network change from which this change was created
+    string network_change_id = 4 [(gogoproto.customname) = "NetworkChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
 
-    // The ID of the device to change
+    // 'device_id' is the identifier of the device to which this change applies
     string device_id = 5 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
 
-    // The version of the device to change
+    // 'device_version' is an optional device version to which to apply this change
     string device_version = 6;
 
-    // The current status of the configuration
-    Status status = 7;
+    // 'status' is the lifecycle status of the change
+    onos.config.meta.Status status = 7;
 
-    // The reason the change failed
-    Reason reason = 8;
+    // 'reason' is the reason the change failed if in the FAILED state
+    onos.config.meta.FailureReason reason = 8;
 
-    // An optional status message
+    // 'message' is an optional status message
     string message = 9;
 
-    // The time at which the configuration was created
+    // 'created' is the time at which the change was created
     google.protobuf.Timestamp created = 10 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
-    // The time at which the configuration was last updated
+    // 'updated' is the time at which the change was last updated
     google.protobuf.Timestamp updated = 11 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
-    // The values to change
+    // 'values' is a set of change values to apply
     repeated Value values = 12;
 }
 
@@ -105,18 +87,18 @@ enum ValueType {
 
 // Value is an individual Path/Value combination in a Change
 message Value {
-    // path is the path to change
+    // 'path' is the path to change
     string path = 1;
 
-    // value is the value
+    // 'value' is the change value
     bytes value = 2;
 
-    // type is the value type
+    // 'type' is the value type
     ValueType type = 3;
 
-    // type_opts is a set of type options
+    // 'type_opts' is a set of type options
     repeated int32 type_opts = 4;
 
-    // removed indicates whether this is a delete
+    // 'removed' indicates whether this is a delete
     bool removed = 5;
 }

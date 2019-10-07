@@ -20,63 +20,44 @@ package onos.config.network.change;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
+import "github.com/onosproject/onos-config/pkg/types/meta/types.proto";
 import "github.com/onosproject/onos-config/pkg/types/device/change/types.proto";
-
-// Status is the status of a network change
-enum Status {
-    // PENDING indicates the change has been added to the store but is waiting to be applied
-    PENDING = 0;
-
-    // APPLYING indicates the change is being applied
-    APPLYING = 1;
-
-    // SUCCEEDED indicates the change was applied successfully
-    SUCCEEDED = 2;
-
-    // FAILED indicates the change failed
-    FAILED = 3;
-}
-
-// Reason is a failure reason
-enum Reason {
-    // ERROR indicates an error occurred while applying the change
-    ERROR = 0;
-
-    // UNAVAILABLE indicates the change failed due to device(s) being unavailable
-    UNAVAILABLE = 1;
-}
 
 // NetworkChange specifies the configuration for a network change
 // A network change is a configuration change that spans multiple devices. The change contains a list of
 // per-device changes to be applied to the network.
 message NetworkChange {
-    // id is the ID of the change
+    // 'id' is the unique identifier of the change
+    // This field should be set prior to persisting the object.
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
-    // index is a monotonically increasing, globally unique index of the change
+    // 'index' is a monotonically increasing, globally unique index of the change
+    // The index is provided by the store, is static and unique for each unique change identifier,
+    // and should not be modified by client code.
     uint64 index = 2 [(gogoproto.casttype) = "Index"];
 
-    // revision is the change revision number
-    // Each unique state of the change will contain a unique revision number which can be
+    // 'revision' is the change revision number
+    // The revision number is provided by the store and should not be modified by client code.
+    // Each unique state of the change will be assigned a unique revision number which can be
     // used for optimistic concurrency control when updating or deleting the change state.
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
-    // status is the current status of the change
-    Status status = 4;
+    // 'status' is the current lifecycle status of the change
+    onos.config.meta.Status status = 4;
 
-    // reason indicates the reason the change failed
-    Reason reason = 5;
+    // 'reason' indicates the reason the change failed if in the FAILED state
+    onos.config.meta.FailureReason reason = 5;
 
-    // message is an optional status message
+    // 'message' is an optional status message
     string message = 6;
 
-    // created is the time at which the change was created
+    // 'created' is the time at which the change was created
     google.protobuf.Timestamp created = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
-    // updated is the time at which the change was last updated
+    // 'updated' is the time at which the change was last updated
     google.protobuf.Timestamp updated = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
-    // changes is a set of changes to apply to devices
-    // The list of changes should contain only a single change per device/version  pair.
+    // 'changes' is a set of changes to apply to devices
+    // The list of changes should contain only a single change per device/version pair.
     repeated onos.config.device.change.Change changes = 9;
 }
