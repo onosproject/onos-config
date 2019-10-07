@@ -16,16 +16,11 @@ package mastership
 
 import (
 	"context"
-	"github.com/atomix/atomix-go-local/pkg/atomix/local"
-	"github.com/atomix/atomix-go-node/pkg/atomix"
-	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
 	"io"
-	"net"
 	"sync"
 )
 
@@ -35,6 +30,9 @@ type Term uint64
 // Store is the device mastership store
 type Store interface {
 	io.Closer
+
+	// NodeID returns the local node identifier used in mastership elections
+	NodeID() cluster.NodeID
 
 	// IsMaster returns a boolean indicating whether the local node is the master for the given device
 	IsMaster(id device.ID) (bool, error)
@@ -68,6 +66,7 @@ func NewAtomixStore() (Store, error) {
 	}
 
 	return &atomixStore{
+		nodeID: cluster.GetNodeID(),
 		newElection: func(id device.ID) (deviceMastershipElection, error) {
 			return newAtomixElection(id, group)
 		},
@@ -75,15 +74,22 @@ func NewAtomixStore() (Store, error) {
 	}, nil
 }
 
+var localConns = make(map[string]*grpc.ClientConn)
+
 // NewLocalStore returns a new local election store
-func NewLocalStore(nodeID cluster.NodeID) (Store, error) {
-	_, conn := startLocalNode()
+func NewLocalStore(clusterID string, nodeID cluster.NodeID) (Store, error) {
+	conn, ok := localConns[clusterID]
+	if !ok {
+		_, conn = utils.StartLocalNode()
+		localConns[clusterID] = conn
+	}
 	return newLocalStore(nodeID, conn)
 }
 
 // newLocalStore returns a new local device store
 func newLocalStore(nodeID cluster.NodeID, conn *grpc.ClientConn) (Store, error) {
 	return &atomixStore{
+		nodeID: nodeID,
 		newElection: func(id device.ID) (deviceMastershipElection, error) {
 			return newLocalElection(id, nodeID, conn)
 		},
@@ -91,25 +97,9 @@ func newLocalStore(nodeID cluster.NodeID, conn *grpc.ClientConn) (Store, error) 
 	}, nil
 }
 
-// startLocalNode starts a single local node
-func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
-	lis := bufconn.Listen(1024 * 1024)
-	node := local.NewNode(lis, registry.Registry)
-	_ = node.Start()
-
-	dialer := func(ctx context.Context, address string) (net.Conn, error) {
-		return lis.Dial()
-	}
-
-	conn, err := grpc.DialContext(context.Background(), "mastership", grpc.WithContextDialer(dialer), grpc.WithInsecure())
-	if err != nil {
-		panic("Failed to dial network configurations")
-	}
-	return node, conn
-}
-
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
+	nodeID      cluster.NodeID
 	newElection func(device.ID) (deviceMastershipElection, error)
 	elections   map[device.ID]deviceMastershipElection
 	mu          sync.RWMutex
@@ -135,6 +125,10 @@ func (s *atomixStore) getElection(deviceID device.ID) (deviceMastershipElection,
 		s.mu.Unlock()
 	}
 	return election, nil
+}
+
+func (s *atomixStore) NodeID() cluster.NodeID {
+	return s.nodeID
 }
 
 func (s *atomixStore) IsMaster(deviceID device.ID) (bool, error) {

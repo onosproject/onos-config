@@ -20,15 +20,10 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/election"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
-	"github.com/atomix/atomix-go-local/pkg/atomix/local"
-	"github.com/atomix/atomix-go-node/pkg/atomix"
-	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
 	"io"
-	"net"
 	"sync"
 	"time"
 )
@@ -41,6 +36,9 @@ type Term uint64
 // Store is the cluster wide leadership store
 type Store interface {
 	io.Closer
+
+	// NodeID returns the local node identifier used in the election
+	NodeID() cluster.NodeID
 
 	// IsLeader returns a boolean indicating whether the local node is the leader
 	IsLeader() (bool, error)
@@ -85,9 +83,15 @@ func NewAtomixStore() (Store, error) {
 	return store, nil
 }
 
+var localConns = make(map[string]*grpc.ClientConn)
+
 // NewLocalStore returns a new local election store
-func NewLocalStore(nodeID cluster.NodeID) (Store, error) {
-	_, conn := startLocalNode()
+func NewLocalStore(clusterID string, nodeID cluster.NodeID) (Store, error) {
+	conn, ok := localConns[clusterID]
+	if !ok {
+		_, conn = utils.StartLocalNode()
+		localConns[clusterID] = conn
+	}
 	return newLocalStore(nodeID, conn)
 }
 
@@ -111,23 +115,6 @@ func newLocalStore(nodeID cluster.NodeID, conn *grpc.ClientConn) (Store, error) 
 		return nil, err
 	}
 	return store, nil
-}
-
-// startLocalNode starts a single local node
-func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
-	lis := bufconn.Listen(1024 * 1024)
-	node := local.NewNode(lis, registry.Registry)
-	_ = node.Start()
-
-	dialer := func(ctx context.Context, address string) (net.Conn, error) {
-		return lis.Dial()
-	}
-
-	conn, err := grpc.DialContext(context.Background(), primitiveName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
-	if err != nil {
-		panic("Failed to dial leadership store")
-	}
-	return node, conn
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
@@ -196,6 +183,10 @@ func (s *atomixStore) watchElection(ch <-chan *election.Event) {
 			s.mu.RUnlock()
 		}
 	}
+}
+
+func (s *atomixStore) NodeID() cluster.NodeID {
+	return cluster.NodeID(s.election.ID())
 }
 
 func (s *atomixStore) IsLeader() (bool, error) {

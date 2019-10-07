@@ -16,13 +16,14 @@ package mastership
 
 import (
 	"github.com/onosproject/onos-config/pkg/store/cluster"
+	"github.com/onosproject/onos-config/pkg/store/utils"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestMastershipElection(t *testing.T) {
-	node, conn := startLocalNode()
+	node, conn := utils.StartLocalNode()
 
 	store1, err := newLocalElection(device.ID("test"), "a", conn)
 	assert.NoError(t, err)

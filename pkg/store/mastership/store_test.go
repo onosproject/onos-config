@@ -16,13 +16,14 @@ package mastership
 
 import (
 	"github.com/onosproject/onos-config/pkg/store/cluster"
+	"github.com/onosproject/onos-config/pkg/store/utils"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestMastershipStore(t *testing.T) {
-	node, conn := startLocalNode()
+	node, conn := utils.StartLocalNode()
 
 	node1 := cluster.NodeID("node1")
 	node2 := cluster.NodeID("node2")

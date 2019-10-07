@@ -16,12 +16,13 @@ package leadership
 
 import (
 	"github.com/onosproject/onos-config/pkg/store/cluster"
+	"github.com/onosproject/onos-config/pkg/store/utils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestLeadershipStore(t *testing.T) {
-	node, conn := startLocalNode()
+	node, conn := utils.StartLocalNode()
 
 	store1, err := newLocalStore("a", conn)
 	assert.NoError(t, err)
