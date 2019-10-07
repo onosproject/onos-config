@@ -69,7 +69,7 @@ func TestFactory_Revert(t *testing.T) {
 	assert.Assert(t, opstateCache != nil)
 
 	go func() {
-		Factory(changeStore, configStore, topoChan, opstateChan, responseChan, dispatcher, models.ModelReadOnlyPaths, opstateCache)
+		Factory(changeStore, configStore, topoChan, opstateChan, responseChan, dispatcher, models, opstateCache)
 	}()
 
 	timeout := time.Millisecond * 500

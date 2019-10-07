@@ -23,7 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"time"
 )
@@ -34,7 +34,7 @@ import (
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	readOnlyPaths map[string]modelregistry.ReadOnlyPathMap, operationalStateCache map[devicepb.ID]change.TypedValueMap) {
+	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[device.ID]change.TypedValueMap) {
 	for topoEvent := range topoChannel {
 		device := topoEvent.Device()
 		if !dispatcher.HasListener(device.ID) && topoEvent.ItemAction() != events.EventItemDeleted {
@@ -62,17 +62,25 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			}
 
 			modelName := utils.ToModelName(cfg.Type, device.Version)
-			mReadOnlyPaths, ok := readOnlyPaths[modelName]
+			mReadOnlyPaths, ok := modelRegistry.ModelReadOnlyPaths[modelName]
 			if !ok {
 				log.Warningf("Cannot check for read only paths for target %s with %s because "+
 					"Model Plugin not available - continuing", device.ID, device.Version)
 			}
+			mStateGetMode := modelregistry.GetStateOpState // default
+			mPlugin, ok := modelRegistry.ModelPlugins[modelName]
+			if !ok {
+				log.Warningf("Cannot check for StateGetMode for target %s with %s because "+
+					"Model Plugin not available - continuing", device.ID, device.Version)
+			} else {
+				mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
+			}
 			operationalStateCache[device.ID] = make(change.TypedValueMap)
 			target := southbound.NewTarget()
 			sync, err := New(ctx, changeStore, configStore, device, configChan, opStateChan,
-				errChan, operationalStateCache[device.ID], mReadOnlyPaths, target)
+				errChan, operationalStateCache[device.ID], mReadOnlyPaths, target, mStateGetMode)
 			if err != nil {
-				log.Error("Error in connecting to client: ", err)
+				log.Errorf("Error connecting to device %v: %v", device, err)
 				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
 					string(device.ID), err)
 				//unregistering the listener for changes to the device
@@ -87,8 +95,12 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
 				go sync.syncConfigEventsToDevice(target, respChan)
-				go sync.syncOperationalState(ctx, target, errChan)
-				//respChan <- events.CreateConnectedEvent(events.EventTypeDeviceConnected, string(deviceName))
+				if sync.getStateMode == modelregistry.GetStateOpState {
+					go sync.syncOperationalStateByPartition(ctx, target, errChan)
+				} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||
+					sync.getStateMode == modelregistry.GetStateExplicitRoPathsExpandWildcards {
+					go sync.syncOperationalStateByPaths(ctx, target, errChan)
+				}
 			}
 		} else if dispatcher.HasListener(device.ID) && topoEvent.ItemAction() == events.EventItemDeleted {
 

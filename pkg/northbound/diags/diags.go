@@ -163,12 +163,12 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 		for {
 			select {
 			case opStateEvent := <-listener:
-				log.Infof("Event received NBI Diags OpState subscribe channel %s for %s",
-					streamID, r.DeviceId)
 				if opStateEvent.Subject() != r.DeviceId {
 					// If the event is not for this device then ignore it
 					continue
 				}
+				log.Infof("Event received NBI Diags OpState subscribe channel %s for %s",
+					streamID, r.DeviceId)
 
 				pathValue := &admin.ChangeValue{
 					Path:      opStateEvent.Path(),

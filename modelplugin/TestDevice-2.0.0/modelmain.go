@@ -20,6 +20,7 @@ package main
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -32,7 +33,7 @@ const modelversion = "2.0.0"
 const modulename = "testdevice.so.2.0.0"
 
 var modelData = []*gnmi.ModelData{
-      {Name: "test1",Organization: "Open Networking Foundation",Version: "2019-06-10"},
+      {Name: "test1",Organization: "Open Networking Foundation",Version: "2019-06-10"},	
 }
 
 func (m modelplugin) ModelData() (string, string, []*gnmi.ModelData, string) {
@@ -62,6 +63,10 @@ func (m modelplugin) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.Va
 
 func (m modelplugin) Schema() (map[string]*yang.Entry, error) {
 	return testdevice_2_0_0.UnzipSchema()
+}
+
+func (m modelplugin) GetStateMode() modelregistry.GetStateMode {
+	return modelregistry.GetStateNone
 }
 
 // ModelPlugin is the exported symbol that gives an entry point to this shared module

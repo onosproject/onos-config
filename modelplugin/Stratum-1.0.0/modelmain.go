@@ -20,6 +20,7 @@ package main
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/modelplugin/Stratum-1.0.0/stratum_1_0_0"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -83,6 +84,10 @@ func (m modelplugin) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.Va
 
 func (m modelplugin) Schema() (map[string]*yang.Entry, error) {
 	return stratum_1_0_0.UnzipSchema()
+}
+
+func (m modelplugin) GetStateMode() modelregistry.GetStateMode {
+	return modelregistry.GetStateExplicitRoPathsExpandWildcards
 }
 
 // ModelPlugin is the exported symbol that gives an entry point to this shared module
