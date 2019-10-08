@@ -189,6 +189,7 @@ func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminS
 			Version:       version,
 			ModelData:     md,
 			Module:        plugin,
+			GetStateMode:  uint32(model.GetStateMode()),
 			ReadOnlyPath:  roPaths,
 			ReadWritePath: rwPaths,
 		}

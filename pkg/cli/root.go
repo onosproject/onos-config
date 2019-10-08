@@ -24,7 +24,6 @@ func GetCommand() *cobra.Command {
 		Short: "ONOS configuration subsystem commands",
 	}
 
-	cmd.AddCommand(getConfigCommand())
 	cmd.AddCommand(getGetCommand())
 	cmd.AddCommand(getAddCommand())
 	//cmd.AddCommand(getRemoveCommand())

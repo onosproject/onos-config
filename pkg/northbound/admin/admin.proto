@@ -117,7 +117,8 @@ message ModelInfo {
     string version = 2;
     repeated gnmi.ModelData model_data = 3;
     string module = 4;
-    repeated ReadOnlyPath read_only_path = 7; // 5 and 6 were used previously
+    uint32 getStateMode = 5;
+    repeated ReadOnlyPath read_only_path = 7; // 6 was used previously
     repeated ReadWritePath read_write_path = 8;
 }
 

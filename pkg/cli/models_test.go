@@ -45,6 +45,7 @@ func generateModelData(count int) {
 			Name:         fmt.Sprintf("Model-%d", modelIndex),
 			Version:      "1.0",
 			Module:       fmt.Sprintf("Module-%d", modelIndex),
+			GetStateMode: 1,
 			ReadOnlyPath: roPaths,
 			ModelData:    modelData,
 		}
@@ -80,6 +81,7 @@ func Test_ListPlugins(t *testing.T) {
 	assert.NilError(t, err)
 	output := outputBuffer.String()
 	assert.Equal(t, strings.Count(output, "YANGS:"), len(modelInfo))
+	assert.Equal(t, strings.Count(output, "GetStateMode: 1"), len(modelInfo))
 	assert.Equal(t, strings.Count(output, "Model-"), len(modelInfo))
 	assert.Equal(t, strings.Count(output, "Read Only Paths ("), len(modelInfo))
 	assert.Assert(t, strings.Contains(output, "Model-1: 1.0 from Module-1"))
