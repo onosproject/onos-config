@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 type testDeviceResolver struct {
@@ -81,7 +82,11 @@ func TestMastershipFilter(t *testing.T) {
 	err = store1.Close()
 	assert.NoError(t, err)
 
-	<-ch
+	select {
+	case <-ch:
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
 
 	assert.True(t, filter2.Accept(types.ID(device1)))
 	assert.True(t, filter2.Accept(types.ID(device2)))

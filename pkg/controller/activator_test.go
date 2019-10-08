@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestLeadershipActivator(t *testing.T) {
@@ -57,7 +58,10 @@ func TestLeadershipActivator(t *testing.T) {
 	err = store1.Close()
 	assert.NoError(t, err)
 
-	<-ch
-
+	select {
+	case <-ch:
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
 	assert.True(t, <-ch2)
 }
