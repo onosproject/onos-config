@@ -275,7 +275,7 @@ func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) error {
 	go func() {
 		defer close(ch)
 		for i := networkchange.Index(1); i <= lastIndex; i++ {
-			if device, err := s.GetByIndex(i); err == nil {
+			if device, err := s.GetByIndex(i); err == nil && device != nil {
 				ch <- device
 			}
 		}
@@ -297,7 +297,7 @@ func (s *atomixStore) Watch(ch chan<- *networkchange.NetworkChange) error {
 	go func() {
 		defer close(ch)
 		for i := networkchange.Index(1); i <= lastIndex; i++ {
-			if device, err := s.GetByIndex(i); err == nil {
+			if device, err := s.GetByIndex(i); err == nil && device != nil {
 				ch <- device
 			}
 		}
