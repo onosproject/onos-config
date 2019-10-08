@@ -49,10 +49,10 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	}
 
 	go func() {
-		defer close(ch)
 		for request := range configCh {
 			ch <- types.ID(request.ID)
 		}
+		close(ch)
 	}()
 	return nil
 }
@@ -89,10 +89,10 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	}
 
 	go func() {
-		defer close(ch)
 		for request := range configCh {
 			ch <- types.ID(request.NetworkChangeID)
 		}
+		close(ch)
 	}()
 	return nil
 }
@@ -104,4 +104,4 @@ func (w *DeviceWatcher) Stop() {
 	w.mu.Unlock()
 }
 
-var _ controller.Watcher = &Watcher{}
+var _ controller.Watcher = &DeviceWatcher{}

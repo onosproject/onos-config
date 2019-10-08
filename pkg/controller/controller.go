@@ -142,13 +142,41 @@ func (c *Controller) Start() error {
 	return nil
 }
 
+// Stop stops the controller
+func (c *Controller) Stop() {
+	c.activator.Stop()
+}
+
 // activate activates the controller
 func (c *Controller) activate() {
 	ch := make(chan types.ID)
+	wg := &sync.WaitGroup{}
 	for _, watcher := range c.watchers {
-		_ = watcher.Start(ch)
+		if err := c.startWatcher(ch, wg, watcher); err == nil {
+			wg.Add(1)
+		}
+		go func() {
+			wg.Wait()
+			close(ch)
+		}()
 	}
 	go c.processEvents(ch)
+}
+
+// startWatcher starts a single watcher
+func (c *Controller) startWatcher(ch chan types.ID, wg *sync.WaitGroup, watcher Watcher) error {
+	watcherCh := make(chan types.ID)
+	if err := watcher.Start(watcherCh); err != nil {
+		return err
+	}
+
+	go func() {
+		for id := range watcherCh {
+			ch <- id
+		}
+		wg.Done()
+	}()
+	return nil
 }
 
 // deactivate deactivates the controller
