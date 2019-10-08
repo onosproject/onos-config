@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestDeviceStore(t *testing.T) {
@@ -141,14 +142,30 @@ func TestDeviceStore(t *testing.T) {
 	assert.NotEqual(t, devicechange.Revision(0), change4.Revision)
 
 	// Verify events were received for the changes
-	changeEvent := <-ch
-	assert.Equal(t, devicechange.ID("device-1:1"), changeEvent.ID)
-	changeEvent = <-ch
-	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
-	changeEvent = <-ch
-	assert.Equal(t, devicechange.ID("device-1:3"), changeEvent.ID)
-	changeEvent = <-ch
-	assert.Equal(t, devicechange.ID("device-2:1"), changeEvent.ID)
+	select {
+	case change := <-ch:
+		assert.Equal(t, devicechange.ID("device-1:1"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case change := <-ch:
+		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case change := <-ch:
+		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case change := <-ch:
+		assert.Equal(t, devicechange.ID("device-2:1"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
 
 	// Update one of the changes
 	change2.Status = change.Status_APPLYING
@@ -182,38 +199,78 @@ func TestDeviceStore(t *testing.T) {
 	assert.Error(t, err)
 
 	// Verify device events were received again
-	changeEvent = <-ch
-	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
-	changeEvent = <-ch
-	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
-	changeEvent = <-ch
-	assert.Equal(t, devicechange.ID("device-1:3"), changeEvent.ID)
+	select {
+	case change := <-ch:
+		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case change := <-ch:
+		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case change := <-ch:
+		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
 
 	// List the changes for a device
 	changes := make(chan *devicechange.Change)
 	err = store1.List(device1, changes)
 	assert.NoError(t, err)
 
-	listChange := <-changes
-	assert.Equal(t, devicechange.ID("device-1:1"), listChange.ID)
-	listChange = <-changes
-	assert.Equal(t, devicechange.ID("device-1:2"), listChange.ID)
-	listChange = <-changes
-	assert.Equal(t, devicechange.ID("device-1:3"), listChange.ID)
-	_, ok := <-changes
-	assert.False(t, ok)
+	select {
+	case listChange := <-changes:
+		assert.Equal(t, devicechange.ID("device-1:1"), listChange.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case change := <-changes:
+		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case change := <-changes:
+		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case _, ok := <-changes:
+		assert.False(t, ok)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
 
 	// Replay changes from a specific index
 	changes = make(chan *devicechange.Change)
 	err = store1.Replay(device1, 2, changes)
 	assert.NoError(t, err)
 
-	listChange = <-changes
-	assert.Equal(t, devicechange.ID("device-1:2"), listChange.ID)
-	listChange = <-changes
-	assert.Equal(t, devicechange.ID("device-1:3"), listChange.ID)
-	_, ok = <-changes
-	assert.False(t, ok)
+	select {
+	case change := <-changes:
+		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case change := <-changes:
+		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	select {
+	case _, ok := <-changes:
+		assert.False(t, ok)
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
 
 	// Delete a change
 	err = store1.Delete(change2)
