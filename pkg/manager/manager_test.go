@@ -440,6 +440,7 @@ func TestManager_GetTargetState(t *testing.T) {
 	const (
 		device1 = "device1"
 		path1   = "/a/b/c"
+		path1WC = "/a/*/c"
 		value1  = "v1"
 		path2   = "/x/y/z"
 		value2  = "v2"
@@ -456,7 +457,7 @@ func TestManager_GetTargetState(t *testing.T) {
 	mgrTest.OperationalStateCache[device1] = device1ValueMap
 
 	// Test fetching a known path from the cache
-	state1 := mgrTest.GetTargetState(device1, path1)
+	state1 := mgrTest.GetTargetState(device1, path1WC)
 	assert.Assert(t, state1 != nil, "Path 1 entry not found")
 	assert.Assert(t, len(state1) == 1, "Path 1 entry has incorrect length %d", len(state1))
 	assert.Assert(t, state1[0].Path == path1, "Path 1 path is incorrect")
@@ -486,6 +487,10 @@ func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
 	panic("implement me")
 }
 
+func (m MockModelPlugin) GetStateMode() modelregistry.GetStateMode {
+	panic("implement me")
+}
+
 func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
 	mgrTest, _, _ := setUp()
 
@@ -494,16 +499,13 @@ func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
 
 	roPathMap := make(modelregistry.ReadOnlyPathMap)
 	roSubPath1 := make(modelregistry.ReadOnlySubPathMap)
-	roSubPath1["/"] = change.ValueTypeSTRING
-	roPathMap["/cont1a"] = roSubPath1
-	roSubPath2 := make(modelregistry.ReadOnlySubPathMap)
-	roSubPath2["/leaf2d"] = change.ValueTypeUINT
-	roPathMap["/cont1b-state"] = roSubPath2
+	roPathMap["/cont1a/cont2a/leaf2a"] = roSubPath1
 
 	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-1.0.0"] = roPathMap
 
 	validationError := mgrTest.ValidateStores()
-	assert.ErrorContains(t, validationError, "read only path in configuration /cont1a matches /cont1a for TestDevice-1.0.0")
+	assert.ErrorContains(t, validationError,
+		"error read only path in configuration /cont1a/cont2a/leaf2a matches /cont1a/cont2a/leaf2a for TestDevice-1.0.0")
 }
 
 func TestManager_ValidateStores(t *testing.T) {
