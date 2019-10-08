@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestDeviceStore(t *testing.T) {
@@ -111,10 +112,18 @@ func TestDeviceStore(t *testing.T) {
 	assert.NotEqual(t, networkchange.Revision(0), change2.Revision)
 
 	// Verify events were received for the changes
-	changeEvent := <-ch
-	assert.Equal(t, networkchange.ID("network:1"), changeEvent.ID)
-	changeEvent = <-ch
-	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
+	select {
+	case e := <-ch:
+		assert.Equal(t, networkchange.ID("network:1"), e.ID)
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "channel timed out")
+	}
+	select {
+	case e := <-ch:
+		assert.Equal(t, networkchange.ID("network:2"), e.ID)
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "channel timed out")
+	}
 
 	// Update one of the changes
 	change2.Status = change.Status_APPLYING
@@ -148,12 +157,24 @@ func TestDeviceStore(t *testing.T) {
 	assert.Error(t, err)
 
 	// Verify events were received again
-	changeEvent = <-ch
-	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
-	changeEvent = <-ch
-	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
-	changeEvent = <-ch
-	assert.Equal(t, networkchange.ID("network:1"), changeEvent.ID)
+	select {
+	case e := <-ch:
+		assert.Equal(t, networkchange.ID("network:2"), e.ID)
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "channel timed out")
+	}
+	select {
+	case e := <-ch:
+		assert.Equal(t, networkchange.ID("network:2"), e.ID)
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "channel timed out")
+	}
+	select {
+	case e := <-ch:
+		assert.Equal(t, networkchange.ID("network:1"), e.ID)
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "channel timed out")
+	}
 
 	// List the changes
 	changes := make(chan *networkchange.NetworkChange)
