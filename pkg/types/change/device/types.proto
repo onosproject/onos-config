@@ -48,7 +48,7 @@ message Change {
     string device_version = 6;
 
     // 'status' is the lifecycle status of the change
-    onos.config.change.Status status = 7;
+    onos.config.change.Status status = 7 [(gogoproto.nullable) = false];
 
     // 'created' is the time at which the change was created
     google.protobuf.Timestamp created = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];

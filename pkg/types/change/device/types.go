@@ -27,22 +27,9 @@ const separator = ":"
 // ID is a device change identifier type
 type ID types.ID
 
-// containsVersion indicates whether a version is present in the change ID
-func (i ID) containsVersion() bool {
-	return strings.Count(string(i), separator) == 2
-}
-
 // GetDeviceID returns the Device ID to which the change is targeted
 func (i ID) GetDeviceID() device.ID {
 	return device.ID(string(i)[:strings.Index(string(i), separator)])
-}
-
-// GetDeviceVersion returns the device version to which the change is targeted
-func (i ID) GetDeviceVersion() string {
-	if !i.containsVersion() {
-		return ""
-	}
-	return string(i)[strings.Index(string(i), separator)+1 : strings.LastIndex(string(i), separator)]
 }
 
 // GetIndex returns the Index
@@ -55,11 +42,8 @@ func (i ID) GetIndex() Index {
 type Index uint64
 
 // GetChangeID returns the device change ID for the index given a device/version
-func (i Index) GetChangeID(deviceID device.ID, version string) ID {
-	if version == "" {
-		return ID(fmt.Sprintf("%s%s%d", deviceID, separator, i))
-	}
-	return ID(fmt.Sprintf("%s%s%s%s%d", deviceID, separator, version, separator, i))
+func (i Index) GetChangeID(deviceID device.ID) ID {
+	return ID(fmt.Sprintf("%s%s%d", deviceID, separator, i))
 }
 
 // Revision is a network configuration revision number
