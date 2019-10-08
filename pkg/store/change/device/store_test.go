@@ -146,30 +146,14 @@ func TestDeviceStore(t *testing.T) {
 	assert.NotEqual(t, devicechange.Revision(0), change4.Revision)
 
 	// Verify events were received for the changes
-	select {
-	case change := <-ch1:
-		assert.Equal(t, devicechange.ID("device-1:1"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-	select {
-	case change := <-ch1:
-		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-	select {
-	case change := <-ch1:
-		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-	select {
-	case change := <-ch2:
-		assert.Equal(t, devicechange.ID("device-2:1"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
+	changeEvent := nextDeviceChange(t, ch1)
+	assert.Equal(t, devicechange.ID("device-1:1"), changeEvent.ID)
+	changeEvent = nextDeviceChange(t, ch1)
+	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
+	changeEvent = nextDeviceChange(t, ch1)
+	assert.Equal(t, devicechange.ID("device-1:3"), changeEvent.ID)
+	changeEvent = nextDeviceChange(t, ch2)
+	assert.Equal(t, devicechange.ID("device-2:1"), changeEvent.ID)
 
 	// Update one of the changes
 	change2.Status.State = change.State_APPLYING
@@ -203,48 +187,25 @@ func TestDeviceStore(t *testing.T) {
 	assert.Error(t, err)
 
 	// Verify device events were received again
-	select {
-	case change := <-ch1:
-		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-	select {
-	case change := <-ch1:
-		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-	select {
-	case change := <-ch1:
-		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
+	changeEvent = nextDeviceChange(t, ch1)
+	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
+	changeEvent = nextDeviceChange(t, ch1)
+	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
+	changeEvent = nextDeviceChange(t, ch1)
+	assert.Equal(t, devicechange.ID("device-1:3"), changeEvent.ID)
 
 	// List the changes for a device
 	changes := make(chan *devicechange.Change)
 	err = store1.List(device1, changes)
 	assert.NoError(t, err)
 
-	select {
-	case listChange := <-changes:
-		assert.Equal(t, devicechange.ID("device-1:1"), listChange.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-	select {
-	case change := <-changes:
-		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-	select {
-	case change := <-changes:
-		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
+	changeEvent = nextDeviceChange(t, changes)
+	assert.Equal(t, devicechange.ID("device-1:1"), changeEvent.ID)
+	changeEvent = nextDeviceChange(t, changes)
+	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
+	changeEvent = nextDeviceChange(t, changes)
+	assert.Equal(t, devicechange.ID("device-1:3"), changeEvent.ID)
+
 	select {
 	case _, ok := <-changes:
 		assert.False(t, ok)
@@ -257,18 +218,11 @@ func TestDeviceStore(t *testing.T) {
 	err = store1.Replay(device1, 2, changes)
 	assert.NoError(t, err)
 
-	select {
-	case change := <-changes:
-		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-	select {
-	case change := <-changes:
-		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
+	changeEvent = nextDeviceChange(t, changes)
+	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
+	changeEvent = nextDeviceChange(t, changes)
+	assert.Equal(t, devicechange.ID("device-1:3"), changeEvent.ID)
+
 	select {
 	case _, ok := <-changes:
 		assert.False(t, ok)
@@ -282,4 +236,24 @@ func TestDeviceStore(t *testing.T) {
 	change2, err = store2.Get("device-1:2")
 	assert.NoError(t, err)
 	assert.Nil(t, change2)
+
+	// Ensure existing changes are replayed in order on watch
+	watches := make(chan *devicechange.Change)
+	err = store1.Watch(device1, watches)
+	assert.NoError(t, err)
+
+	change := nextDeviceChange(t, watches)
+	assert.Equal(t, devicechange.ID("device-1:1"), change.ID)
+	change = nextDeviceChange(t, watches)
+	assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
+}
+
+func nextDeviceChange(t *testing.T, ch chan *devicechange.Change) *devicechange.Change {
+	select {
+	case change := <-ch:
+		return change
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	return nil
 }
