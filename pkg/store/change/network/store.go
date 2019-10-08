@@ -148,6 +148,26 @@ type atomixStore struct {
 	closer  io.Closer
 }
 
+func (s *atomixStore) nextIndex() (networkchange.Index, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	index, err := s.indexes.Increment(ctx, 1)
+	if err != nil {
+		return 0, err
+	}
+	return networkchange.Index(index), nil
+}
+
+func (s *atomixStore) lastIndex() (networkchange.Index, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	index, err := s.indexes.Get(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return networkchange.Index(index), nil
+}
+
 func (s *atomixStore) Get(id networkchange.ID) (*networkchange.NetworkChange, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -179,9 +199,7 @@ func (s *atomixStore) Create(config *networkchange.NetworkChange) error {
 		return errors.New("not a new object")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	index, err := s.indexes.Increment(ctx, 1)
-	cancel()
+	index, err := s.nextIndex()
 	if err != nil {
 		return err
 	}
@@ -194,9 +212,9 @@ func (s *atomixStore) Create(config *networkchange.NetworkChange) error {
 		return err
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
 	entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
-	cancel()
 	if err != nil {
 		return err
 	}
@@ -249,15 +267,15 @@ func (s *atomixStore) Delete(config *networkchange.NetworkChange) error {
 }
 
 func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) error {
-	mapCh := make(chan *_map.Entry)
-	if err := s.configs.Entries(context.Background(), mapCh); err != nil {
+	lastIndex, err := s.lastIndex()
+	if err != nil {
 		return err
 	}
 
 	go func() {
 		defer close(ch)
-		for entry := range mapCh {
-			if device, err := decodeConfig(entry); err == nil {
+		for i := networkchange.Index(1); i <= lastIndex; i++ {
+			if device, err := s.GetByIndex(i); err == nil {
 				ch <- device
 			}
 		}
@@ -266,13 +284,23 @@ func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) error {
 }
 
 func (s *atomixStore) Watch(ch chan<- *networkchange.NetworkChange) error {
+	lastIndex, err := s.lastIndex()
+	if err != nil {
+		return err
+	}
+
 	mapCh := make(chan *_map.Event)
-	if err := s.configs.Watch(context.Background(), mapCh, _map.WithReplay()); err != nil {
+	if err := s.configs.Watch(context.Background(), mapCh); err != nil {
 		return err
 	}
 
 	go func() {
 		defer close(ch)
+		for i := networkchange.Index(1); i <= lastIndex; i++ {
+			if device, err := s.GetByIndex(i); err == nil {
+				ch <- device
+			}
+		}
 		for event := range mapCh {
 			if config, err := decodeConfig(event.Entry); err == nil {
 				ch <- config

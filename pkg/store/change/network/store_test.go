@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-func TestDeviceStore(t *testing.T) {
+func TestNetworkChangeStore(t *testing.T) {
 	node, conn := startLocalNode()
 	defer node.Stop()
 	defer conn.Close()
