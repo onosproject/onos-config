@@ -17,9 +17,13 @@ package manager
 import (
 	"bytes"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/goyang/pkg/yang"
+	"github.com/openconfig/ygot/ygot"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
 	"os"
@@ -430,4 +434,86 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	assert.Equal(t, (*change.TypedFloat)(changes[Test1Cont1ACont2ALeaf2A]).Float32(), float32(ValueLeaf2B159), "Wrong value to set after rollback")
 
 	assert.Equal(t, deletesRoll[0], Test1Cont1ACont2ALeaf2D, "Path should be deleted")
+}
+
+func TestManager_GetTargetState(t *testing.T) {
+	const (
+		device1 = "device1"
+		path1   = "/a/b/c"
+		path1WC = "/a/*/c"
+		value1  = "v1"
+		path2   = "/x/y/z"
+		value2  = "v2"
+		badPath = "/no/such/path"
+	)
+	mgrTest, _, _ := setUp()
+
+	//  Create an op state map with test data
+	device1ValueMap := make(map[string]*change.TypedValue)
+	change1 := change.NewTypedValueString(value1)
+	change2 := change.NewTypedValueString(value2)
+	device1ValueMap[path1] = change1
+	device1ValueMap[path2] = change2
+	mgrTest.OperationalStateCache[device1] = device1ValueMap
+
+	// Test fetching a known path from the cache
+	state1 := mgrTest.GetTargetState(device1, path1WC)
+	assert.Assert(t, state1 != nil, "Path 1 entry not found")
+	assert.Assert(t, len(state1) == 1, "Path 1 entry has incorrect length %d", len(state1))
+	assert.Assert(t, state1[0].Path == path1, "Path 1 path is incorrect")
+	assert.Assert(t, string(state1[0].Value) == value1, "Path 1 value is incorrect")
+
+	// Test fetching an unknown path from the cache
+	stateBad := mgrTest.GetTargetState(device1, badPath)
+	assert.Assert(t, stateBad != nil, "Bad Path Entry returns nil")
+	assert.Assert(t, len(stateBad) == 0, "Bad path entry has incorrect length %d", len(stateBad))
+}
+
+type MockModelPlugin struct{}
+
+func (m MockModelPlugin) ModelData() (string, string, []*gnmi.ModelData, string) {
+	panic("implement me")
+}
+
+func (m MockModelPlugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
+	return nil, nil
+}
+
+func (m MockModelPlugin) Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error {
+	return nil
+}
+
+func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
+	panic("implement me")
+}
+
+func (m MockModelPlugin) GetStateMode() modelregistry.GetStateMode {
+	panic("implement me")
+}
+
+func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
+	mgrTest, _, _ := setUp()
+
+	plugin := MockModelPlugin{}
+	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
+
+	roPathMap := make(modelregistry.ReadOnlyPathMap)
+	roSubPath1 := make(modelregistry.ReadOnlySubPathMap)
+	roPathMap["/cont1a/cont2a/leaf2a"] = roSubPath1
+
+	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-1.0.0"] = roPathMap
+
+	validationError := mgrTest.ValidateStores()
+	assert.ErrorContains(t, validationError,
+		"error read only path in configuration /cont1a/cont2a/leaf2a matches /cont1a/cont2a/leaf2a for TestDevice-1.0.0")
+}
+
+func TestManager_ValidateStores(t *testing.T) {
+	mgrTest, _, _ := setUp()
+
+	plugin := MockModelPlugin{}
+	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
+
+	validationError := mgrTest.ValidateStores()
+	assert.NilError(t, validationError)
 }
