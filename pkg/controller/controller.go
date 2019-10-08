@@ -146,9 +146,7 @@ func (c *Controller) Start() error {
 func (c *Controller) activate() {
 	ch := make(chan types.ID)
 	for _, watcher := range c.watchers {
-		go func(watcher Watcher) {
-			_ = watcher.Start(ch)
-		}(watcher)
+		_ = watcher.Start(ch)
 	}
 	go c.processEvents(ch)
 }
