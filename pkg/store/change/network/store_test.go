@@ -126,7 +126,7 @@ func TestDeviceStore(t *testing.T) {
 	}
 
 	// Update one of the changes
-	change2.Status = change.Status_APPLYING
+	change2.Status.State = change.State_APPLYING
 	revision := change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
@@ -136,7 +136,7 @@ func TestDeviceStore(t *testing.T) {
 	change2, err = store2.Get("network:2")
 	assert.NoError(t, err)
 	assert.NotNil(t, change2)
-	change2.Status = change.Status_SUCCEEDED
+	change2.Status.State = change.State_SUCCEEDED
 	revision = change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
@@ -148,11 +148,11 @@ func TestDeviceStore(t *testing.T) {
 	change12, err := store2.Get("network:1")
 	assert.NoError(t, err)
 
-	change11.Status = change.Status_SUCCEEDED
+	change11.Status.State = change.State_SUCCEEDED
 	err = store1.Update(change11)
 	assert.NoError(t, err)
 
-	change12.Status = change.Status_FAILED
+	change12.Status.State = change.State_FAILED
 	err = store2.Update(change12)
 	assert.Error(t, err)
 
