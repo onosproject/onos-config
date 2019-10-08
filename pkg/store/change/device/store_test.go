@@ -214,4 +214,11 @@ func TestDeviceStore(t *testing.T) {
 	assert.Equal(t, devicechange.ID("device-1:3"), listChange.ID)
 	_, ok = <-changes
 	assert.False(t, ok)
+
+	// Delete a change
+	err = store1.Delete(change2)
+	assert.NoError(t, err)
+	change2, err = store2.Get("device-1:2")
+	assert.NoError(t, err)
+	assert.Nil(t, change2)
 }
