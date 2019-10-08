@@ -155,11 +155,11 @@ func (c *Controller) activate() {
 		if err := c.startWatcher(ch, wg, watcher); err == nil {
 			wg.Add(1)
 		}
-		go func() {
-			wg.Wait()
-			close(ch)
-		}()
 	}
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
 	go c.processEvents(ch)
 }
 
