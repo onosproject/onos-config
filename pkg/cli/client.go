@@ -17,6 +17,7 @@ package cli
 import (
 	"crypto/tls"
 	"github.com/onosproject/onos-config/pkg/certs"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -27,9 +28,13 @@ const (
 
 // getConnection returns a gRPC client connection to the config service
 func getConnection() (*grpc.ClientConn, error) {
-	address := getConfigOrDefault("address", defaultAddress).(string)
-	certPath := getConfigString("tls.certPath")
-	keyPath := getConfigString("tls.keyPath")
+	addressObj := viper.Get("address")
+	if addressObj == nil {
+		addressObj = defaultAddress
+	}
+	address := addressObj.(string)
+	certPath := viper.GetString("tls.certPath")
+	keyPath := viper.GetString("tls.keyPath")
 	var opts []grpc.DialOption
 	if certPath != "" && keyPath != "" {
 		cert, err := tls.LoadX509KeyPair(certPath, keyPath)

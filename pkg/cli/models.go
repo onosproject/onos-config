@@ -24,6 +24,7 @@ import (
 )
 
 const modellistTemplate = "{{.Name}}: {{.Version}} from {{.Module}} containing:\n" +
+	"GetStateMode: {{.GetStateMode}}\n" +
 	"YANGS:\n" +
 	"{{range .ModelData}}" +
 	"\t{{.Name}}\t{{.Version}}\t{{.Organization}}\n" +
