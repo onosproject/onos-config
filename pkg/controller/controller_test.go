@@ -20,18 +20,19 @@ import (
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"strconv"
+	"sync/atomic"
 	"testing"
 )
 
 func TestController(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	var activatorCh chan<- bool
+	activatorValue := &atomic.Value{}
 	activator := NewMockActivator(ctrl)
 	activator.EXPECT().
 		Start(gomock.Any()).
 		DoAndReturn(func(ch chan<- bool) error {
-			activatorCh = ch
+			activatorValue.Store(ch)
 			return nil
 		})
 
@@ -44,12 +45,12 @@ func TestController(t *testing.T) {
 		}).
 		AnyTimes()
 
-	var watcherCh chan<- types.ID
+	watcherValue := &atomic.Value{}
 	watcher := NewMockWatcher(ctrl)
 	watcher.EXPECT().
 		Start(gomock.Any()).
 		DoAndReturn(func(ch chan<- types.ID) error {
-			watcherCh = ch
+			watcherValue.Store(ch)
 			return nil
 		})
 
@@ -76,6 +77,7 @@ func TestController(t *testing.T) {
 	err := controller.Start()
 	assert.NoError(t, err)
 
+	activatorCh := activatorValue.Load().(chan<- bool)
 	activatorCh <- true
 
 	reconciler.EXPECT().
@@ -101,6 +103,7 @@ func TestController(t *testing.T) {
 		Reconcile(gomock.Eq(types.ID("4"))).
 		Return(true, nil)
 
+	watcherCh := watcherValue.Load().(chan<- types.ID)
 	watcherCh <- types.ID("1")
 	watcherCh <- types.ID("2")
 	watcherCh <- types.ID("3")
