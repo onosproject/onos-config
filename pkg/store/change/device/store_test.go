@@ -126,7 +126,7 @@ func TestDeviceStore(t *testing.T) {
 		DeviceID:        device2,
 		Values: []*devicechange.Value{
 			{
-				Path:    "foo",
+				Path:  "foo",
 				Value: []byte("bar"),
 				Type:  devicechange.ValueType_STRING,
 			},
@@ -169,7 +169,9 @@ func TestDeviceStore(t *testing.T) {
 
 	// Verify that concurrent updates fail
 	change31, err := store1.Get(devicechange.ID("device-1:3"))
+	assert.NoError(t, err)
 	change32, err := store2.Get(devicechange.ID("device-1:3"))
+	assert.NoError(t, err)
 
 	change31.Status = change.Status_APPLYING
 	err = store1.Update(change31)
@@ -190,6 +192,7 @@ func TestDeviceStore(t *testing.T) {
 	// List the changes for a device
 	changes := make(chan *devicechange.Change)
 	err = store1.List(device1, changes)
+	assert.NoError(t, err)
 
 	listChange := <-changes
 	assert.Equal(t, devicechange.ID("device-1:1"), listChange.ID)
@@ -203,6 +206,8 @@ func TestDeviceStore(t *testing.T) {
 	// Replay changes from a specific index
 	changes = make(chan *devicechange.Change)
 	err = store1.Replay(device1, 2, changes)
+	assert.NoError(t, err)
+
 	listChange = <-changes
 	assert.Equal(t, devicechange.ID("device-1:2"), listChange.ID)
 	listChange = <-changes
