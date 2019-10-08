@@ -69,7 +69,6 @@ func NewAtomixStore() (Store, error) {
 		configs:      configs,
 		indexFactory: indexFactory,
 		indexes:      make(map[device.ID]counter.Counter),
-		closer:       configs,
 	}, nil
 }
 
@@ -158,7 +157,6 @@ type atomixStore struct {
 	indexFactory func(deviceID device.ID) (counter.Counter, error)
 	indexes      map[device.ID]counter.Counter
 	mu           sync.RWMutex
-	closer       io.Closer
 }
 
 func (s *atomixStore) getIndexCounter(deviceID device.ID) (counter.Counter, error) {
