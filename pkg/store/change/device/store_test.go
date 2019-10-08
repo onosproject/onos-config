@@ -48,8 +48,12 @@ func TestDeviceStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, devicechange.Index(0), lastIndex)
 
-	ch := make(chan *devicechange.Change)
-	err = store2.Watch(ch)
+	ch1 := make(chan *devicechange.Change)
+	err = store2.Watch(device1, ch1)
+	assert.NoError(t, err)
+
+	ch2 := make(chan *devicechange.Change)
+	err = store2.Watch(device2, ch2)
 	assert.NoError(t, err)
 
 	change1 := &devicechange.Change{
@@ -143,25 +147,25 @@ func TestDeviceStore(t *testing.T) {
 
 	// Verify events were received for the changes
 	select {
-	case change := <-ch:
+	case change := <-ch1:
 		assert.Equal(t, devicechange.ID("device-1:1"), change.ID)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
 	select {
-	case change := <-ch:
+	case change := <-ch1:
 		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
 	select {
-	case change := <-ch:
+	case change := <-ch1:
 		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
 	select {
-	case change := <-ch:
+	case change := <-ch2:
 		assert.Equal(t, devicechange.ID("device-2:1"), change.ID)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
@@ -200,19 +204,19 @@ func TestDeviceStore(t *testing.T) {
 
 	// Verify device events were received again
 	select {
-	case change := <-ch:
+	case change := <-ch1:
 		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
 	select {
-	case change := <-ch:
+	case change := <-ch1:
 		assert.Equal(t, devicechange.ID("device-1:2"), change.ID)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
 	select {
-	case change := <-ch:
+	case change := <-ch1:
 		assert.Equal(t, devicechange.ID("device-1:3"), change.ID)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
