@@ -45,19 +45,13 @@ message NetworkChange {
     // 'status' is the current lifecycle status of the change
     onos.config.change.Status status = 4;
 
-    // 'reason' indicates the reason the change failed if in the FAILED state
-    onos.config.change.FailureReason reason = 5;
-
-    // 'message' is an optional status message
-    string message = 6;
-
     // 'created' is the time at which the change was created
-    google.protobuf.Timestamp created = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp created = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'updated' is the time at which the change was last updated
-    google.protobuf.Timestamp updated = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp updated = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'changes' is a set of changes to apply to devices
     // The list of changes should contain only a single change per device/version pair.
-    repeated onos.config.change.device.Change changes = 9;
+    repeated onos.config.change.device.Change changes = 7;
 }
