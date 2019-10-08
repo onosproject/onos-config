@@ -50,8 +50,14 @@ func TestLeadershipActivator(t *testing.T) {
 	assert.True(t, <-ch1)
 	assert.False(t, <-ch2)
 
+	ch := make(chan leadership.Leadership)
+	err = store2.Watch(ch)
+	assert.NoError(t, err)
+
 	err = store1.Close()
 	assert.NoError(t, err)
+
+	<-ch
 
 	assert.True(t, <-ch2)
 }

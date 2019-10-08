@@ -74,8 +74,14 @@ func TestMastershipFilter(t *testing.T) {
 	assert.True(t, filter2.Accept(types.ID(device2)))
 	assert.False(t, filter1.Accept(types.ID(device2)))
 
+	ch := make(chan mastership.Mastership)
+	err = store2.Watch(device1, ch)
+	assert.NoError(t, err)
+
 	err = store1.Close()
 	assert.NoError(t, err)
+
+	<-ch
 
 	assert.True(t, filter2.Accept(types.ID(device1)))
 	assert.True(t, filter2.Accept(types.ID(device2)))
