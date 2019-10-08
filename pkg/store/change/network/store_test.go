@@ -77,7 +77,7 @@ func TestDeviceStore(t *testing.T) {
 	change2 := &networkchange.NetworkChange{
 		Changes: []*devicechange.Change{
 			{
-				DeviceID:        device1,
+				DeviceID: device1,
 				Values: []*devicechange.Value{
 					{
 						Path:    "foo",
