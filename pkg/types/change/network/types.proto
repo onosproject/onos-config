@@ -43,7 +43,7 @@ message NetworkChange {
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
     // 'status' is the current lifecycle status of the change
-    onos.config.change.Status status = 4;
+    onos.config.change.Status status = 4 [(gogoproto.nullable) = false];
 
     // 'created' is the time at which the change was created
     google.protobuf.Timestamp created = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
