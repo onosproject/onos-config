@@ -66,10 +66,14 @@ func NewAtomixStore() (Store, error) {
 	}, nil
 }
 
-// NewLocalStore returns a new local device store
+// NewLocalStore returns a new local network change store
 func NewLocalStore() (Store, error) {
-	node, conn := startLocalNode()
+	_, conn := startLocalNode()
+	return newLocalStore(conn)
+}
 
+// newLocalStore creates a new local network change store
+func newLocalStore(conn *grpc.ClientConn) (Store, error) {
 	counterName := primitive.Name{
 		Namespace: "local",
 		Name:      counterName,
@@ -91,7 +95,6 @@ func NewLocalStore() (Store, error) {
 	return &atomixStore{
 		indexes: ids,
 		configs: configs,
-		closer:  utils.NewNodeCloser(node),
 	}, nil
 }
 
@@ -280,8 +283,7 @@ func (s *atomixStore) Watch(ch chan<- *networkchange.NetworkChange) error {
 }
 
 func (s *atomixStore) Close() error {
-	_ = s.configs.Close()
-	return s.closer.Close()
+	return s.configs.Close()
 }
 
 func decodeConfig(entry *_map.Entry) (*networkchange.NetworkChange, error) {
