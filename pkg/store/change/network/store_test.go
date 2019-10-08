@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-func TestDeviceStore(t *testing.T) {
+func TestNetworkChangeStore(t *testing.T) {
 	node, conn := startLocalNode()
 	defer node.Stop()
 	defer conn.Close()
@@ -112,18 +112,10 @@ func TestDeviceStore(t *testing.T) {
 	assert.NotEqual(t, networkchange.Revision(0), change2.Revision)
 
 	// Verify events were received for the changes
-	select {
-	case e := <-ch:
-		assert.Equal(t, networkchange.ID("network:1"), e.ID)
-	case <-time.After(5 * time.Second):
-		assert.Fail(t, "channel timed out")
-	}
-	select {
-	case e := <-ch:
-		assert.Equal(t, networkchange.ID("network:2"), e.ID)
-	case <-time.After(5 * time.Second):
-		assert.Fail(t, "channel timed out")
-	}
+	changeEvent := nextChange(t, ch)
+	assert.Equal(t, networkchange.ID("network:1"), changeEvent.ID)
+	changeEvent = nextChange(t, ch)
+	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
 
 	// Update one of the changes
 	change2.Status.State = change.State_APPLYING
@@ -157,24 +149,12 @@ func TestDeviceStore(t *testing.T) {
 	assert.Error(t, err)
 
 	// Verify events were received again
-	select {
-	case e := <-ch:
-		assert.Equal(t, networkchange.ID("network:2"), e.ID)
-	case <-time.After(5 * time.Second):
-		assert.Fail(t, "channel timed out")
-	}
-	select {
-	case e := <-ch:
-		assert.Equal(t, networkchange.ID("network:2"), e.ID)
-	case <-time.After(5 * time.Second):
-		assert.Fail(t, "channel timed out")
-	}
-	select {
-	case e := <-ch:
-		assert.Equal(t, networkchange.ID("network:1"), e.ID)
-	case <-time.After(5 * time.Second):
-		assert.Fail(t, "channel timed out")
-	}
+	changeEvent = nextChange(t, ch)
+	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
+	changeEvent = nextChange(t, ch)
+	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
+	changeEvent = nextChange(t, ch)
+	assert.Equal(t, networkchange.ID("network:1"), changeEvent.ID)
 
 	// List the changes
 	changes := make(chan *networkchange.NetworkChange)
@@ -194,4 +174,61 @@ func TestDeviceStore(t *testing.T) {
 	change2, err = store2.Get("network:2")
 	assert.NoError(t, err)
 	assert.Nil(t, change2)
+
+	change := &networkchange.NetworkChange{
+		Changes: []*devicechange.Change{
+			{
+				DeviceID: device1,
+				Values: []*devicechange.Value{
+					{
+						Path:  "foo",
+						Value: []byte("Hello world!"),
+						Type:  devicechange.ValueType_STRING,
+					},
+				},
+			},
+		},
+	}
+
+	err = store1.Create(change)
+	assert.NoError(t, err)
+
+	change = &networkchange.NetworkChange{
+		Changes: []*devicechange.Change{
+			{
+				DeviceID: device2,
+				Values: []*devicechange.Value{
+					{
+						Path:  "bar",
+						Value: []byte("Hello world!"),
+						Type:  devicechange.ValueType_STRING,
+					},
+				},
+			},
+		},
+	}
+
+	err = store1.Create(change)
+	assert.NoError(t, err)
+
+	ch = make(chan *networkchange.NetworkChange)
+	err = store1.Watch(ch)
+	assert.NoError(t, err)
+
+	change = nextChange(t, ch)
+	assert.Equal(t, networkchange.Index(1), change.Index)
+	change = nextChange(t, ch)
+	assert.Equal(t, networkchange.Index(3), change.Index)
+	change = nextChange(t, ch)
+	assert.Equal(t, networkchange.Index(4), change.Index)
+}
+
+func nextChange(t *testing.T, ch chan *networkchange.NetworkChange) *networkchange.NetworkChange {
+	select {
+	case c := <-ch:
+		return c
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	return nil
 }
