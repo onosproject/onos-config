@@ -148,7 +148,7 @@ type Store interface {
 	Replay(device.ID, devicechange.Index, chan<- *devicechange.Change) error
 
 	// Watch watches the device change store for changes
-	Watch(chan<- *devicechange.Change) error
+	Watch(device.ID, chan<- *devicechange.Change) error
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
@@ -324,16 +324,37 @@ func (s *atomixStore) Replay(device device.ID, index devicechange.Index, ch chan
 	return nil
 }
 
-func (s *atomixStore) Watch(ch chan<- *devicechange.Change) error {
+func (s *atomixStore) Watch(device device.ID, ch chan<- *devicechange.Change) error {
+	lastIndex, err := s.LastIndex(device)
+	if err != nil {
+		return err
+	}
+
 	mapCh := make(chan *_map.Event)
-	if err := s.configs.Watch(context.Background(), mapCh, _map.WithReplay()); err != nil {
+	if err := s.configs.Watch(context.Background(), mapCh); err != nil {
 		return err
 	}
 
 	go func() {
 		defer close(ch)
+		for i := devicechange.Index(0); i <= lastIndex; i++ {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			entry, err := s.configs.Get(ctx, string(i.GetChangeID(device)))
+			cancel()
+			if err != nil {
+				ch <- nil
+				break
+			} else if entry != nil {
+				change, err := decodeChange(entry)
+				if err != nil {
+					ch <- nil
+					break
+				}
+				ch <- change
+			}
+		}
 		for event := range mapCh {
-			if config, err := decodeChange(event.Entry); err == nil {
+			if config, err := decodeChange(event.Entry); err == nil && config.DeviceID == device {
 				ch <- config
 			}
 		}
