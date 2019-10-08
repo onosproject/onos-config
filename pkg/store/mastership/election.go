@@ -71,6 +71,9 @@ func newDeviceMastershipElection(deviceID device.ID, election election.Election)
 type deviceMastershipElection interface {
 	io.Closer
 
+	// NodeID returns the local node identifier used in the election
+	NodeID() cluster.NodeID
+
 	// DeviceID returns the device for which this election provides mastership
 	DeviceID() device.ID
 
@@ -88,6 +91,10 @@ type atomixDeviceMastershipElection struct {
 	mastership *Mastership
 	watchers   []chan<- Mastership
 	mu         sync.RWMutex
+}
+
+func (e *atomixDeviceMastershipElection) NodeID() cluster.NodeID {
+	return cluster.NodeID(e.election.ID())
 }
 
 func (e *atomixDeviceMastershipElection) DeviceID() device.ID {
