@@ -164,12 +164,16 @@ func Test_doSingleSetList(t *testing.T) {
 	assert.Equal(t, path.Elem[1].Name, "list2a")
 	assert.Equal(t, path.Elem[2].Name, "tx-power")
 
-	// Check that an the network change ID is given in extension 10
-	assert.Equal(t, len(setResponse.Extension), 1)
+	// Check that an the network change ID is given in extension 100 and that the device is currently disconnected
+	assert.Equal(t, len(setResponse.Extension), 2)
 
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extension.Msg), "TestChange")
+
+	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
+	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
+	assert.Equal(t, string(extensionDeviceState.Msg), "Device1")
 
 	//Now check the store that the change was made correctly
 	assert.Equal(t, len(manager.GetManager().NetworkStore.Store), 2)
@@ -680,12 +684,16 @@ func Test_doSingleDelete(t *testing.T) {
 	assert.Equal(t, path.Elem[1].Name, "cont2a")
 	assert.Equal(t, path.Elem[2].Name, "leaf2a")
 
-	// Check that an the network change ID is given in extension 10
-	assert.Equal(t, len(setResponse.Extension), 1)
+	// Check that an the network change ID is given in extension 100 and that the device is currently disconnected
+	assert.Equal(t, len(setResponse.Extension), 2)
 
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extension.Msg), "TestChange")
+
+	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
+	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
+	assert.Equal(t, string(extensionDeviceState.Msg), "Device1")
 }
 
 // Test_doUpdateDeleteSet shows how a request with a delete and an update can be applied on a target
@@ -756,12 +764,16 @@ func Test_doUpdateDeleteSet(t *testing.T) {
 	assert.Equal(t, pathDelete.Elem[1].Name, "cont2a")
 	assert.Equal(t, pathDelete.Elem[2].Name, "leaf2c")
 
-	// Check that an the network change ID is given in extension 10
-	assert.Equal(t, len(setResponse.Extension), 1)
+	// Check that an the network change ID is given in extension 100 and that the device is currently disconnected
+	assert.Equal(t, len(setResponse.Extension), 2)
 
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extension.Msg), "TestChange")
+
+	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
+	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
+	assert.Equal(t, string(extensionDeviceState.Msg), "Device1")
 
 }
 

@@ -76,14 +76,17 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 		notifications = append(notifications, notification)
 	}
-	disconnectedDevices := make([]string, 0)
-	for k := range disconnectedDevicesMap {
-		disconnectedDevices = append(disconnectedDevices, string(k))
-	}
-	disconnectedDeviceString := strings.Join(disconnectedDevices, ", ")
+
 	response := gnmi.GetResponse{
 		Notification: notifications,
-		Extension: []*gnmi_ext.Extension{
+	}
+	if len(disconnectedDevicesMap) != 0 {
+		disconnectedDevices := make([]string, 0)
+		for k := range disconnectedDevicesMap {
+			disconnectedDevices = append(disconnectedDevices, string(k))
+		}
+		disconnectedDeviceString := strings.Join(disconnectedDevices, ", ")
+		response.Extension = []*gnmi_ext.Extension{
 			{
 				Ext: &gnmi_ext.Extension_RegisteredExt{
 					RegisteredExt: &gnmi_ext.RegisteredExtension{
@@ -92,7 +95,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 					},
 				},
 			},
-		},
+		}
 	}
 	return &response, nil
 }

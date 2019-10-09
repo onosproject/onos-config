@@ -162,31 +162,36 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	disconnectedDeviceString := strings.Join(disconnectedDevices, ", ")
+	extensions := []*gnmi_ext.Extension{
+		{
+			Ext: &gnmi_ext.Extension_RegisteredExt{
+				RegisteredExt: &gnmi_ext.RegisteredExtension{
+					Id:  GnmiExtensionNetwkChangeID,
+					Msg: []byte(networkConfig.Name),
+				},
+			},
+		},
+	}
+
+	if len(disconnectedDevices) != 0 {
+		disconnectedDeviceString := strings.Join(disconnectedDevices, ", ")
+		disconnectedExt := &gnmi_ext.Extension{
+			Ext: &gnmi_ext.Extension_RegisteredExt{
+				RegisteredExt: &gnmi_ext.RegisteredExtension{
+					Id:  GnmiExtensionDevicesNotConnected,
+					Msg: []byte(disconnectedDeviceString),
+				},
+			},
+		}
+		extensions = append(extensions, disconnectedExt)
+	}
 
 	manager.GetManager().NetworkStore.Store =
 		append(manager.GetManager().NetworkStore.Store, *networkConfig)
 	setResponse := &gnmi.SetResponse{
 		Response:  updateResults,
 		Timestamp: time.Now().Unix(),
-		Extension: []*gnmi_ext.Extension{
-			{
-				Ext: &gnmi_ext.Extension_RegisteredExt{
-					RegisteredExt: &gnmi_ext.RegisteredExtension{
-						Id:  GnmiExtensionNetwkChangeID,
-						Msg: []byte(networkConfig.Name),
-					},
-				},
-			},
-			{
-				Ext: &gnmi_ext.Extension_RegisteredExt{
-					RegisteredExt: &gnmi_ext.RegisteredExtension{
-						Id:  GnmiExtensionDevicesNotConnected,
-						Msg: []byte(disconnectedDeviceString),
-					},
-				},
-			},
-		},
+		Extension: extensions,
 	}
 	//TODO Can't do it for one device only, needs to be done for all targets.
 	return setResponse, nil
