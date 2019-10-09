@@ -15,20 +15,23 @@
 package network
 
 import (
-	devicestore "github.com/onosproject/onos-config/pkg/store/change/device"
-	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
+	"github.com/golang/mock/gomock"
+	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"testing"
 	"time"
 )
 
 func TestNetworkWatcher(t *testing.T) {
-	store, err := networkstore.NewLocalStore()
+	store, err := networkchangestore.NewLocalStore()
 	assert.NoError(t, err)
 
 	watcher := &Watcher{
@@ -117,11 +120,25 @@ func TestNetworkWatcher(t *testing.T) {
 }
 
 func TestDeviceWatcher(t *testing.T) {
-	store, err := devicestore.NewLocalStore()
+	ctrl := gomock.NewController(t)
+
+	stream := NewMockDeviceService_ListClient(ctrl)
+	stream.EXPECT().Recv().Return(&device.ListResponse{Device: &device.Device{ID: device.ID("device-1")}}, nil)
+	stream.EXPECT().Recv().Return(&device.ListResponse{Device: &device.Device{ID: device.ID("device-2")}}, nil)
+	stream.EXPECT().Recv().Return(nil, io.EOF)
+
+	client := NewMockDeviceServiceClient(ctrl)
+	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
+
+	deviceStore, err := devicestore.NewStore(client)
+	assert.NoError(t, err)
+
+	changeStore, err := devicechangestore.NewLocalStore()
 	assert.NoError(t, err)
 
 	watcher := &DeviceWatcher{
-		ChangeStore: store,
+		DeviceStore: deviceStore,
+		ChangeStore: changeStore,
 	}
 
 	ch := make(chan types.ID)
@@ -145,7 +162,7 @@ func TestDeviceWatcher(t *testing.T) {
 		},
 	}
 
-	err = store.Create(change1)
+	err = changeStore.Create(change1)
 	assert.NoError(t, err)
 
 	select {
@@ -167,7 +184,7 @@ func TestDeviceWatcher(t *testing.T) {
 		},
 	}
 
-	err = store.Create(change2)
+	err = changeStore.Create(change2)
 	assert.NoError(t, err)
 
 	select {
@@ -178,7 +195,7 @@ func TestDeviceWatcher(t *testing.T) {
 	}
 
 	change1.Status.State = change.State_APPLYING
-	err = store.Update(change1)
+	err = changeStore.Update(change1)
 	assert.NoError(t, err)
 
 	select {
