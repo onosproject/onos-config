@@ -112,6 +112,47 @@ func TestDeviceChangeApply(t *testing.T) {
 	assert.Equal(t, change.State_SUCCEEDED, event.Status.State)
 }
 
+func TestDeviceChangeFailAvailability(t *testing.T) {
+	leaderships, devices, deviceChanges := newStores(t)
+	defer leaderships.Close()
+	defer deviceChanges.Close()
+
+	controller := newController(t, leaderships, devices, deviceChanges)
+	defer controller.Stop()
+
+	// Listen for events for disconnected device changes
+	deviceCh := make(chan *devicechange.Change)
+	err := deviceChanges.Watch(dcDevice, deviceCh)
+	assert.NoError(t, err)
+
+	// Create a disconnected device change 1
+	deviceChange1 := newChange(dcDevice)
+	err = deviceChanges.Create(deviceChange1)
+	assert.NoError(t, err)
+
+	event := nextDeviceEvent(t, deviceCh)
+	assert.Equal(t, dcChange, event.ID)
+	assert.Equal(t, dcDevice, event.DeviceID)
+
+	// Change the state of disconnected device change to APPLYING
+	deviceChange1.Status.State = change.State_APPLYING
+	err = deviceChanges.Update(deviceChange1)
+	assert.NoError(t, err)
+
+	// An event should be received for the APPLYING state change
+	event = nextDeviceEvent(t, deviceCh)
+	assert.Equal(t, dcChange, event.ID)
+	assert.Equal(t, dcDevice, event.DeviceID)
+	assert.Equal(t, change.State_APPLYING, event.Status.State)
+
+	// The controller should fail the change with an UNAVAILABLE reason
+	event = nextDeviceEvent(t, deviceCh)
+	assert.Equal(t, dcChange, event.ID)
+	assert.Equal(t, dcDevice, event.DeviceID)
+	assert.Equal(t, change.State_FAILED, event.Status.State)
+	assert.Equal(t, change.Reason_UNAVAILABLE, event.Status.Reason)
+}
+
 func newStores(t *testing.T) (mastership.Store, devicestore.Store, devicechanges.Store) {
 	ctrl := gomock.NewController(t)
 
