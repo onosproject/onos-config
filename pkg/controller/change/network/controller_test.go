@@ -423,6 +423,30 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	assert.Equal(t, types.ID(change2.ID), deviceChange.NetworkChangeID)
 	assert.Equal(t, change.State_APPLYING, deviceChange.Status.State)
 
+	// Mark the change 4 device change complete
+	networkChange, err = networkChanges.Get(network4)
+	assert.NoError(t, err)
+
+	deviceChange, err = deviceChanges.Get(networkChange.Changes[0].ID)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_APPLYING, deviceChange.Status.State)
+	deviceChange.Status.State = change.State_SUCCEEDED
+	err = deviceChanges.Update(deviceChange)
+	assert.NoError(t, err)
+
+	deviceChange = nextDeviceEvent(t, deviceCh4)
+	assert.Equal(t, types.ID(change4.ID), deviceChange.NetworkChangeID)
+	assert.Equal(t, change.State_SUCCEEDED, deviceChange.Status.State)
+
+	// Network change 4 should be completed
+	networkChange = nextNetworkEvent(t, networkCh)
+	assert.Equal(t, change4.ID, networkChange.ID)
+	assert.Equal(t, change.State_SUCCEEDED, networkChange.Status.State)
+
+	networkChange, err = networkChanges.Get(network4)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_SUCCEEDED, networkChange.Status.State)
+
 	// Mark one of the change 2 device changes complete
 	networkChange, err = networkChanges.Get(network2)
 	assert.NoError(t, err)
@@ -480,6 +504,7 @@ func newStores(t *testing.T) (leadership.Store, devicestore.Store, networkchange
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
 
 	devices, err := devicestore.NewStore(client)
+	assert.NoError(t, err)
 
 	leadershipStore, err := leadership.NewLocalStore("TestNetworkController", cluster.NodeID("node-1"))
 	assert.NoError(t, err)
