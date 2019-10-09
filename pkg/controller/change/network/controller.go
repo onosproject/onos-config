@@ -18,6 +18,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/types"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
@@ -26,7 +27,7 @@ import (
 )
 
 // NewController returns a new config controller
-func NewController(leadership leadershipstore.Store, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
+func NewController(leadership leadershipstore.Store, deviceStore devicestore.Store, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
 	c := controller.NewController()
 	c.Activate(&controller.LeadershipActivator{
 		Store: leadership,
@@ -35,7 +36,8 @@ func NewController(leadership leadershipstore.Store, networkChanges networkchang
 		Store: networkChanges,
 	})
 	c.Watch(&DeviceWatcher{
-		Store: deviceChanges,
+		DeviceStore: deviceStore,
+		ChangeStore: deviceChanges,
 	})
 	c.Reconcile(&Reconciler{
 		networkChanges: networkChanges,
@@ -76,7 +78,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 		if err != nil {
 			return false, err
 		} else if !apply {
-			return true, nil
+			return false, nil
 		}
 		return r.applyNetworkChange(config)
 	}

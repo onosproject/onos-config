@@ -121,7 +121,7 @@ func TestDeviceWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	watcher := &DeviceWatcher{
-		Store: store,
+		ChangeStore: store,
 	}
 
 	ch := make(chan types.ID)
