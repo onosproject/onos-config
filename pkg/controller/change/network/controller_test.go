@@ -44,7 +44,6 @@ const (
 	network1 = networkchange.ID("network:1")
 	network2 = networkchange.ID("network:2")
 	network3 = networkchange.ID("network:3")
-	network4 = networkchange.ID("network:4")
 )
 
 // TestNetworkControllerSuccess verifies that the network controller applies device changes
@@ -260,12 +259,8 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	err = networkChanges.Create(change2)
 	assert.NoError(t, err)
 
-	change3 := newChange(device2, device3)
+	change3 := newChange(device3)
 	err = networkChanges.Create(change3)
-	assert.NoError(t, err)
-
-	change4 := newChange(device4)
-	err = networkChanges.Create(change4)
 	assert.NoError(t, err)
 
 	// Create watches on device and network changes prior to starting the controller
@@ -279,10 +274,6 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 
 	deviceCh3 := make(chan *devicechange.Change)
 	err = deviceChanges.Watch(device3, deviceCh3)
-	assert.NoError(t, err)
-
-	deviceCh4 := make(chan *devicechange.Change)
-	err = deviceChanges.Watch(device4, deviceCh4)
 	assert.NoError(t, err)
 
 	networkCh := make(chan *networkchange.NetworkChange)
@@ -301,17 +292,13 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	assert.Equal(t, change3.ID, networkChange.ID)
 	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
 
-	networkChange = nextNetworkEvent(t, networkCh)
-	assert.Equal(t, change4.ID, networkChange.ID)
-	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
-
 	controller := newController(t, leaderships, devices, networkChanges, deviceChanges)
 	defer controller.Stop()
 
 	// The controller should have processed pending changes once started.
 	// This means change 1 should be in the APPLYING state.
 	// Changes 2 and 3 should remain in PENDING since change2 intersects change1 and change3 intersects change2.
-	// However, change 4 doesn't overlap any of the prior pending changes and thus can be applied.
+	// However, change 3 doesn't overlap any of the prior pending changes and thus can be applied.
 
 	// Network 1 is in the PENDING state
 	networkChange = nextNetworkEvent(t, networkCh)
@@ -333,11 +320,6 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	assert.Equal(t, change3.ID, networkChange.ID)
 	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
 
-	// Network 4 is in the PENDING state
-	networkChange = nextNetworkEvent(t, networkCh)
-	assert.Equal(t, change4.ID, networkChange.ID)
-	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
-
 	// Device 1 in network 1 is in the PENDING state
 	deviceChange := nextDeviceEvent(t, deviceCh1)
 	assert.Equal(t, types.ID(change1.ID), deviceChange.NetworkChangeID)
@@ -353,24 +335,14 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	assert.Equal(t, types.ID(change2.ID), deviceChange.NetworkChangeID)
 	assert.Equal(t, change.State_PENDING, deviceChange.Status.State)
 
-	// Device 2 in network 3 is in the PENDING state
-	deviceChange = nextDeviceEvent(t, deviceCh2)
-	assert.Equal(t, types.ID(change3.ID), deviceChange.NetworkChangeID)
-	assert.Equal(t, change.State_PENDING, deviceChange.Status.State)
-
 	// Device 3 in network 3 is in the PENDING state
 	deviceChange = nextDeviceEvent(t, deviceCh3)
 	assert.Equal(t, types.ID(change3.ID), deviceChange.NetworkChangeID)
 	assert.Equal(t, change.State_PENDING, deviceChange.Status.State)
 
-	// Device 4 in network 4 is in the PENDING state
-	deviceChange = nextDeviceEvent(t, deviceCh4)
-	assert.Equal(t, types.ID(change4.ID), deviceChange.NetworkChangeID)
-	assert.Equal(t, change.State_PENDING, deviceChange.Status.State)
-
-	// Network 4 is changed to the APPLYING state
+	// Network 3 is changed to the APPLYING state
 	networkChange = nextNetworkEvent(t, networkCh)
-	assert.Equal(t, change4.ID, networkChange.ID)
+	assert.Equal(t, change3.ID, networkChange.ID)
 	assert.Equal(t, change.State_APPLYING, networkChange.Status.State)
 
 	// Device 1 in network 1 is changed to the APPLYING state
@@ -378,9 +350,9 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	assert.Equal(t, types.ID(change1.ID), deviceChange.NetworkChangeID)
 	assert.Equal(t, change.State_APPLYING, deviceChange.Status.State)
 
-	// Device 4 in network 4 is changed to the APPLYING state
-	deviceChange = nextDeviceEvent(t, deviceCh4)
-	assert.Equal(t, types.ID(change4.ID), deviceChange.NetworkChangeID)
+	// Device 3 in network 3 is changed to the APPLYING state
+	deviceChange = nextDeviceEvent(t, deviceCh3)
+	assert.Equal(t, types.ID(change3.ID), deviceChange.NetworkChangeID)
 	assert.Equal(t, change.State_APPLYING, deviceChange.Status.State)
 
 	// Mark the change 1 device changes as complete and verify the change is complete
@@ -407,12 +379,6 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	assert.Equal(t, change2.ID, networkChange.ID)
 	assert.Equal(t, change.State_APPLYING, networkChange.Status.State)
 
-	// Change 3 should remain in the PENDING state
-	networkChange, err = networkChanges.Get(network3)
-	assert.NoError(t, err)
-	assert.Equal(t, change3.ID, networkChange.ID)
-	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
-
 	// Device 1 in network 2 is changed to the APPLYING state
 	deviceChange = nextDeviceEvent(t, deviceCh1)
 	assert.Equal(t, types.ID(change2.ID), deviceChange.NetworkChangeID)
@@ -423,8 +389,8 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	assert.Equal(t, types.ID(change2.ID), deviceChange.NetworkChangeID)
 	assert.Equal(t, change.State_APPLYING, deviceChange.Status.State)
 
-	// Mark the change 4 device change complete
-	networkChange, err = networkChanges.Get(network4)
+	// Mark the change 3 device change complete
+	networkChange, err = networkChanges.Get(network3)
 	assert.NoError(t, err)
 
 	deviceChange, err = deviceChanges.Get(networkChange.Changes[0].ID)
@@ -434,16 +400,16 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	err = deviceChanges.Update(deviceChange)
 	assert.NoError(t, err)
 
-	deviceChange = nextDeviceEvent(t, deviceCh4)
-	assert.Equal(t, types.ID(change4.ID), deviceChange.NetworkChangeID)
+	deviceChange = nextDeviceEvent(t, deviceCh3)
+	assert.Equal(t, types.ID(change3.ID), deviceChange.NetworkChangeID)
 	assert.Equal(t, change.State_SUCCEEDED, deviceChange.Status.State)
 
-	// Network change 4 should be completed
+	// Network change 3 should be completed
 	networkChange = nextNetworkEvent(t, networkCh)
-	assert.Equal(t, change4.ID, networkChange.ID)
+	assert.Equal(t, change3.ID, networkChange.ID)
 	assert.Equal(t, change.State_SUCCEEDED, networkChange.Status.State)
 
-	networkChange, err = networkChanges.Get(network4)
+	networkChange, err = networkChanges.Get(network3)
 	assert.NoError(t, err)
 	assert.Equal(t, change.State_SUCCEEDED, networkChange.Status.State)
 
@@ -483,11 +449,6 @@ func TestNetworkControllerPendingConflicts(t *testing.T) {
 	networkChange = nextNetworkEvent(t, networkCh)
 	assert.Equal(t, change2.ID, networkChange.ID)
 	assert.Equal(t, change.State_SUCCEEDED, networkChange.Status.State)
-
-	// Once change 2 is complete, change 3 should be applied
-	networkChange = nextNetworkEvent(t, networkCh)
-	assert.Equal(t, change3.ID, networkChange.ID)
-	assert.Equal(t, change.State_APPLYING, networkChange.Status.State)
 }
 
 func newStores(t *testing.T) (leadership.Store, devicestore.Store, networkchanges.Store, devicechanges.Store) {
