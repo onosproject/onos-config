@@ -24,4 +24,9 @@ const (
 	// GnmiExtensionDeviceType is used in Set only when creating a device the first time
 	// It can be used as a discriminator on Get when wildcard target is given
 	GnmiExtensionDeviceType = 102
+
+	// GnmiExtensionDevicesNotConnected is returned by onos-config in the Set response when the configuration
+	// was requested for one or more device which is currently not connected.
+	// Not Connected devices are included in the message.
+	GnmiExtensionDevicesNotConnected = 103
 )

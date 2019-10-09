@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -158,6 +159,9 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 	assert.Equal(t, utils.StrPath(result.Notification[1].Update[0].Path),
 		"/leaf2b")
 	assert.Equal(t, result.Notification[1].Update[0].GetVal().GetFloatVal(), float32(1.14159))
+
+	assert.Equal(t, result.Extension[0].GetRegisteredExt().Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
+	assert.Equal(t, string(result.Extension[0].GetRegisteredExt().Msg), "Device1")
 }
 
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {

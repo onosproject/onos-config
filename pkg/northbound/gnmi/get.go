@@ -22,12 +22,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
+	"strings"
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 )
 
 // Get implements gNMI Get
@@ -36,10 +39,15 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	prefix := req.GetPrefix()
 
+	disconnectedDevicesMap := make(map[device.ID]bool)
+
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, path := range req.GetPath() {
 		update, err := getUpdate(prefix, path)
+		if _, ok := manager.GetManager().DeviceStore.Cache[device.ID(path.GetTarget())]; !ok {
+			disconnectedDevicesMap[device.ID(path.GetTarget())] = true
+		}
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -54,6 +62,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	// Alternatively - if there's only the prefix
 	if len(req.GetPath()) == 0 {
 		update, err := getUpdate(prefix, nil)
+		if _, ok := manager.GetManager().DeviceStore.Cache[device.ID(prefix.GetTarget())]; !ok {
+			disconnectedDevicesMap[device.ID(prefix.GetTarget())] = true
+		}
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -65,9 +76,23 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 		notifications = append(notifications, notification)
 	}
-
+	disconnectedDevices := make([]string, 0)
+	for k := range disconnectedDevicesMap {
+		disconnectedDevices = append(disconnectedDevices, string(k))
+	}
+	disconnectedDeviceString := strings.Join(disconnectedDevices, ", ")
 	response := gnmi.GetResponse{
 		Notification: notifications,
+		Extension: []*gnmi_ext.Extension{
+			{
+				Ext: &gnmi_ext.Extension_RegisteredExt{
+					RegisteredExt: &gnmi_ext.RegisteredExtension{
+						Id:  GnmiExtensionDevicesNotConnected,
+						Msg: []byte(disconnectedDeviceString),
+					},
+				},
+			},
+		},
 	}
 	return &response, nil
 }
