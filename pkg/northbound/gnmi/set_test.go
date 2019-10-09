@@ -283,7 +283,7 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 
 	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
 	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
-	assert.Equal(t, string(extensionDeviceState.Msg), "localhost-1, localhost-2")
+	assert.Equal(t, string(extensionDeviceState.Msg), "localhost-1,localhost-2")
 
 	// It's a map, so the order of element's is not guaranteed
 	for _, result := range setResponse.Response {

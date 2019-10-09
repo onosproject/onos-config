@@ -85,7 +85,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		for k := range disconnectedDevicesMap {
 			disconnectedDevices = append(disconnectedDevices, string(k))
 		}
-		disconnectedDeviceString := strings.Join(disconnectedDevices, ", ")
+		disconnectedDeviceString := strings.Join(disconnectedDevices, ",")
 		response.Extension = []*gnmi_ext.Extension{
 			{
 				Ext: &gnmi_ext.Extension_RegisteredExt{

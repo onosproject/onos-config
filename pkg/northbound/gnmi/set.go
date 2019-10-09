@@ -174,7 +174,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	if len(disconnectedDevices) != 0 {
-		disconnectedDeviceString := strings.Join(disconnectedDevices, ", ")
+		disconnectedDeviceString := strings.Join(disconnectedDevices, ",")
 		disconnectedExt := &gnmi_ext.Extension{
 			Ext: &gnmi_ext.Extension_RegisteredExt{
 				RegisteredExt: &gnmi_ext.RegisteredExtension{
