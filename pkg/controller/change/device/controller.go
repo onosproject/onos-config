@@ -97,17 +97,8 @@ func (r *Reconciler) applyChange(change *devicechangetype.Change) (bool, error) 
 		return false, err
 	}
 
-	// Find the gNMI protocol state for the device
-	var protocol *deviceservice.ProtocolState
-	for _, p := range device.Protocols {
-		if p.Protocol == deviceservice.Protocol_GNMI {
-			protocol = p
-			break
-		}
-	}
-
 	// If the device is not available, fail the change with the UNAVAILABLE reason
-	if protocol == nil || protocol.ChannelState != deviceservice.ChannelState_CONNECTED {
+	if getProtocolState(device) != deviceservice.ChannelState_CONNECTED {
 		change.Status.State = changetype.State_FAILED
 		change.Status.Reason = changetype.Reason_UNAVAILABLE
 		if err := r.changes.Update(change); err != nil {
@@ -141,6 +132,26 @@ func (r *Reconciler) doChange(change *devicechangetype.Change) error {
 
 // applyRollback attempts to roll back a change
 func (r *Reconciler) applyRollback(change *devicechangetype.Change) (bool, error) {
+	// Get the device from the device store
+	device, err := r.devices.Get(change.DeviceID)
+	if err != nil {
+		return false, err
+	}
+
+	// If the device is not available and the change is APPLYING fail the change with the UNAVAILABLE reason
+	if getProtocolState(device) != deviceservice.ChannelState_CONNECTED {
+		if change.Status.State == changetype.State_APPLYING {
+			change.Status.State = changetype.State_FAILED
+			change.Status.Reason = changetype.Reason_UNAVAILABLE
+			if err := r.changes.Update(change); err != nil {
+				return false, err
+			}
+			return true, nil
+		} else {
+			return false, nil
+		}
+	}
+
 	// Finally, attempt to roll back the change
 	// If an error occurs when rolling back the change and the change is in the APPLYING state,
 	// fail the change
@@ -170,6 +181,21 @@ func (r *Reconciler) applyRollback(change *devicechangetype.Change) (bool, error
 func (r *Reconciler) doRollback(change *devicechangetype.Change) error {
 	// TODO: Roll back the change
 	return nil
+}
+
+func getProtocolState(device *deviceservice.Device) deviceservice.ChannelState {
+	// Find the gNMI protocol state for the device
+	var protocol *deviceservice.ProtocolState
+	for _, p := range device.Protocols {
+		if p.Protocol == deviceservice.Protocol_GNMI {
+			protocol = p
+			break
+		}
+	}
+	if protocol == nil {
+		return deviceservice.ChannelState_UNKNOWN_CHANNEL_STATE
+	}
+	return protocol.ChannelState
 }
 
 var _ controller.Reconciler = &Reconciler{}
