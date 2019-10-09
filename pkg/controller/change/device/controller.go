@@ -29,7 +29,8 @@ import (
 func NewController(mastership mastershipstore.Store, devices devicestore.Store, changes changestore.Store) *controller.Controller {
 	c := controller.NewController()
 	c.Filter(&controller.MastershipFilter{
-		Store: mastership,
+		Store:    mastership,
+		Resolver: &Resolver{},
 	})
 	c.Partition(&Partitioner{})
 	c.Watch(&Watcher{
@@ -41,6 +42,15 @@ func NewController(mastership mastershipstore.Store, devices devicestore.Store, 
 		changes: changes,
 	})
 	return c
+}
+
+// Resolver is a DeviceResolver that resolves device IDs from device change IDs
+type Resolver struct {
+}
+
+// Resolve resolves a device ID from a device change ID
+func (r *Resolver) Resolve(id types.ID) (deviceservice.ID, error) {
+	return devicechangetype.ID(id).GetDeviceID(), nil
 }
 
 // Reconciler is a device change reconciler
