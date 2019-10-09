@@ -112,6 +112,10 @@ func TestDeviceChangeApply(t *testing.T) {
 	assert.Equal(t, change.State_SUCCEEDED, event.Status.State)
 }
 
+func TestDeviceChangeFailError(t *testing.T) {
+	// TODO
+}
+
 func TestDeviceChangeFailAvailability(t *testing.T) {
 	leaderships, devices, deviceChanges := newStores(t)
 	defer leaderships.Close()
@@ -126,8 +130,8 @@ func TestDeviceChangeFailAvailability(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create a disconnected device change 1
-	deviceChange1 := newChange(dcDevice)
-	err = deviceChanges.Create(deviceChange1)
+	deviceChange := newChange(dcDevice)
+	err = deviceChanges.Create(deviceChange)
 	assert.NoError(t, err)
 
 	event := nextDeviceEvent(t, deviceCh)
@@ -135,8 +139,91 @@ func TestDeviceChangeFailAvailability(t *testing.T) {
 	assert.Equal(t, dcDevice, event.DeviceID)
 
 	// Change the state of disconnected device change to APPLYING
-	deviceChange1.Status.State = change.State_APPLYING
-	err = deviceChanges.Update(deviceChange1)
+	deviceChange.Status.State = change.State_APPLYING
+	err = deviceChanges.Update(deviceChange)
+	assert.NoError(t, err)
+
+	// An event should be received for the APPLYING state change
+	event = nextDeviceEvent(t, deviceCh)
+	assert.Equal(t, dcChange, event.ID)
+	assert.Equal(t, dcDevice, event.DeviceID)
+	assert.Equal(t, change.State_APPLYING, event.Status.State)
+
+	// The controller should fail the change with an UNAVAILABLE reason
+	event = nextDeviceEvent(t, deviceCh)
+	assert.Equal(t, dcChange, event.ID)
+	assert.Equal(t, dcDevice, event.DeviceID)
+	assert.Equal(t, change.State_FAILED, event.Status.State)
+	assert.Equal(t, change.Reason_UNAVAILABLE, event.Status.Reason)
+}
+
+func TestDeviceChangeRollback(t *testing.T) {
+	leaderships, devices, deviceChanges := newStores(t)
+	defer leaderships.Close()
+	defer deviceChanges.Close()
+
+	controller := newController(t, leaderships, devices, deviceChanges)
+	defer controller.Stop()
+
+	// Listen for events for disconnected device changes
+	deviceCh := make(chan *devicechange.Change)
+	err := deviceChanges.Watch(device1, deviceCh)
+	assert.NoError(t, err)
+
+	// Create a disconnected device change 1
+	deviceChange := newChange(device1)
+	err = deviceChanges.Create(deviceChange)
+	assert.NoError(t, err)
+
+	event := nextDeviceEvent(t, deviceCh)
+	assert.Equal(t, change1, event.ID)
+	assert.Equal(t, device1, event.DeviceID)
+
+	// Change the state of disconnected device change to APPLYING with the deleted flag set
+	deviceChange.Status.State = change.State_APPLYING
+	deviceChange.Status.Deleted = true
+	err = deviceChanges.Update(deviceChange)
+	assert.NoError(t, err)
+
+	// An event should be received for the APPLYING state change
+	event = nextDeviceEvent(t, deviceCh)
+	assert.Equal(t, change1, event.ID)
+	assert.Equal(t, device1, event.DeviceID)
+	assert.Equal(t, change.State_APPLYING, event.Status.State)
+
+	// The controller should succeed the change
+	event = nextDeviceEvent(t, deviceCh)
+	assert.Equal(t, change1, event.ID)
+	assert.Equal(t, device1, event.DeviceID)
+	assert.Equal(t, change.State_SUCCEEDED, event.Status.State)
+}
+
+func TestDeviceChangeRollbackFailAvailability(t *testing.T) {
+	leaderships, devices, deviceChanges := newStores(t)
+	defer leaderships.Close()
+	defer deviceChanges.Close()
+
+	controller := newController(t, leaderships, devices, deviceChanges)
+	defer controller.Stop()
+
+	// Listen for events for disconnected device changes
+	deviceCh := make(chan *devicechange.Change)
+	err := deviceChanges.Watch(dcDevice, deviceCh)
+	assert.NoError(t, err)
+
+	// Create a disconnected device change 1
+	deviceChange := newChange(dcDevice)
+	err = deviceChanges.Create(deviceChange)
+	assert.NoError(t, err)
+
+	event := nextDeviceEvent(t, deviceCh)
+	assert.Equal(t, dcChange, event.ID)
+	assert.Equal(t, dcDevice, event.DeviceID)
+
+	// Change the state of disconnected device change to APPLYING with the deleted flag set
+	deviceChange.Status.State = change.State_APPLYING
+	deviceChange.Status.Deleted = true
+	err = deviceChanges.Update(deviceChange)
 	assert.NoError(t, err)
 
 	// An event should be received for the APPLYING state change
