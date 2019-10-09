@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package utils test various gNMI value manipulation facilities.
+// Package values tests for native to GNMI change conversion
 
 package values
 
