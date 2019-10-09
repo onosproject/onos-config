@@ -45,10 +45,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	// There is only one set of extensions in Set request, regardless of number of
 	// updates
 	var (
-		netcfgchangename string // May be specified as 100 in extension
-		version          string // May be specified as 101 in extension
-		deviceType       string // May be specified as 102 in extension
+		netcfgchangename    string // May be specified as 100 in extension
+		version             string // May be specified as 101 in extension
+		deviceType          string // May be specified as 102 in extension
+		disconnectedDevices []string
 	)
+
+	disconnectedDevices = make([]string, 0)
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
@@ -112,6 +115,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	//TODO this can be parallelized with a pattern manager.go ValidateStores()
+	mgr := manager.GetManager()
 	//Checking for wrong configuration against the device models for updates
 	for target, updates := range targetUpdates {
 		err := validateChange(target, version, deviceType, updates, targetRemoves[target])
@@ -119,12 +123,18 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			return nil, err
 		}
 		delete(targetRemovesTmp, target)
+		if _, ok := mgr.DeviceStore.Cache[device.ID(target)]; !ok {
+			disconnectedDevices = append(disconnectedDevices, target)
+		}
 	}
 	//Checking for wrong configuration against the device models for deletes
 	for target, removes := range targetRemovesTmp {
 		err := validateChange(target, version, deviceType, make(change.TypedValueMap), removes)
 		if err != nil {
 			return nil, err
+		}
+		if _, ok := mgr.DeviceStore.Cache[device.ID(target)]; !ok {
+			disconnectedDevices = append(disconnectedDevices, target)
 		}
 	}
 
@@ -152,23 +162,38 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	manager.GetManager().NetworkStore.Store =
-		append(manager.GetManager().NetworkStore.Store, *networkConfig)
-
-	setResponse := &gnmi.SetResponse{
-		Response:  updateResults,
-		Timestamp: time.Now().Unix(),
-		Extension: []*gnmi_ext.Extension{
-			{
-				Ext: &gnmi_ext.Extension_RegisteredExt{
-					RegisteredExt: &gnmi_ext.RegisteredExtension{
-						Id:  100,
-						Msg: []byte(networkConfig.Name),
-					},
+	extensions := []*gnmi_ext.Extension{
+		{
+			Ext: &gnmi_ext.Extension_RegisteredExt{
+				RegisteredExt: &gnmi_ext.RegisteredExtension{
+					Id:  GnmiExtensionNetwkChangeID,
+					Msg: []byte(networkConfig.Name),
 				},
 			},
 		},
 	}
+
+	if len(disconnectedDevices) != 0 {
+		disconnectedDeviceString := strings.Join(disconnectedDevices, ",")
+		disconnectedExt := &gnmi_ext.Extension{
+			Ext: &gnmi_ext.Extension_RegisteredExt{
+				RegisteredExt: &gnmi_ext.RegisteredExtension{
+					Id:  GnmiExtensionDevicesNotConnected,
+					Msg: []byte(disconnectedDeviceString),
+				},
+			},
+		}
+		extensions = append(extensions, disconnectedExt)
+	}
+
+	manager.GetManager().NetworkStore.Store =
+		append(manager.GetManager().NetworkStore.Store, *networkConfig)
+	setResponse := &gnmi.SetResponse{
+		Response:  updateResults,
+		Timestamp: time.Now().Unix(),
+		Extension: extensions,
+	}
+	//TODO Can't do it for one device only, needs to be done for all targets.
 	return setResponse, nil
 }
 

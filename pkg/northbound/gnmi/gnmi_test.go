@@ -18,6 +18,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/southbound/topocache"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"os"
 	"sync"
@@ -46,6 +48,10 @@ func setUp() (*Server, *manager.Manager) {
 		log.Error("Expected manager to be loaded ", err)
 		os.Exit(-1)
 	}
+	deviceStore := &topocache.DeviceStore{
+		Cache: make(map[device.ID]*device.Device),
+	}
+	mgr.DeviceStore = deviceStore
 
 	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)

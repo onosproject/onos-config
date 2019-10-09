@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"
@@ -306,13 +307,7 @@ func buildUpdateResponse(update *gnmi.Update) *gnmi.SubscribeResponse {
 		Timestamp: time.Now().Unix(),
 		Update:    updateArray,
 	}
-	responseUpdate := &gnmi.SubscribeResponse_Update{
-		Update: notification,
-	}
-	response := &gnmi.SubscribeResponse{
-		Response: responseUpdate,
-	}
-	return response
+	return buildSubscribeResponse(notification, update.Path.Target)
 }
 
 func buildDeleteResponse(delete *gnmi.Path) *gnmi.SubscribeResponse {
@@ -321,11 +316,27 @@ func buildDeleteResponse(delete *gnmi.Path) *gnmi.SubscribeResponse {
 		Timestamp: time.Now().Unix(),
 		Delete:    deleteArray,
 	}
+	return buildSubscribeResponse(notification, delete.Target)
+}
+
+func buildSubscribeResponse(notification *gnmi.Notification, target string) *gnmi.SubscribeResponse {
 	responseUpdate := &gnmi.SubscribeResponse_Update{
 		Update: notification,
 	}
 	response := &gnmi.SubscribeResponse{
 		Response: responseUpdate,
+	}
+	if _, ok := manager.GetManager().DeviceStore.Cache[device.ID(target)]; !ok {
+		response.Extension = []*gnmi_ext.Extension{
+			{
+				Ext: &gnmi_ext.Extension_RegisteredExt{
+					RegisteredExt: &gnmi_ext.RegisteredExtension{
+						Id:  GnmiExtensionDevicesNotConnected,
+						Msg: []byte(target),
+					},
+				},
+			},
+		}
 	}
 	return response
 }

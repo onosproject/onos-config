@@ -92,3 +92,19 @@ required - the device name, the device type and the version (see diagram above).
 Extension 102 is used to set the `device type`. If a Configuration already exists
 for this device name and version and its device type is different to what's
 given in extension 101, then an error is returned.
+
+## Use of Extension 103 (list of devices disconnected) in GetResponse, SetResponse, SubscribeResponse
+In onos-config the gNMI extension number 103 has been reserved for the
+`list of devices disconnected`. The changes and device configuration is still valid and held 
+by onos-config until the device arrives in the network. 
+
+### GetResponse and SetResponse
+In the GetResponse and GetRequest the `103` extension has an attached message containing a comma separated
+list of devices, e.g `device1,device2,device3` signaling which devices in the request are not
+yet connected to onos-config. 
+
+### SubscribeResponse
+In the SubscribeResponse the `103` extension has an attached message containing a single device, 
+e.g `device1` signaling that the device in the request is not yet connected to onos-config but 
+a configuration object has been changed. in Subscribe there is one device per response since it's
+a 1:1 relationship path to update, where the path include one device. 

@@ -18,6 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"regexp"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -112,7 +113,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	value := uint(13)
 
 	// Wait for the Update response with Update
-	assertUpdateResponse(t, responsesChan, device1, path1Once, path2Once, path3Once, value)
+	assertUpdateResponse(t, responsesChan, device1, path1Once, path2Once, path3Once, value, true)
 
 }
 
@@ -172,7 +173,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 	valueReply := uint(14)
 
 	//Expecting 1 Update response
-	assertUpdateResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream, valueReply)
+	assertUpdateResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream, valueReply, true)
 	//And one sync response
 	assertSyncResponse(responsesChan, t)
 
@@ -350,12 +351,12 @@ func Test_Poll(t *testing.T) {
 	value := uint(13)
 
 	//Expecting first Update response
-	assertUpdateResponse(t, responsesChan, device1, path1Poll, path2Poll, path3Poll, value)
+	assertUpdateResponse(t, responsesChan, device1, path1Poll, path2Poll, path3Poll, value, true)
 	//And first sync response
 	assertSyncResponse(responsesChan, t)
 
 	//Expecting second Update response
-	assertUpdateResponse(t, responsesChan, device1, path1Poll, path2Poll, path3Poll, value)
+	assertUpdateResponse(t, responsesChan, device1, path1Poll, path2Poll, path3Poll, value, true)
 	//And second sync response
 	assertSyncResponse(responsesChan, t)
 
@@ -492,7 +493,7 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 	valueReply := uint(14)
 
 	//Expecting 1 Update response
-	assertUpdateResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream, valueReply)
+	assertUpdateResponse(t, responsesChan, device1, path1Stream, path2Stream, path3Stream, valueReply, false)
 	//And one sync response
 	assertSyncResponse(responsesChan, t)
 	var wg sync.WaitGroup
@@ -530,7 +531,7 @@ func assertSyncResponse(responsesChan chan *gnmi.SubscribeResponse, t *testing.T
 }
 
 func assertUpdateResponse(t *testing.T, responsesChan chan *gnmi.SubscribeResponse, device1 string,
-	path1 string, path2 string, path3 string, value uint) {
+	path1 string, path2 string, path3 string, value uint, disconnected bool) {
 	select {
 	case response := <-responsesChan:
 		assert.Assert(t, response.GetUpdate().GetUpdate() != nil, "Update should not be nil")
@@ -546,6 +547,17 @@ func assertUpdateResponse(t *testing.T, responsesChan chan *gnmi.SubscribeRespon
 		assert.Equal(t, pathResponse.Elem[1].Name, path2)
 		assert.Equal(t, pathResponse.Elem[2].Name, path3)
 		assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetUintVal(), uint64(value))
+		if disconnected {
+			// Check that the device is currently disconnected
+			assert.Equal(t, len(response.Extension), 1)
+
+			extensionDeviceState := response.Extension[0].GetRegisteredExt()
+			assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
+			assert.Equal(t, string(extensionDeviceState.Msg), device1)
+		} else {
+			assert.Equal(t, len(response.Extension), 0)
+		}
+
 	case <-time.After(5 * time.Second):
 		log.Error("Expected Update Response")
 		t.FailNow()
