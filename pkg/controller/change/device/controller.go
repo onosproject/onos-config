@@ -147,9 +147,8 @@ func (r *Reconciler) applyRollback(change *devicechangetype.Change) (bool, error
 				return false, err
 			}
 			return true, nil
-		} else {
-			return false, nil
 		}
+		return false, nil
 	}
 
 	// Finally, attempt to roll back the change
