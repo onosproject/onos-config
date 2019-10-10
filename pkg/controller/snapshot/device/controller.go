@@ -170,7 +170,7 @@ func (r *Reconciler) takeSnapshot(deviceSnapshot *devicesnaptype.DeviceSnapshot,
 
 	// If the snapshot has not recorded any changes, skip it and complete the snapshot
 	if snapshotIndex <= prevSnapshotIndex {
-		return devicechangetype.Index(prevSnapshot.Index), nil
+		return devicechangetype.Index(prevSnapshotIndex), nil
 	}
 
 	// If changes have been recorded, create and store the snapshot
