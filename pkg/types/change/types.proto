@@ -18,44 +18,50 @@ syntax = "proto3";
 
 package onos.config.change;
 
-// Status provides status information for a change
+// Status is the status of a NetworkChange
 message Status {
-    // 'state' indicates the state of the change
-    State state = 1;
+    // 'phase' is the current phase of the NetworkChange
+    Phase phase = 1;
 
-    // 'deleted' indicates whether the object has been deleted
-    bool deleted = 2;
+    // 'state' is the state of the change within a Phase
+    State state = 2;
 
-    // 'reason' is a status reason
+    // 'reason' is a failure reason
     Reason reason = 3;
 
-    // 'message' is a status message
+    // message is a result message
     string message = 4;
 }
 
-// Reason is a reason for the status message
-enum Reason {
-    // UNKNOWN is the default reason indicating no reason was provided
-    UNKNOWN = 0;
+// Phase is the phase of a NetworkChange
+enum Phase {
+    // CHANGE indicates the change has been requested
+    CHANGE = 0;
 
-    // ERROR indicates an error occurred while handling the change
-    ERROR = 1;
-
-    // UNAVAILABLE indicates a device was unavailable
-    UNAVAILABLE = 2;
+    // ROLLBACK indicates a rollback has been requested for the change
+    ROLLBACK = 1;
 }
 
-// State indicates the state of a change
+// State is the state of a phase
 enum State {
-    // PENDING indicates the change is pending
+    // PENDING indicates the phase is pending
     PENDING = 0;
 
-    // APPLYING indicates the change is being applied
-    APPLYING = 1;
+    // RUNNING indicates the phase is in progress
+    RUNNING = 1;
 
-    // SUCCEEDED indicates the change has been applied successfully
-    SUCCEEDED = 2;
+    // COMPLETE indicates the phase is complete
+    COMPLETE = 2;
 
-    // FAILED indicates the change failed
+    // FAILED indicates the phase failed
     FAILED = 3;
+}
+
+// Reason is a reason for a FAILED state
+enum Reason {
+    // NONE indicates no error has occurred
+    NONE = 0;
+
+    // ERROR indicates an error occurred when applying the change
+    ERROR = 1;
 }

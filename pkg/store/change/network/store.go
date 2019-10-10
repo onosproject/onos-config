@@ -119,6 +119,9 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 type Store interface {
 	io.Closer
 
+	// LastIndex gets the last index in the store
+	LastIndex() (networkchange.Index, error)
+
 	// Get gets a network configuration
 	Get(id networkchange.ID) (*networkchange.NetworkChange, error)
 
@@ -158,7 +161,7 @@ func (s *atomixStore) nextIndex() (networkchange.Index, error) {
 	return networkchange.Index(index), nil
 }
 
-func (s *atomixStore) lastIndex() (networkchange.Index, error) {
+func (s *atomixStore) LastIndex() (networkchange.Index, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	index, err := s.indexes.Get(ctx)
@@ -267,7 +270,7 @@ func (s *atomixStore) Delete(config *networkchange.NetworkChange) error {
 }
 
 func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) error {
-	lastIndex, err := s.lastIndex()
+	lastIndex, err := s.LastIndex()
 	if err != nil {
 		return err
 	}
@@ -284,7 +287,7 @@ func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) error {
 }
 
 func (s *atomixStore) Watch(ch chan<- *networkchange.NetworkChange) error {
-	lastIndex, err := s.lastIndex()
+	lastIndex, err := s.LastIndex()
 	if err != nil {
 		return err
 	}
