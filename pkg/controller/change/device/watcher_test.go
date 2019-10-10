@@ -28,7 +28,7 @@ import (
 	"time"
 )
 
-func TestDeviceWatcher(t *testing.T) {
+func testDeviceWatcher(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	stream := NewMockDeviceService_ListClient(ctrl)
