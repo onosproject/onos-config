@@ -101,8 +101,7 @@ func TestNetworkWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	select {
-	case id := <-ch:
-		assert.Equal(t, change2.ID, networkchange.ID(id))
+	case <-ch:
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
@@ -112,8 +111,7 @@ func TestNetworkWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	select {
-	case id := <-ch:
-		assert.Equal(t, change1.ID, networkchange.ID(id))
+	case <-ch:
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
@@ -188,8 +186,7 @@ func TestDeviceWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	select {
-	case id := <-ch:
-		assert.Equal(t, change2.NetworkChangeID, id)
+	case <-ch:
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
@@ -199,8 +196,7 @@ func TestDeviceWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	select {
-	case id := <-ch:
-		assert.Equal(t, change1.NetworkChangeID, id)
+	case <-ch:
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}

@@ -97,8 +97,7 @@ func TestDeviceWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	select {
-	case id := <-ch:
-		assert.Equal(t, types.ID(change2.ID), id)
+	case <-ch:
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
@@ -108,8 +107,7 @@ func TestDeviceWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	select {
-	case id := <-ch:
-		assert.Equal(t, types.ID(change1.ID), id)
+	case <-ch:
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
