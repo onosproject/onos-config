@@ -152,7 +152,12 @@ func (s *topoStore) updateDevice(id devicepb.ID, connectivity devicepb.Connectiv
 		return nil, err
 	}
 	topoDevice := getResponse.Device
-	protocolState := new(devicepb.ProtocolState)
+	protocolState, index := containsGnmi(topoDevice.Protocols)
+	if protocolState != nil {
+		topoDevice.Protocols = remove(topoDevice.Protocols, index)
+	} else {
+		protocolState = new(devicepb.ProtocolState)
+	}
 	protocolState.Protocol = devicepb.Protocol_GNMI
 	protocolState.ConnectivityState = connectivity
 	protocolState.ChannelState = channel
@@ -168,4 +173,18 @@ func (s *topoStore) updateDevice(id devicepb.ID, connectivity devicepb.Connectiv
 	}
 	log.Infof("Device %s is updated with states %s, %s, %s", id, connectivity, channel, service)
 	return updateResponse.Device, nil
+}
+
+func containsGnmi(protocols []*devicepb.ProtocolState) (*devicepb.ProtocolState, int) {
+	for i, p := range protocols {
+		if p.Protocol == devicepb.Protocol_GNMI {
+			return p, i
+		}
+	}
+	return nil, -1
+}
+
+func remove(s []*devicepb.ProtocolState, i int) []*devicepb.ProtocolState {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
 }
