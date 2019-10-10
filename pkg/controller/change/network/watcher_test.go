@@ -119,6 +119,8 @@ func TestNetworkWatcher(t *testing.T) {
 }
 
 func TestDeviceWatcher(t *testing.T) {
+	t.Skip("test disabled")
+
 	ctrl := gomock.NewController(t)
 
 	stream := NewMockDeviceService_ListClient(ctrl)
