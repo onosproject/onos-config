@@ -193,6 +193,136 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.Equal(t, change.State_RUNNING, deviceChange2.Status.State)
 }
 
+// TestReconcilerErrorRollback tests an error resulting in a rollback
+func TestReconcilerErrorRollback(t *testing.T) {
+	_, networkChanges, deviceChanges := newStores(t)
+	defer networkChanges.Close()
+	defer deviceChanges.Close()
+
+	reconciler := &Reconciler{
+		networkChanges: networkChanges,
+		deviceChanges:  deviceChanges,
+	}
+
+	// Create a network change
+	networkChange := newChange(device1, device2)
+	err := networkChanges.Create(networkChange)
+	assert.NoError(t, err)
+
+	// Reconcile the network change
+	ok, err := reconciler.Reconcile(types.ID(networkChange.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Verify that device changes were created
+	deviceChange1, err := deviceChanges.Get("device-1:1")
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
+	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
+	deviceChange2, err := deviceChanges.Get("device-2:1")
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
+	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
+
+	// Reconcile the network change again
+	ok, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// The reconciler should have changed its state to RUNNING
+	networkChange, err = networkChanges.Get(network1)
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
+	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
+
+	// But device change states should remain in PENDING state
+	deviceChange1, err = deviceChanges.Get("device-1:1")
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
+	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
+	deviceChange2, err = deviceChanges.Get("device-2:1")
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
+	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
+
+	// Reconcile the network change again
+	ok, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Verify that device change states were changed to RUNNING
+	deviceChange1, err = deviceChanges.Get("device-1:1")
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
+	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
+	deviceChange2, err = deviceChanges.Get("device-2:1")
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
+	assert.Equal(t, change.State_RUNNING, deviceChange2.Status.State)
+
+	// Complete one of the devices
+	deviceChange1.Status.State = change.State_COMPLETE
+	err = deviceChanges.Update(deviceChange1)
+	assert.NoError(t, err)
+
+	// Reconcile the network change again
+	ok, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Verify the network change was not completed
+	networkChange, err = networkChanges.Get(network1)
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
+	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
+
+	// Fail the other device
+	deviceChange2, err = deviceChanges.Get("device-2:1")
+	assert.NoError(t, err)
+	deviceChange2.Status.State = change.State_FAILED
+	deviceChange2.Status.Reason = change.Reason_ERROR
+	err = deviceChanges.Update(deviceChange2)
+	assert.NoError(t, err)
+
+	// Reconcile the network change again
+	ok, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Verify the network change is still RUNNING
+	networkChange, err = networkChanges.Get(network1)
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
+	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
+
+	// Verify the change to device-1 is being rolled back
+	deviceChange1, err = deviceChanges.Get("device-1:1")
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_ROLLBACK, deviceChange1.Status.Phase)
+	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
+	deviceChange2, err = deviceChanges.Get("device-2:1")
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
+	assert.Equal(t, change.State_FAILED, deviceChange2.Status.State)
+
+	// Set the device-1 change rollback to COMPLETE
+	deviceChange1.Status.State = change.State_COMPLETE
+	err = deviceChanges.Update(deviceChange1)
+	assert.NoError(t, err)
+
+	// Reconcile the network change
+	ok, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Verify that the network change is FAILED
+	networkChange, err = networkChanges.Get(network1)
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
+	assert.Equal(t, change.State_FAILED, networkChange.Status.State)
+	assert.Equal(t, change.Reason_ERROR, networkChange.Status.Reason)
+}
+
 func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicechanges.Store) {
 	ctrl := gomock.NewController(t)
 
