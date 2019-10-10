@@ -15,30 +15,24 @@
 package device
 
 import (
-	"fmt"
+	"github.com/onosproject/onos-config/pkg/controller"
+	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/types"
-	"strconv"
-	"strings"
+	devicesnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 )
 
-const separator = ":"
-
-// ID is a snapshot identifier type
-type ID types.ID
-
-// GetIndex returns the Index
-func (i ID) GetIndex() Index {
-	index, _ := strconv.Atoi(string(i)[strings.LastIndex(string(i), separator)+1:])
-	return Index(index)
+// Partitioner is a WorkPartitioner for device snapshots
+type Partitioner struct {
+	snapshots devicesnapstore.Store
 }
 
-// Index is the index of a snapshot
-type Index uint64
-
-// GetSnapshotID returns the device snapshot ID for the index
-func (i Index) GetChangeID() ID {
-	return ID(fmt.Sprintf("device-snapshot%s%d", separator, i))
+// Partition returns the device as a partition key
+func (p *Partitioner) Partition(id types.ID) (controller.PartitionKey, error) {
+	snapshot, err := p.snapshots.Get(devicesnaptypes.ID(id))
+	if err != nil {
+		return "", err
+	}
+	return controller.PartitionKey(snapshot.DeviceID), nil
 }
 
-// Revision is a network configuration revision number
-type Revision types.Revision
+var _ controller.WorkPartitioner = &Partitioner{}

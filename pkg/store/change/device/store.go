@@ -132,6 +132,9 @@ type Store interface {
 	// Get gets a device change
 	Get(id devicechange.ID) (*devicechange.Change, error)
 
+	// GetByIndex gets a device change by index
+	GetByIndex(id device.ID, index devicechange.Index) (*devicechange.Change, error)
+
 	// Create creates a new device change
 	Create(config *devicechange.Change) error
 
@@ -143,9 +146,6 @@ type Store interface {
 
 	// List lists device change
 	List(device.ID, chan<- *devicechange.Change) error
-
-	// Replay replays the device changes from the given index
-	Replay(device.ID, devicechange.Index, chan<- *devicechange.Change) error
 
 	// Watch watches the device change store for changes
 	Watch(device.ID, chan<- *devicechange.Change) error
@@ -208,6 +208,19 @@ func (s *atomixStore) Get(id devicechange.ID) (*devicechange.Change, error) {
 	defer cancel()
 
 	entry, err := s.configs.Get(ctx, string(id))
+	if err != nil {
+		return nil, err
+	} else if entry == nil {
+		return nil, nil
+	}
+	return decodeChange(entry)
+}
+
+func (s *atomixStore) GetByIndex(device device.ID, index devicechange.Index) (*devicechange.Change, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	entry, err := s.configs.Get(ctx, string(index.GetChangeID(device)))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
@@ -293,33 +306,18 @@ func (s *atomixStore) Delete(config *devicechange.Change) error {
 }
 
 func (s *atomixStore) List(device device.ID, ch chan<- *devicechange.Change) error {
-	return s.Replay(device, devicechange.Index(0), ch)
-}
-
-func (s *atomixStore) Replay(device device.ID, index devicechange.Index, ch chan<- *devicechange.Change) error {
-	lastIndex, err := s.LastIndex(device)
-	if err != nil {
+	mapCh := make(chan *_map.Entry)
+	if err := s.configs.Entries(context.Background(), mapCh); err != nil {
 		return err
 	}
 
 	go func() {
-		for i := index; i <= lastIndex; i++ {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			entry, err := s.configs.Get(ctx, string(i.GetChangeID(device)))
-			cancel()
-			if err != nil {
-				ch <- nil
-				break
-			} else if entry != nil {
-				change, err := decodeChange(entry)
-				if err != nil {
-					ch <- nil
-					break
-				}
-				ch <- change
+		defer close(ch)
+		for entry := range mapCh {
+			if config, err := decodeChange(entry); err == nil && config.DeviceID == device {
+				ch <- config
 			}
 		}
-		close(ch)
 	}()
 	return nil
 }
