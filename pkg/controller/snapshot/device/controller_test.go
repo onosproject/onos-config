@@ -29,8 +29,8 @@ import (
 )
 
 const (
-	device1  = device.ID("device-1")
-	device2  = device.ID("device-2")
+	device1 = device.ID("device-1")
+	device2 = device.ID("device-2")
 )
 
 func TestReconcilerChangeSuccess(t *testing.T) {
