@@ -15,17 +15,13 @@
 package network
 
 import (
-	"github.com/golang/mock/gomock"
-	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
-	"io"
 	"testing"
 	"time"
 )
@@ -118,6 +114,7 @@ func TestNetworkWatcher(t *testing.T) {
 	}
 }
 
+/*
 func TestDeviceWatcher(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
@@ -203,3 +200,4 @@ func TestDeviceWatcher(t *testing.T) {
 		t.FailNow()
 	}
 }
+*/
