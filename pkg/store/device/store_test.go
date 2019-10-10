@@ -79,6 +79,56 @@ func TestDeviceStore(t *testing.T) {
 	assert.Equal(t, device3.ID, device.ID)
 }
 
+func TestUpdateDevice(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	device1 := &devicepb.Device{
+		ID:       "device-1",
+		Revision: 1,
+		Address:  "device-1:1234",
+		Version:  "1.0.0",
+	}
+
+	device1Connected := &devicepb.Device{
+		ID:       "device-1",
+		Revision: 1,
+		Address:  "device-1:1234",
+		Version:  "1.0.0",
+	}
+
+	protocolState := new(devicepb.ProtocolState)
+	protocolState.Protocol = devicepb.Protocol_GNMI
+	protocolState.ConnectivityState = devicepb.ConnectivityState_REACHABLE
+	protocolState.ChannelState = devicepb.ChannelState_CONNECTED
+	protocolState.ServiceState = devicepb.ServiceState_AVAILABLE
+	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
+
+	client := NewMockDeviceServiceClient(ctrl)
+	requestClient := NewMockDeviceServiceClient(ctrl)
+	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&devicepb.GetResponse{Device: device1}, nil)
+
+	store := topoStore{
+		client:        client,
+		requestClient: requestClient,
+	}
+
+	device, err := store.Get(device1.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, device1.ID, device.ID)
+
+	requestClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&devicepb.GetResponse{Device: device1}, nil)
+	requestClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&devicepb.UpdateResponse{Device: device1Connected}, nil)
+
+	deviceUpdated, err := store.DeviceConnected(device1.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, deviceUpdated.ID, device1Connected.ID)
+	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, devicepb.Protocol_GNMI)
+	assert.Equal(t, deviceUpdated.Protocols[0].ConnectivityState, devicepb.ConnectivityState_REACHABLE)
+	assert.Equal(t, deviceUpdated.Protocols[0].ChannelState, devicepb.ChannelState_CONNECTED)
+	assert.Equal(t, deviceUpdated.Protocols[0].ServiceState, devicepb.ServiceState_AVAILABLE)
+
+}
+
 func nextDevice(t *testing.T, ch chan *devicepb.Device) *devicepb.Device {
 	select {
 	case d := <-ch:
