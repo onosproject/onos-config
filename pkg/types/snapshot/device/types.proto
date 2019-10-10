@@ -37,17 +37,20 @@ message DeviceSnapshot {
     // 'revision' is the request revision number
     uint64 revision = 4 [(gogoproto.casttype) = "Revision"];
 
+    // 'network_snapshot_id' is the identifier of the network snapshot from which this snapshot was created
+    string network_snapshot_id = 5 [(gogoproto.customname) = "NetworkSnapshotID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+
     // 'status' is the snapshot status
-    onos.config.snapshot.Status status = 5 [(gogoproto.nullable) = false];
+    onos.config.snapshot.Status status = 6 [(gogoproto.nullable) = false];
 
     // 'timestamp' is the time at which to take the snapshot
-    google.protobuf.Timestamp timestamp = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp timestamp = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'created' is the time at which the configuration was created
-    google.protobuf.Timestamp created = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp created = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'updated' is the time at which the configuration was last updated
-    google.protobuf.Timestamp updated = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp updated = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }
 
 // Snapshot is a snapshot of the state of a single device

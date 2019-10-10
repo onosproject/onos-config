@@ -44,12 +44,19 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	snapshot1 := &networksnapshot.NetworkSnapshot{
-		Devices:   []device.ID{},
+		Devices:   []*networksnapshot.DeviceSnapshotRef{},
 		Timestamp: time.Now().AddDate(0, 0, -7),
 	}
 
 	snapshot2 := &networksnapshot.NetworkSnapshot{
-		Devices:   []device.ID{device1, device2},
+		Devices: []*networksnapshot.DeviceSnapshotRef{
+			{
+				DeviceID: device1,
+			},
+			{
+				DeviceID: device2,
+			},
+		},
 		Timestamp: time.Now().AddDate(0, 0, -1),
 	}
 
@@ -140,7 +147,7 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.Nil(t, snapshot2)
 
 	snapshot := &networksnapshot.NetworkSnapshot{
-		Devices:   []device.ID{},
+		Devices:   []*networksnapshot.DeviceSnapshotRef{},
 		Timestamp: time.Now().AddDate(0, 0, -7),
 	}
 
@@ -148,7 +155,7 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	snapshot = &networksnapshot.NetworkSnapshot{
-		Devices:   []device.ID{},
+		Devices:   []*networksnapshot.DeviceSnapshotRef{},
 		Timestamp: time.Now().AddDate(0, 0, -7),
 	}
 
