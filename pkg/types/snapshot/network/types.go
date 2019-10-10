@@ -23,7 +23,7 @@ import (
 
 const separator = ":"
 
-// ID is a network configuration identifier type
+// ID is a network snapshot identifier type
 type ID types.ID
 
 // GetIndex returns the Index
@@ -33,13 +33,13 @@ func (i ID) GetIndex() Index {
 	return Index(index)
 }
 
-// Index is the index of a network configuration
+// Index is the index of a network snapshot
 type Index uint64
 
 // GetSnapshotID returns the network snapshot ID for the index
-func (i Index) GetChangeID() ID {
+func (i Index) GetSnapshotID() ID {
 	return ID(fmt.Sprintf("snapshot%s%d", separator, i))
 }
 
-// Revision is a network configuration revision number
+// Revision is a network snapshot revision number
 type Revision types.Revision

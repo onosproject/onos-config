@@ -31,7 +31,6 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 	"io"
 	"net"
-	"sync"
 	"time"
 )
 
@@ -154,7 +153,6 @@ type Store interface {
 type atomixStore struct {
 	configs _map.Map
 	indexes counter.Counter
-	mu      sync.RWMutex
 }
 
 func (s *atomixStore) nextIndex() (devicesnapshot.Index, error) {
@@ -194,7 +192,7 @@ func (s *atomixStore) GetByIndex(index devicesnapshot.Index) (*devicesnapshot.De
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Get(ctx, string(index.GetChangeID()))
+	entry, err := s.configs.Get(ctx, string(index.GetSnapshotID()))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
@@ -214,7 +212,7 @@ func (s *atomixStore) Create(config *devicesnapshot.DeviceSnapshot) error {
 	}
 
 	config.Index = index
-	config.ID = index.GetChangeID()
+	config.ID = index.GetSnapshotID()
 	config.Created = time.Now()
 	config.Updated = time.Now()
 

@@ -188,7 +188,7 @@ func (s *atomixStore) GetByIndex(index networksnapshot.Index) (*networksnapshot.
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Get(ctx, string(index.GetChangeID()))
+	entry, err := s.configs.Get(ctx, string(index.GetSnapshotID()))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
@@ -208,7 +208,7 @@ func (s *atomixStore) Create(config *networksnapshot.NetworkSnapshot) error {
 	}
 
 	config.Index = networksnapshot.Index(index)
-	config.ID = config.Index.GetChangeID()
+	config.ID = config.Index.GetSnapshotID()
 
 	bytes, err := proto.Marshal(config)
 	if err != nil {

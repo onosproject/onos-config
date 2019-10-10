@@ -36,9 +36,9 @@ func (i ID) GetIndex() Index {
 type Index uint64
 
 // GetSnapshotID returns the device snapshot ID for the index
-func (i Index) GetChangeID() ID {
+func (i Index) GetSnapshotID() ID {
 	return ID(fmt.Sprintf("device-snapshot%s%d", separator, i))
 }
 
-// Revision is a network configuration revision number
+// Revision is a device snapshot revision number
 type Revision types.Revision
