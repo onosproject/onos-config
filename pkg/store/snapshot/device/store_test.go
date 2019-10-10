@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package network
+package device
 
 import (
 	"github.com/onosproject/onos-config/pkg/types/snapshot"
-	networksnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/network"
+	devicesnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
-func TestNetworkSnapshotStore(t *testing.T) {
+func TestDeviceSnapshotStore(t *testing.T) {
 	node, conn := startLocalNode()
 	defer node.Stop()
 	defer conn.Close()
@@ -39,47 +39,47 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	device1 := device.ID("device-1")
 	device2 := device.ID("device-2")
 
-	ch := make(chan *networksnapshot.NetworkSnapshot)
+	ch := make(chan *devicesnapshot.DeviceSnapshot)
 	err = store2.Watch(ch)
 	assert.NoError(t, err)
 
-	snapshot1 := &networksnapshot.NetworkSnapshot{
-		Devices:   []device.ID{},
+	snapshot1 := &devicesnapshot.DeviceSnapshot{
+		DeviceID:  device1,
 		Timestamp: time.Now().AddDate(0, 0, -7),
 	}
 
-	snapshot2 := &networksnapshot.NetworkSnapshot{
-		Devices:   []device.ID{device1, device2},
+	snapshot2 := &devicesnapshot.DeviceSnapshot{
+		DeviceID:  device2,
 		Timestamp: time.Now().AddDate(0, 0, -1),
 	}
 
 	// Create a new snapshot
 	err = store1.Create(snapshot1)
 	assert.NoError(t, err)
-	assert.Equal(t, networksnapshot.ID("snapshot:1"), snapshot1.ID)
-	assert.Equal(t, networksnapshot.Index(1), snapshot1.Index)
-	assert.NotEqual(t, networksnapshot.Revision(0), snapshot1.Revision)
+	assert.Equal(t, devicesnapshot.ID("device-snapshot:1"), snapshot1.ID)
+	assert.Equal(t, devicesnapshot.Index(1), snapshot1.Index)
+	assert.NotEqual(t, devicesnapshot.Revision(0), snapshot1.Revision)
 
 	// Get the snapshot
-	snapshot1, err = store2.Get("snapshot:1")
+	snapshot1, err = store2.Get("device-snapshot:1")
 	assert.NoError(t, err)
 	assert.NotNil(t, snapshot1)
-	assert.Equal(t, networksnapshot.ID("snapshot:1"), snapshot1.ID)
-	assert.Equal(t, networksnapshot.Index(1), snapshot1.Index)
-	assert.NotEqual(t, networksnapshot.Revision(0), snapshot1.Revision)
+	assert.Equal(t, devicesnapshot.ID("device-snapshot:1"), snapshot1.ID)
+	assert.Equal(t, devicesnapshot.Index(1), snapshot1.Index)
+	assert.NotEqual(t, devicesnapshot.Revision(0), snapshot1.Revision)
 
 	// Create another snapshot
 	err = store2.Create(snapshot2)
 	assert.NoError(t, err)
-	assert.Equal(t, networksnapshot.ID("snapshot:2"), snapshot2.ID)
-	assert.Equal(t, networksnapshot.Index(2), snapshot2.Index)
-	assert.NotEqual(t, networksnapshot.Revision(0), snapshot2.Revision)
+	assert.Equal(t, devicesnapshot.ID("device-snapshot:2"), snapshot2.ID)
+	assert.Equal(t, devicesnapshot.Index(2), snapshot2.Index)
+	assert.NotEqual(t, devicesnapshot.Revision(0), snapshot2.Revision)
 
 	// Verify events were received for the snapshots
 	snapshotEvent := nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:1"), snapshotEvent.ID)
+	assert.Equal(t, devicesnapshot.ID("device-snapshot:1"), snapshotEvent.ID)
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:2"), snapshotEvent.ID)
+	assert.Equal(t, devicesnapshot.ID("device-snapshot:2"), snapshotEvent.ID)
 
 	// Update one of the snapshots
 	snapshot2.Status.State = snapshot.State_RUNNING
@@ -89,7 +89,7 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.NotEqual(t, revision, snapshot2.Revision)
 
 	// Read and then update the snapshot
-	snapshot2, err = store2.Get("snapshot:2")
+	snapshot2, err = store2.Get("device-snapshot:2")
 	assert.NoError(t, err)
 	assert.NotNil(t, snapshot2)
 	snapshot2.Status.State = snapshot.State_COMPLETE
@@ -99,9 +99,9 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.NotEqual(t, revision, snapshot2.Revision)
 
 	// Verify that concurrent updates fail
-	snapshot11, err := store1.Get("snapshot:1")
+	snapshot11, err := store1.Get("device-snapshot:1")
 	assert.NoError(t, err)
-	snapshot12, err := store2.Get("snapshot:1")
+	snapshot12, err := store2.Get("device-snapshot:1")
 	assert.NoError(t, err)
 
 	snapshot11.Status.State = snapshot.State_COMPLETE
@@ -114,14 +114,14 @@ func TestNetworkSnapshotStore(t *testing.T) {
 
 	// Verify events were received again
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:2"), snapshotEvent.ID)
+	assert.Equal(t, devicesnapshot.ID("device-snapshot:2"), snapshotEvent.ID)
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:2"), snapshotEvent.ID)
+	assert.Equal(t, devicesnapshot.ID("device-snapshot:2"), snapshotEvent.ID)
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:1"), snapshotEvent.ID)
+	assert.Equal(t, devicesnapshot.ID("device-snapshot:1"), snapshotEvent.ID)
 
 	// List the snapshots
-	snapshots := make(chan *networksnapshot.NetworkSnapshot)
+	snapshots := make(chan *devicesnapshot.DeviceSnapshot)
 	err = store1.List(snapshots)
 	assert.NoError(t, err)
 
@@ -135,39 +135,39 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	// Delete a snapshot
 	err = store1.Delete(snapshot2)
 	assert.NoError(t, err)
-	snapshot2, err = store2.Get("snapshot:2")
+	snapshot2, err = store2.Get("device-snapshot:2")
 	assert.NoError(t, err)
 	assert.Nil(t, snapshot2)
 
-	snapshot := &networksnapshot.NetworkSnapshot{
-		Devices:   []device.ID{},
+	snapshot := &devicesnapshot.DeviceSnapshot{
+		DeviceID:  device1,
 		Timestamp: time.Now().AddDate(0, 0, -7),
 	}
 
 	err = store1.Create(snapshot)
 	assert.NoError(t, err)
 
-	snapshot = &networksnapshot.NetworkSnapshot{
-		Devices:   []device.ID{},
+	snapshot = &devicesnapshot.DeviceSnapshot{
+		DeviceID:  device2,
 		Timestamp: time.Now().AddDate(0, 0, -7),
 	}
 
 	err = store1.Create(snapshot)
 	assert.NoError(t, err)
 
-	ch = make(chan *networksnapshot.NetworkSnapshot)
+	ch = make(chan *devicesnapshot.DeviceSnapshot)
 	err = store1.Watch(ch)
 	assert.NoError(t, err)
 
 	snapshot = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.Index(1), snapshot.Index)
+	assert.Equal(t, devicesnapshot.Index(1), snapshot.Index)
 	snapshot = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.Index(3), snapshot.Index)
+	assert.Equal(t, devicesnapshot.Index(3), snapshot.Index)
 	snapshot = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.Index(4), snapshot.Index)
+	assert.Equal(t, devicesnapshot.Index(4), snapshot.Index)
 }
 
-func nextSnapshot(t *testing.T, ch chan *networksnapshot.NetworkSnapshot) *networksnapshot.NetworkSnapshot {
+func nextSnapshot(t *testing.T, ch chan *devicesnapshot.DeviceSnapshot) *devicesnapshot.DeviceSnapshot {
 	select {
 	case c := <-ch:
 		return c

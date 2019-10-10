@@ -28,23 +28,26 @@ message DeviceSnapshot {
     // 'id' is the unique snapshot identifier
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
+    // 'index' is a monotonically increasing, globally unique index of the snapshot
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
     // 'device_id' is the device to which the snapshot applies
-    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+    string device_id = 3 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
 
     // 'revision' is the request revision number
-    uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
+    uint64 revision = 4 [(gogoproto.casttype) = "Revision"];
 
     // 'status' is the snapshot status
-    onos.config.snapshot.Status status = 4 [(gogoproto.nullable) = false];
+    onos.config.snapshot.Status status = 5 [(gogoproto.nullable) = false];
 
     // 'timestamp' is the time at which to take the snapshot
-    google.protobuf.Timestamp timestamp = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp timestamp = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'created' is the time at which the configuration was created
-    google.protobuf.Timestamp created = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp created = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'updated' is the time at which the configuration was last updated
-    google.protobuf.Timestamp updated = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp updated = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }
 
 // Snapshot is a snapshot of the state of a single device
