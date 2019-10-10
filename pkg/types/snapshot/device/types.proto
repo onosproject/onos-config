@@ -35,7 +35,7 @@ message DeviceSnapshot {
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
     // 'status' is the snapshot status
-    onos.config.snapshot.Status status = 4;
+    onos.config.snapshot.Status status = 4 [(gogoproto.nullable) = false];
 
     // 'timestamp' is the time at which to take the snapshot
     google.protobuf.Timestamp timestamp = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
