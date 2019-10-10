@@ -78,10 +78,10 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 		return false, err
 	}
 
-	// If the device is not available, fail the change with the UNAVAILABLE reason
+	// If the device is not available, fail the change
 	if getProtocolState(device) != deviceservice.ChannelState_CONNECTED {
 		change.Status.State = changetype.State_FAILED
-		change.Status.Reason = changetype.Reason_UNAVAILABLE
+		change.Status.Reason = changetype.Reason_ERROR
 		if err := r.changes.Update(change); err != nil {
 			return false, err
 		}

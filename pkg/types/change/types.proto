@@ -59,12 +59,9 @@ enum State {
 
 // Reason is a reason for a FAILED state
 enum Reason {
-    // UNKNOWN is a null or unknown failure reason
-    UNKNOWN = 0;
+    // NONE indicates no error has occurred
+    NONE = 0;
 
     // ERROR indicates an error occurred when applying the change
     ERROR = 1;
-
-    // UNAVAILABLE indicates the change failed due to unavailable device(s)
-    UNAVAILABLE = 2;
 }

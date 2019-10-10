@@ -186,30 +186,20 @@ func (r *Reconciler) reconcileRunningChange(change *networktypes.NetworkChange) 
 		return true, nil
 	}
 
-	// Check if any failures have occurred
-	failure := r.getDeviceChangesFailure(deviceChanges)
-	if failure != nil {
+	// If a device change failed, rollback pending changes and requeue the change
+	if r.isDeviceChangesFailed(deviceChanges) {
 		// Ensure changes that have not failed are being rolled back
 		succeeded, err = r.ensureDeviceChangeRollbacksRunning(deviceChanges)
 		if succeeded || err != nil {
 			return succeeded, err
 		}
 
-		// If all device change rollbacks have completed, complete the network change
+		// If all device change rollbacks have completed, revert the network change to PENDING
 		if r.isDeviceChangeRollbacksComplete(deviceChanges) {
-			// If the failure was due to an UNAVAILABLE device, reset the network change state to PENDING
-			// Otherwise, fail the network change with the given failure reason
-			if *failure == changetypes.Reason_UNAVAILABLE {
-				change.Status.State = changetypes.State_PENDING
-				if err := r.networkChanges.Update(change); err != nil {
-					return false, err
-				}
-			} else {
-				change.Status.State = changetypes.State_FAILED
-				change.Status.Reason = *failure
-				if err := r.networkChanges.Update(change); err != nil {
-					return false, err
-				}
+			change.Status.State = changetypes.State_PENDING
+			change.Status.Reason = changetypes.Reason_ERROR
+			if err := r.networkChanges.Update(change); err != nil {
+				return false, err
 			}
 		}
 	}
@@ -255,21 +245,14 @@ func (r *Reconciler) isDeviceChangesComplete(changes []*devicetypes.Change) bool
 	return true
 }
 
-// getDeviceChangesFailure gets the device change failure if any
-func (r *Reconciler) getDeviceChangesFailure(changes []*devicetypes.Change) *changetypes.Reason {
-	var failure *changetypes.Reason
-	for _, deviceChange := range changes {
-		if deviceChange.Status.State == changetypes.State_FAILED {
-			if deviceChange.Status.Reason == changetypes.Reason_UNAVAILABLE {
-				if failure == nil {
-					failure = &deviceChange.Status.Reason
-				}
-			} else {
-				failure = &deviceChange.Status.Reason
-			}
+// isDeviceChangesFailed checks whether the device changes are complete
+func (r *Reconciler) isDeviceChangesFailed(changes []*devicetypes.Change) bool {
+	for _, change := range changes {
+		if change.Status.State == changetypes.State_FAILED {
+			return true
 		}
 	}
-	return failure
+	return false
 }
 
 // ensureDeviceChangeRollbacksRunning ensures RUNNING or COMPLETE device changes are being rolled back
