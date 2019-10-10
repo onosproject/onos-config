@@ -48,7 +48,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for request := range configCh {
-			ch <- request.NetworkSnapshotID
+			ch <- types.ID(request.ID)
 		}
 		close(ch)
 	}()
