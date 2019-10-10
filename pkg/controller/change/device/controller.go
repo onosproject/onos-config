@@ -67,30 +67,11 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 		return false, err
 	}
 
-	// If the change is not found, skip processing
-	if change == nil {
+	// The device controller only needs to handle changes in the RUNNING state
+	if change == nil || change.Status.State != changetype.State_RUNNING {
 		return true, nil
 	}
 
-	// If the change is in the PENDING state and has been deleted, roll back the change
-	if change.Status.State == changetype.State_PENDING && change.Status.Deleted {
-		return r.applyRollback(change)
-	}
-
-	// If the change is in the APPLYING state and has not been deleted, apply the change
-	if change.Status.State == changetype.State_APPLYING && !change.Status.Deleted {
-		return r.applyChange(change)
-	}
-
-	// If the change is in the APPLYING state and has been deleted, roll back the change
-	if change.Status.State == changetype.State_APPLYING && change.Status.Deleted {
-		return r.applyRollback(change)
-	}
-	return true, nil
-}
-
-// applyChange attempts to apply a change
-func (r *Reconciler) applyChange(change *devicechangetype.Change) (bool, error) {
 	// Get the device from the device store
 	device, err := r.devices.Get(change.DeviceID)
 	if err != nil {
@@ -107,17 +88,28 @@ func (r *Reconciler) applyChange(change *devicechangetype.Change) (bool, error) 
 		return true, nil
 	}
 
-	// Finally, attempt to apply the change
-	// If an error occurs when applying the change, fail the device change, otherwise succeed it
+	// Handle the change for each phase
+	switch change.Status.Phase {
+	case changetype.Phase_CHANGE:
+		return r.reconcileChange(change)
+	case changetype.Phase_ROLLBACK:
+		return r.reconcileRollback(change)
+	}
+	return true, nil
+}
+
+// reconcileChange reconciles a CHANGE in the RUNNING state
+func (r *Reconciler) reconcileChange(change *devicechangetype.Change) (bool, error) {
+	// Attempt to apply the change to the device and update the change with the result
 	if err := r.doChange(change); err != nil {
 		change.Status.State = changetype.State_FAILED
 		change.Status.Reason = changetype.Reason_ERROR
 		change.Status.Message = err.Error()
 	} else {
-		change.Status.State = changetype.State_SUCCEEDED
+		change.Status.State = changetype.State_COMPLETE
 	}
 
-	// Update the change state in the store before returning
+	// Update the change status in the store
 	if err := r.changes.Update(change); err != nil {
 		return false, err
 	}
@@ -130,47 +122,18 @@ func (r *Reconciler) doChange(change *devicechangetype.Change) error {
 	return nil
 }
 
-// applyRollback attempts to roll back a change
-func (r *Reconciler) applyRollback(change *devicechangetype.Change) (bool, error) {
-	// Get the device from the device store
-	device, err := r.devices.Get(change.DeviceID)
-	if err != nil {
-		return false, err
-	}
-
-	// If the device is not available and the change is APPLYING fail the change with the UNAVAILABLE reason
-	if getProtocolState(device) != deviceservice.ChannelState_CONNECTED {
-		if change.Status.State == changetype.State_APPLYING {
-			change.Status.State = changetype.State_FAILED
-			change.Status.Reason = changetype.Reason_UNAVAILABLE
-			if err := r.changes.Update(change); err != nil {
-				return false, err
-			}
-			return true, nil
-		} else {
-			return false, nil
-		}
-	}
-
-	// Finally, attempt to roll back the change
-	// If an error occurs when rolling back the change and the change is in the APPLYING state,
-	// fail the change
-	// If the rollback is successful and the change is in the APPLYING state, succeed the change
+// reconcileRollback reconciles a ROLLBACK in the RUNNING state
+func (r *Reconciler) reconcileRollback(change *devicechangetype.Change) (bool, error) {
+	// Attempt to roll back the change to the device and update the change with the result
 	if err := r.doRollback(change); err != nil {
-		if change.Status.State == changetype.State_APPLYING {
-			change.Status.State = changetype.State_FAILED
-			change.Status.Reason = changetype.Reason_ERROR
-			change.Status.Message = err.Error()
-		} else {
-			return false, err
-		}
+		change.Status.State = changetype.State_FAILED
+		change.Status.Reason = changetype.Reason_ERROR
+		change.Status.Message = err.Error()
 	} else {
-		if change.Status.State == changetype.State_APPLYING {
-			change.Status.State = changetype.State_SUCCEEDED
-		}
+		change.Status.State = changetype.State_COMPLETE
 	}
 
-	// Update the change state in the store before returning
+	// Update the change status in the store
 	if err := r.changes.Update(change); err != nil {
 		return false, err
 	}

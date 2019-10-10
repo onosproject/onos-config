@@ -156,7 +156,7 @@ func TestDeviceStore(t *testing.T) {
 	assert.Equal(t, devicechange.ID("device-2:1"), changeEvent.ID)
 
 	// Update one of the changes
-	change2.Status.State = change.State_APPLYING
+	change2.Status.State = change.State_RUNNING
 	revision := change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
@@ -166,7 +166,7 @@ func TestDeviceStore(t *testing.T) {
 	change2, err = store2.Get(devicechange.ID("device-1:2"))
 	assert.NoError(t, err)
 	assert.NotNil(t, change2)
-	change2.Status.State = change.State_SUCCEEDED
+	change2.Status.State = change.State_RUNNING
 	revision = change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
@@ -178,7 +178,7 @@ func TestDeviceStore(t *testing.T) {
 	change32, err := store2.Get(devicechange.ID("device-1:3"))
 	assert.NoError(t, err)
 
-	change31.Status.State = change.State_APPLYING
+	change31.Status.State = change.State_RUNNING
 	err = store1.Update(change31)
 	assert.NoError(t, err)
 

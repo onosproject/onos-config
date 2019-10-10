@@ -17,11 +17,9 @@ package device
 import (
 	"context"
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/pkg/controller"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
-	"github.com/onosproject/onos-config/pkg/store/cluster"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	"github.com/onosproject/onos-config/pkg/store/mastership"
+	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -29,7 +27,6 @@ import (
 	"google.golang.org/grpc"
 	"io"
 	"testing"
-	"time"
 )
 
 const (
@@ -39,208 +36,149 @@ const (
 )
 
 const (
-	change1  = devicechange.ID("device-1:1")
-	change2  = devicechange.ID("device-2:1")
-	dcChange = devicechange.ID("disconnected:1")
+	change1 = devicechange.ID("device-1:1")
+	change2 = devicechange.ID("device-2:1")
 )
 
-func TestDeviceChangeApply(t *testing.T) {
-	leaderships, devices, deviceChanges := newStores(t)
-	defer leaderships.Close()
+func TestReconcilerChangeSuccess(t *testing.T) {
+	devices, deviceChanges := newStores(t)
 	defer deviceChanges.Close()
 
-	controller := newController(t, leaderships, devices, deviceChanges)
-	defer controller.Stop()
-
-	// Listen for events for device-1 and device-2 changes
-	device1Ch := make(chan *devicechange.Change)
-	err := deviceChanges.Watch(device1, device1Ch)
-	assert.NoError(t, err)
-
-	device2Ch := make(chan *devicechange.Change)
-	err = deviceChanges.Watch(device2, device2Ch)
-	assert.NoError(t, err)
+	reconciler := &Reconciler{
+		devices: devices,
+		changes: deviceChanges,
+	}
 
 	// Create a device-1 change 1
 	deviceChange1 := newChange(device1)
-	err = deviceChanges.Create(deviceChange1)
+	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
-	event := nextDeviceEvent(t, device1Ch)
-	assert.Equal(t, change1, event.ID)
-	assert.Equal(t, device1, event.DeviceID)
-
-	// Create a device-1 change 1
+	// Create a device-2 change 1
 	deviceChange2 := newChange(device2)
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
-	event = nextDeviceEvent(t, device2Ch)
-	assert.Equal(t, change2, event.ID)
-	assert.Equal(t, device2, event.DeviceID)
+	// Apply change 1 to the reconciler
+	ok, err := reconciler.Reconcile(types.ID(deviceChange1.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
-	// Change the state of device-1 change 1 to APPLYING
-	deviceChange1.Status.State = change.State_APPLYING
+	// Apply change 2 to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// No changes should have been made
+	deviceChange1, err = deviceChanges.Get(change1)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
+
+	deviceChange2, err = deviceChanges.Get(change2)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
+
+	// Change the state of device-1 change 1 to RUNNING
+	deviceChange1.Status.State = change.State_RUNNING
 	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
-	// Change the state of device-2 change 1 to APPLYING
-	deviceChange2.Status.State = change.State_APPLYING
+	// Change the state of device-2 change 1 to RUNNING
+	deviceChange2.Status.State = change.State_RUNNING
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
-	// Events for both device changes should be received
-	event = nextDeviceEvent(t, device1Ch)
-	assert.Equal(t, change1, event.ID)
-	assert.Equal(t, device1, event.DeviceID)
-	assert.Equal(t, change.State_APPLYING, event.Status.State)
+	// Apply the changes to the reconciler again
+	ok, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
-	event = nextDeviceEvent(t, device2Ch)
-	assert.Equal(t, change2, event.ID)
-	assert.Equal(t, device2, event.DeviceID)
-	assert.Equal(t, change.State_APPLYING, event.Status.State)
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
 	// Both change should be applied successfully
-	event = nextDeviceEvent(t, device1Ch)
-	assert.Equal(t, change1, event.ID)
-	assert.Equal(t, device1, event.DeviceID)
-	assert.Equal(t, change.State_SUCCEEDED, event.Status.State)
+	deviceChange1, err = deviceChanges.Get(change1)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_COMPLETE, deviceChange1.Status.State)
 
-	event = nextDeviceEvent(t, device2Ch)
-	assert.Equal(t, change2, event.ID)
-	assert.Equal(t, device2, event.DeviceID)
-	assert.Equal(t, change.State_SUCCEEDED, event.Status.State)
+	deviceChange2, err = deviceChanges.Get(change2)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
 }
 
-func TestDeviceChangeFailError(t *testing.T) {
-	// TODO
-}
-
-func TestDeviceChangeFailAvailability(t *testing.T) {
-	leaderships, devices, deviceChanges := newStores(t)
-	defer leaderships.Close()
+func TestReconcilerRollbackSuccess(t *testing.T) {
+	devices, deviceChanges := newStores(t)
 	defer deviceChanges.Close()
 
-	controller := newController(t, leaderships, devices, deviceChanges)
-	defer controller.Stop()
+	reconciler := &Reconciler{
+		devices: devices,
+		changes: deviceChanges,
+	}
 
-	// Listen for events for disconnected device changes
-	deviceCh := make(chan *devicechange.Change)
-	err := deviceChanges.Watch(dcDevice, deviceCh)
+	// Create a device-1 change 1
+	deviceChange1 := newChange(device1)
+	deviceChange1.Status.Phase = change.Phase_ROLLBACK
+	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
-	// Create a disconnected device change 1
-	deviceChange := newChange(dcDevice)
-	err = deviceChanges.Create(deviceChange)
+	// Create a device-2 change 1
+	deviceChange2 := newChange(device2)
+	deviceChange2.Status.Phase = change.Phase_ROLLBACK
+	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
-	event := nextDeviceEvent(t, deviceCh)
-	assert.Equal(t, dcChange, event.ID)
-	assert.Equal(t, dcDevice, event.DeviceID)
+	// Apply change 1 to the reconciler
+	ok, err := reconciler.Reconcile(types.ID(deviceChange1.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
-	// Change the state of disconnected device change to APPLYING
-	deviceChange.Status.State = change.State_APPLYING
-	err = deviceChanges.Update(deviceChange)
+	// Apply change 2 to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// No changes should have been made
+	deviceChange1, err = deviceChanges.Get(change1)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
+
+	deviceChange2, err = deviceChanges.Get(change2)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
+
+	// Change the state of device-1 change 1 to RUNNING
+	deviceChange1.Status.State = change.State_RUNNING
+	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
-	// An event should be received for the APPLYING state change
-	event = nextDeviceEvent(t, deviceCh)
-	assert.Equal(t, dcChange, event.ID)
-	assert.Equal(t, dcDevice, event.DeviceID)
-	assert.Equal(t, change.State_APPLYING, event.Status.State)
+	// Change the state of device-2 change 1 to RUNNING
+	deviceChange2.Status.State = change.State_RUNNING
+	err = deviceChanges.Update(deviceChange2)
+	assert.NoError(t, err)
 
-	// The controller should fail the change with an UNAVAILABLE reason
-	event = nextDeviceEvent(t, deviceCh)
-	assert.Equal(t, dcChange, event.ID)
-	assert.Equal(t, dcDevice, event.DeviceID)
-	assert.Equal(t, change.State_FAILED, event.Status.State)
-	assert.Equal(t, change.Reason_UNAVAILABLE, event.Status.Reason)
+	// Apply the changes to the reconciler again
+	ok, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Both change should be applied successfully
+	deviceChange1, err = deviceChanges.Get(change1)
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_ROLLBACK, deviceChange1.Status.Phase)
+	assert.Equal(t, change.State_COMPLETE, deviceChange1.Status.State)
+
+	deviceChange2, err = deviceChanges.Get(change2)
+	assert.NoError(t, err)
+	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
+	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
 }
 
-func TestDeviceChangeRollback(t *testing.T) {
-	leaderships, devices, deviceChanges := newStores(t)
-	defer leaderships.Close()
-	defer deviceChanges.Close()
-
-	controller := newController(t, leaderships, devices, deviceChanges)
-	defer controller.Stop()
-
-	// Listen for events for disconnected device changes
-	deviceCh := make(chan *devicechange.Change)
-	err := deviceChanges.Watch(device1, deviceCh)
-	assert.NoError(t, err)
-
-	// Create a disconnected device change 1
-	deviceChange := newChange(device1)
-	err = deviceChanges.Create(deviceChange)
-	assert.NoError(t, err)
-
-	event := nextDeviceEvent(t, deviceCh)
-	assert.Equal(t, change1, event.ID)
-	assert.Equal(t, device1, event.DeviceID)
-
-	// Change the state of disconnected device change to APPLYING with the deleted flag set
-	deviceChange.Status.State = change.State_APPLYING
-	deviceChange.Status.Deleted = true
-	err = deviceChanges.Update(deviceChange)
-	assert.NoError(t, err)
-
-	// An event should be received for the APPLYING state change
-	event = nextDeviceEvent(t, deviceCh)
-	assert.Equal(t, change1, event.ID)
-	assert.Equal(t, device1, event.DeviceID)
-	assert.Equal(t, change.State_APPLYING, event.Status.State)
-
-	// The controller should succeed the change
-	event = nextDeviceEvent(t, deviceCh)
-	assert.Equal(t, change1, event.ID)
-	assert.Equal(t, device1, event.DeviceID)
-	assert.Equal(t, change.State_SUCCEEDED, event.Status.State)
-}
-
-func TestDeviceChangeRollbackFailAvailability(t *testing.T) {
-	leaderships, devices, deviceChanges := newStores(t)
-	defer leaderships.Close()
-	defer deviceChanges.Close()
-
-	controller := newController(t, leaderships, devices, deviceChanges)
-	defer controller.Stop()
-
-	// Listen for events for disconnected device changes
-	deviceCh := make(chan *devicechange.Change)
-	err := deviceChanges.Watch(dcDevice, deviceCh)
-	assert.NoError(t, err)
-
-	// Create a disconnected device change 1
-	deviceChange := newChange(dcDevice)
-	err = deviceChanges.Create(deviceChange)
-	assert.NoError(t, err)
-
-	event := nextDeviceEvent(t, deviceCh)
-	assert.Equal(t, dcChange, event.ID)
-	assert.Equal(t, dcDevice, event.DeviceID)
-
-	// Change the state of disconnected device change to APPLYING with the deleted flag set
-	deviceChange.Status.State = change.State_APPLYING
-	deviceChange.Status.Deleted = true
-	err = deviceChanges.Update(deviceChange)
-	assert.NoError(t, err)
-
-	// An event should be received for the APPLYING state change
-	event = nextDeviceEvent(t, deviceCh)
-	assert.Equal(t, dcChange, event.ID)
-	assert.Equal(t, dcDevice, event.DeviceID)
-	assert.Equal(t, change.State_APPLYING, event.Status.State)
-
-	// The controller should fail the change with an UNAVAILABLE reason
-	event = nextDeviceEvent(t, deviceCh)
-	assert.Equal(t, dcChange, event.ID)
-	assert.Equal(t, dcDevice, event.DeviceID)
-	assert.Equal(t, change.State_FAILED, event.Status.State)
-	assert.Equal(t, change.Reason_UNAVAILABLE, event.Status.Reason)
-}
-
-func newStores(t *testing.T) (mastership.Store, devicestore.Store, devicechanges.Store) {
+func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	ctrl := gomock.NewController(t)
 
 	devices := map[device.ID]*device.Device{
@@ -293,18 +231,9 @@ func newStores(t *testing.T) (mastership.Store, devicestore.Store, devicechanges
 
 	deviceStore, err := devicestore.NewStore(client)
 	assert.NoError(t, err)
-	mastershipStore, err := mastership.NewLocalStore(t.Name(), cluster.NodeID("node-1"))
-	assert.NoError(t, err)
 	deviceChanges, err := devicechanges.NewLocalStore()
 	assert.NoError(t, err)
-	return mastershipStore, deviceStore, deviceChanges
-}
-
-func newController(t *testing.T, mastershipStore mastership.Store, devices devicestore.Store, deviceChanges devicechanges.Store) *controller.Controller {
-	controller := NewController(mastershipStore, devices, deviceChanges)
-	err := controller.Start()
-	assert.NoError(t, err)
-	return controller
+	return deviceStore, deviceChanges
 }
 
 func newChange(device device.ID) *devicechange.Change {
@@ -318,14 +247,4 @@ func newChange(device device.ID) *devicechange.Change {
 			},
 		},
 	}
-}
-
-func nextDeviceEvent(t *testing.T, ch chan *devicechange.Change) *devicechange.Change {
-	select {
-	case e := <-ch:
-		return e
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-	return nil
 }

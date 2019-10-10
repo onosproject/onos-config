@@ -118,7 +118,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
 
 	// Update one of the changes
-	change2.Status.State = change.State_APPLYING
+	change2.Status.State = change.State_RUNNING
 	revision := change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
@@ -128,7 +128,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	change2, err = store2.Get("network:2")
 	assert.NoError(t, err)
 	assert.NotNil(t, change2)
-	change2.Status.State = change.State_SUCCEEDED
+	change2.Status.State = change.State_COMPLETE
 	revision = change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
@@ -140,7 +140,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	change12, err := store2.Get("network:1")
 	assert.NoError(t, err)
 
-	change11.Status.State = change.State_SUCCEEDED
+	change11.Status.State = change.State_COMPLETE
 	err = store1.Update(change11)
 	assert.NoError(t, err)
 

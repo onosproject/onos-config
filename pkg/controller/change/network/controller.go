@@ -56,73 +56,31 @@ type Reconciler struct {
 
 // Reconcile reconciles the state of a network configuration
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
-	config, err := r.networkChanges.Get(networktypes.ID(id))
+	change, err := r.networkChanges.Get(networktypes.ID(id))
 	if err != nil {
 		return false, err
 	}
 
-	// If the revision number is 0, the change has been removed
-	if config.Revision == 0 {
-		return r.deleteDeviceChanges(config)
-	}
-
-	// Ensure changes have been created in the device change store
-	succeeded, err := r.createDeviceChanges(config)
-	if !succeeded || err != nil {
-		return succeeded, err
-	}
-
-	// If the change is in the PENDING state, check if it can be applied and apply it if so.
-	if config.Status.State == changetypes.State_PENDING {
-		apply, err := r.canApplyNetworkChange(config)
-		if err != nil {
-			return false, err
-		} else if !apply {
-			return false, nil
+	// Handle the change for each phase
+	if change != nil {
+		// For all phases, ensure device changes have been created in the device change store
+		succeeded, err := r.ensureDeviceChanges(change)
+		if succeeded || err != nil {
+			return succeeded, err
 		}
-		return r.applyNetworkChange(config)
-	}
 
-	// If the change is the APPLYING state, ensure all device changes are in the APPLYING
-	// state and check results
-	if config.Status.State == changetypes.State_APPLYING {
-		return r.applyDeviceChanges(config)
-	}
-	return true, nil
-}
-
-func (r *Reconciler) canApplyNetworkChange(config *networktypes.NetworkChange) (bool, error) {
-	sequential := true
-	for index := r.changeIndex; index < config.Index; index++ {
-		change, err := r.networkChanges.GetByIndex(index)
-		if err != nil {
-			return false, err
-		} else if change != nil {
-			if change.Status.State == changetypes.State_PENDING || change.Status.State == changetypes.State_APPLYING {
-				if intersecting(config, change) {
-					return false, nil
-				}
-				sequential = false
-			} else {
-				if sequential {
-					r.changeIndex++
-				}
-			}
+		switch change.Status.Phase {
+		case changetypes.Phase_CHANGE:
+			return r.reconcileChange(change)
+		case changetypes.Phase_ROLLBACK:
+			return r.reconcileRollback(change)
 		}
 	}
 	return true, nil
 }
 
-func (r *Reconciler) applyNetworkChange(config *networktypes.NetworkChange) (bool, error) {
-	config.Status.State = changetypes.State_APPLYING
-	err := r.networkChanges.Update(config)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (r *Reconciler) createDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
+// ensureDeviceChanges ensures device changes have been created for all changes in the network change
+func (r *Reconciler) ensureDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
 	// Loop through changes and create if necessary
 	updated := false
 	for _, change := range config.Changes {
@@ -148,72 +106,299 @@ func (r *Reconciler) createDeviceChanges(config *networktypes.NetworkChange) (bo
 			return false, err
 		}
 	}
+	return updated, nil
+}
+
+// reconcileChange reconciles a change in the CHANGE phase
+func (r *Reconciler) reconcileChange(change *networktypes.NetworkChange) (bool, error) {
+	// Handle each possible state of the phase
+	switch change.Status.State {
+	case changetypes.State_PENDING:
+		return r.reconcilePendingChange(change)
+	case changetypes.State_RUNNING:
+		return r.reconcileRunningChange(change)
+	default:
+		return true, nil
+	}
+}
+
+// reconcilePendingChange reconciles a change in the PENDING state during the CHANGE phase
+func (r *Reconciler) reconcilePendingChange(change *networktypes.NetworkChange) (bool, error) {
+	// Determine whether the change can be applied
+	canApply, err := r.canApplyChange(change)
+	if err != nil {
+		return false, err
+	} else if !canApply {
+		return false, nil
+	}
+
+	// If the change can be applied, update the change state to RUNNING
+	change.Status.State = changetypes.State_RUNNING
+	if err := r.networkChanges.Update(change); err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
-func (r *Reconciler) applyDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
-	state := changetypes.State_SUCCEEDED
-	reason := changetypes.Reason_UNKNOWN
-	for _, deviceChange := range config.Changes {
-		change, err := r.deviceChanges.Get(deviceChange.ID)
+// canApplyChange returns a bool indicating whether the change can be applied
+func (r *Reconciler) canApplyChange(change *networktypes.NetworkChange) (bool, error) {
+	sequential := true
+	for index := r.changeIndex; index < change.Index; index++ {
+		priorChange, err := r.networkChanges.GetByIndex(index)
+		if err != nil {
+			return false, err
+		} else if priorChange != nil {
+			if priorChange.Status.State == changetypes.State_PENDING || priorChange.Status.State == changetypes.State_RUNNING {
+				if intersecting(change, priorChange) {
+					return false, nil
+				}
+				sequential = false
+			} else {
+				if sequential {
+					r.changeIndex++
+				}
+			}
+		}
+	}
+	return true, nil
+}
+
+// reconcileRunningChange reconciles a change in the RUNNING state during the CHANGE phase
+func (r *Reconciler) reconcileRunningChange(change *networktypes.NetworkChange) (bool, error) {
+	// Ensure the device changes are being applied
+	succeeded, err := r.ensureDeviceChangesRunning(change)
+	if succeeded || err != nil {
+		return succeeded, err
+	}
+
+	// Get the current state of all device changes for the change
+	deviceChanges := make([]*devicetypes.Change, len(change.Changes))
+	for i, changeReq := range change.Changes {
+		deviceChange, err := r.deviceChanges.Get(changeReq.ID)
+		if err != nil {
+			return false, err
+		}
+		deviceChanges[i] = deviceChange
+	}
+
+	// Check all device changes for completion or failures
+	complete := 0
+	var failure *changetypes.Reason
+	for _, deviceChange := range deviceChanges {
+		// If a device change is complete, count the change
+		// If a device change fails, determine whether the failure allows for retry
+		if deviceChange.Status.State == changetypes.State_COMPLETE {
+			complete++
+		} else if deviceChange.Status.State == changetypes.State_FAILED {
+			failure = &deviceChange.Status.Reason
+		}
+	}
+
+	// If all the device changes have completed successfully, complete the change
+	// If one of the device changes failed, ensure remaining changes are rolled back
+	// and then fail the change
+	if failure != nil {
+		// After a failure, we need to roll back any pending or successful device changes.
+		// Iterate through device changes and revert any that has failed.
+		rollbackStarted := false
+		rollbackComplete := true
+		for _, deviceChange := range deviceChanges {
+			if deviceChange.Status.Phase == changetypes.Phase_CHANGE && deviceChange.Status.State != changetypes.State_FAILED {
+				deviceChange.Status.Phase = changetypes.Phase_ROLLBACK
+				deviceChange.Status.State = changetypes.State_RUNNING
+				if err := r.deviceChanges.Update(deviceChange); err != nil {
+					return false, err
+				}
+				rollbackStarted = true
+			} else if deviceChange.Status.Phase == changetypes.Phase_ROLLBACK && deviceChange.Status.State != changetypes.State_COMPLETE {
+				rollbackComplete = false
+			}
+		}
+
+		// If device changes were rolled back, discard this change to wait for rollbacks to complete
+		if rollbackStarted {
+			return true, nil
+		} else if rollbackComplete {
+			// If the failure was due to a loss of availability, revert the change back to the PENDING state
+			// Otherwise, fail the change
+			if *failure == changetypes.Reason_UNAVAILABLE {
+				change.Status.State = changetypes.State_PENDING
+				if err := r.networkChanges.Update(change); err != nil {
+					return false, err
+				}
+			} else {
+				change.Status.State = changetypes.State_FAILED
+				change.Status.Reason = *failure
+				if err := r.networkChanges.Update(change); err != nil {
+					return false, err
+				}
+			}
+			return true, nil
+		}
+	} else if complete == len(change.Changes) {
+		change.Status.State = changetypes.State_COMPLETE
+		if err := r.networkChanges.Update(change); err != nil {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+// ensureDeviceChangesRunning ensures device changes are in the running state
+func (r *Reconciler) ensureDeviceChangesRunning(change *networktypes.NetworkChange) (bool, error) {
+	// Ensure all device changes are being applied
+	updated := false
+	for _, changeReq := range change.Changes {
+		deviceChange, err := r.deviceChanges.Get(changeReq.ID)
 		if err != nil {
 			return false, err
 		}
 
-		// If the change is PENDING then change it to APPLYING
-		if change.Status.State == changetypes.State_PENDING {
-			change.Status.State = changetypes.State_APPLYING
-			state = changetypes.State_APPLYING
-			err = r.deviceChanges.Update(change)
-			if err != nil {
+		if deviceChange.Status.State == changetypes.State_PENDING {
+			deviceChange.Status.State = changetypes.State_RUNNING
+			if err := r.deviceChanges.Update(deviceChange); err != nil {
 				return false, err
 			}
-		} else if change.Status.State == changetypes.State_APPLYING {
-			// If the change is APPLYING then ensure the network state is APPLYING
-			state = changetypes.State_APPLYING
-		} else if change.Status.State == changetypes.State_FAILED {
-			// If the change is FAILED then set the network to FAILED
-			// If the change failure reason is UNAVAILABLE then all changes must be UNAVAILABLE, otherwise
-			// the network must be failed with an ERROR.
-			if state != changetypes.State_FAILED {
-				switch change.Status.Reason {
-				case changetypes.Reason_ERROR:
-					reason = changetypes.Reason_ERROR
-				case changetypes.Reason_UNAVAILABLE:
-					reason = changetypes.Reason_UNAVAILABLE
-				}
-			} else if reason == changetypes.Reason_UNAVAILABLE && change.Status.Reason == changetypes.Reason_ERROR {
-				reason = changetypes.Reason_ERROR
-			} else if reason == changetypes.Reason_UNKNOWN && change.Status.Reason == changetypes.Reason_UNAVAILABLE {
-				reason = changetypes.Reason_ERROR
-			}
-			state = changetypes.State_FAILED
+			updated = true
 		}
 	}
+	return updated, nil
+}
 
-	// If the state has changed, update the network config
-	if config.Status.State != state || config.Status.Reason != reason {
-		config.Status.State = state
-		config.Status.Reason = reason
-		if err := r.networkChanges.Update(config); err != nil {
+// reconcileRollback reconciles a change in the ROLLBACK phase
+func (r *Reconciler) reconcileRollback(change *networktypes.NetworkChange) (bool, error) {
+	// Ensure the device changes are in the ROLLBACK phase
+	updated, err := r.ensureDeviceRollbacks(change)
+	if updated || err != nil {
+		return updated, err
+	}
+
+	// Handle each possible state of the phase
+	switch change.Status.State {
+	case changetypes.State_PENDING:
+		return r.reconcilePendingRollback(change)
+	case changetypes.State_RUNNING:
+		return r.reconcileRunningRollback(change)
+	default:
+		return true, nil
+	}
+}
+
+// ensureDeviceRollbacks ensures device rollbacks are pending
+func (r *Reconciler) ensureDeviceRollbacks(change *networktypes.NetworkChange) (bool, error) {
+	// Ensure all device changes are being rolled back
+	updated := false
+	for _, changeReq := range change.Changes {
+		deviceChange, err := r.deviceChanges.Get(changeReq.ID)
+		if err != nil {
+			return false, err
+		}
+
+		if deviceChange.Status.Phase != changetypes.Phase_ROLLBACK {
+			deviceChange.Status.Phase = changetypes.Phase_ROLLBACK
+			deviceChange.Status.State = changetypes.State_PENDING
+			if err := r.deviceChanges.Update(deviceChange); err != nil {
+				return false, err
+			}
+			updated = true
+		}
+	}
+	return updated, nil
+}
+
+// reconcilePendingRollback reconciles a change in the PENDING state during the ROLLBACK phase
+func (r *Reconciler) reconcilePendingRollback(change *networktypes.NetworkChange) (bool, error) {
+	// Determine whether the rollback can be applied
+	canApply, err := r.canApplyRollback(change)
+	if err != nil {
+		return false, err
+	} else if !canApply {
+		return false, nil
+	}
+
+	// If the rollback can be applied, update the change state to RUNNING
+	change.Status.State = changetypes.State_RUNNING
+	if err := r.networkChanges.Update(change); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// canApplyRollback returns a bool indicating whether the rollback can be applied
+func (r *Reconciler) canApplyRollback(change *networktypes.NetworkChange) (bool, error) {
+	lastIndex, err := r.networkChanges.LastIndex()
+	if err != nil {
+		return false, err
+	}
+
+	for index := change.Index + 1; index <= lastIndex; index++ {
+		futureChange, err := r.networkChanges.GetByIndex(index)
+		if err != nil {
+			return false, err
+		} else if futureChange != nil && intersecting(change, futureChange) && futureChange.Status.State != changetypes.State_COMPLETE && futureChange.Status.State != changetypes.State_FAILED {
 			return false, err
 		}
 	}
 	return true, nil
 }
 
-func (r *Reconciler) deleteDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
-	for _, change := range config.Changes {
-		deviceChange, err := r.deviceChanges.Get(change.ID)
-		if err != nil {
-			return false, err
-		}
-		err = r.deviceChanges.Delete(deviceChange)
-		if err != nil {
-			return false, err
-		}
+// reconcileRunningRollback reconciles a change in the RUNNING state during the ROLLBACK phase
+func (r *Reconciler) reconcileRunningRollback(change *networktypes.NetworkChange) (bool, error) {
+	// Ensure the device rollbacks are running
+	succeeded, err := r.ensureDeviceRollbacksRunning(change)
+	if succeeded || err != nil {
+		return succeeded, err
+	}
+
+	// If the rollback is complete, update the change state. Otherwise discard the change.
+	complete, err := r.isRollbackComplete(change)
+	if err != nil {
+		return false, err
+	} else if !complete {
+		return true, nil
+	}
+
+	change.Status.State = changetypes.State_COMPLETE
+	if err := r.networkChanges.Update(change); err != nil {
+		return false, nil
 	}
 	return true, nil
+}
+
+// ensureDeviceRollbacksRunning ensures device rollbacks are in the running state
+func (r *Reconciler) ensureDeviceRollbacksRunning(change *networktypes.NetworkChange) (bool, error) {
+	updated := false
+	for _, changeReq := range change.Changes {
+		deviceChange, err := r.deviceChanges.Get(changeReq.ID)
+		if err != nil {
+			return false, err
+		}
+
+		if deviceChange.Status.State == changetypes.State_PENDING {
+			deviceChange.Status.State = changetypes.State_RUNNING
+			if err := r.deviceChanges.Update(deviceChange); err != nil {
+				return false, err
+			}
+			updated = true
+		}
+	}
+	return updated, nil
+}
+
+// isRollbackComplete determines whether a rollback is complete
+func (r *Reconciler) isRollbackComplete(change *networktypes.NetworkChange) (bool, error) {
+	complete := 0
+	for _, changeReq := range change.Changes {
+		deviceChange, err := r.deviceChanges.Get(changeReq.ID)
+		if err != nil {
+			return false, err
+		}
+
+		if deviceChange.Status.State == changetypes.State_COMPLETE {
+			complete++
+		}
+	}
+	return complete == len(change.Changes), nil
 }
 
 // intersecting indicates whether the changes from the two given NetworkChanges intersect

@@ -107,7 +107,7 @@ func TestNetworkWatcher(t *testing.T) {
 		t.FailNow()
 	}
 
-	change1.Status.State = change.State_APPLYING
+	change1.Status.State = change.State_RUNNING
 	err = store.Update(change1)
 	assert.NoError(t, err)
 
@@ -194,7 +194,7 @@ func TestDeviceWatcher(t *testing.T) {
 		t.FailNow()
 	}
 
-	change1.Status.State = change.State_APPLYING
+	change1.Status.State = change.State_RUNNING
 	err = changeStore.Update(change1)
 	assert.NoError(t, err)
 
