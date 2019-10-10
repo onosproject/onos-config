@@ -117,6 +117,9 @@ func (r *Reconciler) ensureDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 				NetworkSnapshotID: types.ID(snapshot.ID),
 				Timestamp:         snapshot.Timestamp,
 			}
+			if err := r.deviceSnapshots.Create(deviceSnapshot); err != nil {
+				return false, err
+			}
 			deviceRef.DeviceSnapshotId = deviceSnapshot.ID
 			updated = true
 		}
@@ -143,15 +146,15 @@ func (r *Reconciler) getDevices(snapshot *networksnaptypes.NetworkSnapshot) ([]d
 		networkChange, err := r.networkChanges.GetByIndex(index)
 		if err != nil {
 			return nil, err
-		}
+		} else if networkChange != nil {
+			if networkChange.Created.After(snapshot.Timestamp) {
+				break
+			}
 
-		if networkChange.Created.After(snapshot.Timestamp) {
-			break
-		}
-
-		if networkChange.Status.Phase == changetypes.Phase_CHANGE {
-			for _, deviceChange := range networkChange.Changes {
-				devices[deviceChange.DeviceID] = true
+			if networkChange.Status.Phase == changetypes.Phase_CHANGE {
+				for _, deviceChange := range networkChange.Changes {
+					devices[deviceChange.DeviceID] = true
+				}
 			}
 		}
 	}
