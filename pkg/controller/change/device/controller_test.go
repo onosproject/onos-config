@@ -243,9 +243,8 @@ func newChange(device device.ID) *devicechange.Change {
 			{
 				Path: "foo",
 				Value: &devicechange.TypedValue{
-					Bytes:    []byte("Hello world!"),
-					Type:     devicechange.ValueType_STRING,
-					TypeOpts: nil,
+					Bytes: []byte("Hello world!"),
+					Type:  devicechange.ValueType_STRING,
 				},
 			},
 		},

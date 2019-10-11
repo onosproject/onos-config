@@ -52,9 +52,8 @@ func TestNetworkWatcher(t *testing.T) {
 					{
 						Path: "foo",
 						Value: &devicechange.TypedValue{
-							Bytes:    []byte("Hello world!"),
-							Type:     devicechange.ValueType_STRING,
-							TypeOpts: nil,
+							Bytes: []byte("Hello world!"),
+							Type:  devicechange.ValueType_STRING,
 						},
 					},
 					{
