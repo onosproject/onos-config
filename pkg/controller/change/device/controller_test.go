@@ -236,15 +236,17 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	return deviceStore, deviceChanges
 }
 
-func newChange(device device.ID) *devicechange.Change {
-	return &devicechange.Change{
-		DeviceID: device,
-		Values: []*devicechange.Value{
-			{
-				Path: "foo",
-				Value: &devicechange.TypedValue{
-					Bytes: []byte("Hello world!"),
-					Type:  devicechange.ValueType_STRING,
+func newChange(device device.ID) *devicechange.DeviceChange {
+	return &devicechange.DeviceChange{
+		Change: &devicechange.Change{
+			DeviceID: device,
+			Values: []*devicechange.Value{
+				{
+					Path: "foo",
+					Value: &devicechange.TypedValue{
+						Bytes: []byte("Hello world!"),
+						Type:  devicechange.ValueType_STRING,
+					},
 				},
 			},
 		},

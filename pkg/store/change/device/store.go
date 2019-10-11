@@ -133,25 +133,25 @@ type Store interface {
 	LastIndex(device.ID) (devicechange.Index, error)
 
 	// Get gets a device change
-	Get(id devicechange.ID) (*devicechange.Change, error)
+	Get(id devicechange.ID) (*devicechange.DeviceChange, error)
 
 	// Create creates a new device change
-	Create(config *devicechange.Change) error
+	Create(config *devicechange.DeviceChange) error
 
 	// Update updates an existing device change
-	Update(config *devicechange.Change) error
+	Update(config *devicechange.DeviceChange) error
 
 	// Delete deletes a device change
-	Delete(config *devicechange.Change) error
+	Delete(config *devicechange.DeviceChange) error
 
 	// List lists device change
-	List(device.ID, chan<- *devicechange.Change) error
+	List(device.ID, chan<- *devicechange.DeviceChange) error
 
 	// Replay replays the device changes from the given index
-	Replay(device.ID, devicechange.Index, chan<- *devicechange.Change) error
+	Replay(device.ID, devicechange.Index, chan<- *devicechange.DeviceChange) error
 
 	// Watch watches the device change store for changes
-	Watch(device.ID, chan<- *devicechange.Change) error
+	Watch(device.ID, chan<- *devicechange.DeviceChange) error
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
@@ -205,7 +205,7 @@ func (s *atomixStore) setIndex(deviceID device.ID, index devicechange.Index) err
 	return indexes.Set(ctx, int64(index))
 }
 
-func (s *atomixStore) Get(id devicechange.ID) (*devicechange.Change, error) {
+func (s *atomixStore) Get(id devicechange.ID) (*devicechange.DeviceChange, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -218,7 +218,7 @@ func (s *atomixStore) Get(id devicechange.ID) (*devicechange.Change, error) {
 	return decodeChange(entry)
 }
 
-func (s *atomixStore) Create(config *devicechange.Change) error {
+func (s *atomixStore) Create(config *devicechange.DeviceChange) error {
 	if config.Revision != 0 {
 		return errors.New("not a new object")
 	}
@@ -226,14 +226,14 @@ func (s *atomixStore) Create(config *devicechange.Change) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	return backoff.Retry(func() error {
-		lastIndex, err := s.LastIndex(config.DeviceID)
+		lastIndex, err := s.LastIndex(config.Change.DeviceID)
 		if err != nil {
 			return err
 		}
 
 		index := lastIndex + 1
 		config.Index = index
-		config.ID = index.GetChangeID(config.DeviceID)
+		config.ID = index.GetChangeID(config.Change.DeviceID)
 		config.Created = time.Now()
 		config.Updated = time.Now()
 
@@ -251,7 +251,7 @@ func (s *atomixStore) Create(config *devicechange.Change) error {
 		// If the write fails because a change has already been stored, increment the last index and retry
 		if err != nil {
 			if change, err := s.configs.Get(ctx, string(config.ID)); err == nil && change != nil {
-				_ = s.setIndex(config.DeviceID, index)
+				_ = s.setIndex(config.Change.DeviceID, index)
 			}
 			return err
 		}
@@ -261,12 +261,12 @@ func (s *atomixStore) Create(config *devicechange.Change) error {
 		config.Updated = entry.Updated
 
 		// Store the updated index without failing the change
-		_ = s.setIndex(config.DeviceID, index)
+		_ = s.setIndex(config.Change.DeviceID, index)
 		return nil
 	}, backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries), ctx))
 }
 
-func (s *atomixStore) Update(config *devicechange.Change) error {
+func (s *atomixStore) Update(config *devicechange.DeviceChange) error {
 	if config.Revision == 0 {
 		return errors.New("not a stored object")
 	}
@@ -290,7 +290,7 @@ func (s *atomixStore) Update(config *devicechange.Change) error {
 	return nil
 }
 
-func (s *atomixStore) Delete(config *devicechange.Change) error {
+func (s *atomixStore) Delete(config *devicechange.DeviceChange) error {
 	if config.Revision == 0 {
 		return errors.New("not a stored object")
 	}
@@ -308,11 +308,11 @@ func (s *atomixStore) Delete(config *devicechange.Change) error {
 	return nil
 }
 
-func (s *atomixStore) List(device device.ID, ch chan<- *devicechange.Change) error {
+func (s *atomixStore) List(device device.ID, ch chan<- *devicechange.DeviceChange) error {
 	return s.Replay(device, devicechange.Index(0), ch)
 }
 
-func (s *atomixStore) Replay(device device.ID, index devicechange.Index, ch chan<- *devicechange.Change) error {
+func (s *atomixStore) Replay(device device.ID, index devicechange.Index, ch chan<- *devicechange.DeviceChange) error {
 	lastIndex, err := s.LastIndex(device)
 	if err != nil {
 		return err
@@ -340,7 +340,7 @@ func (s *atomixStore) Replay(device device.ID, index devicechange.Index, ch chan
 	return nil
 }
 
-func (s *atomixStore) Watch(device device.ID, ch chan<- *devicechange.Change) error {
+func (s *atomixStore) Watch(device device.ID, ch chan<- *devicechange.DeviceChange) error {
 	lastIndex, err := s.LastIndex(device)
 	if err != nil {
 		return err
@@ -370,7 +370,7 @@ func (s *atomixStore) Watch(device device.ID, ch chan<- *devicechange.Change) er
 			}
 		}
 		for event := range mapCh {
-			if config, err := decodeChange(event.Entry); err == nil && config.DeviceID == device {
+			if config, err := decodeChange(event.Entry); err == nil && config.Change.DeviceID == device {
 				ch <- config
 			}
 		}
@@ -382,8 +382,8 @@ func (s *atomixStore) Close() error {
 	return s.configs.Close()
 }
 
-func decodeChange(entry *_map.Entry) (*devicechange.Change, error) {
-	config := &devicechange.Change{}
+func decodeChange(entry *_map.Entry) (*devicechange.DeviceChange, error) {
+	config := &devicechange.DeviceChange{}
 	if err := proto.Unmarshal(entry.Value, config); err != nil {
 		return nil, err
 	}
