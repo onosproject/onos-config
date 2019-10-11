@@ -20,6 +20,7 @@ import (
 )
 
 // ConfigValue is a of a path, a value and a type
+// Deprecated: ConfigValue is a legacy implementation of an internal ConfigValue
 type ConfigValue struct {
 	Path string
 	TypedValue

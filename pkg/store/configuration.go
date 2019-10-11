@@ -28,10 +28,12 @@ const configurationNamePattern = `^[a-zA-Z0-9\-:_]{4,40}$`
 const configurationVersionPattern = `^(\d+\.\d+\.\d+)$`
 
 // ConfigName is an alias for string - is used to qualify identifier for Configuration
+// Deprecated: ConfigName is a legacy implementation of an internal Configuration
 type ConfigName string
 
 // Configuration is the connection between a device and Change objects
 // The set of ChangeIds define it's content
+// Deprecated: Configuration is a legacy implementation of an internal Configuration
 type Configuration struct {
 	Name    ConfigName
 	Device  string
@@ -46,6 +48,7 @@ type Configuration struct {
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
+// Deprecated: ExtractFullConfig is a method on the legacy Configuration
 func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore map[string]*change.Change, nBack int) []*change.ConfigValue {
 
 	// Have to use a slice to have a consistent output order
@@ -108,6 +111,7 @@ func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore m
 // Model data items must be unique and will be sorted. They should not be added
 // to afterwards
 // The ChangeIDs must unique, and will not be sorted. They can be added afterwards
+// Deprecated: NewConfiguration is a method to create the legacy Configuration
 func NewConfiguration(deviceName string, version string, deviceType string,
 	changes []change.ID) (*Configuration, error) {
 

@@ -37,6 +37,7 @@ const (
 )
 
 // DeviceStore is the model of the Device store
+// Deprecated: DeviceStore is a legacy implementation of an internal topo DeviceStore
 type DeviceStore struct {
 	client        device.DeviceServiceClient
 	Cache         map[device.ID]*device.Device
@@ -44,6 +45,7 @@ type DeviceStore struct {
 }
 
 // LoadDeviceStore loads a device store
+// Deprecated: LoadDeviceStore is a method of loading legacy internal DeviceStore from file
 func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOption) (*DeviceStore, error) {
 	if len(opts) == 0 {
 		return nil, nil
@@ -137,6 +139,7 @@ func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 }
 
 // DeviceConnected signal the local cache and the corresponding topology service that the device connected.
+// Deprecated: DeviceConnected is a method on the legacy topocache DeviceStore
 func (s *DeviceStore) DeviceConnected(id device.ID) error {
 	log.Infof("Device %s connected", id)
 	return s.updateDevice(id, device.ConnectivityState_REACHABLE, device.ChannelState_CONNECTED,
@@ -144,6 +147,7 @@ func (s *DeviceStore) DeviceConnected(id device.ID) error {
 }
 
 // DeviceDisconnected signal the local cache and the corresponding topology service that the device disconnected.
+// Deprecated: DeviceDisconnected is a method on the legacy topocache DeviceStore
 func (s *DeviceStore) DeviceDisconnected(id device.ID, err error) error {
 	log.Infof("Device %s disconnected or had error in connection %s", id, err)
 	//TODO check different possible availabilities based on error

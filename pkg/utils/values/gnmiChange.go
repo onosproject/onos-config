@@ -22,6 +22,7 @@ import (
 )
 
 // NativeChangeToGnmiChange converts a Change object to gNMI format
+// Deprecated: NativeChangeToGnmiChange is a method of changing legacy Change to gnmiType
 func NativeChangeToGnmiChange(c *change.Change) (*gnmi.SetRequest, error) {
 	var deletePaths = []*gnmi.Path{}
 	var replacedPaths = []*gnmi.Update{}

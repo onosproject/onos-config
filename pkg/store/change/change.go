@@ -34,6 +34,7 @@ type ID []byte
 
 // Change is one of the primary objects to be stored
 // A model of the Change object - its is an immutable collection of ChangeValues
+// Deprecated: Change is a legacy implementation of an internal Change
 type Change struct {
 	ID          ID
 	Description string
@@ -74,6 +75,7 @@ func (c Change) IsValid() error {
 // The ID is a has generated from the change values,and does not include
 // the description or the time. This way changes that have an identical meaning
 // can be identified
+// Deprecated: NewChange is method for creating a legacy internal Change
 func NewChange(config ValueCollections, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
@@ -118,6 +120,7 @@ func NewChange(config ValueCollections, desc string) (*Change, error) {
 // The ID is a has generated from the change values,and does not include
 // the description or the time. This way changes that have an identical meaning
 // can be identified
+// Deprecated: NewChangeValuesNoRemoval is method for creating a legacy internal Change
 func NewChangeValuesNoRemoval(config []*ConfigValue, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()

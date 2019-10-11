@@ -50,14 +50,19 @@ func TestNetworkWatcher(t *testing.T) {
 				DeviceID: device.ID("device-1"),
 				Values: []*devicechange.Value{
 					{
-						Path:  "foo",
-						Value: []byte("Hello world!"),
-						Type:  devicechange.ValueType_STRING,
+						Path: "foo",
+						Value: &devicechange.TypedValue{
+							Bytes:    []byte("Hello world!"),
+							Type:     devicechange.ValueType_STRING,
+							TypeOpts: nil,
+						},
 					},
 					{
-						Path:  "bar",
-						Value: []byte("Hello world again!"),
-						Type:  devicechange.ValueType_STRING,
+						Path: "bar",
+						Value: &devicechange.TypedValue{
+							Bytes: []byte("Hello world again!"),
+							Type:  devicechange.ValueType_STRING,
+						},
 					},
 				},
 			},
@@ -65,9 +70,11 @@ func TestNetworkWatcher(t *testing.T) {
 				DeviceID: device.ID("device-2"),
 				Values: []*devicechange.Value{
 					{
-						Path:  "baz",
-						Value: []byte("Goodbye world!"),
-						Type:  devicechange.ValueType_STRING,
+						Path: "baz",
+						Value: &devicechange.TypedValue{
+							Bytes: []byte("Goodbye world!"),
+							Type:  devicechange.ValueType_STRING,
+						},
 					},
 				},
 			},
@@ -152,14 +159,18 @@ func TestDeviceWatcher(t *testing.T) {
 		DeviceID:        device.ID("device-1"),
 		Values: []*devicechange.Value{
 			{
-				Path:  "foo",
-				Value: []byte("Hello world!"),
-				Type:  devicechange.ValueType_STRING,
+				Path: "foo",
+				Value: &devicechange.TypedValue{
+					Bytes: []byte("Hello world!"),
+					Type:  devicechange.ValueType_STRING,
+				},
 			},
 			{
-				Path:  "bar",
-				Value: []byte("Hello world again!"),
-				Type:  devicechange.ValueType_STRING,
+				Path: "bar",
+				Value: &devicechange.TypedValue{
+					Bytes: []byte("Hello world again!"),
+					Type:  devicechange.ValueType_STRING,
+				},
 			},
 		},
 	}
@@ -179,9 +190,11 @@ func TestDeviceWatcher(t *testing.T) {
 		DeviceID:        device.ID("device-2"),
 		Values: []*devicechange.Value{
 			{
-				Path:  "baz",
-				Value: []byte("Goodbye world!"),
-				Type:  devicechange.ValueType_STRING,
+				Path: "baz",
+				Value: &devicechange.TypedValue{
+					Bytes: []byte("Goodbye world!"),
+					Type:  devicechange.ValueType_STRING,
+				},
 			},
 		},
 	}

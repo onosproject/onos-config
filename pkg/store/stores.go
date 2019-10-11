@@ -34,6 +34,7 @@ const StoreTypeConfig = "config"
 const StoreTypeNetwork = "network"
 
 // ConfigurationStore is the model of the Configuration store
+// Deprecated: ConfigurationStore is a legacy implementation of an internal Store
 type ConfigurationStore struct {
 	Version   string
 	Storetype string
@@ -41,6 +42,7 @@ type ConfigurationStore struct {
 }
 
 // LoadConfigStore loads the config store from a file
+// Deprecated: LoadConfigStore is a method for loading legacy ConfigurationStore from file
 func LoadConfigStore(file string) (ConfigurationStore, error) {
 	storeFile, err := os.Open(file)
 	if err != nil {
@@ -63,12 +65,14 @@ func LoadConfigStore(file string) (ConfigurationStore, error) {
 }
 
 // RemoveEntry removes a named Configuration
+// Deprecated: RemoveEntry is a method for legacy ConfigurationStore
 func (s *ConfigurationStore) RemoveEntry(name ConfigName) {
 	delete(s.Store, name)
 }
 
 // RemoveLastChangeEntry removes a change entry from a named Configuration
 // Keeps the configuration even if no changes in that config are present
+// Deprecated: RemoveLastChangeEntry is a method for legacy ConfigurationStore
 func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) (change.ID, error) {
 
 	changeID := s.Store[name].Changes[len(s.Store[name].Changes)-1]
@@ -83,6 +87,7 @@ func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) (change.ID, 
 }
 
 // ChangeStore is the model of the Change store
+// Deprecated: ChangeStore is a legacy implementation of an internal Store
 type ChangeStore struct {
 	Version   string
 	Storetype string
@@ -90,6 +95,7 @@ type ChangeStore struct {
 }
 
 // LoadChangeStore loads the change store from a file
+// Deprecated: LoadConfigStore is a method for loading legacy ChangeStore from file
 func LoadChangeStore(file string) (ChangeStore, error) {
 	storeFile, err := os.Open(file)
 	if err != nil {
@@ -112,6 +118,7 @@ func LoadChangeStore(file string) (ChangeStore, error) {
 }
 
 // NetworkStore is the model of the Network store
+// Deprecated: ChangeStore is a legacy implementation of an internal Store
 type NetworkStore struct {
 	Version   string
 	Storetype string
@@ -119,6 +126,7 @@ type NetworkStore struct {
 }
 
 // RemoveEntry removes a named entry from the Network Store
+// Deprecated: RemoveEntry is a method for legacy NetworkStore
 func (s *NetworkStore) RemoveEntry(name string) error {
 	var rmvIdx int
 	for idx, entry := range s.Store {
@@ -134,6 +142,7 @@ func (s *NetworkStore) RemoveEntry(name string) error {
 }
 
 // LoadNetworkStore loads the change store from a file
+// Deprecated: LoadNetworkStore is a method for loading legacy NetworkStore from file
 func LoadNetworkStore(file string) (*NetworkStore, error) {
 	storeFile, err := os.Open(file)
 	if err != nil {
