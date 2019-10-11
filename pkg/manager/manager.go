@@ -24,7 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"github.com/onosproject/onos-config/pkg/store/device"
+	devicetopo "github.com/onosproject/onos-config/pkg/store/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
@@ -39,7 +39,7 @@ type Manager struct {
 	ConfigStore             *store.ConfigurationStore
 	ChangeStore             *store.ChangeStore
 	DeviceStore             *topocache.DeviceStore
-	NewDeviceStore          device.Store
+	NewDeviceStore          devicetopo.Store
 	NetworkStore            *store.NetworkStore
 	ModelRegistry           *modelregistry.ModelRegistry
 	TopoChannel             chan events.TopoEvent
@@ -52,7 +52,7 @@ type Manager struct {
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(configStore *store.ConfigurationStore, changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
-	newDeviceStore device.Store, networkStore *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
+	newDeviceStore devicetopo.Store, networkStore *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -64,6 +64,7 @@ func NewManager(configStore *store.ConfigurationStore, changeStore *store.Change
 	mgr = Manager{
 		ConfigStore:             configStore,
 		ChangeStore:             changeStore,
+		//TODO move NewDeviceStore to DeviceStore when the latter is removed from project.
 		DeviceStore:             deviceStore,
 		NewDeviceStore:          newDeviceStore,
 		NetworkStore:            networkStore,
@@ -130,13 +131,13 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Device store loaded")
 
-	newDeviceStore, err := device.NewTopoStore(opts...)
+	newDeviceStore, err := devicetopo.NewTopoStore(opts...)
 	if err != nil {
 		log.Error("Cannot load device store ", err)
 		return nil, err
 	}
 	log.Info("New Device store loaded")
-	//TODO start the watch on the new store
+	//TODO start the watch on the new store by passing the ListChannel to the Factory
 
 	networkStore, err := store.LoadNetworkStore(networkStoreFile)
 	if err != nil {
