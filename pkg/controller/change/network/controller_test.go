@@ -351,9 +351,11 @@ func newChange(devices ...device.ID) *networkchange.NetworkChange {
 			DeviceID: device,
 			Values: []*devicechange.Value{
 				{
-					Path:  "foo",
-					Value: []byte("Hello world!"),
-					Type:  devicechange.ValueType_STRING,
+					Path: "foo",
+					Value: &devicechange.TypedValue{
+						Bytes: []byte("Hello world!"),
+						Type:  devicechange.ValueType_STRING,
+					},
 				},
 			},
 		}

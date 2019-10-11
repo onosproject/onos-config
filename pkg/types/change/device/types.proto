@@ -79,20 +79,26 @@ enum ValueType {
     LEAFLIST_BYTES = 14;
 }
 
+// TypedValue is a value represented as a byte array
+message TypedValue {
+    // 'bytes' is the bytes array
+    bytes bytes = 1;
+
+    // 'type' is the value type
+    ValueType type = 2;
+
+    // 'type_opts' is a set of type options
+    repeated int32 type_opts = 3;
+}
+
 // Value is an individual Path/Value combination in a Change
 message Value {
     // 'path' is the path to change
     string path = 1;
 
     // 'value' is the change value
-    bytes value = 2;
-
-    // 'type' is the value type
-    ValueType type = 3;
-
-    // 'type_opts' is a set of type options
-    repeated int32 type_opts = 4;
+    TypedValue value = 2;
 
     // 'removed' indicates whether this is a delete
-    bool removed = 5;
+    bool removed = 3;
 }

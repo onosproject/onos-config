@@ -24,12 +24,14 @@ import (
 )
 
 // TypedValueMap is an alias for a map of paths and values
+// Deprecated: TypedValue is a legacy implementation of an internal TypedValue
 type TypedValueMap map[string]*TypedValue
 
 // Types given here are a rough approximation of those in the set of YANG types
 // and the set of gNMI types
 
 // ValueType is an enum for noting the type of the value
+// Deprecated: TypedValue is a legacy implementation of an internal TypedValue
 type ValueType int
 
 const (
@@ -66,6 +68,9 @@ const (
 )
 
 // TypedValue is a of a value, a type and a LeafList flag
+// Deprecated: TypedValue is a legacy implementation of an internal TypedValue
+// It has been replaced by pkg/types/change/device/types.pb.go Value
+// It will be removed from here in due course.
 type TypedValue struct {
 	Value    []byte
 	Type     ValueType
@@ -110,6 +115,7 @@ func (tv *TypedValue) String() string {
 }
 
 // NewTypedValue creates a TypeValue from a byte[] and type - used in changes.go
+// Deprecated: NewTypedValue is a method for creating legacy TypedValue
 func NewTypedValue(bytes []byte, valueType ValueType, typeOpts []int) (*TypedValue, error) {
 	switch valueType {
 	case ValueTypeEMPTY:

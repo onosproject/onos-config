@@ -19,6 +19,7 @@ import (
 )
 
 // Value is a model that extends ConfigValue - path and a value and bool
+// Deprecated: Value is a legacy implementation of an internal Value
 type Value struct {
 	ConfigValue
 	Remove bool
@@ -46,4 +47,5 @@ func NewChangeValue(path string, value *TypedValue, isRemove bool) (*Value, erro
 }
 
 // ValueCollections is an alias for a slice of ChangeValues
+// Deprecated: ValueCollections is a legacy implementation of an internal ValueCollections
 type ValueCollections []*Value
