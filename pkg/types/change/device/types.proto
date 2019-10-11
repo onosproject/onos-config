@@ -22,8 +22,8 @@ import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 import "github.com/onosproject/onos-config/pkg/types/change/types.proto";
 
-// Change represents a configuration change to a single device
-message Change {
+// DeviceChange is a stored configuration change for a single device
+message DeviceChange {
     // 'id' is the unique identifier of the change
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
@@ -41,11 +41,8 @@ message Change {
     // 'network_change_id' is the identifier of the network change from which this change was created
     string network_change_id = 4 [(gogoproto.customname) = "NetworkChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
 
-    // 'device_id' is the identifier of the device to which this change applies
-    string device_id = 5 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
-
-    // 'device_version' is an optional device version to which to apply this change
-    string device_version = 6;
+    // 'change' is the change object
+    Change change = 5;
 
     // 'status' is the lifecycle status of the change
     onos.config.change.Status status = 7 [(gogoproto.nullable) = false];
@@ -55,9 +52,18 @@ message Change {
 
     // 'updated' is the time at which the change was last updated
     google.protobuf.Timestamp updated = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// Change represents a configuration change to a single device
+message Change {
+    // 'device_id' is the identifier of the device to which this change applies
+    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+
+    // 'device_version' is an optional device version to which to apply this change
+    string device_version = 2;
 
     // 'values' is a set of change values to apply
-    repeated Value values = 10;
+    repeated Value values = 3;
 }
 
 // ValueType is the type for a value

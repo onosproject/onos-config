@@ -54,4 +54,13 @@ message NetworkChange {
     // 'changes' is a set of changes to apply to devices
     // The list of changes should contain only a single change per device/version pair.
     repeated onos.config.change.device.Change changes = 7;
+
+    // 'refs' is a set of references to stored device changes
+    repeated DeviceChangeRef refs = 8;
+}
+
+// DeviceChangeRef is a reference to a device change
+message DeviceChangeRef {
+    // 'device_change_id' is the unique identifier of the device change
+    string device_change_id = 1 [(gogoproto.customname) = "DeviceChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.ID"];
 }

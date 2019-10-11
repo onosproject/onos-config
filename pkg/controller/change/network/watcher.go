@@ -73,7 +73,7 @@ type DeviceWatcher struct {
 	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
-	channels    map[device.ID]chan *devicechangetype.Change
+	channels    map[device.ID]chan *devicechangetype.DeviceChange
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
@@ -87,7 +87,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	}
 
 	w.ch = ch
-	w.channels = make(map[device.ID]chan *devicechangetype.Change)
+	w.channels = make(map[device.ID]chan *devicechangetype.DeviceChange)
 	w.mu.Unlock()
 
 	deviceCh := make(chan *device.Device)
@@ -112,7 +112,7 @@ func (w *DeviceWatcher) watchDevice(device device.ID, ch chan<- types.ID) {
 		return
 	}
 
-	deviceCh = make(chan *devicechangetype.Change, queueSize)
+	deviceCh = make(chan *devicechangetype.DeviceChange, queueSize)
 	w.channels[device] = deviceCh
 	w.mu.Unlock()
 

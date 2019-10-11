@@ -153,22 +153,24 @@ func TestDeviceWatcher(t *testing.T) {
 	err = watcher.Start(ch)
 	assert.NoError(t, err)
 
-	change1 := &devicechange.Change{
+	change1 := &devicechange.DeviceChange{
 		NetworkChangeID: types.ID("network:1"),
-		DeviceID:        device.ID("device-1"),
-		Values: []*devicechange.Value{
-			{
-				Path: "foo",
-				Value: &devicechange.TypedValue{
-					Bytes: []byte("Hello world!"),
-					Type:  devicechange.ValueType_STRING,
+		Change: &devicechange.Change{
+			DeviceID: device.ID("device-1"),
+			Values: []*devicechange.Value{
+				{
+					Path: "foo",
+					Value: &devicechange.TypedValue{
+						Bytes: []byte("Hello world!"),
+						Type:  devicechange.ValueType_STRING,
+					},
 				},
-			},
-			{
-				Path: "bar",
-				Value: &devicechange.TypedValue{
-					Bytes: []byte("Hello world again!"),
-					Type:  devicechange.ValueType_STRING,
+				{
+					Path: "bar",
+					Value: &devicechange.TypedValue{
+						Bytes: []byte("Hello world again!"),
+						Type:  devicechange.ValueType_STRING,
+					},
 				},
 			},
 		},
@@ -184,15 +186,17 @@ func TestDeviceWatcher(t *testing.T) {
 		t.FailNow()
 	}
 
-	change2 := &devicechange.Change{
+	change2 := &devicechange.DeviceChange{
 		NetworkChangeID: types.ID("network:2"),
-		DeviceID:        device.ID("device-2"),
-		Values: []*devicechange.Value{
-			{
-				Path: "baz",
-				Value: &devicechange.TypedValue{
-					Bytes: []byte("Goodbye world!"),
-					Type:  devicechange.ValueType_STRING,
+		Change: &devicechange.Change{
+			DeviceID: device.ID("device-2"),
+			Values: []*devicechange.Value{
+				{
+					Path: "baz",
+					Value: &devicechange.TypedValue{
+						Bytes: []byte("Goodbye world!"),
+						Type:  devicechange.ValueType_STRING,
+					},
 				},
 			},
 		},
