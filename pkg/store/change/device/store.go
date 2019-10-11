@@ -25,6 +25,7 @@ import (
 	"github.com/atomix/atomix-go-local/pkg/atomix/local"
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
+	"github.com/cenkalti/backoff"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -38,6 +39,8 @@ import (
 )
 
 const primitiveName = "device-changes"
+
+const maxRetries = 5
 
 // getCounterName returns the name of the given device ID counter
 func getCounterName(deviceID device.ID) string {
@@ -191,16 +194,15 @@ func (s *atomixStore) LastIndex(deviceID device.ID) (devicechange.Index, error) 
 	return devicechange.Index(index), err
 }
 
-func (s *atomixStore) nextIndex(deviceID device.ID) (devicechange.Index, error) {
+func (s *atomixStore) setIndex(deviceID device.ID, index devicechange.Index) error {
 	indexes, err := s.getIndexCounter(deviceID)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	index, err := indexes.Increment(ctx, 1)
-	return devicechange.Index(index), err
+	return indexes.Set(ctx, int64(index))
 }
 
 func (s *atomixStore) Get(id devicechange.ID) (*devicechange.Change, error) {
@@ -221,33 +223,47 @@ func (s *atomixStore) Create(config *devicechange.Change) error {
 		return errors.New("not a new object")
 	}
 
-	index, err := s.nextIndex(config.DeviceID)
-	if err != nil {
-		return err
-	}
-
-	config.Index = index
-	config.ID = index.GetChangeID(config.DeviceID)
-	config.Created = time.Now()
-	config.Updated = time.Now()
-
-	bytes, err := proto.Marshal(config)
-	if err != nil {
-		return err
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+	return backoff.Retry(func() error {
+		lastIndex, err := s.LastIndex(config.DeviceID)
+		if err != nil {
+			return err
+		}
 
-	entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
-	if err != nil {
-		return err
-	}
+		index := lastIndex + 1
+		config.Index = index
+		config.ID = index.GetChangeID(config.DeviceID)
+		config.Created = time.Now()
+		config.Updated = time.Now()
 
-	config.Revision = devicechange.Revision(entry.Version)
-	config.Created = entry.Created
-	config.Updated = entry.Updated
-	return nil
+		bytes, err := proto.Marshal(config)
+		if err != nil {
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		// Attempt to set the change at the next index
+		entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
+
+		// If the write fails because a change has already been stored, increment the last index and retry
+		if err != nil {
+			if change, err := s.configs.Get(ctx, string(config.ID)); err == nil && change != nil {
+				_ = s.setIndex(config.DeviceID, index)
+			}
+			return err
+		}
+
+		config.Revision = devicechange.Revision(entry.Version)
+		config.Created = entry.Created
+		config.Updated = entry.Updated
+
+		// Store the updated index without failing the change
+		_ = s.setIndex(config.DeviceID, index)
+		return nil
+	}, backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries), ctx))
 }
 
 func (s *atomixStore) Update(config *devicechange.Change) error {
