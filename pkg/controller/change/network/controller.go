@@ -63,12 +63,6 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 
 	// Handle the change for each phase
 	if change != nil {
-		// For all phases, ensure device changes have been created in the device change store
-		succeeded, err := r.ensureDeviceChanges(change)
-		if succeeded || err != nil {
-			return succeeded, err
-		}
-
 		switch change.Status.Phase {
 		case changetypes.Phase_CHANGE:
 			return r.reconcileChange(change)
@@ -77,36 +71,6 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 		}
 	}
 	return true, nil
-}
-
-// ensureDeviceChanges ensures device changes have been created for all changes in the network change
-func (r *Reconciler) ensureDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
-	// Loop through changes and create if necessary
-	updated := false
-	for _, change := range config.Changes {
-		if change.ID == "" {
-			deviceChange := &devicetypes.Change{
-				NetworkChangeID: types.ID(config.ID),
-				DeviceID:        change.DeviceID,
-				DeviceVersion:   change.DeviceVersion,
-				Values:          change.Values,
-			}
-			if err := r.deviceChanges.Create(deviceChange); err != nil {
-				return false, err
-			}
-			change.ID = deviceChange.ID
-			change.Index = deviceChange.Index
-			updated = true
-		}
-	}
-
-	// If indexes have been updated, store the indexes first in the network change
-	if updated {
-		if err := r.networkChanges.Update(config); err != nil {
-			return false, err
-		}
-	}
-	return updated, nil
 }
 
 // reconcileChange reconciles a change in the CHANGE phase
@@ -124,6 +88,11 @@ func (r *Reconciler) reconcileChange(change *networktypes.NetworkChange) (bool, 
 
 // reconcilePendingChange reconciles a change in the PENDING state during the CHANGE phase
 func (r *Reconciler) reconcilePendingChange(change *networktypes.NetworkChange) (bool, error) {
+	// Create device changes if the prior change has been propagated
+	if !hasDeviceChanges(change) {
+		return r.createDeviceChanges(change)
+	}
+
 	// Determine whether the change can be applied
 	canApply, err := r.canApplyChange(change)
 	if err != nil {
@@ -135,6 +104,50 @@ func (r *Reconciler) reconcilePendingChange(change *networktypes.NetworkChange) 
 	// If the change can be applied, update the change state to RUNNING
 	change.Status.State = changetypes.State_RUNNING
 	if err := r.networkChanges.Update(change); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// hasDeviceChanges indicates whether the given change has created device changes
+func hasDeviceChanges(change *networktypes.NetworkChange) bool {
+	for _, deviceChange := range change.Changes {
+		if deviceChange.ID == "" {
+			return false
+		}
+	}
+	return true
+}
+
+// createDeviceChanges creates device changes in sequential order
+func (r *Reconciler) createDeviceChanges(config *networktypes.NetworkChange) (bool, error) {
+	// If the previous network change has not created device changes, requeue to wait for changes to be propagated
+	prevChange, err := r.networkChanges.GetByIndex(config.Index - 1)
+	if err != nil {
+		return false, err
+	} else if prevChange != nil && !hasDeviceChanges(prevChange) {
+		return false, nil
+	}
+
+	// Loop through changes and create device changes
+	for _, change := range config.Changes {
+		if change.ID == "" {
+			deviceChange := &devicetypes.Change{
+				NetworkChangeID: types.ID(config.ID),
+				DeviceID:        change.DeviceID,
+				DeviceVersion:   change.DeviceVersion,
+				Values:          change.Values,
+			}
+			if err := r.deviceChanges.Create(deviceChange); err != nil {
+				return false, err
+			}
+			change.ID = deviceChange.ID
+			change.Index = deviceChange.Index
+		}
+	}
+
+	// If indexes have been updated, store the indexes first in the network change
+	if err := r.networkChanges.Update(config); err != nil {
 		return false, err
 	}
 	return true, nil
