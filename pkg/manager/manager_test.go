@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -102,6 +103,8 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 			Store:     changeStoreTest,
 		},
 		&topocache.DeviceStore{},
+		//TODO mock
+		NewMockStore(),
 		&store.NetworkStore{
 			Version:   "1.0",
 			Storetype: "network",
@@ -468,6 +471,7 @@ func TestManager_GetTargetState(t *testing.T) {
 	assert.Assert(t, stateBad != nil, "Bad Path Entry returns nil")
 	assert.Assert(t, len(stateBad) == 0, "Bad path entry has incorrect length %d", len(stateBad))
 }
+
 
 type MockModelPlugin struct{}
 

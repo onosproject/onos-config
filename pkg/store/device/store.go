@@ -20,7 +20,6 @@ import (
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	"io"
-	log "k8s.io/klog"
 	"time"
 )
 
@@ -30,6 +29,9 @@ const topoAddress = "onos-topo:5150"
 type Store interface {
 	// Get gets a device by ID
 	Get(devicepb.ID) (*devicepb.Device, error)
+
+	// Update updates a given device
+	Update(*devicepb.Device) (*devicepb.Device, error)
 
 	// List lists the devices in the store
 	List(chan<- *devicepb.Device) error
@@ -123,68 +125,20 @@ func (s *topoStore) Watch(ch chan<- *devicepb.Device) error {
 	return nil
 }
 
+func (s *topoStore) Update(updatedDevice *devicepb.Device) (*devicepb.Device, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	updateReq := &devicepb.UpdateRequest{
+		Device: updatedDevice,
+	}
+	response, err := s.requestClient.Update(ctx, updateReq)
+	if err != nil {
+		return nil, err
+	}
+	return response.Device, nil
+}
+
 // getTopoConn gets a gRPC connection to the topology service
 func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	return grpc.Dial(topoAddress, opts...)
-}
-
-// DeviceConnected signals the corresponding topology service that the device connected.
-func (s *topoStore) DeviceConnected(id devicepb.ID) (*devicepb.Device, error) {
-	log.Infof("Device %s connected", id)
-	return s.updateDevice(id, devicepb.ConnectivityState_REACHABLE, devicepb.ChannelState_CONNECTED,
-		devicepb.ServiceState_AVAILABLE)
-}
-
-// DeviceDisconnected signal the corresponding topology service that the device disconnected.
-func (s *topoStore) DeviceDisconnected(id devicepb.ID, err error) (*devicepb.Device, error) {
-	log.Infof("Device %s disconnected or had error in connection %s", id, err)
-	//TODO check different possible availabilities based on error
-	return s.updateDevice(id, devicepb.ConnectivityState_UNREACHABLE, devicepb.ChannelState_DISCONNECTED,
-		devicepb.ServiceState_UNAVAILABLE)
-}
-
-func (s *topoStore) updateDevice(id devicepb.ID, connectivity devicepb.ConnectivityState, channel devicepb.ChannelState,
-	service devicepb.ServiceState) (*devicepb.Device, error) {
-	getResponse, err := s.requestClient.Get(context.Background(), &devicepb.GetRequest{
-		ID: id,
-	})
-	if err != nil {
-		return nil, err
-	}
-	topoDevice := getResponse.Device
-	protocolState, index := containsGnmi(topoDevice.Protocols)
-	if protocolState != nil {
-		topoDevice.Protocols = remove(topoDevice.Protocols, index)
-	} else {
-		protocolState = new(devicepb.ProtocolState)
-	}
-	protocolState.Protocol = devicepb.Protocol_GNMI
-	protocolState.ConnectivityState = connectivity
-	protocolState.ChannelState = channel
-	protocolState.ServiceState = service
-	topoDevice.Protocols = append(topoDevice.Protocols, protocolState)
-	updateReq := devicepb.UpdateRequest{
-		Device: topoDevice,
-	}
-	updateResponse, err := s.requestClient.Update(context.Background(), &updateReq)
-	if err != nil {
-		log.Errorf("Device %s is not updated %s", id, err.Error())
-		return nil, err
-	}
-	log.Infof("Device %s is updated with states %s, %s, %s", id, connectivity, channel, service)
-	return updateResponse.Device, nil
-}
-
-func containsGnmi(protocols []*devicepb.ProtocolState) (*devicepb.ProtocolState, int) {
-	for i, p := range protocols {
-		if p.Protocol == devicepb.Protocol_GNMI {
-			return p, i
-		}
-	}
-	return nil, -1
-}
-
-func remove(s []*devicepb.ProtocolState, i int) []*devicepb.ProtocolState {
-	s[i] = s[len(s)-1]
-	return s[:len(s)-1]
 }

@@ -116,10 +116,9 @@ func TestUpdateDevice(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, device1.ID, device.ID)
 
-	requestClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&devicepb.GetResponse{Device: device1}, nil)
 	requestClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&devicepb.UpdateResponse{Device: device1Connected}, nil)
 
-	deviceUpdated, err := store.DeviceConnected(device1.ID)
+	deviceUpdated, err := store.Update(device1Connected)
 	assert.NoError(t, err)
 	assert.Equal(t, deviceUpdated.ID, device1Connected.ID)
 	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, devicepb.Protocol_GNMI)

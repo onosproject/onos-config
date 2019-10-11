@@ -24,7 +24,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/store/device"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 	"strings"
@@ -38,6 +39,7 @@ type Manager struct {
 	ConfigStore             *store.ConfigurationStore
 	ChangeStore             *store.ChangeStore
 	DeviceStore             *topocache.DeviceStore
+	NewDeviceStore          device.Store
 	NetworkStore            *store.NetworkStore
 	ModelRegistry           *modelregistry.ModelRegistry
 	TopoChannel             chan events.TopoEvent
@@ -45,12 +47,12 @@ type Manager struct {
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              *dispatcher.Dispatcher
-	OperationalStateCache   map[device.ID]change.TypedValueMap
+	OperationalStateCache   map[devicepb.ID]change.TypedValueMap
 }
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(configStore *store.ConfigurationStore, changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
-	networkStore *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
+	newDeviceStore device.Store, networkStore *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -63,6 +65,7 @@ func NewManager(configStore *store.ConfigurationStore, changeStore *store.Change
 		ConfigStore:             configStore,
 		ChangeStore:             changeStore,
 		DeviceStore:             deviceStore,
+		NewDeviceStore:          newDeviceStore,
 		NetworkStore:            networkStore,
 		TopoChannel:             topoCh,
 		ModelRegistry:           modelReg,
@@ -70,7 +73,7 @@ func NewManager(configStore *store.ConfigurationStore, changeStore *store.Change
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
-		OperationalStateCache:   make(map[device.ID]change.TypedValueMap),
+		OperationalStateCache:   make(map[devicepb.ID]change.TypedValueMap),
 	}
 
 	changeIds := make([]string, 0)
@@ -127,6 +130,14 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Device store loaded")
 
+	newDeviceStore, err := device.NewTopoStore(opts...)
+	if err != nil {
+		log.Error("Cannot load device store ", err)
+		return nil, err
+	}
+	log.Info("New Device store loaded")
+	//TODO start the watch on the new store
+
 	networkStore, err := store.LoadNetworkStore(networkStoreFile)
 	if err != nil {
 		log.Error("Cannot load network store ", err)
@@ -134,7 +145,7 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Network store loaded from ", networkStoreFile)
 
-	return NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
+	return NewManager(&configStore, &changeStore, deviceStore, newDeviceStore, networkStore, topoChannel)
 }
 
 // ValidateStores validate configurations against their ModelPlugins at startup
@@ -245,7 +256,7 @@ func GetManager() *Manager {
 func listenOnResponseChannel(respChan chan events.DeviceResponse, deviceStore *topocache.DeviceStore) {
 	log.Info("Listening for Errors in Manager")
 	for event := range respChan {
-		subject := device.ID(event.Subject())
+		subject := devicepb.ID(event.Subject())
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
 			err := deviceStore.DeviceConnected(subject)
