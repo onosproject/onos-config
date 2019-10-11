@@ -24,6 +24,7 @@ import (
 	"github.com/atomix/atomix-go-local/pkg/atomix/local"
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
+	"github.com/cenkalti/backoff"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
@@ -36,6 +37,8 @@ import (
 
 const counterName = "network-change-indexes"
 const configsName = "network-changes"
+
+const maxRetries = 5
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore() (Store, error) {
@@ -151,16 +154,6 @@ type atomixStore struct {
 	closer  io.Closer
 }
 
-func (s *atomixStore) nextIndex() (networkchange.Index, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	index, err := s.indexes.Increment(ctx, 1)
-	if err != nil {
-		return 0, err
-	}
-	return networkchange.Index(index), nil
-}
-
 func (s *atomixStore) LastIndex() (networkchange.Index, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -169,6 +162,12 @@ func (s *atomixStore) LastIndex() (networkchange.Index, error) {
 		return 0, err
 	}
 	return networkchange.Index(index), nil
+}
+
+func (s *atomixStore) setIndex(index networkchange.Index) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	return s.indexes.Set(ctx, int64(index))
 }
 
 func (s *atomixStore) Get(id networkchange.ID) (*networkchange.NetworkChange, error) {
@@ -202,30 +201,45 @@ func (s *atomixStore) Create(config *networkchange.NetworkChange) error {
 		return errors.New("not a new object")
 	}
 
-	index, err := s.nextIndex()
-	if err != nil {
-		return err
-	}
-
-	config.Index = networkchange.Index(index)
-	config.ID = config.Index.GetChangeID()
-
-	bytes, err := proto.Marshal(config)
-	if err != nil {
-		return err
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
-	if err != nil {
-		return err
-	}
+	return backoff.Retry(func() error {
+		lastIndex, err := s.LastIndex()
+		if err != nil {
+			return err
+		}
 
-	config.Revision = networkchange.Revision(entry.Version)
-	config.Created = entry.Created
-	config.Updated = entry.Updated
-	return nil
+		index := lastIndex + 1
+		config.Index = index
+		config.ID = index.GetChangeID()
+
+		bytes, err := proto.Marshal(config)
+		if err != nil {
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		// Attempt to set the change at the next index
+		entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
+
+		// If the write fails because a change has already been stored, increment the last index and retry
+		if err != nil {
+			if change, err := s.configs.Get(ctx, string(config.ID)); err == nil && change != nil {
+				_ = s.setIndex(index)
+			}
+			return err
+		}
+
+		config.Revision = networkchange.Revision(entry.Version)
+		config.Created = entry.Created
+		config.Updated = entry.Updated
+
+		// Store the updated index without failing the change
+		_ = s.setIndex(index)
+		return nil
+	}, backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries), ctx))
 }
 
 func (s *atomixStore) Update(config *networkchange.NetworkChange) error {
