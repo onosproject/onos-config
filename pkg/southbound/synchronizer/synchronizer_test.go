@@ -27,6 +27,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -59,7 +60,7 @@ const (
 )
 
 func synchronizerSetUp() (*store.ChangeStore, *store.ConfigurationStore,
-	chan events.TopoEvent, chan events.OperationalStateEvent,
+	chan devicepb.ListResponse, chan events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
 	*modelregistry.ModelRegistry, modelregistry.ReadOnlyPathMap,
 	change.TypedValueMap, chan events.ConfigEvent,
@@ -87,7 +88,7 @@ func synchronizerSetUp() (*store.ChangeStore, *store.ConfigurationStore,
 	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{Datatype: change.ValueTypeSTRING}
 	roPathMap[cont1bState] = roSubPath2
 	return &changeStore, &configStore,
-		make(chan events.TopoEvent),
+		make(chan devicepb.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, mr, roPathMap, opStateCache,

@@ -24,6 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"time"
 )
@@ -32,29 +33,29 @@ import (
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
-	topoChannel <-chan events.TopoEvent, opStateChan chan<- events.OperationalStateEvent,
+	topoChannel <-chan *devicepb.ListResponse, opStateChan chan<- events.OperationalStateEvent,
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
 	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[device.ID]change.TypedValueMap) {
 
 	for topoEvent := range topoChannel {
-		device := topoEvent.Device()
-		if !dispatcher.HasListener(device.ID) && topoEvent.ItemAction() != events.EventItemDeleted {
-			configChan, respChan, err := dispatcher.RegisterDevice(device.ID)
+		notifiedDevice := topoEvent.Device
+		if !dispatcher.HasListener(notifiedDevice.ID) && topoEvent.Type != devicepb.ListResponse_REMOVED {
+			configChan, respChan, err := dispatcher.RegisterDevice(notifiedDevice.ID)
 			if err != nil {
 				log.Error(err)
 			}
 			ctx := context.Background()
-			configName := store.ConfigName(utils.ToConfigName(device.ID, device.Version))
+			configName := store.ConfigName(utils.ToConfigName(notifiedDevice.ID, notifiedDevice.Version))
 			cfg, ok := configStore.Store[configName]
 			if !ok {
-				if device.Type == "" {
+				if notifiedDevice.Type == "" {
 					log.Warningf("No device type specified for device %s", configName)
 				}
 				cfg = store.Configuration{
 					Name:    configName,
-					Device:  string(device.ID),
-					Version: device.Version,
-					Type:    string(device.Type),
+					Device:  string(notifiedDevice.ID),
+					Version: notifiedDevice.Version,
+					Type:    string(notifiedDevice.Type),
 					Created: time.Now(),
 					Updated: time.Now(),
 					Changes: []change.ID{},
@@ -62,38 +63,38 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				configStore.Store[configName] = cfg
 			}
 
-			modelName := utils.ToModelName(cfg.Type, device.Version)
+			modelName := utils.ToModelName(cfg.Type, notifiedDevice.Version)
 			mReadOnlyPaths, ok := modelRegistry.ModelReadOnlyPaths[modelName]
 			if !ok {
 				log.Warningf("Cannot check for read only paths for target %s with %s because "+
-					"Model Plugin not available - continuing", device.ID, device.Version)
+					"Model Plugin not available - continuing", notifiedDevice.ID, notifiedDevice.Version)
 			}
 			mStateGetMode := modelregistry.GetStateOpState // default
 			mPlugin, ok := modelRegistry.ModelPlugins[modelName]
 			if !ok {
 				log.Warningf("Cannot check for StateGetMode for target %s with %s because "+
-					"Model Plugin not available - continuing", device.ID, device.Version)
+					"Model Plugin not available - continuing", notifiedDevice.ID, notifiedDevice.Version)
 			} else {
 				mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
 			}
-			operationalStateCache[device.ID] = make(change.TypedValueMap)
+			operationalStateCache[notifiedDevice.ID] = make(change.TypedValueMap)
 			target := southbound.NewTarget()
 			//TODO configuration needs to be blocked at this point in time to allow for device connection.
-			sync, err := New(ctx, changeStore, configStore, device, configChan, opStateChan,
-				southboundErrorChan, operationalStateCache[device.ID], mReadOnlyPaths, target, mStateGetMode)
+			sync, err := New(ctx, changeStore, configStore, notifiedDevice, configChan, opStateChan,
+				southboundErrorChan, operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode)
 			if err != nil {
-				log.Errorf("Error connecting to device %v: %v", device, err)
+				log.Errorf("Error connecting to device %v: %v", notifiedDevice, err)
 				southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
-					string(device.ID), err)
+					string(notifiedDevice.ID), err)
 				//unregistering the listener for changes to the device
-				unregErr := dispatcher.UnregisterDevice(device.ID)
+				unregErr := dispatcher.UnregisterDevice(notifiedDevice.ID)
 				if unregErr != nil {
 					southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
-						string(device.ID), unregErr)
+						string(notifiedDevice.ID), unregErr)
 				}
 				//unregistering the listener for changes to the device
-				dispatcher.UnregisterOperationalState(string(device.ID))
-				delete(operationalStateCache, device.ID)
+				dispatcher.UnregisterOperationalState(string(notifiedDevice.ID))
+				delete(operationalStateCache, notifiedDevice.ID)
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
 				go sync.syncConfigEventsToDevice(target, respChan)
@@ -103,11 +104,11 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 					sync.getStateMode == modelregistry.GetStateExplicitRoPathsExpandWildcards {
 					go sync.syncOperationalStateByPaths(ctx, target, southboundErrorChan)
 				}
-				southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(device.ID))
+				southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(notifiedDevice.ID))
 			}
-		} else if dispatcher.HasListener(device.ID) && topoEvent.ItemAction() == events.EventItemDeleted {
+		} else if dispatcher.HasListener(notifiedDevice.ID) && topoEvent.Type == devicepb.ListResponse_REMOVED {
 
-			err := dispatcher.UnregisterDevice(device.ID)
+			err := dispatcher.UnregisterDevice(notifiedDevice.ID)
 			if err != nil {
 				log.Error(err)
 				//TODO evaluate if fall through without upstreaming

@@ -326,7 +326,8 @@ func buildSubscribeResponse(notification *gnmi.Notification, target string) *gnm
 	response := &gnmi.SubscribeResponse{
 		Response: responseUpdate,
 	}
-	if _, ok := manager.GetManager().DeviceStore.Cache[device.ID(target)]; !ok {
+	_, err := manager.GetManager().DeviceStore.Get(device.ID(target))
+	if err != nil && status.Convert(err).Code() == codes.NotFound {
 		response.Extension = []*gnmi_ext.Extension{
 			{
 				Ext: &gnmi_ext.Extension_RegisteredExt{

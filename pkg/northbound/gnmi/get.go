@@ -45,11 +45,18 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	defer s.mu.RUnlock()
 	for _, path := range req.GetPath() {
 		update, err := getUpdate(prefix, path)
-		if _, ok := manager.GetManager().DeviceStore.Cache[device.ID(path.GetTarget())]; !ok {
-			disconnectedDevicesMap[device.ID(path.GetTarget())] = true
-		}
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+		//if target is already disconnected we don't do a get again.
+		_, ok := disconnectedDevicesMap[device.ID(path.GetTarget())]
+		if !ok {
+			deviceGet, errGet := manager.GetManager().DeviceStore.Get(device.ID(prefix.GetTarget()))
+
+			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
+				log.Infof("Device is not connected %s, %s, %s", path.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
+				disconnectedDevicesMap[device.ID(path.GetTarget())] = true
+			}
 		}
 		notification := &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
@@ -62,11 +69,17 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	// Alternatively - if there's only the prefix
 	if len(req.GetPath()) == 0 {
 		update, err := getUpdate(prefix, nil)
-		if _, ok := manager.GetManager().DeviceStore.Cache[device.ID(prefix.GetTarget())]; !ok {
-			disconnectedDevicesMap[device.ID(prefix.GetTarget())] = true
-		}
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+		//if target is already disconnected we don't do a get again.
+		_, ok := disconnectedDevicesMap[device.ID(prefix.GetTarget())]
+		if !ok {
+			deviceGet, errGet := manager.GetManager().DeviceStore.Get(device.ID(prefix.GetTarget()))
+			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
+				log.Infof("Device is not connected %s, %s, %s", prefix.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
+				disconnectedDevicesMap[device.ID(prefix.GetTarget())] = true
+			}
 		}
 		notification := &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
@@ -82,6 +95,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	}
 	if len(disconnectedDevicesMap) != 0 {
 		disconnectedDevices := make([]string, 0)
+		log.Info("Device Map {}", disconnectedDevicesMap)
 		for k := range disconnectedDevicesMap {
 			disconnectedDevices = append(disconnectedDevices, string(k))
 		}

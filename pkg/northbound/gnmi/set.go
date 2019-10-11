@@ -115,7 +115,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	//TODO this can be parallelized with a pattern manager.go ValidateStores()
-	mgr := manager.GetManager()
 	//Checking for wrong configuration against the device models for updates
 	for target, updates := range targetUpdates {
 		err := validateChange(target, version, deviceType, updates, targetRemoves[target])
@@ -123,7 +122,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			return nil, err
 		}
 		delete(targetRemovesTmp, target)
-		if _, ok := mgr.DeviceStore.Cache[device.ID(target)]; !ok {
+		_, errDevice := manager.GetManager().DeviceStore.Get(device.ID(target))
+		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		}
 	}
@@ -133,7 +133,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		if err != nil {
 			return nil, err
 		}
-		if _, ok := mgr.DeviceStore.Cache[device.ID(target)]; !ok {
+		_, errDevice := manager.GetManager().DeviceStore.Get(device.ID(target))
+		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		}
 	}

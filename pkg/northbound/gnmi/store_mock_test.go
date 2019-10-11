@@ -78,7 +78,7 @@ func (mr *MockStoreMockRecorder) List(arg0 interface{}) *gomock.Call {
 }
 
 // Watch mocks base method
-func (m *MockStore) Watch(arg0 chan<- *device.ListResponse) error {
+func (m *MockStore) Watch(arg0 chan<- *device.Device) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Watch", arg0)
 	ret0, _ := ret[0].(error)

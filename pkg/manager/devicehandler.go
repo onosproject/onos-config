@@ -23,7 +23,7 @@ import (
 // DeviceConnected signals the corresponding topology service that the device connected.
 func (m *Manager) DeviceConnected(id devicepb.ID) (*devicepb.Device, error) {
 	log.Infof("Device %s connected", id)
-	return updateDevice(m.NewDeviceStore, id, devicepb.ConnectivityState_REACHABLE, devicepb.ChannelState_CONNECTED,
+	return updateDevice(m.DeviceStore, id, devicepb.ConnectivityState_REACHABLE, devicepb.ChannelState_CONNECTED,
 		devicepb.ServiceState_AVAILABLE)
 }
 
@@ -31,7 +31,7 @@ func (m *Manager) DeviceConnected(id devicepb.ID) (*devicepb.Device, error) {
 func (m *Manager) DeviceDisconnected(id devicepb.ID, err error) (*devicepb.Device, error) {
 	log.Infof("Device %s disconnected or had error in connection %s", id, err)
 	//TODO check different possible availabilities based on error
-	return updateDevice(m.NewDeviceStore, id, devicepb.ConnectivityState_UNREACHABLE, devicepb.ChannelState_DISCONNECTED,
+	return updateDevice(m.DeviceStore, id, devicepb.ConnectivityState_UNREACHABLE, devicepb.ChannelState_DISCONNECTED,
 		devicepb.ServiceState_UNAVAILABLE)
 }
 

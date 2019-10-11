@@ -21,7 +21,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicetopo "github.com/onosproject/onos-config/pkg/store/device"
@@ -38,11 +37,10 @@ var mgr Manager
 type Manager struct {
 	ConfigStore             *store.ConfigurationStore
 	ChangeStore             *store.ChangeStore
-	DeviceStore             *topocache.DeviceStore
-	NewDeviceStore          devicetopo.Store
+	DeviceStore             devicetopo.Store
 	NetworkStore            *store.NetworkStore
 	ModelRegistry           *modelregistry.ModelRegistry
-	TopoChannel             chan events.TopoEvent
+	TopoChannel             chan *devicepb.ListResponse
 	ChangesChannel          chan events.ConfigEvent
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
@@ -51,8 +49,8 @@ type Manager struct {
 }
 
 // NewManager initializes the network config manager subsystem.
-func NewManager(configStore *store.ConfigurationStore, changeStore *store.ChangeStore, deviceStore *topocache.DeviceStore,
-	newDeviceStore devicetopo.Store, networkStore *store.NetworkStore, topoCh chan events.TopoEvent) (*Manager, error) {
+func NewManager(configStore *store.ConfigurationStore, changeStore *store.ChangeStore, deviceStore devicetopo.Store,
+	networkStore *store.NetworkStore, topoCh chan *devicepb.ListResponse) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -66,7 +64,6 @@ func NewManager(configStore *store.ConfigurationStore, changeStore *store.Change
 		ChangeStore: changeStore,
 		//TODO move NewDeviceStore to DeviceStore when the latter is removed from project.
 		DeviceStore:             deviceStore,
-		NewDeviceStore:          newDeviceStore,
 		NetworkStore:            networkStore,
 		TopoChannel:             topoCh,
 		ModelRegistry:           modelReg,
@@ -108,7 +105,7 @@ func NewManager(configStore *store.ConfigurationStore, changeStore *store.Change
 
 // LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
 func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFile string, opts ...grpc.DialOption) (*Manager, error) {
-	topoChannel := make(chan events.TopoEvent, 10)
+	topoChannel := make(chan *devicepb.ListResponse, 10)
 
 	configStore, err := store.LoadConfigStore(configStoreFile)
 	if err != nil {
@@ -124,21 +121,15 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Change store loaded from ", changeStoreFile)
 
-	deviceStore, err := topocache.LoadDeviceStore(topoChannel, opts...)
+	deviceStore, err := devicetopo.NewTopoStore(opts...)
 	if err != nil {
 		log.Error("Cannot load device store ", err)
 		return nil, err
 	}
-	log.Info("Device store loaded")
-
-	newDeviceStore, err := devicetopo.NewTopoStore(opts...)
-	if err != nil {
-		log.Error("Cannot load device store ", err)
-		return nil, err
+	if deviceStore != nil {
+		go deviceStore.Watch(topoChannel)
+		log.Info("Device store loaded")
 	}
-	log.Info("New Device store loaded")
-	//TODO start the watch on the new store by passing the ListChannel to the Factory
-
 	networkStore, err := store.LoadNetworkStore(networkStoreFile)
 	if err != nil {
 		log.Error("Cannot load network store ", err)
@@ -146,7 +137,7 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Network store loaded from ", networkStoreFile)
 
-	return NewManager(&configStore, &changeStore, deviceStore, newDeviceStore, networkStore, topoChannel)
+	return NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
 }
 
 // ValidateStores validate configurations against their ModelPlugins at startup
@@ -235,7 +226,7 @@ func (m *Manager) Run() {
 	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
 	// Listening for errors in the Southbound
-	go listenOnResponseChannel(m.SouthboundErrorChan, m.DeviceStore)
+	go listenOnResponseChannel(m.SouthboundErrorChan, m)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.TopoChannel,
 		m.OperationalStateChannel, m.SouthboundErrorChan, m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)
@@ -254,19 +245,19 @@ func GetManager() *Manager {
 	return &mgr
 }
 
-func listenOnResponseChannel(respChan chan events.DeviceResponse, deviceStore *topocache.DeviceStore) {
+func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 	log.Info("Listening for Errors in Manager")
 	for event := range respChan {
 		subject := devicepb.ID(event.Subject())
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
-			err := deviceStore.DeviceConnected(subject)
+			_, err := m.DeviceConnected(subject)
 			if err != nil {
 				log.Error("Can't notify connection", err)
 			}
 			//TODO unblock config
 		case events.EventTypeErrorDeviceConnect:
-			err := deviceStore.DeviceDisconnected(subject, event.Error())
+			_, err := m.DeviceDisconnected(subject, event.Error())
 			if err != nil {
 				log.Error("Can't notify disconnection", err)
 			}
