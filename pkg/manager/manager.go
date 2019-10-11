@@ -62,8 +62,8 @@ func NewManager(configStore *store.ConfigurationStore, changeStore *store.Change
 	}
 
 	mgr = Manager{
-		ConfigStore:             configStore,
-		ChangeStore:             changeStore,
+		ConfigStore: configStore,
+		ChangeStore: changeStore,
 		//TODO move NewDeviceStore to DeviceStore when the latter is removed from project.
 		DeviceStore:             deviceStore,
 		NewDeviceStore:          newDeviceStore,
