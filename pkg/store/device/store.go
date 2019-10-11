@@ -30,6 +30,9 @@ type Store interface {
 	// Get gets a device by ID
 	Get(devicepb.ID) (*devicepb.Device, error)
 
+	// Update updates a given device
+	Update(*devicepb.Device) (*devicepb.Device, error)
+
 	// List lists the devices in the store
 	List(chan<- *devicepb.Device) error
 
@@ -39,15 +42,28 @@ type Store interface {
 
 // NewTopoStore returns a new topo-based device store
 func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
+	//OPTS can be empty for TESTING purposes
+	if len(opts) == 0 {
+		return nil, nil
+	}
 	opts = append(opts, grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(100*time.Millisecond)))
 	conn, err := getTopoConn(opts...)
 	if err != nil {
 		return nil, err
 	}
 
+	requestConn, err := getTopoConn(opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	client := devicepb.NewDeviceServiceClient(conn)
+
+	requestClient := devicepb.NewDeviceServiceClient(requestConn)
+
 	return &topoStore{
-		client: client,
+		client:        client,
+		requestClient: requestClient,
 	}, nil
 }
 
@@ -58,7 +74,8 @@ func NewStore(client devicepb.DeviceServiceClient) (Store, error) {
 
 // A device Store that uses the topo service to propagate devices
 type topoStore struct {
-	client devicepb.DeviceServiceClient
+	client        devicepb.DeviceServiceClient
+	requestClient devicepb.DeviceServiceClient
 }
 
 func (s *topoStore) Get(id devicepb.ID) (*devicepb.Device, error) {
@@ -67,6 +84,19 @@ func (s *topoStore) Get(id devicepb.ID) (*devicepb.Device, error) {
 	response, err := s.client.Get(ctx, &devicepb.GetRequest{
 		ID: id,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return response.Device, nil
+}
+
+func (s *topoStore) Update(updatedDevice *devicepb.Device) (*devicepb.Device, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	updateReq := &devicepb.UpdateRequest{
+		Device: updatedDevice,
+	}
+	response, err := s.requestClient.Update(ctx, updateReq)
 	if err != nil {
 		return nil, err
 	}

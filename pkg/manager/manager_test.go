@@ -16,11 +16,14 @@ package manager
 
 import (
 	"bytes"
+	"errors"
+	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -55,7 +58,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Configuration) {
+func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigName]store.Configuration, *MockStore) {
 
 	var change1 *change.Change
 	var device1config *store.Configuration
@@ -90,6 +93,9 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 	configurationStoreTest = make(map[store.ConfigName]store.Configuration)
 	configurationStoreTest[device1config.Name] = *device1config
 
+	ctrl := gomock.NewController(t)
+	mockStore := NewMockStore(ctrl)
+
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
 			Version:   "1.0",
@@ -102,6 +108,8 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 			Store:     changeStoreTest,
 		},
 		&topocache.DeviceStore{},
+		//TODO mock
+		mockStore,
 		&store.NetworkStore{
 			Version:   "1.0",
 			Storetype: "network",
@@ -113,7 +121,7 @@ func setUp() (*Manager, map[string]*change.Change, map[store.ConfigName]store.Co
 		os.Exit(-1)
 	}
 	mgrTest.Run()
-	return mgrTest, changeStoreTest, configurationStoreTest
+	return mgrTest, changeStoreTest, configurationStoreTest, mockStore
 }
 
 func Test_LoadManager(t *testing.T) {
@@ -154,7 +162,7 @@ func Test_LoadManagerBadNetworkStore(t *testing.T) {
 
 func Test_GetNetworkConfig(t *testing.T) {
 
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*", 0)
 	assert.NilError(t, err, "GetTargetConfig error")
@@ -167,7 +175,7 @@ func Test_GetNetworkConfig(t *testing.T) {
 func Test_SetNetworkConfig(t *testing.T) {
 	// First verify the value beforehand
 	const origChangeHash = "65MwjiKdV5lnh19sKeapnlAUxGw="
-	mgrTest, changeStoreTest, configurationStoreTest := setUp()
+	mgrTest, changeStoreTest, configurationStoreTest, _ := setUp(t)
 	assert.Equal(t, len(changeStoreTest), 1)
 	i := 0
 	keys := make([]string, len(changeStoreTest))
@@ -226,7 +234,7 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 // When device type is given it is like extension 102 and allows a never heard of before config to be created
 func Test_SetNetworkConfig_NewConfig(t *testing.T) {
-	mgrTest, changeStoreTest, configurationStoreTest := setUp()
+	mgrTest, changeStoreTest, configurationStoreTest, _ := setUp(t)
 
 	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
@@ -249,7 +257,7 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 
 // When device type is given it is like extension 102 and allows a never heard of before config to be created - here it is missing
 func Test_SetNetworkConfig_NewConfig102Missing(t *testing.T) {
-	mgrTest, _, configurationStoreTest := setUp()
+	mgrTest, _, configurationStoreTest, _ := setUp(t)
 
 	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
@@ -266,7 +274,7 @@ func Test_SetNetworkConfig_NewConfig102Missing(t *testing.T) {
 
 func Test_SetBadNetworkConfig(t *testing.T) {
 
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
@@ -281,7 +289,7 @@ func Test_SetBadNetworkConfig(t *testing.T) {
 
 func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 
-	mgrTest, _, configurationStoreTest := setUp()
+	mgrTest, _, configurationStoreTest, _ := setUp(t)
 
 	device2config, err := store.NewConfiguration("Device1", "1.0.1", "TestDevice",
 		[]change.ID{})
@@ -301,7 +309,7 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 
 func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
 
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
@@ -321,7 +329,7 @@ func matchDeviceID(deviceID string, deviceName string) bool {
 }
 
 func TestManager_GetAllDeviceIds(t *testing.T) {
-	mgrTest, _, configurationStoreTest := setUp()
+	mgrTest, _, configurationStoreTest, _ := setUp(t)
 
 	device2config, err := store.NewConfiguration("Device2", "1.0.0", "TestDevice",
 		[]change.ID{})
@@ -340,7 +348,7 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 }
 
 func TestManager_GetNoConfig(t *testing.T) {
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("No Such Device", "Running", "/*", 0)
 	assert.Assert(t, len(result) == 0, "Get of bad device does not return empty array")
@@ -357,7 +365,7 @@ func networkConfigContainsPath(configs []*change.ConfigValue, whichOne string) b
 }
 
 func TestManager_GetAllConfig(t *testing.T) {
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*", 0)
 	assert.Assert(t, len(result) == 3, "Get of device all paths does not return proper array")
@@ -368,7 +376,7 @@ func TestManager_GetAllConfig(t *testing.T) {
 }
 
 func TestManager_GetOneConfig(t *testing.T) {
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
@@ -377,7 +385,7 @@ func TestManager_GetOneConfig(t *testing.T) {
 }
 
 func TestManager_GetWildcardConfig(t *testing.T) {
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*/*/leaf2a", 0)
 	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
@@ -386,7 +394,7 @@ func TestManager_GetWildcardConfig(t *testing.T) {
 }
 
 func TestManager_GetConfigNoTarget(t *testing.T) {
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("", "Running", "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 0, "Get of device one path does not return proper array")
@@ -394,14 +402,14 @@ func TestManager_GetConfigNoTarget(t *testing.T) {
 }
 
 func TestManager_GetManager(t *testing.T) {
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 	assert.Equal(t, mgrTest, GetManager())
 	GetManager().Close()
 	assert.Equal(t, mgrTest, GetManager())
 }
 
 func TestManager_ComputeRollbackDelete(t *testing.T) {
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	updates := make(change.TypedValueMap)
 	deletes := make([]string, 0)
@@ -446,7 +454,7 @@ func TestManager_GetTargetState(t *testing.T) {
 		value2  = "v2"
 		badPath = "/no/such/path"
 	)
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	//  Create an op state map with test data
 	device1ValueMap := make(map[string]*change.TypedValue)
@@ -467,6 +475,93 @@ func TestManager_GetTargetState(t *testing.T) {
 	stateBad := mgrTest.GetTargetState(device1, badPath)
 	assert.Assert(t, stateBad != nil, "Bad Path Entry returns nil")
 	assert.Assert(t, len(stateBad) == 0, "Bad path entry has incorrect length %d", len(stateBad))
+}
+
+func TestManager_DeviceConnected(t *testing.T) {
+	mgrTest, _, _, mockStore := setUp(t)
+	const (
+		device1 = "device1"
+	)
+
+	deviceDisconnected := &devicepb.Device{
+		ID:       "device1",
+		Revision: 1,
+		Address:  "device1:1234",
+		Version:  "1.0.0",
+	}
+
+	device1Connected := &devicepb.Device{
+		ID:       "device1",
+		Revision: 1,
+		Address:  "device1:1234",
+		Version:  "1.0.0",
+	}
+
+	protocolState := new(devicepb.ProtocolState)
+	protocolState.Protocol = devicepb.Protocol_GNMI
+	protocolState.ConnectivityState = devicepb.ConnectivityState_REACHABLE
+	protocolState.ChannelState = devicepb.ChannelState_CONNECTED
+	protocolState.ServiceState = devicepb.ServiceState_AVAILABLE
+	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
+
+	mockStore.EXPECT().Get(gomock.Any()).Return(deviceDisconnected, nil)
+	mockStore.EXPECT().Update(gomock.Any()).Return(device1Connected, nil)
+
+	deviceConnected, err := mgrTest.DeviceConnected(device1)
+
+	assert.NilError(t, err)
+	assert.Equal(t, deviceConnected.ID, device1Connected.ID)
+	assert.Equal(t, deviceConnected.Protocols[0].Protocol, devicepb.Protocol_GNMI)
+	assert.Equal(t, deviceConnected.Protocols[0].ConnectivityState, devicepb.ConnectivityState_REACHABLE)
+	assert.Equal(t, deviceConnected.Protocols[0].ChannelState, devicepb.ChannelState_CONNECTED)
+	assert.Equal(t, deviceConnected.Protocols[0].ServiceState, devicepb.ServiceState_AVAILABLE)
+}
+
+func TestManager_DeviceDisconnected(t *testing.T) {
+	mgrTest, _, _, mockStore := setUp(t)
+	const (
+		device1 = "device1"
+	)
+
+	deviceDisconnected := &devicepb.Device{
+		ID:       "device1",
+		Revision: 1,
+		Address:  "device1:1234",
+		Version:  "1.0.0",
+	}
+
+	device1Connected := &devicepb.Device{
+		ID:       "device1",
+		Revision: 1,
+		Address:  "device1:1234",
+		Version:  "1.0.0",
+	}
+
+	protocolState := new(devicepb.ProtocolState)
+	protocolState.Protocol = devicepb.Protocol_GNMI
+	protocolState.ConnectivityState = devicepb.ConnectivityState_REACHABLE
+	protocolState.ChannelState = devicepb.ChannelState_CONNECTED
+	protocolState.ServiceState = devicepb.ServiceState_AVAILABLE
+	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
+
+	protocolStateDisconnected := new(devicepb.ProtocolState)
+	protocolStateDisconnected.Protocol = devicepb.Protocol_GNMI
+	protocolStateDisconnected.ConnectivityState = devicepb.ConnectivityState_UNREACHABLE
+	protocolStateDisconnected.ChannelState = devicepb.ChannelState_DISCONNECTED
+	protocolStateDisconnected.ServiceState = devicepb.ServiceState_UNAVAILABLE
+	deviceDisconnected.Protocols = append(device1Connected.Protocols, protocolState)
+
+	mockStore.EXPECT().Get(gomock.Any()).Return(device1Connected, nil)
+	mockStore.EXPECT().Update(gomock.Any()).Return(deviceDisconnected, nil)
+
+	deviceUpdated, err := mgrTest.DeviceDisconnected(device1, errors.New("device reported disconnection"))
+
+	assert.NilError(t, err)
+	assert.Equal(t, deviceUpdated.ID, device1Connected.ID)
+	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, devicepb.Protocol_GNMI)
+	assert.Equal(t, deviceUpdated.Protocols[0].ConnectivityState, devicepb.ConnectivityState_UNREACHABLE)
+	assert.Equal(t, deviceUpdated.Protocols[0].ChannelState, devicepb.ChannelState_DISCONNECTED)
+	assert.Equal(t, deviceUpdated.Protocols[0].ServiceState, devicepb.ServiceState_UNAVAILABLE)
 }
 
 type MockModelPlugin struct{}
@@ -492,7 +587,7 @@ func (m MockModelPlugin) GetStateMode() modelregistry.GetStateMode {
 }
 
 func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	plugin := MockModelPlugin{}
 	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
@@ -509,7 +604,7 @@ func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
 }
 
 func TestManager_ValidateStores(t *testing.T) {
-	mgrTest, _, _ := setUp()
+	mgrTest, _, _, _ := setUp(t)
 
 	plugin := MockModelPlugin{}
 	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
