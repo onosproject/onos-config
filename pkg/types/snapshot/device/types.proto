@@ -37,14 +37,14 @@ message DeviceSnapshot {
     // 'network_snapshot_id' is the identifier of the network snapshot from which this snapshot was created
     string network_snapshot_id = 4 [(gogoproto.customname) = "NetworkSnapshotID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
 
+    // 'max_network_change' is the maximum network change to be snapshotted for the device
+    uint64 max_network_change = 5 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+
     // 'status' is the snapshot status
-    onos.config.snapshot.Status status = 5 [(gogoproto.nullable) = false];
+    onos.config.snapshot.Status status = 6 [(gogoproto.nullable) = false];
 
     // 'retention' specifies which changes to retain for device changes
-    onos.config.snapshot.RetentionOptions retention = 6 [(gogoproto.nullable) = false];
-
-    // 'timestamp' is the time at which to take the snapshot
-    google.protobuf.Timestamp timestamp = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    onos.config.snapshot.RetentionOptions retention = 7 [(gogoproto.nullable) = false];
 
     // 'created' is the time at which the configuration was created
     google.protobuf.Timestamp created = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];

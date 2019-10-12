@@ -47,4 +47,13 @@ message NetworkSnapshot {
 
     // 'updated' is the time at which the configuration was last updated
     google.protobuf.Timestamp updated = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+    // 'refs' is a set of references to stored device snapshots
+    repeated DeviceSnapshotRef refs = 10;
+}
+
+// DeviceSnapshotRef is a reference to a device snapshot
+message DeviceSnapshotRef {
+    // 'device_snapshot_id' is the unique identifier of the device snapshot
+    string device_snapshot_id = 1 [(gogoproto.customname) = "DeviceSnapshotID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/snapshot/device.ID"];
 }

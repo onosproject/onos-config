@@ -57,6 +57,9 @@ message NetworkChange {
 
     // 'refs' is a set of references to stored device changes
     repeated DeviceChangeRef refs = 8;
+
+    // 'deleted' is a flag indicating whether this change is being deleted by a snapshot
+    bool deleted = 9;
 }
 
 // DeviceChangeRef is a reference to a device change
