@@ -19,13 +19,14 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
 	"io"
 	"os"
 	"sync"
 	"testing"
+	"time"
 )
 
 // TestMain initializes the test suite context.
@@ -47,7 +48,7 @@ func Test_GetChanges_All(t *testing.T) {
 }
 
 func Test_GetChanges_Change(t *testing.T) {
-	testGetChanges(t, "tAk3GZSh1qbdhdm5414r46RLvqw=")
+	testGetChanges(t, "M84Z2dnvLm3avcD+wIOWIJElb3Y=")
 }
 
 func testGetChanges(t *testing.T, changeID string) {
@@ -123,13 +124,13 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 		}
 		assert.NilError(t, err, "unable to receive message")
 		pv = in.Pathvalue
-		value, err := change.NewTypedValue(pv.Value, change.ValueType(pv.ValueType), []int{})
+		value, err := types.NewTypedValue(pv.Value, types.ValueType(pv.ValueType), []int{})
 		assert.NilError(t, err)
 
 		switch pv.Path {
 		case "/cont1a/cont2a/leaf2c":
 			assert.Equal(t, pv.ValueType, admin.ChangeValueType_STRING)
-			switch value.String() {
+			switch value.StringString() {
 			case "test1":
 				//From the initial response
 				fmt.Println("Got value test1 on ", pv.Path)
@@ -139,15 +140,16 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 				conn.Close()
 				return
 			default:
-				t.Fatal("Unexpected valued for", pv.Path, value.String())
+				t.Fatal("Unexpected value for", pv.Path, value.StringString())
 			}
 		case "/cont1b-state/leaf2d":
 			assert.Equal(t, pv.ValueType, admin.ChangeValueType_UINT)
-			assert.Equal(t, value.String(), "12345")
+			assert.Equal(t, value.StringString(), "12345")
 		default:
 			t.Fatal("Unexpected path in opstate cache for Device2", pv.Path)
 		}
 	}
+	time.Sleep(time.Millisecond * 10)
 	err = stream.CloseSend()
 	assert.NilError(t, err, "unable to close stream")
 }

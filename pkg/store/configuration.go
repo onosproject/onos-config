@@ -86,7 +86,7 @@ func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore m
 				var alreadyExists bool
 				for idx, cv := range consolidatedConfig {
 					if changeValue.Path == cv.Path {
-						consolidatedConfig[idx].Value = changeValue.Value
+						consolidatedConfig[idx].Bytes = changeValue.Bytes
 						alreadyExists = true
 						break
 					}

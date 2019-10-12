@@ -18,7 +18,7 @@ import (
 	"encoding/base64"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
@@ -207,7 +207,7 @@ func Test_listen_operational(t *testing.T) {
 	go d.ListenOperationalState(opStateCh)
 	// Send down some changes
 	event := events.NewOperationalStateEvent("foobar", "testpath",
-		change.NewTypedValueString("testValue"), events.EventItemUpdated)
+		types.NewTypedValueString("testValue"), events.EventItemUpdated)
 	opStateCh <- event
 
 	// Wait for the changes to get distributed

@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/spf13/cobra"
 	"io"
 	"os"
@@ -107,7 +107,7 @@ func nativeType(cv admin.ChangeValue) string {
 	for i, t := range cv.TypeOpts {
 		to[i] = int(t)
 	}
-	tv, err := change.NewTypedValue(cv.Value, change.ValueType(cv.ValueType), to)
+	tv, err := types.NewTypedValue(cv.Value, types.ValueType(cv.ValueType), to)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to convert value to TypedValue %s", err)
 		os.Exit(1)

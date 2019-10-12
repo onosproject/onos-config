@@ -17,31 +17,31 @@ package values
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	pb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 // GnmiTypedValueToNativeType converts gnmi type based values in to native byte array types
 // Deprecated: GnmiTypedValueToNativeType is a method of changing gnmiType to legacy TypedValue
-func GnmiTypedValueToNativeType(gnmiTv *pb.TypedValue) (*change.TypedValue, error) {
+func GnmiTypedValueToNativeType(gnmiTv *pb.TypedValue) (*types.TypedValue, error) {
 
 	switch v := gnmiTv.GetValue().(type) {
 	case *pb.TypedValue_StringVal:
-		return change.NewTypedValueString(v.StringVal), nil
+		return types.NewTypedValueString(v.StringVal), nil
 	case *pb.TypedValue_AsciiVal:
-		return change.NewTypedValueString(v.AsciiVal), nil
+		return types.NewTypedValueString(v.AsciiVal), nil
 	case *pb.TypedValue_IntVal:
-		return change.NewTypedValueInt64(int(v.IntVal)), nil
+		return types.NewTypedValueInt64(int(v.IntVal)), nil
 	case *pb.TypedValue_UintVal:
-		return change.NewTypedValueUint64(uint(v.UintVal)), nil
+		return types.NewTypedValueUint64(uint(v.UintVal)), nil
 	case *pb.TypedValue_BoolVal:
-		return change.NewTypedValueBool(v.BoolVal), nil
+		return types.NewTypedValueBool(v.BoolVal), nil
 	case *pb.TypedValue_BytesVal:
-		return change.NewTypedValueBytes(v.BytesVal), nil
+		return types.NewTypedValueBytes(v.BytesVal), nil
 	case *pb.TypedValue_DecimalVal:
-		return change.NewTypedValueDecimal64(v.DecimalVal.Digits, v.DecimalVal.Precision), nil
+		return types.NewTypedValueDecimal64(v.DecimalVal.Digits, v.DecimalVal.Precision), nil
 	case *pb.TypedValue_FloatVal:
-		return change.NewTypedValueFloat(v.FloatVal), nil
+		return types.NewTypedValueFloat(v.FloatVal), nil
 	case *pb.TypedValue_LeaflistVal:
 		return handleLeafList(v)
 	default:
@@ -49,7 +49,7 @@ func GnmiTypedValueToNativeType(gnmiTv *pb.TypedValue) (*change.TypedValue, erro
 	}
 }
 
-func handleLeafList(gnmiLl *pb.TypedValue_LeaflistVal) (*change.TypedValue, error) {
+func handleLeafList(gnmiLl *pb.TypedValue_LeaflistVal) (*types.TypedValue, error) {
 	stringList := make([]string, 0)
 	intList := make([]int, 0)
 	uintList := make([]uint, 0)
@@ -85,65 +85,65 @@ func handleLeafList(gnmiLl *pb.TypedValue_LeaflistVal) (*change.TypedValue, erro
 	}
 
 	if len(stringList) > 0 {
-		return change.NewLeafListStringTv(stringList), nil
+		return types.NewLeafListStringTv(stringList), nil
 	} else if len(intList) > 0 {
-		return change.NewLeafListInt64Tv(intList), nil
+		return types.NewLeafListInt64Tv(intList), nil
 	} else if len(uintList) > 0 {
-		return change.NewLeafListUint64Tv(uintList), nil
+		return types.NewLeafListUint64Tv(uintList), nil
 	} else if len(boolList) > 0 {
-		return change.NewLeafListBoolTv(boolList), nil
+		return types.NewLeafListBoolTv(boolList), nil
 	} else if len(bytesList) > 0 {
-		return change.NewLeafListBytesTv(bytesList), nil
+		return types.NewLeafListBytesTv(bytesList), nil
 	} else if len(digitsList) > 0 {
-		return change.NewLeafListDecimal64Tv(digitsList, precision), nil
+		return types.NewLeafListDecimal64Tv(digitsList, precision), nil
 	} else if len(floatList) > 0 {
-		return change.NewLeafListFloat32Tv(floatList), nil
+		return types.NewLeafListFloat32Tv(floatList), nil
 	}
 	return nil, fmt.Errorf("Empty leaf list given")
 }
 
 // NativeTypeToGnmiTypedValue converts native byte array based values in to gnmi types
 // Deprecated: NativeTypeToGnmiTypedValue is a method of changing legacy TypedValue to gnmiType
-func NativeTypeToGnmiTypedValue(typedValue *change.TypedValue) (*pb.TypedValue, error) {
-	if len(typedValue.Value) == 0 && typedValue.Type != change.ValueTypeEMPTY {
+func NativeTypeToGnmiTypedValue(typedValue *types.TypedValue) (*pb.TypedValue, error) {
+	if len(typedValue.Bytes) == 0 && typedValue.Type != types.ValueType_EMPTY {
 		return nil, fmt.Errorf("invalid TypedValue Length 0")
 	}
 	switch typedValue.Type {
-	case change.ValueTypeEMPTY:
+	case types.ValueType_EMPTY:
 		gnmiValue := &pb.TypedValue_AnyVal{AnyVal: nil}
 		return &pb.TypedValue{Value: gnmiValue}, nil
 
-	case change.ValueTypeSTRING:
-		gnmiValue := pb.TypedValue_StringVal{StringVal: (*change.TypedString)(typedValue).String()}
+	case types.ValueType_STRING:
+		gnmiValue := pb.TypedValue_StringVal{StringVal: (*types.TypedString)(typedValue).String()}
 		return &pb.TypedValue{Value: &gnmiValue}, nil
 
-	case change.ValueTypeINT:
-		gnmiValue := pb.TypedValue_IntVal{IntVal: int64((*change.TypedInt64)(typedValue).Int())}
+	case types.ValueType_INT:
+		gnmiValue := pb.TypedValue_IntVal{IntVal: int64((*types.TypedInt64)(typedValue).Int())}
 		return &pb.TypedValue{Value: &gnmiValue}, nil
 
-	case change.ValueTypeUINT:
-		gnmiValue := pb.TypedValue_UintVal{UintVal: uint64((*change.TypedUint64)(typedValue).Uint())}
+	case types.ValueType_UINT:
+		gnmiValue := pb.TypedValue_UintVal{UintVal: uint64((*types.TypedUint64)(typedValue).Uint())}
 		return &pb.TypedValue{Value: &gnmiValue}, nil
 
-	case change.ValueTypeBOOL:
-		gnmiValue := pb.TypedValue_BoolVal{BoolVal: (*change.TypedBool)(typedValue).Bool()}
+	case types.ValueType_BOOL:
+		gnmiValue := pb.TypedValue_BoolVal{BoolVal: (*types.TypedBool)(typedValue).Bool()}
 		return &pb.TypedValue{Value: &gnmiValue}, nil
 
-	case change.ValueTypeDECIMAL:
-		digits, precision := (*change.TypedDecimal64)(typedValue).Decimal64()
+	case types.ValueType_DECIMAL:
+		digits, precision := (*types.TypedDecimal64)(typedValue).Decimal64()
 		gnmiValue := pb.TypedValue_DecimalVal{DecimalVal: &pb.Decimal64{Digits: digits, Precision: precision}}
 		return &pb.TypedValue{Value: &gnmiValue}, nil
 
-	case change.ValueTypeFLOAT:
-		gnmiValue := pb.TypedValue_FloatVal{FloatVal: (*change.TypedFloat)(typedValue).Float32()}
+	case types.ValueType_FLOAT:
+		gnmiValue := pb.TypedValue_FloatVal{FloatVal: (*types.TypedFloat)(typedValue).Float32()}
 		return &pb.TypedValue{Value: &gnmiValue}, nil
 
-	case change.ValueTypeBYTES:
-		gnmiValue := pb.TypedValue_BytesVal{BytesVal: (*change.TypedBytes)(typedValue).Bytes()}
+	case types.ValueType_BYTES:
+		gnmiValue := pb.TypedValue_BytesVal{BytesVal: (*types.TypedBytes)(typedValue).ByteArray()}
 		return &pb.TypedValue{Value: &gnmiValue}, nil
 
-	case change.ValueTypeLeafListSTRING:
-		strings := (*change.TypedLeafListString)(typedValue).List()
+	case types.ValueType_LEAFLIST_STRING:
+		strings := (*types.TypedLeafListString)(typedValue).List()
 		gnmiTypedValues := make([]*pb.TypedValue, 0)
 		for _, s := range strings {
 			gnmiValue := pb.TypedValue_StringVal{StringVal: s}
@@ -152,8 +152,8 @@ func NativeTypeToGnmiTypedValue(typedValue *change.TypedValue) (*pb.TypedValue, 
 		gnmiLeafList := pb.TypedValue_LeaflistVal{LeaflistVal: &pb.ScalarArray{Element: gnmiTypedValues}}
 		return &pb.TypedValue{Value: &gnmiLeafList}, nil
 
-	case change.ValueTypeLeafListINT:
-		ints := (*change.TypedLeafListInt64)(typedValue).List()
+	case types.ValueType_LEAFLIST_INT:
+		ints := (*types.TypedLeafListInt64)(typedValue).List()
 		gnmiTypedValues := make([]*pb.TypedValue, 0)
 		for _, i := range ints {
 			gnmiValue := pb.TypedValue_IntVal{IntVal: int64(i)}
@@ -162,8 +162,8 @@ func NativeTypeToGnmiTypedValue(typedValue *change.TypedValue) (*pb.TypedValue, 
 		gnmiLeafList := pb.TypedValue_LeaflistVal{LeaflistVal: &pb.ScalarArray{Element: gnmiTypedValues}}
 		return &pb.TypedValue{Value: &gnmiLeafList}, nil
 
-	case change.ValueTypeLeafListUINT:
-		uints := (*change.TypedLeafListUint)(typedValue).List()
+	case types.ValueType_LEAFLIST_UINT:
+		uints := (*types.TypedLeafListUint)(typedValue).List()
 		gnmiTypedValues := make([]*pb.TypedValue, 0)
 		for _, u := range uints {
 			gnmiValue := pb.TypedValue_UintVal{UintVal: uint64(u)}
@@ -172,8 +172,8 @@ func NativeTypeToGnmiTypedValue(typedValue *change.TypedValue) (*pb.TypedValue, 
 		gnmiLeafList := pb.TypedValue_LeaflistVal{LeaflistVal: &pb.ScalarArray{Element: gnmiTypedValues}}
 		return &pb.TypedValue{Value: &gnmiLeafList}, nil
 
-	case change.ValueTypeLeafListBOOL:
-		bools := (*change.TypedLeafListBool)(typedValue).List()
+	case types.ValueType_LEAFLIST_BOOL:
+		bools := (*types.TypedLeafListBool)(typedValue).List()
 		gnmiTypedValues := make([]*pb.TypedValue, 0)
 		for _, b := range bools {
 			gnmiValue := pb.TypedValue_BoolVal{BoolVal: b}
@@ -182,8 +182,8 @@ func NativeTypeToGnmiTypedValue(typedValue *change.TypedValue) (*pb.TypedValue, 
 		gnmiLeafList := pb.TypedValue_LeaflistVal{LeaflistVal: &pb.ScalarArray{Element: gnmiTypedValues}}
 		return &pb.TypedValue{Value: &gnmiLeafList}, nil
 
-	case change.ValueTypeLeafListDECIMAL:
-		digits, precision := (*change.TypedLeafListDecimal)(typedValue).List()
+	case types.ValueType_LEAFLIST_DECIMAL:
+		digits, precision := (*types.TypedLeafListDecimal)(typedValue).List()
 		gnmiTypedValues := make([]*pb.TypedValue, 0)
 		for _, d := range digits {
 			gnmiValue := pb.TypedValue_DecimalVal{DecimalVal: &pb.Decimal64{Digits: d, Precision: precision}}
@@ -192,8 +192,8 @@ func NativeTypeToGnmiTypedValue(typedValue *change.TypedValue) (*pb.TypedValue, 
 		gnmiLeafList := pb.TypedValue_LeaflistVal{LeaflistVal: &pb.ScalarArray{Element: gnmiTypedValues}}
 		return &pb.TypedValue{Value: &gnmiLeafList}, nil
 
-	case change.ValueTypeLeafListFLOAT:
-		floats := (*change.TypedLeafListFloat)(typedValue).List()
+	case types.ValueType_LEAFLIST_FLOAT:
+		floats := (*types.TypedLeafListFloat)(typedValue).List()
 		gnmiTypedValues := make([]*pb.TypedValue, 0)
 		for _, f := range floats {
 			gnmiValue := pb.TypedValue_FloatVal{FloatVal: f}
@@ -202,8 +202,8 @@ func NativeTypeToGnmiTypedValue(typedValue *change.TypedValue) (*pb.TypedValue, 
 		gnmiLeafList := pb.TypedValue_LeaflistVal{LeaflistVal: &pb.ScalarArray{Element: gnmiTypedValues}}
 		return &pb.TypedValue{Value: &gnmiLeafList}, nil
 
-	case change.ValueTypeLeafListBYTES:
-		bytes := (*change.TypedLeafListBytes)(typedValue).List()
+	case types.ValueType_LEAFLIST_BYTES:
+		bytes := (*types.TypedLeafListBytes)(typedValue).List()
 		gnmiTypedValues := make([]*pb.TypedValue, 0)
 		for _, b := range bytes {
 			gnmiValue := pb.TypedValue_BytesVal{BytesVal: b}

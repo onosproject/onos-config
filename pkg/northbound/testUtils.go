@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
@@ -48,9 +48,9 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 		log.Error("Unable to load manager")
 	}
 
-	opStateValuesDevice2 := make(map[string]*change.TypedValue)
-	opStateValuesDevice2["/cont1a/cont2a/leaf2c"] = change.NewTypedValueString("test1")
-	opStateValuesDevice2["/cont1b-state/leaf2d"] = change.NewTypedValueUint64(12345)
+	opStateValuesDevice2 := make(map[string]*types.TypedValue)
+	opStateValuesDevice2["/cont1a/cont2a/leaf2c"] = types.NewTypedValueString("test1")
+	opStateValuesDevice2["/cont1b-state/leaf2d"] = types.NewTypedValueUint64(12345)
 
 	manager.GetManager().OperationalStateCache[device.ID("Device2")] = opStateValuesDevice2
 	go manager.GetManager().Dispatcher.ListenOperationalState(manager.GetManager().OperationalStateChannel)
@@ -80,14 +80,14 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 		time.Sleep(100 * time.Millisecond)
 		opStateEventWrong := events.NewOperationalStateEvent("Device1",
 			"/cont1a/cont2a/leaf2d",
-			change.NewTypedValueString("testNotRelevant"),
+			types.NewTypedValueString("testNotRelevant"),
 			events.EventItemUpdated)
 		manager.GetManager().OperationalStateChannel <- opStateEventWrong
 
 		time.Sleep(100 * time.Millisecond)
 		opStateEvent := events.NewOperationalStateEvent("Device2",
 			"/cont1a/cont2a/leaf2c",
-			change.NewTypedValueString("test2"),
+			types.NewTypedValueString("test2"),
 			events.EventItemUpdated)
 		manager.GetManager().OperationalStateChannel <- opStateEvent
 	}()

@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"time"
@@ -49,7 +50,7 @@ func (m *Manager) RollbackTargetConfig(configname store.ConfigName) (change.ID, 
 	return id, listenForDeviceResponse(m, targetID)
 }
 
-func computeRollback(m *Manager, target string, configname store.ConfigName) (change.ID, change.TypedValueMap, []string, error) {
+func computeRollback(m *Manager, target string, configname store.ConfigName) (change.ID, types.TypedValueMap, []string, error) {
 	id, err := m.ConfigStore.RemoveLastChangeEntry(configname)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("can't remove last entry on target %s in config %s, %s",
@@ -71,7 +72,7 @@ func computeRollback(m *Manager, target string, configname store.ConfigName) (ch
 			previousValues = append(previousValues, value[0])
 		}
 	}
-	updates := make(change.TypedValueMap)
+	updates := make(types.TypedValueMap)
 	for _, changeVal := range previousValues {
 		updates[changeVal.Path] = &changeVal.TypedValue
 	}

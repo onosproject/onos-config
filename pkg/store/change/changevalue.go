@@ -16,6 +16,7 @@ package change
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/types/change/device"
 )
 
 // Value is a model that extends ConfigValue - path and a value and bool
@@ -30,11 +31,12 @@ func (c Value) String() string {
 	if c.Path == "" {
 		return "InvalidChange"
 	}
-	return fmt.Sprintf("%s %v %t", c.Path, c.Value, c.Remove)
+	return fmt.Sprintf("%s %v %t", c.Path, c.Bytes, c.Remove)
 }
 
 // NewChangeValue decodes a path and value in to an object
-func NewChangeValue(path string, value *TypedValue, isRemove bool) (*Value, error) {
+// Deprecated: NewChangeValue creates a legacy internal Change
+func NewChangeValue(path string, value *device.TypedValue, isRemove bool) (*Value, error) {
 	cv := Value{
 		ConfigValue{path, *value},
 		isRemove,

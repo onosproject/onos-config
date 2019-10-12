@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
@@ -139,15 +140,10 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 			Config:      make([]*change.Value, 0),
 		}
 		for _, cv := range in.ChangeValues {
-			var tv *change.TypedValue
-			typeOptInt32 := make([]int, len(cv.TypeOpts))
-			for i, v := range cv.TypeOpts {
-				typeOptInt32[i] = int(v)
-			}
-			tv = &change.TypedValue{
-				Value:    cv.Value,
-				Type:     change.ValueType(cv.ValueType),
-				TypeOpts: typeOptInt32,
+			tv := &types.TypedValue{
+				Bytes:    cv.Value,
+				Type:     types.ValueType(cv.ValueType),
+				TypeOpts: cv.TypeOpts,
 			}
 
 			value, _ := change.NewChangeValue(cv.Path, tv, cv.Removed)
