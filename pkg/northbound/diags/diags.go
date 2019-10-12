@@ -78,9 +78,9 @@ func (s Server) GetChanges(r *ChangesRequest, stream ConfigDiags_GetChangesServe
 		for _, cv := range c.Config {
 			changeValues = append(changeValues, &admin.ChangeValue{
 				Path:      cv.Path,
-				Value:     cv.Value,
+				Value:     cv.Bytes,
 				ValueType: admin.ChangeValueType(cv.Type),
-				TypeOpts:  typeOpts32(cv.TypeOpts),
+				TypeOpts:  cv.TypeOpts,
 				Removed:   cv.Remove,
 			})
 		}
@@ -141,8 +141,8 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 		pathValue := &admin.ChangeValue{
 			Path:      path,
 			ValueType: admin.ChangeValueType(value.Type),
-			Value:     value.Value,
-			TypeOpts:  typeOpts32(value.TypeOpts),
+			Value:     value.Bytes,
+			TypeOpts:  value.TypeOpts,
 		}
 
 		msg := &OpStateResponse{Type: admin.Type_NONE, Pathvalue: pathValue}
@@ -173,8 +173,8 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 				pathValue := &admin.ChangeValue{
 					Path:      opStateEvent.Path(),
 					ValueType: admin.ChangeValueType(opStateEvent.Value().Type),
-					Value:     opStateEvent.Value().Value,
-					TypeOpts:  typeOpts32(opStateEvent.Value().TypeOpts),
+					Value:     opStateEvent.Value().Bytes,
+					TypeOpts:  opStateEvent.Value().TypeOpts,
 				}
 
 				msg := &OpStateResponse{Type: admin.Type_ADDED, Pathvalue: pathValue}
@@ -204,12 +204,4 @@ func stringInList(haystack []string, needle string) bool {
 		}
 	}
 	return false
-}
-
-func typeOpts32(typeOptsInt []int) []int32 {
-	typeOpts32 := make([]int32, len(typeOptsInt))
-	for i, v := range typeOptsInt {
-		typeOpts32[i] = int32(v)
-	}
-	return typeOpts32
 }

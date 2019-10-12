@@ -145,6 +145,6 @@ func Test_GetChanges(t *testing.T) {
 	assert.NilError(t, err)
 	output := outputBuffer.String()
 	assert.Equal(t, strings.Count(output, "CHANGE"), len(configurations))
-	assert.Equal(t, strings.Count(output, "|(STRING) Test"), len(configurations)*len(configurations))
+	assert.Equal(t, strings.Count(output, "|(STRING) bytes"), len(configurations)*len(configurations))
 	assert.Equal(t, strings.Count(output, "|/root/leaf-0"), len(configurations))
 }

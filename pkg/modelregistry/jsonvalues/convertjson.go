@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"regexp"
 	"sort"
 	"strings"
@@ -126,9 +127,9 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 			} else if hasPrefixMultipleIdx(modelPathOnlyLastIndex, jsonPathIdx) ||
 				hasPrefixMultipleIdx(modelPathOnlySecondIndex, jsonPathIdx) {
 				indexName := jsonPathIdx[strings.LastIndex(jsonPathIdx, "[")+1:]
-				index := jsonPathValue.TypedValue.String()
-				if jsonPathValue.Type == change.ValueTypeFLOAT {
-					index = fmt.Sprintf("%.0f", (*change.TypedFloat)(&jsonPathValue.TypedValue).Float32())
+				index := jsonPathValue.TypedValue.ValueToString()
+				if jsonPathValue.Type == types.ValueType_FLOAT {
+					index = fmt.Sprintf("%.0f", (*types.TypedFloat)(&jsonPathValue.TypedValue).Float32())
 				}
 				jsonRoPath := jsonPathStr[:strings.LastIndex(jsonPathStr, "/")]
 				idx, ok := indexMap[jsonRoPath]
@@ -184,7 +185,7 @@ func extractIndices(indexStr string) []string {
 }
 
 func assignModelType(paths modelregistry.PathMap, modelPath string,
-	jsonPathValue *change.ConfigValue) (*change.TypedValue, error) {
+	jsonPathValue *change.ConfigValue) (*types.TypedValue, error) {
 
 	modelType, err := paths.TypeForPath(modelPath)
 	if err != nil {
@@ -199,32 +200,32 @@ func assignModelType(paths modelregistry.PathMap, modelPath string,
 	return newTypeValue, nil
 }
 
-func pathType(jsonPathValue *change.ConfigValue, spType change.ValueType) (*change.TypedValue, error) {
-	var newTypeValue *change.TypedValue
+func pathType(jsonPathValue *change.ConfigValue, spType types.ValueType) (*types.TypedValue, error) {
+	var newTypeValue *types.TypedValue
 	var err error
 	switch jsonPathValue.Type {
-	case change.ValueTypeFLOAT:
+	case types.ValueType_FLOAT:
 		// Could be int, uint, or float from json - convert to numeric
-		floatVal := (*change.TypedFloat)(&jsonPathValue.TypedValue).Float32()
+		floatVal := (*types.TypedFloat)(&jsonPathValue.TypedValue).Float32()
 
 		switch spType {
-		case change.ValueTypeFLOAT:
+		case types.ValueType_FLOAT:
 			newTypeValue = &jsonPathValue.TypedValue
-		case change.ValueTypeINT:
-			newTypeValue = change.NewTypedValueInt64(int(floatVal))
-		case change.ValueTypeUINT:
-			newTypeValue = change.NewTypedValueUint64(uint(floatVal))
-			//case change.ValueTypeDECIMAL:
+		case types.ValueType_INT:
+			newTypeValue = types.NewTypedValueInt64(int(floatVal))
+		case types.ValueType_UINT:
+			newTypeValue = types.NewTypedValueUint64(uint(floatVal))
+			//case types.ValueTypeDECIMAL:
 			// TODO add a conversion from float to D64 will also need number of decimal places from Read Only SubPath
-			//	newTypeValue = change.NewTypedValueDecimal64()
-		case change.ValueTypeSTRING:
-			newTypeValue = change.NewTypedValueString(fmt.Sprintf("%.0f", float64(floatVal)))
+			//	newTypeValue = types.NewTypedValueDecimal64()
+		case types.ValueType_STRING:
+			newTypeValue = types.NewTypedValueString(fmt.Sprintf("%.0f", float64(floatVal)))
 		default:
 			newTypeValue = &jsonPathValue.TypedValue
 		}
 
 	default:
-		newTypeValue, err = change.NewTypedValue(jsonPathValue.Value, spType, []int{})
+		newTypeValue, err = types.NewTypedValue(jsonPathValue.Bytes, spType, []int32{})
 		if err != nil {
 			return nil, err
 		}

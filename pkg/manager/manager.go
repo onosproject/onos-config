@@ -24,6 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicetopo "github.com/onosproject/onos-config/pkg/store/device"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
@@ -45,7 +46,7 @@ type Manager struct {
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              *dispatcher.Dispatcher
-	OperationalStateCache   map[devicepb.ID]change.TypedValueMap
+	OperationalStateCache   map[devicepb.ID]types.TypedValueMap
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -71,7 +72,7 @@ func NewManager(configStore *store.ConfigurationStore, changeStore *store.Change
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
-		OperationalStateCache:   make(map[devicepb.ID]change.TypedValueMap),
+		OperationalStateCache:   make(map[devicepb.ID]types.TypedValueMap),
 	}
 
 	changeIds := make([]string, 0)
@@ -279,7 +280,7 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 	}
 }
 
-func (m *Manager) computeChange(updates change.TypedValueMap,
+func (m *Manager) computeChange(updates types.TypedValueMap,
 	deletes []string, description string) (*change.Change, error) {
 	var newChanges = make([]*change.Value, 0)
 	//updates
@@ -293,7 +294,7 @@ func (m *Manager) computeChange(updates change.TypedValueMap,
 	}
 	//deletes
 	for _, path := range deletes {
-		changeValue, _ := change.NewChangeValue(path, change.NewTypedValueEmpty(), true)
+		changeValue, _ := change.NewChangeValue(path, types.NewTypedValueEmpty(), true)
 		newChanges = append(newChanges, changeValue)
 	}
 	if description == "" {

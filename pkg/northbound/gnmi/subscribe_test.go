@@ -19,6 +19,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -218,8 +219,8 @@ func Test_WrongDevice(t *testing.T) {
 	targets["Device1"] = struct{}{}
 	subs = append(subs, utils.MatchWildcardRegexp("/cont1a/*/leaf3c"))
 	go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
-	config1Value05, _ := change.NewChangeValue("/cont1a/cont2a/leaf2c", change.NewTypedValueString("def"), false)
-	config1Value09, _ := change.NewChangeValue("/cont1a/list2a[name=txout2]", change.NewTypedValueEmpty(), true)
+	config1Value05, _ := change.NewChangeValue("/cont1a/cont2a/leaf2c", types.NewTypedValueString("def"), false)
+	config1Value09, _ := change.NewChangeValue("/cont1a/list2a[name=txout2]", types.NewTypedValueEmpty(), true)
 	change1, _ := change.NewChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
 	changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
 	select {
@@ -259,8 +260,8 @@ func Test_WrongPath(t *testing.T) {
 	subsStr := make([]*regexp.Regexp, 0)
 	subsStr = append(subsStr, utils.MatchWildcardRegexp(subscriptionPathStr))
 	go listenForUpdates(changeChan, serverFake, mgr, targets, subsStr, resChan)
-	config1Value05, _ := change.NewChangeValue("/test1:cont1a/cont2a/leaf2c", change.NewTypedValueString("def"), false)
-	config1Value09, _ := change.NewChangeValue("/test1:cont1a/list2a[name=txout2]", change.NewTypedValueEmpty(), true)
+	config1Value05, _ := change.NewChangeValue("/test1:cont1a/cont2a/leaf2c", types.NewTypedValueString("def"), false)
+	config1Value09, _ := change.NewChangeValue("/test1:cont1a/list2a[name=txout2]", types.NewTypedValueEmpty(), true)
 	change1, _ := change.NewChange(change.ValueCollections{config1Value05, config1Value09}, "Remove txout 2")
 	changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
 	select {

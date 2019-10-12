@@ -33,6 +33,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 )
 
 func main() {
@@ -49,7 +50,7 @@ func main() {
 
 	for i := 0; i < iterations; i++ {
 		path := fmt.Sprintf("/test%d", i)
-		cv, _ := change.NewChangeValue(path, (*change.TypedValue)(change.NewTypedValueInt64(i)), false)
+		cv, _ := change.NewChangeValue(path, (*types.TypedValue)(types.NewTypedValueInt64(i)), false)
 		changeValues = append(changeValues, cv)
 	}
 

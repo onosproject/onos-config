@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 )
 
 // DecomposeTree breaks a JSON file down in to paths and values without any external
@@ -55,13 +56,13 @@ func extractValuesIntermediate(f interface{}, parentPath string) []*change.Confi
 			changes = append(changes, objs...)
 		}
 	case string:
-		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.NewTypedValueString(value)}
+		newCv := change.ConfigValue{Path: parentPath, TypedValue: *types.NewTypedValueString(value)}
 		changes = append(changes, &newCv)
 	case bool:
-		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.NewTypedValueBool(value)}
+		newCv := change.ConfigValue{Path: parentPath, TypedValue: *types.NewTypedValueBool(value)}
 		changes = append(changes, &newCv)
 	case float64:
-		newCv := change.ConfigValue{Path: parentPath, TypedValue: *change.NewTypedValueFloat(float32(value))}
+		newCv := change.ConfigValue{Path: parentPath, TypedValue: *types.NewTypedValueFloat(float32(value))}
 		changes = append(changes, &newCv)
 	default:
 		fmt.Println("Unexpected type", value)

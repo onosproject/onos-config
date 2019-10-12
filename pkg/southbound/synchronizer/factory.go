@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -35,7 +36,7 @@ import (
 func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	topoChannel <-chan *devicepb.ListResponse, opStateChan chan<- events.OperationalStateEvent,
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[device.ID]change.TypedValueMap) {
+	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[device.ID]types.TypedValueMap) {
 
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
@@ -77,7 +78,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			} else {
 				mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
 			}
-			operationalStateCache[notifiedDevice.ID] = make(change.TypedValueMap)
+			operationalStateCache[notifiedDevice.ID] = make(types.TypedValueMap)
 			target := southbound.NewTarget()
 			//TODO configuration needs to be blocked at this point in time to allow for device connection.
 			sync, err := New(ctx, changeStore, configStore, notifiedDevice, configChan, opStateChan,
