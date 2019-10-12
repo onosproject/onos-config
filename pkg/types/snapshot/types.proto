@@ -20,11 +20,23 @@ package onos.config.snapshot;
 
 // Status is the status of a snapshot
 message Status {
+    // 'phase' is the snapshot phase
+    Phase phase = 1;
+
     // 'state' is the state of a snapshot
     State state = 2;
 }
 
-// State is the state of a snapshot
+// Phase is a snapshot phase
+enum Phase {
+    // MARK is the first phase in which changes are marked for deletion
+    MARK = 0;
+
+    // DELETE is the second phase in which changes are deleted from stores
+    DELETE = 1;
+}
+
+// State is the state of a snapshot within a phase
 enum State {
     // PENDING indicates the snapshot is pending
     PENDING = 0;
