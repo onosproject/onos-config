@@ -48,14 +48,14 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	w.channels = make(map[device.ID]chan *devicechangetype.DeviceChange)
 	w.mu.Unlock()
 
-	deviceCh := make(chan *device.Device)
+	deviceCh := make(chan *device.ListResponse)
 	if err := w.DeviceStore.Watch(deviceCh); err != nil {
 		return err
 	}
 
 	go func() {
-		for device := range deviceCh {
-			w.watchDevice(device.ID, ch)
+		for response := range deviceCh {
+			w.watchDevice(response.Device.ID, ch)
 		}
 	}()
 	return nil

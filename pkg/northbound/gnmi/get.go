@@ -54,7 +54,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			deviceGet, errGet := manager.GetManager().DeviceStore.Get(device.ID(prefix.GetTarget()))
 
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
-				log.Infof("Device is not connected %s, %s, %s", path.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
+				log.Infof("Device is not connected %s, %t, %s, %s, %s", prefix.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
 				disconnectedDevicesMap[device.ID(path.GetTarget())] = true
 			}
 		}
@@ -77,7 +77,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		if !ok {
 			deviceGet, errGet := manager.GetManager().DeviceStore.Get(device.ID(prefix.GetTarget()))
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
-				log.Infof("Device is not connected %s, %s, %s", prefix.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
+				log.Infof("Device is not connected %s, %t, %s, %s, %s", prefix.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
 				disconnectedDevicesMap[device.ID(prefix.GetTarget())] = true
 			}
 		}

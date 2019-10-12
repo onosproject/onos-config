@@ -2,7 +2,7 @@
 // Source: pkg/store/device/store.go
 
 // Package device is a generated GoMock package.
-package manager
+package gnmi
 
 import (
 	gomock "github.com/golang/mock/gomock"
@@ -78,7 +78,7 @@ func (mr *MockStoreMockRecorder) List(arg0 interface{}) *gomock.Call {
 }
 
 // Watch mocks base method
-func (m *MockStore) Watch(arg0 chan<- *device.Device) error {
+func (m *MockStore) Watch(arg0 chan<- *device.ListResponse) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Watch", arg0)
 	ret0, _ := ret[0].(error)

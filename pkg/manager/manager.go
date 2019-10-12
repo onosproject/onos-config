@@ -127,7 +127,13 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 		return nil, err
 	}
 	if deviceStore != nil {
-		go deviceStore.Watch(topoChannel)
+		var err error
+		go func() {
+			err = deviceStore.Watch(topoChannel)
+			if err != nil {
+				log.Error("Cannot Watch devices", err)
+			}
+		}()
 		log.Info("Device store loaded")
 	}
 	networkStore, err := store.LoadNetworkStore(networkStoreFile)
