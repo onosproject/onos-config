@@ -17,8 +17,7 @@ package device
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/types"
-	"strconv"
-	"strings"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 )
 
 const separator = ":"
@@ -26,18 +25,9 @@ const separator = ":"
 // ID is a snapshot identifier type
 type ID types.ID
 
-// GetIndex returns the Index
-func (i ID) GetIndex() Index {
-	index, _ := strconv.Atoi(string(i)[strings.LastIndex(string(i), separator)+1:])
-	return Index(index)
-}
-
-// Index is the index of a snapshot
-type Index uint64
-
-// GetSnapshotID returns the device snapshot ID for the index
-func (i Index) GetSnapshotID() ID {
-	return ID(fmt.Sprintf("device-snapshot%s%d", separator, i))
+// GetSnapshotID returns the snapshot ID for the given network snapshot ID and device
+func GetSnapshotID(networkID types.ID, deviceID device.ID) ID {
+	return ID(fmt.Sprintf("%s%s%s", networkID, separator, deviceID))
 }
 
 // Revision is a device snapshot revision number

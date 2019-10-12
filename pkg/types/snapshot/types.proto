@@ -18,6 +18,9 @@ syntax = "proto3";
 
 package onos.config.snapshot;
 
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
+
 // Status is the status of a snapshot
 message Status {
     // 'phase' is the snapshot phase
@@ -46,4 +49,13 @@ enum State {
 
     // COMPLETE indicates the snapshot is complete
     COMPLETE = 2;
+}
+
+// RetentionOptions specifies the retention policy for a change log
+message RetentionOptions {
+    // 'retain_window' is the duration for which to retain network changes
+    google.protobuf.Duration retain_window = 1 [(gogoproto.stdduration) = true, (gogoproto.nullable) = false];
+
+    // 'min_retain_count' is the minimum number of network changes to retain
+    uint32 min_retain_count = 2;
 }

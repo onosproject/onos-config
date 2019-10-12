@@ -36,24 +36,15 @@ message NetworkSnapshot {
     // 'status' is the snapshot status
     onos.config.snapshot.Status status = 4 [(gogoproto.nullable) = false];
 
-    // 'devices' is the set of devices to snapshot
-    repeated DeviceSnapshotRef devices = 6;
+    // 'network_retention' specifies which changes to retain for network changes
+    onos.config.snapshot.RetentionOptions network_retention = 6 [(gogoproto.nullable) = false];
 
-    // 'timestamp' is the time at which to take the snapshot
-    google.protobuf.Timestamp timestamp = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    // 'device_retention' specifies which changes to retain for device changes
+    onos.config.snapshot.RetentionOptions device_retention = 7 [(gogoproto.nullable) = false];
 
     // 'created' is the time at which the configuration was created
     google.protobuf.Timestamp created = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'updated' is the time at which the configuration was last updated
     google.protobuf.Timestamp updated = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-}
-
-// DeviceSnapshotRef is a reference to a device to snapshot
-message DeviceSnapshotRef {
-    // 'device_snapshot_id' is the unique identifier of the device snapshot
-    string device_snapshot_id = 1 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/snapshot/device.ID"];
-
-    // 'device_id' is the unique identifier of the device to snapshot
-    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
 }

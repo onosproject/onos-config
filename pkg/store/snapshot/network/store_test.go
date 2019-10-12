@@ -17,7 +17,6 @@ package network
 import (
 	"github.com/onosproject/onos-config/pkg/types/snapshot"
 	networksnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/network"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -36,28 +35,22 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.NoError(t, err)
 	defer store2.Close()
 
-	device1 := device.ID("device-1")
-	device2 := device.ID("device-2")
-
 	ch := make(chan *networksnapshot.NetworkSnapshot)
 	err = store2.Watch(ch)
 	assert.NoError(t, err)
 
 	snapshot1 := &networksnapshot.NetworkSnapshot{
-		Devices:   []*networksnapshot.DeviceSnapshotRef{},
-		Timestamp: time.Now().AddDate(0, 0, -7),
+		NetworkRetention: snapshot.RetentionOptions{
+			RetainWindow:   24 * time.Hour,
+			MinRetainCount: 1000,
+		},
 	}
 
 	snapshot2 := &networksnapshot.NetworkSnapshot{
-		Devices: []*networksnapshot.DeviceSnapshotRef{
-			{
-				DeviceID: device1,
-			},
-			{
-				DeviceID: device2,
-			},
+		NetworkRetention: snapshot.RetentionOptions{
+			RetainWindow:   24 * time.Hour,
+			MinRetainCount: 1000,
 		},
-		Timestamp: time.Now().AddDate(0, 0, -1),
 	}
 
 	// Create a new snapshot
@@ -145,33 +138,6 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	snapshot2, err = store2.Get("snapshot:2")
 	assert.NoError(t, err)
 	assert.Nil(t, snapshot2)
-
-	snapshot := &networksnapshot.NetworkSnapshot{
-		Devices:   []*networksnapshot.DeviceSnapshotRef{},
-		Timestamp: time.Now().AddDate(0, 0, -7),
-	}
-
-	err = store1.Create(snapshot)
-	assert.NoError(t, err)
-
-	snapshot = &networksnapshot.NetworkSnapshot{
-		Devices:   []*networksnapshot.DeviceSnapshotRef{},
-		Timestamp: time.Now().AddDate(0, 0, -7),
-	}
-
-	err = store1.Create(snapshot)
-	assert.NoError(t, err)
-
-	ch = make(chan *networksnapshot.NetworkSnapshot)
-	err = store1.Watch(ch)
-	assert.NoError(t, err)
-
-	snapshot = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.Index(1), snapshot.Index)
-	snapshot = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.Index(3), snapshot.Index)
-	snapshot = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.Index(4), snapshot.Index)
 }
 
 func nextSnapshot(t *testing.T, ch chan *networksnapshot.NetworkSnapshot) *networksnapshot.NetworkSnapshot {

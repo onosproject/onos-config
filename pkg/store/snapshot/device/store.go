@@ -17,14 +17,12 @@ package device
 import (
 	"context"
 	"errors"
-	"github.com/atomix/atomix-go-client/pkg/client/counter"
 	"github.com/atomix/atomix-go-client/pkg/client/map"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
 	"github.com/atomix/atomix-go-local/pkg/atomix/local"
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
-	"github.com/cenkalti/backoff"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	devicesnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/device"
@@ -35,10 +33,7 @@ import (
 	"time"
 )
 
-const counterName = "device-snapshot-indexes"
 const primitiveName = "device-snapshots"
-
-const maxRetries = 5
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore() (Store, error) {
@@ -52,11 +47,6 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	ids, err := group.GetCounter(context.Background(), counterName, session.WithTimeout(30*time.Second))
-	if err != nil {
-		return nil, err
-	}
-
 	configs, err := group.GetMap(context.Background(), primitiveName, session.WithTimeout(30*time.Second))
 	if err != nil {
 		return nil, err
@@ -64,7 +54,6 @@ func NewAtomixStore() (Store, error) {
 
 	return &atomixStore{
 		configs: configs,
-		indexes: ids,
 	}, nil
 }
 
@@ -76,15 +65,6 @@ func NewLocalStore() (Store, error) {
 
 // newLocalStore creates a new local device change store
 func newLocalStore(conn *grpc.ClientConn) (Store, error) {
-	counterName := primitive.Name{
-		Namespace: "local",
-		Name:      counterName,
-	}
-	ids, err := counter.New(context.Background(), counterName, []*grpc.ClientConn{conn})
-	if err != nil {
-		return nil, err
-	}
-
 	configsName := primitive.Name{
 		Namespace: "local",
 		Name:      primitiveName,
@@ -96,7 +76,6 @@ func newLocalStore(conn *grpc.ClientConn) (Store, error) {
 
 	return &atomixStore{
 		configs: configs,
-		indexes: ids,
 	}, nil
 }
 
@@ -121,14 +100,8 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 type Store interface {
 	io.Closer
 
-	// LastIndex returns the last index
-	LastIndex() (devicesnapshot.Index, error)
-
 	// Get gets a device snapshot
 	Get(id devicesnapshot.ID) (*devicesnapshot.DeviceSnapshot, error)
-
-	// GetByIndex gets a device snapshot by index
-	GetByIndex(index devicesnapshot.Index) (*devicesnapshot.DeviceSnapshot, error)
 
 	// Create creates a new device snapshot
 	Create(config *devicesnapshot.DeviceSnapshot) error
@@ -155,23 +128,6 @@ type Store interface {
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
 	configs _map.Map
-	indexes counter.Counter
-}
-
-func (s *atomixStore) LastIndex() (devicesnapshot.Index, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	index, err := s.indexes.Get(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return devicesnapshot.Index(index), nil
-}
-
-func (s *atomixStore) setIndex(index devicesnapshot.Index) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	return s.indexes.Set(ctx, int64(index))
 }
 
 func (s *atomixStore) Get(id devicesnapshot.ID) (*devicesnapshot.DeviceSnapshot, error) {
@@ -187,65 +143,29 @@ func (s *atomixStore) Get(id devicesnapshot.ID) (*devicesnapshot.DeviceSnapshot,
 	return decodeDeviceSnapshot(entry)
 }
 
-func (s *atomixStore) GetByIndex(index devicesnapshot.Index) (*devicesnapshot.DeviceSnapshot, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	entry, err := s.configs.Get(ctx, string(index.GetSnapshotID()))
-	if err != nil {
-		return nil, err
-	} else if entry == nil {
-		return nil, nil
-	}
-	return decodeDeviceSnapshot(entry)
-}
-
 func (s *atomixStore) Create(config *devicesnapshot.DeviceSnapshot) error {
 	if config.Revision != 0 {
 		return errors.New("not a new object")
 	}
 
+	config.ID = devicesnapshot.GetSnapshotID(config.NetworkSnapshotID, config.DeviceID)
+
+	bytes, err := proto.Marshal(config)
+	if err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	return backoff.Retry(func() error {
-		lastIndex, err := s.LastIndex()
-		if err != nil {
-			return err
-		}
-
-		index := lastIndex + 1
-		config.Index = index
-		config.ID = index.GetSnapshotID()
-
-		bytes, err := proto.Marshal(config)
-		if err != nil {
-			return err
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-
-		// Attempt to set the snapshot at the next index
-		entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
-
-		// If the write fails because a snapshot has already been stored, increment the last index and retry
-		if err != nil {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			defer cancel()
-			if change, err := s.configs.Get(ctx, string(config.ID)); err == nil && change != nil {
-				_ = s.setIndex(index)
-			}
-			return err
-		}
-
-		config.Revision = devicesnapshot.Revision(entry.Version)
-		config.Created = entry.Created
-		config.Updated = entry.Updated
-
-		// Store the updated index without failing the write
-		_ = s.setIndex(index)
+	entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
+	if err != nil {
 		return nil
-	}, backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries), ctx))
+	}
+
+	config.Revision = devicesnapshot.Revision(entry.Version)
+	config.Created = entry.Created
+	config.Updated = entry.Updated
+	return nil
 }
 
 func (s *atomixStore) Update(config *devicesnapshot.DeviceSnapshot) error {
@@ -291,16 +211,17 @@ func (s *atomixStore) Delete(config *devicesnapshot.DeviceSnapshot) error {
 }
 
 func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) error {
-	lastIndex, err := s.LastIndex()
-	if err != nil {
+
+	mapCh := make(chan *_map.Entry)
+	if err := s.configs.Entries(context.Background(), mapCh); err != nil {
 		return err
 	}
 
 	go func() {
 		defer close(ch)
-		for i := devicesnapshot.Index(1); i <= lastIndex; i++ {
-			if device, err := s.GetByIndex(i); err == nil && device != nil {
-				ch <- device
+		for entry := range mapCh {
+			if config, err := decodeDeviceSnapshot(entry); err == nil {
+				ch <- config
 			}
 		}
 	}()
@@ -308,11 +229,6 @@ func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) error {
 }
 
 func (s *atomixStore) Watch(ch chan<- *devicesnapshot.DeviceSnapshot) error {
-	lastIndex, err := s.LastIndex()
-	if err != nil {
-		return err
-	}
-
 	mapCh := make(chan *_map.Event)
 	if err := s.configs.Watch(context.Background(), mapCh); err != nil {
 		return err
@@ -320,11 +236,6 @@ func (s *atomixStore) Watch(ch chan<- *devicesnapshot.DeviceSnapshot) error {
 
 	go func() {
 		defer close(ch)
-		for i := devicesnapshot.Index(1); i <= lastIndex; i++ {
-			if device, err := s.GetByIndex(i); err == nil && device != nil {
-				ch <- device
-			}
-		}
 		for event := range mapCh {
 			if config, err := decodeDeviceSnapshot(event.Entry); err == nil {
 				ch <- config
