@@ -38,7 +38,7 @@ message DeviceSnapshot {
     string network_snapshot_id = 4 [(gogoproto.customname) = "NetworkSnapshotID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
 
     // 'max_network_change' is the maximum network change to be snapshotted for the device
-    uint64 max_network_change = 5 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+    string max_network_change = 5 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
 
     // 'status' is the snapshot status
     onos.config.snapshot.Status status = 6 [(gogoproto.nullable) = false];
