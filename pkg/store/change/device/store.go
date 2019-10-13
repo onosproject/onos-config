@@ -175,10 +175,15 @@ func (s *atomixStore) Get(id devicechange.ID) (*devicechange.DeviceChange, error
 }
 
 func (s *atomixStore) GetByIndex(device device.ID, index devicechange.Index) (*devicechange.DeviceChange, error) {
+	changes, err := s.getDeviceChanges(device)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Get(ctx, string(index.GetChangeID(device)))
+	entry, err := changes.GetIndex(ctx, indexedmap.Index(index))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
@@ -254,6 +259,9 @@ func (s *atomixStore) Update(config *devicechange.DeviceChange) error {
 	}
 
 	config.Revision = devicechange.Revision(entry.Version)
+	if config.Created.IsZero() {
+		config.Created = entry.Created
+	}
 	config.Updated = entry.Updated
 	return nil
 }

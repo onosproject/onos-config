@@ -20,6 +20,7 @@ import (
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/types"
+	changetype "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetype "github.com/onosproject/onos-config/pkg/types/change/network"
 	snaptype "github.com/onosproject/onos-config/pkg/types/snapshot"
@@ -118,7 +119,11 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	}
 
 	// Compute the maximum timestamp for changes to be deleted from the change store
-	maxTimestamp := time.Now().Add(deviceSnapshot.Retention.RetainWindow * -1)
+	var maxTimestamp *time.Time
+	if deviceSnapshot.Retention.RetainWindow != nil {
+		t := time.Now().Add(*deviceSnapshot.Retention.RetainWindow * -1)
+		maxTimestamp = &t
+	}
 
 	// Create a map to track the current state of the device
 	state := make(map[string]*devicechangetype.Value)
@@ -138,12 +143,20 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 			return false, err
 		} else if networkchangetype.ID(change.NetworkChangeID).GetIndex() > networkchangetype.ID(deviceSnapshot.MaxNetworkChange).GetIndex() {
 			break
-		} else if !change.Created.After(maxTimestamp) {
-			for _, value := range change.Change.Values {
-				if value.Removed {
-					delete(state, value.Path)
-				} else {
-					state[value.Path] = value
+		} else if maxTimestamp == nil || !change.Created.After(*maxTimestamp) {
+			// If the change is not COMPLETE, stop the snapshot
+			if change.Status.State != changetype.State_COMPLETE {
+				break
+			}
+
+			// If the change has been rolled back, ignore the change but continue the snapshot
+			if change.Status.Phase == changetype.Phase_CHANGE {
+				for _, value := range change.Change.Values {
+					if value.Removed {
+						delete(state, value.Path)
+					} else {
+						state[value.Path] = value
+					}
 				}
 			}
 			snapshotIndex = index
@@ -163,7 +176,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 			ID:         devicesnaptype.ID(deviceSnapshot.DeviceID),
 			DeviceID:   deviceSnapshot.DeviceID,
 			SnapshotID: deviceSnapshot.ID,
-			StartIndex: prevIndex + 1,
+			StartIndex: prevIndex,
 			EndIndex:   snapshotIndex,
 			Values:     values,
 		}
@@ -195,7 +208,7 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 	}
 
 	// Iterate through changes up to the current snapshot index and delete changes
-	for index := snapshot.StartIndex; index <= snapshot.EndIndex; index++ {
+	for index := snapshot.StartIndex + 1; index <= snapshot.EndIndex; index++ {
 		change, err := r.changes.GetByIndex(deviceSnapshot.DeviceID, index)
 		if err != nil {
 			return false, err

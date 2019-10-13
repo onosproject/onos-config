@@ -149,7 +149,11 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 	}
 
 	// Compute the maximum timestamp for changes to be deleted from the change store
-	maxTimestamp := time.Now().Add(snapshot.NetworkRetention.RetainWindow * -1)
+	var maxTimestamp *time.Time
+	if snapshot.NetworkRetention.RetainWindow != nil {
+		t := time.Now().Add(*snapshot.NetworkRetention.RetainWindow * -1)
+		maxTimestamp = &t
+	}
 
 	// Iterate through network changes in sequential order
 	foundFirst := false
@@ -161,7 +165,7 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 			foundFirst = true
 
 			// If the change was created before the retention period, mark it for deletion
-			if !change.Created.After(maxTimestamp) {
+			if maxTimestamp == nil || !change.Created.After(*maxTimestamp) {
 				// If the change is still pending, ensure snapshots are not taken of devices following this change
 				if change.Status.State == changetypes.State_PENDING || change.Status.State == changetypes.State_RUNNING {
 					// Record max device changes if necessary
