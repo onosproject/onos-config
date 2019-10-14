@@ -56,11 +56,13 @@ func TestDeviceStore(t *testing.T) {
 	stream.EXPECT().Recv().Return(&devicepb.ListResponse{Device: device3}, nil)
 
 	client := NewMockDeviceServiceClient(ctrl)
+	requestClient := NewMockDeviceServiceClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil)
-	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&devicepb.GetResponse{Device: device1}, nil)
+	requestClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&devicepb.GetResponse{Device: device1}, nil)
 
 	store := topoStore{
-		client: client,
+		client:        client,
+		requestClient: requestClient,
 	}
 
 	device, err := store.Get(device1.ID)

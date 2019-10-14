@@ -60,8 +60,8 @@ func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
 }
 
 // NewStore returns a new device store for the given client
-func NewStore(client devicepb.DeviceServiceClient) (Store, error) {
-	return &topoStore{client: client}, nil
+func NewStore(client devicepb.DeviceServiceClient, requestClient devicepb.DeviceServiceClient) (Store, error) {
+	return &topoStore{client: client, requestClient: requestClient}, nil
 }
 
 // A device Store that uses the topo service to propagate devices

@@ -56,6 +56,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
 				log.Infof("Device is not connected %s, %t, %s, %s, %s", prefix.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
 				disconnectedDevicesMap[device.ID(path.GetTarget())] = true
+			} else if errGet != nil {
+				//handling gRPC errors
+				return nil, errGet
 			}
 		}
 		notification := &gnmi.Notification{
@@ -79,6 +82,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
 				log.Infof("Device is not connected %s, %t, %s, %s, %s", prefix.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
 				disconnectedDevicesMap[device.ID(prefix.GetTarget())] = true
+			} else if errGet != nil {
+				//handling gRPC errors
+				return nil, errGet
 			}
 		}
 		notification := &gnmi.Notification{

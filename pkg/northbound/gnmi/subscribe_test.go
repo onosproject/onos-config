@@ -122,8 +122,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with updates for that path
 func Test_SubscribeLeafStream(t *testing.T) {
 	server, mgr, mockStore := setUp(t)
-	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
-	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -314,8 +313,7 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 
 func Test_Poll(t *testing.T) {
 	server, mgr, mockStore := setUp(t)
-	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
-	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -376,8 +374,7 @@ func Test_Poll(t *testing.T) {
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with delete paths
 func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	server, mgr, mockStore := setUp(t)
-	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
-	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)

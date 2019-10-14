@@ -221,15 +221,16 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)
+	requestClient := NewMockDeviceServiceClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
-	client.EXPECT().Get(gomock.Any(), gomock.Any()).
+	requestClient.EXPECT().Get(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, in *device.GetRequest, opts ...grpc.CallOption) (*device.GetResponse, error) {
 			return &device.GetResponse{
 				Device: devices[in.ID],
 			}, nil
 		}).AnyTimes()
 
-	deviceStore, err := devicestore.NewStore(client)
+	deviceStore, err := devicestore.NewStore(client, requestClient)
 	assert.NoError(t, err)
 	deviceChanges, err := devicechanges.NewLocalStore()
 	assert.NoError(t, err)

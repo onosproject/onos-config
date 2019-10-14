@@ -63,8 +63,7 @@ func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
 // Test_getNoPathElems tests for  Paths with no elements - should treat it like /
 func Test_getNoPathElems(t *testing.T) {
 	server, _, mockStore := setUp(t)
-	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
-	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	noPath1 := gnmi.Path{Target: "Device1"}
 	noPath2 := gnmi.Path{Target: "Device2"}

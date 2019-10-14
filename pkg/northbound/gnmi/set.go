@@ -125,6 +125,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		_, errDevice := manager.GetManager().DeviceStore.Get(device.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
+		} else if errDevice != nil {
+			//handling gRPC errors
+			return nil, err
 		}
 	}
 	//Checking for wrong configuration against the device models for deletes
@@ -136,6 +139,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		_, errDevice := manager.GetManager().DeviceStore.Get(device.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
+		} else if errDevice != nil {
+			//handling gRPC errors
+			return nil, err
 		}
 	}
 
