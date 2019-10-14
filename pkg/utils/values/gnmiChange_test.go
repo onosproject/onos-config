@@ -18,6 +18,7 @@ package values
 
 import (
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"testing"
@@ -30,7 +31,7 @@ func Test_NativeChangeToGnmiChange(t *testing.T) {
 		&change.Value{
 			ConfigValue: change.ConfigValue{
 				Path:       "/path1/path2/path3",
-				TypedValue: *change.NewTypedValueString("value"),
+				TypedValue: *types.NewTypedValueString("value"),
 			},
 			Remove: false,
 		},

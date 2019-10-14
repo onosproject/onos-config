@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -49,7 +50,7 @@ type Synchronizer struct {
 	key                  southbound.DeviceID
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
-	operationalCache     change.TypedValueMap
+	operationalCache     types.TypedValueMap
 	encoding             gnmi.Encoding
 	getStateMode         modelregistry.GetStateMode
 }
@@ -57,7 +58,7 @@ type Synchronizer struct {
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
 	device *device.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, opStateCache change.TypedValueMap,
+	errChan chan<- events.DeviceResponse, opStateCache types.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,

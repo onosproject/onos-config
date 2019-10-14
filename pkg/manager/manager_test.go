@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -69,9 +70,9 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	)
 
 	var err error
-	config1Value01, _ := change.NewChangeValue(Test1Cont1A, change.NewTypedValueEmpty(), false)
-	config1Value02, _ := change.NewChangeValue(Test1Cont1ACont2A, change.NewTypedValueEmpty(), false)
-	config1Value03, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2A, change.NewTypedValueFloat(ValueLeaf2B159), false)
+	config1Value01, _ := change.NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
+	config1Value02, _ := change.NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
+	config1Value03, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueFloat(ValueLeaf2B159), false)
 	change1, err = change.NewChange(change.ValueCollections{
 		config1Value01, config1Value02, config1Value03}, "Original Config for test switch")
 	if err != nil {
@@ -171,7 +172,7 @@ func Test_GetNetworkConfig(t *testing.T) {
 
 func Test_SetNetworkConfig(t *testing.T) {
 	// First verify the value beforehand
-	const origChangeHash = "65MwjiKdV5lnh19sKeapnlAUxGw="
+	const origChangeHash = "N/tfaRhaC23jgoeeHjVOyWXslyU="
 	mgrTest, changeStoreTest, configurationStoreTest, _ := setUp(t)
 	assert.Equal(t, len(changeStoreTest), 1)
 	i := 0
@@ -186,14 +187,14 @@ func Test_SetNetworkConfig(t *testing.T) {
 	assert.Equal(t, store.B64(originalChange.ID), origChangeHash)
 	assert.Equal(t, len(originalChange.Config), 3)
 	assert.Equal(t, originalChange.Config[2].Path, Test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, originalChange.Config[2].Type, change.ValueTypeFLOAT)
-	assert.Equal(t, (*change.TypedFloat)(&originalChange.Config[2].TypedValue).Float32(), float32(ValueLeaf2B159))
+	assert.Equal(t, originalChange.Config[2].Type, types.ValueType_FLOAT)
+	assert.Equal(t, (*types.TypedFloat)(&originalChange.Config[2].TypedValue).Float32(), float32(ValueLeaf2B159))
 
-	updates := make(change.TypedValueMap)
+	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
 
 	// Making change
-	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.NewTypedValueFloat(ValueLeaf2B314))
+	updates[Test1Cont1ACont2ALeaf2A] = (*types.TypedValue)(types.NewTypedValueFloat(ValueLeaf2B314))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 	err := mgrTest.ValidateNetworkConfig("Device1", "1.0.0", "", updates, deletes)
 	assert.NilError(t, err, "ValidateTargetConfig error")
@@ -214,17 +215,17 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	//Asserting change
 	assert.Equal(t, updatedVals[0].Path, Test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, (*change.TypedFloat)(&updatedVals[0].TypedValue).Float32(), float32(ValueLeaf2B314))
+	assert.Equal(t, (*types.TypedFloat)(&updatedVals[0].TypedValue).Float32(), float32(ValueLeaf2B314))
 	assert.Equal(t, updatedVals[0].Remove, false)
 
 	// Checking original is still alright
 	originalChange, ok = changeStoreTest[origChangeHash]
 	assert.Assert(t, ok)
-	assert.Equal(t, (*change.TypedFloat)(&originalChange.Config[2].TypedValue).Float32(), float32(ValueLeaf2B159))
+	assert.Equal(t, (*types.TypedFloat)(&originalChange.Config[2].TypedValue).Float32(), float32(ValueLeaf2B159))
 
 	//Asserting deletion of 2C
 	assert.Equal(t, updatedVals[1].Path, Test1Cont1ACont2ALeaf2C)
-	assert.Equal(t, (*change.TypedEmpty)(&updatedVals[1].TypedValue).String(), "")
+	assert.Equal(t, (*types.TypedEmpty)(&updatedVals[1].TypedValue).String(), "")
 	assert.Equal(t, updatedVals[1].Remove, true)
 
 }
@@ -233,11 +234,11 @@ func Test_SetNetworkConfig(t *testing.T) {
 func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 	mgrTest, changeStoreTest, configurationStoreTest, _ := setUp(t)
 
-	updates := make(change.TypedValueMap)
+	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
 
 	// Making change
-	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.NewTypedValueFloat(ValueLeaf2B314))
+	updates[Test1Cont1ACont2ALeaf2A] = (*types.TypedValue)(types.NewTypedValueFloat(ValueLeaf2B314))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
 	changeID, configName, err := mgrTest.SetNetworkConfig("Device5", "1.0.0", "Devicesim", updates, deletes, "Test_SetNetworkConfig_NewConfig")
@@ -256,11 +257,11 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 func Test_SetNetworkConfig_NewConfig102Missing(t *testing.T) {
 	mgrTest, _, configurationStoreTest, _ := setUp(t)
 
-	updates := make(change.TypedValueMap)
+	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
 
 	// Making change
-	updates[Test1Cont1ACont2ALeaf2A] = (*change.TypedValue)(change.NewTypedValueFloat(ValueLeaf2B314))
+	updates[Test1Cont1ACont2ALeaf2A] = (*types.TypedValue)(types.NewTypedValueFloat(ValueLeaf2B314))
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
 	_, _, err := mgrTest.SetNetworkConfig("Device6", "1.0.0", "", updates, deletes, "Test_SetNetworkConfig_NewConfig")
@@ -273,10 +274,10 @@ func Test_SetBadNetworkConfig(t *testing.T) {
 
 	mgrTest, _, _, _ := setUp(t)
 
-	updates := make(change.TypedValueMap)
+	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B159)
+	updates[Test1Cont1ACont2ALeaf2B] = types.NewTypedValueFloat(ValueLeaf2B159)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -293,10 +294,10 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 	assert.NilError(t, err)
 	configurationStoreTest[device2config.Name] = *device2config
 
-	updates := make(change.TypedValueMap)
+	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B159)
+	updates[Test1Cont1ACont2ALeaf2B] = types.NewTypedValueFloat(ValueLeaf2B159)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -308,10 +309,10 @@ func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
 
 	mgrTest, _, _, _ := setUp(t)
 
-	updates := make(change.TypedValueMap)
+	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B159)
+	updates[Test1Cont1ACont2ALeaf2B] = types.NewTypedValueFloat(ValueLeaf2B159)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2C)
 
@@ -408,18 +409,18 @@ func TestManager_GetManager(t *testing.T) {
 func TestManager_ComputeRollbackDelete(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
-	updates := make(change.TypedValueMap)
+	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B159)
+	updates[Test1Cont1ACont2ALeaf2B] = types.NewTypedValueFloat(ValueLeaf2B159)
 	err := mgrTest.ValidateNetworkConfig("Device1", "1.0.0", "", updates, deletes)
 	assert.NilError(t, err, "ValidateTargetConfig error")
 	_, _, err = mgrTest.SetNetworkConfig("Device1", "1.0.0", "", updates, deletes, "Testing rollback")
 
 	assert.NilError(t, err, "Can't create change", err)
 
-	updates[Test1Cont1ACont2ALeaf2B] = change.NewTypedValueFloat(ValueLeaf2B314)
-	updates[Test1Cont1ACont2ALeaf2D] = change.NewTypedValueFloat(ValueLeaf2D314)
+	updates[Test1Cont1ACont2ALeaf2B] = types.NewTypedValueFloat(ValueLeaf2B314)
+	updates[Test1Cont1ACont2ALeaf2D] = types.NewTypedValueFloat(ValueLeaf2D314)
 	deletes = append(deletes, Test1Cont1ACont2ALeaf2A)
 
 	err = mgrTest.ValidateNetworkConfig("Device1", "1.0.0", "", updates, deletes)
@@ -432,11 +433,11 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	assert.NilError(t, errRoll, "Can't ExecuteRollback", errRoll)
 	config := mgrTest.ConfigStore.Store[*configName]
 	assert.Check(t, !bytes.Equal(config.Changes[len(config.Changes)-1], changeID), "Did not remove last change")
-	assert.Equal(t, changes[Test1Cont1ACont2ALeaf2B].Type, change.ValueTypeFLOAT, "Wrong value to set after rollback")
-	assert.Equal(t, (*change.TypedFloat)(changes[Test1Cont1ACont2ALeaf2B]).Float32(), float32(ValueLeaf2B159), "Wrong value to set after rollback")
+	assert.Equal(t, changes[Test1Cont1ACont2ALeaf2B].Type, types.ValueType_FLOAT, "Wrong value to set after rollback")
+	assert.Equal(t, (*types.TypedFloat)(changes[Test1Cont1ACont2ALeaf2B]).Float32(), float32(ValueLeaf2B159), "Wrong value to set after rollback")
 
-	assert.Equal(t, changes[Test1Cont1ACont2ALeaf2A].Type, change.ValueTypeFLOAT, "Wrong value to set after rollback")
-	assert.Equal(t, (*change.TypedFloat)(changes[Test1Cont1ACont2ALeaf2A]).Float32(), float32(ValueLeaf2B159), "Wrong value to set after rollback")
+	assert.Equal(t, changes[Test1Cont1ACont2ALeaf2A].Type, types.ValueType_FLOAT, "Wrong value to set after rollback")
+	assert.Equal(t, (*types.TypedFloat)(changes[Test1Cont1ACont2ALeaf2A]).Float32(), float32(ValueLeaf2B159), "Wrong value to set after rollback")
 
 	assert.Equal(t, deletesRoll[0], Test1Cont1ACont2ALeaf2D, "Path should be deleted")
 }
@@ -454,9 +455,9 @@ func TestManager_GetTargetState(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
 	//  Create an op state map with test data
-	device1ValueMap := make(map[string]*change.TypedValue)
-	change1 := change.NewTypedValueString(value1)
-	change2 := change.NewTypedValueString(value2)
+	device1ValueMap := make(map[string]*types.TypedValue)
+	change1 := types.NewTypedValueString(value1)
+	change2 := types.NewTypedValueString(value2)
 	device1ValueMap[path1] = change1
 	device1ValueMap[path2] = change2
 	mgrTest.OperationalStateCache[device1] = device1ValueMap
@@ -466,7 +467,7 @@ func TestManager_GetTargetState(t *testing.T) {
 	assert.Assert(t, state1 != nil, "Path 1 entry not found")
 	assert.Assert(t, len(state1) == 1, "Path 1 entry has incorrect length %d", len(state1))
 	assert.Assert(t, state1[0].Path == path1, "Path 1 path is incorrect")
-	assert.Assert(t, string(state1[0].Value) == value1, "Path 1 value is incorrect")
+	assert.Assert(t, string(state1[0].Bytes) == value1, "Path 1 value is incorrect")
 
 	// Test fetching an unknown path from the cache
 	stateBad := mgrTest.GetTargetState(device1, badPath)

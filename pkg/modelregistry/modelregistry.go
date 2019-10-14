@@ -16,7 +16,7 @@ package modelregistry
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -31,7 +31,7 @@ import (
 // PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
 type PathMap interface {
 	JustPaths() []string
-	TypeForPath(path string) (change.ValueType, error)
+	TypeForPath(path string) (types.ValueType, error)
 }
 
 // GetStateMode defines the Getstate handling
@@ -55,7 +55,7 @@ const (
 
 // ReadOnlyAttrib is the known metadata about a Read Only leaf
 type ReadOnlyAttrib struct {
-	Datatype    change.ValueType
+	Datatype    types.ValueType
 	Description string
 	Units       string
 }
@@ -82,7 +82,7 @@ func (ro ReadOnlyPathMap) JustPaths() []string {
 }
 
 // TypeForPath finds the type from the model for a particular path
-func (ro ReadOnlyPathMap) TypeForPath(path string) (change.ValueType, error) {
+func (ro ReadOnlyPathMap) TypeForPath(path string) (types.ValueType, error) {
 	for k, subPaths := range ro {
 		for k1, sp := range subPaths {
 			if k1 == "/" {
@@ -96,12 +96,12 @@ func (ro ReadOnlyPathMap) TypeForPath(path string) (change.ValueType, error) {
 			}
 		}
 	}
-	return change.ValueTypeEMPTY, fmt.Errorf("path %s not found in RO paths of model", path)
+	return types.ValueType_EMPTY, fmt.Errorf("path %s not found in RO paths of model", path)
 }
 
 // ReadWritePathElem holds data about a leaf or container
 type ReadWritePathElem struct {
-	ValueType   change.ValueType
+	ValueType   types.ValueType
 	Units       string
 	Description string
 	Mandatory   bool
@@ -126,13 +126,13 @@ func (rw ReadWritePathMap) JustPaths() []string {
 }
 
 // TypeForPath finds the type from the model for a particular path
-func (rw ReadWritePathMap) TypeForPath(path string) (change.ValueType, error) {
+func (rw ReadWritePathMap) TypeForPath(path string) (types.ValueType, error) {
 	for k, elem := range rw {
 		if k == path {
 			return elem.ValueType, nil
 		}
 	}
-	return change.ValueTypeEMPTY, fmt.Errorf("path %s not found in RW paths of model", path)
+	return types.ValueType_EMPTY, fmt.Errorf("path %s not found in RW paths of model", path)
 }
 
 // ModelRegistry is the object for the saving information about device models
@@ -396,42 +396,42 @@ func PathsRW(rwPathMap ReadWritePathMap) []string {
 	return keys
 }
 
-func toValueType(entry *yang.YangType, isLeafList bool) (change.ValueType, error) {
+func toValueType(entry *yang.YangType, isLeafList bool) (types.ValueType, error) {
 	//TODO evaluate better types and error return
 	switch entry.Name {
 	case "int8", "int16", "int32", "int64":
 		if isLeafList {
-			return change.ValueTypeLeafListINT, nil
+			return types.ValueType_LEAFLIST_INT, nil
 		}
-		return change.ValueTypeINT, nil
+		return types.ValueType_INT, nil
 	case "uint8", "uint16", "uint32", "uint64", "counter64":
 		if isLeafList {
-			return change.ValueTypeLeafListUINT, nil
+			return types.ValueType_LEAFLIST_UINT, nil
 		}
-		return change.ValueTypeUINT, nil
+		return types.ValueType_UINT, nil
 	case "decimal64":
 		if isLeafList {
-			return change.ValueTypeLeafListDECIMAL, nil
+			return types.ValueType_LEAFLIST_DECIMAL, nil
 		}
-		return change.ValueTypeDECIMAL, nil
+		return types.ValueType_DECIMAL, nil
 	case "string", "enumeration", "leafref", "identityref", "union", "instance-identifier":
 		if isLeafList {
-			return change.ValueTypeLeafListSTRING, nil
+			return types.ValueType_LEAFLIST_STRING, nil
 		}
-		return change.ValueTypeSTRING, nil
+		return types.ValueType_STRING, nil
 	case "boolean":
 		if isLeafList {
-			return change.ValueTypeLeafListBOOL, nil
+			return types.ValueType_LEAFLIST_BOOL, nil
 		}
-		return change.ValueTypeBOOL, nil
+		return types.ValueType_BOOL, nil
 	case "bits", "binary":
 		if isLeafList {
-			return change.ValueTypeLeafListBYTES, nil
+			return types.ValueType_LEAFLIST_BYTES, nil
 		}
-		return change.ValueTypeBYTES, nil
+		return types.ValueType_BYTES, nil
 	case "empty":
-		return change.ValueTypeEMPTY, nil
+		return types.ValueType_EMPTY, nil
 	default:
-		return change.ValueTypeSTRING, nil
+		return types.ValueType_STRING, nil
 	}
 }

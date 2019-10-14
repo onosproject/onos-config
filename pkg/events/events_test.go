@@ -17,7 +17,7 @@ package events
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"strings"
 	"testing"
 	"time"
@@ -68,7 +68,7 @@ func Test_configEventConstruction(t *testing.T) {
 
 func Test_operationalStateEventConstruction(t *testing.T) {
 
-	event := NewOperationalStateEvent(eventSubject, path1, change.NewTypedValueString(value1), EventItemAdded)
+	event := NewOperationalStateEvent(eventSubject, path1, types.NewTypedValueString(value1), EventItemAdded)
 
 	assert.Equal(t, event.EventType(), EventTypeOperationalState)
 	assert.Equal(t, event.Subject(), eventSubject)
@@ -79,7 +79,7 @@ func Test_operationalStateEventConstruction(t *testing.T) {
 	assert.Equal(t, event.ItemAction(), EventItemAdded)
 
 	assert.Equal(t, event.Path(), path1)
-	assert.Equal(t, event.Value().String(), value1)
+	assert.Equal(t, event.Value().ValueToString(), value1)
 }
 
 func Test_responseEventConstruction(t *testing.T) {

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
@@ -88,18 +89,18 @@ var Config1Values = [11][]byte{
 	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234
 }
 
-var Config1Types = [11]change.ValueType{
-	change.ValueTypeEMPTY, // 0
-	change.ValueTypeEMPTY, // 0
-	change.ValueTypeUINT,
-	change.ValueTypeFLOAT, // 3
-	change.ValueTypeSTRING,
-	change.ValueTypeSTRING, // 5
-	change.ValueTypeEMPTY,
-	change.ValueTypeUINT,
-	change.ValueTypeEMPTY,
-	change.ValueTypeUINT,
-	change.ValueTypeSTRING, // 10
+var Config1Types = [11]types.ValueType{
+	types.ValueType_EMPTY, // 0
+	types.ValueType_EMPTY, // 0
+	types.ValueType_UINT,
+	types.ValueType_FLOAT, // 3
+	types.ValueType_STRING,
+	types.ValueType_STRING, // 5
+	types.ValueType_EMPTY,
+	types.ValueType_UINT,
+	types.ValueType_EMPTY,
+	types.ValueType_UINT,
+	types.ValueType_STRING, // 10
 }
 
 var Config1PreviousPaths = [13]string{
@@ -134,20 +135,20 @@ var Config1PreviousValues = [13][]byte{
 	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234,
 }
 
-var Config1PreviousTypes = [13]change.ValueType{
-	change.ValueTypeEMPTY, // 0
-	change.ValueTypeEMPTY, // 0
-	change.ValueTypeUINT,
-	change.ValueTypeFLOAT, // 3
-	change.ValueTypeSTRING,
-	change.ValueTypeSTRING, // 5
-	change.ValueTypeEMPTY,
-	change.ValueTypeUINT,
-	change.ValueTypeEMPTY,
-	change.ValueTypeUINT,
-	change.ValueTypeEMPTY, // 10
-	change.ValueTypeUINT,
-	change.ValueTypeSTRING,
+var Config1PreviousTypes = [13]types.ValueType{
+	types.ValueType_EMPTY, // 0
+	types.ValueType_EMPTY, // 0
+	types.ValueType_UINT,
+	types.ValueType_FLOAT, // 3
+	types.ValueType_STRING,
+	types.ValueType_STRING, // 5
+	types.ValueType_EMPTY,
+	types.ValueType_UINT,
+	types.ValueType_EMPTY,
+	types.ValueType_UINT,
+	types.ValueType_EMPTY, // 10
+	types.ValueType_UINT,
+	types.ValueType_STRING,
 }
 
 var Config1FirstPaths = [11]string{
@@ -178,18 +179,18 @@ var Config1FirstValues = [11][]byte{
 	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
-var Config1FirstTypes = [11]change.ValueType{
-	change.ValueTypeEMPTY, // 0
-	change.ValueTypeEMPTY, // 0
-	change.ValueTypeUINT,
-	change.ValueTypeFLOAT, // 3
-	change.ValueTypeSTRING,
-	change.ValueTypeSTRING, // 5
-	change.ValueTypeEMPTY,
-	change.ValueTypeUINT,
-	change.ValueTypeEMPTY,
-	change.ValueTypeUINT,
-	change.ValueTypeSTRING, // 10
+var Config1FirstTypes = [11]types.ValueType{
+	types.ValueType_EMPTY, // 0
+	types.ValueType_EMPTY, // 0
+	types.ValueType_UINT,
+	types.ValueType_FLOAT, // 3
+	types.ValueType_STRING,
+	types.ValueType_STRING, // 5
+	types.ValueType_EMPTY,
+	types.ValueType_UINT,
+	types.ValueType_EMPTY,
+	types.ValueType_UINT,
+	types.ValueType_STRING, // 10
 }
 
 var Config2Paths = [11]string{
@@ -220,18 +221,18 @@ var Config2Values = [11][]byte{
 	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
-var Config2Types = [11]change.ValueType{
-	change.ValueTypeEMPTY, // 0
-	change.ValueTypeEMPTY, // 0
-	change.ValueTypeUINT,
-	change.ValueTypeFLOAT, // 3
-	change.ValueTypeSTRING,
-	change.ValueTypeSTRING, // 5
-	change.ValueTypeEMPTY,
-	change.ValueTypeUINT,
-	change.ValueTypeEMPTY,
-	change.ValueTypeUINT,
-	change.ValueTypeSTRING, // 10
+var Config2Types = [11]types.ValueType{
+	types.ValueType_EMPTY, // 0
+	types.ValueType_EMPTY, // 0
+	types.ValueType_UINT,
+	types.ValueType_FLOAT, // 3
+	types.ValueType_STRING,
+	types.ValueType_STRING, // 5
+	types.ValueType_EMPTY,
+	types.ValueType_UINT,
+	types.ValueType_EMPTY,
+	types.ValueType_UINT,
+	types.ValueType_STRING, // 10
 }
 
 var c1ID, c2ID, c3ID change.ID
@@ -248,17 +249,17 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		change1, change2, change3, change4 *change.Change
 	)
 
-	config1Value01, _ := change.NewChangeValue(Test1Cont1A, change.NewTypedValueEmpty(), false)
-	config1Value02, _ := change.NewChangeValue(Test1Cont1ACont2A, change.NewTypedValueEmpty(), false)
-	config1Value03, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2A, change.NewTypedValueUint64(ValueLeaf2A13), false)
-	config1Value04, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2B, change.NewTypedValueFloat(ValueLeaf2B159), false)
-	config1Value05, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, change.NewTypedValueString(ValueLeaf2CAbc), false)
-	config1Value06, _ := change.NewChangeValue(Test1Cont1ALeaf1A, change.NewTypedValueString(ValueLeaf1AAbcdef), false)
-	config1Value07, _ := change.NewChangeValue(Test1Cont1AList2ATxout1, change.NewTypedValueEmpty(), false)
-	config1Value08, _ := change.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, change.NewTypedValueUint64(ValueTxout1Txpwr8), false)
-	config1Value09, _ := change.NewChangeValue(Test1Cont1AList2ATxout2, change.NewTypedValueEmpty(), false)
-	config1Value10, _ := change.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, change.NewTypedValueUint64(ValueTxout2Txpwr10), false)
-	config1Value11, _ := change.NewChangeValue(Test1Leaftoplevel, change.NewTypedValueString(ValueLeaftopWxy1234), false)
+	config1Value01, _ := change.NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
+	config1Value02, _ := change.NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
+	config1Value03, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(ValueLeaf2A13), false)
+	config1Value04, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueFloat(ValueLeaf2B159), false)
+	config1Value05, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CAbc), false)
+	config1Value06, _ := change.NewChangeValue(Test1Cont1ALeaf1A, types.NewTypedValueString(ValueLeaf1AAbcdef), false)
+	config1Value07, _ := change.NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), false)
+	config1Value08, _ := change.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, types.NewTypedValueUint64(ValueTxout1Txpwr8), false)
+	config1Value09, _ := change.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), false)
+	config1Value10, _ := change.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, types.NewTypedValueUint64(ValueTxout2Txpwr10), false)
+	config1Value11, _ := change.NewChangeValue(Test1Leaftoplevel, types.NewTypedValueString(ValueLeaftopWxy1234), false)
 	change1, err = change.NewChange(change.ValueCollections{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
@@ -269,9 +270,9 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config2Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2B, change.NewTypedValueFloat(ValueLeaf2B314), false)
-	config2Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout3, change.NewTypedValueEmpty(), false)
-	config2Value03, _ := change.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, change.NewTypedValueUint64(ValueTxout3Txpwr16), false)
+	config2Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueFloat(ValueLeaf2B314), false)
+	config2Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout3, types.NewTypedValueEmpty(), false)
+	config2Value03, _ := change.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, types.NewTypedValueUint64(ValueTxout3Txpwr16), false)
 	change2, err = change.NewChange(change.ValueCollections{
 		config2Value01, config2Value02, config2Value03,
 	}, "Trim power level")
@@ -280,8 +281,8 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config3Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, change.NewTypedValueString(ValueLeaf2CDef), false)
-	config3Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout2, change.NewTypedValueEmpty(), true)
+	config3Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CDef), false)
+	config3Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), true)
 	change3, err = change.NewChange(change.ValueCollections{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
@@ -306,8 +307,8 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config4Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, change.NewTypedValueString(ValueLeaf2CGhi), false)
-	config4Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout1, change.NewTypedValueEmpty(), true)
+	config4Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CGhi), false)
+	config4Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), true)
 	change4, err = change.NewChange(change.ValueCollections{
 		config4Value01, config4Value02,
 	}, "Remove txout 1")
@@ -342,11 +343,11 @@ func Test_device1_version(t *testing.T) {
 	assert.Assert(t, ok)
 	assert.Equal(t, len(change1.Config), 11)
 	leaf2c := change1.Config[4]
-	assert.Equal(t, leaf2c.TypedValue.String(), "abc")
+	assert.Equal(t, leaf2c.TypedValue.ValueToString(), "abc")
 
 	config := device1V.ExtractFullConfig(change1, changeStore, 0)
 	for _, c := range config {
-		log.Infof("Path %s = %s (%d)\n", c.Path, c.Value, c.Type)
+		log.Infof("Path %s = %s (%d)\n", c.Path, c.Bytes, c.Type)
 	}
 
 	// Check the value of leaf2c after - the value from the early change should be the same
@@ -355,7 +356,7 @@ func Test_device1_version(t *testing.T) {
 	assert.Assert(t, ok)
 	assert.Equal(t, len(change1.Config), 11)
 	leaf2c = change1.Config[4]
-	assert.Equal(t, leaf2c.TypedValue.String(), "abc")
+	assert.Equal(t, leaf2c.TypedValue.ValueToString(), "abc")
 
 	for i := 0; i < len(Config1Paths); i++ {
 		checkPathvalue(t, config, i,
@@ -376,7 +377,7 @@ func Test_device1_prev_version(t *testing.T) {
 
 	config := device1V.ExtractFullConfig(nil, changeStore, changePrevious)
 	for _, c := range config {
-		log.Infof("Path %s = %s\n", c.Path, c.Value)
+		log.Infof("Path %s = %s\n", c.Path, c.Bytes)
 	}
 
 	for i := 0; i < len(Config1PreviousPaths); i++ {
@@ -397,7 +398,7 @@ func Test_device1_first_version(t *testing.T) {
 
 	config := device1V.ExtractFullConfig(nil, changeStore, changePrevious)
 	for _, c := range config {
-		log.Infof("Path %s = %s\n", c.Path, c.Value)
+		log.Infof("Path %s = %s\n", c.Path, c.Bytes)
 	}
 
 	for i := 0; i < len(Config1FirstPaths); i++ {
@@ -434,7 +435,7 @@ func Test_device2_version(t *testing.T) {
 
 	config := device2V.ExtractFullConfig(nil, changeStore, 0)
 	for _, c := range config {
-		log.Infof("Path %s = %s\n", c.Path, c.Value)
+		log.Infof("Path %s = %s\n", c.Path, c.Bytes)
 	}
 
 	for i := 0; i < len(Config2Paths); i++ {
@@ -444,7 +445,7 @@ func Test_device2_version(t *testing.T) {
 }
 
 func checkPathvalue(t *testing.T, config []*change.ConfigValue, index int,
-	expPaths []string, expValues [][]byte, expTypes []change.ValueType) {
+	expPaths []string, expValues [][]byte, expTypes []types.ValueType) {
 
 	// Check that they are kept in a consistent order
 	if config[index].Path != expPaths[index] {
@@ -452,9 +453,9 @@ func checkPathvalue(t *testing.T, config []*change.ConfigValue, index int,
 			expPaths[index], config[index].Path)
 	}
 
-	if B64(config[index].Value) != B64(expValues[index]) {
+	if B64(config[index].Bytes) != B64(expValues[index]) {
 		t.Errorf("Unexpected change value %d Exp: %v, Got %v", index,
-			expValues[index], config[index].Value)
+			expValues[index], config[index].Bytes)
 	}
 
 	if config[index].Type != expTypes[index] {
@@ -465,8 +466,8 @@ func checkPathvalue(t *testing.T, config []*change.ConfigValue, index int,
 
 func Test_convertChangeToGnmi(t *testing.T) {
 
-	config3Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, change.NewTypedValueString(ValueLeaf2CDef), false)
-	config3Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout2, change.NewTypedValueEmpty(), true)
+	config3Value01, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CDef), false)
+	config3Value02, _ := change.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), true)
 	change3, err := change.NewChange(change.ValueCollections{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
@@ -699,7 +700,7 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test-%s", strconv.Itoa(b.N))
-		cv, _ := change.NewChangeValue(path, change.NewTypedValueUint64(uint(i)), false)
+		cv, _ := change.NewChangeValue(path, types.NewTypedValueUint64(uint(i)), false)
 		err := cv.IsPathValid()
 		assert.NilError(b, err, "path not valid %s", err)
 
@@ -711,7 +712,7 @@ func BenchmarkCreateChange(b *testing.B) {
 	changeValues := change.ValueCollections{}
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test%d", i)
-		cv, _ := change.NewChangeValue(path, change.NewTypedValueUint64(uint(i)), false)
+		cv, _ := change.NewChangeValue(path, types.NewTypedValueUint64(uint(i)), false)
 		changeValues = append(changeValues, cv)
 	}
 

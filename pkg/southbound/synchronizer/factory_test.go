@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -31,7 +31,7 @@ import (
 func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
 	chan *devicepb.ListResponse, chan<- events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
-	*modelregistry.ModelRegistry, map[device.ID]change.TypedValueMap, error) {
+	*modelregistry.ModelRegistry, map[device.ID]types.TypedValueMap, error) {
 
 	changeStore, err := store.LoadChangeStore("../../../configs/changeStore-sample.json")
 	if err != nil {
@@ -44,7 +44,7 @@ func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
 
 	dispatcher := dispatcher.NewDispatcher()
 	modelregistry := new(modelregistry.ModelRegistry)
-	opStateCache := make(map[device.ID]change.TypedValueMap)
+	opStateCache := make(map[device.ID]types.TypedValueMap)
 	return &changeStore, &configStore,
 		make(chan *devicepb.ListResponse),
 		make(chan events.OperationalStateEvent),

@@ -16,6 +16,7 @@ package store
 
 import (
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -50,22 +51,22 @@ var (
 
 func setUpTree() {
 	configValues = make([]*change.ConfigValue, 13)
-	configValues[0] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2A, TypedValue: *change.NewTypedValueUint64(ValueLeaf2A12)}
+	configValues[0] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2A, TypedValue: *types.NewTypedValueUint64(ValueLeaf2A12)}
 
-	configValues[1] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2B, TypedValue: *change.NewTypedValueFloat(ValueLeaf2B114)}
-	configValues[2] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2C, TypedValue: *change.NewTypedValueString(ValueLeaf2CMyValue)}
-	configValues[3] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2D, TypedValue: *change.NewTypedValueDecimal64(ValueLeaf2D114, 5)}
-	configValues[4] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2E, TypedValue: *change.NewTypedValueInt64(ValueLeaf2A12)}
-	configValues[5] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2F, TypedValue: *change.NewTypedValueBytes([]byte(ValueList2A2F))}
-	configValues[6] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2G, TypedValue: *change.NewTypedValueBool(ValueList2A2G)}
-	configValues[7] = &change.ConfigValue{Path: Test1Cont1ALeaf1a, TypedValue: *change.NewTypedValueString(ValueLeaf1AMyValue)}
+	configValues[1] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2B, TypedValue: *types.NewTypedValueFloat(ValueLeaf2B114)}
+	configValues[2] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2C, TypedValue: *types.NewTypedValueString(ValueLeaf2CMyValue)}
+	configValues[3] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2D, TypedValue: *types.NewTypedValueDecimal64(ValueLeaf2D114, 5)}
+	configValues[4] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2E, TypedValue: *types.NewTypedValueInt64(ValueLeaf2A12)}
+	configValues[5] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2F, TypedValue: *types.NewTypedValueBytes([]byte(ValueList2A2F))}
+	configValues[6] = &change.ConfigValue{Path: Test1Cont1ACont2ALeaf2G, TypedValue: *types.NewTypedValueBool(ValueList2A2G)}
+	configValues[7] = &change.ConfigValue{Path: Test1Cont1ALeaf1a, TypedValue: *types.NewTypedValueString(ValueLeaf1AMyValue)}
 
-	configValues[8] = &change.ConfigValue{Path: Test1Cont1AList2a1t, TypedValue: *change.NewTypedValueUint64(ValueList2b1PwrT)}
-	configValues[9] = &change.ConfigValue{Path: Test1Cont1AList2a1r, TypedValue: *change.NewTypedValueUint64(ValueList2b1PwrR)}
-	configValues[10] = &change.ConfigValue{Path: Test1Cont1AList2a2t, TypedValue: *change.NewTypedValueUint64(ValueList2b2PwrT)}
-	configValues[11] = &change.ConfigValue{Path: Test1Cont1AList2a2r, TypedValue: *change.NewTypedValueUint64(ValueList2b2PwrR)}
+	configValues[8] = &change.ConfigValue{Path: Test1Cont1AList2a1t, TypedValue: *types.NewTypedValueUint64(ValueList2b1PwrT)}
+	configValues[9] = &change.ConfigValue{Path: Test1Cont1AList2a1r, TypedValue: *types.NewTypedValueUint64(ValueList2b1PwrR)}
+	configValues[10] = &change.ConfigValue{Path: Test1Cont1AList2a2t, TypedValue: *types.NewTypedValueUint64(ValueList2b2PwrT)}
+	configValues[11] = &change.ConfigValue{Path: Test1Cont1AList2a2r, TypedValue: *types.NewTypedValueUint64(ValueList2b2PwrR)}
 
-	configValues[12] = &change.ConfigValue{Path: Test1Leaftoplevel, TypedValue: *change.NewTypedValueString(ValueLeaftopWxy1234)}
+	configValues[12] = &change.ConfigValue{Path: Test1Leaftoplevel, TypedValue: *types.NewTypedValueString(ValueLeaftopWxy1234)}
 
 }
 

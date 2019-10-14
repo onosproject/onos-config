@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"strconv"
 	"strings"
@@ -55,7 +56,7 @@ func BuildTree(values []*change.ConfigValue, floatAsStr bool) ([]byte, error) {
 // suitable for using with json.Marshal, which in turn can be used to feed in to
 // ygot.Unmarshall
 // This follows the approach in https://blog.golang.org/json-and-go "Generic JSON with interface{}"
-func addPathToTree(path string, value *change.TypedValue, nodeif *interface{}, floatAsStr bool) error {
+func addPathToTree(path string, value *types.TypedValue, nodeif *interface{}, floatAsStr bool) error {
 	pathelems := utils.SplitPath(path)
 
 	// Convert to its real type
@@ -64,7 +65,7 @@ func addPathToTree(path string, value *change.TypedValue, nodeif *interface{}, f
 		return fmt.Errorf("could not convert nodeif %v for %s", *nodeif, path)
 	}
 
-	if len(pathelems) == 1 && len(value.Value) > 0 {
+	if len(pathelems) == 1 && len(value.Bytes) > 0 {
 		// At the end of a line - this is the leaf
 		handleLeafValue(nodemap, value, pathelems, floatAsStr)
 
@@ -153,46 +154,46 @@ func addPathToTree(path string, value *change.TypedValue, nodeif *interface{}, f
 	return nil
 }
 
-func handleLeafValue(nodemap map[string]interface{}, value *change.TypedValue, pathelems []string, floatAsStr bool) {
+func handleLeafValue(nodemap map[string]interface{}, value *types.TypedValue, pathelems []string, floatAsStr bool) {
 	switch value.Type {
-	case change.ValueTypeEMPTY:
+	case types.ValueType_EMPTY:
 		// NOOP
-	case change.ValueTypeSTRING:
-		(nodemap)[pathelems[0]] = (*change.TypedString)(value).String()
-	case change.ValueTypeINT:
-		(nodemap)[pathelems[0]] = (*change.TypedInt64)(value).Int()
-	case change.ValueTypeUINT:
-		(nodemap)[pathelems[0]] = (*change.TypedUint64)(value).Uint()
-	case change.ValueTypeDECIMAL:
+	case types.ValueType_STRING:
+		(nodemap)[pathelems[0]] = (*types.TypedString)(value).String()
+	case types.ValueType_INT:
+		(nodemap)[pathelems[0]] = (*types.TypedInt64)(value).Int()
+	case types.ValueType_UINT:
+		(nodemap)[pathelems[0]] = (*types.TypedUint64)(value).Uint()
+	case types.ValueType_DECIMAL:
 		if floatAsStr {
-			(nodemap)[pathelems[0]] = (*change.TypedDecimal64)(value).String()
+			(nodemap)[pathelems[0]] = (*types.TypedDecimal64)(value).String()
 		} else {
-			(nodemap)[pathelems[0]] = (*change.TypedDecimal64)(value).Float()
+			(nodemap)[pathelems[0]] = (*types.TypedDecimal64)(value).Float()
 		}
-	case change.ValueTypeFLOAT:
+	case types.ValueType_FLOAT:
 		if floatAsStr {
-			(nodemap)[pathelems[0]] = (*change.TypedFloat)(value).String()
+			(nodemap)[pathelems[0]] = (*types.TypedFloat)(value).String()
 		} else {
-			(nodemap)[pathelems[0]] = (*change.TypedFloat)(value).Float32()
+			(nodemap)[pathelems[0]] = (*types.TypedFloat)(value).Float32()
 		}
-	case change.ValueTypeBOOL:
-		(nodemap)[pathelems[0]] = (*change.TypedBool)(value).Bool()
-	case change.ValueTypeBYTES:
-		(nodemap)[pathelems[0]] = (*change.TypedBytes)(value).Bytes()
-	case change.ValueTypeLeafListSTRING:
-		(nodemap)[pathelems[0]] = (*change.TypedLeafListString)(value).List()
-	case change.ValueTypeLeafListINT:
-		(nodemap)[pathelems[0]] = (*change.TypedLeafListInt64)(value).List()
-	case change.ValueTypeLeafListUINT:
-		(nodemap)[pathelems[0]] = (*change.TypedLeafListUint)(value).List()
-	case change.ValueTypeLeafListBOOL:
-		(nodemap)[pathelems[0]] = (*change.TypedLeafListBool)(value).List()
-	case change.ValueTypeLeafListDECIMAL:
-		(nodemap)[pathelems[0]] = (*change.TypedLeafListDecimal)(value).ListFloat()
-	case change.ValueTypeLeafListFLOAT:
-		(nodemap)[pathelems[0]] = (*change.TypedLeafListFloat)(value).List()
-	case change.ValueTypeLeafListBYTES:
-		(nodemap)[pathelems[0]] = (*change.TypedLeafListBytes)(value).List()
+	case types.ValueType_BOOL:
+		(nodemap)[pathelems[0]] = (*types.TypedBool)(value).Bool()
+	case types.ValueType_BYTES:
+		(nodemap)[pathelems[0]] = (*types.TypedBytes)(value).ByteArray()
+	case types.ValueType_LEAFLIST_STRING:
+		(nodemap)[pathelems[0]] = (*types.TypedLeafListString)(value).List()
+	case types.ValueType_LEAFLIST_INT:
+		(nodemap)[pathelems[0]] = (*types.TypedLeafListInt64)(value).List()
+	case types.ValueType_LEAFLIST_UINT:
+		(nodemap)[pathelems[0]] = (*types.TypedLeafListUint)(value).List()
+	case types.ValueType_LEAFLIST_BOOL:
+		(nodemap)[pathelems[0]] = (*types.TypedLeafListBool)(value).List()
+	case types.ValueType_LEAFLIST_DECIMAL:
+		(nodemap)[pathelems[0]] = (*types.TypedLeafListDecimal)(value).ListFloat()
+	case types.ValueType_LEAFLIST_FLOAT:
+		(nodemap)[pathelems[0]] = (*types.TypedLeafListFloat)(value).List()
+	case types.ValueType_LEAFLIST_BYTES:
+		(nodemap)[pathelems[0]] = (*types.TypedLeafListBytes)(value).List()
 	default:
 		(nodemap)[pathelems[0]] = fmt.Sprintf("unexpected %d", value.Type)
 	}

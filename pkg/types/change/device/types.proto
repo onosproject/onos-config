@@ -88,13 +88,13 @@ enum ValueType {
 // TypedValue is a value represented as a byte array
 message TypedValue {
     // 'bytes' is the bytes array
-    bytes bytes = 1;
+    bytes bytes = 1  [json_name="Value", (gogoproto.jsontag) = "Value,omitempty"];
 
     // 'type' is the value type
-    ValueType type = 2;
+    ValueType type = 2 [json_name="Type", (gogoproto.jsontag) = "Type,omitempty"];
 
     // 'type_opts' is a set of type options
-    repeated int32 type_opts = 3;
+    repeated int32 type_opts = 3  [json_name="TypeOpts", (gogoproto.jsontag) = "TypeOpts,omitempty"];
 }
 
 // Value is an individual Path/Value combination in a Change
@@ -106,5 +106,5 @@ message Value {
     TypedValue value = 2;
 
     // 'removed' indicates whether this is a delete
-    bool removed = 3;
+    bool removed = 3 [(gogoproto.jsontag) = "Remove,omitempty"];
 }

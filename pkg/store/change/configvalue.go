@@ -16,6 +16,7 @@ package change
 
 import (
 	"errors"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"regexp"
 )
 
@@ -23,7 +24,7 @@ import (
 // Deprecated: ConfigValue is a legacy implementation of an internal ConfigValue
 type ConfigValue struct {
 	Path string
-	TypedValue
+	types.TypedValue
 }
 
 // IsPathValid tests for valid paths. Path is valid if it

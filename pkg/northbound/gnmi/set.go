@@ -24,6 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -36,7 +37,7 @@ import (
 	"time"
 )
 
-type mapTargetUpdates map[string]change.TypedValueMap
+type mapTargetUpdates map[string]types.TypedValueMap
 type mapTargetRemoves map[string][]string
 type mapNetworkChanges map[store.ConfigName]change.ID
 
@@ -132,7 +133,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 	//Checking for wrong configuration against the device models for deletes
 	for target, removes := range targetRemovesTmp {
-		err := validateChange(target, version, deviceType, make(change.TypedValueMap), removes)
+		err := validateChange(target, version, deviceType, make(types.TypedValueMap), removes)
 		if err != nil {
 			return nil, err
 		}
@@ -206,11 +207,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 // This deals with either a path and a value (simple case) or a path with
 // a JSON body which implies multiple paths and values.
-func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (change.TypedValueMap, error) {
+func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (types.TypedValueMap, error) {
 	target := u.Path.GetTarget()
 	updates, ok := targetUpdates[target]
 	if !ok {
-		updates = make(change.TypedValueMap)
+		updates = make(types.TypedValueMap)
 	}
 
 	jsonVal := u.GetVal().GetJsonVal()
@@ -381,7 +382,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 
 	for target, removes := range targetRemoves {
 		changeID, configName, cont, err := setChange(target, version, deviceType,
-			make(change.TypedValueMap), removes, description)
+			make(types.TypedValueMap), removes, description)
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
 			return nil, nil, err
@@ -489,7 +490,7 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 
 }
 
-func setChange(target string, version string, devicetype string, targetUpdates change.TypedValueMap,
+func setChange(target string, version string, devicetype string, targetUpdates types.TypedValueMap,
 	targetRemoves []string, description string) (change.ID, *store.ConfigName, bool, error) {
 	changeID, configName, err := manager.GetManager().SetNetworkConfig(
 		target, version, devicetype, targetUpdates, targetRemoves, description)
@@ -504,7 +505,7 @@ func setChange(target string, version string, devicetype string, targetUpdates c
 	return changeID, configName, false, nil
 }
 
-func validateChange(target string, version string, deviceType string, targetUpdates change.TypedValueMap, targetRemoves []string) error {
+func validateChange(target string, version string, deviceType string, targetUpdates types.TypedValueMap, targetRemoves []string) error {
 	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
 		return fmt.Errorf("no updates found in change on %s - invalid", target)
 	}
