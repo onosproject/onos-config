@@ -103,11 +103,7 @@ func wrapPath(path string, lineLen int, tabs int) string {
 }
 
 func nativeType(cv admin.ChangeValue) string {
-	to := make([]int, len(cv.TypeOpts))
-	for i, t := range cv.TypeOpts {
-		to[i] = int(t)
-	}
-	tv, err := types.NewTypedValue(cv.Value, types.ValueType(cv.ValueType), to)
+	tv, err := types.NewTypedValue(cv.Value, types.ValueType(cv.ValueType), cv.TypeOpts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to convert value to TypedValue %s", err)
 		os.Exit(1)

@@ -150,12 +150,12 @@ func Test_correctJsonPathRwValues2(t *testing.T) {
 			"/cont1a/cont2a/leaf2a":
 			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.StringString(), "12")
+			assert.Equal(t, correctedPathValue.ValueToString(), "12")
 		case
 			"/cont1a/cont2a/leaf2b":
 			assert.Equal(t, correctedPathValue.Type, types.ValueType_FLOAT, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.StringString(), "1.210000")
+			assert.Equal(t, correctedPathValue.ValueToString(), "1.210000")
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
 		}

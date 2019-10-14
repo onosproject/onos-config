@@ -26,10 +26,10 @@ import (
 // TypedValueMap is an alias for a map of paths and values
 type TypedValueMap map[string]*TypedValue
 
-// StringString is the String calculated as a Native type
+// ValueToString is the String calculated as a Native type
 // There is already a String() in the protobuf generated code that can't be
 // overridden
-func (tv *TypedValue) StringString() string {
+func (tv *TypedValue) ValueToString() string {
 	switch tv.Type {
 	case ValueType_EMPTY:
 		return ""
@@ -67,7 +67,7 @@ func (tv *TypedValue) StringString() string {
 }
 
 // NewTypedValue creates a TypeValue from a byte[] and type - used in changes.go
-func NewTypedValue(bytes []byte, valueType ValueType, typeOpts []int) (*TypedValue, error) {
+func NewTypedValue(bytes []byte, valueType ValueType, typeOpts []int32) (*TypedValue, error) {
 	switch valueType {
 	case ValueType_EMPTY:
 		return NewTypedValueEmpty(), nil
@@ -182,10 +182,10 @@ func caseValueTypeLeafListBOOL(bytes []byte) (*TypedValue, error) {
 }
 
 // caseValueTypeLeafListDECIMAL is moved out of NewTypedValue because of gocyclo
-func caseValueTypeLeafListDECIMAL(bytes []byte, typeOpts []int) (*TypedValue, error) {
+func caseValueTypeLeafListDECIMAL(bytes []byte, typeOpts []int32) (*TypedValue, error) {
 	count := len(bytes) / 8
 	digitsList := make([]int64, 0)
-	precision := 0
+	var precision int32
 
 	if len(typeOpts) > 0 {
 		precision = typeOpts[0]
@@ -211,7 +211,7 @@ func caseValueTypeLeafListFLOAT(bytes []byte) (*TypedValue, error) {
 }
 
 // caseValueTypeLeafListBYTES is moved out of NewTypedValue because of gocyclo
-func caseValueTypeLeafListBYTES(bytes []byte, typeOpts []int) (*TypedValue, error) {
+func caseValueTypeLeafListBYTES(bytes []byte, typeOpts []int32) (*TypedValue, error) {
 	if len(typeOpts) < 1 {
 		return nil, fmt.Errorf("Expecting 1 typeopt for LeafListBytes. Got %d", len(typeOpts))
 	}
@@ -221,11 +221,11 @@ func caseValueTypeLeafListBYTES(bytes []byte, typeOpts []int) (*TypedValue, erro
 	startAt := 0
 	for i, b := range bytes {
 		valueLen := typeOpts[idx]
-		if i-startAt == valueLen {
+		if i-startAt == int(valueLen) {
 			byteArrays = append(byteArrays, buf)
 			buf = make([]byte, 0)
 			idx = idx + 1
-			startAt = startAt + valueLen
+			startAt = startAt + int(valueLen)
 		}
 		buf = append(buf, b)
 	}

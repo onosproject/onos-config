@@ -343,7 +343,7 @@ func Test_device1_version(t *testing.T) {
 	assert.Assert(t, ok)
 	assert.Equal(t, len(change1.Config), 11)
 	leaf2c := change1.Config[4]
-	assert.Equal(t, leaf2c.TypedValue.StringString(), "abc")
+	assert.Equal(t, leaf2c.TypedValue.ValueToString(), "abc")
 
 	config := device1V.ExtractFullConfig(change1, changeStore, 0)
 	for _, c := range config {
@@ -356,7 +356,7 @@ func Test_device1_version(t *testing.T) {
 	assert.Assert(t, ok)
 	assert.Equal(t, len(change1.Config), 11)
 	leaf2c = change1.Config[4]
-	assert.Equal(t, leaf2c.TypedValue.StringString(), "abc")
+	assert.Equal(t, leaf2c.TypedValue.ValueToString(), "abc")
 
 	for i := 0; i < len(Config1Paths); i++ {
 		checkPathvalue(t, config, i,

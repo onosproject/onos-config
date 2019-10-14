@@ -228,19 +228,19 @@ func TestNew(t *testing.T) {
 	os1, ok := opstateCache[cont1bState+leaf2d]
 	assert.Assert(t, ok, "Retrieving 1st path from Op State cache")
 	assert.Equal(t, os1.Type, types.ValueType_UINT)
-	assert.Equal(t, os1.StringString(), "10001")
+	assert.Equal(t, os1.ValueToString(), "10001")
 	os2, ok := opstateCache[cont1aCont2aLeaf2c]
 	assert.Assert(t, ok, "Retrieving 2nd path from Op State cache")
 	assert.Equal(t, os2.Type, types.ValueType_STRING)
-	assert.Equal(t, os2.StringString(), "Mock leaf2c value")
+	assert.Equal(t, os2.ValueToString(), "Mock leaf2c value")
 	os3, ok := opstateCache[cont1bState+list2b100Leaf3c]
 	assert.Assert(t, ok, "Retrieving 3rd path from Op State cache")
 	assert.Equal(t, os3.Type, types.ValueType_STRING)
-	assert.Equal(t, os3.StringString(), "mock Value in JSON")
+	assert.Equal(t, os3.ValueToString(), "mock Value in JSON")
 	os4, ok := opstateCache[cont1bState+list2b101Leaf3c]
 	assert.Assert(t, ok, "Retrieving 4th path from Op State cache")
 	assert.Equal(t, os4.Type, types.ValueType_STRING)
-	assert.Equal(t, os4.StringString(), "Second mock Value")
+	assert.Equal(t, os4.ValueToString(), "Second mock Value")
 
 	opStatePath1, err := utils.ParseGNMIElements(utils.SplitPath(cont1bState + list2b100Leaf3c))
 	assert.NilError(t, err, "Path for wildcard get")
@@ -824,35 +824,35 @@ func Test_LikeStratum(t *testing.T) {
 	os1, ok := opStateCache[interfacesInterfaceEth1StateIfindex]
 	assert.Assert(t, ok, "Retrieving 1st path from Op State cache")
 	assert.Equal(t, os1.Type, types.ValueType_UINT)
-	assert.Equal(t, os1.StringString(), "1")
+	assert.Equal(t, os1.ValueToString(), "1")
 	os2, ok := opStateCache[interfacesInterfaceEth2StateIfindex]
 	assert.Assert(t, ok, "Retrieving 2nd path from Op State cache")
 	assert.Equal(t, os2.Type, types.ValueType_UINT)
-	assert.Equal(t, os2.StringString(), "2")
+	assert.Equal(t, os2.ValueToString(), "2")
 	os3, ok := opStateCache[interfacesInterfaceEth1State+ifName]
 	assert.Assert(t, ok, "Retrieving 3rd path from Op State cache")
 	assert.Equal(t, os3.Type, types.ValueType_STRING)
-	assert.Equal(t, os3.StringString(), s1Eth1)
+	assert.Equal(t, os3.ValueToString(), s1Eth1)
 	os4, ok := opStateCache[interfacesInterfaceEth2State+ifName]
 	assert.Assert(t, ok, "Retrieving 4th path from Op State cache")
 	assert.Equal(t, os4.Type, types.ValueType_STRING)
-	assert.Equal(t, os4.StringString(), s1Eth2)
+	assert.Equal(t, os4.ValueToString(), s1Eth2)
 	os5, ok := opStateCache[interfacesInterfaceEth1State+adminStatus]
 	assert.Assert(t, ok, "Retrieving 5th path from Op State cache")
 	assert.Equal(t, os5.Type, types.ValueType_STRING)
-	assert.Equal(t, os5.StringString(), "UP")
+	assert.Equal(t, os5.ValueToString(), "UP")
 	os6, ok := opStateCache[interfacesInterfaceEth2State+adminStatus]
 	assert.Assert(t, ok, "Retrieving 6th path from Op State cache")
 	assert.Equal(t, os6.Type, types.ValueType_STRING)
-	assert.Equal(t, os6.StringString(), "UP")
+	assert.Equal(t, os6.ValueToString(), "UP")
 	os7, ok := opStateCache[interfacesInterfaceEth1State+countersInOctets]
 	assert.Assert(t, ok, "Retrieving 7th path from Op State cache")
 	assert.Equal(t, os7.Type, types.ValueType_UINT)
-	assert.Equal(t, os7.StringString(), "11111")
+	assert.Equal(t, os7.ValueToString(), "11111")
 	os8, ok := opStateCache[interfacesInterfaceEth2State+countersInOctets]
 	assert.Assert(t, ok, "Retrieving 8th path from Op State cache")
 	assert.Equal(t, os8.Type, types.ValueType_UINT)
-	assert.Equal(t, os8.StringString(), "22222")
+	assert.Equal(t, os8.ValueToString(), "22222")
 
 	// Send a message to the Subscribe request
 	time.Sleep(10 * time.Millisecond) // Wait for before sending a subscribe message

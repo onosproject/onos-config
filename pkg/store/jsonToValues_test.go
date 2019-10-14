@@ -44,7 +44,7 @@ func Test_DecomposeTree(t *testing.T) {
 	assert.NilError(t, err)
 
 	for _, v := range values {
-		fmt.Printf("%s %s\n", (*v).Path, (*v).String())
+		fmt.Printf("%s %s\n", (*v).Path, (*v).ValueToString())
 	}
 	assert.Equal(t, len(values), 22)
 
@@ -96,7 +96,7 @@ func Test_DecomposeTree2(t *testing.T) {
 	assert.NilError(t, err)
 
 	for _, v := range values {
-		fmt.Printf("%s %s\n", (*v).Path, (*v).String())
+		fmt.Printf("%s %s\n", (*v).Path, (*v).ValueToString())
 	}
 	assert.Equal(t, len(values), 31)
 

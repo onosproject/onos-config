@@ -127,7 +127,7 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 			} else if hasPrefixMultipleIdx(modelPathOnlyLastIndex, jsonPathIdx) ||
 				hasPrefixMultipleIdx(modelPathOnlySecondIndex, jsonPathIdx) {
 				indexName := jsonPathIdx[strings.LastIndex(jsonPathIdx, "[")+1:]
-				index := jsonPathValue.TypedValue.StringString()
+				index := jsonPathValue.TypedValue.ValueToString()
 				if jsonPathValue.Type == types.ValueType_FLOAT {
 					index = fmt.Sprintf("%.0f", (*types.TypedFloat)(&jsonPathValue.TypedValue).Float32())
 				}
@@ -225,7 +225,7 @@ func pathType(jsonPathValue *change.ConfigValue, spType types.ValueType) (*types
 		}
 
 	default:
-		newTypeValue, err = types.NewTypedValue(jsonPathValue.Bytes, spType, []int{})
+		newTypeValue, err = types.NewTypedValue(jsonPathValue.Bytes, spType, []int32{})
 		if err != nil {
 			return nil, err
 		}

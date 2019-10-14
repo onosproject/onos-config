@@ -124,13 +124,13 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 		}
 		assert.NilError(t, err, "unable to receive message")
 		pv = in.Pathvalue
-		value, err := types.NewTypedValue(pv.Value, types.ValueType(pv.ValueType), []int{})
+		value, err := types.NewTypedValue(pv.Value, types.ValueType(pv.ValueType), []int32{})
 		assert.NilError(t, err)
 
 		switch pv.Path {
 		case "/cont1a/cont2a/leaf2c":
 			assert.Equal(t, pv.ValueType, admin.ChangeValueType_STRING)
-			switch value.StringString() {
+			switch value.ValueToString() {
 			case "test1":
 				//From the initial response
 				fmt.Println("Got value test1 on ", pv.Path)
@@ -140,11 +140,11 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 				conn.Close()
 				return
 			default:
-				t.Fatal("Unexpected value for", pv.Path, value.StringString())
+				t.Fatal("Unexpected value for", pv.Path, value.ValueToString())
 			}
 		case "/cont1b-state/leaf2d":
 			assert.Equal(t, pv.ValueType, admin.ChangeValueType_UINT)
-			assert.Equal(t, value.StringString(), "12345")
+			assert.Equal(t, value.ValueToString(), "12345")
 		default:
 			t.Fatal("Unexpected path in opstate cache for Device2", pv.Path)
 		}

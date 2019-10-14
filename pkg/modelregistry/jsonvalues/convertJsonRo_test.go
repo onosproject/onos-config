@@ -190,7 +190,7 @@ func Test_correctJsonPathValues(t *testing.T) {
 		case systemNtpSourceAddr:
 			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.StringString(), systemNtpSourceAddrValue)
+			assert.Equal(t, correctedPathValue.ValueToString(), systemNtpSourceAddrValue)
 		case ifEth1Mtu:
 			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
@@ -198,7 +198,7 @@ func Test_correctJsonPathValues(t *testing.T) {
 		case ifEth1Desc:
 			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.StringString(), iface1DescValue)
+			assert.Equal(t, correctedPathValue.ValueToString(), iface1DescValue)
 		case ifEth1Sub120IfIdx:
 			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
@@ -206,7 +206,7 @@ func Test_correctJsonPathValues(t *testing.T) {
 		case ifEth1Sub120AdSt:
 			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.StringString(), iface1Sub15AdStValue)
+			assert.Equal(t, correctedPathValue.ValueToString(), iface1Sub15AdStValue)
 		case sysAaaGrG1Srv7Ca:
 			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT)
 			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)

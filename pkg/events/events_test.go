@@ -80,7 +80,7 @@ func Test_operationalStateEventConstruction(t *testing.T) {
 	assert.Equal(t, event.ItemAction(), EventItemAdded)
 
 	assert.Equal(t, event.Path(), path1)
-	assert.Equal(t, event.Value().StringString(), value1)
+	assert.Equal(t, event.Value().ValueToString(), value1)
 }
 
 func Test_responseEventConstruction(t *testing.T) {
