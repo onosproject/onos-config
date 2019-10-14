@@ -39,9 +39,8 @@ const (
 // DeviceStore is the model of the Device store
 // Deprecated: DeviceStore is a legacy implementation of an internal topo DeviceStore
 type DeviceStore struct {
-	client        device.DeviceServiceClient
-	Cache         map[device.ID]*device.Device
-	requestClient device.DeviceServiceClient
+	client device.DeviceServiceClient
+	Cache  map[device.ID]*device.Device
 }
 
 // LoadDeviceStore loads a device store
@@ -56,19 +55,11 @@ func LoadDeviceStore(topoChannel chan<- events.TopoEvent, opts ...grpc.DialOptio
 		return nil, err
 	}
 
-	requestConn, err := getTopoConn(opts...)
-	if err != nil {
-		return nil, err
-	}
-
 	client := device.NewDeviceServiceClient(conn)
 
-	requestClient := device.NewDeviceServiceClient(requestConn)
-
 	deviceStore := &DeviceStore{
-		client:        client,
-		Cache:         make(map[device.ID]*device.Device),
-		requestClient: requestClient,
+		client: client,
+		Cache:  make(map[device.ID]*device.Device),
 	}
 	go deviceStore.start(topoChannel)
 	return deviceStore, nil
@@ -167,7 +158,7 @@ func (s *DeviceStore) updateDevice(id device.ID, connectivity device.Connectivit
 	updateReq := device.UpdateRequest{
 		Device: connectedDevice,
 	}
-	response, err := s.requestClient.Update(context.Background(), &updateReq)
+	response, err := s.client.Update(context.Background(), &updateReq)
 	if err != nil {
 		log.Errorf("Device %s is not updated locally %s", id, err.Error())
 		return err
