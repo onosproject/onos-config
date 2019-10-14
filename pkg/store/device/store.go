@@ -37,7 +37,7 @@ type Store interface {
 	List(chan<- *devicepb.Device) error
 
 	// Watch watches the device store for changes
-	Watch(chan<- *devicepb.Device) error
+	Watch(chan<- *devicepb.ListResponse) error
 }
 
 // NewTopoStore returns a new topo-based device store
@@ -115,7 +115,7 @@ func (s *topoStore) List(ch chan<- *devicepb.Device) error {
 	return nil
 }
 
-func (s *topoStore) Watch(ch chan<- *devicepb.Device) error {
+func (s *topoStore) Watch(ch chan<- *devicepb.ListResponse) error {
 	list, err := s.client.List(context.Background(), &devicepb.ListRequest{
 		Subscribe: true,
 	})
@@ -132,7 +132,7 @@ func (s *topoStore) Watch(ch chan<- *devicepb.Device) error {
 			if err != nil {
 				break
 			}
-			ch <- response.Device
+			ch <- response
 		}
 	}()
 	return nil

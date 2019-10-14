@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"strings"
 	"testing"
 	"time"
@@ -28,9 +27,7 @@ import (
 
 const (
 	eventSubject  = "device22"
-	eventAddress  = "device22:10161"
 	eventTypeCfg  = EventTypeConfiguration
-	eventTypeTopo = EventTypeTopoCache
 	eventValueKey = "ChangeID"
 	eventValue    = "test-event"
 	path1         = "test1/cont1a/cont2a/leaf2a"
@@ -67,22 +64,6 @@ func Test_configEventConstruction(t *testing.T) {
 
 	assert.Assert(t, strings.Contains(event.String(), eventSubject))
 	assert.Assert(t, strings.Contains(EventTypeConfiguration.String(), "Configuration"))
-}
-
-func Test_topoEventConstruction(t *testing.T) {
-
-	event := NewTopoEvent(eventSubject, EventItemAdded, &device.Device{ID: device.ID("foo"), Address: eventAddress})
-
-	assert.Equal(t, event.EventType(), eventTypeTopo)
-	assert.Equal(t, event.Subject(), eventSubject)
-	assert.Assert(t, event.Time().Before(time.Now()))
-	assert.Equal(t, event.Device().Address, eventAddress)
-	assert.Equal(t, device.ID("foo"), event.Device().ID)
-
-	assert.Equal(t, event.ItemAction(), EventItemAdded)
-
-	assert.Assert(t, strings.Contains(event.String(), eventSubject))
-	assert.Assert(t, strings.Contains(EventTypeTopoCache.String(), "Topo"))
 }
 
 func Test_operationalStateEventConstruction(t *testing.T) {

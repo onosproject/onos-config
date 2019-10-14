@@ -18,9 +18,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -107,7 +105,6 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 			Storetype: "change",
 			Store:     changeStoreTest,
 		},
-		&topocache.DeviceStore{},
 		//TODO mock
 		mockStore,
 		&store.NetworkStore{
@@ -115,7 +112,7 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 			Storetype: "network",
 			Store:     networkStoreTest,
 		},
-		make(chan events.TopoEvent, 10))
+		make(chan *devicepb.ListResponse, 10))
 	if err != nil {
 		log.Warning(err)
 		os.Exit(-1)

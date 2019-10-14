@@ -2,7 +2,7 @@
 // Source: pkg/store/device/store.go
 
 // Package device is a generated GoMock package.
-package manager
+package gnmi
 
 import (
 	gomock "github.com/golang/mock/gomock"

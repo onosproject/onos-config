@@ -15,11 +15,10 @@
 package gnmi
 
 import (
+	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
-	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/southbound/topocache"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"os"
 	"sync"
@@ -36,7 +35,7 @@ func TestMain(m *testing.M) {
 }
 
 // setUp should not depend on any global variables
-func setUp() (*Server, *manager.Manager) {
+func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
 	var server = &Server{}
 
 	mgr, err := manager.LoadManager(
@@ -48,17 +47,16 @@ func setUp() (*Server, *manager.Manager) {
 		log.Error("Expected manager to be loaded ", err)
 		os.Exit(-1)
 	}
-	deviceStore := &topocache.DeviceStore{
-		Cache: make(map[device.ID]*device.Device),
-	}
-	mgr.DeviceStore = deviceStore
+	ctrl := gomock.NewController(t)
+	mockStore := NewMockStore(ctrl)
+	mgr.DeviceStore = mockStore
 
 	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	log.Info("Finished setUp()")
-	return server, mgr
+	return server, mgr, mockStore
 }
 
 func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
@@ -71,7 +69,7 @@ func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
 
 }
 
-func listenToTopoLoading(deviceChan <-chan events.TopoEvent) {
+func listenToTopoLoading(deviceChan <-chan *devicepb.ListResponse) {
 	for deviceConfigEvent := range deviceChan {
 		log.Info("Ignoring event for testing ", deviceConfigEvent)
 	}

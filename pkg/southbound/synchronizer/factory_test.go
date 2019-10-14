@@ -22,13 +22,14 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
 	"testing"
 	"time"
 )
 
 func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
-	chan events.TopoEvent, chan<- events.OperationalStateEvent,
+	chan *devicepb.ListResponse, chan<- events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
 	*modelregistry.ModelRegistry, map[device.ID]change.TypedValueMap, error) {
 
@@ -45,7 +46,7 @@ func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
 	modelregistry := new(modelregistry.ModelRegistry)
 	opStateCache := make(map[device.ID]change.TypedValueMap)
 	return &changeStore, &configStore,
-		make(chan events.TopoEvent),
+		make(chan *devicepb.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, modelregistry, opStateCache, nil
@@ -87,9 +88,12 @@ func TestFactory_Revert(t *testing.T) {
 		Role:        "leaf",
 		Attributes:  nil,
 	}
-	topoEvent := events.NewTopoEvent(device1.ID, events.EventItemAdded, &device1)
+	topoEvent := devicepb.ListResponse{
+		Type:   devicepb.ListResponse_ADDED,
+		Device: &device1,
+	}
 
-	topoChan <- topoEvent
+	topoChan <- &topoEvent
 	time.Sleep(time.Millisecond * 100) // Give it a second for the event to take effect
 
 	listeners := dispatcher.GetListeners()

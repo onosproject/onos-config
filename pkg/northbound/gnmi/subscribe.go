@@ -150,7 +150,11 @@ func collector(stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList,
 			log.Error("Error while collecting data for subscribe once or poll ", err)
 			resChan <- result{success: false, err: err}
 		}
-		response := buildUpdateResponse(update)
+		response, errGet := buildUpdateResponse(update)
+		if errGet != nil {
+			log.Error("Error Retrieving Device", err)
+			resChan <- result{success: false, err: err}
+		}
 		err = sendResponse(response, stream)
 		if err != nil {
 			log.Error("Error sending response ", err)
@@ -265,6 +269,7 @@ func matchRegex(path string, subs []*regexp.Regexp) bool {
 func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *change.TypedValue, stream gnmi.GNMI_SubscribeServer) error {
 	pathGnmi.Target = target
 	var response *gnmi.SubscribeResponse
+	var errGet error
 	//if value is empty it's a delete operation, thus we issue a delete notification
 	//TODO can probably be moved to Value.Remove
 	if len(value.Value) > 0 {
@@ -278,9 +283,12 @@ func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *change.TypedV
 			Path: pathGnmi,
 			Val:  valueGnmi,
 		}
-		response = buildUpdateResponse(update)
+		response, errGet = buildUpdateResponse(update)
 	} else {
-		response = buildDeleteResponse(pathGnmi)
+		response, errGet = buildDeleteResponse(pathGnmi)
+	}
+	if errGet != nil {
+		return errGet
 	}
 	err := sendResponse(response, stream)
 	if err != nil {
@@ -300,7 +308,7 @@ func buildSyncResponse() *gnmi.SubscribeResponse {
 	}
 }
 
-func buildUpdateResponse(update *gnmi.Update) *gnmi.SubscribeResponse {
+func buildUpdateResponse(update *gnmi.Update) (*gnmi.SubscribeResponse, error) {
 	updateArray := make([]*gnmi.Update, 0)
 	updateArray = append(updateArray, update)
 	notification := &gnmi.Notification{
@@ -310,7 +318,7 @@ func buildUpdateResponse(update *gnmi.Update) *gnmi.SubscribeResponse {
 	return buildSubscribeResponse(notification, update.Path.Target)
 }
 
-func buildDeleteResponse(delete *gnmi.Path) *gnmi.SubscribeResponse {
+func buildDeleteResponse(delete *gnmi.Path) (*gnmi.SubscribeResponse, error) {
 	deleteArray := []*gnmi.Path{delete}
 	notification := &gnmi.Notification{
 		Timestamp: time.Now().Unix(),
@@ -319,14 +327,15 @@ func buildDeleteResponse(delete *gnmi.Path) *gnmi.SubscribeResponse {
 	return buildSubscribeResponse(notification, delete.Target)
 }
 
-func buildSubscribeResponse(notification *gnmi.Notification, target string) *gnmi.SubscribeResponse {
+func buildSubscribeResponse(notification *gnmi.Notification, target string) (*gnmi.SubscribeResponse, error) {
 	responseUpdate := &gnmi.SubscribeResponse_Update{
 		Update: notification,
 	}
 	response := &gnmi.SubscribeResponse{
 		Response: responseUpdate,
 	}
-	if _, ok := manager.GetManager().DeviceStore.Cache[device.ID(target)]; !ok {
+	_, errDevice := manager.GetManager().DeviceStore.Get(device.ID(target))
+	if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 		response.Extension = []*gnmi_ext.Extension{
 			{
 				Ext: &gnmi_ext.Extension_RegisteredExt{
@@ -337,8 +346,11 @@ func buildSubscribeResponse(notification *gnmi.Notification, target string) *gnm
 				},
 			},
 		}
+	} else if errDevice != nil {
+		//handling gRPC errors
+		return nil, errDevice
 	}
-	return response
+	return response, nil
 }
 
 func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeServer) error {
