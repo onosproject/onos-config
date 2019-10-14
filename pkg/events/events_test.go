@@ -17,7 +17,6 @@ package events
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"strings"
 	"testing"

@@ -78,7 +78,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			} else {
 				mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
 			}
-			operationalStateCache[notifiedDevice.ID] = make(change.TypedValueMap)
+			operationalStateCache[notifiedDevice.ID] = make(types.TypedValueMap)
 			target := southbound.NewTarget()
 			//TODO configuration needs to be blocked at this point in time to allow for device connection.
 			sync, err := New(ctx, changeStore, configStore, notifiedDevice, configChan, opStateChan,
