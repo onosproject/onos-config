@@ -51,6 +51,10 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
 	ctrl := gomock.NewController(t)
 	//TODO create mock here.
 	// mockNetworkChangesStore :=
+	// mockDeviceChangesStore :=
+	//TODO assign here
+	//mgr.NetworkChangesStore := mockNetworkChangesStore
+	//mgr.ChangeStore := mockDeviceChangesStore
 	mockDeviceStore := NewMockStore(ctrl)
 	mgr.DeviceStore = mockDeviceStore
 
@@ -59,7 +63,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	log.Info("Finished setUp()")
-	//TODO return networkMockStore here. it needs to be passed because otherwise we can't do expect calls
+	//TODO return all mock stores here. it needs to be passed because otherwise we can't do expect calls
 	return server, mgr, mockDeviceStore
 }
 
