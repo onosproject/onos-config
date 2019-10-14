@@ -95,18 +95,22 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	ctrl := gomock.NewController(t)
 	mockStore := NewMockStore(ctrl)
 
+	//TODO create mock here.
+	// mockNetworkChangesStore :=
+	// mockDeviceChangesStore :=
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
 			Version:   "1.0",
 			Storetype: "config",
 			Store:     configurationStoreTest,
 		},
+		// mockDeviceChangesStore,
 		&store.ChangeStore{
 			Version:   "1.0",
 			Storetype: "change",
 			Store:     changeStoreTest,
 		},
-		//TODO mock
+		// mockNetworkChangesStore,
 		mockStore,
 		&store.NetworkStore{
 			Version:   "1.0",

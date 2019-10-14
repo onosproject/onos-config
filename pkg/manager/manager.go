@@ -23,6 +23,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicetopo "github.com/onosproject/onos-config/pkg/store/device"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -38,8 +40,10 @@ var mgr Manager
 type Manager struct {
 	ConfigStore             *store.ConfigurationStore
 	ChangeStore             *store.ChangeStore
+	DeviceChangesStore      device.Store
 	DeviceStore             devicetopo.Store
 	NetworkStore            *store.NetworkStore
+	NetworkChangesStore     network.Store
 	ModelRegistry           *modelregistry.ModelRegistry
 	TopoChannel             chan *devicepb.ListResponse
 	ChangesChannel          chan events.ConfigEvent
@@ -50,8 +54,8 @@ type Manager struct {
 }
 
 // NewManager initializes the network config manager subsystem.
-func NewManager(configStore *store.ConfigurationStore, changeStore *store.ChangeStore, deviceStore devicetopo.Store,
-	networkStore *store.NetworkStore, topoCh chan *devicepb.ListResponse) (*Manager, error) {
+func NewManager(configStore *store.ConfigurationStore, deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicetopo.Store,
+	networkStore *store.NetworkStore, networkChangesStore network.Store, topoCh chan *devicepb.ListResponse) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -61,11 +65,15 @@ func NewManager(configStore *store.ConfigurationStore, changeStore *store.Change
 	}
 
 	mgr = Manager{
-		ConfigStore: configStore,
-		ChangeStore: changeStore,
-		//TODO move NewDeviceStore to DeviceStore when the latter is removed from project.
-		DeviceStore:             deviceStore,
+		//TODO remove deprecated ConfigStore
+		ConfigStore:        configStore,
+		DeviceChangesStore: deviceChangesStore,
+		//TODO remove deprecated ChangeStore
+		ChangeStore:        changeStore,
+		DeviceStore:        deviceStore,
+		//TODO remove deprecated NetworkStore
 		NetworkStore:            networkStore,
+		NetworkChangesStore:     networkChangesStore,
 		TopoChannel:             topoCh,
 		ModelRegistry:           modelReg,
 		ChangesChannel:          make(chan events.ConfigEvent, 10),
@@ -115,6 +123,13 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Configuration store loaded from ", configStoreFile)
 
+	deviceChangesStore, err := device.NewAtomixStore()
+	if err != nil {
+		log.Error("Cannot load device atomix store ", err)
+		return nil, err
+	}
+	log.Info("Device Changes store connected")
+
 	changeStore, err := store.LoadChangeStore(changeStoreFile)
 	if err != nil {
 		log.Error("Cannot load change store ", err)
@@ -144,7 +159,14 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Network store loaded from ", networkStoreFile)
 
-	return NewManager(&configStore, &changeStore, deviceStore, networkStore, topoChannel)
+	networkChangesStore, err := network.NewAtomixStore()
+	if err != nil {
+		log.Error("Cannot load network atomix store ", err)
+		return nil, err
+	}
+	log.Info("Network Configuration store connected")
+
+	return NewManager(&configStore, deviceChangesStore, &changeStore, deviceStore, networkStore, networkChangesStore, topoChannel)
 }
 
 // ValidateStores validate configurations against their ModelPlugins at startup
