@@ -48,14 +48,18 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+		//Assigning to a new string, if this assignment is not made the getRequest id field results empty.
+		target := path.GetTarget()
+		if target == "" {
+			target = prefix.GetTarget()
+		}
 		//if target is already disconnected we don't do a get again.
-		_, ok := disconnectedDevicesMap[device.ID(path.GetTarget())]
+		_, ok := disconnectedDevicesMap[device.ID(target)]
 		if !ok {
-			log.Infof("target %s, len %d,Device id %s len %d", path.GetTarget(), len(path.GetTarget()), device.ID(strings.TrimSpace(path.GetTarget())), len(strings.TrimSpace(path.GetTarget())))
-			deviceGet, errGet := manager.GetManager().DeviceStore.Get(device.ID(strings.TrimSpace(prefix.GetTarget())))
+			_, errGet := manager.GetManager().DeviceStore.Get(device.ID(target))
 
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
-				log.Infof("Device is not connected %s, %t, %s, %s, %s", prefix.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
+				log.Infof("Device is not connected %s, %s", target, errGet)
 				disconnectedDevicesMap[device.ID(path.GetTarget())] = true
 			} else if errGet != nil {
 				//handling gRPC errors
@@ -76,13 +80,14 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+		target := prefix.GetTarget()
 		//if target is already disconnected we don't do a get again.
-		_, ok := disconnectedDevicesMap[device.ID(prefix.GetTarget())]
+		_, ok := disconnectedDevicesMap[device.ID(target)]
 		if !ok {
-			deviceGet, errGet := manager.GetManager().DeviceStore.Get(device.ID(prefix.GetTarget()))
+			_, errGet := manager.GetManager().DeviceStore.Get(device.ID(target))
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
-				log.Infof("Device is not connected %s, %t, %s, %s, %s", prefix.GetTarget(), ok, status.Convert(errGet).Code(), errGet, deviceGet)
-				disconnectedDevicesMap[device.ID(prefix.GetTarget())] = true
+				log.Infof("Device is not connected %s, %s", target, errGet)
+				disconnectedDevicesMap[device.ID(target)] = true
 			} else if errGet != nil {
 				//handling gRPC errors
 				return nil, errGet
