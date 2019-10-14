@@ -269,7 +269,7 @@ func (r *Reconciler) reconcileDelete(snapshot *networksnaptypes.NetworkSnapshot)
 // reconcilePendingDelete reconciles a snapshot in the PENDING state during the DELETE phase
 func (r *Reconciler) reconcilePendingDelete(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
 	// Ensure device snapshots are in the DELETE phase
-	if ok, err := r.ensureDeviceSnapshotsDelete(snapshot); !ok || err != nil {
+	if ok, err := r.ensureDeviceSnapshotsDelete(snapshot); ok || err != nil {
 		return ok, err
 	}
 
@@ -304,13 +304,13 @@ func (r *Reconciler) ensureDeviceSnapshotsDelete(snapshot *networksnaptypes.Netw
 
 // reconcileRunningDelete reconciles a snapshot in the RUNNING state during the DELETE phase
 func (r *Reconciler) reconcileRunningDelete(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
-	// Delete all network changes marked for deletion
-	if ok, err := r.deleteNetworkChanges(snapshot); !ok || err != nil {
+	// Ensure device snapshots are in the RUNNING state
+	if ok, err := r.ensureDeleteRunning(snapshot); ok || err != nil {
 		return ok, err
 	}
 
-	// Ensure device snapshots are in the RUNNING state
-	if ok, err := r.ensureDeleteRunning(snapshot); !ok || err != nil {
+	// Delete all network changes marked for deletion
+	if ok, err := r.deleteNetworkChanges(snapshot); !ok || err != nil {
 		return ok, err
 	}
 
