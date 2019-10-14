@@ -53,7 +53,7 @@ deps: # @HELP ensure that the required dependencies are in place
 	bash -c "diff -u <(echo -n) <(git diff go.sum)"
 
 linters: # @HELP examines Go source code and reports coding problems
-	GOGC=20 golangci-lint run
+	GOGC=50 golangci-lint run
 
 license_check: # @HELP examine and ensure license headers exist
 	./build/licensing/boilerplate.py -v
