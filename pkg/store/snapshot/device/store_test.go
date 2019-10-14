@@ -46,13 +46,11 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	snapshot1 := &devicesnapshot.DeviceSnapshot{
 		DeviceID:          device1,
 		NetworkSnapshotID: "snapshot:1",
-		Timestamp:         time.Now().AddDate(0, 0, -7),
 	}
 
 	snapshot2 := &devicesnapshot.DeviceSnapshot{
 		DeviceID:          device2,
 		NetworkSnapshotID: "snapshot:2",
-		Timestamp:         time.Now().AddDate(0, 0, -1),
 	}
 
 	// Create a new snapshot
@@ -62,7 +60,7 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	assert.NotEqual(t, devicesnapshot.Revision(0), snapshot1.Revision)
 
 	// Get the snapshot
-	snapshot1, err = store2.Get("device-snapshot:1")
+	snapshot1, err = store2.Get("snapshot:1:device-1")
 	assert.NoError(t, err)
 	assert.NotNil(t, snapshot1)
 	assert.Equal(t, devicesnapshot.ID("snapshot:1:device-1"), snapshot1.ID)
@@ -88,7 +86,7 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	assert.NotEqual(t, revision, snapshot2.Revision)
 
 	// Read and then update the snapshot
-	snapshot2, err = store2.Get("device-snapshot:2")
+	snapshot2, err = store2.Get("snapshot:2:device-2")
 	assert.NoError(t, err)
 	assert.NotNil(t, snapshot2)
 	snapshot2.Status.State = snapshot.State_COMPLETE
@@ -98,9 +96,9 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	assert.NotEqual(t, revision, snapshot2.Revision)
 
 	// Verify that concurrent updates fail
-	snapshot11, err := store1.Get("device-snapshot:1")
+	snapshot11, err := store1.Get("snapshot:1:device-1")
 	assert.NoError(t, err)
-	snapshot12, err := store2.Get("device-snapshot:1")
+	snapshot12, err := store2.Get("snapshot:1:device-1")
 	assert.NoError(t, err)
 
 	snapshot11.Status.State = snapshot.State_COMPLETE
@@ -113,11 +111,11 @@ func TestDeviceSnapshotStore(t *testing.T) {
 
 	// Verify events were received again
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, devicesnapshot.ID("device-snapshot:2"), snapshotEvent.ID)
+	assert.Equal(t, devicesnapshot.ID("snapshot:2:device-2"), snapshotEvent.ID)
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, devicesnapshot.ID("device-snapshot:2"), snapshotEvent.ID)
+	assert.Equal(t, devicesnapshot.ID("snapshot:2:device-2"), snapshotEvent.ID)
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, devicesnapshot.ID("device-snapshot:1"), snapshotEvent.ID)
+	assert.Equal(t, devicesnapshot.ID("snapshot:1:device-1"), snapshotEvent.ID)
 
 	// List the snapshots
 	snapshots := make(chan *devicesnapshot.DeviceSnapshot)
@@ -134,21 +132,19 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	// Delete a snapshot
 	err = store1.Delete(snapshot2)
 	assert.NoError(t, err)
-	snapshot2, err = store2.Get("device-snapshot:2")
+	snapshot2, err = store2.Get("snapshot:2:device-2")
 	assert.NoError(t, err)
 	assert.Nil(t, snapshot2)
 
 	snapshot := &devicesnapshot.DeviceSnapshot{
-		DeviceID:  device1,
-		Timestamp: time.Now().AddDate(0, 0, -7),
+		DeviceID: device1,
 	}
 
 	err = store1.Create(snapshot)
 	assert.NoError(t, err)
 
 	snapshot = &devicesnapshot.DeviceSnapshot{
-		DeviceID:  device2,
-		Timestamp: time.Now().AddDate(0, 0, -7),
+		DeviceID: device2,
 	}
 
 	err = store1.Create(snapshot)

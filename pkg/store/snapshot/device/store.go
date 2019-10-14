@@ -230,7 +230,7 @@ func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) error {
 
 func (s *atomixStore) Watch(ch chan<- *devicesnapshot.DeviceSnapshot) error {
 	mapCh := make(chan *_map.Event)
-	if err := s.configs.Watch(context.Background(), mapCh); err != nil {
+	if err := s.configs.Watch(context.Background(), mapCh, _map.WithReplay()); err != nil {
 		return err
 	}
 

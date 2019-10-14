@@ -39,16 +39,17 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	err = store2.Watch(ch)
 	assert.NoError(t, err)
 
+	retainWindow := 24 * time.Hour
 	snapshot1 := &networksnapshot.NetworkSnapshot{
 		NetworkRetention: snapshot.RetentionOptions{
-			RetainWindow:   24 * time.Hour,
+			RetainWindow:   &retainWindow,
 			MinRetainCount: 1000,
 		},
 	}
 
 	snapshot2 := &networksnapshot.NetworkSnapshot{
 		NetworkRetention: snapshot.RetentionOptions{
-			RetainWindow:   24 * time.Hour,
+			RetainWindow:   &retainWindow,
 			MinRetainCount: 1000,
 		},
 	}
