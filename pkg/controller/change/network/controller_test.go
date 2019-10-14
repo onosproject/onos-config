@@ -333,10 +333,9 @@ func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicecha
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)
-	requestClient := NewMockDeviceServiceClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
 
-	devices, err := devicestore.NewStore(client, requestClient)
+	devices, err := devicestore.NewStore(client)
 	assert.NoError(t, err)
 	networkChanges, err := networkchanges.NewLocalStore()
 	assert.NoError(t, err)

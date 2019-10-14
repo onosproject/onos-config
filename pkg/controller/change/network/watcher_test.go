@@ -135,10 +135,9 @@ func TestDeviceWatcher(t *testing.T) {
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)
-	requestClient := NewMockDeviceServiceClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
 
-	deviceStore, err := devicestore.NewStore(client, requestClient)
+	deviceStore, err := devicestore.NewStore(client)
 	assert.NoError(t, err)
 
 	changeStore, err := devicechangestore.NewLocalStore()
