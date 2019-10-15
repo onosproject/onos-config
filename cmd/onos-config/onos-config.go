@@ -48,6 +48,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/store/change/network"
 	log "k8s.io/klog"
 	"os"
 	"time"
@@ -121,7 +123,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, opts...)
+	deviceChangesStore, err := device.NewAtomixStore()
+	if err != nil {
+		log.Error("Cannot load device atomix store ", err)
+	}
+
+	networkChangesStore, err := network.NewAtomixStore()
+	if err != nil {
+		log.Error("Cannot load network atomix store ", err)
+	}
+	log.Info("Network Configuration store connected")
+
+	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, deviceChangesStore, networkChangesStore, opts...)
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {

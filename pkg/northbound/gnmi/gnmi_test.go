@@ -18,7 +18,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"os"
