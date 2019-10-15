@@ -108,5 +108,5 @@ func nativeType(cv admin.ChangeValue) string {
 		fmt.Fprintf(os.Stderr, "Failed to convert value to TypedValue %s", err)
 		os.Exit(1)
 	}
-	return tv.String()
+	return tv.ValueToString()
 }

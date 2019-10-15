@@ -62,6 +62,8 @@ type Server struct {
 }
 
 // GetChanges provides a stream of submitted network changes.
+// Deprecated GetChanges is an NBI method of getting Changes
+// to be replaced by GetDeviceChanges and GetNetworkChanges
 func (s Server) GetChanges(r *ChangesRequest, stream ConfigDiags_GetChangesServer) error {
 	for _, c := range manager.GetManager().ChangeStore.Store {
 		if len(r.ChangeIDs) > 0 && !stringInList(r.ChangeIDs, store.B64(c.ID)) {
@@ -101,6 +103,8 @@ func (s Server) GetChanges(r *ChangesRequest, stream ConfigDiags_GetChangesServe
 }
 
 // GetConfigurations provides a stream of submitted network changes.
+// Deprecated GetConfigurations is an NBI method of getting Configurations
+// to be replaced by GetDeviceChanges and GetNetworkChanges
 func (s Server) GetConfigurations(r *ConfigRequest, stream ConfigDiags_GetConfigurationsServer) error {
 	for _, c := range manager.GetManager().ConfigStore.Store {
 		if len(r.DeviceIDs) > 0 && !stringInList(r.DeviceIDs, c.Device) {

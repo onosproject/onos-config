@@ -82,9 +82,9 @@ func Test_Opstate(t *testing.T) {
 		index       int
 		regexp      string
 	}{
-		{description: "Path 0", index: 2, regexp: `/root/system/path0\s+\|\(STRING\) bytes:"value0" type:STRING +\|`},
-		{description: "Path 1", index: 3, regexp: `/root/system/path1\s+\|\(STRING\) bytes:"value1" type:STRING +\|`},
-		{description: "Path 2", index: 4, regexp: `/root/system/path2\s+\|\(STRING\) bytes:"value2" type:STRING +\|`},
+		{description: "Path 0", index: 2, regexp: `/root/system/path0\s+\|\(STRING\) value0 +\|`},
+		{description: "Path 1", index: 3, regexp: `/root/system/path1\s+\|\(STRING\) value1 +\|`},
+		{description: "Path 2", index: 4, regexp: `/root/system/path2\s+\|\(STRING\) value2 +\|`},
 		{description: "Header", index: 0, regexp: `OPSTATE CACHE: My Device`},
 		{description: "Column Headers", index: 1, regexp: `PATH +\|VALUE`},
 	}
@@ -92,6 +92,6 @@ func Test_Opstate(t *testing.T) {
 	for _, testCase := range testCases {
 		re := regexp.MustCompile(testCase.regexp)
 		assert.Assert(t, re.MatchString(output[testCase.index]),
-			testCase.description, fmt.Sprintf("'%s' does not match '%s'", re.String(), output[testCase.index]))
+			testCase.description, fmt.Sprintf(". '%s' does not match '%s'", re.String(), output[testCase.index]))
 	}
 }
