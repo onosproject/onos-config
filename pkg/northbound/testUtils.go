@@ -16,9 +16,11 @@ package northbound
 
 import (
 	"fmt"
+	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
+	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
@@ -43,9 +45,8 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
-		nil,
-		nil,
-	)
+		mockstore.NewMockDeviceChangesStore(gomock.NewController(nil)),
+		mockstore.NewMockNetworkChangesStore(gomock.NewController(nil)))
 	if err != nil {
 		log.Error("Unable to load manager")
 	}

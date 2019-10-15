@@ -2,7 +2,7 @@
 // Source: github.com/onosproject/onos-config/pkg/store/change/network (interfaces: Store)
 
 // Package mock_network is a generated GoMock package.
-package manager
+package store
 
 import (
 	gomock "github.com/golang/mock/gomock"

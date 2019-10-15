@@ -2,7 +2,7 @@
 // Source: github.com/onosproject/onos-config/pkg/store/device (interfaces: Store)
 
 // Package mock_device is a generated GoMock package.
-package manager
+package store
 
 import (
 	gomock "github.com/golang/mock/gomock"

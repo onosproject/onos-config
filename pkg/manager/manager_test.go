@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -58,7 +59,8 @@ func TestMain(m *testing.M) {
 }
 
 func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigName]store.Configuration,
-	*MockDeviceStore, *MockNetworkChangesStore, *MockDeviceChangesStore) {
+	*mockstore.MockDeviceStore, *mockstore.MockNetworkChangesStore, *mockstore.
+		MockDeviceChangesStore) {
 
 	var change1 *change.Change
 	var device1config *store.Configuration
@@ -95,9 +97,9 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 
 	ctrl := gomock.NewController(t)
 
-	mockNetworkChangesStore := NewMockNetworkChangesStore(ctrl)
-	mockDeviceChangesStore := NewMockDeviceChangesStore(ctrl)
-	mockDeviceStore := NewMockDeviceStore(ctrl)
+	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
+	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
+	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
 
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
@@ -133,8 +135,8 @@ func Test_LoadManager(t *testing.T) {
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sample.json",
-		NewMockDeviceChangesStore(gomock.NewController(t)),
-		NewMockNetworkChangesStore(gomock.NewController(t)))
+		mockstore.NewMockDeviceChangesStore(gomock.NewController(t)),
+		mockstore.NewMockNetworkChangesStore(gomock.NewController(t)))
 	assert.NilError(t, err, "failed to load manager")
 }
 
@@ -143,8 +145,8 @@ func Test_LoadManagerBadConfigStore(t *testing.T) {
 		"../../configs/configStore-sampleX.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sample.json",
-		NewMockDeviceChangesStore(gomock.NewController(t)),
-		NewMockNetworkChangesStore(gomock.NewController(t)))
+		mockstore.NewMockDeviceChangesStore(gomock.NewController(t)),
+		mockstore.NewMockNetworkChangesStore(gomock.NewController(t)))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
@@ -153,8 +155,8 @@ func Test_LoadManagerBadChangeStore(t *testing.T) {
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sampleX.json",
 		"../../configs/networkStore-sample.json",
-		NewMockDeviceChangesStore(gomock.NewController(t)),
-		NewMockNetworkChangesStore(gomock.NewController(t)))
+		mockstore.NewMockDeviceChangesStore(gomock.NewController(t)),
+		mockstore.NewMockNetworkChangesStore(gomock.NewController(t)))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
@@ -163,8 +165,8 @@ func Test_LoadManagerBadNetworkStore(t *testing.T) {
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sampleX.json",
-		NewMockDeviceChangesStore(gomock.NewController(t)),
-		NewMockNetworkChangesStore(gomock.NewController(t)))
+		mockstore.NewMockDeviceChangesStore(gomock.NewController(t)),
+		mockstore.NewMockNetworkChangesStore(gomock.NewController(t)))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
