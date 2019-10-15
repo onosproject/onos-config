@@ -18,6 +18,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
+	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"os"
@@ -38,26 +39,25 @@ func TestMain(m *testing.M) {
 func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
 	var server = &Server{}
 
+	ctrl := gomock.NewController(t)
+	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
+	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
+
 	mgr, err := manager.LoadManager(
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
-		nil,
-		nil,
-	)
+		mockDeviceChangesStore,
+		mockNetworkChangesStore)
+
 	if err != nil {
 		log.Error("Expected manager to be loaded ", err)
 		os.Exit(-1)
 	}
-	ctrl := gomock.NewController(t)
-	//TODO create mock here.
-	// mockNetworkChangesStore :=
-	// mockDeviceChangesStore :=
-	//TODO assign here
-	//mgr.NetworkChangesStore := mockNetworkChangesStore
-	//mgr.ChangeStore := mockDeviceChangesStore
 	mockDeviceStore := NewMockStore(ctrl)
 	mgr.DeviceStore = mockDeviceStore
+	mgr.DeviceChangesStore = mockDeviceChangesStore
+	mgr.NetworkChangesStore = mockNetworkChangesStore
 
 	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)
