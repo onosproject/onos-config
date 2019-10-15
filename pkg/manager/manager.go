@@ -124,8 +124,6 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Configuration store loaded from ", configStoreFile)
 
-	log.Info("Device Changes store connected")
-
 	changeStore, err := store.LoadChangeStore(changeStoreFile)
 	if err != nil {
 		log.Error("Cannot load change store ", err)

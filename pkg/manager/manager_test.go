@@ -57,7 +57,8 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigName]store.Configuration, *MockDeviceStore) {
+func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigName]store.Configuration,
+	*MockDeviceStore, *MockNetworkChangesStore, *MockDeviceChangesStore) {
 
 	var change1 *change.Change
 	var device1config *store.Configuration
@@ -123,7 +124,8 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 		os.Exit(-1)
 	}
 	mgrTest.Run()
-	return mgrTest, changeStoreTest, configurationStoreTest, mockDeviceStore
+	return mgrTest, changeStoreTest, configurationStoreTest,
+		mockDeviceStore, mockNetworkChangesStore, mockDeviceChangesStore
 }
 
 func Test_LoadManager(t *testing.T) {
@@ -168,7 +170,7 @@ func Test_LoadManagerBadNetworkStore(t *testing.T) {
 
 func Test_GetNetworkConfig(t *testing.T) {
 
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*", 0)
 	assert.NilError(t, err, "GetTargetConfig error")
@@ -181,7 +183,8 @@ func Test_GetNetworkConfig(t *testing.T) {
 func Test_SetNetworkConfig(t *testing.T) {
 	// First verify the value beforehand
 	const origChangeHash = "wvqyCGcG9M2ycXcfnnuwXJX0Nec="
-	mgrTest, changeStoreTest, configurationStoreTest, _ := setUp(t)
+	mgrTest, changeStoreTest, configurationStoreTest, _, _, _ := setUp(t)
+
 	assert.Equal(t, len(changeStoreTest), 1)
 	i := 0
 	keys := make([]string, len(changeStoreTest))
@@ -240,7 +243,7 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 // When device type is given it is like extension 102 and allows a never heard of before config to be created
 func Test_SetNetworkConfig_NewConfig(t *testing.T) {
-	mgrTest, changeStoreTest, configurationStoreTest, _ := setUp(t)
+	mgrTest, changeStoreTest, configurationStoreTest, _, _, _ := setUp(t)
 
 	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
@@ -263,7 +266,7 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 
 // When device type is given it is like extension 102 and allows a never heard of before config to be created - here it is missing
 func Test_SetNetworkConfig_NewConfig102Missing(t *testing.T) {
-	mgrTest, _, configurationStoreTest, _ := setUp(t)
+	mgrTest, _, configurationStoreTest, _, _, _ := setUp(t)
 
 	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
@@ -280,7 +283,7 @@ func Test_SetNetworkConfig_NewConfig102Missing(t *testing.T) {
 
 func Test_SetBadNetworkConfig(t *testing.T) {
 
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
@@ -295,7 +298,7 @@ func Test_SetBadNetworkConfig(t *testing.T) {
 
 func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 
-	mgrTest, _, configurationStoreTest, _ := setUp(t)
+	mgrTest, _, configurationStoreTest, _, _, _ := setUp(t)
 
 	device2config, err := store.NewConfiguration("Device1", "1.0.1", "TestDevice",
 		[]change.ID{})
@@ -315,7 +318,7 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 
 func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
 
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
@@ -335,7 +338,7 @@ func matchDeviceID(deviceID string, deviceName string) bool {
 }
 
 func TestManager_GetAllDeviceIds(t *testing.T) {
-	mgrTest, _, configurationStoreTest, _ := setUp(t)
+	mgrTest, _, configurationStoreTest, _, _, _ := setUp(t)
 
 	device2config, err := store.NewConfiguration("Device2", "1.0.0", "TestDevice",
 		[]change.ID{})
@@ -354,7 +357,7 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 }
 
 func TestManager_GetNoConfig(t *testing.T) {
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("No Such Device", "Running", "/*", 0)
 	assert.Assert(t, len(result) == 0, "Get of bad device does not return empty array")
@@ -371,7 +374,7 @@ func networkConfigContainsPath(configs []*types.PathValue, whichOne string) bool
 }
 
 func TestManager_GetAllConfig(t *testing.T) {
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*", 0)
 	assert.Assert(t, len(result) == 3, "Get of device all paths does not return proper array")
@@ -382,7 +385,7 @@ func TestManager_GetAllConfig(t *testing.T) {
 }
 
 func TestManager_GetOneConfig(t *testing.T) {
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
@@ -391,7 +394,7 @@ func TestManager_GetOneConfig(t *testing.T) {
 }
 
 func TestManager_GetWildcardConfig(t *testing.T) {
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*/*/leaf2a", 0)
 	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
@@ -400,7 +403,7 @@ func TestManager_GetWildcardConfig(t *testing.T) {
 }
 
 func TestManager_GetConfigNoTarget(t *testing.T) {
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("", "Running", "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 0, "Get of device one path does not return proper array")
@@ -408,14 +411,14 @@ func TestManager_GetConfigNoTarget(t *testing.T) {
 }
 
 func TestManager_GetManager(t *testing.T) {
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 	assert.Equal(t, mgrTest, GetManager())
 	GetManager().Close()
 	assert.Equal(t, mgrTest, GetManager())
 }
 
 func TestManager_ComputeRollbackDelete(t *testing.T) {
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
@@ -460,7 +463,7 @@ func TestManager_GetTargetState(t *testing.T) {
 		value2  = "v2"
 		badPath = "/no/such/path"
 	)
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	//  Create an op state map with test data
 	device1ValueMap := make(map[string]*types.TypedValue)
@@ -484,7 +487,7 @@ func TestManager_GetTargetState(t *testing.T) {
 }
 
 func TestManager_DeviceConnected(t *testing.T) {
-	mgrTest, _, _, mockStore := setUp(t)
+	mgrTest, _, _, mockStore, _, _ := setUp(t)
 	const (
 		device1 = "device1"
 	)
@@ -526,7 +529,7 @@ func TestManager_DeviceConnected(t *testing.T) {
 }
 
 func TestManager_DeviceDisconnected(t *testing.T) {
-	mgrTest, _, _, mockStore := setUp(t)
+	mgrTest, _, _, mockStore, _, _ := setUp(t)
 	const (
 		device1 = "device1"
 	)
@@ -597,7 +600,7 @@ func (m MockModelPlugin) GetStateMode() modelregistry.GetStateMode {
 }
 
 func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	plugin := MockModelPlugin{}
 	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
@@ -614,7 +617,7 @@ func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
 }
 
 func TestManager_ValidateStores(t *testing.T) {
-	mgrTest, _, _, _ := setUp(t)
+	mgrTest, _, _, _, _, _ := setUp(t)
 
 	plugin := MockModelPlugin{}
 	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
