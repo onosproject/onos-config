@@ -131,42 +131,46 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 }
 
 func Test_LoadManager(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	_, err := LoadManager(
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sample.json",
-		mockstore.NewMockDeviceChangesStore(gomock.NewController(t)),
-		mockstore.NewMockNetworkChangesStore(gomock.NewController(t)))
+		mockstore.NewMockDeviceChangesStore(ctrl),
+		mockstore.NewMockNetworkChangesStore(ctrl))
 	assert.NilError(t, err, "failed to load manager")
 }
 
 func Test_LoadManagerBadConfigStore(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	_, err := LoadManager(
 		"../../configs/configStore-sampleX.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sample.json",
-		mockstore.NewMockDeviceChangesStore(gomock.NewController(t)),
-		mockstore.NewMockNetworkChangesStore(gomock.NewController(t)))
+		mockstore.NewMockDeviceChangesStore(ctrl),
+		mockstore.NewMockNetworkChangesStore(ctrl))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
 func Test_LoadManagerBadChangeStore(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	_, err := LoadManager(
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sampleX.json",
 		"../../configs/networkStore-sample.json",
-		mockstore.NewMockDeviceChangesStore(gomock.NewController(t)),
-		mockstore.NewMockNetworkChangesStore(gomock.NewController(t)))
+		mockstore.NewMockDeviceChangesStore(ctrl),
+		mockstore.NewMockNetworkChangesStore(ctrl))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
 func Test_LoadManagerBadNetworkStore(t *testing.T) {
+	ctrl := gomock.NewController(t)
 	_, err := LoadManager(
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sampleX.json",
-		mockstore.NewMockDeviceChangesStore(gomock.NewController(t)),
-		mockstore.NewMockNetworkChangesStore(gomock.NewController(t)))
+		mockstore.NewMockDeviceChangesStore(ctrl),
+		mockstore.NewMockNetworkChangesStore(ctrl))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
