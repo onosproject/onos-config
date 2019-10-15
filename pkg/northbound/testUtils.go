@@ -41,12 +41,13 @@ var (
 // to which it registers the given service.
 func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 	var err error
+	ctrl := gomock.NewController(nil)
 	_, err = manager.LoadManager(
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
-		mockstore.NewMockDeviceChangesStore(gomock.NewController(nil)),
-		mockstore.NewMockNetworkChangesStore(gomock.NewController(nil)))
+		mockstore.NewMockDeviceChangesStore(ctrl),
+		mockstore.NewMockNetworkChangesStore(ctrl))
 	if err != nil {
 		log.Error("Unable to load manager")
 	}

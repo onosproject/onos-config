@@ -39,8 +39,9 @@ func TestMain(m *testing.M) {
 func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
 	var server = &Server{}
 
-	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(gomock.NewController(t))
-	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
+	ctrl := gomock.NewController(t)
+	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
+	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
 
 	mgr, err := manager.LoadManager(
 		"../../../configs/configStore-sample.json",
@@ -53,7 +54,6 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
 		log.Error("Expected manager to be loaded ", err)
 		os.Exit(-1)
 	}
-	ctrl := gomock.NewController(t)
 	mockDeviceStore := NewMockStore(ctrl)
 	mgr.DeviceStore = mockDeviceStore
 	mgr.DeviceChangesStore = mockDeviceChangesStore
