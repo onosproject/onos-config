@@ -22,11 +22,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/types"
 	changetype "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetype "github.com/onosproject/onos-config/pkg/types/change/network"
 	snaptype "github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
-	"time"
 )
 
 // NewController returns a new network controller
@@ -103,30 +101,8 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 		prevIndex = prevSnapshot.EndIndex
 	}
 
-	// Get the last index in the change store
-	lastIndex, err := r.changes.LastIndex(deviceSnapshot.DeviceID)
-	if err != nil {
-		return false, err
-	}
-
-	// If the last index is less than the minimum retain count, skip the snapshot
-	if uint32(lastIndex) < deviceSnapshot.Retention.MinRetainCount {
-		deviceSnapshot.Status.State = snaptype.State_COMPLETE
-		if err := r.snapshots.Update(deviceSnapshot); err != nil {
-			return false, err
-		}
-		return true, nil
-	}
-
-	// Compute the maximum timestamp for changes to be deleted from the change store
-	var maxTimestamp *time.Time
-	if deviceSnapshot.Retention.RetainWindow != nil {
-		t := time.Now().Add(*deviceSnapshot.Retention.RetainWindow * -1)
-		maxTimestamp = &t
-	}
-
 	// Create a map to track the current state of the device
-	state := make(map[string]*devicechangetype.Value)
+	state := make(map[string]*devicechangetype.ChangeValue)
 
 	// Initialize the state map from the previous snapshot if available
 	if prevSnapshot != nil {
@@ -135,39 +111,40 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 		}
 	}
 
-	// Iterate through changes since the previous snapshot index
-	var snapshotIndex = prevIndex
-	for index := prevIndex + 1; index <= lastIndex-devicechangetype.Index(deviceSnapshot.Retention.MinRetainCount); index++ {
-		change, err := r.changes.GetByIndex(deviceSnapshot.DeviceID, index)
-		if err != nil {
-			return false, err
-		} else if networkchangetype.ID(change.NetworkChangeID).GetIndex() > networkchangetype.ID(deviceSnapshot.MaxNetworkChange).GetIndex() {
-			break
-		} else if maxTimestamp == nil || !change.Created.After(*maxTimestamp) {
-			// If the change is not COMPLETE, stop the snapshot
-			if change.Status.State != changetype.State_COMPLETE {
-				break
-			}
+	// List the changes for the device
+	changes := make(chan *devicechangetype.DeviceChange)
+	if err := r.changes.List(deviceSnapshot.DeviceID, changes); err != nil {
+		return false, err
+	}
 
-			// If the change has been rolled back, ignore the change but continue the snapshot
-			if change.Status.Phase == changetype.Phase_CHANGE {
-				for _, value := range change.Change.Values {
-					if value.Removed {
-						delete(state, value.Path)
-					} else {
-						state[value.Path] = value
-					}
+	// Iterate through changes and populate the snapshot
+	var snapshotIndex = prevIndex
+	for change := range changes {
+		// If the change index is included in the last snapshot, ignore the change
+		if change.Index <= snapshotIndex {
+			continue
+		}
+
+		// If the change is from a NetworkChange greater than the highest change to be snapshotted, break out of the loop
+		if change.NetworkChange.Index > deviceSnapshot.MaxNetworkChangeIndex {
+			break
+		}
+
+		// If the change is within the window to be snapshotted and the change has not been rolled back, record it
+		if change.Status.Phase == changetype.Phase_CHANGE {
+			for _, value := range change.Change.Values {
+				if value.Removed {
+					delete(state, value.Path)
+				} else {
+					state[value.Path] = value
 				}
 			}
-			snapshotIndex = index
-		} else {
-			break
 		}
 	}
 
 	// If the snapshot index is greater than the previous snapshot index, store the snapshot
 	if snapshotIndex > prevIndex {
-		values := make([]*devicechangetype.Value, 0, len(state))
+		values := make([]*devicechangetype.ChangeValue, 0, len(state))
 		for _, value := range state {
 			values = append(values, value)
 		}

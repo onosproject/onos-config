@@ -55,7 +55,6 @@ type Reconciler struct {
 	networkChanges   networkchangestore.Store
 	networkSnapshots networksnapstore.Store
 	deviceSnapshots  devicesnapstore.Store
-	firstChangeIndex networkchangetypes.Index
 }
 
 // Reconcile reconciles the state of a network configuration
@@ -140,59 +139,48 @@ func (r *Reconciler) reconcileRunningMark(snapshot *networksnaptypes.NetworkSnap
 // createDeviceSnapshots marks NetworkChanges for deletion and creates device snapshots
 func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
 	// Iterate through network changes
-	deviceChanges := make(map[device.ID]networkchangetypes.ID)
-	deviceMaxChanges := make(map[device.ID]networkchangetypes.ID)
+	deviceChanges := make(map[device.ID]networkchangetypes.Index)
+	deviceMaxChanges := make(map[device.ID]networkchangetypes.Index)
 
-	lastIndex, err := r.networkChanges.LastIndex()
-	if err != nil {
+	// List network changes
+	changes := make(chan *networkchangetypes.NetworkChange)
+	if err := r.networkChanges.List(changes); err != nil {
 		return false, err
 	}
 
 	// Compute the maximum timestamp for changes to be deleted from the change store
 	var maxTimestamp *time.Time
-	if snapshot.NetworkRetention.RetainWindow != nil {
-		t := time.Now().Add(*snapshot.NetworkRetention.RetainWindow * -1)
+	if snapshot.Retention.RetainWindow != nil {
+		t := time.Now().Add(*snapshot.Retention.RetainWindow * -1)
 		maxTimestamp = &t
 	}
 
-	// Iterate through network changes in sequential order
-	foundFirst := false
-	for index := r.firstChangeIndex; index <= lastIndex-networkchangetypes.Index(snapshot.NetworkRetention.MinRetainCount); index++ {
-		change, err := r.networkChanges.GetByIndex(index)
-		if err != nil {
-			return false, err
-		} else if change != nil {
-			foundFirst = true
+	// Iterate through network changes in chronological order
+	for change := range changes {
+		// If the change was created after the retention period, break out of the loop
+		if maxTimestamp != nil && change.Created.After(*maxTimestamp) {
+			break
+		}
 
-			// If the change was created before the retention period, mark it for deletion
-			if maxTimestamp == nil || !change.Created.After(*maxTimestamp) {
-				// If the change is still pending, ensure snapshots are not taken of devices following this change
-				if change.Status.State == changetypes.State_PENDING || change.Status.State == changetypes.State_RUNNING {
-					// Record max device changes if necessary
-					for _, device := range change.Refs {
-						if _, ok := deviceMaxChanges[device.DeviceChangeID.GetDeviceID()]; !ok {
-							prevChangeID := deviceChanges[device.DeviceChangeID.GetDeviceID()]
-							deviceMaxChanges[device.DeviceChangeID.GetDeviceID()] = prevChangeID
-						}
-					}
-				} else {
-					// Mark the change deleted
-					change.Deleted = true
-					if err := r.networkChanges.Update(change); err != nil {
-						return false, err
-					}
-
-					// Record the change ID for each device in the change
-					for _, device := range change.Refs {
-						deviceChanges[device.DeviceChangeID.GetDeviceID()] = change.ID
-					}
+		// If the change is still pending, ensure snapshots are not taken of devices following this change
+		if change.Status.State == changetypes.State_PENDING || change.Status.State == changetypes.State_RUNNING {
+			// Record max device changes if necessary
+			for _, device := range change.Refs {
+				if _, ok := deviceMaxChanges[device.DeviceChangeID.GetDeviceID()]; !ok {
+					prevChangeIndex := deviceChanges[device.DeviceChangeID.GetDeviceID()]
+					deviceMaxChanges[device.DeviceChangeID.GetDeviceID()] = prevChangeIndex
 				}
-			} else {
-				break
 			}
 		} else {
-			if !foundFirst {
-				r.firstChangeIndex++
+			// Mark the change deleted
+			change.Deleted = true
+			if err := r.networkChanges.Update(change); err != nil {
+				return false, err
+			}
+
+			// Record the change ID for each device in the change
+			for _, device := range change.Refs {
+				deviceChanges[device.DeviceChangeID.GetDeviceID()] = change.Index
 			}
 		}
 	}
@@ -206,12 +194,14 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 
 	// Create device snapshots for each device
 	refs := make([]*networksnaptypes.DeviceSnapshotRef, 0, len(deviceMaxChanges))
-	for device, maxChangeID := range deviceMaxChanges {
+	for device, maxChangeIndex := range deviceMaxChanges {
 		deviceSnapshot := &devicesnaptypes.DeviceSnapshot{
-			DeviceID:          device,
-			NetworkSnapshotID: types.ID(snapshot.ID),
-			MaxNetworkChange:  types.ID(maxChangeID),
-			Retention:         snapshot.DeviceRetention,
+			DeviceID: device,
+			NetworkSnapshot: devicesnaptypes.NetworkSnapshotRef{
+				ID:    types.ID(snapshot.ID),
+				Index: types.Index(snapshot.Index),
+			},
+			MaxNetworkChangeIndex: types.Index(maxChangeIndex),
 			Status: snaptypes.Status{
 				Phase: snaptypes.Phase_MARK,
 				State: snaptypes.State_RUNNING,
@@ -331,31 +321,17 @@ func (r *Reconciler) reconcileRunningDelete(snapshot *networksnaptypes.NetworkSn
 
 // deleteNetworkChanges deletes network changes marked for deletion
 func (r *Reconciler) deleteNetworkChanges(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
-	lastIndex, err := r.networkChanges.LastIndex()
-	if err != nil {
+	// List network changes
+	changes := make(chan *networkchangetypes.NetworkChange)
+	if err := r.networkChanges.List(changes); err != nil {
 		return false, err
 	}
 
-	// Iterate through network changes in sequential order
-	foundFirst := false
-	for index := r.firstChangeIndex; index <= lastIndex-networkchangetypes.Index(snapshot.NetworkRetention.MinRetainCount); index++ {
-		change, err := r.networkChanges.GetByIndex(index)
-		if err != nil {
-			return false, err
-		} else if change != nil {
-			if change.Deleted {
-				if err := r.networkChanges.Delete(change); err != nil {
-					return false, err
-				}
-				if !foundFirst {
-					r.firstChangeIndex++
-				}
-			} else {
-				foundFirst = true
-			}
-		} else {
-			if !foundFirst {
-				r.firstChangeIndex++
+	// Iterate through network changes and mark changes marked for deletion
+	for change := range changes {
+		if change.Deleted {
+			if err := r.networkChanges.Delete(change); err != nil {
+				return false, err
 			}
 		}
 	}

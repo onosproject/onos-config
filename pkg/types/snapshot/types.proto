@@ -55,7 +55,4 @@ enum State {
 message RetentionOptions {
     // 'retain_window' is the duration for which to retain network changes
     google.protobuf.Duration retain_window = 1 [(gogoproto.stdduration) = true];
-
-    // 'min_retain_count' is the minimum number of network changes to retain
-    uint32 min_retain_count = 2;
 }

@@ -40,18 +40,16 @@ type DeviceSnapshot struct {
 	DeviceID github_com_onosproject_onos_topo_pkg_northbound_device.ID `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3,casttype=github.com/onosproject/onos-topo/pkg/northbound/device.ID" json:"device_id,omitempty"`
 	// 'revision' is the request revision number
 	Revision Revision `protobuf:"varint,3,opt,name=revision,proto3,casttype=Revision" json:"revision,omitempty"`
-	// 'network_snapshot_id' is the identifier of the network snapshot from which this snapshot was created
-	NetworkSnapshotID github_com_onosproject_onos_config_pkg_types.ID `protobuf:"bytes,4,opt,name=network_snapshot_id,json=networkSnapshotId,proto3,casttype=github.com/onosproject/onos-config/pkg/types.ID" json:"network_snapshot_id,omitempty"`
-	// 'max_network_change' is the maximum network change to be snapshotted for the device
-	MaxNetworkChange github_com_onosproject_onos_config_pkg_types.ID `protobuf:"bytes,5,opt,name=max_network_change,json=maxNetworkChange,proto3,casttype=github.com/onosproject/onos-config/pkg/types.ID" json:"max_network_change,omitempty"`
+	// 'network_snapshot' is a reference to the network snapshot from which this snapshot was created
+	NetworkSnapshot NetworkSnapshotRef `protobuf:"bytes,4,opt,name=network_snapshot,json=networkSnapshot,proto3" json:"network_snapshot"`
+	// 'max_network_change_index' is the maximum network change index to be snapshotted for the device
+	MaxNetworkChangeIndex github_com_onosproject_onos_config_pkg_types.Index `protobuf:"varint,5,opt,name=max_network_change_index,json=maxNetworkChangeIndex,proto3,casttype=github.com/onosproject/onos-config/pkg/types.Index" json:"max_network_change_index,omitempty"`
 	// 'status' is the snapshot status
 	Status snapshot.Status `protobuf:"bytes,6,opt,name=status,proto3" json:"status"`
-	// 'retention' specifies which changes to retain for device changes
-	Retention snapshot.RetentionOptions `protobuf:"bytes,7,opt,name=retention,proto3" json:"retention"`
 	// 'created' is the time at which the configuration was created
-	Created time.Time `protobuf:"bytes,8,opt,name=created,proto3,stdtime" json:"created"`
+	Created time.Time `protobuf:"bytes,7,opt,name=created,proto3,stdtime" json:"created"`
 	// 'updated' is the time at which the configuration was last updated
-	Updated time.Time `protobuf:"bytes,9,opt,name=updated,proto3,stdtime" json:"updated"`
+	Updated time.Time `protobuf:"bytes,8,opt,name=updated,proto3,stdtime" json:"updated"`
 }
 
 func (m *DeviceSnapshot) Reset()         { *m = DeviceSnapshot{} }
@@ -108,18 +106,18 @@ func (m *DeviceSnapshot) GetRevision() Revision {
 	return 0
 }
 
-func (m *DeviceSnapshot) GetNetworkSnapshotID() github_com_onosproject_onos_config_pkg_types.ID {
+func (m *DeviceSnapshot) GetNetworkSnapshot() NetworkSnapshotRef {
 	if m != nil {
-		return m.NetworkSnapshotID
+		return m.NetworkSnapshot
 	}
-	return ""
+	return NetworkSnapshotRef{}
 }
 
-func (m *DeviceSnapshot) GetMaxNetworkChange() github_com_onosproject_onos_config_pkg_types.ID {
+func (m *DeviceSnapshot) GetMaxNetworkChangeIndex() github_com_onosproject_onos_config_pkg_types.Index {
 	if m != nil {
-		return m.MaxNetworkChange
+		return m.MaxNetworkChangeIndex
 	}
-	return ""
+	return 0
 }
 
 func (m *DeviceSnapshot) GetStatus() snapshot.Status {
@@ -127,13 +125,6 @@ func (m *DeviceSnapshot) GetStatus() snapshot.Status {
 		return m.Status
 	}
 	return snapshot.Status{}
-}
-
-func (m *DeviceSnapshot) GetRetention() snapshot.RetentionOptions {
-	if m != nil {
-		return m.Retention
-	}
-	return snapshot.RetentionOptions{}
 }
 
 func (m *DeviceSnapshot) GetCreated() time.Time {
@@ -150,6 +141,61 @@ func (m *DeviceSnapshot) GetUpdated() time.Time {
 	return time.Time{}
 }
 
+// NetworkSnapshotRef is a back reference to the NetworkSnapshot that created a DeviceSnapshot
+type NetworkSnapshotRef struct {
+	// 'id' is the identifier of the network snapshot from which this snapshot was created
+	ID github_com_onosproject_onos_config_pkg_types.ID `protobuf:"bytes,1,opt,name=id,proto3,casttype=github.com/onosproject/onos-config/pkg/types.ID" json:"id,omitempty"`
+	// 'index' is the index of the network snapshot from which this snapshot was created
+	Index github_com_onosproject_onos_config_pkg_types.Index `protobuf:"varint,2,opt,name=index,proto3,casttype=github.com/onosproject/onos-config/pkg/types.Index" json:"index,omitempty"`
+}
+
+func (m *NetworkSnapshotRef) Reset()         { *m = NetworkSnapshotRef{} }
+func (m *NetworkSnapshotRef) String() string { return proto.CompactTextString(m) }
+func (*NetworkSnapshotRef) ProtoMessage()    {}
+func (*NetworkSnapshotRef) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f618bedd50a8adb9, []int{1}
+}
+func (m *NetworkSnapshotRef) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *NetworkSnapshotRef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_NetworkSnapshotRef.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *NetworkSnapshotRef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NetworkSnapshotRef.Merge(m, src)
+}
+func (m *NetworkSnapshotRef) XXX_Size() int {
+	return m.Size()
+}
+func (m *NetworkSnapshotRef) XXX_DiscardUnknown() {
+	xxx_messageInfo_NetworkSnapshotRef.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_NetworkSnapshotRef proto.InternalMessageInfo
+
+func (m *NetworkSnapshotRef) GetID() github_com_onosproject_onos_config_pkg_types.ID {
+	if m != nil {
+		return m.ID
+	}
+	return ""
+}
+
+func (m *NetworkSnapshotRef) GetIndex() github_com_onosproject_onos_config_pkg_types.Index {
+	if m != nil {
+		return m.Index
+	}
+	return 0
+}
+
 // Snapshot is a snapshot of the state of a single device
 type Snapshot struct {
 	// 'id' is a unique snapshot identifier
@@ -163,14 +209,14 @@ type Snapshot struct {
 	// 'end_index' is the index at which the snapshot ended
 	EndIndex github_com_onosproject_onos_config_pkg_types_change_device.Index `protobuf:"varint,5,opt,name=end_index,json=endIndex,proto3,casttype=github.com/onosproject/onos-config/pkg/types/change/device.Index" json:"end_index,omitempty"`
 	// 'values' is a list of values to set
-	Values []*device.Value `protobuf:"bytes,6,rep,name=values,proto3" json:"values,omitempty"`
+	Values []*device.ChangeValue `protobuf:"bytes,6,rep,name=values,proto3" json:"values,omitempty"`
 }
 
 func (m *Snapshot) Reset()         { *m = Snapshot{} }
 func (m *Snapshot) String() string { return proto.CompactTextString(m) }
 func (*Snapshot) ProtoMessage()    {}
 func (*Snapshot) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f618bedd50a8adb9, []int{1}
+	return fileDescriptor_f618bedd50a8adb9, []int{2}
 }
 func (m *Snapshot) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -234,7 +280,7 @@ func (m *Snapshot) GetEndIndex() github_com_onosproject_onos_config_pkg_types_ch
 	return 0
 }
 
-func (m *Snapshot) GetValues() []*device.Value {
+func (m *Snapshot) GetValues() []*device.ChangeValue {
 	if m != nil {
 		return m.Values
 	}
@@ -243,6 +289,7 @@ func (m *Snapshot) GetValues() []*device.Value {
 
 func init() {
 	proto.RegisterType((*DeviceSnapshot)(nil), "onos.config.snapshot.device.DeviceSnapshot")
+	proto.RegisterType((*NetworkSnapshotRef)(nil), "onos.config.snapshot.device.NetworkSnapshotRef")
 	proto.RegisterType((*Snapshot)(nil), "onos.config.snapshot.device.Snapshot")
 }
 
@@ -251,44 +298,44 @@ func init() {
 }
 
 var fileDescriptor_f618bedd50a8adb9 = []byte{
-	// 577 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x54, 0xcf, 0x8a, 0xd3, 0x40,
-	0x18, 0x6f, 0xda, 0x6e, 0x37, 0x9d, 0x2e, 0xe2, 0x8e, 0x7b, 0x08, 0x75, 0x49, 0xca, 0x82, 0xd2,
-	0x8b, 0x13, 0xd8, 0x45, 0x50, 0x0f, 0xa2, 0xb1, 0x88, 0xf5, 0xa0, 0x90, 0x15, 0xaf, 0x65, 0x9a,
-	0x99, 0xa6, 0x71, 0x37, 0x33, 0x21, 0x99, 0xd4, 0xfa, 0x16, 0xfb, 0x12, 0xbe, 0xcb, 0x82, 0x97,
-	0x3d, 0x7a, 0x8a, 0x92, 0xbe, 0xc5, 0x9e, 0x64, 0x66, 0x12, 0x77, 0x57, 0x8a, 0xd0, 0xc5, 0x83,
-	0x97, 0xf0, 0xf1, 0xe5, 0xf7, 0x2f, 0x1f, 0xbf, 0x16, 0x3c, 0x48, 0x4e, 0x42, 0x57, 0x7c, 0x49,
-	0x68, 0xe6, 0x66, 0x0c, 0x27, 0xd9, 0x9c, 0x0b, 0x97, 0xd0, 0x45, 0x14, 0x50, 0xbd, 0x45, 0x49,
-	0xca, 0x05, 0x87, 0xf7, 0x39, 0xe3, 0x19, 0x0a, 0x38, 0x9b, 0x45, 0x21, 0xaa, 0x81, 0x48, 0x03,
-	0xfb, 0x4e, 0xc8, 0x79, 0x78, 0x4a, 0x5d, 0x05, 0x9d, 0xe6, 0x33, 0x57, 0x44, 0x31, 0xcd, 0x04,
-	0x8e, 0x13, 0xcd, 0xee, 0xef, 0x85, 0x3c, 0xe4, 0x6a, 0x74, 0xe5, 0x54, 0x6d, 0x5f, 0x86, 0x91,
-	0x98, 0xe7, 0x53, 0x14, 0xf0, 0xd8, 0x95, 0xf2, 0x49, 0xca, 0x3f, 0xd1, 0x40, 0xa8, 0xf9, 0x91,
-	0xb6, 0x72, 0xd7, 0xa4, 0xbb, 0x16, 0xab, 0xff, 0x7a, 0x23, 0x89, 0x60, 0x8e, 0x59, 0x48, 0xd7,
-	0x7c, 0xde, 0xc1, 0xd7, 0x2d, 0x70, 0x67, 0xa4, 0xd6, 0xc7, 0x95, 0x0d, 0xdc, 0x07, 0xcd, 0x88,
-	0x58, 0xc6, 0xc0, 0x18, 0x76, 0xbd, 0x9d, 0xb2, 0x70, 0x9a, 0xe3, 0xd1, 0xa5, 0x7a, 0xfa, 0xcd,
-	0x88, 0xc0, 0x19, 0xe8, 0x6a, 0x99, 0x49, 0x44, 0xac, 0xa6, 0x02, 0x8d, 0xcb, 0xc2, 0x31, 0xb5,
-	0x88, 0x82, 0x3e, 0xfd, 0x5b, 0x36, 0xc1, 0x13, 0xae, 0x92, 0x31, 0x9e, 0x8a, 0xf9, 0x94, 0xe7,
-	0x8c, 0x54, 0xb9, 0xd0, 0x78, 0xe4, 0x9b, 0x7a, 0x1c, 0x13, 0x38, 0x04, 0x66, 0x4a, 0x17, 0x51,
-	0x16, 0x71, 0x66, 0xb5, 0x06, 0xc6, 0xb0, 0xed, 0xed, 0x5c, 0x16, 0x8e, 0xe9, 0x57, 0x3b, 0xff,
-	0xf7, 0x5b, 0xb8, 0x04, 0xf7, 0x18, 0x15, 0x9f, 0x79, 0x7a, 0x32, 0xa9, 0x4f, 0x25, 0xb3, 0xb5,
-	0x55, 0xb6, 0x37, 0x65, 0xe1, 0xec, 0xbe, 0xd3, 0xaf, 0xeb, 0x2f, 0x54, 0x21, 0xdd, 0x4d, 0x0e,
-	0x28, 0xa3, 0xed, 0xb2, 0x3f, 0x54, 0x08, 0xc4, 0x00, 0xc6, 0x78, 0x39, 0xa9, 0xdd, 0xf5, 0x95,
-	0xad, 0x2d, 0x65, 0x7c, 0x74, 0x1b, 0x8f, 0xbb, 0x31, 0x5e, 0x56, 0x61, 0x5f, 0x29, 0x31, 0xf8,
-	0x0c, 0x74, 0x32, 0x81, 0x45, 0x9e, 0x59, 0x9d, 0x81, 0x31, 0xec, 0x1d, 0xee, 0xa3, 0xb5, 0x7d,
-	0x3c, 0x56, 0x18, 0xaf, 0x7d, 0x5e, 0x38, 0x0d, 0xbf, 0x62, 0xc0, 0xb7, 0xa0, 0x9b, 0x52, 0x41,
-	0x99, 0x90, 0x37, 0xdc, 0x56, 0xf4, 0x87, 0xeb, 0xe9, 0x7e, 0x0d, 0x7b, 0x9f, 0xc8, 0x67, 0x2d,
-	0x74, 0x45, 0x87, 0xcf, 0xc1, 0x76, 0x90, 0x52, 0x2c, 0x28, 0xb1, 0x4c, 0xa5, 0xd4, 0x47, 0xba,
-	0xfb, 0xa8, 0xee, 0x3e, 0xfa, 0x50, 0x77, 0xdf, 0x33, 0x25, 0xfb, 0xec, 0x87, 0x63, 0xf8, 0x35,
-	0x49, 0xf2, 0xf3, 0x84, 0x28, 0x7e, 0x77, 0x13, 0x7e, 0x45, 0x3a, 0xf8, 0xd6, 0x02, 0xe6, 0x7f,
-	0xd6, 0xd0, 0xc7, 0xa0, 0x77, 0xbd, 0x6f, 0x2d, 0xe5, 0xb4, 0x57, 0x16, 0x0e, 0xb8, 0x51, 0x34,
-	0x19, 0x0b, 0x64, 0x57, 0xa5, 0xa1, 0xa0, 0x97, 0x09, 0x9c, 0x8a, 0x49, 0xc4, 0x08, 0x5d, 0xaa,
-	0x9a, 0xb6, 0x3d, 0x09, 0x7c, 0x71, 0xfb, 0x9f, 0x34, 0x1a, 0x4b, 0x2d, 0x1f, 0x28, 0x61, 0x35,
-	0x43, 0x0c, 0xba, 0x94, 0x91, 0xca, 0x64, 0xeb, 0x1f, 0x9a, 0x98, 0x94, 0x11, 0x6d, 0xf1, 0x04,
-	0x74, 0x16, 0xf8, 0x34, 0xa7, 0xb2, 0x9b, 0xad, 0x61, 0xef, 0x70, 0x70, 0xa3, 0x5c, 0x9a, 0x5b,
-	0xfd, 0x53, 0xa2, 0x8f, 0x12, 0xe8, 0x57, 0x78, 0xcf, 0x3a, 0x2f, 0x6d, 0xe3, 0xa2, 0xb4, 0x8d,
-	0x9f, 0xa5, 0x6d, 0x9c, 0xad, 0xec, 0xc6, 0xc5, 0xca, 0x6e, 0x7c, 0x5f, 0xd9, 0x8d, 0x69, 0x47,
-	0xd5, 0xe1, 0xe8, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0xa7, 0x5b, 0xc4, 0x07, 0x9e, 0x05, 0x00,
-	0x00,
+	// 591 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x54, 0x4f, 0x8b, 0xd3, 0x40,
+	0x1c, 0x6d, 0xda, 0x6e, 0x37, 0x3b, 0x5d, 0x54, 0x86, 0x15, 0x42, 0x5d, 0x92, 0x65, 0x41, 0xe9,
+	0xc5, 0x09, 0x54, 0x14, 0xd6, 0xc3, 0xa2, 0xb5, 0x08, 0x01, 0xf1, 0x90, 0x15, 0xaf, 0x35, 0xcd,
+	0x4c, 0xd3, 0xb8, 0xdb, 0x99, 0x90, 0x4c, 0x6a, 0xfd, 0x16, 0xfb, 0x45, 0xfc, 0x1e, 0x7b, 0x73,
+	0xbd, 0x79, 0x8a, 0x92, 0x7e, 0x8b, 0x9e, 0x24, 0xf3, 0xa7, 0x6c, 0xb1, 0x2c, 0x54, 0x3d, 0x78,
+	0x29, 0xc3, 0x2f, 0xef, 0xfd, 0x7e, 0xef, 0xf7, 0xe6, 0x4d, 0xc1, 0xc3, 0xe4, 0x3c, 0x72, 0xf9,
+	0xe7, 0x84, 0x64, 0x6e, 0x46, 0x83, 0x24, 0x9b, 0x30, 0xee, 0x62, 0x32, 0x8b, 0x43, 0x22, 0xab,
+	0x28, 0x49, 0x19, 0x67, 0xf0, 0x01, 0xa3, 0x2c, 0x43, 0x21, 0xa3, 0xe3, 0x38, 0x42, 0x1a, 0x88,
+	0x24, 0xb0, 0xe3, 0x44, 0x8c, 0x45, 0x17, 0xc4, 0x15, 0xd0, 0x51, 0x3e, 0x76, 0x79, 0x3c, 0x25,
+	0x19, 0x0f, 0xa6, 0x89, 0x64, 0x77, 0x0e, 0x22, 0x16, 0x31, 0x71, 0x74, 0xab, 0x93, 0xaa, 0xbe,
+	0x8c, 0x62, 0x3e, 0xc9, 0x47, 0x28, 0x64, 0x53, 0xb7, 0x6a, 0x9f, 0xa4, 0xec, 0x23, 0x09, 0xb9,
+	0x38, 0x3f, 0x96, 0xa3, 0xdc, 0x0d, 0xea, 0x6e, 0xc8, 0xea, 0xbc, 0xde, 0xaa, 0x45, 0x38, 0x09,
+	0x68, 0x44, 0x36, 0xac, 0x77, 0xfc, 0xb5, 0x09, 0xee, 0x0c, 0x44, 0xf9, 0x4c, 0x8d, 0x81, 0x87,
+	0xa0, 0x1e, 0x63, 0xcb, 0x38, 0x32, 0xba, 0x7b, 0xfd, 0xfd, 0xb2, 0x70, 0xea, 0xde, 0x60, 0x29,
+	0x7e, 0xfd, 0x7a, 0x8c, 0xe1, 0x18, 0xec, 0xc9, 0x36, 0xc3, 0x18, 0x5b, 0x75, 0x01, 0xf2, 0xca,
+	0xc2, 0x31, 0x65, 0x13, 0x01, 0x3d, 0xb9, 0x4d, 0x1b, 0x67, 0x09, 0x13, 0xca, 0x28, 0x4b, 0xf9,
+	0x64, 0xc4, 0x72, 0x8a, 0x95, 0x2e, 0xe4, 0x0d, 0x7c, 0x53, 0x1e, 0x3d, 0x0c, 0xbb, 0xc0, 0x4c,
+	0xc9, 0x2c, 0xce, 0x62, 0x46, 0xad, 0xc6, 0x91, 0xd1, 0x6d, 0xf6, 0xf7, 0x97, 0x85, 0x63, 0xfa,
+	0xaa, 0xe6, 0xaf, 0xbe, 0xc2, 0x0f, 0xe0, 0x1e, 0x25, 0xfc, 0x13, 0x4b, 0xcf, 0x87, 0xda, 0x2a,
+	0xab, 0x79, 0x64, 0x74, 0xdb, 0x3d, 0x17, 0xdd, 0x72, 0x79, 0xe8, 0xad, 0x24, 0xe9, 0xbd, 0x7d,
+	0x32, 0xee, 0x37, 0xaf, 0x0a, 0xa7, 0xe6, 0xdf, 0xa5, 0xeb, 0x5f, 0x20, 0x03, 0xd6, 0x34, 0x98,
+	0x0f, 0xf5, 0x14, 0xe9, 0xe6, 0x30, 0xa6, 0x98, 0xcc, 0xad, 0x1d, 0xa1, 0xed, 0xd9, 0xb2, 0x70,
+	0x7a, 0xdb, 0x5c, 0x09, 0xf2, 0x2a, 0xb6, 0x7f, 0x7f, 0x1a, 0xcc, 0x95, 0x8e, 0x57, 0xa2, 0xab,
+	0x28, 0xc3, 0xe7, 0xa0, 0x95, 0xf1, 0x80, 0xe7, 0x99, 0xd5, 0x12, 0x8b, 0x1c, 0x6e, 0x5e, 0xe4,
+	0x4c, 0x60, 0x94, 0x6a, 0xc5, 0x80, 0xa7, 0x60, 0x37, 0x4c, 0x49, 0xc0, 0x09, 0xb6, 0x76, 0x05,
+	0xb9, 0x83, 0x64, 0x4a, 0x91, 0x4e, 0x29, 0x7a, 0xa7, 0x53, 0xda, 0x37, 0x2b, 0xea, 0xe5, 0x0f,
+	0xc7, 0xf0, 0x35, 0xa9, 0xe2, 0xe7, 0x09, 0x16, 0x7c, 0x73, 0x1b, 0xbe, 0x22, 0x1d, 0x7f, 0x31,
+	0x00, 0xfc, 0xdd, 0x5a, 0xe8, 0xdd, 0x48, 0xd5, 0xc9, 0x2a, 0x55, 0xee, 0x76, 0x9e, 0xc9, 0x08,
+	0xbe, 0x01, 0x3b, 0xd2, 0xfb, 0xfa, 0x5f, 0x79, 0x2f, 0x9b, 0x1c, 0x7f, 0x6b, 0x00, 0xf3, 0x3f,
+	0xcb, 0xfe, 0x53, 0xd0, 0xd6, 0x77, 0x5c, 0x4d, 0x6a, 0x88, 0x49, 0x07, 0x65, 0xe1, 0x00, 0x2d,
+	0x74, 0x25, 0x0b, 0x68, 0xa0, 0x87, 0x21, 0x01, 0xed, 0x8c, 0x07, 0x29, 0x57, 0xc9, 0x6c, 0x0a,
+	0x77, 0x2a, 0xe0, 0x8b, 0x3f, 0xff, 0xb3, 0x50, 0x5e, 0x01, 0xd1, 0x58, 0x86, 0x33, 0x00, 0x7b,
+	0x84, 0xe2, 0xb5, 0xf8, 0xff, 0x9b, 0x21, 0x26, 0xa1, 0x58, 0x8e, 0x38, 0x05, 0xad, 0x59, 0x70,
+	0x91, 0x93, 0x2a, 0xff, 0x8d, 0x6e, 0xbb, 0xf7, 0x68, 0x2d, 0xff, 0x92, 0xab, 0x9f, 0xb1, 0x7c,
+	0x37, 0xef, 0x2b, 0xb8, 0xaf, 0x58, 0x7d, 0xeb, 0xaa, 0xb4, 0x8d, 0xeb, 0xd2, 0x36, 0x7e, 0x96,
+	0xb6, 0x71, 0xb9, 0xb0, 0x6b, 0xd7, 0x0b, 0xbb, 0xf6, 0x7d, 0x61, 0xd7, 0x46, 0x2d, 0x11, 0xe2,
+	0x27, 0xbf, 0x02, 0x00, 0x00, 0xff, 0xff, 0x94, 0x58, 0x9c, 0x53, 0xfe, 0x05, 0x00, 0x00,
 }
 
 func (m *DeviceSnapshot) Marshal() (dAtA []byte, err error) {
@@ -318,23 +365,13 @@ func (m *DeviceSnapshot) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i -= n1
 	i = encodeVarintTypes(dAtA, i, uint64(n1))
 	i--
-	dAtA[i] = 0x4a
+	dAtA[i] = 0x42
 	n2, err2 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Created, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Created):])
 	if err2 != nil {
 		return 0, err2
 	}
 	i -= n2
 	i = encodeVarintTypes(dAtA, i, uint64(n2))
-	i--
-	dAtA[i] = 0x42
-	{
-		size, err := m.Retention.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTypes(dAtA, i, uint64(size))
-	}
 	i--
 	dAtA[i] = 0x3a
 	{
@@ -347,20 +384,21 @@ func (m *DeviceSnapshot) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0x32
-	if len(m.MaxNetworkChange) > 0 {
-		i -= len(m.MaxNetworkChange)
-		copy(dAtA[i:], m.MaxNetworkChange)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.MaxNetworkChange)))
+	if m.MaxNetworkChangeIndex != 0 {
+		i = encodeVarintTypes(dAtA, i, uint64(m.MaxNetworkChangeIndex))
 		i--
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x28
 	}
-	if len(m.NetworkSnapshotID) > 0 {
-		i -= len(m.NetworkSnapshotID)
-		copy(dAtA[i:], m.NetworkSnapshotID)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.NetworkSnapshotID)))
-		i--
-		dAtA[i] = 0x22
+	{
+		size, err := m.NetworkSnapshot.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTypes(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0x22
 	if m.Revision != 0 {
 		i = encodeVarintTypes(dAtA, i, uint64(m.Revision))
 		i--
@@ -372,6 +410,41 @@ func (m *DeviceSnapshot) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintTypes(dAtA, i, uint64(len(m.DeviceID)))
 		i--
 		dAtA[i] = 0x12
+	}
+	if len(m.ID) > 0 {
+		i -= len(m.ID)
+		copy(dAtA[i:], m.ID)
+		i = encodeVarintTypes(dAtA, i, uint64(len(m.ID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *NetworkSnapshotRef) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *NetworkSnapshotRef) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *NetworkSnapshotRef) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Index != 0 {
+		i = encodeVarintTypes(dAtA, i, uint64(m.Index))
+		i--
+		dAtA[i] = 0x10
 	}
 	if len(m.ID) > 0 {
 		i -= len(m.ID)
@@ -479,22 +552,33 @@ func (m *DeviceSnapshot) Size() (n int) {
 	if m.Revision != 0 {
 		n += 1 + sovTypes(uint64(m.Revision))
 	}
-	l = len(m.NetworkSnapshotID)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
-	}
-	l = len(m.MaxNetworkChange)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
+	l = m.NetworkSnapshot.Size()
+	n += 1 + l + sovTypes(uint64(l))
+	if m.MaxNetworkChangeIndex != 0 {
+		n += 1 + sovTypes(uint64(m.MaxNetworkChangeIndex))
 	}
 	l = m.Status.Size()
-	n += 1 + l + sovTypes(uint64(l))
-	l = m.Retention.Size()
 	n += 1 + l + sovTypes(uint64(l))
 	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Created)
 	n += 1 + l + sovTypes(uint64(l))
 	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Updated)
 	n += 1 + l + sovTypes(uint64(l))
+	return n
+}
+
+func (m *NetworkSnapshotRef) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovTypes(uint64(l))
+	}
+	if m.Index != 0 {
+		n += 1 + sovTypes(uint64(m.Index))
+	}
 	return n
 }
 
@@ -651,9 +735,9 @@ func (m *DeviceSnapshot) Unmarshal(dAtA []byte) error {
 			}
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field NetworkSnapshotID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field NetworkSnapshot", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTypes
@@ -663,29 +747,30 @@ func (m *DeviceSnapshot) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthTypes
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthTypes
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.NetworkSnapshotID = github_com_onosproject_onos_config_pkg_types.ID(dAtA[iNdEx:postIndex])
+			if err := m.NetworkSnapshot.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaxNetworkChange", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxNetworkChangeIndex", wireType)
 			}
-			var stringLen uint64
+			m.MaxNetworkChangeIndex = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTypes
@@ -695,24 +780,11 @@ func (m *DeviceSnapshot) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				m.MaxNetworkChangeIndex |= github_com_onosproject_onos_config_pkg_types.Index(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.MaxNetworkChange = github_com_onosproject_onos_config_pkg_types.ID(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
@@ -748,39 +820,6 @@ func (m *DeviceSnapshot) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Retention", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Retention.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 8:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Created", wireType)
 			}
 			var msglen int
@@ -812,7 +851,7 @@ func (m *DeviceSnapshot) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 9:
+		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Updated", wireType)
 			}
@@ -845,6 +884,110 @@ func (m *DeviceSnapshot) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTypes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthTypes
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthTypes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *NetworkSnapshotRef) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTypes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: NetworkSnapshotRef: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: NetworkSnapshotRef: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTypes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTypes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTypes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = github_com_onosproject_onos_config_pkg_types.ID(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			m.Index = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTypes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Index |= github_com_onosproject_onos_config_pkg_types.Index(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTypes(dAtA[iNdEx:])
@@ -1061,7 +1204,7 @@ func (m *Snapshot) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Values = append(m.Values, &device.Value{})
+			m.Values = append(m.Values, &device.ChangeValue{})
 			if err := m.Values[len(m.Values)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

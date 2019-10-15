@@ -148,7 +148,7 @@ func (s *atomixStore) Create(config *devicesnapshot.DeviceSnapshot) error {
 		return errors.New("not a new object")
 	}
 
-	config.ID = devicesnapshot.GetSnapshotID(config.NetworkSnapshotID, config.DeviceID)
+	config.ID = devicesnapshot.GetSnapshotID(config.NetworkSnapshot.ID, config.DeviceID)
 
 	bytes, err := proto.Marshal(config)
 	if err != nil {

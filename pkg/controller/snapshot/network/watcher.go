@@ -90,7 +90,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for request := range configCh {
-			ch <- request.NetworkSnapshotID
+			ch <- request.NetworkSnapshot.ID
 		}
 		close(ch)
 	}()

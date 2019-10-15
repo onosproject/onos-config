@@ -34,23 +34,29 @@ message DeviceSnapshot {
     // 'revision' is the request revision number
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
-    // 'network_snapshot_id' is the identifier of the network snapshot from which this snapshot was created
-    string network_snapshot_id = 4 [(gogoproto.customname) = "NetworkSnapshotID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+    // 'network_snapshot' is a reference to the network snapshot from which this snapshot was created
+    NetworkSnapshotRef network_snapshot = 4 [(gogoproto.nullable) = false];
 
-    // 'max_network_change' is the maximum network change to be snapshotted for the device
-    string max_network_change = 5 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+    // 'max_network_change_index' is the maximum network change index to be snapshotted for the device
+    uint64 max_network_change_index = 5 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.Index"];
 
     // 'status' is the snapshot status
     onos.config.snapshot.Status status = 6 [(gogoproto.nullable) = false];
 
-    // 'retention' specifies which changes to retain for device changes
-    onos.config.snapshot.RetentionOptions retention = 7 [(gogoproto.nullable) = false];
-
     // 'created' is the time at which the configuration was created
-    google.protobuf.Timestamp created = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp created = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'updated' is the time at which the configuration was last updated
-    google.protobuf.Timestamp updated = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp updated = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// NetworkSnapshotRef is a back reference to the NetworkSnapshot that created a DeviceSnapshot
+message NetworkSnapshotRef {
+    // 'id' is the identifier of the network snapshot from which this snapshot was created
+    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+
+    // 'index' is the index of the network snapshot from which this snapshot was created
+    uint64 index = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.Index"];
 }
 
 // Snapshot is a snapshot of the state of a single device
@@ -71,5 +77,5 @@ message Snapshot {
     uint64 end_index = 5 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.Index"];
 
     // 'values' is a list of values to set
-    repeated onos.config.change.device.Value values = 6;
+    repeated onos.config.change.device.ChangeValue values = 6;
 }

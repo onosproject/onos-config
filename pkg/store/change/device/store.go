@@ -196,13 +196,13 @@ func (s *atomixStore) Create(config *devicechange.DeviceChange) error {
 	if config.Change.DeviceID == "" {
 		return errors.New("no device ID specified")
 	}
-	if config.NetworkChangeID == "" {
+	if config.NetworkChange.ID == "" {
 		return errors.New("no NetworkChange ID specified")
 	}
 	if config.Revision != 0 {
 		return errors.New("not a new object")
 	}
-	config.ID = networkchange.ID(config.NetworkChangeID).GetDeviceChangeID(config.Change.DeviceID)
+	config.ID = networkchange.ID(config.NetworkChange.ID).GetDeviceChangeID(config.Change.DeviceID)
 
 	changes, err := s.getDeviceChanges(config.Change.DeviceID)
 	if err != nil {

@@ -156,7 +156,10 @@ func TestDeviceWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	change1 := &devicechange.DeviceChange{
-		NetworkChangeID: types.ID("network:1"),
+		NetworkChange: devicechange.NetworkChangeRef{
+			ID:    "network-change-1",
+			Index: 2,
+		},
 		Change: &devicechange.Change{
 			DeviceID: device.ID("device-1"),
 			Values: []*devicechange.ChangeValue{
@@ -183,13 +186,16 @@ func TestDeviceWatcher(t *testing.T) {
 
 	select {
 	case id := <-ch:
-		assert.Equal(t, change1.NetworkChangeID, id)
+		assert.Equal(t, change1.NetworkChange.ID, id)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
 
 	change2 := &devicechange.DeviceChange{
-		NetworkChangeID: types.ID("network:2"),
+		NetworkChange: devicechange.NetworkChangeRef{
+			ID:    "network-change-2",
+			Index: 2,
+		},
 		Change: &devicechange.Change{
 			DeviceID: device.ID("device-2"),
 			Values: []*devicechange.ChangeValue{

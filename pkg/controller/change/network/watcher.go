@@ -126,7 +126,7 @@ func (w *DeviceWatcher) watchDevice(device device.ID, ch chan<- types.ID) {
 	w.wg.Add(1)
 	go func() {
 		for request := range deviceCh {
-			ch <- types.ID(request.NetworkChangeID)
+			ch <- types.ID(request.NetworkChange.ID)
 		}
 		w.wg.Done()
 	}()
