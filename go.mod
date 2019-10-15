@@ -11,6 +11,7 @@ require (
 	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
+	github.com/google/uuid v1.1.1
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/onosproject/onos-topo v0.0.0-20191007162302-b2f95b144981
 	github.com/openconfig/gnmi v0.0.0-20180912164834-33a1865c3029
