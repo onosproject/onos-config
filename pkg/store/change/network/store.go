@@ -154,6 +154,9 @@ func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.Netw
 }
 
 func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
+	if change.ID == "" {
+		return errors.New("no change ID specified")
+	}
 	if change.Revision != 0 {
 		return errors.New("not a new object")
 	}
