@@ -15,6 +15,7 @@
 package device
 
 import (
+	"fmt"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/types"
@@ -303,7 +304,7 @@ func newRemove(index network.Index, device device.ID, path string, created time.
 func newChange(index network.Index, created time.Time, phase changetype.Phase, state changetype.State, change *devicechange.Change) *devicechange.DeviceChange {
 	return &devicechange.DeviceChange{
 		NetworkChange: devicechange.NetworkChangeRef{
-			ID:    "network-change",
+			ID:    types.ID(fmt.Sprintf("network-change-%d", index)),
 			Index: types.Index(index),
 		},
 		Change: change,

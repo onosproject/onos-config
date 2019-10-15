@@ -17,15 +17,15 @@ package network
 import (
 	"context"
 	"errors"
-	"github.com/atomix/atomix-go-client/pkg/client/counter"
-	"github.com/atomix/atomix-go-client/pkg/client/map"
+	"github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
 	"github.com/atomix/atomix-go-local/pkg/atomix/local"
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
-	"github.com/cenkalti/backoff"
 	"github.com/gogo/protobuf/proto"
+	"github.com/google/uuid"
+	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	networksnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"google.golang.org/grpc"
@@ -35,10 +35,11 @@ import (
 	"time"
 )
 
-const counterName = "network-snapshot-indexes"
-const configsName = "network-snapshots"
+const snapshotsName = "network-snapshots"
 
-const maxRetries = 5
+func init() {
+	uuid.SetNodeID([]byte(cluster.GetNodeID()))
+}
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore() (Store, error) {
@@ -52,20 +53,13 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	ids, err := group.GetCounter(context.Background(), counterName, session.WithTimeout(30*time.Second))
-	if err != nil {
-		return nil, err
-	}
-
-	configs, err := group.GetMap(context.Background(), configsName, session.WithTimeout(30*time.Second))
+	snapshots, err := group.GetIndexedMap(context.Background(), snapshotsName, session.WithTimeout(30*time.Second))
 	if err != nil {
 		return nil, err
 	}
 
 	return &atomixStore{
-		indexes: ids,
-		configs: configs,
-		closer:  configs,
+		snapshots: snapshots,
 	}, nil
 }
 
@@ -77,27 +71,16 @@ func NewLocalStore() (Store, error) {
 
 // newLocalStore creates a new local network snapshot store
 func newLocalStore(conn *grpc.ClientConn) (Store, error) {
-	counterName := primitive.Name{
-		Namespace: "local",
-		Name:      counterName,
-	}
-	ids, err := counter.New(context.Background(), counterName, []*grpc.ClientConn{conn})
-	if err != nil {
-		return nil, err
-	}
-
 	configsName := primitive.Name{
 		Namespace: "local",
-		Name:      configsName,
+		Name:      snapshotsName,
 	}
-	configs, err := _map.New(context.Background(), configsName, []*grpc.ClientConn{conn})
+	snapshots, err := indexedmap.New(context.Background(), configsName, []*grpc.ClientConn{conn})
 	if err != nil {
 		return nil, err
 	}
-
 	return &atomixStore{
-		indexes: ids,
-		configs: configs,
+		snapshots: snapshots,
 	}, nil
 }
 
@@ -111,191 +94,155 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 		return lis.Dial()
 	}
 
-	conn, err := grpc.DialContext(context.Background(), configsName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(context.Background(), snapshotsName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
 	if err != nil {
 		panic("Failed to dial network configurations")
 	}
 	return node, conn
 }
 
-// Store stores NetworkConfig changes
+// Store stores NetworkSnapshots
 type Store interface {
 	io.Closer
 
-	// LastIndex gets the last index in the store
-	LastIndex() (networksnapshot.Index, error)
-
-	// Get gets a network configuration
+	// Get gets a network snapshot
 	Get(id networksnapshot.ID) (*networksnapshot.NetworkSnapshot, error)
 
-	// GetByIndex gets a network change by index
+	// GetByIndex gets a network snapshot by index
 	GetByIndex(index networksnapshot.Index) (*networksnapshot.NetworkSnapshot, error)
 
-	// Create creates a new network configuration
+	// Create creates a new network snapshot
 	Create(config *networksnapshot.NetworkSnapshot) error
 
-	// Update updates an existing network configuration
+	// Update updates an existing network snapshot
 	Update(config *networksnapshot.NetworkSnapshot) error
 
-	// Delete deletes a network configuration
+	// Delete deletes a network snapshot
 	Delete(config *networksnapshot.NetworkSnapshot) error
 
-	// List lists network configurations
+	// List lists network snapshots
 	List(chan<- *networksnapshot.NetworkSnapshot) error
 
-	// Watch watches the network configuration store for changes
+	// Watch watches the network snapshot store for changes
 	Watch(chan<- *networksnapshot.NetworkSnapshot) error
+}
+
+// newSnapshotID creates a new network snapshot ID
+func newSnapshotID() networksnapshot.ID {
+	return networksnapshot.ID(uuid.New().String())
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
-	indexes counter.Counter
-	configs _map.Map
-	closer  io.Closer
-}
-
-func (s *atomixStore) LastIndex() (networksnapshot.Index, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	index, err := s.indexes.Get(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return networksnapshot.Index(index), nil
-}
-
-func (s *atomixStore) setIndex(index networksnapshot.Index) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	return s.indexes.Set(ctx, int64(index))
+	snapshots indexedmap.IndexedMap
 }
 
 func (s *atomixStore) Get(id networksnapshot.ID) (*networksnapshot.NetworkSnapshot, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Get(ctx, string(id))
+	entry, err := s.snapshots.Get(ctx, string(id))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeConfig(entry)
+	return decodeSnapshot(entry)
 }
 
 func (s *atomixStore) GetByIndex(index networksnapshot.Index) (*networksnapshot.NetworkSnapshot, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Get(ctx, string(index.GetSnapshotID()))
+	entry, err := s.snapshots.GetIndex(ctx, indexedmap.Index(index))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeConfig(entry)
+	return decodeSnapshot(entry)
 }
 
-func (s *atomixStore) Create(config *networksnapshot.NetworkSnapshot) error {
-	if config.Revision != 0 {
+func (s *atomixStore) Create(snapshot *networksnapshot.NetworkSnapshot) error {
+	if snapshot.ID == "" {
+		snapshot.ID = newSnapshotID()
+	}
+	if snapshot.Revision != 0 {
 		return errors.New("not a new object")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	return backoff.Retry(func() error {
-		lastIndex, err := s.LastIndex()
-		if err != nil {
-			return err
-		}
-
-		index := lastIndex + 1
-		config.Index = index
-		config.ID = index.GetSnapshotID()
-
-		bytes, err := proto.Marshal(config)
-		if err != nil {
-			return err
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-
-		// Attempt to set the snapshot at the next index
-		entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
-
-		// If the write fails because a snapshot has already been stored, increment the last index and retry
-		if err != nil {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			defer cancel()
-			if change, err := s.configs.Get(ctx, string(config.ID)); err == nil && change != nil {
-				_ = s.setIndex(index)
-			}
-			return err
-		}
-
-		config.Revision = networksnapshot.Revision(entry.Version)
-		config.Created = entry.Created
-		config.Updated = entry.Updated
-
-		// Store the updated index without failing the write
-		_ = s.setIndex(index)
-		return nil
-	}, backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries), ctx))
-}
-
-func (s *atomixStore) Update(config *networksnapshot.NetworkSnapshot) error {
-	if config.Revision == 0 {
-		return errors.New("not a stored object")
+	bytes, err := proto.Marshal(snapshot)
+	if err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	bytes, err := proto.Marshal(config)
+	entry, err := s.snapshots.Put(ctx, string(snapshot.ID), bytes, indexedmap.IfNotSet())
 	if err != nil {
 		return err
 	}
 
-	entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfVersion(int64(config.Revision)))
-	if err != nil {
-		return err
-	}
-
-	config.Revision = networksnapshot.Revision(entry.Version)
-	config.Updated = entry.Updated
+	snapshot.Index = networksnapshot.Index(entry.Index)
+	snapshot.Revision = networksnapshot.Revision(entry.Version)
+	snapshot.Created = entry.Created
+	snapshot.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Delete(config *networksnapshot.NetworkSnapshot) error {
-	if config.Revision == 0 {
+func (s *atomixStore) Update(snapshot *networksnapshot.NetworkSnapshot) error {
+	if snapshot.Revision == 0 {
 		return errors.New("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Remove(ctx, string(config.ID), _map.IfVersion(int64(config.Revision)))
+	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
 		return err
 	}
 
-	config.Revision = 0
-	config.Updated = entry.Updated
+	entry, err := s.snapshots.Put(ctx, string(snapshot.ID), bytes, indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
+	if err != nil {
+		return err
+	}
+
+	snapshot.Revision = networksnapshot.Revision(entry.Version)
+	snapshot.Updated = entry.Updated
+	return nil
+}
+
+func (s *atomixStore) Delete(snapshot *networksnapshot.NetworkSnapshot) error {
+	if snapshot.Revision == 0 {
+		return errors.New("not a stored object")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	entry, err := s.snapshots.RemoveIndex(ctx, indexedmap.Index(snapshot.Index), indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
+	if err != nil {
+		return err
+	}
+
+	snapshot.Revision = 0
+	snapshot.Updated = entry.Updated
 	return nil
 }
 
 func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) error {
-	lastIndex, err := s.LastIndex()
-	if err != nil {
+	mapCh := make(chan *indexedmap.Entry)
+	if err := s.snapshots.Entries(context.Background(), mapCh); err != nil {
 		return err
 	}
 
 	go func() {
 		defer close(ch)
-		for i := networksnapshot.Index(1); i <= lastIndex; i++ {
-			if device, err := s.GetByIndex(i); err == nil && device != nil {
-				ch <- device
+		for entry := range mapCh {
+			if config, err := decodeSnapshot(entry); err == nil {
+				ch <- config
 			}
 		}
 	}()
@@ -303,25 +250,15 @@ func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) error {
 }
 
 func (s *atomixStore) Watch(ch chan<- *networksnapshot.NetworkSnapshot) error {
-	lastIndex, err := s.LastIndex()
-	if err != nil {
-		return err
-	}
-
-	mapCh := make(chan *_map.Event)
-	if err := s.configs.Watch(context.Background(), mapCh); err != nil {
+	mapCh := make(chan *indexedmap.Event)
+	if err := s.snapshots.Watch(context.Background(), mapCh, indexedmap.WithReplay()); err != nil {
 		return err
 	}
 
 	go func() {
 		defer close(ch)
-		for i := networksnapshot.Index(1); i <= lastIndex; i++ {
-			if device, err := s.GetByIndex(i); err == nil && device != nil {
-				ch <- device
-			}
-		}
 		for event := range mapCh {
-			if config, err := decodeConfig(event.Entry); err == nil {
+			if config, err := decodeSnapshot(event.Entry); err == nil {
 				ch <- config
 			}
 		}
@@ -330,17 +267,18 @@ func (s *atomixStore) Watch(ch chan<- *networksnapshot.NetworkSnapshot) error {
 }
 
 func (s *atomixStore) Close() error {
-	return s.configs.Close()
+	return s.snapshots.Close()
 }
 
-func decodeConfig(entry *_map.Entry) (*networksnapshot.NetworkSnapshot, error) {
-	conf := &networksnapshot.NetworkSnapshot{}
-	if err := proto.Unmarshal(entry.Value, conf); err != nil {
+func decodeSnapshot(entry *indexedmap.Entry) (*networksnapshot.NetworkSnapshot, error) {
+	snapshot := &networksnapshot.NetworkSnapshot{}
+	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
 		return nil, err
 	}
-	conf.ID = networksnapshot.ID(entry.Key)
-	conf.Revision = networksnapshot.Revision(entry.Version)
-	conf.Created = entry.Created
-	conf.Updated = entry.Updated
-	return conf, nil
+	snapshot.ID = networksnapshot.ID(entry.Key)
+	snapshot.Index = networksnapshot.Index(entry.Index)
+	snapshot.Revision = networksnapshot.Revision(entry.Version)
+	snapshot.Created = entry.Created
+	snapshot.Updated = entry.Updated
+	return snapshot, nil
 }

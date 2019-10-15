@@ -25,7 +25,7 @@ type NodeID string
 func GetNodeID() NodeID {
 	nodeID := os.Getenv(nodeIDEnv)
 	if nodeID == "" {
-		panic("No node ID provided by environment")
+		return NodeID("onos-config")
 	}
 	return NodeID(nodeID)
 }

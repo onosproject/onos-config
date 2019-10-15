@@ -140,6 +140,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 				}
 			}
 		}
+		snapshotIndex = change.Index
 	}
 
 	// If the snapshot index is greater than the previous snapshot index, store the snapshot
