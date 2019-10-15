@@ -41,12 +41,14 @@ func TestNetworkSnapshotStore(t *testing.T) {
 
 	retainWindow := 24 * time.Hour
 	snapshot1 := &networksnapshot.NetworkSnapshot{
+		ID: "snapshot-1",
 		Retention: snapshot.RetentionOptions{
 			RetainWindow: &retainWindow,
 		},
 	}
 
 	snapshot2 := &networksnapshot.NetworkSnapshot{
+		ID: "snapshot-2",
 		Retention: snapshot.RetentionOptions{
 			RetainWindow: &retainWindow,
 		},
@@ -55,30 +57,30 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	// Create a new snapshot
 	err = store1.Create(snapshot1)
 	assert.NoError(t, err)
-	assert.Equal(t, networksnapshot.ID("snapshot:1"), snapshot1.ID)
+	assert.Equal(t, networksnapshot.ID("snapshot-1"), snapshot1.ID)
 	assert.Equal(t, networksnapshot.Index(1), snapshot1.Index)
 	assert.NotEqual(t, networksnapshot.Revision(0), snapshot1.Revision)
 
 	// Get the snapshot
-	snapshot1, err = store2.Get("snapshot:1")
+	snapshot1, err = store2.Get("snapshot-1")
 	assert.NoError(t, err)
 	assert.NotNil(t, snapshot1)
-	assert.Equal(t, networksnapshot.ID("snapshot:1"), snapshot1.ID)
+	assert.Equal(t, networksnapshot.ID("snapshot-1"), snapshot1.ID)
 	assert.Equal(t, networksnapshot.Index(1), snapshot1.Index)
 	assert.NotEqual(t, networksnapshot.Revision(0), snapshot1.Revision)
 
 	// Create another snapshot
 	err = store2.Create(snapshot2)
 	assert.NoError(t, err)
-	assert.Equal(t, networksnapshot.ID("snapshot:2"), snapshot2.ID)
+	assert.Equal(t, networksnapshot.ID("snapshot-2"), snapshot2.ID)
 	assert.Equal(t, networksnapshot.Index(2), snapshot2.Index)
 	assert.NotEqual(t, networksnapshot.Revision(0), snapshot2.Revision)
 
 	// Verify events were received for the snapshots
 	snapshotEvent := nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:1"), snapshotEvent.ID)
+	assert.Equal(t, networksnapshot.ID("snapshot-1"), snapshotEvent.ID)
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:2"), snapshotEvent.ID)
+	assert.Equal(t, networksnapshot.ID("snapshot-2"), snapshotEvent.ID)
 
 	// Update one of the snapshots
 	snapshot2.Status.State = snapshot.State_RUNNING
@@ -88,7 +90,7 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.NotEqual(t, revision, snapshot2.Revision)
 
 	// Read and then update the snapshot
-	snapshot2, err = store2.Get("snapshot:2")
+	snapshot2, err = store2.Get("snapshot-2")
 	assert.NoError(t, err)
 	assert.NotNil(t, snapshot2)
 	snapshot2.Status.State = snapshot.State_COMPLETE
@@ -98,9 +100,9 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.NotEqual(t, revision, snapshot2.Revision)
 
 	// Verify that concurrent updates fail
-	snapshot11, err := store1.Get("snapshot:1")
+	snapshot11, err := store1.Get("snapshot-1")
 	assert.NoError(t, err)
-	snapshot12, err := store2.Get("snapshot:1")
+	snapshot12, err := store2.Get("snapshot-1")
 	assert.NoError(t, err)
 
 	snapshot11.Status.State = snapshot.State_COMPLETE
@@ -113,11 +115,11 @@ func TestNetworkSnapshotStore(t *testing.T) {
 
 	// Verify events were received again
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:2"), snapshotEvent.ID)
+	assert.Equal(t, networksnapshot.ID("snapshot-2"), snapshotEvent.ID)
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:2"), snapshotEvent.ID)
+	assert.Equal(t, networksnapshot.ID("snapshot-2"), snapshotEvent.ID)
 	snapshotEvent = nextSnapshot(t, ch)
-	assert.Equal(t, networksnapshot.ID("snapshot:1"), snapshotEvent.ID)
+	assert.Equal(t, networksnapshot.ID("snapshot-1"), snapshotEvent.ID)
 
 	// List the snapshots
 	snapshots := make(chan *networksnapshot.NetworkSnapshot)
@@ -134,7 +136,7 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	// Delete a snapshot
 	err = store1.Delete(snapshot2)
 	assert.NoError(t, err)
-	snapshot2, err = store2.Get("snapshot:2")
+	snapshot2, err = store2.Get("snapshot-2")
 	assert.NoError(t, err)
 	assert.Nil(t, snapshot2)
 }
