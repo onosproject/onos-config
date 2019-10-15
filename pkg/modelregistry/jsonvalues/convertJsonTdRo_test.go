@@ -95,12 +95,12 @@ func Test_correctJsonPathValuesTd(t *testing.T) {
 			"/cont1a/cont2a/leaf2c",
 			"/cont1b-state/list2b[index=100]/leaf3c",
 			"/cont1b-state/list2b[index=101]/leaf3c":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_STRING, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		case
 			"/cont1b-state/leaf2d":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
 		}

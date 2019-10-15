@@ -88,7 +88,7 @@ enum ValueType {
 // TypedValue is a value represented as a byte array
 message TypedValue {
     // 'bytes' is the bytes array
-    bytes bytes = 1  [json_name="Value", (gogoproto.jsontag) = "Value,omitempty"];
+    bytes bytes = 1  [json_name="Bytes", (gogoproto.jsontag) = "Bytes,omitempty"];
 
     // 'type' is the value type
     ValueType type = 2 [json_name="Type", (gogoproto.jsontag) = "Type,omitempty"];
@@ -97,14 +97,25 @@ message TypedValue {
     repeated int32 type_opts = 3  [json_name="TypeOpts", (gogoproto.jsontag) = "TypeOpts,omitempty"];
 }
 
-// Value is an individual Path/Value combination in a Change
+// Value is an individual Path/Value and removed flag combination in a Change
 message Value {
     // 'path' is the path to change
-    string path = 1;
+    string path = 1 [json_name="Path", (gogoproto.jsontag) = "Path,omitempty"];
 
     // 'value' is the change value
-    TypedValue value = 2;
+    TypedValue value = 2 [json_name="Value", (gogoproto.jsontag) = "Value,omitempty"];
 
     // 'removed' indicates whether this is a delete
     bool removed = 3 [(gogoproto.jsontag) = "Remove,omitempty"];
+}
+
+// PathValue is an individual Path/Value combination - it is like Value above
+// without the removed flag - it is not used in the DeviceChange store
+// Instead it is useful for handling OpState where `removed` is not relevant
+message PathValue {
+    // 'path' is the path to change
+    string path = 1 [json_name="Path", (gogoproto.jsontag) = "Path,omitempty"];
+
+    // 'value' is the change value
+    TypedValue value = 2 [json_name="Value", (gogoproto.jsontag) = "Value,omitempty"];
 }

@@ -12,19 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package change
+package device
 
 import (
 	"errors"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"regexp"
 )
 
-// ConfigValue is a of a path, a value and a type
-// Deprecated: ConfigValue is a legacy implementation of an internal ConfigValue
-type ConfigValue struct {
-	Path string
-	types.TypedValue
+// NewChangeValue decodes a path and value in to an object
+func NewChangeValue(path string, value *TypedValue, isRemove bool) (*Value, error) {
+	cv := Value{
+		Path:    path,
+		Value:   value,
+		Removed: isRemove,
+	}
+	err := IsPathValid(cv.GetPath())
+	if err != nil {
+		return nil, err
+	}
+	return &cv, nil
 }
 
 // IsPathValid tests for valid paths. Path is valid if it
@@ -33,12 +39,12 @@ type ConfigValue struct {
 // 3) and any further combinations of 1+2
 // Two contiguous slashes are not allowed
 // Paths not starting with slash are not allowed
-func (c ConfigValue) IsPathValid() error {
+func IsPathValid(path string) error {
 	r1 := regexp.MustCompile(`(/[a-zA-Z0-9:=\-_,[\]]+)+`)
 
-	match := r1.FindString(c.Path)
-	if c.Path != match {
-		return errors.New(c.Path)
+	match := r1.FindString(path)
+	if path != match {
+		return errors.New(path)
 	}
 	return nil
 }

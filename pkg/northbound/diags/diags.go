@@ -78,10 +78,10 @@ func (s Server) GetChanges(r *ChangesRequest, stream ConfigDiags_GetChangesServe
 		for _, cv := range c.Config {
 			changeValues = append(changeValues, &admin.ChangeValue{
 				Path:      cv.Path,
-				Value:     cv.Bytes,
-				ValueType: admin.ChangeValueType(cv.Type),
-				TypeOpts:  cv.TypeOpts,
-				Removed:   cv.Remove,
+				Value:     cv.GetValue().GetBytes(),
+				ValueType: admin.ChangeValueType(cv.GetValue().GetType()),
+				TypeOpts:  cv.GetValue().GetTypeOpts(),
+				Removed:   cv.Removed,
 			})
 		}
 

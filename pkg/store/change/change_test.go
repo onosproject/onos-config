@@ -17,9 +17,7 @@ package change
 import (
 	"crypto/sha1"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"gotest.tools/assert"
 	"io"
@@ -68,23 +66,23 @@ const (
 func TestMain(m *testing.M) {
 	var err error
 	log.SetOutput(os.Stdout)
-	config1Value01, _ := NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
-	config1Value02, _ := NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
-	config1Value03, _ := NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(ValueLeaf2A13), false)
-	config1Value04, _ := NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueDecimal64(ValueLeaf2B159D, ValueLeaf2B159P), false)
-	config1Value05, _ := NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CAbc), false)
-	config1Value06, _ := NewChangeValue(Test1Cont1ALeaf1A, types.NewTypedValueString(ValueLeaf1AAbcdef), false)
-	config1Value07, _ := NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), false)
-	config1Value08, _ := NewChangeValue(Test1Cont1AList2ATxout1Txpwr, types.NewTypedValueUint64(ValueTxout1Txpwr8), false)
-	config1Value09, _ := NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), false)
-	config1Value10, _ := NewChangeValue(Test1Cont1AList2ATxout2Txpwr, types.NewTypedValueUint64(ValueTxout2Txpwr10), false)
-	config1Value11, _ := NewChangeValue(Test1Leaftoplevel, types.NewTypedValueString(ValueLeaftopWxy1234), false)
-	config1Value12, _ := NewChangeValue(Test1Cont1ACont2ALeaf2D, types.NewTypedValueBool(true), false)
-	config1Value13, _ := NewChangeValue(Test1Cont1ACont2ALeaf2E, types.NewLeafListInt64Tv([]int{ValueLeaf2E1, ValueLeaf2E2, ValueLeaf2E3}), false)
+	config1Value01, _ := types.NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
+	config1Value02, _ := types.NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
+	config1Value03, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(ValueLeaf2A13), false)
+	config1Value04, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueDecimal64(ValueLeaf2B159D, ValueLeaf2B159P), false)
+	config1Value05, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CAbc), false)
+	config1Value06, _ := types.NewChangeValue(Test1Cont1ALeaf1A, types.NewTypedValueString(ValueLeaf1AAbcdef), false)
+	config1Value07, _ := types.NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), false)
+	config1Value08, _ := types.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, types.NewTypedValueUint64(ValueTxout1Txpwr8), false)
+	config1Value09, _ := types.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), false)
+	config1Value10, _ := types.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, types.NewTypedValueUint64(ValueTxout2Txpwr10), false)
+	config1Value11, _ := types.NewChangeValue(Test1Leaftoplevel, types.NewTypedValueString(ValueLeaftopWxy1234), false)
+	config1Value12, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2D, types.NewTypedValueBool(true), false)
+	config1Value13, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2E, types.NewLeafListInt64Tv([]int{ValueLeaf2E1, ValueLeaf2E2, ValueLeaf2E3}), false)
 	valueLeaf2FBa, _ := base64.StdEncoding.DecodeString(ValueLeaf2F)
-	config1Value14, _ := NewChangeValue(Test1Cont1ACont2ALeaf2F, types.NewTypedValueBytes(valueLeaf2FBa), false)
+	config1Value14, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2F, types.NewTypedValueBytes(valueLeaf2FBa), false)
 
-	change1, err = NewChange(ValueCollections{
+	change1, err = NewChange([]*types.Value{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11, config1Value12, config1Value13, config1Value14,
@@ -102,11 +100,11 @@ func Test_ConfigValue(t *testing.T) {
 	path := "/cont1a/cont2a/leaf2a"
 	value := 13
 
-	configValue2a, _ := NewChangeValue(path, types.NewTypedValueUint64(uint(value)), false)
+	configValue2a, _ := types.NewChangeValue(path, types.NewTypedValueUint64(uint(value)), false)
 
 	assert.Equal(t, configValue2a.Path, path)
 
-	assert.Equal(t, configValue2a.String(), "/cont1a/cont2a/leaf2a [13 0 0 0 0 0 0 0] false")
+	assert.Equal(t, configValue2a.String(), `path:"/cont1a/cont2a/leaf2a" value:<bytes:"\r\000\000\000\000\000\000\000" type:UINT > `)
 }
 
 func Test_changecreation(t *testing.T) {
@@ -141,50 +139,41 @@ func Test_changecreation(t *testing.T) {
 
 func Test_badpath(t *testing.T) {
 	badpath := "does_not_have_any_slash"
-	conf1, err1 := NewChangeValue(badpath, types.NewTypedValueString("123"), false)
+	conf1, err1 := types.NewChangeValue(badpath, types.NewTypedValueString("123"), false)
 
 	assert.Error(t, err1, badpath, "Expected error on ", badpath)
 
 	assert.Assert(t, conf1 == nil, "Expected config to be empty on error")
 
 	badpath = "//two/contiguous/slashes"
-	_, err2 := NewChangeValue(badpath, types.NewTypedValueString("123"), false)
+	_, err2 := types.NewChangeValue(badpath, types.NewTypedValueString("123"), false)
 	assert.ErrorContains(t, err2, badpath, "Expected error on path", badpath)
 
 	badpath = "/test*"
-	_, err3 := NewChangeValue(badpath, types.NewTypedValueString("123"), false)
+	_, err3 := types.NewChangeValue(badpath, types.NewTypedValueString("123"), false)
 	assert.ErrorContains(t, err3, badpath, "Expected error on path", badpath)
 }
 
 func Test_changeValueString(t *testing.T) {
-	cv1, _ := NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(123), false)
-	var buf [8]byte
-	binary.LittleEndian.PutUint64(buf[:], 123)
-	byteArr123 := fmt.Sprintf("%v", buf)
+	cv1, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(123), false)
 
-	assert.Equal(t, cv1.String(), Test1Cont1ACont2ALeaf2A+" "+byteArr123+" false",
+	assert.Equal(t, cv1.String(), `path:"/cont1a/cont2a/leaf2a" value:<bytes:"{\000\000\000\000\000\000\000" type:UINT > `,
 		"Expected changeValue to produce string")
-
-	//Test the error
-	cv2 := Value{}
-	assert.Equal(t, cv2.String(), "InvalidChange",
-		"Expected empty changeValue to produce InvalidChange")
-
 }
 
 func Test_changeString(t *testing.T) {
-	cv1, _ := NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(123), false)
-	cv2, _ := NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueString("ABC"), false)
-	cv3, _ := NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString("Hello"), false)
-	cv4, _ := NewChangeValue(Test1Cont1ACont2ALeaf2D, types.NewTypedValueBool(true), false)
+	cv1, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(123), false)
+	cv2, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueString("ABC"), false)
+	cv3, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString("Hello"), false)
+	cv4, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2D, types.NewTypedValueBool(true), false)
 
-	changeObj, _ := NewChange(ValueCollections{cv1, cv2, cv3, cv4}, "Test Change")
+	changeObj, _ := NewChange([]*types.Value{cv1, cv2, cv3, cv4}, "Test Change")
 
 	var expected = `"Config":[` +
-		`{"Path":"/cont1a/cont2a/leaf2a","Value":"ewAAAAAAAAA=","Type":3,"Remove":false},` +
-		`{"Path":"/cont1a/cont2a/leaf2b","Value":"QUJD","Type":1,"Remove":false},` +
-		`{"Path":"/cont1a/cont2a/leaf2c","Value":"SGVsbG8=","Type":1,"Remove":false},` +
-		`{"Path":"/cont1a/cont2a/leaf2d","Value":"AQ==","Type":4,"Remove":false}]}`
+		`{"Path":"/cont1a/cont2a/leaf2a","Value":{"Bytes":"ewAAAAAAAAA=","Type":3}},` +
+		`{"Path":"/cont1a/cont2a/leaf2b","Value":{"Bytes":"QUJD","Type":1}},` +
+		`{"Path":"/cont1a/cont2a/leaf2c","Value":{"Bytes":"SGVsbG8=","Type":1}},` +
+		`{"Path":"/cont1a/cont2a/leaf2d","Value":{"Bytes":"AQ==","Type":4}}]}`
 
 	assert.Assert(t, strings.Contains(changeObj.String(), expected),
 		"Expected change to produce string. Got", changeObj.String())

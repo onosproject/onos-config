@@ -282,10 +282,10 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 
 func (m *Manager) computeChange(updates types.TypedValueMap,
 	deletes []string, description string) (*change.Change, error) {
-	var newChanges = make([]*change.Value, 0)
+	var newChanges = make([]*types.Value, 0)
 	//updates
 	for path, value := range updates {
-		changeValue, err := change.NewChangeValue(path, value, false)
+		changeValue, err := types.NewChangeValue(path, value, false)
 		if err != nil {
 			log.Warningf("Error creating value for %s %v", path, err)
 			continue
@@ -294,7 +294,7 @@ func (m *Manager) computeChange(updates types.TypedValueMap,
 	}
 	//deletes
 	for _, path := range deletes {
-		changeValue, _ := change.NewChangeValue(path, types.NewTypedValueEmpty(), true)
+		changeValue, _ := types.NewChangeValue(path, types.NewTypedValueEmpty(), true)
 		newChanges = append(newChanges, changeValue)
 	}
 	if description == "" {

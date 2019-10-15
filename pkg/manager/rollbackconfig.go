@@ -56,7 +56,7 @@ func computeRollback(m *Manager, target string, configname store.ConfigName) (ch
 		return nil, nil, nil, fmt.Errorf("can't remove last entry on target %s in config %s, %s",
 			target, configname, err.Error())
 	}
-	previousValues := make([]*change.ConfigValue, 0)
+	previousValues := make([]*types.PathValue, 0)
 	deletes := make([]string, 0)
 	rollbackChange := m.ChangeStore.Store[store.B64(id)]
 	for _, valueColl := range rollbackChange.Config {
@@ -74,7 +74,7 @@ func computeRollback(m *Manager, target string, configname store.ConfigName) (ch
 	}
 	updates := make(types.TypedValueMap)
 	for _, changeVal := range previousValues {
-		updates[changeVal.Path] = &changeVal.TypedValue
+		updates[changeVal.Path] = changeVal.GetValue()
 	}
 	return id, updates, deletes, nil
 }

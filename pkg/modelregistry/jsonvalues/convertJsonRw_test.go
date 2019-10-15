@@ -60,19 +60,19 @@ func Test_correctJsonPathRwValuesSubInterfaces(t *testing.T) {
 			"/interfaces/interface[name=eth1]/config/description",
 			"/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/config/description",
 			"/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=121]/config/description":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_STRING, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		case
 			"/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/config/enabled",
 			"/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=121]/config/enabled":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_BOOL, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_BOOL, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		case
 			"/interfaces/interface[name=eth1]/config/mtu",
 			"/interfaces/interface[name=eth1]/hold-time/config/down",
 			"/interfaces/interface[name=eth1]/hold-time/config/up":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
 		}
@@ -112,8 +112,8 @@ func Test_correctJsonPathRwValuesSystemLogging(t *testing.T) {
 			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=1,severity=2]/config/facility",
 			"/system/logging/console/selectors/selector[facility=3,severity=4]/config/facility",
 			"/system/logging/console/selectors/selector[facility=3,severity=4]/config/severity":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_STRING, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
 		}
@@ -148,14 +148,14 @@ func Test_correctJsonPathRwValues2(t *testing.T) {
 		switch correctedPathValue.Path {
 		case
 			"/cont1a/cont2a/leaf2a":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.ValueToString(), "12")
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, correctedPathValue.GetValue().ValueToString(), "12")
 		case
 			"/cont1a/cont2a/leaf2b":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_FLOAT, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.ValueToString(), "1.210000")
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_FLOAT, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, correctedPathValue.GetValue().ValueToString(), "1.210000")
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
 		}

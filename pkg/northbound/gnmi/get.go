@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -176,13 +176,13 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	return buildUpdate(prefix, path, configValues)
 }
 
-func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*change.ConfigValue) (*gnmi.Update, error) {
+func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*types.PathValue) (*gnmi.Update, error) {
 	var value *gnmi.TypedValue
 	var err error
 	if len(configValues) == 0 {
 		value = nil
 	} else if len(configValues) == 1 {
-		value, err = values.NativeTypeToGnmiTypedValue(&configValues[0].TypedValue)
+		value, err = values.NativeTypeToGnmiTypedValue(configValues[0].GetValue())
 		if err != nil {
 			log.Warning("Unable to convert native value to gnmi", err)
 			return nil, err

@@ -17,7 +17,6 @@ package jsonvalues
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"regexp"
 	"sort"
@@ -35,10 +34,10 @@ type indexEntry struct {
 // CorrectJSONPaths takes configuration values extracted from a json, of which we are not sure about the type and,
 // through the model plugin assigns them the correct type according to the YANG model provided, returning an
 // updated set of configuration values.
-func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
-	paths modelregistry.PathMap, stripNamespaces bool) ([]*change.ConfigValue, error) {
+func CorrectJSONPaths(jsonBase string, jsonPathValues []*types.PathValue,
+	paths modelregistry.PathMap, stripNamespaces bool) ([]*types.PathValue, error) {
 
-	correctedPathValues := make([]*change.ConfigValue, 0)
+	correctedPathValues := make([]*types.PathValue, 0)
 	rOnIndex := regexp.MustCompile(matchOnIndex)
 	rOnNamespace := regexp.MustCompile(matchNamespace)
 	indexMap := make(map[string][]string)
@@ -101,8 +100,8 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 				if err != nil {
 					return nil, err
 				}
-				jsonPathValue.TypedValue = *newTypeValue
-				err = jsonPathValue.IsPathValid()
+				jsonPathValue.Value = newTypeValue
+				err = types.IsPathValid(jsonPathValue.Path)
 				if err != nil {
 					return nil, fmt.Errorf("invalid value %s", err)
 				}
@@ -114,11 +113,11 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 				if err != nil {
 					return nil, err
 				}
-				cv := change.ConfigValue{
-					Path:       jsonPathStr,
-					TypedValue: *newTypeValue,
+				cv := types.PathValue{
+					Path:  jsonPathStr,
+					Value: newTypeValue,
 				}
-				err = cv.IsPathValid()
+				err = types.IsPathValid(cv.Path)
 				if err != nil {
 					return nil, fmt.Errorf("invalid value %s", err)
 				}
@@ -127,9 +126,9 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*change.ConfigValue,
 			} else if hasPrefixMultipleIdx(modelPathOnlyLastIndex, jsonPathIdx) ||
 				hasPrefixMultipleIdx(modelPathOnlySecondIndex, jsonPathIdx) {
 				indexName := jsonPathIdx[strings.LastIndex(jsonPathIdx, "[")+1:]
-				index := jsonPathValue.TypedValue.ValueToString()
-				if jsonPathValue.Type == types.ValueType_FLOAT {
-					index = fmt.Sprintf("%.0f", (*types.TypedFloat)(&jsonPathValue.TypedValue).Float32())
+				index := jsonPathValue.GetValue().ValueToString()
+				if jsonPathValue.GetValue().GetType() == types.ValueType_FLOAT {
+					index = fmt.Sprintf("%.0f", (*types.TypedFloat)(jsonPathValue.GetValue()).Float32())
 				}
 				jsonRoPath := jsonPathStr[:strings.LastIndex(jsonPathStr, "/")]
 				idx, ok := indexMap[jsonRoPath]
@@ -185,7 +184,7 @@ func extractIndices(indexStr string) []string {
 }
 
 func assignModelType(paths modelregistry.PathMap, modelPath string,
-	jsonPathValue *change.ConfigValue) (*types.TypedValue, error) {
+	jsonPathValue *types.PathValue) (*types.TypedValue, error) {
 
 	modelType, err := paths.TypeForPath(modelPath)
 	if err != nil {
@@ -200,17 +199,17 @@ func assignModelType(paths modelregistry.PathMap, modelPath string,
 	return newTypeValue, nil
 }
 
-func pathType(jsonPathValue *change.ConfigValue, spType types.ValueType) (*types.TypedValue, error) {
+func pathType(jsonPathValue *types.PathValue, spType types.ValueType) (*types.TypedValue, error) {
 	var newTypeValue *types.TypedValue
 	var err error
-	switch jsonPathValue.Type {
+	switch jsonPathValue.Value.Type {
 	case types.ValueType_FLOAT:
 		// Could be int, uint, or float from json - convert to numeric
-		floatVal := (*types.TypedFloat)(&jsonPathValue.TypedValue).Float32()
+		floatVal := (*types.TypedFloat)(jsonPathValue.Value).Float32()
 
 		switch spType {
 		case types.ValueType_FLOAT:
-			newTypeValue = &jsonPathValue.TypedValue
+			newTypeValue = jsonPathValue.GetValue()
 		case types.ValueType_INT:
 			newTypeValue = types.NewTypedValueInt64(int(floatVal))
 		case types.ValueType_UINT:
@@ -221,11 +220,11 @@ func pathType(jsonPathValue *change.ConfigValue, spType types.ValueType) (*types
 		case types.ValueType_STRING:
 			newTypeValue = types.NewTypedValueString(fmt.Sprintf("%.0f", float64(floatVal)))
 		default:
-			newTypeValue = &jsonPathValue.TypedValue
+			newTypeValue = jsonPathValue.GetValue()
 		}
 
 	default:
-		newTypeValue, err = types.NewTypedValue(jsonPathValue.Bytes, spType, []int32{})
+		newTypeValue, err = types.NewTypedValue(jsonPathValue.GetValue().GetBytes(), spType, []int32{})
 		if err != nil {
 			return nil, err
 		}

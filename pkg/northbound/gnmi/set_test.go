@@ -110,14 +110,14 @@ func Test_doSingleSet(t *testing.T) {
 
 	changeID, ok := nwChange.ConfigurationChanges["Device1-1.0.0"]
 	assert.Assert(t, ok)
-	assert.Equal(t, store.B64(changeID), "z5mVdNnwgrPOqGqZUb5buUTWWJg=")
+	assert.Equal(t, store.B64(changeID), "joKlrfspGqpKrZILHzDj7mBGbJQ=")
 
 	assert.Equal(t, len(manager.GetManager().ChangeStore.Store), 13)
 	newChange, ok := manager.GetManager().ChangeStore.Store[store.B64(changeID)]
 	assert.Assert(t, ok)
 	assert.Equal(t, len(newChange.Config), 1)
 	assert.Equal(t, newChange.Config[0].Path, "/cont1a/cont2a/leaf2a")
-	assert.Equal(t, (*types.TypedUint64)(&newChange.Config[0].TypedValue).Uint(), uint(16))
+	assert.Equal(t, (*types.TypedUint64)(newChange.Config[0].GetValue()).Uint(), uint(16))
 }
 
 // Test_doSingleSet shows how a value of 1 list can be set on a target
@@ -196,14 +196,14 @@ func Test_doSingleSetList(t *testing.T) {
 
 	changeID, ok := nwChange.ConfigurationChanges["Device1-1.0.0"]
 	assert.Assert(t, ok)
-	assert.Equal(t, store.B64(changeID), "Re+d3zcbGTcHS4mU52ZdAy+lRj8=")
+	assert.Equal(t, store.B64(changeID), "8B3qRNBCLA/g372kD/uF5uMcW8s=")
 
 	assert.Equal(t, len(manager.GetManager().ChangeStore.Store), 13)
 	newChange, ok := manager.GetManager().ChangeStore.Store[store.B64(changeID)]
 	assert.Assert(t, ok)
 	assert.Equal(t, len(newChange.Config), 1)
 	assert.Equal(t, newChange.Config[0].Path, "/cont1a/list2a[name=a/b]/tx-power")
-	assert.Equal(t, (*types.TypedUint64)(&newChange.Config[0].TypedValue).Uint(), uint(16))
+	assert.Equal(t, (*types.TypedUint64)(newChange.Config[0].GetValue()).Uint(), uint(16))
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target

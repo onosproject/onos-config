@@ -386,7 +386,7 @@ func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 					continue
 				}
 				for _, cv := range configValues {
-					value := &cv.TypedValue
+					value := cv.GetValue()
 					sync.operationalCache[cv.Path] = value
 				}
 			} else if sync.encoding == gnmi.Encoding_PROTO {
@@ -402,7 +402,7 @@ func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 	}
 }
 
-func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*change.ConfigValue, error) {
+func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*types.PathValue, error) {
 	jsonVal := update.Val.GetJsonVal()
 	if jsonVal == nil {
 		jsonVal = update.Val.GetJsonIetfVal()
@@ -530,7 +530,7 @@ func (sync *Synchronizer) opStateSubHandler(msg proto.Message) error {
 	return nil
 }
 
-func getNetworkConfig(sync *Synchronizer, target string, configname string, layer int) ([]*change.ConfigValue, error) {
+func getNetworkConfig(sync *Synchronizer, target string, configname string, layer int) ([]*types.PathValue, error) {
 	log.Info("Getting saved config for ", target)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
@@ -542,13 +542,13 @@ func getNetworkConfig(sync *Synchronizer, target string, configname string, laye
 			}
 		}
 		if config.Name == "" {
-			return make([]*change.ConfigValue, 0),
+			return make([]*types.PathValue, 0),
 				fmt.Errorf("No Configuration found for %s", target)
 		}
 	} else if configname != "" {
 		config = sync.ConfigurationStore.Store[store.ConfigName(configname)]
 		if config.Name == "" {
-			return make([]*change.ConfigValue, 0),
+			return make([]*types.PathValue, 0),
 				fmt.Errorf("No Configuration found for %s", configname)
 		}
 	}
