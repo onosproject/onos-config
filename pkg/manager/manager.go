@@ -69,8 +69,8 @@ func NewManager(configStore *store.ConfigurationStore, deviceChangesStore device
 		ConfigStore:        configStore,
 		DeviceChangesStore: deviceChangesStore,
 		//TODO remove deprecated ChangeStore
-		ChangeStore:        changeStore,
-		DeviceStore:        deviceStore,
+		ChangeStore: changeStore,
+		DeviceStore: deviceStore,
 		//TODO remove deprecated NetworkStore
 		NetworkStore:            networkStore,
 		NetworkChangesStore:     networkChangesStore,
@@ -113,7 +113,8 @@ func NewManager(configStore *store.ConfigurationStore, deviceChangesStore device
 }
 
 // LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
-func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFile string, opts ...grpc.DialOption) (*Manager, error) {
+func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFile string,
+	deviceChangesStore device.Store, networkChangesStore network.Store, opts ...grpc.DialOption) (*Manager, error) {
 	topoChannel := make(chan *devicepb.ListResponse, 10)
 
 	configStore, err := store.LoadConfigStore(configStoreFile)
@@ -123,11 +124,6 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Configuration store loaded from ", configStoreFile)
 
-	deviceChangesStore, err := device.NewAtomixStore()
-	if err != nil {
-		log.Error("Cannot load device atomix store ", err)
-		return nil, err
-	}
 	log.Info("Device Changes store connected")
 
 	changeStore, err := store.LoadChangeStore(changeStoreFile)
@@ -158,13 +154,6 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 		return nil, err
 	}
 	log.Info("Network store loaded from ", networkStoreFile)
-
-	networkChangesStore, err := network.NewAtomixStore()
-	if err != nil {
-		log.Error("Cannot load network atomix store ", err)
-		return nil, err
-	}
-	log.Info("Network Configuration store connected")
 
 	return NewManager(&configStore, deviceChangesStore, &changeStore, deviceStore, networkStore, networkChangesStore, topoChannel)
 }
