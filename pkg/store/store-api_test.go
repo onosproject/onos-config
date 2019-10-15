@@ -260,7 +260,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	config1Value09, _ := types.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), false)
 	config1Value10, _ := types.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, types.NewTypedValueUint64(ValueTxout2Txpwr10), false)
 	config1Value11, _ := types.NewChangeValue(Test1Leaftoplevel, types.NewTypedValueString(ValueLeaftopWxy1234), false)
-	change1, err = change.NewChange([]*types.Value{
+	change1, err = change.NewChange([]*types.ChangeValue{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11,
@@ -273,7 +273,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	config2Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueFloat(ValueLeaf2B314), false)
 	config2Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout3, types.NewTypedValueEmpty(), false)
 	config2Value03, _ := types.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, types.NewTypedValueUint64(ValueTxout3Txpwr16), false)
-	change2, err = change.NewChange([]*types.Value{
+	change2, err = change.NewChange([]*types.ChangeValue{
 		config2Value01, config2Value02, config2Value03,
 	}, "Trim power level")
 	if err != nil {
@@ -283,7 +283,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 
 	config3Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CDef), false)
 	config3Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), true)
-	change3, err = change.NewChange([]*types.Value{
+	change3, err = change.NewChange([]*types.ChangeValue{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
 	if err != nil {
@@ -309,7 +309,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 
 	config4Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CGhi), false)
 	config4Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), true)
-	change4, err = change.NewChange([]*types.Value{
+	change4, err = change.NewChange([]*types.ChangeValue{
 		config4Value01, config4Value02,
 	}, "Remove txout 1")
 	if err != nil {
@@ -468,7 +468,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 
 	config3Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CDef), false)
 	config3Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), true)
-	change3, err := change.NewChange([]*types.Value{
+	change3, err := change.NewChange([]*types.ChangeValue{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
 	if err != nil {
@@ -709,7 +709,7 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 
 func BenchmarkCreateChange(b *testing.B) {
 
-	changeValues := []*types.Value{}
+	changeValues := []*types.ChangeValue{}
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test%d", i)
 		cv, _ := types.NewChangeValue(path, types.NewTypedValueUint64(uint(i)), false)

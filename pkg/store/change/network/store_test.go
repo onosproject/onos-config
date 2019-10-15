@@ -49,7 +49,7 @@ func TestNetworkChangeStore(t *testing.T) {
 			{
 
 				DeviceID: device1,
-				Values: []*devicechange.Value{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path: "foo",
 						Value: &devicechange.TypedValue{
@@ -68,7 +68,7 @@ func TestNetworkChangeStore(t *testing.T) {
 			},
 			{
 				DeviceID: device2,
-				Values: []*devicechange.Value{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path: "baz",
 						Value: &devicechange.TypedValue{
@@ -85,7 +85,7 @@ func TestNetworkChangeStore(t *testing.T) {
 		Changes: []*devicechange.Change{
 			{
 				DeviceID: device1,
-				Values: []*devicechange.Value{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path:    "foo",
 						Removed: true,
@@ -185,7 +185,7 @@ func TestNetworkChangeStore(t *testing.T) {
 		Changes: []*devicechange.Change{
 			{
 				DeviceID: device1,
-				Values: []*devicechange.Value{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path: "foo",
 						Value: &devicechange.TypedValue{
@@ -205,7 +205,7 @@ func TestNetworkChangeStore(t *testing.T) {
 		Changes: []*devicechange.Change{
 			{
 				DeviceID: device2,
-				Values: []*devicechange.Value{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path: "bar",
 						Value: &devicechange.TypedValue{

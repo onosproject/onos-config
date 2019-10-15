@@ -20,8 +20,8 @@ import (
 )
 
 // NewChangeValue decodes a path and value in to an object
-func NewChangeValue(path string, value *TypedValue, isRemove bool) (*Value, error) {
-	cv := Value{
+func NewChangeValue(path string, value *TypedValue, isRemove bool) (*ChangeValue, error) {
+	cv := ChangeValue{
 		Path:    path,
 		Value:   value,
 		Removed: isRemove,

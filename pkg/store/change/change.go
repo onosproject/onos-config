@@ -40,7 +40,7 @@ type Change struct {
 	ID          ID
 	Description string
 	Created     time.Time
-	Config      []*types.Value
+	Config      []*types.ChangeValue
 }
 
 // Stringer method for the Change
@@ -77,7 +77,7 @@ func (c Change) IsValid() error {
 // the description or the time. This way changes that have an identical meaning
 // can be identified
 // Deprecated: NewChange is method for creating a legacy internal Change
-func NewChange(config []*types.Value, desc string) (*Change, error) {
+func NewChange(config []*types.ChangeValue, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
@@ -150,10 +150,10 @@ func NewChangeValuesNoRemoval(config []*types.PathValue, desc string) (*Change, 
 
 	hash := h.Sum(nil)
 
-	configColl := make([]*types.Value, 0)
+	configColl := make([]*types.ChangeValue, 0)
 
 	for _, c := range config {
-		configColl = append(configColl, &types.Value{
+		configColl = append(configColl, &types.ChangeValue{
 			Path:    c.GetPath(),
 			Value:   c.GetValue(),
 			Removed: false})

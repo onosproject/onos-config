@@ -453,7 +453,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	//Create a change that we can send down to device
 	value1, err := types.NewChangeValue(cont1aCont2aLeaf2a, types.NewTypedValueUint64(12), false)
 	assert.NilError(t, err)
-	change1, err := change.NewChange([]*types.Value{value1}, "mock test change")
+	change1, err := change.NewChange([]*types.ChangeValue{value1}, "mock test change")
 	assert.NilError(t, err)
 	s.ChangeStore.Store[store.B64(change1.ID)] = change1
 

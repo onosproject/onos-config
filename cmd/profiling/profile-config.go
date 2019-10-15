@@ -45,7 +45,7 @@ func main() {
 	_ = pprof.StartCPUProfile(cpuFile)
 	defer pprof.StopCPUProfile()
 
-	changeValues := make([]*types.Value, 0)
+	changeValues := make([]*types.ChangeValue, 0)
 	iterations := 50000
 
 	for i := 0; i < iterations; i++ {

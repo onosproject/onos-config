@@ -73,7 +73,7 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	config1Value01, _ := types.NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
 	config1Value02, _ := types.NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
 	config1Value03, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueFloat(ValueLeaf2B159), false)
-	change1, err = change.NewChange([]*types.Value{
+	change1, err = change.NewChange([]*types.ChangeValue{
 		config1Value01, config1Value02, config1Value03}, "Original Config for test switch")
 	if err != nil {
 		log.Error(err)

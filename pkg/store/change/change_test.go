@@ -82,7 +82,7 @@ func TestMain(m *testing.M) {
 	valueLeaf2FBa, _ := base64.StdEncoding.DecodeString(ValueLeaf2F)
 	config1Value14, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2F, types.NewTypedValueBytes(valueLeaf2FBa), false)
 
-	change1, err = NewChange([]*types.Value{
+	change1, err = NewChange([]*types.ChangeValue{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11, config1Value12, config1Value13, config1Value14,
@@ -103,8 +103,10 @@ func Test_ConfigValue(t *testing.T) {
 	configValue2a, _ := types.NewChangeValue(path, types.NewTypedValueUint64(uint(value)), false)
 
 	assert.Equal(t, configValue2a.Path, path)
-
-	assert.Equal(t, configValue2a.String(), `path:"/cont1a/cont2a/leaf2a" value:<bytes:"\r\000\000\000\000\000\000\000" type:UINT > `)
+	assert.Equal(t, configValue2a.GetValue().ValueToString(), "13")
+	assert.Equal(t, configValue2a.GetValue().GetType(), types.ValueType_UINT)
+	assert.Equal(t, configValue2a.GetPath(), "/cont1a/cont2a/leaf2a")
+	assert.Equal(t, configValue2a.GetRemoved(), false)
 }
 
 func Test_changecreation(t *testing.T) {
@@ -157,7 +159,7 @@ func Test_badpath(t *testing.T) {
 func Test_changeValueString(t *testing.T) {
 	cv1, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(123), false)
 
-	assert.Equal(t, cv1.String(), `path:"/cont1a/cont2a/leaf2a" value:<bytes:"{\000\000\000\000\000\000\000" type:UINT > `,
+	assert.Equal(t, cv1.GetValue().ValueToString(), "123",
 		"Expected changeValue to produce string")
 }
 
@@ -167,7 +169,7 @@ func Test_changeString(t *testing.T) {
 	cv3, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString("Hello"), false)
 	cv4, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2D, types.NewTypedValueBool(true), false)
 
-	changeObj, _ := NewChange([]*types.Value{cv1, cv2, cv3, cv4}, "Test Change")
+	changeObj, _ := NewChange([]*types.ChangeValue{cv1, cv2, cv3, cv4}, "Test Change")
 
 	var expected = `"Config":[` +
 		`{"Path":"/cont1a/cont2a/leaf2a","Value":{"Bytes":"ewAAAAAAAAA=","Type":3}},` +

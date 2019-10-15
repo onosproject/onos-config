@@ -282,7 +282,7 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 
 func (m *Manager) computeChange(updates types.TypedValueMap,
 	deletes []string, description string) (*change.Change, error) {
-	var newChanges = make([]*types.Value, 0)
+	var newChanges = make([]*types.ChangeValue, 0)
 	//updates
 	for path, value := range updates {
 		changeValue, err := types.NewChangeValue(path, value, false)

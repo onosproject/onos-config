@@ -240,7 +240,7 @@ func newChange(device device.ID) *devicechange.DeviceChange {
 	return &devicechange.DeviceChange{
 		Change: &devicechange.Change{
 			DeviceID: device,
-			Values: []*devicechange.Value{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
 					Value: &devicechange.TypedValue{

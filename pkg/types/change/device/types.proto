@@ -63,7 +63,7 @@ message Change {
     string device_version = 2;
 
     // 'values' is a set of change values to apply
-    repeated Value values = 3;
+    repeated ChangeValue values = 3;
 }
 
 // ValueType is the type for a value
@@ -97,8 +97,8 @@ message TypedValue {
     repeated int32 type_opts = 3  [json_name="TypeOpts", (gogoproto.jsontag) = "TypeOpts,omitempty"];
 }
 
-// Value is an individual Path/Value and removed flag combination in a Change
-message Value {
+// ChangeValue is an individual Path/Value and removed flag combination in a Change
+message ChangeValue {
     // 'path' is the path to change
     string path = 1 [json_name="Path", (gogoproto.jsontag) = "Path,omitempty"];
 
