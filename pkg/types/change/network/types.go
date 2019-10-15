@@ -28,16 +28,11 @@ type ID types.ID
 
 // GetDeviceChangeID returns a device change ID for the given device ID
 func (i ID) GetDeviceChangeID(deviceID device.ID) devicechange.ID {
-	return devicechange.ID(fmt.Sprintf("%s:%s", i, deviceID))
+	return devicechange.ID(fmt.Sprintf("%s%s%s", i, separator, deviceID))
 }
 
 // Index is the index of a network configuration
 type Index uint64
-
-// GetChangeID returns the network change ID for the index
-func (i Index) GetChangeID() ID {
-	return ID(fmt.Sprintf("network%s%d", separator, i))
-}
 
 // Revision is a network configuration revision number
 type Revision types.Revision

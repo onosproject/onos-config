@@ -17,7 +17,7 @@ package device
 import (
 	"github.com/onosproject/onos-config/pkg/controller"
 	"github.com/onosproject/onos-config/pkg/types"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
+	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -25,7 +25,7 @@ import (
 
 func TestDevicePartitioner(t *testing.T) {
 	partitioner := &Partitioner{}
-	key, err := partitioner.Partition(types.ID(devicechange.Index(1).GetChangeID(device.ID("device-1"))))
+	key, err := partitioner.Partition(types.ID(networkchange.ID("change-1").GetDeviceChangeID(device.ID("device-1"))))
 	assert.NoError(t, err)
 	assert.Equal(t, controller.PartitionKey("device-1"), key)
 }
