@@ -57,6 +57,7 @@ github.com/atomix/atomix-go-node v0.0.0-20191015003435-f70de243fb25 h1:YN2hZn/Fk
 github.com/atomix/atomix-go-node v0.0.0-20191015003435-f70de243fb25/go.mod h1:Lt3xjBCH/uWpcoz5n/7j8oquhUJtzmF6qh0dUmFu4Ro=
 github.com/atomix/atomix-go-node v0.0.0-20191015014638-64dd6c85416c h1:ETGyHjdj2dQQOSN5BrkTtK0TO9NhES2cU5Uy5fjMNAc=
 github.com/atomix/atomix-go-node v0.0.0-20191015014638-64dd6c85416c/go.mod h1:RYBKVIL64s0IJXL9HtoF3Wgc6KRXzdaa2KqCvPEuwhI=
+github.com/atomix/atomix-go-node v0.0.0-20191015235149-a27e7ec80c20 h1:DlQ5bk4Vs5NCfzaxNxYrHyaaBmbrxVDGfH9Bog1Bxvw=
 github.com/atomix/atomix-go-node v0.0.0-20191015235149-a27e7ec80c20/go.mod h1:RYBKVIL64s0IJXL9HtoF3Wgc6KRXzdaa2KqCvPEuwhI=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0 h1:HWo1m869IqiPhD389kmkxeTalrjNbbJTC8LXupb+sl0=
