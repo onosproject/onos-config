@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigName]store.Configuration, *MockStore) {
+func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigName]store.Configuration, *MockDeviceStore) {
 
 	var change1 *change.Change
 	var device1config *store.Configuration
@@ -93,37 +93,37 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	configurationStoreTest[device1config.Name] = *device1config
 
 	ctrl := gomock.NewController(t)
-	mockStore := NewMockStore(ctrl)
 
-	//TODO create mock here.
-	// mockNetworkChangesStore :=
-	// mockDeviceChangesStore :=
+	mockNetworkChangesStore := NewMockNetworkChangesStore(ctrl)
+	mockDeviceChangesStore := NewMockDeviceChangesStore(ctrl)
+	mockDeviceStore := NewMockDeviceStore(ctrl)
+
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
 			Version:   "1.0",
 			Storetype: "config",
 			Store:     configurationStoreTest,
 		},
-		// mockDeviceChangesStore,
+		mockDeviceChangesStore,
 		&store.ChangeStore{
 			Version:   "1.0",
 			Storetype: "change",
 			Store:     changeStoreTest,
 		},
-		// mockNetworkChangesStore,
-		mockStore,
+		mockDeviceStore,
 		&store.NetworkStore{
 			Version:   "1.0",
 			Storetype: "network",
 			Store:     networkStoreTest,
 		},
+		mockNetworkChangesStore,
 		make(chan *devicepb.ListResponse, 10))
 	if err != nil {
 		log.Warning(err)
 		os.Exit(-1)
 	}
 	mgrTest.Run()
-	return mgrTest, changeStoreTest, configurationStoreTest, mockStore
+	return mgrTest, changeStoreTest, configurationStoreTest, mockDeviceStore
 }
 
 func Test_LoadManager(t *testing.T) {
@@ -131,7 +131,8 @@ func Test_LoadManager(t *testing.T) {
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sample.json",
-	)
+		NewMockDeviceChangesStore(gomock.NewController(t)),
+		NewMockNetworkChangesStore(gomock.NewController(t)))
 	assert.NilError(t, err, "failed to load manager")
 }
 
@@ -140,7 +141,8 @@ func Test_LoadManagerBadConfigStore(t *testing.T) {
 		"../../configs/configStore-sampleX.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sample.json",
-	)
+		NewMockDeviceChangesStore(gomock.NewController(t)),
+		NewMockNetworkChangesStore(gomock.NewController(t)))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
@@ -149,7 +151,8 @@ func Test_LoadManagerBadChangeStore(t *testing.T) {
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sampleX.json",
 		"../../configs/networkStore-sample.json",
-	)
+		NewMockDeviceChangesStore(gomock.NewController(t)),
+		NewMockNetworkChangesStore(gomock.NewController(t)))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
@@ -158,7 +161,8 @@ func Test_LoadManagerBadNetworkStore(t *testing.T) {
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sampleX.json",
-	)
+		NewMockDeviceChangesStore(gomock.NewController(t)),
+		NewMockNetworkChangesStore(gomock.NewController(t)))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
@@ -499,6 +503,8 @@ func TestManager_DeviceConnected(t *testing.T) {
 		Version:  "1.0.0",
 	}
 
+	mockStore.EXPECT().Get("device1")
+
 	protocolState := new(devicepb.ProtocolState)
 	protocolState.Protocol = devicepb.Protocol_GNMI
 	protocolState.ConnectivityState = devicepb.ConnectivityState_REACHABLE
@@ -538,6 +544,8 @@ func TestManager_DeviceDisconnected(t *testing.T) {
 		Address:  "device1:1234",
 		Version:  "1.0.0",
 	}
+
+	mockStore.EXPECT().Get("device1")
 
 	protocolState := new(devicepb.ProtocolState)
 	protocolState.Protocol = devicepb.Protocol_GNMI
