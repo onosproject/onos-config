@@ -297,7 +297,7 @@ func newNetworkChange(phase change.Phase, state change.State, devices ...device.
 	for i, device := range devices {
 		changes[i] = &devicechange.Change{
 			DeviceID: device,
-			Values: []*devicechange.Value{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
 					Value: &devicechange.TypedValue{

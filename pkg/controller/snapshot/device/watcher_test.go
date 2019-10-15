@@ -39,8 +39,11 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	change1 := &devicesnaptype.DeviceSnapshot{
-		DeviceID:          device.ID("device-1"),
-		NetworkSnapshotID: types.ID("snapshot:1"),
+		DeviceID: device.ID("device-1"),
+		NetworkSnapshot: devicesnaptype.NetworkSnapshotRef{
+			ID:    "snapshot-1",
+			Index: 1,
+		},
 	}
 
 	err = store.Create(change1)
@@ -54,8 +57,11 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 	}
 
 	change2 := &devicesnaptype.DeviceSnapshot{
-		DeviceID:          device.ID("device-2"),
-		NetworkSnapshotID: types.ID("snapshot:1"),
+		DeviceID: device.ID("device-2"),
+		NetworkSnapshot: devicesnaptype.NetworkSnapshotRef{
+			ID:    "snapshot-1",
+			Index: 1,
+		},
 	}
 
 	err = store.Create(change2)

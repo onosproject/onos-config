@@ -98,7 +98,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	if err != nil {
 		return false, err
 	} else if prevSnapshot != nil {
-		prevIndex = prevSnapshot.EndIndex
+		prevIndex = prevSnapshot.ChangeIndex
 	}
 
 	// Create a map to track the current state of the device
@@ -150,12 +150,11 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 		}
 
 		snapshot := &devicesnaptype.Snapshot{
-			ID:         devicesnaptype.ID(deviceSnapshot.DeviceID),
-			DeviceID:   deviceSnapshot.DeviceID,
-			SnapshotID: deviceSnapshot.ID,
-			StartIndex: prevIndex,
-			EndIndex:   snapshotIndex,
-			Values:     values,
+			ID:          devicesnaptype.ID(deviceSnapshot.DeviceID),
+			DeviceID:    deviceSnapshot.DeviceID,
+			SnapshotID:  deviceSnapshot.ID,
+			ChangeIndex: snapshotIndex,
+			Values:      values,
 		}
 		if err := r.snapshots.Store(snapshot); err != nil {
 			return false, err
@@ -184,12 +183,15 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 		return true, nil
 	}
 
+	// List the changes for the device
+	changes := make(chan *devicechangetype.DeviceChange)
+	if err := r.changes.List(deviceSnapshot.DeviceID, changes); err != nil {
+		return false, err
+	}
+
 	// Iterate through changes up to the current snapshot index and delete changes
-	for index := snapshot.StartIndex + 1; index <= snapshot.EndIndex; index++ {
-		change, err := r.changes.GetByIndex(deviceSnapshot.DeviceID, index)
-		if err != nil {
-			return false, err
-		} else if change != nil {
+	for change := range changes {
+		if change.Index <= snapshot.ChangeIndex {
 			if err := r.changes.Delete(change); err != nil {
 				return false, err
 			}

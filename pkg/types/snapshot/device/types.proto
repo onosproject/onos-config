@@ -70,12 +70,9 @@ message Snapshot {
     // 'snapshot_id' is the ID of the snapshot
     string snapshot_id = 3 [(gogoproto.customname) = "SnapshotID", (gogoproto.casttype) = "ID"];
 
-    // 'start_index' is the index at which the snapshot started
-    uint64 start_index = 4 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.Index"];
-
-    // 'end_index' is the index at which the snapshot ended
-    uint64 end_index = 5 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.Index"];
+    // 'change_index' is the change index at which the snapshot ended
+    uint64 change_index = 4 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.Index"];
 
     // 'values' is a list of values to set
-    repeated onos.config.change.device.ChangeValue values = 6;
+    repeated onos.config.change.device.ChangeValue values = 5;
 }

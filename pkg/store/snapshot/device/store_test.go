@@ -44,13 +44,19 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	snapshot1 := &devicesnapshot.DeviceSnapshot{
-		DeviceID:          device1,
-		NetworkSnapshotID: "snapshot:1",
+		DeviceID: device1,
+		NetworkSnapshot: devicesnapshot.NetworkSnapshotRef{
+			ID:    "snapshot-1",
+			Index: 1,
+		},
 	}
 
 	snapshot2 := &devicesnapshot.DeviceSnapshot{
-		DeviceID:          device2,
-		NetworkSnapshotID: "snapshot:2",
+		DeviceID: device2,
+		NetworkSnapshot: devicesnapshot.NetworkSnapshotRef{
+			ID:    "snapshot-2",
+			Index: 2,
+		},
 	}
 
 	// Create a new snapshot

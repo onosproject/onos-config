@@ -33,314 +33,6 @@ const (
 	device1 = device.ID("device-1")
 )
 
-func TestReconcileDeviceRetainAll(t *testing.T) {
-	changes, snapshots := newStores(t)
-	defer changes.Close()
-	defer snapshots.Close()
-
-	reconciler := &Reconciler{
-		changes:   changes,
-		snapshots: snapshots,
-	}
-
-	// Create a device-1 change 1
-	deviceChange1 := newSet(1, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err := changes.Create(deviceChange1)
-	assert.NoError(t, err)
-
-	// Create a device-1 change 2
-	deviceChange2 := newSet(2, device1, "bar", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err = changes.Create(deviceChange2)
-	assert.NoError(t, err)
-
-	// Create a device-1 change 4
-	deviceChange3 := newRemove(4, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err = changes.Create(deviceChange3)
-	assert.NoError(t, err)
-
-	// Create a device-1 change 5
-	deviceChange4 := newSet(5, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err = changes.Create(deviceChange4)
-	assert.NoError(t, err)
-
-	// Create a device snapshot
-	deviceSnapshot := &devicesnap.DeviceSnapshot{
-		DeviceID:         device1,
-		MaxNetworkChange: "network:4",
-		Retention: snapshottype.RetentionOptions{
-			MinRetainCount: 100,
-		},
-	}
-	err = snapshots.Create(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err := reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify the snapshot was not changed
-	revision := deviceSnapshot.Revision
-	deviceSnapshot, err = snapshots.Get(deviceSnapshot.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, revision, deviceSnapshot.Revision)
-
-	// Set the snapshot state to RUNNING
-	deviceSnapshot.Status.State = snapshottype.State_RUNNING
-	err = snapshots.Update(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify the snapshot was set to COMPLETE
-	deviceSnapshot, err = snapshots.Get(deviceSnapshot.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
-
-	// Verify no snapshot was taken
-	snapshot, err := snapshots.Load(devicesnap.ID(deviceSnapshot.DeviceID))
-	assert.NoError(t, err)
-	assert.Nil(t, snapshot)
-}
-
-func TestReconcileDeviceSnapshotRetainCount(t *testing.T) {
-	changes, snapshots := newStores(t)
-	defer changes.Close()
-	defer snapshots.Close()
-
-	reconciler := &Reconciler{
-		changes:   changes,
-		snapshots: snapshots,
-	}
-
-	// Create a device-1 change 1
-	deviceChange1 := newSet(1, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err := changes.Create(deviceChange1)
-	assert.NoError(t, err)
-
-	// Create a device-1 change 2
-	deviceChange2 := newSet(2, device1, "bar", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err = changes.Create(deviceChange2)
-	assert.NoError(t, err)
-
-	// Create a device-1 change 4
-	deviceChange3 := newRemove(4, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err = changes.Create(deviceChange3)
-	assert.NoError(t, err)
-
-	// Create a device-1 change 5
-	deviceChange4 := newSet(5, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err = changes.Create(deviceChange4)
-	assert.NoError(t, err)
-
-	// Create a device snapshot
-	deviceSnapshot := &devicesnap.DeviceSnapshot{
-		DeviceID:         device1,
-		MaxNetworkChange: "network:4",
-		Retention: snapshottype.RetentionOptions{
-			MinRetainCount: 3,
-		},
-	}
-	err = snapshots.Create(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err := reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify the snapshot was not changed
-	revision := deviceSnapshot.Revision
-	deviceSnapshot, err = snapshots.Get(deviceSnapshot.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, revision, deviceSnapshot.Revision)
-
-	// Set the snapshot state to RUNNING
-	deviceSnapshot.Status.State = snapshottype.State_RUNNING
-	err = snapshots.Update(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify the snapshot was set to COMPLETE
-	deviceSnapshot, err = snapshots.Get(deviceSnapshot.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
-
-	// Verify the correct snapshot was taken
-	snapshot, err := snapshots.Load(devicesnap.ID(deviceSnapshot.DeviceID))
-	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(0), snapshot.StartIndex)
-	assert.Equal(t, devicechange.Index(1), snapshot.EndIndex)
-	assert.Len(t, snapshot.Values, 1)
-	assert.Equal(t, "foo", snapshot.Values[0].Path)
-
-	// Verify changes have not been deleted
-	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
-	assert.NotNil(t, deviceChange1)
-
-	// Set the snapshot phase to DELETE
-	deviceSnapshot.Status.Phase = snapshottype.Phase_DELETE
-	deviceSnapshot.Status.State = snapshottype.State_PENDING
-	err = snapshots.Update(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify changes have not been deleted again
-	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
-	assert.NotNil(t, deviceChange1)
-
-	// Set the snapshot phase to RUNNING
-	deviceSnapshot.Status.State = snapshottype.State_RUNNING
-	err = snapshots.Update(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify changes have been deleted
-	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
-	assert.Nil(t, deviceChange1)
-
-	// Verify the snapshot state is COMPLETE
-	deviceSnapshot, err = snapshots.Get(deviceSnapshot.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
-}
-
-func TestReconcileDeviceSnapshotRetainWindow(t *testing.T) {
-	changes, snapshots := newStores(t)
-	defer changes.Close()
-	defer snapshots.Close()
-
-	reconciler := &Reconciler{
-		changes:   changes,
-		snapshots: snapshots,
-	}
-
-	// Create a device-1 change 1
-	deviceChange1 := newSet(1, device1, "foo", time.Now().Add(10*time.Hour*-1), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err := changes.Create(deviceChange1)
-	assert.NoError(t, err)
-
-	// Create a device-1 change 2
-	deviceChange2 := newSet(2, device1, "bar", time.Now().Add(30*time.Minute*-1), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err = changes.Create(deviceChange2)
-	assert.NoError(t, err)
-
-	// Create a device-1 change 4
-	deviceChange3 := newRemove(4, device1, "foo", time.Now().Add(20*time.Minute*-1), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err = changes.Create(deviceChange3)
-	assert.NoError(t, err)
-
-	// Create a device-1 change 5
-	deviceChange4 := newSet(5, device1, "foo", time.Now().Add(10*time.Minute*-1), changetype.Phase_CHANGE, changetype.State_COMPLETE)
-	err = changes.Create(deviceChange4)
-	assert.NoError(t, err)
-
-	// Create a device snapshot
-	retainWindow := 1 * time.Hour
-	deviceSnapshot := &devicesnap.DeviceSnapshot{
-		DeviceID:         device1,
-		MaxNetworkChange: "network:5",
-		Retention: snapshottype.RetentionOptions{
-			RetainWindow: &retainWindow,
-		},
-	}
-	err = snapshots.Create(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err := reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify the snapshot was not changed
-	revision := deviceSnapshot.Revision
-	deviceSnapshot, err = snapshots.Get(deviceSnapshot.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, revision, deviceSnapshot.Revision)
-
-	// Set the snapshot state to RUNNING
-	deviceSnapshot.Status.State = snapshottype.State_RUNNING
-	err = snapshots.Update(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify the snapshot was set to COMPLETE
-	deviceSnapshot, err = snapshots.Get(deviceSnapshot.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
-
-	// Verify the correct snapshot was taken
-	snapshot, err := snapshots.Load(devicesnap.ID(deviceSnapshot.DeviceID))
-	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(0), snapshot.StartIndex)
-	assert.Equal(t, devicechange.Index(1), snapshot.EndIndex)
-	assert.Len(t, snapshot.Values, 1)
-	assert.Equal(t, "foo", snapshot.Values[0].Path)
-
-	// Verify changes have not been deleted
-	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
-	assert.NotNil(t, deviceChange1)
-
-	// Set the snapshot phase to DELETE
-	deviceSnapshot.Status.Phase = snapshottype.Phase_DELETE
-	deviceSnapshot.Status.State = snapshottype.State_PENDING
-	err = snapshots.Update(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify changes have not been deleted again
-	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
-	assert.NotNil(t, deviceChange1)
-
-	// Set the snapshot phase to RUNNING
-	deviceSnapshot.Status.State = snapshottype.State_RUNNING
-	err = snapshots.Update(deviceSnapshot)
-	assert.NoError(t, err)
-
-	// Reconcile the snapshot
-	ok, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Verify changes have been deleted
-	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
-	assert.Nil(t, deviceChange1)
-
-	// Verify the snapshot state is COMPLETE
-	deviceSnapshot, err = snapshots.Get(deviceSnapshot.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
-}
-
 func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	changes, snapshots := newStores(t)
 	defer changes.Close()
@@ -373,8 +65,8 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 
 	// Create a device snapshot
 	deviceSnapshot := &devicesnap.DeviceSnapshot{
-		DeviceID:         device1,
-		MaxNetworkChange: "network:4",
+		DeviceID:              device1,
+		MaxNetworkChangeIndex: 4,
 	}
 	err = snapshots.Create(deviceSnapshot)
 	assert.NoError(t, err)
@@ -408,8 +100,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	// Verify the correct snapshot was taken
 	snapshot, err := snapshots.Load(devicesnap.ID(deviceSnapshot.DeviceID))
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(0), snapshot.StartIndex)
-	assert.Equal(t, devicechange.Index(3), snapshot.EndIndex)
+	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 1)
 	assert.Equal(t, "bar", snapshot.Values[0].Path)
 
@@ -488,8 +179,8 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 
 	// Create a device snapshot
 	deviceSnapshot := &devicesnap.DeviceSnapshot{
-		DeviceID:         device1,
-		MaxNetworkChange: "network:3",
+		DeviceID:              device1,
+		MaxNetworkChangeIndex: 3,
 	}
 	err = snapshots.Create(deviceSnapshot)
 	assert.NoError(t, err)
@@ -523,8 +214,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	// Verify the correct snapshot was taken
 	snapshot, err := snapshots.Load(devicesnap.ID(deviceSnapshot.DeviceID))
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(0), snapshot.StartIndex)
-	assert.Equal(t, devicechange.Index(3), snapshot.EndIndex)
+	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 2)
 
 	// Verify changes have not been deleted
@@ -586,7 +276,7 @@ func newStores(t *testing.T) (devicechangestore.Store, devicesnapstore.Store) {
 func newSet(index network.Index, device device.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechange.DeviceChange {
 	return newChange(index, created, phase, state, &devicechange.Change{
 		DeviceID: device,
-		Values: []*devicechange.Value{
+		Values: []*devicechange.ChangeValue{
 			{
 				Path: path,
 				Value: &devicechange.TypedValue{
@@ -601,7 +291,7 @@ func newSet(index network.Index, device device.ID, path string, created time.Tim
 func newRemove(index network.Index, device device.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechange.DeviceChange {
 	return newChange(index, created, phase, state, &devicechange.Change{
 		DeviceID: device,
-		Values: []*devicechange.Value{
+		Values: []*devicechange.ChangeValue{
 			{
 				Path:    path,
 				Removed: true,
@@ -612,8 +302,11 @@ func newRemove(index network.Index, device device.ID, path string, created time.
 
 func newChange(index network.Index, created time.Time, phase changetype.Phase, state changetype.State, change *devicechange.Change) *devicechange.DeviceChange {
 	return &devicechange.DeviceChange{
-		NetworkChangeID: types.ID(index.GetChangeID()),
-		Change:          change,
+		NetworkChange: devicechange.NetworkChangeRef{
+			ID:    "network-change",
+			Index: types.Index(index),
+		},
+		Change: change,
 		Status: changetype.Status{
 			Phase: phase,
 			State: state,
