@@ -45,6 +45,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	change1 := &networkchange.NetworkChange{
+		ID: "change-1",
 		Changes: []*devicechange.Change{
 			{
 
@@ -82,6 +83,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	}
 
 	change2 := &networkchange.NetworkChange{
+		ID: "change-2",
 		Changes: []*devicechange.Change{
 			{
 				DeviceID: device1,
@@ -98,30 +100,30 @@ func TestNetworkChangeStore(t *testing.T) {
 	// Create a new change
 	err = store1.Create(change1)
 	assert.NoError(t, err)
-	assert.Equal(t, networkchange.ID("network:1"), change1.ID)
+	assert.Equal(t, networkchange.ID("change-1"), change1.ID)
 	assert.Equal(t, networkchange.Index(1), change1.Index)
 	assert.NotEqual(t, networkchange.Revision(0), change1.Revision)
 
 	// Get the change
-	change1, err = store2.Get("network:1")
+	change1, err = store2.Get("change-1")
 	assert.NoError(t, err)
 	assert.NotNil(t, change1)
-	assert.Equal(t, networkchange.ID("network:1"), change1.ID)
+	assert.Equal(t, networkchange.ID("change-1"), change1.ID)
 	assert.Equal(t, networkchange.Index(1), change1.Index)
 	assert.NotEqual(t, networkchange.Revision(0), change1.Revision)
 
 	// Create another change
 	err = store2.Create(change2)
 	assert.NoError(t, err)
-	assert.Equal(t, networkchange.ID("network:2"), change2.ID)
+	assert.Equal(t, networkchange.ID("change-2"), change2.ID)
 	assert.Equal(t, networkchange.Index(2), change2.Index)
 	assert.NotEqual(t, networkchange.Revision(0), change2.Revision)
 
 	// Verify events were received for the changes
 	changeEvent := nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("network:1"), changeEvent.ID)
+	assert.Equal(t, networkchange.ID("change-1"), changeEvent.ID)
 	changeEvent = nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
+	assert.Equal(t, networkchange.ID("change-2"), changeEvent.ID)
 
 	// Update one of the changes
 	change2.Status.State = change.State_RUNNING
@@ -131,7 +133,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NotEqual(t, revision, change2.Revision)
 
 	// Read and then update the change
-	change2, err = store2.Get("network:2")
+	change2, err = store2.Get("change-2")
 	assert.NoError(t, err)
 	assert.NotNil(t, change2)
 	change2.Status.State = change.State_COMPLETE
@@ -141,9 +143,9 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NotEqual(t, revision, change2.Revision)
 
 	// Verify that concurrent updates fail
-	change11, err := store1.Get("network:1")
+	change11, err := store1.Get("change-1")
 	assert.NoError(t, err)
-	change12, err := store2.Get("network:1")
+	change12, err := store2.Get("change-1")
 	assert.NoError(t, err)
 
 	change11.Status.State = change.State_COMPLETE
@@ -156,11 +158,11 @@ func TestNetworkChangeStore(t *testing.T) {
 
 	// Verify events were received again
 	changeEvent = nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
+	assert.Equal(t, networkchange.ID("change-2"), changeEvent.ID)
 	changeEvent = nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("network:2"), changeEvent.ID)
+	assert.Equal(t, networkchange.ID("change-2"), changeEvent.ID)
 	changeEvent = nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("network:1"), changeEvent.ID)
+	assert.Equal(t, networkchange.ID("change-1"), changeEvent.ID)
 
 	// List the changes
 	changes := make(chan *networkchange.NetworkChange)
@@ -177,11 +179,12 @@ func TestNetworkChangeStore(t *testing.T) {
 	// Delete a change
 	err = store1.Delete(change2)
 	assert.NoError(t, err)
-	change2, err = store2.Get("network:2")
+	change2, err = store2.Get("change-2")
 	assert.NoError(t, err)
 	assert.Nil(t, change2)
 
 	change := &networkchange.NetworkChange{
+		ID: "change-3",
 		Changes: []*devicechange.Change{
 			{
 				DeviceID: device1,
@@ -202,6 +205,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	change = &networkchange.NetworkChange{
+		ID: "change-4",
 		Changes: []*devicechange.Change{
 			{
 				DeviceID: device2,

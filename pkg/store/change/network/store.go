@@ -35,8 +35,6 @@ import (
 
 const changesName = "network-changes"
 
-const maxRetries = 5
-
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore() (Store, error) {
 	client, err := utils.GetAtomixClient()
@@ -155,12 +153,12 @@ func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.Netw
 	return decodeChange(entry)
 }
 
-func (s *atomixStore) Create(config *networkchange.NetworkChange) error {
-	if config.Revision != 0 {
+func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
+	if change.Revision != 0 {
 		return errors.New("not a new object")
 	}
 
-	bytes, err := proto.Marshal(config)
+	bytes, err := proto.Marshal(change)
 	if err != nil {
 		return err
 	}
@@ -168,55 +166,56 @@ func (s *atomixStore) Create(config *networkchange.NetworkChange) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.changes.Put(ctx, string(config.ID), bytes, indexedmap.IfNotSet())
+	entry, err := s.changes.Put(ctx, string(change.ID), bytes, indexedmap.IfNotSet())
 	if err != nil {
 		return err
 	}
 
-	config.Revision = networkchange.Revision(entry.Version)
-	config.Created = entry.Created
-	config.Updated = entry.Updated
+	change.Index = networkchange.Index(entry.Index)
+	change.Revision = networkchange.Revision(entry.Version)
+	change.Created = entry.Created
+	change.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Update(config *networkchange.NetworkChange) error {
-	if config.Revision == 0 {
+func (s *atomixStore) Update(change *networkchange.NetworkChange) error {
+	if change.Revision == 0 {
 		return errors.New("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	bytes, err := proto.Marshal(config)
+	bytes, err := proto.Marshal(change)
 	if err != nil {
 		return err
 	}
 
-	entry, err := s.changes.Put(ctx, string(config.ID), bytes, indexedmap.IfVersion(indexedmap.Version(config.Revision)))
+	entry, err := s.changes.Put(ctx, string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
 	if err != nil {
 		return err
 	}
 
-	config.Revision = networkchange.Revision(entry.Version)
-	config.Updated = entry.Updated
+	change.Revision = networkchange.Revision(entry.Version)
+	change.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Delete(config *networkchange.NetworkChange) error {
-	if config.Revision == 0 {
+func (s *atomixStore) Delete(change *networkchange.NetworkChange) error {
+	if change.Revision == 0 {
 		return errors.New("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.changes.Remove(ctx, string(config.ID), indexedmap.IfVersion(indexedmap.Version(config.Revision)))
+	entry, err := s.changes.RemoveIndex(ctx, indexedmap.Index(change.Index), indexedmap.IfVersion(indexedmap.Version(change.Revision)))
 	if err != nil {
 		return err
 	}
 
-	config.Revision = 0
-	config.Updated = entry.Updated
+	change.Revision = 0
+	change.Updated = entry.Updated
 	return nil
 }
 
