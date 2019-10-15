@@ -348,18 +348,15 @@ func (r *Reconciler) reconcilePendingRollback(change *networktypes.NetworkChange
 }
 
 // canApplyRollback returns a bool indicating whether the rollback can be applied
-func (r *Reconciler) canApplyRollback(change *networktypes.NetworkChange) (bool, error) {
-	lastIndex, err := r.networkChanges.LastIndex()
-	if err != nil {
+func (r *Reconciler) canApplyRollback(networkChange *networktypes.NetworkChange) (bool, error) {
+	ch := make(chan *networktypes.NetworkChange)
+	if err := r.networkChanges.List(ch); err != nil {
 		return false, err
 	}
 
-	for index := change.Index + 1; index <= lastIndex; index++ {
-		futureChange, err := r.networkChanges.GetByIndex(index)
-		if err != nil {
-			return false, err
-		} else if futureChange != nil && isIntersectingChange(change, futureChange) && futureChange.Status.State != changetypes.State_COMPLETE && futureChange.Status.State != changetypes.State_FAILED {
-			return false, err
+	for change := range ch {
+		if change.Index > networkChange.Index && isIntersectingChange(networkChange, change) && change.Status.State != changetypes.State_COMPLETE && change.Status.State != changetypes.State_FAILED {
+			return false, nil
 		}
 	}
 	return true, nil

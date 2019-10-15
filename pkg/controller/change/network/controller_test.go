@@ -37,7 +37,7 @@ const (
 )
 
 const (
-	network1 = networkchange.ID("network:1")
+	change1 = networkchange.ID("change-1")
 )
 
 // TestReconcilerChangeRollback tests applying and then rolling back a change
@@ -52,7 +52,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	}
 
 	// Create a network change
-	networkChange := newChange(device1, device2)
+	networkChange := newChange(change1, device1, device2)
 	err := networkChanges.Create(networkChange)
 	assert.NoError(t, err)
 
@@ -62,11 +62,11 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device changes were created
-	deviceChange1, err := deviceChanges.Get("device-1:1")
+	deviceChange1, err := deviceChanges.Get("change-1:device-1")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err := deviceChanges.Get("device-2:1")
+	deviceChange2, err := deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -77,17 +77,17 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// The reconciler should have changed its state to RUNNING
-	networkChange, err = networkChanges.Get(network1)
+	networkChange, err = networkChanges.Get(change1)
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
 
 	// But device change states should remain in PENDING state
-	deviceChange1, err = deviceChanges.Get("device-1:1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("device-2:1")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -98,11 +98,11 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device change states were changed to RUNNING
-	deviceChange1, err = deviceChanges.Get("device-1:1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("device-2:1")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange2.Status.State)
@@ -118,7 +118,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify the network change was not completed
-	networkChange, err = networkChanges.Get(network1)
+	networkChange, err = networkChanges.Get(change1)
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
@@ -134,7 +134,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify the network change is complete
-	networkChange, err = networkChanges.Get(network1)
+	networkChange, err = networkChanges.Get(change1)
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
 	assert.Equal(t, change.State_COMPLETE, networkChange.Status.State)
@@ -151,17 +151,17 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that the rollback is running
-	networkChange, err = networkChanges.Get(network1)
+	networkChange, err = networkChanges.Get(change1)
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, networkChange.Status.Phase)
 	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
 
 	// Verify that device change phases were changed to ROLLBACK
-	deviceChange1, err = deviceChanges.Get("device-1:1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("device-2:1")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -172,7 +172,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that the rollback is running
-	networkChange, err = networkChanges.Get(network1)
+	networkChange, err = networkChanges.Get(change1)
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, networkChange.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
@@ -183,11 +183,11 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device change states were changed to RUNNING
-	deviceChange1, err = deviceChanges.Get("device-1:1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("device-2:1")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange2.Status.State)
@@ -205,7 +205,7 @@ func TestReconcilerError(t *testing.T) {
 	}
 
 	// Create a network change
-	networkChange := newChange(device1, device2)
+	networkChange := newChange(change1, device1, device2)
 	err := networkChanges.Create(networkChange)
 	assert.NoError(t, err)
 
@@ -215,11 +215,11 @@ func TestReconcilerError(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device changes were created
-	deviceChange1, err := deviceChanges.Get("device-1:1")
+	deviceChange1, err := deviceChanges.Get("change-1:device-1")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err := deviceChanges.Get("device-2:1")
+	deviceChange2, err := deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -230,17 +230,17 @@ func TestReconcilerError(t *testing.T) {
 	assert.True(t, ok)
 
 	// The reconciler should have changed its state to RUNNING
-	networkChange, err = networkChanges.Get(network1)
+	networkChange, err = networkChanges.Get(change1)
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
 
 	// But device change states should remain in PENDING state
-	deviceChange1, err = deviceChanges.Get("device-1:1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("device-2:1")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -251,11 +251,11 @@ func TestReconcilerError(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device change states were changed to RUNNING
-	deviceChange1, err = deviceChanges.Get("device-1:1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("device-2:1")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange2.Status.State)
@@ -271,13 +271,13 @@ func TestReconcilerError(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify the network change was not completed
-	networkChange, err = networkChanges.Get(network1)
+	networkChange, err = networkChanges.Get(change1)
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
 
 	// Fail the other device
-	deviceChange2, err = deviceChanges.Get("device-2:1")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	deviceChange2.Status.State = change.State_FAILED
 	deviceChange2.Status.Reason = change.Reason_ERROR
@@ -290,17 +290,17 @@ func TestReconcilerError(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify the network change is still RUNNING
-	networkChange, err = networkChanges.Get(network1)
+	networkChange, err = networkChanges.Get(change1)
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
 
 	// Verify the change to device-1 is being rolled back
-	deviceChange1, err = deviceChanges.Get("device-1:1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("device-2:1")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_FAILED, deviceChange2.Status.State)
@@ -316,7 +316,7 @@ func TestReconcilerError(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that the network change returned to PENDING
-	networkChange, err = networkChanges.Get(network1)
+	networkChange, err = networkChanges.Get(change1)
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, networkChange.Status.Phase)
 	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
@@ -344,7 +344,7 @@ func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicecha
 	return devices, networkChanges, deviceChanges
 }
 
-func newChange(devices ...device.ID) *networkchange.NetworkChange {
+func newChange(id networkchange.ID, devices ...device.ID) *networkchange.NetworkChange {
 	changes := make([]*devicechange.Change, len(devices))
 	for i, device := range devices {
 		changes[i] = &devicechange.Change{
@@ -361,6 +361,7 @@ func newChange(devices ...device.ID) *networkchange.NetworkChange {
 		}
 	}
 	return &networkchange.NetworkChange{
+		ID:      id,
 		Changes: changes,
 	}
 }

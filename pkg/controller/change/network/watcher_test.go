@@ -44,6 +44,7 @@ func TestNetworkWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	change1 := &networkchange.NetworkChange{
+		ID: "change-1",
 		Changes: []*devicechange.Change{
 			{
 
@@ -91,6 +92,7 @@ func TestNetworkWatcher(t *testing.T) {
 	}
 
 	change2 := &networkchange.NetworkChange{
+		ID: "change-2",
 		Changes: []*devicechange.Change{
 			{
 				DeviceID: device.ID("device-1"),

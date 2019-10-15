@@ -36,8 +36,8 @@ const (
 )
 
 const (
-	change1 = devicechange.ID("device-1:1")
-	change2 = devicechange.ID("device-2:1")
+	change1 = devicechange.ID("device-1:device-1")
+	change2 = devicechange.ID("device-2:device-2")
 )
 
 func TestReconcilerChangeSuccess(t *testing.T) {
@@ -238,6 +238,7 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 
 func newChange(device device.ID) *devicechange.DeviceChange {
 	return &devicechange.DeviceChange{
+		NetworkChangeID: types.ID(device),
 		Change: &devicechange.Change{
 			DeviceID: device,
 			Values: []*devicechange.ChangeValue{

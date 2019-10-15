@@ -17,14 +17,12 @@ package network
 import (
 	"context"
 	"errors"
-	"github.com/atomix/atomix-go-client/pkg/client/counter"
-	"github.com/atomix/atomix-go-client/pkg/client/map"
+	"github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
 	"github.com/atomix/atomix-go-local/pkg/atomix/local"
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
-	"github.com/cenkalti/backoff"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
@@ -35,10 +33,7 @@ import (
 	"time"
 )
 
-const counterName = "network-change-indexes"
-const configsName = "network-changes"
-
-const maxRetries = 5
+const changesName = "network-changes"
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore() (Store, error) {
@@ -52,20 +47,13 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	ids, err := group.GetCounter(context.Background(), counterName, session.WithTimeout(30*time.Second))
-	if err != nil {
-		return nil, err
-	}
-
-	configs, err := group.GetMap(context.Background(), configsName, session.WithTimeout(30*time.Second))
+	changes, err := group.GetIndexedMap(context.Background(), changesName, session.WithTimeout(30*time.Second))
 	if err != nil {
 		return nil, err
 	}
 
 	return &atomixStore{
-		indexes: ids,
-		configs: configs,
-		closer:  configs,
+		changes: changes,
 	}, nil
 }
 
@@ -77,27 +65,17 @@ func NewLocalStore() (Store, error) {
 
 // newLocalStore creates a new local network change store
 func newLocalStore(conn *grpc.ClientConn) (Store, error) {
-	counterName := primitive.Name{
-		Namespace: "local",
-		Name:      counterName,
-	}
-	ids, err := counter.New(context.Background(), counterName, []*grpc.ClientConn{conn})
-	if err != nil {
-		return nil, err
-	}
-
 	configsName := primitive.Name{
 		Namespace: "local",
-		Name:      configsName,
+		Name:      changesName,
 	}
-	configs, err := _map.New(context.Background(), configsName, []*grpc.ClientConn{conn})
+	changes, err := indexedmap.New(context.Background(), configsName, []*grpc.ClientConn{conn})
 	if err != nil {
 		return nil, err
 	}
 
 	return &atomixStore{
-		indexes: ids,
-		configs: configs,
+		changes: changes,
 	}, nil
 }
 
@@ -111,7 +89,7 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 		return lis.Dial()
 	}
 
-	conn, err := grpc.DialContext(context.Background(), configsName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(context.Background(), changesName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
 	if err != nil {
 		panic("Failed to dial network configurations")
 	}
@@ -121,9 +99,6 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 // Store stores NetworkConfig changes
 type Store interface {
 	io.Closer
-
-	// LastIndex gets the last index in the store
-	LastIndex() (networkchange.Index, error)
 
 	// Get gets a network configuration
 	Get(id networkchange.ID) (*networkchange.NetworkChange, error)
@@ -149,151 +124,115 @@ type Store interface {
 
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
-	indexes counter.Counter
-	configs _map.Map
-	closer  io.Closer
-}
-
-func (s *atomixStore) LastIndex() (networkchange.Index, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	index, err := s.indexes.Get(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return networkchange.Index(index), nil
-}
-
-func (s *atomixStore) setIndex(index networkchange.Index) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	return s.indexes.Set(ctx, int64(index))
+	changes indexedmap.IndexedMap
 }
 
 func (s *atomixStore) Get(id networkchange.ID) (*networkchange.NetworkChange, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Get(ctx, string(id))
+	entry, err := s.changes.Get(ctx, string(id))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeConfig(entry)
+	return decodeChange(entry)
 }
 
 func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.NetworkChange, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Get(ctx, string(index.GetChangeID()))
+	entry, err := s.changes.GetIndex(ctx, indexedmap.Index(index))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeConfig(entry)
+	return decodeChange(entry)
 }
 
-func (s *atomixStore) Create(config *networkchange.NetworkChange) error {
-	if config.Revision != 0 {
+func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
+	if change.ID == "" {
+		return errors.New("no change ID specified")
+	}
+	if change.Revision != 0 {
 		return errors.New("not a new object")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	return backoff.Retry(func() error {
-		lastIndex, err := s.LastIndex()
-		if err != nil {
-			return err
-		}
-
-		index := lastIndex + 1
-		config.Index = index
-		config.ID = index.GetChangeID()
-
-		bytes, err := proto.Marshal(config)
-		if err != nil {
-			return err
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-
-		// Attempt to set the change at the next index
-		entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
-
-		// If the write fails because a change has already been stored, increment the last index and retry
-		if err != nil {
-			if change, err := s.configs.Get(ctx, string(config.ID)); err == nil && change != nil {
-				_ = s.setIndex(index)
-			}
-			return err
-		}
-
-		config.Revision = networkchange.Revision(entry.Version)
-		config.Created = entry.Created
-		config.Updated = entry.Updated
-
-		// Store the updated index without failing the change
-		_ = s.setIndex(index)
-		return nil
-	}, backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries), ctx))
-}
-
-func (s *atomixStore) Update(config *networkchange.NetworkChange) error {
-	if config.Revision == 0 {
-		return errors.New("not a stored object")
+	bytes, err := proto.Marshal(change)
+	if err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	bytes, err := proto.Marshal(config)
+	entry, err := s.changes.Put(ctx, string(change.ID), bytes, indexedmap.IfNotSet())
 	if err != nil {
 		return err
 	}
 
-	entry, err := s.configs.Put(ctx, string(config.ID), bytes, _map.IfVersion(int64(config.Revision)))
-	if err != nil {
-		return err
-	}
-
-	config.Revision = networkchange.Revision(entry.Version)
-	config.Updated = entry.Updated
+	change.Index = networkchange.Index(entry.Index)
+	change.Revision = networkchange.Revision(entry.Version)
+	change.Created = entry.Created
+	change.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Delete(config *networkchange.NetworkChange) error {
-	if config.Revision == 0 {
+func (s *atomixStore) Update(change *networkchange.NetworkChange) error {
+	if change.Revision == 0 {
 		return errors.New("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.configs.Remove(ctx, string(config.ID), _map.IfVersion(int64(config.Revision)))
+	bytes, err := proto.Marshal(change)
 	if err != nil {
 		return err
 	}
 
-	config.Revision = 0
-	config.Updated = entry.Updated
+	entry, err := s.changes.Put(ctx, string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
+	if err != nil {
+		return err
+	}
+
+	change.Revision = networkchange.Revision(entry.Version)
+	change.Updated = entry.Updated
+	return nil
+}
+
+func (s *atomixStore) Delete(change *networkchange.NetworkChange) error {
+	if change.Revision == 0 {
+		return errors.New("not a stored object")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	entry, err := s.changes.RemoveIndex(ctx, indexedmap.Index(change.Index), indexedmap.IfVersion(indexedmap.Version(change.Revision)))
+	if err != nil {
+		return err
+	}
+
+	change.Revision = 0
+	change.Updated = entry.Updated
 	return nil
 }
 
 func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) error {
-	lastIndex, err := s.LastIndex()
-	if err != nil {
+	mapCh := make(chan *indexedmap.Entry)
+	if err := s.changes.Entries(context.Background(), mapCh); err != nil {
 		return err
 	}
 
 	go func() {
 		defer close(ch)
-		for i := networkchange.Index(1); i <= lastIndex; i++ {
-			if device, err := s.GetByIndex(i); err == nil && device != nil {
-				ch <- device
+		for entry := range mapCh {
+			if config, err := decodeChange(entry); err == nil {
+				ch <- config
 			}
 		}
 	}()
@@ -301,25 +240,15 @@ func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) error {
 }
 
 func (s *atomixStore) Watch(ch chan<- *networkchange.NetworkChange) error {
-	lastIndex, err := s.LastIndex()
-	if err != nil {
-		return err
-	}
-
-	mapCh := make(chan *_map.Event)
-	if err := s.configs.Watch(context.Background(), mapCh); err != nil {
+	mapCh := make(chan *indexedmap.Event)
+	if err := s.changes.Watch(context.Background(), mapCh, indexedmap.WithReplay()); err != nil {
 		return err
 	}
 
 	go func() {
 		defer close(ch)
-		for i := networkchange.Index(1); i <= lastIndex; i++ {
-			if device, err := s.GetByIndex(i); err == nil && device != nil {
-				ch <- device
-			}
-		}
 		for event := range mapCh {
-			if config, err := decodeConfig(event.Entry); err == nil {
+			if config, err := decodeChange(event.Entry); err == nil {
 				ch <- config
 			}
 		}
@@ -328,17 +257,18 @@ func (s *atomixStore) Watch(ch chan<- *networkchange.NetworkChange) error {
 }
 
 func (s *atomixStore) Close() error {
-	return s.configs.Close()
+	return s.changes.Close()
 }
 
-func decodeConfig(entry *_map.Entry) (*networkchange.NetworkChange, error) {
-	conf := &networkchange.NetworkChange{}
-	if err := proto.Unmarshal(entry.Value, conf); err != nil {
+func decodeChange(entry *indexedmap.Entry) (*networkchange.NetworkChange, error) {
+	change := &networkchange.NetworkChange{}
+	if err := proto.Unmarshal(entry.Value, change); err != nil {
 		return nil, err
 	}
-	conf.ID = networkchange.ID(entry.Key)
-	conf.Revision = networkchange.Revision(entry.Version)
-	conf.Created = entry.Created
-	conf.Updated = entry.Updated
-	return conf, nil
+	change.ID = networkchange.ID(entry.Key)
+	change.Index = networkchange.Index(entry.Index)
+	change.Revision = networkchange.Revision(entry.Version)
+	change.Created = entry.Created
+	change.Updated = entry.Updated
+	return change, nil
 }
