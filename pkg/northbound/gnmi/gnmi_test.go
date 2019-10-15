@@ -42,6 +42,8 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
+		nil,
+		nil,
 	)
 	if err != nil {
 		log.Error("Expected manager to be loaded ", err)
