@@ -48,7 +48,7 @@ func TestNetworkWatcher(t *testing.T) {
 			{
 
 				DeviceID: device.ID("device-1"),
-				Values: []*devicechange.Value{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path: "foo",
 						Value: &devicechange.TypedValue{
@@ -67,7 +67,7 @@ func TestNetworkWatcher(t *testing.T) {
 			},
 			{
 				DeviceID: device.ID("device-2"),
-				Values: []*devicechange.Value{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path: "baz",
 						Value: &devicechange.TypedValue{
@@ -94,7 +94,7 @@ func TestNetworkWatcher(t *testing.T) {
 		Changes: []*devicechange.Change{
 			{
 				DeviceID: device.ID("device-1"),
-				Values: []*devicechange.Value{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path:    "foo",
 						Removed: true,
@@ -157,7 +157,7 @@ func TestDeviceWatcher(t *testing.T) {
 		NetworkChangeID: types.ID("network:1"),
 		Change: &devicechange.Change{
 			DeviceID: device.ID("device-1"),
-			Values: []*devicechange.Value{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
 					Value: &devicechange.TypedValue{
@@ -190,7 +190,7 @@ func TestDeviceWatcher(t *testing.T) {
 		NetworkChangeID: types.ID("network:2"),
 		Change: &devicechange.Change{
 			DeviceID: device.ID("device-2"),
-			Values: []*devicechange.Value{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path: "baz",
 					Value: &devicechange.TypedValue{

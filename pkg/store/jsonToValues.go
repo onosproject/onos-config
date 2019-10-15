@@ -17,7 +17,6 @@ package store
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 )
 
@@ -26,7 +25,7 @@ import (
 // got from the Read Only paths of the Model. Also the second stage is necessary
 // resolve list indices, and leaf lists. This second stage is done in the model
 // registry to avoid circular dependencies here.
-func DecomposeTree(genericJSON []byte) ([]*change.ConfigValue, error) {
+func DecomposeTree(genericJSON []byte) ([]*types.PathValue, error) {
 	var f interface{}
 	err := json.Unmarshal(genericJSON, &f)
 	if err != nil {
@@ -40,8 +39,8 @@ func DecomposeTree(genericJSON []byte) ([]*change.ConfigValue, error) {
 // of paths and values.
 // Note: it is not possible to find indices of lists and accurate types directly
 // from json - for that the RO Paths must be consulted
-func extractValuesIntermediate(f interface{}, parentPath string) []*change.ConfigValue {
-	changes := make([]*change.ConfigValue, 0)
+func extractValuesIntermediate(f interface{}, parentPath string) []*types.PathValue {
+	changes := make([]*types.PathValue, 0)
 
 	switch value := f.(type) {
 	case map[string]interface{}:
@@ -56,13 +55,13 @@ func extractValuesIntermediate(f interface{}, parentPath string) []*change.Confi
 			changes = append(changes, objs...)
 		}
 	case string:
-		newCv := change.ConfigValue{Path: parentPath, TypedValue: *types.NewTypedValueString(value)}
+		newCv := types.PathValue{Path: parentPath, Value: types.NewTypedValueString(value)}
 		changes = append(changes, &newCv)
 	case bool:
-		newCv := change.ConfigValue{Path: parentPath, TypedValue: *types.NewTypedValueBool(value)}
+		newCv := types.PathValue{Path: parentPath, Value: types.NewTypedValueBool(value)}
 		changes = append(changes, &newCv)
 	case float64:
-		newCv := change.ConfigValue{Path: parentPath, TypedValue: *types.NewTypedValueFloat(float32(value))}
+		newCv := types.PathValue{Path: parentPath, Value: types.NewTypedValueFloat(float32(value))}
 		changes = append(changes, &newCv)
 	default:
 		fmt.Println("Unexpected type", value)

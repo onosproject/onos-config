@@ -27,19 +27,15 @@ import (
 // Test_NativeChangeToGnmiChange tests conversion from an ONOS change to a GNMI change
 func Test_NativeChangeToGnmiChange(t *testing.T) {
 	// Some test data. One update, one remove
-	testValues := change.ValueCollections{
-		&change.Value{
-			ConfigValue: change.ConfigValue{
-				Path:       "/path1/path2/path3",
-				TypedValue: *types.NewTypedValueString("value"),
-			},
-			Remove: false,
+	testValues := []*types.ChangeValue{
+		{
+			Path:    "/path1/path2/path3",
+			Value:   types.NewTypedValueString("value"),
+			Removed: false,
 		},
-		&change.Value{
-			ConfigValue: change.ConfigValue{
-				Path: "/rpath1/rpath2/rpath3",
-			},
-			Remove: true,
+		{
+			Path:    "/rpath1/rpath2/rpath3",
+			Removed: true,
 		},
 	}
 	testChange, err := change.NewChange(testValues, "Test Change")

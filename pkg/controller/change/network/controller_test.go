@@ -349,7 +349,7 @@ func newChange(devices ...device.ID) *networkchange.NetworkChange {
 	for i, device := range devices {
 		changes[i] = &devicechange.Change{
 			DeviceID: device,
-			Values: []*devicechange.Value{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
 					Value: &devicechange.TypedValue{

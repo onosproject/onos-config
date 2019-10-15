@@ -71,10 +71,10 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	)
 
 	var err error
-	config1Value01, _ := change.NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
-	config1Value02, _ := change.NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
-	config1Value03, _ := change.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueFloat(ValueLeaf2B159), false)
-	change1, err = change.NewChange(change.ValueCollections{
+	config1Value01, _ := types.NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
+	config1Value02, _ := types.NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
+	config1Value03, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueFloat(ValueLeaf2B159), false)
+	change1, err = change.NewChange([]*types.ChangeValue{
 		config1Value01, config1Value02, config1Value03}, "Original Config for test switch")
 	if err != nil {
 		log.Error(err)
@@ -182,7 +182,7 @@ func Test_GetNetworkConfig(t *testing.T) {
 
 func Test_SetNetworkConfig(t *testing.T) {
 	// First verify the value beforehand
-	const origChangeHash = "N/tfaRhaC23jgoeeHjVOyWXslyU="
+	const origChangeHash = "wvqyCGcG9M2ycXcfnnuwXJX0Nec="
 	mgrTest, changeStoreTest, configurationStoreTest, _, _, _ := setUp(t)
 	assert.Equal(t, len(changeStoreTest), 1)
 	i := 0
@@ -197,8 +197,8 @@ func Test_SetNetworkConfig(t *testing.T) {
 	assert.Equal(t, store.B64(originalChange.ID), origChangeHash)
 	assert.Equal(t, len(originalChange.Config), 3)
 	assert.Equal(t, originalChange.Config[2].Path, Test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, originalChange.Config[2].Type, types.ValueType_FLOAT)
-	assert.Equal(t, (*types.TypedFloat)(&originalChange.Config[2].TypedValue).Float32(), float32(ValueLeaf2B159))
+	assert.Equal(t, originalChange.Config[2].GetValue().GetType(), types.ValueType_FLOAT)
+	assert.Equal(t, (*types.TypedFloat)(originalChange.Config[2].GetValue()).Float32(), float32(ValueLeaf2B159))
 
 	updates := make(types.TypedValueMap)
 	deletes := make([]string, 0)
@@ -225,18 +225,18 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	//Asserting change
 	assert.Equal(t, updatedVals[0].Path, Test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, (*types.TypedFloat)(&updatedVals[0].TypedValue).Float32(), float32(ValueLeaf2B314))
-	assert.Equal(t, updatedVals[0].Remove, false)
+	assert.Equal(t, (*types.TypedFloat)(updatedVals[0].GetValue()).Float32(), float32(ValueLeaf2B314))
+	assert.Equal(t, updatedVals[0].Removed, false)
 
 	// Checking original is still alright
 	originalChange, ok = changeStoreTest[origChangeHash]
 	assert.Assert(t, ok)
-	assert.Equal(t, (*types.TypedFloat)(&originalChange.Config[2].TypedValue).Float32(), float32(ValueLeaf2B159))
+	assert.Equal(t, (*types.TypedFloat)(originalChange.Config[2].GetValue()).Float32(), float32(ValueLeaf2B159))
 
 	//Asserting deletion of 2C
 	assert.Equal(t, updatedVals[1].Path, Test1Cont1ACont2ALeaf2C)
-	assert.Equal(t, (*types.TypedEmpty)(&updatedVals[1].TypedValue).String(), "")
-	assert.Equal(t, updatedVals[1].Remove, true)
+	assert.Equal(t, (*types.TypedEmpty)(updatedVals[1].GetValue()).String(), "")
+	assert.Equal(t, updatedVals[1].Removed, true)
 
 }
 
@@ -363,7 +363,7 @@ func TestManager_GetNoConfig(t *testing.T) {
 	assert.ErrorContains(t, err, "no Configuration found")
 }
 
-func networkConfigContainsPath(configs []*change.ConfigValue, whichOne string) bool {
+func networkConfigContainsPath(configs []*types.PathValue, whichOne string) bool {
 	for _, config := range configs {
 		if config.Path == whichOne {
 			return true
@@ -477,7 +477,7 @@ func TestManager_GetTargetState(t *testing.T) {
 	assert.Assert(t, state1 != nil, "Path 1 entry not found")
 	assert.Assert(t, len(state1) == 1, "Path 1 entry has incorrect length %d", len(state1))
 	assert.Assert(t, state1[0].Path == path1, "Path 1 path is incorrect")
-	assert.Assert(t, string(state1[0].Bytes) == value1, "Path 1 value is incorrect")
+	assert.Assert(t, string(state1[0].GetValue().GetBytes()) == value1, "Path 1 value is incorrect")
 
 	// Test fetching an unknown path from the cache
 	stateBad := mgrTest.GetTargetState(device1, badPath)

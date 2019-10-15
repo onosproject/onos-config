@@ -44,7 +44,7 @@ func Test_DecomposeTree(t *testing.T) {
 	assert.NilError(t, err)
 
 	for _, v := range values {
-		fmt.Printf("%s %s\n", (*v).Path, (*v).ValueToString())
+		fmt.Printf("%s %s\n", (*v).Path, (*v).GetValue().ValueToString())
 	}
 	assert.Equal(t, len(values), 22)
 
@@ -69,15 +69,15 @@ func Test_DecomposeTree(t *testing.T) {
 			"/system/openflow/controllers/controller[*]/connections/example-ll[*]",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/conn-type",
 			"/interfaces/interface[*]/name":
-			assert.Equal(t, v.Type, types.ValueType_STRING, newPath)
+			assert.Equal(t, v.GetValue().GetType(), types.ValueType_STRING, newPath)
 		case
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/discombobulator":
-			assert.Equal(t, v.Type, types.ValueType_BOOL, newPath)
+			assert.Equal(t, v.GetValue().GetType(), types.ValueType_BOOL, newPath)
 		case
 			"/system/openflow/controllers/controller[*]/connections/connections-type",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/aux-id",
 			"/system/openflow/controllers/controller[*]/connections/connections-freq":
-			assert.Equal(t, v.Type, types.ValueType_FLOAT, newPath)
+			assert.Equal(t, v.GetValue().GetType(), types.ValueType_FLOAT, newPath)
 		default:
 			t.Fatal("Unexpected jsonPath", newPath)
 		}
@@ -96,7 +96,7 @@ func Test_DecomposeTree2(t *testing.T) {
 	assert.NilError(t, err)
 
 	for _, v := range values {
-		fmt.Printf("%s %s\n", (*v).Path, (*v).ValueToString())
+		fmt.Printf("%s %s\n", (*v).Path, (*v).GetValue().ValueToString())
 	}
 	assert.Equal(t, len(values), 31)
 
@@ -118,13 +118,13 @@ func Test_DecomposeTree2(t *testing.T) {
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/address",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/source-interface",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/transport":
-			assert.Equal(t, v.Type, types.ValueType_STRING, newPath)
+			assert.Equal(t, v.GetValue().GetType(), types.ValueType_STRING, newPath)
 		case
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/aux-id",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/aux-id",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/priority",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/port":
-			assert.Equal(t, v.Type, types.ValueType_FLOAT, newPath)
+			assert.Equal(t, v.GetValue().GetType(), types.ValueType_FLOAT, newPath)
 		default:
 			t.Fatal("Unexpected jsonPath", newPath)
 		}

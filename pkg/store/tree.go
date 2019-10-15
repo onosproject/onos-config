@@ -17,7 +17,6 @@ package store
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"strconv"
@@ -33,12 +32,12 @@ const (
 
 // BuildTree is a function that takes an ordered array of ConfigValues and
 // produces a structured formatted JSON tree
-func BuildTree(values []*change.ConfigValue, floatAsStr bool) ([]byte, error) {
+func BuildTree(values []*types.PathValue, floatAsStr bool) ([]byte, error) {
 
 	root := make(map[string]interface{})
 	rootif := interface{}(root)
 	for _, cv := range values {
-		err := addPathToTree(cv.Path, &cv.TypedValue, &rootif, floatAsStr)
+		err := addPathToTree(cv.Path, cv.GetValue(), &rootif, floatAsStr)
 		if err != nil {
 			return nil, err
 		}

@@ -2,418 +2,550 @@
   "Version": "1.0.0",
   "Storetype": "change",
   "Store": {
-    "wnu2It3B6k+hUwRV8Nm+HOcokXc=": {
-      "ID": "wnu2It3B6k+hUwRV8Nm+HOcokXc=",
+    "Lj+MiMR60C3BLIoEbsp3R4rPzcg=": {
+      "ID": "Lj+MiMR60C3BLIoEbsp3R4rPzcg=",
       "Description": "Remove txout 2",
       "Created": "2019-05-09T16:24:17.815274679Z",
       "Config": [
         {
           "Path": "/cont1a/cont2a/leaf2d",
-          "Value": "AgAAAAAAAAA=",
-          "Type": 5,
-          "TypeOpts": [3]
+          "Value": {
+            "Bytes": "AgAAAAAAAAA=",
+            "Type": 5,
+            "TypeOpts": [3]
+          }
         },
         {
           "Path": "/cont1a/cont2a/leaf2e",
-          "Value": "nf/////////8/////////wUAAAAAAAAAyAAAAAAAAAA=",
-          "Type": 9
+          "Value": {
+            "Bytes": "nf/////////8/////////wUAAAAAAAAAyAAAAAAAAAA=",
+            "Type": 9
+          }
         },
         {
           "Path": "/cont1a/cont2a/leaf2g",
-          "Value": "AA==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AA==",
+            "Type": 4
+          }
         },
         {
           "Path": "/cont1a/list2a[name=txout2]",
-          "Type": 0,
+          "Value": {
+            "Type": 0
+          },
           "Remove": true
         }
       ]
     },
-    "M84Z2dnvLm3avcD+wIOWIJElb3Y=": {
-      "ID": "M84Z2dnvLm3avcD+wIOWIJElb3Y=",
+    "P9dRXqy6IPp2KxeWxGvV0lRQIus=": {
+      "ID": "P9dRXqy6IPp2KxeWxGvV0lRQIus=",
       "Description": "Trim power level",
       "Created": "2019-05-09T16:24:17.815259228Z",
       "Config": [
         {
           "Path": "/cont1a/cont2a/leaf2b",
-          "Value": "AAAA4PND8j8=",
-          "Type": 6
+          "Value": {
+            "Bytes": "AAAA4PND8j8=",
+            "Type": 6
+          }
         },
         {
           "Path": "/cont1a/list2a[name=txout3]/tx-power",
-          "Value": "EAAAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "EAAAAAAAAAA=",
+            "Type": 3
+          }
         }
       ]
     },
-    "cegofxdtwQLJMezqk15zIgp7p+Y=": {
-      "ID": "cegofxdtwQLJMezqk15zIgp7p+Y=",
+    "Wv2Ba23stoAcdD9PkaPUih2HYtY=": {
+      "ID": "Wv2Ba23stoAcdD9PkaPUih2HYtY=",
       "Description": "Remove txout 1",
       "Created": "2019-05-09T16:24:17.815294258Z",
       "Config": [
         {
           "Path": "/cont1a/list2a[name=txout1]",
-          "Type": 0,
+          "Value": {
+            "Type": 0
+          },
           "Remove": true
         }
       ]
     },
-    "WhY1aedSE9uSP1Pr2ouutL6TIkU=": {
-      "ID": "WhY1aedSE9uSP1Pr2ouutL6TIkU=",
+    "je06bYEn4tzIBDUTNcBOhHQYhg0=": {
+      "ID": "je06bYEn4tzIBDUTNcBOhHQYhg0=",
       "Description": "Original Config for test switch",
       "Created": "2019-05-09T16:24:17.815187669Z",
       "Config": [
         {
           "Path": "/cont1a/cont2a/leaf2a",
-          "Value": "DQAAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "DQAAAAAAAAA=",
+            "Type": 3
+          }
         },
         {
           "Path": "/cont1a/cont2a/leaf2b",
-          "Value": "AAAAgJVD+T8=",
-          "Type": 6
+          "Value": {
+            "Bytes": "AAAAgJVD+T8=",
+            "Type": 6
+          }
         },
         {
           "Path": "/cont1a/leaf1a",
-          "Value": "YWJjZGVm",
-          "Type": 1
+          "Value": {
+            "Bytes": "YWJjZGVm",
+            "Type": 1
+          }
         },
         {
           "Path": "/cont1a/list2a[name=txout1]",
-          "Value": "",
-          "Type": 0
+          "Value": {
+            "Bytes": "",
+            "Type": 0
+          }
         },
         {
           "Path": "/cont1a/list2a[name=txout1]/tx-power",
-          "Value": "CAAAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "CAAAAAAAAAA=",
+            "Type": 3
+          }
         },
         {
           "Path": "/cont1a/list2a[name=txout2]",
-          "Value": "",
-          "Type": 0
+          "Value": {
+            "Bytes": "",
+            "Type": 0
+          }
         },
         {
           "Path": "/cont1a/list2a[name=txout2]/tx-power",
-          "Value": "CgAAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "CgAAAAAAAAA=",
+            "Type": 3
+          }
         },
         {
           "Path": "/leafAtTopLevel",
-          "Value": "V1hZLTEyMzQ=",
-          "Type": 1
+          "Value": {
+            "Bytes": "V1hZLTEyMzQ=",
+            "Type": 1
+          }
         }
       ]
     },
-    "k2O8wNxWpL+HJjFwl+R+nwV75BA=": {
-      "ID": "k2O8wNxWpL+HJjFwl+R+nwV75BA=",
+    "mSr0HBYynI8r7bcpEcOXz4bL4aw=": {
+      "ID": "mSr0HBYynI8r7bcpEcOXz4bL4aw=",
       "Description": "Original configuration for devicesim",
       "Created": "2019-05-21T08:43:01Z",
       "Config": [
         {
           "Path": "/interfaces/interface[name=admin]/config/name",
-          "Value": "YWRtaW4=",
-          "Type": 1
+          "Value": {
+            "Bytes": "YWRtaW4=",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=admin]/config/enabled",
-          "Value": "AA==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AA==",
+            "Type": 4
+          }
         },
         {
           "Path": "/interfaces/interface[name=eth1]/config/name",
-          "Value": "ZXRoMQ==",
-          "Type": 1
+          "Value": {
+            "Bytes": "ZXRoMQ==",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=eth1]/config/enabled",
-          "Value": "AQ==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AQ==",
+            "Type": 4
+          }
         },
         {
           "Path": "/interfaces/interface[name=eth1/1]/config/name",
-          "Value": "ZXRoMS8x",
-          "Type": 1
+          "Value": {
+            "Bytes": "ZXRoMS8x",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=eth1/1]/config/enabled",
-          "Value": "AQ==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AQ==",
+            "Type": 4
+          }
         },
         {
           "Path": "/system/aaa/authentication/admin-user/config/admin-password",
-          "Value": "cGFzc3dvcmQ=",
-          "Type": 1
+          "Value": {
+            "Bytes": "cGFzc3dvcmQ=",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/aaa/authentication/config/authentication-method",
-          "Value": "b3BlbmNvbmZpZy1hYWEtdHlwZXM6TE9DQUw=",
-          "Type": 8
+          "Value": {
+            "Bytes": "b3BlbmNvbmZpZy1hYWEtdHlwZXM6TE9DQUw=",
+            "Type": 8
+          }
         },
         {
           "Path": "/system/clock/config/timezone-name",
-          "Value": "RXVyb3BlL0R1Ymxpbg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "RXVyb3BlL0R1Ymxpbg==",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/hostname",
-          "Value": "cmVwbGFjZS1kZXZpY2UtbmFtZQ==",
-          "Type": 1
+          "Value": {
+            "Bytes": "cmVwbGFjZS1kZXZpY2UtbmFtZQ==",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/domain-name",
-          "Value": "b3Blbm5ldHdvcmtpbmcub3Jn",
-          "Type": 1
+          "Value": {
+            "Bytes": "b3Blbm5ldHdvcmtpbmcub3Jn",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/login-banner",
-          "Value": "VGhpcyBkZXZpY2UgaXMgZm9yIGF1dGhvcml6ZWQgdXNlIG9ubHk=",
-          "Type": 1
+          "Value": {
+            "Bytes": "VGhpcyBkZXZpY2UgaXMgZm9yIGF1dGhvcml6ZWQgdXNlIG9ubHk=",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/motd-banner",
-          "Value": "cmVwbGFjZS1tb3RkLWJhbm5lcg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "cmVwbGFjZS1tb3RkLWJhbm5lcg==",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/openflow/agent/config/backoff-interval",
-          "Value": "BQAAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "BQAAAAAAAAA=",
+            "Type": 3
+          }
         },
         {
           "Path": "/system/openflow/agent/config/datapath-id",
-          "Value": "MDA6MTY6M2U6MDA6MDA6MDA6MDA6MDA=",
-          "Type": 1
+          "Value": {
+            "Bytes": "MDA6MTY6M2U6MDA6MDA6MDA6MDA6MDA=",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/openflow/agent/config/failure-mode",
-          "Value": "U0VDVVJF",
-          "Type": 1
+          "Value": {
+            "Bytes": "U0VDVVJF",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/openflow/agent/config/inactivity-probe",
-          "Value": "CgAAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "CgAAAAAAAAA=",
+            "Type": 3
+          }
         },
         {
           "Path": "/system/openflow/agent/config/max-backoff",
-          "Value": "CgAAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "CgAAAAAAAAA=",
+            "Type": 3
+          }
         },
         {
           "Path": "/system/openflow/controllers/controller[name=main]/config/name",
-          "Value": "bWFpbg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "bWFpbg==",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/address",
-          "Value": "MTkyLjAuMi4xMA==",
-          "Type": 1
+          "Value": {
+            "Bytes": "MTkyLjAuMi4xMA==",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/aux-id",
-          "Value": "AAAAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "AAAAAAAAAAA=",
+            "Type": 3
+          }
         },
         {
           "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/port",
-          "Value": "6RkAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "6RkAAAAAAAA=",
+            "Type": 3
+          }
         },
         {
           "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/priority",
-          "Value": "AQAAAAAAAAA=",
-          "Type": 3
+          "Value": {
+            "Bytes": "AQAAAAAAAAA=",
+            "Type": 3
+          }
         },
         {
           "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/source-interface",
-          "Value": "YWRtaW4=",
-          "Type": 1
+          "Value": {
+            "Bytes": "YWRtaW4=",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/config/transport",
-          "Value": "VExT",
-          "Type": 1
+          "Value": {
+            "Bytes": "VExT",
+            "Type": 1
+          }
         }
       ]
     },
-    "EPzF9CLjUD4rcmLtPYDfv9hw7gQ=": {
-      "ID": "EPzF9CLjUD4rcmLtPYDfv9hw7gQ=",
+    "/wbjsT1Pl4OKLUxHy+j8UBDySvk=": {
+      "ID": "/wbjsT1Pl4OKLUxHy+j8UBDySvk=",
       "Description": "Modification of device sim 1",
       "Created": "2019-05-21T08:43:02Z",
       "Config": [
         {
           "Path": "/system/config/hostname",
-          "Value": "bG9jYWxob3N0LTE=",
-          "Type": 1
+          "Value": {
+            "Bytes": "bG9jYWxob3N0LTE=",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/motd-banner",
-          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYx",
-          "Type": 1
+          "Value": {
+            "Bytes": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYx",
+            "Type": 1
+          }
         }
       ]
     },
-    "9ZqeQ87pAtPAFbrpZ9icJNw7jx0=": {
-      "ID": "9ZqeQ87pAtPAFbrpZ9icJNw7jx0=",
+    "HI1vkKfDhdk4g4LdPcr4Rd0DIeI=": {
+      "ID": "HI1vkKfDhdk4g4LdPcr4Rd0DIeI=",
       "Description": "Modification of device sim 2",
       "Created": "2019-05-21T08:43:03Z",
       "Config": [
         {
           "Path": "/system/config/hostname",
-          "Value": "bG9jYWxob3N0LTI=",
-          "Type": 1
+          "Value": {
+            "Bytes": "bG9jYWxob3N0LTI=",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/motd-banner",
-          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYy",
-          "Type": 1
+          "Value": {
+            "Bytes": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYy",
+            "Type": 1
+          }
         }
       ]
     },
-    "1k+/TjbKKr0alYzFDQSBNLjIS/c=": {
-      "ID": "1k+/TjbKKr0alYzFDQSBNLjIS/c=",
+    "JP9oUsUllBpdWIR0XvyiUWxiv6c=": {
+      "ID": "JP9oUsUllBpdWIR0XvyiUWxiv6c=",
       "Description": "Modification of device sim 3",
       "Created": "2019-05-21T08:43:04Z",
       "Config": [
         {
           "Path": "/system/config/hostname",
-          "Value": "bG9jYWxob3N0LTM=",
-          "Type": 1
+          "Value": {
+            "Bytes": "bG9jYWxob3N0LTM=",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/motd-banner",
-          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYz",
-          "Type": 1
+          "Value": {
+            "Bytes": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gbG9jYWxob3N0OjEwMTYz",
+            "Type": 1
+          }
         }
       ]
     },
-    "sSXKsMHm9vuahEmtEP9l79GEnJk=": {
-      "ID": "sSXKsMHm9vuahEmtEP9l79GEnJk=",
+    "QWEE7VidGo/Z4IiSTbK1wmwDtdo=": {
+      "ID": "QWEE7VidGo/Z4IiSTbK1wmwDtdo=",
       "Description": "Modification of device-1-device-simulator",
       "Created": "2019-05-30T18:03:17Z",
       "Config": [
         {
           "Path": "/system/config/hostname",
-          "Value": "ZGV2aWNlLTEtZGV2aWNlLXNpbXVsYXRvcg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "ZGV2aWNlLTEtZGV2aWNlLXNpbXVsYXRvcg==",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/motd-banner",
-          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTEtZGV2aWNlLXNpbXVsYXRvcg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTEtZGV2aWNlLXNpbXVsYXRvcg==",
+            "Type": 1
+          }
         }
       ]
     },
-    "kk0qTjejdVmtcUql10o3ohim/E4=": {
-      "ID": "kk0qTjejdVmtcUql10o3ohim/E4=",
+    "KRjTNltrz0idwiBupo2qftfCN+A=": {
+      "ID": "KRjTNltrz0idwiBupo2qftfCN+A=",
       "Description": "Modification of device-2-device-simulator",
       "Created": "2019-05-30T18:03:17Z",
       "Config": [
         {
           "Path": "/system/config/hostname",
-          "Value": "ZGV2aWNlLTItZGV2aWNlLXNpbXVsYXRvcg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "ZGV2aWNlLTItZGV2aWNlLXNpbXVsYXRvcg==",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/motd-banner",
-          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTItZGV2aWNlLXNpbXVsYXRvcg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTItZGV2aWNlLXNpbXVsYXRvcg==",
+            "Type": 1
+          }
         }
       ]
     },
-    "htenHWCUpidhaS+xGMxGw0jV+9g=": {
-      "ID": "htenHWCUpidhaS+xGMxGw0jV+9g=",
+    "Jcx94M+jOyu4q5A3zycqgMnAdi8=": {
+      "ID": "Jcx94M+jOyu4q5A3zycqgMnAdi8=",
       "Description": "Modification of device-3-device-simulator",
       "Created": "2019-05-30T18:03:17Z",
       "Config": [
         {
           "Path": "/system/config/hostname",
-          "Value": "ZGV2aWNlLTMtZGV2aWNlLXNpbXVsYXRvcg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "ZGV2aWNlLTMtZGV2aWNlLXNpbXVsYXRvcg==",
+            "Type": 1
+          }
         },
         {
           "Path": "/system/config/motd-banner",
-          "Value": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTMtZGV2aWNlLXNpbXVsYXRvcg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "V2VsY29tZSB0byBnTk1JIHNlcnZpY2Ugb24gZGV2aWNlLTMtZGV2aWNlLXNpbXVsYXRvcg==",
+            "Type": 1
+          }
         }
       ]
     },
-    "1AC0VUp9H/bXiwt8uWUh6s05otE=": {
-      "ID": "1AC0VUp9H/bXiwt8uWUh6s05otE=",
+    "QANqS/52DozB/OUKENoVcvOkUZs=": {
+      "ID": "QANqS/52DozB/OUKENoVcvOkUZs=",
       "Description": "Initial configuration of Stratum Simulator",
       "Created": "2019-06-05T12:03:17Z",
       "Config": [
         {
           "Path": "/interfaces/interface[name=s1-eth1]/config/enabled",
-          "Value": "AA==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AA==",
+            "Type": 4
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/config/name",
-          "Value": "czEtZXRoMQ==",
-          "Type": 1
+          "Value": {
+            "Bytes": "czEtZXRoMQ==",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/config/health-indicator",
-          "Value": "R09PRA==",
-          "Type": 1
+          "Value": {
+            "Bytes": "R09PRA==",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/auto-negotiate",
-          "Value": "AQ==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AQ==",
+            "Type": 4
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/forwarding-viable",
-          "Value": "AQ==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AQ==",
+            "Type": 4
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/mac-address",
-          "Value": "MTE6MjI6MzM6NDQ6NTU6NjY=",
-          "Type": 1
+          "Value": {
+            "Bytes": "MTE6MjI6MzM6NDQ6NTU6NjY=",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth1]/ethernet/config/port-speed",
-          "Value": "U1BFRURfMTBHQg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "U1BFRURfMTBHQg==",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/config/enabled",
-          "Value": "AA==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AA==",
+            "Type": 4
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/config/name",
-          "Value": "czEtZXRoMg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "czEtZXRoMg==",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/config/health-indicator",
-          "Value": "R09PRA==",
-          "Type": 1
+          "Value": {
+            "Bytes": "R09PRA==",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/auto-negotiate",
-          "Value": "AQ==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AQ==",
+            "Type": 4
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/forwarding-viable",
-          "Value": "AQ==",
-          "Type": 4
+          "Value": {
+            "Bytes": "AQ==",
+            "Type": 4
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/mac-address",
-          "Value": "MTE6MjI6MzM6NDQ6NTU6NjY=",
-          "Type": 1
+          "Value": {
+            "Bytes": "MTE6MjI6MzM6NDQ6NTU6NjY=",
+            "Type": 1
+          }
         },
         {
           "Path": "/interfaces/interface[name=s1-eth2]/ethernet/config/port-speed",
-          "Value": "U1BFRURfMTBHQg==",
-          "Type": 1
+          "Value": {
+            "Bytes": "U1BFRURfMTBHQg==",
+            "Type": 1
+          }
         }
       ]
     }
