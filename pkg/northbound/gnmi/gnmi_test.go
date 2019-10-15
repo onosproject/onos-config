@@ -42,21 +42,30 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
+		nil,
+		nil,
 	)
 	if err != nil {
 		log.Error("Expected manager to be loaded ", err)
 		os.Exit(-1)
 	}
 	ctrl := gomock.NewController(t)
-	mockStore := NewMockStore(ctrl)
-	mgr.DeviceStore = mockStore
+	//TODO create mock here.
+	// mockNetworkChangesStore :=
+	// mockDeviceChangesStore :=
+	//TODO assign here
+	//mgr.NetworkChangesStore := mockNetworkChangesStore
+	//mgr.ChangeStore := mockDeviceChangesStore
+	mockDeviceStore := NewMockStore(ctrl)
+	mgr.DeviceStore = mockDeviceStore
 
 	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	log.Info("Finished setUp()")
-	return server, mgr, mockStore
+	//TODO return all mock stores here. it needs to be passed because otherwise we can't do expect calls
+	return server, mgr, mockDeviceStore
 }
 
 func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {

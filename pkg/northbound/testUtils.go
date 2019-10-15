@@ -43,6 +43,8 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
+		nil,
+		nil,
 	)
 	if err != nil {
 		log.Error("Unable to load manager")
