@@ -225,7 +225,7 @@ func sendSubscribeResponse(changeInternal *change.Change, subs []*regexp.Regexp,
 				log.Warning("Error in parsing path ", err)
 				continue
 			}
-			err = buildAndSendUpdate(pathGnmi, target, &changeValue.TypedValue, stream)
+			err = buildAndSendUpdate(pathGnmi, target, changeValue.GetValue(), stream)
 			if err != nil {
 				log.Error("Error in sending update path ", err)
 				resChan <- result{success: false, err: err}

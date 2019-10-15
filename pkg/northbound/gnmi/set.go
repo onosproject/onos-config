@@ -247,7 +247,7 @@ func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUp
 		}
 
 		for _, cv := range correctedValues {
-			updates[cv.Path] = &cv.TypedValue
+			updates[cv.Path] = cv.GetValue()
 		}
 	} else {
 		path := utils.StrPath(u.Path)

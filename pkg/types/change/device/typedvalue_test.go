@@ -270,7 +270,7 @@ func Test_JsonSerializationString(t *testing.T) {
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
 
-	assert.Equal(t, string(jsonStr), `{"Value":"VGhpcyBpcyBhIHRlc3Q=","Type":1}`)
+	assert.Equal(t, string(jsonStr), `{"Bytes":"VGhpcyBpcyBhIHRlc3Q=","Type":1}`)
 
 	unmarshalledTv := TypedValue{}
 	err = json.Unmarshal(jsonStr, &unmarshalledTv)
@@ -289,7 +289,7 @@ func Test_JsonSerializationDecimal(t *testing.T) {
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
 
-	assert.Equal(t, string(jsonStr), `{"Value":"0AQAAAAAAAA=","Type":5,"TypeOpts":[6]}`)
+	assert.Equal(t, string(jsonStr), `{"Bytes":"0AQAAAAAAAA=","Type":5,"TypeOpts":[6]}`)
 
 	unmarshalledTv := TypedValue{}
 	err = json.Unmarshal(jsonStr, &unmarshalledTv)
@@ -310,7 +310,7 @@ func Test_JsonSerializationInt(t *testing.T) {
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
 
-	assert.Equal(t, string(jsonStr), `{"Value":"AAAAAAAAAIA=","Type":2}`)
+	assert.Equal(t, string(jsonStr), `{"Bytes":"AAAAAAAAAIA=","Type":2}`)
 
 	unmarshalledTv := TypedValue{}
 	err = json.Unmarshal(jsonStr, &unmarshalledTv)
@@ -331,7 +331,7 @@ func Test_JsonSerializationUint(t *testing.T) {
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
 
-	assert.Equal(t, string(jsonStr), `{"Value":"EAAAAAAAAAA=","Type":3}`)
+	assert.Equal(t, string(jsonStr), `{"Bytes":"EAAAAAAAAAA=","Type":3}`)
 
 	unmarshalledTv := TypedValue{}
 	err = json.Unmarshal(jsonStr, &unmarshalledTv)
@@ -351,7 +351,7 @@ func Test_JsonSerializationBool(t *testing.T) {
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
 
-	assert.Equal(t, string(jsonStr), `{"Value":"AQ==","Type":4}`)
+	assert.Equal(t, string(jsonStr), `{"Bytes":"AQ==","Type":4}`)
 
 	unmarshalledTv := TypedValue{}
 	err = json.Unmarshal(jsonStr, &unmarshalledTv)
@@ -371,7 +371,7 @@ func Test_JsonSerializationLeafListInt(t *testing.T) {
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
 
-	assert.Equal(t, string(jsonStr), `{"Value":"AAAAAAAAAIAAAAAAAAAAAP////////9/","Type":9}`)
+	assert.Equal(t, string(jsonStr), `{"Bytes":"AAAAAAAAAIAAAAAAAAAAAP////////9/","Type":9}`)
 
 	unmarshalledTv := TypedValue{}
 	err = json.Unmarshal(jsonStr, &unmarshalledTv)
@@ -391,7 +391,7 @@ func Test_JsonSerializationLeafListBytes(t *testing.T) {
 	jsonStr, err := json.Marshal(tv)
 	assert.NilError(t, err)
 
-	assert.Equal(t, string(jsonStr), `{"Value":"YWJjZGVmZ2doaWpr","Type":14,"TypeOpts":[3,4,5]}`)
+	assert.Equal(t, string(jsonStr), `{"Bytes":"YWJjZGVmZ2doaWpr","Type":14,"TypeOpts":[3,4,5]}`)
 
 	unmarshalledTv := TypedValue{}
 	err = json.Unmarshal(jsonStr, &unmarshalledTv)

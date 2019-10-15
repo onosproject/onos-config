@@ -19,7 +19,6 @@ import (
 	ds1 "github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim_1_0_0"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -85,80 +84,80 @@ func Test_correctJsonPathValues(t *testing.T) {
 	// here in the intermediate jsonToValues format
 	const systemNtpAuthMismatchNoNs = "/system/ntp/state/auth-mismatch"
 	const systemNtpAuthMismatchValue = 123456.00000
-	val01 := change.ConfigValue{Path: systemNtpAuthMismatchNoNs,
-		TypedValue: *types.NewTypedValueFloat(systemNtpAuthMismatchValue)}
+	val01 := types.PathValue{Path: systemNtpAuthMismatchNoNs,
+		Value: types.NewTypedValueFloat(systemNtpAuthMismatchValue)}
 
 	const systemNtpEnableAuth = "/system/ntp/state/enable-ntp-auth"
 	const systemNtpEnableAuthValue = true
-	val02 := change.ConfigValue{Path: systemNtpEnableAuth,
-		TypedValue: *types.NewTypedValueBool(systemNtpEnableAuthValue)}
+	val02 := types.PathValue{Path: systemNtpEnableAuth,
+		Value: types.NewTypedValueBool(systemNtpEnableAuthValue)}
 
 	const systemNtpSourceAddr = "/system/ntp/state/ntp-source-address"
 	const systemNtpSourceAddrValue = "192.168.0.17"
-	val03 := change.ConfigValue{Path: systemNtpSourceAddr,
-		TypedValue: *types.NewTypedValueString(systemNtpSourceAddrValue)}
+	val03 := types.PathValue{Path: systemNtpSourceAddr,
+		Value: types.NewTypedValueString(systemNtpSourceAddrValue)}
 
 	const iface1Mtu = "/interfaces/interface[1]/state/mtu"
 	const iface1MtuValue = 960.0
-	val04 := change.ConfigValue{Path: iface1Mtu,
-		TypedValue: *types.NewTypedValueFloat(iface1MtuValue)}
+	val04 := types.PathValue{Path: iface1Mtu,
+		Value: types.NewTypedValueFloat(iface1MtuValue)}
 	const iface1Name = "/interfaces/interface[1]/name"
 	const iface1NameValue = "eth1"
-	val05 := change.ConfigValue{Path: iface1Name,
-		TypedValue: *types.NewTypedValueString(iface1NameValue)}
+	val05 := types.PathValue{Path: iface1Name,
+		Value: types.NewTypedValueString(iface1NameValue)}
 	const iface1Desc = "/interfaces/interface[1]/state/description"
 	const iface1DescValue = "new if desc"
-	val06 := change.ConfigValue{Path: iface1Desc,
-		TypedValue: *types.NewTypedValueString(iface1DescValue)}
+	val06 := types.PathValue{Path: iface1Desc,
+		Value: types.NewTypedValueString(iface1DescValue)}
 
 	const iface1Sub15IfaceIdx = "/interfaces/interface[1]/subinterfaces/subinterface[15]/state/ifindex"
 	const iface1Sub15IfaceIdxValue = 10.0
-	val07 := change.ConfigValue{Path: iface1Sub15IfaceIdx,
-		TypedValue: *types.NewTypedValueFloat(iface1Sub15IfaceIdxValue)}
+	val07 := types.PathValue{Path: iface1Sub15IfaceIdx,
+		Value: types.NewTypedValueFloat(iface1Sub15IfaceIdxValue)}
 	const iface1Sub15Idx = "/interfaces/interface[1]/subinterfaces/subinterface[15]/index"
 	const iface1Sub15IdxValue = "120"
-	val08 := change.ConfigValue{Path: iface1Sub15Idx,
-		TypedValue: *types.NewTypedValueString(iface1Sub15IdxValue)}
+	val08 := types.PathValue{Path: iface1Sub15Idx,
+		Value: types.NewTypedValueString(iface1Sub15IdxValue)}
 	const iface1Sub15AdSt = "/interfaces/interface[1]/subinterfaces/subinterface[15]/state/admin-status"
 	const iface1Sub15AdStValue = "UP"
-	val09 := change.ConfigValue{Path: iface1Sub15AdSt,
-		TypedValue: *types.NewTypedValueString(iface1Sub15AdStValue)}
+	val09 := types.PathValue{Path: iface1Sub15AdSt,
+		Value: types.NewTypedValueString(iface1Sub15AdStValue)}
 
 	const sysAaaGr10Svr199Ca = "/system/aaa/server-groups/server-group[10]/servers/server[199]/state/connection-aborts"
 	const sysAaaGr10Svr199CaValue = 12.00
-	val10 := change.ConfigValue{Path: sysAaaGr10Svr199Ca,
-		TypedValue: *types.NewTypedValueFloat(sysAaaGr10Svr199CaValue)}
+	val10 := types.PathValue{Path: sysAaaGr10Svr199Ca,
+		Value: types.NewTypedValueFloat(sysAaaGr10Svr199CaValue)}
 	const sysAaaGr10Name = "/system/aaa/server-groups/server-group[10]/name"
 	const sysAaaGr10NameValue = "g1"
-	val11 := change.ConfigValue{Path: sysAaaGr10Name,
-		TypedValue: *types.NewTypedValueString(sysAaaGr10NameValue)}
+	val11 := types.PathValue{Path: sysAaaGr10Name,
+		Value: types.NewTypedValueString(sysAaaGr10NameValue)}
 	const sysAaaGr10Svr199Addr = "/system/aaa/server-groups/server-group[10]/servers/server[199]/address"
 	const sysAaaGr10Svr199AddrValue = "192.168.0.7"
-	val12 := change.ConfigValue{Path: sysAaaGr10Svr199Addr,
-		TypedValue: *types.NewTypedValueString(sysAaaGr10Svr199AddrValue)}
+	val12 := types.PathValue{Path: sysAaaGr10Svr199Addr,
+		Value: types.NewTypedValueString(sysAaaGr10Svr199AddrValue)}
 
 	const sysAaaGr12Svr199Ca = "/system/aaa/server-groups/server-group[12]/servers/server[199]/state/connection-aborts"
 	const sysAaaGr12Svr199CaValue = 4.0
-	val13 := change.ConfigValue{Path: sysAaaGr12Svr199Ca,
-		TypedValue: *types.NewTypedValueFloat(sysAaaGr12Svr199CaValue)}
+	val13 := types.PathValue{Path: sysAaaGr12Svr199Ca,
+		Value: types.NewTypedValueFloat(sysAaaGr12Svr199CaValue)}
 	const sysAaaGr12Name = "/system/aaa/server-groups/server-group[12]/name"
 	const sysAaaGr12NameValue = "g2"
-	val14 := change.ConfigValue{Path: sysAaaGr12Name,
-		TypedValue: *types.NewTypedValueString(sysAaaGr12NameValue)}
+	val14 := types.PathValue{Path: sysAaaGr12Name,
+		Value: types.NewTypedValueString(sysAaaGr12NameValue)}
 	const sysAaaGr12Svr199Addr = "/system/aaa/server-groups/server-group[12]/servers/server[199]/address"
 	const sysAaaGr12Svr199AddrValue = "192.168.0.4"
-	val15 := change.ConfigValue{Path: sysAaaGr12Svr199Addr,
-		TypedValue: *types.NewTypedValueString(sysAaaGr12Svr199AddrValue)}
+	val15 := types.PathValue{Path: sysAaaGr12Svr199Addr,
+		Value: types.NewTypedValueString(sysAaaGr12Svr199AddrValue)}
 
 	const sysAaaGr12Svr200Ca = "/system/aaa/server-groups/server-group[12]/servers/server[200]/state/connection-aborts"
 	const sysAaaGr12Svr200CaValue = 5.0
-	val16 := change.ConfigValue{Path: sysAaaGr12Svr200Ca,
-		TypedValue: *types.NewTypedValueFloat(sysAaaGr12Svr200CaValue)}
+	val16 := types.PathValue{Path: sysAaaGr12Svr200Ca,
+		Value: types.NewTypedValueFloat(sysAaaGr12Svr200CaValue)}
 	const sysAaaGr12Svr200Addr = "/system/aaa/server-groups/server-group[12]/servers/server[200]/address"
 	const sysAaaGr12Svr200AddrValue = "192.168.0.5"
-	val17 := change.ConfigValue{Path: sysAaaGr12Svr200Addr,
-		TypedValue: *types.NewTypedValueString(sysAaaGr12Svr200AddrValue)}
-	jsonPathValues := []*change.ConfigValue{&val01, &val02, &val03, &val04,
+	val17 := types.PathValue{Path: sysAaaGr12Svr200Addr,
+		Value: types.NewTypedValueString(sysAaaGr12Svr200AddrValue)}
+	jsonPathValues := []*types.PathValue{&val01, &val02, &val03, &val04,
 		&val05, &val06, &val07, &val08, &val09, &val10, &val11, &val12, &val13,
 		&val14, &val15, &val16, &val17}
 
@@ -180,45 +179,45 @@ func Test_correctJsonPathValues(t *testing.T) {
 		const sysAaaGrG2Srv5Ca = "/system/aaa/server-groups/server-group[name=g2]/servers/server[address=192.168.0.5]/state/connection-aborts"
 		switch correctedPathValue.Path {
 		case systemNtpAuthMismatchNoNs:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, (*types.TypedUint64)(&correctedPathValue.TypedValue).Uint(), uint(systemNtpAuthMismatchValue))
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, (*types.TypedUint64)(correctedPathValue.GetValue()).Uint(), uint(systemNtpAuthMismatchValue))
 		case systemNtpEnableAuth:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_BOOL)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, (*types.TypedBool)(&correctedPathValue.TypedValue).Bool(), true)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_BOOL)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, (*types.TypedBool)(correctedPathValue.GetValue()).Bool(), true)
 		case systemNtpSourceAddr:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.ValueToString(), systemNtpSourceAddrValue)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_STRING)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, correctedPathValue.GetValue().ValueToString(), systemNtpSourceAddrValue)
 		case ifEth1Mtu:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, (*types.TypedUint64)(&correctedPathValue.TypedValue).Uint(), uint(iface1MtuValue))
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, (*types.TypedUint64)(correctedPathValue.GetValue()).Uint(), uint(iface1MtuValue))
 		case ifEth1Desc:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.ValueToString(), iface1DescValue)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_STRING)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, correctedPathValue.GetValue().ValueToString(), iface1DescValue)
 		case ifEth1Sub120IfIdx:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, (*types.TypedUint64)(&correctedPathValue.TypedValue).Uint(), uint(iface1Sub15IfaceIdxValue))
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, (*types.TypedUint64)(correctedPathValue.GetValue()).Uint(), uint(iface1Sub15IfaceIdxValue))
 		case ifEth1Sub120AdSt:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, correctedPathValue.ValueToString(), iface1Sub15AdStValue)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_STRING)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, correctedPathValue.GetValue().ValueToString(), iface1Sub15AdStValue)
 		case sysAaaGrG1Srv7Ca:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, (*types.TypedUint64)(&correctedPathValue.TypedValue).Uint(), uint(sysAaaGr10Svr199CaValue))
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, (*types.TypedUint64)(correctedPathValue.GetValue()).Uint(), uint(sysAaaGr10Svr199CaValue))
 		case sysAaaGrG2Srv4Ca:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, (*types.TypedUint64)(&correctedPathValue.TypedValue).Uint(), uint(sysAaaGr12Svr199CaValue))
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, (*types.TypedUint64)(correctedPathValue.GetValue()).Uint(), uint(sysAaaGr12Svr199CaValue))
 		case sysAaaGrG2Srv5Ca:
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
-			assert.Equal(t, (*types.TypedUint64)(&correctedPathValue.TypedValue).Uint(), uint(sysAaaGr12Svr200CaValue))
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, (*types.TypedUint64)(correctedPathValue.GetValue()).Uint(), uint(sysAaaGr12Svr200CaValue))
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
 		}
@@ -276,15 +275,15 @@ func Test_correctJsonPathValues2(t *testing.T) {
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/address",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/aux-id",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/port":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_STRING, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_STRING, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		case
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/priority",
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/priority",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/priority",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/priority":
-			assert.Equal(t, correctedPathValue.Type, types.ValueType_UINT, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.TypeOpts), 0)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT, correctedPathValue.Path)
+			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
 		}

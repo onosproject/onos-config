@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"io"
 	"sort"
 	"time"
@@ -39,7 +40,7 @@ type Change struct {
 	ID          ID
 	Description string
 	Created     time.Time
-	Config      ValueCollections
+	Config      []*types.ChangeValue
 }
 
 // Stringer method for the Change
@@ -76,7 +77,7 @@ func (c Change) IsValid() error {
 // the description or the time. This way changes that have an identical meaning
 // can be identified
 // Deprecated: NewChange is method for creating a legacy internal Change
-func NewChange(config ValueCollections, desc string) (*Change, error) {
+func NewChange(config []*types.ChangeValue, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
@@ -121,7 +122,7 @@ func NewChange(config ValueCollections, desc string) (*Change, error) {
 // the description or the time. This way changes that have an identical meaning
 // can be identified
 // Deprecated: NewChangeValuesNoRemoval is method for creating a legacy internal Change
-func NewChangeValuesNoRemoval(config []*ConfigValue, desc string) (*Change, error) {
+func NewChangeValuesNoRemoval(config []*types.PathValue, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
@@ -149,12 +150,13 @@ func NewChangeValuesNoRemoval(config []*ConfigValue, desc string) (*Change, erro
 
 	hash := h.Sum(nil)
 
-	configColl := make(ValueCollections, 0)
+	configColl := make([]*types.ChangeValue, 0)
 
 	for _, c := range config {
-		configColl = append(configColl, &Value{
-			ConfigValue: *c,
-			Remove:      false})
+		configColl = append(configColl, &types.ChangeValue{
+			Path:    c.GetPath(),
+			Value:   c.GetValue(),
+			Removed: false})
 	}
 
 	return &Change{

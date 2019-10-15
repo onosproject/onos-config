@@ -17,7 +17,7 @@ package manager
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	log "k8s.io/klog"
 	"sort"
@@ -25,7 +25,7 @@ import (
 
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest
-func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, path string, layer int) ([]*change.ConfigValue, error) {
+func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, path string, layer int) ([]*types.PathValue, error) {
 	log.Info("Getting config for ", target, path)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
@@ -37,13 +37,13 @@ func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, pa
 			}
 		}
 		if config.Name == "" {
-			return make([]*change.ConfigValue, 0),
+			return make([]*types.PathValue, 0),
 				fmt.Errorf("no Configuration found for %s", target)
 		}
 	} else if configname != "" {
 		config = m.ConfigStore.Store[configname]
 		if config.Name == "" {
-			return make([]*change.ConfigValue, 0),
+			return make([]*types.PathValue, 0),
 				fmt.Errorf("no Configuration found for %s", configname)
 		}
 	}
@@ -51,7 +51,7 @@ func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, pa
 	if len(configValues) == 0 {
 		return configValues, nil
 	}
-	filteredValues := make([]*change.ConfigValue, 0)
+	filteredValues := make([]*types.PathValue, 0)
 	pathRegexp := utils.MatchWildcardRegexp(path)
 	for _, cv := range configValues {
 		if pathRegexp.MatchString(cv.Path) {

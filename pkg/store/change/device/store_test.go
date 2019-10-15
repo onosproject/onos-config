@@ -60,7 +60,7 @@ func TestDeviceStore(t *testing.T) {
 		NetworkChangeID: types.ID("network-change-1"),
 		Change: &devicechange.Change{
 			DeviceID: device1,
-			Values: []*devicechange.Value{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
 					Value: &devicechange.TypedValue{
@@ -83,7 +83,7 @@ func TestDeviceStore(t *testing.T) {
 		NetworkChangeID: types.ID("network-change-2"),
 		Change: &devicechange.Change{
 			DeviceID: device1,
-			Values: []*devicechange.Value{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path: "baz",
 					Value: &devicechange.TypedValue{
@@ -121,7 +121,7 @@ func TestDeviceStore(t *testing.T) {
 		NetworkChangeID: types.ID("network-change-3"),
 		Change: &devicechange.Change{
 			DeviceID: device1,
-			Values: []*devicechange.Value{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path:    "foo",
 					Removed: true,
@@ -142,7 +142,7 @@ func TestDeviceStore(t *testing.T) {
 		NetworkChangeID: types.ID("network-change-3"),
 		Change: &devicechange.Change{
 			DeviceID: device2,
-			Values: []*devicechange.Value{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
 					Value: &devicechange.TypedValue{

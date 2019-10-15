@@ -36,10 +36,10 @@ func NativeChangeToGnmiChange(c *change.Change) (*gnmi.SetRequest, error) {
 			return nil, parseError
 		}
 
-		if changeValue.Remove {
+		if changeValue.Removed {
 			deletePaths = append(deletePaths, &gnmi.Path{Elem: pathElemsRefs.Elem})
 		} else {
-			gnmiValue, err := NativeTypeToGnmiTypedValue(&changeValue.TypedValue)
+			gnmiValue, err := NativeTypeToGnmiTypedValue(changeValue.GetValue())
 			if err != nil {
 				return nil, fmt.Errorf("error converting %s: %s", changeValue.Path, err)
 			}

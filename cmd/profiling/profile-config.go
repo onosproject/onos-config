@@ -45,12 +45,12 @@ func main() {
 	_ = pprof.StartCPUProfile(cpuFile)
 	defer pprof.StopCPUProfile()
 
-	changeValues := change.ValueCollections{}
+	changeValues := make([]*types.ChangeValue, 0)
 	iterations := 50000
 
 	for i := 0; i < iterations; i++ {
 		path := fmt.Sprintf("/test%d", i)
-		cv, _ := change.NewChangeValue(path, (*types.TypedValue)(types.NewTypedValueInt64(i)), false)
+		cv, _ := types.NewChangeValue(path, (*types.TypedValue)(types.NewTypedValueInt64(i)), false)
 		changeValues = append(changeValues, cv)
 	}
 
