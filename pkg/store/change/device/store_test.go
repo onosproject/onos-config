@@ -40,14 +40,6 @@ func TestDeviceStore(t *testing.T) {
 	device1 := device.ID("device-1")
 	device2 := device.ID("device-2")
 
-	lastIndex, err := store1.LastIndex(device1)
-	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(0), lastIndex)
-
-	lastIndex, err = store1.LastIndex(device2)
-	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(0), lastIndex)
-
 	ch1 := make(chan *devicechange.DeviceChange)
 	err = store2.Watch(device1, ch1)
 	assert.NoError(t, err)
@@ -217,23 +209,6 @@ func TestDeviceStore(t *testing.T) {
 
 	changeEvent = nextDeviceChange(t, changes)
 	assert.Equal(t, devicechange.ID("device-1:1"), changeEvent.ID)
-	changeEvent = nextDeviceChange(t, changes)
-	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
-	changeEvent = nextDeviceChange(t, changes)
-	assert.Equal(t, devicechange.ID("device-1:3"), changeEvent.ID)
-
-	select {
-	case _, ok := <-changes:
-		assert.False(t, ok)
-	case <-time.After(5 * time.Second):
-		t.FailNow()
-	}
-
-	// Replay changes from a specific index
-	changes = make(chan *devicechange.DeviceChange)
-	err = store1.Replay(device1, 2, changes)
-	assert.NoError(t, err)
-
 	changeEvent = nextDeviceChange(t, changes)
 	assert.Equal(t, devicechange.ID("device-1:2"), changeEvent.ID)
 	changeEvent = nextDeviceChange(t, changes)
