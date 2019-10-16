@@ -16,6 +16,7 @@
 package diags
 
 import (
+	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
@@ -52,10 +53,21 @@ func CreateConfigDiagsClient(cc *grpc.ClientConn) ConfigDiagsClient {
 	return ConfigDiagsClientFactory(cc)
 }
 
+// ChangeServiceClientFactory : Default ChangeServiceClient creation.
+var ChangeServiceClientFactory = func(cc *grpc.ClientConn) ChangeServiceClient {
+	return NewChangeServiceClient(cc)
+}
+
+// CreateChangeServiceClient creates and returns a new change service client
+func CreateChangeServiceClient(cc *grpc.ClientConn) ChangeServiceClient {
+	return ChangeServiceClientFactory(cc)
+}
+
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	RegisterConfigDiagsServer(r, Server{})
 	RegisterOpStateDiagsServer(r, Server{})
+	RegisterChangeServiceServer(r, Server{})
 }
 
 // Server implements the gRPC service for diagnostic facilities.
@@ -183,6 +195,28 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 	}
 
 	log.Infof("Closing NBI Diags OpState stream (no subscribe) for %s", r.DeviceId)
+	return nil
+}
+
+// GetNetworkChange returns details of one specific Network Change
+func (s Server) GetNetworkChange(ctx context.Context, r *GetNetworkChangeRequest) (*GetNetworkChangeResponse, error) {
+
+	return nil, nil
+}
+
+// GetDeviceChange returns details of one specific Device Change
+func (s Server) GetDeviceChange(ctx context.Context, r *GetDeviceChangeRequest) (*GetDeviceChangeResponse, error) {
+
+	return nil, nil
+}
+
+// ListNetworkChanges provides a stream of Network Changes
+func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeService_ListNetworkChangesServer) error {
+	return nil
+}
+
+// ListDeviceChanges provides a stream of Device Changes
+func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeService_ListDeviceChangesServer) error {
 	return nil
 }
 

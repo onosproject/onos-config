@@ -203,6 +203,7 @@ func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminS
 }
 
 // GetNetworkChanges provides a stream of submitted network changes.
+// Deprecated: do not use
 func (s Server) GetNetworkChanges(r *NetworkChangesRequest, stream ConfigAdminService_GetNetworkChangesServer) error {
 	for _, nc := range manager.GetManager().NetworkStore.Store {
 
