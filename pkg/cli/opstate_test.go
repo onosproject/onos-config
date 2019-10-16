@@ -17,8 +17,8 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"gotest.tools/assert"
 	"io"
 	"regexp"
@@ -33,12 +33,9 @@ func generateOpstate(count int) {
 	for opstateIndex := range opstateInfo {
 		valueString := fmt.Sprintf("value%d", opstateIndex)
 		pathString := fmt.Sprintf("/root/system/path%d", opstateIndex)
-		value := admin.ChangeValue{
-			Path:      pathString,
-			Value:     []byte(valueString),
-			ValueType: admin.ChangeValueType_STRING,
-			TypeOpts:  nil,
-			Removed:   false,
+		value := types.PathValue{
+			Path:  pathString,
+			Value: types.NewTypedValueString(valueString),
 		}
 		opstateInfo[opstateIndex] = diags.OpStateResponse{
 			Type:      0,

@@ -17,12 +17,10 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/spf13/cobra"
 	"io"
-	"os"
 	"strings"
 	"text/template"
 )
@@ -30,12 +28,12 @@ import (
 const changeTemplate = "CHANGE: {{.Id}} ({{.Desc}})\n" +
 	"\t{{printf \"|%-50s|%-40s|%-7s|\" \"PATH\" \"VALUE\" \"REMOVED\"}}\n" +
 	"{{range .ChangeValues}}" +
-	"\t{{wrappath .Path 50 1| printf \"|%-50s|\"}}{{nativeType . | printf \"(%s) %s\" .ValueType | printf \"%-40s|\" }}{{printf \"%-7t|\" .Removed}}\n" +
+	"\t{{wrappath .Path 50 1| printf \"|%-50s|\"}}{{valuetostring .Value | printf \"(%s) %s\" .Value.Type | printf \"%-40s|\" }}{{printf \"%-7t|\" .Removed}}\n" +
 	"{{end}}\n"
 
 var funcMapChanges = template.FuncMap{
-	"wrappath":   wrapPath,
-	"nativeType": nativeType,
+	"wrappath":      wrapPath,
+	"valuetostring": valueToSstring,
 }
 
 func getGetChangesCommand() *cobra.Command {
@@ -102,11 +100,6 @@ func wrapPath(path string, lineLen int, tabs int) string {
 	return strings.Join(wrapped, sep)
 }
 
-func nativeType(cv admin.ChangeValue) string {
-	tv, err := types.NewTypedValue(cv.Value, types.ValueType(cv.ValueType), cv.TypeOpts)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to convert value to TypedValue %s", err)
-		os.Exit(1)
-	}
-	return tv.ValueToString()
+func valueToSstring(cv types.TypedValue) string {
+	return cv.ValueToString()
 }

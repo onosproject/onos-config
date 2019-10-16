@@ -21,6 +21,7 @@ package proto;
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 import "github.com/onosproject/onos-config/pkg/northbound/admin/admin.proto";
+import "github.com/onosproject/onos-config/pkg/types/change/device/types.proto";
 
 // ChangesRequest is a message for specifying GetChanges query parameters.
 message ChangesRequest {
@@ -47,7 +48,7 @@ message OpStateResponse {
     Type type = 1;
 
     // device is the device on which the event occurred
-    ChangeValue pathvalue = 2;
+    onos.config.change.device.PathValue pathvalue = 2;
 }
 
 // Configuration is a descriptor of a submitted configuration change targeted at a single device.

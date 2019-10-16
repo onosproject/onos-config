@@ -22,7 +22,6 @@ import (
 )
 
 // GnmiTypedValueToNativeType converts gnmi type based values in to native byte array types
-// Deprecated: GnmiTypedValueToNativeType is a method of changing gnmiType to legacy TypedValue
 func GnmiTypedValueToNativeType(gnmiTv *pb.TypedValue) (*types.TypedValue, error) {
 
 	switch v := gnmiTv.GetValue().(type) {
@@ -103,7 +102,6 @@ func handleLeafList(gnmiLl *pb.TypedValue_LeaflistVal) (*types.TypedValue, error
 }
 
 // NativeTypeToGnmiTypedValue converts native byte array based values in to gnmi types
-// Deprecated: NativeTypeToGnmiTypedValue is a method of changing legacy TypedValue to gnmiType
 func NativeTypeToGnmiTypedValue(typedValue *types.TypedValue) (*pb.TypedValue, error) {
 	if len(typedValue.Bytes) == 0 && typedValue.Type != types.ValueType_EMPTY {
 		return nil, fmt.Errorf("invalid TypedValue Length 0")

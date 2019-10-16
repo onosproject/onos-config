@@ -22,6 +22,7 @@ package proto;
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 import "github.com/openconfig/gnmi/proto/gnmi/gnmi.proto";
+import "github.com/onosproject/onos-config/pkg/types/change/device/types.proto";
 
 // NetworkChangesRequest is a message for specifying GetNetworkChanges query parameters.
 message NetworkChangesRequest {
@@ -31,24 +32,6 @@ message NetworkChangesRequest {
 message ConfigChange {
     string id = 1;
     string hash = 2;
-}
-
-enum ChangeValueType {
-    EMPTY = 0;
-    STRING = 1;
-    INT = 2;
-    UINT = 3;
-    BOOL = 4;
-    DECIMAL = 5;
-    FLOAT = 6;
-    BYTES = 7;
-    LEAFLIST_STRING = 8;
-    LEAFLIST_INT = 9;
-    LEAFLIST_UINT = 10;
-    LEAFLIST_BOOL = 11;
-    LEAFLIST_DECIMAL = 12;
-    LEAFLIST_FLOAT = 13;
-    LEAFLIST_BYTES = 14;
 }
 
 // Streaming event type
@@ -66,21 +49,12 @@ enum Type {
     REMOVED = 3;
 }
 
-// ChangeValue is an individual Path/Value combination in a Change
-message ChangeValue {
-    string path = 1;
-    bytes value = 2;
-    ChangeValueType value_type = 3;
-    repeated int32 type_opts = 4;
-    bool removed = 5;
-}
-
 // Change is a descriptor of a submitted configuration change targeted at a single device.
 message Change {
     google.protobuf.Timestamp time = 1 [(gogoproto.stdtime) = true];
     string id = 2;
     string desc = 3;
-    repeated ChangeValue change_values = 4;
+    repeated onos.config.change.device.ChangeValue change_values = 4;
 }
 
 // NetChange is a descriptor of a configuration change submitted via gNMI.
@@ -93,7 +67,7 @@ message NetChange {
 
 message ReadOnlySubPath {
     string sub_path = 1;
-    ChangeValueType value_type = 2; // from diags.proto
+    onos.config.change.device.ValueType value_type = 2; // from diags.proto
 }
 
 message ReadOnlyPath {
@@ -103,7 +77,7 @@ message ReadOnlyPath {
 
 message ReadWritePath {
     string path = 1;
-    ChangeValueType value_type = 2; // from diags.proto
+    onos.config.change.device.ValueType value_type = 2; // from diags.proto
     string units = 3;
     string description = 4;
     bool mandatory = 5;
