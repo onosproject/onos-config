@@ -21,8 +21,8 @@ import (
 	"time"
 )
 
-// NewNetworkConfiguration creates a new network configuration
-func NewNetworkConfiguration(networkChangeID string, changes []*device.Change) (*NetworkChange, error) {
+// NewNetworkChange creates a new network configuration
+func NewNetworkChange(networkChangeID string, changes []*device.Change) (*NetworkChange, error) {
 	r1 := regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 	match := r1.FindString(networkChangeID)
 	if networkChangeID == "" {

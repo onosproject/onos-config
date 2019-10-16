@@ -20,8 +20,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networktypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"
 	"time"
@@ -128,22 +128,20 @@ func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes
 	targetRemoves map[string][]string, version string, deviceType string, netcfgchangename string) {
 	//TODO evaluate need of user and add it back if need be.
 	//TODO start watch and build update Result
-	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
+	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, version,
+		deviceType, netcfgchangename)
 	if errChanges != nil {
 		log.Error("Can't compute new network configs", errChanges)
 	}
-	newNetworkConfig, errNetConfig := networktypes.NewNetworkConfiguration(netcfgchangename, allDeviceChanges)
-	if errNetConfig != nil {
-		log.Error("Can't create new network config", errNetConfig)
+	newNetworkConfig, errNetChange := networkchangetypes.NewNetworkChange(netcfgchangename, allDeviceChanges)
+	if errNetChange != nil {
+		log.Error("Can't create new network config", errNetChange)
 	}
-	//TODO computeNewNetworkConfig, NewNetworkConfiguration and the followign Create can be combined in a manger method
 	//Writing to the atomix backed store too
-	errNewStore := m.NetworkChangesStore.Create(newNetworkConfig)
-	if errNewStore != nil {
-		log.Error("Can't write new network config to atomix store", errNewStore)
+	errStoreNewChange := m.NetworkChangesStore.Create(newNetworkConfig)
+	if errStoreNewChange != nil {
+		log.Error("Can't write new network config to atomix store", errStoreNewChange)
 	}
-	changeGet, _ := m.NetworkChangesStore.Get(newNetworkConfig.ID)
-	log.Info("Change from Atomix", changeGet)
 }
 
 // ComputeNewDeviceChange computes a given device change the given updates and deletes, according to the path
@@ -173,7 +171,7 @@ func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
 	//}
 	//TODO lost description of Change
 	changeElement := &devicechangetypes.Change{
-		DeviceID:      devicepb.ID(deviceName),
+		DeviceID:      devicetopo.ID(deviceName),
 		DeviceVersion: version,
 		Values:        newChanges,
 	}
