@@ -27,7 +27,7 @@ import (
 
 // NewController returns a new network controller
 func NewController(mastership mastershipstore.Store, devices devicestore.Store, changes changestore.Store) *controller.Controller {
-	c := controller.NewController()
+	c := controller.NewController("DeviceChange")
 	c.Filter(&controller.MastershipFilter{
 		Store:    mastership,
 		Resolver: &Resolver{},
@@ -82,6 +82,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	if getProtocolState(device) != deviceservice.ChannelState_CONNECTED {
 		change.Status.State = changetype.State_FAILED
 		change.Status.Reason = changetype.Reason_ERROR
+		log.Infof("Failing DeviceChange %v", change)
 		if err := r.changes.Update(change); err != nil {
 			return false, err
 		}
@@ -105,8 +106,10 @@ func (r *Reconciler) reconcileChange(change *devicechangetype.DeviceChange) (boo
 		change.Status.State = changetype.State_FAILED
 		change.Status.Reason = changetype.Reason_ERROR
 		change.Status.Message = err.Error()
+		log.Infof("Failing DeviceChange %v", change)
 	} else {
 		change.Status.State = changetype.State_COMPLETE
+		log.Infof("Completing DeviceChange %v", change)
 	}
 
 	// Update the change status in the store
@@ -129,8 +132,10 @@ func (r *Reconciler) reconcileRollback(change *devicechangetype.DeviceChange) (b
 		change.Status.State = changetype.State_FAILED
 		change.Status.Reason = changetype.Reason_ERROR
 		change.Status.Message = err.Error()
+		log.Infof("Failing DeviceChange %v", change)
 	} else {
 		change.Status.State = changetype.State_COMPLETE
+		log.Infof("Completing DeviceChange %v", change)
 	}
 
 	// Update the change status in the store

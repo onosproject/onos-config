@@ -27,12 +27,13 @@ import (
 	devicesnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	networksnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	log "k8s.io/klog"
 	"time"
 )
 
 // NewController returns a new network snapshot controller
 func NewController(leadership leadershipstore.Store, networkChanges networkchangestore.Store, networkSnapshots networksnapstore.Store, deviceSnapshots devicesnapstore.Store) *controller.Controller {
-	c := controller.NewController()
+	c := controller.NewController("NetworkSnapshot")
 	c.Activate(&controller.LeadershipActivator{
 		Store: leadership,
 	})
@@ -101,6 +102,7 @@ func (r *Reconciler) reconcilePendingMark(snapshot *networksnaptypes.NetworkSnap
 
 	// If the snapshot can be applied, update the snapshot state to RUNNING
 	snapshot.Status.State = snaptypes.State_RUNNING
+	log.Infof("Running MARK phase for NetworkSnapshot %v", snapshot)
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
 		return false, err
 	}
@@ -233,6 +235,7 @@ func (r *Reconciler) completeRunningMark(snapshot *networksnaptypes.NetworkSnaps
 	// If we've made it this far, move to the DELETE phase
 	snapshot.Status.Phase = snaptypes.Phase_DELETE
 	snapshot.Status.State = snaptypes.State_PENDING
+	log.Infof("Completing MARK phase for NetworkSnapshot %v", snapshot)
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
 		return false, err
 	}
@@ -260,6 +263,7 @@ func (r *Reconciler) reconcilePendingDelete(snapshot *networksnaptypes.NetworkSn
 	}
 
 	snapshot.Status.State = snaptypes.State_RUNNING
+	log.Infof("Running DELETE phase for NetworkSnapshot %v", snapshot)
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
 		return false, err
 	}
@@ -309,6 +313,7 @@ func (r *Reconciler) reconcileRunningDelete(snapshot *networksnaptypes.NetworkSn
 	}
 
 	snapshot.Status.State = snaptypes.State_COMPLETE
+	log.Infof("Completing DELETE phase for NetworkSnapshot %v", snapshot)
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
 		return false, nil
 	}

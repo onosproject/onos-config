@@ -16,6 +16,7 @@ package controller
 
 import (
 	"github.com/onosproject/onos-config/pkg/types"
+	log "k8s.io/klog"
 	"sync"
 	"time"
 )
@@ -42,8 +43,9 @@ type Reconciler interface {
 }
 
 // NewController creates a new controller
-func NewController() *Controller {
+func NewController(name string) *Controller {
 	return &Controller{
+		name:        name,
 		activator:   &UnconditionalActivator{},
 		partitioner: &UnaryPartitioner{},
 		watchers:    make([]Watcher, 0),
@@ -68,6 +70,7 @@ func NewController() *Controller {
 // will create a goroutine per PartitionKey provided by the WorkPartitioner, and requests to different
 // partitions may be handled concurrently.
 type Controller struct {
+	name        string
 	mu          sync.RWMutex
 	activator   Activator
 	partitioner WorkPartitioner
@@ -128,11 +131,13 @@ func (c *Controller) Start() error {
 		for activate := range ch {
 			if activate {
 				if !active {
+					log.Infof("Activating controller %s", c.name)
 					c.activate()
 					active = true
 				}
 			} else {
 				if active {
+					log.Infof("Deactivating controller %s", c.name)
 					c.deactivate()
 					active = false
 				}

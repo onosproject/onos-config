@@ -24,11 +24,12 @@ import (
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networktypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	log "k8s.io/klog"
 )
 
 // NewController returns a new config controller
 func NewController(leadership leadershipstore.Store, deviceStore devicestore.Store, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
-	c := controller.NewController()
+	c := controller.NewController("NetworkChange")
 	c.Activate(&controller.LeadershipActivator{
 		Store: leadership,
 	})
@@ -103,6 +104,7 @@ func (r *Reconciler) reconcilePendingChange(change *networktypes.NetworkChange) 
 
 	// If the change can be applied, update the change state to RUNNING
 	change.Status.State = changetypes.State_RUNNING
+	log.Infof("Running NetworkChange %v", change)
 	if err := r.networkChanges.Update(change); err != nil {
 		return false, err
 	}
@@ -134,6 +136,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networktypes.NetworkChan
 			},
 			Change: change,
 		}
+		log.Infof("Creating DeviceChange %v", deviceChange)
 		if err := r.deviceChanges.Create(deviceChange); err != nil {
 			return false, err
 		}
@@ -190,6 +193,7 @@ func (r *Reconciler) reconcileRunningChange(change *networktypes.NetworkChange) 
 	// If all device changes are complete, mark the network change complete
 	if r.isDeviceChangesComplete(deviceChanges) {
 		change.Status.State = changetypes.State_COMPLETE
+		log.Infof("Completing NetworkChange %v", change)
 		if err := r.networkChanges.Update(change); err != nil {
 			return false, err
 		}
@@ -208,6 +212,7 @@ func (r *Reconciler) reconcileRunningChange(change *networktypes.NetworkChange) 
 		if r.isDeviceChangeRollbacksComplete(deviceChanges) {
 			change.Status.State = changetypes.State_PENDING
 			change.Status.Reason = changetypes.Reason_ERROR
+			log.Infof("Failing NetworkChange %v", change)
 			if err := r.networkChanges.Update(change); err != nil {
 				return false, err
 			}
@@ -223,6 +228,7 @@ func (r *Reconciler) ensureDeviceChangesRunning(changes []*devicetypes.DeviceCha
 	for _, deviceChange := range changes {
 		if deviceChange.Status.State == changetypes.State_PENDING {
 			deviceChange.Status.State = changetypes.State_RUNNING
+			log.Infof("Running DeviceChange %v", deviceChange)
 			if err := r.deviceChanges.Update(deviceChange); err != nil {
 				return false, err
 			}
@@ -272,6 +278,7 @@ func (r *Reconciler) ensureDeviceChangeRollbacksRunning(changes []*devicetypes.D
 		if deviceChange.Status.Phase == changetypes.Phase_CHANGE && deviceChange.Status.State != changetypes.State_FAILED {
 			deviceChange.Status.Phase = changetypes.Phase_ROLLBACK
 			deviceChange.Status.State = changetypes.State_RUNNING
+			log.Infof("Rolling back DeviceChange %v", deviceChange)
 			if err := r.deviceChanges.Update(deviceChange); err != nil {
 				return false, err
 			}
@@ -323,6 +330,7 @@ func (r *Reconciler) ensureDeviceRollbacks(networkChange *networktypes.NetworkCh
 		if deviceChange.Status.Phase != changetypes.Phase_ROLLBACK {
 			deviceChange.Status.Phase = changetypes.Phase_ROLLBACK
 			deviceChange.Status.State = changetypes.State_PENDING
+			log.Infof("Rolling back DeviceChange %v", deviceChange)
 			if err := r.deviceChanges.Update(deviceChange); err != nil {
 				return false, err
 			}
@@ -344,6 +352,7 @@ func (r *Reconciler) reconcilePendingRollback(change *networktypes.NetworkChange
 
 	// If the rollback can be applied, update the change state to RUNNING
 	change.Status.State = changetypes.State_RUNNING
+	log.Infof("Running NetworkChange %v", change)
 	if err := r.networkChanges.Update(change); err != nil {
 		return false, err
 	}
@@ -382,6 +391,7 @@ func (r *Reconciler) reconcileRunningRollback(change *networktypes.NetworkChange
 	}
 
 	change.Status.State = changetypes.State_COMPLETE
+	log.Infof("Completing NetworkChange %v", change)
 	if err := r.networkChanges.Update(change); err != nil {
 		return false, nil
 	}
@@ -399,6 +409,7 @@ func (r *Reconciler) ensureDeviceRollbacksRunning(networkChange *networktypes.Ne
 
 		if deviceChange.Status.State == changetypes.State_PENDING {
 			deviceChange.Status.State = changetypes.State_RUNNING
+			log.Infof("Running DeviceChange %v", deviceChange)
 			if err := r.deviceChanges.Update(deviceChange); err != nil {
 				return false, err
 			}
