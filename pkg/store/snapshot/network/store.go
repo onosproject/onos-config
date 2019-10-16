@@ -71,11 +71,11 @@ func NewLocalStore() (Store, error) {
 
 // newLocalStore creates a new local network snapshot store
 func newLocalStore(conn *grpc.ClientConn) (Store, error) {
-	configsName := primitive.Name{
+	snapshotsName := primitive.Name{
 		Namespace: "local",
 		Name:      snapshotsName,
 	}
-	snapshots, err := indexedmap.New(context.Background(), configsName, []*grpc.ClientConn{conn})
+	snapshots, err := indexedmap.New(context.Background(), snapshotsName, []*grpc.ClientConn{conn})
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 
 	conn, err := grpc.DialContext(context.Background(), snapshotsName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
 	if err != nil {
-		panic("Failed to dial network configurations")
+		panic("Failed to dial")
 	}
 	return node, conn
 }
@@ -112,13 +112,13 @@ type Store interface {
 	GetByIndex(index networksnapshot.Index) (*networksnapshot.NetworkSnapshot, error)
 
 	// Create creates a new network snapshot
-	Create(config *networksnapshot.NetworkSnapshot) error
+	Create(snapshot *networksnapshot.NetworkSnapshot) error
 
 	// Update updates an existing network snapshot
-	Update(config *networksnapshot.NetworkSnapshot) error
+	Update(snapshot *networksnapshot.NetworkSnapshot) error
 
 	// Delete deletes a network snapshot
-	Delete(config *networksnapshot.NetworkSnapshot) error
+	Delete(snapshot *networksnapshot.NetworkSnapshot) error
 
 	// List lists network snapshots
 	List(chan<- *networksnapshot.NetworkSnapshot) error
@@ -132,7 +132,7 @@ func newSnapshotID() networksnapshot.ID {
 	return networksnapshot.ID(uuid.New().String())
 }
 
-// atomixStore is the default implementation of the NetworkConfig store
+// atomixStore is the default implementation of the NetworkSnapshot store
 type atomixStore struct {
 	snapshots indexedmap.IndexedMap
 }
@@ -241,8 +241,8 @@ func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) error {
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if config, err := decodeSnapshot(entry); err == nil {
-				ch <- config
+			if snapshot, err := decodeSnapshot(entry); err == nil {
+				ch <- snapshot
 			}
 		}
 	}()
@@ -258,8 +258,8 @@ func (s *atomixStore) Watch(ch chan<- *networksnapshot.NetworkSnapshot) error {
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if config, err := decodeSnapshot(event.Entry); err == nil {
-				ch <- config
+			if snapshot, err := decodeSnapshot(event.Entry); err == nil {
+				ch <- snapshot
 			}
 		}
 	}()

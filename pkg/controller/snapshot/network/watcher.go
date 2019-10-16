@@ -40,16 +40,16 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 		return nil
 	}
 
-	configCh := make(chan *networksnaptype.NetworkSnapshot, queueSize)
-	w.ch = configCh
+	snapshotCh := make(chan *networksnaptype.NetworkSnapshot, queueSize)
+	w.ch = snapshotCh
 	w.mu.Unlock()
 
-	if err := w.Store.Watch(configCh); err != nil {
+	if err := w.Store.Watch(snapshotCh); err != nil {
 		return err
 	}
 
 	go func() {
-		for request := range configCh {
+		for request := range snapshotCh {
 			ch <- types.ID(request.ID)
 		}
 		close(ch)
@@ -80,16 +80,16 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 		return nil
 	}
 
-	configCh := make(chan *devicesnaptype.DeviceSnapshot, queueSize)
-	w.ch = configCh
+	snapshotCh := make(chan *devicesnaptype.DeviceSnapshot, queueSize)
+	w.ch = snapshotCh
 	w.mu.Unlock()
 
-	if err := w.Store.Watch(configCh); err != nil {
+	if err := w.Store.Watch(snapshotCh); err != nil {
 		return err
 	}
 
 	go func() {
-		for request := range configCh {
+		for request := range snapshotCh {
 			ch <- request.NetworkSnapshot.ID
 		}
 		close(ch)

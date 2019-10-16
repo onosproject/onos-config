@@ -47,17 +47,17 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	configs, err := group.GetMap(context.Background(), primitiveName, session.WithTimeout(30*time.Second))
+	snapshots, err := group.GetMap(context.Background(), primitiveName, session.WithTimeout(30*time.Second))
 	if err != nil {
 		return nil, err
 	}
 
 	return &atomixStore{
-		snapshots: configs,
+		snapshots: snapshots,
 	}, nil
 }
 
-// NewLocalStore returns a new local device store
+// NewLocalStore returns a new local device snapshot store
 func NewLocalStore() (Store, error) {
 	_, conn := startLocalNode()
 	return newLocalStore(conn)
@@ -65,17 +65,17 @@ func NewLocalStore() (Store, error) {
 
 // newLocalStore creates a new local device snapshot store
 func newLocalStore(conn *grpc.ClientConn) (Store, error) {
-	configsName := primitive.Name{
+	snapshotsName := primitive.Name{
 		Namespace: "local",
 		Name:      primitiveName,
 	}
-	configs, err := _map.New(context.Background(), configsName, []*grpc.ClientConn{conn})
+	snapshots, err := _map.New(context.Background(), snapshotsName, []*grpc.ClientConn{conn})
 	if err != nil {
 		return nil, err
 	}
 
 	return &atomixStore{
-		snapshots: configs,
+		snapshots: snapshots,
 	}, nil
 }
 
@@ -91,7 +91,7 @@ func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
 
 	conn, err := grpc.DialContext(context.Background(), primitiveName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
 	if err != nil {
-		panic("Failed to dial network configurations")
+		panic("Failed to dial")
 	}
 	return node, conn
 }
@@ -104,13 +104,13 @@ type Store interface {
 	Get(id devicesnapshot.ID) (*devicesnapshot.DeviceSnapshot, error)
 
 	// Create creates a new device snapshot
-	Create(config *devicesnapshot.DeviceSnapshot) error
+	Create(snapshot *devicesnapshot.DeviceSnapshot) error
 
 	// Update updates an existing device snapshot
-	Update(config *devicesnapshot.DeviceSnapshot) error
+	Update(snapshot *devicesnapshot.DeviceSnapshot) error
 
 	// Delete deletes a device snapshot
-	Delete(config *devicesnapshot.DeviceSnapshot) error
+	Delete(snapshot *devicesnapshot.DeviceSnapshot) error
 
 	// List lists device snapshot
 	List(chan<- *devicesnapshot.DeviceSnapshot) error
@@ -125,7 +125,7 @@ type Store interface {
 	Load(id devicesnapshot.ID) (*devicesnapshot.Snapshot, error)
 }
 
-// atomixStore is the default implementation of the NetworkConfig store
+// atomixStore is the default implementation of the DeviceSnapshot store
 type atomixStore struct {
 	snapshots _map.Map
 }
@@ -143,70 +143,70 @@ func (s *atomixStore) Get(id devicesnapshot.ID) (*devicesnapshot.DeviceSnapshot,
 	return decodeDeviceSnapshot(entry)
 }
 
-func (s *atomixStore) Create(config *devicesnapshot.DeviceSnapshot) error {
-	if config.Revision != 0 {
+func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
+	if snapshot.Revision != 0 {
 		return errors.New("not a new object")
 	}
 
-	config.ID = devicesnapshot.GetSnapshotID(config.NetworkSnapshot.ID, config.DeviceID)
+	snapshot.ID = devicesnapshot.GetSnapshotID(snapshot.NetworkSnapshot.ID, snapshot.DeviceID)
 
-	bytes, err := proto.Marshal(config)
+	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
 		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	entry, err := s.snapshots.Put(ctx, string(config.ID), bytes, _map.IfNotSet())
+	entry, err := s.snapshots.Put(ctx, string(snapshot.ID), bytes, _map.IfNotSet())
 	if err != nil {
 		return nil
 	}
 
-	config.Revision = devicesnapshot.Revision(entry.Version)
-	config.Created = entry.Created
-	config.Updated = entry.Updated
+	snapshot.Revision = devicesnapshot.Revision(entry.Version)
+	snapshot.Created = entry.Created
+	snapshot.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Update(config *devicesnapshot.DeviceSnapshot) error {
-	if config.Revision == 0 {
+func (s *atomixStore) Update(snapshot *devicesnapshot.DeviceSnapshot) error {
+	if snapshot.Revision == 0 {
 		return errors.New("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	config.Updated = time.Now()
-	bytes, err := proto.Marshal(config)
+	snapshot.Updated = time.Now()
+	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
 		return err
 	}
 
-	entry, err := s.snapshots.Put(ctx, string(config.ID), bytes, _map.IfVersion(int64(config.Revision)))
+	entry, err := s.snapshots.Put(ctx, string(snapshot.ID), bytes, _map.IfVersion(int64(snapshot.Revision)))
 	if err != nil {
 		return err
 	}
 
-	config.Revision = devicesnapshot.Revision(entry.Version)
-	config.Updated = entry.Updated
+	snapshot.Revision = devicesnapshot.Revision(entry.Version)
+	snapshot.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Delete(config *devicesnapshot.DeviceSnapshot) error {
-	if config.Revision == 0 {
+func (s *atomixStore) Delete(snapshot *devicesnapshot.DeviceSnapshot) error {
+	if snapshot.Revision == 0 {
 		return errors.New("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.snapshots.Remove(ctx, string(config.ID), _map.IfVersion(int64(config.Revision)))
+	entry, err := s.snapshots.Remove(ctx, string(snapshot.ID), _map.IfVersion(int64(snapshot.Revision)))
 	if err != nil {
 		return err
 	}
 
-	config.Revision = 0
-	config.Updated = entry.Updated
+	snapshot.Revision = 0
+	snapshot.Updated = entry.Updated
 	return nil
 }
 
@@ -220,8 +220,8 @@ func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) error {
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if config, err := decodeDeviceSnapshot(entry); err == nil {
-				ch <- config
+			if snapshot, err := decodeDeviceSnapshot(entry); err == nil {
+				ch <- snapshot
 			}
 		}
 	}()
@@ -237,8 +237,8 @@ func (s *atomixStore) Watch(ch chan<- *devicesnapshot.DeviceSnapshot) error {
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if config, err := decodeDeviceSnapshot(event.Entry); err == nil {
-				ch <- config
+			if snapshot, err := decodeDeviceSnapshot(event.Entry); err == nil {
+				ch <- snapshot
 			}
 		}
 	}()
@@ -279,22 +279,22 @@ func (s *atomixStore) Close() error {
 }
 
 func decodeDeviceSnapshot(entry *_map.Entry) (*devicesnapshot.DeviceSnapshot, error) {
-	config := &devicesnapshot.DeviceSnapshot{}
-	if err := proto.Unmarshal(entry.Value, config); err != nil {
+	snapshot := &devicesnapshot.DeviceSnapshot{}
+	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
 		return nil, err
 	}
-	config.ID = devicesnapshot.ID(entry.Key)
-	config.Revision = devicesnapshot.Revision(entry.Version)
-	config.Created = entry.Created
-	config.Updated = entry.Updated
-	return config, nil
+	snapshot.ID = devicesnapshot.ID(entry.Key)
+	snapshot.Revision = devicesnapshot.Revision(entry.Version)
+	snapshot.Created = entry.Created
+	snapshot.Updated = entry.Updated
+	return snapshot, nil
 }
 
 func decodeSnapshot(entry *_map.Entry) (*devicesnapshot.Snapshot, error) {
-	config := &devicesnapshot.Snapshot{}
-	if err := proto.Unmarshal(entry.Value, config); err != nil {
+	snapshot := &devicesnapshot.Snapshot{}
+	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
 		return nil, err
 	}
-	config.ID = devicesnapshot.ID(entry.Key)
-	return config, nil
+	snapshot.ID = devicesnapshot.ID(entry.Key)
+	return snapshot, nil
 }

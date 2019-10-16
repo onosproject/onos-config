@@ -27,7 +27,7 @@ import (
 	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
 )
 
-// NewController returns a new network controller
+// NewController returns a new device snapshot controller
 func NewController(mastership mastershipstore.Store, changes changestore.Store, snapshots snapstore.Store) *controller.Controller {
 	c := controller.NewController()
 	c.Filter(&controller.MastershipFilter{
@@ -54,11 +54,7 @@ type Resolver struct {
 
 // Resolve resolves a device ID from a device snapshot ID
 func (r *Resolver) Resolve(id types.ID) (deviceservice.ID, error) {
-	snapshot, err := r.snapshots.Get(devicesnaptype.ID(id))
-	if err != nil {
-		return "", err
-	}
-	return snapshot.DeviceID, nil
+	return devicesnaptype.ID(id).GetDeviceID(), nil
 }
 
 // Reconciler is a device snapshot reconciler
@@ -170,7 +166,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	return true, nil
 }
 
-// reconcileMark reconciles a snapshot in the DELETE phase
+// reconcileDelete reconciles a snapshot in the DELETE phase
 func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
 	// Load the current snapshot
 	snapshot, err := r.snapshots.Load(devicesnaptype.ID(deviceSnapshot.DeviceID))

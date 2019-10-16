@@ -107,17 +107,13 @@ func (r *Reconciler) reconcilePendingMark(snapshot *networksnaptypes.NetworkSnap
 	return true, nil
 }
 
-// canApplySnapshot returns a bool indicating whether the change can be applied
+// canApplySnapshot returns a bool indicating whether the snapshot can be taken
 func (r *Reconciler) canApplySnapshot(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
-	for index := networksnaptypes.Index(0); index < snapshot.Index; index++ {
-		prevSnapshot, err := r.networkSnapshots.GetByIndex(index)
-		if err != nil {
-			return false, err
-		} else if prevSnapshot != nil {
-			if prevSnapshot.Status.State == snaptypes.State_PENDING || prevSnapshot.Status.State == snaptypes.State_RUNNING {
-				return false, nil
-			}
-		}
+	prevSnapshot, err := r.networkSnapshots.GetByIndex(snapshot.Index - 1)
+	if err != nil {
+		return false, err
+	} else if prevSnapshot != nil && prevSnapshot.Status.Phase != snaptypes.Phase_DELETE || prevSnapshot.Status.State != snaptypes.State_COMPLETE {
+		return false, nil
 	}
 	return true, nil
 }
