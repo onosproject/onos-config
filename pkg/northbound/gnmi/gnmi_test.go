@@ -36,12 +36,13 @@ func TestMain(m *testing.M) {
 }
 
 // setUp should not depend on any global variables
-func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore, *mockstore.MockNetworkChangesStore) {
+func setUp(t *testing.T) (*Server, *manager.Manager, *mockstore.MockDeviceStore, *mockstore.MockNetworkChangesStore) {
 	var server = &Server{}
 
 	ctrl := gomock.NewController(t)
 	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
 	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
+	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
 
 	mgr, err := manager.LoadManager(
 		"../../../configs/configStore-sample.json",
@@ -54,7 +55,6 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore, *mockstore.Mock
 		log.Error("Expected manager to be loaded ", err)
 		os.Exit(-1)
 	}
-	mockDeviceStore := NewMockStore(ctrl)
 	mgr.DeviceStore = mockDeviceStore
 	mgr.DeviceChangesStore = mockDeviceChangesStore
 	mgr.NetworkChangesStore = mockNetworkChangesStore
