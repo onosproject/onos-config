@@ -34,6 +34,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -172,16 +173,14 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	//TODO evaluate need of user
-	//TODO method for creation
-	_, allDeviceChanges, err := s.computeConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
-	newNetworkConfig := &networktypes.NetworkChange{
-		ID:      networktypes.ID(netcfgchangename),
-		Created: time.Now(),
-		Updated: time.Now(),
-		Changes: allDeviceChanges,
+	// TODO start watch and build update Result
+	allDeviceChanges, errChanges := s.computeConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
+	if errChanges != nil {
+		log.Error("Can't compute new network config", err)
 	}
-	if err != nil {
-		log.Error("Can't computer new network config", err)
+	newNetworkConfig, errNetConfig := networktypes.NewNetworkConfiguration(netcfgchangename, "User1", allDeviceChanges)
+	if errNetConfig != nil {
+		log.Error("Can't compute new network config", err)
 	}
 
 	extensions := []*gnmi_ext.Extension{
@@ -215,6 +214,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	if errNewStore != nil {
 		log.Error("Can't write new network config to atomix store", errNewStore)
 	}
+	//changeGet, _ := manager.GetManager().NetworkChangesStore.Get(newNetworkConfig.ID)
+	//log.Info("Change from Atomix", changeGet)
 	setResponse := &gnmi.SetResponse{
 		Response:  updateResults,
 		Timestamp: time.Now().Unix(),
@@ -429,58 +430,33 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 //computeConfig computes each device change
 func (s *Server) computeConfig(targetUpdates mapTargetUpdates,
 	targetRemoves mapTargetRemoves, version string, deviceType string,
-	description string) ([]*gnmi.UpdateResult, deviceChanges, error) {
+	description string) (deviceChanges, error) {
 
 	deviceChanges := make([]*devicechangetypes.Change, 0)
-	updateResults := make([]*gnmi.UpdateResult, 0)
 	for target, updates := range targetUpdates {
 		//FIXME this is a sequential job, not parallelized
-
 		// target is a device name with no version
-		newChange, err := createChange(target, version, deviceType,
-			updates, targetRemoves[target], description)
+		newChange, err := manager.GetManager().ComputeNewDeviceChange(
+			target, version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {
-			log.Error(err)
+			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue
-		}
-		for k := range updates {
-			updateResult, err := buildUpdateResult(k, target, gnmi.UpdateResult_UPDATE)
-			if err != nil {
-				continue
-			}
-			updateResults = append(updateResults, updateResult)
-		}
-
-		for _, r := range targetRemoves[target] {
-			updateResult, err := buildUpdateResult(r, target, gnmi.UpdateResult_DELETE)
-			if err != nil {
-				continue
-			}
-			updateResults = append(updateResults, updateResult)
-			//Removing from targetRemoves since a pass was already done for this target
-			delete(targetRemoves, target)
 		}
 
 		deviceChanges = append(deviceChanges, newChange)
 	}
 
 	for target, removes := range targetRemoves {
-		newChange, err := createChange(target, version, deviceType,
-			make(devicechangetypes.TypedValueMap), removes, description)
+		newChange, err := manager.GetManager().ComputeNewDeviceChange(
+			target, version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
 		if err != nil {
-			log.Error(err)
+			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue
 		}
-		for _, r := range removes {
-			updateResult, err := buildUpdateResult(r, target, gnmi.UpdateResult_DELETE)
-			if err != nil {
-				continue
-			}
-			updateResults = append(updateResults, updateResult)
-		}
+
 		deviceChanges = append(deviceChanges, newChange)
 	}
-	return updateResults, deviceChanges, nil
+	return deviceChanges, nil
 }
 
 func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) error {
@@ -565,17 +541,6 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 	}
 	return updateResult, nil
 
-}
-
-func createChange(target string, version string, devicetype string, targetUpdates devicechangetypes.TypedValueMap,
-	targetRemoves []string, description string) (*devicechangetypes.Change, error) {
-	newChange, err := manager.GetManager().ComputeNewDeviceChange(
-		target, version, devicetype, targetUpdates, targetRemoves, description)
-	if err != nil {
-		log.Error("Error in setting config: ", newChange, " for target ", err)
-		return nil, err
-	}
-	return newChange, nil
 }
 
 func setChange(target string, version string, devicetype string, targetUpdates devicechangetypes.TypedValueMap,

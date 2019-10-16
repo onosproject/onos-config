@@ -128,13 +128,33 @@ func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
 	deviceType string, updates devicechangetypes.TypedValueMap,
 	deletes []string, description string) (*devicechangetypes.Change, error) {
 
-	chg, err := m.computeDeviceChange(devicepb.ID(deviceName), version, updates, deletes,
-		fmt.Sprintf("Originally created as part of %s", description))
-	if err != nil {
-		return nil, err
+	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
+	//updates
+	for path, value := range updates {
+		changeValue, err := devicechangetypes.NewChangeValue(path, value, false)
+		if err != nil {
+			log.Warningf("Error creating value for %s %v", path, err)
+			continue
+		}
+		newChanges = append(newChanges, changeValue)
+	}
+	//deletes
+	for _, path := range deletes {
+		changeValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
+		newChanges = append(newChanges, changeValue)
+	}
+	//description := fmt.Sprintf("Originally created as part of %s", description)
+	//if description == "" {
+	//	description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
+	//}
+	//TODO lost description of Change
+	changeElement := &devicechangetypes.Change{
+		DeviceID:      devicepb.ID(deviceName),
+		DeviceVersion: version,
+		Values:        newChanges,
 	}
 
-	return chg, nil
+	return changeElement, nil
 }
 
 // getStoredConfig looks for an exact match for the config name or then a partial match based on the device name
