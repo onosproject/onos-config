@@ -17,6 +17,11 @@ package manager
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/controller"
+	devicechange "github.com/onosproject/onos-config/pkg/controller/change/device"
+	networkchange "github.com/onosproject/onos-config/pkg/controller/change/network"
+	devicesnapshot "github.com/onosproject/onos-config/pkg/controller/snapshot/device"
+	networksnapshot "github.com/onosproject/onos-config/pkg/controller/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -26,6 +31,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicetopo "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/leadership"
+	"github.com/onosproject/onos-config/pkg/store/mastership"
+	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
@@ -38,24 +47,34 @@ var mgr Manager
 
 // Manager single point of entry for the config system.
 type Manager struct {
-	ConfigStore             *store.ConfigurationStore
-	ChangeStore             *store.ChangeStore
-	DeviceChangesStore      device.Store
-	DeviceStore             devicetopo.Store
-	NetworkStore            *store.NetworkStore
-	NetworkChangesStore     network.Store
-	ModelRegistry           *modelregistry.ModelRegistry
-	TopoChannel             chan *devicepb.ListResponse
-	ChangesChannel          chan events.ConfigEvent
-	OperationalStateChannel chan events.OperationalStateEvent
-	SouthboundErrorChan     chan events.DeviceResponse
-	Dispatcher              *dispatcher.Dispatcher
-	OperationalStateCache   map[devicepb.ID]types.TypedValueMap
+	ConfigStore               *store.ConfigurationStore
+	ChangeStore               *store.ChangeStore
+	LeadershipStore           leadership.Store
+	MastershipStore           mastership.Store
+	DeviceChangesStore        device.Store
+	DeviceStore               devicetopo.Store
+	NetworkStore              *store.NetworkStore
+	NetworkChangesStore       network.Store
+	NetworkSnapshotStore      networksnap.Store
+	DeviceSnapshotStore       devicesnap.Store
+	networkChangeController   *controller.Controller
+	deviceChangeController    *controller.Controller
+	networkSnapshotController *controller.Controller
+	deviceSnapshotController  *controller.Controller
+	ModelRegistry             *modelregistry.ModelRegistry
+	TopoChannel               chan *devicepb.ListResponse
+	ChangesChannel            chan events.ConfigEvent
+	OperationalStateChannel   chan events.OperationalStateEvent
+	SouthboundErrorChan       chan events.DeviceResponse
+	Dispatcher                *dispatcher.Dispatcher
+	OperationalStateCache     map[devicepb.ID]types.TypedValueMap
 }
 
 // NewManager initializes the network config manager subsystem.
-func NewManager(configStore *store.ConfigurationStore, deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicetopo.Store,
-	networkStore *store.NetworkStore, networkChangesStore network.Store, topoCh chan *devicepb.ListResponse) (*Manager, error) {
+func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store, mastershipStore mastership.Store,
+	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicetopo.Store, networkStore *store.NetworkStore,
+	networkChangesStore network.Store, networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store,
+	topoCh chan *devicepb.ListResponse) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -72,15 +91,21 @@ func NewManager(configStore *store.ConfigurationStore, deviceChangesStore device
 		ChangeStore: changeStore,
 		DeviceStore: deviceStore,
 		//TODO remove deprecated NetworkStore
-		NetworkStore:            networkStore,
-		NetworkChangesStore:     networkChangesStore,
-		TopoChannel:             topoCh,
-		ModelRegistry:           modelReg,
-		ChangesChannel:          make(chan events.ConfigEvent, 10),
-		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
-		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
-		Dispatcher:              dispatcher.NewDispatcher(),
-		OperationalStateCache:   make(map[devicepb.ID]types.TypedValueMap),
+		NetworkStore:              networkStore,
+		NetworkChangesStore:       networkChangesStore,
+		NetworkSnapshotStore:      networkSnapshotStore,
+		DeviceSnapshotStore:       deviceSnapshotStore,
+		networkChangeController:   networkchange.NewController(leadershipStore, deviceStore, networkChangesStore, deviceChangesStore),
+		deviceChangeController:    devicechange.NewController(mastershipStore, deviceStore, deviceChangesStore),
+		networkSnapshotController: networksnapshot.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore),
+		deviceSnapshotController:  devicesnapshot.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
+		TopoChannel:               topoCh,
+		ModelRegistry:             modelReg,
+		ChangesChannel:            make(chan events.ConfigEvent, 10),
+		OperationalStateChannel:   make(chan events.OperationalStateEvent, 10),
+		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
+		Dispatcher:                dispatcher.NewDispatcher(),
+		OperationalStateCache:     make(map[devicepb.ID]types.TypedValueMap),
 	}
 
 	changeIds := make([]string, 0)
@@ -113,8 +138,9 @@ func NewManager(configStore *store.ConfigurationStore, deviceChangesStore device
 }
 
 // LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
-func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFile string,
-	deviceChangesStore device.Store, networkChangesStore network.Store, opts ...grpc.DialOption) (*Manager, error) {
+func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFile string, leadershipStore leadership.Store,
+	mastershipStore mastership.Store, deviceChangesStore device.Store, networkChangesStore network.Store,
+	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store, opts ...grpc.DialOption) (*Manager, error) {
 	topoChannel := make(chan *devicepb.ListResponse, 10)
 
 	configStore, err := store.LoadConfigStore(configStoreFile)
@@ -153,7 +179,7 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Network store loaded from ", networkStoreFile)
 
-	return NewManager(&configStore, deviceChangesStore, &changeStore, deviceStore, networkStore, networkChangesStore, topoChannel)
+	return NewManager(&configStore, leadershipStore, mastershipStore, deviceChangesStore, &changeStore, deviceStore, networkStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, topoChannel)
 }
 
 // ValidateStores validate configurations against their ModelPlugins at startup
@@ -238,6 +264,16 @@ func validateConfiguration(configObj store.Configuration, changeStore map[string
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
+
+	// Start the NetworkChange controller
+	_ = m.networkChangeController.Start()
+	// Start the DeviceChange controller
+	_ = m.deviceChangeController.Start()
+	// Start the NetworkSnapshot controller
+	_ = m.networkSnapshotController.Start()
+	// Start the DeviceSnapshot controller
+	_ = m.deviceSnapshotController.Start()
+
 	// Start the main dispatcher system
 	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)

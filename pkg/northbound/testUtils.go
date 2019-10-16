@@ -46,8 +46,12 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
+		mockstore.NewMockLeadershipStore(ctrl),
+		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
-		mockstore.NewMockNetworkChangesStore(ctrl))
+		mockstore.NewMockNetworkChangesStore(ctrl),
+		mockstore.NewMockNetworkSnapshotStore(ctrl),
+		mockstore.NewMockDeviceSnapshotStore(ctrl))
 	if err != nil {
 		log.Error("Unable to load manager")
 	}
