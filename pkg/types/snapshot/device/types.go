@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
-	"golang.org/x/tools/go/ssa/interp/testdata/src/strings"
+	"strings"
 )
 
 const separator = ":"
