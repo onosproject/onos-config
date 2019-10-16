@@ -27,7 +27,7 @@ import (
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -123,7 +123,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			return nil, err
 		}
 		delete(targetRemovesTmp, target)
-		_, errDevice := manager.GetManager().DeviceStore.Get(devicepb.ID(target))
+		_, errDevice := manager.GetManager().DeviceStore.Get(devicetopo.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
@@ -137,7 +137,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		if err != nil {
 			return nil, err
 		}
-		_, errDevice := manager.GetManager().DeviceStore.Get(devicepb.ID(target))
+		_, errDevice := manager.GetManager().DeviceStore.Get(devicetopo.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
@@ -412,7 +412,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 
 func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) error {
 	mgr := manager.GetManager()
-	respChan, ok := mgr.Dispatcher.GetResponseListener(devicepb.ID(target))
+	respChan, ok := mgr.Dispatcher.GetResponseListener(devicetopo.ID(target))
 	if !ok {
 		log.Infof("Device %s not properly registered, not waiting for southbound confirmation ", target)
 		return nil
