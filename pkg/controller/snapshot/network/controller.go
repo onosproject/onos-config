@@ -112,7 +112,7 @@ func (r *Reconciler) canApplySnapshot(snapshot *networksnaptypes.NetworkSnapshot
 	prevSnapshot, err := r.networkSnapshots.GetByIndex(snapshot.Index - 1)
 	if err != nil {
 		return false, err
-	} else if prevSnapshot != nil && prevSnapshot.Status.Phase != snaptypes.Phase_DELETE || prevSnapshot.Status.State != snaptypes.State_COMPLETE {
+	} else if prevSnapshot != nil && (prevSnapshot.Status.Phase != snaptypes.Phase_DELETE || prevSnapshot.Status.State != snaptypes.State_COMPLETE) {
 		return false, nil
 	}
 	return true, nil
