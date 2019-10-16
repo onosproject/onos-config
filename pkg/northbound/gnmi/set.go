@@ -25,7 +25,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networktypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -34,7 +33,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -42,7 +40,6 @@ import (
 type mapTargetUpdates map[string]devicechangetypes.TypedValueMap
 type mapTargetRemoves map[string][]string
 type mapNetworkChanges map[store.ConfigName]change.ID
-type deviceChanges []*devicechangetypes.Change
 
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
@@ -172,16 +169,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	//TODO evaluate need of user and add it back if need be.
-	//TODO start watch and build update Result
-	allDeviceChanges, errChanges := s.computeConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
-	if errChanges != nil {
-		log.Error("Can't compute new network config", err)
-	}
-	newNetworkConfig, errNetConfig := networktypes.NewNetworkConfiguration(netcfgchangename, allDeviceChanges)
-	if errNetConfig != nil {
-		log.Error("Can't compute new network config", err)
-	}
+
+	//Creating and setting the config on the new atomix Store
+	manager.GetManager().SetNewNetworkConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
 
 	extensions := []*gnmi_ext.Extension{
 		{
@@ -209,14 +199,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	manager.GetManager().NetworkStore.Store =
 		append(manager.GetManager().NetworkStore.Store, *networkConfig)
-	//TODO computeConfig, NewNetworkConfiguration and the followign Create can be combined in a manger method
-	//Writing to the atomix backed store too
-	errNewStore := manager.GetManager().NetworkChangesStore.Create(newNetworkConfig)
-	if errNewStore != nil {
-		log.Error("Can't write new network config to atomix store", errNewStore)
-	}
-	//changeGet, _ := manager.GetManager().NetworkChangesStore.Get(newNetworkConfig.ID)
-	//log.Info("Change from Atomix", changeGet)
 	setResponse := &gnmi.SetResponse{
 		Response:  updateResults,
 		Timestamp: time.Now().Unix(),
@@ -426,38 +408,6 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 		networkChanges[*configName] = changeID
 	}
 	return updateResults, networkChanges, nil
-}
-
-//computeConfig computes each device change
-func (s *Server) computeConfig(targetUpdates mapTargetUpdates,
-	targetRemoves mapTargetRemoves, version string, deviceType string,
-	description string) (deviceChanges, error) {
-
-	deviceChanges := make([]*devicechangetypes.Change, 0)
-	for target, updates := range targetUpdates {
-		//FIXME this is a sequential job, not parallelized
-		// target is a device name with no version
-		newChange, err := manager.GetManager().ComputeNewDeviceChange(
-			target, version, deviceType, updates, targetRemoves[target], description)
-		if err != nil {
-			log.Error("Error in setting config: ", newChange, " for target ", err)
-			continue
-		}
-
-		deviceChanges = append(deviceChanges, newChange)
-	}
-
-	for target, removes := range targetRemoves {
-		newChange, err := manager.GetManager().ComputeNewDeviceChange(
-			target, version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
-		if err != nil {
-			log.Error("Error in setting config: ", newChange, " for target ", err)
-			continue
-		}
-
-		deviceChanges = append(deviceChanges, newChange)
-	}
-	return deviceChanges, nil
 }
 
 func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) error {
