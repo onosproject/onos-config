@@ -24,7 +24,7 @@ import (
 )
 
 const opstateTemplate = "{{wrappath .Pathvalue.Path 80 0| printf \"%-80s|\"}}" +
-	"{{nativeType .Pathvalue | printf \"(%s) %s\" .Pathvalue.ValueType | printf \"%-20s|\" }}"
+	"{{valuetostring .Pathvalue.Value | printf \"(%s) %s\" .Pathvalue.Value.Type | printf \"%-20s|\" }}"
 
 func getGetOpstateCommand() *cobra.Command {
 	cmd := &cobra.Command{

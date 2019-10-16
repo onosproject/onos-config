@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
@@ -116,35 +115,34 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 
 	stream, err := client.GetOpState(context.Background(), opStateReq)
 	assert.NilError(t, err, "unable to issue request")
-	var pv *admin.ChangeValue
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF || in == nil {
 			break
 		}
 		assert.NilError(t, err, "unable to receive message")
-		pv = in.Pathvalue
-		value, err := types.NewTypedValue(pv.Value, types.ValueType(pv.ValueType), []int32{})
+		pv := in.GetPathvalue()
+		//value, err := types.NewTypedValue(pv.Value, types.ValueType(pv.ValueType), []int32{})
 		assert.NilError(t, err)
 
-		switch pv.Path {
+		switch pv.GetPath() {
 		case "/cont1a/cont2a/leaf2c":
-			assert.Equal(t, pv.ValueType, admin.ChangeValueType_STRING)
-			switch value.ValueToString() {
+			assert.Equal(t, pv.GetValue().GetType(), types.ValueType_STRING)
+			switch pv.GetValue().ValueToString() {
 			case "test1":
 				//From the initial response
-				fmt.Println("Got value test1 on ", pv.Path)
+				fmt.Println("Got value test1 on ", pv.GetPath())
 			case "test2":
-				fmt.Println("Got async follow up for ", pv.Path, "closing subscription")
+				fmt.Println("Got async follow up for ", pv.GetPath(), "closing subscription")
 				//Now close the subscription
 				conn.Close()
 				return
 			default:
-				t.Fatal("Unexpected value for", pv.Path, value.ValueToString())
+				t.Fatal("Unexpected value for", pv.Path, pv.GetValue().ValueToString())
 			}
 		case "/cont1b-state/leaf2d":
-			assert.Equal(t, pv.ValueType, admin.ChangeValueType_UINT)
-			assert.Equal(t, value.ValueToString(), "12345")
+			assert.Equal(t, pv.GetValue().GetType(), types.ValueType_UINT)
+			assert.Equal(t, pv.GetValue().ValueToString(), "12345")
 		default:
 			t.Fatal("Unexpected path in opstate cache for Device2", pv.Path)
 		}

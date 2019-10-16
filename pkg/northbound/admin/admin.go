@@ -148,7 +148,7 @@ func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminS
 					for subPath, subPathType := range subpathList {
 						subPathPb := ReadOnlySubPath{
 							SubPath:   subPath,
-							ValueType: ChangeValueType(subPathType.Datatype),
+							ValueType: subPathType.Datatype,
 						}
 						subPathsPb = append(subPathsPb, &subPathPb)
 					}
@@ -170,7 +170,7 @@ func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminS
 				for path, rwObj := range rwPathsAndValues {
 					rwObjProto := ReadWritePath{
 						Path:        path,
-						ValueType:   ChangeValueType(rwObj.ValueType),
+						ValueType:   rwObj.ValueType,
 						Description: rwObj.Description,
 						Default:     rwObj.Default,
 						Units:       rwObj.Units,

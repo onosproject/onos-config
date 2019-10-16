@@ -139,16 +139,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 			Created:     *in.Time,
 			Config:      make([]*types.ChangeValue, 0),
 		}
-		for _, cv := range in.ChangeValues {
-			tv := &types.TypedValue{
-				Bytes:    cv.Value,
-				Type:     types.ValueType(cv.ValueType),
-				TypeOpts: cv.TypeOpts,
-			}
-
-			value, _ := types.NewChangeValue(cv.Path, tv, cv.Removed)
-			changeObj.Config = append(changeObj.Config, value)
-		}
+		changeObj.Config = append(changeObj.Config, in.ChangeValues...)
 		changes[in.Id] = &changeObj
 	}
 

@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
@@ -75,24 +76,12 @@ func (s Server) GetChanges(r *ChangesRequest, stream ConfigDiags_GetChangesServe
 			return errInvalid
 		}
 
-		changeValues := make([]*admin.ChangeValue, 0)
-
-		for _, cv := range c.Config {
-			changeValues = append(changeValues, &admin.ChangeValue{
-				Path:      cv.Path,
-				Value:     cv.GetValue().GetBytes(),
-				ValueType: admin.ChangeValueType(cv.GetValue().GetType()),
-				TypeOpts:  cv.GetValue().GetTypeOpts(),
-				Removed:   cv.Removed,
-			})
-		}
-
 		// Build a change message
 		msg := &admin.Change{
 			Time:         &c.Created,
 			Id:           store.B64(c.ID),
 			Desc:         c.Description,
-			ChangeValues: changeValues,
+			ChangeValues: c.Config,
 		}
 		err := stream.Send(msg)
 		if err != nil {
@@ -142,11 +131,9 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 	}
 
 	for path, value := range deviceCache {
-		pathValue := &admin.ChangeValue{
-			Path:      path,
-			ValueType: admin.ChangeValueType(value.Type),
-			Value:     value.Bytes,
-			TypeOpts:  value.TypeOpts,
+		pathValue := &types.PathValue{
+			Path:  path,
+			Value: value,
 		}
 
 		msg := &OpStateResponse{Type: admin.Type_NONE, Pathvalue: pathValue}
@@ -174,11 +161,9 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 				log.Infof("Event received NBI Diags OpState subscribe channel %s for %s",
 					streamID, r.DeviceId)
 
-				pathValue := &admin.ChangeValue{
-					Path:      opStateEvent.Path(),
-					ValueType: admin.ChangeValueType(opStateEvent.Value().Type),
-					Value:     opStateEvent.Value().Bytes,
-					TypeOpts:  opStateEvent.Value().TypeOpts,
+				pathValue := &types.PathValue{
+					Path:  opStateEvent.Path(),
+					Value: opStateEvent.Value(),
 				}
 
 				msg := &OpStateResponse{Type: admin.Type_ADDED, Pathvalue: pathValue}

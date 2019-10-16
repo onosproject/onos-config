@@ -15,7 +15,6 @@
 package cli
 
 import (
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -39,13 +38,4 @@ func Test_wrapline_exact(t *testing.T) {
 
 	test1Wrapped := wrapPath(test1, 20, 1)
 	assert.Equal(t, test1Wrapped, test1)
-}
-
-func Test_nativeType(t *testing.T) {
-	cv := admin.ChangeValue{
-		Path:      "/aa/bb/cc",
-		Value:     []byte("Test string"),
-		ValueType: 1,
-	}
-	assert.Equal(t, nativeType(cv), "Test string", "convert native type to string")
 }
