@@ -10,7 +10,9 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/gogo/protobuf/types"
 	admin "github.com/onosproject/onos-config/pkg/northbound/admin"
+	github_com_onosproject_onos_config_pkg_types "github.com/onosproject/onos-config/pkg/types"
 	device "github.com/onosproject/onos-config/pkg/types/change/device"
+	network "github.com/onosproject/onos-config/pkg/types/change/network"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -32,6 +34,7 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // ChangesRequest is a message for specifying GetChanges query parameters.
 type ChangesRequest struct {
+	//    option deprecated = true; Commented out for the moment - breaks static check
 	ChangeIDs            []string `protobuf:"bytes,1,rep,name=change_ids,json=changeIds,proto3" json:"change_ids,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -71,6 +74,7 @@ func (m *ChangesRequest) GetChangeIDs() []string {
 
 // ConfigRequest is a message for specifying GetConfigurations query parameters.
 type ConfigRequest struct {
+	//    option deprecated = true; Commented out for the moment - breaks static check
 	DeviceIDs            []string `protobuf:"bytes,1,rep,name=device_ids,json=deviceIds,proto3" json:"device_ids,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -161,7 +165,7 @@ func (m *OpStateRequest) GetSubscribe() bool {
 
 type OpStateResponse struct {
 	// type is the type of the event
-	Type admin.Type `protobuf:"varint,1,opt,name=type,proto3,enum=proto.Type" json:"type,omitempty"`
+	Type admin.Type `protobuf:"varint,1,opt,name=type,proto3,enum=onos.config.admin.Type" json:"type,omitempty"`
 	// device is the device on which the event occurred
 	Pathvalue            *device.PathValue `protobuf:"bytes,2,opt,name=pathvalue,proto3" json:"pathvalue,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
@@ -209,6 +213,7 @@ func (m *OpStateResponse) GetPathvalue() *device.PathValue {
 
 // Configuration is a descriptor of a submitted configuration change targeted at a single device.
 type Configuration struct {
+	//    option deprecated = true; Commented out for the moment - breaks static check
 	Name                 string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	DeviceID             string     `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 	Version              string     `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
@@ -294,52 +299,425 @@ func (m *Configuration) GetChangeIDs() []string {
 	return nil
 }
 
+// GetNetworkChangeRequest gets a network change by ID
+type GetNetworkChangeRequest struct {
+	// id is the unique device ID with which to lookup the network change
+	ID                   github_com_onosproject_onos_config_pkg_types.ID `protobuf:"bytes,1,opt,name=id,proto3,casttype=github.com/onosproject/onos-config/pkg/types.ID" json:"id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                        `json:"-"`
+	XXX_unrecognized     []byte                                          `json:"-"`
+	XXX_sizecache        int32                                           `json:"-"`
+}
+
+func (m *GetNetworkChangeRequest) Reset()         { *m = GetNetworkChangeRequest{} }
+func (m *GetNetworkChangeRequest) String() string { return proto.CompactTextString(m) }
+func (*GetNetworkChangeRequest) ProtoMessage()    {}
+func (*GetNetworkChangeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_624d839d9ad9df06, []int{5}
+}
+func (m *GetNetworkChangeRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetNetworkChangeRequest.Unmarshal(m, b)
+}
+func (m *GetNetworkChangeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetNetworkChangeRequest.Marshal(b, m, deterministic)
+}
+func (m *GetNetworkChangeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetNetworkChangeRequest.Merge(m, src)
+}
+func (m *GetNetworkChangeRequest) XXX_Size() int {
+	return xxx_messageInfo_GetNetworkChangeRequest.Size(m)
+}
+func (m *GetNetworkChangeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetNetworkChangeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetNetworkChangeRequest proto.InternalMessageInfo
+
+func (m *GetNetworkChangeRequest) GetID() github_com_onosproject_onos_config_pkg_types.ID {
+	if m != nil {
+		return m.ID
+	}
+	return ""
+}
+
+// GetNetworkChangeResponse carries a network change
+type GetNetworkChangeResponse struct {
+	// change is the network change object
+	Change               *network.NetworkChange `protobuf:"bytes,1,opt,name=change,proto3" json:"change,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *GetNetworkChangeResponse) Reset()         { *m = GetNetworkChangeResponse{} }
+func (m *GetNetworkChangeResponse) String() string { return proto.CompactTextString(m) }
+func (*GetNetworkChangeResponse) ProtoMessage()    {}
+func (*GetNetworkChangeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_624d839d9ad9df06, []int{6}
+}
+func (m *GetNetworkChangeResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetNetworkChangeResponse.Unmarshal(m, b)
+}
+func (m *GetNetworkChangeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetNetworkChangeResponse.Marshal(b, m, deterministic)
+}
+func (m *GetNetworkChangeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetNetworkChangeResponse.Merge(m, src)
+}
+func (m *GetNetworkChangeResponse) XXX_Size() int {
+	return xxx_messageInfo_GetNetworkChangeResponse.Size(m)
+}
+func (m *GetNetworkChangeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetNetworkChangeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetNetworkChangeResponse proto.InternalMessageInfo
+
+func (m *GetNetworkChangeResponse) GetChange() *network.NetworkChange {
+	if m != nil {
+		return m.Change
+	}
+	return nil
+}
+
+// GetDeviceChangeRequest gets a device change by ID
+type GetDeviceChangeRequest struct {
+	// id is the unique device ID with which to lookup the device change
+	ID                   github_com_onosproject_onos_config_pkg_types.ID `protobuf:"bytes,1,opt,name=id,proto3,casttype=github.com/onosproject/onos-config/pkg/types.ID" json:"id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                        `json:"-"`
+	XXX_unrecognized     []byte                                          `json:"-"`
+	XXX_sizecache        int32                                           `json:"-"`
+}
+
+func (m *GetDeviceChangeRequest) Reset()         { *m = GetDeviceChangeRequest{} }
+func (m *GetDeviceChangeRequest) String() string { return proto.CompactTextString(m) }
+func (*GetDeviceChangeRequest) ProtoMessage()    {}
+func (*GetDeviceChangeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_624d839d9ad9df06, []int{7}
+}
+func (m *GetDeviceChangeRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetDeviceChangeRequest.Unmarshal(m, b)
+}
+func (m *GetDeviceChangeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetDeviceChangeRequest.Marshal(b, m, deterministic)
+}
+func (m *GetDeviceChangeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDeviceChangeRequest.Merge(m, src)
+}
+func (m *GetDeviceChangeRequest) XXX_Size() int {
+	return xxx_messageInfo_GetDeviceChangeRequest.Size(m)
+}
+func (m *GetDeviceChangeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDeviceChangeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDeviceChangeRequest proto.InternalMessageInfo
+
+func (m *GetDeviceChangeRequest) GetID() github_com_onosproject_onos_config_pkg_types.ID {
+	if m != nil {
+		return m.ID
+	}
+	return ""
+}
+
+// GetDeviceChangeResponse carries a device change
+type GetDeviceChangeResponse struct {
+	// change is the device change object
+	Change               *device.DeviceChange `protobuf:"bytes,1,opt,name=change,proto3" json:"change,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
+}
+
+func (m *GetDeviceChangeResponse) Reset()         { *m = GetDeviceChangeResponse{} }
+func (m *GetDeviceChangeResponse) String() string { return proto.CompactTextString(m) }
+func (*GetDeviceChangeResponse) ProtoMessage()    {}
+func (*GetDeviceChangeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_624d839d9ad9df06, []int{8}
+}
+func (m *GetDeviceChangeResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetDeviceChangeResponse.Unmarshal(m, b)
+}
+func (m *GetDeviceChangeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetDeviceChangeResponse.Marshal(b, m, deterministic)
+}
+func (m *GetDeviceChangeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDeviceChangeResponse.Merge(m, src)
+}
+func (m *GetDeviceChangeResponse) XXX_Size() int {
+	return xxx_messageInfo_GetDeviceChangeResponse.Size(m)
+}
+func (m *GetDeviceChangeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDeviceChangeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDeviceChangeResponse proto.InternalMessageInfo
+
+func (m *GetDeviceChangeResponse) GetChange() *device.DeviceChange {
+	if m != nil {
+		return m.Change
+	}
+	return nil
+}
+
+// ListNetworkChangeRequest requests a stream of changes and updates to them
+// By default, the request requests a stream of all changes that are present in the topology when
+// the request is received by the service. However, if `subscribe` is `true`, the stream will remain
+// open after all changes have been sent and events that occur following the last changes will be
+// streamed to the client until the stream is closed.
+type ListNetworkChangeRequest struct {
+	// subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
+	// after all devices have been streamed to the client
+	Subscribe            bool     `protobuf:"varint,1,opt,name=subscribe,proto3" json:"subscribe,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListNetworkChangeRequest) Reset()         { *m = ListNetworkChangeRequest{} }
+func (m *ListNetworkChangeRequest) String() string { return proto.CompactTextString(m) }
+func (*ListNetworkChangeRequest) ProtoMessage()    {}
+func (*ListNetworkChangeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_624d839d9ad9df06, []int{9}
+}
+func (m *ListNetworkChangeRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListNetworkChangeRequest.Unmarshal(m, b)
+}
+func (m *ListNetworkChangeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListNetworkChangeRequest.Marshal(b, m, deterministic)
+}
+func (m *ListNetworkChangeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListNetworkChangeRequest.Merge(m, src)
+}
+func (m *ListNetworkChangeRequest) XXX_Size() int {
+	return xxx_messageInfo_ListNetworkChangeRequest.Size(m)
+}
+func (m *ListNetworkChangeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListNetworkChangeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListNetworkChangeRequest proto.InternalMessageInfo
+
+func (m *ListNetworkChangeRequest) GetSubscribe() bool {
+	if m != nil {
+		return m.Subscribe
+	}
+	return false
+}
+
+// ListNetworkChangeResponse carries a single network change event
+type ListNetworkChangeResponse struct {
+	// type is the type of the event
+	Type admin.Type `protobuf:"varint,1,opt,name=type,proto3,enum=onos.config.admin.Type" json:"type,omitempty"`
+	// change is the network change on which the event occurred
+	Change               *network.NetworkChange `protobuf:"bytes,2,opt,name=change,proto3" json:"change,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *ListNetworkChangeResponse) Reset()         { *m = ListNetworkChangeResponse{} }
+func (m *ListNetworkChangeResponse) String() string { return proto.CompactTextString(m) }
+func (*ListNetworkChangeResponse) ProtoMessage()    {}
+func (*ListNetworkChangeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_624d839d9ad9df06, []int{10}
+}
+func (m *ListNetworkChangeResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListNetworkChangeResponse.Unmarshal(m, b)
+}
+func (m *ListNetworkChangeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListNetworkChangeResponse.Marshal(b, m, deterministic)
+}
+func (m *ListNetworkChangeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListNetworkChangeResponse.Merge(m, src)
+}
+func (m *ListNetworkChangeResponse) XXX_Size() int {
+	return xxx_messageInfo_ListNetworkChangeResponse.Size(m)
+}
+func (m *ListNetworkChangeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListNetworkChangeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListNetworkChangeResponse proto.InternalMessageInfo
+
+func (m *ListNetworkChangeResponse) GetType() admin.Type {
+	if m != nil {
+		return m.Type
+	}
+	return admin.Type_NONE
+}
+
+func (m *ListNetworkChangeResponse) GetChange() *network.NetworkChange {
+	if m != nil {
+		return m.Change
+	}
+	return nil
+}
+
+// ListDeviceChangeRequest requests a stream of changes and updates to them
+// By default, the request requests a stream of all changes that are present in the topology when
+// the request is received by the service. However, if `subscribe` is `true`, the stream will remain
+// open after all changes have been sent and events that occur following the last changes will be
+// streamed to the client until the stream is closed.
+type ListDeviceChangeRequest struct {
+	// subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
+	// after all devices have been streamed to the client
+	Subscribe            bool     `protobuf:"varint,1,opt,name=subscribe,proto3" json:"subscribe,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListDeviceChangeRequest) Reset()         { *m = ListDeviceChangeRequest{} }
+func (m *ListDeviceChangeRequest) String() string { return proto.CompactTextString(m) }
+func (*ListDeviceChangeRequest) ProtoMessage()    {}
+func (*ListDeviceChangeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_624d839d9ad9df06, []int{11}
+}
+func (m *ListDeviceChangeRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListDeviceChangeRequest.Unmarshal(m, b)
+}
+func (m *ListDeviceChangeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListDeviceChangeRequest.Marshal(b, m, deterministic)
+}
+func (m *ListDeviceChangeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListDeviceChangeRequest.Merge(m, src)
+}
+func (m *ListDeviceChangeRequest) XXX_Size() int {
+	return xxx_messageInfo_ListDeviceChangeRequest.Size(m)
+}
+func (m *ListDeviceChangeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListDeviceChangeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListDeviceChangeRequest proto.InternalMessageInfo
+
+func (m *ListDeviceChangeRequest) GetSubscribe() bool {
+	if m != nil {
+		return m.Subscribe
+	}
+	return false
+}
+
+// ListDeviceChangeResponse carries a single network change event
+type ListDeviceChangeResponse struct {
+	// type is the type of the event
+	Type admin.Type `protobuf:"varint,1,opt,name=type,proto3,enum=onos.config.admin.Type" json:"type,omitempty"`
+	// change is the network change on which the event occurred
+	Change               *network.NetworkChange `protobuf:"bytes,2,opt,name=change,proto3" json:"change,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *ListDeviceChangeResponse) Reset()         { *m = ListDeviceChangeResponse{} }
+func (m *ListDeviceChangeResponse) String() string { return proto.CompactTextString(m) }
+func (*ListDeviceChangeResponse) ProtoMessage()    {}
+func (*ListDeviceChangeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_624d839d9ad9df06, []int{12}
+}
+func (m *ListDeviceChangeResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListDeviceChangeResponse.Unmarshal(m, b)
+}
+func (m *ListDeviceChangeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListDeviceChangeResponse.Marshal(b, m, deterministic)
+}
+func (m *ListDeviceChangeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListDeviceChangeResponse.Merge(m, src)
+}
+func (m *ListDeviceChangeResponse) XXX_Size() int {
+	return xxx_messageInfo_ListDeviceChangeResponse.Size(m)
+}
+func (m *ListDeviceChangeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListDeviceChangeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListDeviceChangeResponse proto.InternalMessageInfo
+
+func (m *ListDeviceChangeResponse) GetType() admin.Type {
+	if m != nil {
+		return m.Type
+	}
+	return admin.Type_NONE
+}
+
+func (m *ListDeviceChangeResponse) GetChange() *network.NetworkChange {
+	if m != nil {
+		return m.Change
+	}
+	return nil
+}
+
 func init() {
-	proto.RegisterType((*ChangesRequest)(nil), "proto.ChangesRequest")
-	proto.RegisterType((*ConfigRequest)(nil), "proto.ConfigRequest")
-	proto.RegisterType((*OpStateRequest)(nil), "proto.OpStateRequest")
-	proto.RegisterType((*OpStateResponse)(nil), "proto.OpStateResponse")
-	proto.RegisterType((*Configuration)(nil), "proto.Configuration")
+	proto.RegisterType((*ChangesRequest)(nil), "onos.config.diags.ChangesRequest")
+	proto.RegisterType((*ConfigRequest)(nil), "onos.config.diags.ConfigRequest")
+	proto.RegisterType((*OpStateRequest)(nil), "onos.config.diags.OpStateRequest")
+	proto.RegisterType((*OpStateResponse)(nil), "onos.config.diags.OpStateResponse")
+	proto.RegisterType((*Configuration)(nil), "onos.config.diags.Configuration")
+	proto.RegisterType((*GetNetworkChangeRequest)(nil), "onos.config.diags.GetNetworkChangeRequest")
+	proto.RegisterType((*GetNetworkChangeResponse)(nil), "onos.config.diags.GetNetworkChangeResponse")
+	proto.RegisterType((*GetDeviceChangeRequest)(nil), "onos.config.diags.GetDeviceChangeRequest")
+	proto.RegisterType((*GetDeviceChangeResponse)(nil), "onos.config.diags.GetDeviceChangeResponse")
+	proto.RegisterType((*ListNetworkChangeRequest)(nil), "onos.config.diags.ListNetworkChangeRequest")
+	proto.RegisterType((*ListNetworkChangeResponse)(nil), "onos.config.diags.ListNetworkChangeResponse")
+	proto.RegisterType((*ListDeviceChangeRequest)(nil), "onos.config.diags.ListDeviceChangeRequest")
+	proto.RegisterType((*ListDeviceChangeResponse)(nil), "onos.config.diags.ListDeviceChangeResponse")
 }
 
 func init() { proto.RegisterFile("pkg/northbound/diags/diags.proto", fileDescriptor_624d839d9ad9df06) }
 
 var fileDescriptor_624d839d9ad9df06 = []byte{
-	// 537 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xd1, 0x6e, 0xd3, 0x30,
-	0x14, 0x55, 0xb6, 0x6e, 0x6d, 0x6e, 0xd7, 0x22, 0xac, 0x81, 0xa2, 0x08, 0x29, 0x55, 0xc5, 0x43,
-	0x91, 0xc0, 0xa9, 0x0a, 0x4f, 0x48, 0x43, 0xa2, 0xad, 0x40, 0x43, 0x42, 0xa0, 0x30, 0xf1, 0x8a,
-	0x9c, 0xc4, 0x4b, 0x0d, 0x8b, 0x6d, 0x62, 0xa7, 0xd2, 0x7e, 0x80, 0x67, 0xfe, 0x84, 0x3f, 0x1a,
-	0xd2, 0xbe, 0x04, 0xc5, 0x76, 0xba, 0xb6, 0x0f, 0x68, 0x2f, 0xee, 0xf5, 0xbd, 0xf7, 0x1c, 0xdf,
-	0x7b, 0x7a, 0x02, 0x23, 0xf9, 0xa3, 0x88, 0xb9, 0xa8, 0xf4, 0x2a, 0x15, 0x35, 0xcf, 0xe3, 0x9c,
-	0x91, 0x42, 0xd9, 0x13, 0xcb, 0x4a, 0x68, 0x81, 0x8e, 0xcc, 0x4f, 0x18, 0x15, 0x42, 0x14, 0x57,
-	0x34, 0x36, 0xb7, 0xb4, 0xbe, 0x8c, 0x35, 0x2b, 0xa9, 0xd2, 0xa4, 0x94, 0xb6, 0x2f, 0x3c, 0x2d,
-	0x44, 0x21, 0x4c, 0x18, 0x37, 0x91, 0xcb, 0x2e, 0x0a, 0xa6, 0x57, 0x75, 0x8a, 0x33, 0x51, 0xc6,
-	0x82, 0x0b, 0x25, 0x2b, 0xf1, 0x9d, 0x66, 0xda, 0xc4, 0x2f, 0x32, 0xc1, 0x2f, 0x59, 0x11, 0xef,
-	0x8d, 0x40, 0xf2, 0x92, 0x71, 0x7b, 0x3a, 0x92, 0x77, 0xf7, 0x24, 0xd1, 0xd7, 0x92, 0xaa, 0x38,
-	0x5b, 0x11, 0x5e, 0xd0, 0x38, 0xa7, 0x6b, 0x96, 0x51, 0x9b, 0xb3, 0x3c, 0xe3, 0x37, 0x30, 0x5c,
-	0x98, 0xa2, 0x4a, 0xe8, 0xcf, 0x9a, 0x2a, 0x8d, 0x9e, 0x03, 0xd8, 0xf6, 0x6f, 0x2c, 0x57, 0x81,
-	0x37, 0x3a, 0x9c, 0xf8, 0xf3, 0xc1, 0xed, 0x4d, 0xe4, 0xdb, 0xbe, 0xf3, 0xa5, 0x4a, 0x7c, 0xdb,
-	0x70, 0x9e, 0xab, 0xf1, 0x19, 0x0c, 0x16, 0xe6, 0xb5, 0x2d, 0xb8, 0x7d, 0x66, 0x1f, 0xbe, 0x34,
-	0x59, 0x03, 0xb7, 0x0d, 0x0d, 0xfc, 0x03, 0x0c, 0x3f, 0xc9, 0x2f, 0x9a, 0x68, 0xda, 0xe2, 0x43,
-	0xe8, 0xb5, 0xe5, 0xc0, 0x1b, 0x79, 0x13, 0x3f, 0xd9, 0xdc, 0xd1, 0x13, 0xf0, 0x55, 0x9d, 0xaa,
-	0xac, 0x62, 0x29, 0x0d, 0x0e, 0x46, 0xde, 0xa4, 0x97, 0xdc, 0x25, 0xc6, 0x6b, 0x78, 0xb0, 0xe1,
-	0x52, 0x52, 0x70, 0x45, 0x51, 0x04, 0x9d, 0x66, 0x59, 0x43, 0x34, 0x9c, 0xf5, 0xed, 0xce, 0xf8,
-	0xe2, 0x5a, 0xd2, 0xc4, 0x14, 0xd0, 0x1c, 0x7c, 0x49, 0xf4, 0x6a, 0x4d, 0xae, 0x6a, 0xcb, 0xd8,
-	0x9f, 0x3d, 0xc5, 0x8d, 0x86, 0xd8, 0x6a, 0x88, 0xed, 0xa6, 0xd8, 0x8e, 0x80, 0x3f, 0x13, 0xbd,
-	0xfa, 0xda, 0xf4, 0x26, 0x77, 0xb0, 0xf1, 0x9f, 0x83, 0x56, 0x83, 0xba, 0x22, 0x9a, 0x09, 0x8e,
-	0x10, 0x74, 0x38, 0x29, 0xa9, 0x9b, 0xdf, 0xc4, 0xe8, 0x19, 0xf8, 0x1b, 0x5d, 0xcc, 0x4b, 0xfe,
-	0xfc, 0xe4, 0xf6, 0x26, 0xea, 0xb5, 0xb2, 0x6c, 0xad, 0x19, 0x40, 0x77, 0x4d, 0x2b, 0xc5, 0x04,
-	0x0f, 0x0e, 0x0d, 0x43, 0x7b, 0x45, 0x11, 0xf4, 0x1d, 0x89, 0x59, 0xab, 0x63, 0xaa, 0x4e, 0xef,
-	0x66, 0x2b, 0xf4, 0x1a, 0xba, 0x59, 0x45, 0x89, 0xa6, 0x79, 0x70, 0x64, 0xb6, 0x09, 0xb1, 0x35,
-	0x29, 0x6e, 0x4d, 0x8a, 0x2f, 0x5a, 0x93, 0xce, 0x3b, 0xbf, 0xff, 0x46, 0x5e, 0xd2, 0x02, 0x1a,
-	0x6c, 0x2d, 0x73, 0x83, 0x3d, 0xbe, 0x2f, 0xd6, 0x01, 0xf6, 0x4c, 0xd3, 0xfd, 0xbf, 0x69, 0x66,
-	0xbf, 0x3c, 0xe8, 0x5b, 0xc5, 0x96, 0xcd, 0x57, 0x85, 0x5e, 0x01, 0xbc, 0xa7, 0xda, 0xf9, 0x10,
-	0x3d, 0x72, 0x7f, 0xd3, 0xae, 0x2f, 0xc3, 0xc1, 0x4e, 0x7a, 0xea, 0xa1, 0xb7, 0xf0, 0xb0, 0x41,
-	0x6d, 0x2b, 0xaf, 0xd0, 0x69, 0xdb, 0xb5, 0x6d, 0xca, 0x70, 0x37, 0xeb, 0x9a, 0xa7, 0xde, 0xec,
-	0x23, 0x9c, 0x38, 0xcb, 0xd8, 0x41, 0xce, 0xcc, 0x20, 0x2e, 0xb5, 0x19, 0x64, 0xd7, 0xa1, 0xe1,
-	0xe3, 0xfd, 0xb4, 0x35, 0xdb, 0xd4, 0x4b, 0x8f, 0x4d, 0xe1, 0xe5, 0xbf, 0x00, 0x00, 0x00, 0xff,
-	0xff, 0x49, 0x3e, 0xd3, 0x3c, 0x42, 0x04, 0x00, 0x00,
+	// 804 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x55, 0xdd, 0x6e, 0xd3, 0x48,
+	0x14, 0x5e, 0xa7, 0xd9, 0xb6, 0x3e, 0xe9, 0xcf, 0x76, 0xb4, 0xda, 0xba, 0xd6, 0x4a, 0xc9, 0x5a,
+	0x2b, 0x6d, 0xff, 0xd6, 0x8e, 0xb2, 0x17, 0x0b, 0x48, 0x80, 0x48, 0x23, 0xa2, 0xa0, 0x0a, 0x90,
+	0x5b, 0x90, 0x40, 0x42, 0xc8, 0xb1, 0xa7, 0x8e, 0xdb, 0xc6, 0x63, 0x3c, 0xe3, 0xa2, 0xde, 0x72,
+	0x09, 0x37, 0xbc, 0x09, 0x77, 0xbc, 0x07, 0x2f, 0x10, 0xa4, 0x3e, 0x06, 0x57, 0xc8, 0x33, 0xe3,
+	0xfc, 0xb8, 0x4e, 0x09, 0x95, 0xe0, 0xc6, 0x1a, 0xcf, 0x9c, 0xef, 0x3b, 0xf3, 0x9d, 0xf3, 0xcd,
+	0x0c, 0xd4, 0xa2, 0x13, 0xdf, 0x0a, 0x49, 0xcc, 0x7a, 0x5d, 0x92, 0x84, 0x9e, 0xe5, 0x05, 0x8e,
+	0x4f, 0xc5, 0xd7, 0x8c, 0x62, 0xc2, 0x08, 0x5a, 0x23, 0x21, 0xa1, 0xa6, 0x4b, 0xc2, 0xa3, 0xc0,
+	0x37, 0xf9, 0x82, 0x5e, 0xf5, 0x09, 0xf1, 0x4f, 0xb1, 0xc5, 0x03, 0xba, 0xc9, 0x91, 0xc5, 0x82,
+	0x3e, 0xa6, 0xcc, 0xe9, 0x47, 0x02, 0xa3, 0xff, 0xee, 0x13, 0x9f, 0xf0, 0xa1, 0x95, 0x8e, 0xe4,
+	0xec, 0x9e, 0x1f, 0xb0, 0x5e, 0xd2, 0x35, 0x5d, 0xd2, 0xb7, 0x52, 0xd2, 0x28, 0x26, 0xc7, 0xd8,
+	0x65, 0x7c, 0xfc, 0xaf, 0x48, 0x60, 0xe5, 0xb6, 0xe3, 0x78, 0xfd, 0x20, 0x14, 0x5f, 0x49, 0x72,
+	0x7f, 0x46, 0x12, 0x76, 0x1e, 0x61, 0x6a, 0xb9, 0x3d, 0x27, 0xf4, 0xb1, 0xe5, 0xe1, 0xb3, 0xc0,
+	0xc5, 0x62, 0x4e, 0xf2, 0xb4, 0xaf, 0xc3, 0x13, 0x62, 0xf6, 0x9a, 0xc4, 0x27, 0xe3, 0x44, 0xc6,
+	0x1d, 0x58, 0xd9, 0xe3, 0xab, 0xd4, 0xc6, 0xaf, 0x12, 0x4c, 0x19, 0xda, 0x05, 0x10, 0xf1, 0x2f,
+	0x03, 0x8f, 0x6a, 0x4a, 0x6d, 0x6e, 0x53, 0x6d, 0x2e, 0x5f, 0x0c, 0xaa, 0xaa, 0x88, 0xeb, 0xb4,
+	0xa8, 0xad, 0x8a, 0x80, 0x8e, 0x47, 0x8d, 0xdb, 0xb0, 0xbc, 0xc7, 0xd3, 0x8d, 0xc1, 0xc5, 0x7e,
+	0xf3, 0xf0, 0x16, 0x9f, 0xe5, 0x70, 0x11, 0x90, 0xc2, 0x1f, 0xc0, 0xca, 0xa3, 0xe8, 0x80, 0x39,
+	0x0c, 0x67, 0x78, 0x1d, 0x16, 0xb3, 0x65, 0x4d, 0xa9, 0x29, 0x9b, 0xaa, 0x3d, 0xfc, 0x47, 0x7f,
+	0x82, 0x4a, 0x93, 0x2e, 0x75, 0xe3, 0xa0, 0x8b, 0xb5, 0x52, 0x4d, 0xd9, 0x5c, 0xb4, 0x47, 0x13,
+	0xc6, 0x1b, 0x05, 0x56, 0x87, 0x64, 0x34, 0x22, 0x21, 0xc5, 0x68, 0x07, 0xca, 0xa9, 0x5a, 0xce,
+	0xb4, 0xd2, 0x58, 0x37, 0xc7, 0xdd, 0x20, 0xfa, 0x72, 0x78, 0x1e, 0x61, 0x9b, 0x07, 0xa1, 0x26,
+	0xa8, 0x91, 0xc3, 0x7a, 0x67, 0xce, 0x69, 0x22, 0xe8, 0x2b, 0x8d, 0xbf, 0x27, 0x10, 0x42, 0xb6,
+	0x29, 0xf6, 0x63, 0x3e, 0x76, 0x58, 0xef, 0x69, 0x1a, 0x6b, 0x8f, 0x60, 0xc6, 0x87, 0x52, 0x56,
+	0x90, 0x24, 0x76, 0x58, 0x40, 0x42, 0x84, 0xa0, 0x1c, 0x3a, 0x7d, 0x2c, 0xc5, 0xf0, 0x31, 0xda,
+	0x02, 0x75, 0x58, 0x24, 0x9e, 0x49, 0x6d, 0x2e, 0x5d, 0x0c, 0xaa, 0x8b, 0x59, 0x8d, 0xc6, 0x34,
+	0x6b, 0xb0, 0x70, 0x86, 0x63, 0x1a, 0x90, 0x50, 0x9b, 0xe3, 0x0c, 0xd9, 0x2f, 0xaa, 0x42, 0x45,
+	0x92, 0x70, 0x89, 0x65, 0xbe, 0x2a, 0x8b, 0x9f, 0xaa, 0x42, 0xb7, 0x60, 0xc1, 0x8d, 0xb1, 0xc3,
+	0xb0, 0xa7, 0xfd, 0xca, 0xd5, 0xe8, 0xa6, 0xb0, 0xbe, 0x99, 0x59, 0xdf, 0x3c, 0xcc, 0xac, 0xdf,
+	0x2c, 0xbf, 0xff, 0x5c, 0x55, 0xec, 0x0c, 0x90, 0x62, 0x93, 0xc8, 0xe3, 0xd8, 0xf9, 0x59, 0xb1,
+	0x12, 0x90, 0x73, 0xd0, 0xc2, 0x37, 0x1c, 0xe4, 0xc1, 0x7a, 0x1b, 0xb3, 0x87, 0xc2, 0x9b, 0x22,
+	0x22, 0xf3, 0x42, 0x07, 0x4a, 0x81, 0x74, 0x41, 0xf3, 0xe6, 0xc5, 0xa0, 0x5a, 0xea, 0xb4, 0xbe,
+	0x0c, 0xaa, 0xd6, 0xf7, 0x78, 0xdf, 0xec, 0xb4, 0xec, 0x52, 0xe0, 0x19, 0x2f, 0x40, 0xbb, 0x9c,
+	0x45, 0x9a, 0xe4, 0x1e, 0xcc, 0x8b, 0xed, 0xf0, 0x54, 0x95, 0xc6, 0x56, 0x51, 0xd3, 0xe5, 0xe1,
+	0x31, 0x27, 0x29, 0x24, 0xd0, 0x70, 0xe1, 0x8f, 0x36, 0x66, 0xa2, 0x7d, 0x3f, 0x4c, 0xc3, 0x73,
+	0x5e, 0xa9, 0xc9, 0x24, 0x52, 0xc2, 0xdd, 0x9c, 0x84, 0x7f, 0xae, 0xf0, 0xed, 0x04, 0x41, 0x26,
+	0xe0, 0x06, 0x68, 0xfb, 0x01, 0x2d, 0x6e, 0xc3, 0xc4, 0xb1, 0x53, 0xf2, 0xc7, 0xee, 0x9d, 0x02,
+	0x1b, 0x05, 0xd0, 0xeb, 0x1c, 0xc0, 0x51, 0x23, 0x4a, 0xd7, 0x6d, 0xc4, 0xff, 0xb0, 0x9e, 0x6e,
+	0xa6, 0xa8, 0x13, 0x57, 0xcb, 0x78, 0xab, 0x88, 0x0a, 0x14, 0x96, 0xf7, 0x27, 0xab, 0x68, 0x7c,
+	0x54, 0xa0, 0x22, 0x6e, 0x91, 0x56, 0xfa, 0x64, 0xa1, 0x7d, 0x80, 0x36, 0x66, 0xf2, 0xa2, 0x46,
+	0x7f, 0x99, 0x97, 0x1e, 0x35, 0x73, 0xf2, 0x12, 0xd7, 0x37, 0x0a, 0xb6, 0x28, 0x42, 0xea, 0x0a,
+	0x7a, 0x06, 0x6b, 0x29, 0xdb, 0xf8, 0x2d, 0x45, 0x51, 0xad, 0x88, 0x74, 0xfc, 0x66, 0xd7, 0xa7,
+	0x47, 0x48, 0x92, 0xba, 0xd2, 0xf8, 0x34, 0x07, 0xcb, 0x22, 0xcf, 0x01, 0x8e, 0xd3, 0x42, 0xa2,
+	0x3e, 0xfc, 0x96, 0x3f, 0x78, 0x68, 0xbb, 0x80, 0x69, 0xca, 0x1d, 0xa0, 0xef, 0xcc, 0x14, 0x2b,
+	0xfa, 0x64, 0xfc, 0x82, 0x28, 0xa0, 0x4b, 0x66, 0xa4, 0xa8, 0x88, 0x64, 0x9a, 0xdd, 0xf5, 0xdd,
+	0xd9, 0x82, 0xb3, 0x94, 0x75, 0x05, 0x1d, 0xc3, 0x6a, 0xee, 0x60, 0xa2, 0xad, 0xe2, 0x6d, 0x17,
+	0xf8, 0x52, 0xdf, 0x9e, 0x25, 0x74, 0x28, 0x30, 0x82, 0xb5, 0xbc, 0x4d, 0x69, 0x61, 0x41, 0xa7,
+	0x1c, 0x03, 0x7d, 0x67, 0xa6, 0xd8, 0x91, 0xba, 0x06, 0x86, 0x25, 0xf9, 0xac, 0x0a, 0x33, 0x3e,
+	0xe1, 0x66, 0x94, 0x53, 0x85, 0x66, 0x9c, 0x7c, 0xd2, 0x75, 0xe3, 0xaa, 0x10, 0x91, 0xa8, 0xae,
+	0x74, 0xe7, 0xf9, 0xc3, 0xf2, 0xdf, 0xd7, 0x00, 0x00, 0x00, 0xff, 0xff, 0x27, 0x6f, 0x4b, 0x90,
+	0xd4, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -354,6 +732,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ConfigDiagsClient interface {
+	//    option deprecated = true; Commented out for the moment - breaks static check
 	// GetChanges returns a stream of submitted changes objects.
 	GetChanges(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (ConfigDiags_GetChangesClient, error)
 	// GetConfigurations returns a stream of submitted configurations aimed at individual devices.
@@ -369,7 +748,7 @@ func NewConfigDiagsClient(cc *grpc.ClientConn) ConfigDiagsClient {
 }
 
 func (c *configDiagsClient) GetChanges(ctx context.Context, in *ChangesRequest, opts ...grpc.CallOption) (ConfigDiags_GetChangesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_ConfigDiags_serviceDesc.Streams[0], "/proto.ConfigDiags/GetChanges", opts...)
+	stream, err := c.cc.NewStream(ctx, &_ConfigDiags_serviceDesc.Streams[0], "/onos.config.diags.ConfigDiags/GetChanges", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +780,7 @@ func (x *configDiagsGetChangesClient) Recv() (*admin.Change, error) {
 }
 
 func (c *configDiagsClient) GetConfigurations(ctx context.Context, in *ConfigRequest, opts ...grpc.CallOption) (ConfigDiags_GetConfigurationsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_ConfigDiags_serviceDesc.Streams[1], "/proto.ConfigDiags/GetConfigurations", opts...)
+	stream, err := c.cc.NewStream(ctx, &_ConfigDiags_serviceDesc.Streams[1], "/onos.config.diags.ConfigDiags/GetConfigurations", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -434,6 +813,7 @@ func (x *configDiagsGetConfigurationsClient) Recv() (*Configuration, error) {
 
 // ConfigDiagsServer is the server API for ConfigDiags service.
 type ConfigDiagsServer interface {
+	//    option deprecated = true; Commented out for the moment - breaks static check
 	// GetChanges returns a stream of submitted changes objects.
 	GetChanges(*ChangesRequest, ConfigDiags_GetChangesServer) error
 	// GetConfigurations returns a stream of submitted configurations aimed at individual devices.
@@ -498,7 +878,7 @@ func (x *configDiagsGetConfigurationsServer) Send(m *Configuration) error {
 }
 
 var _ConfigDiags_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.ConfigDiags",
+	ServiceName: "onos.config.diags.ConfigDiags",
 	HandlerType: (*ConfigDiagsServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
@@ -510,6 +890,249 @@ var _ConfigDiags_serviceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "GetConfigurations",
 			Handler:       _ConfigDiags_GetConfigurations_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "pkg/northbound/diags/diags.proto",
+}
+
+// ChangeServiceClient is the client API for ChangeService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type ChangeServiceClient interface {
+	// Get gets a NetworkChange by ID
+	GetNetworkChange(ctx context.Context, in *GetNetworkChangeRequest, opts ...grpc.CallOption) (*GetNetworkChangeResponse, error)
+	// List gets a stream of network change add/update/remove events
+	ListNetworkChanges(ctx context.Context, in *ListNetworkChangeRequest, opts ...grpc.CallOption) (ChangeService_ListNetworkChangesClient, error)
+	// Get gets a DeviceChange by ID
+	GetDeviceChange(ctx context.Context, in *GetDeviceChangeRequest, opts ...grpc.CallOption) (*GetDeviceChangeResponse, error)
+	// List gets a stream of device change add/update/remove events
+	ListDeviceChanges(ctx context.Context, in *ListDeviceChangeRequest, opts ...grpc.CallOption) (ChangeService_ListDeviceChangesClient, error)
+}
+
+type changeServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewChangeServiceClient(cc *grpc.ClientConn) ChangeServiceClient {
+	return &changeServiceClient{cc}
+}
+
+func (c *changeServiceClient) GetNetworkChange(ctx context.Context, in *GetNetworkChangeRequest, opts ...grpc.CallOption) (*GetNetworkChangeResponse, error) {
+	out := new(GetNetworkChangeResponse)
+	err := c.cc.Invoke(ctx, "/onos.config.diags.ChangeService/GetNetworkChange", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *changeServiceClient) ListNetworkChanges(ctx context.Context, in *ListNetworkChangeRequest, opts ...grpc.CallOption) (ChangeService_ListNetworkChangesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_ChangeService_serviceDesc.Streams[0], "/onos.config.diags.ChangeService/ListNetworkChanges", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &changeServiceListNetworkChangesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ChangeService_ListNetworkChangesClient interface {
+	Recv() (*ListNetworkChangeResponse, error)
+	grpc.ClientStream
+}
+
+type changeServiceListNetworkChangesClient struct {
+	grpc.ClientStream
+}
+
+func (x *changeServiceListNetworkChangesClient) Recv() (*ListNetworkChangeResponse, error) {
+	m := new(ListNetworkChangeResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *changeServiceClient) GetDeviceChange(ctx context.Context, in *GetDeviceChangeRequest, opts ...grpc.CallOption) (*GetDeviceChangeResponse, error) {
+	out := new(GetDeviceChangeResponse)
+	err := c.cc.Invoke(ctx, "/onos.config.diags.ChangeService/GetDeviceChange", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *changeServiceClient) ListDeviceChanges(ctx context.Context, in *ListDeviceChangeRequest, opts ...grpc.CallOption) (ChangeService_ListDeviceChangesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_ChangeService_serviceDesc.Streams[1], "/onos.config.diags.ChangeService/ListDeviceChanges", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &changeServiceListDeviceChangesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ChangeService_ListDeviceChangesClient interface {
+	Recv() (*ListDeviceChangeResponse, error)
+	grpc.ClientStream
+}
+
+type changeServiceListDeviceChangesClient struct {
+	grpc.ClientStream
+}
+
+func (x *changeServiceListDeviceChangesClient) Recv() (*ListDeviceChangeResponse, error) {
+	m := new(ListDeviceChangeResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ChangeServiceServer is the server API for ChangeService service.
+type ChangeServiceServer interface {
+	// Get gets a NetworkChange by ID
+	GetNetworkChange(context.Context, *GetNetworkChangeRequest) (*GetNetworkChangeResponse, error)
+	// List gets a stream of network change add/update/remove events
+	ListNetworkChanges(*ListNetworkChangeRequest, ChangeService_ListNetworkChangesServer) error
+	// Get gets a DeviceChange by ID
+	GetDeviceChange(context.Context, *GetDeviceChangeRequest) (*GetDeviceChangeResponse, error)
+	// List gets a stream of device change add/update/remove events
+	ListDeviceChanges(*ListDeviceChangeRequest, ChangeService_ListDeviceChangesServer) error
+}
+
+// UnimplementedChangeServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedChangeServiceServer struct {
+}
+
+func (*UnimplementedChangeServiceServer) GetNetworkChange(ctx context.Context, req *GetNetworkChangeRequest) (*GetNetworkChangeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNetworkChange not implemented")
+}
+func (*UnimplementedChangeServiceServer) ListNetworkChanges(req *ListNetworkChangeRequest, srv ChangeService_ListNetworkChangesServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListNetworkChanges not implemented")
+}
+func (*UnimplementedChangeServiceServer) GetDeviceChange(ctx context.Context, req *GetDeviceChangeRequest) (*GetDeviceChangeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeviceChange not implemented")
+}
+func (*UnimplementedChangeServiceServer) ListDeviceChanges(req *ListDeviceChangeRequest, srv ChangeService_ListDeviceChangesServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListDeviceChanges not implemented")
+}
+
+func RegisterChangeServiceServer(s *grpc.Server, srv ChangeServiceServer) {
+	s.RegisterService(&_ChangeService_serviceDesc, srv)
+}
+
+func _ChangeService_GetNetworkChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetNetworkChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChangeServiceServer).GetNetworkChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/onos.config.diags.ChangeService/GetNetworkChange",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChangeServiceServer).GetNetworkChange(ctx, req.(*GetNetworkChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChangeService_ListNetworkChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListNetworkChangeRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChangeServiceServer).ListNetworkChanges(m, &changeServiceListNetworkChangesServer{stream})
+}
+
+type ChangeService_ListNetworkChangesServer interface {
+	Send(*ListNetworkChangeResponse) error
+	grpc.ServerStream
+}
+
+type changeServiceListNetworkChangesServer struct {
+	grpc.ServerStream
+}
+
+func (x *changeServiceListNetworkChangesServer) Send(m *ListNetworkChangeResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _ChangeService_GetDeviceChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeviceChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChangeServiceServer).GetDeviceChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/onos.config.diags.ChangeService/GetDeviceChange",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChangeServiceServer).GetDeviceChange(ctx, req.(*GetDeviceChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChangeService_ListDeviceChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListDeviceChangeRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChangeServiceServer).ListDeviceChanges(m, &changeServiceListDeviceChangesServer{stream})
+}
+
+type ChangeService_ListDeviceChangesServer interface {
+	Send(*ListDeviceChangeResponse) error
+	grpc.ServerStream
+}
+
+type changeServiceListDeviceChangesServer struct {
+	grpc.ServerStream
+}
+
+func (x *changeServiceListDeviceChangesServer) Send(m *ListDeviceChangeResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+var _ChangeService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "onos.config.diags.ChangeService",
+	HandlerType: (*ChangeServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetNetworkChange",
+			Handler:    _ChangeService_GetNetworkChange_Handler,
+		},
+		{
+			MethodName: "GetDeviceChange",
+			Handler:    _ChangeService_GetDeviceChange_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ListNetworkChanges",
+			Handler:       _ChangeService_ListNetworkChanges_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ListDeviceChanges",
+			Handler:       _ChangeService_ListDeviceChanges_Handler,
 			ServerStreams: true,
 		},
 	},
@@ -534,7 +1157,7 @@ func NewOpStateDiagsClient(cc *grpc.ClientConn) OpStateDiagsClient {
 }
 
 func (c *opStateDiagsClient) GetOpState(ctx context.Context, in *OpStateRequest, opts ...grpc.CallOption) (OpStateDiags_GetOpStateClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_OpStateDiags_serviceDesc.Streams[0], "/proto.OpStateDiags/GetOpState", opts...)
+	stream, err := c.cc.NewStream(ctx, &_OpStateDiags_serviceDesc.Streams[0], "/onos.config.diags.OpStateDiags/GetOpState", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -606,7 +1229,7 @@ func (x *opStateDiagsGetOpStateServer) Send(m *OpStateResponse) error {
 }
 
 var _OpStateDiags_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.OpStateDiags",
+	ServiceName: "onos.config.diags.OpStateDiags",
 	HandlerType: (*OpStateDiagsServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{

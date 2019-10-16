@@ -16,8 +16,8 @@ limitations under the License.
 
 syntax = "proto3";
 
-// Package admin defines the administrative and diagnostic gRPC interfaces.
-package proto;
+// Package admin defines the administrative gRPC interfaces.
+package onos.config.admin;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
@@ -51,6 +51,7 @@ enum Type {
 
 // Change is a descriptor of a submitted configuration change targeted at a single device.
 message Change {
+    //    option deprecated = true; Commented out for the moment - breaks static check
     google.protobuf.Timestamp time = 1 [(gogoproto.stdtime) = true];
     string id = 2;
     string desc = 3;
@@ -59,6 +60,7 @@ message Change {
 
 // NetChange is a descriptor of a configuration change submitted via gNMI.
 message NetChange {
+    //    option deprecated = true; Commented out for the moment - breaks static check
     google.protobuf.Timestamp time = 1 [(gogoproto.stdtime) = true];
     string name = 2;
     string user = 3;
