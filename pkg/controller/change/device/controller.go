@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/types"
 	changetype "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/pkg/utils/values"
 	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 )
@@ -123,7 +124,12 @@ func (r *Reconciler) reconcileChange(change *devicechangetype.DeviceChange) (boo
 // doChange pushes the given change to the device
 func (r *Reconciler) doChange(change *devicechangetype.DeviceChange) error {
 	log.Infof("doChange %v", change)
-	// TODO: Apply the change
+	// TODO: Apply the change here
+    setRequest, err := values.NativeNewChangeToGnmiChange(change.Change)
+    if err != nil {
+    	return err
+	}
+    log.Info("Reconciler doChange request ", setRequest)
 	return nil
 }
 
@@ -151,6 +157,11 @@ func (r *Reconciler) reconcileRollback(change *devicechangetype.DeviceChange) (b
 func (r *Reconciler) doRollback(change *devicechangetype.DeviceChange) error {
 	log.Infof("doRollback %v", change)
 	// TODO: Roll back the change
+	setRequest, err := values.NativeNewChangeToGnmiChange(change.Change)
+	if err != nil {
+		return err
+	}
+	log.Info("Reconciler doRollback request ", setRequest)
 	return nil
 }
 
