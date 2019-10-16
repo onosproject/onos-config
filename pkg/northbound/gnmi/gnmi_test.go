@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 }
 
 // setUp should not depend on any global variables
-func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
+func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore, *mockstore.MockNetworkChangesStore) {
 	var server = &Server{}
 
 	ctrl := gomock.NewController(t)
@@ -65,7 +65,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStore) {
 
 	log.Info("Finished setUp()")
 	//TODO return all mock stores here. it needs to be passed because otherwise we can't do expect calls
-	return server, mgr, mockDeviceStore
+	return server, mgr, mockDeviceStore, mockNetworkChangesStore
 }
 
 func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {

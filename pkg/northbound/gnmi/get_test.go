@@ -30,7 +30,7 @@ import (
 // See also the Test_getWithPrefixNoOtherPathsNoTarget below where the Target
 // is in the Prefix
 func Test_getNoTarget(t *testing.T) {
-	server, _, mockStore := setUp(t)
+	server, _, mockStore, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	noTargetPath1 := gnmi.Path{Elem: make([]*gnmi.PathElem, 0)}
@@ -45,7 +45,7 @@ func Test_getNoTarget(t *testing.T) {
 }
 
 func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
-	server, _, mockStore := setUp(t)
+	server, _, mockStore, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
@@ -62,7 +62,7 @@ func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
 
 // Test_getNoPathElems tests for  Paths with no elements - should treat it like /
 func Test_getNoPathElems(t *testing.T) {
-	server, _, mockStore := setUp(t)
+	server, _, mockStore, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	noPath1 := gnmi.Path{Target: "Device1"}
@@ -85,7 +85,7 @@ func Test_getNoPathElems(t *testing.T) {
 // Test_getAllDevices is where a wildcard is used for target - path is ignored
 func Test_getAllDevices(t *testing.T) {
 
-	server, _, mockStore := setUp(t)
+	server, _, mockStore, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	allDevicesPath := gnmi.Path{Elem: make([]*gnmi.PathElem, 0), Target: "*"}
@@ -111,7 +111,7 @@ func Test_getAllDevices(t *testing.T) {
 // Test_getalldevices is where a wildcard is used for target - path is ignored
 func Test_getAllDevicesInPrefix(t *testing.T) {
 
-	server, _, mockStore := setUp(t)
+	server, _, mockStore, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	request := gnmi.GetRequest{
@@ -132,7 +132,7 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 }
 
 func Test_get2PathsWithPrefix(t *testing.T) {
-	server, _, mockStore := setUp(t)
+	server, _, mockStore, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
@@ -173,7 +173,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 }
 
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
-	server, _, mockStore := setUp(t)
+	server, _, mockStore, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
@@ -201,7 +201,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 }
 
 func Test_targetDoesNotExist(t *testing.T) {
-	server, _, mockStore := setUp(t)
+	server, _, mockStore, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
@@ -219,7 +219,7 @@ func Test_targetDoesNotExist(t *testing.T) {
 // Target does exist, but specified path does not
 // No error - just an empty value
 func Test_pathDoesNotExist(t *testing.T) {
-	server, _, mockStore := setUp(t)
+	server, _, mockStore, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})

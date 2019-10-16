@@ -19,7 +19,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"
 	"time"
@@ -31,7 +33,7 @@ const SetConfigAlreadyApplied = "Already applied:"
 // ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target
 func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
-	deviceType string, updates types.TypedValueMap, deletes []string) error {
+	deviceType string, updates devicechangetypes.TypedValueMap, deletes []string) error {
 
 	deviceConfig, _, err := m.getStoredConfig(deviceName, version, deviceType, true)
 	if err != nil {
@@ -77,7 +79,7 @@ func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 // SetNetworkConfig sets the given the given updates and deletes, according to the path on the configuration
 // for the specified target
 func (m *Manager) SetNetworkConfig(deviceName string, version string,
-	deviceType string, updates types.TypedValueMap,
+	deviceType string, updates devicechangetypes.TypedValueMap,
 	deletes []string, description string) (change.ID, *store.ConfigName, error) {
 
 	//TODO check with topo that the device is available and connected
@@ -119,6 +121,62 @@ func (m *Manager) SetNetworkConfig(deviceName string, version string,
 		changeID, true)
 
 	return changeID, configName, nil
+}
+
+// SetNewNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
+func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
+	targetRemoves map[string][]string, version string, deviceType string, netcfgchangename string) {
+	//TODO evaluate need of user and add it back if need be.
+	//TODO start watch and build update Result
+	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, version,
+		deviceType, netcfgchangename)
+	if errChanges != nil {
+		log.Error("Can't compute new network configs", errChanges)
+	}
+	newNetworkConfig, errNetChange := networkchangetypes.NewNetworkChange(netcfgchangename, allDeviceChanges)
+	if errNetChange != nil {
+		log.Error("Can't create new network config", errNetChange)
+	}
+	//Writing to the atomix backed store too
+	errStoreNewChange := m.NetworkChangesStore.Create(newNetworkConfig)
+	if errStoreNewChange != nil {
+		log.Error("Can't write new network config to atomix store", errStoreNewChange)
+	}
+}
+
+// ComputeNewDeviceChange computes a given device change the given updates and deletes, according to the path
+// on the configuration for the specified target
+func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
+	deviceType string, updates devicechangetypes.TypedValueMap,
+	deletes []string, description string) (*devicechangetypes.Change, error) {
+
+	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
+	//updates
+	for path, value := range updates {
+		changeValue, err := devicechangetypes.NewChangeValue(path, value, false)
+		if err != nil {
+			log.Warningf("Error creating value for %s %v", path, err)
+			continue
+		}
+		newChanges = append(newChanges, changeValue)
+	}
+	//deletes
+	for _, path := range deletes {
+		changeValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
+		newChanges = append(newChanges, changeValue)
+	}
+	//description := fmt.Sprintf("Originally created as part of %s", description)
+	//if description == "" {
+	//	description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
+	//}
+	//TODO lost description of Change
+	changeElement := &devicechangetypes.Change{
+		DeviceID:      devicetopo.ID(deviceName),
+		DeviceVersion: version,
+		Values:        newChanges,
+	}
+
+	return changeElement, nil
 }
 
 // getStoredConfig looks for an exact match for the config name or then a partial match based on the device name
@@ -173,4 +231,36 @@ func (m *Manager) getStoredConfig(deviceName string, version string,
 		}
 	}
 	return &deviceConfig, &expConfigName, nil
+}
+
+//computeNewNetworkConfig computes each device change
+func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
+	targetRemoves map[string][]string, version string, deviceType string,
+	description string) ([]*devicechangetypes.Change, error) {
+
+	deviceChanges := make([]*devicechangetypes.Change, 0)
+	for target, updates := range targetUpdates {
+		//FIXME this is a sequential job, not parallelized
+		// target is a device name with no version
+		newChange, err := m.ComputeNewDeviceChange(
+			target, version, deviceType, updates, targetRemoves[target], description)
+		if err != nil {
+			log.Error("Error in setting config: ", newChange, " for target ", err)
+			continue
+		}
+
+		deviceChanges = append(deviceChanges, newChange)
+	}
+
+	for target, removes := range targetRemoves {
+		newChange, err := m.ComputeNewDeviceChange(
+			target, version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
+		if err != nil {
+			log.Error("Error in setting config: ", newChange, " for target ", err)
+			continue
+		}
+
+		deviceChanges = append(deviceChanges, newChange)
+	}
+	return deviceChanges, nil
 }
