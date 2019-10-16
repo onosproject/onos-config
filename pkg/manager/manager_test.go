@@ -105,6 +105,15 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	mockNetworkSnapshotStore := mockstore.NewMockNetworkSnapshotStore(ctrl)
 	mockDeviceSnapshotStore := mockstore.NewMockDeviceSnapshotStore(ctrl)
 
+	mockLeadershipStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+	mockLeadershipStore.EXPECT().IsLeader().AnyTimes()
+	mockMastershipStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
+	mockNetworkChangesStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+	mockDeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
+	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+	mockNetworkSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+	mockDeviceSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
 			Version:   "1.0",
