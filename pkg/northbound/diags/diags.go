@@ -16,7 +16,6 @@
 package diags
 
 import (
-	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
@@ -196,18 +195,6 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 
 	log.Infof("Closing NBI Diags OpState stream (no subscribe) for %s", r.DeviceId)
 	return nil
-}
-
-// GetNetworkChange returns details of one specific Network Change
-func (s Server) GetNetworkChange(ctx context.Context, r *GetNetworkChangeRequest) (*GetNetworkChangeResponse, error) {
-
-	return nil, nil
-}
-
-// GetDeviceChange returns details of one specific Device Change
-func (s Server) GetDeviceChange(ctx context.Context, r *GetDeviceChangeRequest) (*GetDeviceChangeResponse, error) {
-
-	return nil, nil
 }
 
 // ListNetworkChanges provides a stream of Network Changes

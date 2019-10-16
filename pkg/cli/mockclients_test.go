@@ -30,6 +30,8 @@ type MockClientsConfig struct {
 	netChangesClient                *MockConfigAdminServiceGetNetworkChangesClient
 	configDiagsClientConfigurations *MockConfigDiagsGetConfigurationsClient
 	configDiagsClientChanges        *MockConfigDiagsGetChangesClient
+	listDeviceChangesClient         *MockChangeServiceListDeviceChangesClient
+	listNetworkChangesClient        *MockChangeServiceListNetworkChangesClient
 }
 
 // mockConfigAdminServiceClient is the mock for the ConfigAdminServiceClient
@@ -292,6 +294,100 @@ func (c MockConfigAdminServiceGetNetworkChangesClient) RecvMsg(m interface{}) er
 	return c.recvMsgFn(m)
 }
 
+// MockChangeServiceListDeviceChangesClient is a mock of the ChangeService_ListDeviceChangesClient
+// Function pointers are used to allow mocking specific APIs
+type MockChangeServiceListDeviceChangesClient struct {
+	recvFn      func() (*diags.ListDeviceChangeResponse, error)
+	headerFn    func() (metadata.MD, error)
+	trailerFn   func() metadata.MD
+	closeSendFn func() error
+	contextFn   func() context.Context
+	sendMsgFn   func(interface{}) error
+	recvMsgFn   func(interface{}) error
+}
+
+func (c MockChangeServiceListDeviceChangesClient) Recv() (*diags.ListDeviceChangeResponse, error) {
+	return c.recvFn()
+}
+
+func (c MockChangeServiceListDeviceChangesClient) Header() (metadata.MD, error) {
+	return c.headerFn()
+}
+
+func (c MockChangeServiceListDeviceChangesClient) Trailer() metadata.MD {
+	return c.trailerFn()
+}
+
+func (c MockChangeServiceListDeviceChangesClient) CloseSend() error {
+	return c.closeSendFn()
+}
+
+func (c MockChangeServiceListDeviceChangesClient) Context() context.Context {
+	return c.contextFn()
+}
+
+func (c MockChangeServiceListDeviceChangesClient) SendMsg(m interface{}) error {
+	return c.sendMsgFn(m)
+}
+
+func (c MockChangeServiceListDeviceChangesClient) RecvMsg(m interface{}) error {
+	return c.recvMsgFn(m)
+}
+
+// MockChangeServiceListNetworkChangesClient is a mock of the ChangeService_ListNetworkChangesClient
+// Function pointers are used to allow mocking specific APIs
+type MockChangeServiceListNetworkChangesClient struct {
+	recvFn      func() (*diags.ListNetworkChangeResponse, error)
+	headerFn    func() (metadata.MD, error)
+	trailerFn   func() metadata.MD
+	closeSendFn func() error
+	contextFn   func() context.Context
+	sendMsgFn   func(interface{}) error
+	recvMsgFn   func(interface{}) error
+}
+
+func (c MockChangeServiceListNetworkChangesClient) Recv() (*diags.ListNetworkChangeResponse, error) {
+	return c.recvFn()
+}
+
+func (c MockChangeServiceListNetworkChangesClient) Header() (metadata.MD, error) {
+	return c.headerFn()
+}
+
+func (c MockChangeServiceListNetworkChangesClient) Trailer() metadata.MD {
+	return c.trailerFn()
+}
+
+func (c MockChangeServiceListNetworkChangesClient) CloseSend() error {
+	return c.closeSendFn()
+}
+
+func (c MockChangeServiceListNetworkChangesClient) Context() context.Context {
+	return c.contextFn()
+}
+
+func (c MockChangeServiceListNetworkChangesClient) SendMsg(m interface{}) error {
+	return c.sendMsgFn(m)
+}
+
+func (c MockChangeServiceListNetworkChangesClient) RecvMsg(m interface{}) error {
+	return c.recvMsgFn(m)
+}
+
+// mockChangeServiceClient is the mock for the ChangeServiceClient
+type mockChangeServiceClient struct {
+	getChangeServiceClientDeviceChanges  diags.ChangeService_ListDeviceChangesClient
+	getChangeServiceClientNetworkChanges diags.ChangeService_ListNetworkChangesClient
+}
+
+func (m mockChangeServiceClient) ListNetworkChanges(ctx context.Context, in *diags.ListNetworkChangeRequest, opts ...grpc.CallOption) (diags.ChangeService_ListNetworkChangesClient, error) {
+	return m.getChangeServiceClientNetworkChanges, nil
+}
+
+func (m mockChangeServiceClient) ListDeviceChanges(ctx context.Context, in *diags.ListDeviceChangeRequest, opts ...grpc.CallOption) (diags.ChangeService_ListDeviceChangesClient, error) {
+	return m.getChangeServiceClientDeviceChanges, nil
+}
+
 // setUpMockClients sets up factories to create mocks of top level clients used by the CLI
 func setUpMockClients(config MockClientsConfig) {
 	admin.ConfigAdminClientFactory = func(cc *grpc.ClientConn) admin.ConfigAdminServiceClient {
@@ -311,6 +407,12 @@ func setUpMockClients(config MockClientsConfig) {
 		return mockConfigDiagsClient{
 			getConfigDiagsClientConfigurations: config.configDiagsClientConfigurations,
 			getConfigDiagsClientChanges:        config.configDiagsClientChanges,
+		}
+	}
+	diags.ChangeServiceClientFactory = func(cc *grpc.ClientConn) diags.ChangeServiceClient {
+		return mockChangeServiceClient{
+			getChangeServiceClientDeviceChanges:  config.listDeviceChangesClient,
+			getChangeServiceClientNetworkChanges: config.listNetworkChangesClient,
 		}
 	}
 }
