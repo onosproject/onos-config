@@ -26,7 +26,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicetopo "github.com/onosproject/onos-config/pkg/store/device"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
@@ -50,7 +50,7 @@ type Manager struct {
 	OperationalStateChannel chan events.OperationalStateEvent
 	SouthboundErrorChan     chan events.DeviceResponse
 	Dispatcher              *dispatcher.Dispatcher
-	OperationalStateCache   map[devicepb.ID]devicechangetypes.TypedValueMap
+	OperationalStateCache   map[devicepb.ID]types.TypedValueMap
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -80,7 +80,7 @@ func NewManager(configStore *store.ConfigurationStore, deviceChangesStore device
 		OperationalStateChannel: make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:     make(chan events.DeviceResponse, 10),
 		Dispatcher:              dispatcher.NewDispatcher(),
-		OperationalStateCache:   make(map[devicepb.ID]devicechangetypes.TypedValueMap),
+		OperationalStateCache:   make(map[devicepb.ID]types.TypedValueMap),
 	}
 
 	changeIds := make([]string, 0)
@@ -289,12 +289,12 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 	}
 }
 
-func (m *Manager) computeChange(updates devicechangetypes.TypedValueMap,
+func (m *Manager) computeChange(updates types.TypedValueMap,
 	deletes []string, description string) (*change.Change, error) {
-	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
+	var newChanges = make([]*types.ChangeValue, 0)
 	//updates
 	for path, value := range updates {
-		changeValue, err := devicechangetypes.NewChangeValue(path, value, false)
+		changeValue, err := types.NewChangeValue(path, value, false)
 		if err != nil {
 			log.Warningf("Error creating value for %s %v", path, err)
 			continue
@@ -303,43 +303,13 @@ func (m *Manager) computeChange(updates devicechangetypes.TypedValueMap,
 	}
 	//deletes
 	for _, path := range deletes {
-		changeValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
+		changeValue, _ := types.NewChangeValue(path, types.NewTypedValueEmpty(), true)
 		newChanges = append(newChanges, changeValue)
 	}
 	if description == "" {
 		description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
 	}
 	return change.NewChange(newChanges, description)
-}
-
-func (m *Manager) computeDeviceChange(ID devicepb.ID, deviceVersion string, updates devicechangetypes.TypedValueMap,
-	deletes []string, description string) (*devicechangetypes.Change, error) {
-	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
-	//updates
-	for path, value := range updates {
-		changeValue, err := devicechangetypes.NewChangeValue(path, value, false)
-		if err != nil {
-			log.Warningf("Error creating value for %s %v", path, err)
-			continue
-		}
-		newChanges = append(newChanges, changeValue)
-	}
-	//deletes
-	for _, path := range deletes {
-		changeValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
-		newChanges = append(newChanges, changeValue)
-	}
-	//if description == "" {
-	//	description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
-	//}
-	//TODO lost description of Change
-	changeElement := &devicechangetypes.Change{
-		DeviceID:      ID,
-		DeviceVersion: deviceVersion,
-		Values:        newChanges,
-	}
-
-	return changeElement, nil
 }
 
 func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
