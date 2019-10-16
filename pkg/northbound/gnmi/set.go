@@ -172,13 +172,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	//TODO evaluate need of user
-	// TODO start watch and build update Result
+	//TODO evaluate need of user and add it back if need be.
+	//TODO start watch and build update Result
 	allDeviceChanges, errChanges := s.computeConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
 	if errChanges != nil {
 		log.Error("Can't compute new network config", err)
 	}
-	newNetworkConfig, errNetConfig := networktypes.NewNetworkConfiguration(netcfgchangename, "User1", allDeviceChanges)
+	newNetworkConfig, errNetConfig := networktypes.NewNetworkConfiguration(netcfgchangename, allDeviceChanges)
 	if errNetConfig != nil {
 		log.Error("Can't compute new network config", err)
 	}
@@ -209,6 +209,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	manager.GetManager().NetworkStore.Store =
 		append(manager.GetManager().NetworkStore.Store, *networkConfig)
+	//TODO computeConfig, NewNetworkConfiguration and the followign Create can be combined in a manger method
 	//Writing to the atomix backed store too
 	errNewStore := manager.GetManager().NetworkChangesStore.Create(newNetworkConfig)
 	if errNewStore != nil {
