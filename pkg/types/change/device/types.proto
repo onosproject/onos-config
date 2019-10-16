@@ -38,20 +38,29 @@ message DeviceChange {
     // used for optimistic concurrency control when updating or deleting the change state.
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
-    // 'network_change_id' is the identifier of the network change from which this change was created
-    string network_change_id = 4 [(gogoproto.customname) = "NetworkChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+    // 'network_change' is a reference to the NetworkChange that created this change
+    NetworkChangeRef network_change = 4 [(gogoproto.nullable) = false];
 
     // 'change' is the change object
     Change change = 5;
 
     // 'status' is the lifecycle status of the change
-    onos.config.change.Status status = 7 [(gogoproto.nullable) = false];
+    onos.config.change.Status status = 6 [(gogoproto.nullable) = false];
 
     // 'created' is the time at which the change was created
-    google.protobuf.Timestamp created = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp created = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 
     // 'updated' is the time at which the change was last updated
-    google.protobuf.Timestamp updated = 9 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+    google.protobuf.Timestamp updated = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// NetworkChangeRef is a back reference to the NetworkChange that created a DeviceChange
+message NetworkChangeRef {
+    // 'id' is the identifier of the network change from which this change was created
+    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+
+    // 'index' is the index of the network change from which this change was created
+    uint64 index = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.Index"];
 }
 
 // Change represents a configuration change to a single device

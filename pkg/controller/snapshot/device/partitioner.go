@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cluster
+package device
 
-import "os"
+import (
+	"github.com/onosproject/onos-config/pkg/controller"
+	"github.com/onosproject/onos-config/pkg/types"
+	devicesnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/device"
+)
 
-const nodeIDEnv = "NODE_ID"
-
-// NodeID is a node identifier provided by the environment
-type NodeID string
-
-// GetNodeID gets the local node identifier
-func GetNodeID() NodeID {
-	nodeID := os.Getenv(nodeIDEnv)
-	if nodeID == "" {
-		return NodeID("onos-config")
-	}
-	return NodeID(nodeID)
+// Partitioner is a WorkPartitioner for device snapshots
+type Partitioner struct {
 }
+
+// Partition returns the device as a partition key
+func (p *Partitioner) Partition(id types.ID) (controller.PartitionKey, error) {
+	return controller.PartitionKey(devicesnaptypes.ID(id).GetDeviceID()), nil
+}
+
+var _ controller.WorkPartitioner = &Partitioner{}

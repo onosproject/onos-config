@@ -24,6 +24,8 @@ import (
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
 	"github.com/gogo/protobuf/proto"
+	"github.com/google/uuid"
+	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
 	"google.golang.org/grpc"
@@ -34,6 +36,10 @@ import (
 )
 
 const changesName = "network-changes"
+
+func init() {
+	uuid.SetNodeID([]byte(cluster.GetNodeID()))
+}
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore() (Store, error) {
@@ -122,6 +128,11 @@ type Store interface {
 	Watch(chan<- *networkchange.NetworkChange) error
 }
 
+// newChangeID creates a new network change ID
+func newChangeID() networkchange.ID {
+	return networkchange.ID(uuid.New().String())
+}
+
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
 	changes indexedmap.IndexedMap
@@ -155,7 +166,7 @@ func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.Netw
 
 func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
 	if change.ID == "" {
-		return errors.New("no change ID specified")
+		change.ID = newChangeID()
 	}
 	if change.Revision != 0 {
 		return errors.New("not a new object")

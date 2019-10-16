@@ -238,7 +238,10 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 
 func newChange(device device.ID) *devicechange.DeviceChange {
 	return &devicechange.DeviceChange{
-		NetworkChangeID: types.ID(device),
+		NetworkChange: devicechange.NetworkChangeRef{
+			ID:    types.ID(device),
+			Index: 1,
+		},
 		Change: &devicechange.Change{
 			DeviceID: device,
 			Values: []*devicechange.ChangeValue{

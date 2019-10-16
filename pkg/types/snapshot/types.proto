@@ -1,0 +1,58 @@
+/*
+Copyright 2019-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+package onos.config.snapshot;
+
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
+
+// Status is the status of a snapshot
+message Status {
+    // 'phase' is the snapshot phase
+    Phase phase = 1;
+
+    // 'state' is the state of a snapshot
+    State state = 2;
+}
+
+// Phase is a snapshot phase
+enum Phase {
+    // MARK is the first phase in which changes are marked for deletion
+    MARK = 0;
+
+    // DELETE is the second phase in which changes are deleted from stores
+    DELETE = 1;
+}
+
+// State is the state of a snapshot within a phase
+enum State {
+    // PENDING indicates the snapshot is pending
+    PENDING = 0;
+
+    // RUNNING indicates the snapshot is in progress
+    RUNNING = 1;
+
+    // COMPLETE indicates the snapshot is complete
+    COMPLETE = 2;
+}
+
+// RetentionOptions specifies the retention policy for a change log
+message RetentionOptions {
+    // 'retain_window' is the duration for which to retain network changes
+    google.protobuf.Duration retain_window = 1 [(gogoproto.stdduration) = true];
+}

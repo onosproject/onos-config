@@ -4,12 +4,14 @@ go 1.12
 
 require (
 	github.com/atomix/atomix-go-client v0.0.0-20191015014733-9a44b435e975
-	github.com/atomix/atomix-go-local v0.0.0-20191015014655-c79f6afd1662
-	github.com/atomix/atomix-go-node v0.0.0-20191015014638-64dd6c85416c
+	github.com/atomix/atomix-go-local v0.0.0-20191015235214-be8b36782807
+	github.com/atomix/atomix-go-node v0.0.0-20191015235149-a27e7ec80c20
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
+	github.com/google/uuid v1.1.1
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/onosproject/onos-topo v0.0.0-20191007162302-b2f95b144981
 	github.com/openconfig/gnmi v0.0.0-20180912164834-33a1865c3029
