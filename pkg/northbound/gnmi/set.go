@@ -24,10 +24,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -37,7 +37,7 @@ import (
 	"time"
 )
 
-type mapTargetUpdates map[string]types.TypedValueMap
+type mapTargetUpdates map[string]devicechangetypes.TypedValueMap
 type mapTargetRemoves map[string][]string
 type mapNetworkChanges map[store.ConfigName]change.ID
 
@@ -123,7 +123,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			return nil, err
 		}
 		delete(targetRemovesTmp, target)
-		_, errDevice := manager.GetManager().DeviceStore.Get(device.ID(target))
+		_, errDevice := manager.GetManager().DeviceStore.Get(devicetopo.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
@@ -133,11 +133,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 	//Checking for wrong configuration against the device models for deletes
 	for target, removes := range targetRemovesTmp {
-		err := validateChange(target, version, deviceType, make(types.TypedValueMap), removes)
+		err := validateChange(target, version, deviceType, make(devicechangetypes.TypedValueMap), removes)
 		if err != nil {
 			return nil, err
 		}
-		_, errDevice := manager.GetManager().DeviceStore.Get(device.ID(target))
+		_, errDevice := manager.GetManager().DeviceStore.Get(devicetopo.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
@@ -169,6 +169,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	//Creating and setting the config on the new atomix Store
+	manager.GetManager().SetNewNetworkConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
 
 	extensions := []*gnmi_ext.Extension{
 		{
@@ -207,11 +210,12 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 // This deals with either a path and a value (simple case) or a path with
 // a JSON body which implies multiple paths and values.
-func (s *Server) formatUpdateOrReplace(u *gnmi.Update, targetUpdates mapTargetUpdates) (types.TypedValueMap, error) {
+func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
+	targetUpdates mapTargetUpdates) (devicechangetypes.TypedValueMap, error) {
 	target := u.Path.GetTarget()
 	updates, ok := targetUpdates[target]
 	if !ok {
-		updates = make(types.TypedValueMap)
+		updates = make(devicechangetypes.TypedValueMap)
 	}
 
 	jsonVal := u.GetVal().GetJsonVal()
@@ -382,7 +386,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 
 	for target, removes := range targetRemoves {
 		changeID, configName, cont, err := setChange(target, version, deviceType,
-			make(types.TypedValueMap), removes, description)
+			make(devicechangetypes.TypedValueMap), removes, description)
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
 			return nil, nil, err
@@ -408,7 +412,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 
 func listenForDeviceResponse(changes mapNetworkChanges, target string, name store.ConfigName) error {
 	mgr := manager.GetManager()
-	respChan, ok := mgr.Dispatcher.GetResponseListener(device.ID(target))
+	respChan, ok := mgr.Dispatcher.GetResponseListener(devicetopo.ID(target))
 	if !ok {
 		log.Infof("Device %s not properly registered, not waiting for southbound confirmation ", target)
 		return nil
@@ -490,7 +494,7 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 
 }
 
-func setChange(target string, version string, devicetype string, targetUpdates types.TypedValueMap,
+func setChange(target string, version string, devicetype string, targetUpdates devicechangetypes.TypedValueMap,
 	targetRemoves []string, description string) (change.ID, *store.ConfigName, bool, error) {
 	changeID, configName, err := manager.GetManager().SetNetworkConfig(
 		target, version, devicetype, targetUpdates, targetRemoves, description)
@@ -505,7 +509,8 @@ func setChange(target string, version string, devicetype string, targetUpdates t
 	return changeID, configName, false, nil
 }
 
-func validateChange(target string, version string, deviceType string, targetUpdates types.TypedValueMap, targetRemoves []string) error {
+func validateChange(target string, version string, deviceType string, targetUpdates devicechangetypes.TypedValueMap,
+	targetRemoves []string) error {
 	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
 		return fmt.Errorf("no updates found in change on %s - invalid", target)
 	}
