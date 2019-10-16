@@ -40,16 +40,24 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *mockstore.MockDeviceStore,
 	var server = &Server{}
 
 	ctrl := gomock.NewController(t)
+	mockLeadershipStore := mockstore.NewMockLeadershipStore(ctrl)
+	mockMastershipStore := mockstore.NewMockMastershipStore(ctrl)
 	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
 	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
 	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
+	mockNetworkSnapshotStore := mockstore.NewMockNetworkSnapshotStore(ctrl)
+	mockDeviceSnapshotStore := mockstore.NewMockDeviceSnapshotStore(ctrl)
 
 	mgr, err := manager.LoadManager(
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
+		mockLeadershipStore,
+		mockMastershipStore,
 		mockDeviceChangesStore,
-		mockNetworkChangesStore)
+		mockNetworkChangesStore,
+		mockNetworkSnapshotStore,
+		mockDeviceSnapshotStore)
 
 	if err != nil {
 		log.Error("Expected manager to be loaded ", err)

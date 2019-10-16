@@ -97,9 +97,13 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 
 	ctrl := gomock.NewController(t)
 
+	mockLeadershipStore := mockstore.NewMockLeadershipStore(ctrl)
+	mockMastershipStore := mockstore.NewMockMastershipStore(ctrl)
 	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
 	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
 	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
+	mockNetworkSnapshotStore := mockstore.NewMockNetworkSnapshotStore(ctrl)
+	mockDeviceSnapshotStore := mockstore.NewMockDeviceSnapshotStore(ctrl)
 
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
@@ -107,6 +111,8 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 			Storetype: "config",
 			Store:     configurationStoreTest,
 		},
+		mockLeadershipStore,
+		mockMastershipStore,
 		mockDeviceChangesStore,
 		&store.ChangeStore{
 			Version:   "1.0",
@@ -120,6 +126,8 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 			Store:     networkStoreTest,
 		},
 		mockNetworkChangesStore,
+		mockNetworkSnapshotStore,
+		mockDeviceSnapshotStore,
 		make(chan *devicepb.ListResponse, 10))
 	if err != nil {
 		log.Warning(err)
@@ -136,8 +144,12 @@ func Test_LoadManager(t *testing.T) {
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sample.json",
+		mockstore.NewMockLeadershipStore(ctrl),
+		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
-		mockstore.NewMockNetworkChangesStore(ctrl))
+		mockstore.NewMockNetworkChangesStore(ctrl),
+		mockstore.NewMockNetworkSnapshotStore(ctrl),
+		mockstore.NewMockDeviceSnapshotStore(ctrl))
 	assert.NilError(t, err, "failed to load manager")
 }
 
@@ -147,8 +159,12 @@ func Test_LoadManagerBadConfigStore(t *testing.T) {
 		"../../configs/configStore-sampleX.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sample.json",
+		mockstore.NewMockLeadershipStore(ctrl),
+		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
-		mockstore.NewMockNetworkChangesStore(ctrl))
+		mockstore.NewMockNetworkChangesStore(ctrl),
+		mockstore.NewMockNetworkSnapshotStore(ctrl),
+		mockstore.NewMockDeviceSnapshotStore(ctrl))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
@@ -158,8 +174,12 @@ func Test_LoadManagerBadChangeStore(t *testing.T) {
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sampleX.json",
 		"../../configs/networkStore-sample.json",
+		mockstore.NewMockLeadershipStore(ctrl),
+		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
-		mockstore.NewMockNetworkChangesStore(ctrl))
+		mockstore.NewMockNetworkChangesStore(ctrl),
+		mockstore.NewMockNetworkSnapshotStore(ctrl),
+		mockstore.NewMockDeviceSnapshotStore(ctrl))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
@@ -169,8 +189,12 @@ func Test_LoadManagerBadNetworkStore(t *testing.T) {
 		"../../configs/configStore-sample.json",
 		"../../configs/changeStore-sample.json",
 		"../../configs/networkStore-sampleX.json",
+		mockstore.NewMockLeadershipStore(ctrl),
+		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
-		mockstore.NewMockNetworkChangesStore(ctrl))
+		mockstore.NewMockNetworkChangesStore(ctrl),
+		mockstore.NewMockNetworkSnapshotStore(ctrl),
+		mockstore.NewMockDeviceSnapshotStore(ctrl))
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
