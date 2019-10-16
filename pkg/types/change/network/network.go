@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package network
 
 import (
@@ -19,6 +20,7 @@ import (
 	"regexp"
 	"time"
 )
+
 // NewNetworkConfiguration creates a new network configuration
 func NewNetworkConfiguration(networkChangeID string, changes []*device.Change) (*NetworkChange, error) {
 	r1 := regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
@@ -29,7 +31,7 @@ func NewNetworkConfiguration(networkChangeID string, changes []*device.Change) (
 		return nil, fmt.Errorf("Error in name %s", networkChangeID)
 	}
 
-	return 	&NetworkChange{
+	return &NetworkChange{
 		ID:      ID(networkChangeID),
 		Created: time.Now(),
 		Updated: time.Now(),

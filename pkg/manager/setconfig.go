@@ -19,8 +19,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	networktypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"
 	"time"
@@ -122,6 +123,29 @@ func (m *Manager) SetNetworkConfig(deviceName string, version string,
 	return changeID, configName, nil
 }
 
+// SetNewNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
+func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
+	targetRemoves map[string][]string, version string, deviceType string, netcfgchangename string) {
+	//TODO evaluate need of user and add it back if need be.
+	//TODO start watch and build update Result
+	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
+	if errChanges != nil {
+		log.Error("Can't compute new network configs", errChanges)
+	}
+	newNetworkConfig, errNetConfig := networktypes.NewNetworkConfiguration(netcfgchangename, allDeviceChanges)
+	if errNetConfig != nil {
+		log.Error("Can't create new network config", errNetConfig)
+	}
+	//TODO computeNewNetworkConfig, NewNetworkConfiguration and the followign Create can be combined in a manger method
+	//Writing to the atomix backed store too
+	errNewStore := m.NetworkChangesStore.Create(newNetworkConfig)
+	if errNewStore != nil {
+		log.Error("Can't write new network config to atomix store", errNewStore)
+	}
+	changeGet, _ := m.NetworkChangesStore.Get(newNetworkConfig.ID)
+	log.Info("Change from Atomix", changeGet)
+}
+
 // ComputeNewDeviceChange computes a given device change the given updates and deletes, according to the path
 // on the configuration for the specified target
 func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
@@ -209,4 +233,36 @@ func (m *Manager) getStoredConfig(deviceName string, version string,
 		}
 	}
 	return &deviceConfig, &expConfigName, nil
+}
+
+//computeNewNetworkConfig computes each device change
+func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
+	targetRemoves map[string][]string, version string, deviceType string,
+	description string) ([]*devicechangetypes.Change, error) {
+
+	deviceChanges := make([]*devicechangetypes.Change, 0)
+	for target, updates := range targetUpdates {
+		//FIXME this is a sequential job, not parallelized
+		// target is a device name with no version
+		newChange, err := m.ComputeNewDeviceChange(
+			target, version, deviceType, updates, targetRemoves[target], description)
+		if err != nil {
+			log.Error("Error in setting config: ", newChange, " for target ", err)
+			continue
+		}
+
+		deviceChanges = append(deviceChanges, newChange)
+	}
+
+	for target, removes := range targetRemoves {
+		newChange, err := m.ComputeNewDeviceChange(
+			target, version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
+		if err != nil {
+			log.Error("Error in setting config: ", newChange, " for target ", err)
+			continue
+		}
+
+		deviceChanges = append(deviceChanges, newChange)
+	}
+	return deviceChanges, nil
 }
