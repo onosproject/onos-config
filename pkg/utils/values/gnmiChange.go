@@ -17,6 +17,7 @@ package values
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
@@ -29,6 +30,41 @@ func NativeChangeToGnmiChange(c *change.Change) (*gnmi.SetRequest, error) {
 	var updatedPaths = []*gnmi.Update{}
 
 	for _, changeValue := range c.Config {
+		elems := utils.SplitPath(changeValue.Path)
+		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
+
+		if parseError != nil {
+			return nil, parseError
+		}
+
+		if changeValue.Removed {
+			deletePaths = append(deletePaths, &gnmi.Path{Elem: pathElemsRefs.Elem})
+		} else {
+			gnmiValue, err := NativeTypeToGnmiTypedValue(changeValue.GetValue())
+			if err != nil {
+				return nil, fmt.Errorf("error converting %s: %s", changeValue.Path, err)
+			}
+			updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
+			updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: gnmiValue})
+		}
+	}
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	return &setRequest, nil
+}
+
+// NativeNewChangeToGnmiChange converts a Protobuf defined Change object to gNMI format
+func NativeNewChangeToGnmiChange(c *devicechangetypes.Change) (*gnmi.SetRequest, error) {
+	var deletePaths = []*gnmi.Path{}
+	var replacedPaths = []*gnmi.Update{}
+	var updatedPaths = []*gnmi.Update{}
+
+	for _, changeValue := range c.Values {
 		elems := utils.SplitPath(changeValue.Path)
 		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
 
