@@ -50,6 +50,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
+	"github.com/onosproject/onos-config/pkg/store/leadership"
+	"github.com/onosproject/onos-config/pkg/store/mastership"
+	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	log "k8s.io/klog"
 	"os"
 	"time"
@@ -123,6 +127,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	leadershipStore, err := leadership.NewAtomixStore()
+	if err != nil {
+		log.Error("Cannot load leadership atomix store ", err)
+	}
+
+	mastershipStore, err := mastership.NewAtomixStore()
+	if err != nil {
+		log.Error("Cannot load mastership atomix store ", err)
+	}
+
 	deviceChangesStore, err := device.NewAtomixStore()
 	if err != nil {
 		log.Error("Cannot load device atomix store ", err)
@@ -134,7 +148,17 @@ func main() {
 	}
 	log.Info("Network Configuration store connected")
 
-	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, deviceChangesStore, networkChangesStore, opts...)
+	networkSnapshotStore, err := networksnap.NewAtomixStore()
+	if err != nil {
+		log.Error("Cannot load network snapshot atomix store ", err)
+	}
+
+	deviceSnapshotStore, err := devicesnap.NewAtomixStore()
+	if err != nil {
+		log.Error("Cannot load network atomix store ", err)
+	}
+
+	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, leadershipStore, mastershipStore, deviceChangesStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, opts...)
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {
