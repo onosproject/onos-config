@@ -372,7 +372,7 @@ func checkPathvalue(t *testing.T, config []*types.PathValue, index int,
 	}
 }
 
-func Test_device1_first_version(t *testing.T) {
+func Test_device1_version(t *testing.T) {
 	device1V, _, _ := setUp(t)
 
 	log.Info("Device ", device1V.Change.DeviceID, " (latest) Changes:")
