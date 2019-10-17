@@ -22,6 +22,7 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"
@@ -33,6 +34,7 @@ const SetConfigAlreadyApplied = "Already applied:"
 
 // ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target
+// Deprecated:  ValidateNetworkConfig is a legacy implementation
 func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 	deviceType string, updates devicechangetypes.TypedValueMap, deletes []string) error {
 
@@ -87,7 +89,7 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
 		return err
 	}
 	//TODO this results empty and will work only with exact match of these types (getStoredConfig was masking not exact matches)
-	modelName := fmt.Sprintf("%s-%s", deviceType, version)
+	modelName := utils.ToModelName(deviceType, version)
 	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
 	if !ok {
 		log.Warning("No model ", modelName, " available as a plugin")
@@ -109,8 +111,8 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
 			if err != nil {
 				return err
 			}
-			log.Info("New Configuration is Valid according to model ",
-				modelName)
+			log.Infof("New Configuration for %s, with version %s and type %s, is Valid according to model %s",
+				deviceName, version, deviceType, modelName)
 		}
 	}
 	return nil
@@ -118,6 +120,7 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
 
 // SetNetworkConfig sets the given the given updates and deletes, according to the path on the configuration
 // for the specified target
+// Deprecated: SetNetworkConfig works on legacy, non-atomix stores
 func (m *Manager) SetNetworkConfig(deviceName string, version string,
 	deviceType string, updates devicechangetypes.TypedValueMap,
 	deletes []string, description string) (change.ID, *store.ConfigName, error) {
@@ -165,11 +168,10 @@ func (m *Manager) SetNetworkConfig(deviceName string, version string,
 
 // SetNewNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
 func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
-	targetRemoves map[string][]string, version string, deviceType string, netcfgchangename string) {
+	targetRemoves map[string][]string, deviceInfo map[devicetopo.ID]TypeVersionInfo, netcfgchangename string) {
 	//TODO evaluate need of user and add it back if need be.
 	//TODO start watch and build update Result
-	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, version,
-		deviceType, netcfgchangename)
+	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 	if errChanges != nil {
 		log.Error("Can't compute new network configs", errChanges)
 	}
@@ -185,6 +187,7 @@ func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes
 }
 
 // getStoredConfig looks for an exact match for the config name or then a partial match based on the device name
+// Deprecated: SetNetworkConfig works on legacy, non-atomix stores
 func (m *Manager) getStoredConfig(deviceName string, version string,
 	deviceType string, noCreate bool) (*store.Configuration, *store.ConfigName, error) {
 
@@ -240,31 +243,35 @@ func (m *Manager) getStoredConfig(deviceName string, version string,
 
 //computeNewNetworkConfig computes each device change
 func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
-	targetRemoves map[string][]string, version string, deviceType string,
+	targetRemoves map[string][]string, deviceInfo map[devicetopo.ID]TypeVersionInfo,
 	description string) ([]*devicechangetypes.Change, error) {
 
 	deviceChanges := make([]*devicechangetypes.Change, 0)
 	for target, updates := range targetUpdates {
 		//FIXME this is a sequential job, not parallelized
-		// target is a device name with no version
+		//FIXME target is a device name with no version
+		version := deviceInfo[devicetopo.ID(target)].Version
+		deviceType := deviceInfo[devicetopo.ID(target)].DeviceType
 		newChange, err := m.ComputeNewDeviceChange(
 			target, version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue
 		}
-
+		log.Infof("Appending device change %v", newChange)
 		deviceChanges = append(deviceChanges, newChange)
 	}
 
 	for target, removes := range targetRemoves {
+		version := deviceInfo[devicetopo.ID(target)].Version
+		deviceType := deviceInfo[devicetopo.ID(target)].DeviceType
 		newChange, err := m.ComputeNewDeviceChange(
 			target, version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue
 		}
-
+		log.Infof("Appending device change %v", newChange)
 		deviceChanges = append(deviceChanges, newChange)
 	}
 	return deviceChanges, nil

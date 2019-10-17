@@ -70,6 +70,12 @@ type Manager struct {
 	OperationalStateCache     map[devicepb.ID]devicechangetypes.TypedValueMap
 }
 
+//TypeVersionInfo contains the info about the device type and version
+type TypeVersionInfo struct {
+	DeviceType string
+	Version    string
+}
+
 // NewManager initializes the network config manager subsystem.
 func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store, mastershipStore mastership.Store,
 	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicetopo.Store, networkStore *store.NetworkStore,
@@ -325,6 +331,7 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 	}
 }
 
+// Deprecated: computeChange works on legacy, non-atomix stores
 func (m *Manager) computeChange(updates devicechangetypes.TypedValueMap,
 	deletes []string, description string) (*change.Change, error) {
 	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
@@ -391,4 +398,31 @@ func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
 		log.Info("Added change ", store.B64(configChange.ID), " to ChangeStore (in memory)")
 	}
 	return configChange.ID, nil
+}
+
+//ExtractTypeAndVersion gets a deviceType and a Version based on the available store, topo and extension info
+func ExtractTypeAndVersion(target devicepb.ID, storedDevice *devicepb.Device, versionExt string, deviceTypeExt string) (TypeVersionInfo, error) {
+	var (
+		deviceType string
+		version    string
+	)
+
+	if storedDevice == nil && (deviceTypeExt == "" || versionExt == "") {
+		//TODO try and get it from store
+		return TypeVersionInfo{}, fmt.Errorf("device %s is not connected and Extensions were not "+
+			"complete given %s, %s", target, versionExt, deviceTypeExt)
+	}
+
+	if storedDevice == nil && deviceTypeExt != "" && versionExt != "" {
+		return TypeVersionInfo{Version: versionExt, DeviceType: deviceTypeExt}, nil
+	}
+
+	if storedDevice != nil && deviceTypeExt == "" {
+		deviceType = string(storedDevice.Type)
+	}
+	if storedDevice != nil && versionExt == "" {
+		version = storedDevice.Version
+	}
+
+	return TypeVersionInfo{Version: version, DeviceType: deviceType}, nil
 }
