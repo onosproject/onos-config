@@ -35,7 +35,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
@@ -67,7 +67,13 @@ type Manager struct {
 	OperationalStateChannel   chan events.OperationalStateEvent
 	SouthboundErrorChan       chan events.DeviceResponse
 	Dispatcher                *dispatcher.Dispatcher
-	OperationalStateCache     map[devicepb.ID]types.TypedValueMap
+	OperationalStateCache     map[devicepb.ID]devicechangetypes.TypedValueMap
+}
+
+//TypeVersionInfo contains the info about the device type and version
+type TypeVersionInfo struct {
+	DeviceType string
+	Version    string
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -105,7 +111,7 @@ func NewManager(configStore *store.ConfigurationStore, leadershipStore leadershi
 		OperationalStateChannel:   make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
-		OperationalStateCache:     make(map[devicepb.ID]types.TypedValueMap),
+		OperationalStateCache:     make(map[devicepb.ID]devicechangetypes.TypedValueMap),
 	}
 
 	changeIds := make([]string, 0)
@@ -325,12 +331,13 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 	}
 }
 
-func (m *Manager) computeChange(updates types.TypedValueMap,
+// Deprecated: computeChange works on legacy, non-atomix stores
+func (m *Manager) computeChange(updates devicechangetypes.TypedValueMap,
 	deletes []string, description string) (*change.Change, error) {
-	var newChanges = make([]*types.ChangeValue, 0)
+	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
 	//updates
 	for path, value := range updates {
-		changeValue, err := types.NewChangeValue(path, value, false)
+		changeValue, err := devicechangetypes.NewChangeValue(path, value, false)
 		if err != nil {
 			log.Warningf("Error creating value for %s %v", path, err)
 			continue
@@ -339,13 +346,48 @@ func (m *Manager) computeChange(updates types.TypedValueMap,
 	}
 	//deletes
 	for _, path := range deletes {
-		changeValue, _ := types.NewChangeValue(path, types.NewTypedValueEmpty(), true)
+		changeValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
 		newChanges = append(newChanges, changeValue)
 	}
 	if description == "" {
 		description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
 	}
 	return change.NewChange(newChanges, description)
+}
+
+// ComputeNewDeviceChange computes a given device change the given updates and deletes, according to the path
+// on the configuration for the specified target
+func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
+	deviceType string, updates devicechangetypes.TypedValueMap,
+	deletes []string, description string) (*devicechangetypes.Change, error) {
+
+	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
+	//updates
+	for path, value := range updates {
+		updateValue, err := devicechangetypes.NewChangeValue(path, value, false)
+		if err != nil {
+			log.Warningf("Error creating value for %s %v", path, err)
+			continue
+		}
+		newChanges = append(newChanges, updateValue)
+	}
+	//deletes
+	for _, path := range deletes {
+		deleteValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
+		newChanges = append(newChanges, deleteValue)
+	}
+	//description := fmt.Sprintf("Originally created as part of %s", description)
+	//if description == "" {
+	//	description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
+	//}
+	//TODO lost description of Change
+	changeElement := &devicechangetypes.Change{
+		DeviceID:      devicepb.ID(deviceName),
+		DeviceVersion: version,
+		Values:        newChanges,
+	}
+
+	return changeElement, nil
 }
 
 func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
@@ -356,4 +398,31 @@ func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
 		log.Info("Added change ", store.B64(configChange.ID), " to ChangeStore (in memory)")
 	}
 	return configChange.ID, nil
+}
+
+//ExtractTypeAndVersion gets a deviceType and a Version based on the available store, topo and extension info
+func ExtractTypeAndVersion(target devicepb.ID, storedDevice *devicepb.Device, versionExt string, deviceTypeExt string) (TypeVersionInfo, error) {
+	var (
+		deviceType string
+		version    string
+	)
+
+	if storedDevice == nil && (deviceTypeExt == "" || versionExt == "") {
+		//TODO try and get it from store
+		return TypeVersionInfo{}, fmt.Errorf("device %s is not connected and Extensions were not "+
+			"complete given %s, %s", target, versionExt, deviceTypeExt)
+	}
+
+	if storedDevice == nil && deviceTypeExt != "" && versionExt != "" {
+		return TypeVersionInfo{Version: versionExt, DeviceType: deviceTypeExt}, nil
+	}
+
+	if storedDevice != nil && deviceTypeExt == "" {
+		deviceType = string(storedDevice.Type)
+	}
+	if storedDevice != nil && versionExt == "" {
+		version = storedDevice.Version
+	}
+
+	return TypeVersionInfo{Version: version, DeviceType: deviceType}, nil
 }

@@ -169,6 +169,17 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	configValuesNew, errNewMethod := manager.GetManager().GetTargetNewConfig(target,
+		pathAsString, 0)
+	if errNewMethod != nil {
+		log.Error("Error while extracting config", errNewMethod)
+	}
+
+	//TODO remove this print after the swap
+	log.Info("Old Config Values ", configValues)
+	log.Info("New Config Values from Atomix ", configValuesNew)
+
 	stateValues := manager.GetManager().GetTargetState(target, pathAsString)
 	//Merging the two results
 	configValues = append(configValues, stateValues...)
