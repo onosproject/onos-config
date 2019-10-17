@@ -23,11 +23,12 @@ import (
 	changetype "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
 	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
+	log "k8s.io/klog"
 )
 
 // NewController returns a new network controller
 func NewController(mastership mastershipstore.Store, devices devicestore.Store, changes changestore.Store) *controller.Controller {
-	c := controller.NewController()
+	c := controller.NewController("DeviceChange")
 	c.Filter(&controller.MastershipFilter{
 		Store:    mastership,
 		Resolver: &Resolver{},
@@ -82,6 +83,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	if getProtocolState(device) != deviceservice.ChannelState_CONNECTED {
 		change.Status.State = changetype.State_FAILED
 		change.Status.Reason = changetype.Reason_ERROR
+		log.Infof("Failing DeviceChange %v", change)
 		if err := r.changes.Update(change); err != nil {
 			return false, err
 		}
@@ -105,8 +107,10 @@ func (r *Reconciler) reconcileChange(change *devicechangetype.DeviceChange) (boo
 		change.Status.State = changetype.State_FAILED
 		change.Status.Reason = changetype.Reason_ERROR
 		change.Status.Message = err.Error()
+		log.Infof("Failing DeviceChange %v", change)
 	} else {
 		change.Status.State = changetype.State_COMPLETE
+		log.Infof("Completing DeviceChange %v", change)
 	}
 
 	// Update the change status in the store
@@ -118,6 +122,7 @@ func (r *Reconciler) reconcileChange(change *devicechangetype.DeviceChange) (boo
 
 // doChange pushes the given change to the device
 func (r *Reconciler) doChange(change *devicechangetype.DeviceChange) error {
+	log.Infof("doChange %v", change)
 	// TODO: Apply the change
 	return nil
 }
@@ -129,8 +134,10 @@ func (r *Reconciler) reconcileRollback(change *devicechangetype.DeviceChange) (b
 		change.Status.State = changetype.State_FAILED
 		change.Status.Reason = changetype.Reason_ERROR
 		change.Status.Message = err.Error()
+		log.Infof("Failing DeviceChange %v", change)
 	} else {
 		change.Status.State = changetype.State_COMPLETE
+		log.Infof("Completing DeviceChange %v", change)
 	}
 
 	// Update the change status in the store
@@ -142,6 +149,7 @@ func (r *Reconciler) reconcileRollback(change *devicechangetype.DeviceChange) (b
 
 // doRollback rolls back a change on the device
 func (r *Reconciler) doRollback(change *devicechangetype.DeviceChange) error {
+	log.Infof("doRollback %v", change)
 	// TODO: Roll back the change
 	return nil
 }

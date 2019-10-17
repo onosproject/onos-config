@@ -25,11 +25,12 @@ import (
 	snaptype "github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
+	log "k8s.io/klog"
 )
 
 // NewController returns a new device snapshot controller
 func NewController(mastership mastershipstore.Store, changes changestore.Store, snapshots snapstore.Store) *controller.Controller {
-	c := controller.NewController()
+	c := controller.NewController("DeviceSnapshot")
 	c.Filter(&controller.MastershipFilter{
 		Store: mastership,
 		Resolver: &Resolver{
@@ -114,6 +115,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	}
 
 	// Iterate through changes and populate the snapshot
+	log.Infof("Taking snapshot of device %s", deviceSnapshot.DeviceID)
 	var snapshotIndex = prevIndex
 	for change := range changes {
 		// If the change index is included in the last snapshot, ignore the change
@@ -153,6 +155,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 			ChangeIndex: snapshotIndex,
 			Values:      values,
 		}
+		log.Infof("Storing Snapshot %v", snapshot)
 		if err := r.snapshots.Store(snapshot); err != nil {
 			return false, err
 		}
@@ -160,6 +163,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 
 	// Complete the snapshot MARK phase
 	deviceSnapshot.Status.State = snaptype.State_COMPLETE
+	log.Infof("Completing DeviceSnapshot %v", deviceSnapshot)
 	if err := r.snapshots.Update(deviceSnapshot); err != nil {
 		return false, err
 	}
@@ -174,6 +178,7 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 		return false, err
 	} else if snapshot == nil {
 		deviceSnapshot.Status.State = snaptype.State_COMPLETE
+		log.Infof("Completing DeviceSnapshot %v", deviceSnapshot)
 		if err := r.snapshots.Update(deviceSnapshot); err != nil {
 			return false, err
 		}
@@ -187,16 +192,20 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 	}
 
 	// Iterate through changes up to the current snapshot index and delete changes
+	count := 0
 	for change := range changes {
 		if change.Index <= snapshot.ChangeIndex {
 			if err := r.changes.Delete(change); err != nil {
 				return false, err
 			}
+			count++
 		}
 	}
+	log.Infof("Deleted %d DeviceChanges for device %s", count, deviceSnapshot.DeviceID)
 
 	// Finally, complete the phase
 	deviceSnapshot.Status.State = snaptype.State_COMPLETE
+	log.Infof("Completing DeviceSnapshot %v", deviceSnapshot)
 	if err := r.snapshots.Update(deviceSnapshot); err != nil {
 		return false, err
 	}

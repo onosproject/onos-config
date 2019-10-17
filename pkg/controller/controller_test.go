@@ -72,7 +72,7 @@ func TestController(t *testing.T) {
 
 	reconciler := NewMockReconciler(ctrl)
 
-	controller := NewController().
+	controller := NewController("Test").
 		Activate(activator).
 		Filter(filter).
 		Watch(watcher).
