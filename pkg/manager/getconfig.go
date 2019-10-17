@@ -27,6 +27,7 @@ import (
 
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest
+// Deprecated: GetTargetConfig works on legacy, non-atomix stores
 func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, path string, layer int) ([]*types.PathValue, error) {
 	log.Info("Getting config for ", target, path)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
