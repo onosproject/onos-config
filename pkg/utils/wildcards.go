@@ -27,3 +27,11 @@ func MatchWildcardRegexp(query string) *regexp.Regexp {
 	regexpQuery = strings.ReplaceAll(regexpQuery, `...`, `.*`)               // greedy
 	return regexp.MustCompile(regexpQuery)
 }
+
+// MatchWildcardChNameRegexp creates a Regular Expression from a wild-carded path
+func MatchWildcardChNameRegexp(query string) *regexp.Regexp {
+	const legalChars = `a-zA-Z0-9_:,\-\.`
+	regexpQuery := strings.ReplaceAll(query, `?`, `[`+legalChars+`]{1}`)     // greedy
+	regexpQuery = strings.ReplaceAll(regexpQuery, `*`, `[`+legalChars+`]*?`) // Not greedy
+	return regexp.MustCompile(regexpQuery)
+}

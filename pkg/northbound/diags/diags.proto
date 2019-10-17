@@ -79,17 +79,14 @@ message ListNetworkChangeRequest {
 
     // option to specify a specific network change - if blank or '*' then select all
     // Can support `*` (match many chars) or '?' (match one char) as wildcard
-    string changeid = 2;
+    string changeid = 2 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/network.ID"];;
 }
 
 // ListNetworkChangeResponse carries a single network change event
 message ListNetworkChangeResponse {
 
-    // type is the type of the event
-    onos.config.admin.Type type = 1;
-
     // change is the network change on which the event occurred
-    onos.config.change.network.NetworkChange change = 2;
+    onos.config.change.network.NetworkChange change = 1;
 }
 
 
@@ -106,17 +103,14 @@ message ListDeviceChangeRequest {
 
     // option to specify a specific device change - if blank or '*' then select all
     // Can support `*` (match many chars) or '?' (match one char) as wildcard
-    string changeid = 2;
+    string changeid = 2 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.ID"];
 }
 
 // ListDeviceChangeResponse carries a single network change event
 message ListDeviceChangeResponse {
 
-    // type is the type of the event
-    onos.config.admin.Type type = 1;
-
     // change is the device change on which the event occurred
-    onos.config.change.device.DeviceChange change = 2;
+    onos.config.change.device.DeviceChange change = 1;
 }
 
 // ConfigDiags provides means for obtaining diagnostic information about internal system state.

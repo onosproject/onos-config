@@ -18,7 +18,6 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -42,10 +41,13 @@ func generateDeviceChangeData(count int) {
 		deviceID := fmt.Sprintf("device-%d", cfgIdx)
 
 		deviceChanges[cfgIdx] = devicechangetypes.DeviceChange{
-			ID:            devicechangetypes.ID(deviceID),
-			Index:         devicechangetypes.Index(cfgIdx),
-			Revision:      0,
-			NetworkChange: devicechangetypes.NetworkChangeRef{},
+			ID:       devicechangetypes.ID(deviceID),
+			Index:    devicechangetypes.Index(cfgIdx),
+			Revision: 0,
+			NetworkChange: devicechangetypes.NetworkChangeRef{
+				ID:    "network-1",
+				Index: 0,
+			},
 			Change: &devicechangetypes.Change{
 				DeviceID:      devicetopo.ID(deviceID),
 				DeviceVersion: "1.0.0",
@@ -63,9 +65,9 @@ func generateDeviceChangeData(count int) {
 				},
 			},
 			Status: change.Status{
-				Phase:   change.Phase_CHANGE,
-				State:   change.State_COMPLETE,
-				Reason:  change.Reason_NONE,
+				Phase:   change.Phase(cfgIdx % 2),
+				State:   change.State(cfgIdx % 4),
+				Reason:  change.Reason(cfgIdx % 2),
 				Message: "Test",
 			},
 			Created: now,
@@ -79,16 +81,16 @@ func generateNetworkChangeData(count int) {
 	now := time.Now()
 
 	for cfgIdx := range networkChanges {
-		networkID := fmt.Sprintf("network-%d", cfgIdx)
+		networkID := fmt.Sprintf("a_new_network_change-%d", cfgIdx)
 
 		networkChanges[cfgIdx] = networkchangetypes.NetworkChange{
 			ID:       networkchangetypes.ID(networkID),
 			Index:    networkchangetypes.Index(cfgIdx),
 			Revision: 0,
 			Status: change.Status{
-				Phase:   change.Phase_CHANGE,
-				State:   change.State_COMPLETE,
-				Reason:  change.Reason_NONE,
+				Phase:   change.Phase(cfgIdx % 2),
+				State:   change.State(cfgIdx % 4),
+				Reason:  change.Reason(cfgIdx % 2),
 				Message: "Test",
 			},
 			Created: now,
@@ -145,7 +147,6 @@ func recvNetworkChangesMock() (*diags.ListNetworkChangeResponse, error) {
 		nextNwChIndex++
 
 		return &diags.ListNetworkChangeResponse{
-			Type:   admin.Type_ADDED,
 			Change: &netw,
 		}, nil
 	}
@@ -158,7 +159,6 @@ func recvDeviceChangesMock() (*diags.ListDeviceChangeResponse, error) {
 		nextDevChIndex++
 
 		return &diags.ListDeviceChangeResponse{
-			Type:   admin.Type_ADDED,
 			Change: &netw,
 		}, nil
 	}
@@ -180,10 +180,10 @@ func Test_WatchDeviceChanges(t *testing.T) {
 	})
 
 	deviceChangesCmd := getWatchDeviceChangesCommand()
-	err := deviceChangesCmd.RunE(deviceChangesCmd, nil)
+	err := deviceChangesCmd.RunE(deviceChangesCmd, []string{"device-1"})
 	assert.NilError(t, err)
 	output := outputBuffer.String()
-	assert.Equal(t, strings.Count(output, "ADDED"), len(deviceChanges))
+	assert.Equal(t, strings.Count(output, "Test2"), len(deviceChanges))
 
 }
 
@@ -205,6 +205,6 @@ func Test_WatchNetworkChanges(t *testing.T) {
 	err := networkChangesCmd.RunE(networkChangesCmd, nil)
 	assert.NilError(t, err)
 	output := outputBuffer.String()
-	assert.Equal(t, strings.Count(output, "ADDED"), len(networkChanges))
+	assert.Equal(t, strings.Count(output, "a_new_network_change"), len(networkChanges))
 
 }

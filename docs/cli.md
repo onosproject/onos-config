@@ -18,9 +18,9 @@ Usage:
 
 Available Commands:
   add         Add a config resource
-  config      Read and update the config configuration
   get         Get config resources
   rollback    Rolls-back a network configuration change
+  watch       Watch for updates to a config resource type
 
 Flags:
   -h, --help   help for config
@@ -44,13 +44,6 @@ Subsequent usages of the `onos` command can then abstain from using the `--addre
 option to indicate the server address, resulting in easier usage.
 
 ## Example Commands
-
-### List Network Changes
-For example, to list all network changes submitted through the northbound gNMI interface run:
-```bash
-> onos config get net-changes
-...
-```
 
 ### Rollback Network Change
 To rollback a network use the rollback admin tool. This will rollback the last network
@@ -90,22 +83,17 @@ from the running onos-config process. Please note that these tools are intended 
 diagnostics and should not be relied upon for programmatic purposes as they are not subject
 to any backward compatibility guarantees.
 
-### Changes
-For example, run the following to list all changes submitted through the northbound gNMI 
-as they are tracked by the system broken-up into device specific batches:
+### List and Watch Changes
+For example, to list and watch all changes stored internally run:
 ```bash
-> onos config get changes
+> onos config watch network-changes
 ...
 ```
-> For a specific change specify the optional `changeId` argument.
-
-### Configs
-To get details from the Configuration store use
+or to watch `device-changes`
 ```bash
-> onos config get configs
+> onos config watch device-changes
 ...
 ```
-> For the configuration for a specific device use the optional `deviceId` argument.
 
 ### Devicetree
 To get the aggregate configuration of a device in a hierarchical JSON structure from the store use:

@@ -17,33 +17,30 @@ package cli
 import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
 )
 
-const deviceChangeTemplate = "CHANGE: {{.Type}} {{.Change.ID}} {{.Change.Index}} {{.Change.Revision}}\n" +
-	"\tSTATE: Phase:{{.Change.Status.Phase}}\tState:{{.Change.Status.State}}\tReason:{{.Change.Status.Reason}}\tMsg:{{.Change.Status.Message}}\n" +
-	"\tDevice: {{.Change.Change.DeviceID}} ({{.Change.Change.DeviceVersion}})\n" +
-	"{{range .Change.Change.Values}}" +
-	"\t{{wrappath .Path 50 1| printf \"|%-50s|\"}}{{valuetostring .Value | printf \"(%s) %s\" .Value.Type | printf \"%-40s|\" }}{{printf \"%-7t|\" .Removed}}\n" +
-	"{{end}}\n"
+const deviceChangeTemplate = changeHeaderFormat +
+	"\t{{.NetworkChange.ID}}\t{{.NetworkChange.Index}}\t{{.Change.DeviceID}}\t{{.Change.DeviceVersion}}\n" +
+	"{{range .Change.Values}}" + typedValueFormat + "{{end}}\n"
 
 func getWatchDeviceChangesCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "device-changes <changeId>",
+		Use:   "device-changes <deviceid>",
 		Short: "Watch for device changes with updates",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE:  runWatchDeviceChangesCommand,
 	}
+	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	return cmd
 }
 
 func runWatchDeviceChangesCommand(cmd *cobra.Command, args []string) error {
-	var id string
-	if len(args) > 0 {
-		id = args[0]
-	}
+	id := types.ID(args[0]) // Argument is mandatory
+	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
 	clientConnection, clientConnectionError := getConnection()
 
@@ -53,16 +50,19 @@ func runWatchDeviceChangesCommand(cmd *cobra.Command, args []string) error {
 	client := diags.CreateChangeServiceClient(clientConnection)
 	changesReq := diags.ListDeviceChangeRequest{
 		Subscribe: true,
-		Changeid:  id,
+		ChangeID:  id,
 	}
 
-	tmplChanges, _ := template.New("change").Funcs(funcMapChanges).Parse(deviceChangeTemplate)
+	var tmplChanges *template.Template
+	tmplChanges, _ = template.New("device").Funcs(funcMapChanges).Parse(deviceChangeTemplate)
 
 	stream, err := client.ListDeviceChanges(context.Background(), &changesReq)
 	if err != nil {
 		return err
 	}
-
+	if !noHeaders {
+		GetOutput().Write([]byte(changeHeader))
+	}
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
@@ -71,6 +71,6 @@ func runWatchDeviceChangesCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		_ = tmplChanges.Execute(GetOutput(), in)
+		_ = tmplChanges.Execute(GetOutput(), in.Change)
 	}
 }
