@@ -364,17 +364,17 @@ func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
 	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
 	//updates
 	for path, value := range updates {
-		changeValue, err := devicechangetypes.NewChangeValue(path, value, false)
+		updateValue, err := devicechangetypes.NewChangeValue(path, value, false)
 		if err != nil {
 			log.Warningf("Error creating value for %s %v", path, err)
 			continue
 		}
-		newChanges = append(newChanges, changeValue)
+		newChanges = append(newChanges, updateValue)
 	}
 	//deletes
 	for _, path := range deletes {
-		changeValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
-		newChanges = append(newChanges, changeValue)
+		deleteValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
+		newChanges = append(newChanges, deleteValue)
 	}
 	//description := fmt.Sprintf("Originally created as part of %s", description)
 	//if description == "" {
