@@ -23,7 +23,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/pkg/types/change/network"
+	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -33,6 +37,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -63,7 +68,7 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	*mockstore.MockDeviceStore, *mockstore.MockNetworkChangesStore, *mockstore.
 		MockDeviceChangesStore) {
 
-	var change1 *change.Change
+	var oldchange1 *change.Change
 	var device1config *store.Configuration
 	var mgrTest *Manager
 
@@ -74,20 +79,22 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	)
 
 	var err error
+
 	config1Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1A, devicechangetypes.NewTypedValueEmpty(), false)
 	config1Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2A, devicechangetypes.NewTypedValueEmpty(), false)
 	config1Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueFloat(ValueLeaf2B159), false)
-	change1, err = change.NewChange([]*devicechangetypes.ChangeValue{
+	oldchange1, err = change.NewChange([]*types.ChangeValue{
+
 		config1Value01, config1Value02, config1Value03}, "Original Config for test switch")
 	if err != nil {
 		log.Error(err)
 		os.Exit(-1)
 	}
 	changeStoreTest = make(map[string]*change.Change)
-	changeStoreTest[store.B64(change1.ID)] = change1
+	changeStoreTest[store.B64(oldchange1.ID)] = oldchange1
 
 	device1config, err = store.NewConfiguration("Device1", "1.0.0", "TestDevice",
-		[]change.ID{change1.ID})
+		[]change.ID{oldchange1.ID})
 	if err != nil {
 		log.Error(err)
 		os.Exit(-1)
@@ -115,6 +122,43 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 	mockNetworkSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 	mockDeviceSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+
+	device1 := &devicepb.Device{
+		ID:          "Device1",
+		Revision:    0,
+		Address:     "",
+		Target:      "",
+		Version:     "1.0.0",
+		Timeout:     nil,
+		Credentials: devicepb.Credentials{},
+		TLS:         devicepb.TlsConfig{},
+		Type:        "TestDevice",
+		Role:        "",
+		Attributes:  nil,
+		Protocols:   nil,
+	}
+	change1 := types.Change{
+		Values: []*types.ChangeValue{
+			config1Value01, config1Value02, config1Value03},
+		DeviceID: device1.ID,
+	}
+	deviceChange1 := &devicechange.DeviceChange{
+		Change: &change1,
+		ID:     "Change1",
+	}
+
+	now := time.Now()
+
+	networkChange1 := &network.NetworkChange{
+		ID:      "NetworkChange1",
+		Changes: []*types.Change{&change1},
+		Updated: now,
+		Created: now,
+	}
+
+	mockDeviceChangesStore.EXPECT().Get(deviceChange1.ID).Return(deviceChange1, nil).AnyTimes()
+	mockDeviceStore.EXPECT().Get(device1.ID).Return(device1, nil).AnyTimes()
+	mockNetworkChangesStore.EXPECT().Get(networkChange1.ID).Return(networkChange1, nil).AnyTimes()
 
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
@@ -669,4 +713,22 @@ func TestManager_ValidateStores(t *testing.T) {
 
 	validationError := mgrTest.ValidateStores()
 	assert.NilError(t, validationError)
+}
+
+// Temporary
+func Test_Mocks(t *testing.T) {
+	mgr, _, _, _, _, _ := setUp(t)
+
+	networkChange, networkChangeError := mgr.NetworkChangesStore.Get("NetworkChange1")
+	assert.NilError(t, networkChangeError)
+	assert.Assert(t, networkChange != nil)
+
+	deviceChange, deviceChangeError := mgr.DeviceChangesStore.Get("Change1")
+	assert.NilError(t, deviceChangeError)
+	assert.Assert(t, deviceChange != nil)
+
+	device, deviceError := mgr.DeviceStore.Get(deviceChange.Change.DeviceID)
+	assert.NilError(t, deviceError)
+	assert.Assert(t, device != nil)
+
 }
