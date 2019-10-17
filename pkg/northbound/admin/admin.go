@@ -289,10 +289,12 @@ func (s Server) RollbackNetworkChange(
 	}, nil
 }
 
+// GetSnapshot gets a snapshot for a specific device
 func (s Server) GetSnapshot(ctx context.Context, request *GetSnapshotRequest) (*device.Snapshot, error) {
 	return manager.GetManager().DeviceSnapshotStore.Load(request.DeviceID)
 }
 
+// ListSnapshots lists snapshots for all devices
 func (s Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdminService_ListSnapshotsServer) error {
 	ch := make(chan *device.Snapshot)
 	if err := manager.GetManager().DeviceSnapshotStore.LoadAll(ch); err != nil {
@@ -307,6 +309,7 @@ func (s Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdminS
 	return nil
 }
 
+// CompactChanges takes a snapshot of all devices
 func (s Server) CompactChanges(ctx context.Context, request *CompactChangesRequest) (*CompactChangesResponse, error) {
 	snapshot := &network.NetworkSnapshot{
 		Retention: snapshottype.RetentionOptions{
