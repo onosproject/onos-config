@@ -201,7 +201,7 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 			count++
 		}
 	}
-	log.Infof("Deleted %d DeviceChanges for device %s", deviceSnapshot.DeviceID)
+	log.Infof("Deleted %d DeviceChanges for device %s", count, deviceSnapshot.DeviceID)
 
 	// Finally, complete the phase
 	deviceSnapshot.Status.State = snaptype.State_COMPLETE

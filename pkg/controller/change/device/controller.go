@@ -23,6 +23,7 @@ import (
 	changetype "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
 	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
+	log "k8s.io/klog"
 )
 
 // NewController returns a new network controller
@@ -121,6 +122,7 @@ func (r *Reconciler) reconcileChange(change *devicechangetype.DeviceChange) (boo
 
 // doChange pushes the given change to the device
 func (r *Reconciler) doChange(change *devicechangetype.DeviceChange) error {
+	log.Infof("doChange %v", change)
 	// TODO: Apply the change
 	return nil
 }
@@ -147,6 +149,7 @@ func (r *Reconciler) reconcileRollback(change *devicechangetype.DeviceChange) (b
 
 // doRollback rolls back a change on the device
 func (r *Reconciler) doRollback(change *devicechangetype.DeviceChange) error {
+	log.Infof("doRollback %v", change)
 	// TODO: Roll back the change
 	return nil
 }
