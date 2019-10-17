@@ -384,6 +384,7 @@ func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
 	changeElement := &devicechangetypes.Change{
 		DeviceID:      devicetopo.ID(deviceName),
 		DeviceVersion: version,
+		DeviceType:    deviceType,
 		Values:        newChanges,
 	}
 
