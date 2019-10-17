@@ -56,8 +56,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
-	log.Infof("Request %s", req)
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	//Update
@@ -522,6 +520,11 @@ func validateChange(target string, version string, deviceType string, targetUpda
 		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
 			targetRemoves, target, err)
 		return err
+	}
+	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(target, version, deviceType, targetUpdates, targetRemoves)
+	if errNewValidation != nil {
+		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
+			targetRemoves, target, errNewValidation)
 	}
 	return nil
 }

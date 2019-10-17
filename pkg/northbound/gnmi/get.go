@@ -37,8 +37,6 @@ import (
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 	notifications := make([]*gnmi.Notification, 0)
 
-	log.Infof("Request %s", req)
-
 	prefix := req.GetPrefix()
 
 	disconnectedDevicesMap := make(map[device.ID]bool)
@@ -177,6 +175,8 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	if errNewMethod != nil {
 		log.Error("Error while extracting config", errNewMethod)
 	}
+
+	//TODO remove this print after the swap
 	log.Info("Old Config Values ", configValues)
 	log.Info("New Config Values from Atomix ", configValuesNew)
 

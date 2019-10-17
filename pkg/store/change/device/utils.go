@@ -17,7 +17,6 @@ package device
 import (
 	"github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
-	log "k8s.io/klog"
 	"sort"
 	"strings"
 )
@@ -26,7 +25,7 @@ import (
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.DeviceChange, changeStore Store,
+func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.Change, changeStore Store,
 	nBack int) ([]*device.PathValue, error) {
 
 	// Have to use a slice to have a consistent output order
@@ -50,8 +49,7 @@ func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.DeviceChange, c
 			break
 		}
 		count++
-		log.Infof("Change %s", storeChange)
-		consolidatedConfig = getPathValue(storeChange, consolidatedConfig)
+		consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
 	}
 
 	sort.Slice(consolidatedConfig, func(i, j int) bool {
@@ -61,8 +59,8 @@ func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.DeviceChange, c
 	return consolidatedConfig, nil
 }
 
-func getPathValue(storeChange *device.DeviceChange, consolidatedConfig []*device.PathValue) []*device.PathValue {
-	for _, changeValue := range storeChange.Change.Values {
+func getPathValue(storeChange *device.Change, consolidatedConfig []*device.PathValue) []*device.PathValue {
+	for _, changeValue := range storeChange.Values {
 		if changeValue.Removed {
 			// Delete everything at that path and all below it
 			// Have to search through consolidated config

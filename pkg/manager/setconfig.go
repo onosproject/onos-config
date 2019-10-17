@@ -19,9 +19,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	devicestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"
 	"time"
@@ -71,6 +72,45 @@ func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 			}
 			log.Info("Configuration is Valid according to model ",
 				modelName, " after adding change ", store.B64(chg.ID))
+		}
+	}
+	return nil
+}
+
+// ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
+// for the specified target
+func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
+	deviceType string, updates devicechangetypes.TypedValueMap, deletes []string) error {
+
+	chg, err := m.ComputeNewDeviceChange(deviceName, version, deviceType, updates, deletes, "Generated for validation")
+	if err != nil {
+		return err
+	}
+    //TODO this results empty and will work only with exact match of these types (getStoredConfig was masking not exact matches)
+	modelName := fmt.Sprintf("%s-%s", deviceType, version)
+	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
+	if !ok {
+		log.Warning("No model ", modelName, " available as a plugin")
+	} else {
+		configValues, err := devicestore.ExtractFullConfig(devicetopo.ID(deviceName), chg, m.DeviceChangesStore, 0)
+		if err != nil {
+			return err
+		}
+		jsonTree, err := store.BuildTree(configValues, true)
+		if err != nil {
+			log.Error("Error building JSON tree from Config Values ", err, jsonTree)
+		} else {
+			ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
+			if err != nil {
+				log.Error("Error unmarshaling JSON tree in to YGOT model ", err, string(jsonTree))
+				return err
+			}
+			err = deviceModelYgotPlugin.Validate(ygotModel)
+			if err != nil {
+				return err
+			}
+			log.Info("New Configuration is Valid according to model ",
+				modelName)
 		}
 	}
 	return nil
@@ -142,41 +182,6 @@ func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes
 	if errStoreNewChange != nil {
 		log.Error("Can't write new network config to atomix store", errStoreNewChange)
 	}
-}
-
-// ComputeNewDeviceChange computes a given device change the given updates and deletes, according to the path
-// on the configuration for the specified target
-func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
-	deviceType string, updates devicechangetypes.TypedValueMap,
-	deletes []string, description string) (*devicechangetypes.Change, error) {
-
-	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
-	//updates
-	for path, value := range updates {
-		changeValue, err := devicechangetypes.NewChangeValue(path, value, false)
-		if err != nil {
-			log.Warningf("Error creating value for %s %v", path, err)
-			continue
-		}
-		newChanges = append(newChanges, changeValue)
-	}
-	//deletes
-	for _, path := range deletes {
-		changeValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
-		newChanges = append(newChanges, changeValue)
-	}
-	//description := fmt.Sprintf("Originally created as part of %s", description)
-	//if description == "" {
-	//	description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
-	//}
-	//TODO lost description of Change
-	changeElement := &devicechangetypes.Change{
-		DeviceID:      devicetopo.ID(deviceName),
-		DeviceVersion: version,
-		Values:        newChanges,
-	}
-
-	return changeElement, nil
 }
 
 // getStoredConfig looks for an exact match for the config name or then a partial match based on the device name
