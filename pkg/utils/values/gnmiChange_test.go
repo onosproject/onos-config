@@ -17,12 +17,20 @@
 package values
 
 import (
+	"encoding/json"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
+	"os"
 	"testing"
+)
+
+const (
+	Test1Cont1ACont2ALeaf2C      = "/cont1a/cont2a/leaf2c"
+	Test1Cont1AList2ATxout2      = "/cont1a/list2a[name=txout2]"
+	ValueLeaf2CDef      = "def"
 )
 
 // Test_NativeChangeToGnmiChange tests conversion from an ONOS change to a GNMI change
@@ -106,4 +114,43 @@ func Test_NativeNewChangeToGnmiChange(t *testing.T) {
 	assert.Equal(t, request.Delete[0].Elem[0].Name, "rpath1", "Delete Path[0] is incorrect")
 	assert.Equal(t, request.Delete[0].Elem[1].Name, "rpath2", "Delete Path[1] is incorrect")
 	assert.Equal(t, request.Delete[0].Elem[2].Name, "rpath3", "Delete Path[2] is incorrect")
+}
+
+func Test_convertChangeToGnmi(t *testing.T) {
+	// Some test data. One update, one remove
+	testValues := []*devicechangetypes.ChangeValue{
+		{
+			Path:    Test1Cont1ACont2ALeaf2C,
+			Value:   devicechangetypes.NewTypedValueString(ValueLeaf2CDef),
+			Removed: false,
+		},
+		{
+			Path:    Test1Cont1AList2ATxout2,
+			Removed: true,
+		},
+	}
+	change3 := &devicechangetypes.Change{
+		DeviceID:      devicetopo.ID("Device1"),
+		DeviceVersion: "Device1-1.0.0",
+		Values:        testValues,
+	}
+
+	setRequest, parseError := NativeNewChangeToGnmiChange(change3)
+
+	assert.NilError(t, parseError, "Parsing error for Gnmi change request")
+	assert.Equal(t, len(setRequest.Update), 1)
+
+	jsonstr, _ := json.Marshal(setRequest.Update[0])
+
+	expectedStr := "{\"path\":{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"cont2a\"}," +
+		"{\"name\":\"leaf2c\"}]},\"val\":{\"Value\":{\"StringVal\":\"def\"}}}"
+
+	assert.Equal(t, string(jsonstr), expectedStr)
+
+	assert.Equal(t, len(setRequest.Delete), 1)
+
+	jsonstr2, _ := json.Marshal(setRequest.Delete[0])
+
+	expectedStr2 := "{\"elem\":[{\"name\":\"cont1a\"},{\"name\":\"list2a\",\"key\":{\"name\":\"txout2\"}}]}"
+	assert.Equal(t, string(jsonstr2), expectedStr2)
 }

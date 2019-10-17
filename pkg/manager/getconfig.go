@@ -17,8 +17,10 @@ package manager
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"sort"
 )
@@ -48,6 +50,28 @@ func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, pa
 		}
 	}
 	configValues := config.ExtractFullConfig(nil, m.ChangeStore.Store, layer)
+	if len(configValues) == 0 {
+		return configValues, nil
+	}
+	filteredValues := make([]*types.PathValue, 0)
+	pathRegexp := utils.MatchWildcardRegexp(path)
+	for _, cv := range configValues {
+		if pathRegexp.MatchString(cv.Path) {
+			filteredValues = append(filteredValues, cv)
+		}
+	}
+	//TODO if filteredValue is empty return error
+	return filteredValues, nil
+}
+
+// GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
+// The layer is the numbers of config changes we want to go back in time for. 0 is the latest
+func (m *Manager) GetTargetNewConfig(target string, path string, layer int) ([]*types.PathValue, error) {
+	log.Infof("Getting config for %s at %s", target, path)
+	configValues, errExtract := device.ExtractFullConfig(devicetopo.ID(target), nil, m.DeviceChangesStore, layer)
+	if errExtract != nil {
+		return nil, errExtract
+	}
 	if len(configValues) == 0 {
 		return configValues, nil
 	}
