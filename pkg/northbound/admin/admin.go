@@ -21,6 +21,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/store"
+	snapshottype "github.com/onosproject/onos-config/pkg/types/snapshot"
+	"github.com/onosproject/onos-config/pkg/types/snapshot/device"
+	"github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -284,4 +287,45 @@ func (s Server) RollbackNetworkChange(
 		Message: fmt.Sprintf("Rolled back change '%s' Updated configs %s",
 			networkConfig.Name, configNames),
 	}, nil
+}
+
+func (s Server) GetSnapshot(ctx context.Context, request *GetSnapshotRequest) (*device.Snapshot, error) {
+	return manager.GetManager().DeviceSnapshotStore.Load(request.DeviceID)
+}
+
+func (s Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdminService_ListSnapshotsServer) error {
+	ch := make(chan *device.Snapshot)
+	if err := manager.GetManager().DeviceSnapshotStore.LoadAll(ch); err != nil {
+		return err
+	}
+
+	for snapshot := range ch {
+		if err := stream.SendMsg(snapshot); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s Server) CompactChanges(ctx context.Context, request *CompactChangesRequest) (*CompactChangesResponse, error) {
+	snapshot := &network.NetworkSnapshot{
+		Retention: snapshottype.RetentionOptions{
+			RetainWindow: request.RetentionPeriod,
+		},
+	}
+
+	ch := make(chan *network.NetworkSnapshot)
+	if err := manager.GetManager().NetworkSnapshotStore.Watch(ch); err != nil {
+		return nil, err
+	}
+	if err := manager.GetManager().NetworkSnapshotStore.Create(snapshot); err != nil {
+		return nil, err
+	}
+
+	for event := range ch {
+		if snapshot.ID != "" && snapshot.ID == event.ID && snapshot.Status.Phase == snapshottype.Phase_DELETE && snapshot.Status.State == snapshottype.State_COMPLETE {
+			return &CompactChangesResponse{}, nil
+		}
+	}
+	return nil, errors.New("snapshot state unknown")
 }
