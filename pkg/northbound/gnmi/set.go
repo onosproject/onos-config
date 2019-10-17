@@ -56,6 +56,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
+	log.Infof("Request %s", req)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	//Update

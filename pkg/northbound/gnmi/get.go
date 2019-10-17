@@ -37,6 +37,8 @@ import (
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 	notifications := make([]*gnmi.Notification, 0)
 
+	log.Infof("Request %s", req)
+
 	prefix := req.GetPrefix()
 
 	disconnectedDevicesMap := make(map[device.ID]bool)
@@ -169,6 +171,15 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	configValuesNew, errNewMethod := manager.GetManager().GetTargetNewConfig(target,
+		pathAsString, 0)
+	if errNewMethod != nil {
+		log.Error("Error while extracting config", errNewMethod)
+	}
+	log.Info("Old Config Values ", configValues)
+	log.Info("New Config Values from Atomix ", configValuesNew)
+
 	stateValues := manager.GetManager().GetTargetState(target, pathAsString)
 	//Merging the two results
 	configValues = append(configValues, stateValues...)
