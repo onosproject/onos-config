@@ -82,7 +82,7 @@ func (x gNMISubscribeServerPollFake) Recv() (*gnmi.SubscribeRequest, error) {
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
-	server, mgr, mockStore, _ := setUp(t)
+	server, mgr, mockStore, _, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	var wg sync.WaitGroup
@@ -122,7 +122,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with updates for that path
 func Test_SubscribeLeafStream(t *testing.T) {
-	server, mgr, mockDeviceStore, mockNetworkChangesStore := setUp(t)
+	server, mgr, mockDeviceStore, mockNetworkChangesStore, _ := setUp(t)
 	mockDeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 	mockNetworkChangesStore.EXPECT().Create(gomock.Any())
 
@@ -185,7 +185,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 }
 
 func Test_WrongDevice(t *testing.T) {
-	_, mgr, mockStore, _ := setUp(t)
+	_, mgr, mockStore, _, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
@@ -234,7 +234,7 @@ func Test_WrongDevice(t *testing.T) {
 }
 
 func Test_WrongPath(t *testing.T) {
-	_, mgr, mockStore, _ := setUp(t)
+	_, mgr, mockStore, _, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
@@ -275,7 +275,7 @@ func Test_WrongPath(t *testing.T) {
 }
 
 func Test_ErrorDoubleSubscription(t *testing.T) {
-	server, mgr, mockStore, _ := setUp(t)
+	server, mgr, mockStore, _, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -314,7 +314,7 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 }
 
 func Test_Poll(t *testing.T) {
-	server, mgr, mockStore, _ := setUp(t)
+	server, mgr, mockStore, _, _ := setUp(t)
 	mockStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	var wg sync.WaitGroup
@@ -375,7 +375,7 @@ func Test_Poll(t *testing.T) {
 
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with delete paths
 func Test_SubscribeLeafStreamDelete(t *testing.T) {
-	server, mgr, mockDeviceStore, mockNetworkChangesStore := setUp(t)
+	server, mgr, mockDeviceStore, mockNetworkChangesStore, _ := setUp(t)
 	mockDeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 	mockNetworkChangesStore.EXPECT().Create(gomock.Any())
 
@@ -438,7 +438,7 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 // Test_SubscribeLeafStreamWithDeviceLoaded tests subscribing with mode STREAM for an existing device
 // and then issuing a set request with updates for that path
 func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
-	server, mgr, mockDeviceStore, mockNetworkChangesStore := setUp(t)
+	server, mgr, mockDeviceStore, mockNetworkChangesStore, _ := setUp(t)
 
 	targetStr := "Device1"
 	target := device.ID(targetStr)
