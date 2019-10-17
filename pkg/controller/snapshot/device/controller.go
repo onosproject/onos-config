@@ -90,7 +90,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
 	// Get the previous snapshot if any
 	var prevIndex devicechangetype.Index
-	prevSnapshot, err := r.snapshots.Load(devicesnaptype.ID(deviceSnapshot.DeviceID))
+	prevSnapshot, err := r.snapshots.Load(deviceSnapshot.DeviceID)
 	if err != nil {
 		return false, err
 	} else if prevSnapshot != nil {
@@ -169,7 +169,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 // reconcileDelete reconciles a snapshot in the DELETE phase
 func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
 	// Load the current snapshot
-	snapshot, err := r.snapshots.Load(devicesnaptype.ID(deviceSnapshot.DeviceID))
+	snapshot, err := r.snapshots.Load(deviceSnapshot.DeviceID)
 	if err != nil {
 		return false, err
 	} else if snapshot == nil {
