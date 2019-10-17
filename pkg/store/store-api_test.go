@@ -328,41 +328,7 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	return device1V, device2V, changeStore
 }
 
-func Test_device1_version(t *testing.T) {
-	device1V, _, changeStore := setUp()
 
-	log.Info("Configuration ", device1V.Name, " (latest) Changes:")
-	for idx, cid := range device1V.Changes {
-		log.Infof("%d: %s\n", idx, B64([]byte(cid)))
-	}
-
-	assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
-
-	//Check the value of leaf2c before
-	change1, ok := changeStore[B64(c1ID)]
-	assert.Assert(t, ok)
-	assert.Equal(t, len(change1.Config), 11)
-	leaf2c := change1.Config[4]
-	assert.Equal(t, leaf2c.GetValue().ValueToString(), "abc")
-
-	config := device1V.ExtractFullConfig(change1, changeStore, 0)
-	for _, c := range config {
-		log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
-	}
-
-	// Check the value of leaf2c after - the value from the early change should be the same
-	// This is here because ExtractFullConfig had been inadvertently changing the value
-	change1, ok = changeStore[B64(c1ID)]
-	assert.Assert(t, ok)
-	assert.Equal(t, len(change1.Config), 11)
-	leaf2c = change1.Config[4]
-	assert.Equal(t, leaf2c.GetValue().ValueToString(), "abc")
-
-	for i := 0; i < len(Config1Paths); i++ {
-		checkPathvalue(t, config, i,
-			Config1Paths[0:11], Config1Values[0:11], Config1Types[0:11])
-	}
-}
 
 func Test_device1_prev_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
