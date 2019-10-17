@@ -112,6 +112,12 @@ type Store interface {
 	// GetByIndex gets a network change by index
 	GetByIndex(index networkchange.Index) (*networkchange.NetworkChange, error)
 
+	// GetPrev gets the previous network change by index
+	GetPrev(index networkchange.Index) (*networkchange.NetworkChange, error)
+
+	// GetNext gets the next network change by index
+	GetNext(index networkchange.Index) (*networkchange.NetworkChange, error)
+
 	// Create creates a new network configuration
 	Create(config *networkchange.NetworkChange) error
 
@@ -156,6 +162,32 @@ func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.Netw
 	defer cancel()
 
 	entry, err := s.changes.GetIndex(ctx, indexedmap.Index(index))
+	if err != nil {
+		return nil, err
+	} else if entry == nil {
+		return nil, nil
+	}
+	return decodeChange(entry)
+}
+
+func (s *atomixStore) GetPrev(index networkchange.Index) (*networkchange.NetworkChange, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	entry, err := s.changes.PrevEntry(ctx, indexedmap.Index(index))
+	if err != nil {
+		return nil, err
+	} else if entry == nil {
+		return nil, nil
+	}
+	return decodeChange(entry)
+}
+
+func (s *atomixStore) GetNext(index networkchange.Index) (*networkchange.NetworkChange, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	entry, err := s.changes.NextEntry(ctx, indexedmap.Index(index))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {

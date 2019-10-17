@@ -132,6 +132,23 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, change2.Revision)
 
+	// Get previous and next changes
+	change1, err = store2.Get("change-1")
+	assert.NoError(t, err)
+	assert.NotNil(t, change1)
+	change2, err = store2.GetNext(change1.Index)
+	assert.NoError(t, err)
+	assert.NotNil(t, change2)
+	assert.Equal(t, networkchange.Index(2), change2.Index)
+
+	change2, err = store2.Get("change-2")
+	assert.NoError(t, err)
+	assert.NotNil(t, change2)
+	change1, err = store2.GetPrev(change2.Index)
+	assert.NoError(t, err)
+	assert.NotNil(t, change1)
+	assert.Equal(t, networkchange.Index(1), change1.Index)
+
 	// Read and then update the change
 	change2, err = store2.Get("change-2")
 	assert.NoError(t, err)
