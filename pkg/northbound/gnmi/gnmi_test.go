@@ -36,53 +36,63 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+type MockStores struct {
+	DeviceStore          *mockstore.MockDeviceStore
+	NetworkChangesStore  *mockstore.MockNetworkChangesStore
+	DeviceChangesStore   *mockstore.MockDeviceChangesStore
+	NetworkSnapshotStore *mockstore.MockNetworkSnapshotStore
+	DeviceSnapshotStore  *mockstore.MockDeviceSnapshotStore
+	LeadershipStore      *mockstore.MockLeadershipStore
+	MastershipStore      *mockstore.MockMastershipStore
+}
+
 // setUp should not depend on any global variables
-func setUp(t *testing.T) (*Server, *manager.Manager, *mockstore.MockDeviceStore,
-	*mockstore.MockNetworkChangesStore, *mockstore.MockDeviceChangesStore) {
+func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	var server = &Server{}
 
 	ctrl := gomock.NewController(t)
-	mockLeadershipStore := mockstore.NewMockLeadershipStore(ctrl)
-	mockMastershipStore := mockstore.NewMockMastershipStore(ctrl)
-	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
-	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
-	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
-	mockNetworkSnapshotStore := mockstore.NewMockNetworkSnapshotStore(ctrl)
-	mockDeviceSnapshotStore := mockstore.NewMockDeviceSnapshotStore(ctrl)
+	mockStores := MockStores{
+		DeviceStore:          mockstore.NewMockDeviceStore(ctrl),
+		NetworkChangesStore:  mockstore.NewMockNetworkChangesStore(ctrl),
+		DeviceChangesStore:   mockstore.NewMockDeviceChangesStore(ctrl),
+		NetworkSnapshotStore: mockstore.NewMockNetworkSnapshotStore(ctrl),
+		DeviceSnapshotStore:  mockstore.NewMockDeviceSnapshotStore(ctrl),
+		LeadershipStore:      mockstore.NewMockLeadershipStore(ctrl),
+		MastershipStore:      mockstore.NewMockMastershipStore(ctrl),
+	}
 
 	mgr, err := manager.LoadManager(
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
-		mockLeadershipStore,
-		mockMastershipStore,
-		mockDeviceChangesStore,
-		mockNetworkChangesStore,
-		mockNetworkSnapshotStore,
-		mockDeviceSnapshotStore)
+		mockStores.LeadershipStore,
+		mockStores.MastershipStore,
+		mockStores.DeviceChangesStore,
+		mockStores.NetworkChangesStore,
+		mockStores.NetworkSnapshotStore,
+		mockStores.DeviceSnapshotStore)
 
 	if err != nil {
 		log.Error("Expected manager to be loaded ", err)
 		os.Exit(-1)
 	}
-	mgr.DeviceStore = mockDeviceStore
-	mgr.DeviceChangesStore = mockDeviceChangesStore
-	mgr.NetworkChangesStore = mockNetworkChangesStore
+	mgr.DeviceStore = mockStores.DeviceStore
+	mgr.DeviceChangesStore = mockStores.DeviceChangesStore
+	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
 
 	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
-	mockDeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+	mockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(device devicepb.ID, c chan<- *devicechange.DeviceChange) error {
-			//fmt.Printf("Device %s\n", device)
 			close(c)
 			return nil
 		}).AnyTimes()
 
 	log.Info("Finished setUp()")
-	//TODO return all mock stores here. it needs to be passed because otherwise we can't do expect calls
-	return server, mgr, mockDeviceStore, mockNetworkChangesStore, mockDeviceChangesStore
+
+	return server, mgr, &mockStores
 }
 
 func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {

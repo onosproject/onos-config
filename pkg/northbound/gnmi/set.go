@@ -125,7 +125,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		typeVersionInfo, errTypeVersion := manager.ExtractTypeAndVersion(devicetopo.ID(target),
 			storedDevice, version, deviceType)
 		if errTypeVersion != nil {
-			return nil, errTypeVersion
+			//TODO return instead of log
+			log.Error(errTypeVersion)
+			typeVersionInfo = manager.TypeVersionInfo{
+				DeviceType: "",
+				Version:    "",
+			}
+			//return nil, errTypeVersion
 		}
 		deviceInfo[devicetopo.ID(target)] = typeVersionInfo
 		err := validateChange(target, version, deviceType, deviceInfo, updates, targetRemoves[target])
@@ -146,7 +152,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		typeVersionInfo, errTypeVersion := manager.ExtractTypeAndVersion(devicetopo.ID(target),
 			storedDevice, version, deviceType)
 		if errTypeVersion != nil {
-			return nil, errTypeVersion
+			//TODO return instead of log
+			log.Error(errTypeVersion)
+			typeVersionInfo = manager.TypeVersionInfo{
+				DeviceType: "",
+				Version:    "",
+			}
+			//return nil, errTypeVersion
 		}
 		deviceInfo[devicetopo.ID(target)] = typeVersionInfo
 		err := validateChange(target, version, deviceType, deviceInfo, make(devicechangetypes.TypedValueMap), removes)
