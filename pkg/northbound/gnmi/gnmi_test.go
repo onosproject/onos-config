@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"os"
@@ -36,7 +37,8 @@ func TestMain(m *testing.M) {
 }
 
 // setUp should not depend on any global variables
-func setUp(t *testing.T) (*Server, *manager.Manager, *mockstore.MockDeviceStore, *mockstore.MockNetworkChangesStore) {
+func setUp(t *testing.T) (*Server, *manager.Manager, *mockstore.MockDeviceStore,
+	*mockstore.MockNetworkChangesStore, *mockstore.MockDeviceChangesStore) {
 	var server = &Server{}
 
 	ctrl := gomock.NewController(t)
@@ -71,9 +73,16 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *mockstore.MockDeviceStore,
 	go listenToTopoLoading(mgr.TopoChannel)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
+	mockDeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(device devicepb.ID, c chan<- *devicechange.DeviceChange) error {
+			//fmt.Printf("Device %s\n", device)
+			close(c)
+			return nil
+		}).AnyTimes()
+
 	log.Info("Finished setUp()")
 	//TODO return all mock stores here. it needs to be passed because otherwise we can't do expect calls
-	return server, mgr, mockDeviceStore, mockNetworkChangesStore
+	return server, mgr, mockDeviceStore, mockNetworkChangesStore, mockDeviceChangesStore
 }
 
 func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
