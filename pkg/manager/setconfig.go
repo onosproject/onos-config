@@ -20,9 +20,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicestore "github.com/onosproject/onos-config/pkg/store/change/device"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"
 	"time"
@@ -77,8 +77,8 @@ func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 	return nil
 }
 
-// ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
-// for the specified target
+// ValidateNewNetworkConfig validates the given updates and deletes, according to the path on the configuration
+// for the specified target (Atomix Based)
 func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
 	deviceType string, updates devicechangetypes.TypedValueMap, deletes []string) error {
 
@@ -86,7 +86,7 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
 	if err != nil {
 		return err
 	}
-    //TODO this results empty and will work only with exact match of these types (getStoredConfig was masking not exact matches)
+	//TODO this results empty and will work only with exact match of these types (getStoredConfig was masking not exact matches)
 	modelName := fmt.Sprintf("%s-%s", deviceType, version)
 	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
 	if !ok {

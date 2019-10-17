@@ -125,11 +125,11 @@ func (r *Reconciler) reconcileChange(change *devicechangetype.DeviceChange) (boo
 func (r *Reconciler) doChange(change *devicechangetype.DeviceChange) error {
 	log.Infof("doChange %v", change)
 	// TODO: Apply the change here
-    setRequest, err := values.NativeNewChangeToGnmiChange(change.Change)
-    if err != nil {
-    	return err
+	setRequest, err := values.NativeNewChangeToGnmiChange(change.Change)
+	if err != nil {
+		return err
 	}
-    log.Info("Reconciler doChange request ", setRequest)
+	log.Info("Reconciler doChange request ", setRequest)
 	return nil
 }
 

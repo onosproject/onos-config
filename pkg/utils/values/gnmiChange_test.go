@@ -23,14 +23,13 @@ import (
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
-	"os"
 	"testing"
 )
 
 const (
-	Test1Cont1ACont2ALeaf2C      = "/cont1a/cont2a/leaf2c"
-	Test1Cont1AList2ATxout2      = "/cont1a/list2a[name=txout2]"
-	ValueLeaf2CDef      = "def"
+	Test1Cont1ACont2ALeaf2C = "/cont1a/cont2a/leaf2c"
+	Test1Cont1AList2ATxout2 = "/cont1a/list2a[name=txout2]"
+	ValueLeaf2CDef          = "def"
 )
 
 // Test_NativeChangeToGnmiChange tests conversion from an ONOS change to a GNMI change
