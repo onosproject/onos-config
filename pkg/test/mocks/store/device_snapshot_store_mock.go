@@ -7,6 +7,7 @@ package store
 import (
 	gomock "github.com/golang/mock/gomock"
 	device "github.com/onosproject/onos-config/pkg/types/snapshot/device"
+	device0 "github.com/onosproject/onos-topo/pkg/northbound/device"
 	reflect "reflect"
 )
 
@@ -147,7 +148,7 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Store(snapshot interface{}) *gomo
 }
 
 // Load mocks base method
-func (m *MockDeviceSnapshotStore) Load(id device.ID) (*device.Snapshot, error) {
+func (m *MockDeviceSnapshotStore) Load(id device0.ID) (*device.Snapshot, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Load", id)
 	ret0, _ := ret[0].(*device.Snapshot)
@@ -159,4 +160,18 @@ func (m *MockDeviceSnapshotStore) Load(id device.ID) (*device.Snapshot, error) {
 func (mr *MockDeviceSnapshotStoreMockRecorder) Load(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockDeviceSnapshotStore)(nil).Load), id)
+}
+
+// LoadAll mocks base method
+func (m *MockDeviceSnapshotStore) LoadAll(ch chan<- *device.Snapshot) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadAll", ch)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LoadAll indicates an expected call of LoadAll
+func (mr *MockDeviceSnapshotStoreMockRecorder) LoadAll(ch interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAll", reflect.TypeOf((*MockDeviceSnapshotStore)(nil).LoadAll), ch)
 }
