@@ -33,10 +33,6 @@ const (
 	Test1Cont1ACont2ALeaf2A      = "/cont1a/cont2a/leaf2a"
 	Test1Cont1ACont2ALeaf2B      = "/cont1a/cont2a/leaf2b"
 	Test1Cont1ACont2ALeaf2C      = "/cont1a/cont2a/leaf2c"
-	Test1Cont1ACont2ALeaf2D      = "/cont1a/cont2a/leaf2d"
-	Test1Cont1ACont2ALeaf2E      = "/cont1a/cont2a/leaf2e"
-	Test1Cont1ACont2ALeaf2F      = "/cont1a/cont2a/leaf2f"
-	Test1Cont1ACont2ALeaf2G      = "/cont1a/cont2a/leaf2g"
 	Test1Cont1ALeaf1A            = "/cont1a/leaf1a"
 	Test1Cont1AList2ATxout1      = "/cont1a/list2a[name=txout1]"
 	Test1Cont1AList2ATxout1Txpwr = "/cont1a/list2a[name=txout1]/tx-power"
@@ -242,6 +238,23 @@ const (
 
 var B64 = base64.StdEncoding.EncodeToString
 
+func makeDevice(ID devicetopo.ID) *devicetopo.Device {
+	return &devicetopo.Device{
+		ID:          ID,
+		Revision:    0,
+		Address:     "",
+		Target:      "",
+		Version:     "1.0.0",
+		Timeout:     nil,
+		Credentials: devicetopo.Credentials{},
+		TLS:         devicetopo.TlsConfig{},
+		Type:        "TestDevice",
+		Role:        "",
+		Attributes:  nil,
+		Protocols:   nil,
+	}
+}
+
 func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.DeviceChange, Store) {
 	log.SetOutput(os.Stdout)
 	ctrl := gomock.NewController(t)
@@ -258,34 +271,9 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	config1Value10, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout2Txpwr10), false)
 	config1Value11, _ := devicechangetypes.NewChangeValue(Test1Leaftoplevel, devicechangetypes.NewTypedValueString(ValueLeaftopWxy1234), false)
 
-	device1 := &devicetopo.Device{
-		ID:          Device1ID,
-		Revision:    0,
-		Address:     "",
-		Target:      "",
-		Version:     "1.0.0",
-		Timeout:     nil,
-		Credentials: devicetopo.Credentials{},
-		TLS:         devicetopo.TlsConfig{},
-		Type:        "TestDevice",
-		Role:        "",
-		Attributes:  nil,
-		Protocols:   nil,
-	}
-	device2 := &devicetopo.Device{
-		ID:          Device2ID,
-		Revision:    0,
-		Address:     "",
-		Target:      "",
-		Version:     "1.0.0",
-		Timeout:     nil,
-		Credentials: devicetopo.Credentials{},
-		TLS:         devicetopo.TlsConfig{},
-		Type:        "TestDevice",
-		Role:        "",
-		Attributes:  nil,
-		Protocols:   nil,
-	}
+	device1 := makeDevice(Device1ID)
+	device2 := makeDevice(Device2ID)
+
 	change1 := devicechangetypes.Change{
 		Values: []*devicechangetypes.ChangeValue{
 			config1Value01, config1Value02, config1Value03,
