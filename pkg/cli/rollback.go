@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Deprecated: getRollbackCommand works on legacy, non-atomix stores
 func getRollbackCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rollback <changeId>",
@@ -30,6 +31,7 @@ func getRollbackCommand() *cobra.Command {
 	return cmd
 }
 
+// Deprecated: runRollbackCommand works on legacy, non-atomix stores
 func runRollbackCommand(cmd *cobra.Command, args []string) error {
 	clientConnection, clientConnectionError := getConnection()
 
