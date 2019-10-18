@@ -89,8 +89,8 @@ func (m modelPluginTest) Schema() (map[string]*yang.Entry, error) {
 }
 
 // GetStateMode uses the `generated.go` of the TestDevice1 plugin module
-func (m modelPluginTest) GetStateMode() GetStateMode {
-	return GetStateOpState // modelregistry.GetStateOpState
+func (m modelPluginTest) GetStateMode() int {
+	return 1 // modelregistry.GetStateOpState
 }
 
 func Test_CastModelPlugin(t *testing.T) {
