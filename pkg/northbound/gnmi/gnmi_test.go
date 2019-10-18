@@ -84,8 +84,8 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	go listenToTopoLoading(mgr.TopoChannel)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
-	mockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(device devicepb.ID, c chan<- *devicechange.DeviceChange) error {
+	mockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(device devicepb.ID, version string, c chan<- *devicechange.DeviceChange) error {
 			close(c)
 			return nil
 		}).AnyTimes()

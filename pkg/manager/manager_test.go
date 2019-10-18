@@ -109,7 +109,7 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	mockLeadershipStore.EXPECT().IsLeader().AnyTimes()
 	mockMastershipStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
 	mockNetworkChangesStore.EXPECT().Watch(gomock.Any()).AnyTimes()
-	mockDeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
+	mockDeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 	mockNetworkSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 	mockDeviceSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()

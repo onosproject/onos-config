@@ -101,9 +101,11 @@ message ListDeviceChangeRequest {
     // after all devices have been streamed to the client
     bool subscribe = 1;
 
-    // option to specify a specific device change - if blank or '*' then select all
-    // Can support `*` (match many chars) or '?' (match one char) as wildcard
-    string changeid = 2 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.ID"];
+    // device_id is the device for which to list changes
+    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+
+    // device_version is an optional device version for which to list changes
+    string device_version = 3;
 }
 
 // ListDeviceChangeResponse carries a single network change event

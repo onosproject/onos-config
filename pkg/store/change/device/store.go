@@ -120,10 +120,10 @@ type Store interface {
 	Delete(config *devicechange.DeviceChange) error
 
 	// List lists device change
-	List(device.ID, chan<- *devicechange.DeviceChange) error
+	List(id device.ID, version string, ch chan<- *devicechange.DeviceChange) error
 
 	// Watch watches the device change store for changes
-	Watch(device.ID, chan<- *devicechange.DeviceChange) error
+	Watch(id device.ID, version string, ch chan<- *devicechange.DeviceChange) error
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
@@ -133,7 +133,7 @@ type atomixStore struct {
 	mu             sync.RWMutex
 }
 
-func (s *atomixStore) getDeviceChanges(deviceID device.ID) (indexedmap.IndexedMap, error) {
+func (s *atomixStore) getDeviceChanges(deviceID device.ID, version string) (indexedmap.IndexedMap, error) {
 	s.mu.RLock()
 	changes, ok := s.deviceChanges[deviceID]
 	s.mu.RUnlock()
@@ -154,7 +154,7 @@ func (s *atomixStore) getDeviceChanges(deviceID device.ID) (indexedmap.IndexedMa
 }
 
 func (s *atomixStore) Get(id devicechange.ID) (*devicechange.DeviceChange, error) {
-	changes, err := s.getDeviceChanges(id.GetDeviceID())
+	changes, err := s.getDeviceChanges(id.GetDeviceID(), id.GetDeviceVersion())
 	if err != nil {
 		return nil, err
 	}
@@ -181,9 +181,9 @@ func (s *atomixStore) Create(config *devicechange.DeviceChange) error {
 	if config.Revision != 0 {
 		return errors.New("not a new object")
 	}
-	config.ID = networkchange.ID(config.NetworkChange.ID).GetDeviceChangeID(config.Change.DeviceID)
+	config.ID = networkchange.ID(config.NetworkChange.ID).GetDeviceChangeID(config.Change.DeviceID, config.Change.DeviceVersion)
 
-	changes, err := s.getDeviceChanges(config.Change.DeviceID)
+	changes, err := s.getDeviceChanges(config.Change.DeviceID, config.Change.DeviceVersion)
 	if err != nil {
 		return err
 	}
@@ -219,7 +219,7 @@ func (s *atomixStore) Update(config *devicechange.DeviceChange) error {
 		return errors.New("not a stored object: no storage revision found")
 	}
 
-	changes, err := s.getDeviceChanges(config.Change.DeviceID)
+	changes, err := s.getDeviceChanges(config.Change.DeviceID, config.Change.DeviceVersion)
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func (s *atomixStore) Delete(config *devicechange.DeviceChange) error {
 		return errors.New("not a stored object")
 	}
 
-	changes, err := s.getDeviceChanges(config.Change.DeviceID)
+	changes, err := s.getDeviceChanges(config.Change.DeviceID, config.Change.DeviceVersion)
 	if err != nil {
 		return err
 	}
@@ -274,8 +274,8 @@ func (s *atomixStore) Delete(config *devicechange.DeviceChange) error {
 	return nil
 }
 
-func (s *atomixStore) List(device device.ID, ch chan<- *devicechange.DeviceChange) error {
-	changes, err := s.getDeviceChanges(device)
+func (s *atomixStore) List(device device.ID, version string, ch chan<- *devicechange.DeviceChange) error {
+	changes, err := s.getDeviceChanges(device, version)
 	if err != nil {
 		return err
 	}
@@ -296,8 +296,8 @@ func (s *atomixStore) List(device device.ID, ch chan<- *devicechange.DeviceChang
 	return nil
 }
 
-func (s *atomixStore) Watch(device device.ID, ch chan<- *devicechange.DeviceChange) error {
-	changes, err := s.getDeviceChanges(device)
+func (s *atomixStore) Watch(device device.ID, version string, ch chan<- *devicechange.DeviceChange) error {
+	changes, err := s.getDeviceChanges(device, version)
 	if err != nil {
 		return err
 	}

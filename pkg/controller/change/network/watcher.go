@@ -97,14 +97,14 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for response := range deviceCh {
-			w.watchDevice(response.Device.ID, ch)
+			w.watchDevice(response.Device.ID, response.Device.Version, ch)
 		}
 	}()
 	return nil
 }
 
 // watchDevice watches changes for the given device
-func (w *DeviceWatcher) watchDevice(device device.ID, ch chan<- types.ID) {
+func (w *DeviceWatcher) watchDevice(device device.ID, version string, ch chan<- types.ID) {
 	w.mu.Lock()
 	deviceCh := w.channels[device]
 	if deviceCh != nil {
@@ -116,7 +116,7 @@ func (w *DeviceWatcher) watchDevice(device device.ID, ch chan<- types.ID) {
 	w.channels[device] = deviceCh
 	w.mu.Unlock()
 
-	if err := w.ChangeStore.Watch(device, deviceCh); err != nil {
+	if err := w.ChangeStore.Watch(device, version, deviceCh); err != nil {
 		w.mu.Lock()
 		delete(w.channels, device)
 		w.mu.Unlock()

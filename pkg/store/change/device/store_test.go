@@ -41,11 +41,11 @@ func TestDeviceStore(t *testing.T) {
 	device2 := device.ID("device-2")
 
 	ch1 := make(chan *devicechange.DeviceChange)
-	err = store2.Watch(device1, ch1)
+	err = store2.Watch(device1, "1.0.0", ch1)
 	assert.NoError(t, err)
 
 	ch2 := make(chan *devicechange.DeviceChange)
-	err = store2.Watch(device2, ch2)
+	err = store2.Watch(device2, "1.0.0", ch2)
 	assert.NoError(t, err)
 
 	change1 := &devicechange.DeviceChange{
@@ -54,7 +54,8 @@ func TestDeviceStore(t *testing.T) {
 			Index: 1,
 		},
 		Change: &devicechange.Change{
-			DeviceID: device1,
+			DeviceID:      device1,
+			DeviceVersion: "1.0.0",
 			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
@@ -80,7 +81,8 @@ func TestDeviceStore(t *testing.T) {
 			Index: 2,
 		},
 		Change: &devicechange.Change{
-			DeviceID: device1,
+			DeviceID:      device1,
+			DeviceVersion: "1.0.0",
 			Values: []*devicechange.ChangeValue{
 				{
 					Path: "baz",
@@ -96,22 +98,22 @@ func TestDeviceStore(t *testing.T) {
 	// Create a new change
 	err = store1.Create(change1)
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.ID("network-change-1:device-1"), change1.ID)
+	assert.Equal(t, devicechange.ID("network-change-1:device-1:1.0.0"), change1.ID)
 	assert.Equal(t, devicechange.Index(1), change1.Index)
 	assert.NotEqual(t, devicechange.Revision(0), change1.Revision)
 
 	// Get the change
-	change1, err = store2.Get(devicechange.ID("network-change-1:device-1"))
+	change1, err = store2.Get(devicechange.ID("network-change-1:device-1:1.0.0"))
 	assert.NoError(t, err)
 	assert.NotNil(t, change1)
-	assert.Equal(t, devicechange.ID("network-change-1:device-1"), change1.ID)
+	assert.Equal(t, devicechange.ID("network-change-1:device-1:1.0.0"), change1.ID)
 	assert.Equal(t, devicechange.Index(1), change1.Index)
 	assert.NotEqual(t, devicechange.Revision(0), change1.Revision)
 
 	// Append another change
 	err = store2.Create(change2)
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.ID("network-change-2:device-1"), change2.ID)
+	assert.Equal(t, devicechange.ID("network-change-2:device-1:1.0.0"), change2.ID)
 	assert.Equal(t, devicechange.Index(2), change2.Index)
 	assert.NotEqual(t, devicechange.Revision(0), change2.Revision)
 
@@ -121,7 +123,8 @@ func TestDeviceStore(t *testing.T) {
 			Index: 3,
 		},
 		Change: &devicechange.Change{
-			DeviceID: device1,
+			DeviceID:      device1,
+			DeviceVersion: "1.0.0",
 			Values: []*devicechange.ChangeValue{
 				{
 					Path:    "foo",
@@ -134,7 +137,7 @@ func TestDeviceStore(t *testing.T) {
 	// Append another change
 	err = store1.Create(change3)
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.ID("network-change-3:device-1"), change3.ID)
+	assert.Equal(t, devicechange.ID("network-change-3:device-1:1.0.0"), change3.ID)
 	assert.Equal(t, devicechange.Index(3), change3.Index)
 	assert.NotEqual(t, devicechange.Revision(0), change3.Revision)
 
@@ -145,7 +148,8 @@ func TestDeviceStore(t *testing.T) {
 			Index: 3,
 		},
 		Change: &devicechange.Change{
-			DeviceID: device2,
+			DeviceID:      device2,
+			DeviceVersion: "1.0.0",
 			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
@@ -161,19 +165,19 @@ func TestDeviceStore(t *testing.T) {
 	// Append another change
 	err = store1.Create(change4)
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.ID("network-change-3:device-2"), change4.ID)
+	assert.Equal(t, devicechange.ID("network-change-3:device-2:1.0.0"), change4.ID)
 	assert.Equal(t, devicechange.Index(1), change4.Index)
 	assert.NotEqual(t, devicechange.Revision(0), change4.Revision)
 
 	// Verify events were received for the changes
 	changeEvent := nextDeviceChange(t, ch1)
-	assert.Equal(t, devicechange.ID("network-change-1:device-1"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-1:device-1:1.0.0"), changeEvent.ID)
 	changeEvent = nextDeviceChange(t, ch1)
-	assert.Equal(t, devicechange.ID("network-change-2:device-1"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-2:device-1:1.0.0"), changeEvent.ID)
 	changeEvent = nextDeviceChange(t, ch1)
-	assert.Equal(t, devicechange.ID("network-change-3:device-1"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-3:device-1:1.0.0"), changeEvent.ID)
 	changeEvent = nextDeviceChange(t, ch2)
-	assert.Equal(t, devicechange.ID("network-change-3:device-2"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-3:device-2:1.0.0"), changeEvent.ID)
 
 	// Update one of the changes
 	change2.Status.State = change.State_RUNNING
@@ -183,7 +187,7 @@ func TestDeviceStore(t *testing.T) {
 	assert.NotEqual(t, revision, change2.Revision)
 
 	// Read and then update the change
-	change2, err = store2.Get(devicechange.ID("network-change-2:device-1"))
+	change2, err = store2.Get(devicechange.ID("network-change-2:device-1:1.0.0"))
 	assert.NoError(t, err)
 	assert.NotNil(t, change2)
 	change2.Status.State = change.State_RUNNING
@@ -193,9 +197,9 @@ func TestDeviceStore(t *testing.T) {
 	assert.NotEqual(t, revision, change2.Revision)
 
 	// Verify that concurrent updates fail
-	change31, err := store1.Get(devicechange.ID("network-change-3:device-1"))
+	change31, err := store1.Get(devicechange.ID("network-change-3:device-1:1.0.0"))
 	assert.NoError(t, err)
-	change32, err := store2.Get(devicechange.ID("network-change-3:device-1"))
+	change32, err := store2.Get(devicechange.ID("network-change-3:device-1:1.0.0"))
 	assert.NoError(t, err)
 
 	change31.Status.State = change.State_RUNNING
@@ -208,23 +212,23 @@ func TestDeviceStore(t *testing.T) {
 
 	// Verify device events were received again
 	changeEvent = nextDeviceChange(t, ch1)
-	assert.Equal(t, devicechange.ID("network-change-2:device-1"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-2:device-1:1.0.0"), changeEvent.ID)
 	changeEvent = nextDeviceChange(t, ch1)
-	assert.Equal(t, devicechange.ID("network-change-2:device-1"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-2:device-1:1.0.0"), changeEvent.ID)
 	changeEvent = nextDeviceChange(t, ch1)
-	assert.Equal(t, devicechange.ID("network-change-3:device-1"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-3:device-1:1.0.0"), changeEvent.ID)
 
 	// List the changes for a device
 	changes := make(chan *devicechange.DeviceChange)
-	err = store1.List(device1, changes)
+	err = store1.List(device1, "1.0.0", changes)
 	assert.NoError(t, err)
 
 	changeEvent = nextDeviceChange(t, changes)
-	assert.Equal(t, devicechange.ID("network-change-1:device-1"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-1:device-1:1.0.0"), changeEvent.ID)
 	changeEvent = nextDeviceChange(t, changes)
-	assert.Equal(t, devicechange.ID("network-change-2:device-1"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-2:device-1:1.0.0"), changeEvent.ID)
 	changeEvent = nextDeviceChange(t, changes)
-	assert.Equal(t, devicechange.ID("network-change-3:device-1"), changeEvent.ID)
+	assert.Equal(t, devicechange.ID("network-change-3:device-1:1.0.0"), changeEvent.ID)
 
 	select {
 	case _, ok := <-changes:
@@ -236,19 +240,19 @@ func TestDeviceStore(t *testing.T) {
 	// Delete a change
 	err = store1.Delete(change2)
 	assert.NoError(t, err)
-	change2, err = store2.Get("network-change-2:device-1")
+	change2, err = store2.Get("network-change-2:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Nil(t, change2)
 
 	// Ensure existing changes are replayed in order on watch
 	watches := make(chan *devicechange.DeviceChange)
-	err = store1.Watch(device1, watches)
+	err = store1.Watch(device1, "1.0.0", watches)
 	assert.NoError(t, err)
 
 	change := nextDeviceChange(t, watches)
-	assert.Equal(t, devicechange.ID("network-change-1:device-1"), change.ID)
+	assert.Equal(t, devicechange.ID("network-change-1:device-1:1.0.0"), change.ID)
 	change = nextDeviceChange(t, watches)
-	assert.Equal(t, devicechange.ID("network-change-3:device-1"), change.ID)
+	assert.Equal(t, devicechange.ID("network-change-3:device-1:1.0.0"), change.ID)
 }
 
 func nextDeviceChange(t *testing.T, ch chan *devicechange.DeviceChange) *devicechange.DeviceChange {

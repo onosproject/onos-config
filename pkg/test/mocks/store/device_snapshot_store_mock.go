@@ -148,18 +148,18 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Store(snapshot interface{}) *gomo
 }
 
 // Load mocks base method
-func (m *MockDeviceSnapshotStore) Load(id device0.ID) (*device.Snapshot, error) {
+func (m *MockDeviceSnapshotStore) Load(id device0.ID, version string) (*device.Snapshot, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Load", id)
+	ret := m.ctrl.Call(m, "Load", id, version)
 	ret0, _ := ret[0].(*device.Snapshot)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Load indicates an expected call of Load
-func (mr *MockDeviceSnapshotStoreMockRecorder) Load(id interface{}) *gomock.Call {
+func (mr *MockDeviceSnapshotStoreMockRecorder) Load(id, version interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockDeviceSnapshotStore)(nil).Load), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockDeviceSnapshotStore)(nil).Load), id, version)
 }
 
 // LoadAll mocks base method

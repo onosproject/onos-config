@@ -153,8 +153,8 @@ func Test_ListDeviceChanges(t *testing.T) {
 
 	mockDevChStore, ok := mgrTest.DeviceChangesStore.(*mockstore.MockDeviceChangesStore)
 	assert.Assert(t, ok, "casting mock store")
-	mockDevChStore.EXPECT().List(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(id devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange) error {
+	mockDevChStore.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(id devicetopo.ID, version string, ch chan<- *devicechangetypes.DeviceChange) error {
 
 			// Send our network changes as a streamed response to store List()
 			go func() {
@@ -168,8 +168,9 @@ func Test_ListDeviceChanges(t *testing.T) {
 			return nil
 		})
 	req := ListDeviceChangeRequest{
-		Subscribe: false,
-		ChangeID:  "device-1",
+		Subscribe:     false,
+		DeviceID:      "device-1",
+		DeviceVersion: "1.0.0",
 	}
 	stream, err := client.ListDeviceChanges(context.Background(), &req)
 	assert.NilError(t, err)

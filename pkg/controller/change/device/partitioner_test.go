@@ -25,7 +25,7 @@ import (
 
 func TestDevicePartitioner(t *testing.T) {
 	partitioner := &Partitioner{}
-	key, err := partitioner.Partition(types.ID(networkchange.ID("change-1").GetDeviceChangeID(device.ID("device-1"))))
+	key, err := partitioner.Partition(types.ID(networkchange.ID("change-1").GetDeviceChangeID(device.ID("device-1"), "1.0.0")))
 	assert.NoError(t, err)
-	assert.Equal(t, controller.PartitionKey("device-1"), key)
+	assert.Equal(t, controller.PartitionKey("device-1:1.0.0"), key)
 }

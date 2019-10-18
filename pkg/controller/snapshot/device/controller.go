@@ -91,7 +91,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
 	// Get the previous snapshot if any
 	var prevIndex devicechangetype.Index
-	prevSnapshot, err := r.snapshots.Load(deviceSnapshot.DeviceID)
+	prevSnapshot, err := r.snapshots.Load(deviceSnapshot.DeviceID, deviceSnapshot.DeviceVersion)
 	if err != nil {
 		return false, err
 	} else if prevSnapshot != nil {
@@ -110,7 +110,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 
 	// List the changes for the device
 	changes := make(chan *devicechangetype.DeviceChange)
-	if err := r.changes.List(deviceSnapshot.DeviceID, changes); err != nil {
+	if err := r.changes.List(deviceSnapshot.DeviceID, deviceSnapshot.DeviceVersion, changes); err != nil {
 		return false, err
 	}
 
@@ -149,11 +149,11 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 		}
 
 		snapshot := &devicesnaptype.Snapshot{
-			ID:          devicesnaptype.ID(deviceSnapshot.DeviceID),
-			DeviceID:    deviceSnapshot.DeviceID,
-			SnapshotID:  deviceSnapshot.ID,
-			ChangeIndex: snapshotIndex,
-			Values:      values,
+			DeviceID:      deviceSnapshot.DeviceID,
+			DeviceVersion: deviceSnapshot.DeviceVersion,
+			SnapshotID:    deviceSnapshot.ID,
+			ChangeIndex:   snapshotIndex,
+			Values:        values,
 		}
 		log.Infof("Storing Snapshot %v", snapshot)
 		if err := r.snapshots.Store(snapshot); err != nil {
@@ -173,7 +173,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 // reconcileDelete reconciles a snapshot in the DELETE phase
 func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
 	// Load the current snapshot
-	snapshot, err := r.snapshots.Load(deviceSnapshot.DeviceID)
+	snapshot, err := r.snapshots.Load(deviceSnapshot.DeviceID, deviceSnapshot.DeviceVersion)
 	if err != nil {
 		return false, err
 	} else if snapshot == nil {
@@ -187,7 +187,7 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 
 	// List the changes for the device
 	changes := make(chan *devicechangetype.DeviceChange)
-	if err := r.changes.List(deviceSnapshot.DeviceID, changes); err != nil {
+	if err := r.changes.List(deviceSnapshot.DeviceID, deviceSnapshot.DeviceVersion, changes); err != nil {
 		return false, err
 	}
 

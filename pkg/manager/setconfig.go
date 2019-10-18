@@ -94,7 +94,7 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
 	if !ok {
 		log.Warning("No model ", modelName, " available as a plugin")
 	} else {
-		configValues, err := devicestore.ExtractFullConfig(devicetopo.ID(deviceName), chg, m.DeviceChangesStore, 0)
+		configValues, err := devicestore.ExtractFullConfig(devicetopo.ID(deviceName), version, chg, m.DeviceChangesStore, 0)
 		if err != nil {
 			return err
 		}

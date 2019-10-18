@@ -32,7 +32,12 @@ func (i ID) GetNetworkChangeID() types.ID {
 
 // GetDeviceID returns the Device ID to which the change is targeted
 func (i ID) GetDeviceID() device.ID {
-	return device.ID(string(i)[strings.Index(string(i), separator)+1:])
+	return device.ID(string(i)[strings.Index(string(i), separator)+1 : strings.LastIndex(string(i), separator)])
+}
+
+// GetDeviceVersion returns the device version to which the change is targeted
+func (i ID) GetDeviceVersion() string {
+	return string(i)[strings.LastIndex(string(i), separator)+1:]
 }
 
 // Index is the index of a network configuration

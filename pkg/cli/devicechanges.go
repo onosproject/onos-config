@@ -18,6 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
@@ -34,12 +35,14 @@ func getWatchDeviceChangesCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  runWatchDeviceChangesCommand,
 	}
+	cmd.Flags().StringP("version", "v", "", "an optional device version")
 	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	return cmd
 }
 
 func runWatchDeviceChangesCommand(cmd *cobra.Command, args []string) error {
 	id := types.ID(args[0]) // Argument is mandatory
+	version, _ := cmd.Flags().GetString("version")
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
 	clientConnection, clientConnectionError := getConnection()
@@ -49,8 +52,9 @@ func runWatchDeviceChangesCommand(cmd *cobra.Command, args []string) error {
 	}
 	client := diags.CreateChangeServiceClient(clientConnection)
 	changesReq := diags.ListDeviceChangeRequest{
-		Subscribe: true,
-		ChangeID:  id,
+		Subscribe:     true,
+		DeviceID:      device.ID(id),
+		DeviceVersion: version,
 	}
 
 	var tmplChanges *template.Template

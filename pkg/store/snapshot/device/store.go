@@ -17,6 +17,7 @@ package device
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/client/map"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
@@ -140,7 +141,7 @@ type Store interface {
 	Store(snapshot *devicesnapshot.Snapshot) error
 
 	// Load loads a snapshot
-	Load(id device.ID) (*devicesnapshot.Snapshot, error)
+	Load(id device.ID, version string) (*devicesnapshot.Snapshot, error)
 
 	// Load loads all snapshots
 	LoadAll(ch chan<- *devicesnapshot.Snapshot) error
@@ -170,7 +171,7 @@ func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
 		return errors.New("not a new object")
 	}
 
-	snapshot.ID = devicesnapshot.GetSnapshotID(snapshot.NetworkSnapshot.ID, snapshot.DeviceID)
+	snapshot.ID = devicesnapshot.GetSnapshotID(snapshot.NetworkSnapshot.ID, snapshot.DeviceID, snapshot.DeviceVersion)
 
 	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
@@ -266,6 +267,10 @@ func (s *atomixStore) Watch(ch chan<- *devicesnapshot.DeviceSnapshot) error {
 	return nil
 }
 
+func getSnapshotKey(device device.ID, version string) string {
+	return fmt.Sprintf("%s:%s", device, version)
+}
+
 func (s *atomixStore) Store(snapshot *devicesnapshot.Snapshot) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -275,18 +280,18 @@ func (s *atomixStore) Store(snapshot *devicesnapshot.Snapshot) error {
 		return err
 	}
 
-	_, err = s.snapshots.Put(ctx, string(snapshot.DeviceID), bytes)
+	_, err = s.snapshots.Put(ctx, getSnapshotKey(snapshot.DeviceID, snapshot.DeviceVersion), bytes)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *atomixStore) Load(id device.ID) (*devicesnapshot.Snapshot, error) {
+func (s *atomixStore) Load(id device.ID, version string) (*devicesnapshot.Snapshot, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.snapshots.Get(ctx, string(id))
+	entry, err := s.snapshots.Get(ctx, getSnapshotKey(id, version))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
@@ -334,6 +339,5 @@ func decodeSnapshot(entry *_map.Entry) (*devicesnapshot.Snapshot, error) {
 	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
 		return nil, err
 	}
-	snapshot.ID = devicesnapshot.ID(entry.Key)
 	return snapshot, nil
 }

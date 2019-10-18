@@ -137,8 +137,8 @@ func (r *Reconciler) reconcileRunningMark(snapshot *networksnaptypes.NetworkSnap
 // createDeviceSnapshots marks NetworkChanges for deletion and creates device snapshots
 func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
 	// Iterate through network changes
-	deviceChanges := make(map[device.ID]networkchangetypes.Index)
-	deviceMaxChanges := make(map[device.ID]networkchangetypes.Index)
+	deviceChanges := make(map[device.ID]map[string]networkchangetypes.Index)
+	deviceMaxChanges := make(map[device.ID]map[string]networkchangetypes.Index)
 
 	// List network changes
 	changes := make(chan *networkchangetypes.NetworkChange)
@@ -165,8 +165,19 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 			// Record max device changes if necessary
 			for _, device := range change.Refs {
 				if _, ok := deviceMaxChanges[device.DeviceChangeID.GetDeviceID()]; !ok {
-					prevChangeIndex := deviceChanges[device.DeviceChangeID.GetDeviceID()]
-					deviceMaxChanges[device.DeviceChangeID.GetDeviceID()] = prevChangeIndex
+					deviceVersions, ok := deviceChanges[device.DeviceChangeID.GetDeviceID()]
+					if !ok {
+						deviceVersions = make(map[string]networkchangetypes.Index)
+						deviceChanges[device.DeviceChangeID.GetDeviceID()] = deviceVersions
+					}
+					prevChangeIndex := deviceVersions[device.DeviceChangeID.GetDeviceVersion()]
+
+					deviceMaxVersions, ok := deviceMaxChanges[device.DeviceChangeID.GetDeviceID()]
+					if !ok {
+						deviceMaxVersions = make(map[string]networkchangetypes.Index)
+						deviceMaxChanges[device.DeviceChangeID.GetDeviceID()] = deviceMaxVersions
+					}
+					deviceMaxVersions[device.DeviceChangeID.GetDeviceVersion()] = prevChangeIndex
 				}
 			}
 		} else {
@@ -178,7 +189,12 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 
 			// Record the change ID for each device in the change
 			for _, device := range change.Refs {
-				deviceChanges[device.DeviceChangeID.GetDeviceID()] = change.Index
+				deviceVersions, ok := deviceChanges[device.DeviceChangeID.GetDeviceID()]
+				if !ok {
+					deviceVersions = make(map[string]networkchangetypes.Index)
+					deviceChanges[device.DeviceChangeID.GetDeviceID()] = deviceVersions
+				}
+				deviceVersions[device.DeviceChangeID.GetDeviceVersion()] = change.Index
 			}
 		}
 	}
@@ -192,25 +208,28 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 
 	// Create device snapshots for each device
 	refs := make([]*networksnaptypes.DeviceSnapshotRef, 0, len(deviceMaxChanges))
-	for device, maxChangeIndex := range deviceMaxChanges {
-		deviceSnapshot := &devicesnaptypes.DeviceSnapshot{
-			DeviceID: device,
-			NetworkSnapshot: devicesnaptypes.NetworkSnapshotRef{
-				ID:    types.ID(snapshot.ID),
-				Index: types.Index(snapshot.Index),
-			},
-			MaxNetworkChangeIndex: types.Index(maxChangeIndex),
-			Status: snaptypes.Status{
-				Phase: snaptypes.Phase_MARK,
-				State: snaptypes.State_RUNNING,
-			},
+	for deviceID, maxVersions := range deviceMaxChanges {
+		for deviceVersion, maxChangeIndex := range maxVersions {
+			deviceSnapshot := &devicesnaptypes.DeviceSnapshot{
+				DeviceID:      deviceID,
+				DeviceVersion: deviceVersion,
+				NetworkSnapshot: devicesnaptypes.NetworkSnapshotRef{
+					ID:    types.ID(snapshot.ID),
+					Index: types.Index(snapshot.Index),
+				},
+				MaxNetworkChangeIndex: types.Index(maxChangeIndex),
+				Status: snaptypes.Status{
+					Phase: snaptypes.Phase_MARK,
+					State: snaptypes.State_RUNNING,
+				},
+			}
+			if err := r.deviceSnapshots.Create(deviceSnapshot); err != nil {
+				return false, err
+			}
+			refs = append(refs, &networksnaptypes.DeviceSnapshotRef{
+				DeviceSnapshotID: deviceSnapshot.ID,
+			})
 		}
-		if err := r.deviceSnapshots.Create(deviceSnapshot); err != nil {
-			return false, err
-		}
-		refs = append(refs, &networksnaptypes.DeviceSnapshotRef{
-			DeviceSnapshotID: deviceSnapshot.ID,
-		})
 	}
 
 	// Once the device snapshots have been created, update the network snapshot

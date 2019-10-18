@@ -262,20 +262,20 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 
 // ListDeviceChanges provides a stream of Device Changes
 func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeService_ListDeviceChangesServer) error {
-	log.Infof("ListDeviceChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
+	log.Infof("ListDeviceChanges called with %s. Subscribe %v", r.DeviceID, r.Subscribe)
 
 	devChChan := make(chan *devicechangetypes.DeviceChange)
 	defer close(devChChan)
 
 	if r.Subscribe {
-		err := manager.GetManager().DeviceChangesStore.Watch(devicetopo.ID(r.ChangeID), devChChan)
+		err := manager.GetManager().DeviceChangesStore.Watch(r.DeviceID, r.DeviceVersion, devChChan)
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
 		}
 
 	} else {
-		err := manager.GetManager().DeviceChangesStore.List(devicetopo.ID(r.ChangeID), devChChan)
+		err := manager.GetManager().DeviceChangesStore.List(r.DeviceID, r.DeviceVersion, devChChan)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err
@@ -308,7 +308,7 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 			break
 		}
 	}
-	log.Infof("Closing ListDeviceChanges for %s", r.ChangeID)
+	log.Infof("Closing ListDeviceChanges for %s", r.DeviceID)
 	return nil
 }
 

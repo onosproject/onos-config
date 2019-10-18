@@ -76,13 +76,13 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that no device snapshots were created
-	deviceSnapshot1, err := deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1))
+	deviceSnapshot1, err := deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Nil(t, deviceSnapshot1)
-	deviceSnapshot2, err := deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2))
+	deviceSnapshot2, err := deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Nil(t, deviceSnapshot2)
-	deviceSnapshot3, err := deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3))
+	deviceSnapshot3, err := deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Nil(t, deviceSnapshot3)
 
@@ -111,13 +111,13 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.True(t, networkChange4.Deleted)
 
 	// Verify device snapshots were created
-	deviceSnapshot1, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1))
+	deviceSnapshot1, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1, "1.0.0"))
 	assert.NoError(t, err)
 	assert.NotNil(t, deviceSnapshot1)
-	deviceSnapshot2, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2))
+	deviceSnapshot2, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2, "1.0.0"))
 	assert.NoError(t, err)
 	assert.NotNil(t, deviceSnapshot2)
-	deviceSnapshot3, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3))
+	deviceSnapshot3, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3, "1.0.0"))
 	assert.NoError(t, err)
 	assert.NotNil(t, deviceSnapshot3)
 
@@ -177,15 +177,15 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify the device snapshots are PENDING in the DELETE phase
-	deviceSnapshot1, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1))
+	deviceSnapshot1, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.Phase_DELETE, deviceSnapshot1.Status.Phase)
 	assert.Equal(t, snapshot.State_PENDING, deviceSnapshot1.Status.State)
-	deviceSnapshot2, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2))
+	deviceSnapshot2, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.Phase_DELETE, deviceSnapshot2.Status.Phase)
 	assert.Equal(t, snapshot.State_PENDING, deviceSnapshot2.Status.State)
-	deviceSnapshot3, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3))
+	deviceSnapshot3, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.Phase_DELETE, deviceSnapshot3.Status.Phase)
 	assert.Equal(t, snapshot.State_PENDING, deviceSnapshot3.Status.State)
@@ -202,15 +202,15 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify the device snapshots are RUNNING in the DELETE phase
-	deviceSnapshot1, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1))
+	deviceSnapshot1, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.Phase_DELETE, deviceSnapshot1.Status.Phase)
 	assert.Equal(t, snapshot.State_PENDING, deviceSnapshot1.Status.State)
-	deviceSnapshot2, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2))
+	deviceSnapshot2, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.Phase_DELETE, deviceSnapshot2.Status.Phase)
 	assert.Equal(t, snapshot.State_PENDING, deviceSnapshot2.Status.State)
-	deviceSnapshot3, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3))
+	deviceSnapshot3, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.Phase_DELETE, deviceSnapshot3.Status.Phase)
 	assert.Equal(t, snapshot.State_PENDING, deviceSnapshot3.Status.State)
@@ -227,15 +227,15 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify the device snapshots are RUNNING in the DELETE phase
-	deviceSnapshot1, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1))
+	deviceSnapshot1, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device1, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.Phase_DELETE, deviceSnapshot1.Status.Phase)
 	assert.Equal(t, snapshot.State_RUNNING, deviceSnapshot1.Status.State)
-	deviceSnapshot2, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2))
+	deviceSnapshot2, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device2, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.Phase_DELETE, deviceSnapshot2.Status.Phase)
 	assert.Equal(t, snapshot.State_RUNNING, deviceSnapshot2.Status.State)
-	deviceSnapshot3, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3))
+	deviceSnapshot3, err = deviceSnapshots.Get(devicesnaptype.GetSnapshotID(types.ID(networkSnapshot.ID), device3, "1.0.0"))
 	assert.NoError(t, err)
 	assert.Equal(t, snapshot.Phase_DELETE, deviceSnapshot3.Status.Phase)
 	assert.Equal(t, snapshot.State_RUNNING, deviceSnapshot3.Status.State)
@@ -309,7 +309,8 @@ func newNetworkChange(id networkchange.ID, phase change.Phase, state change.Stat
 	changes := make([]*devicechange.Change, len(devices))
 	for i, device := range devices {
 		changes[i] = &devicechange.Change{
-			DeviceID: device,
+			DeviceID:      device,
+			DeviceVersion: "1.0.0",
 			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
@@ -325,7 +326,7 @@ func newNetworkChange(id networkchange.ID, phase change.Phase, state change.Stat
 	refs := make([]*networkchange.DeviceChangeRef, len(devices))
 	for i, device := range devices {
 		refs[i] = &networkchange.DeviceChangeRef{
-			DeviceChangeID: id.GetDeviceChangeID(device),
+			DeviceChangeID: id.GetDeviceChangeID(device, "1.0.0"),
 		}
 	}
 	return &networkchange.NetworkChange{

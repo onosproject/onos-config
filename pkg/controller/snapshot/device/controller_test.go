@@ -99,7 +99,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
 
 	// Verify the correct snapshot was taken
-	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID)
+	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID, deviceSnapshot.DeviceVersion)
 	assert.NoError(t, err)
 	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 1)
@@ -213,7 +213,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
 
 	// Verify the correct snapshot was taken
-	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID)
+	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID, deviceSnapshot.DeviceVersion)
 	assert.NoError(t, err)
 	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 2)

@@ -15,6 +15,7 @@
 package device
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/controller"
 	"github.com/onosproject/onos-config/pkg/types"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -26,7 +27,7 @@ type Partitioner struct {
 
 // Partition returns the device as a partition key
 func (p *Partitioner) Partition(id types.ID) (controller.PartitionKey, error) {
-	return controller.PartitionKey(changetypes.ID(id).GetDeviceID()), nil
+	return controller.PartitionKey(fmt.Sprintf("%s:%s", changetypes.ID(id).GetDeviceID(), changetypes.ID(id).GetDeviceVersion())), nil
 }
 
 var _ controller.WorkPartitioner = &Partitioner{}

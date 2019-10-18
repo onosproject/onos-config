@@ -27,13 +27,18 @@ const separator = ":"
 type ID types.ID
 
 // GetSnapshotID returns the snapshot ID for the given network snapshot ID and device
-func GetSnapshotID(networkID types.ID, deviceID device.ID) ID {
-	return ID(fmt.Sprintf("%s%s%s", networkID, separator, deviceID))
+func GetSnapshotID(networkID types.ID, deviceID device.ID, version string) ID {
+	return ID(fmt.Sprintf("%s%s%s%s%s", networkID, separator, deviceID, separator, version))
 }
 
 // GetDeviceID returns the device ID for the snapshot ID
 func (i ID) GetDeviceID() device.ID {
-	return device.ID(string(i)[strings.Index(string(i), separator)+1:])
+	return device.ID(string(i)[strings.Index(string(i), separator)+1 : strings.LastIndex(string(i), separator)])
+}
+
+// GetDeviceVersion returns the device version for the snapshot ID
+func (i ID) GetDeviceVersion() string {
+	return string(i)[strings.LastIndex(string(i), separator)+1:]
 }
 
 // Revision is a device snapshot revision number

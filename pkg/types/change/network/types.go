@@ -26,9 +26,9 @@ const separator = ":"
 // ID is a network configuration identifier type
 type ID types.ID
 
-// GetDeviceChangeID returns a device change ID for the given device ID
-func (i ID) GetDeviceChangeID(deviceID device.ID) devicechange.ID {
-	return devicechange.ID(fmt.Sprintf("%s%s%s", i, separator, deviceID))
+// GetDeviceChangeID returns a device change ID for the given device ID and version
+func (i ID) GetDeviceChangeID(deviceID device.ID, version string) devicechange.ID {
+	return devicechange.ID(fmt.Sprintf("%s%s%s%s%s", i, separator, deviceID, separator, version))
 }
 
 // Index is the index of a network configuration

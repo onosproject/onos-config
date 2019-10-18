@@ -36,8 +36,8 @@ const (
 )
 
 const (
-	change1 = devicechange.ID("device-1:device-1")
-	change2 = devicechange.ID("device-2:device-2")
+	change1 = devicechange.ID("device-1:device-1:1.0.0")
+	change2 = devicechange.ID("device-2:device-2:1.0.0")
 )
 
 func TestReconcilerChangeSuccess(t *testing.T) {
@@ -243,7 +243,8 @@ func newChange(device device.ID) *devicechange.DeviceChange {
 			Index: 1,
 		},
 		Change: &devicechange.Change{
-			DeviceID: device,
+			DeviceID:      device,
+			DeviceVersion: "1.0.0",
 			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",

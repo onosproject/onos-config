@@ -25,7 +25,7 @@ import (
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.Change, changeStore Store,
+func ExtractFullConfig(deviceID devicetopo.ID, version string, newChange *device.Change, changeStore Store,
 	nBack int) ([]*device.PathValue, error) {
 
 	// Have to use a slice to have a consistent output order
@@ -33,7 +33,7 @@ func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.Change, changeS
 
 	changeChan := make(chan *device.DeviceChange)
 
-	err := changeStore.List(deviceID, changeChan)
+	err := changeStore.List(deviceID, version, changeChan)
 
 	if err != nil {
 		return nil, err
