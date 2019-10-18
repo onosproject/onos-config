@@ -23,6 +23,7 @@ import (
 	"gotest.tools/assert"
 	log "k8s.io/klog"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -234,7 +235,10 @@ var Config2Types = [11]devicechangetypes.ValueType{
 	devicechangetypes.ValueType_STRING, // 10
 }
 
-//var c1ID, c2ID, c3ID change.ID
+const (
+	Device1ID = devicetopo.ID("Device1-1.0.0")
+	Device2ID = devicetopo.ID("Device2-1.0.0")
+)
 
 var B64 = base64.StdEncoding.EncodeToString
 
@@ -255,7 +259,21 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	config1Value11, _ := devicechangetypes.NewChangeValue(Test1Leaftoplevel, devicechangetypes.NewTypedValueString(ValueLeaftopWxy1234), false)
 
 	device1 := &devicetopo.Device{
-		ID:          "Device1",
+		ID:          Device1ID,
+		Revision:    0,
+		Address:     "",
+		Target:      "",
+		Version:     "1.0.0",
+		Timeout:     nil,
+		Credentials: devicetopo.Credentials{},
+		TLS:         devicetopo.TlsConfig{},
+		Type:        "TestDevice",
+		Role:        "",
+		Attributes:  nil,
+		Protocols:   nil,
+	}
+	device2 := &devicetopo.Device{
+		ID:          Device2ID,
 		Revision:    0,
 		Address:     "",
 		Target:      "",
@@ -317,30 +335,12 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 		Values: []*devicechangetypes.ChangeValue{
 			config4Value01, config4Value02,
 		},
-		DeviceID: device1.ID,
+		DeviceID: device2.ID,
 	}
 	deviceChange4 := &devicechangetypes.DeviceChange{
 		Change: &change4,
 		ID:     "Change4",
 	}
-
-	//c1ID = change1.ID
-	//c2ID = change2.ID
-	//c3ID = change2.ID
-	//
-	//device1V, err = NewConfiguration("Device1", "1.0.0", "TestDevice",
-	//	[]change.ID{change1.ID, change2.ID, change3.ID})
-	//if err != nil {
-	//	log.Error(err)
-	//	os.Exit(-1)
-	//}
-	//
-	//device2V, err = NewConfiguration("Device2", "10.0.100", "TestDevice",
-	//	[]change.ID{change1.ID, change2.ID, change4.ID})
-	//if err != nil {
-	//	log.Error(err)
-	//	os.Exit(-1)
-	//}
 
 	mockChangeStore.EXPECT().Get(deviceChange1.ID).Return(deviceChange1, nil).AnyTimes()
 	mockChangeStore.EXPECT().Get(deviceChange2.ID).Return(deviceChange2, nil).AnyTimes()
@@ -352,7 +352,11 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 			go func() {
 				c <- deviceChange1
 				c <- deviceChange2
-				c <- deviceChange3
+				if strings.Contains(string(device), "Device1") {
+					c <- deviceChange3
+				} else {
+					c <- deviceChange4
+				}
 				close(c)
 			}()
 			return nil
@@ -389,7 +393,7 @@ func Test_device1_version(t *testing.T) {
 		log.Infof("%d: %s\n", idx, cid)
 	}
 
-	assert.Equal(t, string(device1V.Change.DeviceID), "Device1")
+	assert.Equal(t, device1V.Change.DeviceID, Device1ID)
 
 	// Check the value of leaf2c before
 	change1, ok := changeStore.Get("Change1")
@@ -415,5 +419,81 @@ func Test_device1_version(t *testing.T) {
 	for i := 0; i < len(Config1Paths); i++ {
 		checkPathValue(t, pathValues, i,
 			Config1Paths[0:11], Config1Values[0:11], Config1Types[0:11])
+	}
+}
+
+func Test_device1_prev_version(t *testing.T) {
+	device1V, _, changeStore := setUp(t)
+
+	const changePrevious = 1
+	log.Info("Configuration ", device1V.Change.DeviceID, " (n-1) Changes:")
+	for idx, cid := range device1V.Change.Values[0 : len(device1V.Change.Values)-changePrevious] {
+		log.Infof("%d: %s\n", idx, cid)
+	}
+
+	assert.Equal(t, device1V.Change.DeviceID, Device1ID)
+
+	config, _ := ExtractFullConfig(device1V.Change.DeviceID, nil, changeStore, changePrevious)
+	for _, c := range config {
+		log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
+	}
+
+	for i := 0; i < len(Config1PreviousPaths); i++ {
+		checkPathValue(t, config, i,
+			Config1PreviousPaths[0:13], Config1PreviousValues[0:13], Config1PreviousTypes[0:13])
+	}
+}
+
+func Test_device1_first_version(t *testing.T) {
+	device1V, _, changeStore := setUp(t)
+	const changePrevious = 2
+	log.Info("Configuration ", device1V.Change.DeviceID, " (n-2) Changes:")
+	for idx, cid := range device1V.Change.Values[0 : len(device1V.Change.Values)-changePrevious] {
+		log.Infof("%d: %s\n", idx, cid)
+	}
+
+	assert.Equal(t, device1V.Change.DeviceID, Device1ID)
+
+	config, _ := ExtractFullConfig(device1V.Change.DeviceID, nil, changeStore, changePrevious)
+	for _, c := range config {
+		log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
+	}
+
+	for i := 0; i < len(Config1FirstPaths); i++ {
+		checkPathValue(t, config, i,
+			Config1FirstPaths[0:11], Config1FirstValues[0:11], Config1FirstTypes[0:11])
+	}
+}
+
+func Test_device1_invalid_version(t *testing.T) {
+	device1V, _, changeStore := setUp(t)
+	const changePrevious = 3
+
+	assert.Equal(t, device1V.Change.DeviceID, Device1ID)
+
+	config, _ := ExtractFullConfig(device1V.Change.DeviceID, nil, changeStore, changePrevious)
+	if len(config) > 0 {
+		t.Errorf("Not expecting any values for change (n-3). Got %d", len(config))
+	}
+
+}
+
+func Test_device2_version(t *testing.T) {
+	_, device2V, changeStore := setUp(t)
+	log.Info("Configuration ", device2V.Change.DeviceID, " (latest) Changes:")
+	for idx, cid := range device2V.Change.Values {
+		log.Infof("%d: %s\n", idx, cid)
+	}
+
+	assert.Equal(t, device2V.Change.DeviceID, Device2ID)
+
+	config, _ := ExtractFullConfig(device2V.Change.DeviceID, nil, changeStore, 0)
+	for _, c := range config {
+		log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
+	}
+
+	for i := 0; i < len(Config2Paths); i++ {
+		checkPathValue(t, config, i,
+			Config2Paths[0:11], Config2Values[0:11], Config2Types[0:11])
 	}
 }

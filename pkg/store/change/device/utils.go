@@ -43,13 +43,19 @@ func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.Change, changeS
 		consolidatedConfig = getPathValue(newChange, consolidatedConfig)
 	}
 
-	count := 0
-	for storeChange := range changeChan {
-		if nBack != 0 && count == nBack {
-			break
+	if nBack == 0 {
+		for storeChange := range changeChan {
+			consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
 		}
-		count++
-		consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
+	} else {
+		changes := make([]*device.DeviceChange, 0)
+		for storeChange := range changeChan {
+			changes = append(changes, storeChange)
+		}
+		end := len(changes) - nBack
+		for _, storeChange := range changes[0:end] {
+			consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
+		}
 	}
 
 	sort.Slice(consolidatedConfig, func(i, j int) bool {
