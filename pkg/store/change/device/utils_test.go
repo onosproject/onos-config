@@ -347,10 +347,21 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	mockChangeStore.EXPECT().Get(deviceChange3.ID).Return(deviceChange3, nil).AnyTimes()
 	mockChangeStore.EXPECT().Get(deviceChange4.ID).Return(deviceChange4, nil).AnyTimes()
 
-	return deviceChange1, deviceChange4, mockChangeStore
+	mockChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(device devicetopo.ID, c chan<- *devicechangetypes.DeviceChange) error {
+			go func() {
+				c <- deviceChange1
+				c <- deviceChange2
+				c <- deviceChange3
+				close(c)
+			}()
+			return nil
+		}).AnyTimes()
+
+	return deviceChange3, deviceChange4, mockChangeStore
 }
 
-func checkPathvalue(t *testing.T, config []*devicechangetypes.PathValue, index int,
+func checkPathValue(t *testing.T, config []*devicechangetypes.PathValue, index int,
 	expPaths []string, expValues [][]byte, expTypes []devicechangetypes.ValueType) {
 
 	// Check that they are kept in a consistent order
@@ -371,7 +382,7 @@ func checkPathvalue(t *testing.T, config []*devicechangetypes.PathValue, index i
 }
 
 func Test_device1_version(t *testing.T) {
-	device1V, _, _ := setUp(t)
+	device1V, _, changeStore := setUp(t)
 
 	log.Info("Device ", device1V.Change.DeviceID, " (latest) Changes:")
 	for idx, cid := range device1V.Change.Values {
@@ -380,33 +391,29 @@ func Test_device1_version(t *testing.T) {
 
 	assert.Equal(t, string(device1V.Change.DeviceID), "Device1")
 
-	//Check the value of leaf2c before
-	//change1, ok := changeStore[B64(c1ID)]
-	//assert.Assert(t, ok)
-	//assert.Equal(t, len(change1.Config), 11)
-	//leaf2c := change1.Config[4]
-	//assert.Equal(t, leaf2c.GetValue().ValueToString(), "abc")
-	//
-	//config := device1V.ExtractFullConfig(change1, changeStore, 0)
-	//for _, c := range config {
-	//	log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
-	//}
-	//
-	//// Check the value of leaf2c after - the value from the early change should be the same
-	//// This is here because ExtractFullConfig had been inadvertently changing the value
-	//change1, ok = changeStore[B64(c1ID)]
-	//assert.Assert(t, ok)
-	//assert.Equal(t, len(change1.Config), 11)
-	//leaf2c = change1.Config[4]
-	//assert.Equal(t, leaf2c.GetValue().ValueToString(), "abc")
-	//
-	var config []*devicechangetypes.PathValue
+	// Check the value of leaf2c before
+	change1, ok := changeStore.Get("Change1")
+	assert.Assert(t, ok)
+	assert.Equal(t, len(change1.Change.Values), 11)
+	leaf2c := change1.Change.Values[4]
+	assert.Equal(t, leaf2c.GetValue().ValueToString(), "abc")
 
-	if config == nil {
-		return
+	pathValues, ok := ExtractFullConfig(device1V.Change.DeviceID, change1.Change, changeStore, 0)
+	assert.Assert(t, ok)
+	for _, c := range pathValues {
+		log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
 	}
+	//
+	// Check the value of leaf2c after - the value from the early change should be the same
+	// This is here because ExtractFullConfig had been inadvertently changing the value
+	change1, ok = changeStore.Get("Change1")
+	assert.Assert(t, ok)
+	assert.Equal(t, len(change1.Change.Values), 11)
+	leaf2c = change1.Change.Values[4]
+	assert.Equal(t, leaf2c.GetValue().ValueToString(), "abc")
+
 	for i := 0; i < len(Config1Paths); i++ {
-		checkPathvalue(t, config, i,
+		checkPathValue(t, pathValues, i,
 			Config1Paths[0:11], Config1Values[0:11], Config1Types[0:11])
 	}
 }
