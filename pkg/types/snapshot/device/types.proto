@@ -74,5 +74,5 @@ message Snapshot {
     uint64 change_index = 4 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.Index"];
 
     // 'values' is a list of values to set
-    repeated onos.config.change.device.ChangeValue values = 5;
+    repeated onos.config.change.device.PathValue values = 5;
 }

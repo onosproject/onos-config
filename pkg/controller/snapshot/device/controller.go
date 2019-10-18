@@ -99,7 +99,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	}
 
 	// Create a map to track the current state of the device
-	state := make(map[string]*devicechangetype.ChangeValue)
+	state := make(map[string]*devicechangetype.PathValue)
 
 	// Initialize the state map from the previous snapshot if available
 	if prevSnapshot != nil {
@@ -134,7 +134,10 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 				if value.Removed {
 					delete(state, value.Path)
 				} else {
-					state[value.Path] = value
+					state[value.Path] = &devicechangetype.PathValue{
+						Path:  value.GetPath(),
+						Value: value.GetValue(),
+					}
 				}
 			}
 		}
@@ -143,7 +146,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 
 	// If the snapshot index is greater than the previous snapshot index, store the snapshot
 	if snapshotIndex > prevIndex {
-		values := make([]*devicechangetype.ChangeValue, 0, len(state))
+		values := make([]*devicechangetype.PathValue, 0, len(state))
 		for _, value := range state {
 			values = append(values, value)
 		}
