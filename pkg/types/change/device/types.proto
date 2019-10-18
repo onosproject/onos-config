@@ -118,9 +118,9 @@ message ChangeValue {
     bool removed = 3 [(gogoproto.jsontag) = "Remove,omitempty"];
 }
 
-// PathValue is an individual Path/Value combination - it is like Value above
+// PathValue is an individual Path/Value combination - it is like ChangeValue above
 // without the removed flag - it is not used in the DeviceChange store
-// Instead it is useful for handling OpState where `removed` is not relevant
+// Instead it is useful for handling OpState and Snapshots where `removed` is not relevant
 message PathValue {
     // 'path' is the path to change
     string path = 1 [json_name="Path", (gogoproto.jsontag) = "Path,omitempty"];

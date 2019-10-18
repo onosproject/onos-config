@@ -102,8 +102,11 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID)
 	assert.NoError(t, err)
 	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
-	assert.Len(t, snapshot.Values, 1)
-	assert.Equal(t, "bar", snapshot.Values[0].Path)
+	assert.Len(t, snapshot.Values, 2)
+	assert.Equal(t, "/bar/msg", snapshot.Values[0].Path)
+	assert.Equal(t, "Hello world 3", snapshot.Values[0].GetValue().ValueToString())
+	assert.Equal(t, "/bar/meaning", snapshot.Values[1].Path)
+	assert.Equal(t, "42", snapshot.Values[1].GetValue().ValueToString())
 
 	// Verify changes have not been deleted
 	deviceChange1, err = changes.Get(deviceChange1.ID)
@@ -216,7 +219,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID)
 	assert.NoError(t, err)
 	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
-	assert.Len(t, snapshot.Values, 2)
+	assert.Len(t, snapshot.Values, 4)
 
 	// Verify changes have not been deleted
 	deviceChange1, err = changes.Get(deviceChange1.ID)
@@ -279,11 +282,12 @@ func newSet(index network.Index, device device.ID, path string, created time.Tim
 		DeviceID: device,
 		Values: []*devicechange.ChangeValue{
 			{
-				Path: path,
-				Value: &devicechange.TypedValue{
-					Bytes: []byte("Hello world!"),
-					Type:  devicechange.ValueType_STRING,
-				},
+				Path:  fmt.Sprintf("/%s/msg", path),
+				Value: devicechange.NewTypedValueString(fmt.Sprintf("Hello world %d", len(path))),
+			},
+			{
+				Path:  fmt.Sprintf("/%s/meaning", path),
+				Value: devicechange.NewTypedValueInt64(39 + len(path)),
 			},
 		},
 	})
@@ -294,7 +298,7 @@ func newRemove(index network.Index, device device.ID, path string, created time.
 		DeviceID: device,
 		Values: []*devicechange.ChangeValue{
 			{
-				Path:    path,
+				Path:    fmt.Sprintf("/%s", path),
 				Removed: true,
 			},
 		},

@@ -26,6 +26,7 @@ import (
 	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
+	"strings"
 )
 
 // NewController returns a new device snapshot controller
@@ -132,7 +133,13 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 		if change.Status.Phase == changetype.Phase_CHANGE {
 			for _, value := range change.Change.Values {
 				if value.Removed {
-					delete(state, value.Path)
+					// remove any previous paths that started with this deleted path
+					// including those from the previous snapshot
+					for p := range state {
+						if strings.HasPrefix(p, value.Path) {
+							delete(state, p)
+						}
+					}
 				} else {
 					state[value.Path] = &devicechangetype.PathValue{
 						Path:  value.GetPath(),
