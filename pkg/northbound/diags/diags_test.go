@@ -37,9 +37,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func getClient() (*grpc.ClientConn, ConfigDiagsClient, OpStateDiagsClient) {
+func getClient() (*grpc.ClientConn, ConfigDiagsClient, OpStateDiagsClient, ChangeServiceClient) {
 	conn := northbound.Connect(northbound.Address, northbound.Opts...)
-	return conn, NewConfigDiagsClient(conn), NewOpStateDiagsClient(conn)
+	return conn, NewConfigDiagsClient(conn), NewOpStateDiagsClient(conn), NewChangeServiceClient(conn)
 }
 
 func Test_GetChanges_All(t *testing.T) {
@@ -51,7 +51,7 @@ func Test_GetChanges_Change(t *testing.T) {
 }
 
 func testGetChanges(t *testing.T, changeID string) {
-	conn, client, _ := getClient()
+	conn, client, _, _ := getClient()
 	defer conn.Close()
 
 	changesReq := &ChangesRequest{ChangeIDs: make([]string, 0)}
@@ -84,7 +84,7 @@ func Test_GetConfigurations_Device(t *testing.T) {
 }
 
 func testGetConfigurations(t *testing.T, deviceID string) {
-	conn, client, _ := getClient()
+	conn, client, _, _ := getClient()
 	defer conn.Close()
 
 	configReq := &ConfigRequest{DeviceIDs: make([]string, 0)}
@@ -108,7 +108,7 @@ func testGetConfigurations(t *testing.T, deviceID string) {
 }
 
 func Test_GetOpState_DeviceSubscribe(t *testing.T) {
-	conn, _, client := getClient()
+	conn, _, client, _ := getClient()
 	defer conn.Close()
 
 	opStateReq := &OpStateRequest{DeviceId: "Device2", Subscribe: true}
@@ -122,8 +122,6 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 		}
 		assert.NilError(t, err, "unable to receive message")
 		pv := in.GetPathvalue()
-		//value, err := types.NewTypedValue(pv.Value, types.ValueType(pv.ValueType), []int32{})
-		assert.NilError(t, err)
 
 		switch pv.GetPath() {
 		case "/cont1a/cont2a/leaf2c":

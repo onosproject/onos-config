@@ -39,10 +39,12 @@ func getAddCommand() *cobra.Command {
 	return cmd
 }
 
-//func getRemoveCommand() *cobra.Command {
-//	cmd := &cobra.Command{
-//		Use:   "remove {device} [args]",
-//		Short: "Remove a topology resource",
-//	}
-//	return cmd
-//}
+func getWatchCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "watch resource [args]",
+		Short: "Watch for updates to a config resource type",
+	}
+	cmd.AddCommand(getWatchDeviceChangesCommand())
+	cmd.AddCommand(getWatchNetworkChangesCommand())
+	return cmd
+}

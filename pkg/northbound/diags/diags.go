@@ -16,14 +16,16 @@
 package diags
 
 import (
-	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	"github.com/onosproject/onos-config/pkg/utils"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 )
@@ -137,7 +139,7 @@ func (s Server) GetConfigurations(r *ConfigRequest, stream ConfigDiags_GetConfig
 
 // GetOpState provides a stream of Operational and State data
 func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServer) error {
-	deviceCache, ok := manager.GetManager().OperationalStateCache[device.ID(r.DeviceId)]
+	deviceCache, ok := manager.GetManager().OperationalStateCache[devicetopo.ID(r.DeviceId)]
 	if !ok {
 		return fmt.Errorf("no Operational State cache available for %s", r.DeviceId)
 	}
@@ -198,25 +200,115 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 	return nil
 }
 
-// GetNetworkChange returns details of one specific Network Change
-func (s Server) GetNetworkChange(ctx context.Context, r *GetNetworkChangeRequest) (*GetNetworkChangeResponse, error) {
-
-	return nil, nil
-}
-
-// GetDeviceChange returns details of one specific Device Change
-func (s Server) GetDeviceChange(ctx context.Context, r *GetDeviceChangeRequest) (*GetDeviceChangeResponse, error) {
-
-	return nil, nil
-}
-
 // ListNetworkChanges provides a stream of Network Changes
+// If the optional `subscribe` flag is true, then get then return the list of
+// changes first, and then hold the connection open and send on
+// further updates until the client hangs up
 func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeService_ListNetworkChangesServer) error {
+	log.Infof("ListNetworkChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
+
+	// There may be a wildcard given - we only want to reply with changes that match
+	matcher := utils.MatchWildcardChNameRegexp(string(r.ChangeID))
+
+	nwChChan := make(chan *networkchangetypes.NetworkChange)
+	defer close(nwChChan)
+
+	if r.Subscribe {
+		err := manager.GetManager().NetworkChangesStore.Watch(nwChChan)
+		if err != nil {
+			log.Errorf("Error watching Network Changes %s", err)
+			return err
+		}
+
+	} else {
+		err := manager.GetManager().NetworkChangesStore.List(nwChChan)
+		if err != nil {
+			log.Errorf("Error listing Network Changes %s", err)
+			return err
+		}
+	}
+	for {
+		breakout := false
+		select { // Blocks until one of the following are received
+		case nwCh := <-nwChChan:
+			log.Infof("List() channel sent us %v", nwCh)
+			if nwCh == nil { // Will happen at the end of stream
+				breakout = true
+				break
+			}
+
+			if matcher.MatchString(string(nwCh.ID)) {
+				msg := &ListNetworkChangeResponse{
+					Change: nwCh,
+				}
+				log.Infof("Sending matching change %v", nwCh.ID)
+				err := stream.Send(msg)
+				if err != nil {
+					log.Errorf("Error sending NetworkChanges %v %v", nwCh.ID, err)
+					return err
+				}
+			}
+		case <-stream.Context().Done():
+			log.Infof("Remote client closed connection")
+			return nil
+		}
+		if breakout {
+			break
+		}
+	}
+	log.Infof("Closing ListNetworkChanges for %s", r.ChangeID)
 	return nil
 }
 
 // ListDeviceChanges provides a stream of Device Changes
 func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeService_ListDeviceChangesServer) error {
+	log.Infof("ListDeviceChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
+
+	devChChan := make(chan *devicechangetypes.DeviceChange)
+	defer close(devChChan)
+
+	if r.Subscribe {
+		err := manager.GetManager().DeviceChangesStore.Watch(devicetopo.ID(r.ChangeID), devChChan)
+		if err != nil {
+			log.Errorf("Error watching Network Changes %s", err)
+			return err
+		}
+
+	} else {
+		err := manager.GetManager().DeviceChangesStore.List(devicetopo.ID(r.ChangeID), devChChan)
+		if err != nil {
+			log.Errorf("Error listing Network Changes %s", err)
+			return err
+		}
+	}
+	for {
+		breakout := false
+		select { // Blocks until one of the following are received
+		case devCh := <-devChChan:
+			log.Infof("List() channel sent us %v", devCh)
+			if devCh == nil { // Will happen at the end of stream
+				breakout = true
+				break
+			}
+
+			msg := &ListDeviceChangeResponse{
+				Change: devCh,
+			}
+			log.Infof("Sending matching change %v", devCh.ID)
+			err := stream.Send(msg)
+			if err != nil {
+				log.Errorf("Error sending NetworkChanges %v %v", devCh.ID, err)
+				return err
+			}
+		case <-stream.Context().Done():
+			log.Infof("Remote client closed connection")
+			return nil
+		}
+		if breakout {
+			break
+		}
+	}
+	log.Infof("Closing ListDeviceChanges for %s", r.ChangeID)
 	return nil
 }
 
