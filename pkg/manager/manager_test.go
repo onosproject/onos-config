@@ -633,7 +633,7 @@ func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
 	panic("implement me")
 }
 
-func (m MockModelPlugin) GetStateMode() modelregistry.GetStateMode {
+func (m MockModelPlugin) GetStateMode() int {
 	panic("implement me")
 }
 

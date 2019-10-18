@@ -20,7 +20,6 @@ package main
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim_1_0_0"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -65,8 +64,10 @@ func (m modelplugin) Schema() (map[string]*yang.Entry, error) {
 	return devicesim_1_0_0.UnzipSchema()
 }
 
-func (m modelplugin) GetStateMode() modelregistry.GetStateMode {
-	return modelregistry.GetStateOpState
+// GetStateMode returns an int - we do not use the enum because we do not want a
+// direct dependency on onos-config code (for build optimization)
+func (m modelplugin) GetStateMode() int {
+	return 1 // modelregistry.GetStateOpState
 }
 
 // ModelPlugin is the exported symbol that gives an entry point to this shared module
