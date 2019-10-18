@@ -17,11 +17,10 @@ package device
 import (
 	"encoding/base64"
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"gotest.tools/assert"
 	log "k8s.io/klog"
 	"os"
 	"testing"
@@ -89,18 +88,18 @@ var Config1Values = [11][]byte{
 	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234
 }
 
-var Config1Types = [11]types.ValueType{
-	types.ValueType_EMPTY, // 0
-	types.ValueType_EMPTY, // 0
-	types.ValueType_UINT,
-	types.ValueType_FLOAT, // 3
-	types.ValueType_STRING,
-	types.ValueType_STRING, // 5
-	types.ValueType_EMPTY,
-	types.ValueType_UINT,
-	types.ValueType_EMPTY,
-	types.ValueType_UINT,
-	types.ValueType_STRING, // 10
+var Config1Types = [11]devicechangetypes.ValueType{
+	devicechangetypes.ValueType_EMPTY, // 0
+	devicechangetypes.ValueType_EMPTY, // 0
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_FLOAT, // 3
+	devicechangetypes.ValueType_STRING,
+	devicechangetypes.ValueType_STRING, // 5
+	devicechangetypes.ValueType_EMPTY,
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_EMPTY,
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_STRING, // 10
 }
 
 var Config1PreviousPaths = [13]string{
@@ -135,20 +134,20 @@ var Config1PreviousValues = [13][]byte{
 	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234,
 }
 
-var Config1PreviousTypes = [13]types.ValueType{
-	types.ValueType_EMPTY, // 0
-	types.ValueType_EMPTY, // 0
-	types.ValueType_UINT,
-	types.ValueType_FLOAT, // 3
-	types.ValueType_STRING,
-	types.ValueType_STRING, // 5
-	types.ValueType_EMPTY,
-	types.ValueType_UINT,
-	types.ValueType_EMPTY,
-	types.ValueType_UINT,
-	types.ValueType_EMPTY, // 10
-	types.ValueType_UINT,
-	types.ValueType_STRING,
+var Config1PreviousTypes = [13]devicechangetypes.ValueType{
+	devicechangetypes.ValueType_EMPTY, // 0
+	devicechangetypes.ValueType_EMPTY, // 0
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_FLOAT, // 3
+	devicechangetypes.ValueType_STRING,
+	devicechangetypes.ValueType_STRING, // 5
+	devicechangetypes.ValueType_EMPTY,
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_EMPTY,
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_EMPTY, // 10
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_STRING,
 }
 
 var Config1FirstPaths = [11]string{
@@ -179,18 +178,18 @@ var Config1FirstValues = [11][]byte{
 	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
-var Config1FirstTypes = [11]types.ValueType{
-	types.ValueType_EMPTY, // 0
-	types.ValueType_EMPTY, // 0
-	types.ValueType_UINT,
-	types.ValueType_FLOAT, // 3
-	types.ValueType_STRING,
-	types.ValueType_STRING, // 5
-	types.ValueType_EMPTY,
-	types.ValueType_UINT,
-	types.ValueType_EMPTY,
-	types.ValueType_UINT,
-	types.ValueType_STRING, // 10
+var Config1FirstTypes = [11]devicechangetypes.ValueType{
+	devicechangetypes.ValueType_EMPTY, // 0
+	devicechangetypes.ValueType_EMPTY, // 0
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_FLOAT, // 3
+	devicechangetypes.ValueType_STRING,
+	devicechangetypes.ValueType_STRING, // 5
+	devicechangetypes.ValueType_EMPTY,
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_EMPTY,
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_STRING, // 10
 }
 
 var Config2Paths = [11]string{
@@ -221,57 +220,56 @@ var Config2Values = [11][]byte{
 	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
-var Config2Types = [11]types.ValueType{
-	types.ValueType_EMPTY, // 0
-	types.ValueType_EMPTY, // 0
-	types.ValueType_UINT,
-	types.ValueType_FLOAT, // 3
-	types.ValueType_STRING,
-	types.ValueType_STRING, // 5
-	types.ValueType_EMPTY,
-	types.ValueType_UINT,
-	types.ValueType_EMPTY,
-	types.ValueType_UINT,
-	types.ValueType_STRING, // 10
+var Config2Types = [11]devicechangetypes.ValueType{
+	devicechangetypes.ValueType_EMPTY, // 0
+	devicechangetypes.ValueType_EMPTY, // 0
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_FLOAT, // 3
+	devicechangetypes.ValueType_STRING,
+	devicechangetypes.ValueType_STRING, // 5
+	devicechangetypes.ValueType_EMPTY,
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_EMPTY,
+	devicechangetypes.ValueType_UINT,
+	devicechangetypes.ValueType_STRING, // 10
 }
 
-var c1ID, c2ID, c3ID change.ID
+//var c1ID, c2ID, c3ID change.ID
 
 var B64 = base64.StdEncoding.EncodeToString
 
-
-func setUp(t *testing.T) (*types.DeviceChange, *types.DeviceChange, Store) {
+func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.DeviceChange, Store) {
 	log.SetOutput(os.Stdout)
 	ctrl := gomock.NewController(t)
 	mockChangeStore := mockstore.NewMockDeviceChangesStore(ctrl)
-	config1Value01, _ := types.NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
-	config1Value02, _ := types.NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
-	config1Value03, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(ValueLeaf2A13), false)
-	config1Value04, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueFloat(ValueLeaf2B159), false)
-	config1Value05, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CAbc), false)
-	config1Value06, _ := types.NewChangeValue(Test1Cont1ALeaf1A, types.NewTypedValueString(ValueLeaf1AAbcdef), false)
-	config1Value07, _ := types.NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), false)
-	config1Value08, _ := types.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, types.NewTypedValueUint64(ValueTxout1Txpwr8), false)
-	config1Value09, _ := types.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), false)
-	config1Value10, _ := types.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, types.NewTypedValueUint64(ValueTxout2Txpwr10), false)
-	config1Value11, _ := types.NewChangeValue(Test1Leaftoplevel, types.NewTypedValueString(ValueLeaftopWxy1234), false)
+	config1Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1A, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2A, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueUint64(ValueLeaf2A13), false)
+	config1Value04, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueFloat(ValueLeaf2B159), false)
+	config1Value05, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CAbc), false)
+	config1Value06, _ := devicechangetypes.NewChangeValue(Test1Cont1ALeaf1A, devicechangetypes.NewTypedValueString(ValueLeaf1AAbcdef), false)
+	config1Value07, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value08, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout1Txpwr8), false)
+	config1Value09, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value10, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout2Txpwr10), false)
+	config1Value11, _ := devicechangetypes.NewChangeValue(Test1Leaftoplevel, devicechangetypes.NewTypedValueString(ValueLeaftopWxy1234), false)
 
-	device1 := &devicepb.Device{
+	device1 := &devicetopo.Device{
 		ID:          "Device1",
 		Revision:    0,
 		Address:     "",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     nil,
-		Credentials: devicepb.Credentials{},
-		TLS:         devicepb.TlsConfig{},
+		Credentials: devicetopo.Credentials{},
+		TLS:         devicetopo.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "",
 		Attributes:  nil,
 		Protocols:   nil,
 	}
-	change1 := types.Change{
-		Values: []*types.ChangeValue{
+	change1 := devicechangetypes.Change{
+		Values: []*devicechangetypes.ChangeValue{
 			config1Value01, config1Value02, config1Value03,
 			config1Value04, config1Value05, config1Value06,
 			config1Value07, config1Value08, config1Value09,
@@ -279,49 +277,49 @@ func setUp(t *testing.T) (*types.DeviceChange, *types.DeviceChange, Store) {
 		},
 		DeviceID: device1.ID,
 	}
-	deviceChange1 := &devicechange.DeviceChange{
+	deviceChange1 := &devicechangetypes.DeviceChange{
 		Change: &change1,
 		ID:     "Change1",
 	}
 
-	config2Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueFloat(ValueLeaf2B314), false)
-	config2Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout3, types.NewTypedValueEmpty(), false)
-	config2Value03, _ := types.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, types.NewTypedValueUint64(ValueTxout3Txpwr16), false)
+	config2Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueFloat(ValueLeaf2B314), false)
+	config2Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout3, devicechangetypes.NewTypedValueEmpty(), false)
+	config2Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout3Txpwr16), false)
 
-	change2 := types.Change{
-		Values: []*types.ChangeValue{
+	change2 := devicechangetypes.Change{
+		Values: []*devicechangetypes.ChangeValue{
 			config2Value01, config2Value02, config2Value03,
 		},
 		DeviceID: device1.ID,
 	}
-	deviceChange2 := &devicechange.DeviceChange{
+	deviceChange2 := &devicechangetypes.DeviceChange{
 		Change: &change2,
 		ID:     "Change2",
 	}
 
-	config3Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CDef), false)
-	config3Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), true)
+	config3Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CDef), false)
+	config3Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2, devicechangetypes.NewTypedValueEmpty(), true)
 
-	change3 := types.Change{
-		Values: []*types.ChangeValue{
+	change3 := devicechangetypes.Change{
+		Values: []*devicechangetypes.ChangeValue{
 			config3Value01, config3Value02,
 		},
 		DeviceID: device1.ID,
 	}
-	deviceChange3 := &devicechange.DeviceChange{
+	deviceChange3 := &devicechangetypes.DeviceChange{
 		Change: &change3,
 		ID:     "Change3",
 	}
 
-	config4Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CGhi), false)
-	config4Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), true)
-	change4 := types.Change{
-		Values: []*types.ChangeValue{
+	config4Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CGhi), false)
+	config4Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1, devicechangetypes.NewTypedValueEmpty(), true)
+	change4 := devicechangetypes.Change{
+		Values: []*devicechangetypes.ChangeValue{
 			config4Value01, config4Value02,
 		},
 		DeviceID: device1.ID,
 	}
-	deviceChange4 := &devicechange.DeviceChange{
+	deviceChange4 := &devicechangetypes.DeviceChange{
 		Change: &change4,
 		ID:     "Change4",
 	}
@@ -352,8 +350,8 @@ func setUp(t *testing.T) (*types.DeviceChange, *types.DeviceChange, Store) {
 	return deviceChange1, deviceChange4, mockChangeStore
 }
 
-func checkPathvalue(t *testing.T, config []*types.PathValue, index int,
-	expPaths []string, expValues [][]byte, expTypes []types.ValueType) {
+func checkPathvalue(t *testing.T, config []*devicechangetypes.PathValue, index int,
+	expPaths []string, expValues [][]byte, expTypes []devicechangetypes.ValueType) {
 
 	// Check that they are kept in a consistent order
 	if config[index].Path != expPaths[index] {
@@ -380,9 +378,9 @@ func Test_device1_version(t *testing.T) {
 		log.Infof("%d: %s\n", idx, cid)
 	}
 
-	//assert.Equal(t, device1V.Name, ConfigName("Device1-1.0.0"))
-	//
-	////Check the value of leaf2c before
+	assert.Equal(t, string(device1V.Change.DeviceID), "Device1")
+
+	//Check the value of leaf2c before
 	//change1, ok := changeStore[B64(c1ID)]
 	//assert.Assert(t, ok)
 	//assert.Equal(t, len(change1.Config), 11)
@@ -402,8 +400,13 @@ func Test_device1_version(t *testing.T) {
 	//leaf2c = change1.Config[4]
 	//assert.Equal(t, leaf2c.GetValue().ValueToString(), "abc")
 	//
-	//for i := 0; i < len(Config1Paths); i++ {
-	//	checkPathvalue(t, config, i,
-	//		Config1Paths[0:11], Config1Values[0:11], Config1Types[0:11])
-	//}
+	var config []*devicechangetypes.PathValue
+
+	if config == nil {
+		return
+	}
+	for i := 0; i < len(Config1Paths); i++ {
+		checkPathvalue(t, config, i,
+			Config1Paths[0:11], Config1Values[0:11], Config1Types[0:11])
+	}
 }

@@ -328,8 +328,6 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	return device1V, device2V, changeStore
 }
 
-
-
 func Test_device1_prev_version(t *testing.T) {
 	device1V, _, changeStore := setUp()
 
