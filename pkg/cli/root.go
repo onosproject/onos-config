@@ -27,6 +27,7 @@ func GetCommand() *cobra.Command {
 	cmd.AddCommand(getGetCommand())
 	cmd.AddCommand(getAddCommand())
 	cmd.AddCommand(getRollbackCommand())
+	cmd.AddCommand(getRollbackNewCommand())
 	cmd.AddCommand(getWatchCommand())
 	return cmd
 }

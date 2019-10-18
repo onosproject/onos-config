@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/store"
+	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -284,4 +285,17 @@ func (s Server) RollbackNetworkChange(
 		Message: fmt.Sprintf("Rolled back change '%s' Updated configs %s",
 			networkConfig.Name, configNames),
 	}, nil
+}
+
+// RollbackNewNetworkChange rolls back a named new (atomix-based)network changes.
+func (s Server) RollbackNewNetworkChange(
+	ctx context.Context, req *RollbackRequest) (*RollbackResponse, error) {
+	errRollback := manager.GetManager().NewRollbackTargetConfig(networkchange.ID(req.Name))
+	if errRollback != nil {
+		return nil, errRollback
+	}
+	return &RollbackResponse{
+		Message: fmt.Sprintf("Rolled back change '%s'", req.Name),
+	}, nil
+
 }
