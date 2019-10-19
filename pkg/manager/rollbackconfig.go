@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	changeTypes "github.com/onosproject/onos-config/pkg/types/change"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -62,9 +62,9 @@ func (m *Manager) NewRollbackTargetConfig(networkChangeID network.ID) error {
 		log.Errorf("Error on get change %s for rollback: %s", networkChangeID, errGet)
 		return errGet
 	}
-	changeRollback.Status.Phase = changeTypes.Phase_ROLLBACK
-	changeRollback.Status.State = changeTypes.State_PENDING
-	changeRollback.Status.Reason = changeTypes.Reason_NONE
+	changeRollback.Status.Phase = networkchangetypes.Phase_ROLLBACK
+	changeRollback.Status.State = networkchangetypes.State_PENDING
+	changeRollback.Status.Reason = networkchangetypes.Reason_NONE
 	changeRollback.Status.Message = "Administratively requested rollback"
 
 	errUpdate := m.NetworkChangesStore.Update(changeRollback)
