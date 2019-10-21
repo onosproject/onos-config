@@ -20,9 +20,11 @@ syntax = "proto3";
 package onos.config.admin;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 import "github.com/openconfig/gnmi/proto/gnmi/gnmi.proto";
 import "github.com/onosproject/onos-config/pkg/types/change/device/types.proto";
+import "github.com/onosproject/onos-config/pkg/types/snapshot/device/types.proto";
 
 // NetworkChangesRequest is a message for specifying GetNetworkChanges query parameters.
 message NetworkChangesRequest {
@@ -142,6 +144,25 @@ message RollbackResponse {
     string message = 1;
 }
 
+// GetSnapshotRequest gets a snapshot
+message GetSnapshotRequest {
+    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+}
+
+// ListSnapshotsRequest requests a list of snapshots
+message ListSnapshotsRequest {
+
+}
+
+// CompactChangesRequest requests a compaction of the change stores
+message CompactChangesRequest {
+    google.protobuf.Duration retention_period = 1 [(gogoproto.stdduration) = true];
+}
+
+// CompactChangesResponse is a compact response
+message CompactChangesResponse {
+}
+
 // ConfigAdminService provides means for enhanced interactions with the configuration subsystem.
 service ConfigAdminService {
     // RegisterModel adds the specified YANG model to the list of supported models.
@@ -162,4 +183,13 @@ service ConfigAdminService {
 
     // RollbackNetworkChange rolls back the specified network change (or the latest one).
     rpc RollbackNewNetworkChange(RollbackRequest) returns (RollbackResponse);
+
+    // GetSnapshot gets a snapshot
+    rpc GetSnapshot(GetSnapshotRequest) returns (onos.config.snapshot.device.Snapshot);
+
+    // ListSnapshots gets a list of snapshots
+    rpc ListSnapshots(ListSnapshotsRequest) returns (stream onos.config.snapshot.device.Snapshot);
+
+    // CompactChanges requests a snapshot of NetworkChange and DeviceChange stores
+    rpc CompactChanges(CompactChangesRequest) returns (CompactChangesResponse);
 }

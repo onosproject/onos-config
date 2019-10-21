@@ -62,6 +62,8 @@ func Test_SubCommands(t *testing.T) {
 		{commandName: "Rollback-New", expectedShort: "Rolls-back a new network change"},
 		{commandName: "Add", expectedShort: "Add a config resource"},
 		{commandName: "Get", expectedShort: "Get config resources"},
+		{commandName: "Snapshot", expectedShort: "Commands for managing snapshots"},
+		{commandName: "Compact-Changes", expectedShort: "Takes a snapshot of network and device changes"},
 		{commandName: "Watch", expectedShort: "Watch for updates to a config resource type"},
 	}
 
