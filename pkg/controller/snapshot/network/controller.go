@@ -213,6 +213,12 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 		})
 	}
 
+	// If there are no device snapshots to take, complete the snapshot successfully.
+	if len(refs) == 0 {
+		snapshot.Status.Phase = snaptypes.Phase_DELETE
+		snapshot.Status.State = snaptypes.State_COMPLETE
+	}
+
 	// Once the device snapshots have been created, update the network snapshot
 	snapshot.Refs = refs
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
