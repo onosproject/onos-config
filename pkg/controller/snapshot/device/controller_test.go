@@ -103,10 +103,16 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, devicechangetypes.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 2)
-	assert.Equal(t, "/bar/msg", snapshot.Values[0].Path)
-	assert.Equal(t, "Hello world 3", snapshot.Values[0].GetValue().ValueToString())
-	assert.Equal(t, "/bar/meaning", snapshot.Values[1].Path)
-	assert.Equal(t, "42", snapshot.Values[1].GetValue().ValueToString())
+	for _, value := range snapshot.Values {
+		switch value.GetPath() {
+		case "/bar/msg":
+			assert.Equal(t, "Hello world 3", value.GetValue().ValueToString())
+		case "/bar/meaning":
+			assert.Equal(t, "42", value.GetValue().ValueToString())
+		default:
+			t.Error("Unexpected value", value.GetPath())
+		}
+	}
 
 	// Verify changes have not been deleted
 	deviceChange1, err = changes.Get(deviceChange1.ID)
