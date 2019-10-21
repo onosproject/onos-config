@@ -51,8 +51,6 @@ func NewController(leadership leadershipstore.Store, deviceStore devicestore.Sto
 type Reconciler struct {
 	networkChanges networkchangestore.Store
 	deviceChanges  devicechangestore.Store
-	// changeIndex is the index of the highest sequential network change applied
-	changeIndex networktypes.Index
 }
 
 // Reconcile reconciles the state of a network configuration
@@ -155,22 +153,29 @@ func (r *Reconciler) createDeviceChanges(networkChange *networktypes.NetworkChan
 
 // canApplyChange returns a bool indicating whether the change can be applied
 func (r *Reconciler) canApplyChange(change *networktypes.NetworkChange) (bool, error) {
-	sequential := true
-	for index := r.changeIndex; index < change.Index; index++ {
-		priorChange, err := r.networkChanges.GetByIndex(index)
-		if err != nil {
-			return false, err
-		} else if priorChange != nil {
-			if priorChange.Status.State == changetypes.State_PENDING || priorChange.Status.State == changetypes.State_RUNNING {
-				if isIntersectingChange(change, priorChange) {
+	prevChange, err := r.networkChanges.GetPrev(change.Index)
+	if err != nil {
+		return false, err
+	}
+
+	for prevChange != nil {
+		// If the change intersects this change, verify it's complete
+		if isIntersectingChange(change, prevChange) {
+			// If the change is in the CHANGE phase, verify it's complete
+			// If the change is in the ROLLBACK phase, verify it's complete but continue iterating
+			// back to the last CHANGE phase change
+			if prevChange.Status.Phase == changetypes.Phase_CHANGE {
+				return prevChange.Status.State != changetypes.State_PENDING && prevChange.Status.State != changetypes.State_RUNNING, nil
+			} else if prevChange.Status.Phase == changetypes.Phase_ROLLBACK {
+				if prevChange.Status.State == changetypes.State_PENDING || prevChange.Status.State == changetypes.State_RUNNING {
 					return false, nil
 				}
-				sequential = false
-			} else {
-				if sequential {
-					r.changeIndex++
-				}
 			}
+		}
+
+		prevChange, err = r.networkChanges.GetPrev(prevChange.Index)
+		if err != nil {
+			return false, err
 		}
 	}
 	return true, nil
