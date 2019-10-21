@@ -25,9 +25,13 @@ import (
 // change. It is a combination of changes to devices (configurations)
 // Deprecated: NetworkConfiguration is a legacy implementation of an internal NetworkConfiguration
 type NetworkConfiguration struct {
-	Name                 string
-	Created              time.Time
-	User                 string
+	// Deprecated
+	Name string
+	// Deprecated
+	Created time.Time
+	// Deprecated
+	User string
+	// Deprecated
 	ConfigurationChanges map[ConfigName]change.ID
 }
 

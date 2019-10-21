@@ -22,15 +22,19 @@ import (
 )
 
 // StoreVersion is to check compatibility of a store loaded from file
+// Deprecated: do not use
 const StoreVersion = "1.0.0"
 
 // StoreTypeChange is for Change stores
+// Deprecated: do not use
 const StoreTypeChange = "change"
 
 // StoreTypeConfig is for Config stores
+// Deprecated: do not use
 const StoreTypeConfig = "config"
 
 // StoreTypeNetwork is for Config stores
+// Deprecated: do not use
 const StoreTypeNetwork = "network"
 
 // ConfigurationStore is the model of the Configuration store
@@ -89,9 +93,12 @@ func (s *ConfigurationStore) RemoveLastChangeEntry(name ConfigName) (change.ID, 
 // ChangeStore is the model of the Change store
 // Deprecated: ChangeStore is a legacy implementation of an internal Store
 type ChangeStore struct {
-	Version   string
+	// Deprecated
+	Version string
+	// Deprecated
 	Storetype string
-	Store     map[string]*change.Change
+	// Deprecated
+	Store map[string]*change.Change
 }
 
 // LoadChangeStore loads the change store from a file
