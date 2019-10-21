@@ -456,9 +456,9 @@ func (m *ChangeValue) GetRemoved() bool {
 	return false
 }
 
-// PathValue is an individual Path/Value combination - it is like Value above
+// PathValue is an individual Path/Value combination - it is like ChangeValue above
 // without the removed flag - it is not used in the DeviceChange store
-// Instead it is useful for handling OpState where `removed` is not relevant
+// Instead it is useful for handling OpState and Snapshots where `removed` is not relevant
 type PathValue struct {
 	// 'path' is the path to change
 	Path string `protobuf:"bytes,1,opt,name=path,json=Path,proto3" json:"Path,omitempty"`
