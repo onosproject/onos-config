@@ -19,12 +19,15 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/pkg/types/change/network"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"os"
 	"sync"
 	"testing"
+	"time"
 )
 
 // TestMain should only contain static data.
@@ -44,6 +47,34 @@ type MockStores struct {
 	DeviceSnapshotStore  *mockstore.MockDeviceSnapshotStore
 	LeadershipStore      *mockstore.MockLeadershipStore
 	MastershipStore      *mockstore.MockMastershipStore
+}
+
+func setUpWatchMock(mockStores *MockStores) {
+	now := time.Now()
+	watchChange := network.NetworkChange{
+		ID:       "",
+		Index:    0,
+		Revision: 0,
+		Status: changetypes.Status{
+			Phase:   0,
+			State:   changetypes.State_COMPLETE,
+			Reason:  0,
+			Message: "",
+		},
+		Created: now,
+		Updated: now,
+		Changes: nil,
+		Refs:    nil,
+		Deleted: false,
+	}
+	mockStores.NetworkChangesStore.EXPECT().Watch(gomock.Any()).DoAndReturn(
+		func(c chan<- *network.NetworkChange) error {
+			go func() {
+				c <- &watchChange
+				close(c)
+			}()
+			return nil
+		}).AnyTimes()
 }
 
 // setUp should not depend on any global variables
@@ -90,6 +121,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 			return nil
 		}).AnyTimes()
 
+	setUpWatchMock(&mockStores)
 	log.Info("Finished setUp()")
 
 	return server, mgr, &mockStores

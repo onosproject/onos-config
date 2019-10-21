@@ -24,7 +24,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -194,6 +196,18 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	//Creating and setting the config on the new atomix Store
 	mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 
+	//Obtaining response based on distributed store generated events
+	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, network.ID(netcfgchangename))
+
+	if errListen != nil {
+		log.Errorf("Error while building atomix based response %s", errListen.Error())
+		//TODO this needs to be un-commented
+		//return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	log.Info("update result ", updateResults)
+	log.Info("atomix update results ", updateResultsAtomix)
+
 	extensions := []*gnmi_ext.Extension{
 		{
 			Ext: &gnmi_ext.Extension_RegisteredExt{
@@ -226,7 +240,16 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		Timestamp: time.Now().Unix(),
 		Extension: extensions,
 	}
-	//TODO Can't do it for one device only, needs to be done for all targets.
+
+	setResponseAtomix := &gnmi.SetResponse{
+		Response:  updateResultsAtomix,
+		Timestamp: time.Now().Unix(),
+		Extension: extensions,
+	}
+
+	log.Info("set response ", setResponse)
+	log.Info("atomix update response ", setResponseAtomix)
+
 	return setResponse, nil
 }
 
@@ -525,6 +548,52 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 	}
 	return fmt.Errorf("Issue in setting config %s, rolling back changes %s",
 		errResp.Error(), rolledbackIDs)
+}
+
+func listenAndBuildResponse(mgr *manager.Manager, changeID network.ID) ([]*gnmi.UpdateResult, error) {
+	networkChan := make(chan *network.NetworkChange)
+	errWatch := mgr.NetworkChangesStore.Watch(networkChan)
+	if errWatch != nil {
+		return nil, fmt.Errorf("can't complete set operation on target due to %s", errWatch)
+	}
+	updateResults := make([]*gnmi.UpdateResult, 0)
+	for changeEvent := range networkChan {
+		log.Infof("Received notification for change ID %s, phase %s, state %s", changeEvent.ID,
+			changeEvent.Status.Phase, changeEvent.Status.State)
+		if changeEvent.ID == changeID && changeEvent.Status.Phase == changetypes.Phase_CHANGE {
+			switch changeStatus := changeEvent.Status.State; changeStatus {
+			case changetypes.State_COMPLETE:
+				log.Infof("change Status %s", changeStatus)
+				for _, deviceChange := range changeEvent.Changes {
+					deviceID := deviceChange.DeviceID
+					for _, valueUpdate := range deviceChange.Values {
+						var updateResult *gnmi.UpdateResult
+						var errBuild error
+						if valueUpdate.Removed {
+							updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
+								string(deviceID), gnmi.UpdateResult_DELETE)
+						} else {
+							updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
+								string(deviceID), gnmi.UpdateResult_UPDATE)
+						}
+						if errBuild != nil {
+							log.Error(errBuild)
+							continue
+						}
+						updateResults = append(updateResults, updateResult)
+					}
+				}
+			case changetypes.State_FAILED:
+				log.Infof("Received Change Status %s", changeStatus)
+				return nil, fmt.Errorf("issue in setting config reson %s, error %s, rolling back change %s",
+					changeEvent.Status.Reason, changeEvent.Status.Message, changeID)
+			default:
+				continue
+			}
+			break
+		}
+	}
+	return updateResults, nil
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
