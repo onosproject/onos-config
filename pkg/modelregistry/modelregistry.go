@@ -149,7 +149,7 @@ type ModelPlugin interface {
 	UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error)
 	Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error
 	Schema() (map[string]*yang.Entry, error)
-	GetStateMode() GetStateMode
+	GetStateMode() int
 }
 
 // RegisterModelPlugin adds an external model plugin to the model registry at startup

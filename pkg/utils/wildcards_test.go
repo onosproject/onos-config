@@ -92,3 +92,40 @@ func Test_Wildcard4(t *testing.T) {
 	assert.Assert(t, !pathRegexp4.MatchString(path4), "Expect NO match "+path4)
 
 }
+
+func Test_Wildcard_Change1(t *testing.T) {
+	const wildcard1 = `cha?ge-*`
+	pathRegexp1 := MatchWildcardChNameRegexp(wildcard1)
+
+	const chID1 = "change-2"
+	assert.Assert(t, pathRegexp1.MatchString(chID1), "Expect match "+chID1)
+
+	const chID2 = "charge-123456"
+	assert.Assert(t, pathRegexp1.MatchString(chID2), "Expect match "+chID2)
+
+	const chID3 = "channge-2"
+	assert.Assert(t, !pathRegexp1.MatchString(chID3), "Expect not match "+chID3)
+
+	const chID4 = "cha+ge-2"
+	assert.Assert(t, !pathRegexp1.MatchString(chID4), "Expect not match "+chID4)
+}
+
+func Test_Wildcard_Change2(t *testing.T) {
+	const wildcard2 = `cha*ge-??`
+	pathRegexp2 := MatchWildcardChNameRegexp(wildcard2)
+
+	const chID1 = "change-22"
+	assert.Assert(t, pathRegexp2.MatchString(chID1), "Expect match "+chID1)
+
+	const chID2 = "charge-123456"
+	assert.Assert(t, pathRegexp2.MatchString(chID2), "Expect match "+chID2)
+
+	const chID3 = "channge-23"
+	assert.Assert(t, pathRegexp2.MatchString(chID3), "Expect not match "+chID3)
+
+	const chID4 = "cha+++ge-23"
+	assert.Assert(t, !pathRegexp2.MatchString(chID4), "Expect not match "+chID4)
+
+	const chID5 = "channge-++"
+	assert.Assert(t, !pathRegexp2.MatchString(chID5), "Expect not match "+chID5)
+}

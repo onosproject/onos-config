@@ -39,10 +39,9 @@ var (
 
 // SetUpServer sets up a test manager and a gRPC end-point
 // to which it registers the given service.
-func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
-	var err error
+func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) *manager.Manager {
 	ctrl := gomock.NewController(nil)
-	_, err = manager.LoadManager(
+	mgrTest, err := manager.LoadManager(
 		"../../../configs/configStore-sample.json",
 		"../../../configs/changeStore-sample.json",
 		"../../../configs/networkStore-sample.json",
@@ -99,4 +98,5 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) {
 			events.EventItemUpdated)
 		manager.GetManager().OperationalStateChannel <- opStateEvent
 	}()
+	return mgrTest
 }

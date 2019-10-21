@@ -26,6 +26,7 @@ import (
 	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
+	"strings"
 )
 
 // NewController returns a new device snapshot controller
@@ -99,7 +100,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	}
 
 	// Create a map to track the current state of the device
-	state := make(map[string]*devicechangetype.ChangeValue)
+	state := make(map[string]*devicechangetype.PathValue)
 
 	// Initialize the state map from the previous snapshot if available
 	if prevSnapshot != nil {
@@ -132,9 +133,18 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 		if change.Status.Phase == changetype.Phase_CHANGE {
 			for _, value := range change.Change.Values {
 				if value.Removed {
-					delete(state, value.Path)
+					// remove any previous paths that started with this deleted path
+					// including those from the previous snapshot
+					for p := range state {
+						if strings.HasPrefix(p, value.Path) {
+							delete(state, p)
+						}
+					}
 				} else {
-					state[value.Path] = value
+					state[value.Path] = &devicechangetype.PathValue{
+						Path:  value.GetPath(),
+						Value: value.GetValue(),
+					}
 				}
 			}
 		}
@@ -143,7 +153,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 
 	// If the snapshot index is greater than the previous snapshot index, store the snapshot
 	if snapshotIndex > prevIndex {
-		values := make([]*devicechangetype.ChangeValue, 0, len(state))
+		values := make([]*devicechangetype.PathValue, 0, len(state))
 		for _, value := range state {
 			values = append(values, value)
 		}

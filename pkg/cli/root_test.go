@@ -61,6 +61,7 @@ func Test_SubCommands(t *testing.T) {
 		{commandName: "Rollback", expectedShort: "Rolls-back a network configuration change"},
 		{commandName: "Add", expectedShort: "Add a config resource"},
 		{commandName: "Get", expectedShort: "Get config resources"},
+		{commandName: "Watch", expectedShort: "Watch for updates to a config resource type"},
 	}
 
 	var subCommandsFound = make(map[string]bool)
