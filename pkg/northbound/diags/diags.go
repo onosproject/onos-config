@@ -22,7 +22,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -145,7 +144,7 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 	}
 
 	for path, value := range deviceCache {
-		pathValue := &types.PathValue{
+		pathValue := &devicechangetypes.PathValue{
 			Path:  path,
 			Value: value,
 		}
@@ -175,7 +174,7 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 				log.Infof("Event received NBI Diags OpState subscribe channel %s for %s",
 					streamID, r.DeviceId)
 
-				pathValue := &types.PathValue{
+				pathValue := &devicechangetypes.PathValue{
 					Path:  opStateEvent.Path(),
 					Value: opStateEvent.Value(),
 				}

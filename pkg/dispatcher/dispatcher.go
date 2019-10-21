@@ -25,25 +25,25 @@ package dispatcher
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 )
 
 // Dispatcher manages SB and NB configuration event listeners
 type Dispatcher struct {
-	deviceListeners        map[device.ID]chan events.ConfigEvent
+	deviceListeners        map[devicetopo.ID]chan events.ConfigEvent
 	nbiListeners           map[string]chan events.ConfigEvent
 	nbiOpStateListeners    map[string]chan events.OperationalStateEvent
-	deviceResponseListener map[device.ID]chan events.DeviceResponse
+	deviceResponseListener map[devicetopo.ID]chan events.DeviceResponse
 }
 
 // NewDispatcher creates and initializes a new event dispatcher
 func NewDispatcher() *Dispatcher {
 	return &Dispatcher{
-		deviceListeners:        make(map[device.ID]chan events.ConfigEvent),
+		deviceListeners:        make(map[devicetopo.ID]chan events.ConfigEvent),
 		nbiListeners:           make(map[string]chan events.ConfigEvent),
 		nbiOpStateListeners:    make(map[string]chan events.OperationalStateEvent),
-		deviceResponseListener: make(map[device.ID]chan events.DeviceResponse),
+		deviceResponseListener: make(map[devicetopo.ID]chan events.DeviceResponse),
 	}
 }
 
@@ -57,7 +57,7 @@ func (d *Dispatcher) Listen(changeChannel <-chan events.ConfigEvent) {
 
 	for configEvent := range changeChannel {
 		log.Info("Listener: Event ", configEvent)
-		deviceChan, ok := d.deviceListeners[device.ID(configEvent.Subject())]
+		deviceChan, ok := d.deviceListeners[devicetopo.ID(configEvent.Subject())]
 		if !ok {
 			log.Warning("Device not connected - config event discarded ", configEvent)
 		} else {
@@ -92,7 +92,7 @@ func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan event
 
 // RegisterDevice is a way for device synchronizers to register for
 // channel of config events
-func (d *Dispatcher) RegisterDevice(id device.ID) (chan events.ConfigEvent, chan events.DeviceResponse, error) {
+func (d *Dispatcher) RegisterDevice(id devicetopo.ID) (chan events.ConfigEvent, chan events.DeviceResponse, error) {
 	if d.deviceListeners[id] != nil {
 		return nil, nil, fmt.Errorf("Device %s is already registered", id)
 	}
@@ -128,7 +128,7 @@ func (d *Dispatcher) RegisterOpState(subscriber string) (chan events.Operational
 }
 
 // UnregisterDevice closes the device config channel and removes it from the deviceListeners
-func (d *Dispatcher) UnregisterDevice(id device.ID) error {
+func (d *Dispatcher) UnregisterDevice(id devicetopo.ID) error {
 	channel, ok := d.deviceListeners[id]
 	if !ok {
 		return fmt.Errorf("Subscriber %s had not been registered", id)
@@ -186,13 +186,13 @@ func (d *Dispatcher) GetListeners() []string {
 }
 
 // HasListener returns true if the named listeners has been registered
-func (d *Dispatcher) HasListener(name device.ID) bool {
+func (d *Dispatcher) HasListener(name devicetopo.ID) bool {
 	_, ok := d.deviceListeners[name]
 	return ok
 }
 
 // GetResponseListener returns the response listener if the named listeners has been registered
-func (d *Dispatcher) GetResponseListener(name device.ID) (chan events.DeviceResponse, bool) {
+func (d *Dispatcher) GetResponseListener(name devicetopo.ID) (chan events.DeviceResponse, bool) {
 	c, ok := d.deviceResponseListener[name]
 	return c, ok
 }

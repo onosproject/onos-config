@@ -22,8 +22,8 @@ import (
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/types"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
-	devicetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networktypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	log "k8s.io/klog"
 )
 
@@ -55,7 +55,7 @@ type Reconciler struct {
 
 // Reconcile reconciles the state of a network configuration
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
-	change, err := r.networkChanges.Get(networktypes.ID(id))
+	change, err := r.networkChanges.Get(networkchangetypes.ID(id))
 	if err != nil {
 		return false, err
 	}
@@ -73,7 +73,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 }
 
 // reconcileChange reconciles a change in the CHANGE phase
-func (r *Reconciler) reconcileChange(change *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) reconcileChange(change *networkchangetypes.NetworkChange) (bool, error) {
 	// Handle each possible state of the phase
 	switch change.Status.State {
 	case changetypes.State_PENDING:
@@ -86,7 +86,7 @@ func (r *Reconciler) reconcileChange(change *networktypes.NetworkChange) (bool, 
 }
 
 // reconcilePendingChange reconciles a change in the PENDING state during the CHANGE phase
-func (r *Reconciler) reconcilePendingChange(change *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) reconcilePendingChange(change *networkchangetypes.NetworkChange) (bool, error) {
 	// Create device changes if the prior change has been propagated
 	if !hasDeviceChanges(change) {
 		return r.createDeviceChanges(change)
@@ -110,12 +110,12 @@ func (r *Reconciler) reconcilePendingChange(change *networktypes.NetworkChange) 
 }
 
 // hasDeviceChanges indicates whether the given change has created device changes
-func hasDeviceChanges(change *networktypes.NetworkChange) bool {
+func hasDeviceChanges(change *networkchangetypes.NetworkChange) bool {
 	return change.Refs != nil && len(change.Refs) > 0
 }
 
 // createDeviceChanges creates device changes in sequential order
-func (r *Reconciler) createDeviceChanges(networkChange *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) createDeviceChanges(networkChange *networkchangetypes.NetworkChange) (bool, error) {
 	// If the previous network change has not created device changes, requeue to wait for changes to be propagated
 	prevChange, err := r.networkChanges.GetByIndex(networkChange.Index - 1)
 	if err != nil {
@@ -125,10 +125,10 @@ func (r *Reconciler) createDeviceChanges(networkChange *networktypes.NetworkChan
 	}
 
 	// Loop through changes and create device changes
-	refs := make([]*networktypes.DeviceChangeRef, len(networkChange.Changes))
+	refs := make([]*networkchangetypes.DeviceChangeRef, len(networkChange.Changes))
 	for i, change := range networkChange.Changes {
-		deviceChange := &devicetypes.DeviceChange{
-			NetworkChange: devicetypes.NetworkChangeRef{
+		deviceChange := &devicechangetypes.DeviceChange{
+			NetworkChange: devicechangetypes.NetworkChangeRef{
 				ID:    types.ID(networkChange.ID),
 				Index: types.Index(networkChange.Index),
 			},
@@ -138,7 +138,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networktypes.NetworkChan
 		if err := r.deviceChanges.Create(deviceChange); err != nil {
 			return false, err
 		}
-		refs[i] = &networktypes.DeviceChangeRef{
+		refs[i] = &networkchangetypes.DeviceChangeRef{
 			DeviceChangeID: deviceChange.ID,
 		}
 	}
@@ -152,7 +152,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networktypes.NetworkChan
 }
 
 // canApplyChange returns a bool indicating whether the change can be applied
-func (r *Reconciler) canApplyChange(change *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) canApplyChange(change *networkchangetypes.NetworkChange) (bool, error) {
 	prevChange, err := r.networkChanges.GetPrev(change.Index)
 	if err != nil {
 		return false, err
@@ -182,7 +182,7 @@ func (r *Reconciler) canApplyChange(change *networktypes.NetworkChange) (bool, e
 }
 
 // reconcileRunningChange reconciles a change in the RUNNING state during the CHANGE phase
-func (r *Reconciler) reconcileRunningChange(change *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) reconcileRunningChange(change *networkchangetypes.NetworkChange) (bool, error) {
 	// Get the current state of all device changes for the change
 	deviceChanges, err := r.getDeviceChanges(change)
 	if err != nil {
@@ -227,7 +227,7 @@ func (r *Reconciler) reconcileRunningChange(change *networktypes.NetworkChange) 
 }
 
 // ensureDeviceChangesRunning ensures device changes are in the running state
-func (r *Reconciler) ensureDeviceChangesRunning(changes []*devicetypes.DeviceChange) (bool, error) {
+func (r *Reconciler) ensureDeviceChangesRunning(changes []*devicechangetypes.DeviceChange) (bool, error) {
 	// Ensure all device changes are being applied
 	updated := false
 	for _, deviceChange := range changes {
@@ -244,8 +244,8 @@ func (r *Reconciler) ensureDeviceChangesRunning(changes []*devicetypes.DeviceCha
 }
 
 // getDeviceChanges gets the device changes for the given network change
-func (r *Reconciler) getDeviceChanges(networkChange *networktypes.NetworkChange) ([]*devicetypes.DeviceChange, error) {
-	deviceChanges := make([]*devicetypes.DeviceChange, len(networkChange.Changes))
+func (r *Reconciler) getDeviceChanges(networkChange *networkchangetypes.NetworkChange) ([]*devicechangetypes.DeviceChange, error) {
+	deviceChanges := make([]*devicechangetypes.DeviceChange, len(networkChange.Changes))
 	for i, changeRef := range networkChange.Refs {
 		deviceChange, err := r.deviceChanges.Get(changeRef.DeviceChangeID)
 		if err != nil {
@@ -257,7 +257,7 @@ func (r *Reconciler) getDeviceChanges(networkChange *networktypes.NetworkChange)
 }
 
 // isDeviceChangesComplete checks whether the device changes are complete
-func (r *Reconciler) isDeviceChangesComplete(changes []*devicetypes.DeviceChange) bool {
+func (r *Reconciler) isDeviceChangesComplete(changes []*devicechangetypes.DeviceChange) bool {
 	for _, change := range changes {
 		if change.Status.State != changetypes.State_COMPLETE {
 			return false
@@ -267,7 +267,7 @@ func (r *Reconciler) isDeviceChangesComplete(changes []*devicetypes.DeviceChange
 }
 
 // isDeviceChangesFailed checks whether the device changes are complete
-func (r *Reconciler) isDeviceChangesFailed(changes []*devicetypes.DeviceChange) bool {
+func (r *Reconciler) isDeviceChangesFailed(changes []*devicechangetypes.DeviceChange) bool {
 	for _, change := range changes {
 		if change.Status.State == changetypes.State_FAILED {
 			return true
@@ -277,7 +277,7 @@ func (r *Reconciler) isDeviceChangesFailed(changes []*devicetypes.DeviceChange) 
 }
 
 // ensureDeviceChangeRollbacksRunning ensures RUNNING or COMPLETE device changes are being rolled back
-func (r *Reconciler) ensureDeviceChangeRollbacksRunning(changes []*devicetypes.DeviceChange) (bool, error) {
+func (r *Reconciler) ensureDeviceChangeRollbacksRunning(changes []*devicechangetypes.DeviceChange) (bool, error) {
 	updated := false
 	for _, deviceChange := range changes {
 		if deviceChange.Status.Phase == changetypes.Phase_CHANGE && deviceChange.Status.State != changetypes.State_FAILED {
@@ -294,7 +294,7 @@ func (r *Reconciler) ensureDeviceChangeRollbacksRunning(changes []*devicetypes.D
 }
 
 // isDeviceChangeRollbacksComplete determines whether a rollback of device changes is complete
-func (r *Reconciler) isDeviceChangeRollbacksComplete(changes []*devicetypes.DeviceChange) bool {
+func (r *Reconciler) isDeviceChangeRollbacksComplete(changes []*devicechangetypes.DeviceChange) bool {
 	for _, deviceChange := range changes {
 		if deviceChange.Status.Phase == changetypes.Phase_ROLLBACK && deviceChange.Status.State != changetypes.State_COMPLETE {
 			return false
@@ -304,7 +304,7 @@ func (r *Reconciler) isDeviceChangeRollbacksComplete(changes []*devicetypes.Devi
 }
 
 // reconcileRollback reconciles a change in the ROLLBACK phase
-func (r *Reconciler) reconcileRollback(change *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) reconcileRollback(change *networkchangetypes.NetworkChange) (bool, error) {
 	// Ensure the device changes are in the ROLLBACK phase
 	updated, err := r.ensureDeviceRollbacks(change)
 	if updated || err != nil {
@@ -323,7 +323,7 @@ func (r *Reconciler) reconcileRollback(change *networktypes.NetworkChange) (bool
 }
 
 // ensureDeviceRollbacks ensures device rollbacks are pending
-func (r *Reconciler) ensureDeviceRollbacks(networkChange *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) ensureDeviceRollbacks(networkChange *networkchangetypes.NetworkChange) (bool, error) {
 	// Ensure all device changes are being rolled back
 	updated := false
 	for _, changeRef := range networkChange.Refs {
@@ -346,7 +346,7 @@ func (r *Reconciler) ensureDeviceRollbacks(networkChange *networktypes.NetworkCh
 }
 
 // reconcilePendingRollback reconciles a change in the PENDING state during the ROLLBACK phase
-func (r *Reconciler) reconcilePendingRollback(change *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) reconcilePendingRollback(change *networkchangetypes.NetworkChange) (bool, error) {
 	// Determine whether the rollback can be applied
 	canApply, err := r.canApplyRollback(change)
 	if err != nil {
@@ -365,7 +365,7 @@ func (r *Reconciler) reconcilePendingRollback(change *networktypes.NetworkChange
 }
 
 // canApplyRollback returns a bool indicating whether the rollback can be applied
-func (r *Reconciler) canApplyRollback(networkChange *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) canApplyRollback(networkChange *networkchangetypes.NetworkChange) (bool, error) {
 	nextChange, err := r.networkChanges.GetNext(networkChange.Index)
 	if err != nil {
 		return false, err
@@ -387,7 +387,7 @@ func (r *Reconciler) canApplyRollback(networkChange *networktypes.NetworkChange)
 }
 
 // reconcileRunningRollback reconciles a change in the RUNNING state during the ROLLBACK phase
-func (r *Reconciler) reconcileRunningRollback(change *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) reconcileRunningRollback(change *networkchangetypes.NetworkChange) (bool, error) {
 	// Ensure the device rollbacks are running
 	succeeded, err := r.ensureDeviceRollbacksRunning(change)
 	if succeeded || err != nil {
@@ -411,7 +411,7 @@ func (r *Reconciler) reconcileRunningRollback(change *networktypes.NetworkChange
 }
 
 // ensureDeviceRollbacksRunning ensures device rollbacks are in the running state
-func (r *Reconciler) ensureDeviceRollbacksRunning(networkChange *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) ensureDeviceRollbacksRunning(networkChange *networkchangetypes.NetworkChange) (bool, error) {
 	updated := false
 	for _, changeRef := range networkChange.Refs {
 		deviceChange, err := r.deviceChanges.Get(changeRef.DeviceChangeID)
@@ -432,7 +432,7 @@ func (r *Reconciler) ensureDeviceRollbacksRunning(networkChange *networktypes.Ne
 }
 
 // isRollbackComplete determines whether a rollback is complete
-func (r *Reconciler) isRollbackComplete(networkChange *networktypes.NetworkChange) (bool, error) {
+func (r *Reconciler) isRollbackComplete(networkChange *networkchangetypes.NetworkChange) (bool, error) {
 	complete := 0
 	for _, changeRef := range networkChange.Refs {
 		deviceChange, err := r.deviceChanges.Get(changeRef.DeviceChangeID)
@@ -448,7 +448,7 @@ func (r *Reconciler) isRollbackComplete(networkChange *networktypes.NetworkChang
 }
 
 // isIntersectingChange indicates whether the changes from the two given NetworkChanges intersect
-func isIntersectingChange(config *networktypes.NetworkChange, history *networktypes.NetworkChange) bool {
+func isIntersectingChange(config *networkchangetypes.NetworkChange, history *networkchangetypes.NetworkChange) bool {
 	for _, configChange := range config.Changes {
 		for _, historyChange := range history.Changes {
 			if configChange.DeviceID == historyChange.DeviceID {

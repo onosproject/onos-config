@@ -21,7 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/store"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"gotest.tools/assert"
 	"io"
 	"strings"
@@ -62,11 +62,11 @@ func generateChangeData(count int) {
 	changes = make([]admin.Change, count)
 	now := time.Now()
 	for chIdx := range changes {
-		changeValues := make([]*types.ChangeValue, count)
+		changeValues := make([]*devicechangetypes.ChangeValue, count)
 		for cvIdx := range changeValues {
-			cv := types.ChangeValue{
+			cv := devicechangetypes.ChangeValue{
 				Path:  fmt.Sprintf("/root/leaf-%d", cvIdx),
-				Value: types.NewTypedValueString("Test"),
+				Value: devicechangetypes.NewTypedValueString("Test"),
 			}
 			changeValues[cvIdx] = &cv
 		}

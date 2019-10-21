@@ -20,9 +20,9 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/types"
-	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetype "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"sync"
 )
 
@@ -31,7 +31,7 @@ const queueSize = 100
 // Watcher is a network change watcher
 type Watcher struct {
 	Store networkchangestore.Store
-	ch    chan *networkchangetype.NetworkChange
+	ch    chan *networkchangetypes.NetworkChange
 	mu    sync.Mutex
 }
 
@@ -42,7 +42,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 		return nil
 	}
 
-	configCh := make(chan *networkchangetype.NetworkChange, queueSize)
+	configCh := make(chan *networkchangetypes.NetworkChange, queueSize)
 	w.ch = configCh
 	w.mu.Unlock()
 
@@ -73,7 +73,7 @@ type DeviceWatcher struct {
 	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
-	channels    map[device.ID]chan *devicechangetype.DeviceChange
+	channels    map[devicetopo.ID]chan *devicechangetypes.DeviceChange
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
@@ -87,10 +87,10 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	}
 
 	w.ch = ch
-	w.channels = make(map[device.ID]chan *devicechangetype.DeviceChange)
+	w.channels = make(map[devicetopo.ID]chan *devicechangetypes.DeviceChange)
 	w.mu.Unlock()
 
-	deviceCh := make(chan *device.ListResponse)
+	deviceCh := make(chan *devicetopo.ListResponse)
 	if err := w.DeviceStore.Watch(deviceCh); err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 }
 
 // watchDevice watches changes for the given device
-func (w *DeviceWatcher) watchDevice(device device.ID, ch chan<- types.ID) {
+func (w *DeviceWatcher) watchDevice(device devicetopo.ID, ch chan<- types.ID) {
 	w.mu.Lock()
 	deviceCh := w.channels[device]
 	if deviceCh != nil {
@@ -112,7 +112,7 @@ func (w *DeviceWatcher) watchDevice(device device.ID, ch chan<- types.ID) {
 		return
 	}
 
-	deviceCh = make(chan *devicechangetype.DeviceChange, queueSize)
+	deviceCh = make(chan *devicechangetypes.DeviceChange, queueSize)
 	w.channels[device] = deviceCh
 	w.mu.Unlock()
 

@@ -16,7 +16,7 @@ package device
 
 import (
 	"github.com/golang/mock/gomock"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
@@ -26,19 +26,19 @@ import (
 func TestDeviceStore(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	device1 := &devicepb.Device{
+	device1 := &devicetopo.Device{
 		ID:       "device-1",
 		Revision: 1,
 		Address:  "device-1:1234",
 		Version:  "1.0.0",
 	}
-	device2 := &devicepb.Device{
+	device2 := &devicetopo.Device{
 		ID:       "device-1",
 		Revision: 1,
 		Address:  "device-1:1234",
 		Version:  "1.0.0",
 	}
-	device3 := &devicepb.Device{
+	device3 := &devicetopo.Device{
 		ID:       "device-1",
 		Revision: 1,
 		Address:  "device-1:1234",
@@ -46,18 +46,18 @@ func TestDeviceStore(t *testing.T) {
 	}
 
 	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&devicepb.ListResponse{Device: device1}, nil)
-	stream.EXPECT().Recv().Return(&devicepb.ListResponse{Device: device2}, nil)
-	stream.EXPECT().Recv().Return(&devicepb.ListResponse{Device: device3}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: device1}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: device2}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: device3}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
-	stream.EXPECT().Recv().Return(&devicepb.ListResponse{Device: device1}, nil)
-	stream.EXPECT().Recv().Return(&devicepb.ListResponse{Device: device2}, nil)
-	stream.EXPECT().Recv().Return(&devicepb.ListResponse{Device: device3}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: device1}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: device2}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: device3}, nil)
 
 	client := NewMockDeviceServiceClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil)
-	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&devicepb.GetResponse{Device: device1}, nil)
+	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&devicetopo.GetResponse{Device: device1}, nil)
 
 	store := topoStore{
 		client: client,
@@ -67,7 +67,7 @@ func TestDeviceStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, device1.ID, device.ID)
 
-	ch := make(chan *devicepb.Device)
+	ch := make(chan *devicetopo.Device)
 	err = store.List(ch)
 	assert.NoError(t, err)
 
@@ -82,29 +82,29 @@ func TestDeviceStore(t *testing.T) {
 func TestUpdateDevice(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	device1 := &devicepb.Device{
+	device1 := &devicetopo.Device{
 		ID:       "device-1",
 		Revision: 1,
 		Address:  "device-1:1234",
 		Version:  "1.0.0",
 	}
 
-	device1Connected := &devicepb.Device{
+	device1Connected := &devicetopo.Device{
 		ID:       "device-1",
 		Revision: 1,
 		Address:  "device-1:1234",
 		Version:  "1.0.0",
 	}
 
-	protocolState := new(devicepb.ProtocolState)
-	protocolState.Protocol = devicepb.Protocol_GNMI
-	protocolState.ConnectivityState = devicepb.ConnectivityState_REACHABLE
-	protocolState.ChannelState = devicepb.ChannelState_CONNECTED
-	protocolState.ServiceState = devicepb.ServiceState_AVAILABLE
+	protocolState := new(devicetopo.ProtocolState)
+	protocolState.Protocol = devicetopo.Protocol_GNMI
+	protocolState.ConnectivityState = devicetopo.ConnectivityState_REACHABLE
+	protocolState.ChannelState = devicetopo.ChannelState_CONNECTED
+	protocolState.ServiceState = devicetopo.ServiceState_AVAILABLE
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
 
 	client := NewMockDeviceServiceClient(ctrl)
-	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&devicepb.GetResponse{Device: device1}, nil)
+	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&devicetopo.GetResponse{Device: device1}, nil)
 
 	store := topoStore{
 		client: client,
@@ -114,19 +114,19 @@ func TestUpdateDevice(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, device1.ID, device.ID)
 
-	client.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&devicepb.UpdateResponse{Device: device1Connected}, nil)
+	client.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&devicetopo.UpdateResponse{Device: device1Connected}, nil)
 
 	deviceUpdated, err := store.Update(device1Connected)
 	assert.NoError(t, err)
 	assert.Equal(t, deviceUpdated.ID, device1Connected.ID)
-	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, devicepb.Protocol_GNMI)
-	assert.Equal(t, deviceUpdated.Protocols[0].ConnectivityState, devicepb.ConnectivityState_REACHABLE)
-	assert.Equal(t, deviceUpdated.Protocols[0].ChannelState, devicepb.ChannelState_CONNECTED)
-	assert.Equal(t, deviceUpdated.Protocols[0].ServiceState, devicepb.ServiceState_AVAILABLE)
+	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, devicetopo.Protocol_GNMI)
+	assert.Equal(t, deviceUpdated.Protocols[0].ConnectivityState, devicetopo.ConnectivityState_REACHABLE)
+	assert.Equal(t, deviceUpdated.Protocols[0].ChannelState, devicetopo.ChannelState_CONNECTED)
+	assert.Equal(t, deviceUpdated.Protocols[0].ServiceState, devicetopo.ServiceState_AVAILABLE)
 
 }
 
-func nextDevice(t *testing.T, ch chan *devicepb.Device) *devicepb.Device {
+func nextDevice(t *testing.T, ch chan *devicetopo.Device) *devicetopo.Device {
 	select {
 	case d := <-ch:
 		return d

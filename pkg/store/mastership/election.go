@@ -23,7 +23,7 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	"io"
 	"sync"
@@ -31,7 +31,7 @@ import (
 )
 
 // newAtomixElection returns a new persistent device mastership election
-func newAtomixElection(deviceID device.ID, group *client.PartitionGroup) (deviceMastershipElection, error) {
+func newAtomixElection(deviceID devicetopo.ID, group *client.PartitionGroup) (deviceMastershipElection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	election, err := group.GetElection(ctx, fmt.Sprintf("mastership-%s", deviceID), session.WithID(string(cluster.GetNodeID())), session.WithTimeout(15*time.Second))
 	cancel()
@@ -42,7 +42,7 @@ func newAtomixElection(deviceID device.ID, group *client.PartitionGroup) (device
 }
 
 // newLocalElection returns a new local device mastership election
-func newLocalElection(deviceID device.ID, nodeID cluster.NodeID, conn *grpc.ClientConn) (deviceMastershipElection, error) {
+func newLocalElection(deviceID devicetopo.ID, nodeID cluster.NodeID, conn *grpc.ClientConn) (deviceMastershipElection, error) {
 	name := primitive.Name{
 		Namespace: "local",
 		Name:      fmt.Sprintf("mastership-%s", deviceID),
@@ -55,7 +55,7 @@ func newLocalElection(deviceID device.ID, nodeID cluster.NodeID, conn *grpc.Clie
 }
 
 // newDeviceMastershipElection creates and enters a new device mastership election
-func newDeviceMastershipElection(deviceID device.ID, election election.Election) (deviceMastershipElection, error) {
+func newDeviceMastershipElection(deviceID devicetopo.ID, election election.Election) (deviceMastershipElection, error) {
 	deviceElection := &atomixDeviceMastershipElection{
 		deviceID: deviceID,
 		election: election,
@@ -75,7 +75,7 @@ type deviceMastershipElection interface {
 	NodeID() cluster.NodeID
 
 	// DeviceID returns the device for which this election provides mastership
-	DeviceID() device.ID
+	DeviceID() devicetopo.ID
 
 	// isMaster returns a bool indicating whether the local node is the master for the device
 	isMaster() (bool, error)
@@ -86,7 +86,7 @@ type deviceMastershipElection interface {
 
 // atomixDeviceMastershipElection is a persistent device mastership election
 type atomixDeviceMastershipElection struct {
-	deviceID   device.ID
+	deviceID   devicetopo.ID
 	election   election.Election
 	mastership *Mastership
 	watchers   []chan<- Mastership
@@ -97,7 +97,7 @@ func (e *atomixDeviceMastershipElection) NodeID() cluster.NodeID {
 	return cluster.NodeID(e.election.ID())
 }
 
-func (e *atomixDeviceMastershipElection) DeviceID() device.ID {
+func (e *atomixDeviceMastershipElection) DeviceID() devicetopo.ID {
 	return e.deviceID
 }
 

@@ -19,7 +19,7 @@ import (
 	td1 "github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -95,11 +95,11 @@ func Test_correctJsonPathValuesTd(t *testing.T) {
 			"/cont1a/cont2a/leaf2c",
 			"/cont1b-state/list2b[index=100]/leaf3c",
 			"/cont1b-state/list2b[index=101]/leaf3c":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_STRING, correctedPathValue.Path)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechangetypes.ValueType_STRING, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		case
 			"/cont1b-state/leaf2d":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), types.ValueType_UINT, correctedPathValue.Path)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechangetypes.ValueType_UINT, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)

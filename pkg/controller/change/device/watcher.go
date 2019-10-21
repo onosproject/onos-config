@@ -19,8 +19,8 @@ import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/types"
-	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"sync"
 )
 
@@ -31,7 +31,7 @@ type Watcher struct {
 	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
-	channels    map[device.ID]chan *devicechangetype.DeviceChange
+	channels    map[devicetopo.ID]chan *devicechangetypes.DeviceChange
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
@@ -45,10 +45,10 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	}
 
 	w.ch = ch
-	w.channels = make(map[device.ID]chan *devicechangetype.DeviceChange)
+	w.channels = make(map[devicetopo.ID]chan *devicechangetypes.DeviceChange)
 	w.mu.Unlock()
 
-	deviceCh := make(chan *device.ListResponse)
+	deviceCh := make(chan *devicetopo.ListResponse)
 	if err := w.DeviceStore.Watch(deviceCh); err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 }
 
 // watchDevice watches changes for the given device
-func (w *Watcher) watchDevice(device device.ID, ch chan<- types.ID) {
+func (w *Watcher) watchDevice(device devicetopo.ID, ch chan<- types.ID) {
 	w.mu.Lock()
 	deviceCh := w.channels[device]
 	if deviceCh != nil {
@@ -70,7 +70,7 @@ func (w *Watcher) watchDevice(device device.ID, ch chan<- types.ID) {
 		return
 	}
 
-	deviceCh = make(chan *devicechangetype.DeviceChange, queueSize)
+	deviceCh = make(chan *devicechangetypes.DeviceChange, queueSize)
 	w.channels[device] = deviceCh
 	w.mu.Unlock()
 

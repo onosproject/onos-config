@@ -21,9 +21,9 @@ import (
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/types"
 	changetype "github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 )
 
@@ -51,8 +51,8 @@ type Resolver struct {
 }
 
 // Resolve resolves a device ID from a device change ID
-func (r *Resolver) Resolve(id types.ID) (deviceservice.ID, error) {
-	return devicechangetype.ID(id).GetDeviceID(), nil
+func (r *Resolver) Resolve(id types.ID) (devicetopo.ID, error) {
+	return devicechangetypes.ID(id).GetDeviceID(), nil
 }
 
 // Reconciler is a device change reconciler
@@ -64,7 +64,7 @@ type Reconciler struct {
 // Reconcile reconciles the state of a device change
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	// Get the change from the store
-	change, err := r.changes.Get(devicechangetype.ID(id))
+	change, err := r.changes.Get(devicechangetypes.ID(id))
 	if err != nil {
 		return false, err
 	}
@@ -81,7 +81,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	}
 
 	// If the device is not available, fail the change
-	if getProtocolState(device) != deviceservice.ChannelState_CONNECTED {
+	if getProtocolState(device) != devicetopo.ChannelState_CONNECTED {
 		change.Status.State = changetype.State_FAILED
 		change.Status.Reason = changetype.Reason_ERROR
 		log.Infof("Failing DeviceChange %v", change)
@@ -102,7 +102,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 }
 
 // reconcileChange reconciles a CHANGE in the RUNNING state
-func (r *Reconciler) reconcileChange(change *devicechangetype.DeviceChange) (bool, error) {
+func (r *Reconciler) reconcileChange(change *devicechangetypes.DeviceChange) (bool, error) {
 	// Attempt to apply the change to the device and update the change with the result
 	if err := r.doChange(change); err != nil {
 		change.Status.State = changetype.State_FAILED
@@ -122,7 +122,7 @@ func (r *Reconciler) reconcileChange(change *devicechangetype.DeviceChange) (boo
 }
 
 // doChange pushes the given change to the device
-func (r *Reconciler) doChange(change *devicechangetype.DeviceChange) error {
+func (r *Reconciler) doChange(change *devicechangetypes.DeviceChange) error {
 	log.Infof("doChange %v", change)
 	// TODO: Apply the change here
 	setRequest, err := values.NativeNewChangeToGnmiChange(change.Change)
@@ -134,7 +134,7 @@ func (r *Reconciler) doChange(change *devicechangetype.DeviceChange) error {
 }
 
 // reconcileRollback reconciles a ROLLBACK in the RUNNING state
-func (r *Reconciler) reconcileRollback(change *devicechangetype.DeviceChange) (bool, error) {
+func (r *Reconciler) reconcileRollback(change *devicechangetypes.DeviceChange) (bool, error) {
 	// Attempt to roll back the change to the device and update the change with the result
 	if err := r.doRollback(change); err != nil {
 		change.Status.State = changetype.State_FAILED
@@ -154,7 +154,7 @@ func (r *Reconciler) reconcileRollback(change *devicechangetype.DeviceChange) (b
 }
 
 // doRollback rolls back a change on the device
-func (r *Reconciler) doRollback(change *devicechangetype.DeviceChange) error {
+func (r *Reconciler) doRollback(change *devicechangetypes.DeviceChange) error {
 	log.Infof("doRollback %v", change)
 	// TODO: Roll back the change
 	setRequest, err := values.NativeNewChangeToGnmiChange(change.Change)
@@ -165,17 +165,17 @@ func (r *Reconciler) doRollback(change *devicechangetype.DeviceChange) error {
 	return nil
 }
 
-func getProtocolState(device *deviceservice.Device) deviceservice.ChannelState {
+func getProtocolState(device *devicetopo.Device) devicetopo.ChannelState {
 	// Find the gNMI protocol state for the device
-	var protocol *deviceservice.ProtocolState
+	var protocol *devicetopo.ProtocolState
 	for _, p := range device.Protocols {
-		if p.Protocol == deviceservice.Protocol_GNMI {
+		if p.Protocol == devicetopo.Protocol_GNMI {
 			protocol = p
 			break
 		}
 	}
 	if protocol == nil {
-		return deviceservice.ChannelState_UNKNOWN_CHANNEL_STATE
+		return devicetopo.ChannelState_UNKNOWN_CHANNEL_STATE
 	}
 	return protocol.ChannelState
 }

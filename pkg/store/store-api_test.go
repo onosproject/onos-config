@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
 	"os"
@@ -74,18 +74,18 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		change1, change2, change3, change4 *change.Change
 	)
 
-	config1Value01, _ := types.NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
-	config1Value02, _ := types.NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
-	config1Value03, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(ValueLeaf2A13), false)
-	config1Value04, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueFloat(ValueLeaf2B159), false)
-	config1Value05, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CAbc), false)
-	config1Value06, _ := types.NewChangeValue(Test1Cont1ALeaf1A, types.NewTypedValueString(ValueLeaf1AAbcdef), false)
-	config1Value07, _ := types.NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), false)
-	config1Value08, _ := types.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, types.NewTypedValueUint64(ValueTxout1Txpwr8), false)
-	config1Value09, _ := types.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), false)
-	config1Value10, _ := types.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, types.NewTypedValueUint64(ValueTxout2Txpwr10), false)
-	config1Value11, _ := types.NewChangeValue(Test1Leaftoplevel, types.NewTypedValueString(ValueLeaftopWxy1234), false)
-	change1, err = change.NewChange([]*types.ChangeValue{
+	config1Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1A, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2A, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueUint64(ValueLeaf2A13), false)
+	config1Value04, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueFloat(ValueLeaf2B159), false)
+	config1Value05, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CAbc), false)
+	config1Value06, _ := devicechangetypes.NewChangeValue(Test1Cont1ALeaf1A, devicechangetypes.NewTypedValueString(ValueLeaf1AAbcdef), false)
+	config1Value07, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value08, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout1Txpwr8), false)
+	config1Value09, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value10, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout2Txpwr10), false)
+	config1Value11, _ := devicechangetypes.NewChangeValue(Test1Leaftoplevel, devicechangetypes.NewTypedValueString(ValueLeaftopWxy1234), false)
+	change1, err = change.NewChange([]*devicechangetypes.ChangeValue{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11,
@@ -95,10 +95,10 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config2Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueFloat(ValueLeaf2B314), false)
-	config2Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout3, types.NewTypedValueEmpty(), false)
-	config2Value03, _ := types.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, types.NewTypedValueUint64(ValueTxout3Txpwr16), false)
-	change2, err = change.NewChange([]*types.ChangeValue{
+	config2Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueFloat(ValueLeaf2B314), false)
+	config2Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout3, devicechangetypes.NewTypedValueEmpty(), false)
+	config2Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout3Txpwr16), false)
+	change2, err = change.NewChange([]*devicechangetypes.ChangeValue{
 		config2Value01, config2Value02, config2Value03,
 	}, "Trim power level")
 	if err != nil {
@@ -106,9 +106,9 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config3Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CDef), false)
-	config3Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), true)
-	change3, err = change.NewChange([]*types.ChangeValue{
+	config3Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CDef), false)
+	config3Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2, devicechangetypes.NewTypedValueEmpty(), true)
+	change3, err = change.NewChange([]*devicechangetypes.ChangeValue{
 		config3Value01, config3Value02,
 	}, "Remove txout 2")
 	if err != nil {
@@ -132,9 +132,9 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 		os.Exit(-1)
 	}
 
-	config4Value01, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CGhi), false)
-	config4Value02, _ := types.NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), true)
-	change4, err = change.NewChange([]*types.ChangeValue{
+	config4Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CGhi), false)
+	config4Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1, devicechangetypes.NewTypedValueEmpty(), true)
+	change4, err = change.NewChange([]*devicechangetypes.ChangeValue{
 		config4Value01, config4Value02,
 	}, "Remove txout 1")
 	if err != nil {
@@ -357,8 +357,8 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test-%s", strconv.Itoa(b.N))
-		cv, _ := types.NewChangeValue(path, types.NewTypedValueUint64(uint(i)), false)
-		err := types.IsPathValid(cv.Path)
+		cv, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueUint64(uint(i)), false)
+		err := devicechangetypes.IsPathValid(cv.Path)
 		assert.NilError(b, err, "path not valid %s", err)
 
 	}
@@ -366,10 +366,10 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 
 func BenchmarkCreateChange(b *testing.B) {
 
-	changeValues := []*types.ChangeValue{}
+	changeValues := []*devicechangetypes.ChangeValue{}
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test%d", i)
-		cv, _ := types.NewChangeValue(path, types.NewTypedValueUint64(uint(i)), false)
+		cv, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueUint64(uint(i)), false)
 		changeValues = append(changeValues, cv)
 	}
 

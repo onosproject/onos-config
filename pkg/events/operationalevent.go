@@ -15,7 +15,7 @@
 package events
 
 import (
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"time"
 )
 
@@ -24,12 +24,12 @@ type OperationalStateEvent interface {
 	Event
 	ItemAction() EventAction
 	Path() string
-	Value() *types.TypedValue
+	Value() *devicechangetypes.TypedValue
 }
 
 type operationalStateEventObj struct {
 	path       string
-	value      *types.TypedValue
+	value      *devicechangetypes.TypedValue
 	itemAction EventAction
 }
 
@@ -53,7 +53,7 @@ func (e operationalStateEventImpl) Path() string {
 	return ""
 }
 
-func (e operationalStateEventImpl) Value() *types.TypedValue {
+func (e operationalStateEventImpl) Value() *devicechangetypes.TypedValue {
 	oe, ok := e.object.(operationalStateEventObj)
 	if ok {
 		return oe.value
@@ -62,7 +62,7 @@ func (e operationalStateEventImpl) Value() *types.TypedValue {
 }
 
 // NewOperationalStateEvent creates a new operational state event object
-func NewOperationalStateEvent(subject string, path string, value *types.TypedValue,
+func NewOperationalStateEvent(subject string, path string, value *devicechangetypes.TypedValue,
 	eventAction EventAction) OperationalStateEvent {
 	opStateEvent := operationalStateEventImpl{
 		eventImpl: eventImpl{

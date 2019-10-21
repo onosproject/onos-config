@@ -16,27 +16,27 @@ package manager
 
 import (
 	"github.com/onosproject/onos-config/pkg/store/device"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 )
 
 // DeviceConnected signals the corresponding topology service that the device connected.
-func (m *Manager) DeviceConnected(id devicepb.ID) (*devicepb.Device, error) {
+func (m *Manager) DeviceConnected(id devicetopo.ID) (*devicetopo.Device, error) {
 	log.Infof("Device %s connected", id)
-	return updateDevice(m.DeviceStore, id, devicepb.ConnectivityState_REACHABLE, devicepb.ChannelState_CONNECTED,
-		devicepb.ServiceState_AVAILABLE)
+	return updateDevice(m.DeviceStore, id, devicetopo.ConnectivityState_REACHABLE, devicetopo.ChannelState_CONNECTED,
+		devicetopo.ServiceState_AVAILABLE)
 }
 
 // DeviceDisconnected signal the corresponding topology service that the device disconnected.
-func (m *Manager) DeviceDisconnected(id devicepb.ID, err error) (*devicepb.Device, error) {
+func (m *Manager) DeviceDisconnected(id devicetopo.ID, err error) (*devicetopo.Device, error) {
 	log.Infof("Device %s disconnected or had error in connection %s", id, err)
 	//TODO check different possible availabilities based on error
-	return updateDevice(m.DeviceStore, id, devicepb.ConnectivityState_UNREACHABLE, devicepb.ChannelState_DISCONNECTED,
-		devicepb.ServiceState_UNAVAILABLE)
+	return updateDevice(m.DeviceStore, id, devicetopo.ConnectivityState_UNREACHABLE, devicetopo.ChannelState_DISCONNECTED,
+		devicetopo.ServiceState_UNAVAILABLE)
 }
 
-func updateDevice(deviceStore device.Store, id devicepb.ID, connectivity devicepb.ConnectivityState, channel devicepb.ChannelState,
-	service devicepb.ServiceState) (*devicepb.Device, error) {
+func updateDevice(deviceStore device.Store, id devicetopo.ID, connectivity devicetopo.ConnectivityState, channel devicetopo.ChannelState,
+	service devicetopo.ServiceState) (*devicetopo.Device, error) {
 	topoDevice, err := deviceStore.Get(id)
 	if err != nil {
 		return nil, err
@@ -45,9 +45,9 @@ func updateDevice(deviceStore device.Store, id devicepb.ID, connectivity devicep
 	if protocolState != nil {
 		topoDevice.Protocols = remove(topoDevice.Protocols, index)
 	} else {
-		protocolState = new(devicepb.ProtocolState)
+		protocolState = new(devicetopo.ProtocolState)
 	}
-	protocolState.Protocol = devicepb.Protocol_GNMI
+	protocolState.Protocol = devicetopo.Protocol_GNMI
 	protocolState.ConnectivityState = connectivity
 	protocolState.ChannelState = channel
 	protocolState.ServiceState = service
@@ -61,16 +61,16 @@ func updateDevice(deviceStore device.Store, id devicepb.ID, connectivity devicep
 	return updatedDevice, nil
 }
 
-func containsGnmi(protocols []*devicepb.ProtocolState) (*devicepb.ProtocolState, int) {
+func containsGnmi(protocols []*devicetopo.ProtocolState) (*devicetopo.ProtocolState, int) {
 	for i, p := range protocols {
-		if p.Protocol == devicepb.Protocol_GNMI {
+		if p.Protocol == devicetopo.Protocol_GNMI {
 			return p, i
 		}
 	}
 	return nil, -1
 }
 
-func remove(s []*devicepb.ProtocolState, i int) []*devicepb.ProtocolState {
+func remove(s []*devicetopo.ProtocolState, i int) []*devicetopo.ProtocolState {
 	s[i] = s[len(s)-1]
 	return s[:len(s)-1]
 }

@@ -19,17 +19,17 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change"
+	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"time"
 )
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target. Only the last one is
 // restored to the previous state. Going back n changes in time requires n sequential calls of this method.
-// A change is created so that it can be passed down to the real device
+// A change is created so that it can be passed down to the real devicetopo
 // Deprecated: RollbackTargetConfig works on legacy, non-atomix stores
 func (m *Manager) RollbackTargetConfig(configname store.ConfigName) (change.ID, error) {
 	targetID := m.ConfigStore.Store[store.ConfigName(configname)].Device
@@ -55,16 +55,16 @@ func (m *Manager) RollbackTargetConfig(configname store.ConfigName) (change.ID, 
 
 // NewRollbackTargetConfig rollbacks the last change for a given configuration on the target, by setting phase to
 // rollback and state to pending.
-func (m *Manager) NewRollbackTargetConfig(networkChangeID network.ID) error {
+func (m *Manager) NewRollbackTargetConfig(networkChangeID networkchangetypes.ID) error {
 	//TODO make sure this change is the last applied one
 	changeRollback, errGet := m.NetworkChangesStore.Get(networkChangeID)
 	if errGet != nil {
 		log.Errorf("Error on get change %s for rollback: %s", networkChangeID, errGet)
 		return errGet
 	}
-	changeRollback.Status.Phase = networkchangetypes.Phase_ROLLBACK
-	changeRollback.Status.State = networkchangetypes.State_PENDING
-	changeRollback.Status.Reason = networkchangetypes.Reason_NONE
+	changeRollback.Status.Phase = changetypes.Phase_ROLLBACK
+	changeRollback.Status.State = changetypes.State_PENDING
+	changeRollback.Status.Reason = changetypes.Reason_NONE
 	changeRollback.Status.Message = "Administratively requested rollback"
 
 	errUpdate := m.NetworkChangesStore.Update(changeRollback)
@@ -91,7 +91,7 @@ func computeRollback(m *Manager, target string, configname store.ConfigName) (ch
 			return nil, nil, nil, fmt.Errorf("can't get last config for path %s on config %s for target %s",
 				valueColl.Path, configname, err)
 		}
-		//Previously there was no such value configured, deleting from device
+		//Previously there was no such value configured, deleting from devicetopo
 		if len(value) == 0 {
 			deletes = append(deletes, valueColl.Path)
 		} else {
@@ -106,7 +106,7 @@ func computeRollback(m *Manager, target string, configname store.ConfigName) (ch
 }
 
 func listenForDeviceResponse(mgr *Manager, target string) error {
-	respChan, ok := mgr.Dispatcher.GetResponseListener(device.ID(target))
+	respChan, ok := mgr.Dispatcher.GetResponseListener(devicetopo.ID(target))
 	if !ok {
 		log.Infof("Device %s not properly registered, not waiting for southbound confirmation", target)
 		return nil

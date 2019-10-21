@@ -26,7 +26,7 @@ import (
 	snaptypes "github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	networksnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/network"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"time"
 )
@@ -137,8 +137,8 @@ func (r *Reconciler) reconcileRunningMark(snapshot *networksnaptypes.NetworkSnap
 // createDeviceSnapshots marks NetworkChanges for deletion and creates device snapshots
 func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
 	// Iterate through network changes
-	deviceChanges := make(map[device.ID]networkchangetypes.Index)
-	deviceMaxChanges := make(map[device.ID]networkchangetypes.Index)
+	deviceChanges := make(map[devicetopo.ID]networkchangetypes.Index)
+	deviceMaxChanges := make(map[devicetopo.ID]networkchangetypes.Index)
 
 	// List network changes
 	changes := make(chan *networkchangetypes.NetworkChange)

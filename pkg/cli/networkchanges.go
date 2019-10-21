@@ -17,7 +17,7 @@ package cli
 import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	types "github.com/onosproject/onos-config/pkg/types/change/network"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
@@ -52,9 +52,9 @@ func getWatchNetworkChangesCommand() *cobra.Command {
 }
 
 func runWatchNetworkChangesCommand(cmd *cobra.Command, args []string) error {
-	var id types.ID
+	var id networkchangetypes.ID
 	if len(args) > 0 {
-		id = types.ID(args[0])
+		id = networkchangetypes.ID(args[0])
 	}
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")

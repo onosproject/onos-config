@@ -21,7 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
@@ -137,7 +137,7 @@ func runDeviceTreeCommand(cmd *cobra.Command, args []string) error {
 			ID:          change.ID(idBytes),
 			Description: in.Desc,
 			Created:     *in.Time,
-			Config:      make([]*types.ChangeValue, 0),
+			Config:      make([]*devicechangetypes.ChangeValue, 0),
 		}
 		changeObj.Config = append(changeObj.Config, in.ChangeValues...)
 		changes[in.Id] = &changeObj

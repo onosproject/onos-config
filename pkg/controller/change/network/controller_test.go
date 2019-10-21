@@ -21,23 +21,23 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/change"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
 )
 
 const (
-	device1 = device.ID("device-1")
-	device2 = device.ID("device-2")
-	device3 = device.ID("device-3")
-	device4 = device.ID("device-4")
+	device1 = devicetopo.ID("device-1")
+	device2 = devicetopo.ID("device-2")
+	device3 = devicetopo.ID("device-3")
+	device4 = devicetopo.ID("device-4")
 )
 
 const (
-	change1 = networkchange.ID("change-1")
+	change1 = networkchangetypes.ID("change-1")
 )
 
 // TestReconcilerChangeRollback tests applying and then rolling back a change
@@ -326,10 +326,10 @@ func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicecha
 	ctrl := gomock.NewController(t)
 
 	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&device.ListResponse{Device: &device.Device{ID: device1}}, nil)
-	stream.EXPECT().Recv().Return(&device.ListResponse{Device: &device.Device{ID: device2}}, nil)
-	stream.EXPECT().Recv().Return(&device.ListResponse{Device: &device.Device{ID: device3}}, nil)
-	stream.EXPECT().Recv().Return(&device.ListResponse{Device: &device.Device{ID: device4}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: device1}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: device2}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: device3}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: device4}}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)
@@ -344,23 +344,23 @@ func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicecha
 	return devices, networkChanges, deviceChanges
 }
 
-func newChange(id networkchange.ID, devices ...device.ID) *networkchange.NetworkChange {
-	changes := make([]*devicechange.Change, len(devices))
+func newChange(id networkchangetypes.ID, devices ...devicetopo.ID) *networkchangetypes.NetworkChange {
+	changes := make([]*devicechangetypes.Change, len(devices))
 	for i, device := range devices {
-		changes[i] = &devicechange.Change{
+		changes[i] = &devicechangetypes.Change{
 			DeviceID: device,
-			Values: []*devicechange.ChangeValue{
+			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path: "foo",
-					Value: &devicechange.TypedValue{
+					Value: &devicechangetypes.TypedValue{
 						Bytes: []byte("Hello world!"),
-						Type:  devicechange.ValueType_STRING,
+						Type:  devicechangetypes.ValueType_STRING,
 					},
 				},
 			},
 		}
 	}
-	return &networkchange.NetworkChange{
+	return &networkchangetypes.NetworkChange{
 		ID:      id,
 		Changes: changes,
 	}
