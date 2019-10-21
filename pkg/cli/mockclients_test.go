@@ -19,6 +19,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
+	"github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -77,6 +78,18 @@ func (c mockConfigAdminServiceClient) RollbackNewNetworkChange(ctx context.Conte
 	}
 	LastCreatedClient.rollBackID = in.Name
 	return response, nil
+}
+
+func (c mockConfigAdminServiceClient) GetSnapshot(ctx context.Context, in *admin.GetSnapshotRequest, opts ...grpc.CallOption) (*device.Snapshot, error) {
+	return nil, nil
+}
+
+func (c mockConfigAdminServiceClient) ListSnapshots(ctx context.Context, in *admin.ListSnapshotsRequest, opts ...grpc.CallOption) (admin.ConfigAdminService_ListSnapshotsClient, error) {
+	return nil, nil
+}
+
+func (c mockConfigAdminServiceClient) CompactChanges(ctx context.Context, in *admin.CompactChangesRequest, opts ...grpc.CallOption) (*admin.CompactChangesResponse, error) {
+	return nil, nil
 }
 
 // MockConfigAdminServiceListRegisteredModelsClient is a mock of the ConfigAdminServiceListRegisteredModelsClient
