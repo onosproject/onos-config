@@ -145,7 +145,7 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 
 func collector(stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result, mode gnmi.SubscriptionList_Mode) {
 	for _, sub := range request.Subscription {
-		//We get the stated of the devicetopo, for each path we build an update and send it out.
+		//We get the stated of the device, for each path we build an update and send it out.
 		update, err := getUpdate(request.Prefix, sub.Path)
 		if err != nil {
 			log.Error("Error while collecting data for subscribe once or poll ", err)

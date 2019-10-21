@@ -30,7 +30,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
-	devicelocal "github.com/onosproject/onos-config/pkg/store/device"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
@@ -52,7 +52,7 @@ type Manager struct {
 	LeadershipStore           leadership.Store
 	MastershipStore           mastership.Store
 	DeviceChangesStore        device.Store
-	DeviceStore               devicelocal.Store
+	DeviceStore               devicestore.Store
 	NetworkStore              *store.NetworkStore
 	NetworkChangesStore       network.Store
 	NetworkSnapshotStore      networksnap.Store
@@ -78,7 +78,7 @@ type TypeVersionInfo struct {
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store, mastershipStore mastership.Store,
-	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicelocal.Store, networkStore *store.NetworkStore,
+	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicestore.Store, networkStore *store.NetworkStore,
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store,
 	topoCh chan *devicetopo.ListResponse) (*Manager, error) {
 	log.Info("Creating Manager")
@@ -163,7 +163,7 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Change store loaded from ", changeStoreFile)
 
-	deviceStore, err := devicelocal.NewTopoStore(opts...)
+	deviceStore, err := devicestore.NewTopoStore(opts...)
 	if err != nil {
 		log.Error("Cannot load device store ", err)
 		return nil, err

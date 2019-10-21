@@ -29,7 +29,7 @@ import (
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target. Only the last one is
 // restored to the previous state. Going back n changes in time requires n sequential calls of this method.
-// A change is created so that it can be passed down to the real devicetopo
+// A change is created so that it can be passed down to the real device
 // Deprecated: RollbackTargetConfig works on legacy, non-atomix stores
 func (m *Manager) RollbackTargetConfig(configname store.ConfigName) (change.ID, error) {
 	targetID := m.ConfigStore.Store[store.ConfigName(configname)].Device

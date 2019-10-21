@@ -101,7 +101,7 @@ func handleLeafList(gnmiLl *gnmi.TypedValue_LeaflistVal) (*devicechangetypes.Typ
 	return nil, fmt.Errorf("Empty leaf list given")
 }
 
-// NativeTypeToGnmiTypedValue converts native byte array based values in to gnmi devicechangetypes
+// NativeTypeToGnmiTypedValue converts native byte array based values in to gnmi types
 func NativeTypeToGnmiTypedValue(typedValue *devicechangetypes.TypedValue) (*gnmi.TypedValue, error) {
 	if len(typedValue.Bytes) == 0 && typedValue.Type != devicechangetypes.ValueType_EMPTY {
 		return nil, fmt.Errorf("invalid TypedValue Length 0")
