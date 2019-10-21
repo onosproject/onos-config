@@ -20,18 +20,18 @@ import (
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/types"
 	changetype "github.com/onosproject/onos-config/pkg/types/change"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/change/network"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	snapshottype "github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnap "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
 const (
-	device1 = device.ID("device-1")
+	device1 = devicetopo.ID("device-1")
 )
 
 func TestReconcileDeviceSnapshotIndex(t *testing.T) {
@@ -101,7 +101,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	// Verify the correct snapshot was taken
 	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID)
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
+	assert.Equal(t, devicechangetypes.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 2)
 	assert.Equal(t, "/bar/msg", snapshot.Values[0].Path)
 	assert.Equal(t, "Hello world 3", snapshot.Values[0].GetValue().ValueToString())
@@ -218,7 +218,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	// Verify the correct snapshot was taken
 	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID)
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
+	assert.Equal(t, devicechangetypes.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 4)
 
 	// Verify changes have not been deleted
@@ -277,26 +277,26 @@ func newStores(t *testing.T) (devicechangestore.Store, devicesnapstore.Store) {
 	return changes, snapshots
 }
 
-func newSet(index network.Index, device device.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechange.DeviceChange {
-	return newChange(index, created, phase, state, &devicechange.Change{
+func newSet(index networkchangetypes.Index, device devicetopo.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechangetypes.DeviceChange {
+	return newChange(index, created, phase, state, &devicechangetypes.Change{
 		DeviceID: device,
-		Values: []*devicechange.ChangeValue{
+		Values: []*devicechangetypes.ChangeValue{
 			{
 				Path:  fmt.Sprintf("/%s/msg", path),
-				Value: devicechange.NewTypedValueString(fmt.Sprintf("Hello world %d", len(path))),
+				Value: devicechangetypes.NewTypedValueString(fmt.Sprintf("Hello world %d", len(path))),
 			},
 			{
 				Path:  fmt.Sprintf("/%s/meaning", path),
-				Value: devicechange.NewTypedValueInt64(39 + len(path)),
+				Value: devicechangetypes.NewTypedValueInt64(39 + len(path)),
 			},
 		},
 	})
 }
 
-func newRemove(index network.Index, device device.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechange.DeviceChange {
-	return newChange(index, created, phase, state, &devicechange.Change{
+func newRemove(index networkchangetypes.Index, device devicetopo.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechangetypes.DeviceChange {
+	return newChange(index, created, phase, state, &devicechangetypes.Change{
 		DeviceID: device,
-		Values: []*devicechange.ChangeValue{
+		Values: []*devicechangetypes.ChangeValue{
 			{
 				Path:    fmt.Sprintf("/%s", path),
 				Removed: true,
@@ -305,9 +305,9 @@ func newRemove(index network.Index, device device.ID, path string, created time.
 	})
 }
 
-func newChange(index network.Index, created time.Time, phase changetype.Phase, state changetype.State, change *devicechange.Change) *devicechange.DeviceChange {
-	return &devicechange.DeviceChange{
-		NetworkChange: devicechange.NetworkChangeRef{
+func newChange(index networkchangetypes.Index, created time.Time, phase changetype.Phase, state changetype.State, change *devicechangetypes.Change) *devicechangetypes.DeviceChange {
+	return &devicechangetypes.DeviceChange{
+		NetworkChange: devicechangetypes.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("network-change-%d", index)),
 			Index: types.Index(index),
 		},

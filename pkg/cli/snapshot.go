@@ -17,7 +17,7 @@ package cli
 import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/spf13/cobra"
 	"io"
 )
@@ -58,7 +58,7 @@ func runSnapshotCommand(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		snapshot, err := client.GetSnapshot(context.Background(), &admin.GetSnapshotRequest{
-			DeviceID: device.ID(args[0]),
+			DeviceID: devicetopo.ID(args[0]),
 		})
 		if err != nil {
 			return err

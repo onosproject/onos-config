@@ -20,20 +20,20 @@ import (
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/change"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/types/snapshot/network"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 const (
-	device1 = device.ID("device-1")
-	device2 = device.ID("device-2")
-	device3 = device.ID("device-3")
+	device1 = devicetopo.ID("device-1")
+	device2 = devicetopo.ID("device-2")
+	device3 = devicetopo.ID("device-3")
 )
 
 func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
@@ -305,30 +305,30 @@ func newStores(t *testing.T) (networkchangestore.Store, networksnapstore.Store, 
 	return networkChanges, networkSnapshots, deviceSnapshots
 }
 
-func newNetworkChange(id networkchange.ID, phase change.Phase, state change.State, devices ...device.ID) *networkchange.NetworkChange {
-	changes := make([]*devicechange.Change, len(devices))
+func newNetworkChange(id networkchangetypes.ID, phase change.Phase, state change.State, devices ...devicetopo.ID) *networkchangetypes.NetworkChange {
+	changes := make([]*devicechangetypes.Change, len(devices))
 	for i, device := range devices {
-		changes[i] = &devicechange.Change{
+		changes[i] = &devicechangetypes.Change{
 			DeviceID: device,
-			Values: []*devicechange.ChangeValue{
+			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path: "foo",
-					Value: &devicechange.TypedValue{
+					Value: &devicechangetypes.TypedValue{
 						Bytes: []byte("Hello world!"),
-						Type:  devicechange.ValueType_STRING,
+						Type:  devicechangetypes.ValueType_STRING,
 					},
 				},
 			},
 		}
 	}
 
-	refs := make([]*networkchange.DeviceChangeRef, len(devices))
+	refs := make([]*networkchangetypes.DeviceChangeRef, len(devices))
 	for i, device := range devices {
-		refs[i] = &networkchange.DeviceChangeRef{
+		refs[i] = &networkchangetypes.DeviceChangeRef{
 			DeviceChangeID: id.GetDeviceChangeID(device),
 		}
 	}
-	return &networkchange.NetworkChange{
+	return &networkchangetypes.NetworkChange{
 		ID:      id,
 		Changes: changes,
 		Refs:    refs,

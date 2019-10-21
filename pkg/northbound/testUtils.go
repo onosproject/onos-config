@@ -21,8 +21,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 	"sync"
@@ -55,11 +55,11 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) *manage
 		log.Error("Unable to load manager")
 	}
 
-	opStateValuesDevice2 := make(map[string]*types.TypedValue)
-	opStateValuesDevice2["/cont1a/cont2a/leaf2c"] = types.NewTypedValueString("test1")
-	opStateValuesDevice2["/cont1b-state/leaf2d"] = types.NewTypedValueUint64(12345)
+	opStateValuesDevice2 := make(map[string]*devicechangetypes.TypedValue)
+	opStateValuesDevice2["/cont1a/cont2a/leaf2c"] = devicechangetypes.NewTypedValueString("test1")
+	opStateValuesDevice2["/cont1b-state/leaf2d"] = devicechangetypes.NewTypedValueUint64(12345)
 
-	manager.GetManager().OperationalStateCache[device.ID("Device2")] = opStateValuesDevice2
+	manager.GetManager().OperationalStateCache[devicetopo.ID("Device2")] = opStateValuesDevice2
 	go manager.GetManager().Dispatcher.ListenOperationalState(manager.GetManager().OperationalStateChannel)
 
 	config := NewServerConfig("", "", "")
@@ -87,14 +87,14 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) *manage
 		time.Sleep(100 * time.Millisecond)
 		opStateEventWrong := events.NewOperationalStateEvent("Device1",
 			"/cont1a/cont2a/leaf2d",
-			types.NewTypedValueString("testNotRelevant"),
+			devicechangetypes.NewTypedValueString("testNotRelevant"),
 			events.EventItemUpdated)
 		manager.GetManager().OperationalStateChannel <- opStateEventWrong
 
 		time.Sleep(100 * time.Millisecond)
 		opStateEvent := events.NewOperationalStateEvent("Device2",
 			"/cont1a/cont2a/leaf2c",
-			types.NewTypedValueString("test2"),
+			devicechangetypes.NewTypedValueString("test2"),
 			events.EventItemUpdated)
 		manager.GetManager().OperationalStateChannel <- opStateEvent
 	}()

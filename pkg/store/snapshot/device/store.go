@@ -26,7 +26,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	devicesnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"io"
@@ -140,7 +140,7 @@ type Store interface {
 	Store(snapshot *devicesnapshot.Snapshot) error
 
 	// Load loads a snapshot
-	Load(id device.ID) (*devicesnapshot.Snapshot, error)
+	Load(id devicetopo.ID) (*devicesnapshot.Snapshot, error)
 
 	// Load loads all snapshots
 	LoadAll(ch chan<- *devicesnapshot.Snapshot) error
@@ -282,7 +282,7 @@ func (s *atomixStore) Store(snapshot *devicesnapshot.Snapshot) error {
 	return nil
 }
 
-func (s *atomixStore) Load(id device.ID) (*devicesnapshot.Snapshot, error) {
+func (s *atomixStore) Load(id devicetopo.ID) (*devicesnapshot.Snapshot, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

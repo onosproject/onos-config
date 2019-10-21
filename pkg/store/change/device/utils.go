@@ -15,7 +15,7 @@
 package device
 
 import (
-	"github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"sort"
 	"strings"
@@ -25,13 +25,13 @@ import (
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.Change, changeStore Store,
-	nBack int) ([]*device.PathValue, error) {
+func ExtractFullConfig(deviceID devicetopo.ID, newChange *devicechangetypes.Change, changeStore Store,
+	nBack int) ([]*devicechangetypes.PathValue, error) {
 
 	// Have to use a slice to have a consistent output order
-	consolidatedConfig := make([]*device.PathValue, 0)
+	consolidatedConfig := make([]*devicechangetypes.PathValue, 0)
 
-	changeChan := make(chan *device.DeviceChange)
+	changeChan := make(chan *devicechangetypes.DeviceChange)
 
 	err := changeStore.List(deviceID, changeChan)
 
@@ -48,7 +48,7 @@ func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.Change, changeS
 			consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
 		}
 	} else {
-		changes := make([]*device.DeviceChange, 0)
+		changes := make([]*devicechangetypes.DeviceChange, 0)
 		for storeChange := range changeChan {
 			changes = append(changes, storeChange)
 		}
@@ -65,7 +65,7 @@ func ExtractFullConfig(deviceID devicetopo.ID, newChange *device.Change, changeS
 	return consolidatedConfig, nil
 }
 
-func getPathValue(storeChange *device.Change, consolidatedConfig []*device.PathValue) []*device.PathValue {
+func getPathValue(storeChange *devicechangetypes.Change, consolidatedConfig []*devicechangetypes.PathValue) []*devicechangetypes.PathValue {
 	for _, changeValue := range storeChange.Values {
 		if changeValue.Removed {
 			// Delete everything at that path and all below it
@@ -92,7 +92,7 @@ func getPathValue(storeChange *device.Change, consolidatedConfig []*device.PathV
 				}
 			}
 			if !alreadyExists {
-				copyCv := device.PathValue{
+				copyCv := devicechangetypes.PathValue{
 					Path:  changeValue.GetPath(),
 					Value: changeValue.GetValue(),
 				}

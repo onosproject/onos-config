@@ -16,7 +16,7 @@ package device
 
 import (
 	"github.com/onosproject/onos-config/pkg/types"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"strings"
 )
 
@@ -31,8 +31,8 @@ func (i ID) GetNetworkChangeID() types.ID {
 }
 
 // GetDeviceID returns the Device ID to which the change is targeted
-func (i ID) GetDeviceID() device.ID {
-	return device.ID(string(i)[strings.Index(string(i), separator)+1:])
+func (i ID) GetDeviceID() devicetopo.ID {
+	return devicetopo.ID(string(i)[strings.Index(string(i), separator)+1:])
 }
 
 // Index is the index of a network configuration

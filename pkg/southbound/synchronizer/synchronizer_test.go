@@ -24,11 +24,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -61,10 +60,10 @@ const (
 )
 
 func synchronizerSetUp() (*store.ChangeStore, *store.ConfigurationStore,
-	chan devicepb.ListResponse, chan events.OperationalStateEvent,
+	chan devicetopo.ListResponse, chan events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
 	*modelregistry.ModelRegistry, modelregistry.ReadOnlyPathMap,
-	types.TypedValueMap, chan events.ConfigEvent,
+	devicechangetypes.TypedValueMap, chan events.ConfigEvent,
 	error) {
 
 	changeStore, err := store.LoadChangeStore("../../../configs/changeStore-sample.json")
@@ -78,18 +77,18 @@ func synchronizerSetUp() (*store.ChangeStore, *store.ConfigurationStore,
 
 	dispatcher := dispatcher.NewDispatcher()
 	mr := new(modelregistry.ModelRegistry)
-	opStateCache := make(types.TypedValueMap)
+	opStateCache := make(devicechangetypes.TypedValueMap)
 	// See modelplugin/yang/TestDevice-1.0.0/test1@2018-02-20.yang for paths
 	roPathMap := make(modelregistry.ReadOnlyPathMap)
 	roSubPath1 := make(modelregistry.ReadOnlySubPathMap)
-	roSubPath1["/"] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_STRING}
+	roSubPath1["/"] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_STRING}
 	roPathMap[cont1aCont2aLeaf2c] = roSubPath1
 	roSubPath2 := make(modelregistry.ReadOnlySubPathMap)
-	roSubPath2[leaf2d] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_STRING}
+	roSubPath2[leaf2d] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_STRING}
 	roPathMap[cont1bState] = roSubPath2
 	return &changeStore, &configStore,
-		make(chan devicepb.ListResponse),
+		make(chan devicetopo.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, mr, roPathMap, opStateCache,
@@ -131,15 +130,15 @@ func TestNew(t *testing.T) {
 	}
 	timeout := time.Millisecond * 200
 	mock1NameStr := "mockTd"
-	mockDevice1 := device.Device{
-		ID:          device.ID(mock1NameStr),
+	mockDevice1 := devicetopo.Device{
+		ID:          devicetopo.ID(mock1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:11161",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: device.Credentials{},
-		TLS:         device.TlsConfig{},
+		Credentials: devicetopo.Credentials{},
+		TLS:         devicetopo.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
@@ -227,19 +226,19 @@ func TestNew(t *testing.T) {
 	time.Sleep(200 * time.Millisecond) // Wait for response message
 	os1, ok := opstateCache[cont1bState+leaf2d]
 	assert.Assert(t, ok, "Retrieving 1st path from Op State cache")
-	assert.Equal(t, os1.Type, types.ValueType_UINT)
+	assert.Equal(t, os1.Type, devicechangetypes.ValueType_UINT)
 	assert.Equal(t, os1.ValueToString(), "10001")
 	os2, ok := opstateCache[cont1aCont2aLeaf2c]
 	assert.Assert(t, ok, "Retrieving 2nd path from Op State cache")
-	assert.Equal(t, os2.Type, types.ValueType_STRING)
+	assert.Equal(t, os2.Type, devicechangetypes.ValueType_STRING)
 	assert.Equal(t, os2.ValueToString(), "Mock leaf2c value")
 	os3, ok := opstateCache[cont1bState+list2b100Leaf3c]
 	assert.Assert(t, ok, "Retrieving 3rd path from Op State cache")
-	assert.Equal(t, os3.Type, types.ValueType_STRING)
+	assert.Equal(t, os3.Type, devicechangetypes.ValueType_STRING)
 	assert.Equal(t, os3.ValueToString(), "mock Value in JSON")
 	os4, ok := opstateCache[cont1bState+list2b101Leaf3c]
 	assert.Assert(t, ok, "Retrieving 4th path from Op State cache")
-	assert.Equal(t, os4.Type, types.ValueType_STRING)
+	assert.Equal(t, os4.Type, devicechangetypes.ValueType_STRING)
 	assert.Equal(t, os4.ValueToString(), "Second mock Value")
 
 	opStatePath1, err := utils.ParseGNMIElements(utils.SplitPath(cont1bState + list2b100Leaf3c))
@@ -279,7 +278,7 @@ func TestNew(t *testing.T) {
 	time.Sleep(10 * time.Millisecond) // Wait for before sending a subscribe message
 }
 
-func synchronizerBootstrap(t *testing.T) (*MockTargetIf, *device.Device, *gnmi.CapabilityResponse) {
+func synchronizerBootstrap(t *testing.T) (*MockTargetIf, *devicetopo.Device, *gnmi.CapabilityResponse) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockTarget := NewMockTargetIf(ctrl)
@@ -296,15 +295,15 @@ func synchronizerBootstrap(t *testing.T) (*MockTargetIf, *device.Device, *gnmi.C
 
 	timeout := time.Millisecond * 200
 	device1NameStr := "Device1" // Exists in configStore-sample.json
-	device1 := device.Device{
-		ID:          device.ID(device1NameStr),
+	device1 := devicetopo.Device{
+		ID:          devicetopo.ID(device1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:11161",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: device.Credentials{},
-		TLS:         device.TlsConfig{},
+		Credentials: devicetopo.Credentials{},
+		TLS:         devicetopo.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
@@ -316,11 +315,11 @@ func synchronizerBootstrap(t *testing.T) (*MockTargetIf, *device.Device, *gnmi.C
 func setUpStatePaths(t *testing.T) (*gnmi.Path, *gnmi.TypedValue, *gnmi.Path, *gnmi.TypedValue) {
 	statePath, err := utils.ParseGNMIElements(utils.SplitPath(cont1aCont2aLeaf2c))
 	assert.NilError(t, err)
-	stateValue, err := values.NativeTypeToGnmiTypedValue(types.NewTypedValueString("mock Value"))
+	stateValue, err := values.NativeTypeToGnmiTypedValue(devicechangetypes.NewTypedValueString("mock Value"))
 	assert.NilError(t, err)
 	opPath, err := utils.ParseGNMIElements(utils.SplitPath(cont1bState + leaf2d))
 	assert.NilError(t, err)
-	opValue, err := values.NativeTypeToGnmiTypedValue(types.NewTypedValueUint64(10002))
+	opValue, err := values.NativeTypeToGnmiTypedValue(devicechangetypes.NewTypedValueUint64(10002))
 	assert.NilError(t, err)
 	return statePath, stateValue, opPath, opValue
 }
@@ -451,9 +450,9 @@ func TestNewWithExistingConfig(t *testing.T) {
 	go s.syncConfigEventsToDevice(mockTarget, responseChan)
 
 	//Create a change that we can send down to device
-	value1, err := types.NewChangeValue(cont1aCont2aLeaf2a, types.NewTypedValueUint64(12), false)
+	value1, err := devicechangetypes.NewChangeValue(cont1aCont2aLeaf2a, devicechangetypes.NewTypedValueUint64(12), false)
 	assert.NilError(t, err)
-	change1, err := change.NewChange([]*types.ChangeValue{value1}, "mock test change")
+	change1, err := change.NewChange([]*devicechangetypes.ChangeValue{value1}, "mock test change")
 	assert.NilError(t, err)
 	s.ChangeStore.Store[store.B64(change1.ID)] = change1
 
@@ -631,31 +630,31 @@ func Test_LikeStratum(t *testing.T) {
 		Store:     make(map[store.ConfigName]store.Configuration),
 	}
 
-	opStateCache := make(types.TypedValueMap)
+	opStateCache := make(devicechangetypes.TypedValueMap)
 	// See modelplugin/yang/TestDevice-1.0.0/test1@2018-02-20.yang for paths
 	roPathMap := make(modelregistry.ReadOnlyPathMap)
 	roSubPath1 := make(modelregistry.ReadOnlySubPathMap)
-	roSubPath1[ifIndex] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[ifName] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_STRING}
-	roSubPath1[adminStatus] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_STRING}
-	roSubPath1[hardwarePort] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_STRING}
-	roSubPath1[healthIndicator] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_STRING}
-	roSubPath1[lastChange] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_STRING}
-	roSubPath1[operStatus] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_STRING}
-	roSubPath1[countersInBroadcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersInDiscards] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersInErrors] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersInFcsErrors] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersInMcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersInOctets] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersInUnicastPkts] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersInUnknPkts] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersInBcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersOutDiscards] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersOutErrs] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersOutMcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersOutOctets] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
-	roSubPath1[countersOutUcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: types.ValueType_UINT}
+	roSubPath1[ifIndex] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[ifName] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_STRING}
+	roSubPath1[adminStatus] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_STRING}
+	roSubPath1[hardwarePort] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_STRING}
+	roSubPath1[healthIndicator] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_STRING}
+	roSubPath1[lastChange] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_STRING}
+	roSubPath1[operStatus] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_STRING}
+	roSubPath1[countersInBroadcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersInDiscards] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersInErrors] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersInFcsErrors] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersInMcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersInOctets] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersInUnicastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersInUnknPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersInBcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersOutDiscards] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersOutErrs] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersOutMcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersOutOctets] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
+	roSubPath1[countersOutUcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
 	roPathMap[interfacesInterfaceWcState] = roSubPath1
 
 	opstateChan := make(chan events.OperationalStateEvent)
@@ -672,15 +671,15 @@ func Test_LikeStratum(t *testing.T) {
 	} // And many many more
 	timeout := time.Millisecond * 200
 	mock1NameStr := "stratum-1"
-	mockDevice1 := device.Device{
-		ID:          device.ID(mock1NameStr),
+	mockDevice1 := devicetopo.Device{
+		ID:          devicetopo.ID(mock1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:50001",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: device.Credentials{},
-		TLS:         device.TlsConfig{},
+		Credentials: devicetopo.Credentials{},
+		TLS:         devicetopo.TlsConfig{},
 		Type:        "Stratum",
 		Role:        "leaf",
 		Attributes:  nil,
@@ -823,35 +822,35 @@ func Test_LikeStratum(t *testing.T) {
 	time.Sleep(200 * time.Millisecond) // Wait for response message
 	os1, ok := opStateCache[interfacesInterfaceEth1StateIfindex]
 	assert.Assert(t, ok, "Retrieving 1st path from Op State cache")
-	assert.Equal(t, os1.Type, types.ValueType_UINT)
+	assert.Equal(t, os1.Type, devicechangetypes.ValueType_UINT)
 	assert.Equal(t, os1.ValueToString(), "1")
 	os2, ok := opStateCache[interfacesInterfaceEth2StateIfindex]
 	assert.Assert(t, ok, "Retrieving 2nd path from Op State cache")
-	assert.Equal(t, os2.Type, types.ValueType_UINT)
+	assert.Equal(t, os2.Type, devicechangetypes.ValueType_UINT)
 	assert.Equal(t, os2.ValueToString(), "2")
 	os3, ok := opStateCache[interfacesInterfaceEth1State+ifName]
 	assert.Assert(t, ok, "Retrieving 3rd path from Op State cache")
-	assert.Equal(t, os3.Type, types.ValueType_STRING)
+	assert.Equal(t, os3.Type, devicechangetypes.ValueType_STRING)
 	assert.Equal(t, os3.ValueToString(), s1Eth1)
 	os4, ok := opStateCache[interfacesInterfaceEth2State+ifName]
 	assert.Assert(t, ok, "Retrieving 4th path from Op State cache")
-	assert.Equal(t, os4.Type, types.ValueType_STRING)
+	assert.Equal(t, os4.Type, devicechangetypes.ValueType_STRING)
 	assert.Equal(t, os4.ValueToString(), s1Eth2)
 	os5, ok := opStateCache[interfacesInterfaceEth1State+adminStatus]
 	assert.Assert(t, ok, "Retrieving 5th path from Op State cache")
-	assert.Equal(t, os5.Type, types.ValueType_STRING)
+	assert.Equal(t, os5.Type, devicechangetypes.ValueType_STRING)
 	assert.Equal(t, os5.ValueToString(), "UP")
 	os6, ok := opStateCache[interfacesInterfaceEth2State+adminStatus]
 	assert.Assert(t, ok, "Retrieving 6th path from Op State cache")
-	assert.Equal(t, os6.Type, types.ValueType_STRING)
+	assert.Equal(t, os6.Type, devicechangetypes.ValueType_STRING)
 	assert.Equal(t, os6.ValueToString(), "UP")
 	os7, ok := opStateCache[interfacesInterfaceEth1State+countersInOctets]
 	assert.Assert(t, ok, "Retrieving 7th path from Op State cache")
-	assert.Equal(t, os7.Type, types.ValueType_UINT)
+	assert.Equal(t, os7.Type, devicechangetypes.ValueType_UINT)
 	assert.Equal(t, os7.ValueToString(), "11111")
 	os8, ok := opStateCache[interfacesInterfaceEth2State+countersInOctets]
 	assert.Assert(t, ok, "Retrieving 8th path from Op State cache")
-	assert.Equal(t, os8.Type, types.ValueType_UINT)
+	assert.Equal(t, os8.Type, devicechangetypes.ValueType_UINT)
 	assert.Equal(t, os8.ValueToString(), "22222")
 
 	// Send a message to the Subscribe request

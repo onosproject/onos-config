@@ -21,10 +21,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -183,7 +183,7 @@ func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_Subsc
 		if targetPresent && changeInternal != nil {
 			//if the device is registered it has a listener, if not we assume the device is not in the system and
 			// send an immediate response
-			respChan, ok := mgr.Dispatcher.GetResponseListener(device.ID(target))
+			respChan, ok := mgr.Dispatcher.GetResponseListener(devicetopo.ID(target))
 			if ok {
 				go listenForDeviceUpdates(respChan, changeInternal, subs, target, stream, resChan)
 			} else {
@@ -267,7 +267,7 @@ func matchRegex(path string, subs []*regexp.Regexp) bool {
 	return false
 }
 
-func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *types.TypedValue, stream gnmi.GNMI_SubscribeServer) error {
+func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechangetypes.TypedValue, stream gnmi.GNMI_SubscribeServer) error {
 	pathGnmi.Target = target
 	var response *gnmi.SubscribeResponse
 	var errGet error
@@ -335,7 +335,7 @@ func buildSubscribeResponse(notification *gnmi.Notification, target string) (*gn
 	response := &gnmi.SubscribeResponse{
 		Response: responseUpdate,
 	}
-	_, errDevice := manager.GetManager().DeviceStore.Get(device.ID(target))
+	_, errDevice := manager.GetManager().DeviceStore.Get(devicetopo.ID(target))
 	if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 		response.Extension = []*gnmi_ext.Extension{
 			{

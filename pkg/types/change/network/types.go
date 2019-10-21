@@ -17,8 +17,8 @@ package network
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/types"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 )
 
 const separator = ":"
@@ -27,8 +27,8 @@ const separator = ":"
 type ID types.ID
 
 // GetDeviceChangeID returns a device change ID for the given device ID
-func (i ID) GetDeviceChangeID(deviceID device.ID) devicechange.ID {
-	return devicechange.ID(fmt.Sprintf("%s%s%s", i, separator, deviceID))
+func (i ID) GetDeviceChangeID(deviceID devicetopo.ID) devicechangetypes.ID {
+	return devicechangetypes.ID(fmt.Sprintf("%s%s%s", i, separator, deviceID))
 }
 
 // Index is the index of a network configuration

@@ -17,7 +17,7 @@ package device
 import (
 	"github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -36,8 +36,8 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	assert.NoError(t, err)
 	defer store2.Close()
 
-	device1 := device.ID("device-1")
-	device2 := device.ID("device-2")
+	device1 := devicetopo.ID("device-1")
+	device2 := devicetopo.ID("device-2")
 
 	ch := make(chan *devicesnapshot.DeviceSnapshot)
 	err = store2.Watch(ch)

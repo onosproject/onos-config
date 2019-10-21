@@ -25,10 +25,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/status"
@@ -44,21 +44,21 @@ type Synchronizer struct {
 	context.Context
 	*store.ChangeStore
 	*store.ConfigurationStore
-	*device.Device
+	*devicetopo.Device
 	deviceConfigChan     <-chan events.ConfigEvent
 	operationalStateChan chan<- events.OperationalStateEvent
 	key                  southbound.DeviceID
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
-	operationalCache     types.TypedValueMap
+	operationalCache     devicechangetypes.TypedValueMap
 	encoding             gnmi.Encoding
 	getStateMode         modelregistry.GetStateMode
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
-	device *device.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, opStateCache types.TypedValueMap,
+	device *devicetopo.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
+	errChan chan<- events.DeviceResponse, opStateCache devicechangetypes.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
@@ -402,7 +402,7 @@ func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 	}
 }
 
-func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*types.PathValue, error) {
+func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechangetypes.PathValue, error) {
 	jsonVal := update.Val.GetJsonVal()
 	if jsonVal == nil {
 		jsonVal = update.Val.GetJsonIetfVal()
@@ -530,7 +530,7 @@ func (sync *Synchronizer) opStateSubHandler(msg proto.Message) error {
 	return nil
 }
 
-func getNetworkConfig(sync *Synchronizer, target string, configname string, layer int) ([]*types.PathValue, error) {
+func getNetworkConfig(sync *Synchronizer, target string, configname string, layer int) ([]*devicechangetypes.PathValue, error) {
 	log.Info("Getting saved config for ", target)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
@@ -542,13 +542,13 @@ func getNetworkConfig(sync *Synchronizer, target string, configname string, laye
 			}
 		}
 		if config.Name == "" {
-			return make([]*types.PathValue, 0),
+			return make([]*devicechangetypes.PathValue, 0),
 				fmt.Errorf("No Configuration found for %s", target)
 		}
 	} else if configname != "" {
 		config = sync.ConfigurationStore.Store[store.ConfigName(configname)]
 		if config.Name == "" {
-			return make([]*types.PathValue, 0),
+			return make([]*devicechangetypes.PathValue, 0),
 				fmt.Errorf("No Configuration found for %s", configname)
 		}
 	}

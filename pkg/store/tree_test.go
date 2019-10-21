@@ -15,7 +15,7 @@
 package store
 
 import (
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -45,27 +45,27 @@ const (
 )
 
 var (
-	configValues []*types.PathValue
+	configValues []*devicechangetypes.PathValue
 )
 
 func setUpTree() {
-	configValues = make([]*types.PathValue, 13)
-	configValues[0] = &types.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: types.NewTypedValueUint64(ValueLeaf2A12)}
+	configValues = make([]*devicechangetypes.PathValue, 13)
+	configValues[0] = &devicechangetypes.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: devicechangetypes.NewTypedValueUint64(ValueLeaf2A12)}
 
-	configValues[1] = &types.PathValue{Path: Test1Cont1ACont2ALeaf2B, Value: types.NewTypedValueFloat(ValueLeaf2B114)}
-	configValues[2] = &types.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: types.NewTypedValueString(ValueLeaf2CMyValue)}
-	configValues[3] = &types.PathValue{Path: Test1Cont1ACont2ALeaf2D, Value: types.NewTypedValueDecimal64(ValueLeaf2D114, 5)}
-	configValues[4] = &types.PathValue{Path: Test1Cont1ACont2ALeaf2E, Value: types.NewTypedValueInt64(ValueLeaf2A12)}
-	configValues[5] = &types.PathValue{Path: Test1Cont1ACont2ALeaf2F, Value: types.NewTypedValueBytes([]byte(ValueList2A2F))}
-	configValues[6] = &types.PathValue{Path: Test1Cont1ACont2ALeaf2G, Value: types.NewTypedValueBool(ValueList2A2G)}
-	configValues[7] = &types.PathValue{Path: Test1Cont1ALeaf1a, Value: types.NewTypedValueString(ValueLeaf1AMyValue)}
+	configValues[1] = &devicechangetypes.PathValue{Path: Test1Cont1ACont2ALeaf2B, Value: devicechangetypes.NewTypedValueFloat(ValueLeaf2B114)}
+	configValues[2] = &devicechangetypes.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: devicechangetypes.NewTypedValueString(ValueLeaf2CMyValue)}
+	configValues[3] = &devicechangetypes.PathValue{Path: Test1Cont1ACont2ALeaf2D, Value: devicechangetypes.NewTypedValueDecimal64(ValueLeaf2D114, 5)}
+	configValues[4] = &devicechangetypes.PathValue{Path: Test1Cont1ACont2ALeaf2E, Value: devicechangetypes.NewTypedValueInt64(ValueLeaf2A12)}
+	configValues[5] = &devicechangetypes.PathValue{Path: Test1Cont1ACont2ALeaf2F, Value: devicechangetypes.NewTypedValueBytes([]byte(ValueList2A2F))}
+	configValues[6] = &devicechangetypes.PathValue{Path: Test1Cont1ACont2ALeaf2G, Value: devicechangetypes.NewTypedValueBool(ValueList2A2G)}
+	configValues[7] = &devicechangetypes.PathValue{Path: Test1Cont1ALeaf1a, Value: devicechangetypes.NewTypedValueString(ValueLeaf1AMyValue)}
 
-	configValues[8] = &types.PathValue{Path: Test1Cont1AList2a1t, Value: types.NewTypedValueUint64(ValueList2b1PwrT)}
-	configValues[9] = &types.PathValue{Path: Test1Cont1AList2a1r, Value: types.NewTypedValueUint64(ValueList2b1PwrR)}
-	configValues[10] = &types.PathValue{Path: Test1Cont1AList2a2t, Value: types.NewTypedValueUint64(ValueList2b2PwrT)}
-	configValues[11] = &types.PathValue{Path: Test1Cont1AList2a2r, Value: types.NewTypedValueUint64(ValueList2b2PwrR)}
+	configValues[8] = &devicechangetypes.PathValue{Path: Test1Cont1AList2a1t, Value: devicechangetypes.NewTypedValueUint64(ValueList2b1PwrT)}
+	configValues[9] = &devicechangetypes.PathValue{Path: Test1Cont1AList2a1r, Value: devicechangetypes.NewTypedValueUint64(ValueList2b1PwrR)}
+	configValues[10] = &devicechangetypes.PathValue{Path: Test1Cont1AList2a2t, Value: devicechangetypes.NewTypedValueUint64(ValueList2b2PwrT)}
+	configValues[11] = &devicechangetypes.PathValue{Path: Test1Cont1AList2a2r, Value: devicechangetypes.NewTypedValueUint64(ValueList2b2PwrR)}
 
-	configValues[12] = &types.PathValue{Path: Test1Leaftoplevel, Value: types.NewTypedValueString(ValueLeaftopWxy1234)}
+	configValues[12] = &devicechangetypes.PathValue{Path: Test1Leaftoplevel, Value: devicechangetypes.NewTypedValueString(ValueLeaftopWxy1234)}
 
 }
 

@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -39,7 +39,7 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	change1 := &devicesnaptype.DeviceSnapshot{
-		DeviceID: device.ID("device-1"),
+		DeviceID: devicetopo.ID("device-1"),
 		NetworkSnapshot: devicesnaptype.NetworkSnapshotRef{
 			ID:    "snapshot-1",
 			Index: 1,
@@ -57,7 +57,7 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 	}
 
 	change2 := &devicesnaptype.DeviceSnapshot{
-		DeviceID: device.ID("device-2"),
+		DeviceID: devicetopo.ID("device-2"),
 		NetworkSnapshot: devicesnaptype.NetworkSnapshotRef{
 			ID:    "snapshot-1",
 			Index: 1,

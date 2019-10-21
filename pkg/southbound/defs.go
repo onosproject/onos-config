@@ -16,7 +16,7 @@ package southbound
 
 import (
 	"context"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
@@ -28,7 +28,7 @@ type DeviceID struct {
 
 // TargetIf defines the API for Target
 type TargetIf interface {
-	ConnectTarget(ctx context.Context, device devicepb.Device) (DeviceID, error)
+	ConnectTarget(ctx context.Context, device devicetopo.Device) (DeviceID, error)
 	//Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error)
 	CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error)
 	Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error)

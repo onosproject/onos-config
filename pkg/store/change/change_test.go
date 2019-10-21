@@ -18,7 +18,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"gotest.tools/assert"
 	"io"
 	log "k8s.io/klog"
@@ -66,23 +66,23 @@ const (
 func TestMain(m *testing.M) {
 	var err error
 	log.SetOutput(os.Stdout)
-	config1Value01, _ := types.NewChangeValue(Test1Cont1A, types.NewTypedValueEmpty(), false)
-	config1Value02, _ := types.NewChangeValue(Test1Cont1ACont2A, types.NewTypedValueEmpty(), false)
-	config1Value03, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(ValueLeaf2A13), false)
-	config1Value04, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueDecimal64(ValueLeaf2B159D, ValueLeaf2B159P), false)
-	config1Value05, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString(ValueLeaf2CAbc), false)
-	config1Value06, _ := types.NewChangeValue(Test1Cont1ALeaf1A, types.NewTypedValueString(ValueLeaf1AAbcdef), false)
-	config1Value07, _ := types.NewChangeValue(Test1Cont1AList2ATxout1, types.NewTypedValueEmpty(), false)
-	config1Value08, _ := types.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, types.NewTypedValueUint64(ValueTxout1Txpwr8), false)
-	config1Value09, _ := types.NewChangeValue(Test1Cont1AList2ATxout2, types.NewTypedValueEmpty(), false)
-	config1Value10, _ := types.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, types.NewTypedValueUint64(ValueTxout2Txpwr10), false)
-	config1Value11, _ := types.NewChangeValue(Test1Leaftoplevel, types.NewTypedValueString(ValueLeaftopWxy1234), false)
-	config1Value12, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2D, types.NewTypedValueBool(true), false)
-	config1Value13, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2E, types.NewLeafListInt64Tv([]int{ValueLeaf2E1, ValueLeaf2E2, ValueLeaf2E3}), false)
+	config1Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1A, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2A, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueUint64(ValueLeaf2A13), false)
+	config1Value04, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueDecimal64(ValueLeaf2B159D, ValueLeaf2B159P), false)
+	config1Value05, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CAbc), false)
+	config1Value06, _ := devicechangetypes.NewChangeValue(Test1Cont1ALeaf1A, devicechangetypes.NewTypedValueString(ValueLeaf1AAbcdef), false)
+	config1Value07, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value08, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout1Txpwr8), false)
+	config1Value09, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2, devicechangetypes.NewTypedValueEmpty(), false)
+	config1Value10, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout2Txpwr10), false)
+	config1Value11, _ := devicechangetypes.NewChangeValue(Test1Leaftoplevel, devicechangetypes.NewTypedValueString(ValueLeaftopWxy1234), false)
+	config1Value12, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2D, devicechangetypes.NewTypedValueBool(true), false)
+	config1Value13, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2E, devicechangetypes.NewLeafListInt64Tv([]int{ValueLeaf2E1, ValueLeaf2E2, ValueLeaf2E3}), false)
 	valueLeaf2FBa, _ := base64.StdEncoding.DecodeString(ValueLeaf2F)
-	config1Value14, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2F, types.NewTypedValueBytes(valueLeaf2FBa), false)
+	config1Value14, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2F, devicechangetypes.NewTypedValueBytes(valueLeaf2FBa), false)
 
-	change1, err = NewChange([]*types.ChangeValue{
+	change1, err = NewChange([]*devicechangetypes.ChangeValue{
 		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
 		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
 		config1Value11, config1Value12, config1Value13, config1Value14,
@@ -100,11 +100,11 @@ func Test_ConfigValue(t *testing.T) {
 	path := "/cont1a/cont2a/leaf2a"
 	value := 13
 
-	configValue2a, _ := types.NewChangeValue(path, types.NewTypedValueUint64(uint(value)), false)
+	configValue2a, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueUint64(uint(value)), false)
 
 	assert.Equal(t, configValue2a.Path, path)
 	assert.Equal(t, configValue2a.GetValue().ValueToString(), "13")
-	assert.Equal(t, configValue2a.GetValue().GetType(), types.ValueType_UINT)
+	assert.Equal(t, configValue2a.GetValue().GetType(), devicechangetypes.ValueType_UINT)
 	assert.Equal(t, configValue2a.GetPath(), "/cont1a/cont2a/leaf2a")
 	assert.Equal(t, configValue2a.GetRemoved(), false)
 }
@@ -141,35 +141,35 @@ func Test_changecreation(t *testing.T) {
 
 func Test_badpath(t *testing.T) {
 	badpath := "does_not_have_any_slash"
-	conf1, err1 := types.NewChangeValue(badpath, types.NewTypedValueString("123"), false)
+	conf1, err1 := devicechangetypes.NewChangeValue(badpath, devicechangetypes.NewTypedValueString("123"), false)
 
 	assert.Error(t, err1, badpath, "Expected error on ", badpath)
 
 	assert.Assert(t, conf1 == nil, "Expected config to be empty on error")
 
 	badpath = "//two/contiguous/slashes"
-	_, err2 := types.NewChangeValue(badpath, types.NewTypedValueString("123"), false)
+	_, err2 := devicechangetypes.NewChangeValue(badpath, devicechangetypes.NewTypedValueString("123"), false)
 	assert.ErrorContains(t, err2, badpath, "Expected error on path", badpath)
 
 	badpath = "/test*"
-	_, err3 := types.NewChangeValue(badpath, types.NewTypedValueString("123"), false)
+	_, err3 := devicechangetypes.NewChangeValue(badpath, devicechangetypes.NewTypedValueString("123"), false)
 	assert.ErrorContains(t, err3, badpath, "Expected error on path", badpath)
 }
 
 func Test_changeValueString(t *testing.T) {
-	cv1, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(123), false)
+	cv1, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueUint64(123), false)
 
 	assert.Equal(t, cv1.GetValue().ValueToString(), "123",
 		"Expected changeValue to produce string")
 }
 
 func Test_changeString(t *testing.T) {
-	cv1, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2A, types.NewTypedValueUint64(123), false)
-	cv2, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2B, types.NewTypedValueString("ABC"), false)
-	cv3, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2C, types.NewTypedValueString("Hello"), false)
-	cv4, _ := types.NewChangeValue(Test1Cont1ACont2ALeaf2D, types.NewTypedValueBool(true), false)
+	cv1, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueUint64(123), false)
+	cv2, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueString("ABC"), false)
+	cv3, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString("Hello"), false)
+	cv4, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2D, devicechangetypes.NewTypedValueBool(true), false)
 
-	changeObj, _ := NewChange([]*types.ChangeValue{cv1, cv2, cv3, cv4}, "Test Change")
+	changeObj, _ := NewChange([]*devicechangetypes.ChangeValue{cv1, cv2, cv3, cv4}, "Test Change")
 
 	var expected = `"Config":[` +
 		`{"Path":"/cont1a/cont2a/leaf2a","Value":{"Bytes":"ewAAAAAAAAA=","Type":3}},` +

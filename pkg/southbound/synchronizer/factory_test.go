@@ -19,19 +19,18 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
 	"testing"
 	"time"
 )
 
 func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
-	chan *devicepb.ListResponse, chan<- events.OperationalStateEvent,
+	chan *devicetopo.ListResponse, chan<- events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
-	*modelregistry.ModelRegistry, map[device.ID]types.TypedValueMap, error) {
+	*modelregistry.ModelRegistry, map[devicetopo.ID]devicechangetypes.TypedValueMap, error) {
 
 	changeStore, err := store.LoadChangeStore("../../../configs/changeStore-sample.json")
 	if err != nil {
@@ -44,9 +43,9 @@ func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
 
 	dispatcher := dispatcher.NewDispatcher()
 	modelregistry := new(modelregistry.ModelRegistry)
-	opStateCache := make(map[device.ID]types.TypedValueMap)
+	opStateCache := make(map[devicetopo.ID]devicechangetypes.TypedValueMap)
 	return &changeStore, &configStore,
-		make(chan *devicepb.ListResponse),
+		make(chan *devicetopo.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, modelregistry, opStateCache, nil
@@ -75,21 +74,21 @@ func TestFactory_Revert(t *testing.T) {
 
 	timeout := time.Millisecond * 500
 	device1NameStr := "factoryTd"
-	device1 := device.Device{
-		ID:          device.ID(device1NameStr),
+	device1 := devicetopo.Device{
+		ID:          devicetopo.ID(device1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:11161",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: device.Credentials{},
-		TLS:         device.TlsConfig{},
+		Credentials: devicetopo.Credentials{},
+		TLS:         devicetopo.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
 	}
-	topoEvent := devicepb.ListResponse{
-		Type:   devicepb.ListResponse_ADDED,
+	topoEvent := devicetopo.ListResponse{
+		Type:   devicetopo.ListResponse_ADDED,
 		Device: &device1,
 	}
 

@@ -21,10 +21,10 @@ import (
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/types"
 	changetype "github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	snaptype "github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	deviceservice "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"
 )
@@ -55,7 +55,7 @@ type Resolver struct {
 }
 
 // Resolve resolves a device ID from a device snapshot ID
-func (r *Resolver) Resolve(id types.ID) (deviceservice.ID, error) {
+func (r *Resolver) Resolve(id types.ID) (devicetopo.ID, error) {
 	return devicesnaptype.ID(id).GetDeviceID(), nil
 }
 
@@ -91,7 +91,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 // reconcileMark reconciles a snapshot in the MARK phase
 func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
 	// Get the previous snapshot if any
-	var prevIndex devicechangetype.Index
+	var prevIndex devicechangetypes.Index
 	prevSnapshot, err := r.snapshots.Load(deviceSnapshot.DeviceID)
 	if err != nil {
 		return false, err
@@ -100,7 +100,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	}
 
 	// Create a map to track the current state of the device
-	state := make(map[string]*devicechangetype.PathValue)
+	state := make(map[string]*devicechangetypes.PathValue)
 
 	// Initialize the state map from the previous snapshot if available
 	if prevSnapshot != nil {
@@ -110,7 +110,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	}
 
 	// List the changes for the device
-	changes := make(chan *devicechangetype.DeviceChange)
+	changes := make(chan *devicechangetypes.DeviceChange)
 	if err := r.changes.List(deviceSnapshot.DeviceID, changes); err != nil {
 		return false, err
 	}
@@ -141,7 +141,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 						}
 					}
 				} else {
-					state[value.Path] = &devicechangetype.PathValue{
+					state[value.Path] = &devicechangetypes.PathValue{
 						Path:  value.GetPath(),
 						Value: value.GetValue(),
 					}
@@ -153,7 +153,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 
 	// If the snapshot index is greater than the previous snapshot index, store the snapshot
 	if snapshotIndex > prevIndex {
-		values := make([]*devicechangetype.PathValue, 0, len(state))
+		values := make([]*devicechangetypes.PathValue, 0, len(state))
 		for _, value := range state {
 			values = append(values, value)
 		}
@@ -196,7 +196,7 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 	}
 
 	// List the changes for the device
-	changes := make(chan *devicechangetype.DeviceChange)
+	changes := make(chan *devicechangetypes.DeviceChange)
 	if err := r.changes.List(deviceSnapshot.DeviceID, changes); err != nil {
 		return false, err
 	}

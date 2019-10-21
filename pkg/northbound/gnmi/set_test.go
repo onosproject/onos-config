@@ -19,7 +19,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -118,7 +118,7 @@ func Test_doSingleSet(t *testing.T) {
 	assert.Assert(t, ok)
 	assert.Equal(t, len(newChange.Config), 1)
 	assert.Equal(t, newChange.Config[0].Path, "/cont1a/cont2a/leaf2a")
-	assert.Equal(t, (*types.TypedUint64)(newChange.Config[0].GetValue()).Uint(), uint(16))
+	assert.Equal(t, (*devicechangetypes.TypedUint64)(newChange.Config[0].GetValue()).Uint(), uint(16))
 }
 
 // Test_doSingleSet shows how a value of 1 list can be set on a target
@@ -205,7 +205,7 @@ func Test_doSingleSetList(t *testing.T) {
 	assert.Assert(t, ok)
 	assert.Equal(t, len(newChange.Config), 1)
 	assert.Equal(t, newChange.Config[0].Path, "/cont1a/list2a[name=a/b]/tx-power")
-	assert.Equal(t, (*types.TypedUint64)(newChange.Config[0].GetValue()).Uint(), uint(16))
+	assert.Equal(t, (*devicechangetypes.TypedUint64)(newChange.Config[0].GetValue()).Uint(), uint(16))
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target

@@ -21,8 +21,8 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/change"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"io"
@@ -30,14 +30,14 @@ import (
 )
 
 const (
-	device1  = device.ID("device-1")
-	device2  = device.ID("device-2")
-	dcDevice = device.ID("disconnected")
+	device1  = devicetopo.ID("device-1")
+	device2  = devicetopo.ID("device-2")
+	dcDevice = devicetopo.ID("disconnected")
 )
 
 const (
-	change1 = devicechange.ID("device-1:device-1")
-	change2 = devicechange.ID("device-2:device-2")
+	change1 = devicechangetypes.ID("device-1:device-1")
+	change2 = devicechangetypes.ID("device-2:device-2")
 )
 
 func TestReconcilerChangeSuccess(t *testing.T) {
@@ -181,50 +181,50 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	ctrl := gomock.NewController(t)
 
-	devices := map[device.ID]*device.Device{
+	devices := map[devicetopo.ID]*devicetopo.Device{
 		device1: {
 			ID: device1,
-			Protocols: []*device.ProtocolState{
+			Protocols: []*devicetopo.ProtocolState{
 				{
-					Protocol:          device.Protocol_GNMI,
-					ConnectivityState: device.ConnectivityState_REACHABLE,
-					ChannelState:      device.ChannelState_CONNECTED,
+					Protocol:          devicetopo.Protocol_GNMI,
+					ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+					ChannelState:      devicetopo.ChannelState_CONNECTED,
 				},
 			},
 		},
 		device2: {
 			ID: device2,
-			Protocols: []*device.ProtocolState{
+			Protocols: []*devicetopo.ProtocolState{
 				{
-					Protocol:          device.Protocol_GNMI,
-					ConnectivityState: device.ConnectivityState_REACHABLE,
-					ChannelState:      device.ChannelState_CONNECTED,
+					Protocol:          devicetopo.Protocol_GNMI,
+					ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+					ChannelState:      devicetopo.ChannelState_CONNECTED,
 				},
 			},
 		},
 		dcDevice: {
 			ID: dcDevice,
-			Protocols: []*device.ProtocolState{
+			Protocols: []*devicetopo.ProtocolState{
 				{
-					Protocol:          device.Protocol_GNMI,
-					ConnectivityState: device.ConnectivityState_UNREACHABLE,
-					ChannelState:      device.ChannelState_DISCONNECTED,
+					Protocol:          devicetopo.Protocol_GNMI,
+					ConnectivityState: devicetopo.ConnectivityState_UNREACHABLE,
+					ChannelState:      devicetopo.ChannelState_DISCONNECTED,
 				},
 			},
 		},
 	}
 
 	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&device.ListResponse{Device: devices[device1]}, nil)
-	stream.EXPECT().Recv().Return(&device.ListResponse{Device: devices[device2]}, nil)
-	stream.EXPECT().Recv().Return(&device.ListResponse{Device: devices[dcDevice]}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[device1]}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[device2]}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[dcDevice]}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, in *device.GetRequest, opts ...grpc.CallOption) (*device.GetResponse, error) {
-			return &device.GetResponse{
+		DoAndReturn(func(ctx context.Context, in *devicetopo.GetRequest, opts ...grpc.CallOption) (*devicetopo.GetResponse, error) {
+			return &devicetopo.GetResponse{
 				Device: devices[in.ID],
 			}, nil
 		}).AnyTimes()
@@ -236,20 +236,20 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	return deviceStore, deviceChanges
 }
 
-func newChange(device device.ID) *devicechange.DeviceChange {
-	return &devicechange.DeviceChange{
-		NetworkChange: devicechange.NetworkChangeRef{
+func newChange(device devicetopo.ID) *devicechangetypes.DeviceChange {
+	return &devicechangetypes.DeviceChange{
+		NetworkChange: devicechangetypes.NetworkChangeRef{
 			ID:    types.ID(device),
 			Index: 1,
 		},
-		Change: &devicechange.Change{
+		Change: &devicechangetypes.Change{
 			DeviceID: device,
-			Values: []*devicechange.ChangeValue{
+			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path: "foo",
-					Value: &devicechange.TypedValue{
+					Value: &devicechangetypes.TypedValue{
 						Bytes: []byte("Hello world!"),
-						Type:  devicechange.ValueType_STRING,
+						Type:  devicechangetypes.ValueType_STRING,
 					},
 				},
 			},

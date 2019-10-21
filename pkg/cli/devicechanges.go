@@ -17,7 +17,7 @@ package cli
 import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
@@ -39,7 +39,7 @@ func getWatchDeviceChangesCommand() *cobra.Command {
 }
 
 func runWatchDeviceChangesCommand(cmd *cobra.Command, args []string) error {
-	id := types.ID(args[0]) // Argument is mandatory
+	id := devicechangetypes.ID(args[0]) // Argument is mandatory
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
 	clientConnection, clientConnectionError := getConnection()

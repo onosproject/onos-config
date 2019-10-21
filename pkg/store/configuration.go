@@ -17,7 +17,7 @@ package store
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	log "k8s.io/klog"
 	"regexp"
 	"sort"
@@ -50,10 +50,10 @@ type Configuration struct {
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
 // Deprecated: ExtractFullConfig is a method on the legacy Configuration
-func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore map[string]*change.Change, nBack int) []*types.PathValue {
+func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore map[string]*change.Change, nBack int) []*devicechangetypes.PathValue {
 
 	// Have to use a slice to have a consistent output order
-	consolidatedConfig := make([]*types.PathValue, 0)
+	consolidatedConfig := make([]*devicechangetypes.PathValue, 0)
 
 	for _, changeID := range b.Changes[0 : len(b.Changes)-nBack] {
 		existingChange, ok := changeStore[B64(changeID)]
@@ -93,7 +93,7 @@ func (b Configuration) ExtractFullConfig(newChange *change.Change, changeStore m
 					}
 				}
 				if !alreadyExists {
-					copyCv := types.PathValue{
+					copyCv := devicechangetypes.PathValue{
 						Path:  changeValue.GetPath(),
 						Value: changeValue.GetValue(),
 					}

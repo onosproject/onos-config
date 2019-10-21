@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"gotest.tools/assert"
 	"io"
 	"regexp"
@@ -57,9 +57,9 @@ func diagChangesRecv() (*admin.Change, error) {
 			Time: &now,
 			Id:   "2Lo0ZC0wqhuwbnSF9px6kDvEEWI=",
 			Desc: "Change1",
-			ChangeValues: []*types.ChangeValue{
+			ChangeValues: []*devicechangetypes.ChangeValue{
 				{Path: "/a/b/c",
-					Value: types.NewTypedValueString("VALUE"),
+					Value: devicechangetypes.NewTypedValueString("VALUE"),
 				},
 			},
 		}

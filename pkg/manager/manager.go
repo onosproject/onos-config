@@ -30,13 +30,13 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
-	devicetopo "github.com/onosproject/onos-config/pkg/store/device"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 	"strings"
@@ -52,7 +52,7 @@ type Manager struct {
 	LeadershipStore           leadership.Store
 	MastershipStore           mastership.Store
 	DeviceChangesStore        device.Store
-	DeviceStore               devicetopo.Store
+	DeviceStore               devicestore.Store
 	NetworkStore              *store.NetworkStore
 	NetworkChangesStore       network.Store
 	NetworkSnapshotStore      networksnap.Store
@@ -62,12 +62,12 @@ type Manager struct {
 	networkSnapshotController *controller.Controller
 	deviceSnapshotController  *controller.Controller
 	ModelRegistry             *modelregistry.ModelRegistry
-	TopoChannel               chan *devicepb.ListResponse
+	TopoChannel               chan *devicetopo.ListResponse
 	ChangesChannel            chan events.ConfigEvent
 	OperationalStateChannel   chan events.OperationalStateEvent
 	SouthboundErrorChan       chan events.DeviceResponse
 	Dispatcher                *dispatcher.Dispatcher
-	OperationalStateCache     map[devicepb.ID]devicechangetypes.TypedValueMap
+	OperationalStateCache     map[devicetopo.ID]devicechangetypes.TypedValueMap
 }
 
 //TypeVersionInfo contains the info about the device type and version
@@ -78,9 +78,9 @@ type TypeVersionInfo struct {
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store, mastershipStore mastership.Store,
-	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicetopo.Store, networkStore *store.NetworkStore,
+	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicestore.Store, networkStore *store.NetworkStore,
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store,
-	topoCh chan *devicepb.ListResponse) (*Manager, error) {
+	topoCh chan *devicetopo.ListResponse) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -111,7 +111,7 @@ func NewManager(configStore *store.ConfigurationStore, leadershipStore leadershi
 		OperationalStateChannel:   make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
-		OperationalStateCache:     make(map[devicepb.ID]devicechangetypes.TypedValueMap),
+		OperationalStateCache:     make(map[devicetopo.ID]devicechangetypes.TypedValueMap),
 	}
 
 	changeIds := make([]string, 0)
@@ -147,7 +147,7 @@ func NewManager(configStore *store.ConfigurationStore, leadershipStore leadershi
 func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFile string, leadershipStore leadership.Store,
 	mastershipStore mastership.Store, deviceChangesStore device.Store, networkChangesStore network.Store,
 	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store, opts ...grpc.DialOption) (*Manager, error) {
-	topoChannel := make(chan *devicepb.ListResponse, 10)
+	topoChannel := make(chan *devicetopo.ListResponse, 10)
 
 	configStore, err := store.LoadConfigStore(configStoreFile)
 	if err != nil {
@@ -163,7 +163,7 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Change store loaded from ", changeStoreFile)
 
-	deviceStore, err := devicetopo.NewTopoStore(opts...)
+	deviceStore, err := devicestore.NewTopoStore(opts...)
 	if err != nil {
 		log.Error("Cannot load device store ", err)
 		return nil, err
@@ -306,7 +306,7 @@ func GetManager() *Manager {
 func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 	log.Info("Listening for Errors in Manager")
 	for event := range respChan {
-		subject := devicepb.ID(event.Subject())
+		subject := devicetopo.ID(event.Subject())
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
 			_, err := m.DeviceConnected(subject)
@@ -382,7 +382,7 @@ func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
 	//}
 	//TODO lost description of Change
 	changeElement := &devicechangetypes.Change{
-		DeviceID:      devicepb.ID(deviceName),
+		DeviceID:      devicetopo.ID(deviceName),
 		DeviceVersion: version,
 		Values:        newChanges,
 	}
@@ -401,7 +401,7 @@ func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
 }
 
 //ExtractTypeAndVersion gets a deviceType and a Version based on the available store, topo and extension info
-func ExtractTypeAndVersion(target devicepb.ID, storedDevice *devicepb.Device, versionExt string, deviceTypeExt string) (TypeVersionInfo, error) {
+func ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devicetopo.Device, versionExt string, deviceTypeExt string) (TypeVersionInfo, error) {
 	var (
 		deviceType string
 		version    string

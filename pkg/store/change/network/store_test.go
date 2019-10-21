@@ -16,9 +16,9 @@ package network
 
 import (
 	"github.com/onosproject/onos-config/pkg/types/change"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchange "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -37,44 +37,44 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 	defer store2.Close()
 
-	device1 := device.ID("device-1")
-	device2 := device.ID("device-2")
+	device1 := devicetopo.ID("device-1")
+	device2 := devicetopo.ID("device-2")
 
-	ch := make(chan *networkchange.NetworkChange)
+	ch := make(chan *networkchangetypes.NetworkChange)
 	err = store2.Watch(ch)
 	assert.NoError(t, err)
 
-	change1 := &networkchange.NetworkChange{
+	change1 := &networkchangetypes.NetworkChange{
 		ID: "change-1",
-		Changes: []*devicechange.Change{
+		Changes: []*devicechangetypes.Change{
 			{
 
 				DeviceID: device1,
-				Values: []*devicechange.ChangeValue{
+				Values: []*devicechangetypes.ChangeValue{
 					{
 						Path: "foo",
-						Value: &devicechange.TypedValue{
+						Value: &devicechangetypes.TypedValue{
 							Bytes: []byte("Hello world!"),
-							Type:  devicechange.ValueType_STRING,
+							Type:  devicechangetypes.ValueType_STRING,
 						},
 					},
 					{
 						Path: "bar",
-						Value: &devicechange.TypedValue{
+						Value: &devicechangetypes.TypedValue{
 							Bytes: []byte("Hello world again!"),
-							Type:  devicechange.ValueType_STRING,
+							Type:  devicechangetypes.ValueType_STRING,
 						},
 					},
 				},
 			},
 			{
 				DeviceID: device2,
-				Values: []*devicechange.ChangeValue{
+				Values: []*devicechangetypes.ChangeValue{
 					{
 						Path: "baz",
-						Value: &devicechange.TypedValue{
+						Value: &devicechangetypes.TypedValue{
 							Bytes: []byte("Goodbye world!"),
-							Type:  devicechange.ValueType_STRING,
+							Type:  devicechangetypes.ValueType_STRING,
 						},
 					},
 				},
@@ -82,12 +82,12 @@ func TestNetworkChangeStore(t *testing.T) {
 		},
 	}
 
-	change2 := &networkchange.NetworkChange{
+	change2 := &networkchangetypes.NetworkChange{
 		ID: "change-2",
-		Changes: []*devicechange.Change{
+		Changes: []*devicechangetypes.Change{
 			{
 				DeviceID: device1,
-				Values: []*devicechange.ChangeValue{
+				Values: []*devicechangetypes.ChangeValue{
 					{
 						Path:    "foo",
 						Removed: true,
@@ -100,30 +100,30 @@ func TestNetworkChangeStore(t *testing.T) {
 	// Create a new change
 	err = store1.Create(change1)
 	assert.NoError(t, err)
-	assert.Equal(t, networkchange.ID("change-1"), change1.ID)
-	assert.Equal(t, networkchange.Index(1), change1.Index)
-	assert.NotEqual(t, networkchange.Revision(0), change1.Revision)
+	assert.Equal(t, networkchangetypes.ID("change-1"), change1.ID)
+	assert.Equal(t, networkchangetypes.Index(1), change1.Index)
+	assert.NotEqual(t, networkchangetypes.Revision(0), change1.Revision)
 
 	// Get the change
 	change1, err = store2.Get("change-1")
 	assert.NoError(t, err)
 	assert.NotNil(t, change1)
-	assert.Equal(t, networkchange.ID("change-1"), change1.ID)
-	assert.Equal(t, networkchange.Index(1), change1.Index)
-	assert.NotEqual(t, networkchange.Revision(0), change1.Revision)
+	assert.Equal(t, networkchangetypes.ID("change-1"), change1.ID)
+	assert.Equal(t, networkchangetypes.Index(1), change1.Index)
+	assert.NotEqual(t, networkchangetypes.Revision(0), change1.Revision)
 
 	// Create another change
 	err = store2.Create(change2)
 	assert.NoError(t, err)
-	assert.Equal(t, networkchange.ID("change-2"), change2.ID)
-	assert.Equal(t, networkchange.Index(2), change2.Index)
-	assert.NotEqual(t, networkchange.Revision(0), change2.Revision)
+	assert.Equal(t, networkchangetypes.ID("change-2"), change2.ID)
+	assert.Equal(t, networkchangetypes.Index(2), change2.Index)
+	assert.NotEqual(t, networkchangetypes.Revision(0), change2.Revision)
 
 	// Verify events were received for the changes
 	changeEvent := nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("change-1"), changeEvent.ID)
+	assert.Equal(t, networkchangetypes.ID("change-1"), changeEvent.ID)
 	changeEvent = nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("change-2"), changeEvent.ID)
+	assert.Equal(t, networkchangetypes.ID("change-2"), changeEvent.ID)
 
 	// Update one of the changes
 	change2.Status.State = change.State_RUNNING
@@ -139,7 +139,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	change2, err = store2.GetNext(change1.Index)
 	assert.NoError(t, err)
 	assert.NotNil(t, change2)
-	assert.Equal(t, networkchange.Index(2), change2.Index)
+	assert.Equal(t, networkchangetypes.Index(2), change2.Index)
 
 	change2, err = store2.Get("change-2")
 	assert.NoError(t, err)
@@ -147,7 +147,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	change1, err = store2.GetPrev(change2.Index)
 	assert.NoError(t, err)
 	assert.NotNil(t, change1)
-	assert.Equal(t, networkchange.Index(1), change1.Index)
+	assert.Equal(t, networkchangetypes.Index(1), change1.Index)
 
 	// Read and then update the change
 	change2, err = store2.Get("change-2")
@@ -175,14 +175,14 @@ func TestNetworkChangeStore(t *testing.T) {
 
 	// Verify events were received again
 	changeEvent = nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("change-2"), changeEvent.ID)
+	assert.Equal(t, networkchangetypes.ID("change-2"), changeEvent.ID)
 	changeEvent = nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("change-2"), changeEvent.ID)
+	assert.Equal(t, networkchangetypes.ID("change-2"), changeEvent.ID)
 	changeEvent = nextChange(t, ch)
-	assert.Equal(t, networkchange.ID("change-1"), changeEvent.ID)
+	assert.Equal(t, networkchangetypes.ID("change-1"), changeEvent.ID)
 
 	// List the changes
-	changes := make(chan *networkchange.NetworkChange)
+	changes := make(chan *networkchangetypes.NetworkChange)
 	err = store1.List(changes)
 	assert.NoError(t, err)
 
@@ -200,17 +200,17 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, change2)
 
-	change := &networkchange.NetworkChange{
+	change := &networkchangetypes.NetworkChange{
 		ID: "change-3",
-		Changes: []*devicechange.Change{
+		Changes: []*devicechangetypes.Change{
 			{
 				DeviceID: device1,
-				Values: []*devicechange.ChangeValue{
+				Values: []*devicechangetypes.ChangeValue{
 					{
 						Path: "foo",
-						Value: &devicechange.TypedValue{
+						Value: &devicechangetypes.TypedValue{
 							Bytes: []byte("Hello world!"),
-							Type:  devicechange.ValueType_STRING,
+							Type:  devicechangetypes.ValueType_STRING,
 						},
 					},
 				},
@@ -221,17 +221,17 @@ func TestNetworkChangeStore(t *testing.T) {
 	err = store1.Create(change)
 	assert.NoError(t, err)
 
-	change = &networkchange.NetworkChange{
+	change = &networkchangetypes.NetworkChange{
 		ID: "change-4",
-		Changes: []*devicechange.Change{
+		Changes: []*devicechangetypes.Change{
 			{
 				DeviceID: device2,
-				Values: []*devicechange.ChangeValue{
+				Values: []*devicechangetypes.ChangeValue{
 					{
 						Path: "bar",
-						Value: &devicechange.TypedValue{
+						Value: &devicechangetypes.TypedValue{
 							Bytes: []byte("Hello world!"),
-							Type:  devicechange.ValueType_STRING,
+							Type:  devicechangetypes.ValueType_STRING,
 						},
 					},
 				},
@@ -242,19 +242,19 @@ func TestNetworkChangeStore(t *testing.T) {
 	err = store1.Create(change)
 	assert.NoError(t, err)
 
-	ch = make(chan *networkchange.NetworkChange)
+	ch = make(chan *networkchangetypes.NetworkChange)
 	err = store1.Watch(ch)
 	assert.NoError(t, err)
 
 	change = nextChange(t, ch)
-	assert.Equal(t, networkchange.Index(1), change.Index)
+	assert.Equal(t, networkchangetypes.Index(1), change.Index)
 	change = nextChange(t, ch)
-	assert.Equal(t, networkchange.Index(3), change.Index)
+	assert.Equal(t, networkchangetypes.Index(3), change.Index)
 	change = nextChange(t, ch)
-	assert.Equal(t, networkchange.Index(4), change.Index)
+	assert.Equal(t, networkchangetypes.Index(4), change.Index)
 }
 
-func nextChange(t *testing.T, ch chan *networkchange.NetworkChange) *networkchange.NetworkChange {
+func nextChange(t *testing.T, ch chan *networkchangetypes.NetworkChange) *networkchangetypes.NetworkChange {
 	select {
 	case c := <-ch:
 		return c

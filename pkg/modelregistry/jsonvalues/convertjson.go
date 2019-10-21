@@ -17,7 +17,7 @@ package jsonvalues
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"regexp"
 	"sort"
 	"strings"
@@ -34,10 +34,10 @@ type indexEntry struct {
 // CorrectJSONPaths takes configuration values extracted from a json, of which we are not sure about the type and,
 // through the model plugin assigns them the correct type according to the YANG model provided, returning an
 // updated set of configuration values.
-func CorrectJSONPaths(jsonBase string, jsonPathValues []*types.PathValue,
-	paths modelregistry.PathMap, stripNamespaces bool) ([]*types.PathValue, error) {
+func CorrectJSONPaths(jsonBase string, jsonPathValues []*devicechangetypes.PathValue,
+	paths modelregistry.PathMap, stripNamespaces bool) ([]*devicechangetypes.PathValue, error) {
 
-	correctedPathValues := make([]*types.PathValue, 0)
+	correctedPathValues := make([]*devicechangetypes.PathValue, 0)
 	rOnIndex := regexp.MustCompile(matchOnIndex)
 	rOnNamespace := regexp.MustCompile(matchNamespace)
 	indexMap := make(map[string][]string)
@@ -101,7 +101,7 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*types.PathValue,
 					return nil, err
 				}
 				jsonPathValue.Value = newTypeValue
-				err = types.IsPathValid(jsonPathValue.Path)
+				err = devicechangetypes.IsPathValid(jsonPathValue.Path)
 				if err != nil {
 					return nil, fmt.Errorf("invalid value %s", err)
 				}
@@ -113,11 +113,11 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*types.PathValue,
 				if err != nil {
 					return nil, err
 				}
-				cv := types.PathValue{
+				cv := devicechangetypes.PathValue{
 					Path:  jsonPathStr,
 					Value: newTypeValue,
 				}
-				err = types.IsPathValid(cv.Path)
+				err = devicechangetypes.IsPathValid(cv.Path)
 				if err != nil {
 					return nil, fmt.Errorf("invalid value %s", err)
 				}
@@ -127,8 +127,8 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*types.PathValue,
 				hasPrefixMultipleIdx(modelPathOnlySecondIndex, jsonPathIdx) {
 				indexName := jsonPathIdx[strings.LastIndex(jsonPathIdx, "[")+1:]
 				index := jsonPathValue.GetValue().ValueToString()
-				if jsonPathValue.GetValue().GetType() == types.ValueType_FLOAT {
-					index = fmt.Sprintf("%.0f", (*types.TypedFloat)(jsonPathValue.GetValue()).Float32())
+				if jsonPathValue.GetValue().GetType() == devicechangetypes.ValueType_FLOAT {
+					index = fmt.Sprintf("%.0f", (*devicechangetypes.TypedFloat)(jsonPathValue.GetValue()).Float32())
 				}
 				jsonRoPath := jsonPathStr[:strings.LastIndex(jsonPathStr, "/")]
 				idx, ok := indexMap[jsonRoPath]
@@ -184,7 +184,7 @@ func extractIndices(indexStr string) []string {
 }
 
 func assignModelType(paths modelregistry.PathMap, modelPath string,
-	jsonPathValue *types.PathValue) (*types.TypedValue, error) {
+	jsonPathValue *devicechangetypes.PathValue) (*devicechangetypes.TypedValue, error) {
 
 	modelType, err := paths.TypeForPath(modelPath)
 	if err != nil {
@@ -199,32 +199,32 @@ func assignModelType(paths modelregistry.PathMap, modelPath string,
 	return newTypeValue, nil
 }
 
-func pathType(jsonPathValue *types.PathValue, spType types.ValueType) (*types.TypedValue, error) {
-	var newTypeValue *types.TypedValue
+func pathType(jsonPathValue *devicechangetypes.PathValue, spType devicechangetypes.ValueType) (*devicechangetypes.TypedValue, error) {
+	var newTypeValue *devicechangetypes.TypedValue
 	var err error
 	switch jsonPathValue.Value.Type {
-	case types.ValueType_FLOAT:
+	case devicechangetypes.ValueType_FLOAT:
 		// Could be int, uint, or float from json - convert to numeric
-		floatVal := (*types.TypedFloat)(jsonPathValue.Value).Float32()
+		floatVal := (*devicechangetypes.TypedFloat)(jsonPathValue.Value).Float32()
 
 		switch spType {
-		case types.ValueType_FLOAT:
+		case devicechangetypes.ValueType_FLOAT:
 			newTypeValue = jsonPathValue.GetValue()
-		case types.ValueType_INT:
-			newTypeValue = types.NewTypedValueInt64(int(floatVal))
-		case types.ValueType_UINT:
-			newTypeValue = types.NewTypedValueUint64(uint(floatVal))
-			//case types.ValueTypeDECIMAL:
+		case devicechangetypes.ValueType_INT:
+			newTypeValue = devicechangetypes.NewTypedValueInt64(int(floatVal))
+		case devicechangetypes.ValueType_UINT:
+			newTypeValue = devicechangetypes.NewTypedValueUint64(uint(floatVal))
+			//case devicechangetypes.ValueTypeDECIMAL:
 			// TODO add a conversion from float to D64 will also need number of decimal places from Read Only SubPath
-			//	newTypeValue = types.NewTypedValueDecimal64()
-		case types.ValueType_STRING:
-			newTypeValue = types.NewTypedValueString(fmt.Sprintf("%.0f", float64(floatVal)))
+			//	newTypeValue = devicechangetypes.NewTypedValueDecimal64()
+		case devicechangetypes.ValueType_STRING:
+			newTypeValue = devicechangetypes.NewTypedValueString(fmt.Sprintf("%.0f", float64(floatVal)))
 		default:
 			newTypeValue = jsonPathValue.GetValue()
 		}
 
 	default:
-		newTypeValue, err = types.NewTypedValue(jsonPathValue.GetValue().GetBytes(), spType, []int32{})
+		newTypeValue, err = devicechangetypes.NewTypedValue(jsonPathValue.GetValue().GetBytes(), spType, []int32{})
 		if err != nil {
 			return nil, err
 		}

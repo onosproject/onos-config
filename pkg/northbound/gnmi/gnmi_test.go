@@ -19,8 +19,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"os"
 	"sync"
@@ -85,7 +85,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	mockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(device devicepb.ID, c chan<- *devicechange.DeviceChange) error {
+		func(device devicetopo.ID, c chan<- *devicechangetypes.DeviceChange) error {
 			close(c)
 			return nil
 		}).AnyTimes()
@@ -105,7 +105,7 @@ func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
 
 }
 
-func listenToTopoLoading(deviceChan <-chan *devicepb.ListResponse) {
+func listenToTopoLoading(deviceChan <-chan *devicetopo.ListResponse) {
 	for deviceConfigEvent := range deviceChan {
 		log.Info("Ignoring event for testing ", deviceConfigEvent)
 	}

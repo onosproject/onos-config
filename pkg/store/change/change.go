@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"io"
 	"sort"
 	"time"
@@ -40,7 +40,7 @@ type Change struct {
 	ID          ID
 	Description string
 	Created     time.Time
-	Config      []*types.ChangeValue
+	Config      []*devicechangetypes.ChangeValue
 }
 
 // Stringer method for the Change
@@ -77,7 +77,7 @@ func (c Change) IsValid() error {
 // the description or the time. This way changes that have an identical meaning
 // can be identified
 // Deprecated: NewChange is method for creating a legacy internal Change
-func NewChange(config []*types.ChangeValue, desc string) (*Change, error) {
+func NewChange(config []*devicechangetypes.ChangeValue, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
@@ -122,7 +122,7 @@ func NewChange(config []*types.ChangeValue, desc string) (*Change, error) {
 // the description or the time. This way changes that have an identical meaning
 // can be identified
 // Deprecated: NewChangeValuesNoRemoval is method for creating a legacy internal Change
-func NewChangeValuesNoRemoval(config []*types.PathValue, desc string) (*Change, error) {
+func NewChangeValuesNoRemoval(config []*devicechangetypes.PathValue, desc string) (*Change, error) {
 	h := sha1.New()
 	t := time.Now()
 
@@ -150,10 +150,10 @@ func NewChangeValuesNoRemoval(config []*types.PathValue, desc string) (*Change, 
 
 	hash := h.Sum(nil)
 
-	configColl := make([]*types.ChangeValue, 0)
+	configColl := make([]*devicechangetypes.ChangeValue, 0)
 
 	for _, c := range config {
-		configColl = append(configColl, &types.ChangeValue{
+		configColl = append(configColl, &devicechangetypes.ChangeValue{
 			Path:    c.GetPath(),
 			Value:   c.GetValue(),
 			Removed: false})

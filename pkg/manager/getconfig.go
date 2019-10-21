@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
-	types "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
@@ -28,7 +28,7 @@ import (
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest
 // Deprecated: GetTargetConfig works on legacy, non-atomix stores
-func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, path string, layer int) ([]*types.PathValue, error) {
+func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, path string, layer int) ([]*devicechangetypes.PathValue, error) {
 	log.Info("Getting config for ", target, path)
 	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
 	var config store.Configuration
@@ -40,13 +40,13 @@ func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, pa
 			}
 		}
 		if config.Name == "" {
-			return make([]*types.PathValue, 0),
+			return make([]*devicechangetypes.PathValue, 0),
 				fmt.Errorf("no Configuration found for %s", target)
 		}
 	} else if configname != "" {
 		config = m.ConfigStore.Store[configname]
 		if config.Name == "" {
-			return make([]*types.PathValue, 0),
+			return make([]*devicechangetypes.PathValue, 0),
 				fmt.Errorf("no Configuration found for %s", configname)
 		}
 	}
@@ -54,7 +54,7 @@ func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, pa
 	if len(configValues) == 0 {
 		return configValues, nil
 	}
-	filteredValues := make([]*types.PathValue, 0)
+	filteredValues := make([]*devicechangetypes.PathValue, 0)
 	pathRegexp := utils.MatchWildcardRegexp(path)
 	for _, cv := range configValues {
 		if pathRegexp.MatchString(cv.Path) {
@@ -67,7 +67,7 @@ func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, pa
 
 // GetTargetNewConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest (Atomix based)
-func (m *Manager) GetTargetNewConfig(target string, path string, layer int) ([]*types.PathValue, error) {
+func (m *Manager) GetTargetNewConfig(target string, path string, layer int) ([]*devicechangetypes.PathValue, error) {
 	log.Infof("Getting config for %s at %s", target, path)
 	configValues, errExtract := device.ExtractFullConfig(devicetopo.ID(target), nil, m.DeviceChangesStore, layer)
 	if errExtract != nil {
@@ -76,7 +76,7 @@ func (m *Manager) GetTargetNewConfig(target string, path string, layer int) ([]*
 	if len(configValues) == 0 {
 		return configValues, nil
 	}
-	filteredValues := make([]*types.PathValue, 0)
+	filteredValues := make([]*devicechangetypes.PathValue, 0)
 	pathRegexp := utils.MatchWildcardRegexp(path)
 	for _, cv := range configValues {
 		if pathRegexp.MatchString(cv.Path) {
