@@ -171,6 +171,7 @@ func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes
 	targetRemoves map[string][]string, deviceInfo map[devicetopo.ID]TypeVersionInfo, netcfgchangename string) {
 	//TODO evaluate need of user and add it back if need be.
 	//TODO start watch and build update Result
+	//TODO return error
 	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 	if errChanges != nil {
 		log.Error("Can't compute new network configs", errChanges)
