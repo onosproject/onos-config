@@ -12,22 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cli holds ONOS command-line command implementations.
+// Unit tests for rollback CLI
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"bytes"
+	"gotest.tools/assert"
+	"strings"
+	"testing"
+)
 
-// GetCommand returns the root command for the config service.
-func GetCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "config {get,add} [args]",
-		Short: "ONOS configuration subsystem commands",
-	}
+func Test_new_rollback(t *testing.T) {
+	outputBuffer := bytes.NewBufferString("")
+	CaptureOutput(outputBuffer)
 
-	cmd.AddCommand(getGetCommand())
-	cmd.AddCommand(getAddCommand())
-	cmd.AddCommand(getRollbackCommand())
-	cmd.AddCommand(getRollbackNewCommand())
-	cmd.AddCommand(getWatchCommand())
-	return cmd
+	setUpMockClients(MockClientsConfig{})
+	rollback := getRollbackNewCommand()
+	args := make([]string, 1)
+	args[0] = "ABCD1234"
+	err := rollback.RunE(rollback, args)
+	assert.NilError(t, err)
+	assert.Equal(t, LastCreatedClient.rollBackID, "ABCD1234")
+	output := outputBuffer.String()
+	assert.Assert(t, strings.Contains(output, "Rollback was successful"))
 }

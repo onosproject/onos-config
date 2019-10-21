@@ -20,19 +20,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Deprecated: getRollbackCommand works on legacy, non-atomix stores
-func getRollbackCommand() *cobra.Command {
+func getRollbackNewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "rollback <changeId>",
-		Short: "Rolls-back a network configuration change",
+		Use:   "rollback-new <changeId>",
+		Short: "Rolls-back a new network change",
 		Args:  cobra.MaximumNArgs(1),
-		RunE:  runRollbackCommand,
+		RunE:  runNewRollbackCommand,
 	}
 	return cmd
 }
 
-// Deprecated: runRollbackCommand works on legacy, non-atomix stores
-func runRollbackCommand(cmd *cobra.Command, args []string) error {
+func runNewRollbackCommand(cmd *cobra.Command, args []string) error {
 	clientConnection, clientConnectionError := getConnection()
 
 	if clientConnectionError != nil {
@@ -45,7 +43,7 @@ func runRollbackCommand(cmd *cobra.Command, args []string) error {
 		changeID = args[0]
 	}
 
-	resp, err := client.RollbackNetworkChange(
+	resp, err := client.RollbackNewNetworkChange(
 		context.Background(), &admin.RollbackRequest{Name: changeID})
 	if err != nil {
 		return err

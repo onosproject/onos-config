@@ -159,4 +159,7 @@ service ConfigAdminService {
 
     // RollbackNetworkChange rolls back the specified network change (or the latest one).
     rpc RollbackNetworkChange(RollbackRequest) returns (RollbackResponse);
+
+    // RollbackNetworkChange rolls back the specified network change (or the latest one).
+    rpc RollbackNewNetworkChange(RollbackRequest) returns (RollbackResponse);
 }
