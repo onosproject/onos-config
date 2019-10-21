@@ -46,7 +46,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	w.ch = configCh
 	w.mu.Unlock()
 
-	if err := w.Store.Watch(configCh); err != nil {
+	if err := w.Store.Watch(configCh, networkchangestore.WithReplay()); err != nil {
 		return err
 	}
 

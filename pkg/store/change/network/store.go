@@ -131,7 +131,40 @@ type Store interface {
 	List(chan<- *networkchangetypes.NetworkChange) error
 
 	// Watch watches the network configuration store for changes
-	Watch(chan<- *networkchangetypes.NetworkChange) error
+	Watch(chan<- *networkchangetypes.NetworkChange, ...WatchOption) error
+}
+
+// WatchOption is a configuration option for Watch calls
+type WatchOption interface {
+	apply([]indexedmap.WatchOption) []indexedmap.WatchOption
+}
+
+// watchReplyOption is an option to replay events on watch
+type watchReplayOption struct {
+}
+
+func (o watchReplayOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
+	return append(opts, indexedmap.WithReplay())
+}
+
+// WithReplay returns a WatchOption that replays past changes
+func WithReplay() WatchOption {
+	return watchReplayOption{}
+}
+
+type watchIDOption struct {
+	id networkchangetypes.ID
+}
+
+func (o watchIDOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
+	return append(opts, indexedmap.WithFilter(indexedmap.Filter{
+		Key: string(o.id),
+	}))
+}
+
+// WithChangeID returns a Watch option that watches for changes to the given change ID
+func WithChangeID(id networkchangetypes.ID) WatchOption {
+	return watchIDOption{id: id}
 }
 
 // newChangeID creates a new network change ID
@@ -282,9 +315,14 @@ func (s *atomixStore) List(ch chan<- *networkchangetypes.NetworkChange) error {
 	return nil
 }
 
-func (s *atomixStore) Watch(ch chan<- *networkchangetypes.NetworkChange) error {
+func (s *atomixStore) Watch(ch chan<- *networkchangetypes.NetworkChange, opts ...WatchOption) error {
+	watchOpts := make([]indexedmap.WatchOption, 0)
+	for _, opt := range opts {
+		watchOpts = opt.apply(watchOpts)
+	}
+
 	mapCh := make(chan *indexedmap.Event)
-	if err := s.changes.Watch(context.Background(), mapCh, indexedmap.WithReplay()); err != nil {
+	if err := s.changes.Watch(context.Background(), mapCh, watchOpts...); err != nil {
 		return err
 	}
 
