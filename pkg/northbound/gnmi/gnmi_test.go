@@ -18,6 +18,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
+	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -67,8 +68,8 @@ func setUpWatchMock(mockStores *MockStores) {
 		Refs:    nil,
 		Deleted: false,
 	}
-	mockStores.NetworkChangesStore.EXPECT().Watch(gomock.Any()).DoAndReturn(
-		func(c chan<- *network.NetworkChange) error {
+	mockStores.NetworkChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(c chan<- *network.NetworkChange, opts ...networkchangestore.WatchOption) error {
 			go func() {
 				c <- &watchChange
 				close(c)
