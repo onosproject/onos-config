@@ -175,12 +175,21 @@ func TestDeviceStore(t *testing.T) {
 	changeEvent = nextDeviceChange(t, ch2)
 	assert.Equal(t, devicechangetypes.ID("network-change-3:device-2"), changeEvent.ID)
 
+	// Watch events for a specific change
+	changeCh := make(chan *devicechangetypes.DeviceChange)
+	err = store1.Watch(device1, changeCh, WithChangeID(change2.ID))
+	assert.NoError(t, err)
+
 	// Update one of the changes
 	change2.Status.State = change.State_RUNNING
 	revision := change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, change2.Revision)
+
+	event := <-changeCh
+	assert.Equal(t, change2.ID, event.ID)
+	assert.Equal(t, change2.Revision, event.Revision)
 
 	// Read and then update the change
 	change2, err = store2.Get(devicechangetypes.ID("network-change-2:device-1"))
@@ -191,6 +200,10 @@ func TestDeviceStore(t *testing.T) {
 	err = store1.Update(change2)
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, change2.Revision)
+
+	event = <-changeCh
+	assert.Equal(t, change2.ID, event.ID)
+	assert.Equal(t, change2.Revision, event.Revision)
 
 	// Verify that concurrent updates fail
 	change31, err := store1.Get(devicechangetypes.ID("network-change-3:device-1"))
@@ -236,16 +249,19 @@ func TestDeviceStore(t *testing.T) {
 	// Delete a change
 	err = store1.Delete(change2)
 	assert.NoError(t, err)
-	change2, err = store2.Get("network-change-2:device-1")
+	change, err := store2.Get("network-change-2:device-1")
 	assert.NoError(t, err)
-	assert.Nil(t, change2)
+	assert.Nil(t, change)
+
+	event = <-changeCh
+	assert.Equal(t, change2.ID, event.ID)
 
 	// Ensure existing changes are replayed in order on watch
 	watches := make(chan *devicechangetypes.DeviceChange)
-	err = store1.Watch(device1, watches)
+	err = store1.Watch(device1, watches, WithReplay())
 	assert.NoError(t, err)
 
-	change := nextDeviceChange(t, watches)
+	change = nextDeviceChange(t, watches)
 	assert.Equal(t, devicechangetypes.ID("network-change-1:device-1"), change.ID)
 	change = nextDeviceChange(t, watches)
 	assert.Equal(t, devicechangetypes.ID("network-change-3:device-1"), change.ID)

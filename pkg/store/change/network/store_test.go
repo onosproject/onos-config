@@ -125,12 +125,21 @@ func TestNetworkChangeStore(t *testing.T) {
 	changeEvent = nextChange(t, ch)
 	assert.Equal(t, networkchangetypes.ID("change-2"), changeEvent.ID)
 
+	// Watch events for a specific change
+	changeCh := make(chan *networkchangetypes.NetworkChange)
+	err = store1.Watch(changeCh, WithChangeID(change2.ID))
+	assert.NoError(t, err)
+
 	// Update one of the changes
 	change2.Status.State = change.State_RUNNING
 	revision := change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, change2.Revision)
+
+	event := <-changeCh
+	assert.Equal(t, change2.ID, event.ID)
+	assert.Equal(t, change2.Revision, event.Revision)
 
 	// Get previous and next changes
 	change1, err = store2.Get("change-1")
@@ -158,6 +167,10 @@ func TestNetworkChangeStore(t *testing.T) {
 	err = store1.Update(change2)
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, change2.Revision)
+
+	event = <-changeCh
+	assert.Equal(t, change2.ID, event.ID)
+	assert.Equal(t, change2.Revision, event.Revision)
 
 	// Verify that concurrent updates fail
 	change11, err := store1.Get("change-1")
@@ -196,11 +209,14 @@ func TestNetworkChangeStore(t *testing.T) {
 	// Delete a change
 	err = store1.Delete(change2)
 	assert.NoError(t, err)
-	change2, err = store2.Get("change-2")
+	change, err := store2.Get("change-2")
 	assert.NoError(t, err)
-	assert.Nil(t, change2)
+	assert.Nil(t, change)
 
-	change := &networkchangetypes.NetworkChange{
+	event = <-changeCh
+	assert.Equal(t, change2.ID, event.ID)
+
+	change = &networkchangetypes.NetworkChange{
 		ID: "change-3",
 		Changes: []*devicechangetypes.Change{
 			{
@@ -243,7 +259,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	ch = make(chan *networkchangetypes.NetworkChange)
-	err = store1.Watch(ch)
+	err = store1.Watch(ch, WithReplay())
 	assert.NoError(t, err)
 
 	change = nextChange(t, ch)

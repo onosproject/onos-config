@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -213,7 +214,7 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 	defer close(nwChChan)
 
 	if r.Subscribe {
-		err := manager.GetManager().NetworkChangesStore.Watch(nwChChan)
+		err := manager.GetManager().NetworkChangesStore.Watch(nwChChan, network.WithReplay())
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err

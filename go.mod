@@ -3,9 +3,9 @@ module github.com/onosproject/onos-config
 go 1.12
 
 require (
-	github.com/atomix/atomix-go-client v0.0.0-20191017214255-835d39bd51ae
-	github.com/atomix/atomix-go-local v0.0.0-20191015235214-be8b36782807
-	github.com/atomix/atomix-go-node v0.0.0-20191017201713-c8f48f52e1cc
+	github.com/atomix/atomix-go-client v0.0.0-20191021233457-2f26f1f47f04
+	github.com/atomix/atomix-go-local v0.0.0-20191021234710-cca1c26bf4d8
+	github.com/atomix/atomix-go-node v0.0.0-20191021234659-c841a97bec89
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 	github.com/golang/mock v1.3.1

@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
-	devicestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -94,7 +94,7 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
 	if !ok {
 		log.Warning("No model ", modelName, " available as a plugin")
 	} else {
-		configValues, err := devicestore.ExtractFullConfig(devicetopo.ID(deviceName), chg, m.DeviceChangesStore, 0)
+		configValues, err := devicechangeutils.ExtractFullConfig(devicetopo.ID(deviceName), chg, m.DeviceChangesStore, 0)
 		if err != nil {
 			return err
 		}

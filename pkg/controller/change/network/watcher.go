@@ -46,7 +46,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	w.ch = configCh
 	w.mu.Unlock()
 
-	if err := w.Store.Watch(configCh); err != nil {
+	if err := w.Store.Watch(configCh, networkchangestore.WithReplay()); err != nil {
 		return err
 	}
 
@@ -116,7 +116,7 @@ func (w *DeviceWatcher) watchDevice(device devicetopo.ID, ch chan<- types.ID) {
 	w.channels[device] = deviceCh
 	w.mu.Unlock()
 
-	if err := w.ChangeStore.Watch(device, deviceCh); err != nil {
+	if err := w.ChangeStore.Watch(device, deviceCh, devicechangestore.WithReplay()); err != nil {
 		w.mu.Lock()
 		delete(w.channels, device)
 		w.mu.Unlock()
