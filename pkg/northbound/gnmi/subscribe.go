@@ -244,20 +244,22 @@ func listenForNewDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Ma
 		resChan <- result{success: false, err: errWatch}
 	}
 	for changeEvent := range changeChan {
-		for _, value := range changeEvent.Change.Values {
-			if changeEvent.Status.State == changeTypes.State_COMPLETE && matchRegex(value.Path, subs) {
-				pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(value.Path))
-				if err != nil {
-					log.Warning("Error in parsing path ", err)
-					continue
+		if changeEvent.Status.State == changeTypes.State_COMPLETE {
+			for _, value := range changeEvent.Change.Values {
+				if matchRegex(value.Path, subs) {
+					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(value.Path))
+					if err != nil {
+						log.Warning("Error in parsing path ", err)
+						continue
+					}
+					log.Infof("NEW - Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
+					//TODO uncomment in swap patch
+					//err = buildAndSendUpdate(pathGnmi, target, value.Value, stream)
+					//if err != nil {
+					//	log.Error("Error in sending update path ", err)
+					//	resChan <- result{success: false, err: err}
+					//}
 				}
-				log.Infof("NEW - Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
-				//TODO uncomment in swap patch
-				//err = buildAndSendUpdate(pathGnmi, target, value.Value, stream)
-				//if err != nil {
-				//	log.Error("Error in sending update path ", err)
-				//	resChan <- result{success: false, err: err}
-				//}
 			}
 		}
 	}
