@@ -12,13 +12,13 @@ import (
 	reflect "reflect"
 )
 
-// MockStore is a mock of Store interface
+// MockNetworkChangesStore is a mock of Store interface
 type MockNetworkChangesStore struct {
 	ctrl     *gomock.Controller
 	recorder *MockNetworkChangesStoreMockRecorder
 }
 
-// MockStoreMockRecorder is the mock recorder for MockStore
+// MockNetworkChangesStoreMockRecorder is the mock recorder for MockStore
 type MockNetworkChangesStoreMockRecorder struct {
 	mock *MockNetworkChangesStore
 }
@@ -184,31 +184,31 @@ func (mr *MockNetworkChangesStoreMockRecorder) Watch(arg0 interface{}, arg1 ...i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockNetworkChangesStore)(nil).Watch), varargs...)
 }
 
-// MockWatchOption is a mock of WatchOption interface
-type MockWatchOption struct {
+// MockNetworkChangesWatchOption is a mock of WatchOption interface
+type MockNetworkChangesWatchOption struct {
 	ctrl     *gomock.Controller
-	recorder *MockWatchOptionMockRecorder
+	recorder *MockNetworkChangesWatchOptionMockRecorder
 }
 
-// MockWatchOptionMockRecorder is the mock recorder for MockWatchOption
-type MockWatchOptionMockRecorder struct {
-	mock *MockWatchOption
+// MockNetworkChangesWatchOptionMockRecorder is the mock recorder for MockWatchOption
+type MockNetworkChangesWatchOptionMockRecorder struct {
+	mock *MockNetworkChangesWatchOption
 }
 
-// NewMockWatchOption creates a new mock instance
-func NewMockWatchOption(ctrl *gomock.Controller) *MockWatchOption {
-	mock := &MockWatchOption{ctrl: ctrl}
-	mock.recorder = &MockWatchOptionMockRecorder{mock}
+// NewMockNetworkChangesWatchOption creates a new mock instance
+func NewMockNetworkChangesWatchOption(ctrl *gomock.Controller) *MockNetworkChangesWatchOption {
+	mock := &MockNetworkChangesWatchOption{ctrl: ctrl}
+	mock.recorder = &MockNetworkChangesWatchOptionMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockWatchOption) EXPECT() *MockWatchOptionMockRecorder {
+func (m *MockNetworkChangesWatchOption) EXPECT() *MockNetworkChangesWatchOptionMockRecorder {
 	return m.recorder
 }
 
 // apply mocks base method
-func (m *MockWatchOption) apply(arg0 []indexedmap.WatchOption) []indexedmap.WatchOption {
+func (m *MockNetworkChangesWatchOption) apply(arg0 []indexedmap.WatchOption) []indexedmap.WatchOption {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "apply", arg0)
 	ret0, _ := ret[0].([]indexedmap.WatchOption)
@@ -216,7 +216,7 @@ func (m *MockWatchOption) apply(arg0 []indexedmap.WatchOption) []indexedmap.Watc
 }
 
 // apply indicates an expected call of apply
-func (mr *MockWatchOptionMockRecorder) apply(arg0 interface{}) *gomock.Call {
+func (mr *MockNetworkChangesWatchOptionMockRecorder) apply(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "apply", reflect.TypeOf((*MockWatchOption)(nil).apply), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "apply", reflect.TypeOf((*MockNetworkChangesWatchOption)(nil).apply), arg0)
 }

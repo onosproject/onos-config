@@ -17,6 +17,7 @@ package utils
 import (
 	"encoding/base64"
 	"github.com/golang/mock/gomock"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -255,7 +256,7 @@ func makeDevice(ID devicetopo.ID) *devicetopo.Device {
 	}
 }
 
-func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.DeviceChange, Store) {
+func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.DeviceChange, device.Store) {
 	log.SetOutput(os.Stdout)
 	ctrl := gomock.NewController(t)
 	mockChangeStore := mockstore.NewMockDeviceChangesStore(ctrl)

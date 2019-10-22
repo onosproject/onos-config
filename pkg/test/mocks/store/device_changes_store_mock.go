@@ -13,13 +13,13 @@ import (
 	reflect "reflect"
 )
 
-// MockStore is a mock of Store interface
+// MockDeviceChangesStore is a mock of Store interface
 type MockDeviceChangesStore struct {
 	ctrl     *gomock.Controller
 	recorder *MockDeviceChangesStoreMockRecorder
 }
 
-// MockStoreMockRecorder is the mock recorder for MockStore
+// MockDeviceChangesStoreMockRecorder is the mock recorder for MockStore
 type MockDeviceChangesStoreMockRecorder struct {
 	mock *MockDeviceChangesStore
 }
@@ -140,31 +140,31 @@ func (mr *MockDeviceChangesStoreMockRecorder) Watch(arg0, arg1 interface{}, arg2
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockDeviceChangesStore)(nil).Watch), varargs...)
 }
 
-// MockWatchOption is a mock of WatchOption interface
-type MockWatchOption struct {
+// MockDeviceChangesWatchOption is a mock of WatchOption interface
+type MockDeviceChangesWatchOption struct {
 	ctrl     *gomock.Controller
-	recorder *MockWatchOptionMockRecorder
+	recorder *MockDeviceChangesWatchOptionMockRecorder
 }
 
-// MockWatchOptionMockRecorder is the mock recorder for MockWatchOption
-type MockWatchOptionMockRecorder struct {
-	mock *MockWatchOption
+// MockDeviceChangesWatchOptionMockRecorder is the mock recorder for MockWatchOption
+type MockDeviceChangesWatchOptionMockRecorder struct {
+	mock *MockDeviceChangesWatchOption
 }
 
-// NewMockWatchOption creates a new mock instance
-func NewMockWatchOption(ctrl *gomock.Controller) *MockWatchOption {
-	mock := &MockWatchOption{ctrl: ctrl}
-	mock.recorder = &MockWatchOptionMockRecorder{mock}
+// NewMockDeviceChangesWatchOption creates a new mock instance
+func NewMockDeviceChangesWatchOption(ctrl *gomock.Controller) *MockDeviceChangesWatchOption {
+	mock := &MockDeviceChangesWatchOption{ctrl: ctrl}
+	mock.recorder = &MockDeviceChangesWatchOptionMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockWatchOption) EXPECT() *MockWatchOptionMockRecorder {
+func (m *MockDeviceChangesWatchOption) EXPECT() *MockDeviceChangesWatchOptionMockRecorder {
 	return m.recorder
 }
 
 // apply mocks base method
-func (m *MockWatchOption) apply(arg0 []indexedmap.WatchOption) []indexedmap.WatchOption {
+func (m *MockDeviceChangesWatchOption) apply(arg0 []indexedmap.WatchOption) []indexedmap.WatchOption {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "apply", arg0)
 	ret0, _ := ret[0].([]indexedmap.WatchOption)
@@ -172,7 +172,7 @@ func (m *MockWatchOption) apply(arg0 []indexedmap.WatchOption) []indexedmap.Watc
 }
 
 // apply indicates an expected call of apply
-func (mr *MockWatchOptionMockRecorder) apply(arg0 interface{}) *gomock.Call {
+func (mr *MockDeviceChangesWatchOptionMockRecorder) apply(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "apply", reflect.TypeOf((*MockWatchOption)(nil).apply), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "apply", reflect.TypeOf((*MockDeviceChangesWatchOption)(nil).apply), arg0)
 }
