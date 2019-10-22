@@ -68,10 +68,43 @@ func setUpWatchMock(mockStores *MockStores) {
 		Refs:    nil,
 		Deleted: false,
 	}
+
+	deviceChange := devicechangetypes.DeviceChange{
+		ID:       "",
+		Index:    0,
+		Revision: 0,
+		Status: changetypes.Status{
+			Phase:   0,
+			State:   changetypes.State_COMPLETE,
+			Reason:  0,
+			Message: "",
+		},
+		Created: now,
+		Updated: now,
+		NetworkChange: devicechangetypes.NetworkChangeRef{
+			ID:    "",
+			Index: 0,
+		},
+		Change: &devicechangetypes.Change{
+			DeviceID:      "",
+			DeviceVersion: "",
+			Values:        nil,
+		},
+	}
+
 	mockStores.NetworkChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(c chan<- *network.NetworkChange, opts ...networkchangestore.WatchOption) error {
 			go func() {
 				c <- &watchChange
+				close(c)
+			}()
+			return nil
+		}).AnyTimes()
+
+	mockStores.DeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(deviceId devicetopo.ID, c chan<- *devicechangetypes.DeviceChange, opts ...networkchangestore.WatchOption) error {
+			go func() {
+				c <- &deviceChange
 				close(c)
 			}()
 			return nil
