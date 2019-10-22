@@ -123,7 +123,40 @@ type Store interface {
 	List(devicetopo.ID, chan<- *devicechangetypes.DeviceChange) error
 
 	// Watch watches the device change store for changes
-	Watch(devicetopo.ID, chan<- *devicechangetypes.DeviceChange) error
+	Watch(devicetopo.ID, chan<- *devicechangetypes.DeviceChange, ...WatchOption) error
+}
+
+// WatchOption is a configuration option for Watch calls
+type WatchOption interface {
+	apply([]indexedmap.WatchOption) []indexedmap.WatchOption
+}
+
+// watchReplyOption is an option to replay events on watch
+type watchReplayOption struct {
+}
+
+func (o watchReplayOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
+	return append(opts, indexedmap.WithReplay())
+}
+
+// WithReplay returns a WatchOption that replays past changes
+func WithReplay() WatchOption {
+	return watchReplayOption{}
+}
+
+type watchIDOption struct {
+	id devicechangetypes.ID
+}
+
+func (o watchIDOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
+	return append(opts, indexedmap.WithFilter(indexedmap.Filter{
+		Key: string(o.id),
+	}))
+}
+
+// WithChangeID returns a Watch option that watches for changes to the given change ID
+func WithChangeID(id devicechangetypes.ID) WatchOption {
+	return watchIDOption{id: id}
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
@@ -296,14 +329,19 @@ func (s *atomixStore) List(device devicetopo.ID, ch chan<- *devicechangetypes.De
 	return nil
 }
 
-func (s *atomixStore) Watch(device devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange) error {
+func (s *atomixStore) Watch(device devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange, opts ...WatchOption) error {
 	changes, err := s.getDeviceChanges(device)
 	if err != nil {
 		return err
 	}
 
+	watchOpts := make([]indexedmap.WatchOption, 0)
+	for _, opt := range opts {
+		watchOpts = opt.apply(watchOpts)
+	}
+
 	mapCh := make(chan *indexedmap.Event)
-	if err := changes.Watch(context.Background(), mapCh, indexedmap.WithReplay()); err != nil {
+	if err := changes.Watch(context.Background(), mapCh, watchOpts...); err != nil {
 		return err
 	}
 

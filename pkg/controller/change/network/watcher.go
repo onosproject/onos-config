@@ -116,7 +116,7 @@ func (w *DeviceWatcher) watchDevice(device devicetopo.ID, ch chan<- types.ID) {
 	w.channels[device] = deviceCh
 	w.mu.Unlock()
 
-	if err := w.ChangeStore.Watch(device, deviceCh); err != nil {
+	if err := w.ChangeStore.Watch(device, deviceCh, devicechangestore.WithReplay()); err != nil {
 		w.mu.Lock()
 		delete(w.channels, device)
 		w.mu.Unlock()

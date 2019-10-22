@@ -5,18 +5,20 @@
 package store
 
 import (
+	indexedmap "github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	gomock "github.com/golang/mock/gomock"
-	network "github.com/onosproject/onos-config/pkg/types/change/network"
+	network "github.com/onosproject/onos-config/pkg/store/change/network"
+	network0 "github.com/onosproject/onos-config/pkg/types/change/network"
 	reflect "reflect"
 )
 
-// MockNetworkChangesStore is a mock of Store interface
+// MockStore is a mock of Store interface
 type MockNetworkChangesStore struct {
 	ctrl     *gomock.Controller
 	recorder *MockNetworkChangesStoreMockRecorder
 }
 
-// MockNetworkChangesStoreMockRecorder is the mock recorder for MockStore
+// MockStoreMockRecorder is the mock recorder for MockStore
 type MockNetworkChangesStoreMockRecorder struct {
 	mock *MockNetworkChangesStore
 }
@@ -48,10 +50,10 @@ func (mr *MockNetworkChangesStoreMockRecorder) Close() *gomock.Call {
 }
 
 // Get mocks base method
-func (m *MockNetworkChangesStore) Get(id network.ID) (*network.NetworkChange, error) {
+func (m *MockNetworkChangesStore) Get(id network0.ID) (*network0.NetworkChange, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", id)
-	ret0, _ := ret[0].(*network.NetworkChange)
+	ret0, _ := ret[0].(*network0.NetworkChange)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -63,10 +65,10 @@ func (mr *MockNetworkChangesStoreMockRecorder) Get(id interface{}) *gomock.Call 
 }
 
 // GetByIndex mocks base method
-func (m *MockNetworkChangesStore) GetByIndex(index network.Index) (*network.NetworkChange, error) {
+func (m *MockNetworkChangesStore) GetByIndex(index network0.Index) (*network0.NetworkChange, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByIndex", index)
-	ret0, _ := ret[0].(*network.NetworkChange)
+	ret0, _ := ret[0].(*network0.NetworkChange)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -78,10 +80,10 @@ func (mr *MockNetworkChangesStoreMockRecorder) GetByIndex(index interface{}) *go
 }
 
 // GetPrev mocks base method
-func (m *MockNetworkChangesStore) GetPrev(index network.Index) (*network.NetworkChange, error) {
+func (m *MockNetworkChangesStore) GetPrev(index network0.Index) (*network0.NetworkChange, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPrev", index)
-	ret0, _ := ret[0].(*network.NetworkChange)
+	ret0, _ := ret[0].(*network0.NetworkChange)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -93,10 +95,10 @@ func (mr *MockNetworkChangesStoreMockRecorder) GetPrev(index interface{}) *gomoc
 }
 
 // GetNext mocks base method
-func (m *MockNetworkChangesStore) GetNext(index network.Index) (*network.NetworkChange, error) {
+func (m *MockNetworkChangesStore) GetNext(index network0.Index) (*network0.NetworkChange, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNext", index)
-	ret0, _ := ret[0].(*network.NetworkChange)
+	ret0, _ := ret[0].(*network0.NetworkChange)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -108,7 +110,7 @@ func (mr *MockNetworkChangesStoreMockRecorder) GetNext(index interface{}) *gomoc
 }
 
 // Create mocks base method
-func (m *MockNetworkChangesStore) Create(config *network.NetworkChange) error {
+func (m *MockNetworkChangesStore) Create(config *network0.NetworkChange) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", config)
 	ret0, _ := ret[0].(error)
@@ -122,7 +124,7 @@ func (mr *MockNetworkChangesStoreMockRecorder) Create(config interface{}) *gomoc
 }
 
 // Update mocks base method
-func (m *MockNetworkChangesStore) Update(config *network.NetworkChange) error {
+func (m *MockNetworkChangesStore) Update(config *network0.NetworkChange) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", config)
 	ret0, _ := ret[0].(error)
@@ -136,7 +138,7 @@ func (mr *MockNetworkChangesStoreMockRecorder) Update(config interface{}) *gomoc
 }
 
 // Delete mocks base method
-func (m *MockNetworkChangesStore) Delete(config *network.NetworkChange) error {
+func (m *MockNetworkChangesStore) Delete(config *network0.NetworkChange) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", config)
 	ret0, _ := ret[0].(error)
@@ -150,7 +152,7 @@ func (mr *MockNetworkChangesStoreMockRecorder) Delete(config interface{}) *gomoc
 }
 
 // List mocks base method
-func (m *MockNetworkChangesStore) List(arg0 chan<- *network.NetworkChange) error {
+func (m *MockNetworkChangesStore) List(arg0 chan<- *network0.NetworkChange) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", arg0)
 	ret0, _ := ret[0].(error)
@@ -164,15 +166,57 @@ func (mr *MockNetworkChangesStoreMockRecorder) List(arg0 interface{}) *gomock.Ca
 }
 
 // Watch mocks base method
-func (m *MockNetworkChangesStore) Watch(arg0 chan<- *network.NetworkChange) error {
+func (m *MockNetworkChangesStore) Watch(arg0 chan<- *network0.NetworkChange, arg1 ...network.WatchOption) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Watch", arg0)
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Watch", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Watch indicates an expected call of Watch
-func (mr *MockNetworkChangesStoreMockRecorder) Watch(arg0 interface{}) *gomock.Call {
+func (mr *MockNetworkChangesStoreMockRecorder) Watch(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockNetworkChangesStore)(nil).Watch), arg0)
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockNetworkChangesStore)(nil).Watch), varargs...)
+}
+
+// MockWatchOption is a mock of WatchOption interface
+type MockWatchOption struct {
+	ctrl     *gomock.Controller
+	recorder *MockWatchOptionMockRecorder
+}
+
+// MockWatchOptionMockRecorder is the mock recorder for MockWatchOption
+type MockWatchOptionMockRecorder struct {
+	mock *MockWatchOption
+}
+
+// NewMockWatchOption creates a new mock instance
+func NewMockWatchOption(ctrl *gomock.Controller) *MockWatchOption {
+	mock := &MockWatchOption{ctrl: ctrl}
+	mock.recorder = &MockWatchOptionMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockWatchOption) EXPECT() *MockWatchOptionMockRecorder {
+	return m.recorder
+}
+
+// apply mocks base method
+func (m *MockWatchOption) apply(arg0 []indexedmap.WatchOption) []indexedmap.WatchOption {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "apply", arg0)
+	ret0, _ := ret[0].([]indexedmap.WatchOption)
+	return ret0
+}
+
+// apply indicates an expected call of apply
+func (mr *MockWatchOptionMockRecorder) apply(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "apply", reflect.TypeOf((*MockWatchOption)(nil).apply), arg0)
 }
