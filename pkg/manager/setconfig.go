@@ -169,23 +169,25 @@ func (m *Manager) SetNetworkConfig(deviceName string, version string,
 
 // SetNewNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
 func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetopo.ID]TypeVersionInfo, netcfgchangename string) {
+	targetRemoves map[string][]string, deviceInfo map[devicetopo.ID]TypeVersionInfo, netcfgchangename string) error {
 	//TODO evaluate need of user and add it back if need be.
-	//TODO start watch and build update Result
-	//TODO return error
 	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 	if errChanges != nil {
 		log.Error("Can't compute new network configs", errChanges)
+		return errChanges
 	}
 	newNetworkConfig, errNetChange := networkchangetypes.NewNetworkChange(netcfgchangename, allDeviceChanges)
 	if errNetChange != nil {
 		log.Error("Can't create new network config", errNetChange)
+		return errNetChange
 	}
 	//Writing to the atomix backed store too
 	errStoreNewChange := m.NetworkChangesStore.Create(newNetworkConfig)
 	if errStoreNewChange != nil {
 		log.Error("Can't write new network config to atomix store", errStoreNewChange)
+		return errStoreNewChange
 	}
+	return nil
 }
 
 // getStoredConfig looks for an exact match for the config name or then a partial match based on the device name

@@ -106,6 +106,7 @@ func computeRollback(m *Manager, target string, configname store.ConfigName) (ch
 	return id, updates, deletes, nil
 }
 
+// Deprecated: listenForDeviceResponse works on legacy, non-atomix stores
 func listenForDeviceResponse(mgr *Manager, target string) error {
 	respChan, ok := mgr.Dispatcher.GetResponseListener(devicetopo.ID(target))
 	if !ok {

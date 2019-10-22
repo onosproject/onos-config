@@ -196,19 +196,23 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	//Creating and setting the config on the new atomix Store
-	mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
+	errSet := mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
+
+	if errSet != nil {
+		log.Errorf("Error while setting config in atomix %s", errSet.Error())
+		return nil, status.Error(codes.Internal, errSet.Error())
+	}
 
 	//Obtaining response based on distributed store generated events
 	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchangetypes.ID(netcfgchangename))
 
 	if errListen != nil {
 		log.Errorf("Error while building atomix based response %s", errListen.Error())
-		//TODO this needs to be un-commented
-		//return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, errListen.Error())
 	}
 
-	log.Info("update result ", updateResults)
-	log.Info("atomix update results ", updateResultsAtomix)
+	log.Info("UNUSED - update result ", updateResults)
+	log.Info("USED - atomix update results ", updateResultsAtomix)
 
 	extensions := []*gnmi_ext.Extension{
 		{
@@ -249,10 +253,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		Extension: extensions,
 	}
 
-	log.Info("set response ", setResponse)
-	log.Info("atomix update response ", setResponseAtomix)
+	log.Info("UNUSED - set response ", setResponse)
+	log.Info("USED - atomix update response ", setResponseAtomix)
 
-	return setResponse, nil
+	return setResponseAtomix, nil
 }
 
 func extractExtensions(req *gnmi.SetRequest) (string, string, string, error) {
@@ -349,7 +353,7 @@ func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string
 // Deprecated: checkForReadOnly works on legacy, non-atomix stores
 func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdates mapTargetUpdates,
 	targetRemoves mapTargetRemoves) error {
-	//TODO update with ne stores
+	//TODO update with new stores
 	configs := manager.GetManager().ConfigStore.Store
 
 	// Iterate through all the updates - many may use the same target - here we

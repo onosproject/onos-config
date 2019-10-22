@@ -184,6 +184,7 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
 	//TODO the following can be optimized by looking if the path is in the read only
+	//Currently un-hooked from the response, just generating values for comparison
 	configValues, err := manager.GetManager().GetTargetConfig(target, "",
 		pathAsString, 0)
 	if err != nil {
@@ -194,17 +195,18 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 		devicetype.ID(target), typeVersionInfo.Version, pathAsString, 0)
 	if errNewMethod != nil {
 		log.Error("Error while extracting config", errNewMethod)
+		return nil, errNewMethod
 	}
 
 	//TODO remove this print after the swap
-	log.Info("Old Config Values ", configValues)
-	log.Info("New Config Values from Atomix ", configValuesNew)
+	log.Info("UNUSED - Old Config Values ", configValues)
+	log.Info("USED - New Config Values from Atomix ", configValuesNew)
 
 	stateValues := manager.GetManager().GetTargetState(target, pathAsString)
 	//Merging the two results
-	configValues = append(configValues, stateValues...)
+	configValuesNew = append(configValuesNew, stateValues...)
 
-	return buildUpdate(prefix, path, configValues)
+	return buildUpdate(prefix, path, configValuesNew)
 }
 
 func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*devicechangetypes.PathValue) (*gnmi.Update, error) {
