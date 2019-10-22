@@ -24,9 +24,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/change/network"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -197,7 +198,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 
 	//Obtaining response based on distributed store generated events
-	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, network.ID(netcfgchangename))
+	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchangetypes.ID(netcfgchangename))
 
 	if errListen != nil {
 		log.Errorf("Error while building atomix based response %s", errListen.Error())
@@ -550,9 +551,9 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 		errResp.Error(), rolledbackIDs)
 }
 
-func listenAndBuildResponse(mgr *manager.Manager, changeID network.ID) ([]*gnmi.UpdateResult, error) {
-	networkChan := make(chan *network.NetworkChange)
-	errWatch := mgr.NetworkChangesStore.Watch(networkChan)
+func listenAndBuildResponse(mgr *manager.Manager, changeID networkchangetypes.ID) ([]*gnmi.UpdateResult, error) {
+	networkChan := make(chan *networkchangetypes.NetworkChange)
+	errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
 	if errWatch != nil {
 		return nil, fmt.Errorf("can't complete set operation on target due to %s", errWatch)
 	}
@@ -560,10 +561,9 @@ func listenAndBuildResponse(mgr *manager.Manager, changeID network.ID) ([]*gnmi.
 	for changeEvent := range networkChan {
 		log.Infof("Received notification for change ID %s, phase %s, state %s", changeEvent.ID,
 			changeEvent.Status.Phase, changeEvent.Status.State)
-		if changeEvent.ID == changeID && changeEvent.Status.Phase == changetypes.Phase_CHANGE {
+		if changeEvent.Status.Phase == changetypes.Phase_CHANGE {
 			switch changeStatus := changeEvent.Status.State; changeStatus {
 			case changetypes.State_COMPLETE:
-				log.Infof("change Status %s", changeStatus)
 				for _, deviceChange := range changeEvent.Changes {
 					deviceID := deviceChange.DeviceID
 					for _, valueUpdate := range deviceChange.Values {
@@ -584,7 +584,6 @@ func listenAndBuildResponse(mgr *manager.Manager, changeID network.ID) ([]*gnmi.
 					}
 				}
 			case changetypes.State_FAILED:
-				log.Infof("Received Change Status %s", changeStatus)
 				return nil, fmt.Errorf("issue in setting config reson %s, error %s, rolling back change %s",
 					changeEvent.Status.Reason, changeEvent.Status.Message, changeID)
 			default:

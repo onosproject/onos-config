@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
@@ -72,8 +73,7 @@ func (m *Manager) NewRollbackTargetConfig(networkChangeID networkchangetypes.ID)
 		log.Errorf("Error on setting change %s rollback: %s", networkChangeID, errUpdate)
 		return errUpdate
 	}
-	//TODO make sure the device has accepted
-	return nil
+	return listenForChangeNotification(m, networkChangeID)
 }
 
 func computeRollback(m *Manager, target string, configname store.ConfigName) (change.ID, devicechangetypes.TypedValueMap, []string, error) {
@@ -141,4 +141,30 @@ func listenForDeviceResponse(mgr *Manager, target string) error {
 	case <-time.After(5 * time.Second):
 		return fmt.Errorf("Timeout on waiting for device reply %s", target)
 	}
+}
+
+func listenForChangeNotification(mgr *Manager, changeID networkchangetypes.ID) error {
+	networkChan := make(chan *networkchangetypes.NetworkChange)
+	errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
+	if errWatch != nil {
+		return fmt.Errorf("can't complete rollback operation on target due to %s", errWatch)
+	}
+	for changeEvent := range networkChan {
+		log.Infof("Received notification for change ID %s, phase %s, state %s", changeEvent.ID,
+			changeEvent.Status.Phase, changeEvent.Status.State)
+		if changeEvent.Status.Phase == changetypes.Phase_ROLLBACK {
+			switch changeStatus := changeEvent.Status.State; changeStatus {
+			case changetypes.State_COMPLETE:
+				log.Infof("Rollback succeeded for change %s ", changeID)
+				return nil
+			case changetypes.State_FAILED:
+				log.Infof("Received Change Status %s", changeStatus)
+				return fmt.Errorf("issue in setting config reson %s, error %s, rolling back change %s",
+					changeEvent.Status.Reason, changeEvent.Status.Message, changeID)
+			default:
+				continue
+			}
+		}
+	}
+	return nil
 }
