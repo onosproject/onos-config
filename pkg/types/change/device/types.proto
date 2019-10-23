@@ -71,8 +71,11 @@ message Change {
     // 'device_version' is an optional device version to which to apply this change
     string device_version = 2;
 
+    // 'device_type' is an optional device type to which to apply this change
+    string device_type = 3;
+
     // 'values' is a set of change values to apply
-    repeated ChangeValue values = 3;
+    repeated ChangeValue values = 4;
 }
 
 // ValueType is the type for a value

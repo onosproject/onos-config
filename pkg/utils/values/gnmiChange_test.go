@@ -89,6 +89,7 @@ func Test_NativeNewChangeToGnmiChange(t *testing.T) {
 	testChange := &devicechangetypes.Change{
 		DeviceID:      devicetopo.ID("Device1"),
 		DeviceVersion: "Device1-1.0.0",
+		DeviceType:    "devicesim",
 		Values:        testValues,
 	}
 
