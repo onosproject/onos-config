@@ -41,7 +41,8 @@ func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 
 	deviceConfig, _, err := m.getStoredConfig(deviceName, version, deviceType, true)
 	if err != nil {
-		return err
+		log.Errorf(" OLD - Error while setting config %s", err.Error())
+		//return err
 	}
 	deviceConfigTemporary, err := store.NewConfiguration(deviceConfig.Device, deviceConfig.Version,
 		deviceConfig.Type, deviceConfig.Changes)
@@ -264,6 +265,7 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 		}
 		log.Infof("Appending device change %v", newChange)
 		deviceChanges = append(deviceChanges, newChange)
+		delete(targetRemoves, target)
 	}
 
 	for target, removes := range targetRemoves {

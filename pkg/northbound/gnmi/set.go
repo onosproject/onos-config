@@ -63,7 +63,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	targetRemoves := make(mapTargetRemoves)
 
 	deviceInfo = make(map[devicetopo.ID]manager.TypeVersionInfo)
-
+	log.Info("gNMI Set Request", req)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	//Update
@@ -99,6 +99,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, extErr
 	}
 
+	//TODO update to new methods
 	errRo := s.checkForReadOnly(deviceType, version, targetUpdates, targetRemoves)
 	if errRo != nil {
 		return nil, status.Error(codes.InvalidArgument, errRo.Error())
@@ -171,28 +172,35 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 	}
 
-	updateResults, networkChanges, err :=
+	//TODO remove
+	//Deprecated
+	updateResultsOld, networkChanges, err :=
 		s.executeSetConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		log.Errorf(" OLD - Error while setting config %s", err.Error())
+		//return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if len(updateResults) == 0 {
+	if len(updateResultsOld) == 0 {
 		log.Warning("All target changes were duplicated - Set rejected")
-		return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a duplicate of the last change for all targets").Error())
+		//return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a duplicate of the last change for all targets").Error())
 	}
 
 	// Look for use of this name already
+	//Deprecated TODO remove
 	for _, nwCfg := range mgr.NetworkStore.Store {
 		if nwCfg.Name == netcfgchangename {
-			return nil, status.Error(codes.InvalidArgument, fmt.Errorf(
+			err := status.Error(codes.InvalidArgument, fmt.Errorf(
 				"name %s is already used for a Network Configuration", netcfgchangename).Error())
+			log.Error(err)
+			//return nil, err
 		}
 	}
 
 	networkConfig, err := store.NewNetworkConfiguration(netcfgchangename, "User1", networkChanges)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		log.Errorf(" OLD - Error while setting config %s", err.Error())
+		//return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	//Creating and setting the config on the new atomix Store
@@ -204,22 +212,22 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	//Obtaining response based on distributed store generated events
-	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchangetypes.ID(netcfgchangename))
+	updateResults, errListen := listenAndBuildResponse(mgr, networkchangetypes.ID(netcfgchangename))
 
 	if errListen != nil {
 		log.Errorf("Error while building atomix based response %s", errListen.Error())
 		return nil, status.Error(codes.Internal, errListen.Error())
 	}
 
-	log.Info("UNUSED - update result ", updateResults)
-	log.Info("USED - atomix update results ", updateResultsAtomix)
+	log.Info("UNUSED - OLD - update result ", updateResultsOld)
+	log.Info("USED - NEW - atomix update results ", updateResults)
 
 	extensions := []*gnmi_ext.Extension{
 		{
 			Ext: &gnmi_ext.Extension_RegisteredExt{
 				RegisteredExt: &gnmi_ext.RegisteredExtension{
 					Id:  GnmiExtensionNetwkChangeID,
-					Msg: []byte(networkConfig.Name),
+					Msg: []byte(netcfgchangename),
 				},
 			},
 		},
@@ -239,24 +247,25 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	//TODO remove, old way of set.
+	//Deprecated
 	mgr.NetworkStore.Store =
 		append(mgr.NetworkStore.Store, *networkConfig)
+	setResponseOld := &gnmi.SetResponse{
+		Response:  updateResultsOld,
+		Timestamp: time.Now().Unix(),
+		Extension: extensions,
+	}
+
 	setResponse := &gnmi.SetResponse{
 		Response:  updateResults,
 		Timestamp: time.Now().Unix(),
 		Extension: extensions,
 	}
 
-	setResponseAtomix := &gnmi.SetResponse{
-		Response:  updateResultsAtomix,
-		Timestamp: time.Now().Unix(),
-		Extension: extensions,
-	}
+	log.Info("UNUSED - OLD -  set response ", setResponseOld)
+	log.Info("USED - NEW - atomix update response ", setResponse)
 
-	log.Info("UNUSED - set response ", setResponse)
-	log.Info("USED - atomix update response ", setResponseAtomix)
-
-	return setResponseAtomix, nil
+	return setResponse, nil
 }
 
 func extractExtensions(req *gnmi.SetRequest) (string, string, string, error) {
@@ -490,8 +499,9 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 			updates, targetRemoves[target], description)
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
+			log.Errorf(" OLD - Error while setting config %s", err.Error())
 			//Rolling back in case of setChange error.
-			return nil, nil, doRollback(networkChanges, manager.GetManager(), target, *configName, err)
+			//return nil, nil, doRollback(networkChanges, manager.GetManager(), target, *configName, err)
 		} else if err == nil && cont {
 			continue
 		}
@@ -499,7 +509,9 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 		//TODO Maybe do this with a callback mechanism --> when resposne on channel is done trigger callback
 		// that sends reply
 		if responseErr != nil {
-			return nil, nil, fmt.Errorf("can't complete set operation on target %s due to %s", target, responseErr)
+			errTMP := fmt.Errorf("can't complete set operation on target %s due to %s", target, responseErr)
+			log.Errorf(" OLD - Error while setting config %s", errTMP.Error())
+			//return nil, nil, errTMP
 		}
 		for k := range updates {
 			updateResult, err := buildUpdateResult(k, target, gnmi.UpdateResult_UPDATE)
@@ -527,14 +539,16 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 			make(devicechangetypes.TypedValueMap), removes, description)
 		//if the error is not nil and we need to continue do so
 		if err != nil && !cont {
-			return nil, nil, err
+			log.Errorf(" OLD - Error while setting config %s", err.Error())
+			//return nil, nil, err
 		} else if err == nil && cont {
 			continue
 
 		}
 		responseErr := listenForDeviceResponse(networkChanges, target, *configName)
 		if responseErr != nil {
-			return nil, nil, responseErr
+			log.Errorf(" OLD - Error while setting config %s", err.Error())
+			//return nil, nil, responseErr
 		}
 		for _, r := range removes {
 			updateResult, err := buildUpdateResult(r, target, gnmi.UpdateResult_DELETE)
@@ -574,10 +588,10 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 		case events.EventTypeErrorSetConfig:
 			log.Infof("Error during set %s, rolling back", response.ChangeID())
 			//Removing previously applied config
-			err := doRollback(changes, mgr, target, name, response.Error())
-			if err != nil {
-				return err
-			}
+			//err := doRollback(changes, mgr, target, name, response.Error())
+			//if err != nil {
+			//	return err
+			//}
 			go func() {
 				respChan <- events.NewResponseEvent(events.EventTypeSubscribeErrorNotificationSetConfig,
 					response.Subject(), []byte(response.ChangeID()), response.String())
@@ -598,26 +612,26 @@ func listenForDeviceResponse(changes mapNetworkChanges, target string, name stor
 	}
 }
 
-// Deprecated: doRollback works on legacy, non-atomix stores
-func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
-	name store.ConfigName, errResp error) error {
-	rolledbackIDs := make([]string, 0)
-	for configName := range changes {
-		changeID, err := mgr.RollbackTargetConfig(configName)
-		if err != nil {
-			log.Errorf("Can't remove last entry for %s, on config %s, err, %v", target, name, err)
-		}
-		log.Infof("Rolled back %s on %s", store.B64(changeID), configName)
-		rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
-	}
-	//Removing the failed target but not computing the delta singe gNMI ensures device transactionality
-	id, err := mgr.ConfigStore.RemoveLastChangeEntry(store.ConfigName(name))
-	if err != nil {
-		return fmt.Errorf(fmt.Sprintf("Can't remove last entry ( %s ) for %s", store.B64(id), name), err)
-	}
-	return fmt.Errorf("Issue in setting config %s, rolling back changes %s",
-		errResp.Error(), rolledbackIDs)
-}
+//// Deprecated: doRollback works on legacy, non-atomix stores
+//func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
+//	name store.ConfigName, errResp error) error {
+//	rolledbackIDs := make([]string, 0)
+//	for configName := range changes {
+//		changeID, err := mgr.RollbackTargetConfig(configName)
+//		if err != nil {
+//			log.Errorf("Can't remove last entry for %s, on config %s, err, %v", target, name, err)
+//		}
+//		log.Infof("Rolled back %s on %s", store.B64(changeID), configName)
+//		rolledbackIDs = append(rolledbackIDs, store.B64(changeID))
+//	}
+//	//Removing the failed target but not computing the delta singe gNMI ensures device transactionality
+//	id, err := mgr.ConfigStore.RemoveLastChangeEntry(store.ConfigName(name))
+//	if err != nil {
+//		return fmt.Errorf(fmt.Sprintf("Can't remove last entry ( %s ) for %s", store.B64(id), name), err)
+//	}
+//	return fmt.Errorf("Issue in setting config %s, rolling back changes %s",
+//		errResp.Error(), rolledbackIDs)
+//}
 
 func listenAndBuildResponse(mgr *manager.Manager, changeID networkchangetypes.ID) ([]*gnmi.UpdateResult, error) {
 	networkChan := make(chan stream.Event)
@@ -706,7 +720,7 @@ func validateChange(target string, version string, deviceType string, deviceType
 	if err != nil {
 		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
 			targetRemoves, target, err)
-		return err
+		//return err
 	}
 	deviceInfo := deviceTypeAndVersion[devicetopo.ID(target)]
 	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(devicetype.ID(target), deviceInfo.Version, deviceInfo.DeviceType,

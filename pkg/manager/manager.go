@@ -279,13 +279,25 @@ func (m *Manager) Run() {
 	log.Info("Starting Manager")
 
 	// Start the NetworkChange controller
-	_ = m.networkChangeController.Start()
+	errNetworkCtrl := m.networkChangeController.Start()
+	if errNetworkCtrl != nil {
+		log.Error("Can't start controller ", errNetworkCtrl)
+	}
 	// Start the DeviceChange controller
-	_ = m.deviceChangeController.Start()
+	errDeviceChangeCtrl := m.deviceChangeController.Start()
+	if errDeviceChangeCtrl != nil {
+		log.Error("Can't start controller ", errDeviceChangeCtrl)
+	}
 	// Start the NetworkSnapshot controller
-	_ = m.networkSnapshotController.Start()
+	errNetworkSnapshotCtrl := m.networkSnapshotController.Start()
+	if errNetworkSnapshotCtrl != nil {
+		log.Error("Can't start controller ", errNetworkSnapshotCtrl)
+	}
 	// Start the DeviceSnapshot controller
-	_ = m.deviceSnapshotController.Start()
+	errDeviceSnapshotCtrl := m.deviceSnapshotController.Start()
+	if errDeviceSnapshotCtrl != nil {
+		log.Error("Can't start controller ", errDeviceSnapshotCtrl)
+	}
 
 	// Start the main dispatcher system
 	go m.Dispatcher.Listen(m.ChangesChannel)
