@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -187,7 +188,7 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 		}).AnyTimes()
 
 	mockDeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(deviceID devicetopo.ID, c chan<- *devicechange.DeviceChange) error {
+		func(deviceID devicetopo.ID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
 			deviceChange := deviceChanges[deviceID]
 			go func() {
 				if deviceChange != nil {
@@ -195,10 +196,11 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 				}
 				close(c)
 			}()
+			ctx := stream.NewContext(func() {})
 			if deviceChange != nil {
-				return nil
+				return ctx, nil
 			}
-			return errors.New("no Configuration found")
+			return ctx, errors.New("no Configuration found")
 		}).AnyTimes()
 	_ = mockDeviceChangesStore.Create(deviceChange1)
 
