@@ -105,12 +105,14 @@ func setUpWatchMock(mockStores *MockStores) {
 		}).AnyTimes()
 
 	mockStores.DeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(deviceId devicetopo.ID, c chan<- *devicechangetypes.DeviceChange, opts ...networkchangestore.WatchOption) error {
+		func(deviceId devicetopo.ID, c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
 			go func() {
-				c <- &deviceChange
+				c <- stream.Event{Object: &deviceChange}
 				close(c)
 			}()
-			return nil
+			return stream.NewContext(func() {
+
+			}), nil
 		}).AnyTimes()
 }
 
