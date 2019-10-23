@@ -304,6 +304,7 @@ func (s *atomixStore) List(ch chan<- *networkchangetypes.NetworkChange) (stream.
 
 	mapCh := make(chan *indexedmap.Entry)
 	if err := s.changes.Entries(ctx, mapCh); err != nil {
+		cancel()
 		return nil, err
 	}
 
@@ -328,6 +329,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event, opts ...WatchOption) (stream
 
 	mapCh := make(chan *indexedmap.Event)
 	if err := s.changes.Watch(ctx, mapCh, watchOpts...); err != nil {
+		cancel()
 		return nil, err
 	}
 

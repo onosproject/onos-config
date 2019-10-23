@@ -238,6 +238,7 @@ func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) (stream.Con
 
 	mapCh := make(chan *_map.Entry)
 	if err := s.deviceSnapshots.Entries(ctx, mapCh); err != nil {
+		cancel()
 		return nil, err
 	}
 
@@ -257,6 +258,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 
 	mapCh := make(chan *_map.Event)
 	if err := s.deviceSnapshots.Watch(ctx, mapCh, _map.WithReplay()); err != nil {
+		cancel()
 		return nil, err
 	}
 
@@ -326,6 +328,7 @@ func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Contex
 
 	mapCh := make(chan *_map.Entry)
 	if err := s.snapshots.Entries(ctx, mapCh); err != nil {
+		cancel()
 		return nil, err
 	}
 

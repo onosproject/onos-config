@@ -238,6 +238,7 @@ func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) (stream.C
 
 	mapCh := make(chan *indexedmap.Entry)
 	if err := s.snapshots.Entries(ctx, mapCh); err != nil {
+		cancel()
 		return nil, err
 	}
 
@@ -257,6 +258,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 
 	mapCh := make(chan *indexedmap.Event)
 	if err := s.snapshots.Watch(ctx, mapCh, indexedmap.WithReplay()); err != nil {
+		cancel()
 		return nil, err
 	}
 

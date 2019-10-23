@@ -318,6 +318,7 @@ func (s *atomixStore) List(device devicetopo.ID, ch chan<- *devicechangetypes.De
 
 	mapCh := make(chan *indexedmap.Entry)
 	if err := changes.Entries(ctx, mapCh); err != nil {
+		cancel()
 		return nil, err
 	}
 
@@ -346,6 +347,7 @@ func (s *atomixStore) Watch(device devicetopo.ID, ch chan<- stream.Event, opts .
 	ctx, cancel := context.WithCancel(context.Background())
 	mapCh := make(chan *indexedmap.Event)
 	if err := changes.Watch(ctx, mapCh, watchOpts...); err != nil {
+		cancel()
 		return nil, err
 	}
 
