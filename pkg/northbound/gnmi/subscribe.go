@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	changeTypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -237,15 +238,22 @@ func listenForNewUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
 //For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
 func listenForNewDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
 	target string, subs []*regexp.Regexp, resChan chan result) {
-	changeChan := make(chan *devicechangetypes.DeviceChange)
-	errWatch := mgr.DeviceChangesStore.Watch(devicetopo.ID(target), changeChan)
+	eventCh := make(chan streams.Event)
+	ctx, errWatch := mgr.DeviceChangesStore.Watch(devicetopo.ID(target), eventCh)
 	if errWatch != nil {
 		log.Errorf("Cant watch for changes on device %s. error %s", target, errWatch.Error())
 		resChan <- result{success: false, err: errWatch}
+		return
 	}
-	for changeEvent := range changeChan {
-		if changeEvent.Status.State == changeTypes.State_COMPLETE {
-			for _, value := range changeEvent.Change.Values {
+	defer ctx.Close()
+	for changeEvent := range eventCh {
+		change, ok := changeEvent.Object.(*devicechangetypes.DeviceChange)
+		if !ok {
+			log.Error("Could not convert event to DeviceChange")
+			continue
+		}
+		if change.Status.State == changeTypes.State_COMPLETE {
+			for _, value := range change.Change.Values {
 				if matchRegex(value.Path, subs) {
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(value.Path))
 					if err != nil {
