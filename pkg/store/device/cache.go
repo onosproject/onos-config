@@ -17,6 +17,7 @@ package device
 import (
 	"fmt"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	"io"
@@ -66,13 +67,15 @@ type networkChangeStoreCache struct {
 
 // listen starts listening for network changes
 func (c *networkChangeStoreCache) listen() error {
-	ch := make(chan *networkchangetypes.NetworkChange)
-	if err := c.networkChangeStore.Watch(ch); err != nil {
+	ch := make(chan stream.Event)
+	ctx, err := c.networkChangeStore.Watch(ch)
+	if err != nil {
 		return err
 	}
 
 	go func() {
-		for netChange := range ch {
+		for event := range ch {
+			netChange := event.Object.(*networkchangetypes.NetworkChange)
 			for _, devChange := range netChange.Changes {
 				key := newKey(devChange.DeviceID, devChange.DeviceVersion)
 				c.mu.Lock()
@@ -86,6 +89,7 @@ func (c *networkChangeStoreCache) listen() error {
 				c.mu.Unlock()
 			}
 		}
+		ctx.Close()
 	}()
 	return nil
 }
