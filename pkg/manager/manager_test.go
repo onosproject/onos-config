@@ -161,9 +161,36 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 		Created: now,
 	}
 
-	mockDeviceChangesStore.EXPECT().Get(deviceChange1.ID).Return(deviceChange1, nil).AnyTimes()
-	mockDeviceStore.EXPECT().Get(device1.ID).Return(device1, nil).AnyTimes()
+	deviceChanges := make(map[devicetopo.ID]*devicechange.DeviceChange)
+	deviceChanges[device1.ID] = deviceChange1
+
+	mockDeviceChangesStore.EXPECT().Get(deviceChange1.ID).DoAndReturn(
+		func(deviceID devicetopo.ID) (*devicechange.DeviceChange, error) {
+			return deviceChanges[deviceID], nil
+		}).AnyTimes()
 	mockNetworkChangesStore.EXPECT().Get(networkChange1.ID).Return(networkChange1, nil).AnyTimes()
+	mockNetworkChangesStore.EXPECT().List(gomock.Any()).DoAndReturn(
+		func(c chan<- *network.NetworkChange) error {
+			go func() {
+				c <- networkChange1
+				close(c)
+			}()
+			return nil
+		}).AnyTimes()
+	mockDeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(deviceID devicetopo.ID, c chan<- *devicechange.DeviceChange) error {
+			deviceChange := deviceChanges[deviceID]
+			go func() {
+				if deviceChange != nil {
+					c <- deviceChange1
+				}
+				close(c)
+			}()
+			if deviceChange != nil {
+				return nil
+			}
+			return errors.New("no Configuration found")
+		}).AnyTimes()
 
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
@@ -263,12 +290,12 @@ func Test_LoadManagerBadNetworkStore(t *testing.T) {
 	assert.Assert(t, err != nil, "should have failed to load manager")
 }
 
-func Test_GetNetworkConfig(t *testing.T) {
+func Test_GetNewNetworkConfig(t *testing.T) {
 
 	mgrTest, _, _, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*", 0)
-	assert.NilError(t, err, "GetTargetConfig error")
+	result, err := mgrTest.GetTargetNewConfig("Device1", "/*", 0)
+	assert.NilError(t, err, "GetTargetNewConfig error")
 
 	assert.Equal(t, len(result), 3, "Unexpected result element count")
 
@@ -463,7 +490,7 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 func TestManager_GetNoConfig(t *testing.T) {
 	mgrTest, _, _, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("No Such Device", "Running", "/*", 0)
+	result, err := mgrTest.GetTargetNewConfig("No Such Device", "/*", 0)
 	assert.Assert(t, len(result) == 0, "Get of bad device does not return empty array")
 	assert.ErrorContains(t, err, "no Configuration found")
 }
@@ -480,7 +507,7 @@ func networkConfigContainsPath(configs []*devicechangetypes.PathValue, whichOne 
 func TestManager_GetAllConfig(t *testing.T) {
 	mgrTest, _, _, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*", 0)
+	result, err := mgrTest.GetTargetNewConfig("Device1", "/*", 0)
 	assert.Assert(t, len(result) == 3, "Get of device all paths does not return proper array")
 	assert.NilError(t, err, "Configuration not found")
 	assert.Assert(t, networkConfigContainsPath(result, "/cont1a"), "/cont1a not found")
@@ -491,7 +518,7 @@ func TestManager_GetAllConfig(t *testing.T) {
 func TestManager_GetOneConfig(t *testing.T) {
 	mgrTest, _, _, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/cont1a/cont2a/leaf2a", 0)
+	result, err := mgrTest.GetTargetNewConfig("Device1", "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
 	assert.NilError(t, err, "Configuration not found")
 	assert.Assert(t, networkConfigContainsPath(result, "/cont1a/cont2a/leaf2a"), "/cont1a/cont2a/leaf2a not found")
@@ -500,7 +527,7 @@ func TestManager_GetOneConfig(t *testing.T) {
 func TestManager_GetWildcardConfig(t *testing.T) {
 	mgrTest, _, _, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("Device1", "Running", "/*/*/leaf2a", 0)
+	result, err := mgrTest.GetTargetNewConfig("Device1", "/*/*/leaf2a", 0)
 	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
 	assert.NilError(t, err, "Configuration not found")
 	assert.Assert(t, networkConfigContainsPath(result, "/cont1a/cont2a/leaf2a"), "/cont1a/cont2a/leaf2a not found")
@@ -509,9 +536,9 @@ func TestManager_GetWildcardConfig(t *testing.T) {
 func TestManager_GetConfigNoTarget(t *testing.T) {
 	mgrTest, _, _, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("", "Running", "/cont1a/cont2a/leaf2a", 0)
+	result, err := mgrTest.GetTargetNewConfig("", "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 0, "Get of device one path does not return proper array")
-	assert.ErrorContains(t, err, "no Configuration found for Running")
+	assert.ErrorContains(t, err, "no Configuration found")
 }
 
 func TestManager_GetManager(t *testing.T) {
@@ -728,22 +755,4 @@ func TestManager_ValidateStores(t *testing.T) {
 
 	validationError := mgrTest.ValidateStores()
 	assert.NilError(t, validationError)
-}
-
-// Temporary
-func Test_Mocks(t *testing.T) {
-	mgr, _, _, _, _, _ := setUp(t)
-
-	networkChange, networkChangeError := mgr.NetworkChangesStore.Get("NetworkChange1")
-	assert.NilError(t, networkChangeError)
-	assert.Assert(t, networkChange != nil)
-
-	deviceChange, deviceChangeError := mgr.DeviceChangesStore.Get("Change1")
-	assert.NilError(t, deviceChangeError)
-	assert.Assert(t, deviceChange != nil)
-
-	device, deviceError := mgr.DeviceStore.Get(deviceChange.Change.DeviceID)
-	assert.NilError(t, deviceError)
-	assert.Assert(t, device != nil)
-
 }
