@@ -16,6 +16,7 @@ package manager
 
 import (
 	"fmt"
+	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
@@ -64,19 +65,23 @@ func (m *Manager) NewRollbackTargetConfig(networkChangeID networkchangetypes.ID)
 		log.Errorf("Error on get change %s for rollback: %s", networkChangeID, errGet)
 		return errGet
 	}
-	changeRollback.Status.Phase = changetypes.Phase_ROLLBACK
-	changeRollback.Status.State = changetypes.State_PENDING
-	changeRollback.Status.Reason = changetypes.Reason_NONE
-	changeRollback.Status.Message = "Administratively requested rollback"
 
-	errUpdate := m.NetworkChangesStore.Update(changeRollback)
+	computedChange, errCompute := computeNewRollback(m, changeRollback)
+	if errCompute != nil {
+		log.Errorf("Error in computing rollback for id %s for rollback: %s",
+			networkChangeID, errCompute)
+		return errCompute
+	}
+	log.Infof("Rolling back %s with %s", changeRollback.Changes, computedChange.Changes)
+	errUpdate := m.NetworkChangesStore.Create(computedChange)
 	if errUpdate != nil {
-		log.Errorf("Error on setting change %s rollback: %s", networkChangeID, errUpdate)
+		log.Errorf("Error on setting change %s rollback: %s", computedChange.ID, errUpdate)
 		return errUpdate
 	}
-	return listenForChangeNotification(m, networkChangeID)
+	return listenForChangeNotification(m, computedChange.ID)
 }
 
+//Deprecated computeRollback works on old non atomix methods
 func computeRollback(m *Manager, target string, configname store.ConfigName) (change.ID, devicechangetypes.TypedValueMap, []string, error) {
 	id, err := m.ConfigStore.RemoveLastChangeEntry(configname)
 	if err != nil {
@@ -104,6 +109,58 @@ func computeRollback(m *Manager, target string, configname store.ConfigName) (ch
 		updates[changeVal.Path] = changeVal.GetValue()
 	}
 	return id, updates, deletes, nil
+}
+
+//Deprecated computeRollback works on old non atomix methods
+func computeNewRollback(m *Manager, rollbackChange *networkchangetypes.NetworkChange) (*networkchangetypes.NetworkChange, error) {
+	deltaChange := &networkchangetypes.NetworkChange{
+		ID: networkchangetypes.ID(namesgenerator.GetRandomName(0)),
+		Status: changetypes.Status{
+			Phase:   changetypes.Phase_ROLLBACK,
+			State:   changetypes.State_PENDING,
+			Reason:  changetypes.Reason_NONE,
+			Message: "Change generated for administratively requested rollback of " + string(rollbackChange.ID),
+		},
+	}
+	prevChanges := make([]*devicechangetypes.Change, 0)
+	for _, deviceChange := range rollbackChange.Changes {
+		previousValues := make([]*devicechangetypes.ChangeValue, 0)
+		for _, value := range deviceChange.Values {
+			preVal, err := m.GetTargetNewConfig(string(deviceChange.DeviceID), value.Path, 1)
+			if err != nil {
+				return nil, fmt.Errorf("can't get last config for path %s on network config %s for target %s, %s",
+					value.Path, string(rollbackChange.ID), deviceChange.DeviceID, err)
+			}
+			//Previously there was no such value configured, deleting from devicetopo
+			if len(preVal) == 0 {
+				deleteVal := &devicechangetypes.ChangeValue{
+					Path:    value.Path,
+					Value:   nil,
+					Removed: true,
+				}
+				previousValues = append(previousValues, deleteVal)
+			} else {
+				updateVal := &devicechangetypes.ChangeValue{
+					Path:    preVal[0].Path,
+					Value:   preVal[0].Value,
+					Removed: false,
+				}
+				previousValues = append(previousValues, updateVal)
+			}
+
+		}
+		rollbackChange := &devicechangetypes.Change{
+			DeviceID:      deviceChange.DeviceID,
+			DeviceVersion: deviceChange.DeviceVersion,
+			DeviceType:    deviceChange.DeviceType,
+			Values:        previousValues,
+		}
+		prevChanges = append(prevChanges, rollbackChange)
+	}
+	deltaChange.Changes = prevChanges
+	deltaChange.Created = time.Now()
+	deltaChange.Updated = time.Now()
+	return deltaChange, nil
 }
 
 func listenForDeviceResponse(mgr *Manager, target string) error {
