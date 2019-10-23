@@ -17,6 +17,7 @@ package device
 import (
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/types"
 	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	"sync"
@@ -27,28 +28,29 @@ const queueSize = 100
 // Watcher is a device snapshot watcher
 type Watcher struct {
 	Store devicesnapstore.Store
-	ch    chan *devicesnaptype.DeviceSnapshot
+	ctx   stream.Context
 	mu    sync.Mutex
 }
 
 // Start starts the device snapshot watcher
 func (w *Watcher) Start(ch chan<- types.ID) error {
 	w.mu.Lock()
-	if w.ch != nil {
+	defer w.mu.Unlock()
+	if w.ctx != nil {
 		return nil
 	}
 
-	snapshotCh := make(chan *devicesnaptype.DeviceSnapshot, queueSize)
-	w.ch = snapshotCh
-	w.mu.Unlock()
+	snapshotCh := make(chan stream.Event, queueSize)
 
-	if err := w.Store.Watch(snapshotCh); err != nil {
+	ctx, err := w.Store.Watch(snapshotCh)
+	if err != nil {
 		return err
 	}
+	w.ctx = ctx
 
 	go func() {
 		for request := range snapshotCh {
-			ch <- types.ID(request.ID)
+			ch <- types.ID(request.Object.(*devicesnaptype.DeviceSnapshot).ID)
 		}
 		close(ch)
 	}()
@@ -58,7 +60,9 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 // Stop stops the device snapshot watcher
 func (w *Watcher) Stop() {
 	w.mu.Lock()
-	close(w.ch)
+	if w.ctx != nil {
+		w.ctx.Close()
+	}
 	w.mu.Unlock()
 }
 

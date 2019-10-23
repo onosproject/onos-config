@@ -26,6 +26,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"google.golang.org/grpc"
@@ -128,10 +129,10 @@ type Store interface {
 	Delete(config *networkchangetypes.NetworkChange) error
 
 	// List lists network configurations
-	List(chan<- *networkchangetypes.NetworkChange) error
+	List(chan<- *networkchangetypes.NetworkChange) (stream.Context, error)
 
 	// Watch watches the network configuration store for changes
-	Watch(chan<- *networkchangetypes.NetworkChange, ...WatchOption) error
+	Watch(chan<- stream.Event, ...WatchOption) (stream.Context, error)
 }
 
 // WatchOption is a configuration option for Watch calls
@@ -298,10 +299,13 @@ func (s *atomixStore) Delete(change *networkchangetypes.NetworkChange) error {
 	return nil
 }
 
-func (s *atomixStore) List(ch chan<- *networkchangetypes.NetworkChange) error {
+func (s *atomixStore) List(ch chan<- *networkchangetypes.NetworkChange) (stream.Context, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	mapCh := make(chan *indexedmap.Entry)
-	if err := s.changes.Entries(context.Background(), mapCh); err != nil {
-		return err
+	if err := s.changes.Entries(ctx, mapCh); err != nil {
+		cancel()
+		return nil, err
 	}
 
 	go func() {
@@ -312,29 +316,55 @@ func (s *atomixStore) List(ch chan<- *networkchangetypes.NetworkChange) error {
 			}
 		}
 	}()
-	return nil
+	return stream.NewCancelContext(cancel), nil
 }
 
-func (s *atomixStore) Watch(ch chan<- *networkchangetypes.NetworkChange, opts ...WatchOption) error {
+func (s *atomixStore) Watch(ch chan<- stream.Event, opts ...WatchOption) (stream.Context, error) {
 	watchOpts := make([]indexedmap.WatchOption, 0)
 	for _, opt := range opts {
 		watchOpts = opt.apply(watchOpts)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	mapCh := make(chan *indexedmap.Event)
-	if err := s.changes.Watch(context.Background(), mapCh, watchOpts...); err != nil {
-		return err
+	if err := s.changes.Watch(ctx, mapCh, watchOpts...); err != nil {
+		cancel()
+		return nil, err
 	}
 
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if config, err := decodeChange(event.Entry); err == nil {
-				ch <- config
+			if change, err := decodeChange(event.Entry); err == nil {
+				switch event.Type {
+				case indexedmap.EventNone:
+					ch <- stream.Event{
+						Type:   stream.None,
+						Object: change,
+					}
+				case indexedmap.EventInserted:
+					ch <- stream.Event{
+						Type:   stream.Created,
+						Object: change,
+					}
+				case indexedmap.EventUpdated:
+					ch <- stream.Event{
+						Type:   stream.Updated,
+						Object: change,
+					}
+				case indexedmap.EventRemoved:
+					ch <- stream.Event{
+						Type:   stream.Deleted,
+						Object: change,
+					}
+				}
 			}
 		}
 	}()
-	return nil
+	return stream.NewContext(func() {
+		cancel()
+	}), nil
 }
 
 func (s *atomixStore) Close() error {

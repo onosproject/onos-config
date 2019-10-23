@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -100,17 +101,17 @@ func Test_ListNetworkChanges(t *testing.T) {
 
 	mockNwChStore, ok := mgrTest.NetworkChangesStore.(*mockstore.MockNetworkChangesStore)
 	assert.Assert(t, ok, "casting mock store")
-	mockNwChStore.EXPECT().List(gomock.Any()).DoAndReturn(func(ch chan<- *networkchangetypes.NetworkChange) error {
+	mockNwChStore.EXPECT().List(gomock.Any()).DoAndReturn(func(ch chan<- *networkchangetypes.NetworkChange) (stream.Context, error) {
 		// Send our network changes as a streamed response to store List()
 		go func() {
 			for _, nwch := range networkChanges {
 				ch <- nwch
 			}
-			// Finally send an empty one like the real List() does
-			ch <- nil
+			close(ch)
 		}()
+		return stream.NewContext(func() {
 
-		return nil
+		}), nil
 	})
 	req := ListNetworkChangeRequest{
 		Subscribe: false,
@@ -154,18 +155,19 @@ func Test_ListDeviceChanges(t *testing.T) {
 	mockDevChStore, ok := mgrTest.DeviceChangesStore.(*mockstore.MockDeviceChangesStore)
 	assert.Assert(t, ok, "casting mock store")
 	mockDevChStore.EXPECT().List(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(id devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange) error {
+		DoAndReturn(func(id devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 
 			// Send our network changes as a streamed response to store List()
 			go func() {
 				for _, devch := range deviceChanges {
 					ch <- devch
 				}
-				// Finally send an empty one like the real List() does
-				ch <- nil
+				close(ch)
 			}()
 
-			return nil
+			return stream.NewContext(func() {
+
+			}), nil
 		})
 	req := ListDeviceChangeRequest{
 		Subscribe: false,

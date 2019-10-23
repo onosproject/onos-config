@@ -111,9 +111,11 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 
 	// List the changes for the device
 	changes := make(chan *devicechangetypes.DeviceChange)
-	if err := r.changes.List(deviceSnapshot.DeviceID, changes); err != nil {
+	ctx, err := r.changes.List(deviceSnapshot.DeviceID, changes)
+	if err != nil {
 		return false, err
 	}
+	defer ctx.Close()
 
 	// Iterate through changes and populate the snapshot
 	log.Infof("Taking snapshot of device %s", deviceSnapshot.DeviceID)
@@ -197,9 +199,11 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 
 	// List the changes for the device
 	changes := make(chan *devicechangetypes.DeviceChange)
-	if err := r.changes.List(deviceSnapshot.DeviceID, changes); err != nil {
+	ctx, err := r.changes.List(deviceSnapshot.DeviceID, changes)
+	if err != nil {
 		return false, err
 	}
+	defer ctx.Close()
 
 	// Iterate through changes up to the current snapshot index and delete changes
 	count := 0

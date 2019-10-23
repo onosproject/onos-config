@@ -8,6 +8,7 @@ import (
 	indexedmap "github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	gomock "github.com/golang/mock/gomock"
 	network "github.com/onosproject/onos-config/pkg/store/change/network"
+	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	network0 "github.com/onosproject/onos-config/pkg/types/change/network"
 	reflect "reflect"
 )
@@ -152,11 +153,12 @@ func (mr *MockNetworkChangesStoreMockRecorder) Delete(config interface{}) *gomoc
 }
 
 // List mocks base method
-func (m *MockNetworkChangesStore) List(arg0 chan<- *network0.NetworkChange) error {
+func (m *MockNetworkChangesStore) List(arg0 chan<- *network0.NetworkChange) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // List indicates an expected call of List
@@ -166,15 +168,16 @@ func (mr *MockNetworkChangesStoreMockRecorder) List(arg0 interface{}) *gomock.Ca
 }
 
 // Watch mocks base method
-func (m *MockNetworkChangesStore) Watch(arg0 chan<- *network0.NetworkChange, arg1 ...network.WatchOption) error {
+func (m *MockNetworkChangesStore) Watch(arg0 chan<- stream.Event, arg1 ...network.WatchOption) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Watch", varargs...)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Watch indicates an expected call of Watch

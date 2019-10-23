@@ -15,6 +15,7 @@
 package network
 
 import (
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
@@ -40,8 +41,8 @@ func TestNetworkChangeStore(t *testing.T) {
 	device1 := devicetopo.ID("device-1")
 	device2 := devicetopo.ID("device-2")
 
-	ch := make(chan *networkchangetypes.NetworkChange)
-	err = store2.Watch(ch)
+	ch := make(chan stream.Event)
+	_, err = store2.Watch(ch)
 	assert.NoError(t, err)
 
 	change1 := &networkchangetypes.NetworkChange{
@@ -120,14 +121,14 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NotEqual(t, networkchangetypes.Revision(0), change2.Revision)
 
 	// Verify events were received for the changes
-	changeEvent := nextChange(t, ch)
+	changeEvent := nextEvent(t, ch)
 	assert.Equal(t, networkchangetypes.ID("change-1"), changeEvent.ID)
-	changeEvent = nextChange(t, ch)
+	changeEvent = nextEvent(t, ch)
 	assert.Equal(t, networkchangetypes.ID("change-2"), changeEvent.ID)
 
 	// Watch events for a specific change
-	changeCh := make(chan *networkchangetypes.NetworkChange)
-	err = store1.Watch(changeCh, WithChangeID(change2.ID))
+	changeCh := make(chan stream.Event)
+	_, err = store1.Watch(changeCh, WithChangeID(change2.ID))
 	assert.NoError(t, err)
 
 	// Update one of the changes
@@ -137,7 +138,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, change2.Revision)
 
-	event := <-changeCh
+	event := (<-changeCh).Object.(*networkchangetypes.NetworkChange)
 	assert.Equal(t, change2.ID, event.ID)
 	assert.Equal(t, change2.Revision, event.Revision)
 
@@ -168,7 +169,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, change2.Revision)
 
-	event = <-changeCh
+	event = (<-changeCh).Object.(*networkchangetypes.NetworkChange)
 	assert.Equal(t, change2.ID, event.ID)
 	assert.Equal(t, change2.Revision, event.Revision)
 
@@ -187,16 +188,16 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.Error(t, err)
 
 	// Verify events were received again
-	changeEvent = nextChange(t, ch)
+	changeEvent = nextEvent(t, ch)
 	assert.Equal(t, networkchangetypes.ID("change-2"), changeEvent.ID)
-	changeEvent = nextChange(t, ch)
+	changeEvent = nextEvent(t, ch)
 	assert.Equal(t, networkchangetypes.ID("change-2"), changeEvent.ID)
-	changeEvent = nextChange(t, ch)
+	changeEvent = nextEvent(t, ch)
 	assert.Equal(t, networkchangetypes.ID("change-1"), changeEvent.ID)
 
 	// List the changes
 	changes := make(chan *networkchangetypes.NetworkChange)
-	err = store1.List(changes)
+	_, err = store1.List(changes)
 	assert.NoError(t, err)
 
 	_, ok := <-changes
@@ -213,7 +214,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, change)
 
-	event = <-changeCh
+	event = (<-changeCh).Object.(*networkchangetypes.NetworkChange)
 	assert.Equal(t, change2.ID, event.ID)
 
 	change = &networkchangetypes.NetworkChange{
@@ -258,22 +259,22 @@ func TestNetworkChangeStore(t *testing.T) {
 	err = store1.Create(change)
 	assert.NoError(t, err)
 
-	ch = make(chan *networkchangetypes.NetworkChange)
-	err = store1.Watch(ch, WithReplay())
+	ch = make(chan stream.Event)
+	_, err = store1.Watch(ch, WithReplay())
 	assert.NoError(t, err)
 
-	change = nextChange(t, ch)
+	change = nextEvent(t, ch)
 	assert.Equal(t, networkchangetypes.Index(1), change.Index)
-	change = nextChange(t, ch)
+	change = nextEvent(t, ch)
 	assert.Equal(t, networkchangetypes.Index(3), change.Index)
-	change = nextChange(t, ch)
+	change = nextEvent(t, ch)
 	assert.Equal(t, networkchangetypes.Index(4), change.Index)
 }
 
-func nextChange(t *testing.T, ch chan *networkchangetypes.NetworkChange) *networkchangetypes.NetworkChange {
+func nextEvent(t *testing.T, ch chan stream.Event) *networkchangetypes.NetworkChange {
 	select {
 	case c := <-ch:
-		return c
+		return c.Object.(*networkchangetypes.NetworkChange)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}

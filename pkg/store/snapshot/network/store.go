@@ -26,6 +26,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	networksnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"google.golang.org/grpc"
@@ -121,10 +122,10 @@ type Store interface {
 	Delete(snapshot *networksnapshot.NetworkSnapshot) error
 
 	// List lists network snapshots
-	List(chan<- *networksnapshot.NetworkSnapshot) error
+	List(chan<- *networksnapshot.NetworkSnapshot) (stream.Context, error)
 
 	// Watch watches the network snapshot store for changes
-	Watch(chan<- *networksnapshot.NetworkSnapshot) error
+	Watch(chan<- stream.Event) (stream.Context, error)
 }
 
 // newSnapshotID creates a new network snapshot ID
@@ -232,10 +233,13 @@ func (s *atomixStore) Delete(snapshot *networksnapshot.NetworkSnapshot) error {
 	return nil
 }
 
-func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) error {
+func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) (stream.Context, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	mapCh := make(chan *indexedmap.Entry)
-	if err := s.snapshots.Entries(context.Background(), mapCh); err != nil {
-		return err
+	if err := s.snapshots.Entries(ctx, mapCh); err != nil {
+		cancel()
+		return nil, err
 	}
 
 	go func() {
@@ -246,24 +250,48 @@ func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) error {
 			}
 		}
 	}()
-	return nil
+	return stream.NewCancelContext(cancel), nil
 }
 
-func (s *atomixStore) Watch(ch chan<- *networksnapshot.NetworkSnapshot) error {
+func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	mapCh := make(chan *indexedmap.Event)
-	if err := s.snapshots.Watch(context.Background(), mapCh, indexedmap.WithReplay()); err != nil {
-		return err
+	if err := s.snapshots.Watch(ctx, mapCh, indexedmap.WithReplay()); err != nil {
+		cancel()
+		return nil, err
 	}
 
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
 			if snapshot, err := decodeSnapshot(event.Entry); err == nil {
-				ch <- snapshot
+				switch event.Type {
+				case indexedmap.EventNone:
+					ch <- stream.Event{
+						Type:   stream.None,
+						Object: snapshot,
+					}
+				case indexedmap.EventInserted:
+					ch <- stream.Event{
+						Type:   stream.Created,
+						Object: snapshot,
+					}
+				case indexedmap.EventUpdated:
+					ch <- stream.Event{
+						Type:   stream.Updated,
+						Object: snapshot,
+					}
+				case indexedmap.EventRemoved:
+					ch <- stream.Event{
+						Type:   stream.Deleted,
+						Object: snapshot,
+					}
+				}
 			}
 		}
 	}()
-	return nil
+	return stream.NewCancelContext(cancel), nil
 }
 
 func (s *atomixStore) Close() error {

@@ -15,6 +15,7 @@
 package network
 
 import (
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/types/snapshot"
 	networksnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"github.com/stretchr/testify/assert"
@@ -35,8 +36,8 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.NoError(t, err)
 	defer store2.Close()
 
-	ch := make(chan *networksnapshot.NetworkSnapshot)
-	err = store2.Watch(ch)
+	ch := make(chan stream.Event)
+	_, err = store2.Watch(ch)
 	assert.NoError(t, err)
 
 	retainWindow := 24 * time.Hour
@@ -77,9 +78,9 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.NotEqual(t, networksnapshot.Revision(0), snapshot2.Revision)
 
 	// Verify events were received for the snapshots
-	snapshotEvent := nextSnapshot(t, ch)
+	snapshotEvent := nextEvent(t, ch)
 	assert.Equal(t, networksnapshot.ID("snapshot-1"), snapshotEvent.ID)
-	snapshotEvent = nextSnapshot(t, ch)
+	snapshotEvent = nextEvent(t, ch)
 	assert.Equal(t, networksnapshot.ID("snapshot-2"), snapshotEvent.ID)
 
 	// Update one of the snapshots
@@ -114,16 +115,16 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.Error(t, err)
 
 	// Verify events were received again
-	snapshotEvent = nextSnapshot(t, ch)
+	snapshotEvent = nextEvent(t, ch)
 	assert.Equal(t, networksnapshot.ID("snapshot-2"), snapshotEvent.ID)
-	snapshotEvent = nextSnapshot(t, ch)
+	snapshotEvent = nextEvent(t, ch)
 	assert.Equal(t, networksnapshot.ID("snapshot-2"), snapshotEvent.ID)
-	snapshotEvent = nextSnapshot(t, ch)
+	snapshotEvent = nextEvent(t, ch)
 	assert.Equal(t, networksnapshot.ID("snapshot-1"), snapshotEvent.ID)
 
 	// List the snapshots
 	snapshots := make(chan *networksnapshot.NetworkSnapshot)
-	err = store1.List(snapshots)
+	_, err = store1.List(snapshots)
 	assert.NoError(t, err)
 
 	_, ok := <-snapshots
@@ -141,10 +142,10 @@ func TestNetworkSnapshotStore(t *testing.T) {
 	assert.Nil(t, snapshot2)
 }
 
-func nextSnapshot(t *testing.T, ch chan *networksnapshot.NetworkSnapshot) *networksnapshot.NetworkSnapshot {
+func nextEvent(t *testing.T, ch chan stream.Event) *networksnapshot.NetworkSnapshot {
 	select {
 	case c := <-ch:
-		return c
+		return c.Object.(*networksnapshot.NetworkSnapshot)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}

@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -337,7 +338,7 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	mockChangeStore.EXPECT().Get(deviceChange4.ID).Return(deviceChange4, nil).AnyTimes()
 
 	mockChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(device devicetopo.ID, c chan<- *devicechangetypes.DeviceChange) error {
+		func(device devicetopo.ID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 			go func() {
 				c <- deviceChange1
 				c <- deviceChange2
@@ -348,7 +349,9 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 				}
 				close(c)
 			}()
-			return nil
+			return stream.NewContext(func() {
+
+			}), nil
 		}).AnyTimes()
 
 	return deviceChange3, deviceChange4, mockChangeStore

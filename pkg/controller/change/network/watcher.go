@@ -19,6 +19,7 @@ import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/types"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
@@ -31,28 +32,28 @@ const queueSize = 100
 // Watcher is a network change watcher
 type Watcher struct {
 	Store networkchangestore.Store
-	ch    chan *networkchangetypes.NetworkChange
+	ctx   stream.Context
 	mu    sync.Mutex
 }
 
 // Start starts the network change watcher
 func (w *Watcher) Start(ch chan<- types.ID) error {
 	w.mu.Lock()
-	if w.ch != nil {
+	defer w.mu.Unlock()
+	if w.ctx != nil {
 		return nil
 	}
 
-	configCh := make(chan *networkchangetypes.NetworkChange, queueSize)
-	w.ch = configCh
-	w.mu.Unlock()
-
-	if err := w.Store.Watch(configCh, networkchangestore.WithReplay()); err != nil {
+	configCh := make(chan stream.Event, queueSize)
+	ctx, err := w.Store.Watch(configCh, networkchangestore.WithReplay())
+	if err != nil {
 		return err
 	}
+	w.ctx = ctx
 
 	go func() {
 		for request := range configCh {
-			ch <- types.ID(request.ID)
+			ch <- types.ID(request.Object.(*networkchangetypes.NetworkChange).ID)
 		}
 		close(ch)
 	}()
@@ -62,7 +63,9 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 // Stop stops the network change watcher
 func (w *Watcher) Stop() {
 	w.mu.Lock()
-	close(w.ch)
+	if w.ctx != nil {
+		w.ctx.Close()
+	}
 	w.mu.Unlock()
 }
 
@@ -73,7 +76,7 @@ type DeviceWatcher struct {
 	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
-	channels    map[devicetopo.ID]chan *devicechangetypes.DeviceChange
+	streams     map[devicetopo.ID]stream.Context
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
@@ -87,7 +90,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	}
 
 	w.ch = ch
-	w.channels = make(map[devicetopo.ID]chan *devicechangetypes.DeviceChange)
+	w.streams = make(map[devicetopo.ID]stream.Context)
 	w.mu.Unlock()
 
 	deviceCh := make(chan *devicetopo.ListResponse)
@@ -106,27 +109,24 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 // watchDevice watches changes for the given device
 func (w *DeviceWatcher) watchDevice(device devicetopo.ID, ch chan<- types.ID) {
 	w.mu.Lock()
-	deviceCh := w.channels[device]
-	if deviceCh != nil {
-		w.mu.Unlock()
+	defer w.mu.Unlock()
+
+	ctx := w.streams[device]
+	if ctx != nil {
 		return
 	}
 
-	deviceCh = make(chan *devicechangetypes.DeviceChange, queueSize)
-	w.channels[device] = deviceCh
-	w.mu.Unlock()
-
-	if err := w.ChangeStore.Watch(device, deviceCh, devicechangestore.WithReplay()); err != nil {
-		w.mu.Lock()
-		delete(w.channels, device)
-		w.mu.Unlock()
+	deviceCh := make(chan stream.Event, queueSize)
+	ctx, err := w.ChangeStore.Watch(device, deviceCh, devicechangestore.WithReplay())
+	if err != nil {
 		return
 	}
+	w.streams[device] = ctx
 
 	w.wg.Add(1)
 	go func() {
-		for request := range deviceCh {
-			ch <- types.ID(request.NetworkChange.ID)
+		for event := range deviceCh {
+			ch <- types.ID(event.Object.(*devicechangetypes.DeviceChange).ID)
 		}
 		w.wg.Done()
 	}()
@@ -135,8 +135,8 @@ func (w *DeviceWatcher) watchDevice(device devicetopo.ID, ch chan<- types.ID) {
 // Stop stops the device change watcher
 func (w *DeviceWatcher) Stop() {
 	w.mu.Lock()
-	for _, ch := range w.channels {
-		close(ch)
+	for _, ctx := range w.streams {
+		ctx.Close()
 	}
 	w.mu.Unlock()
 	w.wg.Wait()

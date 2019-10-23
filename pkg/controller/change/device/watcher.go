@@ -18,6 +18,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/types"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -31,7 +32,7 @@ type Watcher struct {
 	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
-	channels    map[devicetopo.ID]chan *devicechangetypes.DeviceChange
+	streams     map[devicetopo.ID]stream.Context
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
@@ -45,7 +46,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	}
 
 	w.ch = ch
-	w.channels = make(map[devicetopo.ID]chan *devicechangetypes.DeviceChange)
+	w.streams = make(map[devicetopo.ID]stream.Context)
 	w.mu.Unlock()
 
 	deviceCh := make(chan *devicetopo.ListResponse)
@@ -64,27 +65,24 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 // watchDevice watches changes for the given device
 func (w *Watcher) watchDevice(device devicetopo.ID, ch chan<- types.ID) {
 	w.mu.Lock()
-	deviceCh := w.channels[device]
-	if deviceCh != nil {
-		w.mu.Unlock()
+	defer w.mu.Unlock()
+
+	ctx := w.streams[device]
+	if ctx != nil {
 		return
 	}
 
-	deviceCh = make(chan *devicechangetypes.DeviceChange, queueSize)
-	w.channels[device] = deviceCh
-	w.mu.Unlock()
-
-	if err := w.ChangeStore.Watch(device, deviceCh, devicechangestore.WithReplay()); err != nil {
-		w.mu.Lock()
-		delete(w.channels, device)
-		w.mu.Unlock()
+	deviceCh := make(chan stream.Event, queueSize)
+	ctx, err := w.ChangeStore.Watch(device, deviceCh, devicechangestore.WithReplay())
+	if err != nil {
 		return
 	}
+	w.streams[device] = ctx
 
 	w.wg.Add(1)
 	go func() {
-		for request := range deviceCh {
-			ch <- types.ID(request.ID)
+		for event := range deviceCh {
+			ch <- types.ID(event.Object.(*devicechangetypes.DeviceChange).ID)
 		}
 		w.wg.Done()
 	}()
@@ -93,8 +91,8 @@ func (w *Watcher) watchDevice(device devicetopo.ID, ch chan<- types.ID) {
 // Stop stops the device change watcher
 func (w *Watcher) Stop() {
 	w.mu.Lock()
-	for _, ch := range w.channels {
-		close(ch)
+	for _, ctx := range w.streams {
+		ctx.Close()
 	}
 	w.mu.Unlock()
 	w.wg.Wait()

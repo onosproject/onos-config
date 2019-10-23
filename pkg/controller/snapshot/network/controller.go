@@ -142,9 +142,11 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 
 	// List network changes
 	changes := make(chan *networkchangetypes.NetworkChange)
-	if err := r.networkChanges.List(changes); err != nil {
+	ctx, err := r.networkChanges.List(changes)
+	if err != nil {
 		return false, err
 	}
+	defer ctx.Close()
 
 	// Compute the maximum timestamp for changes to be deleted from the change store
 	var maxTimestamp *time.Time
@@ -324,9 +326,11 @@ func (r *Reconciler) reconcileRunningDelete(snapshot *networksnaptypes.NetworkSn
 func (r *Reconciler) deleteNetworkChanges(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
 	// List network changes
 	changes := make(chan *networkchangetypes.NetworkChange)
-	if err := r.networkChanges.List(changes); err != nil {
+	ctx, err := r.networkChanges.List(changes)
+	if err != nil {
 		return false, err
 	}
+	defer ctx.Close()
 
 	// Iterate through network changes and mark changes marked for deletion
 	for change := range changes {

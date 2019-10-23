@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
@@ -552,19 +553,21 @@ func doRollback(changes mapNetworkChanges, mgr *manager.Manager, target string,
 }
 
 func listenAndBuildResponse(mgr *manager.Manager, changeID networkchangetypes.ID) ([]*gnmi.UpdateResult, error) {
-	networkChan := make(chan *networkchangetypes.NetworkChange)
-	errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
+	networkChan := make(chan stream.Event)
+	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
 	if errWatch != nil {
 		return nil, fmt.Errorf("can't complete set operation on target due to %s", errWatch)
 	}
+	defer ctx.Close()
 	updateResults := make([]*gnmi.UpdateResult, 0)
 	for changeEvent := range networkChan {
-		log.Infof("Received notification for change ID %s, phase %s, state %s", changeEvent.ID,
-			changeEvent.Status.Phase, changeEvent.Status.State)
-		if changeEvent.Status.Phase == changetypes.Phase_CHANGE {
-			switch changeStatus := changeEvent.Status.State; changeStatus {
+		change := changeEvent.Object.(*networkchangetypes.NetworkChange)
+		log.Infof("Received notification for change ID %s, phase %s, state %s", change.ID,
+			change.Status.Phase, change.Status.State)
+		if change.Status.Phase == changetypes.Phase_CHANGE {
+			switch changeStatus := change.Status.State; changeStatus {
 			case changetypes.State_COMPLETE:
-				for _, deviceChange := range changeEvent.Changes {
+				for _, deviceChange := range change.Changes {
 					deviceID := deviceChange.DeviceID
 					for _, valueUpdate := range deviceChange.Values {
 						var updateResult *gnmi.UpdateResult
@@ -585,7 +588,7 @@ func listenAndBuildResponse(mgr *manager.Manager, changeID networkchangetypes.ID
 				}
 			case changetypes.State_FAILED:
 				return nil, fmt.Errorf("issue in setting config reson %s, error %s, rolling back change %s",
-					changeEvent.Status.Reason, changeEvent.Status.Message, changeID)
+					change.Status.Reason, change.Status.Message, changeID)
 			default:
 				continue
 			}
