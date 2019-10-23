@@ -42,15 +42,24 @@ type Info struct {
 type Cache interface {
 	io.Closer
 
+	// GetDevicesByID returns the devices that match the given device ID
+	GetDevicesByID(id device.ID) []*Info
+
+	// GetDevicesByType gets all devices of the given type
+	GetDevicesByType(deviceType string) []*Info
+
+	// GetDevicesByVersion gets all devices of the given type/version
+	GetDevicesByVersion(deviceType string, deviceVersion string) []*Info
+
 	// GetDevices returns the set of devices in the cache
-	GetDevices() []Info
+	GetDevices() []*Info
 }
 
 // NewCache returns a new cache based on the NetworkChange store
 func NewCache(networkChangeStore networkchangestore.Store) (Cache, error) {
 	cache := &networkChangeStoreCache{
 		networkChangeStore: networkChangeStore,
-		devices:            make(map[string]Info),
+		devices:            make(map[string]*Info),
 	}
 	if err := cache.listen(); err != nil {
 		return nil, err
@@ -61,7 +70,7 @@ func NewCache(networkChangeStore networkchangestore.Store) (Cache, error) {
 // networkChangeStoreCache is a device cache based on the NetworkChange store
 type networkChangeStoreCache struct {
 	networkChangeStore networkchangestore.Store
-	devices            map[string]Info
+	devices            map[string]*Info
 	mu                 sync.RWMutex
 }
 
@@ -80,9 +89,9 @@ func (c *networkChangeStoreCache) listen() error {
 				key := newKey(devChange.DeviceID, devChange.DeviceVersion)
 				c.mu.Lock()
 				if _, ok := c.devices[key]; !ok {
-					c.devices[key] = Info{
+					c.devices[key] = &Info{
 						DeviceID: devChange.DeviceID,
-						Type:     "",
+						Type:     devChange.DeviceType,
 						Version:  devChange.DeviceVersion,
 					}
 				}
@@ -94,11 +103,47 @@ func (c *networkChangeStoreCache) listen() error {
 	return nil
 }
 
-func (c *networkChangeStoreCache) GetDevices() []Info {
+func (c *networkChangeStoreCache) GetDevicesByID(id device.ID) []*Info {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	devices := make([]*Info, 0, len(c.devices))
+	for _, info := range c.devices {
+		if info.DeviceID == id {
+			devices = append(devices, info)
+		}
+	}
+	return devices
+}
+
+func (c *networkChangeStoreCache) GetDevicesByType(deviceType string) []*Info {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	devices := make([]*Info, 0, len(c.devices))
+	for _, info := range c.devices {
+		if info.Type == deviceType {
+			devices = append(devices, info)
+		}
+	}
+	return devices
+}
+
+func (c *networkChangeStoreCache) GetDevicesByVersion(deviceType string, deviceVersion string) []*Info {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	devices := make([]*Info, 0, len(c.devices))
+	for _, info := range c.devices {
+		if info.Type == deviceType && info.Version == deviceVersion {
+			devices = append(devices, info)
+		}
+	}
+	return devices
+}
+
+func (c *networkChangeStoreCache) GetDevices() []*Info {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	devices := make([]Info, 0, len(c.devices))
+	devices := make([]*Info, 0, len(c.devices))
 	for _, info := range c.devices {
 		devices = append(devices, info)
 	}
