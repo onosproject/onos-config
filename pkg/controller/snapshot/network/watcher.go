@@ -18,6 +18,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/types"
 	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	networksnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/network"
@@ -29,28 +30,28 @@ const queueSize = 100
 // Watcher is a network snapshot watcher
 type Watcher struct {
 	Store networksnapstore.Store
-	ch    chan *networksnaptype.NetworkSnapshot
+	ctx   stream.Context
 	mu    sync.Mutex
 }
 
 // Start starts the network snapshot watcher
 func (w *Watcher) Start(ch chan<- types.ID) error {
 	w.mu.Lock()
-	if w.ch != nil {
+	defer w.mu.Unlock()
+	if w.ctx != nil {
 		return nil
 	}
 
-	snapshotCh := make(chan *networksnaptype.NetworkSnapshot, queueSize)
-	w.ch = snapshotCh
-	w.mu.Unlock()
-
-	if err := w.Store.Watch(snapshotCh); err != nil {
+	snapshotCh := make(chan stream.Event, queueSize)
+	ctx, err := w.Store.Watch(snapshotCh)
+	if err != nil {
 		return err
 	}
+	w.ctx = ctx
 
 	go func() {
 		for request := range snapshotCh {
-			ch <- types.ID(request.ID)
+			ch <- types.ID(request.Object.(*networksnaptype.NetworkSnapshot).ID)
 		}
 		close(ch)
 	}()
@@ -60,7 +61,9 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 // Stop stops the network snapshot watcher
 func (w *Watcher) Stop() {
 	w.mu.Lock()
-	close(w.ch)
+	if w.ctx != nil {
+		w.ctx.Close()
+	}
 	w.mu.Unlock()
 }
 
@@ -69,28 +72,28 @@ var _ controller.Watcher = &Watcher{}
 // DeviceWatcher is a device snapshot watcher
 type DeviceWatcher struct {
 	Store devicesnapstore.Store
-	ch    chan *devicesnaptype.DeviceSnapshot
+	ctx   stream.Context
 	mu    sync.Mutex
 }
 
 // Start starts the device snapshot watcher
 func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	w.mu.Lock()
-	if w.ch != nil {
+	defer w.mu.Unlock()
+	if w.ctx != nil {
 		return nil
 	}
 
-	snapshotCh := make(chan *devicesnaptype.DeviceSnapshot, queueSize)
-	w.ch = snapshotCh
-	w.mu.Unlock()
-
-	if err := w.Store.Watch(snapshotCh); err != nil {
+	snapshotCh := make(chan stream.Event, queueSize)
+	ctx, err := w.Store.Watch(snapshotCh)
+	if err != nil {
 		return err
 	}
+	w.ctx = ctx
 
 	go func() {
-		for request := range snapshotCh {
-			ch <- request.NetworkSnapshot.ID
+		for event := range snapshotCh {
+			ch <- event.Object.(*devicesnaptype.DeviceSnapshot).NetworkSnapshot.ID
 		}
 		close(ch)
 	}()
@@ -100,7 +103,9 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 // Stop stops the device snapshot watcher
 func (w *DeviceWatcher) Stop() {
 	w.mu.Lock()
-	close(w.ch)
+	if w.ctx != nil {
+		w.ctx.Close()
+	}
 	w.mu.Unlock()
 }
 

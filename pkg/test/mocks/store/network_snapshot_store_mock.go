@@ -6,6 +6,7 @@ package store
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	network "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	reflect "reflect"
 )
@@ -120,11 +121,12 @@ func (mr *MockNetworkSnapshotStoreMockRecorder) Delete(snapshot interface{}) *go
 }
 
 // List mocks base method
-func (m *MockNetworkSnapshotStore) List(arg0 chan<- *network.NetworkSnapshot) error {
+func (m *MockNetworkSnapshotStore) List(arg0 chan<- *network.NetworkSnapshot) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // List indicates an expected call of List
@@ -134,11 +136,12 @@ func (mr *MockNetworkSnapshotStoreMockRecorder) List(arg0 interface{}) *gomock.C
 }
 
 // Watch mocks base method
-func (m *MockNetworkSnapshotStore) Watch(arg0 chan<- *network.NetworkSnapshot) error {
+func (m *MockNetworkSnapshotStore) Watch(arg0 chan<- stream.Event) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Watch", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Watch indicates an expected call of Watch

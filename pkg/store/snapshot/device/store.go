@@ -24,6 +24,7 @@ import (
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
 	"github.com/gogo/protobuf/proto"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	devicesnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -131,10 +132,10 @@ type Store interface {
 	Delete(snapshot *devicesnapshot.DeviceSnapshot) error
 
 	// List lists device snapshot
-	List(chan<- *devicesnapshot.DeviceSnapshot) error
+	List(chan<- *devicesnapshot.DeviceSnapshot) (stream.Context, error)
 
 	// Watch watches the device snapshot store for changes
-	Watch(chan<- *devicesnapshot.DeviceSnapshot) error
+	Watch(chan<- stream.Event) (stream.Context, error)
 
 	// Store stores a snapshot
 	Store(snapshot *devicesnapshot.Snapshot) error
@@ -143,7 +144,7 @@ type Store interface {
 	Load(id devicetopo.ID) (*devicesnapshot.Snapshot, error)
 
 	// Load loads all snapshots
-	LoadAll(ch chan<- *devicesnapshot.Snapshot) error
+	LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Context, error)
 }
 
 // atomixStore is the default implementation of the DeviceSnapshot store
@@ -232,10 +233,12 @@ func (s *atomixStore) Delete(snapshot *devicesnapshot.DeviceSnapshot) error {
 	return nil
 }
 
-func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) error {
+func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) (stream.Context, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	mapCh := make(chan *_map.Entry)
-	if err := s.deviceSnapshots.Entries(context.Background(), mapCh); err != nil {
-		return err
+	if err := s.deviceSnapshots.Entries(ctx, mapCh); err != nil {
+		return nil, err
 	}
 
 	go func() {
@@ -246,24 +249,47 @@ func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) error {
 			}
 		}
 	}()
-	return nil
+	return stream.NewCancelContext(cancel), nil
 }
 
-func (s *atomixStore) Watch(ch chan<- *devicesnapshot.DeviceSnapshot) error {
+func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	mapCh := make(chan *_map.Event)
-	if err := s.deviceSnapshots.Watch(context.Background(), mapCh, _map.WithReplay()); err != nil {
-		return err
+	if err := s.deviceSnapshots.Watch(ctx, mapCh, _map.WithReplay()); err != nil {
+		return nil, err
 	}
 
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
 			if snapshot, err := decodeDeviceSnapshot(event.Entry); err == nil {
-				ch <- snapshot
+				switch event.Type {
+				case _map.EventNone:
+					ch <- stream.Event{
+						Type:   stream.None,
+						Object: snapshot,
+					}
+				case _map.EventInserted:
+					ch <- stream.Event{
+						Type:   stream.Created,
+						Object: snapshot,
+					}
+				case _map.EventUpdated:
+					ch <- stream.Event{
+						Type:   stream.Updated,
+						Object: snapshot,
+					}
+				case _map.EventRemoved:
+					ch <- stream.Event{
+						Type:   stream.Deleted,
+						Object: snapshot,
+					}
+				}
 			}
 		}
 	}()
-	return nil
+	return stream.NewCancelContext(cancel), nil
 }
 
 func (s *atomixStore) Store(snapshot *devicesnapshot.Snapshot) error {
@@ -295,10 +321,12 @@ func (s *atomixStore) Load(id devicetopo.ID) (*devicesnapshot.Snapshot, error) {
 	return decodeSnapshot(entry)
 }
 
-func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) error {
+func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Context, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	mapCh := make(chan *_map.Entry)
-	if err := s.snapshots.Entries(context.Background(), mapCh); err != nil {
-		return err
+	if err := s.snapshots.Entries(ctx, mapCh); err != nil {
+		return nil, err
 	}
 
 	go func() {
@@ -309,7 +337,7 @@ func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) error {
 			}
 		}
 	}()
-	return nil
+	return stream.NewCancelContext(cancel), nil
 }
 
 func (s *atomixStore) Close() error {

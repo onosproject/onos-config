@@ -15,6 +15,7 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -39,8 +40,8 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	device1 := devicetopo.ID("device-1")
 	device2 := devicetopo.ID("device-2")
 
-	ch := make(chan *devicesnapshot.DeviceSnapshot)
-	err = store2.Watch(ch)
+	ch := make(chan stream.Event)
+	_, err = store2.Watch(ch)
 	assert.NoError(t, err)
 
 	snapshot1 := &devicesnapshot.DeviceSnapshot{
@@ -79,9 +80,9 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	assert.NotEqual(t, devicesnapshot.Revision(0), snapshot2.Revision)
 
 	// Verify events were received for the snapshots
-	snapshotEvent := nextSnapshot(t, ch)
+	snapshotEvent := nextEvent(t, ch)
 	assert.Equal(t, devicesnapshot.ID("snapshot-1:device-1"), snapshotEvent.ID)
-	snapshotEvent = nextSnapshot(t, ch)
+	snapshotEvent = nextEvent(t, ch)
 	assert.Equal(t, devicesnapshot.ID("snapshot-2:device-2"), snapshotEvent.ID)
 
 	// Update one of the snapshots
@@ -116,16 +117,16 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	assert.Error(t, err)
 
 	// Verify events were received again
-	snapshotEvent = nextSnapshot(t, ch)
+	snapshotEvent = nextEvent(t, ch)
 	assert.Equal(t, devicesnapshot.ID("snapshot-2:device-2"), snapshotEvent.ID)
-	snapshotEvent = nextSnapshot(t, ch)
+	snapshotEvent = nextEvent(t, ch)
 	assert.Equal(t, devicesnapshot.ID("snapshot-2:device-2"), snapshotEvent.ID)
-	snapshotEvent = nextSnapshot(t, ch)
+	snapshotEvent = nextEvent(t, ch)
 	assert.Equal(t, devicesnapshot.ID("snapshot-1:device-1"), snapshotEvent.ID)
 
 	// List the snapshots
 	snapshots := make(chan *devicesnapshot.DeviceSnapshot)
-	err = store1.List(snapshots)
+	_, err = store1.List(snapshots)
 	assert.NoError(t, err)
 
 	_, ok := <-snapshots
@@ -156,22 +157,22 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	err = store1.Create(snapshot)
 	assert.NoError(t, err)
 
-	ch = make(chan *devicesnapshot.DeviceSnapshot)
-	err = store1.Watch(ch)
+	ch = make(chan stream.Event)
+	_, err = store1.Watch(ch)
 	assert.NoError(t, err)
 
-	snapshot = nextSnapshot(t, ch)
+	snapshot = nextEvent(t, ch)
 	assert.NotNil(t, snapshot)
-	snapshot = nextSnapshot(t, ch)
+	snapshot = nextEvent(t, ch)
 	assert.NotNil(t, snapshot)
-	snapshot = nextSnapshot(t, ch)
+	snapshot = nextEvent(t, ch)
 	assert.NotNil(t, snapshot)
 }
 
-func nextSnapshot(t *testing.T, ch chan *devicesnapshot.DeviceSnapshot) *devicesnapshot.DeviceSnapshot {
+func nextEvent(t *testing.T, ch chan stream.Event) *devicesnapshot.DeviceSnapshot {
 	select {
 	case c := <-ch:
-		return c
+		return c.Object.(*devicesnapshot.DeviceSnapshot)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}

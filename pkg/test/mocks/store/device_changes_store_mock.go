@@ -8,6 +8,7 @@ import (
 	indexedmap "github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	gomock "github.com/golang/mock/gomock"
 	device "github.com/onosproject/onos-config/pkg/store/change/device"
+	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	device0 "github.com/onosproject/onos-config/pkg/types/change/device"
 	device1 "github.com/onosproject/onos-topo/pkg/northbound/device"
 	reflect "reflect"
@@ -108,11 +109,12 @@ func (mr *MockDeviceChangesStoreMockRecorder) Delete(config interface{}) *gomock
 }
 
 // List mocks base method
-func (m *MockDeviceChangesStore) List(arg0 device1.ID, arg1 chan<- *device0.DeviceChange) error {
+func (m *MockDeviceChangesStore) List(arg0 device1.ID, arg1 chan<- *device0.DeviceChange) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // List indicates an expected call of List
@@ -122,15 +124,16 @@ func (mr *MockDeviceChangesStoreMockRecorder) List(arg0, arg1 interface{}) *gomo
 }
 
 // Watch mocks base method
-func (m *MockDeviceChangesStore) Watch(arg0 device1.ID, arg1 chan<- *device0.DeviceChange, arg2 ...device.WatchOption) error {
+func (m *MockDeviceChangesStore) Watch(arg0 device1.ID, arg1 chan<- stream.Event, arg2 ...device.WatchOption) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Watch", varargs...)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Watch indicates an expected call of Watch

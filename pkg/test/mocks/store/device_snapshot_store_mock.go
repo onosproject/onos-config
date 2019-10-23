@@ -6,6 +6,7 @@ package store
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	device "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	device0 "github.com/onosproject/onos-topo/pkg/northbound/device"
 	reflect "reflect"
@@ -106,11 +107,12 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Delete(snapshot interface{}) *gom
 }
 
 // List mocks base method
-func (m *MockDeviceSnapshotStore) List(arg0 chan<- *device.DeviceSnapshot) error {
+func (m *MockDeviceSnapshotStore) List(arg0 chan<- *device.DeviceSnapshot) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // List indicates an expected call of List
@@ -120,11 +122,12 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) List(arg0 interface{}) *gomock.Ca
 }
 
 // Watch mocks base method
-func (m *MockDeviceSnapshotStore) Watch(arg0 chan<- *device.DeviceSnapshot) error {
+func (m *MockDeviceSnapshotStore) Watch(arg0 chan<- stream.Event) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Watch", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Watch indicates an expected call of Watch
@@ -163,11 +166,12 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Load(id interface{}) *gomock.Call
 }
 
 // LoadAll mocks base method
-func (m *MockDeviceSnapshotStore) LoadAll(ch chan<- *device.Snapshot) error {
+func (m *MockDeviceSnapshotStore) LoadAll(ch chan<- *device.Snapshot) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadAll", ch)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // LoadAll indicates an expected call of LoadAll

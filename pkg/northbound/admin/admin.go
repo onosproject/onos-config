@@ -21,10 +21,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	snapshottype "github.com/onosproject/onos-config/pkg/types/snapshot"
 	"github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	"github.com/onosproject/onos-config/pkg/types/snapshot/network"
+	networksnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -310,9 +311,11 @@ func (s Server) GetSnapshot(ctx context.Context, request *GetSnapshotRequest) (*
 // ListSnapshots lists snapshots for all devices
 func (s Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdminService_ListSnapshotsServer) error {
 	ch := make(chan *device.Snapshot)
-	if err := manager.GetManager().DeviceSnapshotStore.LoadAll(ch); err != nil {
+	ctx, err := manager.GetManager().DeviceSnapshotStore.LoadAll(ch)
+	if err != nil {
 		return err
 	}
+	defer ctx.Close()
 
 	for snapshot := range ch {
 		if err := stream.SendMsg(snapshot); err != nil {
@@ -324,22 +327,25 @@ func (s Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdminS
 
 // CompactChanges takes a snapshot of all devices
 func (s Server) CompactChanges(ctx context.Context, request *CompactChangesRequest) (*CompactChangesResponse, error) {
-	snapshot := &network.NetworkSnapshot{
+	snapshot := &networksnaptypes.NetworkSnapshot{
 		Retention: snapshottype.RetentionOptions{
 			RetainWindow: request.RetentionPeriod,
 		},
 	}
 
-	ch := make(chan *network.NetworkSnapshot)
-	if err := manager.GetManager().NetworkSnapshotStore.Watch(ch); err != nil {
+	ch := make(chan stream.Event)
+	stream, err := manager.GetManager().NetworkSnapshotStore.Watch(ch)
+	if err != nil {
 		return nil, err
 	}
+	defer stream.Close()
 	if err := manager.GetManager().NetworkSnapshotStore.Create(snapshot); err != nil {
 		return nil, err
 	}
 
 	for event := range ch {
-		if snapshot.ID != "" && snapshot.ID == event.ID && snapshot.Status.Phase == snapshottype.Phase_DELETE && snapshot.Status.State == snapshottype.State_COMPLETE {
+		eventSnapshot := event.Object.(*networksnaptypes.NetworkSnapshot)
+		if snapshot.ID != "" && snapshot.ID == eventSnapshot.ID && eventSnapshot.Status.Phase == snapshottype.Phase_DELETE && eventSnapshot.Status.State == snapshottype.State_COMPLETE {
 			return &CompactChangesResponse{}, nil
 		}
 	}

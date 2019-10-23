@@ -15,6 +15,7 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -40,12 +41,12 @@ func TestDeviceStore(t *testing.T) {
 	device1 := devicetopo.ID("device-1")
 	device2 := devicetopo.ID("device-2")
 
-	ch1 := make(chan *devicechangetypes.DeviceChange)
-	err = store2.Watch(device1, ch1)
+	ch1 := make(chan stream.Event)
+	_, err = store2.Watch(device1, ch1)
 	assert.NoError(t, err)
 
-	ch2 := make(chan *devicechangetypes.DeviceChange)
-	err = store2.Watch(device2, ch2)
+	ch2 := make(chan stream.Event)
+	_, err = store2.Watch(device2, ch2)
 	assert.NoError(t, err)
 
 	change1 := &devicechangetypes.DeviceChange{
@@ -166,18 +167,18 @@ func TestDeviceStore(t *testing.T) {
 	assert.NotEqual(t, devicechangetypes.Revision(0), change4.Revision)
 
 	// Verify events were received for the changes
-	changeEvent := nextDeviceChange(t, ch1)
+	changeEvent := nextEvent(t, ch1)
 	assert.Equal(t, devicechangetypes.ID("network-change-1:device-1"), changeEvent.ID)
-	changeEvent = nextDeviceChange(t, ch1)
+	changeEvent = nextEvent(t, ch1)
 	assert.Equal(t, devicechangetypes.ID("network-change-2:device-1"), changeEvent.ID)
-	changeEvent = nextDeviceChange(t, ch1)
+	changeEvent = nextEvent(t, ch1)
 	assert.Equal(t, devicechangetypes.ID("network-change-3:device-1"), changeEvent.ID)
-	changeEvent = nextDeviceChange(t, ch2)
+	changeEvent = nextEvent(t, ch2)
 	assert.Equal(t, devicechangetypes.ID("network-change-3:device-2"), changeEvent.ID)
 
 	// Watch events for a specific change
-	changeCh := make(chan *devicechangetypes.DeviceChange)
-	err = store1.Watch(device1, changeCh, WithChangeID(change2.ID))
+	changeCh := make(chan stream.Event)
+	_, err = store1.Watch(device1, changeCh, WithChangeID(change2.ID))
 	assert.NoError(t, err)
 
 	// Update one of the changes
@@ -187,7 +188,7 @@ func TestDeviceStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, change2.Revision)
 
-	event := <-changeCh
+	event := (<-changeCh).Object.(*devicechangetypes.DeviceChange)
 	assert.Equal(t, change2.ID, event.ID)
 	assert.Equal(t, change2.Revision, event.Revision)
 
@@ -201,7 +202,7 @@ func TestDeviceStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, revision, change2.Revision)
 
-	event = <-changeCh
+	event = (<-changeCh).Object.(*devicechangetypes.DeviceChange)
 	assert.Equal(t, change2.ID, event.ID)
 	assert.Equal(t, change2.Revision, event.Revision)
 
@@ -220,16 +221,16 @@ func TestDeviceStore(t *testing.T) {
 	assert.Error(t, err)
 
 	// Verify device events were received again
-	changeEvent = nextDeviceChange(t, ch1)
+	changeEvent = nextEvent(t, ch1)
 	assert.Equal(t, devicechangetypes.ID("network-change-2:device-1"), changeEvent.ID)
-	changeEvent = nextDeviceChange(t, ch1)
+	changeEvent = nextEvent(t, ch1)
 	assert.Equal(t, devicechangetypes.ID("network-change-2:device-1"), changeEvent.ID)
-	changeEvent = nextDeviceChange(t, ch1)
+	changeEvent = nextEvent(t, ch1)
 	assert.Equal(t, devicechangetypes.ID("network-change-3:device-1"), changeEvent.ID)
 
 	// List the changes for a device
 	changes := make(chan *devicechangetypes.DeviceChange)
-	err = store1.List(device1, changes)
+	_, err = store1.List(device1, changes)
 	assert.NoError(t, err)
 
 	changeEvent = nextDeviceChange(t, changes)
@@ -253,17 +254,17 @@ func TestDeviceStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, change)
 
-	event = <-changeCh
+	event = (<-changeCh).Object.(*devicechangetypes.DeviceChange)
 	assert.Equal(t, change2.ID, event.ID)
 
 	// Ensure existing changes are replayed in order on watch
-	watches := make(chan *devicechangetypes.DeviceChange)
-	err = store1.Watch(device1, watches, WithReplay())
+	watches := make(chan stream.Event)
+	_, err = store1.Watch(device1, watches, WithReplay())
 	assert.NoError(t, err)
 
-	change = nextDeviceChange(t, watches)
+	change = nextEvent(t, watches)
 	assert.Equal(t, devicechangetypes.ID("network-change-1:device-1"), change.ID)
-	change = nextDeviceChange(t, watches)
+	change = nextEvent(t, watches)
 	assert.Equal(t, devicechangetypes.ID("network-change-3:device-1"), change.ID)
 }
 
@@ -271,6 +272,16 @@ func nextDeviceChange(t *testing.T, ch chan *devicechangetypes.DeviceChange) *de
 	select {
 	case change := <-ch:
 		return change
+	case <-time.After(5 * time.Second):
+		t.FailNow()
+	}
+	return nil
+}
+
+func nextEvent(t *testing.T, ch chan stream.Event) *devicechangetypes.DeviceChange {
+	select {
+	case change := <-ch:
+		return change.Object.(*devicechangetypes.DeviceChange)
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}

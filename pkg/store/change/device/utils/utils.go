@@ -34,11 +34,13 @@ func ExtractFullConfig(deviceID devicetopo.ID, newChange *devicechangetypes.Chan
 
 	changeChan := make(chan *devicechangetypes.DeviceChange)
 
-	err := changeStore.List(deviceID, changeChan)
+	ctx, err := changeStore.List(deviceID, changeChan)
 
 	if err != nil {
 		return nil, err
 	}
+
+	defer ctx.Close()
 
 	if newChange != nil {
 		consolidatedConfig = getPathValue(newChange, consolidatedConfig)

@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
+	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -210,50 +211,83 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 	// There may be a wildcard given - we only want to reply with changes that match
 	matcher := utils.MatchWildcardChNameRegexp(string(r.ChangeID))
 
-	nwChChan := make(chan *networkchangetypes.NetworkChange)
-	defer close(nwChChan)
-
 	if r.Subscribe {
-		err := manager.GetManager().NetworkChangesStore.Watch(nwChChan, network.WithReplay())
+		eventCh := make(chan streams.Event)
+		ctx, err := manager.GetManager().NetworkChangesStore.Watch(eventCh, network.WithReplay())
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
 		}
+		defer ctx.Close()
 
+		for {
+			breakout := false
+			select { // Blocks until one of the following are received
+			case event, ok := <-eventCh:
+				if !ok { // Will happen at the end of stream
+					breakout = true
+					break
+				}
+
+				change := event.Object.(*networkchangetypes.NetworkChange)
+				log.Infof("List() channel sent us %v", change)
+
+				if matcher.MatchString(string(change.ID)) {
+					msg := &ListNetworkChangeResponse{
+						Change: change,
+					}
+					log.Infof("Sending matching change %v", change.ID)
+					err := stream.Send(msg)
+					if err != nil {
+						log.Errorf("Error sending NetworkChanges %v %v", change.ID, err)
+						return err
+					}
+				}
+			case <-stream.Context().Done():
+				log.Infof("Remote client closed connection")
+				return nil
+			}
+			if breakout {
+				break
+			}
+		}
 	} else {
-		err := manager.GetManager().NetworkChangesStore.List(nwChChan)
+		changeCh := make(chan *networkchangetypes.NetworkChange)
+		ctx, err := manager.GetManager().NetworkChangesStore.List(changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err
 		}
-	}
-	for {
-		breakout := false
-		select { // Blocks until one of the following are received
-		case nwCh := <-nwChChan:
-			log.Infof("List() channel sent us %v", nwCh)
-			if nwCh == nil { // Will happen at the end of stream
-				breakout = true
+		defer ctx.Close()
+
+		for {
+			breakout := false
+			select { // Blocks until one of the following are received
+			case change, ok := <-changeCh:
+				if !ok { // Will happen at the end of stream
+					breakout = true
+					break
+				}
+
+				log.Infof("List() channel sent us %v", change)
+				if matcher.MatchString(string(change.ID)) {
+					msg := &ListNetworkChangeResponse{
+						Change: change,
+					}
+					log.Infof("Sending matching change %v", change.ID)
+					err := stream.Send(msg)
+					if err != nil {
+						log.Errorf("Error sending NetworkChanges %v %v", change.ID, err)
+						return err
+					}
+				}
+			case <-stream.Context().Done():
+				log.Infof("Remote client closed connection")
+				return nil
+			}
+			if breakout {
 				break
 			}
-
-			if matcher.MatchString(string(nwCh.ID)) {
-				msg := &ListNetworkChangeResponse{
-					Change: nwCh,
-				}
-				log.Infof("Sending matching change %v", nwCh.ID)
-				err := stream.Send(msg)
-				if err != nil {
-					log.Errorf("Error sending NetworkChanges %v %v", nwCh.ID, err)
-					return err
-				}
-			}
-		case <-stream.Context().Done():
-			log.Infof("Remote client closed connection")
-			return nil
-		}
-		if breakout {
-			break
 		}
 	}
 	log.Infof("Closing ListNetworkChanges for %s", r.ChangeID)
@@ -264,48 +298,79 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeService_ListDeviceChangesServer) error {
 	log.Infof("ListDeviceChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
 
-	devChChan := make(chan *devicechangetypes.DeviceChange)
-	defer close(devChChan)
-
 	if r.Subscribe {
-		err := manager.GetManager().DeviceChangesStore.Watch(devicetopo.ID(r.ChangeID), devChChan)
+		eventCh := make(chan streams.Event)
+		ctx, err := manager.GetManager().DeviceChangesStore.Watch(devicetopo.ID(r.ChangeID), eventCh)
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
 		}
+		defer ctx.Close()
 
+		for {
+			breakout := false
+			select { // Blocks until one of the following are received
+			case event, ok := <-eventCh:
+				if !ok { // Will happen at the end of stream
+					breakout = true
+					break
+				}
+
+				change := event.Object.(*devicechangetypes.DeviceChange)
+				log.Infof("List() channel sent us %v", change)
+
+				msg := &ListDeviceChangeResponse{
+					Change: change,
+				}
+				log.Infof("Sending matching change %v", change.ID)
+				err := stream.Send(msg)
+				if err != nil {
+					log.Errorf("Error sending NetworkChanges %v %v", change.ID, err)
+					return err
+				}
+			case <-stream.Context().Done():
+				log.Infof("Remote client closed connection")
+				return nil
+			}
+			if breakout {
+				break
+			}
+		}
 	} else {
-		err := manager.GetManager().DeviceChangesStore.List(devicetopo.ID(r.ChangeID), devChChan)
+		changeCh := make(chan *devicechangetypes.DeviceChange)
+		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetopo.ID(r.ChangeID), changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err
 		}
-	}
-	for {
-		breakout := false
-		select { // Blocks until one of the following are received
-		case devCh := <-devChChan:
-			log.Infof("List() channel sent us %v", devCh)
-			if devCh == nil { // Will happen at the end of stream
-				breakout = true
+		defer ctx.Close()
+
+		for {
+			breakout := false
+			select { // Blocks until one of the following are received
+			case change, ok := <-changeCh:
+				if !ok { // Will happen at the end of stream
+					breakout = true
+					break
+				}
+
+				log.Infof("List() channel sent us %v", change)
+				msg := &ListDeviceChangeResponse{
+					Change: change,
+				}
+				log.Infof("Sending matching change %v", change.ID)
+				err := stream.Send(msg)
+				if err != nil {
+					log.Errorf("Error sending NetworkChanges %v %v", change.ID, err)
+					return err
+				}
+			case <-stream.Context().Done():
+				log.Infof("Remote client closed connection")
+				return nil
+			}
+			if breakout {
 				break
 			}
-
-			msg := &ListDeviceChangeResponse{
-				Change: devCh,
-			}
-			log.Infof("Sending matching change %v", devCh.ID)
-			err := stream.Send(msg)
-			if err != nil {
-				log.Errorf("Error sending NetworkChanges %v %v", devCh.ID, err)
-				return err
-			}
-		case <-stream.Context().Done():
-			log.Infof("Remote client closed connection")
-			return nil
-		}
-		if breakout {
-			break
 		}
 	}
 	log.Infof("Closing ListDeviceChanges for %s", r.ChangeID)

@@ -25,6 +25,7 @@ import (
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
 	"github.com/gogo/protobuf/proto"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
@@ -120,10 +121,10 @@ type Store interface {
 	Delete(config *devicechangetypes.DeviceChange) error
 
 	// List lists device change
-	List(devicetopo.ID, chan<- *devicechangetypes.DeviceChange) error
+	List(devicetopo.ID, chan<- *devicechangetypes.DeviceChange) (stream.Context, error)
 
 	// Watch watches the device change store for changes
-	Watch(devicetopo.ID, chan<- *devicechangetypes.DeviceChange, ...WatchOption) error
+	Watch(devicetopo.ID, chan<- stream.Event, ...WatchOption) (stream.Context, error)
 }
 
 // WatchOption is a configuration option for Watch calls
@@ -307,15 +308,17 @@ func (s *atomixStore) Delete(config *devicechangetypes.DeviceChange) error {
 	return nil
 }
 
-func (s *atomixStore) List(device devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange) error {
+func (s *atomixStore) List(device devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 	changes, err := s.getDeviceChanges(device)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	mapCh := make(chan *indexedmap.Entry)
-	if err := changes.Entries(context.Background(), mapCh); err != nil {
-		return err
+	if err := changes.Entries(ctx, mapCh); err != nil {
+		return nil, err
 	}
 
 	go func() {
@@ -326,13 +329,13 @@ func (s *atomixStore) List(device devicetopo.ID, ch chan<- *devicechangetypes.De
 			}
 		}
 	}()
-	return nil
+	return stream.NewCancelContext(cancel), nil
 }
 
-func (s *atomixStore) Watch(device devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange, opts ...WatchOption) error {
+func (s *atomixStore) Watch(device devicetopo.ID, ch chan<- stream.Event, opts ...WatchOption) (stream.Context, error) {
 	changes, err := s.getDeviceChanges(device)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	watchOpts := make([]indexedmap.WatchOption, 0)
@@ -340,20 +343,42 @@ func (s *atomixStore) Watch(device devicetopo.ID, ch chan<- *devicechangetypes.D
 		watchOpts = opt.apply(watchOpts)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	mapCh := make(chan *indexedmap.Event)
-	if err := changes.Watch(context.Background(), mapCh, watchOpts...); err != nil {
-		return err
+	if err := changes.Watch(ctx, mapCh, watchOpts...); err != nil {
+		return nil, err
 	}
 
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if config, err := decodeChange(event.Entry); err == nil {
-				ch <- config
+			if change, err := decodeChange(event.Entry); err == nil {
+				switch event.Type {
+				case indexedmap.EventNone:
+					ch <- stream.Event{
+						Type:   stream.None,
+						Object: change,
+					}
+				case indexedmap.EventInserted:
+					ch <- stream.Event{
+						Type:   stream.Created,
+						Object: change,
+					}
+				case indexedmap.EventUpdated:
+					ch <- stream.Event{
+						Type:   stream.Updated,
+						Object: change,
+					}
+				case indexedmap.EventRemoved:
+					ch <- stream.Event{
+						Type:   stream.Deleted,
+						Object: change,
+					}
+				}
 			}
 		}
 	}()
-	return nil
+	return stream.NewCancelContext(cancel), nil
 }
 
 func (s *atomixStore) Close() error {
