@@ -88,7 +88,6 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	config1Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2A, devicechangetypes.NewTypedValueEmpty(), false)
 	config1Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueFloat(ValueLeaf2B159), false)
 	oldchange1, err = change.NewChange([]*types.ChangeValue{
-
 		config1Value01, config1Value02, config1Value03}, "Original Config for test switch")
 	if err != nil {
 		log.Error(err)
@@ -109,24 +108,9 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 
 	ctrl := gomock.NewController(t)
 
-	mockLeadershipStore := mockstore.NewMockLeadershipStore(ctrl)
-	mockMastershipStore := mockstore.NewMockMastershipStore(ctrl)
-	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
-	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
-	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
-	mockNetworkSnapshotStore := mockstore.NewMockNetworkSnapshotStore(ctrl)
-	mockDeviceSnapshotStore := mockstore.NewMockDeviceSnapshotStore(ctrl)
 	mockDeviceCache := devicestore.NewMockCache(ctrl)
 
-	mockLeadershipStore.EXPECT().Watch(gomock.Any()).AnyTimes()
-	mockLeadershipStore.EXPECT().IsLeader().AnyTimes()
-	mockMastershipStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
-	mockNetworkChangesStore.EXPECT().Watch(gomock.Any()).AnyTimes()
-	mockDeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
-	mockNetworkChangesStore.EXPECT().Create(gomock.Any()).Return(nil)
-	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
-	mockNetworkSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
-	mockDeviceSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+	// Data for default configuration
 
 	device1 := &devicepb.Device{
 		ID:          "Device1",
@@ -153,7 +137,6 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	}
 
 	now := time.Now()
-
 	networkChange1 := &network.NetworkChange{
 		ID:      "NetworkChange1",
 		Changes: []*types.Change{&change1},
@@ -161,14 +144,23 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 		Created: now,
 	}
 
-	deviceChanges := make(map[devicetopo.ID]*devicechange.DeviceChange)
-	deviceChanges[device1.ID] = deviceChange1
+	// Mocks for stores
 
-	mockDeviceChangesStore.EXPECT().Get(deviceChange1.ID).DoAndReturn(
-		func(deviceID devicetopo.ID) (*devicechange.DeviceChange, error) {
-			return deviceChanges[deviceID], nil
-		}).AnyTimes()
+	// Mock Leadership Store
+	mockLeadershipStore := mockstore.NewMockLeadershipStore(ctrl)
+	mockLeadershipStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+	mockLeadershipStore.EXPECT().IsLeader().AnyTimes()
+
+	// Mock Mastership Store
+	mockMastershipStore := mockstore.NewMockMastershipStore(ctrl)
+	mockMastershipStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
+
+	// Mock Network changes store
+	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
+	mockNetworkChangesStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+	mockNetworkChangesStore.EXPECT().Create(gomock.Any()).Return(nil)
 	mockNetworkChangesStore.EXPECT().Get(networkChange1.ID).Return(networkChange1, nil).AnyTimes()
+
 	mockNetworkChangesStore.EXPECT().List(gomock.Any()).DoAndReturn(
 		func(c chan<- *network.NetworkChange) error {
 			go func() {
@@ -177,6 +169,23 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 			}()
 			return nil
 		}).AnyTimes()
+
+	// Mock Device Changes Store
+	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
+	mockDeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
+	deviceChanges := make(map[devicetopo.ID]*devicechange.DeviceChange)
+
+	mockDeviceChangesStore.EXPECT().Get(deviceChange1.ID).DoAndReturn(
+		func(deviceID devicetopo.ID) (*devicechange.DeviceChange, error) {
+			return deviceChanges[deviceID], nil
+		}).AnyTimes()
+
+	mockDeviceChangesStore.EXPECT().Create(gomock.Any()).DoAndReturn(
+		func(config *devicechange.DeviceChange) error {
+			deviceChanges[config.Change.DeviceID] = config
+			return nil
+		}).AnyTimes()
+
 	mockDeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(deviceID devicetopo.ID, c chan<- *devicechange.DeviceChange) error {
 			deviceChange := deviceChanges[deviceID]
@@ -191,6 +200,19 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 			}
 			return errors.New("no Configuration found")
 		}).AnyTimes()
+	_ = mockDeviceChangesStore.Create(deviceChange1)
+
+	//  Mock Network Snapshot Store
+	mockNetworkSnapshotStore := mockstore.NewMockNetworkSnapshotStore(ctrl)
+	mockNetworkSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+
+	// Mock Device Snapshot Store
+	mockDeviceSnapshotStore := mockstore.NewMockDeviceSnapshotStore(ctrl)
+	mockDeviceSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+
+	// Mock Device Store
+	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
+	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 
 	mgrTest, err = NewManager(
 		&store.ConfigurationStore{
