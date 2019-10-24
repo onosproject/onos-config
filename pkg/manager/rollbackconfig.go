@@ -123,6 +123,8 @@ func computeNewRollback(m *Manager, rollbackChange *networkchangetypes.NetworkCh
 		},
 	}
 	prevChanges := make([]*devicechangetypes.Change, 0)
+	//TODO We might want to consider doing reverse iteration to get the previous value for a path instead of
+	// reading up to the previous change for the path. see comments on PR #805
 	for _, deviceChange := range rollbackChange.Changes {
 		previousValues := make([]*devicechangetypes.ChangeValue, 0)
 		for _, value := range deviceChange.Values {
