@@ -24,6 +24,7 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	typeschange "github.com/onosproject/onos-config/pkg/types/change"
 	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -135,6 +136,7 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	deviceChange1 := &devicechange.DeviceChange{
 		Change: &change1,
 		ID:     "Change1",
+		Status: typeschange.Status{State: typeschange.State_COMPLETE},
 	}
 
 	now := time.Now()
@@ -143,6 +145,7 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 		Changes: []*types.Change{&change1},
 		Updated: now,
 		Created: now,
+		Status:  typeschange.Status{State: typeschange.State_COMPLETE},
 	}
 
 	// Mocks for stores
