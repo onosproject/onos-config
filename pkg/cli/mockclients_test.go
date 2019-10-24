@@ -365,6 +365,7 @@ type MockChangeServiceListNetworkChangesClient struct {
 	contextFn   func() context.Context
 	sendMsgFn   func(interface{}) error
 	recvMsgFn   func(interface{}) error
+	recvCounter func() int
 }
 
 func (c MockChangeServiceListNetworkChangesClient) Recv() (*diags.ListNetworkChangeResponse, error) {

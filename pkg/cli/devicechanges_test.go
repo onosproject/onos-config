@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Unit tests for rollback CLI
+// Unit tests for watch and list device-changes CLI
 package cli
 
 import (
@@ -76,82 +76,7 @@ func generateDeviceChangeData(count int) {
 	}
 }
 
-func generateNetworkChangeData(count int) {
-	networkChanges = make([]networkchangetypes.NetworkChange, count)
-	now := time.Now()
-
-	for cfgIdx := range networkChanges {
-		networkID := fmt.Sprintf("a_new_network_change-%d", cfgIdx)
-
-		networkChanges[cfgIdx] = networkchangetypes.NetworkChange{
-			ID:       networkchangetypes.ID(networkID),
-			Index:    networkchangetypes.Index(cfgIdx),
-			Revision: 0,
-			Status: change.Status{
-				Phase:   change.Phase(cfgIdx % 2),
-				State:   change.State(cfgIdx % 4),
-				Reason:  change.Reason(cfgIdx % 2),
-				Message: "Test",
-			},
-			Created: now,
-			Updated: now,
-			Changes: []*devicechangetypes.Change{
-				{
-					DeviceID:      "device-1",
-					DeviceVersion: "1.0.0",
-					Values: []*devicechangetypes.ChangeValue{
-						{
-							Path:    "/aa/bb/cc",
-							Value:   devicechangetypes.NewTypedValueString("Test1"),
-							Removed: false,
-						},
-						{
-							Path:    "/aa/bb/dd",
-							Value:   devicechangetypes.NewTypedValueString("Test2"),
-							Removed: false,
-						},
-					},
-				},
-				{
-					DeviceID:      "device-2",
-					DeviceVersion: "1.0.0",
-					Values: []*devicechangetypes.ChangeValue{
-						{
-							Path:    "/aa/bb/cc",
-							Value:   devicechangetypes.NewTypedValueString("Test3"),
-							Removed: false,
-						},
-						{
-							Path:    "/aa/bb/dd",
-							Value:   devicechangetypes.NewTypedValueString("Test4"),
-							Removed: false,
-						},
-					},
-				},
-			},
-			Refs: []*networkchangetypes.DeviceChangeRef{
-				{DeviceChangeID: "device-1:1"},
-				{DeviceChangeID: "device-2:1"},
-			},
-			Deleted: false,
-		}
-	}
-}
-
-var nextNwChIndex = 0
 var nextDevChIndex = 0
-
-func recvNetworkChangesMock() (*diags.ListNetworkChangeResponse, error) {
-	if nextNwChIndex < len(networkChanges) {
-		netw := networkChanges[nextNwChIndex]
-		nextNwChIndex++
-
-		return &diags.ListNetworkChangeResponse{
-			Change: &netw,
-		}, nil
-	}
-	return nil, io.EOF
-}
 
 func recvDeviceChangesMock() (*diags.ListDeviceChangeResponse, error) {
 	if nextDevChIndex < len(deviceChanges) {
@@ -187,24 +112,38 @@ func Test_WatchDeviceChanges(t *testing.T) {
 
 }
 
-func Test_WatchNetworkChanges(t *testing.T) {
+var nextListDevChIndex = 0
+
+func recvListDeviceChangesMock() (*diags.ListDeviceChangeResponse, error) {
+	if nextListDevChIndex < len(deviceChanges) {
+		netw := deviceChanges[nextListDevChIndex]
+		nextListDevChIndex++
+
+		return &diags.ListDeviceChangeResponse{
+			Change: &netw,
+		}, nil
+	}
+	return nil, io.EOF
+}
+
+func Test_ListDeviceChanges(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
 	CaptureOutput(outputBuffer)
 	generateDeviceChangeData(4)
 	generateNetworkChangeData(4)
 
-	configsClient := MockChangeServiceListNetworkChangesClient{
-		recvFn: recvNetworkChangesMock,
+	configsClient := MockChangeServiceListDeviceChangesClient{
+		recvFn: recvListDeviceChangesMock,
 	}
 
 	setUpMockClients(MockClientsConfig{
-		listNetworkChangesClient: &configsClient,
+		listDeviceChangesClient: &configsClient,
 	})
 
-	networkChangesCmd := getWatchNetworkChangesCommand()
-	err := networkChangesCmd.RunE(networkChangesCmd, nil)
+	deviceChangesCmd := getWatchDeviceChangesCommand()
+	err := deviceChangesCmd.RunE(deviceChangesCmd, []string{"device-1"})
 	assert.NilError(t, err)
 	output := outputBuffer.String()
-	assert.Equal(t, strings.Count(output, "a_new_network_change"), len(networkChanges))
+	assert.Equal(t, strings.Count(output, "Test2"), len(deviceChanges))
 
 }
