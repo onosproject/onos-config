@@ -16,8 +16,10 @@ package device
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
+	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/change"
@@ -178,6 +180,265 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
 }
 
+func TestReconcilerChangeThenRollback(t *testing.T) {
+	devices, deviceChanges := newStores(t)
+	defer deviceChanges.Close()
+
+	reconciler := &Reconciler{
+		devices: devices,
+		changes: deviceChanges,
+	}
+
+	// Create a device-1 change 1
+	deviceChange1 := newChangeInterface(device1, 1)
+	err := deviceChanges.Create(deviceChange1)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err := reconciler.Reconcile(types.ID(deviceChange1.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// No changes should have been made
+	deviceChange1, err = deviceChanges.Get(deviceChange1.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
+
+	// Change the state of device-1 change 1 to RUNNING
+	deviceChange1.Status.State = change.State_RUNNING
+	err = deviceChanges.Update(deviceChange1)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Should be complete by now
+	deviceChange1, err = deviceChanges.Get(deviceChange1.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_COMPLETE, deviceChange1.Status.State)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
+
+	//**********************************************************
+	// Create eth2 in a second change
+	//**********************************************************
+	deviceChange2 := newChangeInterface(device1, 2)
+	err = deviceChanges.Create(deviceChange2)
+	assert.NoError(t, err)
+
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Change the state of device-1 change 1 to RUNNING
+	deviceChange2.Status.State = change.State_RUNNING
+	err = deviceChanges.Update(deviceChange2)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Should be complete by now
+	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
+
+	paths, err := devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	assert.NoError(t, err, "problem extracting full config")
+	assert.Equal(t, 4, len(paths))
+	for _, p := range paths {
+		switch p.Path {
+		case "/interfaces/interface[name=eth1]/config/name":
+			assert.Equal(t, "eth1", p.Value.ValueToString())
+		case "/interfaces/interface[name=eth1]/config/enabled":
+			assert.Equal(t, "UP", p.Value.ValueToString())
+		case "/interfaces/interface[name=eth2]/config/name":
+			assert.Equal(t, "eth2", p.Value.ValueToString())
+		case "/interfaces/interface[name=eth2]/config/enabled":
+			assert.Equal(t, "DOWN", p.Value.ValueToString())
+		default:
+			t.Errorf("Unexpected path %s", p.Path)
+		}
+	}
+
+	//**********************************************************
+	// Change devicechange2 to rollback
+	//**********************************************************
+	deviceChange2.Status.State = change.State_PENDING
+	deviceChange2.Status.Phase = change.Phase_ROLLBACK
+	err = deviceChanges.Update(deviceChange2)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Change the state of device-1 change 1 to RUNNING
+	deviceChange2.Status.State = change.State_RUNNING
+	err = deviceChanges.Update(deviceChange2)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Should be complete by now
+	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
+
+	paths, err = devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	assert.NoError(t, err, "problem extracting full config")
+	assert.Equal(t, 2, len(paths))
+	for _, p := range paths {
+		switch p.Path {
+		case "/interfaces/interface[name=eth1]/config/name":
+			assert.Equal(t, "eth1", p.Value.ValueToString())
+		case "/interfaces/interface[name=eth1]/config/enabled":
+			assert.Equal(t, "UP", p.Value.ValueToString())
+		default:
+			t.Errorf("Unexpected path %s", p.Path)
+		}
+	}
+}
+
+// TestReconcilerRemoveThenRollback creates an eth1 with 2 attribs. Then the
+// interface is removed (at root). Then this delete is rolled back and the 2
+// attributes become visible again
+func TestReconcilerRemoveThenRollback(t *testing.T) {
+	devices, deviceChanges := newStores(t)
+	defer deviceChanges.Close()
+
+	reconciler := &Reconciler{
+		devices: devices,
+		changes: deviceChanges,
+	}
+
+	//**********************************************
+	// First create an interface eth1
+	//**********************************************
+	deviceChange1 := newChangeInterface(device1, 1)
+	err := deviceChanges.Create(deviceChange1)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err := reconciler.Reconcile(types.ID(deviceChange1.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Change the state of device-1 change 1 to RUNNING
+	deviceChange1.Status.State = change.State_RUNNING
+	err = deviceChanges.Update(deviceChange1)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Should be complete by now
+	deviceChange1, err = deviceChanges.Get(deviceChange1.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_COMPLETE, deviceChange1.Status.State)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
+
+	paths, err := devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	assert.NoError(t, err, "problem extracting full config")
+	assert.Equal(t, 2, len(paths))
+	for _, p := range paths {
+		switch p.Path {
+		case "/interfaces/interface[name=eth1]/config/name":
+			assert.Equal(t, "eth1", p.Value.ValueToString())
+		case "/interfaces/interface[name=eth1]/config/enabled":
+			assert.Equal(t, "UP", p.Value.ValueToString())
+		default:
+			t.Errorf("Unexpected path %s", p.Path)
+		}
+	}
+
+	//**********************************************
+	// Then remove the interface eth1
+	//**********************************************
+	deviceChange2 := newChangeInterfaceRemove(device1, 1)
+	err = deviceChanges.Create(deviceChange2)
+	assert.NoError(t, err)
+
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Change the state of device-1 change 1 to RUNNING
+	deviceChange2.Status.State = change.State_RUNNING
+	err = deviceChanges.Update(deviceChange2)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Should be complete by now
+	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
+
+	paths, err = devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	assert.NoError(t, err, "problem extracting full config")
+	assert.Equal(t, 0, len(paths))
+
+	//**********************************************************
+	// Now rollback the remove
+	//**********************************************************
+	deviceChange2.Status.State = change.State_PENDING
+	deviceChange2.Status.Phase = change.Phase_ROLLBACK
+	err = deviceChanges.Update(deviceChange2)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Change the state of device-1 change 1 to RUNNING
+	deviceChange2.Status.State = change.State_RUNNING
+	err = deviceChanges.Update(deviceChange2)
+	assert.NoError(t, err)
+
+	// Apply change to the reconciler
+	ok, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Should be complete by now
+	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
+
+	paths, err = devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	assert.NoError(t, err, "problem extracting full config")
+	assert.Equal(t, 2, len(paths))
+	for _, p := range paths {
+		switch p.Path {
+		case "/interfaces/interface[name=eth1]/config/name":
+			assert.Equal(t, "eth1", p.Value.ValueToString())
+		case "/interfaces/interface[name=eth1]/config/enabled":
+			assert.Equal(t, "UP", p.Value.ValueToString())
+		default:
+			t.Errorf("Unexpected path %s", p.Path)
+		}
+	}
+
+}
+
 func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	ctrl := gomock.NewController(t)
 
@@ -246,11 +507,62 @@ func newChange(device devicetopo.ID) *devicechangetypes.DeviceChange {
 			DeviceID: device,
 			Values: []*devicechangetypes.ChangeValue{
 				{
-					Path: "foo",
-					Value: &devicechangetypes.TypedValue{
-						Bytes: []byte("Hello world!"),
-						Type:  devicechangetypes.ValueType_STRING,
-					},
+					Path:  "foo",
+					Value: devicechangetypes.NewTypedValueString("Hello world!"),
+				},
+			},
+		},
+	}
+}
+
+// newChangeInterface creates a new interface eth<n> in the OpenConfig model style
+func newChangeInterface(device devicetopo.ID, iface int) *devicechangetypes.DeviceChange {
+	ifaceID := fmt.Sprintf("eth%d", iface)
+	ifacePath := fmt.Sprintf("/interfaces/interface[name=%s]/config/", ifaceID)
+	enabled := "UP"
+	if iface%2 == 0 {
+		enabled = "DOWN"
+	}
+
+	return &devicechangetypes.DeviceChange{
+		NetworkChange: devicechangetypes.NetworkChangeRef{
+			ID:    types.ID(fmt.Sprintf("%s-if%d-added", device, iface)),
+			Index: types.Index(iface),
+		},
+		Change: &devicechangetypes.Change{
+			DeviceID: device,
+			Values: []*devicechangetypes.ChangeValue{
+				{
+					Path:    ifacePath + "name",
+					Value:   devicechangetypes.NewTypedValueString(ifaceID),
+					Removed: false,
+				},
+				{
+					Path:    ifacePath + "enabled",
+					Value:   devicechangetypes.NewTypedValueString(enabled),
+					Removed: false,
+				},
+			},
+		},
+	}
+}
+
+// newChangeInterfaceRemove removes an interface eth<n> of the OpenConfig model style
+func newChangeInterfaceRemove(device devicetopo.ID, iface int) *devicechangetypes.DeviceChange {
+	ifaceID := fmt.Sprintf("eth%d", iface)
+	ifacePath := fmt.Sprintf("/interfaces/interface[name=%s]", ifaceID)
+
+	return &devicechangetypes.DeviceChange{
+		NetworkChange: devicechangetypes.NetworkChangeRef{
+			ID:    types.ID(fmt.Sprintf("%s-if%d-removed", device, iface)),
+			Index: types.Index(iface),
+		},
+		Change: &devicechangetypes.Change{
+			DeviceID: device,
+			Values: []*devicechangetypes.ChangeValue{
+				{
+					Path:    ifacePath,
+					Removed: true,
 				},
 			},
 		},
