@@ -22,16 +22,18 @@ import (
 	"time"
 )
 
+// Deprecated: For old style configurations
 func getGetConfigsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "configs [<deviceId>]",
-		Short: "Lists details of device configuration changes",
+		Short: "Lists details of device configuration changes (deprecated)",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runGetConfigsCommand,
 	}
 	return cmd
 }
 
+// Deprecated: For old style configurations
 func runGetConfigsCommand(cmd *cobra.Command, args []string) error {
 	conn, err := getConnection()
 	if err != nil {

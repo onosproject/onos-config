@@ -28,18 +28,37 @@ const opstateTemplate = "{{wrappath .Pathvalue.Path 80 0| printf \"%-80s|\"}}" +
 
 func getGetOpstateCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "opstate <deviceid> [--subscribe]",
-		Short: "Gets the Opstate cache for a device",
+		Use:   "opstate <deviceid>",
+		Short: "Get the Opstate cache for a device",
 		Args:  cobra.ExactArgs(1),
-		RunE:  runOpstateCommand,
+		RunE:  runGetOpstateCommand,
 	}
-	cmd.Flags().BoolP("subscribe", "s", false, "subscribe for subsequent changes")
+	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	return cmd
 }
 
-func runOpstateCommand(cmd *cobra.Command, args []string) error {
+func getWatchOpstateCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "opstate <deviceid>",
+		Short: "Watch the Opstate cache for a device",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runWatchOpstateCommand,
+	}
+	cmd.Flags().Bool("no-headers", false, "disables output headers")
+	return cmd
+}
+
+func runGetOpstateCommand(cmd *cobra.Command, args []string) error {
+	return opstateCommand(cmd, false, args)
+}
+
+func runWatchOpstateCommand(cmd *cobra.Command, args []string) error {
+	return opstateCommand(cmd, true, args)
+}
+
+func opstateCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 	deviceID := args[0]
-	subscribe, _ := cmd.Flags().GetBool("subscribe")
+	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 	tmplGetOpState, _ := template.New("change").Funcs(funcMapChanges).Parse(opstateTemplate)
 	clientConnection, clientConnectionError := getConnection()
 
@@ -48,8 +67,10 @@ func runOpstateCommand(cmd *cobra.Command, args []string) error {
 	}
 	client := diags.CreateOpStateDiagsClient(clientConnection)
 
-	Output("OPSTATE CACHE: %s\n", deviceID)
-	Output("%-82s|%-20s|\n", "PATH", "VALUE")
+	if !noHeaders {
+		Output("OPSTATE CACHE: %s\n", deviceID)
+		Output("%-82s|%-20s|\n", "PATH", "VALUE")
+	}
 
 	stream, err := client.GetOpState(context.Background(), &diags.OpStateRequest{DeviceId: deviceID, Subscribe: subscribe})
 	if err != nil {

@@ -71,6 +71,7 @@ message Configuration {
 // the request is received by the service. However, if `subscribe` is `true`, the stream will remain
 // open after all changes have been sent and events that occur following the last changes will be
 // streamed to the client until the stream is closed.
+// If "withoutReplay" is true then only changes that happen after the call will be returned
 message ListNetworkChangeRequest {
 
     // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
@@ -80,6 +81,9 @@ message ListNetworkChangeRequest {
     // option to specify a specific network change - if blank or '*' then select all
     // Can support `*` (match many chars) or '?' (match one char) as wildcard
     string changeid = 2 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/network.ID"];;
+
+    // option to request only changes that happen after the call
+    bool withoutReplay = 3;
 }
 
 // ListNetworkChangeResponse carries a single network change event
@@ -95,6 +99,7 @@ message ListNetworkChangeResponse {
 // the request is received by the service. However, if `subscribe` is `true`, the stream will remain
 // open after all changes have been sent and events that occur following the last changes will be
 // streamed to the client until the stream is closed.
+// If "withoutReplay" is true then only changes that happen after the call will be returned
 message ListDeviceChangeRequest {
 
     // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
@@ -104,6 +109,9 @@ message ListDeviceChangeRequest {
     // option to specify a specific device change - if blank or '*' then select all
     // Can support `*` (match many chars) or '?' (match one char) as wildcard
     string changeid = 2 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.ID"];
+
+    // option to request only changes that happen after the call
+    bool withoutReplay = 3;
 }
 
 // ListDeviceChangeResponse carries a single network change event

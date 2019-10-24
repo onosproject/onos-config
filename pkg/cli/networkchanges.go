@@ -41,17 +41,37 @@ const networkChangeTemplateVerbose = changeHeaderFormat +
 
 func getWatchNetworkChangesCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "network-changes <changeId>",
+		Use:   "network-changes [changeId wildcard]",
 		Short: "Watch for network changes with updates",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runWatchNetworkChangesCommand,
 	}
-	cmd.Flags().BoolP("verbose", "v", false, "whether to print the device with verbose output")
+	cmd.Flags().BoolP("verbose", "v", false, "whether to print the change with verbose output")
+	cmd.Flags().Bool("no-headers", false, "disables output headers")
+	return cmd
+}
+
+func getListNetworkChangesCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "network-changes [changeId wildcard]",
+		Short: "List current network changes",
+		Args:  cobra.MaximumNArgs(1),
+		RunE:  runListNetworkChangesCommand,
+	}
+	cmd.Flags().BoolP("verbose", "v", false, "whether to print the change with verbose output")
 	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	return cmd
 }
 
 func runWatchNetworkChangesCommand(cmd *cobra.Command, args []string) error {
+	return networkChangesCommand(cmd, true, args)
+}
+
+func runListNetworkChangesCommand(cmd *cobra.Command, args []string) error {
+	return networkChangesCommand(cmd, false, args)
+}
+
+func networkChangesCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 	var id networkchangetypes.ID
 	if len(args) > 0 {
 		id = networkchangetypes.ID(args[0])
@@ -66,7 +86,7 @@ func runWatchNetworkChangesCommand(cmd *cobra.Command, args []string) error {
 	}
 	client := diags.CreateChangeServiceClient(clientConnection)
 	changesReq := diags.ListNetworkChangeRequest{
-		Subscribe: true,
+		Subscribe: subscribe,
 		ChangeID:  id,
 	}
 
