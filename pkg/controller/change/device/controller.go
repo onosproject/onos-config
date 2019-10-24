@@ -18,12 +18,12 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/controller"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/types"
 	changetype "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
@@ -188,11 +188,10 @@ func getProtocolState(device *devicetopo.Device) devicetopo.ChannelState {
 
 // computeRollback returns a change containing the previous value for each path of the rollbackChange
 func (r *Reconciler) computeNewRollback(deviceChange *devicechangetypes.DeviceChange) (*devicechangetypes.Change, error) {
-	prevChanges := make([]*devicechangetypes.Change, 0)
 	//TODO We might want to consider doing reverse iteration to get the previous value for a path instead of
 	// reading up to the previous change for the target. see comments on PR #805
 	previousValues := make([]*devicechangetypes.ChangeValue, 0)
-	prevValues, err := devicechangeutils.ExtractFullConfig(deviceChange.Change.DeviceID, nil, r.changes, 1)
+	prevValues, err := devicechangeutils.ExtractFullConfig(deviceChange.Change.DeviceID, nil, r.changes, 0)
 	if err != nil {
 		return nil, fmt.Errorf("can't get last config on network config %s for target %s, %s",
 			string(deviceChange.ID), deviceChange.Change.DeviceID, err)
@@ -220,10 +219,9 @@ func (r *Reconciler) computeNewRollback(deviceChange *devicechangetypes.DeviceCh
 
 	}
 	deltaChange := &devicechangetypes.Change{
-		DeviceID:      rollbackChange.DeviceID,
-		Values:        previousValues,
+		DeviceID: rollbackChange.DeviceID,
+		Values:   previousValues,
 	}
-	prevChanges = append(prevChanges, rollbackChange)
 	return deltaChange, nil
 }
 

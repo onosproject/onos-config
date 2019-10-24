@@ -16,6 +16,7 @@ package utils
 
 import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"sort"
@@ -48,12 +49,16 @@ func ExtractFullConfig(deviceID devicetopo.ID, newChange *devicechangetypes.Chan
 
 	if nBack == 0 {
 		for storeChange := range changeChan {
-			consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
+			if storeChange.Status.State == change.State_COMPLETE && storeChange.Status.Phase != change.Phase_ROLLBACK {
+				consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
+			}
 		}
 	} else {
 		changes := make([]*devicechangetypes.DeviceChange, 0)
 		for storeChange := range changeChan {
-			changes = append(changes, storeChange)
+			if storeChange.Status.State == change.State_COMPLETE && storeChange.Status.Phase != change.Phase_ROLLBACK {
+				changes = append(changes, storeChange)
+			}
 		}
 		end := len(changes) - nBack
 		for _, storeChange := range changes[0:end] {
