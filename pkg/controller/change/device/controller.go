@@ -197,6 +197,7 @@ func (r *Reconciler) computeNewRollback(deviceChange *devicechangetypes.DeviceCh
 			string(deviceChange.ID), deviceChange.Change.DeviceID, err)
 	}
 	rollbackChange := deviceChange.Change
+	alreadyRemoved := make(map[string]struct{})
 	for _, preVal := range prevValues {
 		for _, value := range rollbackChange.Values {
 			//Previously there was no such value configured, deleting from devicetopo
@@ -208,11 +209,15 @@ func (r *Reconciler) computeNewRollback(deviceChange *devicechangetypes.DeviceCh
 				}
 				previousValues = append(previousValues, updateVal)
 			} else {
+				if _, ok := alreadyRemoved[value.Path]; ok {
+					continue
+				}
 				deleteVal := &devicechangetypes.ChangeValue{
 					Path:    value.Path,
 					Value:   nil,
 					Removed: true,
 				}
+				alreadyRemoved[value.Path] = struct{}{}
 				previousValues = append(previousValues, deleteVal)
 			}
 		}
