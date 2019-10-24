@@ -22,16 +22,18 @@ import (
 	"io"
 )
 
+// Deprecated: For old style net-configs
 func getGetNetChangesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "net-changes",
-		Short: "Lists network configuration changes",
+		Short: "Lists network configuration changes (deprecated)",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runNetChangesCommand,
 	}
 	return cmd
 }
 
+// Deprecated: For old style net-configs
 func runNetChangesCommand(cmd *cobra.Command, args []string) error {
 	clientConnection, clientConnectionError := getConnection()
 

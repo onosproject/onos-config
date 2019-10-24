@@ -16,12 +16,9 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/spf13/cobra"
 	"io"
-	"strings"
 	"text/template"
 )
 
@@ -36,16 +33,18 @@ var funcMapChanges = template.FuncMap{
 	"valuetostring": valueToSstring,
 }
 
+// Deprecated: For old style changes
 func getGetChangesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "changes [<changeId>]",
-		Short: "Lists records of configuration changes",
+		Short: "Lists records of configuration changes (deprecated)",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runChangesCommand,
 	}
 	return cmd
 }
 
+// Deprecated: For old style changes
 func runChangesCommand(cmd *cobra.Command, args []string) error {
 	clientConnection, clientConnectionError := getConnection()
 
@@ -75,31 +74,4 @@ func runChangesCommand(cmd *cobra.Command, args []string) error {
 		}
 		_ = tmplChanges.Execute(GetOutput(), in)
 	}
-}
-
-func wrapPath(path string, lineLen int, tabs int) string {
-	over := len(path) % lineLen
-	linesC := len(path) / lineLen
-	var wrapped []string
-	if over > 0 {
-		wrapped = make([]string, linesC+1)
-	} else {
-		wrapped = make([]string, linesC)
-	}
-	var i int
-	for i = 0; i < linesC; i++ {
-		wrapped[i] = path[i*lineLen : i*lineLen+lineLen]
-	}
-	if over > 0 {
-		overFmt := fmt.Sprintf("%s-%ds", "%", lineLen)
-		wrapped[linesC] = fmt.Sprintf(overFmt, path[linesC*lineLen:])
-	}
-
-	tabsArr := make([]string, tabs+1)
-	sep := fmt.Sprintf("\n%s  ", strings.Join(tabsArr, "\t"))
-	return strings.Join(wrapped, sep)
-}
-
-func valueToSstring(cv devicechangetypes.TypedValue) string {
-	return cv.ValueToString()
 }

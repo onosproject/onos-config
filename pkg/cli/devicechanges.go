@@ -16,10 +16,12 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/spf13/cobra"
 	"io"
+	"strings"
 	"text/template"
 )
 
@@ -30,7 +32,7 @@ const deviceChangeTemplate = changeHeaderFormat +
 func getWatchDeviceChangesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "device-changes <deviceid>",
-		Short: "Watch for device changes with updates",
+		Short: "Watch for changes on a device with updates",
 		Args:  cobra.ExactArgs(1),
 		RunE:  runWatchDeviceChangesCommand,
 	}
@@ -38,7 +40,26 @@ func getWatchDeviceChangesCommand() *cobra.Command {
 	return cmd
 }
 
+func getListDeviceChangesCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "device-changes <deviceid>",
+		Short: "List current changes on a device",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runListDeviceChangesCommand,
+	}
+	cmd.Flags().Bool("no-headers", false, "disables output headers")
+	return cmd
+}
+
 func runWatchDeviceChangesCommand(cmd *cobra.Command, args []string) error {
+	return deviceChangesCommand(cmd, true, args)
+}
+
+func runListDeviceChangesCommand(cmd *cobra.Command, args []string) error {
+	return deviceChangesCommand(cmd, false, args)
+}
+
+func deviceChangesCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 	id := devicechangetypes.ID(args[0]) // Argument is mandatory
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
@@ -49,7 +70,7 @@ func runWatchDeviceChangesCommand(cmd *cobra.Command, args []string) error {
 	}
 	client := diags.CreateChangeServiceClient(clientConnection)
 	changesReq := diags.ListDeviceChangeRequest{
-		Subscribe: true,
+		Subscribe: subscribe,
 		ChangeID:  id,
 	}
 
@@ -73,4 +94,31 @@ func runWatchDeviceChangesCommand(cmd *cobra.Command, args []string) error {
 		}
 		_ = tmplChanges.Execute(GetOutput(), in.Change)
 	}
+}
+
+func wrapPath(path string, lineLen int, tabs int) string {
+	over := len(path) % lineLen
+	linesC := len(path) / lineLen
+	var wrapped []string
+	if over > 0 {
+		wrapped = make([]string, linesC+1)
+	} else {
+		wrapped = make([]string, linesC)
+	}
+	var i int
+	for i = 0; i < linesC; i++ {
+		wrapped[i] = path[i*lineLen : i*lineLen+lineLen]
+	}
+	if over > 0 {
+		overFmt := fmt.Sprintf("%s-%ds", "%", lineLen)
+		wrapped[linesC] = fmt.Sprintf(overFmt, path[linesC*lineLen:])
+	}
+
+	tabsArr := make([]string, tabs+1)
+	sep := fmt.Sprintf("\n%s  ", strings.Join(tabsArr, "\t"))
+	return strings.Join(wrapped, sep)
+}
+
+func valueToSstring(cv devicechangetypes.TypedValue) string {
+	return cv.ValueToString()
 }

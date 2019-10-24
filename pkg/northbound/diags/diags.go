@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -210,10 +211,14 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 
 	// There may be a wildcard given - we only want to reply with changes that match
 	matcher := utils.MatchWildcardChNameRegexp(string(r.ChangeID))
+	var watchOpts []network.WatchOption
+	if !r.WithoutReplay {
+		watchOpts = append(watchOpts, network.WithReplay())
+	}
 
 	if r.Subscribe {
 		eventCh := make(chan streams.Event)
-		ctx, err := manager.GetManager().NetworkChangesStore.Watch(eventCh, network.WithReplay())
+		ctx, err := manager.GetManager().NetworkChangesStore.Watch(eventCh, watchOpts...)
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
@@ -230,7 +235,6 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 				}
 
 				change := event.Object.(*networkchangetypes.NetworkChange)
-				log.Infof("List() channel sent us %v", change)
 
 				if matcher.MatchString(string(change.ID)) {
 					msg := &ListNetworkChangeResponse{
@@ -244,7 +248,7 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 					}
 				}
 			case <-stream.Context().Done():
-				log.Infof("Remote client closed connection")
+				log.Infof("ListNetworkChanges remote client closed connection")
 				return nil
 			}
 			if breakout {
@@ -269,7 +273,6 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 					break
 				}
 
-				log.Infof("List() channel sent us %v", change)
 				if matcher.MatchString(string(change.ID)) {
 					msg := &ListNetworkChangeResponse{
 						Change: change,
@@ -282,7 +285,7 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 					}
 				}
 			case <-stream.Context().Done():
-				log.Infof("Remote client closed connection")
+				log.Infof("ListNetworkChanges remote client closed connection")
 				return nil
 			}
 			if breakout {
@@ -298,9 +301,14 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeService_ListDeviceChangesServer) error {
 	log.Infof("ListDeviceChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
 
+	var watchOpts []device.WatchOption
+	if !r.WithoutReplay {
+		watchOpts = append(watchOpts, device.WithReplay())
+	}
+
 	if r.Subscribe {
 		eventCh := make(chan streams.Event)
-		ctx, err := manager.GetManager().DeviceChangesStore.Watch(devicetopo.ID(r.ChangeID), eventCh)
+		ctx, err := manager.GetManager().DeviceChangesStore.Watch(devicetopo.ID(r.ChangeID), eventCh, watchOpts...)
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
@@ -317,7 +325,6 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 				}
 
 				change := event.Object.(*devicechangetypes.DeviceChange)
-				log.Infof("List() channel sent us %v", change)
 
 				msg := &ListDeviceChangeResponse{
 					Change: change,
@@ -329,7 +336,7 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 					return err
 				}
 			case <-stream.Context().Done():
-				log.Infof("Remote client closed connection")
+				log.Infof("ListDeviceChanges Remote client closed connection")
 				return nil
 			}
 			if breakout {
@@ -354,7 +361,6 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 					break
 				}
 
-				log.Infof("List() channel sent us %v", change)
 				msg := &ListDeviceChangeResponse{
 					Change: change,
 				}
@@ -365,7 +371,7 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 					return err
 				}
 			case <-stream.Context().Done():
-				log.Infof("Remote client closed connection")
+				log.Infof("ListDeviceChanges remote client closed connection")
 				return nil
 			}
 			if breakout {
