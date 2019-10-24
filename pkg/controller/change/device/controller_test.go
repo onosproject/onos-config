@@ -55,6 +55,8 @@ const (
 	eth1Name        = "/interfaces/interface[name=eth1]/config/name"
 	eth1Enabled     = "/interfaces/interface[name=eth1]/config/enabled"
 	eth1Hi          = "/interfaces/interface[name=eth1]/config/health-indicator"
+	eth1Desc        = "/interfaces/interface[name=eth1]/config/description"
+	eth2Base        = "/interfaces/interface[name=eth2]"
 	eth2Name        = "/interfaces/interface[name=eth2]/config/name"
 	eth2Enabled     = "/interfaces/interface[name=eth2]/config/enabled"
 	eth2Hi          = "/interfaces/interface[name=eth2]/config/health-indicator"
