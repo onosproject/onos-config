@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
@@ -288,6 +289,12 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	deviceChange1 := &devicechangetypes.DeviceChange{
 		Change: &change1,
 		ID:     "Change1",
+		Status: changetypes.Status{
+			Phase:   changetypes.Phase_CHANGE,
+			State:   changetypes.State_COMPLETE,
+			Reason:  0,
+			Message: "",
+		},
 	}
 
 	config2Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueFloat(ValueLeaf2B314), false)
@@ -303,6 +310,12 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	deviceChange2 := &devicechangetypes.DeviceChange{
 		Change: &change2,
 		ID:     "Change2",
+		Status: changetypes.Status{
+			Phase:   changetypes.Phase_CHANGE,
+			State:   changetypes.State_COMPLETE,
+			Reason:  0,
+			Message: "",
+		},
 	}
 
 	config3Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CDef), false)
@@ -317,6 +330,12 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	deviceChange3 := &devicechangetypes.DeviceChange{
 		Change: &change3,
 		ID:     "Change3",
+		Status: changetypes.Status{
+			Phase:   changetypes.Phase_CHANGE,
+			State:   changetypes.State_COMPLETE,
+			Reason:  0,
+			Message: "",
+		},
 	}
 
 	config4Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CGhi), false)
@@ -330,6 +349,12 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	deviceChange4 := &devicechangetypes.DeviceChange{
 		Change: &change4,
 		ID:     "Change4",
+		Status: changetypes.Status{
+			Phase:   changetypes.Phase_CHANGE,
+			State:   changetypes.State_COMPLETE,
+			Reason:  0,
+			Message: "",
+		},
 	}
 
 	mockChangeStore.EXPECT().Get(deviceChange1.ID).Return(deviceChange1, nil).AnyTimes()

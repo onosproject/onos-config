@@ -15,8 +15,10 @@
 package device
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/controller"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/types"
@@ -156,8 +158,12 @@ func (r *Reconciler) reconcileRollback(change *devicechangetypes.DeviceChange) (
 // doRollback rolls back a change on the device
 func (r *Reconciler) doRollback(change *devicechangetypes.DeviceChange) error {
 	log.Infof("doRollback %v", change)
-	// TODO: Roll back the change
-	setRequest, err := values.NativeNewChangeToGnmiChange(change.Change)
+	deltaChange, err := r.computeNewRollback(change)
+	if err != nil {
+		return err
+	}
+	log.Infof("Rolling back %s with %s", change.Change, deltaChange)
+	setRequest, err := values.NativeNewChangeToGnmiChange(deltaChange)
 	if err != nil {
 		return err
 	}
@@ -178,6 +184,45 @@ func getProtocolState(device *devicetopo.Device) devicetopo.ChannelState {
 		return devicetopo.ChannelState_UNKNOWN_CHANNEL_STATE
 	}
 	return protocol.ChannelState
+}
+
+// computeRollback returns a change containing the previous value for each path of the rollbackChange
+func (r *Reconciler) computeNewRollback(deviceChange *devicechangetypes.DeviceChange) (*devicechangetypes.Change, error) {
+	//TODO We might want to consider doing reverse iteration to get the previous value for a path instead of
+	// reading up to the previous change for the target. see comments on PR #805
+	previousValues := make([]*devicechangetypes.ChangeValue, 0)
+	prevValues, err := devicechangeutils.ExtractFullConfig(deviceChange.Change.DeviceID, nil, r.changes, 0)
+	if err != nil {
+		return nil, fmt.Errorf("can't get last config on network config %s for target %s, %s",
+			string(deviceChange.ID), deviceChange.Change.DeviceID, err)
+	}
+	rollbackChange := deviceChange.Change
+	for _, preVal := range prevValues {
+		for _, value := range rollbackChange.Values {
+			//Previously there was no such value configured, deleting from devicetopo
+			if preVal.Path == value.Path {
+				updateVal := &devicechangetypes.ChangeValue{
+					Path:    preVal.Path,
+					Value:   preVal.Value,
+					Removed: false,
+				}
+				previousValues = append(previousValues, updateVal)
+			} else {
+				deleteVal := &devicechangetypes.ChangeValue{
+					Path:    value.Path,
+					Value:   nil,
+					Removed: true,
+				}
+				previousValues = append(previousValues, deleteVal)
+			}
+		}
+
+	}
+	deltaChange := &devicechangetypes.Change{
+		DeviceID: rollbackChange.DeviceID,
+		Values:   previousValues,
+	}
+	return deltaChange, nil
 }
 
 var _ controller.Reconciler = &Reconciler{}

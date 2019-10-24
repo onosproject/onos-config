@@ -15,7 +15,8 @@
 package utils
 
 import (
-	"github.com/onosproject/onos-config/pkg/store/change/device"
+	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"sort"
@@ -26,7 +27,7 @@ import (
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func ExtractFullConfig(deviceID devicetopo.ID, newChange *devicechangetypes.Change, changeStore device.Store,
+func ExtractFullConfig(deviceID devicetopo.ID, newChange *devicechangetypes.Change, changeStore devicechangestore.Store,
 	nBack int) ([]*devicechangetypes.PathValue, error) {
 
 	// Have to use a slice to have a consistent output order
@@ -48,12 +49,16 @@ func ExtractFullConfig(deviceID devicetopo.ID, newChange *devicechangetypes.Chan
 
 	if nBack == 0 {
 		for storeChange := range changeChan {
-			consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
+			if storeChange.Status.State == change.State_COMPLETE && storeChange.Status.Phase != change.Phase_ROLLBACK {
+				consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
+			}
 		}
 	} else {
 		changes := make([]*devicechangetypes.DeviceChange, 0)
 		for storeChange := range changeChan {
-			changes = append(changes, storeChange)
+			if storeChange.Status.State == change.State_COMPLETE && storeChange.Status.Phase != change.Phase_ROLLBACK {
+				changes = append(changes, storeChange)
+			}
 		}
 		end := len(changes) - nBack
 		for _, storeChange := range changes[0:end] {
