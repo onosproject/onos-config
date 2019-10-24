@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
@@ -111,8 +112,9 @@ func computeRollback(m *Manager, target string, configname store.ConfigName) (ch
 	return id, updates, deletes, nil
 }
 
-//Deprecated computeRollback works on old non atomix methods
+// computeRollback returns a change containing the previous value for each path of the rollbackChange
 func computeNewRollback(m *Manager, rollbackChange *networkchangetypes.NetworkChange) (*networkchangetypes.NetworkChange, error) {
+	//TODO make sure the changeID is unique.
 	deltaChange := &networkchangetypes.NetworkChange{
 		ID: networkchangetypes.ID(namesgenerator.GetRandomName(0)),
 		Status: changetypes.Status{
@@ -124,30 +126,32 @@ func computeNewRollback(m *Manager, rollbackChange *networkchangetypes.NetworkCh
 	}
 	prevChanges := make([]*devicechangetypes.Change, 0)
 	//TODO We might want to consider doing reverse iteration to get the previous value for a path instead of
-	// reading up to the previous change for the path. see comments on PR #805
+	// reading up to the previous change for the target. see comments on PR #805
 	for _, deviceChange := range rollbackChange.Changes {
 		previousValues := make([]*devicechangetypes.ChangeValue, 0)
-		for _, value := range deviceChange.Values {
-			preVal, err := m.GetTargetNewConfig(string(deviceChange.DeviceID), value.Path, 1)
-			if err != nil {
-				return nil, fmt.Errorf("can't get last config for path %s on network config %s for target %s, %s",
-					value.Path, string(rollbackChange.ID), deviceChange.DeviceID, err)
-			}
-			//Previously there was no such value configured, deleting from devicetopo
-			if len(preVal) == 0 {
-				deleteVal := &devicechangetypes.ChangeValue{
-					Path:    value.Path,
-					Value:   nil,
-					Removed: true,
+		prevValues, err := devicechangeutils.ExtractFullConfig(deviceChange.DeviceID, nil, m.DeviceChangesStore, 1)
+		if err != nil {
+			return nil, fmt.Errorf("can't get last config on network config %s for target %s, %s",
+				string(rollbackChange.ID), deviceChange.DeviceID, err)
+		}
+		for _, preVal := range prevValues {
+			for _, value := range deviceChange.Values {
+				//Previously there was no such value configured, deleting from devicetopo
+				if preVal.Path == value.Path {
+					updateVal := &devicechangetypes.ChangeValue{
+						Path:    preVal.Path,
+						Value:   preVal.Value,
+						Removed: false,
+					}
+					previousValues = append(previousValues, updateVal)
+				} else {
+					deleteVal := &devicechangetypes.ChangeValue{
+						Path:    value.Path,
+						Value:   nil,
+						Removed: true,
+					}
+					previousValues = append(previousValues, deleteVal)
 				}
-				previousValues = append(previousValues, deleteVal)
-			} else {
-				updateVal := &devicechangetypes.ChangeValue{
-					Path:    preVal[0].Path,
-					Value:   preVal[0].Value,
-					Removed: false,
-				}
-				previousValues = append(previousValues, updateVal)
 			}
 
 		}
