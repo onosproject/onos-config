@@ -29,6 +29,7 @@ import (
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/types/change/network"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -160,15 +161,31 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	mockMastershipStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
 
 	// Mock Network changes store
+	networkChangesList := make([]*network.NetworkChange, 0)
 	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
 	mockNetworkChangesStore.EXPECT().Watch(gomock.Any()).AnyTimes()
-	mockNetworkChangesStore.EXPECT().Create(gomock.Any()).Return(nil)
-	mockNetworkChangesStore.EXPECT().Get(networkChange1.ID).Return(networkChange1, nil).AnyTimes()
+	mockNetworkChangesStore.EXPECT().Create(gomock.Any()).DoAndReturn(
+		func(networkChange *networkchangetypes.NetworkChange) error {
+			networkChangesList = append(networkChangesList, networkChange)
+			return nil
+		}).AnyTimes()
+	mockNetworkChangesStore.EXPECT().Get(networkChange1.ID).DoAndReturn(
+		func(id networkchangetypes.ID) (*networkchangetypes.NetworkChange, error) {
+			for _, networkChange := range networkChangesList {
+				if networkChange.ID == id {
+					return networkChange, nil
+				}
+			}
+			return nil, nil
+		}).AnyTimes()
+	_ = mockNetworkChangesStore.Create(networkChange1)
 
 	mockNetworkChangesStore.EXPECT().List(gomock.Any()).DoAndReturn(
 		func(c chan<- *network.NetworkChange) error {
 			go func() {
-				c <- networkChange1
+				for _, networkChange := range networkChangesList {
+					c <- networkChange
+				}
 				close(c)
 			}()
 			return nil
