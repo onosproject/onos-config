@@ -42,6 +42,24 @@ const (
 	change2 = devicechangetypes.ID("device-2:device-2")
 )
 
+const (
+	healthUp        = "UP"
+	healthDown      = "DOWN"
+	ethPrefix       = "eth"
+	eth1            = ethPrefix + "1"
+	eth2            = ethPrefix + "2"
+	ifHealthAttr    = "health-indicator"
+	ifNameAttr      = "name"
+	ifEnabledAttr   = "enabled"
+	ifConfigNameFmt = "/interfaces/interface[name=eth%d]/config/"
+	eth1Name        = "/interfaces/interface[name=eth1]/config/name"
+	eth1Enabled     = "/interfaces/interface[name=eth1]/config/enabled"
+	eth1Hi          = "/interfaces/interface[name=eth1]/config/health-indicator"
+	eth2Name        = "/interfaces/interface[name=eth2]/config/name"
+	eth2Enabled     = "/interfaces/interface[name=eth2]/config/enabled"
+	eth2Hi          = "/interfaces/interface[name=eth2]/config/health-indicator"
+)
+
 func TestReconcilerChangeSuccess(t *testing.T) {
 	devices, deviceChanges := newStores(t)
 	defer deviceChanges.Close()
@@ -249,17 +267,21 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 
 	paths, err := devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
-	assert.Equal(t, 4, len(paths))
+	assert.Equal(t, 6, len(paths))
 	for _, p := range paths {
 		switch p.Path {
-		case "/interfaces/interface[name=eth1]/config/name":
-			assert.Equal(t, "eth1", p.Value.ValueToString())
-		case "/interfaces/interface[name=eth1]/config/enabled":
-			assert.Equal(t, "UP", p.Value.ValueToString())
-		case "/interfaces/interface[name=eth2]/config/name":
-			assert.Equal(t, "eth2", p.Value.ValueToString())
-		case "/interfaces/interface[name=eth2]/config/enabled":
-			assert.Equal(t, "DOWN", p.Value.ValueToString())
+		case eth1Name:
+			assert.Equal(t, eth1, p.Value.ValueToString())
+		case eth1Enabled:
+			assert.Equal(t, "false", p.Value.ValueToString())
+		case eth1Hi:
+			assert.Equal(t, healthUp, p.Value.ValueToString())
+		case eth2Name:
+			assert.Equal(t, eth2, p.Value.ValueToString())
+		case eth2Enabled:
+			assert.Equal(t, "true", p.Value.ValueToString())
+		case eth2Hi:
+			assert.Equal(t, healthDown, p.Value.ValueToString())
 		default:
 			t.Errorf("Unexpected path %s", p.Path)
 		}
@@ -296,13 +318,15 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 
 	paths, err = devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
-	assert.Equal(t, 2, len(paths))
+	assert.Equal(t, 3, len(paths))
 	for _, p := range paths {
 		switch p.Path {
-		case "/interfaces/interface[name=eth1]/config/name":
-			assert.Equal(t, "eth1", p.Value.ValueToString())
-		case "/interfaces/interface[name=eth1]/config/enabled":
-			assert.Equal(t, "UP", p.Value.ValueToString())
+		case eth1Name:
+			assert.Equal(t, eth1, p.Value.ValueToString())
+		case eth1Enabled:
+			assert.Equal(t, "false", p.Value.ValueToString())
+		case eth1Hi:
+			assert.Equal(t, healthUp, p.Value.ValueToString())
 		default:
 			t.Errorf("Unexpected path %s", p.Path)
 		}
@@ -351,13 +375,15 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 
 	paths, err := devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
-	assert.Equal(t, 2, len(paths))
+	assert.Equal(t, 3, len(paths))
 	for _, p := range paths {
 		switch p.Path {
-		case "/interfaces/interface[name=eth1]/config/name":
-			assert.Equal(t, "eth1", p.Value.ValueToString())
-		case "/interfaces/interface[name=eth1]/config/enabled":
-			assert.Equal(t, "UP", p.Value.ValueToString())
+		case eth1Name:
+			assert.Equal(t, eth1, p.Value.ValueToString())
+		case eth1Enabled:
+			assert.Equal(t, "false", p.Value.ValueToString())
+		case eth1Hi:
+			assert.Equal(t, healthUp, p.Value.ValueToString())
 		default:
 			t.Errorf("Unexpected path %s", p.Path)
 		}
@@ -425,13 +451,15 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 
 	paths, err = devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
-	assert.Equal(t, 2, len(paths))
+	assert.Equal(t, 3, len(paths))
 	for _, p := range paths {
 		switch p.Path {
-		case "/interfaces/interface[name=eth1]/config/name":
-			assert.Equal(t, "eth1", p.Value.ValueToString())
-		case "/interfaces/interface[name=eth1]/config/enabled":
-			assert.Equal(t, "UP", p.Value.ValueToString())
+		case eth1Name:
+			assert.Equal(t, eth1, p.Value.ValueToString())
+		case eth1Enabled:
+			assert.Equal(t, "false", p.Value.ValueToString())
+		case eth1Hi:
+			assert.Equal(t, healthUp, p.Value.ValueToString())
 		default:
 			t.Errorf("Unexpected path %s", p.Path)
 		}
@@ -517,11 +545,11 @@ func newChange(device devicetopo.ID) *devicechangetypes.DeviceChange {
 
 // newChangeInterface creates a new interface eth<n> in the OpenConfig model style
 func newChangeInterface(device devicetopo.ID, iface int) *devicechangetypes.DeviceChange {
-	ifaceID := fmt.Sprintf("eth%d", iface)
-	ifacePath := fmt.Sprintf("/interfaces/interface[name=%s]/config/", ifaceID)
-	enabled := "UP"
+	ifaceID := fmt.Sprintf("%s%d", ethPrefix, iface)
+	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
+	healthValue := healthUp
 	if iface%2 == 0 {
-		enabled = "DOWN"
+		healthValue = healthDown
 	}
 
 	return &devicechangetypes.DeviceChange{
@@ -533,13 +561,18 @@ func newChangeInterface(device devicetopo.ID, iface int) *devicechangetypes.Devi
 			DeviceID: device,
 			Values: []*devicechangetypes.ChangeValue{
 				{
-					Path:    ifacePath + "name",
+					Path:    ifacePath + ifNameAttr,
 					Value:   devicechangetypes.NewTypedValueString(ifaceID),
 					Removed: false,
 				},
 				{
-					Path:    ifacePath + "enabled",
-					Value:   devicechangetypes.NewTypedValueString(enabled),
+					Path:    ifacePath + ifEnabledAttr,
+					Value:   devicechangetypes.NewTypedValueBool(iface%2 == 0),
+					Removed: false,
+				},
+				{
+					Path:    ifacePath + ifHealthAttr,
+					Value:   devicechangetypes.NewTypedValueString(healthValue),
 					Removed: false,
 				},
 			},
@@ -549,8 +582,7 @@ func newChangeInterface(device devicetopo.ID, iface int) *devicechangetypes.Devi
 
 // newChangeInterfaceRemove removes an interface eth<n> of the OpenConfig model style
 func newChangeInterfaceRemove(device devicetopo.ID, iface int) *devicechangetypes.DeviceChange {
-	ifaceID := fmt.Sprintf("eth%d", iface)
-	ifacePath := fmt.Sprintf("/interfaces/interface[name=%s]", ifaceID)
+	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
 
 	return &devicechangetypes.DeviceChange{
 		NetworkChange: devicechangetypes.NetworkChangeRef{
