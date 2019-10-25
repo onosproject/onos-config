@@ -736,6 +736,7 @@ func validateChange(target string, version string, deviceType string, deviceType
 	if errNewValidation != nil {
 		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
 			targetRemoves, target, errNewValidation)
+		return err
 	}
 	return nil
 }
