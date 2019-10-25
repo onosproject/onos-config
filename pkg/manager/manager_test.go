@@ -29,7 +29,7 @@ import (
 	types "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/types/change/network"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicepb "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -82,24 +82,11 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 
 	// Data for default configuration
 
-	device1 := &devicepb.Device{
-		ID:          Device1,
-		Revision:    0,
-		Address:     "",
-		Target:      "",
-		Version:     DeviceVersion,
-		Timeout:     nil,
-		Credentials: devicepb.Credentials{},
-		TLS:         devicepb.TlsConfig{},
-		Type:        DeviceType,
-		Role:        "",
-		Attributes:  nil,
-		Protocols:   nil,
-	}
 	change1 := types.Change{
 		Values: []*types.ChangeValue{
 			config1Value01, config1Value02, config1Value03},
-		DeviceID: device1.ID,
+		DeviceID:      Device1,
+		DeviceVersion: DeviceVersion,
 	}
 	deviceChange1 := &devicechange.DeviceChange{
 		Change: &change1,
@@ -161,30 +148,35 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 	// Mock Device Changes Store
 	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
 	mockDeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
-	deviceChanges := make(map[devicetopo.ID]*devicechange.DeviceChange)
+	deviceChanges := make(map[devicechange.ID]*devicechange.DeviceChange)
 
 	mockDeviceChangesStore.EXPECT().Get(deviceChange1.ID).DoAndReturn(
-		func(deviceID devicetopo.ID) (*devicechange.DeviceChange, error) {
+		func(deviceID devicechange.ID) (*devicechange.DeviceChange, error) {
 			return deviceChanges[deviceID], nil
 		}).AnyTimes()
 
 	mockDeviceChangesStore.EXPECT().Create(gomock.Any()).DoAndReturn(
 		func(config *devicechange.DeviceChange) error {
-			deviceChanges[config.Change.DeviceID] = config
+			deviceChanges[config.ID] = config
 			return nil
 		}).AnyTimes()
 
 	mockDeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(deviceID devicetopo.ID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
-			deviceChange := deviceChanges[deviceID]
+		func(deviceID device.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
+			changes := make([]*devicechange.DeviceChange, 0)
+			for _, deviceChange := range deviceChanges {
+				if device.NewVersionedID(deviceChange.Change.DeviceID, deviceChange.Change.DeviceVersion).GetID() == deviceID.GetID() {
+					changes = append(changes, deviceChange)
+				}
+			}
 			go func() {
-				if deviceChange != nil {
-					c <- deviceChange1
+				for _, deviceChange := range changes {
+					c <- deviceChange
 				}
 				close(c)
 			}()
 			ctx := stream.NewContext(func() {})
-			if deviceChange != nil {
+			if len(changes) != 0 {
 				return ctx, nil
 			}
 			return ctx, errors.New("no Configuration found")
@@ -311,7 +303,7 @@ func Test_GetNewNetworkConfig(t *testing.T) {
 
 	mgrTest, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetNewConfig(Device1, "/*", 0)
+	result, err := mgrTest.GetTargetNewConfig(Device1, DeviceVersion, "/*", 0)
 	assert.NilError(t, err, "GetTargetNewConfig error")
 
 	assert.Equal(t, len(result), 3, "Unexpected result element count")
@@ -494,7 +486,7 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 func TestManager_GetNoConfig(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetNewConfig("No Such Device", "/*", 0)
+	result, err := mgrTest.GetTargetNewConfig("No Such Device", DeviceVersion, "/*", 0)
 	assert.Assert(t, len(result) == 0, "Get of bad device does not return empty array")
 	assert.ErrorContains(t, err, "no Configuration found")
 }
@@ -511,7 +503,7 @@ func networkConfigContainsPath(configs []*devicechangetypes.PathValue, whichOne 
 func TestManager_GetAllConfig(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetNewConfig("Device1", "/*", 0)
+	result, err := mgrTest.GetTargetNewConfig("Device1", DeviceVersion, "/*", 0)
 	assert.Assert(t, len(result) == 3, "Get of device all paths does not return proper array")
 	assert.NilError(t, err, "Configuration not found")
 	assert.Assert(t, networkConfigContainsPath(result, "/cont1a"), "/cont1a not found")
@@ -522,7 +514,7 @@ func TestManager_GetAllConfig(t *testing.T) {
 func TestManager_GetOneConfig(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetNewConfig("Device1", "/cont1a/cont2a/leaf2a", 0)
+	result, err := mgrTest.GetTargetNewConfig("Device1", DeviceVersion, "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
 	assert.NilError(t, err, "Configuration not found")
 	assert.Assert(t, networkConfigContainsPath(result, "/cont1a/cont2a/leaf2a"), "/cont1a/cont2a/leaf2a not found")
@@ -531,7 +523,7 @@ func TestManager_GetOneConfig(t *testing.T) {
 func TestManager_GetWildcardConfig(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetNewConfig("Device1", "/*/*/leaf2a", 0)
+	result, err := mgrTest.GetTargetNewConfig("Device1", DeviceVersion, "/*/*/leaf2a", 0)
 	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
 	assert.NilError(t, err, "Configuration not found")
 	assert.Assert(t, networkConfigContainsPath(result, "/cont1a/cont2a/leaf2a"), "/cont1a/cont2a/leaf2a not found")
@@ -540,7 +532,7 @@ func TestManager_GetWildcardConfig(t *testing.T) {
 func TestManager_GetConfigNoTarget(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetNewConfig("", "/cont1a/cont2a/leaf2a", 0)
+	result, err := mgrTest.GetTargetNewConfig("", DeviceVersion, "/cont1a/cont2a/leaf2a", 0)
 	assert.Assert(t, len(result) == 0, "Get of device one path does not return proper array")
 	assert.ErrorContains(t, err, "no Configuration found")
 }
