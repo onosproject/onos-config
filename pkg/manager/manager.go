@@ -303,7 +303,7 @@ func (m *Manager) Run() {
 	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
 	// Listening for errors in the Southbound
-	go listenOnResponseChannel(m.SouthboundErrorChan, m)
+	//go listenOnResponseChannel(m.SouthboundErrorChan, m)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.TopoChannel,
 		m.OperationalStateChannel, m.SouthboundErrorChan, m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)

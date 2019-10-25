@@ -98,7 +98,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				delete(operationalStateCache, notifiedDevice.ID)
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
-				go sync.syncConfigEventsToDevice(target, respChan)
+				//go sync.syncConfigEventsToDevice(target, respChan)
 				if sync.getStateMode == modelregistry.GetStateOpState {
 					go sync.syncOperationalStateByPartition(ctx, target, southboundErrorChan)
 				} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||

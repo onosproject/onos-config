@@ -17,6 +17,7 @@ package device
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/controller"
+	"github.com/onosproject/onos-config/pkg/southbound"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
@@ -126,14 +127,8 @@ func (r *Reconciler) reconcileChange(change *devicechangetypes.DeviceChange) (bo
 
 // doChange pushes the given change to the device
 func (r *Reconciler) doChange(change *devicechangetypes.DeviceChange) error {
-	log.Infof("doChange %v", change)
-	// TODO: Apply the change here
-	setRequest, err := values.NativeNewChangeToGnmiChange(change.Change)
-	if err != nil {
-		return err
-	}
-	log.Info("Reconciler doChange request ", setRequest)
-	return nil
+	log.Infof("Applying change %v ", change.Change)
+	return r.translateAndSendChange(change.Change)
 }
 
 // reconcileRollback reconciles a ROLLBACK in the RUNNING state
@@ -158,17 +153,33 @@ func (r *Reconciler) reconcileRollback(change *devicechangetypes.DeviceChange) (
 
 // doRollback rolls back a change on the device
 func (r *Reconciler) doRollback(change *devicechangetypes.DeviceChange) error {
-	log.Infof("doRollback %v", change)
+	log.Infof("Execucting Rollback for %v", change)
 	deltaChange, err := r.computeNewRollback(change)
 	if err != nil {
 		return err
 	}
-	log.Infof("Rolling back %s with %s", change.Change, deltaChange)
-	setRequest, err := values.NativeNewChangeToGnmiChange(deltaChange)
+	log.Infof("Rolling back %v with %v", change.Change, deltaChange)
+	return r.translateAndSendChange(deltaChange)
+}
+
+func (r *Reconciler) translateAndSendChange(change *devicechangetypes.Change) error {
+	setRequest, err := values.NativeNewChangeToGnmiChange(change)
 	if err != nil {
 		return err
 	}
-	log.Info("Reconciler doRollback request ", setRequest)
+	log.Info("Reconciler set request ", setRequest)
+	deviceTarget, err := southbound.GetTarget(change.DeviceID)
+	if err != nil {
+		//TODO revisit change state.
+		log.Infof("Device %s is not connected, accepting change", change.DeviceID)
+		return nil
+	}
+	setResponse, err := deviceTarget.Set(deviceTarget.Ctx, setRequest)
+	if err != nil {
+		log.Error("Error while doing set: ", err)
+		return err
+	}
+	log.Info(change.DeviceID, " SetResponse ", setResponse)
 	return nil
 }
 

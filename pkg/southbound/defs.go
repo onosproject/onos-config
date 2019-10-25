@@ -22,6 +22,7 @@ import (
 )
 
 // DeviceID Target key; can be extended, for now is ip:port
+//TODO move to topocache.ID
 type DeviceID struct {
 	DeviceID string
 }
