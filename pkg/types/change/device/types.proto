@@ -66,13 +66,13 @@ message NetworkChangeRef {
 // Change represents a configuration change to a single device
 message Change {
     // 'device_id' is the identifier of the device to which this change applies
-    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.ID"];
 
     // 'device_version' is an optional device version to which to apply this change
-    string device_version = 2;
+    string device_version = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.Version"];
 
     // 'device_type' is an optional device type to which to apply this change
-    string device_type = 3;
+    string device_type = 3 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.Type"];
 
     // 'values' is a set of change values to apply
     repeated ChangeValue values = 4;

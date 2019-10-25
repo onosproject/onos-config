@@ -36,6 +36,7 @@ import (
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
@@ -76,8 +77,8 @@ type Manager struct {
 
 //TypeVersionInfo contains the info about the device type and version
 type TypeVersionInfo struct {
-	DeviceType string
-	Version    string
+	DeviceType devicetype.Type
+	Version    devicetype.Version
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -87,7 +88,6 @@ func NewManager(configStore *store.ConfigurationStore, leadershipStore leadershi
 	deviceCache devicestore.Cache, networkStore *store.NetworkStore,
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
 	deviceSnapshotStore devicesnap.Store, topoCh chan *devicetopo.ListResponse) (*Manager, error) {
-
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -366,8 +366,8 @@ func (m *Manager) computeChange(updates devicechangetypes.TypedValueMap,
 
 // ComputeNewDeviceChange computes a given device change the given updates and deletes, according to the path
 // on the configuration for the specified target
-func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
-	deviceType string, updates devicechangetypes.TypedValueMap,
+func (m *Manager) ComputeNewDeviceChange(deviceName devicetype.ID, version devicetype.Version,
+	deviceType devicetype.Type, updates devicechangetypes.TypedValueMap,
 	deletes []string, description string) (*devicechangetypes.Change, error) {
 
 	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
@@ -391,7 +391,7 @@ func (m *Manager) ComputeNewDeviceChange(deviceName string, version string,
 	//}
 	//TODO lost description of Change
 	changeElement := &devicechangetypes.Change{
-		DeviceID:      devicetopo.ID(deviceName),
+		DeviceID:      deviceName,
 		DeviceVersion: version,
 		DeviceType:    deviceType,
 		Values:        newChanges,
@@ -410,21 +410,30 @@ func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
 	return configChange.ID, nil
 }
 
-//ExtractTypeAndVersion gets a deviceType and a Version based on the available store, topo and extension info
-func ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devicetopo.Device, versionExt string, deviceTypeExt string) (TypeVersionInfo, error) {
+// ExtractTypeAndVersion gets a deviceType and a Version based on the available store, topo and extension info
+func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devicetopo.Device, versionExt string, deviceTypeExt string) (TypeVersionInfo, error) {
 	var (
 		deviceType string
 		version    string
 	)
 
 	if storedDevice == nil && (deviceTypeExt == "" || versionExt == "") {
-		//TODO try and get it from store
-		return TypeVersionInfo{}, fmt.Errorf("device %s is not connected and Extensions were not "+
-			"complete given %s, %s", target, versionExt, deviceTypeExt)
+		devices := m.DeviceCache.GetDevicesByID(devicetype.ID(target))
+		if len(devices) == 0 {
+			return TypeVersionInfo{}, fmt.Errorf("device %s is not connected and Extensions were not "+
+				"complete given %s, %s", target, versionExt, deviceTypeExt)
+		} else if len(devices) > 1 {
+			return TypeVersionInfo{}, fmt.Errorf("device %s is ambiguous and Extensions were not "+
+				"complete given %s, %s", target, versionExt, deviceTypeExt)
+		}
+		return TypeVersionInfo{
+			DeviceType: devices[0].Type,
+			Version:    devices[0].Version,
+		}, nil
 	}
 
 	if storedDevice == nil && deviceTypeExt != "" && versionExt != "" {
-		return TypeVersionInfo{Version: versionExt, DeviceType: deviceTypeExt}, nil
+		return TypeVersionInfo{Version: devicetype.Version(versionExt), DeviceType: devicetype.Type(deviceTypeExt)}, nil
 	}
 
 	if storedDevice != nil && deviceTypeExt == "" {
@@ -434,5 +443,5 @@ func ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devicetopo.Device
 		version = storedDevice.Version
 	}
 
-	return TypeVersionInfo{Version: version, DeviceType: deviceType}, nil
+	return TypeVersionInfo{Version: devicetype.Version(version), DeviceType: devicetype.Type(deviceType)}, nil
 }

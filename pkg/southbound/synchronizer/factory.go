@@ -23,6 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
@@ -45,7 +46,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				log.Error(err)
 			}
 			ctx := context.Background()
-			configName := store.ConfigName(utils.ToConfigName(notifiedDevice.ID, notifiedDevice.Version))
+			configName := store.ConfigName(utils.ToConfigName(devicetype.ID(notifiedDevice.ID), devicetype.Version(notifiedDevice.Version)))
 			cfg, ok := configStore.Store[configName]
 			if !ok {
 				if notifiedDevice.Type == "" {
@@ -63,7 +64,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				configStore.Store[configName] = cfg
 			}
 
-			modelName := utils.ToModelName(cfg.Type, notifiedDevice.Version)
+			modelName := utils.ToModelName(devicetype.Type(cfg.Type), devicetype.Version(notifiedDevice.Version))
 			mReadOnlyPaths, ok := modelRegistry.ModelReadOnlyPaths[modelName]
 			if !ok {
 				log.Warningf("Cannot check for read only paths for target %s with %s because "+

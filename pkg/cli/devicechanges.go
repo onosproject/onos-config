@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/spf13/cobra"
 	"io"
 	"strings"
@@ -47,6 +48,7 @@ func getListDeviceChangesCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  runListDeviceChangesCommand,
 	}
+	cmd.Flags().StringP("version", "v", "", "device version")
 	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	return cmd
 }
@@ -60,7 +62,8 @@ func runListDeviceChangesCommand(cmd *cobra.Command, args []string) error {
 }
 
 func deviceChangesCommand(cmd *cobra.Command, subscribe bool, args []string) error {
-	id := devicechangetypes.ID(args[0]) // Argument is mandatory
+	id := args[0] // Argument is mandatory
+	version, _ := cmd.Flags().GetString("version")
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
 	clientConnection, clientConnectionError := getConnection()
@@ -70,8 +73,9 @@ func deviceChangesCommand(cmd *cobra.Command, subscribe bool, args []string) err
 	}
 	client := diags.CreateChangeServiceClient(clientConnection)
 	changesReq := diags.ListDeviceChangeRequest{
-		Subscribe: subscribe,
-		ChangeID:  id,
+		Subscribe:     subscribe,
+		DeviceID:      device.ID(id),
+		DeviceVersion: device.Version(version),
 	}
 
 	var tmplChanges *template.Template

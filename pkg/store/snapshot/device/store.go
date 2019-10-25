@@ -26,8 +26,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	devicesnapshot "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"io"
@@ -141,7 +141,7 @@ type Store interface {
 	Store(snapshot *devicesnapshot.Snapshot) error
 
 	// Load loads a snapshot
-	Load(id devicetopo.ID) (*devicesnapshot.Snapshot, error)
+	Load(deviceID device.VersionedID) (*devicesnapshot.Snapshot, error)
 
 	// Load loads all snapshots
 	LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Context, error)
@@ -170,8 +170,14 @@ func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
 	if snapshot.Revision != 0 {
 		return errors.New("not a new object")
 	}
+	if snapshot.DeviceID == "" {
+		return errors.New("no device ID specified")
+	}
+	if snapshot.DeviceVersion == "" {
+		return errors.New("no device version specified")
+	}
 
-	snapshot.ID = devicesnapshot.GetSnapshotID(snapshot.NetworkSnapshot.ID, snapshot.DeviceID)
+	snapshot.ID = devicesnapshot.GetSnapshotID(snapshot.NetworkSnapshot.ID, snapshot.DeviceID, snapshot.DeviceVersion)
 
 	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
@@ -194,6 +200,12 @@ func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
 func (s *atomixStore) Update(snapshot *devicesnapshot.DeviceSnapshot) error {
 	if snapshot.Revision == 0 {
 		return errors.New("not a stored object")
+	}
+	if snapshot.DeviceID == "" {
+		return errors.New("no device ID specified")
+	}
+	if snapshot.DeviceVersion == "" {
+		return errors.New("no device version specified")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -295,6 +307,13 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 }
 
 func (s *atomixStore) Store(snapshot *devicesnapshot.Snapshot) error {
+	if snapshot.DeviceID == "" {
+		return errors.New("no device ID specified")
+	}
+	if snapshot.DeviceVersion == "" {
+		return errors.New("no device version specified")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -303,18 +322,18 @@ func (s *atomixStore) Store(snapshot *devicesnapshot.Snapshot) error {
 		return err
 	}
 
-	_, err = s.snapshots.Put(ctx, string(snapshot.DeviceID), bytes)
+	_, err = s.snapshots.Put(ctx, string(snapshot.GetVersionedDeviceID()), bytes)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *atomixStore) Load(id devicetopo.ID) (*devicesnapshot.Snapshot, error) {
+func (s *atomixStore) Load(deviceID device.VersionedID) (*devicesnapshot.Snapshot, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.snapshots.Get(ctx, string(id))
+	entry, err := s.snapshots.Get(ctx, string(deviceID))
 	if err != nil {
 		return nil, err
 	} else if entry == nil {

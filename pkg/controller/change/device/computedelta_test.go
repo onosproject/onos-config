@@ -40,7 +40,9 @@ func TestReconciler_computeNewRollback_singleUpdate(t *testing.T) {
 			Index: types.Index(1),
 		},
 		Change: &devicechangetypes.Change{
-			DeviceID: device1,
+			DeviceID:      device1,
+			DeviceVersion: "1.0.0",
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:    eth1Enabled,
@@ -75,7 +77,9 @@ func TestReconciler_computeNewRollback_mixedUpdate(t *testing.T) {
 			Index: types.Index(1),
 		},
 		Change: &devicechangetypes.Change{
-			DeviceID: device1,
+			DeviceID:      device1,
+			DeviceVersion: "1.0.0",
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:    eth1Enabled,
@@ -133,7 +137,9 @@ func TestReconciler_computeNewRollback_addInterface(t *testing.T) {
 			Index: types.Index(1),
 		},
 		Change: &devicechangetypes.Change{
-			DeviceID: device1,
+			DeviceID:      device1,
+			DeviceVersion: "1.0.0",
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:  eth2Name,
@@ -191,7 +197,9 @@ func TestReconciler_computeNewRollback_removeInterface(t *testing.T) {
 			Index: types.Index(1),
 		},
 		Change: &devicechangetypes.Change{
-			DeviceID: device1,
+			DeviceID:      device1,
+			DeviceVersion: "1.0.0",
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:    eth2Base,
@@ -223,7 +231,7 @@ func TestReconciler_computeNewRollback_removeInterface(t *testing.T) {
 }
 
 func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.Store, iface int) error {
-	deviceChangeIf := newChangeInterface(device1, iface)
+	deviceChangeIf := newChangeInterface(device1, "1.0.0", iface)
 
 	err := deviceChangesStore.Create(deviceChangeIf)
 	if err != nil {

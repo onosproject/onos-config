@@ -22,8 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
-
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"gotest.tools/assert"
 	"io"
 	"strings"
@@ -49,7 +48,7 @@ func generateDeviceChangeData(count int) {
 				Index: 0,
 			},
 			Change: &devicechangetypes.Change{
-				DeviceID:      devicetopo.ID(deviceID),
+				DeviceID:      device.ID(deviceID),
 				DeviceVersion: "1.0.0",
 				Values: []*devicechangetypes.ChangeValue{
 					{

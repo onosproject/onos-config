@@ -146,7 +146,8 @@ message RollbackResponse {
 
 // GetSnapshotRequest gets a snapshot
 message GetSnapshotRequest {
-    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-topo/pkg/northbound/device.ID"];
+    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.ID"];
+    string device_version = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.Version"];
 }
 
 // ListSnapshotsRequest requests a list of snapshots

@@ -15,27 +15,19 @@
 package device
 
 import (
-	"fmt"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"io"
 	"sync"
 )
 
-const separator = ":"
-
-// newKey returns a new cache key
-func newKey(id device.ID, version string) string {
-	return fmt.Sprintf("%s%s%s", id, separator, version)
-}
-
 // Info is device type/version info
 type Info struct {
 	DeviceID device.ID
-	Type     string
-	Version  string
+	Type     device.Type
+	Version  device.Version
 }
 
 // Cache is a device type/version cache
@@ -46,10 +38,10 @@ type Cache interface {
 	GetDevicesByID(id device.ID) []*Info
 
 	// GetDevicesByType gets all devices of the given type
-	GetDevicesByType(deviceType string) []*Info
+	GetDevicesByType(deviceType device.Type) []*Info
 
 	// GetDevicesByVersion gets all devices of the given type/version
-	GetDevicesByVersion(deviceType string, deviceVersion string) []*Info
+	GetDevicesByVersion(deviceType device.Type, deviceVersion device.Version) []*Info
 
 	// GetDevices returns the set of devices in the cache
 	GetDevices() []*Info
@@ -59,7 +51,7 @@ type Cache interface {
 func NewCache(networkChangeStore networkchangestore.Store) (Cache, error) {
 	cache := &networkChangeStoreCache{
 		networkChangeStore: networkChangeStore,
-		devices:            make(map[string]*Info),
+		devices:            make(map[device.VersionedID]*Info),
 	}
 	if err := cache.listen(); err != nil {
 		return nil, err
@@ -70,7 +62,7 @@ func NewCache(networkChangeStore networkchangestore.Store) (Cache, error) {
 // networkChangeStoreCache is a device cache based on the NetworkChange store
 type networkChangeStoreCache struct {
 	networkChangeStore networkchangestore.Store
-	devices            map[string]*Info
+	devices            map[device.VersionedID]*Info
 	mu                 sync.RWMutex
 }
 
@@ -86,7 +78,7 @@ func (c *networkChangeStoreCache) listen() error {
 		for event := range ch {
 			netChange := event.Object.(*networkchangetypes.NetworkChange)
 			for _, devChange := range netChange.Changes {
-				key := newKey(devChange.DeviceID, devChange.DeviceVersion)
+				key := device.NewVersionedID(devChange.DeviceID, devChange.DeviceVersion)
 				c.mu.Lock()
 				if _, ok := c.devices[key]; !ok {
 					c.devices[key] = &Info{
@@ -115,7 +107,7 @@ func (c *networkChangeStoreCache) GetDevicesByID(id device.ID) []*Info {
 	return devices
 }
 
-func (c *networkChangeStoreCache) GetDevicesByType(deviceType string) []*Info {
+func (c *networkChangeStoreCache) GetDevicesByType(deviceType device.Type) []*Info {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	devices := make([]*Info, 0, len(c.devices))
@@ -127,7 +119,7 @@ func (c *networkChangeStoreCache) GetDevicesByType(deviceType string) []*Info {
 	return devices
 }
 
-func (c *networkChangeStoreCache) GetDevicesByVersion(deviceType string, deviceVersion string) []*Info {
+func (c *networkChangeStoreCache) GetDevicesByVersion(deviceType device.Type, deviceVersion device.Version) []*Info {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	devices := make([]*Info, 0, len(c.devices))

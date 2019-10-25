@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -38,8 +38,8 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 	defer store2.Close()
 
-	device1 := devicetopo.ID("device-1")
-	device2 := devicetopo.ID("device-2")
+	device1 := device.ID("device-1")
+	device2 := device.ID("device-2")
 
 	ch := make(chan stream.Event)
 	_, err = store2.Watch(ch)
@@ -50,7 +50,8 @@ func TestNetworkChangeStore(t *testing.T) {
 		Changes: []*devicechangetypes.Change{
 			{
 
-				DeviceID: device1,
+				DeviceID:      device1,
+				DeviceVersion: "1.0.0",
 				Values: []*devicechangetypes.ChangeValue{
 					{
 						Path: "foo",

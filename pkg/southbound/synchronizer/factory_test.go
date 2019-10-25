@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
@@ -104,7 +105,7 @@ func TestFactory_Revert(t *testing.T) {
 	assert.Assert(t, ok)
 	assert.Assert(t, respListener != nil)
 
-	configName := store.ConfigName(utils.ToConfigName(device1.ID, device1.Version))
+	configName := store.ConfigName(utils.ToConfigName(device.ID(device1.ID), device.Version(device1.Version)))
 	cfgStoreUpdated, ok := configStore.Store[configName]
 	assert.Assert(t, ok, "Checking config created")
 	assert.Equal(t, cfgStoreUpdated.Name, configName)

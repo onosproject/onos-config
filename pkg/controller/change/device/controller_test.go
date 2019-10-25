@@ -24,6 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/types"
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -32,14 +33,14 @@ import (
 )
 
 const (
-	device1  = devicetopo.ID("device-1")
-	device2  = devicetopo.ID("device-2")
-	dcDevice = devicetopo.ID("disconnected")
+	device1  = device.ID("device-1")
+	device2  = device.ID("device-2")
+	dcDevice = device.ID("disconnected")
 )
 
 const (
-	change1 = devicechangetypes.ID("device-1:device-1")
-	change2 = devicechangetypes.ID("device-2:device-2")
+	change1 = devicechangetypes.ID("device-1:device-1:1.0.0")
+	change2 = devicechangetypes.ID("device-2:device-2:1.0.0")
 )
 
 const (
@@ -72,12 +73,12 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 	}
 
 	// Create a device-1 change 1
-	deviceChange1 := newChange(device1)
+	deviceChange1 := newChange(device1, "1.0.0")
 	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
 	// Create a device-2 change 1
-	deviceChange2 := newChange(device2)
+	deviceChange2 := newChange(device2, "1.0.0")
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
@@ -139,13 +140,13 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 	}
 
 	// Create a device-1 change 1
-	deviceChange1 := newChange(device1)
+	deviceChange1 := newChange(device1, "1.0.0")
 	deviceChange1.Status.Phase = change.Phase_ROLLBACK
 	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
 	// Create a device-2 change 1
-	deviceChange2 := newChange(device2)
+	deviceChange2 := newChange(device2, "1.0.0")
 	deviceChange2.Status.Phase = change.Phase_ROLLBACK
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
@@ -210,7 +211,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	}
 
 	// Create a device-1 change 1
-	deviceChange1 := newChangeInterface(device1, 1)
+	deviceChange1 := newChangeInterface(device1, "1.0.0", 1)
 	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
@@ -243,7 +244,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	//**********************************************************
 	// Create eth2 in a second change
 	//**********************************************************
-	deviceChange2 := newChangeInterface(device1, 2)
+	deviceChange2 := newChangeInterface(device1, "1.0.0", 2)
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
@@ -267,7 +268,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 
-	paths, err := devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	paths, err := devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, "1.0.0"), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 6, len(paths))
 	for _, p := range paths {
@@ -318,7 +319,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
 
-	paths, err = devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	paths, err = devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, "1.0.0"), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 3, len(paths))
 	for _, p := range paths {
@@ -350,7 +351,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	//**********************************************
 	// First create an interface eth1
 	//**********************************************
-	deviceChange1 := newChangeInterface(device1, 1)
+	deviceChange1 := newChangeInterface(device1, "1.0.0", 1)
 	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
@@ -375,7 +376,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.Equal(t, change.State_COMPLETE, deviceChange1.Status.State)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 
-	paths, err := devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	paths, err := devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, "1.0.0"), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 3, len(paths))
 	for _, p := range paths {
@@ -394,7 +395,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	//**********************************************
 	// Then remove the interface eth1
 	//**********************************************
-	deviceChange2 := newChangeInterfaceRemove(device1, 1)
+	deviceChange2 := newChangeInterfaceRemove(device1, "1.0.0", 1)
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
@@ -418,7 +419,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 
-	paths, err = devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	paths, err = devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, "1.0.0"), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 0, len(paths))
 
@@ -451,7 +452,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
 
-	paths, err = devicechangeutils.ExtractFullConfig(device1, nil, deviceChanges, 0)
+	paths, err = devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, "1.0.0"), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 3, len(paths))
 	for _, p := range paths {
@@ -473,8 +474,8 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	ctrl := gomock.NewController(t)
 
 	devices := map[devicetopo.ID]*devicetopo.Device{
-		device1: {
-			ID: device1,
+		devicetopo.ID(device1): {
+			ID: devicetopo.ID(device1),
 			Protocols: []*devicetopo.ProtocolState{
 				{
 					Protocol:          devicetopo.Protocol_GNMI,
@@ -483,8 +484,8 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 				},
 			},
 		},
-		device2: {
-			ID: device2,
+		devicetopo.ID(device2): {
+			ID: devicetopo.ID(device2),
 			Protocols: []*devicetopo.ProtocolState{
 				{
 					Protocol:          devicetopo.Protocol_GNMI,
@@ -493,8 +494,8 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 				},
 			},
 		},
-		dcDevice: {
-			ID: dcDevice,
+		devicetopo.ID(dcDevice): {
+			ID: devicetopo.ID(dcDevice),
 			Protocols: []*devicetopo.ProtocolState{
 				{
 					Protocol:          devicetopo.Protocol_GNMI,
@@ -506,9 +507,9 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	}
 
 	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[device1]}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[device2]}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[dcDevice]}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[devicetopo.ID(device1)]}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[devicetopo.ID(device2)]}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[devicetopo.ID(dcDevice)]}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)
@@ -527,14 +528,16 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	return deviceStore, deviceChanges
 }
 
-func newChange(device devicetopo.ID) *devicechangetypes.DeviceChange {
+func newChange(device device.ID, version device.Version) *devicechangetypes.DeviceChange {
 	return &devicechangetypes.DeviceChange{
 		NetworkChange: devicechangetypes.NetworkChangeRef{
 			ID:    types.ID(device),
 			Index: 1,
 		},
 		Change: &devicechangetypes.Change{
-			DeviceID: device,
+			DeviceID:      device,
+			DeviceVersion: version,
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:  "foo",
@@ -546,7 +549,7 @@ func newChange(device devicetopo.ID) *devicechangetypes.DeviceChange {
 }
 
 // newChangeInterface creates a new interface eth<n> in the OpenConfig model style
-func newChangeInterface(device devicetopo.ID, iface int) *devicechangetypes.DeviceChange {
+func newChangeInterface(device device.ID, version device.Version, iface int) *devicechangetypes.DeviceChange {
 	ifaceID := fmt.Sprintf("%s%d", ethPrefix, iface)
 	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
 	healthValue := healthUp
@@ -560,7 +563,9 @@ func newChangeInterface(device devicetopo.ID, iface int) *devicechangetypes.Devi
 			Index: types.Index(iface),
 		},
 		Change: &devicechangetypes.Change{
-			DeviceID: device,
+			DeviceID:      device,
+			DeviceVersion: version,
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:    ifacePath + ifNameAttr,
@@ -583,7 +588,7 @@ func newChangeInterface(device devicetopo.ID, iface int) *devicechangetypes.Devi
 }
 
 // newChangeInterfaceRemove removes an interface eth<n> of the OpenConfig model style
-func newChangeInterfaceRemove(device devicetopo.ID, iface int) *devicechangetypes.DeviceChange {
+func newChangeInterfaceRemove(device device.ID, version device.Version, iface int) *devicechangetypes.DeviceChange {
 	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
 
 	return &devicechangetypes.DeviceChange{
@@ -592,7 +597,9 @@ func newChangeInterfaceRemove(device devicetopo.ID, iface int) *devicechangetype
 			Index: types.Index(iface),
 		},
 		Change: &devicechangetypes.Change{
-			DeviceID: device,
+			DeviceID:      device,
+			DeviceVersion: version,
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:    ifacePath,

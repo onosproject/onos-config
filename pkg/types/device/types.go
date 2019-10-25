@@ -12,17 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package network
+package device
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/types"
+	"strings"
 )
 
-// ID is a network configuration identifier type
+const separator = ":"
+
+// Type is a device type
+type Type string
+
+// ID is a device ID
 type ID types.ID
 
-// Index is the index of a network configuration
-type Index uint64
+// Version is a device version
+type Version string
 
-// Revision is a network configuration revision number
-type Revision types.Revision
+// VersionedID is a versioned device ID
+type VersionedID types.ID
+
+// NewVersionedID returns a new versioned device identifier
+func NewVersionedID(id ID, version Version) VersionedID {
+	return VersionedID(fmt.Sprintf("%s%s%s", id, separator, version))
+}
+
+// GetID returns the device ID
+func (i VersionedID) GetID() ID {
+	return ID(i[:strings.Index(string(i), separator)])
+}
+
+// GetVersion returns the device version
+func (i VersionedID) GetVersion() Version {
+	return Version(i[strings.Index(string(i), separator)+1:])
+}

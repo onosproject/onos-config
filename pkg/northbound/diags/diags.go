@@ -26,6 +26,7 @@ import (
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
@@ -299,7 +300,7 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 
 // ListDeviceChanges provides a stream of Device Changes
 func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeService_ListDeviceChangesServer) error {
-	log.Infof("ListDeviceChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
+	log.Infof("ListDeviceChanges called with %s %s. Subscribe %v", r.DeviceID, r.DeviceVersion, r.Subscribe)
 
 	var watchOpts []device.WatchOption
 	if !r.WithoutReplay {
@@ -308,7 +309,7 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 
 	if r.Subscribe {
 		eventCh := make(chan streams.Event)
-		ctx, err := manager.GetManager().DeviceChangesStore.Watch(devicetopo.ID(r.ChangeID), eventCh, watchOpts...)
+		ctx, err := manager.GetManager().DeviceChangesStore.Watch(devicetype.NewVersionedID(r.DeviceID, r.DeviceVersion), eventCh, watchOpts...)
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
@@ -345,7 +346,7 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 		}
 	} else {
 		changeCh := make(chan *devicechangetypes.DeviceChange)
-		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetopo.ID(r.ChangeID), changeCh)
+		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, r.DeviceVersion), changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err
@@ -379,7 +380,7 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 			}
 		}
 	}
-	log.Infof("Closing ListDeviceChanges for %s", r.ChangeID)
+	log.Infof("Closing ListDeviceChanges for %s", r.DeviceID)
 	return nil
 }
 

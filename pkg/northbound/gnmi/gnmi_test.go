@@ -24,11 +24,9 @@ import (
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	"github.com/onosproject/onos-config/pkg/types/change/network"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
-	"github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/openconfig/goyang/pkg/yang"
-	"github.com/openconfig/ygot/ygot"
 	log "k8s.io/klog"
 	"os"
 	"sync"
@@ -47,42 +45,18 @@ func TestMain(m *testing.M) {
 
 type MockStores struct {
 	DeviceStore          *mockstore.MockDeviceStore
+	DeviceCache          *devicestore.MockCache
 	NetworkChangesStore  *mockstore.MockNetworkChangesStore
 	DeviceChangesStore   *mockstore.MockDeviceChangesStore
 	NetworkSnapshotStore *mockstore.MockNetworkSnapshotStore
 	DeviceSnapshotStore  *mockstore.MockDeviceSnapshotStore
 	LeadershipStore      *mockstore.MockLeadershipStore
 	MastershipStore      *mockstore.MockMastershipStore
-	DeviceCache          *devicestore.MockCache
-}
-
-type MockModelPlugin struct {
-	schemaFn func() (map[string]*yang.Entry, error)
-}
-
-func (m MockModelPlugin) ModelData() (string, string, []*gnmi.ModelData, string) {
-	panic("implement me")
-}
-
-func (m MockModelPlugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
-	return nil, nil
-}
-
-func (m MockModelPlugin) Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error {
-	return nil
-}
-
-func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
-	return m.schemaFn()
-}
-
-func (m MockModelPlugin) GetStateMode() int {
-	panic("implement me")
 }
 
 func setUpWatchMock(mockStores *MockStores) {
 	now := time.Now()
-	watchChange := networkchangetypes.NetworkChange{
+	watchChange := network.NetworkChange{
 		ID:       "",
 		Index:    0,
 		Revision: 0,
@@ -134,7 +108,7 @@ func setUpWatchMock(mockStores *MockStores) {
 		}).AnyTimes()
 
 	mockStores.DeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(deviceId devicetopo.ID, c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
+		func(deviceId device.VersionedID, c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
 			go func() {
 				c <- stream.Event{Object: &deviceChange}
 				close(c)
@@ -152,13 +126,13 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	ctrl := gomock.NewController(t)
 	mockStores := MockStores{
 		DeviceStore:          mockstore.NewMockDeviceStore(ctrl),
+		DeviceCache:          devicestore.NewMockCache(ctrl),
 		NetworkChangesStore:  mockstore.NewMockNetworkChangesStore(ctrl),
 		DeviceChangesStore:   mockstore.NewMockDeviceChangesStore(ctrl),
 		NetworkSnapshotStore: mockstore.NewMockNetworkSnapshotStore(ctrl),
 		DeviceSnapshotStore:  mockstore.NewMockDeviceSnapshotStore(ctrl),
 		LeadershipStore:      mockstore.NewMockLeadershipStore(ctrl),
 		MastershipStore:      mockstore.NewMockMastershipStore(ctrl),
-		DeviceCache:          devicestore.NewMockCache(ctrl),
 	}
 
 	mgr, err := manager.LoadManager(
@@ -185,8 +159,9 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	go listenToTopoLoading(mgr.TopoChannel)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*devicestore.Info, 0)).AnyTimes()
 	mockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(device devicetopo.ID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+		func(device device.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 			close(c)
 			return stream.NewContext(func() {
 

@@ -63,7 +63,7 @@ func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
 // Test_getNoPathElems tests for  Paths with no elements - should treat it like /
 func Test_getNoPathElems(t *testing.T) {
 	server, _, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	noPath1 := gnmi.Path{Target: "Device1"}
 	noPath2 := gnmi.Path{Target: "Device2"}
@@ -133,7 +133,7 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 
 func Test_get2PathsWithPrefix(t *testing.T) {
 	server, _, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)
@@ -174,7 +174,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	server, _, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)
@@ -220,7 +220,7 @@ func Test_targetDoesNotExist(t *testing.T) {
 // No error - just an empty value
 func Test_pathDoesNotExist(t *testing.T) {
 	server, _, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)

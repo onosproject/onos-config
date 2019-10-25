@@ -22,16 +22,16 @@ import (
 	changetype "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	snapshottype "github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnap "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
 const (
-	device1 = devicetopo.ID("device-1")
+	device1 = device.ID("device-1")
 )
 
 func TestReconcileDeviceSnapshotIndex(t *testing.T) {
@@ -67,6 +67,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	// Create a device snapshot
 	deviceSnapshot := &devicesnap.DeviceSnapshot{
 		DeviceID:              device1,
+		DeviceVersion:         "1.0.0",
 		MaxNetworkChangeIndex: 4,
 	}
 	err = snapshots.Create(deviceSnapshot)
@@ -99,7 +100,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
 
 	// Verify the correct snapshot was taken
-	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID)
+	snapshot, err := snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	assert.NoError(t, err)
 	assert.Equal(t, devicechangetypes.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 2)
@@ -190,6 +191,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	// Create a device snapshot
 	deviceSnapshot := &devicesnap.DeviceSnapshot{
 		DeviceID:              device1,
+		DeviceVersion:         "1.0.0",
 		MaxNetworkChangeIndex: 3,
 	}
 	err = snapshots.Create(deviceSnapshot)
@@ -222,7 +224,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
 
 	// Verify the correct snapshot was taken
-	snapshot, err := snapshots.Load(deviceSnapshot.DeviceID)
+	snapshot, err := snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	assert.NoError(t, err)
 	assert.Equal(t, devicechangetypes.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 4)
@@ -283,9 +285,11 @@ func newStores(t *testing.T) (devicechangestore.Store, devicesnapstore.Store) {
 	return changes, snapshots
 }
 
-func newSet(index networkchangetypes.Index, device devicetopo.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechangetypes.DeviceChange {
+func newSet(index networkchangetypes.Index, device device.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechangetypes.DeviceChange {
 	return newChange(index, created, phase, state, &devicechangetypes.Change{
-		DeviceID: device,
+		DeviceID:      device,
+		DeviceVersion: "1.0.0",
+		DeviceType:    "Stratum",
 		Values: []*devicechangetypes.ChangeValue{
 			{
 				Path:  fmt.Sprintf("/%s/msg", path),
@@ -299,9 +303,11 @@ func newSet(index networkchangetypes.Index, device devicetopo.ID, path string, c
 	})
 }
 
-func newRemove(index networkchangetypes.Index, device devicetopo.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechangetypes.DeviceChange {
+func newRemove(index networkchangetypes.Index, device device.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechangetypes.DeviceChange {
 	return newChange(index, created, phase, state, &devicechangetypes.Change{
-		DeviceID: device,
+		DeviceID:      device,
+		DeviceVersion: "1.0.0",
+		DeviceType:    "Stratum",
 		Values: []*devicechangetypes.ChangeValue{
 			{
 				Path:    fmt.Sprintf("/%s", path),

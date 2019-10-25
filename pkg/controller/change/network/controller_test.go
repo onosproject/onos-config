@@ -23,6 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -30,10 +31,10 @@ import (
 )
 
 const (
-	device1 = devicetopo.ID("device-1")
-	device2 = devicetopo.ID("device-2")
-	device3 = devicetopo.ID("device-3")
-	device4 = devicetopo.ID("device-4")
+	device1 = device.ID("device-1")
+	device2 = device.ID("device-2")
+	device3 = device.ID("device-3")
+	device4 = device.ID("device-4")
 )
 
 const (
@@ -62,11 +63,11 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device changes were created
-	deviceChange1, err := deviceChanges.Get("change-1:device-1")
+	deviceChange1, err := deviceChanges.Get("change-1:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err := deviceChanges.Get("change-1:device-2")
+	deviceChange2, err := deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -83,11 +84,11 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
 
 	// But device change states should remain in PENDING state
-	deviceChange1, err = deviceChanges.Get("change-1:device-1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("change-1:device-2")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -98,11 +99,11 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device change states were changed to RUNNING
-	deviceChange1, err = deviceChanges.Get("change-1:device-1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("change-1:device-2")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange2.Status.State)
@@ -157,11 +158,11 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
 
 	// Verify that device change phases were changed to ROLLBACK
-	deviceChange1, err = deviceChanges.Get("change-1:device-1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("change-1:device-2")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -183,11 +184,11 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device change states were changed to RUNNING
-	deviceChange1, err = deviceChanges.Get("change-1:device-1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("change-1:device-2")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange2.Status.State)
@@ -215,11 +216,11 @@ func TestReconcilerError(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device changes were created
-	deviceChange1, err := deviceChanges.Get("change-1:device-1")
+	deviceChange1, err := deviceChanges.Get("change-1:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err := deviceChanges.Get("change-1:device-2")
+	deviceChange2, err := deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -236,11 +237,11 @@ func TestReconcilerError(t *testing.T) {
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
 
 	// But device change states should remain in PENDING state
-	deviceChange1, err = deviceChanges.Get("change-1:device-1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("change-1:device-2")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
@@ -251,11 +252,11 @@ func TestReconcilerError(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify that device change states were changed to RUNNING
-	deviceChange1, err = deviceChanges.Get("change-1:device-1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("change-1:device-2")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange2.Status.State)
@@ -277,7 +278,7 @@ func TestReconcilerError(t *testing.T) {
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
 
 	// Fail the other device
-	deviceChange2, err = deviceChanges.Get("change-1:device-2")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	deviceChange2.Status.State = change.State_FAILED
 	deviceChange2.Status.Reason = change.Reason_ERROR
@@ -296,11 +297,11 @@ func TestReconcilerError(t *testing.T) {
 	assert.Equal(t, change.State_RUNNING, networkChange.Status.State)
 
 	// Verify the change to device-1 is being rolled back
-	deviceChange1, err = deviceChanges.Get("change-1:device-1")
+	deviceChange1, err = deviceChanges.Get("change-1:device-1:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_ROLLBACK, deviceChange1.Status.Phase)
 	assert.Equal(t, change.State_RUNNING, deviceChange1.Status.State)
-	deviceChange2, err = deviceChanges.Get("change-1:device-2")
+	deviceChange2, err = deviceChanges.Get("change-1:device-2:1.0.0")
 	assert.NoError(t, err)
 	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
 	assert.Equal(t, change.State_FAILED, deviceChange2.Status.State)
@@ -326,10 +327,10 @@ func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicecha
 	ctrl := gomock.NewController(t)
 
 	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: device1}}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: device2}}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: device3}}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: device4}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID(device1)}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID(device2)}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID(device3)}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID(device4)}}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)
@@ -344,11 +345,13 @@ func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicecha
 	return devices, networkChanges, deviceChanges
 }
 
-func newChange(id networkchangetypes.ID, devices ...devicetopo.ID) *networkchangetypes.NetworkChange {
+func newChange(id networkchangetypes.ID, devices ...device.ID) *networkchangetypes.NetworkChange {
 	changes := make([]*devicechangetypes.Change, len(devices))
 	for i, device := range devices {
 		changes[i] = &devicechangetypes.Change{
-			DeviceID: device,
+			DeviceID:      device,
+			DeviceVersion: "1.0.0",
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path: "foo",

@@ -22,6 +22,7 @@ import (
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
@@ -235,8 +236,8 @@ var Config2Types = [11]devicechangetypes.ValueType{
 }
 
 const (
-	Device1ID = devicetopo.ID("Device1-1.0.0")
-	Device2ID = devicetopo.ID("Device2-1.0.0")
+	Device1ID = devicetype.ID("Device1-1.0.0")
+	Device2ID = devicetype.ID("Device2-1.0.0")
 )
 
 var B64 = base64.StdEncoding.EncodeToString
@@ -274,8 +275,8 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	config1Value10, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout2Txpwr10), false)
 	config1Value11, _ := devicechangetypes.NewChangeValue(Test1Leaftoplevel, devicechangetypes.NewTypedValueString(ValueLeaftopWxy1234), false)
 
-	device1 := makeDevice(Device1ID)
-	device2 := makeDevice(Device2ID)
+	device1 := makeDevice(devicetopo.ID(Device1ID))
+	device2 := makeDevice(devicetopo.ID(Device2ID))
 
 	change1 := devicechangetypes.Change{
 		Values: []*devicechangetypes.ChangeValue{
@@ -284,7 +285,8 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 			config1Value07, config1Value08, config1Value09,
 			config1Value10, config1Value11,
 		},
-		DeviceID: device1.ID,
+		DeviceID:      devicetype.ID(device1.ID),
+		DeviceVersion: "1.0.0",
 	}
 	deviceChange1 := &devicechangetypes.DeviceChange{
 		Change: &change1,
@@ -305,7 +307,8 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 		Values: []*devicechangetypes.ChangeValue{
 			config2Value01, config2Value02, config2Value03,
 		},
-		DeviceID: device1.ID,
+		DeviceID:      devicetype.ID(device1.ID),
+		DeviceVersion: "1.0.0",
 	}
 	deviceChange2 := &devicechangetypes.DeviceChange{
 		Change: &change2,
@@ -325,7 +328,8 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 		Values: []*devicechangetypes.ChangeValue{
 			config3Value01, config3Value02,
 		},
-		DeviceID: device1.ID,
+		DeviceID:      devicetype.ID(device1.ID),
+		DeviceVersion: "1.0.0",
 	}
 	deviceChange3 := &devicechangetypes.DeviceChange{
 		Change: &change3,
@@ -344,7 +348,8 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 		Values: []*devicechangetypes.ChangeValue{
 			config4Value01, config4Value02,
 		},
-		DeviceID: device2.ID,
+		DeviceID:      devicetype.ID(device2.ID),
+		DeviceVersion: "1.0.0",
 	}
 	deviceChange4 := &devicechangetypes.DeviceChange{
 		Change: &change4,
@@ -363,7 +368,7 @@ func setUp(t *testing.T) (*devicechangetypes.DeviceChange, *devicechangetypes.De
 	mockChangeStore.EXPECT().Get(deviceChange4.ID).Return(deviceChange4, nil).AnyTimes()
 
 	mockChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(device devicetopo.ID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+		func(device devicetype.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 			go func() {
 				c <- deviceChange1
 				c <- deviceChange2
@@ -419,7 +424,7 @@ func Test_device1_version(t *testing.T) {
 	leaf2c := change1.Change.Values[4]
 	assert.Equal(t, leaf2c.GetValue().ValueToString(), "abc")
 
-	pathValues, ok := ExtractFullConfig(device1V.Change.DeviceID, change1.Change, changeStore, 0)
+	pathValues, ok := ExtractFullConfig(device1V.Change.GetVersionedDeviceID(), change1.Change, changeStore, 0)
 	assert.Assert(t, ok)
 	for _, c := range pathValues {
 		log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
@@ -450,7 +455,7 @@ func Test_device1_prev_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Change.DeviceID, Device1ID)
 
-	config, _ := ExtractFullConfig(device1V.Change.DeviceID, nil, changeStore, changePrevious)
+	config, _ := ExtractFullConfig(device1V.Change.GetVersionedDeviceID(), nil, changeStore, changePrevious)
 	for _, c := range config {
 		log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
 	}
@@ -471,7 +476,7 @@ func Test_device1_first_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Change.DeviceID, Device1ID)
 
-	config, _ := ExtractFullConfig(device1V.Change.DeviceID, nil, changeStore, changePrevious)
+	config, _ := ExtractFullConfig(device1V.Change.GetVersionedDeviceID(), nil, changeStore, changePrevious)
 	for _, c := range config {
 		log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
 	}
@@ -488,7 +493,7 @@ func Test_device1_invalid_version(t *testing.T) {
 
 	assert.Equal(t, device1V.Change.DeviceID, Device1ID)
 
-	config, _ := ExtractFullConfig(device1V.Change.DeviceID, nil, changeStore, changePrevious)
+	config, _ := ExtractFullConfig(device1V.Change.GetVersionedDeviceID(), nil, changeStore, changePrevious)
 	if len(config) > 0 {
 		t.Errorf("Not expecting any values for change (n-3). Got %d", len(config))
 	}
@@ -504,7 +509,7 @@ func Test_device2_version(t *testing.T) {
 
 	assert.Equal(t, device2V.Change.DeviceID, Device2ID)
 
-	config, _ := ExtractFullConfig(device2V.Change.DeviceID, nil, changeStore, 0)
+	config, _ := ExtractFullConfig(device2V.Change.GetVersionedDeviceID(), nil, changeStore, 0)
 	for _, c := range config {
 		log.Infof("Path %s = %s\n", c.Path, c.GetValue().ValueToString())
 	}

@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"testing"
@@ -87,7 +86,7 @@ func Test_NativeNewChangeToGnmiChange(t *testing.T) {
 		},
 	}
 	testChange := &devicechangetypes.Change{
-		DeviceID:      devicetopo.ID("Device1"),
+		DeviceID:      "Device1",
 		DeviceVersion: "Device1-1.0.0",
 		DeviceType:    "devicesim",
 		Values:        testValues,
@@ -130,7 +129,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 		},
 	}
 	change3 := &devicechangetypes.Change{
-		DeviceID:      devicetopo.ID("Device1"),
+		DeviceID:      "Device1",
 		DeviceVersion: "Device1-1.0.0",
 		Values:        testValues,
 	}

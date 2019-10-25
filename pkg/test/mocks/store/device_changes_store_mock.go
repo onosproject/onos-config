@@ -10,7 +10,7 @@ import (
 	device "github.com/onosproject/onos-config/pkg/store/change/device"
 	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	device0 "github.com/onosproject/onos-config/pkg/types/change/device"
-	device1 "github.com/onosproject/onos-topo/pkg/northbound/device"
+	device1 "github.com/onosproject/onos-config/pkg/types/device"
 	reflect "reflect"
 )
 
@@ -67,67 +67,67 @@ func (mr *MockDeviceChangesStoreMockRecorder) Get(id interface{}) *gomock.Call {
 }
 
 // Create mocks base method
-func (m *MockDeviceChangesStore) Create(config *device0.DeviceChange) error {
+func (m *MockDeviceChangesStore) Create(change *device0.DeviceChange) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", config)
+	ret := m.ctrl.Call(m, "Create", change)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Create indicates an expected call of Create
-func (mr *MockDeviceChangesStoreMockRecorder) Create(config interface{}) *gomock.Call {
+func (mr *MockDeviceChangesStoreMockRecorder) Create(change interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDeviceChangesStore)(nil).Create), config)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockDeviceChangesStore)(nil).Create), change)
 }
 
 // Update mocks base method
-func (m *MockDeviceChangesStore) Update(config *device0.DeviceChange) error {
+func (m *MockDeviceChangesStore) Update(change *device0.DeviceChange) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", config)
+	ret := m.ctrl.Call(m, "Update", change)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update
-func (mr *MockDeviceChangesStoreMockRecorder) Update(config interface{}) *gomock.Call {
+func (mr *MockDeviceChangesStoreMockRecorder) Update(change interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDeviceChangesStore)(nil).Update), config)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDeviceChangesStore)(nil).Update), change)
 }
 
 // Delete mocks base method
-func (m *MockDeviceChangesStore) Delete(config *device0.DeviceChange) error {
+func (m *MockDeviceChangesStore) Delete(change *device0.DeviceChange) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", config)
+	ret := m.ctrl.Call(m, "Delete", change)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete
-func (mr *MockDeviceChangesStoreMockRecorder) Delete(config interface{}) *gomock.Call {
+func (mr *MockDeviceChangesStoreMockRecorder) Delete(change interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDeviceChangesStore)(nil).Delete), config)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDeviceChangesStore)(nil).Delete), change)
 }
 
 // List mocks base method
-func (m *MockDeviceChangesStore) List(arg0 device1.ID, arg1 chan<- *device0.DeviceChange) (stream.Context, error) {
+func (m *MockDeviceChangesStore) List(deviceID device1.VersionedID, ch chan<- *device0.DeviceChange) (stream.Context, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret := m.ctrl.Call(m, "List", deviceID, ch)
 	ret0, _ := ret[0].(stream.Context)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List
-func (mr *MockDeviceChangesStoreMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockDeviceChangesStoreMockRecorder) List(deviceID, ch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockDeviceChangesStore)(nil).List), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockDeviceChangesStore)(nil).List), deviceID, ch)
 }
 
 // Watch mocks base method
-func (m *MockDeviceChangesStore) Watch(arg0 device1.ID, arg1 chan<- stream.Event, arg2 ...device.WatchOption) (stream.Context, error) {
+func (m *MockDeviceChangesStore) Watch(deviceID device1.VersionedID, ch chan<- stream.Event, opts ...device.WatchOption) (stream.Context, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []interface{}{deviceID, ch}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Watch", varargs...)
@@ -137,9 +137,9 @@ func (m *MockDeviceChangesStore) Watch(arg0 device1.ID, arg1 chan<- stream.Event
 }
 
 // Watch indicates an expected call of Watch
-func (mr *MockDeviceChangesStoreMockRecorder) Watch(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockDeviceChangesStoreMockRecorder) Watch(deviceID, ch interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	varargs := append([]interface{}{deviceID, ch}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockDeviceChangesStore)(nil).Watch), varargs...)
 }
 
