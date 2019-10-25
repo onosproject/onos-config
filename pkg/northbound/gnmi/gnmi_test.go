@@ -27,6 +27,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/goyang/pkg/yang"
+	"github.com/openconfig/ygot/ygot"
 	log "k8s.io/klog"
 	"os"
 	"sync"
@@ -52,6 +55,30 @@ type MockStores struct {
 	DeviceSnapshotStore  *mockstore.MockDeviceSnapshotStore
 	LeadershipStore      *mockstore.MockLeadershipStore
 	MastershipStore      *mockstore.MockMastershipStore
+}
+
+type MockModelPlugin struct {
+	schemaFn func() (map[string]*yang.Entry, error)
+}
+
+func (m MockModelPlugin) ModelData() (string, string, []*gnmi.ModelData, string) {
+	panic("implement me")
+}
+
+func (m MockModelPlugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
+	return nil, nil
+}
+
+func (m MockModelPlugin) Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error {
+	return nil
+}
+
+func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
+	return m.schemaFn()
+}
+
+func (m MockModelPlugin) GetStateMode() int {
+	panic("implement me")
 }
 
 func setUpWatchMock(mockStores *MockStores) {
@@ -159,7 +186,6 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	go listenToTopoLoading(mgr.TopoChannel)
 	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*devicestore.Info, 0)).AnyTimes()
 	mockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(device device.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 			close(c)

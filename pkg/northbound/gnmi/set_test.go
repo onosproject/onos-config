@@ -17,10 +17,16 @@ package gnmi
 import (
 	"context"
 	"github.com/golang/mock/gomock"
+	td1 "github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
+	td2 "github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
+	"github.com/openconfig/goyang/pkg/yang"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"strconv"
@@ -32,9 +38,16 @@ import (
 	"gotest.tools/assert"
 )
 
+const (
+	cont1aCont2aLeaf2a = "/cont1a/cont2a/leaf2a"
+	cont1aCont2aLeaf2b = "/cont1a/cont2a/leaf2b"
+	cont1aCont2aLeaf2c = "/cont1a/cont2a/leaf2c" // State
+)
+
 // Test_doSingleSet shows how a value of 1 path can be set on a target
 func Test_doSingleSet(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 
@@ -124,6 +137,7 @@ func Test_doSingleSet(t *testing.T) {
 // Test_doSingleSet shows how a value of 1 list can be set on a target
 func Test_doSingleSetList(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 
@@ -211,6 +225,7 @@ func Test_doSingleSetList(t *testing.T) {
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
 func Test_do2SetsOnSameTarget(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 	var deletePaths = make([]*gnmi.Path, 0)
@@ -261,6 +276,7 @@ func Test_do2SetsOnSameTarget(t *testing.T) {
 // same time
 func Test_do2SetsOnDiffTargets(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 	var deletePaths = make([]*gnmi.Path, 0)
@@ -311,6 +327,7 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 // targets can be Set at same time
 func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 	var deletePaths = make([]*gnmi.Path, 0)
@@ -371,6 +388,7 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 // a single target fails
 func Test_doDuplicateSetSingleTarget(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 	var deletePaths = make([]*gnmi.Path, 0)
@@ -432,6 +450,7 @@ func Test_doDuplicateSetSingleTarget(t *testing.T) {
 // duplicates it should fail
 func Test_doDuplicateSet2Targets(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 	var deletePaths = make([]*gnmi.Path, 0)
@@ -511,6 +530,7 @@ func Test_doDuplicateSet2Targets(t *testing.T) {
 // Note how the SetResponse does not include the dups
 func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any()).Times(2)
 	// Make 2 changes
@@ -602,6 +622,7 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 
 func Test_NetCfgSetWithDuplicateNameGiven(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 	var deletePaths = make([]*gnmi.Path, 0)
@@ -662,6 +683,7 @@ func Test_NetCfgSetWithDuplicateNameGiven(t *testing.T) {
 // Test_doSingleDelete shows how a value of 1 path can be deleted on a target
 func Test_doSingleDelete(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 
@@ -727,6 +749,7 @@ func Test_doSingleDelete(t *testing.T) {
 // Test_doUpdateDeleteSet shows how a request with a delete and an update can be applied on a target
 func Test_doUpdateDeleteSet(t *testing.T) {
 	server, _, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 	var deletePaths = make([]*gnmi.Path, 0)
@@ -808,3 +831,62 @@ func Test_doUpdateDeleteSet(t *testing.T) {
 }
 
 //TODO test with update and delete at the same time.
+
+func TestSet_checkForReadOnly(t *testing.T) {
+	server, mgr, mockStores := setUp(t)
+
+	modelPluginTestDevice1 := MockModelPlugin{
+		td1.UnzipSchema,
+	}
+	modelPluginTestDevice2 := MockModelPlugin{
+		td2.UnzipSchema,
+	}
+	mgr.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = modelPluginTestDevice1
+	ds1Schema, _ := modelPluginTestDevice1.Schema()
+	readOnlyPathsTd1, _ := modelregistry.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-1.0.0"] = readOnlyPathsTd1
+
+	mgr.ModelRegistry.ModelPlugins["TestDevice-2.0.0"] = modelPluginTestDevice2
+	td2Schema, _ := modelPluginTestDevice2.Schema()
+	readOnlyPathsTd2, _ := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
+	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-2.0.0"] = readOnlyPathsTd2
+
+	cacheInfo1v1 := device.Info{
+		DeviceID: "device-1",
+		Type:     "TestDevice",
+		Version:  "1.0.0",
+	}
+
+	cacheInfo1v2 := device.Info{
+		DeviceID: "device-1",
+		Type:     "TestDevice",
+		Version:  "2.0.0",
+	}
+
+	cacheInfo2v1 := device.Info{
+		DeviceID: "device-2",
+		Type:     "TestDevice",
+		Version:  "1.0.0",
+	}
+
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*device.Info{&cacheInfo1v1, &cacheInfo1v2})
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-2")).Return([]*device.Info{&cacheInfo2v1})
+
+	updateT1 := make(map[string]*devicechangetypes.TypedValue)
+	updateT1[cont1aCont2aLeaf2a] = devicechangetypes.NewTypedValueUint64(10)
+	updateT1[cont1aCont2aLeaf2b] = devicechangetypes.NewTypedValueString("2b on t1")
+
+	updateT2 := make(map[string]*devicechangetypes.TypedValue)
+	updateT1[cont1aCont2aLeaf2a] = devicechangetypes.NewTypedValueUint64(11)
+	updateT1[cont1aCont2aLeaf2b] = devicechangetypes.NewTypedValueString("2b on t2")
+	updateT1[cont1aCont2aLeaf2c] = devicechangetypes.NewTypedValueString("2c on t2 - ro attribute")
+
+	targetUpdates := make(map[string]devicechangetypes.TypedValueMap)
+	targetUpdates["device-1"] = updateT1
+	targetUpdates["device-2"] = updateT2
+
+	targetDeletes := make(map[string][]string)
+
+	err := server.checkForReadOnlyNew(targetUpdates, targetDeletes)
+	assert.Error(t, err, `update contains a change to a read only path /cont1a/cont2a/leaf2c. Rejected`)
+}
