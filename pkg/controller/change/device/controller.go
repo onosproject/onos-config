@@ -27,6 +27,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
+	"strings"
 )
 
 // NewController returns a new network controller
@@ -197,31 +198,24 @@ func (r *Reconciler) computeNewRollback(deviceChange *devicechangetypes.DeviceCh
 			string(deviceChange.ID), deviceChange.Change.DeviceID, err)
 	}
 	rollbackChange := deviceChange.Change
-	alreadyRemoved := make(map[string]struct{})
-	for _, preVal := range prevValues {
-		for _, value := range rollbackChange.Values {
-			//Previously there was no such value configured, deleting from devicetopo
-			if preVal.Path == value.Path {
-				updateVal := &devicechangetypes.ChangeValue{
-					Path:    preVal.Path,
-					Value:   preVal.Value,
-					Removed: false,
-				}
-				previousValues = append(previousValues, updateVal)
-			} else {
-				if _, ok := alreadyRemoved[value.Path]; ok {
-					continue
-				}
-				deleteVal := &devicechangetypes.ChangeValue{
-					Path:    value.Path,
-					Value:   nil,
-					Removed: true,
-				}
-				alreadyRemoved[value.Path] = struct{}{}
-				previousValues = append(previousValues, deleteVal)
+	alreadyUpdated := make(map[string]struct{})
+	for _, rbValue := range rollbackChange.Values {
+		for _, prevVal := range prevValues {
+			if prevVal.Path == rbValue.Path ||
+				rbValue.Removed && strings.HasPrefix(prevVal.Path, rbValue.Path) {
+				alreadyUpdated[rbValue.Path] = struct{}{}
+				previousValues = append(previousValues, &devicechangetypes.ChangeValue{
+					Path:  prevVal.Path,
+					Value: prevVal.Value,
+				})
 			}
 		}
-
+		if _, ok := alreadyUpdated[rbValue.Path]; !ok {
+			previousValues = append(previousValues, &devicechangetypes.ChangeValue{
+				Path:    rbValue.Path,
+				Removed: true,
+			})
+		}
 	}
 	deltaChange := &devicechangetypes.Change{
 		DeviceID: rollbackChange.DeviceID,
