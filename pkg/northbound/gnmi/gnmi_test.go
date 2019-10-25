@@ -19,12 +19,16 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/change/network"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/goyang/pkg/yang"
+	"github.com/openconfig/ygot/ygot"
 	log "k8s.io/klog"
 	"os"
 	"sync"
@@ -49,11 +53,36 @@ type MockStores struct {
 	DeviceSnapshotStore  *mockstore.MockDeviceSnapshotStore
 	LeadershipStore      *mockstore.MockLeadershipStore
 	MastershipStore      *mockstore.MockMastershipStore
+	DeviceCache          *devicestore.MockCache
+}
+
+type MockModelPlugin struct {
+	schemaFn func() (map[string]*yang.Entry, error)
+}
+
+func (m MockModelPlugin) ModelData() (string, string, []*gnmi.ModelData, string) {
+	panic("implement me")
+}
+
+func (m MockModelPlugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
+	return nil, nil
+}
+
+func (m MockModelPlugin) Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error {
+	return nil
+}
+
+func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
+	return m.schemaFn()
+}
+
+func (m MockModelPlugin) GetStateMode() int {
+	panic("implement me")
 }
 
 func setUpWatchMock(mockStores *MockStores) {
 	now := time.Now()
-	watchChange := network.NetworkChange{
+	watchChange := networkchangetypes.NetworkChange{
 		ID:       "",
 		Index:    0,
 		Revision: 0,
@@ -129,6 +158,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 		DeviceSnapshotStore:  mockstore.NewMockDeviceSnapshotStore(ctrl),
 		LeadershipStore:      mockstore.NewMockLeadershipStore(ctrl),
 		MastershipStore:      mockstore.NewMockMastershipStore(ctrl),
+		DeviceCache:          devicestore.NewMockCache(ctrl),
 	}
 
 	mgr, err := manager.LoadManager(
@@ -138,6 +168,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 		mockStores.LeadershipStore,
 		mockStores.MastershipStore,
 		mockStores.DeviceChangesStore,
+		mockStores.DeviceCache,
 		mockStores.NetworkChangesStore,
 		mockStores.NetworkSnapshotStore,
 		mockStores.DeviceSnapshotStore)

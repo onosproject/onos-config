@@ -47,12 +47,16 @@ var mgr Manager
 
 // Manager single point of entry for the config system.
 type Manager struct {
-	ConfigStore               *store.ConfigurationStore
-	ChangeStore               *store.ChangeStore
-	LeadershipStore           leadership.Store
-	MastershipStore           mastership.Store
-	DeviceChangesStore        device.Store
-	DeviceStore               devicestore.Store
+	// deprecated: old store
+	ConfigStore *store.ConfigurationStore
+	// deprecated: old store
+	ChangeStore        *store.ChangeStore
+	LeadershipStore    leadership.Store
+	MastershipStore    mastership.Store
+	DeviceChangesStore device.Store
+	DeviceStore        devicestore.Store
+	DeviceCache        devicestore.Cache
+	// deprecated: old store
 	NetworkStore              *store.NetworkStore
 	NetworkChangesStore       network.Store
 	NetworkSnapshotStore      networksnap.Store
@@ -77,10 +81,13 @@ type TypeVersionInfo struct {
 }
 
 // NewManager initializes the network config manager subsystem.
-func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store, mastershipStore mastership.Store,
-	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicestore.Store, networkStore *store.NetworkStore,
-	networkChangesStore network.Store, networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store,
-	topoCh chan *devicetopo.ListResponse) (*Manager, error) {
+func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store,
+	mastershipStore mastership.Store, deviceChangesStore device.Store,
+	changeStore *store.ChangeStore, deviceStore devicestore.Store,
+	deviceCache devicestore.Cache, networkStore *store.NetworkStore,
+	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
+	deviceSnapshotStore devicesnap.Store, topoCh chan *devicetopo.ListResponse) (*Manager, error) {
+
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -96,6 +103,7 @@ func NewManager(configStore *store.ConfigurationStore, leadershipStore leadershi
 		//TODO remove deprecated ChangeStore
 		ChangeStore: changeStore,
 		DeviceStore: deviceStore,
+		DeviceCache: deviceCache,
 		//TODO remove deprecated NetworkStore
 		NetworkStore:              networkStore,
 		NetworkChangesStore:       networkChangesStore,
@@ -145,7 +153,8 @@ func NewManager(configStore *store.ConfigurationStore, leadershipStore leadershi
 
 // LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
 func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFile string, leadershipStore leadership.Store,
-	mastershipStore mastership.Store, deviceChangesStore device.Store, networkChangesStore network.Store,
+	mastershipStore mastership.Store, deviceChangesStore device.Store,
+	deviceCache devicestore.Cache, networkChangesStore network.Store,
 	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store, opts ...grpc.DialOption) (*Manager, error) {
 	topoChannel := make(chan *devicetopo.ListResponse, 10)
 
@@ -185,7 +194,7 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 	}
 	log.Info("Network store loaded from ", networkStoreFile)
 
-	return NewManager(&configStore, leadershipStore, mastershipStore, deviceChangesStore, &changeStore, deviceStore, networkStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, topoChannel)
+	return NewManager(&configStore, leadershipStore, mastershipStore, deviceChangesStore, &changeStore, deviceStore, deviceCache, networkStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, topoChannel)
 }
 
 // ValidateStores validate configurations against their ModelPlugins at startup

@@ -408,6 +408,69 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 	return nil
 }
 
+// iterate through the updates and check that none of them include a `set` of a
+// readonly attribute - this is done by checking with the relevant model
+func (s *Server) checkForReadOnlyNew(
+	targetUpdates mapTargetUpdates, targetRemoves mapTargetRemoves) error {
+
+	deviceCache := manager.GetManager().DeviceCache
+	modelreg := manager.GetManager().ModelRegistry
+
+	// Iterate through all the updates - many may use the same target - here we
+	// create a map of the models for all of the targets
+	targetModelTypes := make(map[string][]string)
+	for t := range targetUpdates { // map - just need the key
+		if _, ok := targetModelTypes[t]; ok {
+			continue
+		}
+		for _, config := range deviceCache.GetDevicesByID(devicetopo.ID(t)) {
+			// This ignores versions - if it's RO in one version will be regarded
+			// as RO in all versions - very unlikely that model would change
+			// YANG items from `config false` to `config true` across versions
+			m, ok := modelreg.
+				ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
+			if !ok {
+				log.Warningf("Cannot check for Read Only paths for %s %s because "+
+					"Model Plugin not available - continuing", config.Type, config.Version)
+				return nil
+			}
+			targetModelTypes[t] = modelregistry.Paths(m)
+		}
+	}
+	for t := range targetRemoves { // map - just need the key
+		if _, ok := targetModelTypes[t]; ok {
+			continue
+		}
+		for _, config := range deviceCache.GetDevicesByID(devicetopo.ID(t)) {
+			m, ok := modelreg.
+				ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
+			if !ok {
+				log.Warningf("Cannot check for Read Only paths for %s %s because "+
+					"Model Plugin not available - continuing", config.Type, config.Version)
+				return nil
+			}
+			targetModelTypes[t] = modelregistry.Paths(m)
+		}
+	}
+
+	// Now iterate through the consolidated set of targets and see if any are read-only paths
+	for t, update := range targetUpdates {
+		model := targetModelTypes[t]
+		for path := range update { // map - just need the key
+			for _, ropath := range model {
+				// Search through for list indices and replace with generic
+
+				modelPath := modelregistry.RemovePathIndices(path)
+				if strings.HasPrefix(modelPath, ropath) {
+					return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 // Deprecated: executeSetConfig works on legacy, non-atomix stores
 func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 	targetRemoves mapTargetRemoves, version string, deviceType string,

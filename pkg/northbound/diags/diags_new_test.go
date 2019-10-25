@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
@@ -55,6 +56,7 @@ func setUpServer(port int16, service Service, waitGroup *sync.WaitGroup, ctrl *g
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
+		devicestore.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl))
