@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -104,6 +105,7 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
 	mockNetworkSnapshotStore := mockstore.NewMockNetworkSnapshotStore(ctrl)
 	mockDeviceSnapshotStore := mockstore.NewMockDeviceSnapshotStore(ctrl)
+	mockDeviceCache := devicestore.NewMockCache(ctrl)
 
 	mockLeadershipStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 	mockLeadershipStore.EXPECT().IsLeader().AnyTimes()
@@ -129,6 +131,7 @@ func setUp(t *testing.T) (*Manager, map[string]*change.Change, map[store.ConfigN
 			Store:     changeStoreTest,
 		},
 		mockDeviceStore,
+		mockDeviceCache,
 		&store.NetworkStore{
 			Version:   "1.0",
 			Storetype: "network",
@@ -156,6 +159,7 @@ func Test_LoadManager(t *testing.T) {
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
+		devicestore.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl))
@@ -171,6 +175,7 @@ func Test_LoadManagerBadConfigStore(t *testing.T) {
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
+		devicestore.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl))
@@ -186,6 +191,7 @@ func Test_LoadManagerBadChangeStore(t *testing.T) {
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
+		devicestore.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl))
@@ -201,6 +207,7 @@ func Test_LoadManagerBadNetworkStore(t *testing.T) {
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
+		devicestore.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl))

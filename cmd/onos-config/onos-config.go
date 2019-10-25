@@ -50,6 +50,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
@@ -148,6 +149,11 @@ func main() {
 	}
 	log.Info("Network Configuration store connected")
 
+	deviceCache, err := devicestore.NewCache(networkChangesStore)
+	if err != nil {
+		log.Error("Cannot load device cache", err)
+	}
+
 	networkSnapshotStore, err := networksnap.NewAtomixStore()
 	if err != nil {
 		log.Error("Cannot load network snapshot atomix store ", err)
@@ -158,7 +164,7 @@ func main() {
 		log.Error("Cannot load network atomix store ", err)
 	}
 
-	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, leadershipStore, mastershipStore, deviceChangesStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, opts...)
+	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, leadershipStore, mastershipStore, deviceChangesStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, opts...)
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {
