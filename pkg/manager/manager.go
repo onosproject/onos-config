@@ -82,11 +82,9 @@ type TypeVersionInfo struct {
 }
 
 // NewManager initializes the network config manager subsystem.
-func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store,
-	mastershipStore mastership.Store, deviceChangesStore device.Store,
-	changeStore *store.ChangeStore, deviceStore devicestore.Store,
-	deviceCache devicestore.Cache, networkStore *store.NetworkStore,
-	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
+func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store, mastershipStore mastership.Store,
+	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicestore.Store, deviceCache devicestore.Cache,
+	networkStore *store.NetworkStore, networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
 	deviceSnapshotStore devicesnap.Store, topoCh chan *devicetopo.ListResponse) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
