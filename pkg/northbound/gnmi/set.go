@@ -174,8 +174,16 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	//TODO remove
 	//Deprecated
+	targetUpdatesCopy := make(mapTargetUpdates)
+	targetRemovesCopy := make(mapTargetRemoves)
+	for k,v := range targetUpdates{
+		targetUpdatesCopy[k] = v
+	}
+	for k,v := range targetRemoves{
+		targetRemovesCopy[k] = v
+	}
 	updateResultsOld, networkChanges, err :=
-		s.executeSetConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
+		s.executeSetConfig(targetUpdatesCopy, targetRemovesCopy, version, deviceType, netcfgchangename)
 	if err != nil {
 		log.Errorf(" OLD - Error while setting config %s", err.Error())
 		//return nil, status.Error(codes.Internal, err.Error())
