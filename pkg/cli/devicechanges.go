@@ -37,6 +37,7 @@ func getWatchDeviceChangesCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  runWatchDeviceChangesCommand,
 	}
+	cmd.Flags().StringP("version", "v", "", "an optional version")
 	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	return cmd
 }
