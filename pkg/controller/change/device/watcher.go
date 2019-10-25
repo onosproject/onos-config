@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/types"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"sync"
 )
@@ -32,7 +33,7 @@ type Watcher struct {
 	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
-	streams     map[devicetopo.ID]stream.Context
+	streams     map[device.VersionedID]stream.Context
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
@@ -46,7 +47,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	}
 
 	w.ch = ch
-	w.streams = make(map[devicetopo.ID]stream.Context)
+	w.streams = make(map[device.VersionedID]stream.Context)
 	w.mu.Unlock()
 
 	deviceCh := make(chan *devicetopo.ListResponse)
@@ -55,29 +56,29 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	}
 
 	go func() {
-		for response := range deviceCh {
-			w.watchDevice(response.Device.ID, ch)
+		for event := range deviceCh {
+			w.watchDevice(device.NewVersionedID(device.ID(event.Device.ID), device.Version(event.Device.Version)), ch)
 		}
 	}()
 	return nil
 }
 
 // watchDevice watches changes for the given device
-func (w *Watcher) watchDevice(device devicetopo.ID, ch chan<- types.ID) {
+func (w *Watcher) watchDevice(deviceID device.VersionedID, ch chan<- types.ID) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	ctx := w.streams[device]
+	ctx := w.streams[deviceID]
 	if ctx != nil {
 		return
 	}
 
 	deviceCh := make(chan stream.Event, queueSize)
-	ctx, err := w.ChangeStore.Watch(device, deviceCh, devicechangestore.WithReplay())
+	ctx, err := w.ChangeStore.Watch(deviceID, deviceCh, devicechangestore.WithReplay())
 	if err != nil {
 		return
 	}
-	w.streams[device] = ctx
+	w.streams[deviceID] = ctx
 
 	w.wg.Add(1)
 	go func() {

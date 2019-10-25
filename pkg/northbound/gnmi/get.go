@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -41,10 +42,15 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	disconnectedDevicesMap := make(map[devicetopo.ID]bool)
 
+	version, err := extractGetVersion(req)
+	if err != nil {
+		return nil, err
+	}
+
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, path := range req.GetPath() {
-		update, err := getUpdate(prefix, path)
+		update, err := getUpdate(version, prefix, path)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -76,7 +82,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	}
 	// Alternatively - if there's only the prefix
 	if len(req.GetPath()) == 0 {
-		update, err := getUpdate(prefix, nil)
+		update, err := getUpdate(version, prefix, nil)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -127,7 +133,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 }
 
 // getUpdate utility method for getting an Update for a given path
-func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
+func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	if (path == nil || path.Target == "") && (prefix == nil || prefix.Target == "") {
 		return nil, fmt.Errorf("Invalid request - Path %s has no target", utils.StrPath(path))
 	}
@@ -159,6 +165,20 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 		return update, nil
 	}
 
+	mgr := manager.GetManager()
+	storedDevice, _ := mgr.DeviceStore.Get(devicetopo.ID(target))
+	typeVersionInfo, errTypeVersion := manager.GetManager().ExtractTypeAndVersion(devicetopo.ID(target),
+		storedDevice, string(version), "")
+	if errTypeVersion != nil {
+		//TODO return instead of log
+		log.Error(errTypeVersion)
+		typeVersionInfo = manager.TypeVersionInfo{
+			DeviceType: "",
+			Version:    "",
+		}
+		//return nil, errTypeVersion
+	}
+
 	pathAsString := utils.StrPath(path)
 	if prefix != nil && prefix.Elem != nil {
 		pathAsString = utils.StrPath(prefix) + pathAsString
@@ -170,8 +190,8 @@ func getUpdate(prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 		return nil, err
 	}
 
-	configValuesNew, errNewMethod := manager.GetManager().GetTargetNewConfig(target,
-		pathAsString, 0)
+	configValuesNew, errNewMethod := manager.GetManager().GetTargetNewConfig(
+		devicetype.ID(target), typeVersionInfo.Version, pathAsString, 0)
 	if errNewMethod != nil {
 		log.Error("Error while extracting config", errNewMethod)
 	}
@@ -215,4 +235,17 @@ func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*devicechang
 		Path: path,
 		Val:  value,
 	}, nil
+}
+
+func extractGetVersion(req *gnmi.GetRequest) (devicetype.Version, error) {
+	var version devicetype.Version
+	for _, ext := range req.GetExtension() {
+		if ext.GetRegisteredExt().GetId() == GnmiExtensionVersion {
+			version = devicetype.Version(ext.GetRegisteredExt().GetMsg())
+		} else {
+			return "", status.Error(codes.InvalidArgument, fmt.Errorf("unexpected extension %d = '%s' in Set()",
+				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
+		}
+	}
+	return version, nil
 }

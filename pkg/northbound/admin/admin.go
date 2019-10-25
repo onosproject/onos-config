@@ -23,6 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	snapshottype "github.com/onosproject/onos-config/pkg/types/snapshot"
 	"github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	networksnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/network"
@@ -144,7 +145,7 @@ func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminS
 
 		roPaths := make([]*ReadOnlyPath, 0)
 		if req.Verbose {
-			roPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(name, version)]
+			roPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(name), devicetype.Version(version))]
 			if !ok {
 				log.Warningf("no list of Read Only Paths found for %s %s\n", name, version)
 			} else {
@@ -168,7 +169,7 @@ func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminS
 
 		rwPaths := make([]*ReadWritePath, 0)
 		if req.Verbose {
-			rwPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadWritePaths[utils.ToModelName(name, version)]
+			rwPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadWritePaths[utils.ToModelName(devicetype.Type(name), devicetype.Version(version))]
 			if !ok {
 				log.Warningf("no list of Read Write Paths found for %s %s\n", name, version)
 			} else {
@@ -305,7 +306,7 @@ func (s Server) RollbackNewNetworkChange(
 
 // GetSnapshot gets a snapshot for a specific device
 func (s Server) GetSnapshot(ctx context.Context, request *GetSnapshotRequest) (*device.Snapshot, error) {
-	return manager.GetManager().DeviceSnapshotStore.Load(request.DeviceID)
+	return manager.GetManager().DeviceSnapshotStore.Load(devicetype.NewVersionedID(request.DeviceID, request.DeviceVersion))
 }
 
 // ListSnapshots lists snapshots for all devices

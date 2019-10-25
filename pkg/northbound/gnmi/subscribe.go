@@ -24,6 +24,7 @@ import (
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	changeTypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -131,8 +132,13 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 		}
 
 		//If the subscription mode is ONCE or POLL we immediately start a routine to collect the data
+		version, err := extractSubscribeVersion(in)
 		if mode != gnmi.SubscriptionList_STREAM {
-			go collector(stream, subscribe, resChan, mode)
+			if err != nil {
+				resChan <- result{success: false, err: err}
+			} else {
+				go collector(version, stream, subscribe, resChan, mode)
+			}
 		} else {
 			subs := subscribe.Subscription
 			//FAST way to identify if target and subscription is present
@@ -145,17 +151,17 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 			}
 			//Each subscription request spawns a go routing listening for related events for the target and the paths
 			go listenForUpdates(changesChan, stream, mgr, targets, subsStr, resChan)
-			go listenForNewUpdates(stream, mgr, targets, subsStr, resChan)
+			go listenForNewUpdates(stream, mgr, targets, version, subsStr, resChan)
 			go listenForOpStateUpdates(opStateChan, stream, targets, subsStr, resChan)
 		}
 	}
 }
 
-func collector(stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result, mode gnmi.SubscriptionList_Mode) {
+func collector(version devicetype.Version, stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result, mode gnmi.SubscriptionList_Mode) {
 	for _, sub := range request.Subscription {
 		//We get the stated of the device, for each path we build an update and send it out.
 		//Already based on the new atomix based store
-		update, err := getUpdate(request.Prefix, sub.Path)
+		update, err := getUpdate(version, request.Prefix, sub.Path)
 		if err != nil {
 			log.Error("Error while collecting data for subscribe once or poll ", err)
 			resChan <- result{success: false, err: err}
@@ -229,17 +235,17 @@ func listenForDeviceUpdates(respChan <-chan events.DeviceResponse, changeInterna
 
 //For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
 func listenForNewUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
-	targets map[string]struct{}, subs []*regexp.Regexp, resChan chan result) {
+	targets map[string]struct{}, version devicetype.Version, subs []*regexp.Regexp, resChan chan result) {
 	for target := range targets {
-		go listenForNewDeviceUpdates(stream, mgr, target, subs, resChan)
+		go listenForNewDeviceUpdates(stream, mgr, devicetype.ID(target), version, subs, resChan)
 	}
 }
 
 //For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
 func listenForNewDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
-	target string, subs []*regexp.Regexp, resChan chan result) {
+	target devicetype.ID, version devicetype.Version, subs []*regexp.Regexp, resChan chan result) {
 	eventCh := make(chan streams.Event)
-	ctx, errWatch := mgr.DeviceChangesStore.Watch(devicetopo.ID(target), eventCh)
+	ctx, errWatch := mgr.DeviceChangesStore.Watch(devicetype.NewVersionedID(target, version), eventCh)
 	if errWatch != nil {
 		log.Errorf("Cant watch for changes on device %s. error %s", target, errWatch.Error())
 		resChan <- result{success: false, err: errWatch}
@@ -432,4 +438,17 @@ func getChangeFromEvent(update events.ConfigEvent, mgr *manager.Manager) (string
 		log.Warning("No change found for: ", changeID)
 	}
 	return target, changeInternal
+}
+
+func extractSubscribeVersion(req *gnmi.SubscribeRequest) (devicetype.Version, error) {
+	var version devicetype.Version
+	for _, ext := range req.GetExtension() {
+		if ext.GetRegisteredExt().GetId() == GnmiExtensionVersion {
+			version = devicetype.Version(ext.GetRegisteredExt().GetMsg())
+		} else {
+			return "", status.Error(codes.InvalidArgument, fmt.Errorf("unexpected extension %d = '%s' in Set()",
+				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
+		}
+	}
+	return version, nil
 }

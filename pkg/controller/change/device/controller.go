@@ -55,7 +55,7 @@ type Resolver struct {
 
 // Resolve resolves a device ID from a device change ID
 func (r *Resolver) Resolve(id types.ID) (devicetopo.ID, error) {
-	return devicechangetypes.ID(id).GetDeviceID(), nil
+	return devicetopo.ID(devicechangetypes.ID(id).GetDeviceID()), nil
 }
 
 // Reconciler is a device change reconciler
@@ -78,7 +78,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	}
 
 	// Get the device from the device store
-	device, err := r.devices.Get(change.Change.DeviceID)
+	device, err := r.devices.Get(devicetopo.ID(change.Change.DeviceID))
 	if err != nil {
 		return false, err
 	}
@@ -192,7 +192,7 @@ func (r *Reconciler) computeNewRollback(deviceChange *devicechangetypes.DeviceCh
 	//TODO We might want to consider doing reverse iteration to get the previous value for a path instead of
 	// reading up to the previous change for the target. see comments on PR #805
 	previousValues := make([]*devicechangetypes.ChangeValue, 0)
-	prevValues, err := devicechangeutils.ExtractFullConfig(deviceChange.Change.DeviceID, nil, r.changes, 0)
+	prevValues, err := devicechangeutils.ExtractFullConfig(deviceChange.Change.GetVersionedDeviceID(), nil, r.changes, 0)
 	if err != nil {
 		return nil, fmt.Errorf("can't get last config on network config %s for target %s, %s",
 			string(deviceChange.ID), deviceChange.Change.DeviceID, err)
@@ -218,8 +218,9 @@ func (r *Reconciler) computeNewRollback(deviceChange *devicechangetypes.DeviceCh
 		}
 	}
 	deltaChange := &devicechangetypes.Change{
-		DeviceID: rollbackChange.DeviceID,
-		Values:   previousValues,
+		DeviceID:      rollbackChange.DeviceID,
+		DeviceVersion: rollbackChange.DeviceVersion,
+		Values:        previousValues,
 	}
 	return deltaChange, nil
 }

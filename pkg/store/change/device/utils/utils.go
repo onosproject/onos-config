@@ -18,7 +18,7 @@ import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"sort"
 	"strings"
 )
@@ -27,7 +27,7 @@ import (
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func ExtractFullConfig(deviceID devicetopo.ID, newChange *devicechangetypes.Change, changeStore devicechangestore.Store,
+func ExtractFullConfig(deviceID device.VersionedID, newChange *devicechangetypes.Change, changeStore devicechangestore.Store,
 	nBack int) ([]*devicechangetypes.PathValue, error) {
 
 	// Have to use a slice to have a consistent output order

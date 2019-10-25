@@ -19,6 +19,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-config/pkg/store/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -83,7 +84,15 @@ func (x gNMISubscribeServerPollFake) Recv() (*gnmi.SubscribeRequest, error) {
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
 	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+		{
+			DeviceID: "Device1",
+			Version:  "1.0.0",
+			Type:     "Stratum",
+		},
+	}).AnyTimes()
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -123,6 +132,14 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with updates for that path
 func Test_SubscribeLeafStream(t *testing.T) {
 	server, mgr, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+		{
+			DeviceID: "Device1",
+			Version:  "1.0.0",
+			Type:     "Stratum",
+		},
+	}).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 
@@ -315,7 +332,15 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 
 func Test_Poll(t *testing.T) {
 	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+		{
+			DeviceID: "Device1",
+			Version:  "1.0.0",
+			Type:     "Stratum",
+		},
+	}).AnyTimes()
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -376,6 +401,14 @@ func Test_Poll(t *testing.T) {
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with delete paths
 func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	server, mgr, mockStores := setUp(t)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+		{
+			DeviceID: "Device1",
+			Version:  "1.0.0",
+			Type:     "Stratum",
+		},
+	}).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 
@@ -446,8 +479,15 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 		ID: target,
 	}
 
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+		{
+			DeviceID: "Device1",
+			Version:  "1.0.0",
+			Type:     "Stratum",
+		},
+	}).AnyTimes()
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil).Times(2)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 
 	configChan, respChan, err := mgr.Dispatcher.RegisterDevice(target)

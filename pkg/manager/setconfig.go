@@ -22,6 +22,7 @@ import (
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
@@ -81,8 +82,8 @@ func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 
 // ValidateNewNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target (Atomix Based)
-func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
-	deviceType string, updates devicechangetypes.TypedValueMap, deletes []string) error {
+func (m *Manager) ValidateNewNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
+	deviceType devicetype.Type, updates devicechangetypes.TypedValueMap, deletes []string) error {
 
 	chg, err := m.ComputeNewDeviceChange(deviceName, version, deviceType, updates, deletes, "Generated for validation")
 	if err != nil {
@@ -94,7 +95,7 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName string, version string,
 	if !ok {
 		log.Warning("No model ", modelName, " available as a plugin")
 	} else {
-		configValues, err := devicechangeutils.ExtractFullConfig(devicetopo.ID(deviceName), chg, m.DeviceChangesStore, 0)
+		configValues, err := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(deviceName, version), chg, m.DeviceChangesStore, 0)
 		if err != nil {
 			return err
 		}
@@ -254,7 +255,7 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 		version := deviceInfo[devicetopo.ID(target)].Version
 		deviceType := deviceInfo[devicetopo.ID(target)].DeviceType
 		newChange, err := m.ComputeNewDeviceChange(
-			target, version, deviceType, updates, targetRemoves[target], description)
+			devicetype.ID(target), version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue
@@ -267,7 +268,7 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 		version := deviceInfo[devicetopo.ID(target)].Version
 		deviceType := deviceInfo[devicetopo.ID(target)].DeviceType
 		newChange, err := m.ComputeNewDeviceChange(
-			target, version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
+			devicetype.ID(target), version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue

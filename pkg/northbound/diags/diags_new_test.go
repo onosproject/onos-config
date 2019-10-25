@@ -27,7 +27,7 @@ import (
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
 	"io"
@@ -157,7 +157,7 @@ func Test_ListDeviceChanges(t *testing.T) {
 	mockDevChStore, ok := mgrTest.DeviceChangesStore.(*mockstore.MockDeviceChangesStore)
 	assert.Assert(t, ok, "casting mock store")
 	mockDevChStore.EXPECT().List(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(id devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+		DoAndReturn(func(id device.VersionedID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 
 			// Send our network changes as a streamed response to store List()
 			go func() {
@@ -172,8 +172,9 @@ func Test_ListDeviceChanges(t *testing.T) {
 			}), nil
 		})
 	req := ListDeviceChangeRequest{
-		Subscribe: false,
-		ChangeID:  "device-1",
+		Subscribe:     false,
+		DeviceID:      "device-1",
+		DeviceVersion: "1.0.0",
 	}
 	stream, err := client.ListDeviceChanges(context.Background(), &req)
 	assert.NilError(t, err)

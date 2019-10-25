@@ -29,6 +29,7 @@ import (
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
@@ -94,7 +95,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	netcfgchangename, version, deviceType, extErr := extractExtensions(req)
-
 	if extErr != nil {
 		return nil, extErr
 	}
@@ -126,7 +126,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			//handling gRPC errors
 			return nil, errDevice
 		}
-		typeVersionInfo, errTypeVersion := manager.ExtractTypeAndVersion(devicetopo.ID(target),
+		typeVersionInfo, errTypeVersion := manager.GetManager().ExtractTypeAndVersion(devicetopo.ID(target),
 			storedDevice, version, deviceType)
 		if errTypeVersion != nil {
 			//TODO return instead of log
@@ -153,7 +153,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			//handling gRPC errors
 			return nil, errDevice
 		}
-		typeVersionInfo, errTypeVersion := manager.ExtractTypeAndVersion(devicetopo.ID(target),
+		typeVersionInfo, errTypeVersion := manager.GetManager().ExtractTypeAndVersion(devicetopo.ID(target),
 			storedDevice, version, deviceType)
 		if errTypeVersion != nil {
 			//TODO return instead of log
@@ -302,7 +302,7 @@ func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
 		for _, config := range configs {
 			if config.Device == target {
 				rwPaths, ok = manager.GetManager().ModelRegistry.
-					ModelReadWritePaths[utils.ToModelName(config.Type, config.Version)]
+					ModelReadWritePaths[utils.ToModelName(devicetype.Type(config.Type), devicetype.Version(config.Version))]
 				if !ok {
 					return nil, fmt.Errorf("Cannot process JSON payload  on %s %s because "+
 						"Model Plugin not available", config.Type, config.Version)
@@ -362,7 +362,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 		for _, config := range configs {
 			if config.Device == t {
 				m, ok := manager.GetManager().ModelRegistry.
-					ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
+					ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(config.Type), devicetype.Version(config.Version))]
 				if !ok {
 					log.Warningf("Cannot check for Read Only paths for %s %s because "+
 						"Model Plugin not available - continuing", config.Type, config.Version)
@@ -379,7 +379,7 @@ func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdat
 		for _, config := range configs {
 			if config.Device == t {
 				m, ok := manager.GetManager().ModelRegistry.
-					ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
+					ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(config.Type), devicetype.Version(config.Version))]
 				if !ok {
 					log.Warningf("Cannot check for Read Only paths for %s %s because "+
 						"Model Plugin not available - continuing", config.Type, config.Version)
@@ -423,7 +423,7 @@ func (s *Server) checkForReadOnlyNew(
 		if _, ok := targetModelTypes[t]; ok {
 			continue
 		}
-		for _, config := range deviceCache.GetDevicesByID(devicetopo.ID(t)) {
+		for _, config := range deviceCache.GetDevicesByID(devicetype.ID(t)) {
 			// This ignores versions - if it's RO in one version will be regarded
 			// as RO in all versions - very unlikely that model would change
 			// YANG items from `config false` to `config true` across versions
@@ -441,7 +441,7 @@ func (s *Server) checkForReadOnlyNew(
 		if _, ok := targetModelTypes[t]; ok {
 			continue
 		}
-		for _, config := range deviceCache.GetDevicesByID(devicetopo.ID(t)) {
+		for _, config := range deviceCache.GetDevicesByID(devicetype.ID(t)) {
 			m, ok := modelreg.
 				ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
 			if !ok {
@@ -705,7 +705,7 @@ func validateChange(target string, version string, deviceType string, deviceType
 		return err
 	}
 	deviceInfo := deviceTypeAndVersion[devicetopo.ID(target)]
-	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(target, deviceInfo.Version, deviceInfo.DeviceType,
+	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(devicetype.ID(target), deviceInfo.Version, deviceInfo.DeviceType,
 		targetUpdates, targetRemoves)
 	if errNewValidation != nil {
 		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,

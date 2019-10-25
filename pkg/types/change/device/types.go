@@ -15,8 +15,9 @@
 package device
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-config/pkg/types"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"strings"
 )
 
@@ -25,14 +26,29 @@ const separator = ":"
 // ID is a device change identifier type
 type ID types.ID
 
+// NewID return sa new device change identifier
+func NewID(netChangeID types.ID, deviceID device.ID, deviceVersion device.Version) ID {
+	return ID(fmt.Sprintf("%s%s%s%s%s", netChangeID, separator, deviceID, separator, deviceVersion))
+}
+
 // GetNetworkChangeID returns the NetworkChange ID for the DeviceChange
 func (i ID) GetNetworkChangeID() types.ID {
-	return types.ID(string(i)[:strings.Index(string(i), separator)])
+	return types.ID(i[:strings.Index(string(i), separator)])
 }
 
 // GetDeviceID returns the Device ID to which the change is targeted
-func (i ID) GetDeviceID() devicetopo.ID {
-	return devicetopo.ID(string(i)[strings.Index(string(i), separator)+1:])
+func (i ID) GetDeviceID() device.ID {
+	return device.ID(i[strings.Index(string(i), separator)+1 : strings.LastIndex(string(i), separator)])
+}
+
+// GetDeviceVersion returns the device version to which the change is targeted
+func (i ID) GetDeviceVersion() device.Version {
+	return device.Version(i[strings.LastIndex(string(i), separator)+1:])
+}
+
+// GetDeviceVersionedID returns the VersionedID for the device to which the change is targeted
+func (i ID) GetDeviceVersionedID() device.VersionedID {
+	return device.NewVersionedID(i.GetDeviceID(), i.GetDeviceVersion())
 }
 
 // Index is the index of a network configuration
@@ -40,3 +56,8 @@ type Index uint64
 
 // Revision is a network configuration revision number
 type Revision types.Revision
+
+// GetVersionedDeviceID returns the device VersionedID for the change
+func (c *Change) GetVersionedDeviceID() device.VersionedID {
+	return device.NewVersionedID(c.DeviceID, c.DeviceVersion)
+}

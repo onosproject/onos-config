@@ -23,10 +23,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/types"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	snaptypes "github.com/onosproject/onos-config/pkg/types/snapshot"
 	devicesnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	networksnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/network"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"time"
 )
@@ -137,8 +137,8 @@ func (r *Reconciler) reconcileRunningMark(snapshot *networksnaptypes.NetworkSnap
 // createDeviceSnapshots marks NetworkChanges for deletion and creates device snapshots
 func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
 	// Iterate through network changes
-	deviceChanges := make(map[devicetopo.ID]networkchangetypes.Index)
-	deviceMaxChanges := make(map[devicetopo.ID]networkchangetypes.Index)
+	deviceChanges := make(map[device.VersionedID]networkchangetypes.Index)
+	deviceMaxChanges := make(map[device.VersionedID]networkchangetypes.Index)
 
 	// List network changes
 	changes := make(chan *networkchangetypes.NetworkChange)
@@ -166,9 +166,9 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 		if change.Status.State == changetypes.State_PENDING || change.Status.State == changetypes.State_RUNNING {
 			// Record max device changes if necessary
 			for _, device := range change.Refs {
-				if _, ok := deviceMaxChanges[device.DeviceChangeID.GetDeviceID()]; !ok {
-					prevChangeIndex := deviceChanges[device.DeviceChangeID.GetDeviceID()]
-					deviceMaxChanges[device.DeviceChangeID.GetDeviceID()] = prevChangeIndex
+				if _, ok := deviceMaxChanges[device.DeviceChangeID.GetDeviceVersionedID()]; !ok {
+					prevChangeIndex := deviceChanges[device.DeviceChangeID.GetDeviceVersionedID()]
+					deviceMaxChanges[device.DeviceChangeID.GetDeviceVersionedID()] = prevChangeIndex
 				}
 			}
 		} else {
@@ -180,7 +180,7 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 
 			// Record the change ID for each device in the change
 			for _, device := range change.Refs {
-				deviceChanges[device.DeviceChangeID.GetDeviceID()] = change.Index
+				deviceChanges[device.DeviceChangeID.GetDeviceVersionedID()] = change.Index
 			}
 		}
 	}
@@ -196,7 +196,8 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 	refs := make([]*networksnaptypes.DeviceSnapshotRef, 0, len(deviceMaxChanges))
 	for device, maxChangeIndex := range deviceMaxChanges {
 		deviceSnapshot := &devicesnaptypes.DeviceSnapshot{
-			DeviceID: device,
+			DeviceID:      device.GetID(),
+			DeviceVersion: device.GetVersion(),
 			NetworkSnapshot: devicesnaptypes.NetworkSnapshotRef{
 				ID:    types.ID(snapshot.ID),
 				Index: types.Index(snapshot.Index),

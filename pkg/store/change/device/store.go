@@ -28,8 +28,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"io"
@@ -39,7 +38,7 @@ import (
 )
 
 // getDeviceChangesName returns the name of the changes map for the given device ID
-func getDeviceChangesName(deviceID devicetopo.ID) string {
+func getDeviceChangesName(deviceID device.VersionedID) string {
 	return fmt.Sprintf("device-changes-%s", deviceID)
 }
 
@@ -55,13 +54,13 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	changesFactory := func(deviceID devicetopo.ID) (indexedmap.IndexedMap, error) {
+	changesFactory := func(deviceID device.VersionedID) (indexedmap.IndexedMap, error) {
 		return group.GetIndexedMap(context.Background(), getDeviceChangesName(deviceID), session.WithTimeout(30*time.Second))
 	}
 
 	return &atomixStore{
 		changesFactory: changesFactory,
-		deviceChanges:  make(map[devicetopo.ID]indexedmap.IndexedMap),
+		deviceChanges:  make(map[device.VersionedID]indexedmap.IndexedMap),
 	}, nil
 }
 
@@ -73,7 +72,7 @@ func NewLocalStore() (Store, error) {
 
 // newLocalStore creates a new local device change store
 func newLocalStore(conn *grpc.ClientConn) (Store, error) {
-	changesFactory := func(deviceID devicetopo.ID) (indexedmap.IndexedMap, error) {
+	changesFactory := func(deviceID device.VersionedID) (indexedmap.IndexedMap, error) {
 		counterName := primitive.Name{
 			Namespace: "local",
 			Name:      getDeviceChangesName(deviceID),
@@ -83,7 +82,7 @@ func newLocalStore(conn *grpc.ClientConn) (Store, error) {
 
 	return &atomixStore{
 		changesFactory: changesFactory,
-		deviceChanges:  make(map[devicetopo.ID]indexedmap.IndexedMap),
+		deviceChanges:  make(map[device.VersionedID]indexedmap.IndexedMap),
 	}, nil
 }
 
@@ -112,19 +111,19 @@ type Store interface {
 	Get(id devicechangetypes.ID) (*devicechangetypes.DeviceChange, error)
 
 	// Create creates a new device change
-	Create(config *devicechangetypes.DeviceChange) error
+	Create(change *devicechangetypes.DeviceChange) error
 
 	// Update updates an existing device change
-	Update(config *devicechangetypes.DeviceChange) error
+	Update(change *devicechangetypes.DeviceChange) error
 
 	// Delete deletes a device change
-	Delete(config *devicechangetypes.DeviceChange) error
+	Delete(change *devicechangetypes.DeviceChange) error
 
 	// List lists device change
-	List(devicetopo.ID, chan<- *devicechangetypes.DeviceChange) (stream.Context, error)
+	List(deviceID device.VersionedID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error)
 
 	// Watch watches the device change store for changes
-	Watch(devicetopo.ID, chan<- stream.Event, ...WatchOption) (stream.Context, error)
+	Watch(deviceID device.VersionedID, ch chan<- stream.Event, opts ...WatchOption) (stream.Context, error)
 }
 
 // WatchOption is a configuration option for Watch calls
@@ -162,12 +161,12 @@ func WithChangeID(id devicechangetypes.ID) WatchOption {
 
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
-	changesFactory func(deviceID devicetopo.ID) (indexedmap.IndexedMap, error)
-	deviceChanges  map[devicetopo.ID]indexedmap.IndexedMap
+	changesFactory func(device.VersionedID) (indexedmap.IndexedMap, error)
+	deviceChanges  map[device.VersionedID]indexedmap.IndexedMap
 	mu             sync.RWMutex
 }
 
-func (s *atomixStore) getDeviceChanges(deviceID devicetopo.ID) (indexedmap.IndexedMap, error) {
+func (s *atomixStore) getDeviceChanges(deviceID device.VersionedID) (indexedmap.IndexedMap, error) {
 	s.mu.RLock()
 	changes, ok := s.deviceChanges[deviceID]
 	s.mu.RUnlock()
@@ -188,7 +187,7 @@ func (s *atomixStore) getDeviceChanges(deviceID devicetopo.ID) (indexedmap.Index
 }
 
 func (s *atomixStore) Get(id devicechangetypes.ID) (*devicechangetypes.DeviceChange, error) {
-	changes, err := s.getDeviceChanges(id.GetDeviceID())
+	changes, err := s.getDeviceChanges(id.GetDeviceVersionedID())
 	if err != nil {
 		return nil, err
 	}
@@ -205,24 +204,34 @@ func (s *atomixStore) Get(id devicechangetypes.ID) (*devicechangetypes.DeviceCha
 	return decodeChange(entry)
 }
 
-func (s *atomixStore) Create(config *devicechangetypes.DeviceChange) error {
-	if config.Change.DeviceID == "" {
+func (s *atomixStore) Create(change *devicechangetypes.DeviceChange) error {
+	if change.Change.DeviceID == "" {
 		return errors.New("no device ID specified")
 	}
-	if config.NetworkChange.ID == "" {
+	if change.NetworkChange.ID == "" {
 		return errors.New("no NetworkChange ID specified")
 	}
-	if config.Revision != 0 {
+	if change.Revision != 0 {
 		return errors.New("not a new object")
 	}
-	config.ID = networkchangetypes.ID(config.NetworkChange.ID).GetDeviceChangeID(config.Change.DeviceID)
+	if change.Change.DeviceID == "" {
+		return errors.New("no device ID specified")
+	}
+	if change.Change.DeviceVersion == "" {
+		return errors.New("no device version specified")
+	}
+	if change.Change.DeviceType == "" {
+		return errors.New("no device type specified")
+	}
 
-	changes, err := s.getDeviceChanges(config.Change.DeviceID)
+	change.ID = devicechangetypes.NewID(change.NetworkChange.ID, change.Change.DeviceID, change.Change.DeviceVersion)
+
+	changes, err := s.getDeviceChanges(change.Change.GetVersionedDeviceID())
 	if err != nil {
 		return err
 	}
 
-	bytes, err := proto.Marshal(config)
+	bytes, err := proto.Marshal(change)
 	if err != nil {
 		return err
 	}
@@ -230,30 +239,39 @@ func (s *atomixStore) Create(config *devicechangetypes.DeviceChange) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := changes.Put(ctx, string(config.ID), bytes, indexedmap.IfNotSet())
+	entry, err := changes.Put(ctx, string(change.ID), bytes, indexedmap.IfNotSet())
 	if err != nil {
 		return err
 	}
 
-	config.Index = devicechangetypes.Index(entry.Index)
-	config.Revision = devicechangetypes.Revision(entry.Version)
-	config.Created = entry.Created
-	config.Updated = entry.Updated
+	change.Index = devicechangetypes.Index(entry.Index)
+	change.Revision = devicechangetypes.Revision(entry.Version)
+	change.Created = entry.Created
+	change.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Update(config *devicechangetypes.DeviceChange) error {
-	if config.ID == "" {
+func (s *atomixStore) Update(change *devicechangetypes.DeviceChange) error {
+	if change.ID == "" {
 		return errors.New("no change ID configured")
 	}
-	if config.Index == 0 {
+	if change.Index == 0 {
 		return errors.New("not a stored object: no storage index found")
 	}
-	if config.Revision == 0 {
+	if change.Revision == 0 {
 		return errors.New("not a stored object: no storage revision found")
 	}
+	if change.Change.DeviceID == "" {
+		return errors.New("no device ID specified")
+	}
+	if change.Change.DeviceVersion == "" {
+		return errors.New("no device version specified")
+	}
+	if change.Change.DeviceType == "" {
+		return errors.New("no device type specified")
+	}
 
-	changes, err := s.getDeviceChanges(config.Change.DeviceID)
+	changes, err := s.getDeviceChanges(change.Change.GetVersionedDeviceID())
 	if err != nil {
 		return err
 	}
@@ -261,36 +279,36 @@ func (s *atomixStore) Update(config *devicechangetypes.DeviceChange) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	bytes, err := proto.Marshal(config)
+	bytes, err := proto.Marshal(change)
 	if err != nil {
 		return err
 	}
 
-	entry, err := changes.Put(ctx, string(config.ID), bytes, indexedmap.IfVersion(indexedmap.Version(config.Revision)))
+	entry, err := changes.Put(ctx, string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
 	if err != nil {
 		return err
 	}
 
-	config.Revision = devicechangetypes.Revision(entry.Version)
-	if config.Created.IsZero() {
-		config.Created = entry.Created
+	change.Revision = devicechangetypes.Revision(entry.Version)
+	if change.Created.IsZero() {
+		change.Created = entry.Created
 	}
-	config.Updated = entry.Updated
+	change.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Delete(config *devicechangetypes.DeviceChange) error {
-	if config.ID == "" {
+func (s *atomixStore) Delete(change *devicechangetypes.DeviceChange) error {
+	if change.ID == "" {
 		return errors.New("no change ID configured")
 	}
-	if config.Index == 0 {
+	if change.Index == 0 {
 		return errors.New("not a stored object: no storage index found")
 	}
-	if config.Revision == 0 {
+	if change.Revision == 0 {
 		return errors.New("not a stored object")
 	}
 
-	changes, err := s.getDeviceChanges(config.Change.DeviceID)
+	changes, err := s.getDeviceChanges(change.Change.GetVersionedDeviceID())
 	if err != nil {
 		return err
 	}
@@ -298,18 +316,18 @@ func (s *atomixStore) Delete(config *devicechangetypes.DeviceChange) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := changes.RemoveIndex(ctx, indexedmap.Index(config.Index), indexedmap.IfVersion(indexedmap.Version(config.Revision)))
+	entry, err := changes.RemoveIndex(ctx, indexedmap.Index(change.Index), indexedmap.IfVersion(indexedmap.Version(change.Revision)))
 	if err != nil {
 		return err
 	}
 
-	config.Revision = 0
-	config.Updated = entry.Updated
+	change.Revision = 0
+	change.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) List(device devicetopo.ID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
-	changes, err := s.getDeviceChanges(device)
+func (s *atomixStore) List(deviceID device.VersionedID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+	changes, err := s.getDeviceChanges(deviceID)
 	if err != nil {
 		return nil, err
 	}
@@ -333,8 +351,8 @@ func (s *atomixStore) List(device devicetopo.ID, ch chan<- *devicechangetypes.De
 	return stream.NewCancelContext(cancel), nil
 }
 
-func (s *atomixStore) Watch(device devicetopo.ID, ch chan<- stream.Event, opts ...WatchOption) (stream.Context, error) {
-	changes, err := s.getDeviceChanges(device)
+func (s *atomixStore) Watch(deviceID device.VersionedID, ch chan<- stream.Event, opts ...WatchOption) (stream.Context, error) {
+	changes, err := s.getDeviceChanges(deviceID)
 	if err != nil {
 		return nil, err
 	}

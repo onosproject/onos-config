@@ -17,6 +17,7 @@ package modelregistry
 import (
 	"fmt"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -173,7 +174,7 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 			moduleName)
 	}
 	name, version, _, _ := modelPlugin.ModelData()
-	modelName := utils.ToModelName(name, version)
+	modelName := utils.ToModelName(devicetype.Type(name), devicetype.Version(version))
 	registry.ModelPlugins[modelName] = modelPlugin
 	//Saving the model plugin name and library name in a distributed list for other instances to access it.
 	registry.LocationStore[modelName] = moduleName
@@ -233,7 +234,7 @@ func (registry *ModelRegistry) Capabilities() []*gnmi.ModelData {
 	for _, model := range registry.ModelPlugins {
 		_, _, modelItem, _ := model.ModelData()
 		for _, mi := range modelItem {
-			modelName := utils.ToModelName(mi.Name, mi.Version)
+			modelName := utils.ToModelName(devicetype.Type(mi.Name), devicetype.Version(mi.Version))
 			modelMap[modelName] = mi
 		}
 	}

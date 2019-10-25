@@ -48,7 +48,8 @@ func TestNetworkWatcher(t *testing.T) {
 		Changes: []*devicechangetypes.Change{
 			{
 
-				DeviceID: devicetopo.ID("device-1"),
+				DeviceID:      "device-1",
+				DeviceVersion: "1.0.0",
 				Values: []*devicechangetypes.ChangeValue{
 					{
 						Path: "foo",
@@ -67,7 +68,8 @@ func TestNetworkWatcher(t *testing.T) {
 				},
 			},
 			{
-				DeviceID: devicetopo.ID("device-2"),
+				DeviceID:      "device-2",
+				DeviceVersion: "1.0.0",
 				Values: []*devicechangetypes.ChangeValue{
 					{
 						Path: "baz",
@@ -95,7 +97,8 @@ func TestNetworkWatcher(t *testing.T) {
 		ID: "change-2",
 		Changes: []*devicechangetypes.Change{
 			{
-				DeviceID: devicetopo.ID("device-1"),
+				DeviceID:      "device-1",
+				DeviceVersion: "1.0.0",
 				Values: []*devicechangetypes.ChangeValue{
 					{
 						Path:    "foo",
@@ -130,8 +133,8 @@ func TestDeviceWatcher(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID("device-1")}}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID("device-2")}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID("device-1"), Version: "1.0.0"}}, nil)
+	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID("device-2"), Version: "1.0.0"}}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)
@@ -159,7 +162,9 @@ func TestDeviceWatcher(t *testing.T) {
 			Index: 2,
 		},
 		Change: &devicechangetypes.Change{
-			DeviceID: devicetopo.ID("device-1"),
+			DeviceID:      "device-1",
+			DeviceVersion: "1.0.0",
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path: "foo",
@@ -195,7 +200,9 @@ func TestDeviceWatcher(t *testing.T) {
 			Index: 2,
 		},
 		Change: &devicechangetypes.Change{
-			DeviceID: devicetopo.ID("device-2"),
+			DeviceID:      "device-2",
+			DeviceVersion: "1.0.0",
+			DeviceType:    "Stratum",
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path: "baz",

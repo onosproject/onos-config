@@ -7,8 +7,8 @@ package store
 import (
 	gomock "github.com/golang/mock/gomock"
 	stream "github.com/onosproject/onos-config/pkg/store/stream"
-	device "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	device0 "github.com/onosproject/onos-topo/pkg/northbound/device"
+	device "github.com/onosproject/onos-config/pkg/types/device"
+	device0 "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	reflect "reflect"
 )
 
@@ -50,10 +50,10 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Close() *gomock.Call {
 }
 
 // Get mocks base method
-func (m *MockDeviceSnapshotStore) Get(id device.ID) (*device.DeviceSnapshot, error) {
+func (m *MockDeviceSnapshotStore) Get(id device0.ID) (*device0.DeviceSnapshot, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", id)
-	ret0, _ := ret[0].(*device.DeviceSnapshot)
+	ret0, _ := ret[0].(*device0.DeviceSnapshot)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -65,7 +65,7 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Get(id interface{}) *gomock.Call 
 }
 
 // Create mocks base method
-func (m *MockDeviceSnapshotStore) Create(snapshot *device.DeviceSnapshot) error {
+func (m *MockDeviceSnapshotStore) Create(snapshot *device0.DeviceSnapshot) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", snapshot)
 	ret0, _ := ret[0].(error)
@@ -79,7 +79,7 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Create(snapshot interface{}) *gom
 }
 
 // Update mocks base method
-func (m *MockDeviceSnapshotStore) Update(snapshot *device.DeviceSnapshot) error {
+func (m *MockDeviceSnapshotStore) Update(snapshot *device0.DeviceSnapshot) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", snapshot)
 	ret0, _ := ret[0].(error)
@@ -93,7 +93,7 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Update(snapshot interface{}) *gom
 }
 
 // Delete mocks base method
-func (m *MockDeviceSnapshotStore) Delete(snapshot *device.DeviceSnapshot) error {
+func (m *MockDeviceSnapshotStore) Delete(snapshot *device0.DeviceSnapshot) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", snapshot)
 	ret0, _ := ret[0].(error)
@@ -107,7 +107,7 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Delete(snapshot interface{}) *gom
 }
 
 // List mocks base method
-func (m *MockDeviceSnapshotStore) List(arg0 chan<- *device.DeviceSnapshot) (stream.Context, error) {
+func (m *MockDeviceSnapshotStore) List(arg0 chan<- *device0.DeviceSnapshot) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", arg0)
 	ret0, _ := ret[0].(stream.Context)
@@ -137,7 +137,7 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Watch(arg0 interface{}) *gomock.C
 }
 
 // Store mocks base method
-func (m *MockDeviceSnapshotStore) Store(snapshot *device.Snapshot) error {
+func (m *MockDeviceSnapshotStore) Store(snapshot *device0.Snapshot) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Store", snapshot)
 	ret0, _ := ret[0].(error)
@@ -151,22 +151,22 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) Store(snapshot interface{}) *gomo
 }
 
 // Load mocks base method
-func (m *MockDeviceSnapshotStore) Load(id device0.ID) (*device.Snapshot, error) {
+func (m *MockDeviceSnapshotStore) Load(deviceID device.VersionedID) (*device0.Snapshot, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Load", id)
-	ret0, _ := ret[0].(*device.Snapshot)
+	ret := m.ctrl.Call(m, "Load", deviceID)
+	ret0, _ := ret[0].(*device0.Snapshot)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Load indicates an expected call of Load
-func (mr *MockDeviceSnapshotStoreMockRecorder) Load(id interface{}) *gomock.Call {
+func (mr *MockDeviceSnapshotStoreMockRecorder) Load(deviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockDeviceSnapshotStore)(nil).Load), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockDeviceSnapshotStore)(nil).Load), deviceID)
 }
 
 // LoadAll mocks base method
-func (m *MockDeviceSnapshotStore) LoadAll(ch chan<- *device.Snapshot) (stream.Context, error) {
+func (m *MockDeviceSnapshotStore) LoadAll(ch chan<- *device0.Snapshot) (stream.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadAll", ch)
 	ret0, _ := ret[0].(stream.Context)

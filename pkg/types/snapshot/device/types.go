@@ -17,7 +17,7 @@ package device
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/types"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/types/device"
 	"strings"
 )
 
@@ -27,14 +27,29 @@ const separator = ":"
 type ID types.ID
 
 // GetSnapshotID returns the snapshot ID for the given network snapshot ID and device
-func GetSnapshotID(networkID types.ID, deviceID devicetopo.ID) ID {
-	return ID(fmt.Sprintf("%s%s%s", networkID, separator, deviceID))
+func GetSnapshotID(networkID types.ID, deviceID device.ID, deviceVersion device.Version) ID {
+	return ID(fmt.Sprintf("%s%s%s%s%s", networkID, separator, deviceID, separator, deviceVersion))
 }
 
 // GetDeviceID returns the device ID for the snapshot ID
-func (i ID) GetDeviceID() devicetopo.ID {
-	return devicetopo.ID(string(i)[strings.Index(string(i), separator)+1:])
+func (i ID) GetDeviceID() device.ID {
+	return device.ID(i[strings.Index(string(i), separator)+1 : strings.LastIndex(string(i), separator)])
+}
+
+// GetDeviceVersion returns the device version for the snapshot ID
+func (i ID) GetDeviceVersion() device.Version {
+	return device.Version(i[strings.LastIndex(string(i), separator)+1:])
 }
 
 // Revision is a device snapshot revision number
 type Revision types.Revision
+
+// GetVersionedDeviceID returns the device VersionedID for the snapshot
+func (s *DeviceSnapshot) GetVersionedDeviceID() device.VersionedID {
+	return device.NewVersionedID(s.DeviceID, s.DeviceVersion)
+}
+
+// GetVersionedDeviceID returns the device VersionedID for the snapshot
+func (s *Snapshot) GetVersionedDeviceID() device.VersionedID {
+	return device.NewVersionedID(s.DeviceID, s.DeviceVersion)
+}

@@ -6,7 +6,7 @@ package device
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	device0 "github.com/onosproject/onos-topo/pkg/northbound/device"
+	device "github.com/onosproject/onos-config/pkg/types/device"
 	reflect "reflect"
 )
 
@@ -48,7 +48,7 @@ func (mr *MockCacheMockRecorder) Close() *gomock.Call {
 }
 
 // GetDevicesByID mocks base method
-func (m *MockCache) GetDevicesByID(id device0.ID) []*Info {
+func (m *MockCache) GetDevicesByID(id device.ID) []*Info {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDevicesByID", id)
 	ret0, _ := ret[0].([]*Info)
@@ -62,7 +62,7 @@ func (mr *MockCacheMockRecorder) GetDevicesByID(id interface{}) *gomock.Call {
 }
 
 // GetDevicesByType mocks base method
-func (m *MockCache) GetDevicesByType(deviceType string) []*Info {
+func (m *MockCache) GetDevicesByType(deviceType device.Type) []*Info {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDevicesByType", deviceType)
 	ret0, _ := ret[0].([]*Info)
@@ -76,7 +76,7 @@ func (mr *MockCacheMockRecorder) GetDevicesByType(deviceType interface{}) *gomoc
 }
 
 // GetDevicesByVersion mocks base method
-func (m *MockCache) GetDevicesByVersion(deviceType, deviceVersion string) []*Info {
+func (m *MockCache) GetDevicesByVersion(deviceType device.Type, deviceVersion device.Version) []*Info {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDevicesByVersion", deviceType, deviceVersion)
 	ret0, _ := ret[0].([]*Info)

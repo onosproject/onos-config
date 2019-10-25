@@ -20,6 +20,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.4.0
+	golang.org/x/tools v0.0.0-20190806215303-88ddfcebc769
 	google.golang.org/grpc v1.23.1
 	gotest.tools v2.2.0+incompatible
 	k8s.io/klog v0.3.3

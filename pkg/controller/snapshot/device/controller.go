@@ -56,7 +56,7 @@ type Resolver struct {
 
 // Resolve resolves a device ID from a device snapshot ID
 func (r *Resolver) Resolve(id types.ID) (devicetopo.ID, error) {
-	return devicesnaptype.ID(id).GetDeviceID(), nil
+	return devicetopo.ID(devicesnaptype.ID(id).GetDeviceID()), nil
 }
 
 // Reconciler is a device snapshot reconciler
@@ -92,7 +92,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
 	// Get the previous snapshot if any
 	var prevIndex devicechangetypes.Index
-	prevSnapshot, err := r.snapshots.Load(deviceSnapshot.DeviceID)
+	prevSnapshot, err := r.snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	if err != nil {
 		return false, err
 	} else if prevSnapshot != nil {
@@ -111,7 +111,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 
 	// List the changes for the device
 	changes := make(chan *devicechangetypes.DeviceChange)
-	ctx, err := r.changes.List(deviceSnapshot.DeviceID, changes)
+	ctx, err := r.changes.List(deviceSnapshot.GetVersionedDeviceID(), changes)
 	if err != nil {
 		return false, err
 	}
@@ -161,11 +161,12 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 		}
 
 		snapshot := &devicesnaptype.Snapshot{
-			ID:          devicesnaptype.ID(deviceSnapshot.DeviceID),
-			DeviceID:    deviceSnapshot.DeviceID,
-			SnapshotID:  deviceSnapshot.ID,
-			ChangeIndex: snapshotIndex,
-			Values:      values,
+			ID:            devicesnaptype.ID(deviceSnapshot.DeviceID),
+			DeviceID:      deviceSnapshot.DeviceID,
+			DeviceVersion: deviceSnapshot.DeviceVersion,
+			SnapshotID:    deviceSnapshot.ID,
+			ChangeIndex:   snapshotIndex,
+			Values:        values,
 		}
 		log.Infof("Storing Snapshot %v", snapshot)
 		if err := r.snapshots.Store(snapshot); err != nil {
@@ -185,7 +186,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 // reconcileDelete reconciles a snapshot in the DELETE phase
 func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
 	// Load the current snapshot
-	snapshot, err := r.snapshots.Load(deviceSnapshot.DeviceID)
+	snapshot, err := r.snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	if err != nil {
 		return false, err
 	} else if snapshot == nil {
@@ -199,7 +200,7 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 
 	// List the changes for the device
 	changes := make(chan *devicechangetypes.DeviceChange)
-	ctx, err := r.changes.List(deviceSnapshot.DeviceID, changes)
+	ctx, err := r.changes.List(deviceSnapshot.GetVersionedDeviceID(), changes)
 	if err != nil {
 		return false, err
 	}
