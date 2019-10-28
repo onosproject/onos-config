@@ -174,14 +174,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	//TODO remove
 	//Deprecated
-	targetUpdatesCopy := make(mapTargetUpdates)
-	targetRemovesCopy := make(mapTargetRemoves)
-	for k,v := range targetUpdates{
-		targetUpdatesCopy[k] = v
-	}
-	for k,v := range targetRemoves{
-		targetRemovesCopy[k] = v
-	}
+	targetUpdatesCopy, targetRemovesCopy := oldMapCopies(targetUpdates, targetRemoves)
 	updateResultsOld, networkChanges, err :=
 		s.executeSetConfig(targetUpdatesCopy, targetRemovesCopy, version, deviceType, netcfgchangename)
 	if err != nil {
@@ -274,6 +267,18 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	log.Info("USED - NEW - atomix update response ", setResponse)
 
 	return setResponse, nil
+}
+
+func oldMapCopies(targetUpdates mapTargetUpdates, targetRemoves mapTargetRemoves) (mapTargetUpdates, mapTargetRemoves) {
+	targetUpdatesCopy := make(mapTargetUpdates)
+	targetRemovesCopy := make(mapTargetRemoves)
+	for k, v := range targetUpdates {
+		targetUpdatesCopy[k] = v
+	}
+	for k, v := range targetRemoves {
+		targetRemovesCopy[k] = v
+	}
+	return targetUpdatesCopy, targetRemovesCopy
 }
 
 func extractExtensions(req *gnmi.SetRequest) (string, string, string, error) {
