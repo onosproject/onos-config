@@ -65,7 +65,6 @@ const (
 )
 
 func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockNetworkChangesStore, *mockstore.MockDeviceChangesStore) {
-
 	log.SetOutput(os.Stdout)
 	var (
 		mgrTest *Manager
@@ -475,7 +474,7 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 	assert.NilError(t, err, "SetTargetConfig error")
 
 	deviceIds := mgrTest.GetAllDeviceIds()
-	// TODO - this doesn't see the new devices
+	// TODO - GetAllDeviceIds() doesn't use the Atomix based stores yet
 	t.Skip()
 	assert.Equal(t, len(*deviceIds), 3)
 	assert.Assert(t, matchDeviceID((*deviceIds)[0], "Device1"))
