@@ -16,7 +16,6 @@ package manager
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
@@ -162,8 +161,8 @@ func (m *Manager) SetNetworkConfig(deviceName string, version string,
 	// TODO: At this stage
 	//  2) Do a precheck that the device is reachable
 	//  3) Check that the caller is authorized to make the change
-	m.ChangesChannel <- events.NewConfigEvent(deviceConfig.Device,
-		changeID, true)
+	//m.ChangesChannel <- events.NewConfigEvent(deviceConfig.Device,
+	//	changeID, true)
 
 	return changeID, configName, nil
 }
