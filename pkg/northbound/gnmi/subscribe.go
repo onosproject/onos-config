@@ -267,7 +267,7 @@ func listenForNewDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Ma
 						continue
 					}
 					log.Infof("USED - NEW - Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
-					err = buildAndSendUpdate(pathGnmi, target, value.Value, stream)
+					err = buildAndSendUpdate(pathGnmi, string(target), value.Value, stream)
 					if err != nil {
 						log.Error("Error in sending update path ", err)
 						resChan <- result{success: false, err: err}
