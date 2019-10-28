@@ -20,9 +20,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	typeschange "github.com/onosproject/onos-config/pkg/types/change"
 	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -116,18 +118,26 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 	// Mock Network changes store
 	networkChangesList := make([]*network.NetworkChange, 0)
 	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
-	mockNetworkChangesStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 	mockNetworkChangesStore.EXPECT().Create(gomock.Any()).DoAndReturn(
+		func(networkChange *networkchangetypes.NetworkChange) error {
+			networkChangesList = append(networkChangesList, networkChange)
+			return nil
+		}).AnyTimes()
+	mockNetworkChangesStore.EXPECT().Update(gomock.Any()).DoAndReturn(
 		func(networkChange *networkchangetypes.NetworkChange) error {
 			networkChangesList = append(networkChangesList, networkChange)
 			return nil
 		}).AnyTimes()
 	mockNetworkChangesStore.EXPECT().Get(gomock.Any()).DoAndReturn(
 		func(id networkchangetypes.ID) (*networkchangetypes.NetworkChange, error) {
+			var found *networkchangetypes.NetworkChange
 			for _, networkChange := range networkChangesList {
 				if networkChange.ID == id {
-					return networkChange, nil
+					found = networkChange
 				}
+			}
+			if found != nil {
+				return found, nil
 			}
 			return nil, nil
 		}).AnyTimes()
@@ -142,6 +152,22 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 				close(c)
 			}()
 			return nil
+		}).AnyTimes()
+	mockNetworkChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(c chan<- stream.Event, o ...networkstore.WatchOption) (stream.Context, error) {
+			go func() {
+				lastChange := networkChangesList[len(networkChangesList)-1]
+				if lastChange.Status.Phase == changetypes.Phase_ROLLBACK {
+					lastChange.Status.State = changetypes.State_COMPLETE
+				}
+				event := stream.Event{
+					Type:   "",
+					Object: lastChange,
+				}
+				c <- event
+				close(c)
+			}()
+			return stream.NewContext(func() {}), nil
 		}).AnyTimes()
 
 	// Mock Device Changes Store
@@ -543,6 +569,15 @@ func TestManager_GetManager(t *testing.T) {
 	assert.Equal(t, mgrTest, GetManager())
 }
 
+func valuesContainsPath(path string, values []*types.ChangeValue) bool {
+	for _, value := range values {
+		if value.Path == path {
+			return true
+		}
+	}
+	return false
+}
+
 func TestManager_ComputeRollbackDelete(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
@@ -564,21 +599,26 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	err = mgrTest.ValidateNewNetworkConfig(Device1, DeviceVersion, DeviceType, updates, deletes)
 	assert.NilError(t, err, "ValidateTargetConfig error")
 
+	updatesForDevice1, deletesForDevice1, deviceInfo = makeDeviceChanges(Device1, updates, deletes)
 	err = mgrTest.SetNewNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
 	assert.NilError(t, err, "Can't create change")
 
-	// TODO - use new APIs to execute the roll back
-	//_, changes, deletesRoll, errRoll := computeRollback(mgrTest, Device1, *configName)
-	//assert.NilError(t, errRoll, "Can't ExecuteRollback", errRoll)
-	//config := mgrTest.ConfigStore.Store[*configName]
-	//assert.Check(t, !bytes.Equal(config.Changes[len(config.Changes)-1], changeID), "Did not remove last change")
-	//assert.Equal(t, changes[Test1Cont1ACont2ALeaf2B].Type, devicechangetypes.ValueType_FLOAT, "Wrong value to set after rollback")
-	//assert.Equal(t, (*devicechangetypes.TypedFloat)(changes[Test1Cont1ACont2ALeaf2B]).Float32(), float32(ValueLeaf2B159), "Wrong value to set after rollback")
-	//
-	//assert.Equal(t, changes[Test1Cont1ACont2ALeaf2A].Type, devicechangetypes.ValueType_FLOAT, "Wrong value to set after rollback")
-	//assert.Equal(t, (*devicechangetypes.TypedFloat)(changes[Test1Cont1ACont2ALeaf2A]).Float32(), float32(ValueLeaf2B159), "Wrong value to set after rollback")
-	//
-	//assert.Equal(t, deletesRoll[0], Test1Cont1ACont2ALeaf2D, "Path should be deleted")
+	err = mgrTest.NewRollbackTargetConfig("TestingRollback2")
+	assert.NilError(t, err, "Can't roll back change")
+	rbChange, _ := mgrTest.NetworkChangesStore.Get("TestingRollback2")
+	assert.Assert(t, rbChange != nil)
+
+	assert.Assert(t, len(rbChange.Changes) == 2)
+	assert.Assert(t, strings.Contains(rbChange.Status.Message, "requested rollback"))
+	assert.Assert(t, valuesContainsPath(Test1Cont1ACont2ALeaf2D, rbChange.Changes[0].Values))
+	assert.Assert(t, !rbChange.Changes[0].Values[0].Removed)
+	assert.Assert(t, valuesContainsPath(Test1Cont1ACont2ALeaf2B, rbChange.Changes[0].Values))
+	assert.Assert(t, !rbChange.Changes[0].Values[0].Removed)
+	assert.Assert(t, valuesContainsPath(Test1Cont1ACont2ALeaf2A, rbChange.Changes[0].Values))
+	assert.Assert(t, !rbChange.Changes[0].Values[0].Removed)
+
+	assert.Assert(t, valuesContainsPath(Test1Cont1ACont2ALeaf2A, rbChange.Changes[1].Values))
+	assert.Assert(t, rbChange.Changes[1].Values[0].Removed)
 }
 
 func TestManager_GetTargetState(t *testing.T) {
