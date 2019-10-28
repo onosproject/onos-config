@@ -41,7 +41,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
 		if !dispatcher.HasListener(notifiedDevice.ID) && topoEvent.Type != devicetopo.ListResponse_REMOVED {
-			configChan, respChan, err := dispatcher.RegisterDevice(notifiedDevice.ID)
+			configChan, _, err := dispatcher.RegisterDevice(notifiedDevice.ID)
 			if err != nil {
 				log.Error(err)
 			}

@@ -33,9 +33,9 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-var targets = make(map[DeviceID]interface{})
+var targets = make(map[devicetopo.ID]interface{})
 
-func createDestination(device devicetopo.Device) (*client.Destination, DeviceID) {
+func createDestination(device devicetopo.Device) (*client.Destination, devicetopo.ID) {
 	d := &client.Destination{}
 	d.Addrs = []string{device.Address}
 	d.Target = device.Target
@@ -77,11 +77,11 @@ func createDestination(device devicetopo.Device) (*client.Destination, DeviceID)
 			d.TLS = &tls.Config{InsecureSkipVerify: true}
 		}
 	}
-	return d, DeviceID{DeviceID: device.Address}
+	return d, device.ID
 }
 
 // GetTarget attempts to get a specific target from the targets cache
-func GetTarget(key DeviceID) (*Target, error) {
+func GetTarget(key devicetopo.ID) (*Target, error) {
 	_, ok := targets[key].(*Target)
 	if ok {
 		return targets[key].(*Target), nil
@@ -93,13 +93,13 @@ func GetTarget(key DeviceID) (*Target, error) {
 // ConnectTarget connects to a given Device according to the passed information establishing a channel to it.
 //TODO make asyc
 //TODO lock channel to allow one request to device at each time
-func (target *Target) ConnectTarget(ctx context.Context, device devicetopo.Device) (DeviceID, error) {
+func (target *Target) ConnectTarget(ctx context.Context, device devicetopo.Device) (devicetopo.ID, error) {
 	dest, key := createDestination(device)
 	c, err := GnmiClientFactory(ctx, *dest)
 
 	//c.handler := client.NotificationHandler{}
 	if err != nil {
-		return DeviceID{}, fmt.Errorf("could not create a gNMI client: %v", err)
+		return "", fmt.Errorf("could not create a gNMI client: %v", err)
 	}
 	target.Destination = *dest
 	target.Clt = c
