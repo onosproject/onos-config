@@ -171,9 +171,8 @@ func (r *Reconciler) translateAndSendChange(change *devicechangetypes.Change) er
 	log.Info("Device ", change.DeviceID)
 	deviceTarget, err := southbound.GetTarget(devicetopo.ID(change.DeviceID))
 	if err != nil {
-		//TODO revisit change state.
 		log.Infof("Device %s is not connected, accepting change", change.DeviceID)
-		return nil
+		return fmt.Errorf("Device not connected %s, error %s", change.DeviceID, err.Error())
 	}
 	setResponse, err := deviceTarget.Set(deviceTarget.Ctx, setRequest)
 	if err != nil {

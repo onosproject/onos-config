@@ -513,14 +513,14 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 		} else if err == nil && cont {
 			continue
 		}
-		responseErr := listenForDeviceResponse(networkChanges, target, *configName)
-		//TODO Maybe do this with a callback mechanism --> when resposne on channel is done trigger callback
-		// that sends reply
-		if responseErr != nil {
-			errTMP := fmt.Errorf("can't complete set operation on target %s due to %s", target, responseErr)
-			log.Errorf(" OLD - Error while setting config %s", errTMP.Error())
-			//return nil, nil, errTMP
-		}
+		//responseErr := listenForDeviceResponse(networkChanges, target, *configName)
+		////TODO Maybe do this with a callback mechanism --> when resposne on channel is done trigger callback
+		//// that sends reply
+		//if responseErr != nil {
+		//	errTMP := fmt.Errorf("can't complete set operation on target %s due to %s", target, responseErr)
+		//	log.Errorf(" OLD - Error while setting config %s", errTMP.Error())
+		//	//return nil, nil, errTMP
+		//}
 		for k := range updates {
 			updateResult, err := buildUpdateResult(k, target, gnmi.UpdateResult_UPDATE)
 			if err != nil {
