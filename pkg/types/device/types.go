@@ -24,7 +24,7 @@ import (
 const separator = ":"
 
 // Type is a device type
-type Type string
+type Type devicetopo.Type
 
 // ID is a device ID
 type ID devicetopo.ID
