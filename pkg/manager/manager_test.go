@@ -41,8 +41,6 @@ import (
 )
 
 const (
-	test1Cont1A             = "/cont1a"
-	test1Cont1ACont2A       = "/cont1a/cont2a"
 	test1Cont1ACont2ALeaf2A = "/cont1a/cont2a/leaf2a"
 	test1Cont1ACont2ALeaf2B = "/cont1a/cont2a/leaf2b"
 	test1Cont1ACont2ALeaf2C = "/cont1a/cont2a/leaf2c"
@@ -50,9 +48,10 @@ const (
 )
 
 const (
+	valueLeaf2A789 = uint(789)
 	valueLeaf2B159 = 1.579
 	valueLeaf2B314 = 3.14
-	valueLeaf2D314 = 3.14
+	valueLeaf2D123 = 1.23
 )
 
 const (
@@ -70,8 +69,6 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 		err     error
 	)
 
-	config1Value01, _ := devicechangetypes.NewChangeValue(test1Cont1A, devicechangetypes.NewTypedValueEmpty(), false)
-	config1Value02, _ := devicechangetypes.NewChangeValue(test1Cont1ACont2A, devicechangetypes.NewTypedValueEmpty(), false)
 	config1Value03, _ := devicechangetypes.NewChangeValue(test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueFloat(valueLeaf2B159), false)
 
 	ctrl := gomock.NewController(t)
@@ -82,7 +79,7 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 
 	change1 := devicechangetypes.Change{
 		Values: []*devicechangetypes.ChangeValue{
-			config1Value01, config1Value02, config1Value03},
+			config1Value03},
 		DeviceID:      device1,
 		DeviceVersion: deviceVersion1,
 	}
@@ -247,8 +244,8 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 }
 
 func makeDeviceChanges(device string, updates devicechangetypes.TypedValueMap, deletes []string) (
-	map[string]devicechangetypes.TypedValueMap, map[string][]string, map[devicetopo.ID]devicestore.Info) {
-	deviceInfo := make(map[devicetopo.ID]devicestore.Info)
+	map[string]devicechangetypes.TypedValueMap, map[string][]string, map[devicetype.ID]devicestore.Info) {
+	deviceInfo := make(map[devicetype.ID]devicestore.Info)
 
 	updatesForDevice := make(map[string]devicechangetypes.TypedValueMap)
 	updatesForDevice[device] = updates
@@ -331,9 +328,9 @@ func Test_GetNewNetworkConfig(t *testing.T) {
 	result, err := mgrTest.GetTargetNewConfig(device1, deviceVersion1, "/*", 0)
 	assert.NilError(t, err, "GetTargetNewConfig error")
 
-	assert.Equal(t, len(result), 3, "Unexpected result element count")
+	assert.Equal(t, len(result), 1, "Unexpected result element count")
 
-	assert.Equal(t, result[0].Path, test1Cont1A, "result %s is different")
+	assert.Equal(t, result[0].Path, test1Cont1ACont2ALeaf2A, "result %s is different")
 }
 
 func Test_SetNetworkConfig(t *testing.T) {
@@ -341,15 +338,14 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	// First verify the value beforehand
 	originalChange, _ := mgrTest.NetworkChangesStore.Get(networkChange1)
-	assert.Equal(t, len(originalChange.Changes[0].Values), 3)
-	assert.Equal(t, originalChange.Changes[0].Values[2].Path, test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, originalChange.Changes[0].Values[2].Value.Type, devicechangetypes.ValueType_FLOAT)
-	assert.Equal(t, (*devicechangetypes.TypedFloat)(originalChange.Changes[0].Values[2].Value).Float32(), float32(valueLeaf2B159))
+	assert.Equal(t, len(originalChange.Changes[0].Values), 1)
+	assert.Equal(t, originalChange.Changes[0].Values[0].Path, test1Cont1ACont2ALeaf2A)
+	assert.Equal(t, originalChange.Changes[0].Values[0].Value.Type, devicechangetypes.ValueType_FLOAT)
+	assert.Equal(t, (*devicechangetypes.TypedFloat)(originalChange.Changes[0].Values[0].Value).Float32(), float32(valueLeaf2B159))
 
 	// Making change
-
 	updates := make(devicechangetypes.TypedValueMap)
-	updates[test1Cont1ACont2ALeaf2A] = devicechangetypes.NewTypedValueFloat(valueLeaf2B314)
+	updates[test1Cont1ACont2ALeaf2A] = devicechangetypes.NewTypedValueUint64(valueLeaf2A789)
 	deletes := []string{test1Cont1ACont2ALeaf2C}
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
@@ -371,12 +367,12 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	// Asserting update to 2A
 	assert.Equal(t, updatedVals[0].Path, test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, (*devicechangetypes.TypedFloat)(updatedVals[0].GetValue()).Float32(), float32(valueLeaf2B314))
+	assert.Equal(t, (*devicechangetypes.TypedUint64)(updatedVals[0].GetValue()).Uint(), valueLeaf2A789)
 	assert.Equal(t, updatedVals[0].Removed, false)
 
 	// Asserting deletion of 2C
 	assert.Equal(t, updatedVals[1].Path, test1Cont1ACont2ALeaf2C)
-	assert.Equal(t, (*devicechangetypes.TypedEmpty)(updatedVals[1].GetValue()).String(), "")
+	assert.Equal(t, updatedVals[1].GetValue().ValueToString(), "")
 	assert.Equal(t, updatedVals[1].Removed, true)
 }
 
@@ -385,12 +381,11 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
 	// Making change
-
 	const Device5 = "Device5"
 	const NetworkChangeAddDevice5 = "NetworkChangeAddDevice5"
 
 	updates := make(devicechangetypes.TypedValueMap)
-	updates[test1Cont1ACont2ALeaf2A] = devicechangetypes.NewTypedValueFloat(valueLeaf2B314)
+	updates[test1Cont1ACont2ALeaf2A] = devicechangetypes.NewTypedValueUint64(valueLeaf2A789)
 	deletes := []string{test1Cont1ACont2ALeaf2C}
 
 	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(Device5, updates, deletes)
@@ -399,22 +394,20 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 	assert.NilError(t, err, "SetTargetConfig error")
 	testUpdate, _ := mgrTest.NetworkChangesStore.Get(NetworkChangeAddDevice5)
 	assert.Assert(t, testUpdate != nil)
-	assert.Assert(t, len(testUpdate.Changes) == 2)
-	change1 := testUpdate.Changes[len(testUpdate.Changes)-2]
-	change2 := testUpdate.Changes[len(testUpdate.Changes)-1]
+	assert.Equal(t, 1, len(testUpdate.Changes))
+	change1 := testUpdate.Changes[0]
 	assert.Assert(t, change1 != nil)
-	assert.Assert(t, change2 != nil)
 
 	// Asserting update to 2A
 	value2A := change1.Values[0]
 	assert.Equal(t, value2A.Path, test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, (*devicechangetypes.TypedFloat)(value2A.GetValue()).Float32(), float32(valueLeaf2B314))
+	assert.Equal(t, value2A.GetValue().ValueToString(), "789")
 	assert.Equal(t, value2A.Removed, false)
 
 	// Asserting deletion of 2C
-	value2C := change2.Values[0]
+	value2C := change1.Values[1]
 	assert.Equal(t, value2C.Path, test1Cont1ACont2ALeaf2C)
-	assert.Equal(t, (*devicechangetypes.TypedEmpty)(value2C.GetValue()).String(), "")
+	assert.Equal(t, value2C.GetValue().ValueToString(), "")
 	assert.Equal(t, value2C.Removed, true)
 }
 
@@ -529,10 +522,8 @@ func TestManager_GetAllConfig(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetNewConfig(device1, deviceVersion1, "/*", 0)
-	assert.Assert(t, len(result) == 3, "Get of device all paths does not return proper array")
+	assert.Assert(t, len(result) == 1, "Get of device all paths does not return proper array")
 	assert.NilError(t, err, "Configuration not found")
-	assert.Assert(t, networkConfigContainsPath(result, test1Cont1A), test1Cont1A+" not found")
-	assert.Assert(t, networkConfigContainsPath(result, test1Cont1ACont2A), test1Cont1ACont2A+" not found")
 	assert.Assert(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
 }
 
@@ -569,15 +560,6 @@ func TestManager_GetManager(t *testing.T) {
 	assert.Equal(t, mgrTest, GetManager())
 }
 
-func valuesContainsPath(path string, values []*devicechangetypes.ChangeValue) bool {
-	for _, value := range values {
-		if value.Path == path {
-			return true
-		}
-	}
-	return false
-}
-
 func TestManager_ComputeRollbackDelete(t *testing.T) {
 	mgrTest, _, _, _ := setUp(t)
 
@@ -593,7 +575,7 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	assert.NilError(t, err, "Can't create change", err)
 
 	updates[test1Cont1ACont2ALeaf2B] = devicechangetypes.NewTypedValueFloat(valueLeaf2B314)
-	updates[test1Cont1ACont2ALeaf2D] = devicechangetypes.NewTypedValueFloat(valueLeaf2D314)
+	updates[test1Cont1ACont2ALeaf2D] = devicechangetypes.NewTypedValueFloat(valueLeaf2D123)
 	deletes = append(deletes, test1Cont1ACont2ALeaf2A)
 
 	err = mgrTest.ValidateNewNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
@@ -608,17 +590,24 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	rbChange, _ := mgrTest.NetworkChangesStore.Get("TestingRollback2")
 	assert.Assert(t, rbChange != nil)
 
-	assert.Assert(t, len(rbChange.Changes) == 2)
+	assert.Assert(t, len(rbChange.Changes) == 1)
 	assert.Assert(t, strings.Contains(rbChange.Status.Message, "requested rollback"))
-	assert.Assert(t, valuesContainsPath(test1Cont1ACont2ALeaf2D, rbChange.Changes[0].Values))
-	assert.Assert(t, !rbChange.Changes[0].Values[0].Removed)
-	assert.Assert(t, valuesContainsPath(test1Cont1ACont2ALeaf2B, rbChange.Changes[0].Values))
-	assert.Assert(t, !rbChange.Changes[0].Values[0].Removed)
-	assert.Assert(t, valuesContainsPath(test1Cont1ACont2ALeaf2A, rbChange.Changes[0].Values))
-	assert.Assert(t, !rbChange.Changes[0].Values[0].Removed)
-
-	assert.Assert(t, valuesContainsPath(test1Cont1ACont2ALeaf2A, rbChange.Changes[1].Values))
-	assert.Assert(t, rbChange.Changes[1].Values[0].Removed)
+	assert.Assert(t, len(rbChange.Changes[0].Values) == 3)
+	for _, v := range rbChange.Changes[0].Values {
+		switch v.Path {
+		case test1Cont1ACont2ALeaf2A:
+			assert.Assert(t, v.Removed)
+			assert.Equal(t, "", v.Value.ValueToString())
+		case test1Cont1ACont2ALeaf2B:
+			assert.Assert(t, !v.Removed)
+			assert.Equal(t, "3.140000", v.Value.ValueToString())
+		case test1Cont1ACont2ALeaf2D:
+			assert.Assert(t, !v.Removed)
+			assert.Equal(t, "1.230000", v.Value.ValueToString())
+		default:
+			t.Errorf("Unexpected path %s", v.Path)
+		}
+	}
 }
 
 func TestManager_GetTargetState(t *testing.T) {

@@ -52,18 +52,15 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	// There is only one set of extensions in Set request, regardless of number of
 	// updates
 	var (
-		netcfgchangename    string // May be specified as 100 in extension
-		version             string // May be specified as 101 in extension
-		deviceType          string // May be specified as 102 in extension
+		netCfgChangeName    string             // May be specified as 100 in extension
+		version             devicetype.Version // May be specified as 101 in extension
+		deviceType          devicetype.Type    // May be specified as 102 in extension
 		disconnectedDevices []string
-		deviceInfo          map[devicetopo.ID]devicestore.Info
 	)
 
 	disconnectedDevices = make([]string, 0)
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
-
-	deviceInfo = make(map[devicetopo.ID]devicestore.Info)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -95,18 +92,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		targetRemoves[target] = s.doDelete(u, targetRemoves)
 	}
 
-	netcfgchangename, version, deviceType, extErr := extractExtensions(req)
-	if extErr != nil {
-		return nil, extErr
+	netCfgChangeName, version, deviceType, err := extractExtensions(req)
+	if err != nil {
+		return nil, err
 	}
 
-	errRo := s.checkForReadOnly(deviceType, version, targetUpdates, targetRemoves)
-	if errRo != nil {
-		return nil, status.Error(codes.InvalidArgument, errRo.Error())
-	}
-
-	if netcfgchangename == "" {
-		netcfgchangename = namesgenerator.GetRandomName(0)
+	if netCfgChangeName == "" {
+		netCfgChangeName = namesgenerator.GetRandomName(0)
 	}
 
 	//Temporary map in order to not to modify the original removes but optimize calculations during validation
@@ -116,64 +108,44 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	mgr := manager.GetManager()
-
-	//TODO this can be parallelized with a pattern manager.go ValidateStores()
+	deviceInfo := make(map[devicetype.ID]devicestore.Info)
 	//Checking for wrong configuration against the device models for updates
-	for target, updates := range targetUpdates {
-		storedDevice, errDevice := mgr.DeviceStore.Get(devicetopo.ID(target))
+	for target := range targetUpdates {
+		deviceType, version, err = mgr.CheckCacheForDevice(devicetype.ID(target), deviceType, version)
+		if err != nil {
+			return nil, err
+		}
+		_, errDevice := mgr.DeviceStore.Get(devicetopo.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
 			//handling gRPC errors
 			return nil, errDevice
-		}
-		typeVersionInfo, errTypeVersion := manager.GetManager().ExtractTypeAndVersion(devicetopo.ID(target),
-			storedDevice, version, deviceType)
-		if errTypeVersion != nil {
-			//TODO return instead of log
-			log.Error(errTypeVersion)
-			typeVersionInfo = devicestore.Info{
-				Type:    "",
-				Version: "",
-			}
-			//return nil, errTypeVersion
-		}
-		deviceInfo[devicetopo.ID(target)] = typeVersionInfo
-		err := validateChange(target, version, deviceType, deviceInfo, updates, targetRemoves[target])
-		if err != nil {
-			return nil, err
 		}
 		delete(targetRemovesTmp, target)
 	}
 	//Checking for wrong configuration against the device models for deletes
-	for target, removes := range targetRemovesTmp {
-		storedDevice, errDevice := mgr.DeviceStore.Get(devicetopo.ID(target))
+	for target := range targetRemovesTmp {
+		deviceType, version, err = mgr.CheckCacheForDevice(devicetype.ID(target), deviceType, version)
+		if err != nil {
+			return nil, err
+		}
+		_, errDevice := mgr.DeviceStore.Get(devicetopo.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
 			//handling gRPC errors
 			return nil, errDevice
 		}
-		typeVersionInfo, errTypeVersion := manager.GetManager().ExtractTypeAndVersion(devicetopo.ID(target),
-			storedDevice, version, deviceType)
-		if errTypeVersion != nil {
-			//TODO return instead of log
-			log.Error(errTypeVersion)
-			typeVersionInfo = devicestore.Info{
-				Type:    "",
-				Version: "",
-			}
-			//return nil, errTypeVersion
-		}
-		deviceInfo[devicetopo.ID(target)] = typeVersionInfo
-		err := validateChange(target, version, deviceType, deviceInfo, make(devicechangetypes.TypedValueMap), removes)
-		if err != nil {
-			return nil, err
-		}
+	}
+
+	errRo := s.checkForReadOnlyNew(targetUpdates, targetRemoves)
+	if errRo != nil {
+		return nil, status.Error(codes.InvalidArgument, errRo.Error())
 	}
 
 	updateResults, networkChanges, err :=
-		s.executeSetConfig(targetUpdates, targetRemoves, version, deviceType, netcfgchangename)
+		s.executeSetConfig(targetUpdates, targetRemoves, string(version), string(deviceType), netCfgChangeName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -185,22 +157,22 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	// Look for use of this name already
 	for _, nwCfg := range mgr.NetworkStore.Store {
-		if nwCfg.Name == netcfgchangename {
+		if nwCfg.Name == netCfgChangeName {
 			return nil, status.Error(codes.InvalidArgument, fmt.Errorf(
-				"name %s is already used for a Network Configuration", netcfgchangename).Error())
+				"name %s is already used for a Network Configuration", netCfgChangeName).Error())
 		}
 	}
 
-	networkConfig, err := store.NewNetworkConfiguration(netcfgchangename, "User1", networkChanges)
+	networkConfig, err := store.NewNetworkConfiguration(netCfgChangeName, "User1", networkChanges)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	//Creating and setting the config on the new atomix Store
-	_ = mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
+	_ = mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
 
 	//Obtaining response based on distributed store generated events
-	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchangetypes.ID(netcfgchangename))
+	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchangetypes.ID(netCfgChangeName))
 
 	if errListen != nil {
 		log.Errorf("Error while building atomix based response %s", errListen.Error())
@@ -256,7 +228,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	return setResponse, nil
 }
 
-func extractExtensions(req *gnmi.SetRequest) (string, string, string, error) {
+func extractExtensions(req *gnmi.SetRequest) (string, devicetype.Version, devicetype.Type, error) {
 	var netcfgchangename string
 	var version string
 	var deviceType string
@@ -274,7 +246,7 @@ func extractExtensions(req *gnmi.SetRequest) (string, string, string, error) {
 		log.Infof("Set called with extensions; 100: %s, 101: %s, 102: %s",
 			netcfgchangename, version, deviceType)
 	}
-	return netcfgchangename, version, deviceType, nil
+	return netcfgchangename, devicetype.Version(version), devicetype.Type(deviceType), nil
 }
 
 // This deals with either a path and a value (simple case) or a path with
@@ -345,68 +317,6 @@ func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string
 	deletes = append(deletes, path)
 	return deletes
 
-}
-
-// Deprecated: checkForReadOnly works on legacy, non-atomix stores
-func (s *Server) checkForReadOnly(deviceType string, version string, targetUpdates mapTargetUpdates,
-	targetRemoves mapTargetRemoves) error {
-	//TODO update with ne stores
-	configs := manager.GetManager().ConfigStore.Store
-
-	// Iterate through all the updates - many may use the same target - here we
-	// create a map of the models for all of the targets
-	targetModelTypes := make(map[string][]string)
-	for t := range targetUpdates { // map - just need the key
-		if _, ok := targetModelTypes[t]; ok {
-			continue
-		}
-		for _, config := range configs {
-			if config.Device == t {
-				m, ok := manager.GetManager().ModelRegistry.
-					ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(config.Type), devicetype.Version(config.Version))]
-				if !ok {
-					log.Warningf("Cannot check for Read Only paths for %s %s because "+
-						"Model Plugin not available - continuing", config.Type, config.Version)
-					return nil
-				}
-				targetModelTypes[t] = modelregistry.Paths(m)
-			}
-		}
-	}
-	for t := range targetRemoves { // map - just need the key
-		if _, ok := targetModelTypes[t]; ok {
-			continue
-		}
-		for _, config := range configs {
-			if config.Device == t {
-				m, ok := manager.GetManager().ModelRegistry.
-					ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(config.Type), devicetype.Version(config.Version))]
-				if !ok {
-					log.Warningf("Cannot check for Read Only paths for %s %s because "+
-						"Model Plugin not available - continuing", config.Type, config.Version)
-					return nil
-				}
-				targetModelTypes[t] = modelregistry.Paths(m)
-			}
-		}
-	}
-
-	// Now iterate through the consolidated set of targets and see if any are read-only paths
-	for t, update := range targetUpdates {
-		model := targetModelTypes[t]
-		for path := range update { // map - just need the key
-			for _, ropath := range model {
-				// Search through for list indices and replace with generic
-
-				modelPath := modelregistry.RemovePathIndices(path)
-				if strings.HasPrefix(modelPath, ropath) {
-					return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
-				}
-			}
-		}
-	}
-
-	return nil
 }
 
 // iterate through the updates and check that none of them include a `set` of a
@@ -691,26 +601,4 @@ func setChange(target string, version string, devicetype string, targetUpdates d
 		return nil, nil, false, err
 	}
 	return changeID, configName, false, nil
-}
-
-func validateChange(target string, version string, deviceType string, deviceTypeAndVersion map[devicetopo.ID]devicestore.Info,
-	targetUpdates devicechangetypes.TypedValueMap, targetRemoves []string) error {
-	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
-		return fmt.Errorf("no updates found in change on %s - invalid", target)
-	}
-
-	err := manager.GetManager().ValidateNetworkConfig(target, version, deviceType, targetUpdates, targetRemoves)
-	if err != nil {
-		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
-			targetRemoves, target, err)
-		return err
-	}
-	deviceInfo := deviceTypeAndVersion[devicetopo.ID(target)]
-	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(devicetype.ID(target), deviceInfo.Version, deviceInfo.Type,
-		targetUpdates, targetRemoves)
-	if errNewValidation != nil {
-		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
-			targetRemoves, target, errNewValidation)
-	}
-	return nil
 }
