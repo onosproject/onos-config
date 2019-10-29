@@ -158,6 +158,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 	updateResultsOld, networkChanges, err :=
 		s.executeSetConfig(targetUpdatesCopy, targetRemovesCopy, string(version), string(deviceType), netcfgchangename)
+
 	if err != nil {
 		log.Errorf(" OLD - Error while setting config %s", err.Error())
 		//return nil, status.Error(codes.Internal, err.Error())
@@ -172,8 +173,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	//Deprecated TODO remove
 	for _, nwCfg := range mgr.NetworkStore.Store {
 		if nwCfg.Name == netCfgChangeName {
-			return nil, status.Error(codes.InvalidArgument, fmt.Errorf(
+			err := status.Error(codes.InvalidArgument, fmt.Errorf(
 				"name %s is already used for a Network Configuration", netCfgChangeName).Error())
+			log.Error(err)
+			//return nil, err
 		}
 	}
 
@@ -184,7 +187,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	//Creating and setting the config on the new atomix Store
-	errSet := mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
+	errSet := mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
+
 	if errSet != nil {
 		log.Errorf("Error while setting config in atomix %s", errSet.Error())
 		return nil, status.Error(codes.Internal, errSet.Error())
@@ -192,7 +196,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	//Obtaining response based on distributed store generated events
 	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchangetypes.ID(netCfgChangeName))
-
 	if errListen != nil {
 		log.Errorf("Error while building atomix based response %s", errListen.Error())
 		return nil, status.Error(codes.Internal, errListen.Error())
@@ -206,7 +209,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Ext: &gnmi_ext.Extension_RegisteredExt{
 				RegisteredExt: &gnmi_ext.RegisteredExtension{
 					Id:  GnmiExtensionNetwkChangeID,
-					Msg: []byte(netcfgchangename),
+					Msg: []byte(netCfgChangeName),
 				},
 			},
 		},
@@ -236,7 +239,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	setResponse := &gnmi.SetResponse{
-		Response:  updateResults,
+		Response:  updateResultsAtomix,
 		Timestamp: time.Now().Unix(),
 		Extension: extensions,
 	}
@@ -245,6 +248,18 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	log.Info("USED - NEW - atomix update response ", setResponse)
 
 	return setResponse, nil
+}
+
+func oldMapCopies(targetUpdates mapTargetUpdates, targetRemoves mapTargetRemoves) (mapTargetUpdates, mapTargetRemoves) {
+	targetUpdatesCopy := make(mapTargetUpdates)
+	targetRemovesCopy := make(mapTargetRemoves)
+	for k, v := range targetUpdates {
+		targetUpdatesCopy[k] = v
+	}
+	for k, v := range targetRemoves {
+		targetRemovesCopy[k] = v
+	}
+	return targetUpdatesCopy, targetRemovesCopy
 }
 
 func extractExtensions(req *gnmi.SetRequest) (string, devicetype.Version, devicetype.Type, error) {
@@ -422,6 +437,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 		} else if err == nil && cont {
 			continue
 		}
+
 		//responseErr := listenForDeviceResponse(networkChanges, target, *configName)
 		////TODO Maybe do this with a callback mechanism --> when resposne on channel is done trigger callback
 		//// that sends reply
@@ -430,6 +446,7 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 		//	log.Errorf(" OLD - Error while setting config %s", errTMP.Error())
 		//	//return nil, nil, errTMP
 		//}
+
 		for k := range updates {
 			updateResult, err := buildUpdateResult(k, target, gnmi.UpdateResult_UPDATE)
 			if err != nil {

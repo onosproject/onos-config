@@ -192,7 +192,7 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 		log.Error("UNUSED - OLD - Error while extracting config", err)
 		//return nil, err
 	}
-	
+
 	configValues, errNewMethod := manager.GetManager().GetTargetNewConfig(
 		devicetype.ID(target), typeVersionInfo.Version, pathAsString, 0)
 	if errNewMethod != nil {
