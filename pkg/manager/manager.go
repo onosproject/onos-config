@@ -419,7 +419,7 @@ func (m *Manager) CheckCacheForDevice(target devicetype.ID, deviceType devicetyp
 		return deviceType, version, nil
 	} else if len(deviceInfos) == 1 {
 		log.Infof("Handling target %s as %s:%s", target, deviceType, version)
-		if deviceInfos[0].Type != deviceType || deviceInfos[0].Version != version {
+		if deviceInfos[0].Version != version {
 			log.Infof("Ignoring device type %s and version %s from extension for %s. Using %s and %s",
 				deviceType, version, target, deviceInfos[0].Type, deviceInfos[0].Version)
 		}
@@ -427,11 +427,21 @@ func (m *Manager) CheckCacheForDevice(target devicetype.ID, deviceType devicetyp
 	} else {
 		// n devices of that name already exist - have to choose 1 or exit
 		for _, di := range deviceInfos {
-			if di.Type == deviceType && di.Version == version {
+			if di.Version == version {
 				log.Infof("Handling target %s as %s:%s", target, deviceType, version)
-				return deviceInfos[0].Type, deviceInfos[0].Version, nil
+				return di.Type, di.Version, nil
 			}
 		}
+		// Else allow it as a new version
+		if deviceType == deviceInfos[0].Type && version != "" {
+			log.Infof("Handling target %s as %s:%s", target, deviceType, version)
+			return deviceType, version, nil
+		} else if deviceType != "" && deviceType != deviceInfos[0].Type {
+			return "", "", status.Error(codes.Internal,
+				fmt.Sprintf("target %s type given %s does not match expected %s",
+					target, deviceType, deviceInfos[0].Type))
+		}
+
 		return "", "", status.Error(codes.Internal,
 			fmt.Sprintf("target %s has %d versions. Specify 1 version with extension 102",
 				target, len(deviceInfos)))

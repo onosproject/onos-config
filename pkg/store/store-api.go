@@ -40,6 +40,7 @@ a way of storing Configurations in JSON files
 ChangeStore
 
 a way of storing Changes in JSON files
+Deprecated: do not use
 */
 package store
 
