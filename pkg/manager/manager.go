@@ -39,6 +39,8 @@ import (
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 	"strings"
 	"time"
@@ -402,7 +404,52 @@ func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
 	return configChange.ID, nil
 }
 
+// CheckCacheForDevice checks against the device cache (of the device change store
+// to see if a device of that name is already present)
+func (m *Manager) CheckCacheForDevice(target devicetype.ID, deviceType devicetype.Type,
+	version devicetype.Version) (devicetype.Type, devicetype.Version, error) {
+
+	deviceInfos := mgr.DeviceCache.GetDevicesByID(target)
+	if len(deviceInfos) == 0 {
+		// New device - need type and version
+		if deviceType == "" || version == "" {
+			return "", "", status.Error(codes.Internal,
+				fmt.Sprintf("target %s is not known. Need to supply a type and version through Extensions 101 and 102", target))
+		}
+		return deviceType, version, nil
+	} else if len(deviceInfos) == 1 {
+		log.Infof("Handling target %s as %s:%s", target, deviceType, version)
+		if deviceInfos[0].Version != version {
+			log.Infof("Ignoring device type %s and version %s from extension for %s. Using %s and %s",
+				deviceType, version, target, deviceInfos[0].Type, deviceInfos[0].Version)
+		}
+		return deviceInfos[0].Type, deviceInfos[0].Version, nil
+	} else {
+		// n devices of that name already exist - have to choose 1 or exit
+		for _, di := range deviceInfos {
+			if di.Version == version {
+				log.Infof("Handling target %s as %s:%s", target, deviceType, version)
+				return di.Type, di.Version, nil
+			}
+		}
+		// Else allow it as a new version
+		if deviceType == deviceInfos[0].Type && version != "" {
+			log.Infof("Handling target %s as %s:%s", target, deviceType, version)
+			return deviceType, version, nil
+		} else if deviceType != "" && deviceType != deviceInfos[0].Type {
+			return "", "", status.Error(codes.Internal,
+				fmt.Sprintf("target %s type given %s does not match expected %s",
+					target, deviceType, deviceInfos[0].Type))
+		}
+
+		return "", "", status.Error(codes.Internal,
+			fmt.Sprintf("target %s has %d versions. Specify 1 version with extension 102",
+				target, len(deviceInfos)))
+	}
+}
+
 // ExtractTypeAndVersion gets a deviceType and a Version based on the available store, topo and extension info
+// deprecated: now that we use device cache directly
 func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devicetopo.Device,
 	versionExt string, deviceTypeExt string) (devicestore.Info, error) {
 

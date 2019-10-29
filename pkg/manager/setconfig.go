@@ -25,7 +25,6 @@ import (
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"
 	"time"
@@ -170,7 +169,7 @@ func (m *Manager) SetNetworkConfig(deviceName string, version string,
 
 // SetNewNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
 func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetopo.ID]devicestore.Info, netcfgchangename string) error {
+	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info, netcfgchangename string) error {
 	//TODO evaluate need of user and add it back if need be.
 	//TODO start watch and build update Result
 	//TODO return an error if the device is new and extensions 101 and 102 are not specified
@@ -247,15 +246,18 @@ func (m *Manager) getStoredConfig(deviceName string, version string,
 
 //computeNewNetworkConfig computes each device change
 func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetopo.ID]devicestore.Info,
+	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info,
 	description string) ([]*devicechangetypes.Change, error) {
+
+	// Keep track of the targets handled
+	targetsHandled := make(map[string]struct{})
 
 	deviceChanges := make([]*devicechangetypes.Change, 0)
 	for target, updates := range targetUpdates {
 		//FIXME this is a sequential job, not parallelized
 		//FIXME target is a device name with no version
-		version := deviceInfo[devicetopo.ID(target)].Version
-		deviceType := deviceInfo[devicetopo.ID(target)].Type
+		version := deviceInfo[devicetype.ID(target)].Version
+		deviceType := deviceInfo[devicetype.ID(target)].Type
 		newChange, err := m.ComputeNewDeviceChange(
 			devicetype.ID(target), version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {
@@ -264,11 +266,16 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 		}
 		log.Infof("Appending device change %v", newChange)
 		deviceChanges = append(deviceChanges, newChange)
+		targetsHandled[target] = struct{}{}
 	}
 
+	// Some targets might only have removes
 	for target, removes := range targetRemoves {
-		version := deviceInfo[devicetopo.ID(target)].Version
-		deviceType := deviceInfo[devicetopo.ID(target)].Type
+		if _, ok := targetsHandled[target]; ok {
+			continue
+		}
+		version := deviceInfo[devicetype.ID(target)].Version
+		deviceType := deviceInfo[devicetype.ID(target)].Type
 		newChange, err := m.ComputeNewDeviceChange(
 			devicetype.ID(target), version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
 		if err != nil {

@@ -84,7 +84,6 @@ func (x gNMISubscribeServerPollFake) Recv() (*gnmi.SubscribeRequest, error) {
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
 	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
@@ -132,7 +131,6 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with updates for that path
 func Test_SubscribeLeafStream(t *testing.T) {
 	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
@@ -332,7 +330,6 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 
 func Test_Poll(t *testing.T) {
 	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
@@ -401,7 +398,6 @@ func Test_Poll(t *testing.T) {
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with delete paths
 func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
@@ -479,7 +475,6 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 		ID: target,
 	}
 
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
