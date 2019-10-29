@@ -39,6 +39,8 @@ import (
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 	"strings"
 	"time"
@@ -73,12 +75,6 @@ type Manager struct {
 	SouthboundErrorChan       chan events.DeviceResponse
 	Dispatcher                *dispatcher.Dispatcher
 	OperationalStateCache     map[devicetopo.ID]devicechangetypes.TypedValueMap
-}
-
-//TypeVersionInfo contains the info about the device type and version
-type TypeVersionInfo struct {
-	DeviceType devicetype.Type
-	Version    devicetype.Version
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -420,8 +416,55 @@ func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
 	return configChange.ID, nil
 }
 
+// CheckCacheForDevice checks against the device cache (of the device change store
+// to see if a device of that name is already present)
+func (m *Manager) CheckCacheForDevice(target devicetype.ID, deviceType devicetype.Type,
+	version devicetype.Version) (devicetype.Type, devicetype.Version, error) {
+
+	deviceInfos := mgr.DeviceCache.GetDevicesByID(target)
+	if len(deviceInfos) == 0 {
+		// New device - need type and version
+		if deviceType == "" || version == "" {
+			return "", "", status.Error(codes.Internal,
+				fmt.Sprintf("target %s is not known. Need to supply a type and version through Extensions 101 and 102", target))
+		}
+		return deviceType, version, nil
+	} else if len(deviceInfos) == 1 {
+		log.Infof("Handling target %s as %s:%s", target, deviceType, version)
+		if deviceInfos[0].Version != version {
+			log.Infof("Ignoring device type %s and version %s from extension for %s. Using %s and %s",
+				deviceType, version, target, deviceInfos[0].Type, deviceInfos[0].Version)
+		}
+		return deviceInfos[0].Type, deviceInfos[0].Version, nil
+	} else {
+		// n devices of that name already exist - have to choose 1 or exit
+		for _, di := range deviceInfos {
+			if di.Version == version {
+				log.Infof("Handling target %s as %s:%s", target, deviceType, version)
+				return di.Type, di.Version, nil
+			}
+		}
+		// Else allow it as a new version
+		if deviceType == deviceInfos[0].Type && version != "" {
+			log.Infof("Handling target %s as %s:%s", target, deviceType, version)
+			return deviceType, version, nil
+		} else if deviceType != "" && deviceType != deviceInfos[0].Type {
+			return "", "", status.Error(codes.Internal,
+				fmt.Sprintf("target %s type given %s does not match expected %s",
+					target, deviceType, deviceInfos[0].Type))
+		}
+
+		return "", "", status.Error(codes.Internal,
+			fmt.Sprintf("target %s has %d versions. Specify 1 version with extension 102",
+				target, len(deviceInfos)))
+	}
+}
+
 // ExtractTypeAndVersion gets a deviceType and a Version based on the available store, topo and extension info
-func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devicetopo.Device, versionExt string, deviceTypeExt string) (TypeVersionInfo, error) {
+// deprecated: now that we use device cache directly
+func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devicetopo.Device,
+	versionExt string, deviceTypeExt string) (devicestore.Info, error) {
+
 	var (
 		deviceType string
 		version    string
@@ -430,20 +473,20 @@ func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devi
 	if storedDevice == nil && (deviceTypeExt == "" || versionExt == "") {
 		devices := m.DeviceCache.GetDevicesByID(devicetype.ID(target))
 		if len(devices) == 0 {
-			return TypeVersionInfo{}, fmt.Errorf("device %s is not connected and Extensions were not "+
+			return devicestore.Info{}, fmt.Errorf("device %s is not connected and Extensions were not "+
 				"complete given %s, %s", target, versionExt, deviceTypeExt)
 		} else if len(devices) > 1 {
-			return TypeVersionInfo{}, fmt.Errorf("device %s is ambiguous and Extensions were not "+
+			return devicestore.Info{}, fmt.Errorf("device %s is ambiguous and Extensions were not "+
 				"complete given %s, %s", target, versionExt, deviceTypeExt)
 		}
-		return TypeVersionInfo{
-			DeviceType: devices[0].Type,
-			Version:    devices[0].Version,
+		return devicestore.Info{
+			Type:    devices[0].Type,
+			Version: devices[0].Version,
 		}, nil
 	}
 
 	if storedDevice == nil && deviceTypeExt != "" && versionExt != "" {
-		return TypeVersionInfo{Version: devicetype.Version(versionExt), DeviceType: devicetype.Type(deviceTypeExt)}, nil
+		return devicestore.Info{Version: devicetype.Version(versionExt), Type: devicetype.Type(deviceTypeExt)}, nil
 	}
 
 	if storedDevice != nil && deviceTypeExt == "" {
@@ -453,5 +496,5 @@ func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devi
 		version = storedDevice.Version
 	}
 
-	return TypeVersionInfo{Version: devicetype.Version(version), DeviceType: devicetype.Type(deviceType)}, nil
+	return devicestore.Info{Version: devicetype.Version(version), Type: devicetype.Type(deviceType)}, nil
 }
