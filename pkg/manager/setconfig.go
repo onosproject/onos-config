@@ -249,9 +249,6 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info,
 	description string) ([]*devicechangetypes.Change, error) {
 
-	// Keep track of the targets handled
-	targetsHandled := make(map[string]struct{})
-
 	deviceChanges := make([]*devicechangetypes.Change, 0)
 	for target, updates := range targetUpdates {
 		//FIXME this is a sequential job, not parallelized
@@ -266,14 +263,11 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 		}
 		log.Infof("Appending device change %v", newChange)
 		deviceChanges = append(deviceChanges, newChange)
-		targetsHandled[target] = struct{}{}
+		delete(targetRemoves, target)
 	}
 
 	// Some targets might only have removes
 	for target, removes := range targetRemoves {
-		if _, ok := targetsHandled[target]; ok {
-			continue
-		}
 		version := deviceInfo[devicetype.ID(target)].Version
 		deviceType := deviceInfo[devicetype.ID(target)].Type
 		newChange, err := m.ComputeNewDeviceChange(
