@@ -24,14 +24,12 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 	"regexp"
 	"strings"
@@ -103,39 +101,41 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	config, err := getNetworkConfig(sync, string(sync.Device.ID), "", 0)
 
 	//Device does not have any stored config at the moment, skip initial set
+	//TODO port to new stores and controller based architecture
 	if err != nil {
 		log.Info(sync.Device.Address, " has no initial configuration")
 	} else {
 		//Device has initial configuration saved in onos-config, trying to apply
-		initialConfig, err := change.NewChangeValuesNoRemoval(config, "Initial set to device")
+		log.Info(sync.Device.Address, " Device has initial configuration ", config)
+		//initialConfig, err := change.NewChangeValuesNoRemoval(config, "Initial set to device")
+		//
+		//if err != nil {
+		//	log.Errorf("Can't translate the initial config for %s due to: %s", sync.Device.Address, err)
+		//	return sync, nil
+		//}
 
-		if err != nil {
-			log.Errorf("Can't translate the initial config for %s due to: %s", sync.Device.Address, err)
-			return sync, nil
-		}
+		//gnmiChange, err := values.NativeChangeToGnmiChange(initialConfig)
 
-		gnmiChange, err := values.NativeChangeToGnmiChange(initialConfig)
+		//if err != nil {
+		//	log.Errorf("Can't obtain GnmiChange for %s due to: %s", sync.Device.Address, err)
+		//	return sync, nil
+		//}
 
-		if err != nil {
-			log.Errorf("Can't obtain GnmiChange for %s due to: %s", sync.Device.Address, err)
-			return sync, nil
-		}
+		//resp, err := target.Set(context, gnmiChange)
 
-		resp, err := target.Set(context, gnmiChange)
-
-		if err != nil {
-			errGnmi, _ := status.FromError(err)
-			//Hack because the desc field is not available.
-			//Splitting at the desc string and getting the second element which is the description.
-			log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address,
-				strings.Split(errGnmi.Message(), " desc = ")[1])
-			errChan <- events.NewErrorEvent(events.EventTypeErrorSetInitialConfig,
-				string(device.ID), initialConfig.ID, err)
-		} else {
-			log.Infof("Loaded initial config %s for device %s", store.B64(initialConfig.ID), string(sync.key))
-			errChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig,
-				string(sync.key), initialConfig.ID, resp.String())
-		}
+		//if err != nil {
+		//	errGnmi, _ := status.FromError(err)
+		//	//Hack because the desc field is not available.
+		//	//Splitting at the desc string and getting the second element which is the description.
+		//	log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address,
+		//		strings.Split(errGnmi.Message(), " desc = ")[1])
+		//	errChan <- events.NewErrorEvent(events.EventTypeErrorSetInitialConfig,
+		//		string(device.ID), initialConfig.ID, err)
+		//} else {
+		//	log.Infof("Loaded initial config %s for device %s", store.B64(initialConfig.ID), string(sync.key))
+		//	errChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig,
+		//		string(sync.key), initialConfig.ID, resp.String())
+		//}
 	}
 
 	return sync, nil
