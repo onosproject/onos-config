@@ -75,12 +75,6 @@ type Manager struct {
 	OperationalStateCache     map[devicetopo.ID]devicechangetypes.TypedValueMap
 }
 
-//TypeVersionInfo contains the info about the device type and version
-type TypeVersionInfo struct {
-	DeviceType devicetype.Type
-	Version    devicetype.Version
-}
-
 // NewManager initializes the network config manager subsystem.
 func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store, mastershipStore mastership.Store,
 	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicestore.Store, deviceCache devicestore.Cache,
@@ -409,7 +403,9 @@ func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
 }
 
 // ExtractTypeAndVersion gets a deviceType and a Version based on the available store, topo and extension info
-func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devicetopo.Device, versionExt string, deviceTypeExt string) (TypeVersionInfo, error) {
+func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devicetopo.Device,
+	versionExt string, deviceTypeExt string) (devicestore.Info, error) {
+
 	var (
 		deviceType string
 		version    string
@@ -418,20 +414,20 @@ func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devi
 	if storedDevice == nil && (deviceTypeExt == "" || versionExt == "") {
 		devices := m.DeviceCache.GetDevicesByID(devicetype.ID(target))
 		if len(devices) == 0 {
-			return TypeVersionInfo{}, fmt.Errorf("device %s is not connected and Extensions were not "+
+			return devicestore.Info{}, fmt.Errorf("device %s is not connected and Extensions were not "+
 				"complete given %s, %s", target, versionExt, deviceTypeExt)
 		} else if len(devices) > 1 {
-			return TypeVersionInfo{}, fmt.Errorf("device %s is ambiguous and Extensions were not "+
+			return devicestore.Info{}, fmt.Errorf("device %s is ambiguous and Extensions were not "+
 				"complete given %s, %s", target, versionExt, deviceTypeExt)
 		}
-		return TypeVersionInfo{
-			DeviceType: devices[0].Type,
-			Version:    devices[0].Version,
+		return devicestore.Info{
+			Type:    devices[0].Type,
+			Version: devices[0].Version,
 		}, nil
 	}
 
 	if storedDevice == nil && deviceTypeExt != "" && versionExt != "" {
-		return TypeVersionInfo{Version: devicetype.Version(versionExt), DeviceType: devicetype.Type(deviceTypeExt)}, nil
+		return devicestore.Info{Version: devicetype.Version(versionExt), Type: devicetype.Type(deviceTypeExt)}, nil
 	}
 
 	if storedDevice != nil && deviceTypeExt == "" {
@@ -441,5 +437,5 @@ func (m *Manager) ExtractTypeAndVersion(target devicetopo.ID, storedDevice *devi
 		version = storedDevice.Version
 	}
 
-	return TypeVersionInfo{Version: devicetype.Version(version), DeviceType: devicetype.Type(deviceType)}, nil
+	return devicestore.Info{Version: devicetype.Version(version), Type: devicetype.Type(deviceType)}, nil
 }

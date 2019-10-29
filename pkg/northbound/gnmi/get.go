@@ -17,21 +17,21 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
+	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 	"strings"
 	"time"
-
-	"github.com/onosproject/onos-config/pkg/manager"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
-	"github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/openconfig/gnmi/proto/gnmi_ext"
 )
 
 // Get implements gNMI Get
@@ -172,9 +172,9 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 	if errTypeVersion != nil {
 		//TODO return instead of log
 		log.Error(errTypeVersion)
-		typeVersionInfo = manager.TypeVersionInfo{
-			DeviceType: "",
-			Version:    "",
+		typeVersionInfo = devicestore.Info{
+			Type:    "",
+			Version: "",
 		}
 		//return nil, errTypeVersion
 	}

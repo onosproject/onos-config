@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -55,14 +56,14 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		version             string // May be specified as 101 in extension
 		deviceType          string // May be specified as 102 in extension
 		disconnectedDevices []string
-		deviceInfo          map[devicetopo.ID]manager.TypeVersionInfo
+		deviceInfo          map[devicetopo.ID]devicestore.Info
 	)
 
 	disconnectedDevices = make([]string, 0)
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
-	deviceInfo = make(map[devicetopo.ID]manager.TypeVersionInfo)
+	deviceInfo = make(map[devicetopo.ID]devicestore.Info)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -131,9 +132,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		if errTypeVersion != nil {
 			//TODO return instead of log
 			log.Error(errTypeVersion)
-			typeVersionInfo = manager.TypeVersionInfo{
-				DeviceType: "",
-				Version:    "",
+			typeVersionInfo = devicestore.Info{
+				Type:    "",
+				Version: "",
 			}
 			//return nil, errTypeVersion
 		}
@@ -158,9 +159,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		if errTypeVersion != nil {
 			//TODO return instead of log
 			log.Error(errTypeVersion)
-			typeVersionInfo = manager.TypeVersionInfo{
-				DeviceType: "",
-				Version:    "",
+			typeVersionInfo = devicestore.Info{
+				Type:    "",
+				Version: "",
 			}
 			//return nil, errTypeVersion
 		}
@@ -692,7 +693,7 @@ func setChange(target string, version string, devicetype string, targetUpdates d
 	return changeID, configName, false, nil
 }
 
-func validateChange(target string, version string, deviceType string, deviceTypeAndVersion map[devicetopo.ID]manager.TypeVersionInfo,
+func validateChange(target string, version string, deviceType string, deviceTypeAndVersion map[devicetopo.ID]devicestore.Info,
 	targetUpdates devicechangetypes.TypedValueMap, targetRemoves []string) error {
 	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
 		return fmt.Errorf("no updates found in change on %s - invalid", target)
@@ -705,7 +706,7 @@ func validateChange(target string, version string, deviceType string, deviceType
 		return err
 	}
 	deviceInfo := deviceTypeAndVersion[devicetopo.ID(target)]
-	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(devicetype.ID(target), deviceInfo.Version, deviceInfo.DeviceType,
+	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(devicetype.ID(target), deviceInfo.Version, deviceInfo.Type,
 		targetUpdates, targetRemoves)
 	if errNewValidation != nil {
 		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
