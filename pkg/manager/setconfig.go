@@ -41,7 +41,8 @@ func (m *Manager) ValidateNetworkConfig(deviceName string, version string,
 
 	deviceConfig, _, err := m.getStoredConfig(deviceName, version, deviceType, true)
 	if err != nil {
-		return err
+		log.Errorf(" OLD - Error while setting config %s", err.Error())
+		//return err
 	}
 	deviceConfigTemporary, err := store.NewConfiguration(deviceConfig.Device, deviceConfig.Version,
 		deviceConfig.Type, deviceConfig.Changes)

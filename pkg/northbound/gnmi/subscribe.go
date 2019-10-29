@@ -266,13 +266,12 @@ func listenForNewDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Ma
 						log.Warning("Error in parsing path ", err)
 						continue
 					}
-					log.Infof("NEW - Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
-					//TODO uncomment in swap patch
-					//err = buildAndSendUpdate(pathGnmi, target, value.Value, stream)
-					//if err != nil {
-					//	log.Error("Error in sending update path ", err)
-					//	resChan <- result{success: false, err: err}
-					//}
+					log.Infof("USED - NEW - Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
+					err = buildAndSendUpdate(pathGnmi, string(target), value.Value, stream)
+					if err != nil {
+						log.Error("Error in sending update path ", err)
+						resChan <- result{success: false, err: err}
+					}
 				}
 			}
 		}
@@ -289,12 +288,7 @@ func sendSubscribeResponse(changeInternal *change.Change, subs []*regexp.Regexp,
 				log.Warning("Error in parsing path ", err)
 				continue
 			}
-			log.Infof("OLD - Subscribe notification for %s on %s with value %s", pathGnmi, target, changeValue.GetValue())
-			err = buildAndSendUpdate(pathGnmi, target, changeValue.GetValue(), stream)
-			if err != nil {
-				log.Error("Error in sending update path ", err)
-				resChan <- result{success: false, err: err}
-			}
+			log.Infof("UNUSED - OLD - Subscribe notification for %s on %s with value %s", pathGnmi, target, changeValue.GetValue())
 		}
 	}
 }
