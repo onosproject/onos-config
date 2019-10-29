@@ -196,7 +196,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	//Creating and setting the config on the new atomix Store
-	mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
+	_ = mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 
 	//Obtaining response based on distributed store generated events
 	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchangetypes.ID(netcfgchangename))
