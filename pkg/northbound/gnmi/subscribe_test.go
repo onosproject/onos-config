@@ -168,8 +168,6 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with updates for that path
 func Test_SubscribeLeafStream(t *testing.T) {
-	t.Skip("TODO - implement mock Atomix stores for data for this test")
-
 	server, mgr, mockStores := setUp(t)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
@@ -178,7 +176,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(3)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 
 	var wg sync.WaitGroup
@@ -655,7 +653,7 @@ func assertUpdateResponse(t *testing.T, responsesChan chan *gnmi.SubscribeRespon
 		}
 
 	case <-time.After(5 * time.Second):
-		log.Error("Expected Update Response")
+		log.Error("Timed out waiting for Update Response")
 		t.FailNow()
 	}
 
