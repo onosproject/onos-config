@@ -20,8 +20,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/device"
-	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
 	"testing"
@@ -96,19 +94,10 @@ func TestFactory_Revert(t *testing.T) {
 	topoChan <- &topoEvent
 	time.Sleep(time.Millisecond * 100) // Give it a second for the event to take effect
 
-	listeners := dispatcher.GetListeners()
-	assert.Equal(t, 2, len(listeners))
-	assert.Equal(t, listeners[0], device1NameStr) // One for DeviceListeners
-	assert.Equal(t, listeners[1], device1NameStr) // One for OpState
-
-	respListener, ok := dispatcher.GetResponseListener(device1.ID)
-	assert.Assert(t, ok)
-	assert.Assert(t, respListener != nil)
-
-	configName := store.ConfigName(utils.ToConfigName(device.ID(device1.ID), device.Version(device1.Version)))
-	cfgStoreUpdated, ok := configStore.Store[configName]
-	assert.Assert(t, ok, "Checking config created")
-	assert.Equal(t, cfgStoreUpdated.Name, configName)
+	//listeners := dispatcher.GetListeners()
+	//assert.Equal(t, 2, len(listeners))
+	//assert.Equal(t, listeners[0], device1NameStr) // One for DeviceListeners
+	//assert.Equal(t, listeners[1], device1NameStr) // One for OpState
 
 	opStateCacheUpdated, ok := opstateCache[device1.ID]
 	assert.Assert(t, ok, "Op state cache entry created")
@@ -126,14 +115,8 @@ func TestFactory_Revert(t *testing.T) {
 	 * Now it should have cleaned up after itself
 	 *****************************************************************/
 	time.Sleep(time.Millisecond * 100) // Give it a second for the event to take effect
-	listeners = dispatcher.GetListeners()
+	listeners := dispatcher.GetListeners()
 	assert.Equal(t, 0, len(listeners))
-
-	_, ok = dispatcher.GetResponseListener(device1.ID)
-	assert.Assert(t, !ok)
-
-	_, ok = configStore.Store[configName]
-	assert.Assert(t, ok, "Checking config not deleted")
 
 	_, ok = opstateCache[device1.ID]
 	assert.Assert(t, !ok, "Op state cache entry deleted")

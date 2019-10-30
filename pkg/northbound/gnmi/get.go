@@ -184,25 +184,12 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
 	//TODO the following can be optimized by looking if the path is in the read only
-	//Currently un-hooked from the response, just generating values for comparison
-	//Deprecated
-	configValuesOld, err := manager.GetManager().GetTargetConfig(target, "",
-		pathAsString, 0)
-	if err != nil {
-		log.Error("UNUSED - OLD - Error while extracting config", err)
-		//return nil, err
-	}
-
 	configValues, errNewMethod := manager.GetManager().GetTargetNewConfig(
 		devicetype.ID(target), typeVersionInfo.Version, pathAsString, 0)
 	if errNewMethod != nil {
 		log.Error("Error while extracting config", errNewMethod)
 		return nil, errNewMethod
 	}
-
-	//TODO remove this print after the swap
-	log.Info("UNUSED - OLD - Old Config Values ", configValuesOld)
-	log.Info("USED - NEW - New Config Values from Atomix ", configValues)
 
 	stateValues := manager.GetManager().GetTargetState(target, pathAsString)
 	//Merging the two results

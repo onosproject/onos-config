@@ -20,7 +20,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	changeTypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -56,13 +55,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 		return err1
 	}
 	hash := store.B64(h.Sum(nil))
-	//Registering one listener per NB app/client on both change and opStateChan
-	//TODO remove
-	changesChan, err := mgr.Dispatcher.RegisterNbi(hash)
-	if err != nil {
-		log.Warning("Subscription present: ", err)
-		return status.Error(codes.AlreadyExists, err.Error())
-	}
+	//Registering one listener for opStateChan
 	opStateChan, err := mgr.Dispatcher.RegisterOpState(hash)
 	if err != nil {
 		log.Warning("Subscription present: ", err)
@@ -70,7 +63,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	}
 	resChan := make(chan result)
 	//Handles each subscribe request coming into the server, blocks until a new request or an error comes in
-	go listenOnChannel(stream, mgr, hash, resChan, subscribe, changesChan, opStateChan)
+	go listenOnChannel(stream, mgr, hash, resChan, subscribe, opStateChan)
 
 	res := <-resChan
 
@@ -80,17 +73,13 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	return nil
 }
 
-// TODO listenOnChannel works on legacy, non-atomix stores, remove the non opstate stuff
 func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, hash string,
-	resChan chan result, subscribe *gnmi.SubscriptionList, changesChan chan events.ConfigEvent,
-	opStateChan chan events.OperationalStateEvent) {
+	resChan chan result, subscribe *gnmi.SubscriptionList, opStateChan chan events.OperationalStateEvent) {
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
 			log.Info("Subscription Terminated EOF")
 			//Ignoring Errors during removal
-			//TODO remove NBI
-			mgr.Dispatcher.UnregisterNbi(hash)
 			mgr.Dispatcher.UnregisterOperationalState(hash)
 			resChan <- result{success: true, err: nil}
 			break
@@ -100,15 +89,11 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 			code, ok := status.FromError(err)
 			if ok && code.Code() == codes.Canceled {
 				log.Info("Subscription Terminated, Canceled")
-				//TODO remove NBI
-				mgr.Dispatcher.UnregisterNbi(hash)
 				mgr.Dispatcher.UnregisterOperationalState(hash)
 				resChan <- result{success: true, err: nil}
 			} else {
 				log.Error("Error in subscription ", err)
 				//Ignoring Errors during removal
-				//TODO remove NBI
-				mgr.Dispatcher.UnregisterNbi(hash)
 				mgr.Dispatcher.UnregisterOperationalState(hash)
 				resChan <- result{success: false, err: err}
 			}
@@ -151,7 +136,6 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 				targets[sub.Path.Target] = struct{}{}
 			}
 			//Each subscription request spawns a go routing listening for related events for the target and the paths
-			go listenForUpdates(changesChan, stream, mgr, targets, subsStr, resChan)
 			go listenForNewUpdates(stream, mgr, targets, version, subsStr, resChan)
 			go listenForOpStateUpdates(opStateChan, stream, targets, subsStr, resChan)
 		}
@@ -192,50 +176,6 @@ func collector(mgr *manager.Manager, version devicetype.Version, stream gnmi.GNM
 		//Sending only if we need to finish listening because of ONCE
 		// if POLL we need to keep the channel open
 		resChan <- result{success: true, err: nil}
-	}
-}
-
-//For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
-// Deprecated: computeChange works on legacy, non-atomix stores
-func listenForUpdates(changeChan chan events.ConfigEvent, stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
-	targets map[string]struct{}, subs []*regexp.Regexp, resChan chan result) {
-	for update := range changeChan {
-		target, changeInternal := getChangeFromEvent(update, mgr)
-		_, targetPresent := targets[target]
-		if targetPresent && changeInternal != nil {
-			//if the device is registered it has a listener, if not we assume the device is not in the system and
-			// send an immediate response
-			respChan, ok := mgr.Dispatcher.GetResponseListener(devicetopo.ID(target))
-			if ok {
-				go listenForDeviceUpdates(respChan, changeInternal, subs, target, stream, resChan)
-			} else {
-				log.Infof("Device %s not registered, reporting update to subscribers immediately ", target)
-				sendSubscribeResponse(changeInternal, subs, target, stream, resChan)
-			}
-		}
-	}
-}
-
-//Listens for an update from the device after a config has been changed, if update does not arrive after 5 secs
-// (same as set.go) we consider the device as un-responsive and do not send the update to subscribers.
-// Also if there is an error we do not send it up.
-// Deprecated: computeChange works on legacy, non-atomix stores
-func listenForDeviceUpdates(respChan <-chan events.DeviceResponse, changeInternal *change.Change,
-	subs []*regexp.Regexp, target string, stream gnmi.GNMI_SubscribeServer, resChan chan result) {
-	select {
-	case response := <-respChan:
-		switch eventType := response.EventType(); eventType {
-		case events.EventTypeSubscribeNotificationSetConfig:
-			log.Info("Set is properly configured ", response.ChangeID())
-			sendSubscribeResponse(changeInternal, subs, target, stream, resChan)
-		case events.EventTypeSubscribeErrorNotificationSetConfig:
-			log.Error("Set is not properly configured, not sending subscribe update ", response.ChangeID())
-		default:
-			log.Errorf("Unrecognized reply, not sending subscribe update for %s. error %s", response.ChangeID(),
-				response.Error())
-		}
-	case <-time.After(5 * time.Second):
-		log.Error("Timeout on waiting for device reply ", target)
 	}
 }
 
@@ -285,21 +225,6 @@ func listenForNewDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Ma
 					}
 				}
 			}
-		}
-	}
-}
-
-// Deprecated: computeChange works on legacy, non-atomix stores
-func sendSubscribeResponse(changeInternal *change.Change, subs []*regexp.Regexp, target string,
-	stream gnmi.GNMI_SubscribeServer, resChan chan result) {
-	for _, changeValue := range changeInternal.Config {
-		if matchRegex(changeValue.Path, subs) {
-			pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(changeValue.Path))
-			if err != nil {
-				log.Warning("Error in parsing path ", err)
-				continue
-			}
-			log.Infof("UNUSED - OLD - Subscribe notification for %s on %s with value %s", pathGnmi, target, changeValue.GetValue())
 		}
 	}
 }
@@ -432,17 +357,6 @@ func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeSe
 		return status.Error(codes.Internal, err.Error())
 	}
 	return nil
-}
-
-// Deprecated: computeChange works on legacy, non-atomix stores
-func getChangeFromEvent(update events.ConfigEvent, mgr *manager.Manager) (string, *change.Change) {
-	target := update.Subject()
-	changeID := update.ChangeID()
-	changeInternal, ok := mgr.ChangeStore.Store[changeID]
-	if !ok {
-		log.Warning("No change found for: ", changeID)
-	}
-	return target, changeInternal
 }
 
 func extractSubscribeVersion(req *gnmi.SubscribeRequest) (devicetype.Version, error) {

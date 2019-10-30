@@ -15,8 +15,6 @@
 package manager
 
 import (
-	"fmt"
-	"github.com/onosproject/onos-config/pkg/store"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
@@ -24,46 +22,6 @@ import (
 	log "k8s.io/klog"
 	"sort"
 )
-
-// GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
-// The layer is the numbers of config changes we want to go back in time for. 0 is the latest
-// Deprecated: GetTargetConfig works on legacy, non-atomix stores
-func (m *Manager) GetTargetConfig(target string, configname store.ConfigName, path string, layer int) ([]*devicechangetypes.PathValue, error) {
-	log.Info("Getting config for ", target, path)
-	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
-	var config store.Configuration
-	if target != "" {
-		for _, cfg := range m.ConfigStore.Store {
-			if cfg.Device == target {
-				config = cfg
-				break
-			}
-		}
-		if config.Name == "" {
-			return make([]*devicechangetypes.PathValue, 0),
-				fmt.Errorf("no Configuration found for %s", target)
-		}
-	} else if configname != "" {
-		config = m.ConfigStore.Store[configname]
-		if config.Name == "" {
-			return make([]*devicechangetypes.PathValue, 0),
-				fmt.Errorf("no Configuration found for %s", configname)
-		}
-	}
-	configValues := config.ExtractFullConfig(nil, m.ChangeStore.Store, layer)
-	if len(configValues) == 0 {
-		return configValues, nil
-	}
-	filteredValues := make([]*devicechangetypes.PathValue, 0)
-	pathRegexp := utils.MatchWildcardRegexp(path)
-	for _, cv := range configValues {
-		if pathRegexp.MatchString(cv.Path) {
-			filteredValues = append(filteredValues, cv)
-		}
-	}
-	//TODO if filteredValue is empty return error
-	return filteredValues, nil
-}
 
 // GetTargetNewConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest (Atomix based)

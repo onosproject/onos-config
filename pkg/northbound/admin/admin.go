@@ -235,61 +235,10 @@ func (s Server) GetNetworkChanges(r *NetworkChangesRequest, stream ConfigAdminSe
 }
 
 // RollbackNetworkChange rolls back a named network changes.
+// deprecated to be removed
 func (s Server) RollbackNetworkChange(
 	ctx context.Context, req *RollbackRequest) (*RollbackResponse, error) {
-	var networkConfig *store.NetworkConfiguration
-	var ncIdx int
-
-	if req.Name == "" {
-		networkConfig =
-			&manager.GetManager().NetworkStore.Store[len(manager.GetManager().NetworkStore.Store)-1]
-	} else {
-		for idx, nc := range manager.GetManager().NetworkStore.Store {
-			if nc.Name == req.Name {
-				networkConfig = &nc
-				ncIdx = idx
-			}
-		}
-		if networkConfig == nil {
-			return nil, fmt.Errorf("Rollback aborted. Network change %s not found", req.Name)
-		}
-
-		// Look to see if any of the devices have been updated in later NCs
-		if len(manager.GetManager().NetworkStore.Store) > ncIdx+1 {
-			for _, nc := range manager.GetManager().NetworkStore.Store[ncIdx+1:] {
-				for k := range nc.ConfigurationChanges {
-					if len(networkConfig.ConfigurationChanges[k]) > 0 {
-						return nil, fmt.Errorf(
-							"network change %s cannot be rolled back because change %s "+
-								"subsequently modifies %s", req.Name, nc.Name, k)
-					}
-				}
-			}
-		}
-	}
-
-	configNames := make(map[string][]string)
-	// Check all are valid before we delete anything
-	for configName, changeID := range networkConfig.ConfigurationChanges {
-		configChangeIds := manager.GetManager().ConfigStore.Store[configName].Changes
-		if store.B64(configChangeIds[len(configChangeIds)-1]) != store.B64(changeID) {
-			return nil, fmt.Errorf(
-				"the last change on %s is not %s as expected. Was %s",
-				configName, store.B64(changeID), store.B64(configChangeIds[len(configChangeIds)-1]))
-		}
-		changeID, err := manager.GetManager().RollbackTargetConfig(configName)
-		rollbackIDs := configNames[string(configName)]
-		configNames[string(configName)] = append(rollbackIDs, store.B64(changeID))
-		if err != nil {
-			return nil, err
-		}
-	}
-	_ = manager.GetManager().NetworkStore.RemoveEntry(networkConfig.Name)
-
-	return &RollbackResponse{
-		Message: fmt.Sprintf("Rolled back change '%s' Updated configs %s",
-			networkConfig.Name, configNames),
-	}, nil
+	return nil, fmt.Errorf("(Deprecated) Please use RollbackNewNetworkChange ")
 }
 
 // RollbackNewNetworkChange rolls back a named new (atomix-based)network changes.
