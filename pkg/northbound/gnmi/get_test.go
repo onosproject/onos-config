@@ -72,6 +72,7 @@ func Test_getNoPathElems(t *testing.T) {
 		},
 	}).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	setUpListMock(mockStores)
 
 	noPath1 := gnmi.Path{Target: "Device1"}
 	noPath2 := gnmi.Path{Target: "Device2"}
@@ -236,6 +237,7 @@ func Test_pathDoesNotExist(t *testing.T) {
 	server, _, mockStores := setUp(t)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
+	setUpListMock(mockStores)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)
