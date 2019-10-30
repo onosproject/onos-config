@@ -23,7 +23,6 @@ import (
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
-	log "k8s.io/klog"
 	"sync"
 )
 
@@ -58,7 +57,6 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for event := range deviceCh {
-			log.Infof("Device: watching for %s", device.NewVersionedID(device.ID(event.Device.ID), device.Version(event.Device.Version)))
 			w.watchDevice(device.NewVersionedID(device.ID(event.Device.ID), device.Version(event.Device.Version)), ch)
 		}
 	}()
@@ -67,7 +65,6 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 
 // watchDevice watches changes for the given device
 func (w *Watcher) watchDevice(deviceID device.VersionedID, ch chan<- types.ID) {
-	log.Infof("Watching for %s", deviceID)
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -86,7 +83,6 @@ func (w *Watcher) watchDevice(deviceID device.VersionedID, ch chan<- types.ID) {
 	w.wg.Add(1)
 	go func() {
 		for event := range deviceCh {
-			log.Infof("Received device change event %v", event.Object)
 			ch <- types.ID(event.Object.(*devicechangetypes.DeviceChange).ID)
 		}
 		w.wg.Done()

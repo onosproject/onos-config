@@ -179,35 +179,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	for k, v := range targetRemoves {
 		targetRemovesCopy[k] = v
 	}
-	//updateResultsOld, networkChanges, err :=
-	//	s.executeSetConfig(targetUpdatesCopy, targetRemovesCopy, string(version), string(deviceType), netCfgChangeName)
-	//
-	//if err != nil {
-	//	log.Errorf(" OLD - Error while setting config %s", err.Error())
-	//	//return nil, status.Error(codes.Internal, err.Error())
-	//}
-
-	//if len(updateResultsOld) == 0 {
-	//	log.Warning("All target changes were duplicated - Set rejected")
-	//	//return nil, status.Error(codes.AlreadyExists, fmt.Errorf("set change rejected as it is a duplicate of the last change for all targets").Error())
-	//}
-
-	// Look for use of this name already
-	//Deprecated TODO remove
-	//for _, nwCfg := range mgr.NetworkStore.Store {
-	//	if nwCfg.Name == netCfgChangeName {
-	//		err := status.Error(codes.InvalidArgument, fmt.Errorf(
-	//			"name %s is already used for a Network Configuration", netCfgChangeName).Error())
-	//		log.Error(err)
-	//		//return nil, err
-	//	}
-	//}
-
-	//networkConfig, err := store.NewNetworkConfiguration(netCfgChangeName, "User1", networkChanges)
-	//if err != nil {
-	//	log.Errorf(" OLD - Error while setting config %s", err.Error())
-	//	//return nil, status.Error(codes.Internal, err.Error())
-	//}
 
 	//Creating and setting the config on the new atomix Store
 	errSet := mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
@@ -251,16 +222,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 		extensions = append(extensions, disconnectedExt)
 	}
-
-	//TODO remove, old way of set.
-	//Deprecated
-	//mgr.NetworkStore.Store =
-	//	append(mgr.NetworkStore.Store, *networkConfig)
-	//setResponseOld := &gnmi.SetResponse{
-	//	Response:  updateResultsOld,
-	//	Timestamp: time.Now().Unix(),
-	//	Extension: extensions,
-	//}
 
 	setResponse := &gnmi.SetResponse{
 		Response:  updateResultsAtomix,
@@ -556,12 +517,6 @@ func validateChange(target string, deviceType devicetype.Type, version devicetyp
 		return fmt.Errorf("no updates found in change on %s - invalid", target)
 	}
 
-	//err := manager.GetManager().ValidateNetworkConfig(target, version, deviceType, targetUpdates, targetRemoves)
-	//if err != nil {
-	//	log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
-	//		targetRemoves, target, err)
-	//	return err
-	//}
 	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(devicetype.ID(target), version, deviceType,
 		targetUpdates, targetRemoves)
 	if errNewValidation != nil {
