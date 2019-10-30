@@ -137,9 +137,10 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 			if err != nil {
 				resChan <- result{success: false, err: err}
 			} else {
-				go collector(version, stream, subscribe, resChan, mode)
+				go collector(mgr, version, stream, subscribe, resChan, mode)
 			}
 		} else {
+
 			subs := subscribe.Subscription
 			//FAST way to identify if target and subscription is present
 			subsStr := make([]*regexp.Regexp, 0)
@@ -157,8 +158,13 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 	}
 }
 
-func collector(version devicetype.Version, stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result, mode gnmi.SubscriptionList_Mode) {
+func collector(mgr *manager.Manager, version devicetype.Version, stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result, mode gnmi.SubscriptionList_Mode) {
 	for _, sub := range request.Subscription {
+		_, version, err := mgr.CheckCacheForDevice(devicetype.ID(sub.GetPath().GetTarget()), devicetype.Type(""), version)
+		if err != nil {
+			log.Error("Error while collecting data from device cache ", err)
+			resChan <- result{success: false, err: err}
+		}
 		//We get the stated of the device, for each path we build an update and send it out.
 		//Already based on the new atomix based store
 		update, err := getUpdate(version, request.Prefix, sub.Path)
@@ -237,6 +243,11 @@ func listenForDeviceUpdates(respChan <-chan events.DeviceResponse, changeInterna
 func listenForNewUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
 	targets map[string]struct{}, version devicetype.Version, subs []*regexp.Regexp, resChan chan result) {
 	for target := range targets {
+		_, version, err := mgr.CheckCacheForDevice(devicetype.ID(target), devicetype.Type(""), version)
+		if err != nil {
+			log.Errorf("unable to get version from cache %s", err)
+			return
+		}
 		go listenForNewDeviceUpdates(stream, mgr, devicetype.ID(target), version, subs, resChan)
 	}
 }
@@ -440,7 +451,7 @@ func extractSubscribeVersion(req *gnmi.SubscribeRequest) (devicetype.Version, er
 		if ext.GetRegisteredExt().GetId() == GnmiExtensionVersion {
 			version = devicetype.Version(ext.GetRegisteredExt().GetMsg())
 		} else {
-			return "", status.Error(codes.InvalidArgument, fmt.Errorf("unexpected extension %d = '%s' in Set()",
+			return "", status.Error(codes.InvalidArgument, fmt.Errorf("unexpected extension %d = '%s' in Subscribe()",
 				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
 		}
 	}

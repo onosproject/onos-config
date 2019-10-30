@@ -25,6 +25,7 @@ import (
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	log "k8s.io/klog"
 	"sync"
 )
 
@@ -109,6 +110,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 
 // watchDevice watches changes for the given device
 func (w *DeviceWatcher) watchDevice(deviceID device.VersionedID, ch chan<- types.ID) {
+	log.Infof("Network watching device %s", deviceID)
 	w.mu.Lock()
 	defer w.mu.Unlock()
 

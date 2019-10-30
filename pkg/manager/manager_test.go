@@ -719,7 +719,7 @@ func TestManager_ValidateStores(t *testing.T) {
 }
 
 func TestManager_CheckCacheForDevice(t *testing.T) {
-	mgrTest, _, _, _, mockDeviceCacheStore := setUp(t)
+	mgrTest, mockDeviceStore, _, _, mockDeviceCacheStore := setUp(t)
 
 	const (
 		deviceTest1 = "DeviceTest1"
@@ -753,6 +753,19 @@ func TestManager_CheckCacheForDevice(t *testing.T) {
 	mockDeviceCacheStore.EXPECT().GetDevicesByID(devicetype.ID(deviceTest1)).Return(deviceInfos[:2]).AnyTimes()
 	mockDeviceCacheStore.EXPECT().GetDevicesByID(devicetype.ID(deviceTest2)).Return(deviceInfos[2:]).AnyTimes()
 	mockDeviceCacheStore.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*devicestore.Info, 0)).AnyTimes()
+	mockDeviceStore.EXPECT().Get(devicetopo.ID(deviceTest1)).Return(&devicetopo.Device{
+		ID:      deviceTest1,
+		Address: "1.2.3.4",
+		Version: v1,
+		Type:    tdType,
+	}, nil).AnyTimes()
+	mockDeviceStore.EXPECT().Get(devicetopo.ID(deviceTest2)).Return(&devicetopo.Device{
+		ID:      deviceTest2,
+		Address: "1.2.3.4",
+		Version: v1,
+		Type:    dsType,
+	}, nil).AnyTimes()
+	mockDeviceStore.EXPECT().Get(devicetopo.ID(deviceTest3)).Return(nil, nil).AnyTimes()
 
 	/********************************************************************
 	 * deviceTest1 v1.0.0
