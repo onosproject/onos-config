@@ -21,14 +21,9 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-// DeviceID Target key; can be extended, for now is ip:port
-type DeviceID struct {
-	DeviceID string
-}
-
 // TargetIf defines the API for Target
 type TargetIf interface {
-	ConnectTarget(ctx context.Context, device devicetopo.Device) (DeviceID, error)
+	ConnectTarget(ctx context.Context, device devicetopo.Device) (devicetopo.ID, error)
 	//Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error)
 	CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error)
 	Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error)

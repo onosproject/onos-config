@@ -41,7 +41,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
 		if !dispatcher.HasListener(notifiedDevice.ID) && topoEvent.Type != devicetopo.ListResponse_REMOVED {
-			configChan, respChan, err := dispatcher.RegisterDevice(notifiedDevice.ID)
+			configChan, _, err := dispatcher.RegisterDevice(notifiedDevice.ID)
 			if err != nil {
 				log.Error(err)
 			}
@@ -98,7 +98,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 				delete(operationalStateCache, notifiedDevice.ID)
 			} else {
 				//spawning two go routines to propagate changes and to get operational state
-				go sync.syncConfigEventsToDevice(target, respChan)
+				//go sync.syncConfigEventsToDevice(target, respChan)
 				if sync.getStateMode == modelregistry.GetStateOpState {
 					go sync.syncOperationalStateByPartition(ctx, target, southboundErrorChan)
 				} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||

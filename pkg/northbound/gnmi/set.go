@@ -62,6 +62,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
+	deviceInfo = make(map[devicetopo.ID]manager.TypeVersionInfo)
+	log.Info("gNMI Set Request", req)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	//Update
@@ -146,9 +148,17 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	//TODO remove
 	//Deprecated
-	targetUpdatesCopy, targetRemovesCopy := oldMapCopies(targetUpdates, targetRemoves)
+	targetUpdatesCopy := make(mapTargetUpdates)
+	targetRemovesCopy := make(mapTargetRemoves)
+	for k,v := range targetUpdates{
+		targetUpdatesCopy[k] = v
+	}
+	for k,v := range targetRemoves{
+		targetRemovesCopy[k] = v
+	}
 	updateResultsOld, networkChanges, err :=
-		s.executeSetConfig(targetUpdatesCopy, targetRemovesCopy, string(version), string(deviceType), netCfgChangeName)
+		s.executeSetConfig(targetUpdatesCopy, targetRemovesCopy, string(version), string(deviceType), netcfgchangename)
+
 	if err != nil {
 		log.Errorf(" OLD - Error while setting config %s", err.Error())
 		//return nil, status.Error(codes.Internal, err.Error())
@@ -192,7 +202,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	log.Info("UNUSED - OLD - update result ", updateResultsOld)
-	log.Info("USED - NEW - atomix update results ", updateResultsAtomix)
+	log.Info("USED - NEW - atomix update results ", updateResults)
 
 	extensions := []*gnmi_ext.Extension{
 		{
@@ -427,14 +437,16 @@ func (s *Server) executeSetConfig(targetUpdates mapTargetUpdates,
 		} else if err == nil && cont {
 			continue
 		}
-		responseErr := listenForDeviceResponse(networkChanges, target, *configName)
-		//TODO Maybe do this with a callback mechanism --> when resposne on channel is done trigger callback
-		// that sends reply
-		if responseErr != nil {
-			errTMP := fmt.Errorf("can't complete set operation on target %s due to %s", target, responseErr)
-			log.Errorf(" OLD - Error while setting config %s", errTMP.Error())
-			//return nil, nil, errTMP
-		}
+
+		//responseErr := listenForDeviceResponse(networkChanges, target, *configName)
+		////TODO Maybe do this with a callback mechanism --> when resposne on channel is done trigger callback
+		//// that sends reply
+		//if responseErr != nil {
+		//	errTMP := fmt.Errorf("can't complete set operation on target %s due to %s", target, responseErr)
+		//	log.Errorf(" OLD - Error while setting config %s", errTMP.Error())
+		//	//return nil, nil, errTMP
+		//}
+
 		for k := range updates {
 			updateResult, err := buildUpdateResult(k, target, gnmi.UpdateResult_UPDATE)
 			if err != nil {

@@ -24,14 +24,12 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 	"regexp"
 	"strings"
@@ -47,7 +45,7 @@ type Synchronizer struct {
 	*devicetopo.Device
 	deviceConfigChan     <-chan events.ConfigEvent
 	operationalStateChan chan<- events.OperationalStateEvent
-	key                  southbound.DeviceID
+	key                  devicetopo.ID
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
 	operationalCache     devicechangetypes.TypedValueMap
@@ -103,39 +101,41 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	config, err := getNetworkConfig(sync, string(sync.Device.ID), "", 0)
 
 	//Device does not have any stored config at the moment, skip initial set
+	//TODO port to new stores and controller based architecture
 	if err != nil {
 		log.Info(sync.Device.Address, " has no initial configuration")
 	} else {
 		//Device has initial configuration saved in onos-config, trying to apply
-		initialConfig, err := change.NewChangeValuesNoRemoval(config, "Initial set to device")
+		log.Info(sync.Device.Address, " Device has initial configuration ", config)
+		//initialConfig, err := change.NewChangeValuesNoRemoval(config, "Initial set to device")
+		//
+		//if err != nil {
+		//	log.Errorf("Can't translate the initial config for %s due to: %s", sync.Device.Address, err)
+		//	return sync, nil
+		//}
 
-		if err != nil {
-			log.Errorf("Can't translate the initial config for %s due to: %s", sync.Device.Address, err)
-			return sync, nil
-		}
+		//gnmiChange, err := values.NativeChangeToGnmiChange(initialConfig)
 
-		gnmiChange, err := values.NativeChangeToGnmiChange(initialConfig)
+		//if err != nil {
+		//	log.Errorf("Can't obtain GnmiChange for %s due to: %s", sync.Device.Address, err)
+		//	return sync, nil
+		//}
 
-		if err != nil {
-			log.Errorf("Can't obtain GnmiChange for %s due to: %s", sync.Device.Address, err)
-			return sync, nil
-		}
+		//resp, err := target.Set(context, gnmiChange)
 
-		resp, err := target.Set(context, gnmiChange)
-
-		if err != nil {
-			errGnmi, _ := status.FromError(err)
-			//Hack because the desc field is not available.
-			//Splitting at the desc string and getting the second element which is the description.
-			log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address,
-				strings.Split(errGnmi.Message(), " desc = ")[1])
-			errChan <- events.NewErrorEvent(events.EventTypeErrorSetInitialConfig,
-				string(device.ID), initialConfig.ID, err)
-		} else {
-			log.Infof("Loaded initial config %s for device %s", store.B64(initialConfig.ID), sync.key.DeviceID)
-			errChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig,
-				sync.key.DeviceID, initialConfig.ID, resp.String())
-		}
+		//if err != nil {
+		//	errGnmi, _ := status.FromError(err)
+		//	//Hack because the desc field is not available.
+		//	//Splitting at the desc string and getting the second element which is the description.
+		//	log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address,
+		//		strings.Split(errGnmi.Message(), " desc = ")[1])
+		//	errChan <- events.NewErrorEvent(events.EventTypeErrorSetInitialConfig,
+		//		string(device.ID), initialConfig.ID, err)
+		//} else {
+		//	log.Infof("Loaded initial config %s for device %s", store.B64(initialConfig.ID), string(sync.key))
+		//	errChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig,
+		//		string(sync.key), initialConfig.ID, resp.String())
+		//}
 	}
 
 	return sync, nil
@@ -151,7 +151,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(target southbound.TargetIf, r
 		if err != nil {
 			log.Warning("Event discarded because change is invalid: ", err)
 			respChan <- events.NewErrorEvent(events.EventTypeErrorParseConfig,
-				sync.key.DeviceID, c.ID, err)
+				string(sync.key), c.ID, err)
 			continue
 		}
 		gnmiChange, parseError := values.NativeChangeToGnmiChange(c)
@@ -159,7 +159,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(target southbound.TargetIf, r
 		if parseError != nil {
 			log.Error("Parsing error for gNMI change: ", parseError)
 			respChan <- events.NewErrorEvent(events.EventTypeErrorParseConfig,
-				sync.key.DeviceID, c.ID, err)
+				string(sync.key), c.ID, err)
 			continue
 		}
 
@@ -168,12 +168,12 @@ func (sync *Synchronizer) syncConfigEventsToDevice(target southbound.TargetIf, r
 		if err != nil {
 			log.Error("Error while doing set: ", err)
 			respChan <- events.NewErrorEvent(events.EventTypeErrorSetConfig,
-				sync.key.DeviceID, c.ID, err)
+				string(sync.key), c.ID, err)
 			continue
 		}
 		log.Info(sync.Device.Address, " SetResponse ", setResponse)
 		respChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig,
-			sync.key.DeviceID, c.ID, setResponse.String())
+			string(sync.key), c.ID, setResponse.String())
 
 	}
 }
@@ -182,7 +182,7 @@ func (sync *Synchronizer) syncConfigEventsToDevice(target southbound.TargetIf, r
 func (sync Synchronizer) syncOperationalStateByPartition(ctx context.Context, target southbound.TargetIf,
 	errChan chan<- events.DeviceResponse) {
 
-	log.Infof("Syncing Op & State of %s started. Mode %v", sync.key.DeviceID, sync.getStateMode)
+	log.Infof("Syncing Op & State of %s started. Mode %v", string(sync.key), sync.getStateMode)
 	notifications := make([]*gnmi.Notification, 0)
 	stateNotif, errState := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_STATE)
 	if errState != nil {
@@ -211,21 +211,21 @@ func (sync Synchronizer) syncOperationalStateByPartition(ctx context.Context, ta
 func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target southbound.TargetIf,
 	errChan chan<- events.DeviceResponse) {
 
-	log.Infof("Syncing Op & State of %s started. Mode %v", sync.key.DeviceID, sync.getStateMode)
+	log.Infof("Syncing Op & State of %s started. Mode %v", string(sync.key), sync.getStateMode)
 	if sync.modelReadOnlyPaths == nil {
 		errMp := fmt.Errorf("no model plugin, cant work in operational state cache")
 		log.Error(errMp)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorMissingModelPlugin,
-			sync.key.DeviceID, errMp)
+			string(sync.key), errMp)
 		return
 	} else if len(sync.modelReadOnlyPaths) == 0 {
 		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorSubscribe,
-			sync.key.DeviceID, noPathErr)
+			string(sync.key), noPathErr)
 		log.Warning(noPathErr)
 		return
 	}
-	log.Infof("Getting state by %d ReadOnly paths for %s", len(sync.modelReadOnlyPaths), sync.key.DeviceID)
+	log.Infof("Getting state by %d ReadOnly paths for %s", len(sync.modelReadOnlyPaths), string(sync.key))
 	getPaths := make([]*gnmi.Path, 0)
 	for _, path := range sync.modelReadOnlyPaths.JustPaths() {
 		if sync.getStateMode == modelregistry.GetStateExplicitRoPathsExpandWildcards &&
@@ -237,7 +237,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 		if err != nil {
 			log.Warning("Error converting RO path to gNMI")
 			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
-				sync.key.DeviceID, err)
+				string(sync.key), err)
 			return
 		}
 		getPaths = append(getPaths, gnmiPath)
@@ -274,7 +274,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 			if errRoPaths != nil {
 				log.Warning("Error on request for expanded wildcard read-only paths", sync.key, errRoPaths)
 				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
-					sync.key.DeviceID, errRoPaths)
+					string(sync.key), errRoPaths)
 				return
 			}
 			for _, n := range responseEwRoPaths.Notification {
@@ -283,20 +283,20 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 						configValues, err := sync.getValuesFromJSON(u)
 						if err != nil {
 							errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
-								sync.key.DeviceID, err)
+								string(sync.key), err)
 							continue
 						}
 						for _, cv := range configValues {
 							matched, err := pathMatchesWildcard(ewStringPaths, cv.Path)
 							if err != nil {
 								errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
-									sync.key.DeviceID, err)
+									string(sync.key), err)
 								continue
 							}
 							p, err := utils.ParseGNMIElements(utils.SplitPath(matched))
 							if err != nil {
 								errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
-									sync.key.DeviceID, err)
+									string(sync.key), err)
 								continue
 							}
 							getPaths = append(getPaths, p)
@@ -305,13 +305,13 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 						matched, err := pathMatchesWildcard(ewStringPaths, utils.StrPath(u.Path))
 						if err != nil {
 							errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
-								sync.key.DeviceID, err)
+								string(sync.key), err)
 							continue
 						}
 						matchedAsPath, err := utils.ParseGNMIElements(utils.SplitPath(matched))
 						if err != nil {
 							errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
-								sync.key.DeviceID, err)
+								string(sync.key), err)
 							continue
 						}
 						getPaths = append(getPaths, matchedAsPath)
@@ -330,7 +330,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 	if errRoPaths != nil {
 		log.Warning("Error on request for read-only paths", sync.key, errRoPaths)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
-			sync.key.DeviceID, errRoPaths)
+			string(sync.key), errRoPaths)
 		return
 	}
 	sync.opCacheUpdate(responseRoPaths.Notification, errChan)
@@ -375,14 +375,14 @@ func pathMatchesWildcard(wildcards map[string]interface{}, path string) (string,
 func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 	errChan chan<- events.DeviceResponse) {
 
-	log.Infof("Handling %d received OpState paths. %s", len(notifications), sync.key.DeviceID)
+	log.Infof("Handling %d received OpState paths. %s", len(notifications), string(sync.key))
 	for _, notification := range notifications {
 		for _, update := range notification.Update {
 			if sync.encoding == gnmi.Encoding_JSON || sync.encoding == gnmi.Encoding_JSON_IETF {
 				configValues, err := sync.getValuesFromJSON(update)
 				if err != nil {
 					errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
-						sync.key.DeviceID, err)
+						string(sync.key), err)
 					continue
 				}
 				for _, cv := range configValues {
@@ -441,11 +441,11 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 		Origin:            "",
 	}
 
-	log.Infof("Subscribing to %d paths. %s", len(subscribePaths), sync.key.DeviceID)
+	log.Infof("Subscribing to %d paths. %s", len(subscribePaths), string(sync.key))
 	req, err := southbound.NewSubscribeRequest(options)
 	if err != nil {
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorParseConfig,
-			sync.key.DeviceID, err)
+			string(sync.key), err)
 		return
 	}
 
@@ -453,17 +453,17 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 	if subErr != nil {
 		log.Warning("Error in subscribe", subErr)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorSubscribe,
-			sync.key.DeviceID, subErr)
+			string(sync.key), subErr)
 		return
 	}
-	log.Info("Subscribe for OpState notifications on ", sync.key.DeviceID, " started")
+	log.Info("Subscribe for OpState notifications on ", string(sync.key), " started")
 }
 
 func (sync *Synchronizer) getOpStatePathsByType(ctx context.Context,
 	target southbound.TargetIf,
 	reqtype gnmi.GetRequest_DataType) ([]*gnmi.Notification, error) {
 
-	log.Infof("Getting %s partition for %s", reqtype, sync.key.DeviceID)
+	log.Infof("Getting %s partition for %s", reqtype, string(sync.key))
 	requestState := &gnmi.GetRequest{
 		Type:     reqtype,
 		Encoding: sync.encoding,
