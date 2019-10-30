@@ -43,7 +43,6 @@ type Synchronizer struct {
 	*store.ChangeStore
 	*store.ConfigurationStore
 	*devicetopo.Device
-	deviceConfigChan     <-chan events.ConfigEvent
 	operationalStateChan chan<- events.OperationalStateEvent
 	key                  devicetopo.ID
 	query                client.Query
@@ -55,7 +54,7 @@ type Synchronizer struct {
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
-	device *devicetopo.Device, deviceCfgChan <-chan events.ConfigEvent, opStateChan chan<- events.OperationalStateEvent,
+	device *devicetopo.Device, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache devicechangetypes.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode) (*Synchronizer, error) {
 	sync := &Synchronizer{
@@ -63,7 +62,6 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 		ChangeStore:          changeStore,
 		ConfigurationStore:   configStore,
 		Device:               device,
-		deviceConfigChan:     deviceCfgChan,
 		operationalStateChan: opStateChan,
 		operationalCache:     opStateCache,
 		modelReadOnlyPaths:   mReadOnlyPaths,
@@ -98,84 +96,7 @@ func New(context context.Context, changeStore *store.ChangeStore, configStore *s
 	}
 	log.Info(sync.Device.Address, " Encoding:", sync.encoding, " Capabilities ", capResponse)
 
-	config, err := getNetworkConfig(sync, string(sync.Device.ID), "", 0)
-
-	//Device does not have any stored config at the moment, skip initial set
-	//TODO port to new stores and controller based architecture
-	if err != nil {
-		log.Info(sync.Device.Address, " has no initial configuration")
-	} else {
-		//Device has initial configuration saved in onos-config, trying to apply
-		log.Info(sync.Device.Address, " Device has initial configuration ", config)
-		//initialConfig, err := change.NewChangeValuesNoRemoval(config, "Initial set to device")
-		//
-		//if err != nil {
-		//	log.Errorf("Can't translate the initial config for %s due to: %s", sync.Device.Address, err)
-		//	return sync, nil
-		//}
-
-		//gnmiChange, err := values.NativeChangeToGnmiChange(initialConfig)
-
-		//if err != nil {
-		//	log.Errorf("Can't obtain GnmiChange for %s due to: %s", sync.Device.Address, err)
-		//	return sync, nil
-		//}
-
-		//resp, err := target.Set(context, gnmiChange)
-
-		//if err != nil {
-		//	errGnmi, _ := status.FromError(err)
-		//	//Hack because the desc field is not available.
-		//	//Splitting at the desc string and getting the second element which is the description.
-		//	log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address,
-		//		strings.Split(errGnmi.Message(), " desc = ")[1])
-		//	errChan <- events.NewErrorEvent(events.EventTypeErrorSetInitialConfig,
-		//		string(device.ID), initialConfig.ID, err)
-		//} else {
-		//	log.Infof("Loaded initial config %s for device %s", store.B64(initialConfig.ID), string(sync.key))
-		//	errChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig,
-		//		string(sync.key), initialConfig.ID, resp.String())
-		//}
-	}
-
 	return sync, nil
-}
-
-// syncConfigEventsToDevice is a go routine that listens out for configuration events specific
-// to a device and propagates them downwards through southbound interface
-func (sync *Synchronizer) syncConfigEventsToDevice(target southbound.TargetIf, respChan chan<- events.DeviceResponse) {
-
-	for deviceConfigEvent := range sync.deviceConfigChan {
-		c := sync.ChangeStore.Store[deviceConfigEvent.ChangeID()]
-		err := c.IsValid()
-		if err != nil {
-			log.Warning("Event discarded because change is invalid: ", err)
-			respChan <- events.NewErrorEvent(events.EventTypeErrorParseConfig,
-				string(sync.key), c.ID, err)
-			continue
-		}
-		gnmiChange, parseError := values.NativeChangeToGnmiChange(c)
-
-		if parseError != nil {
-			log.Error("Parsing error for gNMI change: ", parseError)
-			respChan <- events.NewErrorEvent(events.EventTypeErrorParseConfig,
-				string(sync.key), c.ID, err)
-			continue
-		}
-
-		log.Info("Change formatted to gNMI setRequest ", gnmiChange)
-		setResponse, err := target.Set(sync.Context, gnmiChange)
-		if err != nil {
-			log.Error("Error while doing set: ", err)
-			respChan <- events.NewErrorEvent(events.EventTypeErrorSetConfig,
-				string(sync.key), c.ID, err)
-			continue
-		}
-		log.Info(sync.Device.Address, " SetResponse ", setResponse)
-		respChan <- events.NewResponseEvent(events.EventTypeAchievedSetConfig,
-			string(sync.key), c.ID, setResponse.String())
-
-	}
 }
 
 // For use when device model has modelregistry.GetStateOpState
@@ -528,34 +449,4 @@ func (sync *Synchronizer) opStateSubHandler(msg proto.Message) error {
 
 	}
 	return nil
-}
-
-func getNetworkConfig(sync *Synchronizer, target string, configname string, layer int) ([]*devicechangetypes.PathValue, error) {
-	log.Info("Getting saved config for ", target)
-	//TODO the key of the config store should be a tuple of (devicename, configname) use the param
-	var config store.Configuration
-	if target != "" {
-		for _, cfg := range sync.ConfigurationStore.Store {
-			if cfg.Device == target {
-				config = cfg
-				break
-			}
-		}
-		if config.Name == "" {
-			return make([]*devicechangetypes.PathValue, 0),
-				fmt.Errorf("No Configuration found for %s", target)
-		}
-	} else if configname != "" {
-		config = sync.ConfigurationStore.Store[store.ConfigName(configname)]
-		if config.Name == "" {
-			return make([]*devicechangetypes.PathValue, 0),
-				fmt.Errorf("No Configuration found for %s", configname)
-		}
-	}
-	configValues := config.ExtractFullConfig(nil, sync.ChangeStore.Store, layer)
-	if len(configValues) != 0 {
-		return configValues, nil
-	}
-
-	return nil, fmt.Errorf("No Configuration for Device %s", target)
 }

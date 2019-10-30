@@ -18,7 +18,6 @@ package values
 
 import (
 	"encoding/json"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
@@ -30,46 +29,6 @@ const (
 	Test1Cont1AList2ATxout2 = "/cont1a/list2a[name=txout2]"
 	ValueLeaf2CDef          = "def"
 )
-
-// Test_NativeChangeToGnmiChange tests conversion from an ONOS change to a GNMI change
-func Test_NativeChangeToGnmiChange(t *testing.T) {
-	// Some test data. One update, one remove
-	testValues := []*devicechangetypes.ChangeValue{
-		{
-			Path:    "/path1/path2/path3",
-			Value:   devicechangetypes.NewTypedValueString("value"),
-			Removed: false,
-		},
-		{
-			Path:    "/rpath1/rpath2/rpath3",
-			Removed: true,
-		},
-	}
-	testChange, err := change.NewChange(testValues, "Test Change")
-	assert.NilError(t, err)
-
-	//  Do the conversion
-	request, err := NativeChangeToGnmiChange(testChange)
-	assert.NilError(t, err)
-	assert.Assert(t, request != nil)
-
-	// Check that the Update portion of the GNMI request is correct
-	assert.Equal(t, len(request.Update), 1, "Update array size is incorrect")
-	assert.Equal(t, len(request.Update[0].Path.Elem), 3, "Path array size is incorrect")
-	assert.Equal(t, request.Update[0].Path.Elem[0].Name, "path1", "Path[0] is incorrect")
-	assert.Equal(t, request.Update[0].Path.Elem[1].Name, "path2", "Path[1] is incorrect")
-	assert.Equal(t, request.Update[0].Path.Elem[2].Name, "path3", "Path[2] is incorrect")
-	requestValueString, ok := request.Update[0].Val.Value.(*gnmi.TypedValue_StringVal)
-	assert.Equal(t, ok, true, "request value has wrong type")
-	assert.Equal(t, requestValueString.StringVal, "value", "Value is incorrect")
-
-	// Check that the Delete portion of the request is correct
-	assert.Equal(t, len(request.Delete), 1, "Delete array size is incorrect")
-	assert.Equal(t, len(request.Delete[0].Elem), 3, "Path array size is incorrect")
-	assert.Equal(t, request.Delete[0].Elem[0].Name, "rpath1", "Delete Path[0] is incorrect")
-	assert.Equal(t, request.Delete[0].Elem[1].Name, "rpath2", "Delete Path[1] is incorrect")
-	assert.Equal(t, request.Delete[0].Elem[2].Name, "rpath3", "Delete Path[2] is incorrect")
-}
 
 // Test_NativeChangeToGnmiChange tests conversion from an ONOS change to a GNMI change
 func Test_NativeNewChangeToGnmiChange(t *testing.T) {

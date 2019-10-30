@@ -43,7 +43,6 @@ import (
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 	"strings"
-	"time"
 )
 
 var mgr Manager
@@ -296,7 +295,6 @@ func (m *Manager) Run() {
 	}
 
 	// Start the main dispatcher system
-	go m.Dispatcher.Listen(m.ChangesChannel)
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
 	// Listening for errors in the Southbound
 	go listenOnResponseChannel(m.SouthboundErrorChan, m)
@@ -346,30 +344,6 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 	}
 }
 
-// Deprecated: computeChange works on legacy, non-atomix stores
-func (m *Manager) computeChange(updates devicechangetypes.TypedValueMap,
-	deletes []string, description string) (*change.Change, error) {
-	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
-	//updates
-	for path, value := range updates {
-		changeValue, err := devicechangetypes.NewChangeValue(path, value, false)
-		if err != nil {
-			log.Warningf("Error creating value for %s %v", path, err)
-			continue
-		}
-		newChanges = append(newChanges, changeValue)
-	}
-	//deletes
-	for _, path := range deletes {
-		changeValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
-		newChanges = append(newChanges, changeValue)
-	}
-	if description == "" {
-		description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
-	}
-	return change.NewChange(newChanges, description)
-}
-
 // ComputeNewDeviceChange computes a given device change the given updates and deletes, according to the path
 // on the configuration for the specified target
 func (m *Manager) ComputeNewDeviceChange(deviceName devicetype.ID, version devicetype.Version,
@@ -404,16 +378,6 @@ func (m *Manager) ComputeNewDeviceChange(deviceName devicetype.ID, version devic
 	}
 
 	return changeElement, nil
-}
-
-func (m *Manager) storeChange(configChange *change.Change) (change.ID, error) {
-	if m.ChangeStore.Store[store.B64(configChange.ID)] != nil {
-		log.Info("Change ID = ", store.B64(configChange.ID), " already exists - not overwriting")
-	} else {
-		m.ChangeStore.Store[store.B64(configChange.ID)] = configChange
-		log.Info("Added change ", store.B64(configChange.ID), " to ChangeStore (in memory)")
-	}
-	return configChange.ID, nil
 }
 
 // CheckCacheForDevice checks against the device cache (of the device change store

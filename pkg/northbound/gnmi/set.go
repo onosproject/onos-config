@@ -169,17 +169,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, status.Error(codes.InvalidArgument, errRo.Error())
 	}
 
-	//TODO remove
-	//Deprecated
-	targetUpdatesCopy := make(mapTargetUpdates)
-	targetRemovesCopy := make(mapTargetRemoves)
-	for k, v := range targetUpdates {
-		targetUpdatesCopy[k] = v
-	}
-	for k, v := range targetRemoves {
-		targetRemovesCopy[k] = v
-	}
-
 	//Creating and setting the config on the new atomix Store
 	errSet := mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
 
@@ -195,9 +184,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		log.Errorf("Error while building atomix based response %s", errListen.Error())
 		return nil, status.Error(codes.Internal, errListen.Error())
 	}
-
-	//log.Info("UNUSED - OLD - update result ", updateResultsOld)
-	log.Info("USED - NEW - atomix update results ", updateResultsAtomix)
 
 	extensions := []*gnmi_ext.Extension{
 		{
@@ -228,9 +214,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		Timestamp: time.Now().Unix(),
 		Extension: extensions,
 	}
-
-	//log.Info("UNUSED - OLD -  set response ", setResponseOld)
-	log.Info("USED - NEW - atomix update response ", setResponse)
 
 	return setResponse, nil
 }

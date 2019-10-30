@@ -21,13 +21,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
-	"time"
 )
 
 // Factory is a go routine thread that listens out for Device creation
@@ -40,31 +38,11 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
-		if !dispatcher.HasListener(notifiedDevice.ID) && topoEvent.Type != devicetopo.ListResponse_REMOVED {
-			configChan, _, err := dispatcher.RegisterDevice(notifiedDevice.ID)
-			if err != nil {
-				log.Error(err)
-			}
+		//TODO evaluate the need for fine-grained checking
+		if topoEvent.Type != devicetopo.ListResponse_REMOVED {
 			ctx := context.Background()
-			configName := store.ConfigName(utils.ToConfigName(devicetype.ID(notifiedDevice.ID), devicetype.Version(notifiedDevice.Version)))
-			cfg, ok := configStore.Store[configName]
-			if !ok {
-				if notifiedDevice.Type == "" {
-					log.Warningf("No device type specified for device %s", configName)
-				}
-				cfg = store.Configuration{
-					Name:    configName,
-					Device:  string(notifiedDevice.ID),
-					Version: notifiedDevice.Version,
-					Type:    string(notifiedDevice.Type),
-					Created: time.Now(),
-					Updated: time.Now(),
-					Changes: []change.ID{},
-				}
-				configStore.Store[configName] = cfg
-			}
 
-			modelName := utils.ToModelName(devicetype.Type(cfg.Type), devicetype.Version(notifiedDevice.Version))
+			modelName := utils.ToModelName(devicetype.Type(notifiedDevice.Type), devicetype.Version(notifiedDevice.Version))
 			mReadOnlyPaths, ok := modelRegistry.ModelReadOnlyPaths[modelName]
 			if !ok {
 				log.Warningf("Cannot check for read only paths for target %s with %s because "+
@@ -81,18 +59,13 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			operationalStateCache[notifiedDevice.ID] = make(devicechangetypes.TypedValueMap)
 			target := southbound.NewTarget()
 			//TODO configuration needs to be blocked at this point in time to allow for device connection.
-			sync, err := New(ctx, changeStore, configStore, notifiedDevice, configChan, opStateChan,
+			sync, err := New(ctx, changeStore, configStore, notifiedDevice, opStateChan,
 				southboundErrorChan, operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode)
 			if err != nil {
 				log.Errorf("Error connecting to device %v: %v", notifiedDevice, err)
 				southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
 					string(notifiedDevice.ID), err)
 				//unregistering the listener for changes to the device
-				unregErr := dispatcher.UnregisterDevice(notifiedDevice.ID)
-				if unregErr != nil {
-					southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
-						string(notifiedDevice.ID), unregErr)
-				}
 				//unregistering the listener for changes to the device
 				dispatcher.UnregisterOperationalState(string(notifiedDevice.ID))
 				delete(operationalStateCache, notifiedDevice.ID)
@@ -106,15 +79,6 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 					go sync.syncOperationalStateByPaths(ctx, target, southboundErrorChan)
 				}
 				southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(notifiedDevice.ID))
-			}
-		} else if dispatcher.HasListener(notifiedDevice.ID) && topoEvent.Type == devicetopo.ListResponse_REMOVED {
-
-			err := dispatcher.UnregisterDevice(notifiedDevice.ID)
-			if err != nil {
-				log.Error(err)
-				//TODO evaluate if fall through without upstreaming
-				//southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceDisconnect,
-				//	string(deviceName), err)
 			}
 		}
 	}

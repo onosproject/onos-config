@@ -166,7 +166,7 @@ func TestNew(t *testing.T) {
 		}
 	}()
 
-	s, err := New(context2.Background(), changeStore, configStore, &mockDevice1, configChan,
+	s, err := New(context2.Background(), changeStore, configStore, &mockDevice1,
 		opstateChan, responseChan, opstateCache, roPathMap, mockTarget,
 		modelregistry.GetStateExplicitRoPaths)
 	assert.NilError(t, err, "Creating s")
@@ -177,7 +177,7 @@ func TestNew(t *testing.T) {
 	time.Sleep(100 * time.Millisecond) // Wait for response message
 
 	// called asynchronously as it hangs until it gets a config event
-	go s.syncConfigEventsToDevice(mockTarget, responseChan)
+	//go s.syncConfigEventsToDevice(mockTarget, responseChan)
 
 	// Listen for OpState updates
 	go func() {
@@ -436,7 +436,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 		}
 	}()
 
-	s, err := New(context2.Background(), changeStore, configStore, device1, configChan,
+	s, err := New(context2.Background(), changeStore, configStore, device1,
 		opstateChan, responseChan, opstateCache, roPathMap, mockTarget, modelregistry.GetStateOpState)
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
@@ -446,7 +446,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	time.Sleep(100 * time.Millisecond) // Wait for response message
 
 	// called asynchronously as it hangs until it gets a config event
-	go s.syncConfigEventsToDevice(mockTarget, responseChan)
+	//go s.syncConfigEventsToDevice(mockTarget, responseChan)
 
 	//Create a change that we can send down to device
 	value1, err := devicechangetypes.NewChangeValue(cont1aCont2aLeaf2a, devicechangetypes.NewTypedValueUint64(12), false)
@@ -542,7 +542,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 
 func TestNewWithExistingConfigError(t *testing.T) {
 	changeStore, configStore, _, opstateChan, responseChan, _,
-		_, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
+		_, roPathMap, opstateCache, _, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
@@ -568,7 +568,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 		}
 	}()
 
-	s, err := New(context2.Background(), changeStore, configStore, device1, configChan,
+	s, err := New(context2.Background(), changeStore, configStore, device1,
 		opstateChan, responseChan, opstateCache, roPathMap, mockTarget, modelregistry.GetStateOpState)
 
 	assert.NilError(t, err, "Creating synchronizer")
@@ -658,7 +658,6 @@ func Test_LikeStratum(t *testing.T) {
 
 	opstateChan := make(chan events.OperationalStateEvent)
 	responseChan := make(chan events.DeviceResponse)
-	configChan := make(chan events.ConfigEvent)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -705,7 +704,7 @@ func Test_LikeStratum(t *testing.T) {
 		}
 	}()
 
-	s, err := New(context2.Background(), &changeStore, &configStore, &mockDevice1, configChan,
+	s, err := New(context2.Background(), &changeStore, &configStore, &mockDevice1,
 		opstateChan, responseChan, opStateCache, roPathMap, mockTarget,
 		modelregistry.GetStateExplicitRoPathsExpandWildcards)
 	assert.NilError(t, err, "Creating s")
@@ -716,7 +715,7 @@ func Test_LikeStratum(t *testing.T) {
 	time.Sleep(100 * time.Millisecond) // Wait for response message
 
 	// called asynchronously as it hangs until it gets a config event
-	go s.syncConfigEventsToDevice(mockTarget, responseChan)
+	//go s.syncConfigEventsToDevice(mockTarget, responseChan)
 
 	// Listen for OpState updates
 	go func() {

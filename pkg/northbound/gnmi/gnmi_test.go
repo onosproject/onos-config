@@ -184,7 +184,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 
 	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)
-	go mgr.Dispatcher.Listen(mgr.ChangesChannel)
+	//go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	mockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(device device.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
