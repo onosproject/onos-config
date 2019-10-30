@@ -525,7 +525,7 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil).Times(3)
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil).AnyTimes()
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 	subscribeSetUp(mockStores.DeviceChangesStore)
 
