@@ -101,6 +101,7 @@ func setUpWatchMock(mockStores *MockStores) {
 	}
 
 	config1Value01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf4a", devicechangetypes.NewTypedValueUint64(14), false)
+	config1Value02, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueEmpty(), true)
 
 	deviceChange := devicechangetypes.DeviceChange{
 		ID:       "",
@@ -122,7 +123,7 @@ func setUpWatchMock(mockStores *MockStores) {
 			DeviceID:      "",
 			DeviceVersion: "",
 			Values: []*devicechangetypes.ChangeValue{
-				config1Value01,
+				config1Value01, config1Value02,
 			},
 		},
 	}
