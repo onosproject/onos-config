@@ -176,7 +176,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(3)
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 
 	var wg sync.WaitGroup
@@ -370,8 +370,6 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 }
 
 func Test_Poll(t *testing.T) {
-	t.Skip("TODO - implement mock Atomix stores for data for this test")
-
 	server, mgr, mockStores := setUp(t)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
@@ -381,6 +379,7 @@ func Test_Poll(t *testing.T) {
 		},
 	}).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	subscribeSetUp(mockStores.DeviceChangesStore)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -449,8 +448,9 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
+	subscribeSetUp(mockStores.DeviceChangesStore)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -527,8 +527,9 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil).Times(2)
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil).Times(3)
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
+	subscribeSetUp(mockStores.DeviceChangesStore)
 
 	//configChan, respChan, err := mgr.Dispatcher.RegisterDevice(target)
 
