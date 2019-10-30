@@ -7,7 +7,6 @@ package synchronizer
 import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
-	southbound "github.com/onosproject/onos-config/pkg/southbound"
 	device "github.com/onosproject/onos-topo/pkg/northbound/device"
 	client "github.com/openconfig/gnmi/client"
 	gnmi "github.com/openconfig/gnmi/proto/gnmi"
@@ -53,10 +52,10 @@ func (mr *MockTargetIfMockRecorder) CapabilitiesWithString(arg0, arg1 interface{
 }
 
 // ConnectTarget mocks base method
-func (m *MockTargetIf) ConnectTarget(arg0 context.Context, arg1 device.Device) (southbound.DeviceID, error) {
+func (m *MockTargetIf) ConnectTarget(arg0 context.Context, arg1 device.Device) (device.ID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConnectTarget", arg0, arg1)
-	ret0, _ := ret[0].(southbound.DeviceID)
+	ret0, _ := ret[0].(device.ID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -21,7 +21,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -147,7 +146,7 @@ func TestNew(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice1,
-	).Return(southbound.DeviceID{DeviceID: mock1NameStr}, nil)
+	).Return(devicetopo.ID(mock1NameStr), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -342,7 +341,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(southbound.DeviceID{DeviceID: string(device1.ID)}, nil)
+	).Return(devicetopo.ID(device1.ID), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -551,7 +550,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(southbound.DeviceID{DeviceID: string(device1.ID)}, nil)
+	).Return(devicetopo.ID(device1.ID), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -688,7 +687,7 @@ func Test_LikeStratum(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice1,
-	).Return(southbound.DeviceID{DeviceID: mock1NameStr}, nil)
+	).Return(devicetopo.ID(mock1NameStr), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),

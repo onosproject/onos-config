@@ -138,13 +138,13 @@ func tearDown() {
 	GnmiBaseClientFactory = saveGnmiBaseClientFactory
 }
 
-func getDevice1Target(t *testing.T) (Target, DeviceID, context.Context) {
+func getDevice1Target(t *testing.T) (Target, devicetopo.ID, context.Context) {
 	target := Target{}
 	ctx := context.Background()
 	key, err := target.ConnectTarget(ctx, device)
 	assert.NilError(t, err)
 	assert.Assert(t, target.Clt != nil)
-	assert.Equal(t, key.DeviceID, "localhost:10161")
+	assert.Equal(t, string(key), "localhost-1")
 	assert.Assert(t, target.Ctx != nil)
 	return target, key, ctx
 }
@@ -164,7 +164,7 @@ func Test_ConnectTarget(t *testing.T) {
 func Test_BadTarget(t *testing.T) {
 	setUp(t)
 
-	key := DeviceID{DeviceID: "no such target"}
+	key := devicetopo.ID("no such target")
 	_, fetchError := GetTarget(key)
 	assert.ErrorContains(t, fetchError, "does not exist")
 	tearDown()
