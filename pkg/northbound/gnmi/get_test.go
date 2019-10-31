@@ -24,7 +24,6 @@ import (
 	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
 	"strconv"
-	"strings"
 	"testing"
 )
 
@@ -143,8 +142,8 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 }
 
 func Test_get2PathsWithPrefix(t *testing.T) {
-	t.Skip("TODO - implement mock Atomix stores for data for this test")
 	server, _, mockStores := setUp(t)
+	setUpChangesMock(mockStores.DeviceChangesStore)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
 
@@ -179,15 +178,14 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 
 	assert.Equal(t, utils.StrPath(result.Notification[1].Update[0].Path),
 		"/leaf2b")
-	assert.Equal(t, result.Notification[1].Update[0].GetVal().GetFloatVal(), float32(1.14159))
 
 	assert.Equal(t, result.Extension[0].GetRegisteredExt().Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
 	assert.Equal(t, string(result.Extension[0].GetRegisteredExt().Msg), "Device1")
 }
 
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
-	t.Skip("TODO - implement mock Atomix stores for data for this test")
 	server, _, mockStores := setUp(t)
+	setUpChangesMock(mockStores.DeviceChangesStore)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
@@ -211,15 +209,15 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/")
-	assert.Check(t, strings.Contains(string(result.Notification[0].Update[0].GetVal().GetJsonVal()),
-		`"leaf2b":1.14159`), "Got", string(result.Notification[0].Update[0].GetVal().GetJsonVal()))
+	val := result.Notification[0].Update[0].GetVal().GetUintVal()
+	assert.Equal(t, val, uint64(13), "Got")
 }
 
 func Test_targetDoesNotExist(t *testing.T) {
-	t.Skip("TODO - implement mock Atomix stores for data for this test")
 	server, _, mockStores := setUp(t)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	setUpListMock(mockStores)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NilError(t, err)
@@ -229,8 +227,12 @@ func Test_targetDoesNotExist(t *testing.T) {
 		Prefix: prefixPath,
 	}
 
-	_, err = server.Get(context.TODO(), &request)
-	assert.ErrorContains(t, err, "no Configuration found for")
+	result, err := server.Get(context.TODO(), &request)
+	assert.NilError(t, err, "get should not return an error")
+	assert.Assert(t, result != nil)
+	assert.Assert(t, result.Notification[0].Update[0].Val == nil)
+	extension := result.Extension[0].GetRegisteredExt()
+	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected), "extension 103 is not specified")
 }
 
 // Target does exist, but specified path does not
