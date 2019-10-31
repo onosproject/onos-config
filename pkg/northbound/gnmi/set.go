@@ -258,22 +258,20 @@ func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
 			return nil, fmt.Errorf("invalid JSON payload %s", string(jsonVal))
 		}
 
-		configs := manager.GetManager().ConfigStore.Store
-
 		var rwPaths modelregistry.ReadWritePathMap
+		infos := manager.GetManager().DeviceCache.GetDevicesByID(devicetype.ID(target))
 		// Iterate through configs to find match for target
-		for _, config := range configs {
-			if config.Device == target {
-				rwPaths, ok = manager.GetManager().ModelRegistry.
-					ModelReadWritePaths[utils.ToModelName(devicetype.Type(config.Type), devicetype.Version(config.Version))]
-				if !ok {
-					return nil, fmt.Errorf("Cannot process JSON payload  on %s %s because "+
-						"Model Plugin not available", config.Type, config.Version)
-				}
+		for _, info := range infos {
+			rwPaths, ok = manager.GetManager().ModelRegistry.
+				ModelReadWritePaths[utils.ToModelName(devicetype.Type(info.Type), devicetype.Version(info.Version))]
+			if ok {
 				break
 			}
 		}
-
+		if rwPaths == nil {
+			return nil, fmt.Errorf("Cannot process JSON payload because "+
+				"Model Plugin not available for target %s", target)
+		}
 		correctedValues, err := jsonvalues.CorrectJSONPaths(
 			utils.StrPath(u.Path), intermediateConfigValues, rwPaths, true)
 		if err != nil {

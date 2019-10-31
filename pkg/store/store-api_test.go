@@ -15,7 +15,6 @@
 package store
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -60,166 +59,9 @@ const (
 	ValueLeaftopWxy1234 = "WXY-1234"
 )
 
-var c1ID, c2ID, c3ID change.ID
-
 func TestMain(m *testing.M) {
 	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
-}
-
-func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.Change) {
-	var err error
-
-	var (
-		change1, change2, change3, change4 *change.Change
-	)
-
-	config1Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1A, devicechangetypes.NewTypedValueEmpty(), false)
-	config1Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2A, devicechangetypes.NewTypedValueEmpty(), false)
-	config1Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueUint64(ValueLeaf2A13), false)
-	config1Value04, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueFloat(ValueLeaf2B159), false)
-	config1Value05, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CAbc), false)
-	config1Value06, _ := devicechangetypes.NewChangeValue(Test1Cont1ALeaf1A, devicechangetypes.NewTypedValueString(ValueLeaf1AAbcdef), false)
-	config1Value07, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1, devicechangetypes.NewTypedValueEmpty(), false)
-	config1Value08, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout1Txpwr8), false)
-	config1Value09, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2, devicechangetypes.NewTypedValueEmpty(), false)
-	config1Value10, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout2Txpwr10), false)
-	config1Value11, _ := devicechangetypes.NewChangeValue(Test1Leaftoplevel, devicechangetypes.NewTypedValueString(ValueLeaftopWxy1234), false)
-	change1, err = change.NewChange([]*devicechangetypes.ChangeValue{
-		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
-		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
-		config1Value11,
-	}, "Original Config for test switch")
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	config2Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueFloat(ValueLeaf2B314), false)
-	config2Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout3, devicechangetypes.NewTypedValueEmpty(), false)
-	config2Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout3Txpwr16), false)
-	change2, err = change.NewChange([]*devicechangetypes.ChangeValue{
-		config2Value01, config2Value02, config2Value03,
-	}, "Trim power level")
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	config3Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CDef), false)
-	config3Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2, devicechangetypes.NewTypedValueEmpty(), true)
-	change3, err = change.NewChange([]*devicechangetypes.ChangeValue{
-		config3Value01, config3Value02,
-	}, "Remove txout 2")
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	changeStore = make(map[string]*change.Change)
-	changeStore[B64(change1.ID)] = change1
-	changeStore[B64(change2.ID)] = change2
-	changeStore[B64(change3.ID)] = change3
-
-	c1ID = change1.ID
-	c2ID = change2.ID
-	c3ID = change2.ID
-
-	device1V, err = NewConfiguration("Device1", "1.0.0", "TestDevice",
-		[]change.ID{change1.ID, change2.ID, change3.ID})
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	config4Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CGhi), false)
-	config4Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1, devicechangetypes.NewTypedValueEmpty(), true)
-	change4, err = change.NewChange([]*devicechangetypes.ChangeValue{
-		config4Value01, config4Value02,
-	}, "Remove txout 1")
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	changeStore[B64(change4.ID)] = change4
-
-	device2V, err = NewConfiguration("Device2", "10.0.100", "TestDevice",
-		[]change.ID{change1.ID, change2.ID, change4.ID})
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	return device1V, device2V, changeStore
-}
-
-func Test_writeOutChangeFile(t *testing.T) {
-	_, _, changeStore := setUp()
-	if _, err := os.Stat("testout"); os.IsNotExist(err) {
-		_ = os.Mkdir("testout", os.ModePerm)
-	}
-	changeStoreFile, err := os.Create("testout/changeStore-sample.json")
-	if err != nil {
-		t.Errorf("%s", err)
-	}
-
-	jsonEncoder := json.NewEncoder(changeStoreFile)
-	var csf = ChangeStore{Version: StoreVersion,
-		Storetype: StoreTypeChange, Store: changeStore}
-	err = jsonEncoder.Encode(csf)
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	defer changeStoreFile.Close()
-}
-
-func Test_loadChangeStoreFile(t *testing.T) {
-	changeStore, err := LoadChangeStore("testout/changeStore-sample.json")
-	assert.NilError(t, err, "Unexpected error when loading Change Store from file %s", err)
-	assert.Equal(t, changeStore.Version, StoreVersion)
-}
-
-func Test_loadChangeStoreFileError(t *testing.T) {
-	changeStore, err := LoadChangeStore("nonexistent.json")
-	assert.Assert(t, err != nil, "Expected an error when loading Change Store from invalid file")
-	assert.Equal(t, changeStore.Version, "")
-}
-
-func Test_loadConfigStoreFileBadVersion(t *testing.T) {
-	_, err := LoadConfigStore("testdata/configStore-badVersion.json")
-	assert.ErrorContains(t, err, "Store version invalid")
-}
-
-func Test_loadConfigStoreFileBadType(t *testing.T) {
-	_, err := LoadConfigStore("testdata/configStore-badType.json")
-	assert.ErrorContains(t, err, "Store type invalid")
-}
-
-func Test_loadChangeStoreFileBadVersion(t *testing.T) {
-	_, err := LoadChangeStore("testdata/changeStore-badVersion.json")
-	assert.ErrorContains(t, err, "Store version invalid")
-}
-
-func Test_loadChangeStoreFileBadType(t *testing.T) {
-	_, err := LoadChangeStore("testdata/changeStore-badType.json")
-	assert.ErrorContains(t, err, "Store type invalid")
-}
-
-func Test_loadNetworkStoreFileError(t *testing.T) {
-	networkStore, err := LoadNetworkStore("nonexistent.json")
-	assert.Assert(t, err != nil, "Expected an error when loading Change Store from invalid file")
-	assert.Assert(t, networkStore == nil, "")
-}
-
-func Test_loadNetworkStoreFileBadVersion(t *testing.T) {
-	_, err := LoadNetworkStore("testdata/networkStore-badVersion.json")
-	assert.ErrorContains(t, err, "Store version invalid")
-}
-
-func Test_loadNetworkStoreFileBadType(t *testing.T) {
-	_, err := LoadNetworkStore("testdata/networkStore-badType.json")
-	assert.ErrorContains(t, err, "Store type invalid")
 }
 
 func TestCreateConfiguration_badname(t *testing.T) {
@@ -269,59 +111,6 @@ func TestCreateConfiguration_badtype(t *testing.T) {
 	assert.ErrorContains(t, err, "does not match pattern", "bad char")
 }
 
-func Test_writeOutConfigFile(t *testing.T) {
-	device1V, device2V, _ := setUp()
-	configurationStore := make(map[ConfigName]Configuration)
-	configurationStore[device1V.Name] = *device1V
-	configurationStore[device2V.Name] = *device2V
-
-	configStoreFile, _ := os.Create("testout/configStore-sample.json")
-	jsonEncoder := json.NewEncoder(configStoreFile)
-	err := jsonEncoder.Encode(ConfigurationStore{Version: StoreVersion,
-		Storetype: StoreTypeConfig, Store: configurationStore})
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	defer configStoreFile.Close()
-}
-
-func Test_loadConfigStoreFile(t *testing.T) {
-	configStore, err := LoadConfigStore("testout/configStore-sample.json")
-
-	assert.NilError(t, err, "Unexpected error when loading Config Store from file %s", err)
-	assert.Equal(t, configStore.Version, StoreVersion)
-}
-
-func Test_loadConfigStoreFileError(t *testing.T) {
-	configStore, err := LoadConfigStore("nonexistent.json")
-	assert.Assert(t, err != nil, "Expected an error when loading Config Store from invalid file")
-	assert.Equal(t, configStore.Version, "")
-}
-
-func Test_writeOutNetworkFile(t *testing.T) {
-	networkStore := make([]NetworkConfiguration, 0)
-	ccs := make(map[ConfigName]change.ID)
-	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
-	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
-	nw1, err := NewNetworkConfiguration("testChange", "nw1", ccs)
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	networkStore = append(networkStore, *nw1)
-
-	networkStoreFile, _ := os.Create("testout/networkStore-sample.json")
-	jsonEncoder := json.NewEncoder(networkStoreFile)
-	err = jsonEncoder.Encode(NetworkStore{Version: StoreVersion,
-		Storetype: StoreTypeNetwork, Store: networkStore})
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	defer networkStoreFile.Close()
-}
-
 // Test_createnetStore tests that a valid network config name is accepted
 // Note: the testing against duplicate names is done in northbound/set_test.go
 func Test_createnetStore(t *testing.T) {
@@ -345,12 +134,6 @@ func Test_createnetStore_noname(t *testing.T) {
 	var noname string
 	_, err := NewNetworkConfiguration(noname, "onos", make(map[ConfigName]change.ID))
 	assert.ErrorContains(t, err, "Empty name not allowed")
-}
-
-func Test_loadNetworkStoreFile(t *testing.T) {
-	networkStore, err := LoadNetworkStore("testout/networkStore-sample.json")
-	assert.NilError(t, err, "Unexpected error when loading Network Store from file %s", err)
-	assert.Equal(t, networkStore.Version, StoreVersion)
 }
 
 func BenchmarkCreateChangeValue(b *testing.B) {

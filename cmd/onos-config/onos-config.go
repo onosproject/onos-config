@@ -56,7 +56,6 @@ import (
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	log "k8s.io/klog"
-	"os"
 	"time"
 )
 
@@ -83,11 +82,12 @@ func (i *arrayFlags) Set(value string) error {
 func main() {
 	var modelPlugins arrayFlags
 
-	configStoreFile := flag.String("configStore", configStoreDefaultFileName,
+	//TODO remove these in accordance with ONIT and other starting procedures
+	_ = flag.String("configStore", configStoreDefaultFileName,
 		"path to config store file")
-	changeStoreFile := flag.String("changeStore", changeStoreDefaultFileName,
+	_ = flag.String("changeStore", changeStoreDefaultFileName,
 		"path to change store file")
-	networkStoreFile := flag.String("networkStore", networkStoreDefaultFileName,
+	_ = flag.String("networkStore", networkStoreDefaultFileName,
 		"path to network store file")
 
 	// TODO: This flag is preserved for backwards compatibility
@@ -164,7 +164,8 @@ func main() {
 		log.Error("Cannot load network atomix store ", err)
 	}
 
-	mgr, err := manager.LoadManager(*configStoreFile, *changeStoreFile, *networkStoreFile, leadershipStore, mastershipStore, deviceChangesStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, opts...)
+	mgr, err := manager.LoadManager(leadershipStore, mastershipStore, deviceChangesStore, deviceCache,
+		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, opts...)
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {
@@ -182,11 +183,6 @@ func main() {
 			if err != nil {
 				log.Fatal("Unable to start onos-config ", err)
 			}
-		}
-		err = mgr.ValidateStores()
-		if err != nil {
-			log.Error("Error when validating configurations against model plugins: ", err)
-			os.Exit(-1)
 		}
 
 		mgr.Run()

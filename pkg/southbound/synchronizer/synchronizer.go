@@ -40,8 +40,6 @@ const matchOnIndex = `(\=.*?]).*?`
 // Synchronizer enables proper configuring of a device based on store events and cache of operational data
 type Synchronizer struct {
 	context.Context
-	*store.ChangeStore
-	*store.ConfigurationStore
 	*devicetopo.Device
 	operationalStateChan chan<- events.OperationalStateEvent
 	key                  devicetopo.ID
@@ -53,14 +51,12 @@ type Synchronizer struct {
 }
 
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
-func New(context context.Context, changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
+func New(context context.Context,
 	device *devicetopo.Device, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache devicechangetypes.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
-		ChangeStore:          changeStore,
-		ConfigurationStore:   configStore,
 		Device:               device,
 		operationalStateChan: opStateChan,
 		operationalCache:     opStateCache,

@@ -180,9 +180,6 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	}
 
 	mgr, err := manager.LoadManager(
-		"../../../configs/configStore-sample.json",
-		"../../../configs/changeStore-sample.json",
-		"../../../configs/networkStore-sample.json",
 		mockStores.LeadershipStore,
 		mockStores.MastershipStore,
 		mockStores.DeviceChangesStore,

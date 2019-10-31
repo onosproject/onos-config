@@ -16,7 +16,6 @@ package dispatcher
 
 import (
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/store"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
@@ -35,14 +34,7 @@ var (
 )
 
 const (
-	configStoreDefaultFileName = "testdata/configStore-sample.json"
-	changeStoreDefaultFileName = "testdata/changeStore-sample.json"
-	opStateTest                = "opStateListener"
-)
-
-var (
-	configStoreTest store.ConfigurationStore
-	changeStoreTest store.ChangeStore
+	opStateTest = "opStateListener"
 )
 
 func setUp() *Dispatcher {
@@ -61,20 +53,6 @@ func TestMain(m *testing.M) {
 	device1 = devicetopo.Device{ID: "localhost-1", Address: "localhost:10161"}
 	device2 = devicetopo.Device{ID: "localhost-2", Address: "localhost:10162"}
 	device3 = devicetopo.Device{ID: "localhost-3", Address: "localhost:10163"}
-
-	configStoreTest, err = store.LoadConfigStore(configStoreDefaultFileName)
-	if err != nil {
-		wd, _ := os.Getwd()
-		log.Warning("Cannot load config store ", err, wd)
-		os.Exit(1)
-	}
-	log.Info("Configuration store loaded from ", configStoreDefaultFileName)
-
-	changeStoreTest, err = store.LoadChangeStore(changeStoreDefaultFileName)
-	if err != nil {
-		log.Error("Cannot load change store ", err)
-		os.Exit(1)
-	}
 
 	os.Exit(m.Run())
 }

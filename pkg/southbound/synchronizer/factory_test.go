@@ -18,7 +18,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/store"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
@@ -26,25 +25,14 @@ import (
 	"time"
 )
 
-func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
-	chan *devicetopo.ListResponse, chan<- events.OperationalStateEvent,
+func factorySetUp() (chan *devicetopo.ListResponse, chan<- events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
 	*modelregistry.ModelRegistry, map[devicetopo.ID]devicechangetypes.TypedValueMap, error) {
-
-	changeStore, err := store.LoadChangeStore("../../../configs/changeStore-sample.json")
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, err
-	}
-	configStore, err := store.LoadConfigStore("../../../configs/configStore-sample.json")
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, err
-	}
 
 	dispatcher := dispatcher.NewDispatcher()
 	modelregistry := new(modelregistry.ModelRegistry)
 	opStateCache := make(map[devicetopo.ID]devicechangetypes.TypedValueMap)
-	return &changeStore, &configStore,
-		make(chan *devicetopo.ListResponse),
+	return make(chan *devicetopo.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, modelregistry, opStateCache, nil
@@ -55,11 +43,8 @@ func factorySetUp() (*store.ChangeStore, *store.ConfigurationStore,
  * and then un-does everything
  */
 func TestFactory_Revert(t *testing.T) {
-	changeStore, configStore, topoChan, opstateChan, responseChan, dispatcher,
-		models, opstateCache, err := factorySetUp()
+	topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, err := factorySetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
-	assert.Assert(t, changeStore != nil)
-	assert.Assert(t, configStore != nil)
 	assert.Assert(t, topoChan != nil)
 	assert.Assert(t, opstateChan != nil)
 	assert.Assert(t, responseChan != nil)
@@ -68,7 +53,7 @@ func TestFactory_Revert(t *testing.T) {
 	assert.Assert(t, opstateCache != nil)
 
 	go func() {
-		Factory(changeStore, configStore, topoChan, opstateChan, responseChan, dispatcher, models, opstateCache)
+		Factory(topoChan, opstateChan, responseChan, dispatcher, models, opstateCache)
 	}()
 
 	timeout := time.Millisecond * 500

@@ -43,9 +43,6 @@ var (
 func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) *manager.Manager {
 	ctrl := gomock.NewController(nil)
 	mgrTest, err := manager.LoadManager(
-		"../../../configs/configStore-sample.json",
-		"../../../configs/changeStore-sample.json",
-		"../../../configs/networkStore-sample.json",
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),

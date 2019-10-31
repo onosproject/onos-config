@@ -21,7 +21,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -58,21 +57,11 @@ const (
 	gnmiVer070         = "0.7.0"
 )
 
-func synchronizerSetUp() (*store.ChangeStore, *store.ConfigurationStore,
-	chan devicetopo.ListResponse, chan events.OperationalStateEvent,
+func synchronizerSetUp() (chan devicetopo.ListResponse, chan events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
 	*modelregistry.ModelRegistry, modelregistry.ReadOnlyPathMap,
 	devicechangetypes.TypedValueMap, chan events.ConfigEvent,
 	error) {
-
-	changeStore, err := store.LoadChangeStore("../../../configs/changeStore-sample.json")
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
-	}
-	configStore, err := store.LoadConfigStore("../../../configs/configStore-sample.json")
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
-	}
 
 	dispatcher := dispatcher.NewDispatcher()
 	mr := new(modelregistry.ModelRegistry)
@@ -86,8 +75,7 @@ func synchronizerSetUp() (*store.ChangeStore, *store.ConfigurationStore,
 	roSubPath2[leaf2d] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_UINT}
 	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{Datatype: devicechangetypes.ValueType_STRING}
 	roPathMap[cont1bState] = roSubPath2
-	return &changeStore, &configStore,
-		make(chan devicetopo.ListResponse),
+	return make(chan devicetopo.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, mr, roPathMap, opStateCache,
@@ -103,11 +91,8 @@ func synchronizerSetUp() (*store.ChangeStore, *store.ConfigurationStore,
  * getting the OpState attributes
  */
 func TestNew(t *testing.T) {
-	changeStore, configStore, topoChan, opstateChan, responseChan, dispatcher,
-		models, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
+	topoChan, opstateChan, responseChan, dispatcher, models, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
-	assert.Assert(t, changeStore != nil)
-	assert.Assert(t, configStore != nil)
 	assert.Assert(t, topoChan != nil)
 	assert.Assert(t, opstateChan != nil)
 	assert.Assert(t, responseChan != nil)
@@ -166,7 +151,7 @@ func TestNew(t *testing.T) {
 		}
 	}()
 
-	s, err := New(context2.Background(), changeStore, configStore, &mockDevice1,
+	s, err := New(context2.Background(), &mockDevice1,
 		opstateChan, responseChan, opstateCache, roPathMap, mockTarget,
 		modelregistry.GetStateExplicitRoPaths)
 	assert.NilError(t, err, "Creating s")
@@ -330,8 +315,7 @@ func setUpStatePaths(t *testing.T) (*gnmi.Path, *gnmi.TypedValue, *gnmi.Path, *g
  * Also in this case we test the GetState_OpState for getting the OpState attribs
  */
 func TestNewWithExistingConfig(t *testing.T) {
-	changeStore, configStore, _, opstateChan, responseChan, _,
-		_, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
+	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
@@ -436,7 +420,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 		}
 	}()
 
-	s, err := New(context2.Background(), changeStore, configStore, device1,
+	s, err := New(context2.Background(), device1,
 		opstateChan, responseChan, opstateCache, roPathMap, mockTarget, modelregistry.GetStateOpState)
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
@@ -453,7 +437,6 @@ func TestNewWithExistingConfig(t *testing.T) {
 	assert.NilError(t, err)
 	change1, err := change.NewChange([]*devicechangetypes.ChangeValue{value1}, "mock test change")
 	assert.NilError(t, err)
-	s.ChangeStore.Store[store.B64(change1.ID)] = change1
 
 	// Send a device config event
 	go func() {
@@ -541,8 +524,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 }
 
 func TestNewWithExistingConfigError(t *testing.T) {
-	changeStore, configStore, _, opstateChan, responseChan, _,
-		_, roPathMap, opstateCache, _, err := synchronizerSetUp()
+	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, _, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
@@ -568,7 +550,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 		}
 	}()
 
-	s, err := New(context2.Background(), changeStore, configStore, device1,
+	s, err := New(context2.Background(), device1,
 		opstateChan, responseChan, opstateCache, roPathMap, mockTarget, modelregistry.GetStateOpState)
 
 	assert.NilError(t, err, "Creating synchronizer")
@@ -616,18 +598,6 @@ func Test_LikeStratum(t *testing.T) {
 		interfacesInterfaceEth2State        = "/interfaces/interface[name=s1-eth2]/state"
 		interfacesInterfaceEth2StateIfindex = interfacesInterfaceEth2State + ifIndex
 	)
-
-	changeStore := store.ChangeStore{
-		Version:   "1.0.0",
-		Storetype: "changes",
-		Store:     make(map[string]*change.Change),
-	}
-
-	configStore := store.ConfigurationStore{
-		Version:   "1.0.0",
-		Storetype: "configs",
-		Store:     make(map[store.ConfigName]store.Configuration),
-	}
 
 	opStateCache := make(devicechangetypes.TypedValueMap)
 	// See modelplugin/yang/TestDevice-1.0.0/test1@2018-02-20.yang for paths
@@ -704,7 +674,7 @@ func Test_LikeStratum(t *testing.T) {
 		}
 	}()
 
-	s, err := New(context2.Background(), &changeStore, &configStore, &mockDevice1,
+	s, err := New(context2.Background(), &mockDevice1,
 		opstateChan, responseChan, opStateCache, roPathMap, mockTarget,
 		modelregistry.GetStateExplicitRoPathsExpandWildcards)
 	assert.NilError(t, err, "Creating s")

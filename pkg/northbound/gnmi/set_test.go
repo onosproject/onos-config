@@ -19,9 +19,7 @@ import (
 	"github.com/golang/mock/gomock"
 	td1 "github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
 	td2 "github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
-	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
@@ -117,28 +115,6 @@ func Test_doSingleSet(t *testing.T) {
 	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
 	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
 	assert.Equal(t, string(extensionDeviceState.Msg), "Device1")
-
-	//Now check the store that the change was made correctly
-	assert.Equal(t, len(manager.GetManager().NetworkStore.Store), 2)
-	var nwChange store.NetworkConfiguration
-	for _, n := range manager.GetManager().NetworkStore.Store {
-		if n.Name == "TestChange" {
-			nwChange = n
-		}
-	}
-	assert.Equal(t, nwChange.User, "User1")
-	assert.Equal(t, len(nwChange.ConfigurationChanges), 1)
-
-	changeID, ok := nwChange.ConfigurationChanges["Device1-1.0.0"]
-	assert.Assert(t, ok)
-	assert.Equal(t, store.B64(changeID), "joKlrfspGqpKrZILHzDj7mBGbJQ=")
-
-	assert.Equal(t, len(manager.GetManager().ChangeStore.Store), 13)
-	newChange, ok := manager.GetManager().ChangeStore.Store[store.B64(changeID)]
-	assert.Assert(t, ok)
-	assert.Equal(t, len(newChange.Config), 1)
-	assert.Equal(t, newChange.Config[0].Path, "/cont1a/cont2a/leaf2a")
-	assert.Equal(t, (*devicechangetypes.TypedUint64)(newChange.Config[0].GetValue()).Uint(), uint(16))
 }
 
 // Test_doSingleSet shows how a value of 1 list can be set on a target
@@ -213,27 +189,6 @@ func Test_doSingleSetList(t *testing.T) {
 	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
 	assert.Equal(t, string(extensionDeviceState.Msg), "Device1")
 
-	//Now check the store that the change was made correctly
-	assert.Equal(t, len(manager.GetManager().NetworkStore.Store), 2)
-	var nwChange store.NetworkConfiguration
-	for _, n := range manager.GetManager().NetworkStore.Store {
-		if n.Name == "TestChange" {
-			nwChange = n
-		}
-	}
-	assert.Equal(t, nwChange.User, "User1")
-	assert.Equal(t, len(nwChange.ConfigurationChanges), 1)
-
-	changeID, ok := nwChange.ConfigurationChanges["Device1-1.0.0"]
-	assert.Assert(t, ok)
-	assert.Equal(t, store.B64(changeID), "8B3qRNBCLA/g372kD/uF5uMcW8s=")
-
-	assert.Equal(t, len(manager.GetManager().ChangeStore.Store), 13)
-	newChange, ok := manager.GetManager().ChangeStore.Store[store.B64(changeID)]
-	assert.Assert(t, ok)
-	assert.Equal(t, len(newChange.Config), 1)
-	assert.Equal(t, newChange.Config[0].Path, "/cont1a/list2a[name=a/b]/tx-power")
-	assert.Equal(t, (*devicechangetypes.TypedUint64)(newChange.Config[0].GetValue()).Uint(), uint(16))
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target

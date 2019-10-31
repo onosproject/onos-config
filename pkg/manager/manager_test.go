@@ -18,8 +18,6 @@ import (
 	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -215,22 +213,11 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 
 	mgrTest, err = NewManager(
-		&store.ConfigurationStore{
-			Version:   "1.0",
-			Storetype: "config",
-			Store:     make(map[store.ConfigName]store.Configuration),
-		},
 		mockLeadershipStore,
 		mockMastershipStore,
 		mockDeviceChangesStore,
-		&store.ChangeStore{
-			Version:   "1.0",
-			Storetype: "change",
-			Store:     make(map[string]*change.Change),
-		},
 		mockDeviceStore,
 		mockDeviceCache,
-		nil,
 		mockNetworkChangesStore,
 		mockNetworkSnapshotStore,
 		mockDeviceSnapshotStore,
@@ -413,7 +400,9 @@ func matchDeviceID(deviceID string, deviceName string) bool {
 }
 
 func TestManager_GetAllDeviceIds(t *testing.T) {
-	mgrTest, _, _, _, _ := setUp(t)
+	// TODO - GetAllDeviceIds() uses atomix, needs better mocking
+	t.Skip("TODO - mock for atomix")
+	mgrTest, mockDeviceStore, _, _, _ := setUp(t)
 
 	updates := make(devicechangetypes.TypedValueMap)
 	updates[test1Cont1ACont2ALeaf2A] = devicechangetypes.NewTypedValueFloat(valueLeaf2B314)
@@ -424,10 +413,9 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 	updatesForDevice3, deletesForDevice3, deviceInfo3 := makeDeviceChanges("Device2", updates, deletes)
 	err = mgrTest.SetNewNetworkConfig(updatesForDevice3, deletesForDevice3, deviceInfo3, "Device3")
 	assert.NilError(t, err, "SetTargetConfig error")
-
+	mockDeviceStore.EXPECT().List(gomock.Any()).AnyTimes()
 	deviceIds := mgrTest.GetAllDeviceIds()
-	// TODO - GetAllDeviceIds() doesn't use the Atomix based stores yet
-	t.Skip()
+
 	assert.Equal(t, len(*deviceIds), 3)
 	assert.Assert(t, matchDeviceID((*deviceIds)[0], device1))
 	assert.Assert(t, matchDeviceID((*deviceIds)[1], "Device2"))
@@ -701,21 +689,20 @@ func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
 
 	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-1.0.0"] = roPathMap
 
-	validationError := mgrTest.ValidateStores()
 	// TODO - Not implemented on Atomix stores yet
 	t.Skip()
-	assert.ErrorContains(t, validationError,
-		"error read only path in configuration /cont1a/cont2a/leaf2a matches /cont1a/cont2a/leaf2a for TestDevice-1.0.0")
+	//assert.ErrorContains(t, validationError,
+	//	"error read only path in configuration /cont1a/cont2a/leaf2a matches /cont1a/cont2a/leaf2a for TestDevice-1.0.0")
 }
 
 func TestManager_ValidateStores(t *testing.T) {
+	t.Skip("TODO re-enable when validation is done on atomix stores")
 	mgrTest, _, _, _, _ := setUp(t)
 
 	plugin := MockModelPlugin{}
 	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
 
-	validationError := mgrTest.ValidateStores()
-	assert.NilError(t, validationError)
+	//assert.NilError(t, validationError)
 }
 
 func TestManager_CheckCacheForDevice(t *testing.T) {
