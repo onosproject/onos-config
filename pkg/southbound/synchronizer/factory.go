@@ -39,7 +39,7 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
 		//TODO evaluate the need for fine-grained checking
-		if topoEvent.Type != devicetopo.ListResponse_REMOVED {
+		if topoEvent.Type == devicetopo.ListResponse_ADDED {
 			ctx := context.Background()
 
 			modelName := utils.ToModelName(devicetype.Type(notifiedDevice.Type), devicetype.Version(notifiedDevice.Version))

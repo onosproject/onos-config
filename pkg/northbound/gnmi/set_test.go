@@ -954,16 +954,16 @@ func TestSet_checkForReadOnly(t *testing.T) {
 	updateT1[cont1aCont2aLeaf2b] = devicechangetypes.NewTypedValueString("2b on t1")
 
 	updateT2 := make(map[string]*devicechangetypes.TypedValue)
-	updateT1[cont1aCont2aLeaf2a] = devicechangetypes.NewTypedValueUint64(11)
-	updateT1[cont1aCont2aLeaf2b] = devicechangetypes.NewTypedValueString("2b on t2")
-	updateT1[cont1aCont2aLeaf2c] = devicechangetypes.NewTypedValueString("2c on t2 - ro attribute")
+	updateT2[cont1aCont2aLeaf2a] = devicechangetypes.NewTypedValueUint64(11)
+	updateT2[cont1aCont2aLeaf2b] = devicechangetypes.NewTypedValueString("2b on t2")
+	updateT2[cont1aCont2aLeaf2c] = devicechangetypes.NewTypedValueString("2c on t2 - ro attribute")
 
 	targetUpdates := make(map[string]devicechangetypes.TypedValueMap)
 	targetUpdates["device-1"] = updateT1
 	targetUpdates["device-2"] = updateT2
 
-	targetDeletes := make(map[string][]string)
-
-	err := server.checkForReadOnlyNew(targetUpdates, targetDeletes)
+	err := server.checkForReadOnlyNew("device-1", "TestDevice", "1.0.0", updateT1, make([]string, 0))
+	assert.NilError(t, err, "unexpected error on T1")
+	err = server.checkForReadOnlyNew("device-2", "TestDevice", "1.0.0", updateT2, make([]string, 0))
 	assert.Error(t, err, `update contains a change to a read only path /cont1a/cont2a/leaf2c. Rejected`)
 }
