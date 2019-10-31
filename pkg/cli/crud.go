@@ -14,17 +14,16 @@
 
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"text/template"
+)
 
 func getGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get {device-changes,devicetree,network-changes,plugins,opstate} [args]",
 		Short: "Get config resources",
 	}
-	cmd.AddCommand(getGetConfigsCommand())
-	cmd.AddCommand(getGetChangesCommand())
-	cmd.AddCommand(getGetDeviceTreeCommand())
-	cmd.AddCommand(getGetNetChangesCommand())
 	cmd.AddCommand(getListNetworkChangesCommand())
 	cmd.AddCommand(getListDeviceChangesCommand())
 	cmd.AddCommand(getGetPluginsCommand())
@@ -50,4 +49,9 @@ func getWatchCommand() *cobra.Command {
 	cmd.AddCommand(getWatchNetworkChangesCommand())
 	cmd.AddCommand(getWatchOpstateCommand())
 	return cmd
+}
+
+var funcMapChanges = template.FuncMap{
+	"wrappath":      wrapPath,
+	"valuetostring": valueToSstring,
 }

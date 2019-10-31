@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
@@ -206,39 +205,6 @@ func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminS
 		}
 	}
 	return nil
-}
-
-// GetNetworkChanges provides a stream of submitted network changes.
-// Deprecated: do not use
-func (s Server) GetNetworkChanges(r *NetworkChangesRequest, stream ConfigAdminService_GetNetworkChangesServer) error {
-	for _, nc := range manager.GetManager().NetworkStore.Store {
-
-		// Build net change message
-		msg := &NetChange{
-			Time:    &nc.Created,
-			Name:    nc.Name,
-			User:    nc.User,
-			Changes: make([]*ConfigChange, 0),
-		}
-
-		// Build list of config change messages.
-		for k, v := range nc.ConfigurationChanges {
-			msg.Changes = append(msg.Changes, &ConfigChange{Id: string(k), Hash: store.B64(v)})
-		}
-
-		err := stream.Send(msg)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// RollbackNetworkChange rolls back a named network changes.
-// deprecated to be removed
-func (s Server) RollbackNetworkChange(
-	ctx context.Context, req *RollbackRequest) (*RollbackResponse, error) {
-	return nil, fmt.Errorf("(Deprecated) Please use RollbackNewNetworkChange ")
 }
 
 // RollbackNewNetworkChange rolls back a named new (atomix-based)network changes.

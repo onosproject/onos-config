@@ -19,22 +19,11 @@ syntax = "proto3";
 // Package admin defines the administrative gRPC interfaces.
 package onos.config.admin;
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 import "github.com/openconfig/gnmi/proto/gnmi/gnmi.proto";
 import "github.com/onosproject/onos-config/pkg/types/change/device/types.proto";
 import "github.com/onosproject/onos-config/pkg/types/snapshot/device/types.proto";
-
-// NetworkChangesRequest is a message for specifying GetNetworkChanges query parameters.
-message NetworkChangesRequest {
-}
-
-// ConfigChange is a descriptor of a submitted configuration change targeted as a single device.
-message ConfigChange {
-    string id = 1;
-    string hash = 2;
-}
 
 // Streaming event type
 enum Type {
@@ -49,24 +38,6 @@ enum Type {
 
     // REMOVED is an event which occurs when an item is removed
     REMOVED = 3;
-}
-
-// Change is a descriptor of a submitted configuration change targeted at a single device.
-message Change {
-    //    option deprecated = true; Commented out for the moment - breaks static check
-    google.protobuf.Timestamp time = 1 [(gogoproto.stdtime) = true];
-    string id = 2;
-    string desc = 3;
-    repeated onos.config.change.device.ChangeValue change_values = 4;
-}
-
-// NetChange is a descriptor of a configuration change submitted via gNMI.
-message NetChange {
-    //    option deprecated = true; Commented out for the moment - breaks static check
-    google.protobuf.Timestamp time = 1 [(gogoproto.stdtime) = true];
-    string name = 2;
-    string user = 3;
-    repeated ConfigChange changes = 4;
 }
 
 message ReadOnlySubPath {
@@ -175,12 +146,6 @@ service ConfigAdminService {
 
     // ListRegisteredModels returns a stream of registered models.
     rpc ListRegisteredModels(ListModelsRequest) returns (stream ModelInfo);
-
-    // GetNetworkChanges returns a stream of network changes submitted via gNMI.
-    rpc GetNetworkChanges(NetworkChangesRequest) returns (stream NetChange);
-
-    // RollbackNetworkChange rolls back the specified network change (or the latest one).
-    rpc RollbackNetworkChange(RollbackRequest) returns (RollbackResponse);
 
     // RollbackNetworkChange rolls back the specified network change (or the latest one).
     rpc RollbackNewNetworkChange(RollbackRequest) returns (RollbackResponse);

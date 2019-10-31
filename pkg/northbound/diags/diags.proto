@@ -18,23 +18,10 @@ syntax = "proto3";
 
 package onos.config.diags;
 
-import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 import "github.com/onosproject/onos-config/pkg/northbound/admin/admin.proto";
 import "github.com/onosproject/onos-config/pkg/types/change/device/types.proto";
 import "github.com/onosproject/onos-config/pkg/types/change/network/types.proto";
-
-// ChangesRequest is a message for specifying GetChanges query parameters.
-message ChangesRequest {
-//    option deprecated = true; Commented out for the moment - breaks static check
-    repeated string change_ids = 1 [(gogoproto.customname) = "ChangeIDs"];
-}
-
-// ConfigRequest is a message for specifying GetConfigurations query parameters.
-message ConfigRequest {
-    //    option deprecated = true; Commented out for the moment - breaks static check
-    repeated string device_ids = 1 [(gogoproto.customname) = "DeviceIDs"];
-}
 
 // OpStateRequest is a message for specifying GetOpState query parameters.
 message OpStateRequest {
@@ -52,18 +39,6 @@ message OpStateResponse {
 
     // device is the device on which the event occurred
     onos.config.change.device.PathValue pathvalue = 2;
-}
-
-// Configuration is a descriptor of a submitted configuration change targeted at a single device.
-message Configuration {
-    //    option deprecated = true; Commented out for the moment - breaks static check
-    string name = 1;
-    string device_id = 2 [(gogoproto.customname) = "DeviceID"];
-    string version = 3;
-    string device_type = 4;
-    google.protobuf.Timestamp created = 5 [(gogoproto.stdtime) = true];
-    google.protobuf.Timestamp updated = 6 [(gogoproto.stdtime) = true];
-    repeated string change_ids = 7 [(gogoproto.customname) = "ChangeIDs"];
 }
 
 // ListNetworkChangeRequest requests a stream of changes and updates to them
@@ -122,16 +97,6 @@ message ListDeviceChangeResponse {
 
     // change is the device change on which the event occurred
     onos.config.change.device.DeviceChange change = 1;
-}
-
-// ConfigDiags provides means for obtaining diagnostic information about internal system state.
-service ConfigDiags {
-    //    option deprecated = true; Commented out for the moment - breaks static check
-    // GetChanges returns a stream of submitted changes objects.
-    rpc GetChanges (ChangesRequest) returns (stream onos.config.admin.Change);
-
-    // GetConfigurations returns a stream of submitted configurations aimed at individual devices.
-    rpc GetConfigurations (ConfigRequest) returns (stream Configuration);
 }
 
 service ChangeService {
