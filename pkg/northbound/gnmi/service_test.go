@@ -18,6 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"gotest.tools/assert"
@@ -31,9 +32,12 @@ func TestService_getGNMIServiceVersion(t *testing.T) {
 }
 
 func TestService_Capabilities(t *testing.T) {
-	t.Skip("TODO needs to be verified")
+	//t.Skip("TODO needs to be verified")
 	server := Server{}
 	request := gnmi.CapabilityRequest{}
+	manager.GetManager().ModelRegistry = &modelregistry.ModelRegistry{
+		ModelPlugins: make(map[string]modelregistry.ModelPlugin),
+	}
 	response, err := server.Capabilities(context.Background(), &request)
 	assert.NilError(t, err)
 	assert.Assert(t, response != nil)
