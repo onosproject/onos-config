@@ -16,6 +16,9 @@ package admin
 
 import (
 	"context"
+	"errors"
+	"github.com/golang/mock/gomock"
+	"github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"os"
 	"sync"
 	"testing"
@@ -25,11 +28,14 @@ import (
 	"gotest.tools/assert"
 )
 
+var mockNetworkChangesStore *store.MockNetworkChangesStore
+
 // TestMain initializes the test suite context.
 func TestMain(m *testing.M) {
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
-	northbound.SetUpServer(10124, Service{}, &waitGroup)
+	mgr := northbound.SetUpServer(10124, Service{}, &waitGroup)
+	mockNetworkChangesStore = mgr.NetworkChangesStore.(*store.MockNetworkChangesStore)
 	waitGroup.Wait()
 	os.Exit(m.Run())
 }
@@ -40,17 +46,17 @@ func getAdminClient() (*grpc.ClientConn, ConfigAdminServiceClient) {
 }
 
 func Test_RollbackNetworkChange_BadName(t *testing.T) {
-	t.Skip()
 	conn, client := getAdminClient()
 	defer conn.Close()
+	mockNetworkChangesStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("Rollback aborted. Network change BAD CHANGE not found"))
 	_, err := client.RollbackNewNetworkChange(context.Background(), &RollbackRequest{Name: "BAD CHANGE"})
 	assert.ErrorContains(t, err, "Rollback aborted. Network change BAD CHANGE not found")
 }
 
 func Test_RollbackNetworkChange_NoChange(t *testing.T) {
-	t.Skip()
 	conn, client := getAdminClient()
 	defer conn.Close()
+	mockNetworkChangesStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("change is not specified"))
 	_, err := client.RollbackNewNetworkChange(context.Background(), &RollbackRequest{Name: ""})
 	assert.ErrorContains(t, err, "is not")
 }
