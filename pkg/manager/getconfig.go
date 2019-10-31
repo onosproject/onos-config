@@ -19,8 +19,8 @@ import (
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
-	"sort"
 )
 
 // GetTargetNewConfig returns a set of change values given a target, a configuration name, a path and a layer.
@@ -49,10 +49,16 @@ func (m *Manager) GetTargetNewConfig(deviceID devicetype.ID, version devicetype.
 func (m *Manager) GetAllDeviceIds() *[]string {
 	var deviceIds = make([]string, 0)
 
-	for _, v := range m.ConfigStore.Store {
-		deviceIds = append(deviceIds, v.Device+" ("+v.Version+")")
+	//TODO move to topo
+	deviceChan := make(chan *devicetopo.Device)
+	err := m.DeviceStore.List(deviceChan)
+	if err != nil {
+		log.Errorf("Cant get a list for devices %s", err)
+		return &deviceIds
 	}
-	sort.Strings(deviceIds)
+	for dev := range deviceChan {
+		deviceIds = append(deviceIds, string(dev.ID))
+	}
 
 	return &deviceIds
 }

@@ -26,8 +26,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
-	"github.com/onosproject/onos-config/pkg/store"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
@@ -49,17 +47,11 @@ var mgr Manager
 
 // Manager single point of entry for the config system.
 type Manager struct {
-	// deprecated: old store
-	ConfigStore *store.ConfigurationStore
-	// deprecated: old store
-	ChangeStore        *store.ChangeStore
-	LeadershipStore    leadership.Store
-	MastershipStore    mastership.Store
-	DeviceChangesStore device.Store
-	DeviceStore        devicestore.Store
-	DeviceCache        devicestore.Cache
-	// deprecated: old store
-	NetworkStore              *store.NetworkStore
+	LeadershipStore           leadership.Store
+	MastershipStore           mastership.Store
+	DeviceChangesStore        device.Store
+	DeviceStore               devicestore.Store
+	DeviceCache               devicestore.Cache
 	NetworkChangesStore       network.Store
 	NetworkSnapshotStore      networksnap.Store
 	DeviceSnapshotStore       devicesnap.Store
@@ -77,9 +69,9 @@ type Manager struct {
 }
 
 // NewManager initializes the network config manager subsystem.
-func NewManager(configStore *store.ConfigurationStore, leadershipStore leadership.Store, mastershipStore mastership.Store,
-	deviceChangesStore device.Store, changeStore *store.ChangeStore, deviceStore devicestore.Store, deviceCache devicestore.Cache,
-	networkStore *store.NetworkStore, networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
+func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Store,
+	deviceChangesStore device.Store, deviceStore devicestore.Store, deviceCache devicestore.Cache,
+	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
 	deviceSnapshotStore devicesnap.Store, topoCh chan *devicetopo.ListResponse) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
@@ -90,15 +82,9 @@ func NewManager(configStore *store.ConfigurationStore, leadershipStore leadershi
 	}
 
 	mgr = Manager{
-		//TODO remove deprecated ConfigStore
-		ConfigStore:        configStore,
-		DeviceChangesStore: deviceChangesStore,
-		//TODO remove deprecated ChangeStore
-		ChangeStore: changeStore,
-		DeviceStore: deviceStore,
-		DeviceCache: deviceCache,
-		//TODO remove deprecated NetworkStore
-		NetworkStore:              networkStore,
+		DeviceChangesStore:        deviceChangesStore,
+		DeviceStore:               deviceStore,
+		DeviceCache:               deviceCache,
 		NetworkChangesStore:       networkChangesStore,
 		NetworkSnapshotStore:      networkSnapshotStore,
 		DeviceSnapshotStore:       deviceSnapshotStore,
@@ -115,55 +101,16 @@ func NewManager(configStore *store.ConfigurationStore, leadershipStore leadershi
 		OperationalStateCache:     make(map[devicetopo.ID]devicechangetypes.TypedValueMap),
 	}
 
-	changeIds := make([]string, 0)
-	// Perform a sanity check on the change store
-	for changeID, changeObj := range changeStore.Store {
-		err := changeObj.IsValid()
-		if err != nil {
-			return nil, err
-		}
-		if changeID != store.B64(changeObj.ID) {
-			return nil, fmt.Errorf("ChangeID: %s must match %s",
-				changeID, store.B64(changeObj.ID))
-		}
-		changeIds = append(changeIds, changeID)
-	}
-
-	changeIdsStr := strings.Join(changeIds, ",")
-
-	for configID, configObj := range configStore.Store {
-		for _, chID := range configObj.Changes {
-			if !strings.Contains(changeIdsStr, store.B64(chID)) {
-				return nil, fmt.Errorf(
-					"ChangeID %s from Config %s not found in change store",
-					store.B64(chID), configID)
-			}
-		}
-	}
+	//TODO perform a sanity check on the new atomix stores ?
 
 	return &mgr, nil
 }
 
 // LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
-func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFile string, leadershipStore leadership.Store,
-	mastershipStore mastership.Store, deviceChangesStore device.Store,
+func LoadManager(leadershipStore leadership.Store, mastershipStore mastership.Store, deviceChangesStore device.Store,
 	deviceCache devicestore.Cache, networkChangesStore network.Store,
 	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store, opts ...grpc.DialOption) (*Manager, error) {
 	topoChannel := make(chan *devicetopo.ListResponse, 10)
-
-	configStore, err := store.LoadConfigStore(configStoreFile)
-	if err != nil {
-		log.Error("Cannot load config store ", err)
-		return nil, err
-	}
-	log.Info("Configuration store loaded from ", configStoreFile)
-
-	changeStore, err := store.LoadChangeStore(changeStoreFile)
-	if err != nil {
-		log.Error("Cannot load change store ", err)
-		return nil, err
-	}
-	log.Info("Change store loaded from ", changeStoreFile)
 
 	deviceStore, err := devicestore.NewTopoStore(opts...)
 	if err != nil {
@@ -178,95 +125,11 @@ func LoadManager(configStoreFile string, changeStoreFile string, networkStoreFil
 				log.Error("Cannot Watch devices", err)
 			}
 		}()
-		log.Info("Device store loaded")
+		log.Info("Device store watch started")
 	}
-	networkStore, err := store.LoadNetworkStore(networkStoreFile)
-	if err != nil {
-		log.Error("Cannot load network store ", err)
-		return nil, err
-	}
-	log.Info("Network store loaded from ", networkStoreFile)
 
-	return NewManager(&configStore, leadershipStore, mastershipStore, deviceChangesStore, &changeStore, deviceStore, deviceCache, networkStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, topoChannel)
-}
-
-// ValidateStores validate configurations against their ModelPlugins at startup
-func (m *Manager) ValidateStores() error {
-	validationErrors := make(chan error)
-	cfgCount := len(m.ConfigStore.Store)
-	if cfgCount > 0 {
-		for _, configObj := range m.ConfigStore.Store {
-			go validateConfiguration(configObj, m.ChangeStore.Store, validationErrors)
-		}
-		for valErr := range validationErrors {
-			if valErr != nil {
-				return valErr
-			}
-			cfgCount--
-			if cfgCount == 0 {
-				return nil
-			}
-		}
-	}
-	return nil
-}
-
-// validateConfiguration is a go routine for validating a Configuration against it ModelPlugin
-func validateConfiguration(configObj store.Configuration, changeStore map[string]*change.Change, errChan chan error) {
-	modelPluginName := configObj.Type + "-" + configObj.Version
-	cfgModelPlugin, pluginExists := mgr.ModelRegistry.ModelPlugins[modelPluginName]
-	if pluginExists {
-		log.Info("Validating config ", configObj.Name, " with Model Plugin ", modelPluginName)
-		fullconfig := configObj.ExtractFullConfig(nil, mgr.ChangeStore.Store, 0)
-		configJSON, err := store.BuildTree(fullconfig, true)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		ygotModelConfig, err := cfgModelPlugin.UnmarshalConfigValues(configJSON)
-		if err != nil {
-			log.Error(string(configJSON))
-			errChan <- err
-			return
-		}
-		err = cfgModelPlugin.Validate(ygotModelConfig)
-		if err != nil {
-			log.Error(string(configJSON))
-			errChan <- err
-			return
-		}
-
-		// Also validate that configs do not contain any read only paths
-		for _, changeID := range configObj.Changes {
-			change, ok := changeStore[store.B64(changeID)]
-			if !ok {
-				err = fmt.Errorf("error retrieving paths for %s %s", store.B64(changeID), modelPluginName)
-				errChan <- err
-				return
-			}
-			for _, path := range change.Config {
-				changePath := modelregistry.RemovePathIndices(path.Path)
-				roPathsAndValues, ok := mgr.ModelRegistry.ModelReadOnlyPaths[modelPluginName]
-				if !ok {
-					log.Warningf("Can't find read only paths for %s", modelPluginName)
-					continue
-				}
-				roPaths := modelregistry.Paths(roPathsAndValues)
-				for _, ropath := range roPaths {
-					if strings.HasPrefix(changePath, ropath) {
-						err = fmt.Errorf("error read only path in configuration %s matches %s for %s",
-							changePath, ropath, modelPluginName)
-						errChan <- err
-						return
-					}
-				}
-			}
-		}
-
-	} else {
-		log.Warning("No Model Plugin available for ", modelPluginName)
-	}
-	errChan <- nil
+	return NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStore, deviceCache,
+		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, topoChannel)
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
@@ -299,8 +162,8 @@ func (m *Manager) Run() {
 	// Listening for errors in the Southbound
 	go listenOnResponseChannel(m.SouthboundErrorChan, m)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
-	go synchronizer.Factory(m.ChangeStore, m.ConfigStore, m.TopoChannel,
-		m.OperationalStateChannel, m.SouthboundErrorChan, m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)
+	go synchronizer.Factory(m.TopoChannel, m.OperationalStateChannel, m.SouthboundErrorChan,
+		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)
 }
 
 //Close kills the channels and manager related objects

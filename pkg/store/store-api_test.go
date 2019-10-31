@@ -15,7 +15,6 @@
 package store
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -153,75 +152,6 @@ func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.
 	return device1V, device2V, changeStore
 }
 
-func Test_writeOutChangeFile(t *testing.T) {
-	_, _, changeStore := setUp()
-	if _, err := os.Stat("testout"); os.IsNotExist(err) {
-		_ = os.Mkdir("testout", os.ModePerm)
-	}
-	changeStoreFile, err := os.Create("testout/changeStore-sample.json")
-	if err != nil {
-		t.Errorf("%s", err)
-	}
-
-	jsonEncoder := json.NewEncoder(changeStoreFile)
-	var csf = ChangeStore{Version: StoreVersion,
-		Storetype: StoreTypeChange, Store: changeStore}
-	err = jsonEncoder.Encode(csf)
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	defer changeStoreFile.Close()
-}
-
-func Test_loadChangeStoreFile(t *testing.T) {
-	changeStore, err := LoadChangeStore("testout/changeStore-sample.json")
-	assert.NilError(t, err, "Unexpected error when loading Change Store from file %s", err)
-	assert.Equal(t, changeStore.Version, StoreVersion)
-}
-
-func Test_loadChangeStoreFileError(t *testing.T) {
-	changeStore, err := LoadChangeStore("nonexistent.json")
-	assert.Assert(t, err != nil, "Expected an error when loading Change Store from invalid file")
-	assert.Equal(t, changeStore.Version, "")
-}
-
-func Test_loadConfigStoreFileBadVersion(t *testing.T) {
-	_, err := LoadConfigStore("testdata/configStore-badVersion.json")
-	assert.ErrorContains(t, err, "Store version invalid")
-}
-
-func Test_loadConfigStoreFileBadType(t *testing.T) {
-	_, err := LoadConfigStore("testdata/configStore-badType.json")
-	assert.ErrorContains(t, err, "Store type invalid")
-}
-
-func Test_loadChangeStoreFileBadVersion(t *testing.T) {
-	_, err := LoadChangeStore("testdata/changeStore-badVersion.json")
-	assert.ErrorContains(t, err, "Store version invalid")
-}
-
-func Test_loadChangeStoreFileBadType(t *testing.T) {
-	_, err := LoadChangeStore("testdata/changeStore-badType.json")
-	assert.ErrorContains(t, err, "Store type invalid")
-}
-
-func Test_loadNetworkStoreFileError(t *testing.T) {
-	networkStore, err := LoadNetworkStore("nonexistent.json")
-	assert.Assert(t, err != nil, "Expected an error when loading Change Store from invalid file")
-	assert.Assert(t, networkStore == nil, "")
-}
-
-func Test_loadNetworkStoreFileBadVersion(t *testing.T) {
-	_, err := LoadNetworkStore("testdata/networkStore-badVersion.json")
-	assert.ErrorContains(t, err, "Store version invalid")
-}
-
-func Test_loadNetworkStoreFileBadType(t *testing.T) {
-	_, err := LoadNetworkStore("testdata/networkStore-badType.json")
-	assert.ErrorContains(t, err, "Store type invalid")
-}
-
 func TestCreateConfiguration_badname(t *testing.T) {
 	_, err :=
 		NewConfiguration("", "1.0.0", "TestDevice",
@@ -269,59 +199,6 @@ func TestCreateConfiguration_badtype(t *testing.T) {
 	assert.ErrorContains(t, err, "does not match pattern", "bad char")
 }
 
-func Test_writeOutConfigFile(t *testing.T) {
-	device1V, device2V, _ := setUp()
-	configurationStore := make(map[ConfigName]Configuration)
-	configurationStore[device1V.Name] = *device1V
-	configurationStore[device2V.Name] = *device2V
-
-	configStoreFile, _ := os.Create("testout/configStore-sample.json")
-	jsonEncoder := json.NewEncoder(configStoreFile)
-	err := jsonEncoder.Encode(ConfigurationStore{Version: StoreVersion,
-		Storetype: StoreTypeConfig, Store: configurationStore})
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	defer configStoreFile.Close()
-}
-
-func Test_loadConfigStoreFile(t *testing.T) {
-	configStore, err := LoadConfigStore("testout/configStore-sample.json")
-
-	assert.NilError(t, err, "Unexpected error when loading Config Store from file %s", err)
-	assert.Equal(t, configStore.Version, StoreVersion)
-}
-
-func Test_loadConfigStoreFileError(t *testing.T) {
-	configStore, err := LoadConfigStore("nonexistent.json")
-	assert.Assert(t, err != nil, "Expected an error when loading Config Store from invalid file")
-	assert.Equal(t, configStore.Version, "")
-}
-
-func Test_writeOutNetworkFile(t *testing.T) {
-	networkStore := make([]NetworkConfiguration, 0)
-	ccs := make(map[ConfigName]change.ID)
-	ccs["Device2VersionMain"] = []byte("DCuMG07l01g2BvMdEta+7DyxMxk=")
-	ccs["Device2VersionMain"] = []byte("LsDuwm2XJjdOq+u9QEcUJo/HxaM=")
-	nw1, err := NewNetworkConfiguration("testChange", "nw1", ccs)
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	networkStore = append(networkStore, *nw1)
-
-	networkStoreFile, _ := os.Create("testout/networkStore-sample.json")
-	jsonEncoder := json.NewEncoder(networkStoreFile)
-	err = jsonEncoder.Encode(NetworkStore{Version: StoreVersion,
-		Storetype: StoreTypeNetwork, Store: networkStore})
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	defer networkStoreFile.Close()
-}
-
 // Test_createnetStore tests that a valid network config name is accepted
 // Note: the testing against duplicate names is done in northbound/set_test.go
 func Test_createnetStore(t *testing.T) {
@@ -345,12 +222,6 @@ func Test_createnetStore_noname(t *testing.T) {
 	var noname string
 	_, err := NewNetworkConfiguration(noname, "onos", make(map[ConfigName]change.ID))
 	assert.ErrorContains(t, err, "Empty name not allowed")
-}
-
-func Test_loadNetworkStoreFile(t *testing.T) {
-	networkStore, err := LoadNetworkStore("testout/networkStore-sample.json")
-	assert.NilError(t, err, "Unexpected error when loading Network Store from file %s", err)
-	assert.Equal(t, networkStore.Version, StoreVersion)
 }
 
 func BenchmarkCreateChangeValue(b *testing.B) {

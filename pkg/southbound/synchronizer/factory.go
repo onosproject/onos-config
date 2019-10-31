@@ -20,7 +20,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
-	"github.com/onosproject/onos-config/pkg/store"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -31,8 +30,7 @@ import (
 // Factory is a go routine thread that listens out for Device creation
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
-func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationStore,
-	topoChannel <-chan *devicetopo.ListResponse, opStateChan chan<- events.OperationalStateEvent,
+func Factory(topoChannel <-chan *devicetopo.ListResponse, opStateChan chan<- events.OperationalStateEvent,
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
 	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[devicetopo.ID]devicechangetypes.TypedValueMap) {
 
@@ -59,8 +57,8 @@ func Factory(changeStore *store.ChangeStore, configStore *store.ConfigurationSto
 			operationalStateCache[notifiedDevice.ID] = make(devicechangetypes.TypedValueMap)
 			target := southbound.NewTarget()
 			//TODO configuration needs to be blocked at this point in time to allow for device connection.
-			sync, err := New(ctx, changeStore, configStore, notifiedDevice, opStateChan,
-				southboundErrorChan, operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode)
+			sync, err := New(ctx, notifiedDevice, opStateChan, southboundErrorChan,
+				operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode)
 			if err != nil {
 				log.Errorf("Error connecting to device %v: %v", notifiedDevice, err)
 				southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
