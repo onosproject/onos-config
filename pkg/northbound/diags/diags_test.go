@@ -37,78 +37,13 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func getClient() (*grpc.ClientConn, ConfigDiagsClient, OpStateDiagsClient, ChangeServiceClient) {
+func getClient() (*grpc.ClientConn, OpStateDiagsClient, ChangeServiceClient) {
 	conn := northbound.Connect(northbound.Address, northbound.Opts...)
-	return conn, NewConfigDiagsClient(conn), NewOpStateDiagsClient(conn), NewChangeServiceClient(conn)
-}
-
-func Test_GetChanges_All(t *testing.T) {
-	testGetChanges(t, "")
-}
-
-func Test_GetChanges_Change(t *testing.T) {
-	testGetChanges(t, "P9dRXqy6IPp2KxeWxGvV0lRQIus=")
-}
-
-func testGetChanges(t *testing.T, changeID string) {
-	conn, client, _, _ := getClient()
-	defer conn.Close()
-
-	changesReq := &ChangesRequest{ChangeIDs: make([]string, 0)}
-	if changeID != "" {
-		changesReq.ChangeIDs = append(changesReq.ChangeIDs, changeID)
-	}
-
-	stream, err := client.GetChanges(context.Background(), changesReq)
-	assert.NilError(t, err, "unable to issue request")
-	var id = ""
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF || in == nil {
-			break
-		}
-		assert.NilError(t, err, "unable to receive message")
-		id = in.Id
-	}
-	err = stream.CloseSend()
-	assert.NilError(t, err, "unable to close stream")
-	assert.Assert(t, len(id) > 0, "no id received")
-}
-
-func Test_GetConfigurations_All(t *testing.T) {
-	testGetConfigurations(t, "")
-}
-
-func Test_GetConfigurations_Device(t *testing.T) {
-	testGetConfigurations(t, "Device2")
-}
-
-func testGetConfigurations(t *testing.T, deviceID string) {
-	conn, client, _, _ := getClient()
-	defer conn.Close()
-
-	configReq := &ConfigRequest{DeviceIDs: make([]string, 0)}
-	if deviceID != "" {
-		configReq.DeviceIDs = append(configReq.DeviceIDs, deviceID)
-	}
-	stream, err := client.GetConfigurations(context.Background(), configReq)
-	assert.NilError(t, err, "unable to issue request")
-	var name = ""
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF || in == nil {
-			break
-		}
-		assert.NilError(t, err, "unable to receive message")
-		name = in.Name
-	}
-	err = stream.CloseSend()
-	assert.NilError(t, err, "unable to close stream")
-	assert.Assert(t, len(name) > 0, "no name received")
+	return conn, NewOpStateDiagsClient(conn), NewChangeServiceClient(conn)
 }
 
 func Test_GetOpState_DeviceSubscribe(t *testing.T) {
-	conn, _, client, _ := getClient()
+	conn, client, _ := getClient()
 	defer conn.Close()
 
 	opStateReq := &OpStateRequest{DeviceId: "Device2", Subscribe: true}

@@ -24,7 +24,6 @@ func getGetCommand() *cobra.Command {
 		Use:   "get {device-changes,devicetree,network-changes,plugins,opstate} [args]",
 		Short: "Get config resources",
 	}
-	cmd.AddCommand(getGetDeviceTreeCommand())
 	cmd.AddCommand(getListNetworkChangesCommand())
 	cmd.AddCommand(getListDeviceChangesCommand())
 	cmd.AddCommand(getGetPluginsCommand())

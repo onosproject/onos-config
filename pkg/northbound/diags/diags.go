@@ -20,7 +20,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
@@ -48,16 +47,6 @@ func CreateOpStateDiagsClient(cc *grpc.ClientConn) OpStateDiagsClient {
 	return OpStateDiagsClientFactory(cc)
 }
 
-// ConfigDiagsClientFactory : Default OpStateDiagsClient creation.
-var ConfigDiagsClientFactory = func(cc *grpc.ClientConn) ConfigDiagsClient {
-	return NewConfigDiagsClient(cc)
-}
-
-// CreateConfigDiagsClient creates and returns a new op state diags client
-func CreateConfigDiagsClient(cc *grpc.ClientConn) ConfigDiagsClient {
-	return ConfigDiagsClientFactory(cc)
-}
-
 // ChangeServiceClientFactory : Default ChangeServiceClient creation.
 var ChangeServiceClientFactory = func(cc *grpc.ClientConn) ChangeServiceClient {
 	return NewChangeServiceClient(cc)
@@ -70,74 +59,12 @@ func CreateChangeServiceClient(cc *grpc.ClientConn) ChangeServiceClient {
 
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
-	RegisterConfigDiagsServer(r, Server{})
 	RegisterOpStateDiagsServer(r, Server{})
 	RegisterChangeServiceServer(r, Server{})
 }
 
 // Server implements the gRPC service for diagnostic facilities.
 type Server struct {
-}
-
-// GetChanges provides a stream of submitted network changes.
-// Deprecated GetChanges is an NBI method of getting Changes
-// to be replaced by GetDeviceChanges and GetNetworkChanges
-func (s Server) GetChanges(r *ChangesRequest, stream ConfigDiags_GetChangesServer) error {
-	for _, c := range manager.GetManager().ChangeStore.Store {
-		if len(r.ChangeIDs) > 0 && !stringInList(r.ChangeIDs, store.B64(c.ID)) {
-			continue
-		}
-
-		errInvalid := c.IsValid()
-		if errInvalid != nil {
-			return errInvalid
-		}
-
-		// Build a change message
-		msg := &admin.Change{
-			Time:         &c.Created,
-			Id:           store.B64(c.ID),
-			Desc:         c.Description,
-			ChangeValues: c.Config,
-		}
-		err := stream.Send(msg)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// GetConfigurations provides a stream of submitted network changes.
-// Deprecated GetConfigurations is an NBI method of getting Configurations
-// to be replaced by GetDeviceChanges and GetNetworkChanges
-func (s Server) GetConfigurations(r *ConfigRequest, stream ConfigDiags_GetConfigurationsServer) error {
-	for _, c := range manager.GetManager().ConfigStore.Store {
-		if len(r.DeviceIDs) > 0 && !stringInList(r.DeviceIDs, c.Device) {
-			continue
-		}
-
-		changeIDs := make([]string, len(c.Changes))
-
-		for idx, cid := range c.Changes {
-			changeIDs[idx] = store.B64(cid)
-		}
-
-		msg := &Configuration{
-			Name:       string(c.Name),
-			DeviceID:   c.Device,
-			Version:    c.Version,
-			DeviceType: c.Type,
-			Updated:    &c.Updated,
-			ChangeIDs:  changeIDs,
-		}
-		err := stream.Send(msg)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // GetOpState provides a stream of Operational and State data
@@ -382,13 +309,4 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 	}
 	log.Infof("Closing ListDeviceChanges for %s", r.DeviceID)
 	return nil
-}
-
-func stringInList(haystack []string, needle string) bool {
-	for _, hay := range haystack {
-		if hay == needle {
-			return true
-		}
-	}
-	return false
 }

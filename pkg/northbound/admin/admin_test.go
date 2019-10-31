@@ -16,7 +16,6 @@ package admin
 
 import (
 	"context"
-	"io"
 	"os"
 	"sync"
 	"testing"
@@ -40,25 +39,6 @@ func getAdminClient() (*grpc.ClientConn, ConfigAdminServiceClient) {
 	return conn, CreateConfigAdminServiceClient(conn)
 }
 
-func Test_GetNetworkChanges(t *testing.T) {
-	conn, client := getAdminClient()
-	defer conn.Close()
-	stream, err := client.GetNetworkChanges(context.Background(), &NetworkChangesRequest{})
-	assert.NilError(t, err, "unable to issue request")
-	var name string
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF || in == nil {
-			break
-		}
-		assert.NilError(t, err, "unable to receive message")
-		name = in.Name
-	}
-	err = stream.CloseSend()
-	assert.NilError(t, err, "unable to close stream")
-	assert.Assert(t, len(name) > 0, "no name received")
-}
-
 func Test_RollbackNetworkChange_BadName(t *testing.T) {
 	t.Skip()
 	conn, client := getAdminClient()
@@ -71,6 +51,6 @@ func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 	t.Skip()
 	conn, client := getAdminClient()
 	defer conn.Close()
-	_, err := client.RollbackNetworkChange(context.Background(), &RollbackRequest{Name: ""})
+	_, err := client.RollbackNewNetworkChange(context.Background(), &RollbackRequest{Name: ""})
 	assert.ErrorContains(t, err, "is not")
 }
