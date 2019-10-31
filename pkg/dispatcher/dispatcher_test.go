@@ -34,9 +34,7 @@ var (
 )
 
 const (
-	configStoreDefaultFileName = "testdata/configStore-sample.json"
-	changeStoreDefaultFileName = "testdata/changeStore-sample.json"
-	opStateTest                = "opStateListener"
+	opStateTest = "opStateListener"
 )
 
 func setUp() *Dispatcher {

@@ -91,8 +91,7 @@ func synchronizerSetUp() (chan devicetopo.ListResponse, chan events.OperationalS
  * getting the OpState attributes
  */
 func TestNew(t *testing.T) {
-	topoChan, opstateChan, responseChan, dispatcher,
-	models, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
+	topoChan, opstateChan, responseChan, dispatcher, models, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 	assert.Assert(t, topoChan != nil)
 	assert.Assert(t, opstateChan != nil)
@@ -316,8 +315,7 @@ func setUpStatePaths(t *testing.T) (*gnmi.Path, *gnmi.TypedValue, *gnmi.Path, *g
  * Also in this case we test the GetState_OpState for getting the OpState attribs
  */
 func TestNewWithExistingConfig(t *testing.T) {
-	_, opstateChan, responseChan, _,
-	_, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
+	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
@@ -526,8 +524,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 }
 
 func TestNewWithExistingConfigError(t *testing.T) {
-	_, opstateChan, responseChan, _,
-	_, roPathMap, opstateCache, _, err := synchronizerSetUp()
+	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, _, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)

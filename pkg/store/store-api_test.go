@@ -59,97 +59,9 @@ const (
 	ValueLeaftopWxy1234 = "WXY-1234"
 )
 
-var c1ID, c2ID, c3ID change.ID
-
 func TestMain(m *testing.M) {
 	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
-}
-
-func setUp() (device1V, device2V *Configuration, changeStore map[string]*change.Change) {
-	var err error
-
-	var (
-		change1, change2, change3, change4 *change.Change
-	)
-
-	config1Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1A, devicechangetypes.NewTypedValueEmpty(), false)
-	config1Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2A, devicechangetypes.NewTypedValueEmpty(), false)
-	config1Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechangetypes.NewTypedValueUint64(ValueLeaf2A13), false)
-	config1Value04, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueFloat(ValueLeaf2B159), false)
-	config1Value05, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CAbc), false)
-	config1Value06, _ := devicechangetypes.NewChangeValue(Test1Cont1ALeaf1A, devicechangetypes.NewTypedValueString(ValueLeaf1AAbcdef), false)
-	config1Value07, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1, devicechangetypes.NewTypedValueEmpty(), false)
-	config1Value08, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout1Txpwr8), false)
-	config1Value09, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2, devicechangetypes.NewTypedValueEmpty(), false)
-	config1Value10, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout2Txpwr10), false)
-	config1Value11, _ := devicechangetypes.NewChangeValue(Test1Leaftoplevel, devicechangetypes.NewTypedValueString(ValueLeaftopWxy1234), false)
-	change1, err = change.NewChange([]*devicechangetypes.ChangeValue{
-		config1Value01, config1Value02, config1Value03, config1Value04, config1Value05,
-		config1Value06, config1Value07, config1Value08, config1Value09, config1Value10,
-		config1Value11,
-	}, "Original Config for test switch")
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	config2Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechangetypes.NewTypedValueFloat(ValueLeaf2B314), false)
-	config2Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout3, devicechangetypes.NewTypedValueEmpty(), false)
-	config2Value03, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, devicechangetypes.NewTypedValueUint64(ValueTxout3Txpwr16), false)
-	change2, err = change.NewChange([]*devicechangetypes.ChangeValue{
-		config2Value01, config2Value02, config2Value03,
-	}, "Trim power level")
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	config3Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CDef), false)
-	config3Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout2, devicechangetypes.NewTypedValueEmpty(), true)
-	change3, err = change.NewChange([]*devicechangetypes.ChangeValue{
-		config3Value01, config3Value02,
-	}, "Remove txout 2")
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	changeStore = make(map[string]*change.Change)
-	changeStore[B64(change1.ID)] = change1
-	changeStore[B64(change2.ID)] = change2
-	changeStore[B64(change3.ID)] = change3
-
-	c1ID = change1.ID
-	c2ID = change2.ID
-	c3ID = change2.ID
-
-	device1V, err = NewConfiguration("Device1", "1.0.0", "TestDevice",
-		[]change.ID{change1.ID, change2.ID, change3.ID})
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	config4Value01, _ := devicechangetypes.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechangetypes.NewTypedValueString(ValueLeaf2CGhi), false)
-	config4Value02, _ := devicechangetypes.NewChangeValue(Test1Cont1AList2ATxout1, devicechangetypes.NewTypedValueEmpty(), true)
-	change4, err = change.NewChange([]*devicechangetypes.ChangeValue{
-		config4Value01, config4Value02,
-	}, "Remove txout 1")
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-	changeStore[B64(change4.ID)] = change4
-
-	device2V, err = NewConfiguration("Device2", "10.0.100", "TestDevice",
-		[]change.ID{change1.ID, change2.ID, change4.ID})
-	if err != nil {
-		log.Error(err)
-		os.Exit(-1)
-	}
-
-	return device1V, device2V, changeStore
 }
 
 func TestCreateConfiguration_badname(t *testing.T) {

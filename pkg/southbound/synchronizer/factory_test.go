@@ -43,8 +43,7 @@ func factorySetUp() (chan *devicetopo.ListResponse, chan<- events.OperationalSta
  * and then un-does everything
  */
 func TestFactory_Revert(t *testing.T) {
-	topoChan, opstateChan, responseChan, dispatcher,
-	models, opstateCache, err := factorySetUp()
+	topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, err := factorySetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 	assert.Assert(t, topoChan != nil)
 	assert.Assert(t, opstateChan != nil)
