@@ -25,7 +25,7 @@ import (
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -100,6 +100,9 @@ func setUpWatchMock(mockStores *MockStores) {
 		Deleted: false,
 	}
 
+	config1Value01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf4a", devicechangetypes.NewTypedValueUint64(14), false)
+	config1Value02, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueEmpty(), true)
+
 	deviceChange := devicechangetypes.DeviceChange{
 		ID:       "",
 		Index:    0,
@@ -119,7 +122,9 @@ func setUpWatchMock(mockStores *MockStores) {
 		Change: &devicechangetypes.Change{
 			DeviceID:      "",
 			DeviceVersion: "",
-			Values:        nil,
+			Values: []*devicechangetypes.ChangeValue{
+				config1Value01, config1Value02,
+			},
 		},
 	}
 
@@ -135,9 +140,21 @@ func setUpWatchMock(mockStores *MockStores) {
 		}).AnyTimes()
 
 	mockStores.DeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(deviceId device.VersionedID, c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
+		func(deviceId devicetype.VersionedID, c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
 			go func() {
 				c <- stream.Event{Object: &deviceChange}
+				close(c)
+			}()
+			return stream.NewContext(func() {
+
+			}), nil
+		}).AnyTimes()
+}
+
+func setUpListMock(stores *MockStores) {
+	stores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(device devicetype.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+			go func() {
 				close(c)
 			}()
 			return stream.NewContext(func() {
@@ -185,14 +202,6 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)
 	//go mgr.Dispatcher.Listen(mgr.ChangesChannel)
-
-	mockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(device device.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
-			close(c)
-			return stream.NewContext(func() {
-
-			}), nil
-		}).AnyTimes()
 
 	setUpWatchMock(&mockStores)
 	log.Info("Finished setUp()")
