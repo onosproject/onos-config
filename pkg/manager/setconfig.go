@@ -42,28 +42,31 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName devicetype.ID, version dev
 	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
 	if !ok {
 		log.Warning("No model ", modelName, " available as a plugin")
-	} else {
-		configValues, err := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(deviceName, version), chg, m.DeviceChangesStore, 0)
-		if err != nil {
-			return err
-		}
-		jsonTree, err := store.BuildTree(configValues, true)
-		if err != nil {
-			log.Error("Error building JSON tree from Config Values ", err, jsonTree)
-		} else {
-			ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
-			if err != nil {
-				log.Error("Error unmarshaling JSON tree in to YGOT model ", err, string(jsonTree))
-				return err
-			}
-			err = deviceModelYgotPlugin.Validate(ygotModel)
-			if err != nil {
-				return err
-			}
-			log.Infof("New Configuration for %s, with version %s and type %s, is Valid according to model %s",
-				deviceName, version, deviceType, modelName)
-		}
+		return nil
 	}
+
+	configValues, err := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(deviceName, version), chg, m.DeviceChangesStore, 0)
+	if err != nil {
+		return err
+	}
+	jsonTree, err := store.BuildTree(configValues, true)
+	if err != nil {
+		log.Error("Error building JSON tree from Config Values ", err, jsonTree)
+		return err
+	}
+
+	ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
+	if err != nil {
+		log.Error("Error unmarshaling JSON tree in to YGOT model ", err, string(jsonTree))
+		return err
+	}
+	err = deviceModelYgotPlugin.Validate(ygotModel)
+	if err != nil {
+		return err
+	}
+	log.Infof("New Configuration for %s, with version %s and type %s, is Valid according to model %s",
+		deviceName, version, deviceType, modelName)
+
 	return nil
 }
 

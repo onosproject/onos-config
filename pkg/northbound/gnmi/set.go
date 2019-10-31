@@ -69,7 +69,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
 		if err != nil {
 			log.Warning("Error in update ", err)
-			return nil, err
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
@@ -80,7 +80,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
 		if err != nil {
 			log.Warning("Error in replace", err)
-			return nil, err
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
@@ -92,7 +92,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	netCfgChangeName, version, deviceType, err := extractExtensions(req)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if netCfgChangeName == "" {
@@ -111,7 +111,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	for target, updates := range targetUpdates {
 		deviceType, version, err = mgr.CheckCacheForDevice(devicetype.ID(target), deviceType, version)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		deviceInfo[devicetype.ID(target)] = devicestore.Info{
 			DeviceID: devicetype.ID(target),
@@ -124,12 +124,17 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
 			//handling gRPC errors
-			return nil, errDevice
+			return nil, status.Error(codes.Internal, errDevice.Error())
 		}
 
 		err := validateChange(target, deviceType, version, updates, targetRemoves[target])
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		err = s.checkForReadOnlyNew(target, deviceType, version, updates, targetRemoves[target])
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		delete(targetRemovesTmp, target)
 	}
@@ -137,7 +142,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	for target, removes := range targetRemovesTmp {
 		deviceType, version, err = mgr.CheckCacheForDevice(devicetype.ID(target), deviceType, version)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		deviceInfo[devicetype.ID(target)] = devicestore.Info{
 			DeviceID: devicetype.ID(target),
@@ -150,23 +155,18 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
 			//handling gRPC errors
-			return nil, errDevice
+			return nil, status.Error(codes.Internal, errDevice.Error())
 		}
 
 		err := validateChange(target, deviceType, version, make(devicechangetypes.TypedValueMap), removes)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-	}
 
-	errRo := s.checkForReadOnly(deviceType, version, targetUpdates, targetRemoves)
-	if errRo != nil {
-		return nil, status.Error(codes.InvalidArgument, errRo.Error())
-	}
-
-	errRo = s.checkForReadOnlyNew(targetUpdates, targetRemovesTmp)
-	if errRo != nil {
-		return nil, status.Error(codes.InvalidArgument, errRo.Error())
+		err = s.checkForReadOnlyNew(target, deviceType, version, make(devicechangetypes.TypedValueMap), removes)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 	}
 
 	//Creating and setting the config on the new atomix Store
@@ -309,123 +309,44 @@ func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string
 
 }
 
-func (s *Server) checkForReadOnly(deviceType devicetype.Type, version devicetype.Version, targetUpdates mapTargetUpdates,
-	targetRemoves mapTargetRemoves) error {
-	//TODO update with ne stores
-	configs := manager.GetManager().ConfigStore.Store
-
-	// Iterate through all the updates - many may use the same target - here we
-	// create a map of the models for all of the targets
-	targetModelTypes := make(map[string][]string)
-	for t := range targetUpdates { // map - just need the key
-		if _, ok := targetModelTypes[t]; ok {
-			continue
-		}
-		for _, config := range configs {
-			if config.Device == t {
-				m, ok := manager.GetManager().ModelRegistry.
-					ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(config.Type), devicetype.Version(config.Version))]
-				if !ok {
-					log.Warningf("Cannot check for Read Only paths for %s %s because "+
-						"Model Plugin not available - continuing", config.Type, config.Version)
-					return nil
-				}
-				targetModelTypes[t] = modelregistry.Paths(m)
-			}
-		}
-	}
-	for t := range targetRemoves { // map - just need the key
-		if _, ok := targetModelTypes[t]; ok {
-			continue
-		}
-		for _, config := range configs {
-			if config.Device == t {
-				m, ok := manager.GetManager().ModelRegistry.
-					ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(config.Type), devicetype.Version(config.Version))]
-				if !ok {
-					log.Warningf("Cannot check for Read Only paths for %s %s because "+
-						"Model Plugin not available - continuing", config.Type, config.Version)
-					return nil
-				}
-				targetModelTypes[t] = modelregistry.Paths(m)
-			}
-		}
-	}
-
-	// Now iterate through the consolidated set of targets and see if any are read-only paths
-	for t, update := range targetUpdates {
-		model := targetModelTypes[t]
-		for path := range update { // map - just need the key
-			for _, ropath := range model {
-				// Search through for list indices and replace with generic
-
-				modelPath := modelregistry.RemovePathIndices(path)
-				if strings.HasPrefix(modelPath, ropath) {
-					return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
 // iterate through the updates and check that none of them include a `set` of a
 // readonly attribute - this is done by checking with the relevant model
-func (s *Server) checkForReadOnlyNew(
-	targetUpdates mapTargetUpdates, targetRemoves mapTargetRemoves) error {
+func (s *Server) checkForReadOnlyNew(target string, deviceType devicetype.Type, version devicetype.Version,
+	targetUpdates devicechangetypes.TypedValueMap, targetRemoves []string) error {
 
-	deviceCache := manager.GetManager().DeviceCache
 	modelreg := manager.GetManager().ModelRegistry
 
-	// Iterate through all the updates - many may use the same target - here we
-	// create a map of the models for all of the targets
-	targetModelTypes := make(map[string][]string)
-	for t := range targetUpdates { // map - just need the key
-		if _, ok := targetModelTypes[t]; ok {
-			continue
-		}
-		for _, config := range deviceCache.GetDevicesByID(devicetype.ID(t)) {
-			// This ignores versions - if it's RO in one version will be regarded
-			// as RO in all versions - very unlikely that model would change
-			// YANG items from `config false` to `config true` across versions
-			m, ok := modelreg.
-				ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
-			if !ok {
-				log.Warningf("Cannot check for Read Only paths for %s %s because "+
-					"Model Plugin not available - continuing", config.Type, config.Version)
-				return nil
-			}
-			targetModelTypes[t] = modelregistry.Paths(m)
-		}
+	// This ignores versions - if it's RO in one version will be regarded
+	// as RO in all versions - very unlikely that model would change
+	// YANG items from `config false` to `config true` across versions
+	model, ok := modelreg.
+		ModelReadOnlyPaths[utils.ToModelName(deviceType, version)]
+	if !ok {
+		log.Warningf("Cannot check for Read Only paths for %s %s because "+
+			"Model Plugin not available - continuing", deviceType, version)
+		return nil
 	}
-	for t := range targetRemoves { // map - just need the key
-		if _, ok := targetModelTypes[t]; ok {
-			continue
-		}
-		for _, config := range deviceCache.GetDevicesByID(devicetype.ID(t)) {
-			m, ok := modelreg.
-				ModelReadOnlyPaths[utils.ToModelName(config.Type, config.Version)]
-			if !ok {
-				log.Warningf("Cannot check for Read Only paths for %s %s because "+
-					"Model Plugin not available - continuing", config.Type, config.Version)
-				return nil
+
+	// Now iterate through the consolidated set of targets and see if any are read-only paths
+	for path := range targetUpdates { // map - just need the key
+		log.Infof("Testing %s for read only", path)
+		for ropath := range model {
+			// Search through for list indices and replace with generic
+			modelPath := modelregistry.RemovePathIndices(path)
+			if strings.HasPrefix(modelPath, ropath) {
+				return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
 			}
-			targetModelTypes[t] = modelregistry.Paths(m)
 		}
 	}
 
 	// Now iterate through the consolidated set of targets and see if any are read-only paths
-	for t, update := range targetUpdates {
-		model := targetModelTypes[t]
-		for path := range update { // map - just need the key
-			for _, ropath := range model {
-				// Search through for list indices and replace with generic
-
-				modelPath := modelregistry.RemovePathIndices(path)
-				if strings.HasPrefix(modelPath, ropath) {
-					return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
-				}
+	for _, path := range targetRemoves { // map - just need the key
+		log.Infof("Testing %s for read only", path)
+		for ropath := range model {
+			// Search through for list indices and replace with generic
+			modelPath := modelregistry.RemovePathIndices(path)
+			if strings.HasPrefix(modelPath, ropath) {
+				return fmt.Errorf("remove contains a change to a read only path %s. Rejected", path)
 			}
 		}
 	}
@@ -499,7 +420,7 @@ func validateChange(target string, deviceType devicetype.Type, version devicetyp
 	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
 		return fmt.Errorf("no updates found in change on %s - invalid", target)
 	}
-
+	log.Infof("Validating change %s:%s:%s", target, deviceType, version)
 	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(devicetype.ID(target), version, deviceType,
 		targetUpdates, targetRemoves)
 	if errNewValidation != nil {
@@ -507,5 +428,6 @@ func validateChange(target string, deviceType devicetype.Type, version devicetyp
 			targetRemoves, target, errNewValidation)
 		return errNewValidation
 	}
+	log.Infof("Validating change %s:%s:%s DONE", target, deviceType, version)
 	return nil
 }
