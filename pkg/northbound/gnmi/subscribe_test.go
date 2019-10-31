@@ -20,11 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/store/device"
-	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-config/pkg/test/mocks/store"
-	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -84,43 +80,11 @@ func (x gNMISubscribeServerPollFake) Recv() (*gnmi.SubscribeRequest, error) {
 
 }
 
-func subscribeSetUp(mockChangeStore *store.MockDeviceChangesStore) {
-	configValue01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueUint64(13), false)
-
-	change1 := devicechangetypes.Change{
-		Values: []*devicechangetypes.ChangeValue{
-			configValue01,
-		},
-		DeviceID:      devicetype.ID("Device1"),
-		DeviceVersion: "1.0.0",
-	}
-	deviceChange1 := &devicechangetypes.DeviceChange{
-		Change: &change1,
-		ID:     "Change",
-		Status: changetypes.Status{
-			Phase:   changetypes.Phase_CHANGE,
-			State:   changetypes.State_COMPLETE,
-			Reason:  0,
-			Message: "",
-		},
-	}
-	mockChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(device devicetype.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
-			go func() {
-				c <- deviceChange1
-				close(c)
-			}()
-			return stream.NewContext(func() {
-
-			}), nil
-		}).AnyTimes()
-}
-
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
 	server, mgr, mockStores := setUp(t)
 
-	subscribeSetUp(mockStores.DeviceChangesStore)
+	setUpChangesMock(mockStores.DeviceChangesStore)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
@@ -379,7 +343,7 @@ func Test_Poll(t *testing.T) {
 		},
 	}).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	subscribeSetUp(mockStores.DeviceChangesStore)
+	setUpChangesMock(mockStores.DeviceChangesStore)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -449,7 +413,7 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	}).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
-	subscribeSetUp(mockStores.DeviceChangesStore)
+	setUpChangesMock(mockStores.DeviceChangesStore)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -527,7 +491,7 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 	}).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil).AnyTimes()
 	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
-	subscribeSetUp(mockStores.DeviceChangesStore)
+	setUpChangesMock(mockStores.DeviceChangesStore)
 
 	//configChan, respChan, err := mgr.Dispatcher.RegisterDevice(target)
 

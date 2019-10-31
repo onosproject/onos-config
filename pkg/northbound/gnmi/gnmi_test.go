@@ -163,6 +163,38 @@ func setUpListMock(stores *MockStores) {
 		}).AnyTimes()
 }
 
+func setUpChangesMock(mockChangeStore *mockstore.MockDeviceChangesStore) {
+	configValue01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueUint64(13), false)
+
+	change1 := devicechangetypes.Change{
+		Values: []*devicechangetypes.ChangeValue{
+			configValue01,
+		},
+		DeviceID:      devicetype.ID("Device1"),
+		DeviceVersion: "1.0.0",
+	}
+	deviceChange1 := &devicechangetypes.DeviceChange{
+		Change: &change1,
+		ID:     "Change",
+		Status: changetypes.Status{
+			Phase:   changetypes.Phase_CHANGE,
+			State:   changetypes.State_COMPLETE,
+			Reason:  0,
+			Message: "",
+		},
+	}
+	mockChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(device devicetype.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+			go func() {
+				c <- deviceChange1
+				close(c)
+			}()
+			return stream.NewContext(func() {
+
+			}), nil
+		}).AnyTimes()
+}
+
 // setUp should not depend on any global variables
 func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	var server = &Server{}
