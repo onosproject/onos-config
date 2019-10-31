@@ -21,6 +21,7 @@ import (
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/stretchr/testify/assert"
+	assert2 "gotest.tools/assert"
 	"testing"
 	"time"
 )
@@ -294,4 +295,21 @@ func nextEvent(t *testing.T, ch chan stream.Event) *devicechangetypes.DeviceChan
 		t.FailNow()
 	}
 	return nil
+}
+
+func Test_badpath(t *testing.T) {
+	badpath := "does_not_have_any_slash"
+	conf1, err1 := devicechangetypes.NewChangeValue(badpath, devicechangetypes.NewTypedValueString("123"), false)
+
+	assert2.Error(t, err1, badpath, "Expected error on ", badpath)
+
+	assert2.Assert(t, conf1 == nil, "Expected config to be empty on error")
+
+	badpath = "//two/contiguous/slashes"
+	_, err2 := devicechangetypes.NewChangeValue(badpath, devicechangetypes.NewTypedValueString("123"), false)
+	assert2.ErrorContains(t, err2, badpath, "Expected error on path", badpath)
+
+	badpath = "/test*"
+	_, err3 := devicechangetypes.NewChangeValue(badpath, devicechangetypes.NewTypedValueString("123"), false)
+	assert2.ErrorContains(t, err3, badpath, "Expected error on path", badpath)
 }

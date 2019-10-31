@@ -31,19 +31,25 @@ import (
 var b64 = base64.StdEncoding.EncodeToString
 
 // ID is an alias for the ID of the change
+// Deprecated: Change is a legacy implementation of an internal Change
 type ID []byte
 
 // Change is one of the primary objects to be stored
 // A model of the Change object - its is an immutable collection of ChangeValues
 // Deprecated: Change is a legacy implementation of an internal Change
 type Change struct {
-	ID          ID
+	// deprecated: Change is a legacy implementation of an internal Change
+	ID ID
+	// deprecated: Change is a legacy implementation of an internal Change
 	Description string
-	Created     time.Time
-	Config      []*devicechangetypes.ChangeValue
+	// deprecated: Change is a legacy implementation of an internal Change
+	Created time.Time
+	// deprecated: Change is a legacy implementation of an internal Change
+	Config []*devicechangetypes.ChangeValue
 }
 
 // Stringer method for the Change
+// Deprecated: Change is a legacy implementation of an internal Change
 func (c Change) String() string {
 	jsonstr, _ := json.Marshal(c)
 	return string(jsonstr)
