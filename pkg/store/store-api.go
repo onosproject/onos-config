@@ -12,36 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-Package store contains the the Config Store API.
-
-The following core concepts are each maintained in their own files.
-
-ConfigValue
-
-the simplest element of a configuration - just a path and a value
-
-ChangeValue
-
-a ConfigValue extended with a Remove flag
-
-Change
-
-a set of ChangeValues
-
-Configuration
-
-a set of Changes related to a device
-
-ConfigurationStore
-
-a way of storing Configurations in JSON files
-
-ChangeStore
-
-a way of storing Changes in JSON files
-Deprecated: do not use
-*/
 package store
 
 import "encoding/base64"

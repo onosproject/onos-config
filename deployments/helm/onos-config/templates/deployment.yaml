@@ -48,10 +48,6 @@ spec:
             - "-caPath=/etc/onos-config/certs/tls.cacrt"
             - "-keyPath=/etc/onos-config/certs/tls.key"
             - "-certPath=/etc/onos-config/certs/tls.crt"
-            - "-configStore=/etc/onos-config/test-configs/configStore-sample.json"
-            - "-changeStore=/etc/onos-config/test-configs/changeStore-sample.json"
-            - "-deviceStore=/etc/onos-config/test-configs/deviceStore.json"
-            - "-networkStore=/etc/onos-config/test-configs/networkStore-sample.json"
             {{- range $i, $plugin := .Values.plugins }}
             - {{ printf "-modelPlugin=/usr/local/lib/%s" $plugin }}
             {{- end }}
@@ -78,12 +74,7 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 20
           {{- end }}
-          # Mount the test configuration
-          # TODO: This should be removed when stores are added!
           volumeMounts:
-            - name: test-config
-              mountPath: /etc/onos-config/test-configs
-              readOnly: true
             - name: secret
               mountPath: /etc/onos-config/certs
               readOnly: true
@@ -103,9 +94,6 @@ spec:
       # Mount test volumes
       # TODO: This should be removed when stores are added!
       volumes:
-        - name: test-config
-          configMap:
-            name: {{ template "fullname" . }}-config
         - name: secret
           secret:
             secretName: {{ template "fullname" . }}-secret
