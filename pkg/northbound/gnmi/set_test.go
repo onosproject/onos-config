@@ -71,8 +71,7 @@ func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
 	_ = store.Create(networkChange1)
 }
 
-// Test_doSingleSet shows how a value of 1 path can be set on a target
-func Test_doSingleSet(t *testing.T) {
+func setUpForSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*gnmi.Update) {
 	server, mgr, mockStores := setUp(t)
 	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
 	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
@@ -85,12 +84,15 @@ func Test_doSingleSet(t *testing.T) {
 		},
 	}).AnyTimes()
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
-	setUpWatchMock(mockStores)
-
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
+	return server, deletePaths, replacedPaths, updatedPaths
+}
+
+// Test_doSingleSet shows how a value of 1 path can be set on a target
+func Test_doSingleSet(t *testing.T) {
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
@@ -269,8 +271,6 @@ func Test_do2SetsOnSameTarget(t *testing.T) {
 
 	assert.Equal(t, len(setResponse.Response), 2)
 
-	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
-
 	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_UPDATE.String())
 	assert.Equal(t, setResponse.Response[1].Op.String(), gnmi.UpdateResult_UPDATE.String())
 
@@ -325,8 +325,6 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 2)
-
-	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
 
 	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
 	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
@@ -412,7 +410,7 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 // Test_doDuplicateSetSingleTarget shows how duplicate combineation of paths on
 // a single target fails
 func Test_doDuplicateSetSingleTarget(t *testing.T) {
-	t.Skip("Does not detect the duplicate change - needs investigation")
+	t.Skip("Not detecting error for duplicate change. Needs investigation")
 	server, mgr, mockStores := setUp(t)
 	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
 	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
@@ -466,8 +464,6 @@ func Test_doDuplicateSetSingleTarget(t *testing.T) {
 	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 2)
-
-	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Now try again - should fail
@@ -555,8 +551,6 @@ func Test_doDuplicateSet2Targets(t *testing.T) {
 
 	assert.Equal(t, len(setResponse.Response), 4)
 
-	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
-
 	/////////////////////////////////////////////////////////////////////////////
 	// Now try again - should fail
 	/////////////////////////////////////////////////////////////////////////////
@@ -638,8 +632,6 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 4)
-
-	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Now try again - should NOT fail as target 2 is not duplicate
@@ -789,8 +781,6 @@ func Test_doSingleDelete(t *testing.T) {
 
 	assert.Equal(t, len(setResponse.Response), 1)
 
-	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
-
 	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_DELETE.String())
 
 	path := setResponse.Response[0].Path
@@ -867,8 +857,6 @@ func Test_doUpdateDeleteSet(t *testing.T) {
 	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 2)
-
-	assert.Assert(t, setResponse.Message == nil, "Unexpected gnmi error message")
 
 	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_UPDATE.String())
 
