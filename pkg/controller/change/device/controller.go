@@ -174,7 +174,7 @@ func (r *Reconciler) translateAndSendChange(change *devicechangetypes.Change) er
 		log.Infof("Device %s is not connected, accepting change", change.DeviceID)
 		return fmt.Errorf("Device not connected %s, error %s", change.DeviceID, err.Error())
 	}
-	setResponse, err := deviceTarget.Set(deviceTarget.Ctx, setRequest)
+	setResponse, err := deviceTarget.Set(*deviceTarget.Context(), setRequest)
 	if err != nil {
 		log.Error("Error while doing set: ", err)
 		return err

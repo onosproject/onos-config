@@ -63,7 +63,7 @@ func New(context context.Context,
 		modelReadOnlyPaths:   mReadOnlyPaths,
 		getStateMode:         getStateMode,
 	}
-	log.Info("Connecting to ", sync.Device.Address, " over gNMI")
+	log.Info("Connecting to ", sync.Device.Address, " over gNMI for ", sync.Device.ID)
 	key, err := target.ConnectTarget(context, *sync.Device)
 	sync.key = key
 	if err != nil {

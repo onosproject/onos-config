@@ -143,9 +143,9 @@ func getDevice1Target(t *testing.T) (Target, devicetopo.ID, context.Context) {
 	ctx := context.Background()
 	key, err := target.ConnectTarget(ctx, device)
 	assert.NilError(t, err)
-	assert.Assert(t, target.Clt != nil)
+	assert.Assert(t, target.clt != nil)
 	assert.Equal(t, string(key), "localhost-1")
-	assert.Assert(t, target.Ctx != nil)
+	assert.Assert(t, target.ctx != nil)
 	return target, key, ctx
 }
 
@@ -156,8 +156,8 @@ func Test_ConnectTarget(t *testing.T) {
 
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
-	assert.DeepEqual(t, target.Destination.Addrs, targetFetch.Destination.Addrs)
-	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
+	assert.DeepEqual(t, target.Destination().Addrs, targetFetch.Destination().Addrs)
+	assert.DeepEqual(t, *target.Client(), *targetFetch.Client())
 	tearDown()
 }
 
@@ -181,9 +181,9 @@ func Test_ConnectTargetUserPassword(t *testing.T) {
 
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
-	assert.Equal(t, target.Destination.Credentials.Username, "User")
-	assert.Equal(t, target.Destination.Credentials.Password, "Password")
-	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
+	assert.Equal(t, target.Destination().Credentials.Username, "User")
+	assert.Equal(t, target.Destination().Credentials.Password, "Password")
+	assert.DeepEqual(t, target.clt, *targetFetch.Client())
 
 	tearDown()
 }
@@ -197,8 +197,8 @@ func Test_ConnectTargetInsecurePaths(t *testing.T) {
 
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
-	assert.Equal(t, targetFetch.Destination.TLS.InsecureSkipVerify, false)
-	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
+	assert.Equal(t, targetFetch.Destination().TLS.InsecureSkipVerify, false)
+	assert.DeepEqual(t, target.clt, *targetFetch.Client())
 
 	tearDown()
 }
@@ -211,8 +211,8 @@ func Test_ConnectTargetInsecureFlag(t *testing.T) {
 
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
-	assert.Equal(t, targetFetch.Destination.TLS.InsecureSkipVerify, true)
-	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
+	assert.Equal(t, targetFetch.Destination().TLS.InsecureSkipVerify, true)
+	assert.DeepEqual(t, target.clt, *targetFetch.Client())
 
 	tearDown()
 }
@@ -228,10 +228,10 @@ func Test_ConnectTargetWithCert(t *testing.T) {
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
 	ca := getCertPool("testdata/onfca.crt")
-	assert.DeepEqual(t, targetFetch.Destination.TLS.RootCAs.Subjects()[0], ca.Subjects()[0])
+	assert.DeepEqual(t, targetFetch.Destination().TLS.RootCAs.Subjects()[0], ca.Subjects()[0])
 	cert := setCertificate("testdata/client1.crt", "testdata/client1.key")
-	assert.DeepEqual(t, targetFetch.Destination.TLS.Certificates[0].Certificate, cert.Certificate)
-	assert.DeepEqual(t, target.Clt, targetFetch.Clt)
+	assert.DeepEqual(t, targetFetch.Destination().TLS.Certificates[0].Certificate, cert.Certificate)
+	assert.DeepEqual(t, target.clt, *targetFetch.Client())
 
 	tearDown()
 }
@@ -294,8 +294,8 @@ func Test_Subscribe(t *testing.T) {
 	setUp(t)
 
 	target := Target{}
-	target.Destination.Addrs = make([]string, 1)
-	target.Destination.Addrs[0] = "127.0.0.1"
+	target.Destination().Addrs = make([]string, 1)
+	target.Destination().Addrs[0] = "127.0.0.1"
 	ctx := context.Background()
 
 	_, connectError := target.ConnectTarget(ctx, device)
