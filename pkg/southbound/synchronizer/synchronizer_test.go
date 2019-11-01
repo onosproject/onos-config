@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/change"
+	"github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
@@ -106,7 +107,7 @@ func TestNew(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockTarget := NewMockTargetIf(ctrl)
+	mockTarget := southbound.NewMockTargetIf(ctrl)
 	modelData1 := gnmi.ModelData{
 		Name:         "test1",
 		Organization: "Open Networking Foundation",
@@ -262,10 +263,10 @@ func TestNew(t *testing.T) {
 	time.Sleep(10 * time.Millisecond) // Wait for before sending a subscribe message
 }
 
-func synchronizerBootstrap(t *testing.T) (*MockTargetIf, *devicetopo.Device, *gnmi.CapabilityResponse) {
+func synchronizerBootstrap(t *testing.T) (*southbound.MockTargetIf, *devicetopo.Device, *gnmi.CapabilityResponse) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockTarget := NewMockTargetIf(ctrl)
+	mockTarget := southbound.NewMockTargetIf(ctrl)
 	modelData1 := gnmi.ModelData{
 		Name:         "test1",
 		Organization: "Open Networking Foundation",
@@ -631,7 +632,7 @@ func Test_LikeStratum(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockTarget := NewMockTargetIf(ctrl)
+	mockTarget := southbound.NewMockTargetIf(ctrl)
 	modelData1 := gnmi.ModelData{
 		Name:         "openconfig-interfaces",
 		Organization: "OpenConfig working group",

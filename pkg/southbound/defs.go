@@ -31,13 +31,16 @@ type TargetIf interface {
 	Set(ctx context.Context, request *gpb.SetRequest) (*gpb.SetResponse, error)
 	SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error)
 	Subscribe(ctx context.Context, request *gpb.SubscribeRequest, handler client.ProtoHandler) error
+	Context() *context.Context
+	Destination() *client.Destination
+	Client() *GnmiClient
 }
 
 // Target struct for connecting to gNMI
 type Target struct {
-	Destination client.Destination
-	Clt         GnmiClient
-	Ctx         context.Context
+	dest client.Destination
+	clt  GnmiClient
+	ctx  context.Context
 }
 
 // NewTarget is a method for constructing a target

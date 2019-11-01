@@ -25,7 +25,6 @@ import (
 )
 
 func TestReconciler_computeNewRollback_singleUpdate(t *testing.T) {
-	t.Skip("Currently failed due to nil pointer - need to check on mocks")
 	devices, deviceChangesStore := newStores(t)
 	reconciler := &Reconciler{
 		devices: devices,
@@ -42,8 +41,8 @@ func TestReconciler_computeNewRollback_singleUpdate(t *testing.T) {
 		},
 		Change: &devicechangetypes.Change{
 			DeviceID:      device1,
-			DeviceVersion: "1.0.0",
-			DeviceType:    "Stratum",
+			DeviceVersion: v1,
+			DeviceType:    stratumType,
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:    eth1Enabled,
@@ -59,11 +58,11 @@ func TestReconciler_computeNewRollback_singleUpdate(t *testing.T) {
 	assert.Equal(t, 1, len(deltas.Values))
 	// Was originally false, change set it to true, now that change is being
 	// rolled back should be set to false again
+	assert.NotNil(t, deltas.Values[0].Value)
 	assert.Equal(t, "false", deltas.Values[0].Value.ValueToString())
 }
 
 func TestReconciler_computeNewRollback_mixedUpdate(t *testing.T) {
-	t.Skip("Currently failed due to nil pointer - need to check on mocks")
 	devices, deviceChangesStore := newStores(t)
 	reconciler := &Reconciler{
 		devices: devices,
@@ -80,8 +79,8 @@ func TestReconciler_computeNewRollback_mixedUpdate(t *testing.T) {
 		},
 		Change: &devicechangetypes.Change{
 			DeviceID:      device1,
-			DeviceVersion: "1.0.0",
-			DeviceType:    "Stratum",
+			DeviceVersion: v1,
+			DeviceType:    stratumType,
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:    eth1Enabled,
@@ -140,8 +139,8 @@ func TestReconciler_computeNewRollback_addInterface(t *testing.T) {
 		},
 		Change: &devicechangetypes.Change{
 			DeviceID:      device1,
-			DeviceVersion: "1.0.0",
-			DeviceType:    "Stratum",
+			DeviceVersion: v1,
+			DeviceType:    stratumType,
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:  eth2Name,
@@ -181,7 +180,6 @@ func TestReconciler_computeNewRollback_addInterface(t *testing.T) {
 }
 
 func TestReconciler_computeNewRollback_removeInterface(t *testing.T) {
-	t.Skip("Currently failed due to nil pointer - need to check on mocks")
 	devices, deviceChangesStore := newStores(t)
 	defer deviceChangesStore.Close()
 	reconciler := &Reconciler{
@@ -201,8 +199,8 @@ func TestReconciler_computeNewRollback_removeInterface(t *testing.T) {
 		},
 		Change: &devicechangetypes.Change{
 			DeviceID:      device1,
-			DeviceVersion: "1.0.0",
-			DeviceType:    "Stratum",
+			DeviceVersion: v1,
+			DeviceType:    stratumType,
 			Values: []*devicechangetypes.ChangeValue{
 				{
 					Path:    eth2Base,
@@ -234,7 +232,7 @@ func TestReconciler_computeNewRollback_removeInterface(t *testing.T) {
 }
 
 func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.Store, iface int) error {
-	deviceChangeIf := newChangeInterface(device1, "1.0.0", iface)
+	deviceChangeIf := newChangeInterface(device1, v1, iface)
 
 	err := deviceChangesStore.Create(deviceChangeIf)
 	if err != nil {

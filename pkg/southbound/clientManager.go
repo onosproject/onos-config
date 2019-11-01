@@ -33,7 +33,8 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-var targets = make(map[devicetopo.ID]interface{})
+// Targets is a global cache of connected targets
+var Targets = make(map[devicetopo.ID]TargetIf)
 
 func createDestination(device devicetopo.Device) (*client.Destination, devicetopo.ID) {
 	d := &client.Destination{}
@@ -81,13 +82,12 @@ func createDestination(device devicetopo.Device) (*client.Destination, devicetop
 }
 
 // GetTarget attempts to get a specific target from the targets cache
-func GetTarget(key devicetopo.ID) (*Target, error) {
-	_, ok := targets[key].(*Target)
+func GetTarget(key devicetopo.ID) (TargetIf, error) {
+	t, ok := Targets[key].(TargetIf)
 	if ok {
-		return targets[key].(*Target), nil
+		return t, nil
 	}
-	return nil, fmt.Errorf("client for %v does not exist, create first", key)
-
+	return nil, fmt.Errorf("client for %v does not exist, create first %v", key, Targets)
 }
 
 // ConnectTarget connects to a given Device according to the passed information establishing a channel to it.
@@ -101,10 +101,10 @@ func (target *Target) ConnectTarget(ctx context.Context, device devicetopo.Devic
 	if err != nil {
 		return "", fmt.Errorf("could not create a gNMI client: %v", err)
 	}
-	target.Destination = *dest
-	target.Clt = c
-	target.Ctx = ctx
-	targets[key] = target
+	target.dest = *dest
+	target.clt = c
+	target.ctx = ctx
+	Targets[key] = target
 	return key, err
 }
 
@@ -148,7 +148,7 @@ func (target *Target) CapabilitiesWithString(ctx context.Context, request string
 
 // Capabilities get capabilities according to a formatted request
 func (target *Target) Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
-	response, err := target.Clt.Capabilities(ctx, request)
+	response, err := target.clt.Capabilities(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Capabilities(%q): %v", request.String(), err)
 	}
@@ -170,7 +170,7 @@ func (target *Target) GetWithString(ctx context.Context, request string) (*gpb.G
 
 // Get can make a get request according to a formatted request
 func (target *Target) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error) {
-	response, err := target.Clt.Get(ctx, request)
+	response, err := target.clt.Get(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Get(%q) : %v", request.String(), err)
 	}
@@ -193,7 +193,7 @@ func (target *Target) SetWithString(ctx context.Context, request string) (*gpb.S
 
 // Set can make a set request according to a formatted request
 func (target *Target) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.SetResponse, error) {
-	response, err := target.Clt.Set(ctx, request)
+	response, err := target.clt.Set(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Set(%q) : %v", request.String(), err)
 	}
@@ -203,18 +203,18 @@ func (target *Target) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.Se
 // Subscribe initiates a subscription to a target and set of paths by establishing a new channel
 func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeRequest, handler client.ProtoHandler) error {
 	//TODO currently establishing a throwaway client per each subscription request
-	//this is due to the face that 1 NotificationHandler is allowed per client (1:1)
+	//this is due to the fact that 1 NotificationHandler is allowed per client (1:1)
 	//alternatively we could handle every connection request with one NotificationHandler
 	//returing to the caller only the desired results.
 	q, err := client.NewQuery(request)
 	if err != nil {
 		return err
 	}
-	q.Addrs = target.Destination.Addrs
-	q.Timeout = target.Destination.Timeout
-	q.Target = target.Destination.Target
-	q.Credentials = target.Destination.Credentials
-	q.TLS = target.Destination.TLS
+	q.Addrs = target.Destination().Addrs
+	q.Timeout = target.Destination().Timeout
+	q.Target = target.Destination().Target
+	q.Credentials = target.Destination().Credentials
+	q.TLS = target.Destination().TLS
 	q.ProtoHandler = handler
 	c := GnmiBaseClientFactory()
 	err = c.Subscribe(ctx, q, "gnmi")
@@ -222,6 +222,21 @@ func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeReque
 		return fmt.Errorf("could not create a gNMI for subscription: %v", err)
 	}
 	return err
+}
+
+// Context allows retrieval of the context for the target
+func (target *Target) Context() *context.Context {
+	return &target.ctx
+}
+
+// Destination allows retrieval of the context for the target
+func (target *Target) Destination() *client.Destination {
+	return &target.dest
+}
+
+// Client allows retrieval of the context for the target
+func (target *Target) Client() *GnmiClient {
+	return &target.clt
 }
 
 // NewSubscribeRequest returns a SubscribeRequest for the given paths
