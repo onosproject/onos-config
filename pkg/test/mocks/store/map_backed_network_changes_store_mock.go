@@ -23,7 +23,7 @@ import (
 )
 
 //SetUpMapBackedNetworkChangesStore : creates a map backed store for the given mock
-func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore MockNetworkChangesStore) {
+func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChangesStore) {
 	networkChangesList := make([]*networkchangetypes.NetworkChange, 0)
 	mockNetworkChangesStore.EXPECT().Create(gomock.Any()).DoAndReturn(
 		func(networkChange *networkchangetypes.NetworkChange) error {
@@ -63,7 +63,8 @@ func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore MockNetworkChange
 		func(c chan<- stream.Event, o ...networkstore.WatchOption) (stream.Context, error) {
 			go func() {
 				lastChange := networkChangesList[len(networkChangesList)-1]
-				if lastChange.Status.Phase == changetypes.Phase_ROLLBACK {
+				if lastChange.Status.Phase == changetypes.Phase_ROLLBACK ||
+					lastChange.Status.State == changetypes.State_PENDING {
 					lastChange.Status.State = changetypes.State_COMPLETE
 				}
 				event := stream.Event{
