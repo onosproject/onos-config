@@ -151,23 +151,8 @@ func Test_doSingleSet(t *testing.T) {
 
 // Test_doSingleSet shows how a value of 1 list can be set on a target
 func Test_doSingleSetList(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
 	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a/list2a[name=a/b]/tx-power"))
 	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
 	value := gnmi.TypedValue{Value: &typedValue}
@@ -225,22 +210,7 @@ func Test_doSingleSetList(t *testing.T) {
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
 func Test_do2SetsOnSameTarget(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
 	pathElemsRefs1, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2b"})
 	value1Str := gnmi.TypedValue_StringVal{StringVal: "newValue2b"}
@@ -283,22 +253,7 @@ func Test_do2SetsOnSameTarget(t *testing.T) {
 // Test_do2SetsOnDiffTargets shows how paths on multiple targets can be Set at
 // same time
 func Test_do2SetsOnDiffTargets(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
 	// Make the same change to 2 targets
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
@@ -341,21 +296,7 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 // Test_do2SetsOnOneTargetOneOnDiffTarget shows how multiple paths on multiple
 // targets can be Set at same time
 func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
 	// Make the same change to 2 targets
 	pathElemsRefs2a, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
@@ -411,21 +352,7 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 // a single target fails
 func Test_doDuplicateSetSingleTarget(t *testing.T) {
 	t.Skip("Not detecting error for duplicate change. Needs investigation")
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
 	// Make 2 changes
 	pathElemsRefs2a, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
@@ -480,21 +407,7 @@ func Test_doDuplicateSetSingleTarget(t *testing.T) {
 // duplicates it should fail
 func Test_doDuplicateSet2Targets(t *testing.T) {
 	t.Skip("Not detecting error for duplicate change. Needs investigation")
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
 	// Make 2 changes
 	pathElemsRefs2a, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
@@ -567,18 +480,7 @@ func Test_doDuplicateSet2Targets(t *testing.T) {
 // Note how the SetResponse does not include the dups
 func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	t.Skip("Dupes not detected - needs investigation")
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	server, _, _, _ := setUpForSetTests(t)
 	// Make 2 changes
 	pathElemsRefs2a, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	valueStr2a := gnmi.TypedValue_StringVal{StringVal: "6thValue2a"}
@@ -666,21 +568,7 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 
 func Test_NetCfgSetWithDuplicateNameGiven(t *testing.T) {
 	t.Skip("Dupes not detected - needs investigation")
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	typedValue := gnmi.TypedValue_StringVal{StringVal: "Value2a"}
@@ -735,22 +623,7 @@ func Test_NetCfgSetWithDuplicateNameGiven(t *testing.T) {
 
 // Test_doSingleDelete shows how a value of 1 path can be deleted on a target
 func Test_doSingleDelete(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	deletePath := &gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
@@ -807,21 +680,7 @@ func Test_doSingleDelete(t *testing.T) {
 
 // Test_doUpdateDeleteSet shows how a request with a delete and an update can be applied on a target
 func Test_doUpdateDeleteSet(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	typedValue := gnmi.TypedValue_StringVal{StringVal: "newValue2a"}
