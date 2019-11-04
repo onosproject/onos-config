@@ -15,8 +15,7 @@
 package events
 
 import (
-	"encoding/base64"
-	"github.com/onosproject/onos-config/pkg/store/change"
+	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"time"
 )
 
@@ -66,14 +65,14 @@ func (respEvent deviceResponseImpl) Response() string {
 }
 
 // NewResponseEvent creates a new response event object
-func NewResponseEvent(eventType EventType, subject string, changeID change.ID, response string) DeviceResponse {
+func NewResponseEvent(eventType EventType, subject string, changeID devicechangetypes.ID, response string) DeviceResponse {
 	dr := deviceResponseImpl{
 		eventImpl: eventImpl{
 			subject:   subject,
 			time:      time.Now(),
 			eventType: eventType,
 			object: deviceResponseObj{
-				changeID: base64.StdEncoding.EncodeToString(changeID),
+				changeID: string(changeID),
 				error:    nil,
 				response: response,
 			},
@@ -92,23 +91,6 @@ func NewDeviceConnectedEvent(eventType EventType, subject string) DeviceResponse
 			object: deviceResponseObj{
 				changeID: "",
 				error:    nil,
-				response: "",
-			},
-		},
-	}
-	return &dr
-}
-
-// NewErrorEvent creates a new error event object
-func NewErrorEvent(eventType EventType, subject string, changeID change.ID, err error) DeviceResponse {
-	dr := deviceResponseImpl{
-		eventImpl: eventImpl{
-			subject:   subject,
-			time:      time.Now(),
-			eventType: eventType,
-			object: deviceResponseObj{
-				changeID: base64.StdEncoding.EncodeToString(changeID),
-				error:    err,
 				response: "",
 			},
 		},
