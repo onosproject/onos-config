@@ -16,30 +16,20 @@ package gnmi
 
 import (
 	"context"
-	"github.com/golang/mock/gomock"
 	td1 "github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
 	td2 "github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/device"
-	"github.com/onosproject/onos-config/pkg/store/stream"
-	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/openconfig/goyang/pkg/yang"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"gotest.tools/assert"
 	"strconv"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/openconfig/gnmi/proto/gnmi"
-	"gotest.tools/assert"
 )
 
 const (
@@ -51,75 +41,9 @@ const (
 	deviceVersion1     = "1.0.0"
 )
 
-func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
-	mockstore.SetUpMapBackedNetworkChangesStore(store)
-	now := time.Now()
-	config1Value01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf4a", devicechangetypes.NewTypedValueUint64(14), false)
-	config1Value02, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueEmpty(), true)
-	change1 := devicechangetypes.Change{
-		Values: []*devicechangetypes.ChangeValue{
-			config1Value01, config1Value02},
-		DeviceID:      device1,
-		DeviceVersion: deviceVersion1,
-	}
-
-	networkChange1 := &networkchangetypes.NetworkChange{
-		ID:      networkChange1,
-		Changes: []*devicechangetypes.Change{&change1},
-		Updated: now,
-		Created: now,
-		Status:  changetypes.Status{State: changetypes.State_COMPLETE},
-	}
-	_ = store.Create(networkChange1)
-}
-
-func setUpBaseDevices(mockStores *MockStores) {
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
-		{
-			DeviceID: "Device1",
-			Version:  "1.0.0",
-			Type:     "TestDevice",
-		},
-	}).AnyTimes()
-
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mockStores.DeviceStore.EXPECT().List(gomock.Any()).DoAndReturn(
-		func(c chan<- *devicetopo.Device) (stream.Context, error) {
-			go func() {
-				c <- &devicetopo.Device{
-					ID:      "Device1 (1.0.0)",
-					Version: "1.0.0",
-				}
-				c <- &devicetopo.Device{
-					ID:      "Device2 (2.0.0)",
-					Version: "2.0.0",
-				}
-				c <- &devicetopo.Device{
-					ID:      "Device3",
-					Version: "1.0.0",
-				}
-				close(c)
-			}()
-			return stream.NewContext(func() {
-			}), nil
-		}).AnyTimes()
-}
-
-func setUpForSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*gnmi.Update) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	setUpBaseDevices(mockStores)
-	var deletePaths = make([]*gnmi.Path, 0)
-	var replacedPaths = make([]*gnmi.Update, 0)
-	var updatedPaths = make([]*gnmi.Update, 0)
-	return server, deletePaths, replacedPaths, updatedPaths
-}
-
 // Test_doSingleSet shows how a value of 1 path can be set on a target
 func Test_doSingleSet(t *testing.T) {
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
@@ -178,7 +102,7 @@ func Test_doSingleSet(t *testing.T) {
 
 // Test_doSingleSet shows how a value of 1 list can be set on a target
 func Test_doSingleSetList(t *testing.T) {
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a/list2a[name=a/b]/tx-power"))
 	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
@@ -237,7 +161,7 @@ func Test_doSingleSetList(t *testing.T) {
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
 func Test_do2SetsOnSameTarget(t *testing.T) {
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	pathElemsRefs1, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2b"})
 	value1Str := gnmi.TypedValue_StringVal{StringVal: "newValue2b"}
@@ -280,7 +204,7 @@ func Test_do2SetsOnSameTarget(t *testing.T) {
 // Test_do2SetsOnDiffTargets shows how paths on multiple targets can be Set at
 // same time
 func Test_do2SetsOnDiffTargets(t *testing.T) {
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	// Make the same change to 2 targets
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
@@ -323,7 +247,7 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 // Test_do2SetsOnOneTargetOneOnDiffTarget shows how multiple paths on multiple
 // targets can be Set at same time
 func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	// Make the same change to 2 targets
 	pathElemsRefs2a, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
@@ -379,7 +303,7 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 // a single target fails
 func Test_doDuplicateSetSingleTarget(t *testing.T) {
 	t.Skip("Not detecting error for duplicate change. Needs investigation")
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	// Make 2 changes
 	pathElemsRefs2a, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
@@ -434,7 +358,7 @@ func Test_doDuplicateSetSingleTarget(t *testing.T) {
 // duplicates it should fail
 func Test_doDuplicateSet2Targets(t *testing.T) {
 	t.Skip("Not detecting error for duplicate change. Needs investigation")
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	// Make 2 changes
 	pathElemsRefs2a, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
@@ -507,7 +431,7 @@ func Test_doDuplicateSet2Targets(t *testing.T) {
 // Note how the SetResponse does not include the dups
 func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 	t.Skip("Dupes not detected - needs investigation")
-	server, _, _, _ := setUpForSetTests(t)
+	server, _, _, _ := setUpForGetSetTests(t)
 	// Make 2 changes
 	pathElemsRefs2a, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	valueStr2a := gnmi.TypedValue_StringVal{StringVal: "6thValue2a"}
@@ -595,7 +519,7 @@ func Test_doDuplicateSet1TargetNewOnOther(t *testing.T) {
 
 func Test_NetCfgSetWithDuplicateNameGiven(t *testing.T) {
 	t.Skip("Dupes not detected - needs investigation")
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	typedValue := gnmi.TypedValue_StringVal{StringVal: "Value2a"}
@@ -650,7 +574,7 @@ func Test_NetCfgSetWithDuplicateNameGiven(t *testing.T) {
 
 // Test_doSingleDelete shows how a value of 1 path can be deleted on a target
 func Test_doSingleDelete(t *testing.T) {
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	deletePath := &gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
@@ -707,7 +631,7 @@ func Test_doSingleDelete(t *testing.T) {
 
 // Test_doUpdateDeleteSet shows how a request with a delete and an update can be applied on a target
 func Test_doUpdateDeleteSet(t *testing.T) {
-	server, deletePaths, replacedPaths, updatedPaths := setUpForSetTests(t)
+	server, deletePaths, replacedPaths, updatedPaths := setUpForGetSetTests(t)
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	typedValue := gnmi.TypedValue_StringVal{StringVal: "newValue2a"}

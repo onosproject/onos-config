@@ -25,11 +25,14 @@ import (
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/types/change/network"
+	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 	"os"
 	"sync"
@@ -236,6 +239,72 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	log.Info("Finished setUp()")
 
 	return server, mgr, &mockStores
+}
+
+func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
+	mockstore.SetUpMapBackedNetworkChangesStore(store)
+	now := time.Now()
+	config1Value01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf4a", devicechangetypes.NewTypedValueUint64(14), false)
+	config1Value02, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueEmpty(), true)
+	change1 := devicechangetypes.Change{
+		Values: []*devicechangetypes.ChangeValue{
+			config1Value01, config1Value02},
+		DeviceID:      device1,
+		DeviceVersion: deviceVersion1,
+	}
+
+	networkChange1 := &networkchangetypes.NetworkChange{
+		ID:      networkChange1,
+		Changes: []*devicechangetypes.Change{&change1},
+		Updated: now,
+		Created: now,
+		Status:  changetypes.Status{State: changetypes.State_COMPLETE},
+	}
+	_ = store.Create(networkChange1)
+}
+
+func setUpBaseDevices(mockStores *MockStores) {
+	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*devicestore.Info{
+		{
+			DeviceID: "Device1",
+			Version:  "1.0.0",
+			Type:     "TestDevice",
+		},
+	}).AnyTimes()
+
+	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mockStores.DeviceStore.EXPECT().List(gomock.Any()).DoAndReturn(
+		func(c chan<- *devicetopo.Device) (stream.Context, error) {
+			go func() {
+				c <- &devicetopo.Device{
+					ID:      "Device1 (1.0.0)",
+					Version: "1.0.0",
+				}
+				c <- &devicetopo.Device{
+					ID:      "Device2 (2.0.0)",
+					Version: "2.0.0",
+				}
+				c <- &devicetopo.Device{
+					ID:      "Device3",
+					Version: "1.0.0",
+				}
+				close(c)
+			}()
+			return stream.NewContext(func() {
+			}), nil
+		}).AnyTimes()
+}
+
+func setUpForGetSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*gnmi.Update) {
+	server, mgr, mockStores := setUp(t)
+	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
+	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
+	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
+	setUpBaseDevices(mockStores)
+	var deletePaths = make([]*gnmi.Path, 0)
+	var replacedPaths = make([]*gnmi.Update, 0)
+	var updatedPaths = make([]*gnmi.Update, 0)
+	return server, deletePaths, replacedPaths, updatedPaths
 }
 
 func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
