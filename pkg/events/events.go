@@ -27,16 +27,9 @@ type EventType int
 
 // Values of the EventType enumeration
 const ( // For event types
-	EventTypeConfiguration EventType = iota
-	EventTypeTopoCache
-	EventTypeOperationalState
-	EventTypeAchievedSetConfig
-	EventTypeSubscribeNotificationSetConfig
+	EventTypeOperationalState EventType = iota
 	EventTypeDeviceConnected
-	EventTypeErrorSetConfig
-	EventTypeSubscribeErrorNotificationSetConfig
 	EventTypeErrorParseConfig
-	EventTypeErrorSetInitialConfig
 	EventTypeErrorDeviceConnect
 	EventTypeErrorDeviceCapabilities
 	EventTypeErrorDeviceDisconnect

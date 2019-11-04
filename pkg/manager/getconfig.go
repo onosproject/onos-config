@@ -48,8 +48,6 @@ func (m *Manager) GetTargetNewConfig(deviceID devicetype.ID, version devicetype.
 // GetAllDeviceIds returns a list of just DeviceIDs from the Config store
 func (m *Manager) GetAllDeviceIds() *[]string {
 	var deviceIds = make([]string, 0)
-
-	//TODO move to topo
 	deviceChan := make(chan *devicetopo.Device)
 	err := m.DeviceStore.List(deviceChan)
 	if err != nil {

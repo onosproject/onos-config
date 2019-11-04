@@ -61,7 +61,6 @@ type Manager struct {
 	deviceSnapshotController  *controller.Controller
 	ModelRegistry             *modelregistry.ModelRegistry
 	TopoChannel               chan *devicetopo.ListResponse
-	ChangesChannel            chan events.ConfigEvent
 	OperationalStateChannel   chan events.OperationalStateEvent
 	SouthboundErrorChan       chan events.DeviceResponse
 	Dispatcher                *dispatcher.Dispatcher
@@ -94,15 +93,11 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		deviceSnapshotController:  devicesnapshot.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
 		TopoChannel:               topoCh,
 		ModelRegistry:             modelReg,
-		ChangesChannel:            make(chan events.ConfigEvent, 10),
 		OperationalStateChannel:   make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
 		OperationalStateCache:     make(map[devicetopo.ID]devicechangetypes.TypedValueMap),
 	}
-
-	//TODO perform a sanity check on the new atomix stores ?
-
 	return &mgr, nil
 }
 
@@ -169,7 +164,7 @@ func (m *Manager) Run() {
 //Close kills the channels and manager related objects
 func (m *Manager) Close() {
 	log.Info("Closing Manager")
-	close(m.ChangesChannel)
+	close(m.TopoChannel)
 	close(m.OperationalStateChannel)
 }
 
@@ -189,13 +184,11 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 			if err != nil {
 				log.Error("Can't notify connection", err)
 			}
-			//TODO unblock config
 		case events.EventTypeErrorDeviceConnect:
 			_, err := m.DeviceDisconnected(subject, event.Error())
 			if err != nil {
 				log.Error("Can't notify disconnection", err)
 			}
-			//TODO unblock config
 		default:
 			if strings.Contains(event.Error().Error(), "desc =") {
 				log.Errorf("Error reported to channel %s",

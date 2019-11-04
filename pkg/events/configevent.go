@@ -14,12 +14,6 @@
 
 package events
 
-import (
-	"encoding/base64"
-	"github.com/onosproject/onos-config/pkg/store/change"
-	"time"
-)
-
 // ConfigEvent a configuration event. It is a specialization of Event, by adding
 // 2 new methods to interface
 type ConfigEvent interface {
@@ -56,18 +50,4 @@ func (e configEventImpl) Applied() bool {
 		return ce.applied
 	}
 	return false
-}
-
-// NewConfigEvent creates a new config event object
-func NewConfigEvent(subject string, changeID change.ID, applied bool) ConfigEvent {
-	ce := configEventImpl{eventImpl{
-		subject:   subject,
-		time:      time.Now(),
-		eventType: EventTypeConfiguration,
-		object: configEventObj{
-			changeID: base64.StdEncoding.EncodeToString(changeID),
-			applied:  applied,
-		},
-	}}
-	return ce
 }

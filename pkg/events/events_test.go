@@ -27,44 +27,11 @@ import (
 
 const (
 	eventSubject  = "device22"
-	eventTypeCfg  = EventTypeConfiguration
-	eventValueKey = "ChangeID"
-	eventValue    = "test-event"
 	path1         = "test1/cont1a/cont2a/leaf2a"
 	value1        = "value1"
 	testChangeID  = "dGVzdDE="
 	testResponse  = "test response"
 )
-
-func Test_eventConstruction(t *testing.T) {
-	values := make(map[string]string)
-	values[eventValueKey] = eventValue
-	event := NewEvent(eventSubject, eventTypeCfg, values)
-
-	assert.Equal(t, event.EventType(), eventTypeCfg)
-	assert.Equal(t, event.Subject(), eventSubject)
-	assert.Assert(t, event.Time().Before(time.Now()))
-
-	assert.Assert(t, strings.Contains(event.String(), eventSubject))
-	assert.Equal(t, len(event.Object().(map[string]string)), 1)
-}
-
-func Test_configEventConstruction(t *testing.T) {
-
-	b := []byte(eventValue)
-
-	event := NewConfigEvent(eventSubject, b, true)
-
-	assert.Equal(t, event.EventType(), eventTypeCfg)
-	assert.Equal(t, event.Subject(), eventSubject)
-	assert.Assert(t, event.Time().Before(time.Now()))
-
-	assert.Equal(t, event.ChangeID(), base64.StdEncoding.EncodeToString(b))
-	assert.Equal(t, event.Applied(), true)
-
-	assert.Assert(t, strings.Contains(event.String(), eventSubject))
-	assert.Assert(t, strings.Contains(EventTypeConfiguration.String(), "Configuration"))
-}
 
 func Test_operationalStateEventConstruction(t *testing.T) {
 
@@ -80,19 +47,6 @@ func Test_operationalStateEventConstruction(t *testing.T) {
 
 	assert.Equal(t, event.Path(), path1)
 	assert.Equal(t, event.Value().ValueToString(), value1)
-}
-
-func Test_responseEventConstruction(t *testing.T) {
-	cid1, _ := base64.StdEncoding.DecodeString(testChangeID)
-	event := NewResponseEvent(EventTypeAchievedSetConfig, eventSubject, cid1, testResponse)
-
-	assert.Equal(t, event.EventType(), EventTypeAchievedSetConfig)
-	assert.Equal(t, event.Subject(), eventSubject)
-	assert.Assert(t, event.Time().Before(time.Now()))
-
-	assert.Equal(t, event.ChangeID(), testChangeID)
-	assert.Equal(t, event.Response(), testResponse)
-	assert.NilError(t, event.Error())
 }
 
 func Test_errorEventConstruction(t *testing.T) {
