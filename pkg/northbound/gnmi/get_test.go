@@ -92,10 +92,7 @@ func Test_getNoPathElems(t *testing.T) {
 
 // Test_getAllDevices is where a wildcard is used for target - path is ignored
 func Test_getAllDevices(t *testing.T) {
-	// TODO - GetAllDeviceIds() uses atomix, needs better mocking
-	t.Skip("TODO - mock for atomix")
-	server, _, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	server, _, _, _ := setUpForGetSetTests(t)
 
 	allDevicesPath := gnmi.Path{Elem: make([]*gnmi.PathElem, 0), Target: "*"}
 
@@ -113,16 +110,12 @@ func Test_getAllDevices(t *testing.T) {
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
-	assert.Equal(t, deviceListStr,
-		"[Device1 (1.0.0), Device2 (1.0.0), Device2 (2.0.0), device-1-device-simulator (1.0.0), device-2-device-simulator (1.0.0), device-3-device-simulator (1.0.0), localhost-1 (1.0.0), localhost-2 (1.0.0), localhost-3 (1.0.0), stratum-sim-1 (1.0.0)]")
+	assert.Equal(t, deviceListStr, "[Device1 (1.0.0), Device2 (2.0.0), Device3]")
 }
 
 // Test_getalldevices is where a wildcard is used for target - path is ignored
 func Test_getAllDevicesInPrefix(t *testing.T) {
-	// TODO - GetAllDeviceIds() uses atomix, needs better mocking
-	t.Skip("TODO - mock for atomix")
-	server, _, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	server, _, _, _ := setUpForGetSetTests(t)
 
 	request := gnmi.GetRequest{
 		Prefix: &gnmi.Path{Target: "*"},
@@ -136,9 +129,7 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
-	assert.Equal(t, deviceListStr,
-		"[Device1 (1.0.0), Device2 (1.0.0), Device2 (2.0.0), device-1-device-simulator (1.0.0), device-2-device-simulator (1.0.0), device-3-device-simulator (1.0.0), localhost-1 (1.0.0), localhost-2 (1.0.0), localhost-3 (1.0.0), stratum-sim-1 (1.0.0)]",
-		"Expected value")
+	assert.Equal(t, deviceListStr, "[Device1 (1.0.0), Device2 (2.0.0), Device3]", "Expected value")
 }
 
 func Test_get2PathsWithPrefix(t *testing.T) {
