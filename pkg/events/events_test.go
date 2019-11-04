@@ -26,11 +26,11 @@ import (
 )
 
 const (
-	eventSubject  = "device22"
-	path1         = "test1/cont1a/cont2a/leaf2a"
-	value1        = "value1"
-	testChangeID  = "dGVzdDE="
-	testResponse  = "test response"
+	eventSubject = "device22"
+	path1        = "test1/cont1a/cont2a/leaf2a"
+	value1       = "value1"
+	testChangeID = "dGVzdDE="
+	testResponse = "test response"
 )
 
 func Test_operationalStateEventConstruction(t *testing.T) {

@@ -51,8 +51,8 @@ const (
 )
 
 func (et EventType) String() string {
-	return [...]string{"Configuration", "TopoCache", "OperationalState", "EventTypeAchievedSetConfig",
-		"EventTypeErrorSetConfig", "EventTypeErrorParseConfig", "EventTypeErrorSetInitialConfig",
+	return [...]string{"OperationalState", "EventTypeAchievedSetConfig",
+		"EventTypeErrorSetConfig", "EventTypeErrorParseConfig",
 		"EventTypeErrorDeviceConnect", "EventTypeErrorDeviceCapabilities", "EventTypeErrorDeviceDisconnect",
 		"EventTypeErrorSubscribe, EventTypeErrorMissingModelPlugin, EventTypeErrorTranslation"}[et]
 }
