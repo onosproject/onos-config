@@ -17,10 +17,7 @@ package gnmi
 import (
 	"context"
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/store/device"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -215,20 +212,13 @@ func Test_WrongDevice(t *testing.T) {
 
 	//request := buildRequest(path, gnmi.SubscriptionList_STREAM)
 
-	changeChan := make(chan events.ConfigEvent)
 	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
-	//serverFake := gNMISubscribeServerFake{
-	//	Request:   request,
-	//	Responses: responsesChan,
-	//	Signal:    make(chan struct{}),
-	//}
 
 	targets := make(map[string]struct{})
 	//subs := make([]*regexp.Regexp, 0)
 	//resChan := make(chan result)
 	targets["Device2"] = struct{}{}
 	//go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
-	changeChan <- events.NewConfigEvent("Device1", []byte("test"), true)
 	var response *gnmi.SubscribeResponse
 	select {
 	case response = <-responsesChan:
@@ -239,10 +229,10 @@ func Test_WrongDevice(t *testing.T) {
 	targets["Device1"] = struct{}{}
 	//subs = append(subs, utils.MatchWildcardRegexp("/cont1a/*/leaf3c"))
 	//go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
-	config1Value05, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2c", devicechangetypes.NewTypedValueString("def"), false)
-	config1Value09, _ := devicechangetypes.NewChangeValue("/cont1a/list2a[name=txout2]", devicechangetypes.NewTypedValueEmpty(), true)
-	change1, _ := change.NewChange([]*devicechangetypes.ChangeValue{config1Value05, config1Value09}, "Remove txout 2")
-	changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
+	//config1Value05, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2c", devicechangetypes.NewTypedValueString("def"), false)
+	//config1Value09, _ := devicechangetypes.NewChangeValue("/cont1a/list2a[name=txout2]", devicechangetypes.NewTypedValueEmpty(), true)
+	//change1, _ := change.NewChange([]*devicechangetypes.ChangeValue{config1Value05, config1Value09}, "Remove txout 2")
+	//changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
 	select {
 	case response = <-responsesChan:
 		log.Error("Should not be receiving response ", response)
@@ -265,7 +255,7 @@ func Test_WrongPath(t *testing.T) {
 
 	//request := buildRequest(path, gnmi.SubscriptionList_STREAM)
 
-	changeChan := make(chan events.ConfigEvent)
+	//changeChan := make(chan events.ConfigEvent)
 	responsesChan := make(chan *gnmi.SubscribeResponse, 1)
 	//serverFake := gNMISubscribeServerFake{
 	//	Request:   request,
@@ -281,10 +271,10 @@ func Test_WrongPath(t *testing.T) {
 	//subsStr := make([]*regexp.Regexp, 0)
 	//subsStr = append(subsStr, utils.MatchWildcardRegexp(subscriptionPathStr))
 	//go listenForUpdates(changeChan, serverFake, mgr, targets, subsStr, resChan)
-	config1Value05, _ := devicechangetypes.NewChangeValue("/test1:cont1a/cont2a/leaf2c", devicechangetypes.NewTypedValueString("def"), false)
-	config1Value09, _ := devicechangetypes.NewChangeValue("/test1:cont1a/list2a[name=txout2]", devicechangetypes.NewTypedValueEmpty(), true)
-	change1, _ := change.NewChange([]*devicechangetypes.ChangeValue{config1Value05, config1Value09}, "Remove txout 2")
-	changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
+	//config1Value05, _ := devicechangetypes.NewChangeValue("/test1:cont1a/cont2a/leaf2c", devicechangetypes.NewTypedValueString("def"), false)
+	//config1Value09, _ := devicechangetypes.NewChangeValue("/test1:cont1a/list2a[name=txout2]", devicechangetypes.NewTypedValueEmpty(), true)
+	//change1, _ := change.NewChange([]*devicechangetypes.ChangeValue{config1Value05, config1Value09}, "Remove txout 2")
+	//changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
 	select {
 	case response = <-responsesChan:
 		log.Error("Should not be receiving response ", response)

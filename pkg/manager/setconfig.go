@@ -37,7 +37,6 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName devicetype.ID, version dev
 	if err != nil {
 		return err
 	}
-	//TODO this results empty and will work only with exact match of these types (getStoredConfig was masking not exact matches)
 	modelName := utils.ToModelName(deviceType, version)
 	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
 	if !ok {
@@ -74,8 +73,6 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName devicetype.ID, version dev
 func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
 	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info, netcfgchangename string) error {
 	//TODO evaluate need of user and add it back if need be.
-	//TODO start watch and build update Result
-	//TODO return an error if the device is new and extensions 101 and 102 are not specified
 	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 	if errChanges != nil {
 		return errChanges
@@ -100,7 +97,6 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 	deviceChanges := make([]*devicechangetypes.Change, 0)
 	for target, updates := range targetUpdates {
 		//FIXME this is a sequential job, not parallelized
-		//FIXME target is a device name with no version
 		version := deviceInfo[devicetype.ID(target)].Version
 		deviceType := deviceInfo[devicetype.ID(target)].Type
 		newChange, err := m.ComputeNewDeviceChange(

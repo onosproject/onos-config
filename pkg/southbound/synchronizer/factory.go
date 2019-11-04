@@ -56,7 +56,6 @@ func Factory(topoChannel <-chan *devicetopo.ListResponse, opStateChan chan<- eve
 			}
 			operationalStateCache[notifiedDevice.ID] = make(devicechangetypes.TypedValueMap)
 			target := southbound.NewTarget()
-			//TODO configuration needs to be blocked at this point in time to allow for device connection.
 			sync, err := New(ctx, notifiedDevice, opStateChan, southboundErrorChan,
 				operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode)
 			if err != nil {

@@ -21,7 +21,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	"github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -61,8 +60,7 @@ const (
 func synchronizerSetUp() (chan devicetopo.ListResponse, chan events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
 	*modelregistry.ModelRegistry, modelregistry.ReadOnlyPathMap,
-	devicechangetypes.TypedValueMap, chan events.ConfigEvent,
-	error) {
+	devicechangetypes.TypedValueMap, error) {
 
 	dispatcher := dispatcher.NewDispatcher()
 	mr := new(modelregistry.ModelRegistry)
@@ -80,7 +78,6 @@ func synchronizerSetUp() (chan devicetopo.ListResponse, chan events.OperationalS
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, mr, roPathMap, opStateCache,
-		make(chan events.ConfigEvent),
 		nil
 }
 
@@ -92,12 +89,11 @@ func synchronizerSetUp() (chan devicetopo.ListResponse, chan events.OperationalS
  * getting the OpState attributes
  */
 func TestNew(t *testing.T) {
-	topoChan, opstateChan, responseChan, dispatcher, models, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
+	topoChan, opstateChan, responseChan, dispatcher, models, roPathMap, opstateCache, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 	assert.Assert(t, topoChan != nil)
 	assert.Assert(t, opstateChan != nil)
 	assert.Assert(t, responseChan != nil)
-	assert.Assert(t, configChan != nil)
 	assert.Assert(t, dispatcher != nil)
 	assert.Assert(t, models != nil)
 	assert.Assert(t, roPathMap != nil)
@@ -316,7 +312,7 @@ func setUpStatePaths(t *testing.T) (*gnmi.Path, *gnmi.TypedValue, *gnmi.Path, *g
  * Also in this case we test the GetState_OpState for getting the OpState attribs
  */
 func TestNewWithExistingConfig(t *testing.T) {
-	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, configChan, err := synchronizerSetUp()
+	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
@@ -434,18 +430,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	//go s.syncConfigEventsToDevice(mockTarget, responseChan)
 
 	//Create a change that we can send down to device
-	value1, err := devicechangetypes.NewChangeValue(cont1aCont2aLeaf2a, devicechangetypes.NewTypedValueUint64(12), false)
 	assert.NilError(t, err)
-	change1, err := change.NewChange([]*devicechangetypes.ChangeValue{value1}, "mock test change")
-	assert.NilError(t, err)
-
-	// Send a device config event
-	go func() {
-		configEvent := events.NewConfigEvent(string(device1.ID), change1.ID, true)
-		configChan <- configEvent
-	}()
-
-	time.Sleep(100 * time.Millisecond) // Wait for response message
 
 	// Listen for OpState updates
 	go func() {
@@ -525,7 +510,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 }
 
 func TestNewWithExistingConfigError(t *testing.T) {
-	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, _, err := synchronizerSetUp()
+	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
