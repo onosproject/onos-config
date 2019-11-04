@@ -32,7 +32,6 @@ func TestService_getGNMIServiceVersion(t *testing.T) {
 }
 
 func TestService_Capabilities(t *testing.T) {
-	//t.Skip("TODO needs to be verified")
 	server := Server{}
 	request := gnmi.CapabilityRequest{}
 	manager.GetManager().ModelRegistry = &modelregistry.ModelRegistry{
