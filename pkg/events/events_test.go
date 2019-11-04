@@ -33,6 +33,18 @@ const (
 	testResponse = "test response"
 )
 
+func Test_eventConstruction(t *testing.T) {
+	values := make(map[string]string)
+	event := NewEvent(eventSubject, EventTypeOperationalState, values)
+
+	assert.Equal(t, event.EventType(), EventTypeOperationalState)
+	assert.Equal(t, event.Subject(), eventSubject)
+	assert.Assert(t, event.Time().Before(time.Now()))
+
+	assert.Assert(t, strings.Contains(event.String(), eventSubject))
+	assert.Equal(t, len(event.Object().(map[string]string)), 0)
+}
+
 func Test_operationalStateEventConstruction(t *testing.T) {
 
 	event := NewOperationalStateEvent(eventSubject, path1, devicechangetypes.NewTypedValueString(value1), EventItemAdded)

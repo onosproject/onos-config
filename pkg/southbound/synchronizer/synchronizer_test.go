@@ -430,7 +430,6 @@ func TestNewWithExistingConfig(t *testing.T) {
 	//go s.syncConfigEventsToDevice(mockTarget, responseChan)
 
 	//Create a change that we can send down to device
-	_, err = devicechangetypes.NewChangeValue(cont1aCont2aLeaf2a, devicechangetypes.NewTypedValueUint64(12), false)
 	assert.NilError(t, err)
 
 	// Listen for OpState updates
