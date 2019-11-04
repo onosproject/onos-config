@@ -15,7 +15,6 @@
 package events
 
 import (
-	"encoding/base64"
 	"fmt"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"strings"
@@ -29,7 +28,6 @@ const (
 	eventSubject = "device22"
 	path1        = "test1/cont1a/cont2a/leaf2a"
 	value1       = "value1"
-	testChangeID = "dGVzdDE="
 	testResponse = "test response"
 )
 
@@ -59,19 +57,6 @@ func Test_operationalStateEventConstruction(t *testing.T) {
 
 	assert.Equal(t, event.Path(), path1)
 	assert.Equal(t, event.Value().ValueToString(), value1)
-}
-
-func Test_errorEventConstruction(t *testing.T) {
-	cid1, _ := base64.StdEncoding.DecodeString(testChangeID)
-	event := NewErrorEvent(EventTypeErrorGetWithRoPaths, eventSubject, cid1, fmt.Errorf(testResponse))
-
-	assert.Equal(t, event.EventType(), EventTypeErrorGetWithRoPaths)
-	assert.Equal(t, event.Subject(), eventSubject)
-	assert.Assert(t, event.Time().Before(time.Now()))
-
-	assert.Equal(t, event.ChangeID(), testChangeID)
-	assert.Equal(t, event.Response(), "")
-	assert.Error(t, event.Error(), testResponse, "expected an error")
 }
 
 func Test_errorEventBoChangeIDConstruction(t *testing.T) {

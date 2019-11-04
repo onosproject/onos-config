@@ -16,7 +16,6 @@ package store
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
@@ -54,19 +53,4 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 		assert.NilError(b, err, "path not valid %s", err)
 
 	}
-}
-
-func BenchmarkCreateChange(b *testing.B) {
-
-	changeValues := []*devicechangetypes.ChangeValue{}
-	for i := 0; i < b.N; i++ {
-		path := fmt.Sprintf("/test%d", i)
-		cv, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueUint64(uint(i)), false)
-		changeValues = append(changeValues, cv)
-	}
-
-	newChange, _ := change.NewChange(changeValues, "Benchmarked Change")
-
-	err := newChange.IsValid()
-	assert.NilError(b, err, "Invalid change %s", err)
 }
