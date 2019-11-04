@@ -21,11 +21,13 @@ import (
 	td2 "github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/openconfig/goyang/pkg/yang"
 	"google.golang.org/grpc/codes"
@@ -71,11 +73,7 @@ func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
 	_ = store.Create(networkChange1)
 }
 
-func setUpForSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*gnmi.Update) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
+func setUpBaseDevices(mockStores *MockStores) {
 	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
@@ -83,7 +81,36 @@ func setUpForSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*g
 			Type:     "TestDevice",
 		},
 	}).AnyTimes()
+
 	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mockStores.DeviceStore.EXPECT().List(gomock.Any()).DoAndReturn(
+		func(c chan<- *devicetopo.Device) (stream.Context, error) {
+			go func() {
+				c <- &devicetopo.Device{
+					ID:      "Device1 (1.0.0)",
+					Version: "1.0.0",
+				}
+				c <- &devicetopo.Device{
+					ID:      "Device2 (2.0.0)",
+					Version: "2.0.0",
+				}
+				c <- &devicetopo.Device{
+					ID:      "Device3",
+					Version: "1.0.0",
+				}
+				close(c)
+			}()
+			return stream.NewContext(func() {
+			}), nil
+		}).AnyTimes()
+}
+
+func setUpForSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*gnmi.Update) {
+	server, mgr, mockStores := setUp(t)
+	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
+	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
+	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
+	setUpBaseDevices(mockStores)
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
