@@ -17,39 +17,52 @@ package diags
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
 	"io"
+	log "k8s.io/klog"
+	"net"
 	"os"
-	"sync"
 	"testing"
 	"time"
 )
 
 // TestMain initializes the test suite context.
 func TestMain(m *testing.M) {
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	northbound.SetUpServer(10123, Service{}, &waitGroup)
-	waitGroup.Wait()
+	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
 }
 
-func getClient() (*grpc.ClientConn, OpStateDiagsClient, ChangeServiceClient) {
-	conn := northbound.Connect(northbound.Address, northbound.Opts...)
-	return conn, NewOpStateDiagsClient(conn), NewChangeServiceClient(conn)
-}
-
 func Test_GetOpState_DeviceSubscribe(t *testing.T) {
-	conn, client, _ := getClient()
-	defer conn.Close()
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+	defer s.Stop()
+
+	RegisterOpStateDiagsServer(s, &Server{})
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			t.Error("Server exited with error")
+		}
+	}()
+
+	dialer := func(ctx context.Context, address string) (net.Conn, error) {
+		return lis.Dial()
+	}
+
+	conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	if err != nil {
+		t.Error("Failed to dial bufnet")
+	}
+
+	client := CreateOpStateDiagsClient(conn)
 
 	opStateReq := &OpStateRequest{DeviceId: "Device2", Subscribe: true}
 
-	stream, err := client.GetOpState(context.Background(), opStateReq)
-	assert.NilError(t, err, "unable to issue request")
+	stream, err := client.GetOpState(context.TODO(), opStateReq)
+	assert.NilError(t, err, "expected to get device-1")
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF || in == nil {

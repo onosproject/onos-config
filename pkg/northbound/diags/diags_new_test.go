@@ -18,9 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/northbound"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
@@ -29,26 +27,42 @@ import (
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/onosproject/onos-config/pkg/types/device"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
 	"io"
 	log "k8s.io/klog"
+	"net"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
 
-var (
-	// Address is a test server address as "127.0.0.1:port" string
-	Address string
-
-	// Opts is a set of gRPC connection options
-	Opts []grpc.DialOption
-)
-
 // SetUpServer sets up a test manager and a gRPC end-point
 // to which it registers the given service.
-func setUpServer(port int16, service Service, waitGroup *sync.WaitGroup, ctrl *gomock.Controller) *manager.Manager {
+func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, ChangeServiceClient, *grpc.Server) {
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+
+	RegisterChangeServiceServer(s, &Server{})
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			t.Error("Server exited with error")
+		}
+	}()
+
+	dialer := func(ctx context.Context, address string) (net.Conn, error) {
+		return lis.Dial()
+	}
+
+	conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	if err != nil {
+		t.Error("Failed to dial bufnet")
+	}
+
+	client := CreateChangeServiceClient(conn)
+
+	ctrl := gomock.NewController(t)
 	mgrTest, err := manager.LoadManager(
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
@@ -61,42 +75,16 @@ func setUpServer(port int16, service Service, waitGroup *sync.WaitGroup, ctrl *g
 		log.Error("Unable to load manager")
 	}
 
-	config := northbound.NewServerConfig("", "", "")
-	config.Port = port
-	s := northbound.NewServer(config)
-	s.AddService(service)
-
-	empty := ""
-	Address = fmt.Sprintf(":%d", port)
-	Opts, err = certs.HandleCertArgs(&empty, &empty)
-	if err != nil {
-		log.Error("Error loading cert ", err)
-	}
-	go func() {
-		err := s.Serve(func(started string) {
-			waitGroup.Done()
-			fmt.Printf("Started %v", started)
-		})
-		if err != nil {
-			log.Error("Unable to serve ", err)
-		}
-	}()
-
-	return mgrTest
+	return mgrTest, conn, client, s
 }
 
 func Test_ListNetworkChanges(t *testing.T) {
 	const numevents = 40
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	// Trying to get away from the TestMain PITA
-	mgrTest := setUpServer(10124, Service{}, &waitGroup, gomock.NewController(t))
-	waitGroup.Wait()
+	mgrTest, conn, client, server := setUpServer(t)
+	defer server.Stop()
+	defer conn.Close()
 
 	networkChanges := generateNetworkChangeData(numevents)
-	conn := northbound.Connect(Address, Opts...)
-	client := NewChangeServiceClient(conn)
-	defer conn.Close()
 
 	mockNwChStore, ok := mgrTest.NetworkChangesStore.(*mockstore.MockNetworkChangesStore)
 	assert.Assert(t, ok, "casting mock store")
@@ -140,16 +128,11 @@ func Test_ListNetworkChanges(t *testing.T) {
 
 func Test_ListDeviceChanges(t *testing.T) {
 	const numevents = 40
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	// Trying to get away from the TestMain PITA
-	mgrTest := setUpServer(10125, Service{}, &waitGroup, gomock.NewController(t))
-	waitGroup.Wait()
+	mgrTest, conn, client, server := setUpServer(t)
+	defer server.Stop()
+	defer conn.Close()
 
 	deviceChanges := generateDeviceChangeData(numevents)
-	conn := northbound.Connect(Address, Opts...)
-	client := NewChangeServiceClient(conn)
-	defer conn.Close()
 
 	mockDevChStore, ok := mgrTest.DeviceChangesStore.(*mockstore.MockDeviceChangesStore)
 	assert.Assert(t, ok, "casting mock store")
