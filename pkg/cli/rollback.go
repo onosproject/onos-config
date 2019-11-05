@@ -22,8 +22,8 @@ import (
 
 func getRollbackCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "rollback-new <changeId>",
-		Short: "Rolls-back a new network change",
+		Use:   "rollback <changeId>",
+		Short: "Rolls-back a network change",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runRollbackCommand,
 	}
