@@ -148,7 +148,7 @@ service ConfigAdminService {
     rpc ListRegisteredModels(ListModelsRequest) returns (stream ModelInfo);
 
     // RollbackNetworkChange rolls back the specified network change (or the latest one).
-    rpc RollbackNewNetworkChange(RollbackRequest) returns (RollbackResponse);
+    rpc RollbackNetworkChange(RollbackRequest) returns (RollbackResponse);
 
     // GetSnapshot gets a snapshot
     rpc GetSnapshot(GetSnapshotRequest) returns (onos.config.snapshot.device.Snapshot);

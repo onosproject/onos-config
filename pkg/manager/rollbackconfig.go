@@ -23,9 +23,9 @@ import (
 	log "k8s.io/klog"
 )
 
-// NewRollbackTargetConfig rollbacks the last change for a given configuration on the target, by setting phase to
+// RollbackTargetConfig rollbacks the last change for a given configuration on the target, by setting phase to
 // rollback and state to pending.
-func (m *Manager) NewRollbackTargetConfig(networkChangeID networkchangetypes.ID) error {
+func (m *Manager) RollbackTargetConfig(networkChangeID networkchangetypes.ID) error {
 	//TODO make sure this change is the last applied one
 	changeRollback, errGet := m.NetworkChangesStore.Get(networkChangeID)
 	if errGet != nil {

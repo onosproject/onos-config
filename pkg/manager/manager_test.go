@@ -506,7 +506,7 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	err = mgrTest.SetNewNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
 	assert.NilError(t, err, "Can't create change")
 
-	err = mgrTest.NewRollbackTargetConfig("TestingRollback2")
+	err = mgrTest.RollbackTargetConfig("TestingRollback2")
 	assert.NilError(t, err, "Can't roll back change")
 	rbChange, _ := mgrTest.NetworkChangesStore.Get("TestingRollback2")
 	assert.Assert(t, rbChange != nil)
