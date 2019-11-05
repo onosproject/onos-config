@@ -35,9 +35,8 @@ func Factory(topoChannel <-chan *devicetopo.ListResponse, opStateChan chan<- eve
 	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[devicetopo.ID]devicechangetypes.TypedValueMap) {
 
 	for topoEvent := range topoChannel {
-		log.Infof("Receieved TopoChannel event %v %v", topoEvent.Type, topoEvent)
 		notifiedDevice := topoEvent.Device
-		//TODO evaluate the need for fine-grained checking
+		// Watch() replays existing devices (with type NONE) and subsequent changes (with type ADDED)
 		if topoEvent.Type == devicetopo.ListResponse_NONE || topoEvent.Type == devicetopo.ListResponse_ADDED {
 			ctx := context.Background()
 
