@@ -112,16 +112,6 @@ func LoadManager(leadershipStore leadership.Store, mastershipStore mastership.St
 		log.Error("Cannot load device store ", err)
 		return nil, err
 	}
-	if deviceStore != nil {
-		var err error
-		go func() {
-			err = deviceStore.Watch(topoChannel)
-			if err != nil {
-				log.Error("Cannot Watch devices", err)
-			}
-		}()
-		log.Info("Device store watch started")
-	}
 
 	return NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStore, deviceCache,
 		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, topoChannel)
@@ -159,6 +149,12 @@ func (m *Manager) Run() {
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.TopoChannel, m.OperationalStateChannel, m.SouthboundErrorChan,
 		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)
+
+	err := m.DeviceStore.Watch(m.TopoChannel)
+	if err != nil {
+		log.Error("Error Watching devices", err)
+	}
+	log.Info("Device store watch started")
 }
 
 //Close kills the channels and manager related objects
