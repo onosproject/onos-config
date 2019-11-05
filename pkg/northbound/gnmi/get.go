@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -170,13 +169,7 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 	typeVersionInfo, errTypeVersion := manager.GetManager().ExtractTypeAndVersion(devicetopo.ID(target),
 		storedDevice, string(version), "")
 	if errTypeVersion != nil {
-		//TODO return instead of log
-		log.Error(errTypeVersion)
-		typeVersionInfo = devicestore.Info{
-			Type:    "",
-			Version: "",
-		}
-		//return nil, errTypeVersion
+		return nil, errTypeVersion
 	}
 
 	pathAsString := utils.StrPath(path)
