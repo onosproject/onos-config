@@ -36,8 +36,8 @@ func Factory(topoChannel <-chan *devicetopo.ListResponse, opStateChan chan<- eve
 
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
-		//TODO evaluate the need for fine-grained checking
-		if topoEvent.Type == devicetopo.ListResponse_ADDED {
+		// Watch() replays existing devices (with type NONE) and subsequent changes (with type ADDED)
+		if topoEvent.Type == devicetopo.ListResponse_NONE || topoEvent.Type == devicetopo.ListResponse_ADDED {
 			ctx := context.Background()
 
 			modelName := utils.ToModelName(devicetype.Type(notifiedDevice.Type), devicetype.Version(notifiedDevice.Version))
