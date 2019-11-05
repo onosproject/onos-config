@@ -27,7 +27,7 @@ func Test_new_rollback(t *testing.T) {
 	CaptureOutput(outputBuffer)
 
 	setUpMockClients(MockClientsConfig{})
-	rollback := getRollbackNewCommand()
+	rollback := getRollbackCommand()
 	args := make([]string, 1)
 	args[0] = "ABCD1234"
 	err := rollback.RunE(rollback, args)

@@ -49,7 +49,7 @@ func Test_RollbackNetworkChange_BadName(t *testing.T) {
 	conn, client := getAdminClient()
 	defer conn.Close()
 	mockNetworkChangesStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("Rollback aborted. Network change BAD CHANGE not found"))
-	_, err := client.RollbackNewNetworkChange(context.Background(), &RollbackRequest{Name: "BAD CHANGE"})
+	_, err := client.RollbackNetworkChange(context.Background(), &RollbackRequest{Name: "BAD CHANGE"})
 	assert.ErrorContains(t, err, "Rollback aborted. Network change BAD CHANGE not found")
 }
 
@@ -57,6 +57,6 @@ func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 	conn, client := getAdminClient()
 	defer conn.Close()
 	mockNetworkChangesStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("change is not specified"))
-	_, err := client.RollbackNewNetworkChange(context.Background(), &RollbackRequest{Name: ""})
+	_, err := client.RollbackNetworkChange(context.Background(), &RollbackRequest{Name: ""})
 	assert.ErrorContains(t, err, "is not")
 }
