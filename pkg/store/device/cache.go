@@ -69,7 +69,7 @@ type networkChangeStoreCache struct {
 // listen starts listening for network changes
 func (c *networkChangeStoreCache) listen() error {
 	ch := make(chan stream.Event)
-	ctx, err := c.networkChangeStore.Watch(ch)
+	ctx, err := c.networkChangeStore.Watch(ch, networkchangestore.WithReplay())
 	if err != nil {
 		return err
 	}
