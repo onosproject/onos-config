@@ -110,10 +110,10 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 		}
 
 		//If there are no paths in the request such request is ignored
-		//TODO evaluate throwing error
 		if subscribe.Subscription == nil {
-			log.Warning("No subscription paths, ignoring request ", in)
-			continue
+			log.Error("No subscription paths, ignoring request ", in)
+			resChan <- result{success: false, err: fmt.Errorf("no subscription paths in request")}
+			break
 		}
 
 		//If the subscription mode is ONCE or POLL we immediately start a routine to collect the data
