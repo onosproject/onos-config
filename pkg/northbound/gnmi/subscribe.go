@@ -217,8 +217,8 @@ func listenForNewDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Ma
 						log.Warning("Error in parsing path ", err)
 						continue
 					}
-					log.Infof("USED - NEW - Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
-					err = buildAndSendUpdate(pathGnmi, string(target), value.Value, stream)
+					log.Infof("Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
+					err = buildAndSendUpdate(pathGnmi, string(target), value.Value, value.Removed, stream)
 					if err != nil {
 						log.Error("Error in sending update path ", err)
 						resChan <- result{success: false, err: err}
@@ -244,7 +244,7 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 				continue
 			}
 
-			err = buildAndSendUpdate(pathGnmi, target, opStateChange.Value(), stream)
+			err = buildAndSendUpdate(pathGnmi, target, opStateChange.Value(), len(opStateChange.Value().Bytes) > 0, stream)
 			if err != nil {
 				log.Error("Error in sending update path ", err)
 				resChan <- result{success: false, err: err}
@@ -262,13 +262,15 @@ func matchRegex(path string, subs []*regexp.Regexp) bool {
 	return false
 }
 
-func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechangetypes.TypedValue, stream gnmi.GNMI_SubscribeServer) error {
+func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechangetypes.TypedValue, removed bool,
+	stream gnmi.GNMI_SubscribeServer) error {
 	pathGnmi.Target = target
 	var response *gnmi.SubscribeResponse
 	var errGet error
-	//if value is empty it's a delete operation, thus we issue a delete notification
-	//TODO can probably be moved to Value.Remove
-	if len(value.Bytes) > 0 {
+	//if removed we issue a delete notification
+	if removed {
+		response, errGet = buildDeleteResponse(pathGnmi)
+	} else {
 		valueGnmi, err := values.NativeTypeToGnmiTypedValue(value)
 		if err != nil {
 			log.Warning("Unable to convert native value to gnmiValue", err)
@@ -280,8 +282,6 @@ func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechanget
 			Val:  valueGnmi,
 		}
 		response, errGet = buildUpdateResponse(update)
-	} else {
-		response, errGet = buildDeleteResponse(pathGnmi)
 	}
 	if errGet != nil {
 		return errGet
