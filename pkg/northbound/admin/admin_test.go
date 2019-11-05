@@ -18,45 +18,85 @@ import (
 	"context"
 	"errors"
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/pkg/test/mocks/store"
-	"os"
-	"sync"
-	"testing"
-
-	"github.com/onosproject/onos-config/pkg/northbound"
+	"github.com/onosproject/onos-config/pkg/manager"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
+	log "k8s.io/klog"
+	"net"
+	"os"
+	"testing"
 )
-
-var mockNetworkChangesStore *store.MockNetworkChangesStore
 
 // TestMain initializes the test suite context.
 func TestMain(m *testing.M) {
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	mgr := northbound.SetUpServer(10124, Service{}, &waitGroup)
-	mockNetworkChangesStore = mgr.NetworkChangesStore.(*store.MockNetworkChangesStore)
-	waitGroup.Wait()
+	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
 }
 
-func getAdminClient() (*grpc.ClientConn, ConfigAdminServiceClient) {
-	conn := northbound.Connect(northbound.Address, northbound.Opts...)
-	return conn, CreateConfigAdminServiceClient(conn)
+func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, ConfigAdminServiceClient, *grpc.Server) {
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+
+	RegisterConfigAdminServiceServer(s, &Server{})
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			t.Error("Server exited with error")
+		}
+	}()
+
+	dialer := func(ctx context.Context, address string) (net.Conn, error) {
+		return lis.Dial()
+	}
+
+	conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	if err != nil {
+		t.Error("Failed to dial bufnet")
+	}
+
+	client := CreateConfigAdminServiceClient(conn)
+
+	ctrl := gomock.NewController(t)
+	mgrTest, err := manager.LoadManager(
+		mockstore.NewMockLeadershipStore(ctrl),
+		mockstore.NewMockMastershipStore(ctrl),
+		mockstore.NewMockDeviceChangesStore(ctrl),
+		devicestore.NewMockCache(ctrl),
+		mockstore.NewMockNetworkChangesStore(ctrl),
+		mockstore.NewMockNetworkSnapshotStore(ctrl),
+		mockstore.NewMockDeviceSnapshotStore(ctrl))
+	if err != nil {
+		log.Error("Unable to load manager")
+	}
+
+	return mgrTest, conn, client, s
 }
 
 func Test_RollbackNetworkChange_BadName(t *testing.T) {
-	conn, client := getAdminClient()
+	mgrTest, conn, client, server := setUpServer(t)
+	defer server.Stop()
 	defer conn.Close()
-	mockNetworkChangesStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("Rollback aborted. Network change BAD CHANGE not found"))
+
+	mockNwChStore, ok := mgrTest.NetworkChangesStore.(*mockstore.MockNetworkChangesStore)
+	assert.Assert(t, ok, "casting mock store")
+
+	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("Rollback aborted. Network change BAD CHANGE not found"))
 	_, err := client.RollbackNetworkChange(context.Background(), &RollbackRequest{Name: "BAD CHANGE"})
 	assert.ErrorContains(t, err, "Rollback aborted. Network change BAD CHANGE not found")
 }
 
 func Test_RollbackNetworkChange_NoChange(t *testing.T) {
-	conn, client := getAdminClient()
+	mgrTest, conn, client, server := setUpServer(t)
+	defer server.Stop()
 	defer conn.Close()
-	mockNetworkChangesStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("change is not specified"))
+
+	mockNwChStore, ok := mgrTest.NetworkChangesStore.(*mockstore.MockNetworkChangesStore)
+	assert.Assert(t, ok, "casting mock store")
+
+	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("change is not specified"))
 	_, err := client.RollbackNetworkChange(context.Background(), &RollbackRequest{Name: ""})
 	assert.ErrorContains(t, err, "is not")
 }
