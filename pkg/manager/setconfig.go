@@ -22,6 +22,8 @@ import (
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 )
 
@@ -69,7 +71,7 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName devicetype.ID, version dev
 	return nil
 }
 
-// SetNewNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
+// SetNewNetworkConfig creates and stores a new network config for the given updates and deletes and targets
 func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
 	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info, netcfgchangename string) error {
 	//TODO evaluate need of user and add it back if need be.
@@ -99,6 +101,10 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 		//FIXME this is a sequential job, not parallelized
 		version := deviceInfo[devicetype.ID(target)].Version
 		deviceType := deviceInfo[devicetype.ID(target)].Type
+		deviceType, version, err := mgr.CheckCacheForDevice(devicetype.ID(target), deviceType, version)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 		newChange, err := m.ComputeNewDeviceChange(
 			devicetype.ID(target), version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {

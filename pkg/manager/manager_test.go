@@ -54,6 +54,8 @@ const (
 
 const (
 	device1                              = "Device1"
+	device5                              = "Device5"
+	device7                              = "Device7"
 	deviceVersion1                       = "1.0.0"
 	deviceTypeTd                         = "TestDevice"
 	networkChange1 networkchangetypes.ID = "NetworkChange1"
@@ -72,6 +74,15 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 	ctrl := gomock.NewController(t)
 
 	mockDeviceCache := devicestore.NewMockCache(ctrl)
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return(
+		[]*devicestore.Info{
+			{
+				DeviceID: devicetype.ID("Device1"),
+				Version:  "1.0.0",
+				Type:     "type",
+			},
+		},
+	).AnyTimes()
 
 	// Data for default configuration
 
@@ -211,6 +222,7 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 	// Mock Device Store
 	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
 	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
+	mockDeviceStore.EXPECT().Get(devicetopo.ID("Device1")).AnyTimes()
 
 	mgrTest, err = NewManager(
 		mockLeadershipStore,
@@ -233,6 +245,7 @@ func setUp(t *testing.T) (*Manager, *mockstore.MockDeviceStore, *mockstore.MockN
 func makeDeviceChanges(device string, updates devicechangetypes.TypedValueMap, deletes []string) (
 	map[string]devicechangetypes.TypedValueMap, map[string][]string, map[devicetype.ID]devicestore.Info) {
 	deviceInfo := make(map[devicetype.ID]devicestore.Info)
+	deviceInfo[devicetype.ID(device1)] = devicestore.Info{Type: deviceTypeTd, Version: deviceVersion1}
 
 	updatesForDevice := make(map[string]devicechangetypes.TypedValueMap)
 	updatesForDevice[device] = updates
@@ -298,17 +311,19 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 // When device type is given it is like extension 102 and allows a never heard of before config to be created
 func Test_SetNetworkConfig_NewConfig(t *testing.T) {
-	mgrTest, _, _, _, _ := setUp(t)
+	mgrTest, mockDeviceStore, _, _, mockDeviceCache := setUp(t)
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID(device5)).AnyTimes()
+	mockDeviceStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("no device"))
 
 	// Making change
-	const Device5 = "Device5"
 	const NetworkChangeAddDevice5 = "NetworkChangeAddDevice5"
 
 	updates := make(devicechangetypes.TypedValueMap)
 	updates[test1Cont1ACont2ALeaf2A] = devicechangetypes.NewTypedValueUint64(valueLeaf2A789)
 	deletes := []string{test1Cont1ACont2ALeaf2C}
 
-	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(Device5, updates, deletes)
+	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(device5, updates, deletes)
+	deviceInfo[devicetype.ID(device5)] = devicestore.Info{Type: deviceTypeTd, Version: deviceVersion1}
 
 	err := mgrTest.SetNewNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo, NetworkChangeAddDevice5)
 	assert.NilError(t, err, "SetTargetConfig error")
@@ -333,7 +348,10 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 
 // When device type is given it is like extension 102 and allows a never heard of before config to be created - here it is missing
 func Test_SetNetworkConfig_NewConfig102Missing(t *testing.T) {
-	mgrTest, _, _, _, _ := setUp(t)
+	mgrTest, mockDeviceStore, _, _, mockDeviceCacheStore := setUp(t)
+
+	mockDeviceCacheStore.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*devicestore.Info, 0)).AnyTimes()
+	mockDeviceStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("no device"))
 
 	// Making change
 	updates := make(devicechangetypes.TypedValueMap)
@@ -342,27 +360,22 @@ func Test_SetNetworkConfig_NewConfig102Missing(t *testing.T) {
 	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges("Device6", updates, deletes)
 
 	err := mgrTest.SetNewNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo, "Test_SetNetworkConfig_NewConfig")
-	// TODO - the error for the missing type is currently not detecting the error of the unknown device type
-	t.Skip()
-	assert.ErrorContains(t, err, "no configuration found matching 'Device6-1.0.0' and no device type () given Please specify version and device type in extensions 101 and 102")
-	//_, okupdate := configurationStoreTest["Device6-1.0.0"]
-	//assert.Assert(t, !okupdate, "Expecting not to find Device6-1.0.0")
+	assert.ErrorContains(t, err, "target Device6 is not known. Need to supply a type and version through Extensions 101 and 102")
 }
 
 func Test_SetBadNetworkConfig(t *testing.T) {
 
-	mgrTest, _, _, _, _ := setUp(t)
+	mgrTest, mockDeviceStore, _, _, mockDeviceCache := setUp(t)
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID(device7)).AnyTimes()
+	mockDeviceStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("no device"))
 
 	updates := make(devicechangetypes.TypedValueMap)
 	deletes := []string{test1Cont1ACont2ALeaf2A, test1Cont1ACont2ALeaf2C}
 	updates[test1Cont1ACont2ALeaf2B] = devicechangetypes.NewTypedValueFloat(valueLeaf2B159)
-	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
+	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device7, updates, deletes)
 
 	err := mgrTest.SetNewNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "Testing")
-	// TODO - Storing a new device without extensions 101 and 102 set does not currently throw an error
-	// enable test when an error can be seen
-	t.Skip()
-	assert.ErrorContains(t, err, "no configuration found")
+	assert.ErrorContains(t, err, "is not known")
 }
 
 func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
