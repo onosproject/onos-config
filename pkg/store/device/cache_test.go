@@ -16,6 +16,7 @@ package device
 
 import (
 	"github.com/golang/mock/gomock"
+	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/test/mocks/store"
 	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
@@ -30,7 +31,7 @@ func TestDeviceCache(t *testing.T) {
 	chVal := &atomic.Value{}
 	ctrl := gomock.NewController(t)
 	netChangeStore := store.NewMockNetworkChangesStore(ctrl)
-	netChangeStore.EXPECT().Watch(gomock.Any()).DoAndReturn(func(ch chan<- stream.Event) (stream.Context, error) {
+	netChangeStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(func(ch chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
 		chVal.Store(ch)
 		return stream.NewContext(func() {
 		}), nil
