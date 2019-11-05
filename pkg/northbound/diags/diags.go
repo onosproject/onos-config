@@ -59,8 +59,8 @@ func CreateChangeServiceClient(cc *grpc.ClientConn) ChangeServiceClient {
 
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
-	RegisterOpStateDiagsServer(r, Server{})
-	RegisterChangeServiceServer(r, Server{})
+	RegisterOpStateDiagsServer(r, &Server{})
+	RegisterChangeServiceServer(r, &Server{})
 }
 
 // Server implements the gRPC service for diagnostic facilities.
@@ -68,7 +68,7 @@ type Server struct {
 }
 
 // GetOpState provides a stream of Operational and State data
-func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServer) error {
+func (s *Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServer) error {
 	deviceCache, ok := manager.GetManager().OperationalStateCache[devicetopo.ID(r.DeviceId)]
 	if !ok {
 		return fmt.Errorf("no Operational State cache available for %s", r.DeviceId)
@@ -134,7 +134,7 @@ func (s Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServ
 // If the optional `subscribe` flag is true, then get then return the list of
 // changes first, and then hold the connection open and send on
 // further updates until the client hangs up
-func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeService_ListNetworkChangesServer) error {
+func (s *Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeService_ListNetworkChangesServer) error {
 	log.Infof("ListNetworkChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
 
 	// There may be a wildcard given - we only want to reply with changes that match
@@ -226,7 +226,7 @@ func (s Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSer
 }
 
 // ListDeviceChanges provides a stream of Device Changes
-func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeService_ListDeviceChangesServer) error {
+func (s *Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeService_ListDeviceChangesServer) error {
 	log.Infof("ListDeviceChanges called with %s %s. Subscribe %v", r.DeviceID, r.DeviceVersion, r.Subscribe)
 
 	var watchOpts []device.WatchOption
@@ -234,9 +234,16 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 		watchOpts = append(watchOpts, device.WithReplay())
 	}
 
+	// Look in the deviceCache for a version
+	_, version, err := manager.GetManager().CheckCacheForDevice(r.DeviceID, "", r.DeviceVersion)
+	if err != nil {
+		log.Errorf(err.Error())
+		return err
+	}
+
 	if r.Subscribe {
 		eventCh := make(chan streams.Event)
-		ctx, err := manager.GetManager().DeviceChangesStore.Watch(devicetype.NewVersionedID(r.DeviceID, r.DeviceVersion), eventCh, watchOpts...)
+		ctx, err := manager.GetManager().DeviceChangesStore.Watch(devicetype.NewVersionedID(r.DeviceID, version), eventCh, watchOpts...)
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
@@ -273,7 +280,7 @@ func (s Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServi
 		}
 	} else {
 		changeCh := make(chan *devicechangetypes.DeviceChange)
-		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, r.DeviceVersion), changeCh)
+		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, version), changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err

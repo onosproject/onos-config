@@ -25,7 +25,8 @@ import (
 	changetypes "github.com/onosproject/onos-config/pkg/types/change"
 	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
+	devicetype "github.com/onosproject/onos-config/pkg/types/device"
+	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
@@ -74,6 +75,8 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, ChangeServic
 	if err != nil {
 		log.Error("Unable to load manager")
 	}
+
+	mgrTest.DeviceStore = mockstore.NewMockDeviceStore(ctrl)
 
 	return mgrTest, conn, client, s
 }
@@ -135,9 +138,9 @@ func Test_ListDeviceChanges(t *testing.T) {
 	deviceChanges := generateDeviceChangeData(numevents)
 
 	mockDevChStore, ok := mgrTest.DeviceChangesStore.(*mockstore.MockDeviceChangesStore)
-	assert.Assert(t, ok, "casting mock store")
+	assert.Assert(t, ok, "casting mock device changes store")
 	mockDevChStore.EXPECT().List(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(id device.VersionedID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+		DoAndReturn(func(id devicetype.VersionedID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 
 			// Send our network changes as a streamed response to store List()
 			go func() {
@@ -151,6 +154,28 @@ func Test_ListDeviceChanges(t *testing.T) {
 
 			}), nil
 		})
+
+	mockDeviceStore, ok := mgrTest.DeviceStore.(*mockstore.MockDeviceStore)
+	assert.Assert(t, ok, "casting mock device store")
+	mockDeviceStore.EXPECT().Get(devicetopo.ID("device-1")).Return(
+		&devicetopo.Device{
+			ID:      "device-1",
+			Address: "localhost:10126",
+			Type:    "Devicesim",
+			Role:    "leaf",
+		}, nil,
+	)
+
+	mockDeviceCache, ok := mgrTest.DeviceCache.(*devicestore.MockCache)
+	assert.Assert(t, ok, "casting mock cache")
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*devicestore.Info{
+		{
+			DeviceID: "device-1",
+			Type:     "Devicesim",
+			Version:  "1.0.0",
+		},
+	})
+
 	req := ListDeviceChangeRequest{
 		Subscribe:     false,
 		DeviceID:      "device-1",
@@ -176,6 +201,51 @@ func Test_ListDeviceChanges(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond * numevents * 2)
+}
+
+func Test_ListDeviceChangesNoVersionManyPresent(t *testing.T) {
+	mgrTest, conn, client, server := setUpServer(t)
+	defer server.Stop()
+	defer conn.Close()
+
+	mockDeviceStore, ok := mgrTest.DeviceStore.(*mockstore.MockDeviceStore)
+	assert.Assert(t, ok, "casting mock device store")
+	mockDeviceStore.EXPECT().Get(devicetopo.ID("device-1")).Return(
+		nil, nil,
+	)
+
+	mockDeviceCache, ok := mgrTest.DeviceCache.(*devicestore.MockCache)
+	assert.Assert(t, ok, "casting mock cache")
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*devicestore.Info{
+		{
+			DeviceID: "device-1",
+			Type:     "Devicesim",
+			Version:  "1.0.0",
+		},
+		{
+			DeviceID: "device-1",
+			Type:     "Devicesim",
+			Version:  "2.0.0",
+		},
+	})
+	time.Sleep(time.Millisecond * 10)
+
+	req := ListDeviceChangeRequest{
+		Subscribe: false,
+		DeviceID:  "device-1",
+	}
+	stream, err := client.ListDeviceChanges(context.TODO(), &req)
+	assert.NilError(t, err) // Doesn't get error here - this is just the client - error is in stream
+	assert.Assert(t, stream != nil)
+
+	go func() {
+		for {
+			_, err := stream.Recv()                                                                                                        // Should block until we receive responses
+			assert.Error(t, err, "rpc error: code = Internal desc = target device-1 has 2 versions. Specify 1 version with extension 102") //Expecting an error here
+		}
+	}()
+	time.Sleep(time.Millisecond * 10)
+
 }
 
 func generateNetworkChangeData(count int) []*networkchangetypes.NetworkChange {
