@@ -207,8 +207,13 @@ func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminS
 	return nil
 }
 
+<<<<<<< Updated upstream
 // RollbackNetworkChange rolls back a named atomix-based network change.
 func (s Server) RollbackNetworkChange(
+=======
+// RollbackNewNetworkChange rolls back a named new (atomix-based)netwoget.gok changes.
+func (s Server) RollbackNewNetworkChange(
+>>>>>>> Stashed changes
 	ctx context.Context, req *RollbackRequest) (*RollbackResponse, error) {
 	errRollback := manager.GetManager().RollbackTargetConfig(networkchangetypes.ID(req.Name))
 	if errRollback != nil {
