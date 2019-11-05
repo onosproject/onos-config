@@ -169,7 +169,8 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 	typeVersionInfo, errTypeVersion := manager.GetManager().ExtractTypeAndVersion(devicetopo.ID(target),
 		storedDevice, string(version), "")
 	if errTypeVersion != nil {
-		return nil, errTypeVersion
+		log.Errorf("Error while extracting type and version for target %s with err %v", target, errTypeVersion)
+		return nil, status.Error(codes.InvalidArgument, errTypeVersion.Error())
 	}
 
 	pathAsString := utils.StrPath(path)
