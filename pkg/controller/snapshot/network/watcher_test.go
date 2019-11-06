@@ -17,7 +17,7 @@ package network
 import (
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/api/types/snapshot"
-	networksnaptype "github.com/onosproject/onos-config/api/types/snapshot/network"
+	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -37,19 +37,19 @@ func TestNetworkSnapshotWatcher(t *testing.T) {
 	err = watcher.Start(ch)
 	assert.NoError(t, err)
 
-	snapshot1 := &networksnaptype.NetworkSnapshot{}
+	snapshot1 := &networksnapshot.NetworkSnapshot{}
 
 	err = store.Create(snapshot1)
 	assert.NoError(t, err)
 
 	select {
 	case id := <-ch:
-		assert.Equal(t, snapshot1.ID, networksnaptype.ID(id))
+		assert.Equal(t, snapshot1.ID, networksnapshot.ID(id))
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
 
-	snapshot2 := &networksnaptype.NetworkSnapshot{}
+	snapshot2 := &networksnapshot.NetworkSnapshot{}
 
 	err = store.Create(snapshot2)
 	assert.NoError(t, err)

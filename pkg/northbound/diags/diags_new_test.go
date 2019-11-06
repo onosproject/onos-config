@@ -22,7 +22,7 @@ import (
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
-	"github.com/onosproject/onos-config/api/types/device"
+	devicetypes "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -141,7 +141,7 @@ func Test_ListDeviceChanges(t *testing.T) {
 	mockDevChStore, ok := mgrTest.DeviceChangesStore.(*mockstore.MockDeviceChangesStore)
 	assert.Assert(t, ok, "casting mock device changes store")
 	mockDevChStore.EXPECT().List(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(id device.VersionedID, ch chan<- *devicechange.DeviceChange) (stream.Context, error) {
+		DoAndReturn(func(id devicetypes.VersionedID, ch chan<- *devicechange.DeviceChange) (stream.Context, error) {
 
 			// Send our network changes as a streamed response to store List()
 			go func() {
@@ -169,7 +169,7 @@ func Test_ListDeviceChanges(t *testing.T) {
 
 	mockDeviceCache, ok := mgrTest.DeviceCache.(*devicestore.MockCache)
 	assert.Assert(t, ok, "casting mock cache")
-	mockDeviceCache.EXPECT().GetDevicesByID(devicetopo.ID("device-1")).Return([]*devicestore.Info{
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetypes.ID("device-1")).Return([]*devicestore.Info{
 		{
 			DeviceID: "device-1",
 			Type:     "Devicesim",
@@ -217,7 +217,7 @@ func Test_ListDeviceChangesNoVersionManyPresent(t *testing.T) {
 
 	mockDeviceCache, ok := mgrTest.DeviceCache.(*devicestore.MockCache)
 	assert.Assert(t, ok, "casting mock cache")
-	mockDeviceCache.EXPECT().GetDevicesByID(devicetopo.ID("device-1")).Return([]*devicestore.Info{
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetypes.ID("device-1")).Return([]*devicestore.Info{
 		{
 			DeviceID: "device-1",
 			Type:     "Devicesim",

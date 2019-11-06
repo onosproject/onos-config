@@ -15,8 +15,8 @@
 package utils
 
 import (
-	"github.com/onosproject/onos-config/api/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/api/types/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	"sort"
@@ -27,13 +27,13 @@ import (
 // This gets the change up to and including the latest
 // Use "nBack" to specify a number of changes back to go
 // If there are not as many changes in the history as nBack nothing is returned
-func ExtractFullConfig(deviceID device.VersionedID, newChange *devicechangetypes.Change, changeStore devicechangestore.Store,
-	nBack int) ([]*devicechangetypes.PathValue, error) {
+func ExtractFullConfig(deviceID device.VersionedID, newChange *devicechange.Change, changeStore devicechangestore.Store,
+	nBack int) ([]*devicechange.PathValue, error) {
 
 	// Have to use a slice to have a consistent output order
-	consolidatedConfig := make([]*devicechangetypes.PathValue, 0)
+	consolidatedConfig := make([]*devicechange.PathValue, 0)
 
-	changeChan := make(chan *devicechangetypes.DeviceChange)
+	changeChan := make(chan *devicechange.DeviceChange)
 
 	ctx, err := changeStore.List(deviceID, changeChan)
 
@@ -49,14 +49,14 @@ func ExtractFullConfig(deviceID device.VersionedID, newChange *devicechangetypes
 
 	if nBack == 0 {
 		for storeChange := range changeChan {
-			if storeChange.Status.State == change.State_COMPLETE && storeChange.Status.Phase != change.Phase_ROLLBACK {
+			if storeChange.Status.State == changetypes.State_COMPLETE && storeChange.Status.Phase != changetypes.Phase_ROLLBACK {
 				consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
 			}
 		}
 	} else {
-		changes := make([]*devicechangetypes.DeviceChange, 0)
+		changes := make([]*devicechange.DeviceChange, 0)
 		for storeChange := range changeChan {
-			if storeChange.Status.State == change.State_COMPLETE && storeChange.Status.Phase != change.Phase_ROLLBACK {
+			if storeChange.Status.State == changetypes.State_COMPLETE && storeChange.Status.Phase != changetypes.Phase_ROLLBACK {
 				changes = append(changes, storeChange)
 			}
 		}
@@ -73,7 +73,7 @@ func ExtractFullConfig(deviceID device.VersionedID, newChange *devicechangetypes
 	return consolidatedConfig, nil
 }
 
-func getPathValue(storeChange *devicechangetypes.Change, consolidatedConfig []*devicechangetypes.PathValue) []*devicechangetypes.PathValue {
+func getPathValue(storeChange *devicechange.Change, consolidatedConfig []*devicechange.PathValue) []*devicechange.PathValue {
 	for _, changeValue := range storeChange.Values {
 		if changeValue.Removed {
 			// Delete everything at that path and all below it
@@ -100,7 +100,7 @@ func getPathValue(storeChange *devicechangetypes.Change, consolidatedConfig []*d
 				}
 			}
 			if !alreadyExists {
-				copyCv := devicechangetypes.PathValue{
+				copyCv := devicechange.PathValue{
 					Path:  changeValue.GetPath(),
 					Value: changeValue.GetValue(),
 				}

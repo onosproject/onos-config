@@ -17,13 +17,13 @@ package manager
 
 import (
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/controller"
-	devicechange "github.com/onosproject/onos-config/pkg/controller/change/device"
-	networkchange "github.com/onosproject/onos-config/pkg/controller/change/network"
-	devicesnapshot "github.com/onosproject/onos-config/pkg/controller/snapshot/device"
-	networksnapshot "github.com/onosproject/onos-config/pkg/controller/snapshot/network"
+	devicechangectl "github.com/onosproject/onos-config/pkg/controller/change/device"
+	networkchangectl "github.com/onosproject/onos-config/pkg/controller/change/network"
+	devicesnapshotctl "github.com/onosproject/onos-config/pkg/controller/snapshot/device"
+	networksnapshotctl "github.com/onosproject/onos-config/pkg/controller/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -64,7 +64,7 @@ type Manager struct {
 	OperationalStateChannel   chan events.OperationalStateEvent
 	SouthboundErrorChan       chan events.DeviceResponse
 	Dispatcher                *dispatcher.Dispatcher
-	OperationalStateCache     map[devicetopo.ID]devicechangetypes.TypedValueMap
+	OperationalStateCache     map[devicetopo.ID]devicechange.TypedValueMap
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -87,16 +87,16 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		NetworkChangesStore:       networkChangesStore,
 		NetworkSnapshotStore:      networkSnapshotStore,
 		DeviceSnapshotStore:       deviceSnapshotStore,
-		networkChangeController:   networkchange.NewController(leadershipStore, deviceStore, networkChangesStore, deviceChangesStore),
-		deviceChangeController:    devicechange.NewController(mastershipStore, deviceStore, deviceChangesStore),
-		networkSnapshotController: networksnapshot.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore),
-		deviceSnapshotController:  devicesnapshot.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
+		networkChangeController:   networkchangectl.NewController(leadershipStore, deviceStore, networkChangesStore, deviceChangesStore),
+		deviceChangeController:    devicechangectl.NewController(mastershipStore, deviceStore, deviceChangesStore),
+		networkSnapshotController: networksnapshotctl.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore),
+		deviceSnapshotController:  devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
 		TopoChannel:               topoCh,
 		ModelRegistry:             modelReg,
 		OperationalStateChannel:   make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
-		OperationalStateCache:     make(map[devicetopo.ID]devicechangetypes.TypedValueMap),
+		OperationalStateCache:     make(map[devicetopo.ID]devicechange.TypedValueMap),
 	}
 	return &mgr, nil
 }
@@ -199,34 +199,34 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 // ComputeDeviceChange computes a given device change the given updates and deletes, according to the path
 // on the configuration for the specified target
 func (m *Manager) ComputeDeviceChange(deviceName devicetype.ID, version devicetype.Version,
-	deviceType devicetype.Type, updates devicechangetypes.TypedValueMap,
-	deletes []string, description string) (*devicechangetypes.Change, error) {
+	deviceType devicetype.Type, updates devicechange.TypedValueMap,
+	deletes []string, description string) (*devicechange.Change, error) {
 
-	var changes = make([]*devicechangetypes.ChangeValue, 0)
+	var newChanges = make([]*devicechange.ChangeValue, 0)
 	//updates
 	for path, value := range updates {
-		updateValue, err := devicechangetypes.NewChangeValue(path, value, false)
+		updateValue, err := devicechange.NewChangeValue(path, value, false)
 		if err != nil {
 			log.Warningf("Error creating value for %s %v", path, err)
 			continue
 		}
-		changes = append(changes, updateValue)
+		newChanges = append(newChanges, updateValue)
 	}
 	//deletes
 	for _, path := range deletes {
-		deleteValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
-		changes = append(changes, deleteValue)
+		deleteValue, _ := devicechange.NewChangeValue(path, devicechange.NewTypedValueEmpty(), true)
+		newChanges = append(newChanges, deleteValue)
 	}
 	//description := fmt.Sprintf("Originally created as part of %s", description)
 	//if description == "" {
 	//	description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
 	//}
 	//TODO lost description of Change
-	changeElement := &devicechangetypes.Change{
+	changeElement := &devicechange.Change{
 		DeviceID:      deviceName,
 		DeviceVersion: version,
 		DeviceType:    deviceType,
-		Values:        changes,
+		Values:        newChanges,
 	}
 
 	return changeElement, nil

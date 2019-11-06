@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/api/diags"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
@@ -56,7 +56,7 @@ func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_Ge
 	}
 
 	for path, value := range deviceCache {
-		pathValue := &devicechangetypes.PathValue{
+		pathValue := &devicechange.PathValue{
 			Path:  path,
 			Value: value,
 		}
@@ -86,7 +86,7 @@ func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_Ge
 				log.Infof("Event received NBI Diags OpState subscribe channel %s for %s",
 					streamID, r.DeviceId)
 
-				pathValue := &devicechangetypes.PathValue{
+				pathValue := &devicechange.PathValue{
 					Path:  opStateEvent.Path(),
 					Value: opStateEvent.Value(),
 				}
@@ -143,7 +143,7 @@ func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream dia
 					break
 				}
 
-				change := event.Object.(*networkchangetypes.NetworkChange)
+				change := event.Object.(*networkchange.NetworkChange)
 
 				if matcher.MatchString(string(change.ID)) {
 					msg := &diags.ListNetworkChangeResponse{
@@ -165,7 +165,7 @@ func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream dia
 			}
 		}
 	} else {
-		changeCh := make(chan *networkchangetypes.NetworkChange)
+		changeCh := make(chan *networkchange.NetworkChange)
 		ctx, err := manager.GetManager().NetworkChangesStore.List(changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
@@ -240,7 +240,7 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 					break
 				}
 
-				change := event.Object.(*devicechangetypes.DeviceChange)
+				change := event.Object.(*devicechange.DeviceChange)
 
 				msg := &diags.ListDeviceChangeResponse{
 					Change: change,
@@ -260,8 +260,8 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 			}
 		}
 	} else {
-		changeCh := make(chan *devicechangetypes.DeviceChange)
-		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, version), changeCh)
+		changeCh := make(chan *devicechange.DeviceChange)
+		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, r.DeviceVersion), changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err

@@ -17,7 +17,7 @@ package manager
 import (
 	"fmt"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
-	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	log "k8s.io/klog"
@@ -25,7 +25,7 @@ import (
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target, by setting phase to
 // rollback and state to pending.
-func (m *Manager) RollbackTargetConfig(networkChangeID networkchangetypes.ID) error {
+func (m *Manager) RollbackTargetConfig(networkChangeID networkchange.ID) error {
 	//TODO make sure this change is the last applied one
 	changeRollback, errGet := m.NetworkChangesStore.Get(networkChangeID)
 	if errGet != nil {
@@ -45,7 +45,7 @@ func (m *Manager) RollbackTargetConfig(networkChangeID networkchangetypes.ID) er
 	return listenForChangeNotification(m, networkChangeID)
 }
 
-func listenForChangeNotification(mgr *Manager, changeID networkchangetypes.ID) error {
+func listenForChangeNotification(mgr *Manager, changeID networkchange.ID) error {
 	networkChan := make(chan stream.Event)
 	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
 	if errWatch != nil {
@@ -53,7 +53,7 @@ func listenForChangeNotification(mgr *Manager, changeID networkchangetypes.ID) e
 	}
 	defer ctx.Close()
 	for changeEvent := range networkChan {
-		change := changeEvent.Object.(*networkchangetypes.NetworkChange)
+		change := changeEvent.Object.(*networkchange.NetworkChange)
 		log.Infof("Received notification for change ID %s, phase %s, state %s", change.ID,
 			change.Status.Phase, change.Status.State)
 		if change.Status.Phase == changetypes.Phase_ROLLBACK {

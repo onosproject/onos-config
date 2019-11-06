@@ -19,7 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/onosproject/onos-config/api/diags"
-	"github.com/onosproject/onos-config/api/types/change"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/api/types/device"
@@ -63,10 +63,10 @@ func generateDeviceChangeData(count int) {
 					},
 				},
 			},
-			Status: change.Status{
-				Phase:   change.Phase(cfgIdx % 2),
-				State:   change.State(cfgIdx % 4),
-				Reason:  change.Reason(cfgIdx % 2),
+			Status: changetypes.Status{
+				Phase:   changetypes.Phase(cfgIdx % 2),
+				State:   changetypes.State(cfgIdx % 4),
+				Reason:  changetypes.Reason(cfgIdx % 2),
 				Message: "Test",
 			},
 			Created: now,

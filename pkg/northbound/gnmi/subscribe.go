@@ -17,8 +17,8 @@ package gnmi
 import (
 	"crypto/sha1"
 	"fmt"
-	changeTypes "github.com/onosproject/onos-config/api/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
@@ -203,12 +203,12 @@ func listenForDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manag
 	}
 	defer ctx.Close()
 	for changeEvent := range eventCh {
-		change, ok := changeEvent.Object.(*devicechangetypes.DeviceChange)
+		change, ok := changeEvent.Object.(*devicechange.DeviceChange)
 		if !ok {
 			log.Error("Could not convert event to DeviceChange")
 			continue
 		}
-		if change.Status.State == changeTypes.State_COMPLETE {
+		if change.Status.State == changetypes.State_COMPLETE {
 			for _, value := range change.Change.Values {
 				if matchRegex(value.Path, subs) {
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(value.Path))
@@ -261,7 +261,7 @@ func matchRegex(path string, subs []*regexp.Regexp) bool {
 	return false
 }
 
-func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechangetypes.TypedValue, removed bool,
+func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechange.TypedValue, removed bool,
 	stream gnmi.GNMI_SubscribeServer) error {
 	pathGnmi.Target = target
 	var response *gnmi.SubscribeResponse

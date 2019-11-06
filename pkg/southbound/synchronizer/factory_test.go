@@ -15,7 +15,7 @@
 package synchronizer
 
 import (
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -27,11 +27,11 @@ import (
 
 func factorySetUp() (chan *devicetopo.ListResponse, chan<- events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
-	*modelregistry.ModelRegistry, map[devicetopo.ID]devicechangetypes.TypedValueMap, error) {
+	*modelregistry.ModelRegistry, map[devicetopo.ID]devicechange.TypedValueMap, error) {
 
 	dispatcher := dispatcher.NewDispatcher()
 	modelregistry := new(modelregistry.ModelRegistry)
-	opStateCache := make(map[devicetopo.ID]devicechangetypes.TypedValueMap)
+	opStateCache := make(map[devicetopo.ID]devicechange.TypedValueMap)
 	return make(chan *devicetopo.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),

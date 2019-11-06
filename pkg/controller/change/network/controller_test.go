@@ -18,8 +18,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/api/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/api/types/device"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
@@ -38,7 +38,7 @@ const (
 )
 
 const (
-	change1 = networkchangetypes.ID("change-1")
+	change1 = networkchange.ID("change-1")
 )
 
 // TestReconcilerChangeRollback tests applying and then rolling back a change
@@ -345,25 +345,25 @@ func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicecha
 	return devices, networkChanges, deviceChanges
 }
 
-func newChange(id networkchangetypes.ID, devices ...device.ID) *networkchangetypes.NetworkChange {
-	changes := make([]*devicechangetypes.Change, len(devices))
+func newChange(id networkchange.ID, devices ...device.ID) *networkchange.NetworkChange {
+	changes := make([]*devicechange.Change, len(devices))
 	for i, device := range devices {
-		changes[i] = &devicechangetypes.Change{
+		changes[i] = &devicechange.Change{
 			DeviceID:      device,
 			DeviceVersion: "1.0.0",
 			DeviceType:    "Stratum",
-			Values: []*devicechangetypes.ChangeValue{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path: "foo",
-					Value: &devicechangetypes.TypedValue{
+					Value: &devicechange.TypedValue{
 						Bytes: []byte("Hello world!"),
-						Type:  devicechangetypes.ValueType_STRING,
+						Type:  devicechange.ValueType_STRING,
 					},
 				},
 			},
 		}
 	}
-	return &networkchangetypes.NetworkChange{
+	return &networkchange.NetworkChange{
 		ID:      id,
 		Changes: changes,
 	}

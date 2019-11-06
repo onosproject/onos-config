@@ -17,11 +17,11 @@ package network
 import (
 	"github.com/onosproject/onos-config/api/types"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
-	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/api/types/device"
 	snaptypes "github.com/onosproject/onos-config/api/types/snapshot"
-	devicesnaptypes "github.com/onosproject/onos-config/api/types/snapshot/device"
-	networksnaptypes "github.com/onosproject/onos-config/api/types/snapshot/network"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/controller"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
@@ -60,7 +60,7 @@ type Reconciler struct {
 
 // Reconcile reconciles the state of a network configuration
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
-	snapshot, err := r.networkSnapshots.Get(networksnaptypes.ID(id))
+	snapshot, err := r.networkSnapshots.Get(networksnapshot.ID(id))
 	if err != nil {
 		return false, err
 	}
@@ -78,7 +78,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 }
 
 // reconcileMark reconciles a snapshot in the MARK phase
-func (r *Reconciler) reconcileMark(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcileMark(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// Handle each possible state of the phase
 	switch snapshot.Status.State {
 	case snaptypes.State_PENDING:
@@ -91,7 +91,7 @@ func (r *Reconciler) reconcileMark(snapshot *networksnaptypes.NetworkSnapshot) (
 }
 
 // reconcilePendingMark reconciles a snapshot in the PENDING state during the MARK phase
-func (r *Reconciler) reconcilePendingMark(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcilePendingMark(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// Determine whether the snapshot can be applied
 	canApply, err := r.canApplySnapshot(snapshot)
 	if err != nil {
@@ -110,7 +110,7 @@ func (r *Reconciler) reconcilePendingMark(snapshot *networksnaptypes.NetworkSnap
 }
 
 // canApplySnapshot returns a bool indicating whether the snapshot can be taken
-func (r *Reconciler) canApplySnapshot(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) canApplySnapshot(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	prevSnapshot, err := r.networkSnapshots.GetByIndex(snapshot.Index - 1)
 	if err != nil {
 		return false, err
@@ -121,12 +121,12 @@ func (r *Reconciler) canApplySnapshot(snapshot *networksnaptypes.NetworkSnapshot
 }
 
 // hasDeviceSnapshots indicates whether the given snapshot has device snapshots
-func hasDeviceSnapshots(snapshot *networksnaptypes.NetworkSnapshot) bool {
+func hasDeviceSnapshots(snapshot *networksnapshot.NetworkSnapshot) bool {
 	return snapshot.Refs != nil && len(snapshot.Refs) > 0
 }
 
 // reconcileRunningMark reconciles a snapshot in the RUNNING state during the MARK phase
-func (r *Reconciler) reconcileRunningMark(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcileRunningMark(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// If device snapshots have not been created, run the mark phase
 	if !hasDeviceSnapshots(snapshot) {
 		return r.createDeviceSnapshots(snapshot)
@@ -135,13 +135,13 @@ func (r *Reconciler) reconcileRunningMark(snapshot *networksnaptypes.NetworkSnap
 }
 
 // createDeviceSnapshots marks NetworkChanges for deletion and creates device snapshots
-func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// Iterate through network changes
-	deviceChanges := make(map[device.VersionedID]networkchangetypes.Index)
-	deviceMaxChanges := make(map[device.VersionedID]networkchangetypes.Index)
+	deviceChanges := make(map[device.VersionedID]networkchange.Index)
+	deviceMaxChanges := make(map[device.VersionedID]networkchange.Index)
 
 	// List network changes
-	changes := make(chan *networkchangetypes.NetworkChange)
+	changes := make(chan *networkchange.NetworkChange)
 	ctx, err := r.networkChanges.List(changes)
 	if err != nil {
 		return false, err
@@ -193,12 +193,12 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 	}
 
 	// Create device snapshots for each device
-	refs := make([]*networksnaptypes.DeviceSnapshotRef, 0, len(deviceMaxChanges))
+	refs := make([]*networksnapshot.DeviceSnapshotRef, 0, len(deviceMaxChanges))
 	for device, maxChangeIndex := range deviceMaxChanges {
-		deviceSnapshot := &devicesnaptypes.DeviceSnapshot{
+		deviceSnapshot := &devicesnapshot.DeviceSnapshot{
 			DeviceID:      device.GetID(),
 			DeviceVersion: device.GetVersion(),
-			NetworkSnapshot: devicesnaptypes.NetworkSnapshotRef{
+			NetworkSnapshot: devicesnapshot.NetworkSnapshotRef{
 				ID:    types.ID(snapshot.ID),
 				Index: types.Index(snapshot.Index),
 			},
@@ -211,7 +211,7 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 		if err := r.deviceSnapshots.Create(deviceSnapshot); err != nil {
 			return false, err
 		}
-		refs = append(refs, &networksnaptypes.DeviceSnapshotRef{
+		refs = append(refs, &networksnapshot.DeviceSnapshotRef{
 			DeviceSnapshotID: deviceSnapshot.ID,
 		})
 	}
@@ -231,7 +231,7 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnaptypes.NetworkSna
 }
 
 // completeRunningMark attempts to complete the MARK phase
-func (r *Reconciler) completeRunningMark(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) completeRunningMark(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	for _, ref := range snapshot.Refs {
 		deviceSnapshot, err := r.deviceSnapshots.Get(ref.DeviceSnapshotID)
 		if err != nil {
@@ -252,7 +252,7 @@ func (r *Reconciler) completeRunningMark(snapshot *networksnaptypes.NetworkSnaps
 }
 
 // reconcileDelete reconciles a snapshot in the DELETE phase
-func (r *Reconciler) reconcileDelete(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcileDelete(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// Handle each possible state of the phase
 	switch snapshot.Status.State {
 	case snaptypes.State_PENDING:
@@ -265,7 +265,7 @@ func (r *Reconciler) reconcileDelete(snapshot *networksnaptypes.NetworkSnapshot)
 }
 
 // reconcilePendingDelete reconciles a snapshot in the PENDING state during the DELETE phase
-func (r *Reconciler) reconcilePendingDelete(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcilePendingDelete(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// Ensure device snapshots are in the DELETE phase
 	if ok, err := r.ensureDeviceSnapshotsDelete(snapshot); ok || err != nil {
 		return ok, err
@@ -280,7 +280,7 @@ func (r *Reconciler) reconcilePendingDelete(snapshot *networksnaptypes.NetworkSn
 }
 
 // ensureDeviceSnapshotsDelete ensures device device snapshots are pending in the DELETE phase
-func (r *Reconciler) ensureDeviceSnapshotsDelete(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) ensureDeviceSnapshotsDelete(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// Ensure all device snapshots are in the DELETE phase
 	updated := false
 	for _, ref := range snapshot.Refs {
@@ -302,7 +302,7 @@ func (r *Reconciler) ensureDeviceSnapshotsDelete(snapshot *networksnaptypes.Netw
 }
 
 // reconcileRunningDelete reconciles a snapshot in the RUNNING state during the DELETE phase
-func (r *Reconciler) reconcileRunningDelete(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcileRunningDelete(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// Ensure device snapshots are in the RUNNING state
 	if ok, err := r.ensureDeleteRunning(snapshot); ok || err != nil {
 		return ok, err
@@ -330,9 +330,9 @@ func (r *Reconciler) reconcileRunningDelete(snapshot *networksnaptypes.NetworkSn
 }
 
 // deleteNetworkChanges deletes network changes marked for deletion
-func (r *Reconciler) deleteNetworkChanges(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) deleteNetworkChanges(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// List network changes
-	changes := make(chan *networkchangetypes.NetworkChange)
+	changes := make(chan *networkchange.NetworkChange)
 	ctx, err := r.networkChanges.List(changes)
 	if err != nil {
 		return false, err
@@ -351,7 +351,7 @@ func (r *Reconciler) deleteNetworkChanges(snapshot *networksnaptypes.NetworkSnap
 }
 
 // ensureDeleteRunning ensures device rollbacks are in the running state
-func (r *Reconciler) ensureDeleteRunning(snapshot *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) ensureDeleteRunning(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	updated := false
 	for _, ref := range snapshot.Refs {
 		deviceSnapshot, err := r.deviceSnapshots.Get(ref.DeviceSnapshotID)
@@ -371,7 +371,7 @@ func (r *Reconciler) ensureDeleteRunning(snapshot *networksnaptypes.NetworkSnaps
 }
 
 // isDeleteComplete determines whether device deletes are complete
-func (r *Reconciler) isDeleteComplete(networkChange *networksnaptypes.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) isDeleteComplete(networkChange *networksnapshot.NetworkSnapshot) (bool, error) {
 	for _, changeRef := range networkChange.Refs {
 		deviceChange, err := r.deviceSnapshots.Get(changeRef.DeviceSnapshotID)
 		if err != nil {

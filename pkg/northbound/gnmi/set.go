@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"github.com/docker/docker/pkg/namesgenerator"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -41,7 +41,7 @@ import (
 	"time"
 )
 
-type mapTargetUpdates map[string]devicechangetypes.TypedValueMap
+type mapTargetUpdates map[string]devicechange.TypedValueMap
 type mapTargetRemoves map[string][]string
 
 // Set implements gNMI Set
@@ -158,12 +158,12 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			return nil, status.Error(codes.Internal, errDevice.Error())
 		}
 
-		err := validateChange(target, deviceType, version, make(devicechangetypes.TypedValueMap), removes)
+		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		err = s.checkForReadOnly(target, deviceType, version, make(devicechangetypes.TypedValueMap), removes)
+		err = s.checkForReadOnly(target, deviceType, version, make(devicechange.TypedValueMap), removes)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -179,7 +179,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	// TODO: Not clear if there is a period of time where this misses out on events
 	//Obtaining response based on distributed store generated events
-	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchangetypes.ID(netCfgChangeName))
+	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchange.ID(netCfgChangeName))
 	if errListen != nil {
 		log.Errorf("Error while building atomix based response %s", errListen.Error())
 		return nil, status.Error(codes.Internal, errListen.Error())
@@ -242,11 +242,11 @@ func extractExtensions(req *gnmi.SetRequest) (string, devicetype.Version, device
 // This deals with either a path and a value (simple case) or a path with
 // a JSON body which implies multiple paths and values.
 func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
-	targetUpdates mapTargetUpdates) (devicechangetypes.TypedValueMap, error) {
+	targetUpdates mapTargetUpdates) (devicechange.TypedValueMap, error) {
 	target := u.Path.GetTarget()
 	updates, ok := targetUpdates[target]
 	if !ok {
-		updates = make(devicechangetypes.TypedValueMap)
+		updates = make(devicechange.TypedValueMap)
 	}
 
 	jsonVal := u.GetVal().GetJsonVal()
@@ -310,7 +310,7 @@ func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string
 // iterate through the updates and check that none of them include a `set` of a
 // readonly attribute - this is done by checking with the relevant model
 func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, version devicetype.Version,
-	targetUpdates devicechangetypes.TypedValueMap, targetRemoves []string) error {
+	targetUpdates devicechange.TypedValueMap, targetRemoves []string) error {
 
 	modelreg := manager.GetManager().ModelRegistry
 
@@ -352,7 +352,7 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 	return nil
 }
 
-func listenAndBuildResponse(mgr *manager.Manager, changeID networkchangetypes.ID) ([]*gnmi.UpdateResult, error) {
+func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]*gnmi.UpdateResult, error) {
 	networkChan := make(chan stream.Event)
 	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
 	if errWatch != nil {
@@ -361,7 +361,7 @@ func listenAndBuildResponse(mgr *manager.Manager, changeID networkchangetypes.ID
 	defer ctx.Close()
 	updateResults := make([]*gnmi.UpdateResult, 0)
 	for changeEvent := range networkChan {
-		change := changeEvent.Object.(*networkchangetypes.NetworkChange)
+		change := changeEvent.Object.(*networkchange.NetworkChange)
 		log.Infof("Received notification for change ID %s, phase %s, state %s", change.ID,
 			change.Status.Phase, change.Status.State)
 		if change.Status.Phase == changetypes.Phase_CHANGE {
@@ -414,7 +414,7 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 }
 
 func validateChange(target string, deviceType devicetype.Type, version devicetype.Version,
-	targetUpdates devicechangetypes.TypedValueMap, targetRemoves []string) error {
+	targetUpdates devicechange.TypedValueMap, targetRemoves []string) error {
 	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
 		return fmt.Errorf("no updates found in change on %s - invalid", target)
 	}

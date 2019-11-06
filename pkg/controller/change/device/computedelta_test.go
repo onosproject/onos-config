@@ -17,8 +17,8 @@ package device
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/api/types"
-	"github.com/onosproject/onos-config/api/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -34,19 +34,19 @@ func TestReconciler_computeRollback_singleUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	defer deviceChangesStore.Close()
 
-	deviceChangeIf1Change := &devicechangetypes.DeviceChange{
-		NetworkChange: devicechangetypes.NetworkChangeRef{
+	deviceChangeIf1Change := &devicechange.DeviceChange{
+		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-change", device1, 1)),
 			Index: types.Index(1),
 		},
-		Change: &devicechangetypes.Change{
+		Change: &devicechange.Change{
 			DeviceID:      device1,
 			DeviceVersion: v1,
 			DeviceType:    stratumType,
-			Values: []*devicechangetypes.ChangeValue{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path:    eth1Enabled,
-					Value:   devicechangetypes.NewTypedValueBool(true),
+					Value:   devicechange.NewTypedValueBool(true),
 					Removed: false,
 				},
 			},
@@ -72,19 +72,19 @@ func TestReconciler_computeRollback_mixedUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	defer deviceChangesStore.Close()
 
-	deviceChangeIf1Change := &devicechangetypes.DeviceChange{
-		NetworkChange: devicechangetypes.NetworkChangeRef{
+	deviceChangeIf1Change := &devicechange.DeviceChange{
+		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-change", device1, 1)),
 			Index: types.Index(1),
 		},
-		Change: &devicechangetypes.Change{
+		Change: &devicechange.Change{
 			DeviceID:      device1,
 			DeviceVersion: v1,
 			DeviceType:    stratumType,
-			Values: []*devicechangetypes.ChangeValue{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path:    eth1Enabled,
-					Value:   devicechangetypes.NewTypedValueBool(true),
+					Value:   devicechange.NewTypedValueBool(true),
 					Removed: false,
 				},
 				{
@@ -93,7 +93,7 @@ func TestReconciler_computeRollback_mixedUpdate(t *testing.T) {
 				},
 				{
 					Path:  eth1Desc,
-					Value: devicechangetypes.NewTypedValueString("This is a test"),
+					Value: devicechange.NewTypedValueString("This is a test"),
 				},
 			},
 		},
@@ -132,27 +132,27 @@ func TestReconciler_computeRollback_addInterface(t *testing.T) {
 	err := setUpComputeDelta(reconciler, deviceChangesStore, 1)
 	assert.NoError(t, err)
 
-	deviceChangeIf2Add := &devicechangetypes.DeviceChange{
-		NetworkChange: devicechangetypes.NetworkChangeRef{
+	deviceChangeIf2Add := &devicechange.DeviceChange{
+		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-add", device1, 2)),
 			Index: types.Index(1),
 		},
-		Change: &devicechangetypes.Change{
+		Change: &devicechange.Change{
 			DeviceID:      device1,
 			DeviceVersion: v1,
 			DeviceType:    stratumType,
-			Values: []*devicechangetypes.ChangeValue{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path:  eth2Name,
-					Value: devicechangetypes.NewTypedValueString(eth2),
+					Value: devicechange.NewTypedValueString(eth2),
 				},
 				{
 					Path:  eth2Enabled,
-					Value: devicechangetypes.NewTypedValueBool(true),
+					Value: devicechange.NewTypedValueBool(true),
 				},
 				{
 					Path:  eth2Hi,
-					Value: devicechangetypes.NewTypedValueString(healthUp),
+					Value: devicechange.NewTypedValueString(healthUp),
 				},
 			},
 		},
@@ -192,16 +192,16 @@ func TestReconciler_computeRollback_removeInterface(t *testing.T) {
 	err = setUpComputeDelta(reconciler, deviceChangesStore, 2)
 	assert.NoError(t, err)
 
-	deviceChangeIf2Delete := &devicechangetypes.DeviceChange{
-		NetworkChange: devicechangetypes.NetworkChangeRef{
+	deviceChangeIf2Delete := &devicechange.DeviceChange{
+		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-delete", device1, 2)),
 			Index: types.Index(1),
 		},
-		Change: &devicechangetypes.Change{
+		Change: &devicechange.Change{
 			DeviceID:      device1,
 			DeviceVersion: v1,
 			DeviceType:    stratumType,
-			Values: []*devicechangetypes.ChangeValue{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path:    eth2Base,
 					Removed: true,
@@ -246,7 +246,7 @@ func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.
 	if !ok {
 		return fmt.Errorf("failed to reconcile")
 	}
-	deviceChangeIf.Status.State = change.State_RUNNING
+	deviceChangeIf.Status.State = changetypes.State_RUNNING
 	err = deviceChangesStore.Update(deviceChangeIf)
 	if err != nil {
 		return err

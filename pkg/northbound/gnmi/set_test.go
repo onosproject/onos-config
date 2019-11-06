@@ -17,7 +17,7 @@ package gnmi
 import (
 	"context"
 	"github.com/golang/mock/gomock"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	td1 "github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
 	td2 "github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
@@ -520,16 +520,16 @@ func TestSet_checkForReadOnly(t *testing.T) {
 	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*device.Info{&cacheInfo1v1, &cacheInfo1v2})
 	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-2")).Return([]*device.Info{&cacheInfo2v1})
 
-	updateT1 := make(map[string]*devicechangetypes.TypedValue)
-	updateT1[cont1aCont2aLeaf2a] = devicechangetypes.NewTypedValueUint64(10)
-	updateT1[cont1aCont2aLeaf2b] = devicechangetypes.NewTypedValueString("2b on t1")
+	updateT1 := make(map[string]*devicechange.TypedValue)
+	updateT1[cont1aCont2aLeaf2a] = devicechange.NewTypedValueUint64(10)
+	updateT1[cont1aCont2aLeaf2b] = devicechange.NewTypedValueString("2b on t1")
 
-	updateT2 := make(map[string]*devicechangetypes.TypedValue)
-	updateT2[cont1aCont2aLeaf2a] = devicechangetypes.NewTypedValueUint64(11)
-	updateT2[cont1aCont2aLeaf2b] = devicechangetypes.NewTypedValueString("2b on t2")
-	updateT2[cont1aCont2aLeaf2c] = devicechangetypes.NewTypedValueString("2c on t2 - ro attribute")
+	updateT2 := make(map[string]*devicechange.TypedValue)
+	updateT2[cont1aCont2aLeaf2a] = devicechange.NewTypedValueUint64(11)
+	updateT2[cont1aCont2aLeaf2b] = devicechange.NewTypedValueString("2b on t2")
+	updateT2[cont1aCont2aLeaf2c] = devicechange.NewTypedValueString("2c on t2 - ro attribute")
 
-	targetUpdates := make(map[string]devicechangetypes.TypedValueMap)
+	targetUpdates := make(map[string]devicechange.TypedValueMap)
 	targetUpdates["device-1"] = updateT1
 	targetUpdates["device-2"] = updateT2
 

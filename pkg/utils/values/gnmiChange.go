@@ -16,13 +16,13 @@ package values
 
 import (
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
 // NativeChangeToGnmiChange converts a Protobuf defined Change object to gNMI format
-func NativeChangeToGnmiChange(c *devicechangetypes.Change) (*gnmi.SetRequest, error) {
+func NativeChangeToGnmiChange(c *devicechange.Change) (*gnmi.SetRequest, error) {
 	var deletePaths = []*gnmi.Path{}
 	var replacedPaths = []*gnmi.Update{}
 	var updatedPaths = []*gnmi.Update{}

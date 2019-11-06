@@ -19,11 +19,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/api/admin"
-	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
-	snapshottype "github.com/onosproject/onos-config/api/types/snapshot"
-	"github.com/onosproject/onos-config/api/types/snapshot/device"
-	networksnaptypes "github.com/onosproject/onos-config/api/types/snapshot/network"
+	"github.com/onosproject/onos-config/api/types/snapshot"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -200,7 +200,7 @@ func (s Server) ListRegisteredModels(req *admin.ListModelsRequest, stream admin.
 
 // RollbackNetworkChange rolls back a named atomix-based network change.
 func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRequest) (*admin.RollbackResponse, error) {
-	errRollback := manager.GetManager().RollbackTargetConfig(networkchangetypes.ID(req.Name))
+	errRollback := manager.GetManager().RollbackTargetConfig(networkchange.ID(req.Name))
 	if errRollback != nil {
 		return nil, errRollback
 	}
@@ -210,13 +210,13 @@ func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRe
 }
 
 // GetSnapshot gets a snapshot for a specific device
-func (s Server) GetSnapshot(ctx context.Context, request *admin.GetSnapshotRequest) (*device.Snapshot, error) {
+func (s Server) GetSnapshot(ctx context.Context, request *admin.GetSnapshotRequest) (*devicesnapshot.Snapshot, error) {
 	return manager.GetManager().DeviceSnapshotStore.Load(devicetype.NewVersionedID(request.DeviceID, request.DeviceVersion))
 }
 
 // ListSnapshots lists snapshots for all devices
 func (s Server) ListSnapshots(request *admin.ListSnapshotsRequest, stream admin.ConfigAdminService_ListSnapshotsServer) error {
-	ch := make(chan *device.Snapshot)
+	ch := make(chan *devicesnapshot.Snapshot)
 	ctx, err := manager.GetManager().DeviceSnapshotStore.LoadAll(ch)
 	if err != nil {
 		return err
@@ -233,8 +233,8 @@ func (s Server) ListSnapshots(request *admin.ListSnapshotsRequest, stream admin.
 
 // CompactChanges takes a snapshot of all devices
 func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChangesRequest) (*admin.CompactChangesResponse, error) {
-	snapshot := &networksnaptypes.NetworkSnapshot{
-		Retention: snapshottype.RetentionOptions{
+	snap := &networksnapshot.NetworkSnapshot{
+		Retention: snapshot.RetentionOptions{
 			RetainWindow: request.RetentionPeriod,
 		},
 	}
@@ -245,13 +245,13 @@ func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChange
 		return nil, err
 	}
 	defer stream.Close()
-	if err := manager.GetManager().NetworkSnapshotStore.Create(snapshot); err != nil {
+	if err := manager.GetManager().NetworkSnapshotStore.Create(snap); err != nil {
 		return nil, err
 	}
 
 	for event := range ch {
-		eventSnapshot := event.Object.(*networksnaptypes.NetworkSnapshot)
-		if snapshot.ID != "" && snapshot.ID == eventSnapshot.ID && eventSnapshot.Status.Phase == snapshottype.Phase_DELETE && eventSnapshot.Status.State == snapshottype.State_COMPLETE {
+		eventSnapshot := event.Object.(*networksnapshot.NetworkSnapshot)
+		if snap.ID != "" && snap.ID == eventSnapshot.ID && eventSnapshot.Status.Phase == snapshot.Phase_DELETE && eventSnapshot.Status.State == snapshot.State_COMPLETE {
 			return &admin.CompactChangesResponse{}, nil
 		}
 	}
