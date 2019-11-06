@@ -23,9 +23,9 @@ import (
 	log "k8s.io/klog"
 )
 
-// GetTargetNewConfig returns a set of change values given a target, a configuration name, a path and a layer.
+// GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest (Atomix based)
-func (m *Manager) GetTargetNewConfig(deviceID devicetype.ID, version devicetype.Version, path string, layer int) ([]*devicechangetypes.PathValue, error) {
+func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Version, path string, layer int) ([]*devicechangetypes.PathValue, error) {
 	log.Infof("Getting config for %s at %s", deviceID, path)
 	configValues, errExtract := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(deviceID, version), nil, m.DeviceChangesStore, layer)
 	if errExtract != nil {

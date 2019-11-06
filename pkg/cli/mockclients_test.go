@@ -64,14 +64,6 @@ func (c mockConfigAdminServiceClient) RollbackNetworkChange(ctx context.Context,
 	return response, nil
 }
 
-func (c mockConfigAdminServiceClient) RollbackNewNetworkChange(ctx context.Context, in *admin.RollbackRequest, opts ...grpc.CallOption) (*admin.RollbackResponse, error) {
-	response := &admin.RollbackResponse{
-		Message: "Rollback was successful",
-	}
-	LastCreatedClient.rollBackID = in.Name
-	return response, nil
-}
-
 func (c mockConfigAdminServiceClient) GetSnapshot(ctx context.Context, in *admin.GetSnapshotRequest, opts ...grpc.CallOption) (*device.Snapshot, error) {
 	return nil, nil
 }

@@ -28,12 +28,12 @@ import (
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
 const SetConfigAlreadyApplied = "Already applied:"
 
-// ValidateNewNetworkConfig validates the given updates and deletes, according to the path on the configuration
+// ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target (Atomix Based)
-func (m *Manager) ValidateNewNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
+func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 	deviceType devicetype.Type, updates devicechangetypes.TypedValueMap, deletes []string) error {
 
-	chg, err := m.ComputeNewDeviceChange(deviceName, version, deviceType, updates, deletes, "Generated for validation")
+	chg, err := m.ComputeDeviceChange(deviceName, version, deviceType, updates, deletes, "Generated for validation")
 	if err != nil {
 		return err
 	}
@@ -69,28 +69,28 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName devicetype.ID, version dev
 	return nil
 }
 
-// SetNewNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
-func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
+// SetNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
+func (m *Manager) SetNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
 	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info, netcfgchangename string) error {
 	//TODO evaluate need of user and add it back if need be.
-	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
+	allDeviceChanges, errChanges := m.computeNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 	if errChanges != nil {
 		return errChanges
 	}
-	newNetworkConfig, errNetChange := networkchangetypes.NewNetworkChange(netcfgchangename, allDeviceChanges)
+	networkConfig, errNetChange := networkchangetypes.NewNetworkChange(netcfgchangename, allDeviceChanges)
 	if errNetChange != nil {
 		return errNetChange
 	}
 	//Writing to the atomix backed store too
-	errStoreNewChange := m.NetworkChangesStore.Create(newNetworkConfig)
-	if errStoreNewChange != nil {
-		return errStoreNewChange
+	errStoreChange := m.NetworkChangesStore.Create(networkConfig)
+	if errStoreChange != nil {
+		return errStoreChange
 	}
 	return nil
 }
 
-//computeNewNetworkConfig computes each device change
-func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
+//computeNetworkConfig computes each device change
+func (m *Manager) computeNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
 	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info,
 	description string) ([]*devicechangetypes.Change, error) {
 
@@ -99,7 +99,7 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 		//FIXME this is a sequential job, not parallelized
 		version := deviceInfo[devicetype.ID(target)].Version
 		deviceType := deviceInfo[devicetype.ID(target)].Type
-		newChange, err := m.ComputeNewDeviceChange(
+		newChange, err := m.ComputeDeviceChange(
 			devicetype.ID(target), version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
@@ -114,7 +114,7 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 	for target, removes := range targetRemoves {
 		version := deviceInfo[devicetype.ID(target)].Version
 		deviceType := deviceInfo[devicetype.ID(target)].Type
-		newChange, err := m.ComputeNewDeviceChange(
+		newChange, err := m.ComputeDeviceChange(
 			devicetype.ID(target), version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)

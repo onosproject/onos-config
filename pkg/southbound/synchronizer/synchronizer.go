@@ -50,7 +50,7 @@ type Synchronizer struct {
 	getStateMode         modelregistry.GetStateMode
 }
 
-// New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
+// New builds a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context,
 	device *devicetopo.Device, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache devicechangetypes.TypedValueMap,

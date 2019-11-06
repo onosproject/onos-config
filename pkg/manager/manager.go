@@ -196,13 +196,13 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 	}
 }
 
-// ComputeNewDeviceChange computes a given device change the given updates and deletes, according to the path
+// ComputeDeviceChange computes a given device change the given updates and deletes, according to the path
 // on the configuration for the specified target
-func (m *Manager) ComputeNewDeviceChange(deviceName devicetype.ID, version devicetype.Version,
+func (m *Manager) ComputeDeviceChange(deviceName devicetype.ID, version devicetype.Version,
 	deviceType devicetype.Type, updates devicechangetypes.TypedValueMap,
 	deletes []string, description string) (*devicechangetypes.Change, error) {
 
-	var newChanges = make([]*devicechangetypes.ChangeValue, 0)
+	var changes = make([]*devicechangetypes.ChangeValue, 0)
 	//updates
 	for path, value := range updates {
 		updateValue, err := devicechangetypes.NewChangeValue(path, value, false)
@@ -210,12 +210,12 @@ func (m *Manager) ComputeNewDeviceChange(deviceName devicetype.ID, version devic
 			log.Warningf("Error creating value for %s %v", path, err)
 			continue
 		}
-		newChanges = append(newChanges, updateValue)
+		changes = append(changes, updateValue)
 	}
 	//deletes
 	for _, path := range deletes {
 		deleteValue, _ := devicechangetypes.NewChangeValue(path, devicechangetypes.NewTypedValueEmpty(), true)
-		newChanges = append(newChanges, deleteValue)
+		changes = append(changes, deleteValue)
 	}
 	//description := fmt.Sprintf("Originally created as part of %s", description)
 	//if description == "" {
@@ -226,7 +226,7 @@ func (m *Manager) ComputeNewDeviceChange(deviceName devicetype.ID, version devic
 		DeviceID:      deviceName,
 		DeviceVersion: version,
 		DeviceType:    deviceType,
-		Values:        newChanges,
+		Values:        changes,
 	}
 
 	return changeElement, nil

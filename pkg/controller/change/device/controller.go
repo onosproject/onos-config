@@ -154,7 +154,7 @@ func (r *Reconciler) reconcileRollback(change *devicechangetypes.DeviceChange) (
 // doRollback rolls back a change on the device
 func (r *Reconciler) doRollback(change *devicechangetypes.DeviceChange) error {
 	log.Infof("Execucting Rollback for %v", change)
-	deltaChange, err := r.computeNewRollback(change)
+	deltaChange, err := r.computeRollback(change)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (r *Reconciler) doRollback(change *devicechangetypes.DeviceChange) error {
 }
 
 func (r *Reconciler) translateAndSendChange(change *devicechangetypes.Change) error {
-	setRequest, err := values.NativeNewChangeToGnmiChange(change)
+	setRequest, err := values.NativeChangeToGnmiChange(change)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func getProtocolState(device *devicetopo.Device) devicetopo.ChannelState {
 }
 
 // computeRollback returns a change containing the previous value for each path of the rollbackChange
-func (r *Reconciler) computeNewRollback(deviceChange *devicechangetypes.DeviceChange) (*devicechangetypes.Change, error) {
+func (r *Reconciler) computeRollback(deviceChange *devicechangetypes.DeviceChange) (*devicechangetypes.Change, error) {
 	//TODO We might want to consider doing reverse iteration to get the previous value for a path instead of
 	// reading up to the previous change for the target. see comments on PR #805
 	previousValues := make([]*devicechangetypes.ChangeValue, 0)

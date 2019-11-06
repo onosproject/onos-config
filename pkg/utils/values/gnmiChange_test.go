@@ -31,7 +31,7 @@ const (
 )
 
 // Test_NativeChangeToGnmiChange tests conversion from an ONOS change to a GNMI change
-func Test_NativeNewChangeToGnmiChange(t *testing.T) {
+func Test_NativeChangeToGnmiChange(t *testing.T) {
 	// Some test data. One update, one remove
 	testValues := []*devicechangetypes.ChangeValue{
 		{
@@ -52,7 +52,7 @@ func Test_NativeNewChangeToGnmiChange(t *testing.T) {
 	}
 
 	//  Do the conversion
-	request, err := NativeNewChangeToGnmiChange(testChange)
+	request, err := NativeChangeToGnmiChange(testChange)
 	assert.NilError(t, err)
 	assert.Assert(t, request != nil)
 
@@ -93,7 +93,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 		Values:        testValues,
 	}
 
-	setRequest, parseError := NativeNewChangeToGnmiChange(change3)
+	setRequest, parseError := NativeChangeToGnmiChange(change3)
 
 	assert.NilError(t, parseError, "Parsing error for Gnmi change request")
 	assert.Equal(t, len(setRequest.Update), 1)
