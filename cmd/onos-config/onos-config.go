@@ -21,13 +21,7 @@ Admin service through gRPC
 
 Arguments
 
--configStore <the location of a Configuration store> (stores/configStore-sample.json by default)
-
--changeStore <the location of a Change store> (stores/changeStore-sample.json by default)
-
--deviceStore <the location of a TopoCache store> (stores/deviceStore-sample.json by default)
-
--networkStore <the location of a Network store> (stores/networkStore-sample.json by default)
+-modelPlugin (repeated) <the location of a shared object library that implements the Model Plugin interface>
 
 -caPath <the location of a CA certificate>
 
@@ -59,14 +53,6 @@ import (
 	"time"
 )
 
-// Default locations of stores
-const (
-	configStoreDefaultFileName  = "../configs/configStore-sample.json"
-	changeStoreDefaultFileName  = "../configs/changeStore-sample.json"
-	deviceStoreDefaultFileName  = "../configs/deviceStore-sample.json"
-	networkStoreDefaultFileName = "../configs/networkStore-sample.json"
-)
-
 type arrayFlags []string
 
 func (i *arrayFlags) String() string {
@@ -81,18 +67,6 @@ func (i *arrayFlags) Set(value string) error {
 // The main entry point
 func main() {
 	var modelPlugins arrayFlags
-
-	//TODO remove these in accordance with ONIT and other starting procedures
-	_ = flag.String("configStore", configStoreDefaultFileName,
-		"path to config store file")
-	_ = flag.String("changeStore", changeStoreDefaultFileName,
-		"path to change store file")
-	_ = flag.String("networkStore", networkStoreDefaultFileName,
-		"path to network store file")
-
-	// TODO: This flag is preserved for backwards compatibility
-	_ = flag.String("deviceStore", deviceStoreDefaultFileName,
-		"path to device store file")
 
 	flag.Var(&modelPlugins, "modelPlugin", "names of model plugins to load (repeated)")
 	caPath := flag.String("caPath", "", "path to CA certificate")

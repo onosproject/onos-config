@@ -8,7 +8,6 @@ ENV GO111MODULE=on
 
 COPY Makefile go.mod go.sum /go/src/github.com/onosproject/onos-config/
 COPY cmd/ /go/src/github.com/onosproject/onos-config/cmd/
-COPY configs/ /go/src/github.com/onosproject/onos-config/configs/
 COPY pkg/ /go/src/github.com/onosproject/onos-config/pkg/
 COPY vendor/ /go/src/github.com/onosproject/onos-config/vendor/
 
