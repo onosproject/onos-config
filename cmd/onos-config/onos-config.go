@@ -21,6 +21,8 @@ Admin service through gRPC
 
 Arguments
 
+-modelPlugin (repeated) <the location of a shared object library that implements the Model Plugin interface>
+
 -caPath <the location of a CA certificate>
 
 -keyPath <the location of a client private key>
