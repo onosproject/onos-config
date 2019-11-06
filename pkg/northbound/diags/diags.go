@@ -17,15 +17,16 @@ package diags
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-config/api/diags"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
@@ -37,30 +38,10 @@ type Service struct {
 	northbound.Service
 }
 
-// OpStateDiagsClientFactory : Default OpStateDiagsClient creation.
-var OpStateDiagsClientFactory = func(cc *grpc.ClientConn) OpStateDiagsClient {
-	return NewOpStateDiagsClient(cc)
-}
-
-// CreateOpStateDiagsClient creates and returns a new op state diags client
-func CreateOpStateDiagsClient(cc *grpc.ClientConn) OpStateDiagsClient {
-	return OpStateDiagsClientFactory(cc)
-}
-
-// ChangeServiceClientFactory : Default ChangeServiceClient creation.
-var ChangeServiceClientFactory = func(cc *grpc.ClientConn) ChangeServiceClient {
-	return NewChangeServiceClient(cc)
-}
-
-// CreateChangeServiceClient creates and returns a new change service client
-func CreateChangeServiceClient(cc *grpc.ClientConn) ChangeServiceClient {
-	return ChangeServiceClientFactory(cc)
-}
-
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
-	RegisterOpStateDiagsServer(r, &Server{})
-	RegisterChangeServiceServer(r, &Server{})
+	diags.RegisterOpStateDiagsServer(r, Server{})
+	diags.RegisterChangeServiceServer(r, Server{})
 }
 
 // Server implements the gRPC service for diagnostic facilities.
@@ -68,19 +49,19 @@ type Server struct {
 }
 
 // GetOpState provides a stream of Operational and State data
-func (s *Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateServer) error {
+func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_GetOpStateServer) error {
 	deviceCache, ok := manager.GetManager().OperationalStateCache[devicetopo.ID(r.DeviceId)]
 	if !ok {
 		return fmt.Errorf("no Operational State cache available for %s", r.DeviceId)
 	}
 
 	for path, value := range deviceCache {
-		pathValue := &devicechangetypes.PathValue{
+		pathValue := &devicechange.PathValue{
 			Path:  path,
 			Value: value,
 		}
 
-		msg := &OpStateResponse{Type: admin.Type_NONE, Pathvalue: pathValue}
+		msg := &diags.OpStateResponse{Type: admin.Type_NONE, Pathvalue: pathValue}
 		err := stream.Send(msg)
 		if err != nil {
 			return err
@@ -105,12 +86,12 @@ func (s *Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateSer
 				log.Infof("Event received NBI Diags OpState subscribe channel %s for %s",
 					streamID, r.DeviceId)
 
-				pathValue := &devicechangetypes.PathValue{
+				pathValue := &devicechange.PathValue{
 					Path:  opStateEvent.Path(),
 					Value: opStateEvent.Value(),
 				}
 
-				msg := &OpStateResponse{Type: admin.Type_ADDED, Pathvalue: pathValue}
+				msg := &diags.OpStateResponse{Type: admin.Type_ADDED, Pathvalue: pathValue}
 				err = stream.SendMsg(msg)
 				if err != nil {
 					log.Warningf("Error sending message on stream %s. Closing. %v",
@@ -134,7 +115,7 @@ func (s *Server) GetOpState(r *OpStateRequest, stream OpStateDiags_GetOpStateSer
 // If the optional `subscribe` flag is true, then get then return the list of
 // changes first, and then hold the connection open and send on
 // further updates until the client hangs up
-func (s *Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeService_ListNetworkChangesServer) error {
+func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream diags.ChangeService_ListNetworkChangesServer) error {
 	log.Infof("ListNetworkChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
 
 	// There may be a wildcard given - we only want to reply with changes that match
@@ -162,10 +143,10 @@ func (s *Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSe
 					break
 				}
 
-				change := event.Object.(*networkchangetypes.NetworkChange)
+				change := event.Object.(*networkchange.NetworkChange)
 
 				if matcher.MatchString(string(change.ID)) {
-					msg := &ListNetworkChangeResponse{
+					msg := &diags.ListNetworkChangeResponse{
 						Change: change,
 					}
 					log.Infof("Sending matching change %v", change.ID)
@@ -184,7 +165,7 @@ func (s *Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSe
 			}
 		}
 	} else {
-		changeCh := make(chan *networkchangetypes.NetworkChange)
+		changeCh := make(chan *networkchange.NetworkChange)
 		ctx, err := manager.GetManager().NetworkChangesStore.List(changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
@@ -202,7 +183,7 @@ func (s *Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSe
 				}
 
 				if matcher.MatchString(string(change.ID)) {
-					msg := &ListNetworkChangeResponse{
+					msg := &diags.ListNetworkChangeResponse{
 						Change: change,
 					}
 					log.Infof("Sending matching change %v", change.ID)
@@ -226,7 +207,7 @@ func (s *Server) ListNetworkChanges(r *ListNetworkChangeRequest, stream ChangeSe
 }
 
 // ListDeviceChanges provides a stream of Device Changes
-func (s *Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeService_ListDeviceChangesServer) error {
+func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags.ChangeService_ListDeviceChangesServer) error {
 	log.Infof("ListDeviceChanges called with %s %s. Subscribe %v", r.DeviceID, r.DeviceVersion, r.Subscribe)
 
 	var watchOpts []device.WatchOption
@@ -259,9 +240,9 @@ func (s *Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServ
 					break
 				}
 
-				change := event.Object.(*devicechangetypes.DeviceChange)
+				change := event.Object.(*devicechange.DeviceChange)
 
-				msg := &ListDeviceChangeResponse{
+				msg := &diags.ListDeviceChangeResponse{
 					Change: change,
 				}
 				log.Infof("Sending matching change %v", change.ID)
@@ -279,8 +260,8 @@ func (s *Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServ
 			}
 		}
 	} else {
-		changeCh := make(chan *devicechangetypes.DeviceChange)
-		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, version), changeCh)
+		changeCh := make(chan *devicechange.DeviceChange)
+		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, r.DeviceVersion), changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err
@@ -296,7 +277,7 @@ func (s *Server) ListDeviceChanges(r *ListDeviceChangeRequest, stream ChangeServ
 					break
 				}
 
-				msg := &ListDeviceChangeResponse{
+				msg := &diags.ListDeviceChangeResponse{
 					Change: change,
 				}
 				log.Infof("Sending matching change %v", change.ID)

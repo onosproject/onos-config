@@ -16,10 +16,10 @@ package jsonvalues
 
 import (
 	"fmt"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	td1 "github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/openconfig/goyang/pkg/yang"
 	"gotest.tools/assert"
 	"io/ioutil"
@@ -60,18 +60,18 @@ func Test_correctJsonPathRwValuesSubInterfaces(t *testing.T) {
 			"/interfaces/interface[name=eth1]/config/description",
 			"/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/config/description",
 			"/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=121]/config/description":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechangetypes.ValueType_STRING, correctedPathValue.Path)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_STRING, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		case
 			"/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/config/enabled",
 			"/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=121]/config/enabled":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechangetypes.ValueType_BOOL, correctedPathValue.Path)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_BOOL, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		case
 			"/interfaces/interface[name=eth1]/config/mtu",
 			"/interfaces/interface[name=eth1]/hold-time/config/down",
 			"/interfaces/interface[name=eth1]/hold-time/config/up":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechangetypes.ValueType_UINT, correctedPathValue.Path)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_UINT, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
@@ -112,7 +112,7 @@ func Test_correctJsonPathRwValuesSystemLogging(t *testing.T) {
 			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=1,severity=2]/config/facility",
 			"/system/logging/console/selectors/selector[facility=3,severity=4]/config/facility",
 			"/system/logging/console/selectors/selector[facility=3,severity=4]/config/severity":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechangetypes.ValueType_STRING, correctedPathValue.Path)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_STRING, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
@@ -148,12 +148,12 @@ func Test_correctJsonPathRwValues2(t *testing.T) {
 		switch correctedPathValue.Path {
 		case
 			"/cont1a/cont2a/leaf2a":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechangetypes.ValueType_UINT, correctedPathValue.Path)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_UINT, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 			assert.Equal(t, correctedPathValue.GetValue().ValueToString(), "12")
 		case
 			"/cont1a/cont2a/leaf2b":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechangetypes.ValueType_FLOAT, correctedPathValue.Path)
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_FLOAT, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 			assert.Equal(t, correctedPathValue.GetValue().ValueToString(), "1.210000")
 		default:

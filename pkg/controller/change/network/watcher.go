@@ -15,15 +15,15 @@
 package network
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-config/pkg/types"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"sync"
 )
@@ -54,7 +54,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for request := range configCh {
-			ch <- types.ID(request.Object.(*networkchangetypes.NetworkChange).ID)
+			ch <- types.ID(request.Object.(*networkchange.NetworkChange).ID)
 		}
 		close(ch)
 	}()
@@ -127,7 +127,7 @@ func (w *DeviceWatcher) watchDevice(deviceID device.VersionedID, ch chan<- types
 	w.wg.Add(1)
 	go func() {
 		for event := range deviceCh {
-			ch <- types.ID(event.Object.(*devicechangetypes.DeviceChange).NetworkChange.ID)
+			ch <- types.ID(event.Object.(*devicechange.DeviceChange).NetworkChange.ID)
 		}
 		w.wg.Done()
 	}()

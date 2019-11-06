@@ -15,9 +15,9 @@
 package manager
 
 import (
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
@@ -25,7 +25,7 @@ import (
 
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest (Atomix based)
-func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Version, path string, layer int) ([]*devicechangetypes.PathValue, error) {
+func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Version, path string, layer int) ([]*devicechange.PathValue, error) {
 	log.Infof("Getting config for %s at %s", deviceID, path)
 	configValues, errExtract := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(deviceID, version), nil, m.DeviceChangesStore, layer)
 	if errExtract != nil {
@@ -34,7 +34,7 @@ func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Ver
 	if len(configValues) == 0 {
 		return configValues, nil
 	}
-	filteredValues := make([]*devicechangetypes.PathValue, 0)
+	filteredValues := make([]*devicechange.PathValue, 0)
 	pathRegexp := utils.MatchWildcardRegexp(path)
 	for _, cv := range configValues {
 		if pathRegexp.MatchString(cv.Path) {

@@ -15,13 +15,13 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-config/pkg/types"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"sync"
 )
@@ -83,7 +83,7 @@ func (w *Watcher) watchDevice(deviceID device.VersionedID, ch chan<- types.ID) {
 	w.wg.Add(1)
 	go func() {
 		for event := range deviceCh {
-			ch <- types.ID(event.Object.(*devicechangetypes.DeviceChange).ID)
+			ch <- types.ID(event.Object.(*devicechange.DeviceChange).ID)
 		}
 		w.wg.Done()
 	}()

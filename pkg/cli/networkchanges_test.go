@@ -18,10 +18,10 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	"github.com/onosproject/onos-config/pkg/types/change"
-	"github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/change/network"
+	"github.com/onosproject/onos-config/api/diags"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"gotest.tools/assert"
 	"io"
 	"strings"
@@ -30,37 +30,37 @@ import (
 )
 
 func generateNetworkChangeData(count int) {
-	networkChanges = make([]network.NetworkChange, count)
+	networkChanges = make([]networkchange.NetworkChange, count)
 	now := time.Now()
 
 	for cfgIdx := range networkChanges {
 		networkID := fmt.Sprintf("a_new_network_change-%d", cfgIdx)
 
-		networkChanges[cfgIdx] = network.NetworkChange{
-			ID:       network.ID(networkID),
-			Index:    network.Index(cfgIdx),
+		networkChanges[cfgIdx] = networkchange.NetworkChange{
+			ID:       networkchange.ID(networkID),
+			Index:    networkchange.Index(cfgIdx),
 			Revision: 0,
-			Status: change.Status{
-				Phase:   change.Phase(cfgIdx % 2),
-				State:   change.State(cfgIdx % 4),
-				Reason:  change.Reason(cfgIdx % 2),
+			Status: changetypes.Status{
+				Phase:   changetypes.Phase(cfgIdx % 2),
+				State:   changetypes.State(cfgIdx % 4),
+				Reason:  changetypes.Reason(cfgIdx % 2),
 				Message: "Test",
 			},
 			Created: now,
 			Updated: now,
-			Changes: []*device.Change{
+			Changes: []*devicechange.Change{
 				{
 					DeviceID:      "device-1",
 					DeviceVersion: "1.0.0",
-					Values: []*device.ChangeValue{
+					Values: []*devicechange.ChangeValue{
 						{
 							Path:    "/aa/bb/cc",
-							Value:   device.NewTypedValueString("Test1"),
+							Value:   devicechange.NewTypedValueString("Test1"),
 							Removed: false,
 						},
 						{
 							Path:    "/aa/bb/dd",
-							Value:   device.NewTypedValueString("Test2"),
+							Value:   devicechange.NewTypedValueString("Test2"),
 							Removed: false,
 						},
 					},
@@ -68,21 +68,21 @@ func generateNetworkChangeData(count int) {
 				{
 					DeviceID:      "device-2",
 					DeviceVersion: "1.0.0",
-					Values: []*device.ChangeValue{
+					Values: []*devicechange.ChangeValue{
 						{
 							Path:    "/aa/bb/cc",
-							Value:   device.NewTypedValueString("Test3"),
+							Value:   devicechange.NewTypedValueString("Test3"),
 							Removed: false,
 						},
 						{
 							Path:    "/aa/bb/dd",
-							Value:   device.NewTypedValueString("Test4"),
+							Value:   devicechange.NewTypedValueString("Test4"),
 							Removed: false,
 						},
 					},
 				},
 			},
-			Refs: []*network.DeviceChangeRef{
+			Refs: []*networkchange.DeviceChangeRef{
 				{DeviceChangeID: "device-1:1"},
 				{DeviceChangeID: "device-2:1"},
 			},

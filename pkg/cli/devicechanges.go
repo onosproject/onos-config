@@ -17,9 +17,9 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/device"
+	"github.com/onosproject/onos-config/api/diags"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/spf13/cobra"
 	"io"
 	"strings"
@@ -124,6 +124,6 @@ func wrapPath(path string, lineLen int, tabs int) string {
 	return strings.Join(wrapped, sep)
 }
 
-func valueToSstring(cv devicechangetypes.TypedValue) string {
+func valueToSstring(cv devicechange.TypedValue) string {
 	return cv.ValueToString()
 }

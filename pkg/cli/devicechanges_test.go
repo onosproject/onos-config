@@ -18,11 +18,11 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	"github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
+	"github.com/onosproject/onos-config/api/diags"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/api/types/device"
 	"gotest.tools/assert"
 	"io"
 	"strings"
@@ -30,43 +30,43 @@ import (
 	"time"
 )
 
-var deviceChanges []devicechangetypes.DeviceChange
-var networkChanges []networkchangetypes.NetworkChange
+var deviceChanges []devicechange.DeviceChange
+var networkChanges []networkchange.NetworkChange
 
 func generateDeviceChangeData(count int) {
-	deviceChanges = make([]devicechangetypes.DeviceChange, count)
+	deviceChanges = make([]devicechange.DeviceChange, count)
 	now := time.Now()
 	for cfgIdx := range deviceChanges {
 		deviceID := fmt.Sprintf("device-%d", cfgIdx)
 
-		deviceChanges[cfgIdx] = devicechangetypes.DeviceChange{
-			ID:       devicechangetypes.ID(deviceID),
-			Index:    devicechangetypes.Index(cfgIdx),
+		deviceChanges[cfgIdx] = devicechange.DeviceChange{
+			ID:       devicechange.ID(deviceID),
+			Index:    devicechange.Index(cfgIdx),
 			Revision: 0,
-			NetworkChange: devicechangetypes.NetworkChangeRef{
+			NetworkChange: devicechange.NetworkChangeRef{
 				ID:    "network-1",
 				Index: 0,
 			},
-			Change: &devicechangetypes.Change{
+			Change: &devicechange.Change{
 				DeviceID:      device.ID(deviceID),
 				DeviceVersion: "1.0.0",
-				Values: []*devicechangetypes.ChangeValue{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path:    "/aa/bb/cc",
-						Value:   devicechangetypes.NewTypedValueString("Test1"),
+						Value:   devicechange.NewTypedValueString("Test1"),
 						Removed: false,
 					},
 					{
 						Path:    "/aa/bb/dd",
-						Value:   devicechangetypes.NewTypedValueString("Test2"),
+						Value:   devicechange.NewTypedValueString("Test2"),
 						Removed: false,
 					},
 				},
 			},
-			Status: change.Status{
-				Phase:   change.Phase(cfgIdx % 2),
-				State:   change.State(cfgIdx % 4),
-				Reason:  change.Reason(cfgIdx % 2),
+			Status: changetypes.Status{
+				Phase:   changetypes.Phase(cfgIdx % 2),
+				State:   changetypes.State(cfgIdx % 4),
+				Reason:  changetypes.Reason(cfgIdx % 2),
 				Message: "Test",
 			},
 			Created: now,

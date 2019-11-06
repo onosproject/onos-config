@@ -18,7 +18,7 @@ package values
 
 import (
 	"encoding/json"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"testing"
@@ -33,10 +33,10 @@ const (
 // Test_NativeChangeToGnmiChange tests conversion from an ONOS change to a GNMI change
 func Test_NativeChangeToGnmiChange(t *testing.T) {
 	// Some test data. One update, one remove
-	testValues := []*devicechangetypes.ChangeValue{
+	testValues := []*devicechange.ChangeValue{
 		{
 			Path:    "/path1/path2/path3",
-			Value:   devicechangetypes.NewTypedValueString("value"),
+			Value:   devicechange.NewTypedValueString("value"),
 			Removed: false,
 		},
 		{
@@ -44,7 +44,7 @@ func Test_NativeChangeToGnmiChange(t *testing.T) {
 			Removed: true,
 		},
 	}
-	testChange := &devicechangetypes.Change{
+	testChange := &devicechange.Change{
 		DeviceID:      "Device1",
 		DeviceVersion: "Device1-1.0.0",
 		DeviceType:    "devicesim",
@@ -76,10 +76,10 @@ func Test_NativeChangeToGnmiChange(t *testing.T) {
 
 func Test_convertChangeToGnmi(t *testing.T) {
 	// Some test data. One update, one remove
-	testValues := []*devicechangetypes.ChangeValue{
+	testValues := []*devicechange.ChangeValue{
 		{
 			Path:    Test1Cont1ACont2ALeaf2C,
-			Value:   devicechangetypes.NewTypedValueString(ValueLeaf2CDef),
+			Value:   devicechange.NewTypedValueString(ValueLeaf2CDef),
 			Removed: false,
 		},
 		{
@@ -87,7 +87,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 			Removed: true,
 		},
 	}
-	change3 := &devicechangetypes.Change{
+	change3 := &devicechange.Change{
 		DeviceID:      "Device1",
 		DeviceVersion: "Device1-1.0.0",
 		Values:        testValues,

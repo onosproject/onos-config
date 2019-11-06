@@ -16,8 +16,8 @@ package modelregistry
 
 import (
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -32,7 +32,7 @@ import (
 // PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
 type PathMap interface {
 	JustPaths() []string
-	TypeForPath(path string) (devicechangetypes.ValueType, error)
+	TypeForPath(path string) (devicechange.ValueType, error)
 }
 
 // GetStateMode defines the Getstate handling
@@ -56,7 +56,7 @@ const (
 
 // ReadOnlyAttrib is the known metadata about a Read Only leaf
 type ReadOnlyAttrib struct {
-	Datatype    devicechangetypes.ValueType
+	Datatype    devicechange.ValueType
 	Description string
 	Units       string
 }
@@ -83,7 +83,7 @@ func (ro ReadOnlyPathMap) JustPaths() []string {
 }
 
 // TypeForPath finds the type from the model for a particular path
-func (ro ReadOnlyPathMap) TypeForPath(path string) (devicechangetypes.ValueType, error) {
+func (ro ReadOnlyPathMap) TypeForPath(path string) (devicechange.ValueType, error) {
 	for k, subPaths := range ro {
 		for k1, sp := range subPaths {
 			if k1 == "/" {
@@ -97,12 +97,12 @@ func (ro ReadOnlyPathMap) TypeForPath(path string) (devicechangetypes.ValueType,
 			}
 		}
 	}
-	return devicechangetypes.ValueType_EMPTY, fmt.Errorf("path %s not found in RO paths of model", path)
+	return devicechange.ValueType_EMPTY, fmt.Errorf("path %s not found in RO paths of model", path)
 }
 
 // ReadWritePathElem holds data about a leaf or container
 type ReadWritePathElem struct {
-	ValueType   devicechangetypes.ValueType
+	ValueType   devicechange.ValueType
 	Units       string
 	Description string
 	Mandatory   bool
@@ -127,13 +127,13 @@ func (rw ReadWritePathMap) JustPaths() []string {
 }
 
 // TypeForPath finds the type from the model for a particular path
-func (rw ReadWritePathMap) TypeForPath(path string) (devicechangetypes.ValueType, error) {
+func (rw ReadWritePathMap) TypeForPath(path string) (devicechange.ValueType, error) {
 	for k, elem := range rw {
 		if k == path {
 			return elem.ValueType, nil
 		}
 	}
-	return devicechangetypes.ValueType_EMPTY, fmt.Errorf("path %s not found in RW paths of model", path)
+	return devicechange.ValueType_EMPTY, fmt.Errorf("path %s not found in RW paths of model", path)
 }
 
 // ModelRegistry is the object for the saving information about device models
@@ -397,42 +397,42 @@ func PathsRW(rwPathMap ReadWritePathMap) []string {
 	return keys
 }
 
-func toValueType(entry *yang.YangType, isLeafList bool) (devicechangetypes.ValueType, error) {
-	//TODO evaluate better devicechangetypes and error return
+func toValueType(entry *yang.YangType, isLeafList bool) (devicechange.ValueType, error) {
+	//TODO evaluate better devicechange and error return
 	switch entry.Name {
 	case "int8", "int16", "int32", "int64":
 		if isLeafList {
-			return devicechangetypes.ValueType_LEAFLIST_INT, nil
+			return devicechange.ValueType_LEAFLIST_INT, nil
 		}
-		return devicechangetypes.ValueType_INT, nil
+		return devicechange.ValueType_INT, nil
 	case "uint8", "uint16", "uint32", "uint64", "counter64":
 		if isLeafList {
-			return devicechangetypes.ValueType_LEAFLIST_UINT, nil
+			return devicechange.ValueType_LEAFLIST_UINT, nil
 		}
-		return devicechangetypes.ValueType_UINT, nil
+		return devicechange.ValueType_UINT, nil
 	case "decimal64":
 		if isLeafList {
-			return devicechangetypes.ValueType_LEAFLIST_DECIMAL, nil
+			return devicechange.ValueType_LEAFLIST_DECIMAL, nil
 		}
-		return devicechangetypes.ValueType_DECIMAL, nil
+		return devicechange.ValueType_DECIMAL, nil
 	case "string", "enumeration", "leafref", "identityref", "union", "instance-identifier":
 		if isLeafList {
-			return devicechangetypes.ValueType_LEAFLIST_STRING, nil
+			return devicechange.ValueType_LEAFLIST_STRING, nil
 		}
-		return devicechangetypes.ValueType_STRING, nil
+		return devicechange.ValueType_STRING, nil
 	case "boolean":
 		if isLeafList {
-			return devicechangetypes.ValueType_LEAFLIST_BOOL, nil
+			return devicechange.ValueType_LEAFLIST_BOOL, nil
 		}
-		return devicechangetypes.ValueType_BOOL, nil
+		return devicechange.ValueType_BOOL, nil
 	case "bits", "binary":
 		if isLeafList {
-			return devicechangetypes.ValueType_LEAFLIST_BYTES, nil
+			return devicechange.ValueType_LEAFLIST_BYTES, nil
 		}
-		return devicechangetypes.ValueType_BYTES, nil
+		return devicechange.ValueType_BYTES, nil
 	case "empty":
-		return devicechangetypes.ValueType_EMPTY, nil
+		return devicechange.ValueType_EMPTY, nil
 	default:
-		return devicechangetypes.ValueType_STRING, nil
+		return devicechange.ValueType_STRING, nil
 	}
 }

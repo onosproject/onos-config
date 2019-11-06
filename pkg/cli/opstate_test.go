@@ -17,8 +17,8 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/api/diags"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"gotest.tools/assert"
 	"io"
 	"regexp"
@@ -33,9 +33,9 @@ func generateOpstate(count int) {
 	for opstateIndex := range opstateInfo {
 		valueString := fmt.Sprintf("value%d", opstateIndex)
 		pathString := fmt.Sprintf("/root/system/path%d", opstateIndex)
-		value := devicechangetypes.PathValue{
+		value := devicechange.PathValue{
 			Path:  pathString,
-			Value: devicechangetypes.NewTypedValueString(valueString),
+			Value: devicechange.NewTypedValueString(valueString),
 		}
 		opstateInfo[opstateIndex] = diags.OpStateResponse{
 			Type:      0,

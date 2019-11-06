@@ -18,6 +18,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
+	"github.com/onosproject/onos-config/api/types"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
@@ -26,10 +30,6 @@ import (
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	southboundmock "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
-	"github.com/onosproject/onos-config/pkg/types"
-	"github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -50,8 +50,8 @@ const (
 )
 
 const (
-	change1 = devicechangetypes.ID("device-1:device-1:1.0.0")
-	change2 = devicechangetypes.ID("device-2:device-2:1.0.0")
+	change1 = devicechange.ID("device-1:device-1:1.0.0")
+	change2 = devicechange.ID("device-2:device-2:1.0.0")
 )
 
 const (
@@ -106,19 +106,19 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 	// No changes should have been made
 	deviceChange1, err = deviceChanges.Get(change1)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
+	assert.Equal(t, changetypes.State_PENDING, deviceChange1.Status.State)
 
 	deviceChange2, err = deviceChanges.Get(change2)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
+	assert.Equal(t, changetypes.State_PENDING, deviceChange2.Status.State)
 
 	// Change the state of device-1 change 1 to RUNNING
-	deviceChange1.Status.State = change.State_RUNNING
+	deviceChange1.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
 	// Change the state of device-2 change 1 to RUNNING
-	deviceChange2.Status.State = change.State_RUNNING
+	deviceChange2.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -134,11 +134,11 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 	// Both change should be applied successfully
 	deviceChange1, err = deviceChanges.Get(change1)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_COMPLETE, deviceChange1.Status.State)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange1.Status.State)
 
 	deviceChange2, err = deviceChanges.Get(change2)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
 }
 
 func TestReconcilerRollbackSuccess(t *testing.T) {
@@ -152,13 +152,13 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 
 	// Create a device-1 change 1
 	deviceChange1 := newChange(device1, v1)
-	deviceChange1.Status.Phase = change.Phase_ROLLBACK
+	deviceChange1.Status.Phase = changetypes.Phase_ROLLBACK
 	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
 	// Create a device-2 change 1
 	deviceChange2 := newChange(device2, v1)
-	deviceChange2.Status.Phase = change.Phase_ROLLBACK
+	deviceChange2.Status.Phase = changetypes.Phase_ROLLBACK
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
@@ -175,19 +175,19 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 	// No changes should have been made
 	deviceChange1, err = deviceChanges.Get(change1)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
+	assert.Equal(t, changetypes.State_PENDING, deviceChange1.Status.State)
 
 	deviceChange2, err = deviceChanges.Get(change2)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
+	assert.Equal(t, changetypes.State_PENDING, deviceChange2.Status.State)
 
 	// Change the state of device-1 change 1 to RUNNING
-	deviceChange1.Status.State = change.State_RUNNING
+	deviceChange1.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
 	// Change the state of device-2 change 1 to RUNNING
-	deviceChange2.Status.State = change.State_RUNNING
+	deviceChange2.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -203,13 +203,13 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 	// Both change should be applied successfully
 	deviceChange1, err = deviceChanges.Get(change1)
 	assert.NoError(t, err)
-	assert.Equal(t, change.Phase_ROLLBACK, deviceChange1.Status.Phase)
-	assert.Equal(t, change.State_COMPLETE, deviceChange1.Status.State)
+	assert.Equal(t, changetypes.Phase_ROLLBACK, deviceChange1.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange1.Status.State)
 
 	deviceChange2, err = deviceChanges.Get(change2)
 	assert.NoError(t, err)
-	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
-	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, changetypes.Phase_ROLLBACK, deviceChange2.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
 }
 
 func TestReconcilerChangeThenRollback(t *testing.T) {
@@ -234,10 +234,10 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	// No changes should have been made
 	deviceChange1, err = deviceChanges.Get(deviceChange1.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_PENDING, deviceChange1.Status.State)
+	assert.Equal(t, changetypes.State_PENDING, deviceChange1.Status.State)
 
 	// Change the state of device-1 change 1 to RUNNING
-	deviceChange1.Status.State = change.State_RUNNING
+	deviceChange1.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
@@ -249,8 +249,8 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	// Should be complete by now
 	deviceChange1, err = deviceChanges.Get(deviceChange1.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_COMPLETE, deviceChange1.Status.State)
-	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange1.Status.State)
+	assert.Equal(t, changetypes.Phase_CHANGE, deviceChange1.Status.Phase)
 
 	//**********************************************************
 	// Create eth2 in a second change
@@ -264,7 +264,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Change the state of device-1 change 1 to RUNNING
-	deviceChange2.Status.State = change.State_RUNNING
+	deviceChange2.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -276,8 +276,8 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	// Should be complete by now
 	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
-	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, changetypes.Phase_CHANGE, deviceChange2.Status.Phase)
 
 	paths, err := devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
@@ -304,8 +304,8 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	//**********************************************************
 	// Change devicechange2 to rollback
 	//**********************************************************
-	deviceChange2.Status.State = change.State_PENDING
-	deviceChange2.Status.Phase = change.Phase_ROLLBACK
+	deviceChange2.Status.State = changetypes.State_PENDING
+	deviceChange2.Status.Phase = changetypes.Phase_ROLLBACK
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -315,7 +315,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Change the state of device-1 change 1 to RUNNING
-	deviceChange2.Status.State = change.State_RUNNING
+	deviceChange2.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -327,8 +327,8 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	// Should be complete by now
 	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
-	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, changetypes.Phase_ROLLBACK, deviceChange2.Status.Phase)
 
 	paths, err = devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
@@ -372,7 +372,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Change the state of device-1 change 1 to RUNNING
-	deviceChange1.Status.State = change.State_RUNNING
+	deviceChange1.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
@@ -384,8 +384,8 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	// Should be complete by now
 	deviceChange1, err = deviceChanges.Get(deviceChange1.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_COMPLETE, deviceChange1.Status.State)
-	assert.Equal(t, change.Phase_CHANGE, deviceChange1.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange1.Status.State)
+	assert.Equal(t, changetypes.Phase_CHANGE, deviceChange1.Status.Phase)
 
 	paths, err := devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
@@ -415,7 +415,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Change the state of device-1 change 1 to RUNNING
-	deviceChange2.Status.State = change.State_RUNNING
+	deviceChange2.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -427,8 +427,8 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	// Should be complete by now
 	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
-	assert.Equal(t, change.Phase_CHANGE, deviceChange2.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, changetypes.Phase_CHANGE, deviceChange2.Status.Phase)
 
 	paths, err = devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
@@ -437,8 +437,8 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	//**********************************************************
 	// Now rollback the remove
 	//**********************************************************
-	deviceChange2.Status.State = change.State_PENDING
-	deviceChange2.Status.Phase = change.Phase_ROLLBACK
+	deviceChange2.Status.State = changetypes.State_PENDING
+	deviceChange2.Status.Phase = changetypes.Phase_ROLLBACK
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -448,7 +448,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.True(t, ok)
 
 	// Change the state of device-1 change 1 to RUNNING
-	deviceChange2.Status.State = change.State_RUNNING
+	deviceChange2.Status.State = changetypes.State_RUNNING
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -460,8 +460,8 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	// Should be complete by now
 	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, change.State_COMPLETE, deviceChange2.Status.State)
-	assert.Equal(t, change.Phase_ROLLBACK, deviceChange2.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
+	assert.Equal(t, changetypes.Phase_ROLLBACK, deviceChange2.Status.Phase)
 
 	paths, err = devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
@@ -589,7 +589,7 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	//topoChannel := make(chan *devicetopo.ListResponse)
 	//dispatcher := dispatcher.NewDispatcher()
 	//modelregistry := new(modelregistry.ModelRegistry)
-	opStateCache := make(devicechangetypes.TypedValueMap)
+	opStateCache := make(devicechange.TypedValueMap)
 	roPathMap := make(modelregistry.ReadOnlyPathMap)
 
 	_, err := synchronizer.New(context.Background(), &mockDevice,
@@ -602,20 +602,20 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	southbound.Targets[devicetopo.ID(name)] = mockTargetDevice
 }
 
-func newChange(device device.ID, version device.Version) *devicechangetypes.DeviceChange {
-	return &devicechangetypes.DeviceChange{
-		NetworkChange: devicechangetypes.NetworkChangeRef{
+func newChange(device device.ID, version device.Version) *devicechange.DeviceChange {
+	return &devicechange.DeviceChange{
+		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(device),
 			Index: 1,
 		},
-		Change: &devicechangetypes.Change{
+		Change: &devicechange.Change{
 			DeviceID:      device,
 			DeviceVersion: version,
 			DeviceType:    stratumType,
-			Values: []*devicechangetypes.ChangeValue{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path:  "foo",
-					Value: devicechangetypes.NewTypedValueString("Hello world!"),
+					Value: devicechange.NewTypedValueString("Hello world!"),
 				},
 			},
 		},
@@ -623,7 +623,7 @@ func newChange(device device.ID, version device.Version) *devicechangetypes.Devi
 }
 
 // newChangeInterface creates a new interface eth<n> in the OpenConfig model style
-func newChangeInterface(device device.ID, version device.Version, iface int) *devicechangetypes.DeviceChange {
+func newChangeInterface(device device.ID, version device.Version, iface int) *devicechange.DeviceChange {
 	ifaceID := fmt.Sprintf("%s%d", ethPrefix, iface)
 	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
 	healthValue := healthUp
@@ -631,29 +631,29 @@ func newChangeInterface(device device.ID, version device.Version, iface int) *de
 		healthValue = healthDown
 	}
 
-	return &devicechangetypes.DeviceChange{
-		NetworkChange: devicechangetypes.NetworkChangeRef{
+	return &devicechange.DeviceChange{
+		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-added", device, iface)),
 			Index: types.Index(iface),
 		},
-		Change: &devicechangetypes.Change{
+		Change: &devicechange.Change{
 			DeviceID:      device,
 			DeviceVersion: version,
 			DeviceType:    stratumType,
-			Values: []*devicechangetypes.ChangeValue{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path:    ifacePath + ifNameAttr,
-					Value:   devicechangetypes.NewTypedValueString(ifaceID),
+					Value:   devicechange.NewTypedValueString(ifaceID),
 					Removed: false,
 				},
 				{
 					Path:    ifacePath + ifEnabledAttr,
-					Value:   devicechangetypes.NewTypedValueBool(iface%2 == 0),
+					Value:   devicechange.NewTypedValueBool(iface%2 == 0),
 					Removed: false,
 				},
 				{
 					Path:    ifacePath + ifHealthAttr,
-					Value:   devicechangetypes.NewTypedValueString(healthValue),
+					Value:   devicechange.NewTypedValueString(healthValue),
 					Removed: false,
 				},
 			},
@@ -662,19 +662,19 @@ func newChangeInterface(device device.ID, version device.Version, iface int) *de
 }
 
 // newChangeInterfaceRemove removes an interface eth<n> of the OpenConfig model style
-func newChangeInterfaceRemove(device device.ID, version device.Version, iface int) *devicechangetypes.DeviceChange {
+func newChangeInterfaceRemove(device device.ID, version device.Version, iface int) *devicechange.DeviceChange {
 	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
 
-	return &devicechangetypes.DeviceChange{
-		NetworkChange: devicechangetypes.NetworkChangeRef{
+	return &devicechange.DeviceChange{
+		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-removed", device, iface)),
 			Index: types.Index(iface),
 		},
-		Change: &devicechangetypes.Change{
+		Change: &devicechange.Change{
 			DeviceID:      device,
 			DeviceVersion: version,
 			DeviceType:    stratumType,
-			Values: []*devicechangetypes.ChangeValue{
+			Values: []*devicechange.ChangeValue{
 				{
 					Path:    ifacePath,
 					Removed: true,

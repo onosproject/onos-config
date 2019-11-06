@@ -15,10 +15,10 @@
 package device
 
 import (
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/api/types/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
 	"io"
 	"sync"
 )
@@ -76,7 +76,7 @@ func (c *networkChangeStoreCache) listen() error {
 
 	go func() {
 		for event := range ch {
-			netChange := event.Object.(*networkchangetypes.NetworkChange)
+			netChange := event.Object.(*networkchange.NetworkChange)
 			for _, devChange := range netChange.Changes {
 				key := device.NewVersionedID(devChange.DeviceID, devChange.DeviceVersion)
 				c.mu.Lock()

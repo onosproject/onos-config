@@ -16,7 +16,7 @@ package network
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/types"
+	"github.com/onosproject/onos-config/api/types"
 	"strconv"
 	"strings"
 )

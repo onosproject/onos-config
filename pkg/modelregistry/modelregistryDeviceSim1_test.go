@@ -15,8 +15,8 @@
 package modelregistry
 
 import (
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	ds1 "github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim_1_0_0"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/openconfig/goyang/pkg/yang"
 	"gotest.tools/assert"
 	"testing"
@@ -206,6 +206,6 @@ func Test_SchemaDeviceSim(t *testing.T) {
 
 	logSvrSelFacName, logSvrSelFacNameOk := readWritePathsDeviceSim1["/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/config/facility"]
 	assert.Assert(t, logSvrSelFacNameOk, "expected to get /system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/config/facility")
-	assert.Equal(t, logSvrSelFacName.ValueType, devicechangetypes.ValueType_STRING, "expected /system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/config/facility to be STRING")
+	assert.Equal(t, logSvrSelFacName.ValueType, devicechange.ValueType_STRING, "expected /system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/config/facility to be STRING")
 
 }

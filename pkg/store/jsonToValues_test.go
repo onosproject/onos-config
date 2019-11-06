@@ -16,7 +16,7 @@ package store
 
 import (
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"gotest.tools/assert"
 	"io/ioutil"
 	"regexp"
@@ -69,15 +69,15 @@ func Test_DecomposeTree(t *testing.T) {
 			"/system/openflow/controllers/controller[*]/connections/example-ll[*]",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/conn-type",
 			"/interfaces/interface[*]/name":
-			assert.Equal(t, v.GetValue().GetType(), devicechangetypes.ValueType_STRING, newPath)
+			assert.Equal(t, v.GetValue().GetType(), devicechange.ValueType_STRING, newPath)
 		case
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/discombobulator":
-			assert.Equal(t, v.GetValue().GetType(), devicechangetypes.ValueType_BOOL, newPath)
+			assert.Equal(t, v.GetValue().GetType(), devicechange.ValueType_BOOL, newPath)
 		case
 			"/system/openflow/controllers/controller[*]/connections/connections-type",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/aux-id",
 			"/system/openflow/controllers/controller[*]/connections/connections-freq":
-			assert.Equal(t, v.GetValue().GetType(), devicechangetypes.ValueType_FLOAT, newPath)
+			assert.Equal(t, v.GetValue().GetType(), devicechange.ValueType_FLOAT, newPath)
 		default:
 			t.Fatal("Unexpected jsonPath", newPath)
 		}
@@ -118,13 +118,13 @@ func Test_DecomposeTree2(t *testing.T) {
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/address",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/source-interface",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/transport":
-			assert.Equal(t, v.GetValue().GetType(), devicechangetypes.ValueType_STRING, newPath)
+			assert.Equal(t, v.GetValue().GetType(), devicechange.ValueType_STRING, newPath)
 		case
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/aux-id",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/aux-id",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/priority",
 			"/system/openflow/controllers/controller[*]/connections/connection[*]/state/port":
-			assert.Equal(t, v.GetValue().GetType(), devicechangetypes.ValueType_FLOAT, newPath)
+			assert.Equal(t, v.GetValue().GetType(), devicechange.ValueType_FLOAT, newPath)
 		default:
 			t.Fatal("Unexpected jsonPath", newPath)
 		}

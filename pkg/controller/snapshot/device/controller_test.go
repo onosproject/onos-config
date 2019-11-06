@@ -16,15 +16,15 @@ package device
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/api/types"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/api/types/device"
+	snapshottype "github.com/onosproject/onos-config/api/types/snapshot"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
-	"github.com/onosproject/onos-config/pkg/types"
-	changetype "github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
-	snapshottype "github.com/onosproject/onos-config/pkg/types/snapshot"
-	devicesnap "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -45,27 +45,27 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	}
 
 	// Create a device-1 change 1
-	deviceChange1 := newSet(1, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
+	deviceChange1 := newSet(1, device1, "foo", time.Now(), changetypes.Phase_CHANGE, changetypes.State_COMPLETE)
 	err := changes.Create(deviceChange1)
 	assert.NoError(t, err)
 
 	// Create a device-1 change 2
-	deviceChange2 := newSet(2, device1, "bar", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
+	deviceChange2 := newSet(2, device1, "bar", time.Now(), changetypes.Phase_CHANGE, changetypes.State_COMPLETE)
 	err = changes.Create(deviceChange2)
 	assert.NoError(t, err)
 
 	// Create a device-1 change 4
-	deviceChange3 := newRemove(4, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
+	deviceChange3 := newRemove(4, device1, "foo", time.Now(), changetypes.Phase_CHANGE, changetypes.State_COMPLETE)
 	err = changes.Create(deviceChange3)
 	assert.NoError(t, err)
 
 	// Create a device-1 change 5
-	deviceChange4 := newSet(5, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
+	deviceChange4 := newSet(5, device1, "foo", time.Now(), changetypes.Phase_CHANGE, changetypes.State_COMPLETE)
 	err = changes.Create(deviceChange4)
 	assert.NoError(t, err)
 
 	// Create a device snapshot
-	deviceSnapshot := &devicesnap.DeviceSnapshot{
+	deviceSnapshot := &devicesnapshot.DeviceSnapshot{
 		DeviceID:              device1,
 		DeviceVersion:         "1.0.0",
 		MaxNetworkChangeIndex: 4,
@@ -102,7 +102,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	// Verify the correct snapshot was taken
 	snapshot, err := snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	assert.NoError(t, err)
-	assert.Equal(t, devicechangetypes.Index(3), snapshot.ChangeIndex)
+	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 2)
 	for _, value := range snapshot.Values {
 		switch value.GetPath() {
@@ -174,22 +174,22 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	}
 
 	// Create a device-1 change 1
-	deviceChange1 := newSet(1, device1, "foo", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
+	deviceChange1 := newSet(1, device1, "foo", time.Now(), changetypes.Phase_CHANGE, changetypes.State_COMPLETE)
 	err := changes.Create(deviceChange1)
 	assert.NoError(t, err)
 
 	// Create a device-1 change 2
-	deviceChange2 := newSet(2, device1, "bar", time.Now(), changetype.Phase_CHANGE, changetype.State_COMPLETE)
+	deviceChange2 := newSet(2, device1, "bar", time.Now(), changetypes.Phase_CHANGE, changetypes.State_COMPLETE)
 	err = changes.Create(deviceChange2)
 	assert.NoError(t, err)
 
 	// Create a device-1 change 4
-	deviceChange3 := newRemove(3, device1, "foo", time.Now(), changetype.Phase_ROLLBACK, changetype.State_COMPLETE)
+	deviceChange3 := newRemove(3, device1, "foo", time.Now(), changetypes.Phase_ROLLBACK, changetypes.State_COMPLETE)
 	err = changes.Create(deviceChange3)
 	assert.NoError(t, err)
 
 	// Create a device snapshot
-	deviceSnapshot := &devicesnap.DeviceSnapshot{
+	deviceSnapshot := &devicesnapshot.DeviceSnapshot{
 		DeviceID:              device1,
 		DeviceVersion:         "1.0.0",
 		MaxNetworkChangeIndex: 3,
@@ -226,7 +226,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	// Verify the correct snapshot was taken
 	snapshot, err := snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	assert.NoError(t, err)
-	assert.Equal(t, devicechangetypes.Index(3), snapshot.ChangeIndex)
+	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 4)
 
 	// Verify changes have not been deleted
@@ -285,30 +285,30 @@ func newStores(t *testing.T) (devicechangestore.Store, devicesnapstore.Store) {
 	return changes, snapshots
 }
 
-func newSet(index networkchangetypes.Index, device device.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechangetypes.DeviceChange {
-	return newChange(index, created, phase, state, &devicechangetypes.Change{
+func newSet(index networkchange.Index, device device.ID, path string, created time.Time, phase changetypes.Phase, state changetypes.State) *devicechange.DeviceChange {
+	return newChange(index, created, phase, state, &devicechange.Change{
 		DeviceID:      device,
 		DeviceVersion: "1.0.0",
 		DeviceType:    "Stratum",
-		Values: []*devicechangetypes.ChangeValue{
+		Values: []*devicechange.ChangeValue{
 			{
 				Path:  fmt.Sprintf("/%s/msg", path),
-				Value: devicechangetypes.NewTypedValueString(fmt.Sprintf("Hello world %d", len(path))),
+				Value: devicechange.NewTypedValueString(fmt.Sprintf("Hello world %d", len(path))),
 			},
 			{
 				Path:  fmt.Sprintf("/%s/meaning", path),
-				Value: devicechangetypes.NewTypedValueInt64(39 + len(path)),
+				Value: devicechange.NewTypedValueInt64(39 + len(path)),
 			},
 		},
 	})
 }
 
-func newRemove(index networkchangetypes.Index, device device.ID, path string, created time.Time, phase changetype.Phase, state changetype.State) *devicechangetypes.DeviceChange {
-	return newChange(index, created, phase, state, &devicechangetypes.Change{
+func newRemove(index networkchange.Index, device device.ID, path string, created time.Time, phase changetypes.Phase, state changetypes.State) *devicechange.DeviceChange {
+	return newChange(index, created, phase, state, &devicechange.Change{
 		DeviceID:      device,
 		DeviceVersion: "1.0.0",
 		DeviceType:    "Stratum",
-		Values: []*devicechangetypes.ChangeValue{
+		Values: []*devicechange.ChangeValue{
 			{
 				Path:    fmt.Sprintf("/%s", path),
 				Removed: true,
@@ -317,14 +317,14 @@ func newRemove(index networkchangetypes.Index, device device.ID, path string, cr
 	})
 }
 
-func newChange(index networkchangetypes.Index, created time.Time, phase changetype.Phase, state changetype.State, change *devicechangetypes.Change) *devicechangetypes.DeviceChange {
-	return &devicechangetypes.DeviceChange{
-		NetworkChange: devicechangetypes.NetworkChangeRef{
+func newChange(index networkchange.Index, created time.Time, phase changetypes.Phase, state changetypes.State, change *devicechange.Change) *devicechange.DeviceChange {
+	return &devicechange.DeviceChange{
+		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("network-change-%d", index)),
 			Index: types.Index(index),
 		},
 		Change: change,
-		Status: changetype.Status{
+		Status: changetypes.Status{
 			Phase: phase,
 			State: state,
 		},

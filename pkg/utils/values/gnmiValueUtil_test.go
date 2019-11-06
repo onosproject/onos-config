@@ -17,7 +17,7 @@
 package values
 
 import (
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"reflect"
@@ -40,7 +40,7 @@ func Test_GnmiStringToNative(t *testing.T) {
 	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue})
 	assert.NilError(t, err)
 
-	nativeString := (*devicechangetypes.TypedString)(nativeType)
+	nativeString := (*devicechange.TypedString)(nativeType)
 	assert.Equal(t, nativeString.String(), testString)
 }
 
@@ -49,7 +49,7 @@ func Test_GnmiIntToNative(t *testing.T) {
 	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue})
 	assert.NilError(t, err)
 
-	nativeInt64 := (*devicechangetypes.TypedInt64)(nativeType)
+	nativeInt64 := (*devicechange.TypedInt64)(nativeType)
 	assert.Equal(t, nativeInt64.Int(), testNegativeInt)
 }
 
@@ -58,7 +58,7 @@ func Test_GnmiUintToNative(t *testing.T) {
 	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue})
 	assert.NilError(t, err)
 
-	nativeUint64 := (*devicechangetypes.TypedUint64)(nativeType)
+	nativeUint64 := (*devicechange.TypedUint64)(nativeType)
 	assert.Equal(t, nativeUint64.Uint(), testMaxUint)
 }
 
@@ -67,7 +67,7 @@ func Test_GnmiBoolToNative(t *testing.T) {
 	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue})
 	assert.NilError(t, err)
 
-	nativeBool := (*devicechangetypes.TypedBool)(nativeType)
+	nativeBool := (*devicechange.TypedBool)(nativeType)
 	assert.Equal(t, nativeBool.Bool(), true)
 }
 
@@ -169,16 +169,16 @@ var stringTestValue = &gnmi.TypedValue{
 func Test_Leaflists(t *testing.T) {
 	testCases := []struct {
 		description  string
-		expectedType devicechangetypes.ValueType
+		expectedType devicechange.ValueType
 		testValue    *gnmi.TypedValue
 	}{
-		{description: "Int", expectedType: devicechangetypes.ValueType_LEAFLIST_INT, testValue: intTestValue},
-		{description: "Uint", expectedType: devicechangetypes.ValueType_LEAFLIST_UINT, testValue: uintTestValue},
-		{description: "Decimal", expectedType: devicechangetypes.ValueType_LEAFLIST_DECIMAL, testValue: decimalTestValue},
-		{description: "Boolean", expectedType: devicechangetypes.ValueType_LEAFLIST_BOOL, testValue: booleanTestValue},
-		{description: "Float", expectedType: devicechangetypes.ValueType_LEAFLIST_FLOAT, testValue: floatTestValue},
-		{description: "Bytes", expectedType: devicechangetypes.ValueType_LEAFLIST_BYTES, testValue: bytesTestValue},
-		{description: "Strings", expectedType: devicechangetypes.ValueType_LEAFLIST_STRING, testValue: stringTestValue},
+		{description: "Int", expectedType: devicechange.ValueType_LEAFLIST_INT, testValue: intTestValue},
+		{description: "Uint", expectedType: devicechange.ValueType_LEAFLIST_UINT, testValue: uintTestValue},
+		{description: "Decimal", expectedType: devicechange.ValueType_LEAFLIST_DECIMAL, testValue: decimalTestValue},
+		{description: "Boolean", expectedType: devicechange.ValueType_LEAFLIST_BOOL, testValue: booleanTestValue},
+		{description: "Float", expectedType: devicechange.ValueType_LEAFLIST_FLOAT, testValue: floatTestValue},
+		{description: "Bytes", expectedType: devicechange.ValueType_LEAFLIST_BYTES, testValue: bytesTestValue},
+		{description: "Strings", expectedType: devicechange.ValueType_LEAFLIST_STRING, testValue: stringTestValue},
 	}
 
 	for _, testCase := range testCases {
@@ -198,7 +198,7 @@ func Test_Leaflists(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 
 func Test_NativeStringToGnmi(t *testing.T) {
-	nativeString := devicechangetypes.NewTypedValueString(testString)
+	nativeString := devicechange.NewTypedValueString(testString)
 	gnmiString, err := NativeTypeToGnmiTypedValue(nativeString)
 	assert.NilError(t, err)
 	_, ok := gnmiString.Value.(*gnmi.TypedValue_StringVal)
@@ -208,7 +208,7 @@ func Test_NativeStringToGnmi(t *testing.T) {
 }
 
 func Test_NativeIntToGnmi(t *testing.T) {
-	nativeInt := devicechangetypes.NewTypedValueInt64(testPositiveInt)
+	nativeInt := devicechange.NewTypedValueInt64(testPositiveInt)
 	gnmiInt, err := NativeTypeToGnmiTypedValue(nativeInt)
 	assert.NilError(t, err)
 	_, ok := gnmiInt.Value.(*gnmi.TypedValue_IntVal)
@@ -218,7 +218,7 @@ func Test_NativeIntToGnmi(t *testing.T) {
 }
 
 func Test_NativeUintToGnmi(t *testing.T) {
-	nativeUint := devicechangetypes.NewTypedValueUint64(testMaxUint)
+	nativeUint := devicechange.NewTypedValueUint64(testMaxUint)
 	gnmiUint, err := NativeTypeToGnmiTypedValue(nativeUint)
 	assert.NilError(t, err)
 	_, ok := gnmiUint.Value.(*gnmi.TypedValue_UintVal)
@@ -228,7 +228,7 @@ func Test_NativeUintToGnmi(t *testing.T) {
 }
 
 func Test_NativeBoolToGnmi(t *testing.T) {
-	nativeBool := devicechangetypes.NewTypedValueBool(true)
+	nativeBool := devicechange.NewTypedValueBool(true)
 	gnmiBool, err := NativeTypeToGnmiTypedValue(nativeBool)
 	assert.NilError(t, err)
 	_, ok := gnmiBool.Value.(*gnmi.TypedValue_BoolVal)

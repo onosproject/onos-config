@@ -15,15 +15,15 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	changetype "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	snaptype "github.com/onosproject/onos-config/api/types/snapshot"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
-	"github.com/onosproject/onos-config/pkg/types"
-	changetype "github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	snaptype "github.com/onosproject/onos-config/pkg/types/snapshot"
-	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"
@@ -56,7 +56,7 @@ type Resolver struct {
 
 // Resolve resolves a device ID from a device snapshot ID
 func (r *Resolver) Resolve(id types.ID) (devicetopo.ID, error) {
-	return devicetopo.ID(devicesnaptype.ID(id).GetDeviceID()), nil
+	return devicetopo.ID(devicesnapshot.ID(id).GetDeviceID()), nil
 }
 
 // Reconciler is a device snapshot reconciler
@@ -68,7 +68,7 @@ type Reconciler struct {
 // Reconcile reconciles the state of a device snapshot
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	// Get the snapshot from the store
-	deviceSnapshot, err := r.snapshots.Get(devicesnaptype.ID(id))
+	deviceSnapshot, err := r.snapshots.Get(devicesnapshot.ID(id))
 	if err != nil {
 		return false, err
 	}
@@ -89,9 +89,9 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 }
 
 // reconcileMark reconciles a snapshot in the MARK phase
-func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
+func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnapshot.DeviceSnapshot) (bool, error) {
 	// Get the previous snapshot if any
-	var prevIndex devicechangetypes.Index
+	var prevIndex devicechange.Index
 	prevSnapshot, err := r.snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	if err != nil {
 		return false, err
@@ -100,7 +100,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	}
 
 	// Create a map to track the current state of the device
-	state := make(map[string]*devicechangetypes.PathValue)
+	state := make(map[string]*devicechange.PathValue)
 
 	// Initialize the state map from the previous snapshot if available
 	if prevSnapshot != nil {
@@ -110,7 +110,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 	}
 
 	// List the changes for the device
-	changes := make(chan *devicechangetypes.DeviceChange)
+	changes := make(chan *devicechange.DeviceChange)
 	ctx, err := r.changes.List(deviceSnapshot.GetVersionedDeviceID(), changes)
 	if err != nil {
 		return false, err
@@ -143,7 +143,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 						}
 					}
 				} else {
-					state[value.Path] = &devicechangetypes.PathValue{
+					state[value.Path] = &devicechange.PathValue{
 						Path:  value.GetPath(),
 						Value: value.GetValue(),
 					}
@@ -155,13 +155,13 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 
 	// If the snapshot index is greater than the previous snapshot index, store the snapshot
 	if snapshotIndex > prevIndex {
-		values := make([]*devicechangetypes.PathValue, 0, len(state))
+		values := make([]*devicechange.PathValue, 0, len(state))
 		for _, value := range state {
 			values = append(values, value)
 		}
 
-		snapshot := &devicesnaptype.Snapshot{
-			ID:            devicesnaptype.ID(deviceSnapshot.DeviceID),
+		snapshot := &devicesnapshot.Snapshot{
+			ID:            devicesnapshot.ID(deviceSnapshot.DeviceID),
 			DeviceID:      deviceSnapshot.DeviceID,
 			DeviceVersion: deviceSnapshot.DeviceVersion,
 			SnapshotID:    deviceSnapshot.ID,
@@ -184,7 +184,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnaptype.DeviceSnapshot
 }
 
 // reconcileDelete reconciles a snapshot in the DELETE phase
-func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapshot) (bool, error) {
+func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnapshot.DeviceSnapshot) (bool, error) {
 	// Load the current snapshot
 	snapshot, err := r.snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	if err != nil {
@@ -199,7 +199,7 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnaptype.DeviceSnapsh
 	}
 
 	// List the changes for the device
-	changes := make(chan *devicechangetypes.DeviceChange)
+	changes := make(chan *devicechange.DeviceChange)
 	ctx, err := r.changes.List(deviceSnapshot.GetVersionedDeviceID(), changes)
 	if err != nil {
 		return false, err

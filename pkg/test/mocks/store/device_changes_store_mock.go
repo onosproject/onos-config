@@ -7,10 +7,10 @@ package store
 import (
 	indexedmap "github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	gomock "github.com/golang/mock/gomock"
+	device0 "github.com/onosproject/onos-config/api/types/change/device"
+	device1 "github.com/onosproject/onos-config/api/types/device"
 	device "github.com/onosproject/onos-config/pkg/store/change/device"
 	stream "github.com/onosproject/onos-config/pkg/store/stream"
-	device0 "github.com/onosproject/onos-config/pkg/types/change/device"
-	device1 "github.com/onosproject/onos-config/pkg/types/device"
 	reflect "reflect"
 )
 

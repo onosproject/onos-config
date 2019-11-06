@@ -16,28 +16,28 @@ package store
 
 import (
 	"github.com/golang/mock/gomock"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	changetypes "github.com/onosproject/onos-config/pkg/types/change"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 )
 
 //SetUpMapBackedNetworkChangesStore : creates a map backed store for the given mock
 func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChangesStore) {
-	networkChangesList := make([]*networkchangetypes.NetworkChange, 0)
+	networkChangesList := make([]*networkchange.NetworkChange, 0)
 	mockNetworkChangesStore.EXPECT().Create(gomock.Any()).DoAndReturn(
-		func(networkChange *networkchangetypes.NetworkChange) error {
+		func(networkChange *networkchange.NetworkChange) error {
 			networkChangesList = append(networkChangesList, networkChange)
 			return nil
 		}).AnyTimes()
 	mockNetworkChangesStore.EXPECT().Update(gomock.Any()).DoAndReturn(
-		func(networkChange *networkchangetypes.NetworkChange) error {
+		func(networkChange *networkchange.NetworkChange) error {
 			networkChangesList = append(networkChangesList, networkChange)
 			return nil
 		}).AnyTimes()
 	mockNetworkChangesStore.EXPECT().Get(gomock.Any()).DoAndReturn(
-		func(id networkchangetypes.ID) (*networkchangetypes.NetworkChange, error) {
-			var found *networkchangetypes.NetworkChange
+		func(id networkchange.ID) (*networkchange.NetworkChange, error) {
+			var found *networkchange.NetworkChange
 			for _, networkChange := range networkChangesList {
 				if networkChange.ID == id {
 					found = networkChange
@@ -50,7 +50,7 @@ func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChang
 		}).AnyTimes()
 
 	mockNetworkChangesStore.EXPECT().List(gomock.Any()).DoAndReturn(
-		func(c chan<- *networkchangetypes.NetworkChange) error {
+		func(c chan<- *networkchange.NetworkChange) error {
 			go func() {
 				for _, networkChange := range networkChangesList {
 					c <- networkChange

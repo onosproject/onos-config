@@ -16,12 +16,12 @@ package synchronizer
 
 import (
 	"context"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
@@ -32,7 +32,7 @@ import (
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(topoChannel <-chan *devicetopo.ListResponse, opStateChan chan<- events.OperationalStateEvent,
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[devicetopo.ID]devicechangetypes.TypedValueMap) {
+	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[devicetopo.ID]devicechange.TypedValueMap) {
 
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
@@ -54,7 +54,7 @@ func Factory(topoChannel <-chan *devicetopo.ListResponse, opStateChan chan<- eve
 			} else {
 				mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
 			}
-			operationalStateCache[notifiedDevice.ID] = make(devicechangetypes.TypedValueMap)
+			operationalStateCache[notifiedDevice.ID] = make(devicechange.TypedValueMap)
 			target := southbound.NewTarget()
 			sync, err := New(ctx, notifiedDevice, opStateChan, southboundErrorChan,
 				operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode)

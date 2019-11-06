@@ -16,13 +16,13 @@ package network
 
 import (
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"regexp"
 	"time"
 )
 
 // NewNetworkChange creates a new network configuration
-func NewNetworkChange(networkChangeID string, changes []*devicechangetypes.Change) (*NetworkChange, error) {
+func NewNetworkChange(networkChangeID string, changes []*devicechange.Change) (*NetworkChange, error) {
 	r1 := regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 	match := r1.FindString(networkChangeID)
 	if networkChangeID == "" {

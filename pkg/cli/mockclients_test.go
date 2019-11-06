@@ -17,9 +17,9 @@ package cli
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	"github.com/onosproject/onos-config/pkg/types/snapshot/device"
+	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-config/api/diags"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -64,7 +64,15 @@ func (c mockConfigAdminServiceClient) RollbackNetworkChange(ctx context.Context,
 	return response, nil
 }
 
-func (c mockConfigAdminServiceClient) GetSnapshot(ctx context.Context, in *admin.GetSnapshotRequest, opts ...grpc.CallOption) (*device.Snapshot, error) {
+func (c mockConfigAdminServiceClient) RollbackNewNetworkChange(ctx context.Context, in *admin.RollbackRequest, opts ...grpc.CallOption) (*admin.RollbackResponse, error) {
+	response := &admin.RollbackResponse{
+		Message: "Rollback was successful",
+	}
+	LastCreatedClient.rollBackID = in.Name
+	return response, nil
+}
+
+func (c mockConfigAdminServiceClient) GetSnapshot(ctx context.Context, in *admin.GetSnapshotRequest, opts ...grpc.CallOption) (*devicesnapshot.Snapshot, error) {
 	return nil, nil
 }
 

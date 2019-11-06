@@ -15,9 +15,9 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/controller"
-	"github.com/onosproject/onos-config/pkg/types"
-	devicesnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 )
 
 // Partitioner is a WorkPartitioner for device snapshots
@@ -26,7 +26,7 @@ type Partitioner struct {
 
 // Partition returns the device as a partition key
 func (p *Partitioner) Partition(id types.ID) (controller.PartitionKey, error) {
-	return controller.PartitionKey(devicesnaptypes.ID(id).GetDeviceID()), nil
+	return controller.PartitionKey(devicesnapshot.ID(id).GetDeviceID()), nil
 }
 
 var _ controller.WorkPartitioner = &Partitioner{}

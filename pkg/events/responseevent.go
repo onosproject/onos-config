@@ -15,7 +15,7 @@
 package events
 
 import (
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"time"
 )
 
@@ -65,7 +65,7 @@ func (respEvent deviceResponseImpl) Response() string {
 }
 
 // NewResponseEvent creates a new response event object
-func NewResponseEvent(eventType EventType, subject string, changeID devicechangetypes.ID, response string) DeviceResponse {
+func NewResponseEvent(eventType EventType, subject string, changeID devicechange.ID, response string) DeviceResponse {
 	dr := deviceResponseImpl{
 		eventImpl: eventImpl{
 			subject:   subject,

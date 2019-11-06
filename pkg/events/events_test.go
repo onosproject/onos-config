@@ -16,7 +16,7 @@ package events
 
 import (
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"strings"
 	"testing"
 	"time"
@@ -45,7 +45,7 @@ func Test_eventConstruction(t *testing.T) {
 
 func Test_operationalStateEventConstruction(t *testing.T) {
 
-	event := NewOperationalStateEvent(eventSubject, path1, devicechangetypes.NewTypedValueString(value1), EventItemAdded)
+	event := NewOperationalStateEvent(eventSubject, path1, devicechange.NewTypedValueString(value1), EventItemAdded)
 
 	assert.Equal(t, event.EventType(), EventTypeOperationalState)
 	assert.Equal(t, event.Subject(), eventSubject)

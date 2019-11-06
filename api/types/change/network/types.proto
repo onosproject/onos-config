@@ -20,8 +20,8 @@ package onos.config.change.network;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
-import "github.com/onosproject/onos-config/pkg/types/change/types.proto";
-import "github.com/onosproject/onos-config/pkg/types/change/device/types.proto";
+import "github.com/onosproject/onos-config/api/types/change/types.proto";
+import "github.com/onosproject/onos-config/api/types/change/device/types.proto";
 
 // NetworkChange specifies the configuration for a network change
 // A network change is a configuration change that spans multiple devices. The change contains a list of
@@ -65,5 +65,5 @@ message NetworkChange {
 // DeviceChangeRef is a reference to a device change
 message DeviceChangeRef {
     // 'device_change_id' is the unique identifier of the device change
-    string device_change_id = 1 [(gogoproto.customname) = "DeviceChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.ID"];
+    string device_change_id = 1 [(gogoproto.customname) = "DeviceChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/change/device.ID"];
 }

@@ -25,10 +25,10 @@ import (
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
 	"github.com/gogo/protobuf/proto"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"io"
@@ -108,19 +108,19 @@ type Store interface {
 	io.Closer
 
 	// Get gets a device change
-	Get(id devicechangetypes.ID) (*devicechangetypes.DeviceChange, error)
+	Get(id devicechange.ID) (*devicechange.DeviceChange, error)
 
 	// Create creates a new device change
-	Create(change *devicechangetypes.DeviceChange) error
+	Create(change *devicechange.DeviceChange) error
 
 	// Update updates an existing device change
-	Update(change *devicechangetypes.DeviceChange) error
+	Update(change *devicechange.DeviceChange) error
 
 	// Delete deletes a device change
-	Delete(change *devicechangetypes.DeviceChange) error
+	Delete(change *devicechange.DeviceChange) error
 
 	// List lists device change
-	List(deviceID device.VersionedID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error)
+	List(deviceID device.VersionedID, ch chan<- *devicechange.DeviceChange) (stream.Context, error)
 
 	// Watch watches the device change store for changes
 	Watch(deviceID device.VersionedID, ch chan<- stream.Event, opts ...WatchOption) (stream.Context, error)
@@ -145,7 +145,7 @@ func WithReplay() WatchOption {
 }
 
 type watchIDOption struct {
-	id devicechangetypes.ID
+	id devicechange.ID
 }
 
 func (o watchIDOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
@@ -155,7 +155,7 @@ func (o watchIDOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOp
 }
 
 // WithChangeID returns a Watch option that watches for changes to the given change ID
-func WithChangeID(id devicechangetypes.ID) WatchOption {
+func WithChangeID(id devicechange.ID) WatchOption {
 	return watchIDOption{id: id}
 }
 
@@ -186,7 +186,7 @@ func (s *atomixStore) getDeviceChanges(deviceID device.VersionedID) (indexedmap.
 	return changes, nil
 }
 
-func (s *atomixStore) Get(id devicechangetypes.ID) (*devicechangetypes.DeviceChange, error) {
+func (s *atomixStore) Get(id devicechange.ID) (*devicechange.DeviceChange, error) {
 	changes, err := s.getDeviceChanges(id.GetDeviceVersionedID())
 	if err != nil {
 		return nil, err
@@ -204,7 +204,7 @@ func (s *atomixStore) Get(id devicechangetypes.ID) (*devicechangetypes.DeviceCha
 	return decodeChange(entry)
 }
 
-func (s *atomixStore) Create(change *devicechangetypes.DeviceChange) error {
+func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
 	if change.Change.DeviceID == "" {
 		return errors.New("no device ID specified")
 	}
@@ -224,7 +224,7 @@ func (s *atomixStore) Create(change *devicechangetypes.DeviceChange) error {
 		return errors.New("no device type specified")
 	}
 
-	change.ID = devicechangetypes.NewID(change.NetworkChange.ID, change.Change.DeviceID, change.Change.DeviceVersion)
+	change.ID = devicechange.NewID(change.NetworkChange.ID, change.Change.DeviceID, change.Change.DeviceVersion)
 
 	changes, err := s.getDeviceChanges(change.Change.GetVersionedDeviceID())
 	if err != nil {
@@ -244,14 +244,14 @@ func (s *atomixStore) Create(change *devicechangetypes.DeviceChange) error {
 		return err
 	}
 
-	change.Index = devicechangetypes.Index(entry.Index)
-	change.Revision = devicechangetypes.Revision(entry.Version)
+	change.Index = devicechange.Index(entry.Index)
+	change.Revision = devicechange.Revision(entry.Version)
 	change.Created = entry.Created
 	change.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Update(change *devicechangetypes.DeviceChange) error {
+func (s *atomixStore) Update(change *devicechange.DeviceChange) error {
 	if change.ID == "" {
 		return errors.New("no change ID configured")
 	}
@@ -289,7 +289,7 @@ func (s *atomixStore) Update(change *devicechangetypes.DeviceChange) error {
 		return err
 	}
 
-	change.Revision = devicechangetypes.Revision(entry.Version)
+	change.Revision = devicechange.Revision(entry.Version)
 	if change.Created.IsZero() {
 		change.Created = entry.Created
 	}
@@ -297,7 +297,7 @@ func (s *atomixStore) Update(change *devicechangetypes.DeviceChange) error {
 	return nil
 }
 
-func (s *atomixStore) Delete(change *devicechangetypes.DeviceChange) error {
+func (s *atomixStore) Delete(change *devicechange.DeviceChange) error {
 	if change.ID == "" {
 		return errors.New("no change ID configured")
 	}
@@ -326,7 +326,7 @@ func (s *atomixStore) Delete(change *devicechangetypes.DeviceChange) error {
 	return nil
 }
 
-func (s *atomixStore) List(deviceID device.VersionedID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+func (s *atomixStore) List(deviceID device.VersionedID, ch chan<- *devicechange.DeviceChange) (stream.Context, error) {
 	changes, err := s.getDeviceChanges(deviceID)
 	if err != nil {
 		return nil, err
@@ -411,14 +411,14 @@ func (s *atomixStore) Close() error {
 	return returnErr
 }
 
-func decodeChange(entry *indexedmap.Entry) (*devicechangetypes.DeviceChange, error) {
-	change := &devicechangetypes.DeviceChange{}
+func decodeChange(entry *indexedmap.Entry) (*devicechange.DeviceChange, error) {
+	change := &devicechange.DeviceChange{}
 	if err := proto.Unmarshal(entry.Value, change); err != nil {
 		return nil, err
 	}
-	change.ID = devicechangetypes.ID(entry.Key)
-	change.Index = devicechangetypes.Index(entry.Index)
-	change.Revision = devicechangetypes.Revision(entry.Version)
+	change.ID = devicechange.ID(entry.Key)
+	change.Index = devicechange.Index(entry.Index)
+	change.Revision = devicechange.Revision(entry.Version)
 	change.Created = entry.Created
 	change.Updated = entry.Updated
 	return change, nil

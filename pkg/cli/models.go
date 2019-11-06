@@ -17,7 +17,7 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/api/admin"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
