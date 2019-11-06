@@ -15,10 +15,10 @@
 package synchronizer
 
 import (
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
 	"testing"

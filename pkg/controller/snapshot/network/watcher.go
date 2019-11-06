@@ -15,13 +15,13 @@
 package network
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	devicesnaptype "github.com/onosproject/onos-config/api/types/snapshot/device"
+	networksnaptype "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-config/pkg/types"
-	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	networksnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"sync"
 )
 

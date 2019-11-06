@@ -19,9 +19,9 @@ syntax = "proto3";
 package onos.config.diags;
 
 import "gogoproto/gogo.proto";
-import "github.com/onosproject/onos-config/pkg/northbound/admin/admin.proto";
-import "github.com/onosproject/onos-config/pkg/types/change/device/types.proto";
-import "github.com/onosproject/onos-config/pkg/types/change/network/types.proto";
+import "github.com/onosproject/onos-config/api/admin/admin.proto";
+import "github.com/onosproject/onos-config/api/types/change/device/types.proto";
+import "github.com/onosproject/onos-config/api/types/change/network/types.proto";
 
 // OpStateRequest is a message for specifying GetOpState query parameters.
 message OpStateRequest {
@@ -55,7 +55,7 @@ message ListNetworkChangeRequest {
 
     // option to specify a specific network change - if blank or '*' then select all
     // Can support `*` (match many chars) or '?' (match one char) as wildcard
-    string changeid = 2 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/network.ID"];;
+    string changeid = 2 [(gogoproto.customname) = "ChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/change/network.ID"];;
 
     // option to request only changes that happen after the call
     bool withoutReplay = 3;
@@ -83,10 +83,10 @@ message ListDeviceChangeRequest {
 
     // option to specify a specific device change - if blank or '*' then select all
     // Can support `*` (match many chars) or '?' (match one char) as wildcard
-    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.ID"];
+    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.ID"];
 
     // device_version is an optional device version
-    string device_version = 3 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.Version"];
+    string device_version = 3 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.Version"];
 
     // option to request only changes that happen after the call
     bool withoutReplay = 4;

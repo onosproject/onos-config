@@ -15,9 +15,9 @@
 package manager
 
 import (
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"

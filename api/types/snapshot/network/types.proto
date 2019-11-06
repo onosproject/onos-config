@@ -20,7 +20,7 @@ package onos.config.snapshot.network;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
-import "github.com/onosproject/onos-config/pkg/types/snapshot/types.proto";
+import "github.com/onosproject/onos-config/api/types/snapshot/types.proto";
 
 // NetworkSnapshot is a snapshot of all network changes
 message NetworkSnapshot {
@@ -52,5 +52,5 @@ message NetworkSnapshot {
 // DeviceSnapshotRef is a reference to a device snapshot
 message DeviceSnapshotRef {
     // 'device_snapshot_id' is the unique identifier of the device snapshot
-    string device_snapshot_id = 1 [(gogoproto.customname) = "DeviceSnapshotID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/snapshot/device.ID"];
+    string device_snapshot_id = 1 [(gogoproto.customname) = "DeviceSnapshotID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/snapshot/device.ID"];
 }

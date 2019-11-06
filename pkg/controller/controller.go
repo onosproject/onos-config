@@ -15,7 +15,7 @@
 package controller
 
 import (
-	"github.com/onosproject/onos-config/pkg/types"
+	"github.com/onosproject/onos-config/api/types"
 	log "k8s.io/klog"
 	"sync"
 	"time"

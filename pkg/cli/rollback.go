@@ -16,7 +16,7 @@ package cli
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/api/admin"
 	"github.com/spf13/cobra"
 )
 

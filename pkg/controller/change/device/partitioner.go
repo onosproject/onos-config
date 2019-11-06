@@ -15,9 +15,9 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/controller"
-	"github.com/onosproject/onos-config/pkg/types"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 )
 
 // Partitioner is a WorkPartitioner for devices

@@ -16,7 +16,7 @@ package network
 
 import (
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 	"regexp"
 	"time"
 )

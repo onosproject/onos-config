@@ -15,7 +15,7 @@
 package store
 
 import (
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 	"gotest.tools/assert"
 	"testing"
 )

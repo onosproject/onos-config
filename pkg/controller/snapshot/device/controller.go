@@ -15,15 +15,15 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	changetype "github.com/onosproject/onos-config/api/types/change"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	snaptype "github.com/onosproject/onos-config/api/types/snapshot"
+	devicesnaptype "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
-	"github.com/onosproject/onos-config/pkg/types"
-	changetype "github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	snaptype "github.com/onosproject/onos-config/pkg/types/snapshot"
-	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 	"strings"

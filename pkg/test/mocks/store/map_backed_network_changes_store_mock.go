@@ -16,10 +16,10 @@ package store
 
 import (
 	"github.com/golang/mock/gomock"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	changetypes "github.com/onosproject/onos-config/pkg/types/change"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 )
 
 //SetUpMapBackedNetworkChangesStore : creates a map backed store for the given mock

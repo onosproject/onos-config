@@ -17,12 +17,12 @@ package northbound
 import (
 	"fmt"
 	"github.com/golang/mock/gomock"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"

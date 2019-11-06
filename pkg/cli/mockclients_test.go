@@ -17,9 +17,9 @@ package cli
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	"github.com/onosproject/onos-config/pkg/types/snapshot/device"
+	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-config/api/diags"
+	"github.com/onosproject/onos-config/api/types/snapshot/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )

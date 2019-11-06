@@ -18,14 +18,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
+	"github.com/onosproject/onos-config/api/diags"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	changetypes "github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
@@ -39,11 +40,11 @@ import (
 
 // SetUpServer sets up a test manager and a gRPC end-point
 // to which it registers the given service.
-func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, ChangeServiceClient, *grpc.Server) {
+func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, diags.ChangeServiceClient, *grpc.Server) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 
-	RegisterChangeServiceServer(s, &Server{})
+	diags.RegisterChangeServiceServer(s, &Server{})
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -60,7 +61,7 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, ChangeServic
 		t.Error("Failed to dial bufnet")
 	}
 
-	client := CreateChangeServiceClient(conn)
+	client := diags.CreateChangeServiceClient(conn)
 
 	ctrl := gomock.NewController(t)
 	mgrTest, err := manager.LoadManager(
@@ -100,7 +101,7 @@ func Test_ListNetworkChanges(t *testing.T) {
 
 		}), nil
 	})
-	req := ListNetworkChangeRequest{
+	req := diags.ListNetworkChangeRequest{
 		Subscribe: false,
 		ChangeID:  "change-*",
 	}
@@ -151,7 +152,7 @@ func Test_ListDeviceChanges(t *testing.T) {
 
 			}), nil
 		})
-	req := ListDeviceChangeRequest{
+	req := diags.ListDeviceChangeRequest{
 		Subscribe:     false,
 		DeviceID:      "device-1",
 		DeviceVersion: "1.0.0",

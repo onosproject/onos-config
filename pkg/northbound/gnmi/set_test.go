@@ -16,12 +16,12 @@ package gnmi
 
 import (
 	"context"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	td1 "github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
 	td2 "github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/device"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"

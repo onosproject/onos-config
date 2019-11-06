@@ -16,8 +16,8 @@ package modelregistry
 
 import (
 	"fmt"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 	ds1 "github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim_1_0_0"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"

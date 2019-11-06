@@ -20,7 +20,7 @@ package onos.config.change.device;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
-import "github.com/onosproject/onos-config/pkg/types/change/types.proto";
+import "github.com/onosproject/onos-config/api/types/change/types.proto";
 
 // DeviceChange is a stored configuration change for a single device
 message DeviceChange {
@@ -57,22 +57,22 @@ message DeviceChange {
 // NetworkChangeRef is a back reference to the NetworkChange that created a DeviceChange
 message NetworkChangeRef {
     // 'id' is the identifier of the network change from which this change was created
-    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types.ID"];
 
     // 'index' is the index of the network change from which this change was created
-    uint64 index = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.Index"];
+    uint64 index = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types.Index"];
 }
 
 // Change represents a configuration change to a single device
 message Change {
     // 'device_id' is the identifier of the device to which this change applies
-    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.ID"];
+    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.ID"];
 
     // 'device_version' is an optional device version to which to apply this change
-    string device_version = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.Version"];
+    string device_version = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.Version"];
 
     // 'device_type' is an optional device type to which to apply this change
-    string device_type = 3 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.Type"];
+    string device_type = 3 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.Type"];
 
     // 'values' is a set of change values to apply
     repeated ChangeValue values = 4;

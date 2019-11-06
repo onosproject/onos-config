@@ -16,7 +16,7 @@ package values
 
 import (
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 )

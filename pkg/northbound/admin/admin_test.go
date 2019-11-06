@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"github.com/golang/mock/gomock"
+	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/pkg/manager"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
@@ -36,11 +37,11 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, ConfigAdminServiceClient, *grpc.Server) {
+func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, admin.ConfigAdminServiceClient, *grpc.Server) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 
-	RegisterConfigAdminServiceServer(s, &Server{})
+	admin.RegisterConfigAdminServiceServer(s, &Server{})
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -57,7 +58,7 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, ConfigAdminS
 		t.Error("Failed to dial bufnet")
 	}
 
-	client := CreateConfigAdminServiceClient(conn)
+	client := admin.CreateConfigAdminServiceClient(conn)
 
 	ctrl := gomock.NewController(t)
 	mgrTest, err := manager.LoadManager(
@@ -84,7 +85,7 @@ func Test_RollbackNetworkChange_BadName(t *testing.T) {
 	assert.Assert(t, ok, "casting mock store")
 
 	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("Rollback aborted. Network change BAD CHANGE not found"))
-	_, err := client.RollbackNetworkChange(context.Background(), &RollbackRequest{Name: "BAD CHANGE"})
+	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: "BAD CHANGE"})
 	assert.ErrorContains(t, err, "Rollback aborted. Network change BAD CHANGE not found")
 }
 
@@ -97,6 +98,6 @@ func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 	assert.Assert(t, ok, "casting mock store")
 
 	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("change is not specified"))
-	_, err := client.RollbackNetworkChange(context.Background(), &RollbackRequest{Name: ""})
+	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: ""})
 	assert.ErrorContains(t, err, "is not")
 }

@@ -20,8 +20,8 @@ package onos.config.snapshot.device;
 
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
-import "github.com/onosproject/onos-config/pkg/types/snapshot/types.proto";
-import "github.com/onosproject/onos-config/pkg/types/change/device/types.proto";
+import "github.com/onosproject/onos-config/api/types/snapshot/types.proto";
+import "github.com/onosproject/onos-config/api/types/change/device/types.proto";
 
 // DeviceSnapshot is a device snapshot
 message DeviceSnapshot {
@@ -29,10 +29,10 @@ message DeviceSnapshot {
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
     // 'device_id' is the device to which the snapshot applies
-    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.ID"];
+    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.ID"];
 
     // 'device_version' is the version to which the snapshot applies
-    string device_version = 3 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.Version"];
+    string device_version = 3 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.Version"];
 
     // 'revision' is the request revision number
     uint64 revision = 4 [(gogoproto.casttype) = "Revision"];
@@ -41,7 +41,7 @@ message DeviceSnapshot {
     NetworkSnapshotRef network_snapshot = 5 [(gogoproto.nullable) = false];
 
     // 'max_network_change_index' is the maximum network change index to be snapshotted for the device
-    uint64 max_network_change_index = 6 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.Index"];
+    uint64 max_network_change_index = 6 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types.Index"];
 
     // 'status' is the snapshot status
     onos.config.snapshot.Status status = 7 [(gogoproto.nullable) = false];
@@ -56,10 +56,10 @@ message DeviceSnapshot {
 // NetworkSnapshotRef is a back reference to the NetworkSnapshot that created a DeviceSnapshot
 message NetworkSnapshotRef {
     // 'id' is the identifier of the network snapshot from which this snapshot was created
-    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.ID"];
+    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types.ID"];
 
     // 'index' is the index of the network snapshot from which this snapshot was created
-    uint64 index = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types.Index"];
+    uint64 index = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types.Index"];
 }
 
 // Snapshot is a snapshot of the state of a single device
@@ -68,16 +68,16 @@ message Snapshot {
     string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
 
     // 'device_id' is the device to which the snapshot applies
-    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.ID"];
+    string device_id = 2 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.ID"];
 
     // 'device_version' is the version to which the snapshot applies
-    string device_version = 3 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.Version"];
+    string device_version = 3 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.Version"];
 
     // 'snapshot_id' is the ID of the snapshot
     string snapshot_id = 4 [(gogoproto.customname) = "SnapshotID", (gogoproto.casttype) = "ID"];
 
     // 'change_index' is the change index at which the snapshot ended
-    uint64 change_index = 5 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/change/device.Index"];
+    uint64 change_index = 5 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/change/device.Index"];
 
     // 'values' is a list of values to set
     repeated onos.config.change.device.PathValue values = 6;

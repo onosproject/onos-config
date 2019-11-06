@@ -22,8 +22,8 @@ package onos.config.admin;
 import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 import "github.com/openconfig/gnmi/proto/gnmi/gnmi.proto";
-import "github.com/onosproject/onos-config/pkg/types/change/device/types.proto";
-import "github.com/onosproject/onos-config/pkg/types/snapshot/device/types.proto";
+import "github.com/onosproject/onos-config/api/types/change/device/types.proto";
+import "github.com/onosproject/onos-config/api/types/snapshot/device/types.proto";
 
 // Streaming event type
 enum Type {
@@ -117,8 +117,8 @@ message RollbackResponse {
 
 // GetSnapshotRequest gets a snapshot
 message GetSnapshotRequest {
-    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.ID"];
-    string device_version = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/pkg/types/device.Version"];
+    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.ID"];
+    string device_version = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.Version"];
 }
 
 // ListSnapshotsRequest requests a list of snapshots

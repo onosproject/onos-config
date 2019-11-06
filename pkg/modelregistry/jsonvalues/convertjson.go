@@ -16,8 +16,8 @@ package jsonvalues
 
 import (
 	"fmt"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
 	"regexp"
 	"sort"
 	"strings"

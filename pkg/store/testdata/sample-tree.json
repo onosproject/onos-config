@@ -36,7 +36,11 @@
             "connections": {
               "connections-type": 1,
               "connections-freq": 5.4321,
-              "example-ll": ["a", "b", "c"],
+              "example-ll": [
+                "a",
+                "b",
+                "c"
+              ],
               "connection": [
                 {
                   "aux-id": 2,

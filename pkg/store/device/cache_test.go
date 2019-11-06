@@ -16,11 +16,11 @@ package device
 
 import (
 	"github.com/golang/mock/gomock"
+	devicechangetype "github.com/onosproject/onos-config/api/types/change/device"
+	networkchangetype "github.com/onosproject/onos-config/api/types/change/network"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/test/mocks/store"
-	devicechangetype "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetype "github.com/onosproject/onos-config/pkg/types/change/network"
 	"github.com/stretchr/testify/assert"
 	"sync/atomic"
 	"testing"

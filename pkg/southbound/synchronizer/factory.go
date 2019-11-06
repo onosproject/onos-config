@@ -16,12 +16,12 @@ package synchronizer
 
 import (
 	"context"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
