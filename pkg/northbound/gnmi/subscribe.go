@@ -26,7 +26,7 @@ import (
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -329,7 +329,7 @@ func buildSubscribeResponse(notification *gnmi.Notification, target string) (*gn
 	response := &gnmi.SubscribeResponse{
 		Response: responseUpdate,
 	}
-	_, errDevice := manager.GetManager().DeviceStore.Get(devicetopo.ID(target))
+	_, errDevice := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
 	if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 		response.Extension = []*gnmi_ext.Extension{
 			{

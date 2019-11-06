@@ -7,7 +7,7 @@ package network
 import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
-	device "github.com/onosproject/onos-topo/pkg/northbound/device"
+	device "github.com/onosproject/onos-topo/api/device"
 	grpc "google.golang.org/grpc"
 	metadata "google.golang.org/grpc/metadata"
 	reflect "reflect"

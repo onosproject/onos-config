@@ -8,7 +8,7 @@ import (
 	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/southbound"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"reflect"
@@ -38,10 +38,10 @@ func (m *MockTargetIf) EXPECT() *MockTargetIfMockRecorder {
 }
 
 // ConnectTarget mocks base method
-func (m *MockTargetIf) ConnectTarget(ctx context.Context, device devicetopo.Device) (devicetopo.ID, error) {
+func (m *MockTargetIf) ConnectTarget(ctx context.Context, device topodevice.Device) (topodevice.ID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConnectTarget", ctx, device)
-	ret0, _ := ret[0].(devicetopo.ID)
+	ret0, _ := ret[0].(topodevice.ID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

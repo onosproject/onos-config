@@ -23,7 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
 	log "k8s.io/klog"
 	"os"
@@ -242,16 +242,16 @@ const (
 
 var B64 = base64.StdEncoding.EncodeToString
 
-func makeDevice(ID devicetopo.ID) *devicetopo.Device {
-	return &devicetopo.Device{
+func makeDevice(ID topodevice.ID) *topodevice.Device {
+	return &topodevice.Device{
 		ID:          ID,
 		Revision:    0,
 		Address:     "",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     nil,
-		Credentials: devicetopo.Credentials{},
-		TLS:         devicetopo.TlsConfig{},
+		Credentials: topodevice.Credentials{},
+		TLS:         topodevice.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "",
 		Attributes:  nil,
@@ -275,8 +275,8 @@ func setUp(t *testing.T) (*devicechange.DeviceChange, *devicechange.DeviceChange
 	config1Value10, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechange.NewTypedValueUint64(ValueTxout2Txpwr10), false)
 	config1Value11, _ := devicechange.NewChangeValue(Test1Leaftoplevel, devicechange.NewTypedValueString(ValueLeaftopWxy1234), false)
 
-	device1 := makeDevice(devicetopo.ID(Device1ID))
-	device2 := makeDevice(devicetopo.ID(Device2ID))
+	device1 := makeDevice(topodevice.ID(Device1ID))
+	device2 := makeDevice(topodevice.ID(Device2ID))
 
 	change1 := devicechange.Change{
 		Values: []*devicechange.ChangeValue{

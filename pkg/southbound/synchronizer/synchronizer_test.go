@@ -25,7 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -57,7 +57,7 @@ const (
 	gnmiVer070         = "0.7.0"
 )
 
-func synchronizerSetUp() (chan devicetopo.ListResponse, chan events.OperationalStateEvent,
+func synchronizerSetUp() (chan topodevice.ListResponse, chan events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
 	*modelregistry.ModelRegistry, modelregistry.ReadOnlyPathMap,
 	devicechange.TypedValueMap, error) {
@@ -74,7 +74,7 @@ func synchronizerSetUp() (chan devicetopo.ListResponse, chan events.OperationalS
 	roSubPath2[leaf2d] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
 	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
 	roPathMap[cont1bState] = roSubPath2
-	return make(chan devicetopo.ListResponse),
+	return make(chan topodevice.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, mr, roPathMap, opStateCache,
@@ -111,15 +111,15 @@ func TestNew(t *testing.T) {
 	}
 	timeout := time.Millisecond * 200
 	mock1NameStr := "mockTd"
-	mockDevice1 := devicetopo.Device{
-		ID:          devicetopo.ID(mock1NameStr),
+	mockDevice1 := topodevice.Device{
+		ID:          topodevice.ID(mock1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:11161",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: devicetopo.Credentials{},
-		TLS:         devicetopo.TlsConfig{},
+		Credentials: topodevice.Credentials{},
+		TLS:         topodevice.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
@@ -128,7 +128,7 @@ func TestNew(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice1,
-	).Return(devicetopo.ID(mock1NameStr), nil)
+	).Return(topodevice.ID(mock1NameStr), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -259,7 +259,7 @@ func TestNew(t *testing.T) {
 	time.Sleep(10 * time.Millisecond) // Wait for before sending a subscribe message
 }
 
-func synchronizerBootstrap(t *testing.T) (*southbound.MockTargetIf, *devicetopo.Device, *gnmi.CapabilityResponse) {
+func synchronizerBootstrap(t *testing.T) (*southbound.MockTargetIf, *topodevice.Device, *gnmi.CapabilityResponse) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockTarget := southbound.NewMockTargetIf(ctrl)
@@ -276,15 +276,15 @@ func synchronizerBootstrap(t *testing.T) (*southbound.MockTargetIf, *devicetopo.
 
 	timeout := time.Millisecond * 200
 	device1NameStr := "Device1" // Exists in configStore-sample.json
-	device1 := devicetopo.Device{
-		ID:          devicetopo.ID(device1NameStr),
+	device1 := topodevice.Device{
+		ID:          topodevice.ID(device1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:11161",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: devicetopo.Credentials{},
-		TLS:         devicetopo.TlsConfig{},
+		Credentials: topodevice.Credentials{},
+		TLS:         topodevice.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
@@ -322,7 +322,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(devicetopo.ID(device1.ID), nil)
+	).Return(topodevice.ID(device1.ID), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -518,7 +518,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(devicetopo.ID(device1.ID), nil)
+	).Return(topodevice.ID(device1.ID), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -625,15 +625,15 @@ func Test_LikeStratum(t *testing.T) {
 	} // And many many more
 	timeout := time.Millisecond * 200
 	mock1NameStr := "stratum-1"
-	mockDevice1 := devicetopo.Device{
-		ID:          devicetopo.ID(mock1NameStr),
+	mockDevice1 := topodevice.Device{
+		ID:          topodevice.ID(mock1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:50001",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: devicetopo.Credentials{},
-		TLS:         devicetopo.TlsConfig{},
+		Credentials: topodevice.Credentials{},
+		TLS:         topodevice.TlsConfig{},
 		Type:        "Stratum",
 		Role:        "leaf",
 		Attributes:  nil,
@@ -642,7 +642,7 @@ func Test_LikeStratum(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice1,
-	).Return(devicetopo.ID(mock1NameStr), nil)
+	).Return(topodevice.ID(mock1NameStr), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),

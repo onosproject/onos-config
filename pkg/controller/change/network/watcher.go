@@ -24,7 +24,7 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"sync"
 )
 
@@ -94,7 +94,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	w.streams = make(map[device.VersionedID]stream.Context)
 	w.mu.Unlock()
 
-	deviceCh := make(chan *devicetopo.ListResponse)
+	deviceCh := make(chan *topodevice.ListResponse)
 	if err := w.DeviceStore.Watch(deviceCh); err != nil {
 		return err
 	}

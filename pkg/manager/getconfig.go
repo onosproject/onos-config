@@ -19,7 +19,7 @@ import (
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	log "k8s.io/klog"
 )
 
@@ -48,7 +48,7 @@ func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Ver
 // GetAllDeviceIds returns a list of just DeviceIDs from the Config store
 func (m *Manager) GetAllDeviceIds() *[]string {
 	var deviceIds = make([]string, 0)
-	deviceChan := make(chan *devicetopo.Device)
+	deviceChan := make(chan *topodevice.Device)
 	err := m.DeviceStore.List(deviceChan)
 	if err != nil {
 		log.Errorf("Cant get a list for devices %s", err)

@@ -19,20 +19,20 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
 	"testing"
 	"time"
 )
 
-func factorySetUp() (chan *devicetopo.ListResponse, chan<- events.OperationalStateEvent,
+func factorySetUp() (chan *topodevice.ListResponse, chan<- events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcher.Dispatcher,
-	*modelregistry.ModelRegistry, map[devicetopo.ID]devicechange.TypedValueMap, error) {
+	*modelregistry.ModelRegistry, map[topodevice.ID]devicechange.TypedValueMap, error) {
 
 	dispatcher := dispatcher.NewDispatcher()
 	modelregistry := new(modelregistry.ModelRegistry)
-	opStateCache := make(map[devicetopo.ID]devicechange.TypedValueMap)
-	return make(chan *devicetopo.ListResponse),
+	opStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
+	return make(chan *topodevice.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, modelregistry, opStateCache, nil
@@ -58,21 +58,21 @@ func TestFactory_Revert(t *testing.T) {
 
 	timeout := time.Millisecond * 500
 	device1NameStr := "factoryTd"
-	device1 := devicetopo.Device{
-		ID:          devicetopo.ID(device1NameStr),
+	device1 := topodevice.Device{
+		ID:          topodevice.ID(device1NameStr),
 		Revision:    0,
 		Address:     "1.2.3.4:11161",
 		Target:      "",
 		Version:     "1.0.0",
 		Timeout:     &timeout,
-		Credentials: devicetopo.Credentials{},
-		TLS:         devicetopo.TlsConfig{},
+		Credentials: topodevice.Credentials{},
+		TLS:         topodevice.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
 	}
-	topoEvent := devicetopo.ListResponse{
-		Type:   devicetopo.ListResponse_ADDED,
+	topoEvent := topodevice.ListResponse{
+		Type:   topodevice.ListResponse_ADDED,
 		Device: &device1,
 	}
 

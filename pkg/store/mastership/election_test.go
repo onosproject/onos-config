@@ -17,7 +17,7 @@ package mastership
 import (
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -25,17 +25,17 @@ import (
 func TestMastershipElection(t *testing.T) {
 	node, conn := utils.StartLocalNode()
 
-	store1, err := newLocalElection(devicetopo.ID("test"), "a", conn)
+	store1, err := newLocalElection(topodevice.ID("test"), "a", conn)
 	assert.NoError(t, err)
 
-	store2, err := newLocalElection(devicetopo.ID("test"), "b", conn)
+	store2, err := newLocalElection(topodevice.ID("test"), "b", conn)
 	assert.NoError(t, err)
 
 	store2Ch := make(chan Mastership)
 	err = store2.watch(store2Ch)
 	assert.NoError(t, err)
 
-	store3, err := newLocalElection(devicetopo.ID("test"), "c", conn)
+	store3, err := newLocalElection(topodevice.ID("test"), "c", conn)
 	assert.NoError(t, err)
 
 	store3Ch := make(chan Mastership)

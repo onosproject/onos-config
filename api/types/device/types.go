@@ -17,17 +17,17 @@ package device
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/api/types"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"strings"
 )
 
 const separator = ":"
 
 // Type is a device type
-type Type devicetopo.Type
+type Type topodevice.Type
 
 // ID is a device ID
-type ID devicetopo.ID
+type ID topodevice.ID
 
 // Version is a device version
 type Version string

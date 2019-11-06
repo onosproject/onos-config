@@ -30,7 +30,7 @@ import (
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	southboundmock "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -486,50 +486,50 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 
 	ctrl := gomock.NewController(t)
 
-	devices := map[devicetopo.ID]*devicetopo.Device{
-		devicetopo.ID(device1): {
-			ID: devicetopo.ID(device1),
-			Protocols: []*devicetopo.ProtocolState{
+	devices := map[topodevice.ID]*topodevice.Device{
+		topodevice.ID(device1): {
+			ID: topodevice.ID(device1),
+			Protocols: []*topodevice.ProtocolState{
 				{
-					Protocol:          devicetopo.Protocol_GNMI,
-					ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
-					ChannelState:      devicetopo.ChannelState_CONNECTED,
+					Protocol:          topodevice.Protocol_GNMI,
+					ConnectivityState: topodevice.ConnectivityState_REACHABLE,
+					ChannelState:      topodevice.ChannelState_CONNECTED,
 				},
 			},
 		},
-		devicetopo.ID(device2): {
-			ID: devicetopo.ID(device2),
-			Protocols: []*devicetopo.ProtocolState{
+		topodevice.ID(device2): {
+			ID: topodevice.ID(device2),
+			Protocols: []*topodevice.ProtocolState{
 				{
-					Protocol:          devicetopo.Protocol_GNMI,
-					ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
-					ChannelState:      devicetopo.ChannelState_CONNECTED,
+					Protocol:          topodevice.Protocol_GNMI,
+					ConnectivityState: topodevice.ConnectivityState_REACHABLE,
+					ChannelState:      topodevice.ChannelState_CONNECTED,
 				},
 			},
 		},
-		devicetopo.ID(dcDevice): {
-			ID: devicetopo.ID(dcDevice),
-			Protocols: []*devicetopo.ProtocolState{
+		topodevice.ID(dcDevice): {
+			ID: topodevice.ID(dcDevice),
+			Protocols: []*topodevice.ProtocolState{
 				{
-					Protocol:          devicetopo.Protocol_GNMI,
-					ConnectivityState: devicetopo.ConnectivityState_UNREACHABLE,
-					ChannelState:      devicetopo.ChannelState_DISCONNECTED,
+					Protocol:          topodevice.Protocol_GNMI,
+					ConnectivityState: topodevice.ConnectivityState_UNREACHABLE,
+					ChannelState:      topodevice.ChannelState_DISCONNECTED,
 				},
 			},
 		},
 	}
 
 	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[devicetopo.ID(device1)]}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[devicetopo.ID(device2)]}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: devices[devicetopo.ID(dcDevice)]}, nil)
+	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: devices[topodevice.ID(device1)]}, nil)
+	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: devices[topodevice.ID(device2)]}, nil)
+	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: devices[topodevice.ID(dcDevice)]}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, in *devicetopo.GetRequest, opts ...grpc.CallOption) (*devicetopo.GetResponse, error) {
-			return &devicetopo.GetResponse{
+		DoAndReturn(func(ctx context.Context, in *topodevice.GetRequest, opts ...grpc.CallOption) (*topodevice.GetResponse, error) {
+			return &topodevice.GetResponse{
 				Device: devices[in.ID],
 			}, nil
 		}).AnyTimes()
@@ -552,13 +552,13 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 		Version:      "2018-02-20",
 	}
 	timeout := time.Millisecond * 200
-	mockDevice := devicetopo.Device{
-		ID:          devicetopo.ID(name),
+	mockDevice := topodevice.Device{
+		ID:          topodevice.ID(name),
 		Address:     "1.2.3.4:11161",
 		Version:     v1,
 		Timeout:     &timeout,
-		Credentials: devicetopo.Credentials{},
-		TLS:         devicetopo.TlsConfig{},
+		Credentials: topodevice.Credentials{},
+		TLS:         topodevice.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 	}
@@ -569,7 +569,7 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	mockTargetDevice.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice,
-	).Return(devicetopo.ID(name), nil)
+	).Return(topodevice.ID(name), nil)
 
 	mockTargetDevice.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -586,7 +586,7 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 		Response: []*gnmi.UpdateResult{},
 	}, nil).AnyTimes()
 
-	//topoChannel := make(chan *devicetopo.ListResponse)
+	//topoChannel := make(chan *topodevice.ListResponse)
 	//dispatcher := dispatcher.NewDispatcher()
 	//modelregistry := new(modelregistry.ModelRegistry)
 	opStateCache := make(devicechange.TypedValueMap)
@@ -599,7 +599,7 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	assert.NoError(t, err, "Unable to create new synchronizer for", mockDevice.ID)
 
 	// Finally to make it visible to tests - add it to `Targets`
-	southbound.Targets[devicetopo.ID(name)] = mockTargetDevice
+	southbound.Targets[topodevice.ID(name)] = mockTargetDevice
 }
 
 func newChange(device device.ID, version device.Version) *devicechange.DeviceChange {

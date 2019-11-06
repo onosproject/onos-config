@@ -26,7 +26,7 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	log "k8s.io/klog"
 	"strings"
 )
@@ -55,8 +55,8 @@ type Resolver struct {
 }
 
 // Resolve resolves a device ID from a device change ID
-func (r *Resolver) Resolve(id types.ID) (devicetopo.ID, error) {
-	return devicetopo.ID(devicechange.ID(id).GetDeviceID()), nil
+func (r *Resolver) Resolve(id types.ID) (topodevice.ID, error) {
+	return topodevice.ID(devicechange.ID(id).GetDeviceID()), nil
 }
 
 // Reconciler is a device change reconciler
@@ -79,13 +79,13 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	}
 
 	// Get the device from the device store
-	device, err := r.devices.Get(devicetopo.ID(change.Change.DeviceID))
+	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))
 	if err != nil {
 		return false, err
 	}
 
 	// If the device is not available, fail the change
-	if getProtocolState(device) != devicetopo.ChannelState_CONNECTED {
+	if getProtocolState(device) != topodevice.ChannelState_CONNECTED {
 		change.Status.State = changetypes.State_FAILED
 		change.Status.Reason = changetypes.Reason_ERROR
 		log.Infof("Failing DeviceChange %v", change)
@@ -169,7 +169,7 @@ func (r *Reconciler) translateAndSendChange(change *devicechange.Change) error {
 	}
 	log.Info("Reconciler set request ", setRequest)
 	log.Info("Device ", change.DeviceID)
-	deviceTarget, err := southbound.GetTarget(devicetopo.ID(change.DeviceID))
+	deviceTarget, err := southbound.GetTarget(topodevice.ID(change.DeviceID))
 	if err != nil {
 		log.Infof("Device %s is not connected, accepting change", change.DeviceID)
 		return fmt.Errorf("Device not connected %s, error %s", change.DeviceID, err.Error())
@@ -183,17 +183,17 @@ func (r *Reconciler) translateAndSendChange(change *devicechange.Change) error {
 	return nil
 }
 
-func getProtocolState(device *devicetopo.Device) devicetopo.ChannelState {
+func getProtocolState(device *topodevice.Device) topodevice.ChannelState {
 	// Find the gNMI protocol state for the device
-	var protocol *devicetopo.ProtocolState
+	var protocol *topodevice.ProtocolState
 	for _, p := range device.Protocols {
-		if p.Protocol == devicetopo.Protocol_GNMI {
+		if p.Protocol == topodevice.Protocol_GNMI {
 			protocol = p
 			break
 		}
 	}
 	if protocol == nil {
-		return devicetopo.ChannelState_UNKNOWN_CHANNEL_STATE
+		return topodevice.ChannelState_UNKNOWN_CHANNEL_STATE
 	}
 	return protocol.ChannelState
 }

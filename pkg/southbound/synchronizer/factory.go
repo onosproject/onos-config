@@ -23,21 +23,21 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	log "k8s.io/klog"
 )
 
 // Factory is a go routine thread that listens out for Device creation
 // and deletion events and spawns Synchronizer threads for them
 // These synchronizers then listen out for configEvents relative to a device and
-func Factory(topoChannel <-chan *devicetopo.ListResponse, opStateChan chan<- events.OperationalStateEvent,
+func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- events.OperationalStateEvent,
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[devicetopo.ID]devicechange.TypedValueMap) {
+	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap) {
 
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
 		// Watch() replays existing devices (with type NONE) and subsequent changes (with type ADDED)
-		if topoEvent.Type == devicetopo.ListResponse_NONE || topoEvent.Type == devicetopo.ListResponse_ADDED {
+		if topoEvent.Type == topodevice.ListResponse_NONE || topoEvent.Type == topodevice.ListResponse_ADDED {
 			ctx := context.Background()
 
 			modelName := utils.ToModelName(devicetype.Type(notifiedDevice.Type), devicetype.Version(notifiedDevice.Version))

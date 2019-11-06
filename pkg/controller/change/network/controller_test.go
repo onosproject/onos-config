@@ -24,7 +24,7 @@ import (
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
@@ -327,10 +327,10 @@ func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicecha
 	ctrl := gomock.NewController(t)
 
 	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID(device1)}}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID(device2)}}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID(device3)}}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID(device4)}}, nil)
+	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID(device1)}}, nil)
+	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID(device2)}}, nil)
+	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID(device3)}}, nil)
+	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID(device4)}}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)

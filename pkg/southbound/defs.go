@@ -16,14 +16,14 @@ package southbound
 
 import (
 	"context"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 // TargetIf defines the API for Target
 type TargetIf interface {
-	ConnectTarget(ctx context.Context, device devicetopo.Device) (devicetopo.ID, error)
+	ConnectTarget(ctx context.Context, device topodevice.Device) (topodevice.ID, error)
 	//Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error)
 	CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error)
 	Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error)

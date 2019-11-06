@@ -18,7 +18,7 @@ import (
 	"context"
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	device                    devicetopo.Device
+	device                    topodevice.Device
 	saveGnmiClientFactory     func(ctx context.Context, d client.Destination) (GnmiClient, error)
 	saveGnmiBaseClientFactory func() BaseClientInterface
 )
@@ -121,11 +121,11 @@ func setUp(t *testing.T) {
 	}
 
 	timeout := 10 * time.Second
-	device = devicetopo.Device{
-		ID:      devicetopo.ID("localhost-1"),
+	device = topodevice.Device{
+		ID:      topodevice.ID("localhost-1"),
 		Address: "localhost:10161",
 		Version: "1.0.0",
-		Credentials: devicetopo.Credentials{
+		Credentials: topodevice.Credentials{
 			User:     "devicesim",
 			Password: "notused",
 		},
@@ -138,7 +138,7 @@ func tearDown() {
 	GnmiBaseClientFactory = saveGnmiBaseClientFactory
 }
 
-func getDevice1Target(t *testing.T) (Target, devicetopo.ID, context.Context) {
+func getDevice1Target(t *testing.T) (Target, topodevice.ID, context.Context) {
 	target := Target{}
 	ctx := context.Background()
 	key, err := target.ConnectTarget(ctx, device)
@@ -164,7 +164,7 @@ func Test_ConnectTarget(t *testing.T) {
 func Test_BadTarget(t *testing.T) {
 	setUp(t)
 
-	key := devicetopo.ID("no such target")
+	key := topodevice.ID("no such target")
 	_, fetchError := GetTarget(key)
 	assert.ErrorContains(t, fetchError, "does not exist")
 	tearDown()

@@ -26,7 +26,7 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -270,19 +270,19 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *devicestore
 		},
 	}).AnyTimes()
 
-	mockStores.DeviceStore.EXPECT().Get(devicetopo.ID(device1)).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mockStores.DeviceStore.EXPECT().Get(topodevice.ID(device1)).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 	mockStores.DeviceStore.EXPECT().List(gomock.Any()).DoAndReturn(
-		func(c chan<- *devicetopo.Device) (stream.Context, error) {
+		func(c chan<- *topodevice.Device) (stream.Context, error) {
 			go func() {
-				c <- &devicetopo.Device{
+				c <- &topodevice.Device{
 					ID:      "Device1 (1.0.0)",
 					Version: "1.0.0",
 				}
-				c <- &devicetopo.Device{
+				c <- &topodevice.Device{
 					ID:      "Device2 (2.0.0)",
 					Version: "2.0.0",
 				}
-				c <- &devicetopo.Device{
+				c <- &topodevice.Device{
 					ID:      "Device3",
 					Version: "1.0.0",
 				}
@@ -315,7 +315,7 @@ func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
 
 }
 
-func listenToTopoLoading(deviceChan <-chan *devicetopo.ListResponse) {
+func listenToTopoLoading(deviceChan <-chan *topodevice.ListResponse) {
 	for deviceConfigEvent := range deviceChan {
 		log.Info("Ignoring event for testing ", deviceConfigEvent)
 	}

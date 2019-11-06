@@ -6,7 +6,7 @@ package store
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	device "github.com/onosproject/onos-topo/pkg/northbound/device"
+	device "github.com/onosproject/onos-topo/api/device"
 	reflect "reflect"
 )
 

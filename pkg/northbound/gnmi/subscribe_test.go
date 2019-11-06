@@ -19,7 +19,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -467,8 +467,8 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 	server, mgr, mocks := setUp(t)
 
 	targetStr := "Device1"
-	target := devicetopo.ID(targetStr)
-	presentDevice := &devicetopo.Device{
+	target := topodevice.ID(targetStr)
+	presentDevice := &topodevice.Device{
 		ID: target,
 	}
 

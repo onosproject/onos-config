@@ -25,7 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/device"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -81,7 +81,7 @@ func setUpDeviceWithMultipleVersions(mocks *AllMocks, deviceName string) {
 			Type:     "TestDevice",
 		},
 	}).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(devicetopo.ID(deviceName)).Return(nil, nil).AnyTimes()
+	mocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID(deviceName)).Return(nil, nil).AnyTimes()
 }
 
 // Test_doSingleSet shows how a value of 1 path can be set on a target

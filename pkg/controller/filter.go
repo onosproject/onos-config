@@ -17,7 +17,7 @@ package controller
 import (
 	"github.com/onosproject/onos-config/api/types"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"regexp"
 )
 
@@ -55,7 +55,7 @@ var _ Filter = &MastershipFilter{}
 // DeviceResolver resolves a device from a type ID
 type DeviceResolver interface {
 	// Resolve resolves a device
-	Resolve(id types.ID) (devicetopo.ID, error)
+	Resolve(id types.ID) (topodevice.ID, error)
 }
 
 // RegexpDeviceResolver is a DeviceResolver that reads a device ID from a regexp
@@ -64,8 +64,8 @@ type RegexpDeviceResolver struct {
 }
 
 // Resolve resolves a device ID from the configured regexp
-func (r *RegexpDeviceResolver) Resolve(id types.ID) (devicetopo.ID, error) {
-	return devicetopo.ID(r.Regexp.FindString(string(id))), nil
+func (r *RegexpDeviceResolver) Resolve(id types.ID) (topodevice.ID, error) {
+	return topodevice.ID(r.Regexp.FindString(string(id))), nil
 }
 
 var _ DeviceResolver = &RegexpDeviceResolver{}

@@ -27,7 +27,7 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
@@ -158,8 +158,8 @@ func Test_ListDeviceChanges(t *testing.T) {
 
 	mockDeviceStore, ok := mgrTest.DeviceStore.(*mockstore.MockDeviceStore)
 	assert.Assert(t, ok, "casting mock device store")
-	mockDeviceStore.EXPECT().Get(devicetopo.ID("device-1")).Return(
-		&devicetopo.Device{
+	mockDeviceStore.EXPECT().Get(topodevice.ID("device-1")).Return(
+		&topodevice.Device{
 			ID:      "device-1",
 			Address: "localhost:10126",
 			Type:    "Devicesim",
@@ -211,7 +211,7 @@ func Test_ListDeviceChangesNoVersionManyPresent(t *testing.T) {
 
 	mockDeviceStore, ok := mgrTest.DeviceStore.(*mockstore.MockDeviceStore)
 	assert.Assert(t, ok, "casting mock device store")
-	mockDeviceStore.EXPECT().Get(devicetopo.ID("device-1")).Return(
+	mockDeviceStore.EXPECT().Get(topodevice.ID("device-1")).Return(
 		nil, nil,
 	)
 

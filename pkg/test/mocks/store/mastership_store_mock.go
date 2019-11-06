@@ -8,7 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	cluster "github.com/onosproject/onos-config/pkg/store/cluster"
 	mastership "github.com/onosproject/onos-config/pkg/store/mastership"
-	device "github.com/onosproject/onos-topo/pkg/northbound/device"
+	device "github.com/onosproject/onos-topo/api/device"
 	reflect "reflect"
 )
 
