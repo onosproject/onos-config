@@ -24,7 +24,7 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	log "k8s.io/klog"
 	"sync"
 )
 
@@ -74,7 +74,7 @@ var _ controller.Watcher = &Watcher{}
 
 // DeviceWatcher is a device change watcher
 type DeviceWatcher struct {
-	DeviceStore devicestore.Store
+	DeviceCache devicestore.Cache
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
 	streams     map[device.VersionedID]stream.Context
@@ -94,14 +94,13 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	w.streams = make(map[device.VersionedID]stream.Context)
 	w.mu.Unlock()
 
-	deviceCh := make(chan *topodevice.ListResponse)
-	if err := w.DeviceStore.Watch(deviceCh); err != nil {
-		return err
-	}
+	deviceCacheCh := make(chan *devicestore.Info)
+	w.DeviceCache.Watch(deviceCacheCh)
+	log.Infof("Network DeviceWatcher - watching cache started %v", deviceCacheCh)
 
 	go func() {
-		for event := range deviceCh {
-			w.watchDevice(device.NewVersionedID(device.ID(event.Device.ID), device.Version(event.Device.Version)), ch)
+		for event := range deviceCacheCh {
+			w.watchDevice(device.NewVersionedID(event.DeviceID, event.Version), ch)
 		}
 	}()
 	return nil
@@ -114,6 +113,7 @@ func (w *DeviceWatcher) watchDevice(deviceID device.VersionedID, ch chan<- types
 
 	ctx := w.streams[deviceID]
 	if ctx != nil {
+		log.Errorf("Network DeviceWatcher for device changes %s - ctx already found", deviceID)
 		return
 	}
 
@@ -123,6 +123,8 @@ func (w *DeviceWatcher) watchDevice(deviceID device.VersionedID, ch chan<- types
 		return
 	}
 	w.streams[deviceID] = ctx
+
+	log.Infof("Network DeviceWatcher - watching device changes store for %s", deviceID)
 
 	w.wg.Add(1)
 	go func() {

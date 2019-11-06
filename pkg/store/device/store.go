@@ -42,10 +42,9 @@ type Store interface {
 
 // NewTopoStore returns a new topo-based device store
 func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
-	//OPTS can be empty for TESTING purposes
-	if len(opts) == 0 {
-		return nil, nil
-	}
+	//if len(opts) == 0 {
+	//	return nil, fmt.Errorf("no opts given when creating topo store")
+	//}
 	opts = append(opts, grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(100*time.Millisecond)))
 	conn, err := getTopoConn(opts...)
 	if err != nil {

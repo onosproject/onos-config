@@ -23,12 +23,17 @@ import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"io"
+	log "k8s.io/klog"
+	"os"
 	"testing"
 	"time"
 )
+
+func TestMain(m *testing.M) {
+	log.SetOutput(os.Stdout)
+	os.Exit(m.Run())
+}
 
 func TestNetworkWatcher(t *testing.T) {
 	store, err := networkchangestore.NewLocalStore()
@@ -132,23 +137,36 @@ func TestNetworkWatcher(t *testing.T) {
 func TestDeviceWatcher(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID("device-1"), Version: "1.0.0"}}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID("device-2"), Version: "1.0.0"}}, nil)
-	stream.EXPECT().Recv().Return(nil, io.EOF)
-
-	client := NewMockDeviceServiceClient(ctrl)
-	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
-
-	deviceStore, err := devicestore.NewStore(client)
-	assert.NoError(t, err)
+	t.Log("Testing")
+	cachedDevices := []*devicestore.Info{
+		{
+			DeviceID: "device-1",
+			Type:     "DeviceSim",
+			Version:  "1.0.0",
+		},
+		{
+			DeviceID: "device-2",
+			Type:     "DeviceSim",
+			Version:  "1.0.0",
+		},
+	}
+	deviceCache := devicestore.NewMockCache(ctrl)
+	deviceCache.EXPECT().Watch(gomock.Any()).DoAndReturn(
+		func(ch chan<- *devicestore.Info) {
+			go func() {
+				for _, di := range cachedDevices {
+					ch <- di
+				}
+				close(ch)
+			}()
+		})
 
 	changeStore, err := devicechangestore.NewLocalStore()
 	assert.NoError(t, err)
 	defer changeStore.Close()
 
 	watcher := &DeviceWatcher{
-		DeviceStore: deviceStore,
+		DeviceCache: deviceCache,
 		ChangeStore: changeStore,
 	}
 

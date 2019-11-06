@@ -20,6 +20,7 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"io"
+	log "k8s.io/klog"
 	"sync"
 )
 
@@ -29,6 +30,8 @@ type Info struct {
 	Type     device.Type
 	Version  device.Version
 }
+
+var listeners map[chan<- *Info]struct{}
 
 // Cache is a device type/version cache
 type Cache interface {
@@ -45,6 +48,9 @@ type Cache interface {
 
 	// GetDevices returns the set of devices in the cache
 	GetDevices() []*Info
+
+	// Watch allows tracking updates of the cache
+	Watch(chan<- *Info)
 }
 
 // NewCache returns a new cache based on the NetworkChange store
@@ -53,6 +59,8 @@ func NewCache(networkChangeStore networkchangestore.Store) (Cache, error) {
 		networkChangeStore: networkChangeStore,
 		devices:            make(map[device.VersionedID]*Info),
 	}
+	listeners = make(map[chan<- *Info]struct{})
+
 	if err := cache.listen(); err != nil {
 		return nil, err
 	}
@@ -81,10 +89,18 @@ func (c *networkChangeStoreCache) listen() error {
 				key := device.NewVersionedID(devChange.DeviceID, devChange.DeviceVersion)
 				c.mu.Lock()
 				if _, ok := c.devices[key]; !ok {
-					c.devices[key] = &Info{
+					info := Info{
 						DeviceID: devChange.DeviceID,
 						Type:     devChange.DeviceType,
 						Version:  devChange.DeviceVersion,
+					}
+					log.Infof("Updating cache with %v", info)
+					c.devices[key] = &info
+					for l := range listeners {
+						if l == nil {
+							delete(listeners, l)
+						}
+						l <- &info
 					}
 				}
 				c.mu.Unlock()
@@ -140,6 +156,12 @@ func (c *networkChangeStoreCache) GetDevices() []*Info {
 		devices = append(devices, info)
 	}
 	return devices
+}
+
+func (c *networkChangeStoreCache) Watch(ch chan<- *Info) {
+	c.mu.Lock()
+	listeners[ch] = struct{}{}
+	c.mu.Unlock()
 }
 
 func (c *networkChangeStoreCache) Close() error {

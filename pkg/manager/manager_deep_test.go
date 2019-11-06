@@ -211,6 +211,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	mgrTest.setTargetGenerator(mockTargetCreationfn)
 	mgrTest.Run()
 
+	time.Sleep(10 * time.Millisecond)
 	assert.Assert(t, networkChange1 != nil)
 	err = mgrTest.NetworkChangesStore.Create(networkChange1)
 	assert.NilError(t, err, "Unexpected failure when creating new NetworkChange")
@@ -224,10 +225,11 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 		select {
 		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
 			event := eventObj.Object.(*networkchange.NetworkChange)
+			//t.Logf("Event received %v", event)
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(3 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -317,20 +319,25 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	updatedVals := testUpdate.Changes[0].Values
 	assert.Equal(t, len(updatedVals), 2)
 
-	// Asserting update to 2A
-	assert.Equal(t, updatedVals[0].Path, test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, (*devicechange.TypedUint64)(updatedVals[0].GetValue()).Uint(), valueLeaf2A789)
-	assert.Equal(t, updatedVals[0].Removed, false)
-
-	// Asserting deletion of 2C
-	assert.Equal(t, updatedVals[1].Path, test1Cont1ACont2ALeaf2C)
-	assert.Equal(t, updatedVals[1].GetValue().ValueToString(), "")
-	assert.Equal(t, updatedVals[1].Removed, true)
+	for _, updatedVal := range updatedVals {
+		switch updatedVal.Path {
+		case test1Cont1ACont2ALeaf2A:
+			assert.Equal(t, (*devicechange.TypedUint64)(updatedVal.GetValue()).Uint(), valueLeaf2A789)
+			assert.Equal(t, updatedVal.Removed, false)
+		case test1Cont1ACont2ALeaf2C:
+			assert.Equal(t, updatedVal.GetValue().ValueToString(), "")
+			assert.Equal(t, updatedVal.Removed, true)
+		default:
+			t.Errorf("Unexpected path: %s", updatedVal.Path)
+		}
+	}
 }
 
 // Test a change on Device 2 - this device does not exist on Topo - a config-only device at this stage
 func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
-	mgrTest, _ := setUpDeepTest(t)
+	mgrTest, allMocks := setUpDeepTest(t)
+
+	allMocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID("device-config-only")).Return(nil, nil).AnyTimes()
 
 	// Making change
 	updates := make(devicechange.TypedValueMap)
@@ -354,20 +361,39 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 		select {
 		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
 			event := eventObj.Object.(*networkchange.NetworkChange)
-			t.Logf("Event received %v", event)
+			//t.Logf("Event received %v", event)
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(500 * time.Millisecond):
-			// The following is the problem in Issue https://github.com/onosproject/onos-config/issues/866
-			// The Device Change controller never gets created and hence the Network Change controller
-			// just sits there doing nothing and stays in RUNNING
-			assert.Assert(t, true, "Failed because NW change never went to Complete")
-			breakout = true
-			//t.FailNow()
+		case <-time.After(5 * time.Second):
+			t.FailNow()
 		}
 		if breakout {
 			break
 		}
 	}
+
+	testUpdate, _ := mgrTest.NetworkChangesStore.Get(testNetworkChange)
+	assert.Assert(t, testUpdate != nil)
+	assert.Equal(t, testUpdate.ID, testNetworkChange, "Change Ids should correspond")
+	assert.Equal(t, changetypes.Phase_CHANGE, testUpdate.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, testUpdate.Status.State)
+
+	// Check that the created change is correct
+	updatedVals := testUpdate.Changes[0].Values
+	assert.Equal(t, len(updatedVals), 2)
+
+	for _, updatedVal := range updatedVals {
+		switch updatedVal.Path {
+		case test1Cont1ACont2ALeaf2A:
+			assert.Equal(t, (*devicechange.TypedUint64)(updatedVal.GetValue()).Uint(), valueLeaf2A789)
+			assert.Equal(t, updatedVal.Removed, false)
+		case test1Cont1ACont2ALeaf2B:
+			assert.Equal(t, updatedVal.GetValue().ValueToString(), "1.590")
+			assert.Equal(t, updatedVal.Removed, false)
+		default:
+			t.Errorf("Unexpected path: %s", updatedVal.Path)
+		}
+	}
+
 }

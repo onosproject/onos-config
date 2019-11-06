@@ -40,6 +40,14 @@ func TestDeviceCache(t *testing.T) {
 	cache, err := NewCache(netChangeStore)
 	assert.NoError(t, err)
 
+	cacheChan := make(chan *Info, 10)
+	t.Logf("Watching cache")
+	cache.Watch(cacheChan)
+
+	cacheChan2 := make(chan *Info, 10)
+	t.Logf("Watching cache a 2nd time")
+	cache.Watch(cacheChan2)
+
 	ch := chVal.Load().(chan<- stream.Event)
 	ch <- stream.Event{
 		Type: stream.Created,
@@ -95,7 +103,7 @@ func TestDeviceCache(t *testing.T) {
 	}
 
 	// Need to wait for the event to be read by the cache
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Millisecond)
 
 	devices := cache.GetDevicesByID("device-1")
 	assert.Len(t, devices, 1)
@@ -111,4 +119,26 @@ func TestDeviceCache(t *testing.T) {
 
 	devices = cache.GetDevicesByVersion("Stratum", "1.0.0")
 	assert.Len(t, devices, 2)
+
+	go func() {
+		count := 0
+		for update := range cacheChan {
+			t.Logf("Cache updated %v", update)
+			count++
+		}
+		assert.Equal(t, 3, count)
+	}()
+
+	go func() {
+		count2 := 0
+		for update := range cacheChan2 {
+			t.Logf("Cache updated %v", update)
+			count2++
+		}
+		assert.Equal(t, 3, count2)
+	}()
+
+	// Wait for the test to complete
+	time.Sleep(20 * time.Millisecond)
+
 }

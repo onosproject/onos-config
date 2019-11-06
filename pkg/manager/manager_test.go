@@ -78,7 +78,15 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	ctrl := gomock.NewController(t)
 
 	mockDeviceCache := devicestore.NewMockCache(ctrl)
-
+	mockDeviceCache.EXPECT().Watch(gomock.Any()).DoAndReturn(
+		func(ch chan<- *devicestore.Info) {
+			ch <- &devicestore.Info{
+				DeviceID: device1,
+				Type:     deviceTypeTd,
+				Version:  deviceVersion1,
+			}
+		},
+	)
 	// Data for default configuration
 
 	change1 := devicechange.Change{

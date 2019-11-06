@@ -102,3 +102,15 @@ func (mr *MockCacheMockRecorder) GetDevices() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevices", reflect.TypeOf((*MockCache)(nil).GetDevices))
 }
+
+// Watch mocks base method
+func (m *MockCache) Watch(arg0 chan<- *Info) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Watch", arg0)
+}
+
+// Watch indicates an expected call of Watch
+func (mr *MockCacheMockRecorder) Watch(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockCache)(nil).Watch), arg0)
+}

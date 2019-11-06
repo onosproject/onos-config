@@ -28,7 +28,7 @@ import (
 )
 
 // NewController returns a new config controller
-func NewController(leadership leadershipstore.Store, deviceStore devicestore.Store, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
+func NewController(leadership leadershipstore.Store, deviceCache devicestore.Cache, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
 	c := controller.NewController("NetworkChange")
 	c.Activate(&controller.LeadershipActivator{
 		Store: leadership,
@@ -37,7 +37,7 @@ func NewController(leadership leadershipstore.Store, deviceStore devicestore.Sto
 		Store: networkChanges,
 	})
 	c.Watch(&DeviceWatcher{
-		DeviceStore: deviceStore,
+		DeviceCache: deviceCache,
 		ChangeStore: deviceChanges,
 	})
 	c.Reconcile(&Reconciler{
@@ -57,6 +57,7 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	change, err := r.networkChanges.Get(networkchange.ID(id))
 	if err != nil {
+		log.Warningf("Could not get NW change %s", id)
 		return false, err
 	}
 

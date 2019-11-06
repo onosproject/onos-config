@@ -32,7 +32,9 @@ import (
 )
 
 // NewController returns a new network controller
-func NewController(mastership mastershipstore.Store, devices devicestore.Store, changes changestore.Store) *controller.Controller {
+func NewController(mastership mastershipstore.Store, devices devicestore.Store,
+	cache devicestore.Cache, changes changestore.Store) *controller.Controller {
+
 	c := controller.NewController("DeviceChange")
 	c.Filter(&controller.MastershipFilter{
 		Store:    mastership,
@@ -40,7 +42,7 @@ func NewController(mastership mastershipstore.Store, devices devicestore.Store, 
 	})
 	c.Partition(&Partitioner{})
 	c.Watch(&Watcher{
-		DeviceStore: devices,
+		DeviceCache: cache,
 		ChangeStore: changes,
 	})
 	c.Reconcile(&Reconciler{
@@ -79,13 +81,17 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	}
 
 	// Get the device from the device store
+	log.Infof("Checking Device store for %s", change.Change.DeviceID)
 	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))
 	if err != nil {
 		return false, err
 	}
 
-	// If the device is not available, fail the change
-	if getProtocolState(device) != topodevice.ChannelState_CONNECTED {
+	// If the device is not present in topo then it is a config -only device
+	if device == nil {
+		log.Infof("Device %s is not present in topo", change.Change.DeviceID)
+	} else if getProtocolState(device) != topodevice.ChannelState_CONNECTED {
+		// If the device is not available, fail the change
 		change.Status.State = changetypes.State_FAILED
 		change.Status.Reason = changetypes.Reason_ERROR
 		log.Infof("Failing DeviceChange %v", change)
@@ -98,7 +104,7 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	// Handle the change for each phase
 	switch change.Status.Phase {
 	case changetypes.Phase_CHANGE:
-		return r.reconcileChange(change)
+		return r.reconcileChange(change, device != nil)
 	case changetypes.Phase_ROLLBACK:
 		return r.reconcileRollback(change)
 	}
@@ -106,9 +112,13 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 }
 
 // reconcileChange reconciles a CHANGE in the RUNNING state
-func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (bool, error) {
+func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange, inTopo bool) (bool, error) {
 	// Attempt to apply the change to the device and update the change with the result
-	if err := r.doChange(change); err != nil {
+	var err error = nil
+	if inTopo {
+		err = r.doChange(change)
+	}
+	if err != nil {
 		change.Status.State = changetypes.State_FAILED
 		change.Status.Reason = changetypes.Reason_ERROR
 		change.Status.Message = err.Error()
