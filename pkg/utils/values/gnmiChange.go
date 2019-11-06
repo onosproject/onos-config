@@ -21,8 +21,8 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
-// NativeNewChangeToGnmiChange converts a Protobuf defined Change object to gNMI format
-func NativeNewChangeToGnmiChange(c *devicechangetypes.Change) (*gnmi.SetRequest, error) {
+// NativeChangeToGnmiChange converts a Protobuf defined Change object to gNMI format
+func NativeChangeToGnmiChange(c *devicechangetypes.Change) (*gnmi.SetRequest, error) {
 	var deletePaths = []*gnmi.Path{}
 	var replacedPaths = []*gnmi.Update{}
 	var updatedPaths = []*gnmi.Update{}

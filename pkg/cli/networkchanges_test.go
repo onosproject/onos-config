@@ -34,7 +34,7 @@ func generateNetworkChangeData(count int) {
 	now := time.Now()
 
 	for cfgIdx := range networkChanges {
-		networkID := fmt.Sprintf("a_new_network_change-%d", cfgIdx)
+		networkID := fmt.Sprintf("a_network_change-%d", cfgIdx)
 
 		networkChanges[cfgIdx] = network.NetworkChange{
 			ID:       network.ID(networkID),
@@ -109,7 +109,7 @@ func Test_WatchNetworkChanges(t *testing.T) {
 	err := networkChangesCmd.RunE(networkChangesCmd, nil)
 	assert.NilError(t, err)
 	output := outputBuffer.String()
-	assert.Equal(t, strings.Count(output, "a_new_network_change"), len(networkChanges))
+	assert.Equal(t, strings.Count(output, "a_network_change"), len(networkChanges))
 }
 
 var nextWatchNwChIndex int
@@ -146,7 +146,7 @@ func Test_GetNetworkChanges(t *testing.T) {
 	err := networkChangesCmd.RunE(networkChangesCmd, nil)
 	assert.NilError(t, err)
 	output := outputBuffer.String()
-	assert.Equal(t, strings.Count(output, "a_new_network_change"), len(networkChanges))
+	assert.Equal(t, strings.Count(output, "a_network_change"), len(networkChanges))
 
 }
 

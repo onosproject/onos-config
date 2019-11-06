@@ -22,7 +22,7 @@ import (
 	"testing"
 )
 
-func Test_new_rollback(t *testing.T) {
+func Test_rollback(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
 	CaptureOutput(outputBuffer)
 

@@ -136,7 +136,7 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 				targets[sub.Path.Target] = struct{}{}
 			}
 			//Each subscription request spawns a go routing listening for related events for the target and the paths
-			go listenForNewUpdates(stream, mgr, targets, version, subsStr, resChan)
+			go listenForUpdates(stream, mgr, targets, version, subsStr, resChan)
 			go listenForOpStateUpdates(opStateChan, stream, targets, subsStr, resChan)
 		}
 	}
@@ -150,7 +150,6 @@ func collector(mgr *manager.Manager, version devicetype.Version, stream gnmi.GNM
 			resChan <- result{success: false, err: err}
 		}
 		//We get the stated of the device, for each path we build an update and send it out.
-		//Already based on the new atomix based store
 		update, err := getUpdate(version, request.Prefix, sub.Path)
 		if err != nil {
 			log.Error("Error while collecting data for subscribe once or poll ", err)
@@ -180,7 +179,7 @@ func collector(mgr *manager.Manager, version devicetype.Version, stream gnmi.GNM
 }
 
 //For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
-func listenForNewUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
+func listenForUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
 	targets map[string]struct{}, version devicetype.Version, subs []*regexp.Regexp, resChan chan result) {
 	for target := range targets {
 		_, version, err := mgr.CheckCacheForDevice(devicetype.ID(target), devicetype.Type(""), version)
@@ -188,12 +187,12 @@ func listenForNewUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
 			log.Errorf("unable to get version from cache %s", err)
 			return
 		}
-		go listenForNewDeviceUpdates(stream, mgr, devicetype.ID(target), version, subs, resChan)
+		go listenForDeviceUpdates(stream, mgr, devicetype.ID(target), version, subs, resChan)
 	}
 }
 
 //For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
-func listenForNewDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
+func listenForDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
 	target devicetype.ID, version devicetype.Version, subs []*regexp.Regexp, resChan chan result) {
 	eventCh := make(chan streams.Event)
 	ctx, errWatch := mgr.DeviceChangesStore.Watch(devicetype.NewVersionedID(target, version), eventCh)

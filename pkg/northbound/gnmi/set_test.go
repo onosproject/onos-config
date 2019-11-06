@@ -487,8 +487,8 @@ func TestSet_checkForReadOnly(t *testing.T) {
 	targetUpdates["device-1"] = updateT1
 	targetUpdates["device-2"] = updateT2
 
-	err := server.checkForReadOnlyNew("device-1", "TestDevice", "1.0.0", updateT1, make([]string, 0))
+	err := server.checkForReadOnly("device-1", "TestDevice", "1.0.0", updateT1, make([]string, 0))
 	assert.NilError(t, err, "unexpected error on T1")
-	err = server.checkForReadOnlyNew("device-2", "TestDevice", "1.0.0", updateT2, make([]string, 0))
+	err = server.checkForReadOnly("device-2", "TestDevice", "1.0.0", updateT2, make([]string, 0))
 	assert.Error(t, err, `update contains a change to a read only path /cont1a/cont2a/leaf2c. Rejected`)
 }

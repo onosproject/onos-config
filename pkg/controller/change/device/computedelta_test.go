@@ -24,7 +24,7 @@ import (
 	"testing"
 )
 
-func TestReconciler_computeNewRollback_singleUpdate(t *testing.T) {
+func TestReconciler_computeRollback_singleUpdate(t *testing.T) {
 	devices, deviceChangesStore := newStores(t)
 	reconciler := &Reconciler{
 		devices: devices,
@@ -53,7 +53,7 @@ func TestReconciler_computeNewRollback_singleUpdate(t *testing.T) {
 		},
 	}
 
-	deltas, err := reconciler.computeNewRollback(deviceChangeIf1Change)
+	deltas, err := reconciler.computeRollback(deviceChangeIf1Change)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(deltas.Values))
 	// Was originally false, change set it to true, now that change is being
@@ -62,7 +62,7 @@ func TestReconciler_computeNewRollback_singleUpdate(t *testing.T) {
 	assert.Equal(t, "false", deltas.Values[0].Value.ValueToString())
 }
 
-func TestReconciler_computeNewRollback_mixedUpdate(t *testing.T) {
+func TestReconciler_computeRollback_mixedUpdate(t *testing.T) {
 	devices, deviceChangesStore := newStores(t)
 	reconciler := &Reconciler{
 		devices: devices,
@@ -99,7 +99,7 @@ func TestReconciler_computeNewRollback_mixedUpdate(t *testing.T) {
 		},
 	}
 
-	deltas, err := reconciler.computeNewRollback(deviceChangeIf1Change)
+	deltas, err := reconciler.computeRollback(deviceChangeIf1Change)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(deltas.Values))
 	// enabled was originally false, change set it to true, should be set to false on rollback
@@ -122,7 +122,7 @@ func TestReconciler_computeNewRollback_mixedUpdate(t *testing.T) {
 	}
 }
 
-func TestReconciler_computeNewRollback_addInterface(t *testing.T) {
+func TestReconciler_computeRollback_addInterface(t *testing.T) {
 	devices, deviceChangesStore := newStores(t)
 	defer deviceChangesStore.Close()
 	reconciler := &Reconciler{
@@ -158,7 +158,7 @@ func TestReconciler_computeNewRollback_addInterface(t *testing.T) {
 		},
 	}
 
-	deltas, err := reconciler.computeNewRollback(deviceChangeIf2Add)
+	deltas, err := reconciler.computeRollback(deviceChangeIf2Add)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(deltas.Values))
 	// Should be deleting everything of eth2
@@ -179,7 +179,7 @@ func TestReconciler_computeNewRollback_addInterface(t *testing.T) {
 	}
 }
 
-func TestReconciler_computeNewRollback_removeInterface(t *testing.T) {
+func TestReconciler_computeRollback_removeInterface(t *testing.T) {
 	devices, deviceChangesStore := newStores(t)
 	defer deviceChangesStore.Close()
 	reconciler := &Reconciler{
@@ -210,7 +210,7 @@ func TestReconciler_computeNewRollback_removeInterface(t *testing.T) {
 		},
 	}
 
-	deltas, err := reconciler.computeNewRollback(deviceChangeIf2Delete)
+	deltas, err := reconciler.computeRollback(deviceChangeIf2Delete)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(deltas.Values))
 	// Should be restoring everything of eth2

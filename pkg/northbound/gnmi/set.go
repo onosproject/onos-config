@@ -132,7 +132,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		err = s.checkForReadOnlyNew(target, deviceType, version, updates, targetRemoves[target])
+		err = s.checkForReadOnly(target, deviceType, version, updates, targetRemoves[target])
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -163,14 +163,14 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		err = s.checkForReadOnlyNew(target, deviceType, version, make(devicechangetypes.TypedValueMap), removes)
+		err = s.checkForReadOnly(target, deviceType, version, make(devicechangetypes.TypedValueMap), removes)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	//Creating and setting the config on the new atomix Store
-	errSet := mgr.SetNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
+	//Creating and setting the config on the atomix Store
+	errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
 
 	if errSet != nil {
 		log.Errorf("Error while setting config in atomix %s", errSet.Error())
@@ -309,7 +309,7 @@ func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string
 
 // iterate through the updates and check that none of them include a `set` of a
 // readonly attribute - this is done by checking with the relevant model
-func (s *Server) checkForReadOnlyNew(target string, deviceType devicetype.Type, version devicetype.Version,
+func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, version devicetype.Version,
 	targetUpdates devicechangetypes.TypedValueMap, targetRemoves []string) error {
 
 	modelreg := manager.GetManager().ModelRegistry
@@ -419,12 +419,12 @@ func validateChange(target string, deviceType devicetype.Type, version devicetyp
 		return fmt.Errorf("no updates found in change on %s - invalid", target)
 	}
 	log.Infof("Validating change %s:%s:%s", target, deviceType, version)
-	errNewValidation := manager.GetManager().ValidateNewNetworkConfig(devicetype.ID(target), version, deviceType,
+	errValidation := manager.GetManager().ValidateNetworkConfig(devicetype.ID(target), version, deviceType,
 		targetUpdates, targetRemoves)
-	if errNewValidation != nil {
+	if errValidation != nil {
 		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
-			targetRemoves, target, errNewValidation)
-		return errNewValidation
+			targetRemoves, target, errValidation)
+		return errValidation
 	}
 	log.Infof("Validating change %s:%s:%s DONE", target, deviceType, version)
 	return nil

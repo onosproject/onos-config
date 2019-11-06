@@ -178,11 +178,11 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
 	//TODO the following can be optimized by looking if the path is in the read only
-	configValues, errNewMethod := manager.GetManager().GetTargetNewConfig(
+	configValues, errGetTargetCfg := manager.GetManager().GetTargetConfig(
 		devicetype.ID(target), typeVersionInfo.Version, pathAsString, 0)
-	if errNewMethod != nil {
-		log.Error("Error while extracting config", errNewMethod)
-		return nil, errNewMethod
+	if errGetTargetCfg != nil {
+		log.Error("Error while extracting config", errGetTargetCfg)
+		return nil, errGetTargetCfg
 	}
 
 	stateValues := manager.GetManager().GetTargetState(target, pathAsString)
