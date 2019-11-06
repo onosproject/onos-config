@@ -99,14 +99,14 @@ func (m *Manager) computeNetworkConfig(targetUpdates map[string]devicechangetype
 		//FIXME this is a sequential job, not parallelized
 		version := deviceInfo[devicetype.ID(target)].Version
 		deviceType := deviceInfo[devicetype.ID(target)].Type
-		deviceChange, err := m.ComputeDeviceChange(
+		newChange, err := m.ComputeDeviceChange(
 			devicetype.ID(target), version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {
-			log.Error("Error in setting config: ", deviceChange, " for target ", err)
+			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue
 		}
-		log.Infof("Appending device change %v", deviceChange)
-		deviceChanges = append(deviceChanges, deviceChange)
+		log.Infof("Appending device change %v", newChange)
+		deviceChanges = append(deviceChanges, newChange)
 		delete(targetRemoves, target)
 	}
 
@@ -114,14 +114,14 @@ func (m *Manager) computeNetworkConfig(targetUpdates map[string]devicechangetype
 	for target, removes := range targetRemoves {
 		version := deviceInfo[devicetype.ID(target)].Version
 		deviceType := deviceInfo[devicetype.ID(target)].Type
-		deviceChange, err := m.ComputeDeviceChange(
+		newChange, err := m.ComputeDeviceChange(
 			devicetype.ID(target), version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
 		if err != nil {
-			log.Error("Error in setting config: ", deviceChange, " for target ", err)
+			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue
 		}
-		log.Infof("Appending device change %v", deviceChange)
-		deviceChanges = append(deviceChanges, deviceChange)
+		log.Infof("Appending device change %v", newChange)
+		deviceChanges = append(deviceChanges, newChange)
 	}
 	return deviceChanges, nil
 }
