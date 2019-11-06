@@ -350,40 +350,6 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 	assert.Equal(t, value2C.Removed, true)
 }
 
-// When device type is given it is like extension 102 and allows a never heard of before config to be created - here it is missing
-func Test_SetNetworkConfig_NewConfig102Missing(t *testing.T) {
-	mgrTest, _ := setUp(t)
-
-	// Making change
-	updates := make(devicechangetypes.TypedValueMap)
-	deletes := []string{test1Cont1ACont2ALeaf2C}
-	updates[test1Cont1ACont2ALeaf2A] = devicechangetypes.NewTypedValueFloat(valueLeaf2B314)
-	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges("Device6", updates, deletes)
-
-	err := mgrTest.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo, "Test_SetNetworkConfig_Config")
-	// TODO - the error for the missing type is currently not detecting the error of the unknown device type
-	t.Skip()
-	assert.ErrorContains(t, err, "no configuration found matching 'Device6-1.0.0' and no device type () given Please specify version and device type in extensions 101 and 102")
-	//_, okupdate := configurationStoreTest["Device6-1.0.0"]
-	//assert.Assert(t, !okupdate, "Expecting not to find Device6-1.0.0")
-}
-
-func Test_SetBadNetworkConfig(t *testing.T) {
-
-	mgrTest, _ := setUp(t)
-
-	updates := make(devicechangetypes.TypedValueMap)
-	deletes := []string{test1Cont1ACont2ALeaf2A, test1Cont1ACont2ALeaf2C}
-	updates[test1Cont1ACont2ALeaf2B] = devicechangetypes.NewTypedValueFloat(valueLeaf2B159)
-	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
-
-	err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "Testing")
-	// TODO - Storing a new device without extensions 101 and 102 set does not currently throw an error
-	// enable test when an error can be seen
-	t.Skip()
-	assert.ErrorContains(t, err, "no configuration found")
-}
-
 func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 
 	mgrTest, _ := setUp(t)

@@ -263,7 +263,7 @@ func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
 }
 
 func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *devicestore.MockCache) {
-	deviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*devicestore.Info{
+	deviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*devicestore.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
@@ -271,7 +271,7 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *devicestore
 		},
 	}).AnyTimes()
 
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mockStores.DeviceStore.EXPECT().Get(devicetopo.ID(device1)).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 	mockStores.DeviceStore.EXPECT().List(gomock.Any()).DoAndReturn(
 		func(c chan<- *devicetopo.Device) (stream.Context, error) {
 			go func() {
@@ -294,7 +294,7 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *devicestore
 		}).AnyTimes()
 }
 
-func setUpForGetSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*gnmi.Update) {
+func setUpForGetSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*gnmi.Update, *AllMocks) {
 	server, mgr, allMocks := setUp(t)
 	allMocks.MockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
 	mgr.NetworkChangesStore = allMocks.MockStores.NetworkChangesStore
@@ -303,7 +303,7 @@ func setUpForGetSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, [
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
-	return server, deletePaths, replacedPaths, updatedPaths
+	return server, deletePaths, replacedPaths, updatedPaths, allMocks
 }
 
 func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
