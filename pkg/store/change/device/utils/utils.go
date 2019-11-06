@@ -15,10 +15,10 @@
 package utils
 
 import (
+	"github.com/onosproject/onos-config/api/types/change"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	"github.com/onosproject/onos-config/api/types/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
-	"github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/device"
 	"sort"
 	"strings"
 )

@@ -15,12 +15,12 @@
 package manager
 
 import (
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	log "k8s.io/klog"
 )

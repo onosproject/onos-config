@@ -15,10 +15,10 @@
 package network
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	"github.com/onosproject/onos-config/api/types/snapshot"
+	networksnaptype "github.com/onosproject/onos-config/api/types/snapshot/network"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	"github.com/onosproject/onos-config/pkg/types"
-	"github.com/onosproject/onos-config/pkg/types/snapshot"
-	networksnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

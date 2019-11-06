@@ -18,14 +18,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
+	"github.com/onosproject/onos-config/api/diags"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	changetypes "github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
@@ -40,11 +41,11 @@ import (
 
 // SetUpServer sets up a test manager and a gRPC end-point
 // to which it registers the given service.
-func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, ChangeServiceClient, *grpc.Server) {
+func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, diags.ChangeServiceClient, *grpc.Server) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 
-	RegisterChangeServiceServer(s, &Server{})
+	diags.RegisterChangeServiceServer(s, &Server{})
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -61,7 +62,7 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, ChangeServic
 		t.Error("Failed to dial bufnet")
 	}
 
-	client := CreateChangeServiceClient(conn)
+	client := diags.CreateChangeServiceClient(conn)
 
 	ctrl := gomock.NewController(t)
 	mgrTest, err := manager.LoadManager(
@@ -91,7 +92,7 @@ func Test_ListNetworkChanges(t *testing.T) {
 
 	mockNwChStore, ok := mgrTest.NetworkChangesStore.(*mockstore.MockNetworkChangesStore)
 	assert.Assert(t, ok, "casting mock store")
-	mockNwChStore.EXPECT().List(gomock.Any()).DoAndReturn(func(ch chan<- *networkchangetypes.NetworkChange) (stream.Context, error) {
+	mockNwChStore.EXPECT().List(gomock.Any()).DoAndReturn(func(ch chan<- *networkchange.NetworkChange) (stream.Context, error) {
 		// Send our network changes as a streamed response to store List()
 		go func() {
 			for _, nwch := range networkChanges {
@@ -103,7 +104,7 @@ func Test_ListNetworkChanges(t *testing.T) {
 
 		}), nil
 	})
-	req := ListNetworkChangeRequest{
+	req := diags.ListNetworkChangeRequest{
 		Subscribe: false,
 		ChangeID:  "change-*",
 	}
@@ -140,7 +141,7 @@ func Test_ListDeviceChanges(t *testing.T) {
 	mockDevChStore, ok := mgrTest.DeviceChangesStore.(*mockstore.MockDeviceChangesStore)
 	assert.Assert(t, ok, "casting mock device changes store")
 	mockDevChStore.EXPECT().List(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(id devicetype.VersionedID, ch chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+		DoAndReturn(func(id device.VersionedID, ch chan<- *devicechange.DeviceChange) (stream.Context, error) {
 
 			// Send our network changes as a streamed response to store List()
 			go func() {
@@ -168,7 +169,7 @@ func Test_ListDeviceChanges(t *testing.T) {
 
 	mockDeviceCache, ok := mgrTest.DeviceCache.(*devicestore.MockCache)
 	assert.Assert(t, ok, "casting mock cache")
-	mockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*devicestore.Info{
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetopo.ID("device-1")).Return([]*devicestore.Info{
 		{
 			DeviceID: "device-1",
 			Type:     "Devicesim",
@@ -176,7 +177,7 @@ func Test_ListDeviceChanges(t *testing.T) {
 		},
 	})
 
-	req := ListDeviceChangeRequest{
+	req := diags.ListDeviceChangeRequest{
 		Subscribe:     false,
 		DeviceID:      "device-1",
 		DeviceVersion: "1.0.0",
@@ -216,7 +217,7 @@ func Test_ListDeviceChangesNoVersionManyPresent(t *testing.T) {
 
 	mockDeviceCache, ok := mgrTest.DeviceCache.(*devicestore.MockCache)
 	assert.Assert(t, ok, "casting mock cache")
-	mockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*devicestore.Info{
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetopo.ID("device-1")).Return([]*devicestore.Info{
 		{
 			DeviceID: "device-1",
 			Type:     "Devicesim",
@@ -230,7 +231,7 @@ func Test_ListDeviceChangesNoVersionManyPresent(t *testing.T) {
 	})
 	time.Sleep(time.Millisecond * 10)
 
-	req := ListDeviceChangeRequest{
+	req := diags.ListDeviceChangeRequest{
 		Subscribe: false,
 		DeviceID:  "device-1",
 	}
@@ -248,16 +249,16 @@ func Test_ListDeviceChangesNoVersionManyPresent(t *testing.T) {
 
 }
 
-func generateNetworkChangeData(count int) []*networkchangetypes.NetworkChange {
-	networkChanges := make([]*networkchangetypes.NetworkChange, count)
+func generateNetworkChangeData(count int) []*networkchange.NetworkChange {
+	networkChanges := make([]*networkchange.NetworkChange, count)
 	now := time.Now()
 
 	for cfgIdx := range networkChanges {
 		networkID := fmt.Sprintf("change-%d", cfgIdx)
 
-		networkChanges[cfgIdx] = &networkchangetypes.NetworkChange{
-			ID:       networkchangetypes.ID(networkID),
-			Index:    networkchangetypes.Index(cfgIdx),
+		networkChanges[cfgIdx] = &networkchange.NetworkChange{
+			ID:       networkchange.ID(networkID),
+			Index:    networkchange.Index(cfgIdx),
 			Revision: 0,
 			Status: changetypes.Status{
 				Phase:   changetypes.Phase(cfgIdx % 2),
@@ -267,19 +268,19 @@ func generateNetworkChangeData(count int) []*networkchangetypes.NetworkChange {
 			},
 			Created: now,
 			Updated: now,
-			Changes: []*devicechangetypes.Change{
+			Changes: []*devicechange.Change{
 				{
 					DeviceID:      "device-1",
 					DeviceVersion: "1.0.0",
-					Values: []*devicechangetypes.ChangeValue{
+					Values: []*devicechange.ChangeValue{
 						{
 							Path:    "/aa/bb/cc",
-							Value:   devicechangetypes.NewTypedValueString("Test1"),
+							Value:   devicechange.NewTypedValueString("Test1"),
 							Removed: false,
 						},
 						{
 							Path:    "/aa/bb/dd",
-							Value:   devicechangetypes.NewTypedValueString("Test2"),
+							Value:   devicechange.NewTypedValueString("Test2"),
 							Removed: false,
 						},
 					},
@@ -287,21 +288,21 @@ func generateNetworkChangeData(count int) []*networkchangetypes.NetworkChange {
 				{
 					DeviceID:      "device-2",
 					DeviceVersion: "1.0.0",
-					Values: []*devicechangetypes.ChangeValue{
+					Values: []*devicechange.ChangeValue{
 						{
 							Path:    "/aa/bb/cc",
-							Value:   devicechangetypes.NewTypedValueString("Test3"),
+							Value:   devicechange.NewTypedValueString("Test3"),
 							Removed: false,
 						},
 						{
 							Path:    "/aa/bb/dd",
-							Value:   devicechangetypes.NewTypedValueString("Test4"),
+							Value:   devicechange.NewTypedValueString("Test4"),
 							Removed: false,
 						},
 					},
 				},
 			},
-			Refs: []*networkchangetypes.DeviceChangeRef{
+			Refs: []*networkchange.DeviceChangeRef{
 				{DeviceChangeID: "device-1:1"},
 				{DeviceChangeID: "device-2:1"},
 			},
@@ -312,33 +313,33 @@ func generateNetworkChangeData(count int) []*networkchangetypes.NetworkChange {
 	return networkChanges
 }
 
-func generateDeviceChangeData(count int) []*devicechangetypes.DeviceChange {
-	networkChanges := make([]*devicechangetypes.DeviceChange, count)
+func generateDeviceChangeData(count int) []*devicechange.DeviceChange {
+	networkChanges := make([]*devicechange.DeviceChange, count)
 	now := time.Now()
 
 	for cfgIdx := range networkChanges {
 		networkID := fmt.Sprintf("device-%d", cfgIdx)
 
-		networkChanges[cfgIdx] = &devicechangetypes.DeviceChange{
-			ID:       devicechangetypes.ID(networkID),
-			Index:    devicechangetypes.Index(cfgIdx),
+		networkChanges[cfgIdx] = &devicechange.DeviceChange{
+			ID:       devicechange.ID(networkID),
+			Index:    devicechange.Index(cfgIdx),
 			Revision: 0,
-			NetworkChange: devicechangetypes.NetworkChangeRef{
+			NetworkChange: devicechange.NetworkChangeRef{
 				ID:    "network-1",
 				Index: 0,
 			},
-			Change: &devicechangetypes.Change{
+			Change: &devicechange.Change{
 				DeviceID:      "devicesim-1",
 				DeviceVersion: "1.0.0",
-				Values: []*devicechangetypes.ChangeValue{
+				Values: []*devicechange.ChangeValue{
 					{
 						Path:    "/aa/bb/cc",
-						Value:   devicechangetypes.NewTypedValueString("test1"),
+						Value:   devicechange.NewTypedValueString("test1"),
 						Removed: false,
 					},
 					{
 						Path:    "/aa/bb/dd",
-						Value:   devicechangetypes.NewTypedValueString("test2"),
+						Value:   devicechange.NewTypedValueString("test2"),
 						Removed: false,
 					},
 				},

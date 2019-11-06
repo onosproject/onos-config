@@ -15,9 +15,9 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/controller"
-	"github.com/onosproject/onos-config/pkg/types"
-	devicechange "github.com/onosproject/onos-config/pkg/types/change/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

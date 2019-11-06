@@ -15,10 +15,10 @@
 package device
 
 import (
+	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/api/types/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
 	"io"
 	"sync"
 )

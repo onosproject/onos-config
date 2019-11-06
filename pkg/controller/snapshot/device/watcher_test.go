@@ -15,10 +15,10 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	"github.com/onosproject/onos-config/api/types/snapshot"
+	devicesnaptype "github.com/onosproject/onos-config/api/types/snapshot/device"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
-	"github.com/onosproject/onos-config/pkg/types"
-	"github.com/onosproject/onos-config/pkg/types/snapshot"
-	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

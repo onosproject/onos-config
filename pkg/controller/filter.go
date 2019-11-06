@@ -15,8 +15,8 @@
 package controller
 
 import (
+	"github.com/onosproject/onos-config/api/types"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
-	"github.com/onosproject/onos-config/pkg/types"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"regexp"
 )

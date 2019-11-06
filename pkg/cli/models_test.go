@@ -17,7 +17,7 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/api/admin"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"io"

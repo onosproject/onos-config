@@ -15,17 +15,17 @@
 package network
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	"github.com/onosproject/onos-config/api/types/change"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/api/types/device"
+	"github.com/onosproject/onos-config/api/types/snapshot"
+	devicesnaptype "github.com/onosproject/onos-config/api/types/snapshot/device"
+	networksnap "github.com/onosproject/onos-config/api/types/snapshot/network"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	"github.com/onosproject/onos-config/pkg/types"
-	"github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
-	"github.com/onosproject/onos-config/pkg/types/snapshot"
-	devicesnaptype "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	networksnap "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

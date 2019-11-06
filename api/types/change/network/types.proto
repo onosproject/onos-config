@@ -1,0 +1,69 @@
+/*
+Copyright 2019-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+package onos.config.change.network;
+
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "github.com/onosproject/onos-config/api/types/change/types.proto";
+import "github.com/onosproject/onos-config/api/types/change/device/types.proto";
+
+// NetworkChange specifies the configuration for a network change
+// A network change is a configuration change that spans multiple devices. The change contains a list of
+// per-device changes to be applied to the network.
+message NetworkChange {
+    // 'id' is the unique identifier of the change
+    // This field should be set prior to persisting the object.
+    string id = 1 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "ID"];
+
+    // 'index' is a monotonically increasing, globally unique index of the change
+    // The index is provided by the store, is static and unique for each unique change identifier,
+    // and should not be modified by client code.
+    uint64 index = 2 [(gogoproto.casttype) = "Index"];
+
+    // 'revision' is the change revision number
+    // The revision number is provided by the store and should not be modified by client code.
+    // Each unique state of the change will be assigned a unique revision number which can be
+    // used for optimistic concurrency control when updating or deleting the change state.
+    uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
+
+    // 'status' is the current lifecycle status of the change
+    onos.config.change.Status status = 4 [(gogoproto.nullable) = false];
+
+    // 'created' is the time at which the change was created
+    google.protobuf.Timestamp created = 5 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+    // 'updated' is the time at which the change was last updated
+    google.protobuf.Timestamp updated = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+    // 'changes' is a set of changes to apply to devices
+    // The list of changes should contain only a single change per device/version pair.
+    repeated onos.config.change.device.Change changes = 7;
+
+    // 'refs' is a set of references to stored device changes
+    repeated DeviceChangeRef refs = 8;
+
+    // 'deleted' is a flag indicating whether this change is being deleted by a snapshot
+    bool deleted = 9;
+}
+
+// DeviceChangeRef is a reference to a device change
+message DeviceChangeRef {
+    // 'device_change_id' is the unique identifier of the device change
+    string device_change_id = 1 [(gogoproto.customname) = "DeviceChangeID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/change/device.ID"];
+}

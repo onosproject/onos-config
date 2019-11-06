@@ -16,10 +16,10 @@ package manager
 
 import (
 	"fmt"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	changetypes "github.com/onosproject/onos-config/pkg/types/change"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
 	log "k8s.io/klog"
 )
 

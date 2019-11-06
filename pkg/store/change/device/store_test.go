@@ -15,11 +15,11 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	"github.com/onosproject/onos-config/api/types/change"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-config/pkg/types"
-	"github.com/onosproject/onos-config/pkg/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
-	"github.com/onosproject/onos-config/pkg/types/device"
 	"github.com/stretchr/testify/assert"
 	assert2 "gotest.tools/assert"
 	"testing"

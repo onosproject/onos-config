@@ -15,18 +15,18 @@
 package network
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	changetypes "github.com/onosproject/onos-config/api/types/change"
+	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/api/types/device"
+	snaptypes "github.com/onosproject/onos-config/api/types/snapshot"
+	devicesnaptypes "github.com/onosproject/onos-config/api/types/snapshot/device"
+	networksnaptypes "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/controller"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	"github.com/onosproject/onos-config/pkg/types"
-	changetypes "github.com/onosproject/onos-config/pkg/types/change"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	"github.com/onosproject/onos-config/pkg/types/device"
-	snaptypes "github.com/onosproject/onos-config/pkg/types/snapshot"
-	devicesnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	networksnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	log "k8s.io/klog"
 	"time"
 )

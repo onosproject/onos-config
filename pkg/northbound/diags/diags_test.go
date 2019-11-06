@@ -17,7 +17,8 @@ package diags
 import (
 	"context"
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	"github.com/onosproject/onos-config/api/diags"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
@@ -40,7 +41,7 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 	s := grpc.NewServer()
 	defer s.Stop()
 
-	RegisterOpStateDiagsServer(s, &Server{})
+	diags.RegisterOpStateDiagsServer(s, &Server{})
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -57,9 +58,9 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 		t.Error("Failed to dial bufnet")
 	}
 
-	client := CreateOpStateDiagsClient(conn)
+	client := diags.CreateOpStateDiagsClient(conn)
 
-	opStateReq := &OpStateRequest{DeviceId: "Device2", Subscribe: true}
+	opStateReq := &diags.OpStateRequest{DeviceId: "Device2", Subscribe: true}
 
 	stream, err := client.GetOpState(context.TODO(), opStateReq)
 	assert.NilError(t, err, "expected to get device-1")

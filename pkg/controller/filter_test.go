@@ -15,9 +15,9 @@
 package controller
 
 import (
+	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
-	"github.com/onosproject/onos-config/pkg/types"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"github.com/stretchr/testify/assert"
 	"testing"

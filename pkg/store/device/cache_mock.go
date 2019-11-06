@@ -6,7 +6,7 @@ package device
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	device "github.com/onosproject/onos-config/pkg/types/device"
+	device "github.com/onosproject/onos-config/api/types/device"
 	reflect "reflect"
 )
 

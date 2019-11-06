@@ -17,7 +17,7 @@ package store
 import (
 	"encoding/json"
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/pkg/types/change/device"
+	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
 )
 
 // DecomposeTree breaks a JSON file down in to paths and values without any external

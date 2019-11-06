@@ -18,14 +18,15 @@ package admin
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-config/api/admin"
+	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
+	snapshottype "github.com/onosproject/onos-config/api/types/snapshot"
+	"github.com/onosproject/onos-config/api/types/snapshot/device"
+	networksnaptypes "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	networkchangetypes "github.com/onosproject/onos-config/pkg/types/change/network"
-	devicetype "github.com/onosproject/onos-config/pkg/types/device"
-	snapshottype "github.com/onosproject/onos-config/pkg/types/snapshot"
-	"github.com/onosproject/onos-config/pkg/types/snapshot/device"
-	networksnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -43,38 +44,28 @@ type Service struct {
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	server := Server{}
-	RegisterConfigAdminServiceServer(r, &server)
+	admin.RegisterConfigAdminServiceServer(r, server)
 }
 
 // Server implements the gRPC service for administrative facilities.
 type Server struct {
 }
 
-// ConfigAdminClientFactory : Default ConfigAdminClient creation.
-var ConfigAdminClientFactory = func(cc *grpc.ClientConn) ConfigAdminServiceClient {
-	return NewConfigAdminServiceClient(cc)
-}
-
-// CreateConfigAdminServiceClient creates and returns a new config admin client
-func CreateConfigAdminServiceClient(cc *grpc.ClientConn) ConfigAdminServiceClient {
-	return ConfigAdminClientFactory(cc)
-}
-
 // RegisterModel registers a model plugin already on the onos-configs file system.
-func (s *Server) RegisterModel(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
+func (s Server) RegisterModel(ctx context.Context, req *admin.RegisterRequest) (*admin.RegisterResponse, error) {
 	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(req.SoFile)
 	if err != nil {
 		return nil, err
 	}
-	return &RegisterResponse{
+	return &admin.RegisterResponse{
 		Name:    name,
 		Version: version,
 	}, nil
 }
 
 // UploadRegisterModel uploads and registers a new model plugin.
-func (s *Server) UploadRegisterModel(stream ConfigAdminService_UploadRegisterModelServer) error {
-	response := RegisterResponse{Name: "Unknown"}
+func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegisterModelServer) error {
+	response := admin.RegisterResponse{Name: "Unknown"}
 	soFileName := ""
 
 	const TEMPFILE = "/tmp/uploaded_model_plugin.tmp"
@@ -129,7 +120,7 @@ func (s *Server) UploadRegisterModel(stream ConfigAdminService_UploadRegisterMod
 }
 
 // ListRegisteredModels lists the registered models..
-func (s *Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminService_ListRegisteredModelsServer) error {
+func (s Server) ListRegisteredModels(req *admin.ListModelsRequest, stream admin.ConfigAdminService_ListRegisteredModelsServer) error {
 	requestedModel := req.ModelName
 	requestedVersion := req.ModelVersion
 
@@ -142,22 +133,22 @@ func (s *Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdmin
 			continue
 		}
 
-		roPaths := make([]*ReadOnlyPath, 0)
+		roPaths := make([]*admin.ReadOnlyPath, 0)
 		if req.Verbose {
 			roPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(name), devicetype.Version(version))]
 			if !ok {
 				log.Warningf("no list of Read Only Paths found for %s %s\n", name, version)
 			} else {
 				for path, subpathList := range roPathsAndValues {
-					subPathsPb := make([]*ReadOnlySubPath, 0)
+					subPathsPb := make([]*admin.ReadOnlySubPath, 0)
 					for subPath, subPathType := range subpathList {
-						subPathPb := ReadOnlySubPath{
+						subPathPb := admin.ReadOnlySubPath{
 							SubPath:   subPath,
 							ValueType: subPathType.Datatype,
 						}
 						subPathsPb = append(subPathsPb, &subPathPb)
 					}
-					pathPb := ReadOnlyPath{
+					pathPb := admin.ReadOnlyPath{
 						Path:    path,
 						SubPath: subPathsPb,
 					}
@@ -166,14 +157,14 @@ func (s *Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdmin
 			}
 		}
 
-		rwPaths := make([]*ReadWritePath, 0)
+		rwPaths := make([]*admin.ReadWritePath, 0)
 		if req.Verbose {
 			rwPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadWritePaths[utils.ToModelName(devicetype.Type(name), devicetype.Version(version))]
 			if !ok {
 				log.Warningf("no list of Read Write Paths found for %s %s\n", name, version)
 			} else {
 				for path, rwObj := range rwPathsAndValues {
-					rwObjProto := ReadWritePath{
+					rwObjProto := admin.ReadWritePath{
 						Path:        path,
 						ValueType:   rwObj.ValueType,
 						Description: rwObj.Description,
@@ -189,7 +180,7 @@ func (s *Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdmin
 		}
 
 		// Build model message
-		msg := &ModelInfo{
+		msg := &admin.ModelInfo{
 			Name:          name,
 			Version:       version,
 			ModelData:     md,
@@ -208,24 +199,23 @@ func (s *Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdmin
 }
 
 // RollbackNetworkChange rolls back a named atomix-based network change.
-func (s *Server) RollbackNetworkChange(
-	ctx context.Context, req *RollbackRequest) (*RollbackResponse, error) {
+func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRequest) (*admin.RollbackResponse, error) {
 	errRollback := manager.GetManager().RollbackTargetConfig(networkchangetypes.ID(req.Name))
 	if errRollback != nil {
 		return nil, errRollback
 	}
-	return &RollbackResponse{
+	return &admin.RollbackResponse{
 		Message: fmt.Sprintf("Rolled back change '%s'", req.Name),
 	}, nil
 }
 
 // GetSnapshot gets a snapshot for a specific device
-func (s *Server) GetSnapshot(ctx context.Context, request *GetSnapshotRequest) (*device.Snapshot, error) {
+func (s Server) GetSnapshot(ctx context.Context, request *admin.GetSnapshotRequest) (*device.Snapshot, error) {
 	return manager.GetManager().DeviceSnapshotStore.Load(devicetype.NewVersionedID(request.DeviceID, request.DeviceVersion))
 }
 
 // ListSnapshots lists snapshots for all devices
-func (s *Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdminService_ListSnapshotsServer) error {
+func (s Server) ListSnapshots(request *admin.ListSnapshotsRequest, stream admin.ConfigAdminService_ListSnapshotsServer) error {
 	ch := make(chan *device.Snapshot)
 	ctx, err := manager.GetManager().DeviceSnapshotStore.LoadAll(ch)
 	if err != nil {
@@ -242,7 +232,7 @@ func (s *Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdmin
 }
 
 // CompactChanges takes a snapshot of all devices
-func (s *Server) CompactChanges(ctx context.Context, request *CompactChangesRequest) (*CompactChangesResponse, error) {
+func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChangesRequest) (*admin.CompactChangesResponse, error) {
 	snapshot := &networksnaptypes.NetworkSnapshot{
 		Retention: snapshottype.RetentionOptions{
 			RetainWindow: request.RetentionPeriod,
@@ -262,7 +252,7 @@ func (s *Server) CompactChanges(ctx context.Context, request *CompactChangesRequ
 	for event := range ch {
 		eventSnapshot := event.Object.(*networksnaptypes.NetworkSnapshot)
 		if snapshot.ID != "" && snapshot.ID == eventSnapshot.ID && eventSnapshot.Status.Phase == snapshottype.Phase_DELETE && eventSnapshot.Status.State == snapshottype.State_COMPLETE {
-			return &CompactChangesResponse{}, nil
+			return &admin.CompactChangesResponse{}, nil
 		}
 	}
 	return nil, errors.New("snapshot state unknown")

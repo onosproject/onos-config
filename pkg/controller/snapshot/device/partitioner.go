@@ -15,9 +15,9 @@
 package device
 
 import (
+	"github.com/onosproject/onos-config/api/types"
+	devicesnaptypes "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/controller"
-	"github.com/onosproject/onos-config/pkg/types"
-	devicesnaptypes "github.com/onosproject/onos-config/pkg/types/snapshot/device"
 )
 
 // Partitioner is a WorkPartitioner for device snapshots
