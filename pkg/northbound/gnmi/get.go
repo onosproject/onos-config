@@ -164,10 +164,7 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 		return update, nil
 	}
 
-	mgr := manager.GetManager()
-	storedDevice, _ := mgr.DeviceStore.Get(devicetopo.ID(target))
-	typeVersionInfo, errTypeVersion := manager.GetManager().ExtractTypeAndVersion(devicetopo.ID(target),
-		storedDevice, string(version), "")
+	_, version, errTypeVersion := manager.GetManager().CheckCacheForDevice(devicetype.ID(target), "", version)
 	if errTypeVersion != nil {
 		log.Errorf("Error while extracting type and version for target %s with err %v", target, errTypeVersion)
 		return nil, status.Error(codes.InvalidArgument, errTypeVersion.Error())
@@ -179,7 +176,7 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 	}
 	//TODO the following can be optimized by looking if the path is in the read only
 	configValues, errGetTargetCfg := manager.GetManager().GetTargetConfig(
-		devicetype.ID(target), typeVersionInfo.Version, pathAsString, 0)
+		devicetype.ID(target), version, pathAsString, 0)
 	if errGetTargetCfg != nil {
 		log.Error("Error while extracting config", errGetTargetCfg)
 		return nil, errGetTargetCfg
