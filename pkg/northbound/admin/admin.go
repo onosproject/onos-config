@@ -43,7 +43,7 @@ type Service struct {
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	server := Server{}
-	RegisterConfigAdminServiceServer(r, server)
+	RegisterConfigAdminServiceServer(r, &server)
 }
 
 // Server implements the gRPC service for administrative facilities.
@@ -61,7 +61,7 @@ func CreateConfigAdminServiceClient(cc *grpc.ClientConn) ConfigAdminServiceClien
 }
 
 // RegisterModel registers a model plugin already on the onos-configs file system.
-func (s Server) RegisterModel(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
+func (s *Server) RegisterModel(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
 	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(req.SoFile)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (s Server) RegisterModel(ctx context.Context, req *RegisterRequest) (*Regis
 }
 
 // UploadRegisterModel uploads and registers a new model plugin.
-func (s Server) UploadRegisterModel(stream ConfigAdminService_UploadRegisterModelServer) error {
+func (s *Server) UploadRegisterModel(stream ConfigAdminService_UploadRegisterModelServer) error {
 	response := RegisterResponse{Name: "Unknown"}
 	soFileName := ""
 
@@ -129,7 +129,7 @@ func (s Server) UploadRegisterModel(stream ConfigAdminService_UploadRegisterMode
 }
 
 // ListRegisteredModels lists the registered models..
-func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminService_ListRegisteredModelsServer) error {
+func (s *Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminService_ListRegisteredModelsServer) error {
 	requestedModel := req.ModelName
 	requestedVersion := req.ModelVersion
 
@@ -208,7 +208,7 @@ func (s Server) ListRegisteredModels(req *ListModelsRequest, stream ConfigAdminS
 }
 
 // RollbackNetworkChange rolls back a named atomix-based network change.
-func (s Server) RollbackNetworkChange(
+func (s *Server) RollbackNetworkChange(
 	ctx context.Context, req *RollbackRequest) (*RollbackResponse, error) {
 	errRollback := manager.GetManager().RollbackTargetConfig(networkchangetypes.ID(req.Name))
 	if errRollback != nil {
@@ -220,12 +220,12 @@ func (s Server) RollbackNetworkChange(
 }
 
 // GetSnapshot gets a snapshot for a specific device
-func (s Server) GetSnapshot(ctx context.Context, request *GetSnapshotRequest) (*device.Snapshot, error) {
+func (s *Server) GetSnapshot(ctx context.Context, request *GetSnapshotRequest) (*device.Snapshot, error) {
 	return manager.GetManager().DeviceSnapshotStore.Load(devicetype.NewVersionedID(request.DeviceID, request.DeviceVersion))
 }
 
 // ListSnapshots lists snapshots for all devices
-func (s Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdminService_ListSnapshotsServer) error {
+func (s *Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdminService_ListSnapshotsServer) error {
 	ch := make(chan *device.Snapshot)
 	ctx, err := manager.GetManager().DeviceSnapshotStore.LoadAll(ch)
 	if err != nil {
@@ -242,7 +242,7 @@ func (s Server) ListSnapshots(request *ListSnapshotsRequest, stream ConfigAdminS
 }
 
 // CompactChanges takes a snapshot of all devices
-func (s Server) CompactChanges(ctx context.Context, request *CompactChangesRequest) (*CompactChangesResponse, error) {
+func (s *Server) CompactChanges(ctx context.Context, request *CompactChangesRequest) (*CompactChangesResponse, error) {
 	snapshot := &networksnaptypes.NetworkSnapshot{
 		Retention: snapshottype.RetentionOptions{
 			RetainWindow: request.RetentionPeriod,
