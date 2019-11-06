@@ -435,7 +435,7 @@ func Test_doUpdateDeleteSet(t *testing.T) {
 //TODO test with update and delete at the same time.
 
 func TestSet_checkForReadOnly(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
+	server, mgr, mocks := setUp(t)
 
 	modelPluginTestDevice1 := MockModelPlugin{
 		td1.UnzipSchema,
@@ -471,8 +471,8 @@ func TestSet_checkForReadOnly(t *testing.T) {
 		Version:  "1.0.0",
 	}
 
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*device.Info{&cacheInfo1v1, &cacheInfo1v2})
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-2")).Return([]*device.Info{&cacheInfo2v1})
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*device.Info{&cacheInfo1v1, &cacheInfo1v2})
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-2")).Return([]*device.Info{&cacheInfo2v1})
 
 	updateT1 := make(map[string]*devicechangetypes.TypedValue)
 	updateT1[cont1aCont2aLeaf2a] = devicechangetypes.NewTypedValueUint64(10)
