@@ -16,8 +16,8 @@ package device
 
 import (
 	"github.com/golang/mock/gomock"
-	devicechangetype "github.com/onosproject/onos-config/api/types/change/device"
-	networkchangetype "github.com/onosproject/onos-config/api/types/change/network"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/test/mocks/store"
@@ -43,10 +43,10 @@ func TestDeviceCache(t *testing.T) {
 	ch := chVal.Load().(chan<- stream.Event)
 	ch <- stream.Event{
 		Type: stream.Created,
-		Object: &networkchangetype.NetworkChange{
+		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
 			Index: 1,
-			Changes: []*devicechangetype.Change{
+			Changes: []*devicechange.Change{
 				{
 					DeviceID:      "device-1",
 					DeviceType:    "Stratum",
@@ -62,10 +62,10 @@ func TestDeviceCache(t *testing.T) {
 	}
 	ch <- stream.Event{
 		Type: stream.Created,
-		Object: &networkchangetype.NetworkChange{
+		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
 			Index: 1,
-			Changes: []*devicechangetype.Change{
+			Changes: []*devicechange.Change{
 				{
 					DeviceID:      "device-2",
 					DeviceType:    "Stratum",
@@ -81,10 +81,10 @@ func TestDeviceCache(t *testing.T) {
 	}
 	ch <- stream.Event{
 		Type: stream.Created,
-		Object: &networkchangetype.NetworkChange{
+		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
 			Index: 1,
-			Changes: []*devicechangetype.Change{
+			Changes: []*devicechange.Change{
 				{
 					DeviceID:      "device-3",
 					DeviceType:    "NotStratum",

@@ -16,8 +16,8 @@ package network
 
 import (
 	"github.com/onosproject/onos-config/api/types"
-	devicesnaptype "github.com/onosproject/onos-config/api/types/snapshot/device"
-	networksnaptype "github.com/onosproject/onos-config/api/types/snapshot/network"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
@@ -51,7 +51,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for request := range snapshotCh {
-			ch <- types.ID(request.Object.(*networksnaptype.NetworkSnapshot).ID)
+			ch <- types.ID(request.Object.(*networksnapshot.NetworkSnapshot).ID)
 		}
 		close(ch)
 	}()
@@ -93,7 +93,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for event := range snapshotCh {
-			ch <- event.Object.(*devicesnaptype.DeviceSnapshot).NetworkSnapshot.ID
+			ch <- event.Object.(*devicesnapshot.DeviceSnapshot).NetworkSnapshot.ID
 		}
 		close(ch)
 	}()

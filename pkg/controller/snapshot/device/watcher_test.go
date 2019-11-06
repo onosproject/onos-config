@@ -17,7 +17,7 @@ package device
 import (
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/api/types/snapshot"
-	devicesnaptype "github.com/onosproject/onos-config/api/types/snapshot/device"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -37,10 +37,10 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 	err = watcher.Start(ch)
 	assert.NoError(t, err)
 
-	change1 := &devicesnaptype.DeviceSnapshot{
+	change1 := &devicesnapshot.DeviceSnapshot{
 		DeviceID:      "device-1",
 		DeviceVersion: "1.0.0",
-		NetworkSnapshot: devicesnaptype.NetworkSnapshotRef{
+		NetworkSnapshot: devicesnapshot.NetworkSnapshotRef{
 			ID:    "snapshot-1",
 			Index: 1,
 		},
@@ -51,15 +51,15 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 
 	select {
 	case id := <-ch:
-		assert.Equal(t, change1.ID, devicesnaptype.ID(id))
+		assert.Equal(t, change1.ID, devicesnapshot.ID(id))
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
 
-	change2 := &devicesnaptype.DeviceSnapshot{
+	change2 := &devicesnapshot.DeviceSnapshot{
 		DeviceID:      "device-2",
 		DeviceVersion: "1.0.0",
-		NetworkSnapshot: devicesnaptype.NetworkSnapshotRef{
+		NetworkSnapshot: devicesnapshot.NetworkSnapshotRef{
 			ID:    "snapshot-1",
 			Index: 1,
 		},

@@ -15,7 +15,7 @@
 package dispatcher
 
 import (
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	"gotest.tools/assert"
@@ -94,7 +94,7 @@ func Test_listen_operational(t *testing.T) {
 	go d.ListenOperationalState(opStateCh)
 	// Send down some changes
 	event := events.NewOperationalStateEvent("foobar", "testpath",
-		devicechangetypes.NewTypedValueString("testValue"), events.EventItemUpdated)
+		devicechange.NewTypedValueString("testValue"), events.EventItemUpdated)
 	opStateCh <- event
 
 	// Wait for the changes to get distributed

@@ -15,21 +15,21 @@
 package manager
 
 import (
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 )
 
 // GetTargetState returns a set of state values given a target and a path.
-func (m *Manager) GetTargetState(target string, path string) []*devicechangetypes.PathValue {
+func (m *Manager) GetTargetState(target string, path string) []*devicechange.PathValue {
 	log.Info("Getting State for ", target, path)
-	configValues := make([]*devicechangetypes.PathValue, 0)
+	configValues := make([]*devicechange.PathValue, 0)
 	//First check the cache, if it's not empty for this path we read that and return,
 	pathRegexp := utils.MatchWildcardRegexp(path)
 	for pathCache, value := range m.OperationalStateCache[devicetopo.ID(target)] {
 		if pathRegexp.MatchString(pathCache) {
-			configValues = append(configValues, &devicechangetypes.PathValue{
+			configValues = append(configValues, &devicechange.PathValue{
 				Path:  pathCache,
 				Value: value,
 			})

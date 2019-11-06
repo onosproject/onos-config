@@ -17,9 +17,8 @@ package gnmi
 import (
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
-	"github.com/onosproject/onos-config/api/types/change/network"
-	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
@@ -86,7 +85,7 @@ func (m MockModelPlugin) GetStateMode() int {
 
 func setUpWatchMock(mockStores *MockStores) {
 	now := time.Now()
-	watchChange := network.NetworkChange{
+	watchChange := networkchange.NetworkChange{
 		ID:       "",
 		Index:    0,
 		Revision: 0,
@@ -103,10 +102,10 @@ func setUpWatchMock(mockStores *MockStores) {
 		Deleted: false,
 	}
 
-	config1Value01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf4a", devicechangetypes.NewTypedValueUint64(14), false)
-	config1Value02, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueEmpty(), true)
+	config1Value01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf4a", devicechange.NewTypedValueUint64(14), false)
+	config1Value02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueEmpty(), true)
 
-	deviceChange := devicechangetypes.DeviceChange{
+	deviceChange := devicechange.DeviceChange{
 		ID:       "",
 		Index:    0,
 		Revision: 0,
@@ -118,14 +117,14 @@ func setUpWatchMock(mockStores *MockStores) {
 		},
 		Created: now,
 		Updated: now,
-		NetworkChange: devicechangetypes.NetworkChangeRef{
+		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    "",
 			Index: 0,
 		},
-		Change: &devicechangetypes.Change{
+		Change: &devicechange.Change{
 			DeviceID:      "",
 			DeviceVersion: "",
-			Values: []*devicechangetypes.ChangeValue{
+			Values: []*devicechange.ChangeValue{
 				config1Value01, config1Value02,
 			},
 		},
@@ -156,7 +155,7 @@ func setUpWatchMock(mockStores *MockStores) {
 
 func setUpListMock(stores *MockStores) {
 	stores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(device devicetype.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+		func(device devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
 			go func() {
 				close(c)
 			}()
@@ -167,16 +166,16 @@ func setUpListMock(stores *MockStores) {
 }
 
 func setUpChangesMock(mockChangeStore *mockstore.MockDeviceChangesStore) {
-	configValue01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueUint64(13), false)
+	configValue01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueUint64(13), false)
 
-	change1 := devicechangetypes.Change{
-		Values: []*devicechangetypes.ChangeValue{
+	change1 := devicechange.Change{
+		Values: []*devicechange.ChangeValue{
 			configValue01,
 		},
 		DeviceID:      devicetype.ID("Device1"),
 		DeviceVersion: "1.0.0",
 	}
-	deviceChange1 := &devicechangetypes.DeviceChange{
+	deviceChange1 := &devicechange.DeviceChange{
 		Change: &change1,
 		ID:     "Change",
 		Status: changetypes.Status{
@@ -187,7 +186,7 @@ func setUpChangesMock(mockChangeStore *mockstore.MockDeviceChangesStore) {
 		},
 	}
 	mockChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(device devicetype.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
+		func(device devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
 			go func() {
 				c <- deviceChange1
 				close(c)
@@ -244,18 +243,18 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
 	mockstore.SetUpMapBackedNetworkChangesStore(store)
 	now := time.Now()
-	config1Value01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf4a", devicechangetypes.NewTypedValueUint64(14), false)
-	config1Value02, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueEmpty(), true)
-	change1 := devicechangetypes.Change{
-		Values: []*devicechangetypes.ChangeValue{
+	config1Value01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf4a", devicechange.NewTypedValueUint64(14), false)
+	config1Value02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueEmpty(), true)
+	change1 := devicechange.Change{
+		Values: []*devicechange.ChangeValue{
 			config1Value01, config1Value02},
 		DeviceID:      device1,
 		DeviceVersion: deviceVersion1,
 	}
 
-	networkChange1 := &networkchangetypes.NetworkChange{
+	networkChange1 := &networkchange.NetworkChange{
 		ID:      networkChange1,
-		Changes: []*devicechangetypes.Change{&change1},
+		Changes: []*devicechange.Change{&change1},
 		Updated: now,
 		Created: now,
 		Status:  changetypes.Status{State: changetypes.State_COMPLETE},

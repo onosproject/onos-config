@@ -17,7 +17,7 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
@@ -192,7 +192,7 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 	return buildUpdate(prefix, path, configValues)
 }
 
-func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*devicechangetypes.PathValue) (*gnmi.Update, error) {
+func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*devicechange.PathValue) (*gnmi.Update, error) {
 	var value *gnmi.TypedValue
 	var err error
 	if len(configValues) == 0 {

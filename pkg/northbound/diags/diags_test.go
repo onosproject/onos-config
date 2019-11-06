@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/api/diags"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
@@ -74,7 +74,7 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 
 		switch pv.GetPath() {
 		case "/cont1a/cont2a/leaf2c":
-			assert.Equal(t, pv.GetValue().GetType(), devicechangetypes.ValueType_STRING)
+			assert.Equal(t, pv.GetValue().GetType(), devicechange.ValueType_STRING)
 			switch pv.GetValue().ValueToString() {
 			case "test1":
 				//From the initial response
@@ -88,7 +88,7 @@ func Test_GetOpState_DeviceSubscribe(t *testing.T) {
 				t.Fatal("Unexpected value for", pv.Path, pv.GetValue().ValueToString())
 			}
 		case "/cont1b-state/leaf2d":
-			assert.Equal(t, pv.GetValue().GetType(), devicechangetypes.ValueType_UINT)
+			assert.Equal(t, pv.GetValue().GetType(), devicechange.ValueType_UINT)
 			assert.Equal(t, pv.GetValue().ValueToString(), "12345")
 		default:
 			t.Fatal("Unexpected path in opstate cache for Device2", pv.Path)

@@ -19,7 +19,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/api/diags"
-	"github.com/onosproject/onos-config/api/types/snapshot/device"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -72,7 +72,7 @@ func (c mockConfigAdminServiceClient) RollbackNewNetworkChange(ctx context.Conte
 	return response, nil
 }
 
-func (c mockConfigAdminServiceClient) GetSnapshot(ctx context.Context, in *admin.GetSnapshotRequest, opts ...grpc.CallOption) (*device.Snapshot, error) {
+func (c mockConfigAdminServiceClient) GetSnapshot(ctx context.Context, in *admin.GetSnapshotRequest, opts ...grpc.CallOption) (*devicesnapshot.Snapshot, error) {
 	return nil, nil
 }
 

@@ -16,7 +16,7 @@ package device
 
 import (
 	"github.com/onosproject/onos-config/api/types"
-	devicesnaptype "github.com/onosproject/onos-config/api/types/snapshot/device"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -50,7 +50,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for request := range snapshotCh {
-			ch <- types.ID(request.Object.(*devicesnaptype.DeviceSnapshot).ID)
+			ch <- types.ID(request.Object.(*devicesnapshot.DeviceSnapshot).ID)
 		}
 		close(ch)
 	}()

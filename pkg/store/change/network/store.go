@@ -25,7 +25,7 @@ import (
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
-	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
@@ -108,28 +108,28 @@ type Store interface {
 	io.Closer
 
 	// Get gets a network configuration
-	Get(id networkchangetypes.ID) (*networkchangetypes.NetworkChange, error)
+	Get(id networkchange.ID) (*networkchange.NetworkChange, error)
 
 	// GetByIndex gets a network change by index
-	GetByIndex(index networkchangetypes.Index) (*networkchangetypes.NetworkChange, error)
+	GetByIndex(index networkchange.Index) (*networkchange.NetworkChange, error)
 
 	// GetPrev gets the previous network change by index
-	GetPrev(index networkchangetypes.Index) (*networkchangetypes.NetworkChange, error)
+	GetPrev(index networkchange.Index) (*networkchange.NetworkChange, error)
 
 	// GetNext gets the next network change by index
-	GetNext(index networkchangetypes.Index) (*networkchangetypes.NetworkChange, error)
+	GetNext(index networkchange.Index) (*networkchange.NetworkChange, error)
 
 	// Create creates a new network configuration
-	Create(config *networkchangetypes.NetworkChange) error
+	Create(config *networkchange.NetworkChange) error
 
 	// Update updates an existing network configuration
-	Update(config *networkchangetypes.NetworkChange) error
+	Update(config *networkchange.NetworkChange) error
 
 	// Delete deletes a network configuration
-	Delete(config *networkchangetypes.NetworkChange) error
+	Delete(config *networkchange.NetworkChange) error
 
 	// List lists network configurations
-	List(chan<- *networkchangetypes.NetworkChange) (stream.Context, error)
+	List(chan<- *networkchange.NetworkChange) (stream.Context, error)
 
 	// Watch watches the network configuration store for changes
 	Watch(chan<- stream.Event, ...WatchOption) (stream.Context, error)
@@ -154,7 +154,7 @@ func WithReplay() WatchOption {
 }
 
 type watchIDOption struct {
-	id networkchangetypes.ID
+	id networkchange.ID
 }
 
 func (o watchIDOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
@@ -164,13 +164,13 @@ func (o watchIDOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOp
 }
 
 // WithChangeID returns a Watch option that watches for changes to the given change ID
-func WithChangeID(id networkchangetypes.ID) WatchOption {
+func WithChangeID(id networkchange.ID) WatchOption {
 	return watchIDOption{id: id}
 }
 
 // newChangeID creates a new network change ID
-func newChangeID() networkchangetypes.ID {
-	return networkchangetypes.ID(uuid.New().String())
+func newChangeID() networkchange.ID {
+	return networkchange.ID(uuid.New().String())
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
@@ -178,7 +178,7 @@ type atomixStore struct {
 	changes indexedmap.IndexedMap
 }
 
-func (s *atomixStore) Get(id networkchangetypes.ID) (*networkchangetypes.NetworkChange, error) {
+func (s *atomixStore) Get(id networkchange.ID) (*networkchange.NetworkChange, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -191,7 +191,7 @@ func (s *atomixStore) Get(id networkchangetypes.ID) (*networkchangetypes.Network
 	return decodeChange(entry)
 }
 
-func (s *atomixStore) GetByIndex(index networkchangetypes.Index) (*networkchangetypes.NetworkChange, error) {
+func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.NetworkChange, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -204,7 +204,7 @@ func (s *atomixStore) GetByIndex(index networkchangetypes.Index) (*networkchange
 	return decodeChange(entry)
 }
 
-func (s *atomixStore) GetPrev(index networkchangetypes.Index) (*networkchangetypes.NetworkChange, error) {
+func (s *atomixStore) GetPrev(index networkchange.Index) (*networkchange.NetworkChange, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -217,7 +217,7 @@ func (s *atomixStore) GetPrev(index networkchangetypes.Index) (*networkchangetyp
 	return decodeChange(entry)
 }
 
-func (s *atomixStore) GetNext(index networkchangetypes.Index) (*networkchangetypes.NetworkChange, error) {
+func (s *atomixStore) GetNext(index networkchange.Index) (*networkchange.NetworkChange, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -230,7 +230,7 @@ func (s *atomixStore) GetNext(index networkchangetypes.Index) (*networkchangetyp
 	return decodeChange(entry)
 }
 
-func (s *atomixStore) Create(change *networkchangetypes.NetworkChange) error {
+func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
 	if change.ID == "" {
 		change.ID = newChangeID()
 	}
@@ -251,14 +251,14 @@ func (s *atomixStore) Create(change *networkchangetypes.NetworkChange) error {
 		return err
 	}
 
-	change.Index = networkchangetypes.Index(entry.Index)
-	change.Revision = networkchangetypes.Revision(entry.Version)
+	change.Index = networkchange.Index(entry.Index)
+	change.Revision = networkchange.Revision(entry.Version)
 	change.Created = entry.Created
 	change.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Update(change *networkchangetypes.NetworkChange) error {
+func (s *atomixStore) Update(change *networkchange.NetworkChange) error {
 	if change.Revision == 0 {
 		return errors.New("not a stored object")
 	}
@@ -276,12 +276,12 @@ func (s *atomixStore) Update(change *networkchangetypes.NetworkChange) error {
 		return err
 	}
 
-	change.Revision = networkchangetypes.Revision(entry.Version)
+	change.Revision = networkchange.Revision(entry.Version)
 	change.Updated = entry.Updated
 	return nil
 }
 
-func (s *atomixStore) Delete(change *networkchangetypes.NetworkChange) error {
+func (s *atomixStore) Delete(change *networkchange.NetworkChange) error {
 	if change.Revision == 0 {
 		return errors.New("not a stored object")
 	}
@@ -299,7 +299,7 @@ func (s *atomixStore) Delete(change *networkchangetypes.NetworkChange) error {
 	return nil
 }
 
-func (s *atomixStore) List(ch chan<- *networkchangetypes.NetworkChange) (stream.Context, error) {
+func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) (stream.Context, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	mapCh := make(chan *indexedmap.Entry)
@@ -371,14 +371,14 @@ func (s *atomixStore) Close() error {
 	return s.changes.Close()
 }
 
-func decodeChange(entry *indexedmap.Entry) (*networkchangetypes.NetworkChange, error) {
-	change := &networkchangetypes.NetworkChange{}
+func decodeChange(entry *indexedmap.Entry) (*networkchange.NetworkChange, error) {
+	change := &networkchange.NetworkChange{}
 	if err := proto.Unmarshal(entry.Value, change); err != nil {
 		return nil, err
 	}
-	change.ID = networkchangetypes.ID(entry.Key)
-	change.Index = networkchangetypes.Index(entry.Index)
-	change.Revision = networkchangetypes.Revision(entry.Version)
+	change.ID = networkchange.ID(entry.Key)
+	change.Index = networkchange.Index(entry.Index)
+	change.Revision = networkchange.Revision(entry.Version)
 	change.Created = entry.Created
 	change.Updated = entry.Updated
 	return change, nil

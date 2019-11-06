@@ -15,8 +15,8 @@
 package manager
 
 import (
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
-	networkchangetypes "github.com/onosproject/onos-config/api/types/change/network"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
@@ -31,7 +31,7 @@ const SetConfigAlreadyApplied = "Already applied:"
 // ValidateNewNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target (Atomix Based)
 func (m *Manager) ValidateNewNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
-	deviceType devicetype.Type, updates devicechangetypes.TypedValueMap, deletes []string) error {
+	deviceType devicetype.Type, updates devicechange.TypedValueMap, deletes []string) error {
 
 	chg, err := m.ComputeNewDeviceChange(deviceName, version, deviceType, updates, deletes, "Generated for validation")
 	if err != nil {
@@ -70,14 +70,14 @@ func (m *Manager) ValidateNewNetworkConfig(deviceName devicetype.ID, version dev
 }
 
 // SetNewNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
-func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
+func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechange.TypedValueMap,
 	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info, netcfgchangename string) error {
 	//TODO evaluate need of user and add it back if need be.
 	allDeviceChanges, errChanges := m.computeNewNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 	if errChanges != nil {
 		return errChanges
 	}
-	newNetworkConfig, errNetChange := networkchangetypes.NewNetworkChange(netcfgchangename, allDeviceChanges)
+	newNetworkConfig, errNetChange := networkchange.NewNetworkChange(netcfgchangename, allDeviceChanges)
 	if errNetChange != nil {
 		return errNetChange
 	}
@@ -90,11 +90,11 @@ func (m *Manager) SetNewNetworkConfig(targetUpdates map[string]devicechangetypes
 }
 
 //computeNewNetworkConfig computes each device change
-func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechangetypes.TypedValueMap,
+func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechange.TypedValueMap,
 	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info,
-	description string) ([]*devicechangetypes.Change, error) {
+	description string) ([]*devicechange.Change, error) {
 
-	deviceChanges := make([]*devicechangetypes.Change, 0)
+	deviceChanges := make([]*devicechange.Change, 0)
 	for target, updates := range targetUpdates {
 		//FIXME this is a sequential job, not parallelized
 		version := deviceInfo[devicetype.ID(target)].Version
@@ -115,7 +115,7 @@ func (m *Manager) computeNewNetworkConfig(targetUpdates map[string]devicechanget
 		version := deviceInfo[devicetype.ID(target)].Version
 		deviceType := deviceInfo[devicetype.ID(target)].Type
 		newChange, err := m.ComputeNewDeviceChange(
-			devicetype.ID(target), version, deviceType, make(devicechangetypes.TypedValueMap), removes, description)
+			devicetype.ID(target), version, deviceType, make(devicechange.TypedValueMap), removes, description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue

@@ -229,9 +229,9 @@ func Test_WrongDevice(t *testing.T) {
 	targets["Device1"] = struct{}{}
 	//subs = append(subs, utils.MatchWildcardRegexp("/cont1a/*/leaf3c"))
 	//go listenForUpdates(changeChan, serverFake, mgr, targets, subs, resChan)
-	//config1Value05, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2c", devicechangetypes.NewTypedValueString("def"), false)
-	//config1Value09, _ := devicechangetypes.NewChangeValue("/cont1a/list2a[name=txout2]", devicechangetypes.NewTypedValueEmpty(), true)
-	//change1, _ := change.NewChange([]*devicechangetypes.ChangeValue{config1Value05, config1Value09}, "Remove txout 2")
+	//config1Value05, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2c", devicechange.NewTypedValueString("def"), false)
+	//config1Value09, _ := devicechange.NewChangeValue("/cont1a/list2a[name=txout2]", devicechange.NewTypedValueEmpty(), true)
+	//change1, _ := change.NewChange([]*devicechange.ChangeValue{config1Value05, config1Value09}, "Remove txout 2")
 	//changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
 	select {
 	case response = <-responsesChan:
@@ -271,9 +271,9 @@ func Test_WrongPath(t *testing.T) {
 	//subsStr := make([]*regexp.Regexp, 0)
 	//subsStr = append(subsStr, utils.MatchWildcardRegexp(subscriptionPathStr))
 	//go listenForUpdates(changeChan, serverFake, mgr, targets, subsStr, resChan)
-	//config1Value05, _ := devicechangetypes.NewChangeValue("/test1:cont1a/cont2a/leaf2c", devicechangetypes.NewTypedValueString("def"), false)
-	//config1Value09, _ := devicechangetypes.NewChangeValue("/test1:cont1a/list2a[name=txout2]", devicechangetypes.NewTypedValueEmpty(), true)
-	//change1, _ := change.NewChange([]*devicechangetypes.ChangeValue{config1Value05, config1Value09}, "Remove txout 2")
+	//config1Value05, _ := devicechange.NewChangeValue("/test1:cont1a/cont2a/leaf2c", devicechange.NewTypedValueString("def"), false)
+	//config1Value09, _ := devicechange.NewChangeValue("/test1:cont1a/list2a[name=txout2]", devicechange.NewTypedValueEmpty(), true)
+	//change1, _ := change.NewChange([]*devicechange.ChangeValue{config1Value05, config1Value09}, "Remove txout 2")
 	//changeChan <- events.NewConfigEvent("Device1", change1.ID, true)
 	select {
 	case response = <-responsesChan:

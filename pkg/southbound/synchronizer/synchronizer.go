@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
@@ -45,7 +45,7 @@ type Synchronizer struct {
 	key                  devicetopo.ID
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
-	operationalCache     devicechangetypes.TypedValueMap
+	operationalCache     devicechange.TypedValueMap
 	encoding             gnmi.Encoding
 	getStateMode         modelregistry.GetStateMode
 }
@@ -53,7 +53,7 @@ type Synchronizer struct {
 // New Build a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context,
 	device *devicetopo.Device, opStateChan chan<- events.OperationalStateEvent,
-	errChan chan<- events.DeviceResponse, opStateCache devicechangetypes.TypedValueMap,
+	errChan chan<- events.DeviceResponse, opStateCache devicechange.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
@@ -319,7 +319,7 @@ func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 	}
 }
 
-func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechangetypes.PathValue, error) {
+func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechange.PathValue, error) {
 	jsonVal := update.Val.GetJsonVal()
 	if jsonVal == nil {
 		jsonVal = update.Val.GetJsonIetfVal()

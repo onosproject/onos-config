@@ -15,7 +15,7 @@
 package modelregistry
 
 import (
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	td2 "github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
 	"github.com/openconfig/goyang/pkg/yang"
 	"gotest.tools/assert"
@@ -46,7 +46,7 @@ func Test_SchemaTestDevice2(t *testing.T) {
 	assert.Equal(t, len(leaf2c), 1, "expected /cont1a/cont2a/leaf2c to have only 1 subpath")
 	leaf2cVt, leaf2cVtOk := leaf2c["/"]
 	assert.Assert(t, leaf2cVtOk, "expected /cont1a/cont2a/leaf2c to have subpath /")
-	assert.Equal(t, leaf2cVt.Datatype, devicechangetypes.ValueType_STRING)
+	assert.Equal(t, leaf2cVt.Datatype, devicechange.ValueType_STRING)
 
 	cont1b, cont1bOk := readOnlyPathsTestDevice2["/cont1b-state"]
 	assert.Assert(t, cont1bOk, "expected to get /cont1b-state")
@@ -54,15 +54,15 @@ func Test_SchemaTestDevice2(t *testing.T) {
 
 	cont1bVt, cont1bVtOk := cont1b["/leaf2d"]
 	assert.Assert(t, cont1bVtOk, "expected /cont1b-state to have subpath /leaf2d")
-	assert.Equal(t, cont1bVt.Datatype, devicechangetypes.ValueType_UINT)
+	assert.Equal(t, cont1bVt.Datatype, devicechange.ValueType_UINT)
 
 	l2bIdxVt, l2bIdxVtOk := cont1b["/list2b[index=*]/index"]
 	assert.Assert(t, l2bIdxVtOk, "expected /cont1b-state to have subpath /list2b[index[*]/index")
-	assert.Equal(t, l2bIdxVt.Datatype, devicechangetypes.ValueType_UINT)
+	assert.Equal(t, l2bIdxVt.Datatype, devicechange.ValueType_UINT)
 
 	l2bLeaf3cVt, l2bLeaf3cVtOk := cont1b["/list2b[index=*]/leaf3c"]
 	assert.Assert(t, l2bLeaf3cVtOk, "expected /cont1b-state to have subpath /list2b[index[*]/leaf3c")
-	assert.Equal(t, l2bLeaf3cVt.Datatype, devicechangetypes.ValueType_STRING)
+	assert.Equal(t, l2bLeaf3cVt.Datatype, devicechange.ValueType_STRING)
 
 	////////////////////////////////////////////////////
 	/// Read write paths
@@ -93,46 +93,46 @@ func Test_SchemaTestDevice2(t *testing.T) {
 
 	list2aName, list2aNameOk := readWritePathsTestDevice2["/cont1a/list2a[name=*]/name"]
 	assert.Assert(t, list2aNameOk, "expected to get /cont1a/list2a[name=*]/name")
-	assert.Equal(t, list2aName.ValueType, devicechangetypes.ValueType_STRING, "expected /cont1a/list2a[name=*]/name to be STRING")
+	assert.Equal(t, list2aName.ValueType, devicechange.ValueType_STRING, "expected /cont1a/list2a[name=*]/name to be STRING")
 
 	list2aTxp, list2aTxpOk := readWritePathsTestDevice2["/cont1a/list2a[name=*]/tx-power"]
 	assert.Assert(t, list2aTxpOk, "expected to get /cont1a/list2a[name=*]/tx-power")
-	assert.Equal(t, list2aTxp.ValueType, devicechangetypes.ValueType_UINT, "expected /cont1a/list2a[name=*]/tx-power to be UINT")
+	assert.Equal(t, list2aTxp.ValueType, devicechange.ValueType_UINT, "expected /cont1a/list2a[name=*]/tx-power to be UINT")
 
 	list2aRxp, list2aRxpOk := readWritePathsTestDevice2["/cont1a/list2a[name=*]/rx-power"]
 	assert.Assert(t, list2aRxpOk, "expected to get /cont1a/list2a[name=*]/rx-power")
-	assert.Equal(t, list2aRxp.ValueType, devicechangetypes.ValueType_UINT, "expected /cont1a/list2a[name=*]/rx-power to be UINT")
+	assert.Equal(t, list2aRxp.ValueType, devicechange.ValueType_UINT, "expected /cont1a/list2a[name=*]/rx-power to be UINT")
 
 	leaf1a, leaf1aOk := readWritePathsTestDevice2["/cont1a/leaf1a"]
 	assert.Assert(t, leaf1aOk, "expected to get /cont1a/leaf1a")
-	assert.Equal(t, leaf1a.ValueType, devicechangetypes.ValueType_STRING, "expected /cont1a/leaf1a to be STRING")
+	assert.Equal(t, leaf1a.ValueType, devicechange.ValueType_STRING, "expected /cont1a/leaf1a to be STRING")
 
 	leaf2a, leaf2aOk := readWritePathsTestDevice2["/cont1a/cont2a/leaf2a"]
 	assert.Assert(t, leaf2aOk, "expected to get /cont1a/cont2a/leaf2a")
-	assert.Equal(t, leaf2a.ValueType, devicechangetypes.ValueType_UINT, "expected /cont1a/cont2a/leaf2a to be UINT")
+	assert.Equal(t, leaf2a.ValueType, devicechange.ValueType_UINT, "expected /cont1a/cont2a/leaf2a to be UINT")
 
 	leaf2b, leaf2bOk := readWritePathsTestDevice2["/cont1a/cont2a/leaf2b"]
 	assert.Assert(t, leaf2bOk, "expected to get /cont1a/cont2a/leaf2b")
-	assert.Equal(t, leaf2b.ValueType, devicechangetypes.ValueType_DECIMAL, "expected /cont1a/cont2a/leaf2b to be DECIMAL")
+	assert.Equal(t, leaf2b.ValueType, devicechange.ValueType_DECIMAL, "expected /cont1a/cont2a/leaf2b to be DECIMAL")
 
 	leaf2d, leaf2dOk := readWritePathsTestDevice2["/cont1a/cont2a/leaf2d"]
 	assert.Assert(t, leaf2dOk, "expected to get /cont1a/cont2a/leaf2d")
-	assert.Equal(t, leaf2d.ValueType, devicechangetypes.ValueType_DECIMAL, "expected /cont1a/cont2a/leaf2d to be DECIMAL")
+	assert.Equal(t, leaf2d.ValueType, devicechange.ValueType_DECIMAL, "expected /cont1a/cont2a/leaf2d to be DECIMAL")
 
 	leaf2e, leaf2eOk := readWritePathsTestDevice2["/cont1a/cont2a/leaf2e"]
 	assert.Assert(t, leaf2eOk, "expected to get /cont1a/cont2a/leaf2e")
-	assert.Equal(t, leaf2e.ValueType, devicechangetypes.ValueType_LEAFLIST_INT, "expected /cont1a/cont2a/leaf2d to be Leaf List INT")
+	assert.Equal(t, leaf2e.ValueType, devicechange.ValueType_LEAFLIST_INT, "expected /cont1a/cont2a/leaf2d to be Leaf List INT")
 
 	leaf2f, leaf2fOk := readWritePathsTestDevice2["/cont1a/cont2a/leaf2f"]
 	assert.Assert(t, leaf2fOk, "expected to get /cont1a/cont2a/leaf2f")
-	assert.Equal(t, leaf2f.ValueType, devicechangetypes.ValueType_BYTES, "expected /cont1a/cont2a/leaf2f to be BYTES")
+	assert.Equal(t, leaf2f.ValueType, devicechange.ValueType_BYTES, "expected /cont1a/cont2a/leaf2f to be BYTES")
 
 	leaf2g, leaf2gOk := readWritePathsTestDevice2["/cont1a/cont2a/leaf2g"]
 	assert.Assert(t, leaf2gOk, "expected to get /cont1a/cont2a/leaf2g")
-	assert.Equal(t, leaf2g.ValueType, devicechangetypes.ValueType_BOOL, "expected /cont1a/cont2a/leaf2g to be BOOL")
+	assert.Equal(t, leaf2g.ValueType, devicechange.ValueType_BOOL, "expected /cont1a/cont2a/leaf2g to be BOOL")
 
 	leafTopLevel, leafTopLevelOk := readWritePathsTestDevice2["/leafAtTopLevel"]
 	assert.Assert(t, leafTopLevelOk, "expected to get /leafAtTopLevel")
-	assert.Equal(t, leafTopLevel.ValueType, devicechangetypes.ValueType_STRING, "expected /leafAtTopLevel to be STRING")
+	assert.Equal(t, leafTopLevel.ValueType, devicechange.ValueType_STRING, "expected /leafAtTopLevel to be STRING")
 
 }

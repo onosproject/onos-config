@@ -17,15 +17,15 @@ package store
 import (
 	"encoding/json"
 	"fmt"
-	devicechangetypes "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 )
 
 // DecomposeTree breaks a JSON file down in to paths and values without any external
-// context - a second stage is required to align these paths to the specific devicechangetypes
+// context - a second stage is required to align these paths to the specific devicechange
 // got from the Read Only paths of the Model. Also the second stage is necessary
 // resolve list indices, and leaf lists. This second stage is done in the model
 // registry to avoid circular dependencies here.
-func DecomposeTree(genericJSON []byte) ([]*devicechangetypes.PathValue, error) {
+func DecomposeTree(genericJSON []byte) ([]*devicechange.PathValue, error) {
 	var f interface{}
 	err := json.Unmarshal(genericJSON, &f)
 	if err != nil {
@@ -37,10 +37,10 @@ func DecomposeTree(genericJSON []byte) ([]*devicechangetypes.PathValue, error) {
 
 // extractValuesIntermediate recursively walks a JSON tree to create a flat set
 // of paths and values.
-// Note: it is not possible to find indices of lists and accurate devicechangetypes directly
+// Note: it is not possible to find indices of lists and accurate devicechange directly
 // from json - for that the RO Paths must be consulted
-func extractValuesIntermediate(f interface{}, parentPath string) []*devicechangetypes.PathValue {
-	changes := make([]*devicechangetypes.PathValue, 0)
+func extractValuesIntermediate(f interface{}, parentPath string) []*devicechange.PathValue {
+	changes := make([]*devicechange.PathValue, 0)
 
 	switch value := f.(type) {
 	case map[string]interface{}:
@@ -55,13 +55,13 @@ func extractValuesIntermediate(f interface{}, parentPath string) []*devicechange
 			changes = append(changes, objs...)
 		}
 	case string:
-		newCv := devicechangetypes.PathValue{Path: parentPath, Value: devicechangetypes.NewTypedValueString(value)}
+		newCv := devicechange.PathValue{Path: parentPath, Value: devicechange.NewTypedValueString(value)}
 		changes = append(changes, &newCv)
 	case bool:
-		newCv := devicechangetypes.PathValue{Path: parentPath, Value: devicechangetypes.NewTypedValueBool(value)}
+		newCv := devicechange.PathValue{Path: parentPath, Value: devicechange.NewTypedValueBool(value)}
 		changes = append(changes, &newCv)
 	case float64:
-		newCv := devicechangetypes.PathValue{Path: parentPath, Value: devicechangetypes.NewTypedValueFloat(float32(value))}
+		newCv := devicechange.PathValue{Path: parentPath, Value: devicechange.NewTypedValueFloat(float32(value))}
 		changes = append(changes, &newCv)
 	default:
 		fmt.Println("Unexpected type", value)
