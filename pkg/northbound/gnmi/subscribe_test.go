@@ -79,18 +79,18 @@ func (x gNMISubscribeServerPollFake) Recv() (*gnmi.SubscribeRequest, error) {
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
 func Test_SubscribeLeafOnce(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
+	server, mgr, mocks := setUp(t)
 
-	setUpChangesMock(mockStores.DeviceChangesStore)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	setUpChangesMock(mocks)
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -129,16 +129,16 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with updates for that path
 func Test_SubscribeLeafStream(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	server, mgr, mocks := setUp(t)
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mocks.MockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -201,8 +201,8 @@ func Test_SubscribeLeafStream(t *testing.T) {
 // Deprecated port to new
 func Test_WrongDevice(t *testing.T) {
 	t.Skip()
-	_, _, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	_, _, mocks := setUp(t)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -244,8 +244,8 @@ func Test_WrongDevice(t *testing.T) {
 
 func Test_WrongPath(t *testing.T) {
 	t.Skip("TODO - hangs, needs to be ported to new listening mechanism")
-	_, _, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	_, _, mocks := setUp(t)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	path, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf4a"})
 
@@ -285,8 +285,8 @@ func Test_WrongPath(t *testing.T) {
 }
 
 func Test_ErrorDoubleSubscription(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	server, mgr, mocks := setUp(t)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
 
@@ -324,16 +324,16 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 }
 
 func Test_Poll(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	server, mgr, mocks := setUp(t)
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	setUpChangesMock(mockStores.DeviceChangesStore)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	setUpChangesMock(mocks)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -393,17 +393,17 @@ func Test_Poll(t *testing.T) {
 
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with delete paths
 func Test_SubscribeLeafStreamDelete(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	server, mgr, mocks := setUp(t)
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
-	setUpChangesMock(mockStores.DeviceChangesStore)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mocks.MockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
+	setUpChangesMock(mocks)
 
 	var wg sync.WaitGroup
 	defer tearDown(mgr, &wg)
@@ -464,7 +464,7 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 // Test_SubscribeLeafStreamWithDeviceLoaded tests subscribing with mode STREAM for an existing device
 // and then issuing a set request with updates for that path
 func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
-	server, mgr, mockStores := setUp(t)
+	server, mgr, mocks := setUp(t)
 
 	targetStr := "Device1"
 	target := devicetopo.ID(targetStr)
@@ -472,16 +472,16 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 		ID: target,
 	}
 
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
 			Type:     "Stratum",
 		},
 	}).AnyTimes()
-	mockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil).AnyTimes()
-	mockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
-	setUpChangesMock(mockStores.DeviceChangesStore)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil).AnyTimes()
+	mocks.MockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
+	setUpChangesMock(mocks)
 
 	//configChan, respChan, err := mgr.Dispatcher.RegisterDevice(target)
 

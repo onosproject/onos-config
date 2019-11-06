@@ -40,6 +40,13 @@ import (
 	"time"
 )
 
+// AllMocks is a place to hold references to mock stores and caches. It can't be put into test/mocks/store
+// because of circular dependencies.
+type AllMocks struct {
+	MockStores      *mockstore.MockStores
+	MockDeviceCache *devicestore.MockCache
+}
+
 // TestMain should only contain static data.
 // It is run once for all tests - each test is then run on its own thread, so if
 // anything is shared the order of it's modification is not deterministic
@@ -47,17 +54,6 @@ import (
 func TestMain(m *testing.M) {
 	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
-}
-
-type MockStores struct {
-	DeviceStore          *mockstore.MockDeviceStore
-	DeviceCache          *devicestore.MockCache
-	NetworkChangesStore  *mockstore.MockNetworkChangesStore
-	DeviceChangesStore   *mockstore.MockDeviceChangesStore
-	NetworkSnapshotStore *mockstore.MockNetworkSnapshotStore
-	DeviceSnapshotStore  *mockstore.MockDeviceSnapshotStore
-	LeadershipStore      *mockstore.MockLeadershipStore
-	MastershipStore      *mockstore.MockMastershipStore
 }
 
 type MockModelPlugin struct {
@@ -84,7 +80,7 @@ func (m MockModelPlugin) GetStateMode() int {
 	panic("implement me")
 }
 
-func setUpWatchMock(mockStores *MockStores) {
+func setUpWatchMock(mocks *AllMocks) {
 	now := time.Now()
 	watchChange := network.NetworkChange{
 		ID:       "",
@@ -131,7 +127,7 @@ func setUpWatchMock(mockStores *MockStores) {
 		},
 	}
 
-	mockStores.NetworkChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
+	mocks.MockStores.NetworkChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
 			go func() {
 				c <- stream.Event{Object: &watchChange}
@@ -142,7 +138,7 @@ func setUpWatchMock(mockStores *MockStores) {
 			}), nil
 		}).AnyTimes()
 
-	mockStores.DeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
+	mocks.MockStores.DeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(deviceId devicetype.VersionedID, c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
 			go func() {
 				c <- stream.Event{Object: &deviceChange}
@@ -154,8 +150,8 @@ func setUpWatchMock(mockStores *MockStores) {
 		}).AnyTimes()
 }
 
-func setUpListMock(stores *MockStores) {
-	stores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+func setUpListMock(mocks *AllMocks) {
+	mocks.MockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(device devicetype.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 			go func() {
 				close(c)
@@ -166,7 +162,7 @@ func setUpListMock(stores *MockStores) {
 		}).AnyTimes()
 }
 
-func setUpChangesMock(mockChangeStore *mockstore.MockDeviceChangesStore) {
+func setUpChangesMock(mocks *AllMocks) {
 	configValue01, _ := devicechangetypes.NewChangeValue("/cont1a/cont2a/leaf2a", devicechangetypes.NewTypedValueUint64(13), false)
 
 	change1 := devicechangetypes.Change{
@@ -186,7 +182,7 @@ func setUpChangesMock(mockChangeStore *mockstore.MockDeviceChangesStore) {
 			Message: "",
 		},
 	}
-	mockChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+	mocks.MockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(device devicetype.VersionedID, c chan<- *devicechangetypes.DeviceChange) (stream.Context, error) {
 			go func() {
 				c <- deviceChange1
@@ -199,13 +195,13 @@ func setUpChangesMock(mockChangeStore *mockstore.MockDeviceChangesStore) {
 }
 
 // setUp should not depend on any global variables
-func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
+func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 	var server = &Server{}
+	var allMocks AllMocks
 
 	ctrl := gomock.NewController(t)
-	mockStores := MockStores{
+	mockStores := &mockstore.MockStores{
 		DeviceStore:          mockstore.NewMockDeviceStore(ctrl),
-		DeviceCache:          devicestore.NewMockCache(ctrl),
 		NetworkChangesStore:  mockstore.NewMockNetworkChangesStore(ctrl),
 		DeviceChangesStore:   mockstore.NewMockDeviceChangesStore(ctrl),
 		NetworkSnapshotStore: mockstore.NewMockNetworkSnapshotStore(ctrl),
@@ -213,12 +209,15 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 		LeadershipStore:      mockstore.NewMockLeadershipStore(ctrl),
 		MastershipStore:      mockstore.NewMockMastershipStore(ctrl),
 	}
+	deviceCache := devicestore.NewMockCache(ctrl)
+	allMocks.MockStores = mockStores
+	allMocks.MockDeviceCache = deviceCache
 
 	mgr, err := manager.LoadManager(
 		mockStores.LeadershipStore,
 		mockStores.MastershipStore,
 		mockStores.DeviceChangesStore,
-		mockStores.DeviceCache,
+		deviceCache,
 		mockStores.NetworkChangesStore,
 		mockStores.NetworkSnapshotStore,
 		mockStores.DeviceSnapshotStore)
@@ -235,10 +234,10 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *MockStores) {
 	go listenToTopoLoading(mgr.TopoChannel)
 	//go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
-	setUpWatchMock(&mockStores)
+	setUpWatchMock(&allMocks)
 	log.Info("Finished setUp()")
 
-	return server, mgr, &mockStores
+	return server, mgr, &allMocks
 }
 
 func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
@@ -263,8 +262,8 @@ func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
 	_ = store.Create(networkChange1)
 }
 
-func setUpBaseDevices(mockStores *MockStores) {
-	mockStores.DeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*devicestore.Info{
+func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *devicestore.MockCache) {
+	deviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*devicestore.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
@@ -296,11 +295,11 @@ func setUpBaseDevices(mockStores *MockStores) {
 }
 
 func setUpForGetSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*gnmi.Update) {
-	server, mgr, mockStores := setUp(t)
-	mockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
-	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
-	setUpBaseNetworkStore(mockStores.NetworkChangesStore)
-	setUpBaseDevices(mockStores)
+	server, mgr, allMocks := setUp(t)
+	allMocks.MockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
+	mgr.NetworkChangesStore = allMocks.MockStores.NetworkChangesStore
+	setUpBaseNetworkStore(allMocks.MockStores.NetworkChangesStore)
+	setUpBaseDevices(allMocks.MockStores, allMocks.MockDeviceCache)
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
