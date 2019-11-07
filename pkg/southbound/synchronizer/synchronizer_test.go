@@ -57,11 +57,17 @@ const (
 	gnmiVer070         = "0.7.0"
 )
 
-func synchronizerSetUp() (chan topodevice.ListResponse, chan events.OperationalStateEvent,
-	chan events.DeviceResponse, *dispatcher.Dispatcher,
-	*modelregistry.ModelRegistry, modelregistry.ReadOnlyPathMap,
-	devicechange.TypedValueMap, error) {
+type synchronizerParameters struct {
+	topoChan     chan topodevice.ListResponse
+	opstateChan  chan events.OperationalStateEvent
+	responseChan chan events.DeviceResponse
+	dispatcher   *dispatcher.Dispatcher
+	models       *modelregistry.ModelRegistry
+	roPathMap    modelregistry.ReadOnlyPathMap
+	opstateCache devicechange.TypedValueMap
+}
 
+func synchronizerSetUp() (synchronizerParameters, error) {
 	dispatcher := dispatcher.NewDispatcher()
 	mr := new(modelregistry.ModelRegistry)
 	opStateCache := make(devicechange.TypedValueMap)
@@ -74,11 +80,16 @@ func synchronizerSetUp() (chan topodevice.ListResponse, chan events.OperationalS
 	roSubPath2[leaf2d] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
 	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
 	roPathMap[cont1bState] = roSubPath2
-	return make(chan topodevice.ListResponse),
-		make(chan events.OperationalStateEvent),
-		make(chan events.DeviceResponse),
-		dispatcher, mr, roPathMap, opStateCache,
-		nil
+
+	return synchronizerParameters{
+		topoChan:     make(chan topodevice.ListResponse),
+		opstateChan:  make(chan events.OperationalStateEvent),
+		responseChan: make(chan events.DeviceResponse),
+		dispatcher:   dispatcher,
+		models:       mr,
+		roPathMap:    roPathMap,
+		opstateCache: opStateCache,
+	}, nil
 }
 
 /**
@@ -89,17 +100,21 @@ func synchronizerSetUp() (chan topodevice.ListResponse, chan events.OperationalS
  * getting the OpState attributes
  */
 func TestNew(t *testing.T) {
-	topoChan, opstateChan, responseChan, dispatcher, models, roPathMap, opstateCache, err := synchronizerSetUp()
+	params, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
-	assert.Assert(t, topoChan != nil)
-	assert.Assert(t, opstateChan != nil)
-	assert.Assert(t, responseChan != nil)
-	assert.Assert(t, dispatcher != nil)
-	assert.Assert(t, models != nil)
-	assert.Assert(t, roPathMap != nil)
-	assert.Assert(t, opstateCache != nil)
+	assert.Assert(t, params.topoChan != nil)
+	assert.Assert(t, params.opstateChan != nil)
+	assert.Assert(t, params.responseChan != nil)
+	assert.Assert(t, params.dispatcher != nil)
+	assert.Assert(t, params.models != nil)
+	assert.Assert(t, params.roPathMap != nil)
+	assert.Assert(t, params.opstateCache != nil)
 
-	_, textValue, _, _ := setUpStatePaths(t)
+	statePath, textValue, opPath, opValue := setUpStatePaths(t)
+	assert.Assert(t, statePath != nil)
+	assert.Assert(t, textValue != nil)
+	assert.Assert(t, opPath != nil)
+	assert.Assert(t, opValue != nil)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -141,7 +156,7 @@ func TestNew(t *testing.T) {
 
 	go func() {
 		// Handles any errors coming back from functions
-		for resp := range responseChan {
+		for resp := range params.responseChan {
 			assert.NilError(t, resp.Error(), "Expecting no error response")
 			// If all is running cleanly we should only get a response after Set
 			assert.Assert(t, strings.Contains(resp.Response(), `<path:<elem:<name:"cont1a" > elem:<name:"cont2a" >`))
@@ -149,7 +164,7 @@ func TestNew(t *testing.T) {
 	}()
 
 	s, err := New(context2.Background(), &mockDevice1,
-		opstateChan, responseChan, opstateCache, roPathMap, mockTarget,
+		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
 		modelregistry.GetStateExplicitRoPaths)
 	assert.NilError(t, err, "Creating s")
 	assert.Equal(t, string(s.ID), mock1NameStr)
@@ -163,7 +178,7 @@ func TestNew(t *testing.T) {
 
 	// Listen for OpState updates
 	go func() {
-		for o := range opstateChan {
+		for o := range params.opstateChan {
 			fmt.Println("OpState cache subscribe event received", o.Path(), o.EventType(), o.ItemAction())
 			assert.Equal(t, o.Subject(), mock1NameStr)
 		}
@@ -202,22 +217,22 @@ func TestNew(t *testing.T) {
 	).Return(nil).MinTimes(1)
 
 	// Called asynchronously as after building up the opStateCache it subscribes and waits
-	go s.syncOperationalStateByPaths(context2.Background(), mockTarget, responseChan)
+	go s.syncOperationalStateByPaths(context2.Background(), mockTarget, params.responseChan)
 
 	time.Sleep(200 * time.Millisecond) // Wait for response message
-	os1, ok := opstateCache[cont1bState+leaf2d]
+	os1, ok := params.opstateCache[cont1bState+leaf2d]
 	assert.Assert(t, ok, "Retrieving 1st path from Op State cache")
 	assert.Equal(t, os1.Type, devicechange.ValueType_UINT)
 	assert.Equal(t, os1.ValueToString(), "10001")
-	os2, ok := opstateCache[cont1aCont2aLeaf2c]
+	os2, ok := params.opstateCache[cont1aCont2aLeaf2c]
 	assert.Assert(t, ok, "Retrieving 2nd path from Op State cache")
 	assert.Equal(t, os2.Type, devicechange.ValueType_STRING)
 	assert.Equal(t, os2.ValueToString(), "Mock leaf2c value")
-	os3, ok := opstateCache[cont1bState+list2b100Leaf3c]
+	os3, ok := params.opstateCache[cont1bState+list2b100Leaf3c]
 	assert.Assert(t, ok, "Retrieving 3rd path from Op State cache")
 	assert.Equal(t, os3.Type, devicechange.ValueType_STRING)
 	assert.Equal(t, os3.ValueToString(), "mock Value in JSON")
-	os4, ok := opstateCache[cont1bState+list2b101Leaf3c]
+	os4, ok := params.opstateCache[cont1bState+list2b101Leaf3c]
 	assert.Assert(t, ok, "Retrieving 4th path from Op State cache")
 	assert.Equal(t, os4.Type, devicechange.ValueType_STRING)
 	assert.Equal(t, os4.ValueToString(), "Second mock Value")
@@ -312,7 +327,7 @@ func setUpStatePaths(t *testing.T) (*gnmi.Path, *gnmi.TypedValue, *gnmi.Path, *g
  * Also in this case we test the GetState_OpState for getting the OpState attribs
  */
 func TestNewWithExistingConfig(t *testing.T) {
-	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, err := synchronizerSetUp()
+	params, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
@@ -411,14 +426,14 @@ func TestNewWithExistingConfig(t *testing.T) {
 
 	go func() {
 		// Handles any errors coming back from functions
-		for resp := range responseChan {
+		for resp := range params.responseChan {
 			assert.NilError(t, resp.Error(), "Expecting no error response")
 			assert.Assert(t, strings.Contains(resp.Response(), `<path:<elem:<name:"cont1a" > elem:<name:"cont2a" >`))
 		}
 	}()
 
 	s, err := New(context2.Background(), device1,
-		opstateChan, responseChan, opstateCache, roPathMap, mockTarget, modelregistry.GetStateOpState)
+		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget, modelregistry.GetStateOpState)
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
 	assert.Equal(t, s.Device.ID, device1.ID)
@@ -434,14 +449,14 @@ func TestNewWithExistingConfig(t *testing.T) {
 
 	// Listen for OpState updates
 	go func() {
-		for o := range opstateChan {
+		for o := range params.opstateChan {
 			fmt.Println("OpState cache subscribe event received", o.Path(), o.EventType(), o.ItemAction())
 			assert.Equal(t, o.Subject(), string("Device1"))
 		}
 	}()
 
 	// Called asynchronously as after building up the opStateCache it subscribes and waits
-	go s.syncOperationalStateByPartition(context2.Background(), mockTarget, responseChan)
+	go s.syncOperationalStateByPartition(context2.Background(), mockTarget, params.responseChan)
 	subscribeResp1 := gnmi.SubscribeResponse_Update{
 		Update: &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
@@ -510,7 +525,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 }
 
 func TestNewWithExistingConfigError(t *testing.T) {
-	_, opstateChan, responseChan, _, _, roPathMap, opstateCache, err := synchronizerSetUp()
+	params, err := synchronizerSetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
@@ -531,13 +546,13 @@ func TestNewWithExistingConfigError(t *testing.T) {
 	).Return(nil, status.Errorf(codes.Internal, "test, desc = error generated by mock"))
 
 	go func() {
-		for resp := range responseChan {
+		for resp := range params.responseChan {
 			assert.ErrorContains(t, resp.Error(), "error generated by mock")
 		}
 	}()
 
 	s, err := New(context2.Background(), device1,
-		opstateChan, responseChan, opstateCache, roPathMap, mockTarget, modelregistry.GetStateOpState)
+		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget, modelregistry.GetStateOpState)
 
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)

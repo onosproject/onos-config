@@ -6,6 +6,7 @@ linters:
     - misspell
     - typecheck
     - errcheck
+    - dogsled
 run:
   skip-dirs:
     - modelplugin

@@ -293,16 +293,20 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *devicestore
 		}).AnyTimes()
 }
 
-func setUpForGetSetTests(t *testing.T) (*Server, []*gnmi.Path, []*gnmi.Update, []*gnmi.Update, *AllMocks) {
+func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks) {
 	server, mgr, allMocks := setUp(t)
 	allMocks.MockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
 	mgr.NetworkChangesStore = allMocks.MockStores.NetworkChangesStore
 	setUpBaseNetworkStore(allMocks.MockStores.NetworkChangesStore)
 	setUpBaseDevices(allMocks.MockStores, allMocks.MockDeviceCache)
+	return server, allMocks
+}
+
+func setUpPathsForGetSetTests() ([]*gnmi.Path, []*gnmi.Update, []*gnmi.Update) {
 	var deletePaths = make([]*gnmi.Path, 0)
 	var replacedPaths = make([]*gnmi.Update, 0)
 	var updatedPaths = make([]*gnmi.Update, 0)
-	return server, deletePaths, replacedPaths, updatedPaths, allMocks
+	return deletePaths, replacedPaths, updatedPaths
 }
 
 func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
