@@ -39,7 +39,7 @@ func (m modelPluginTestDevice) UnmarshalConfigValues(jsonTree []byte) (*ygot.Val
 	device := &td1.Device{}
 	vgs := ygot.ValidatedGoStruct(device)
 
-	if err := td1.Unmarshal([]byte(jsonTree), device); err != nil {
+	if err := td1.Unmarshal(jsonTree, device); err != nil {
 		return nil, err
 	}
 

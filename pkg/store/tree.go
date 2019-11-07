@@ -134,7 +134,7 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 		elemMap, ok := (nodemap)[pathelems[0]]
 		if !ok {
 			elemMap = make(map[string]interface{})
-			elemIf := interface{}(elemMap)
+			elemIf := elemMap
 
 			err := addPathToTree(refinePath, value, &elemIf, floatAsStr)
 			if err != nil {

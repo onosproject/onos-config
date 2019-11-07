@@ -127,7 +127,7 @@ func (w *DeviceWatcher) watchDevice(deviceID device.VersionedID, ch chan<- types
 	w.wg.Add(1)
 	go func() {
 		for event := range deviceCh {
-			ch <- types.ID(event.Object.(*devicechange.DeviceChange).NetworkChange.ID)
+			ch <- event.Object.(*devicechange.DeviceChange).NetworkChange.ID
 		}
 		w.wg.Done()
 	}()

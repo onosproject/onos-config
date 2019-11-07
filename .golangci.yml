@@ -7,6 +7,7 @@ linters:
     - typecheck
     - errcheck
     - dogsled
+    - unconvert
 run:
   skip-dirs:
     - modelplugin

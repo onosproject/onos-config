@@ -122,7 +122,7 @@ func setUp(t *testing.T) {
 
 	timeout := 10 * time.Second
 	device = topodevice.Device{
-		ID:      topodevice.ID("localhost-1"),
+		ID:      "localhost-1",
 		Address: "localhost:10161",
 		Version: "1.0.0",
 		Credentials: topodevice.Credentials{
@@ -411,7 +411,7 @@ func Test_SetWithString(t *testing.T) {
 	target, _, ctx := getDevice1Target(t)
 
 	request := "delete: <elem: <name: 'system'> elem:<name:'config'> elem: <name: 'hostname'>>"
-	setResponse, setErr := target.SetWithString(ctx, string(request))
+	setResponse, setErr := target.SetWithString(ctx, request)
 
 	assert.NilError(t, setErr)
 	assert.Assert(t, setResponse != nil)

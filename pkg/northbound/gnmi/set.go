@@ -263,7 +263,7 @@ func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
 		// Iterate through configs to find match for target
 		for _, info := range infos {
 			rwPaths, ok = manager.GetManager().ModelRegistry.
-				ModelReadWritePaths[utils.ToModelName(devicetype.Type(info.Type), devicetype.Version(info.Version))]
+				ModelReadWritePaths[utils.ToModelName(info.Type, info.Version)]
 			if ok {
 				break
 			}

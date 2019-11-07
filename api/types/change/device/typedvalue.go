@@ -892,7 +892,7 @@ func NewLeafListBytes(values [][]byte) *TypedLeafListBytes {
 	bytes := make([]byte, 0)
 	typeopts := make([]int32, 0)
 	for _, v := range values {
-		bytes = append(bytes, []byte(v)...)
+		bytes = append(bytes, v...)
 		typeopts = append(typeopts, int32(len(v)))
 	}
 	typedLeafListBytes := TypedLeafListBytes{
