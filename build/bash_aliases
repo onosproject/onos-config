@@ -54,6 +54,13 @@ function goPackages {
     find . -name '*.go' -exec dirname {} \; | sort -u | sed "s:^\.:github.com/onosproject/$(basename $PWD):g"
 }
 
+# Registers go packages with godoc.
+function godocPackages {
+    find . -name '*.go' -exec dirname {} \; | sort -u \
+        | sed "s:^\.:curl -sS --fail https\://godoc.org/github.com/onosproject/$(basename $PWD):g;s:\$: >/dev/null:g" \
+        | bash
+}
+
 export ONOS_REPOS="onos-topo onos-config onos-control onos-ztp onos-cli onos-test"
 
 # Pull All Repos
