@@ -25,7 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -58,7 +58,7 @@ const (
 )
 
 type synchronizerParameters struct {
-	topoChan     chan devicetopo.ListResponse
+	topoChan     chan topodevice.ListResponse
 	opstateChan  chan events.OperationalStateEvent
 	responseChan chan events.DeviceResponse
 	dispatcher   *dispatcher.Dispatcher
@@ -82,7 +82,7 @@ func synchronizerSetUp() (synchronizerParameters, error) {
 	roPathMap[cont1bState] = roSubPath2
 
 	return synchronizerParameters{
-		topoChan:     make(chan devicetopo.ListResponse),
+		topoChan:     make(chan topodevice.ListResponse),
 		opstateChan:  make(chan events.OperationalStateEvent),
 		responseChan: make(chan events.DeviceResponse),
 		dispatcher:   dispatcher,
