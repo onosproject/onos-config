@@ -8,6 +8,8 @@ linters:
     - errcheck
     - dogsled
     - unconvert
+    - nakedret
+    - scopelint
 run:
   skip-dirs:
     - modelplugin
