@@ -26,11 +26,13 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
 	log "k8s.io/klog"
+	"sync"
 )
 
 // Dispatcher manages SB and NB configuration event listeners
 type Dispatcher struct {
-	nbiOpStateListeners map[string]chan events.OperationalStateEvent
+	nbiOpStateListenersLock sync.RWMutex
+	nbiOpStateListeners     map[string]chan events.OperationalStateEvent
 }
 
 // NewDispatcher creates and initializes a new event dispatcher
@@ -48,6 +50,8 @@ func NewDispatcher() *Dispatcher {
 func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan events.OperationalStateEvent) {
 	log.Info("Operational State Event listener initialized")
 
+	d.nbiOpStateListenersLock.RLock()
+	defer d.nbiOpStateListenersLock.RUnlock()
 	for operationalStateEvent := range operationalStateChannel {
 		for _, nbiChan := range d.nbiOpStateListeners {
 			nbiChan <- operationalStateEvent
@@ -58,6 +62,8 @@ func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan event
 // RegisterOpState is a way for nbi instances to register for
 // channel of events
 func (d *Dispatcher) RegisterOpState(subscriber string) (chan events.OperationalStateEvent, error) {
+	d.nbiOpStateListenersLock.Lock()
+	defer d.nbiOpStateListenersLock.Unlock()
 	if d.nbiOpStateListeners[subscriber] != nil {
 		return nil, fmt.Errorf("NBI operational state %s is already registered", subscriber)
 	}
@@ -68,6 +74,8 @@ func (d *Dispatcher) RegisterOpState(subscriber string) (chan events.Operational
 
 // UnregisterOperationalState closes the device channel and removes it from the deviceListeners
 func (d *Dispatcher) UnregisterOperationalState(subscriber string) {
+	d.nbiOpStateListenersLock.Lock()
+	defer d.nbiOpStateListenersLock.Unlock()
 	channel, ok := d.nbiOpStateListeners[subscriber]
 	if !ok {
 		log.Infof("Subscriber %s had not been registered", subscriber)
@@ -80,6 +88,8 @@ func (d *Dispatcher) UnregisterOperationalState(subscriber string) {
 // GetListeners returns a list of registered listeners names
 func (d *Dispatcher) GetListeners() []string {
 	listenerKeys := make([]string, 0)
+	d.nbiOpStateListenersLock.RLock()
+	defer d.nbiOpStateListenersLock.RUnlock()
 	for k := range d.nbiOpStateListeners {
 		listenerKeys = append(listenerKeys, k)
 	}
