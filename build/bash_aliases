@@ -49,6 +49,11 @@ function oklogw {
     done
 }
 
+# Lists go packages in the current project; suitable for https://go-search.org/add
+function goPackages {
+    find . -name '*.go' -exec dirname {} \; | sort -u | sed "s:^\.:github.com/onosproject/$(basename $PWD):g"
+}
+
 export ONOS_REPOS="onos-topo onos-config onos-control onos-ztp onos-cli onos-test"
 
 # Pull All Repos
