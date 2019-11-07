@@ -70,8 +70,8 @@ func Test_TypedValueEmpty(t *testing.T) {
 	tv := NewTypedValueEmpty()
 
 	assert.Equal(t, len(tv.Bytes), 0)
-	testConversion(t, (*TypedValue)(tv))
-	assert.Equal(t, (*TypedValue)(tv).ValueToString(), "")
+	testConversion(t, tv)
+	assert.Equal(t, tv.ValueToString(), "")
 
 	tv2, err := NewTypedValue([]byte{0x0, 0x0, 0x0}, ValueType_EMPTY, []int32{})
 	assert.NilError(t, err)
@@ -83,8 +83,8 @@ func Test_TypedValueString(t *testing.T) {
 	tv := NewTypedValueString(testString)
 
 	assert.Equal(t, len(tv.Bytes), 14)
-	testConversion(t, (*TypedValue)(tv))
-	assert.Equal(t, (*TypedValue)(tv).ValueToString(), testString)
+	testConversion(t, tv)
+	assert.Equal(t, tv.ValueToString(), testString)
 }
 
 func Test_TypedValueInt(t *testing.T) {
@@ -321,7 +321,7 @@ func Test_JsonSerializationInt(t *testing.T) {
 	assert.DeepEqual(t, unmarshalledTv.Bytes, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80})
 
 	uintVal := (*TypedInt64)(&unmarshalledTv).Int()
-	assert.Equal(t, uintVal, int(testNegativeInt))
+	assert.Equal(t, uintVal, testNegativeInt)
 	assert.Equal(t, unmarshalledTv.ValueToString(), "-9223372036854775808")
 }
 

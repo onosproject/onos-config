@@ -337,7 +337,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(topodevice.ID(device1.ID), nil)
+	).Return(device1.ID, nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -451,7 +451,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	go func() {
 		for o := range params.opstateChan {
 			fmt.Println("OpState cache subscribe event received", o.Path(), o.EventType(), o.ItemAction())
-			assert.Equal(t, o.Subject(), string("Device1"))
+			assert.Equal(t, o.Subject(), "Device1")
 		}
 	}()
 
@@ -533,7 +533,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(topodevice.ID(device1.ID), nil)
+	).Return(device1.ID, nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
