@@ -148,12 +148,13 @@ func CorrectJSONPaths(jsonBase string, jsonPathValues []*devicechange.PathValue,
 	indexTable := make([]indexEntry, len(indexMap))
 	i := 0
 	for path, idxElem := range indexMap {
-		sort.Slice(idxElem, func(i, j int) bool {
-			return idxElem[i] < idxElem[j]
+		key := idxElem
+		sort.Slice(key, func(i, j int) bool {
+			return key[i] < key[j]
 		})
 		indexTable[i] = indexEntry{
 			path: path,
-			key:  idxElem,
+			key:  key,
 		}
 		i++
 	}
