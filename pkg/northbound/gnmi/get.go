@@ -23,7 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -39,7 +39,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	prefix := req.GetPrefix()
 
-	disconnectedDevicesMap := make(map[devicetopo.ID]bool)
+	disconnectedDevicesMap := make(map[topodevice.ID]bool)
 
 	version, err := extractGetVersion(req)
 	if err != nil {
@@ -59,13 +59,13 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			target = prefix.GetTarget()
 		}
 		//if target is already disconnected we don't do a get again.
-		_, ok := disconnectedDevicesMap[devicetopo.ID(target)]
+		_, ok := disconnectedDevicesMap[topodevice.ID(target)]
 		if !ok {
-			_, errGet := manager.GetManager().DeviceStore.Get(devicetopo.ID(target))
+			_, errGet := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
 
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
 				log.Infof("Device is not connected %s, %s", target, errGet)
-				disconnectedDevicesMap[devicetopo.ID(path.GetTarget())] = true
+				disconnectedDevicesMap[topodevice.ID(path.GetTarget())] = true
 			} else if errGet != nil {
 				//handling gRPC errors
 				return nil, errGet
@@ -87,12 +87,12 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		}
 		target := prefix.GetTarget()
 		//if target is already disconnected we don't do a get again.
-		_, ok := disconnectedDevicesMap[devicetopo.ID(target)]
+		_, ok := disconnectedDevicesMap[topodevice.ID(target)]
 		if !ok {
-			_, errGet := manager.GetManager().DeviceStore.Get(devicetopo.ID(target))
+			_, errGet := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
 				log.Infof("Device is not connected %s, %s", target, errGet)
-				disconnectedDevicesMap[devicetopo.ID(target)] = true
+				disconnectedDevicesMap[topodevice.ID(target)] = true
 			} else if errGet != nil {
 				//handling gRPC errors
 				return nil, errGet

@@ -18,7 +18,7 @@ import (
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -27,8 +27,8 @@ import (
 type testDeviceResolver struct {
 }
 
-func (r testDeviceResolver) Resolve(id types.ID) (devicetopo.ID, error) {
-	return devicetopo.ID(id), nil
+func (r testDeviceResolver) Resolve(id types.ID) (topodevice.ID, error) {
+	return topodevice.ID(id), nil
 }
 
 func TestMastershipFilter(t *testing.T) {
@@ -51,8 +51,8 @@ func TestMastershipFilter(t *testing.T) {
 		Resolver: testDeviceResolver{},
 	}
 
-	device1 := devicetopo.ID("device1")
-	device2 := devicetopo.ID("device2")
+	device1 := topodevice.ID("device1")
+	device2 := topodevice.ID("device2")
 
 	master, err := store1.IsMaster(device1)
 	assert.NoError(t, err)

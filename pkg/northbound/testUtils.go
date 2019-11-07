@@ -23,7 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 	"sync"
@@ -58,7 +58,7 @@ func SetUpServer(port int16, service Service, waitGroup *sync.WaitGroup) *manage
 	opStateValuesDevice2["/cont1a/cont2a/leaf2c"] = devicechange.NewTypedValueString("test1")
 	opStateValuesDevice2["/cont1b-state/leaf2d"] = devicechange.NewTypedValueUint64(12345)
 
-	manager.GetManager().OperationalStateCache[devicetopo.ID("Device2")] = opStateValuesDevice2
+	manager.GetManager().OperationalStateCache[topodevice.ID("Device2")] = opStateValuesDevice2
 	go manager.GetManager().Dispatcher.ListenOperationalState(manager.GetManager().OperationalStateChannel)
 
 	config := NewServerConfig("", "", "")

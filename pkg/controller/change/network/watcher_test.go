@@ -23,7 +23,7 @@ import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
@@ -133,8 +133,8 @@ func TestDeviceWatcher(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID("device-1"), Version: "1.0.0"}}, nil)
-	stream.EXPECT().Recv().Return(&devicetopo.ListResponse{Device: &devicetopo.Device{ID: devicetopo.ID("device-2"), Version: "1.0.0"}}, nil)
+	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID("device-1"), Version: "1.0.0"}}, nil)
+	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID("device-2"), Version: "1.0.0"}}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := NewMockDeviceServiceClient(ctrl)

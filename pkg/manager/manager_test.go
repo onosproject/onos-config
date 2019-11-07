@@ -26,7 +26,7 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -227,7 +227,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		mockNetworkChangesStore,
 		mockNetworkSnapshotStore,
 		mockDeviceSnapshotStore,
-		make(chan *devicetopo.ListResponse, 10))
+		make(chan *topodevice.ListResponse, 10))
 	if err != nil {
 		log.Warning(err)
 		os.Exit(-1)
@@ -555,14 +555,14 @@ func TestManager_DeviceConnected(t *testing.T) {
 		device1 = "device1"
 	)
 
-	deviceDisconnected := &devicetopo.Device{
+	deviceDisconnected := &topodevice.Device{
 		ID:       "device1",
 		Revision: 1,
 		Address:  "device1:1234",
 		Version:  deviceVersion1,
 	}
 
-	device1Connected := &devicetopo.Device{
+	device1Connected := &topodevice.Device{
 		ID:       "device1",
 		Revision: 1,
 		Address:  "device1:1234",
@@ -571,11 +571,11 @@ func TestManager_DeviceConnected(t *testing.T) {
 
 	mocks.MockStores.DeviceStore.EXPECT().Get("device1")
 
-	protocolState := new(devicetopo.ProtocolState)
-	protocolState.Protocol = devicetopo.Protocol_GNMI
-	protocolState.ConnectivityState = devicetopo.ConnectivityState_REACHABLE
-	protocolState.ChannelState = devicetopo.ChannelState_CONNECTED
-	protocolState.ServiceState = devicetopo.ServiceState_AVAILABLE
+	protocolState := new(topodevice.ProtocolState)
+	protocolState.Protocol = topodevice.Protocol_GNMI
+	protocolState.ConnectivityState = topodevice.ConnectivityState_REACHABLE
+	protocolState.ChannelState = topodevice.ChannelState_CONNECTED
+	protocolState.ServiceState = topodevice.ServiceState_AVAILABLE
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
 
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(deviceDisconnected, nil)
@@ -585,10 +585,10 @@ func TestManager_DeviceConnected(t *testing.T) {
 
 	assert.NilError(t, err)
 	assert.Equal(t, deviceConnected.ID, device1Connected.ID)
-	assert.Equal(t, deviceConnected.Protocols[0].Protocol, devicetopo.Protocol_GNMI)
-	assert.Equal(t, deviceConnected.Protocols[0].ConnectivityState, devicetopo.ConnectivityState_REACHABLE)
-	assert.Equal(t, deviceConnected.Protocols[0].ChannelState, devicetopo.ChannelState_CONNECTED)
-	assert.Equal(t, deviceConnected.Protocols[0].ServiceState, devicetopo.ServiceState_AVAILABLE)
+	assert.Equal(t, deviceConnected.Protocols[0].Protocol, topodevice.Protocol_GNMI)
+	assert.Equal(t, deviceConnected.Protocols[0].ConnectivityState, topodevice.ConnectivityState_REACHABLE)
+	assert.Equal(t, deviceConnected.Protocols[0].ChannelState, topodevice.ChannelState_CONNECTED)
+	assert.Equal(t, deviceConnected.Protocols[0].ServiceState, topodevice.ServiceState_AVAILABLE)
 }
 
 func TestManager_DeviceDisconnected(t *testing.T) {
@@ -597,14 +597,14 @@ func TestManager_DeviceDisconnected(t *testing.T) {
 		device1 = "device1"
 	)
 
-	deviceDisconnected := &devicetopo.Device{
+	deviceDisconnected := &topodevice.Device{
 		ID:       "device1",
 		Revision: 1,
 		Address:  "device1:1234",
 		Version:  deviceVersion1,
 	}
 
-	device1Connected := &devicetopo.Device{
+	device1Connected := &topodevice.Device{
 		ID:       "device1",
 		Revision: 1,
 		Address:  "device1:1234",
@@ -613,18 +613,18 @@ func TestManager_DeviceDisconnected(t *testing.T) {
 
 	mocks.MockStores.DeviceStore.EXPECT().Get("device1")
 
-	protocolState := new(devicetopo.ProtocolState)
-	protocolState.Protocol = devicetopo.Protocol_GNMI
-	protocolState.ConnectivityState = devicetopo.ConnectivityState_REACHABLE
-	protocolState.ChannelState = devicetopo.ChannelState_CONNECTED
-	protocolState.ServiceState = devicetopo.ServiceState_AVAILABLE
+	protocolState := new(topodevice.ProtocolState)
+	protocolState.Protocol = topodevice.Protocol_GNMI
+	protocolState.ConnectivityState = topodevice.ConnectivityState_REACHABLE
+	protocolState.ChannelState = topodevice.ChannelState_CONNECTED
+	protocolState.ServiceState = topodevice.ServiceState_AVAILABLE
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
 
-	protocolStateDisconnected := new(devicetopo.ProtocolState)
-	protocolStateDisconnected.Protocol = devicetopo.Protocol_GNMI
-	protocolStateDisconnected.ConnectivityState = devicetopo.ConnectivityState_UNREACHABLE
-	protocolStateDisconnected.ChannelState = devicetopo.ChannelState_DISCONNECTED
-	protocolStateDisconnected.ServiceState = devicetopo.ServiceState_UNAVAILABLE
+	protocolStateDisconnected := new(topodevice.ProtocolState)
+	protocolStateDisconnected.Protocol = topodevice.Protocol_GNMI
+	protocolStateDisconnected.ConnectivityState = topodevice.ConnectivityState_UNREACHABLE
+	protocolStateDisconnected.ChannelState = topodevice.ChannelState_DISCONNECTED
+	protocolStateDisconnected.ServiceState = topodevice.ServiceState_UNAVAILABLE
 	deviceDisconnected.Protocols = append(device1Connected.Protocols, protocolState)
 
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(device1Connected, nil)
@@ -634,10 +634,10 @@ func TestManager_DeviceDisconnected(t *testing.T) {
 
 	assert.NilError(t, err)
 	assert.Equal(t, deviceUpdated.ID, device1Connected.ID)
-	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, devicetopo.Protocol_GNMI)
-	assert.Equal(t, deviceUpdated.Protocols[0].ConnectivityState, devicetopo.ConnectivityState_UNREACHABLE)
-	assert.Equal(t, deviceUpdated.Protocols[0].ChannelState, devicetopo.ChannelState_DISCONNECTED)
-	assert.Equal(t, deviceUpdated.Protocols[0].ServiceState, devicetopo.ServiceState_UNAVAILABLE)
+	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, topodevice.Protocol_GNMI)
+	assert.Equal(t, deviceUpdated.Protocols[0].ConnectivityState, topodevice.ConnectivityState_UNREACHABLE)
+	assert.Equal(t, deviceUpdated.Protocols[0].ChannelState, topodevice.ChannelState_DISCONNECTED)
+	assert.Equal(t, deviceUpdated.Protocols[0].ServiceState, topodevice.ServiceState_UNAVAILABLE)
 }
 
 type MockModelPlugin struct{}
@@ -725,19 +725,19 @@ func TestManager_CheckCacheForDevice(t *testing.T) {
 	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID(deviceTest1)).Return(deviceInfos[:2]).AnyTimes()
 	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID(deviceTest2)).Return(deviceInfos[2:]).AnyTimes()
 	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*devicestore.Info, 0)).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(devicetopo.ID(deviceTest1)).Return(&devicetopo.Device{
+	mocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID(deviceTest1)).Return(&topodevice.Device{
 		ID:      deviceTest1,
 		Address: "1.2.3.4",
 		Version: v1,
 		Type:    tdType,
 	}, nil).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(devicetopo.ID(deviceTest2)).Return(&devicetopo.Device{
+	mocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID(deviceTest2)).Return(&topodevice.Device{
 		ID:      deviceTest2,
 		Address: "1.2.3.4",
 		Version: v1,
 		Type:    dsType,
 	}, nil).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(devicetopo.ID(deviceTest3)).Return(nil, nil).AnyTimes()
+	mocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID(deviceTest3)).Return(nil, nil).AnyTimes()
 
 	/********************************************************************
 	 * deviceTest1 v1.0.0

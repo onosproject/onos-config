@@ -24,7 +24,7 @@ import (
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	log "k8s.io/klog"
 	"strings"
 )
@@ -55,8 +55,8 @@ type Resolver struct {
 }
 
 // Resolve resolves a device ID from a device snapshot ID
-func (r *Resolver) Resolve(id types.ID) (devicetopo.ID, error) {
-	return devicetopo.ID(devicesnapshot.ID(id).GetDeviceID()), nil
+func (r *Resolver) Resolve(id types.ID) (topodevice.ID, error) {
+	return topodevice.ID(devicesnapshot.ID(id).GetDeviceID()), nil
 }
 
 // Reconciler is a device snapshot reconciler

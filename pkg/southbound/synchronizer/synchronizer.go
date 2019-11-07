@@ -27,7 +27,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	log "k8s.io/klog"
@@ -40,9 +40,9 @@ const matchOnIndex = `(\=.*?]).*?`
 // Synchronizer enables proper configuring of a device based on store events and cache of operational data
 type Synchronizer struct {
 	context.Context
-	*devicetopo.Device
+	*topodevice.Device
 	operationalStateChan chan<- events.OperationalStateEvent
-	key                  devicetopo.ID
+	key                  topodevice.ID
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
 	operationalCache     devicechange.TypedValueMap
@@ -52,7 +52,7 @@ type Synchronizer struct {
 
 // New builds a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context,
-	device *devicetopo.Device, opStateChan chan<- events.OperationalStateEvent,
+	device *topodevice.Device, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache devicechange.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode) (*Synchronizer, error) {
 	sync := &Synchronizer{

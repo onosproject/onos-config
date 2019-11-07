@@ -17,7 +17,7 @@ package mastership
 import (
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -29,8 +29,8 @@ func TestMastershipStore(t *testing.T) {
 	node2 := cluster.NodeID("node2")
 	node3 := cluster.NodeID("node3")
 
-	device1 := devicetopo.ID("device1")
-	device2 := devicetopo.ID("device2")
+	device1 := topodevice.ID("device1")
+	device2 := topodevice.ID("device2")
 
 	// Create three stores for three different nodes
 	store1, err := newLocalStore(node1, conn)

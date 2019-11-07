@@ -18,7 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 	"io"
 	"sync"
@@ -35,16 +35,16 @@ type Store interface {
 	NodeID() cluster.NodeID
 
 	// IsMaster returns a boolean indicating whether the local node is the master for the given device
-	IsMaster(id devicetopo.ID) (bool, error)
+	IsMaster(id topodevice.ID) (bool, error)
 
 	// Watch watches the store for mastership changes
-	Watch(devicetopo.ID, chan<- Mastership) error
+	Watch(topodevice.ID, chan<- Mastership) error
 }
 
 // Mastership contains information about a device mastership term
 type Mastership struct {
 	// Device is the identifier of the device to which this mastership related
-	Device devicetopo.ID
+	Device topodevice.ID
 
 	// Term is the mastership term
 	Term Term
@@ -67,10 +67,10 @@ func NewAtomixStore() (Store, error) {
 
 	return &atomixStore{
 		nodeID: cluster.GetNodeID(),
-		newElection: func(id devicetopo.ID) (deviceMastershipElection, error) {
+		newElection: func(id topodevice.ID) (deviceMastershipElection, error) {
 			return newAtomixElection(id, group)
 		},
-		elections: make(map[devicetopo.ID]deviceMastershipElection),
+		elections: make(map[topodevice.ID]deviceMastershipElection),
 	}, nil
 }
 
@@ -90,23 +90,23 @@ func NewLocalStore(clusterID string, nodeID cluster.NodeID) (Store, error) {
 func newLocalStore(nodeID cluster.NodeID, conn *grpc.ClientConn) (Store, error) {
 	return &atomixStore{
 		nodeID: nodeID,
-		newElection: func(id devicetopo.ID) (deviceMastershipElection, error) {
+		newElection: func(id topodevice.ID) (deviceMastershipElection, error) {
 			return newLocalElection(id, nodeID, conn)
 		},
-		elections: make(map[devicetopo.ID]deviceMastershipElection),
+		elections: make(map[topodevice.ID]deviceMastershipElection),
 	}, nil
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
 	nodeID      cluster.NodeID
-	newElection func(devicetopo.ID) (deviceMastershipElection, error)
-	elections   map[devicetopo.ID]deviceMastershipElection
+	newElection func(topodevice.ID) (deviceMastershipElection, error)
+	elections   map[topodevice.ID]deviceMastershipElection
 	mu          sync.RWMutex
 }
 
 // getElection gets the mastership election for the given device
-func (s *atomixStore) getElection(deviceID devicetopo.ID) (deviceMastershipElection, error) {
+func (s *atomixStore) getElection(deviceID topodevice.ID) (deviceMastershipElection, error) {
 	s.mu.RLock()
 	election, ok := s.elections[deviceID]
 	s.mu.RUnlock()
@@ -131,7 +131,7 @@ func (s *atomixStore) NodeID() cluster.NodeID {
 	return s.nodeID
 }
 
-func (s *atomixStore) IsMaster(deviceID devicetopo.ID) (bool, error) {
+func (s *atomixStore) IsMaster(deviceID topodevice.ID) (bool, error) {
 	election, err := s.getElection(deviceID)
 	if err != nil {
 		return false, err
@@ -139,7 +139,7 @@ func (s *atomixStore) IsMaster(deviceID devicetopo.ID) (bool, error) {
 	return election.isMaster()
 }
 
-func (s *atomixStore) Watch(deviceID devicetopo.ID, ch chan<- Mastership) error {
+func (s *atomixStore) Watch(deviceID topodevice.ID, ch chan<- Mastership) error {
 	election, err := s.getElection(deviceID)
 	if err != nil {
 		return err

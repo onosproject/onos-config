@@ -35,7 +35,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -60,18 +60,18 @@ type Manager struct {
 	networkSnapshotController *controller.Controller
 	deviceSnapshotController  *controller.Controller
 	ModelRegistry             *modelregistry.ModelRegistry
-	TopoChannel               chan *devicetopo.ListResponse
+	TopoChannel               chan *topodevice.ListResponse
 	OperationalStateChannel   chan events.OperationalStateEvent
 	SouthboundErrorChan       chan events.DeviceResponse
 	Dispatcher                *dispatcher.Dispatcher
-	OperationalStateCache     map[devicetopo.ID]devicechange.TypedValueMap
+	OperationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
 }
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Store,
 	deviceChangesStore device.Store, deviceStore devicestore.Store, deviceCache devicestore.Cache,
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
-	deviceSnapshotStore devicesnap.Store, topoCh chan *devicetopo.ListResponse) (*Manager, error) {
+	deviceSnapshotStore devicesnap.Store, topoCh chan *topodevice.ListResponse) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -96,7 +96,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		OperationalStateChannel:   make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
-		OperationalStateCache:     make(map[devicetopo.ID]devicechange.TypedValueMap),
+		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
 	}
 	return &mgr, nil
 }
@@ -105,7 +105,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 func LoadManager(leadershipStore leadership.Store, mastershipStore mastership.Store, deviceChangesStore device.Store,
 	deviceCache devicestore.Cache, networkChangesStore network.Store,
 	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store, opts ...grpc.DialOption) (*Manager, error) {
-	topoChannel := make(chan *devicetopo.ListResponse, 10)
+	topoChannel := make(chan *topodevice.ListResponse, 10)
 
 	deviceStore, err := devicestore.NewTopoStore(opts...)
 	if err != nil {
@@ -173,7 +173,7 @@ func GetManager() *Manager {
 func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 	log.Info("Listening for Errors in Manager")
 	for event := range respChan {
-		subject := devicetopo.ID(event.Subject())
+		subject := topodevice.ID(event.Subject())
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
 			_, err := m.DeviceConnected(subject)
@@ -238,7 +238,7 @@ func (m *Manager) CheckCacheForDevice(target devicetype.ID, deviceType devicetyp
 	version devicetype.Version) (devicetype.Type, devicetype.Version, error) {
 
 	deviceInfos := mgr.DeviceCache.GetDevicesByID(target)
-	topoDevice, errTopoDevice := mgr.DeviceStore.Get(devicetopo.ID(target))
+	topoDevice, errTopoDevice := mgr.DeviceStore.Get(topodevice.ID(target))
 	if errTopoDevice != nil {
 		log.Infof("Device %s not found in topo store", target)
 	}

@@ -17,7 +17,7 @@ package dispatcher
 import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/events"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
 	log "k8s.io/klog"
@@ -29,7 +29,7 @@ import (
 
 var (
 	optStateChannel           chan events.OperationalStateEvent
-	device1, device2, device3 devicetopo.Device
+	device1, device2, device3 topodevice.Device
 	err                       error
 )
 
@@ -50,9 +50,9 @@ func tearDown(t *testing.T, d *Dispatcher) {
 func TestMain(m *testing.M) {
 	log.SetOutput(os.Stdout)
 
-	device1 = devicetopo.Device{ID: "localhost-1", Address: "localhost:10161"}
-	device2 = devicetopo.Device{ID: "localhost-2", Address: "localhost:10162"}
-	device3 = devicetopo.Device{ID: "localhost-3", Address: "localhost:10163"}
+	device1 = topodevice.Device{ID: "localhost-1", Address: "localhost:10161"}
+	device2 = topodevice.Device{ID: "localhost-2", Address: "localhost:10162"}
+	device3 = topodevice.Device{ID: "localhost-3", Address: "localhost:10163"}
 
 	os.Exit(m.Run())
 }

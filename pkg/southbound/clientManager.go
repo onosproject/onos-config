@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/utils"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"io/ioutil"
 	log "k8s.io/klog"
 	"strings"
@@ -34,9 +34,9 @@ import (
 )
 
 // Targets is a global cache of connected targets
-var Targets = make(map[devicetopo.ID]TargetIf)
+var Targets = make(map[topodevice.ID]TargetIf)
 
-func createDestination(device devicetopo.Device) (*client.Destination, devicetopo.ID) {
+func createDestination(device topodevice.Device) (*client.Destination, topodevice.ID) {
 	d := &client.Destination{}
 	d.Addrs = []string{device.Address}
 	d.Target = device.Target
@@ -82,7 +82,7 @@ func createDestination(device devicetopo.Device) (*client.Destination, devicetop
 }
 
 // GetTarget attempts to get a specific target from the targets cache
-func GetTarget(key devicetopo.ID) (TargetIf, error) {
+func GetTarget(key topodevice.ID) (TargetIf, error) {
 	t, ok := Targets[key].(TargetIf)
 	if ok {
 		return t, nil
@@ -93,7 +93,7 @@ func GetTarget(key devicetopo.ID) (TargetIf, error) {
 // ConnectTarget connects to a given Device according to the passed information establishing a channel to it.
 //TODO make asyc
 //TODO lock channel to allow one request to device at each time
-func (target *Target) ConnectTarget(ctx context.Context, device devicetopo.Device) (devicetopo.ID, error) {
+func (target *Target) ConnectTarget(ctx context.Context, device topodevice.Device) (topodevice.ID, error) {
 	dest, key := createDestination(device)
 	c, err := GnmiClientFactory(ctx, *dest)
 

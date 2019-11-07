@@ -31,7 +31,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	devicetopo "github.com/onosproject/onos-topo/pkg/northbound/device"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -119,7 +119,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Version:  version,
 		}
 
-		_, errDevice := mgr.DeviceStore.Get(devicetopo.ID(target))
+		_, errDevice := mgr.DeviceStore.Get(topodevice.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
@@ -150,7 +150,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Version:  version,
 		}
 
-		_, errDevice := mgr.DeviceStore.Get(devicetopo.ID(target))
+		_, errDevice := mgr.DeviceStore.Get(topodevice.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {

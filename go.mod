@@ -12,7 +12,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/onosproject/onos-topo v0.0.0-20191009212759-73d0cb9dfc91
+	github.com/onosproject/onos-topo v0.0.0-20191107000708-af85b82cfca3
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c
 	github.com/openconfig/goyang v0.0.0-20190924211109-064f9690516f
 	github.com/openconfig/ygot v0.6.0
