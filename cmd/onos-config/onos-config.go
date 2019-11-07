@@ -42,6 +42,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
@@ -138,8 +139,13 @@ func main() {
 		log.Error("Cannot load network atomix store ", err)
 	}
 
+	deviceStore, err := devicestore.NewTopoStore(opts...)
+	if err != nil {
+		log.Error("Cannot load device store ", err)
+	}
+
 	mgr, err := manager.LoadManager(leadershipStore, mastershipStore, deviceChangesStore, deviceCache,
-		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, opts...)
+		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceStore)
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {
@@ -159,7 +165,7 @@ func main() {
 			}
 		}
 
-		mgr.Run()
+		mgr.Run(southbound.NewTarget)
 		err = startServer(*caPath, *keyPath, *certPath)
 		if err != nil {
 			log.Fatal("Unable to start onos-config ", err)

@@ -68,7 +68,8 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, admin.Config
 		devicestore.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
-		mockstore.NewMockDeviceSnapshotStore(ctrl))
+		mockstore.NewMockDeviceSnapshotStore(ctrl),
+		mockstore.NewMockDeviceStore(ctrl))
 	if err != nil {
 		log.Error("Unable to load manager")
 	}

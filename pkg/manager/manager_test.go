@@ -22,6 +22,7 @@ import (
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/southbound"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -232,7 +233,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		log.Warning(err)
 		os.Exit(-1)
 	}
-	mgrTest.Run()
+	mgrTest.Run(southbound.NewTarget)
 
 	mockStores := &mockstore.MockStores{
 		DeviceStore:          mockDeviceStore,
@@ -252,6 +253,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 func makeDeviceChanges(device string, updates devicechange.TypedValueMap, deletes []string) (
 	map[string]devicechange.TypedValueMap, map[string][]string, map[devicetype.ID]devicestore.Info) {
 	deviceInfo := make(map[devicetype.ID]devicestore.Info)
+	deviceInfo[devicetype.ID(device)] = devicestore.Info{DeviceID: devicetype.ID(device), Type: deviceTypeTd, Version: deviceVersion1}
 
 	updatesForDevice := make(map[string]devicechange.TypedValueMap)
 	updatesForDevice[device] = updates

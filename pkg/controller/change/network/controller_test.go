@@ -15,7 +15,6 @@
 package network
 
 import (
-	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -23,18 +22,13 @@ import (
 	"github.com/onosproject/onos-config/api/types/device"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"io"
 	"testing"
 )
 
 const (
 	device1 = device.ID("device-1")
 	device2 = device.ID("device-2")
-	device3 = device.ID("device-3")
-	device4 = device.ID("device-4")
 )
 
 const (
@@ -43,7 +37,7 @@ const (
 
 // TestReconcilerChangeRollback tests applying and then rolling back a change
 func TestReconcilerChangeRollback(t *testing.T) {
-	_, networkChanges, deviceChanges := newStores(t)
+	networkChanges, deviceChanges := newStores(t)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
@@ -196,7 +190,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 
 // TestReconcilerError tests an error reverting a change to PENDING
 func TestReconcilerError(t *testing.T) {
-	_, networkChanges, deviceChanges := newStores(t)
+	networkChanges, deviceChanges := newStores(t)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
@@ -323,26 +317,12 @@ func TestReconcilerError(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
 }
 
-func newStores(t *testing.T) (devicestore.Store, networkchanges.Store, devicechanges.Store) {
-	ctrl := gomock.NewController(t)
-
-	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID(device1)}}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID(device2)}}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID(device3)}}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: &topodevice.Device{ID: topodevice.ID(device4)}}, nil)
-	stream.EXPECT().Recv().Return(nil, io.EOF)
-
-	client := NewMockDeviceServiceClient(ctrl)
-	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
-
-	devices, err := devicestore.NewStore(client)
-	assert.NoError(t, err)
+func newStores(t *testing.T) (networkchanges.Store, devicechanges.Store) {
 	networkChanges, err := networkchanges.NewLocalStore()
 	assert.NoError(t, err)
 	deviceChanges, err := devicechanges.NewLocalStore()
 	assert.NoError(t, err)
-	return devices, networkChanges, deviceChanges
+	return networkChanges, deviceChanges
 }
 
 func newChange(id networkchange.ID, devices ...device.ID) *networkchange.NetworkChange {

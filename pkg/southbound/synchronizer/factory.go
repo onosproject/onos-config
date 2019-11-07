@@ -32,7 +32,8 @@ import (
 // These synchronizers then listen out for configEvents relative to a device and
 func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- events.OperationalStateEvent,
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap) {
+	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap,
+	newTargetFn func() southbound.TargetIf) {
 
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
@@ -55,7 +56,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 				mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
 			}
 			operationalStateCache[notifiedDevice.ID] = make(devicechange.TypedValueMap)
-			target := southbound.NewTarget()
+			target := newTargetFn()
 			sync, err := New(ctx, notifiedDevice, opStateChan, southboundErrorChan,
 				operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode)
 			if err != nil {

@@ -134,7 +134,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 			},
 			Change: change,
 		}
-		log.Infof("Creating DeviceChange %v", deviceChange)
+		log.Infof("Creating DeviceChange %v for %v", deviceChange, networkChange.ID)
 		if err := r.deviceChanges.Create(deviceChange); err != nil {
 			return false, err
 		}

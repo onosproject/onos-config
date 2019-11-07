@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"io"
+	log "k8s.io/klog"
 	"net"
 	"sync"
 	"time"
@@ -205,6 +206,7 @@ func (s *atomixStore) Get(id devicechange.ID) (*devicechange.DeviceChange, error
 }
 
 func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
+	log.Infof("Creating new device change %v", change)
 	if change.Change.DeviceID == "" {
 		return errors.New("no device ID specified")
 	}

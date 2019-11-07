@@ -167,13 +167,13 @@ func (r *Reconciler) translateAndSendChange(change *devicechange.Change) error {
 	if err != nil {
 		return err
 	}
-	log.Info("Reconciler set request ", setRequest)
-	log.Info("Device ", change.DeviceID)
+	log.Infof("Reconciler set request for %s: %v", change.DeviceID, setRequest)
 	deviceTarget, err := southbound.GetTarget(topodevice.ID(change.DeviceID))
 	if err != nil {
 		log.Infof("Device %s is not connected, accepting change", change.DeviceID)
 		return fmt.Errorf("Device not connected %s, error %s", change.DeviceID, err.Error())
 	}
+	log.Infof("Target for device %s: %v %v", change.DeviceID, deviceTarget, deviceTarget.Context())
 	setResponse, err := deviceTarget.Set(*deviceTarget.Context(), setRequest)
 	if err != nil {
 		log.Error("Error while doing set: ", err)
