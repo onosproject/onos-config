@@ -43,7 +43,9 @@ spec:
             - name: ATOMIX_APP
               value: {{ template "fullname" . }}
             - name: ATOMIX_RAFT_GROUP
-              value: {{ template "fullname" . }}-raft
+              value: raft
+            - name: ATOMIX_NAMESPACE
+            value: {{ template "fullname" . }}
           args:
             - "-caPath=/etc/onos-config/certs/tls.cacrt"
             - "-keyPath=/etc/onos-config/certs/tls.key"
