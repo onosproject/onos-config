@@ -33,6 +33,7 @@ import (
 	log "k8s.io/klog"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 const matchOnIndex = `(\=.*?]).*?`
@@ -46,6 +47,7 @@ type Synchronizer struct {
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
 	operationalCache     devicechange.TypedValueMap
+	operationalCacheLock *sync.RWMutex
 	encoding             gnmi.Encoding
 	getStateMode         modelregistry.GetStateMode
 }
@@ -60,6 +62,7 @@ func New(context context.Context,
 		Device:               device,
 		operationalStateChan: opStateChan,
 		operationalCache:     opStateCache,
+		operationalCacheLock: &sync.RWMutex{},
 		modelReadOnlyPaths:   mReadOnlyPaths,
 		getStateMode:         getStateMode,
 	}
@@ -293,6 +296,8 @@ func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 	errChan chan<- events.DeviceResponse) {
 
 	log.Infof("Handling %d received OpState paths. %s", len(notifications), string(sync.key))
+	sync.operationalCacheLock.Lock()
+	defer sync.operationalCacheLock.Unlock()
 	for _, notification := range notifications {
 		for _, update := range notification.Update {
 			if sync.encoding == gnmi.Encoding_JSON || sync.encoding == gnmi.Encoding_JSON_IETF {
@@ -343,9 +348,11 @@ func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechange
  */
 func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan chan<- events.DeviceResponse) {
 	subscribePaths := make([][]string, 0)
+	sync.operationalCacheLock.RLock()
 	for p := range sync.operationalCache {
 		subscribePaths = append(subscribePaths, utils.SplitPath(p))
 	}
+	sync.operationalCacheLock.RUnlock()
 
 	options := &southbound.SubscribeOptions{
 		UpdatesOnly:       false,
@@ -429,10 +436,13 @@ func (sync *Synchronizer) opStateSubHandler(msg proto.Message) error {
 				}
 				sync.operationalStateChan <- events.NewOperationalStateEvent(string(sync.Device.ID), pathStr, val, events.EventItemUpdated)
 
+				sync.operationalCacheLock.Lock()
 				sync.operationalCache[pathStr] = val
+				sync.operationalCacheLock.Unlock()
 			}
 		}
 
+		sync.operationalCacheLock.Lock()
 		for _, del := range notification.Delete {
 			if del.Elem == nil {
 				return fmt.Errorf("invalid nil path in update: %v", del)
@@ -442,7 +452,7 @@ func (sync *Synchronizer) opStateSubHandler(msg proto.Message) error {
 			sync.operationalStateChan <- events.NewOperationalStateEvent(string(sync.Device.ID), pathStr, nil, events.EventItemDeleted)
 			delete(sync.operationalCache, pathStr)
 		}
-
+		sync.operationalCacheLock.Unlock()
 	}
 	return nil
 }
