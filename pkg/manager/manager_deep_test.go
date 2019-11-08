@@ -215,7 +215,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	assert.Assert(t, networkChange1 != nil)
 	err = mgrTest.NetworkChangesStore.Create(networkChange1)
 	assert.NilError(t, err, "Unexpected failure when creating new NetworkChange")
-	time.Sleep(time.Millisecond * 10)
+	time.Sleep(time.Millisecond * 100)
 
 	return mgrTest, &AllMocks{
 		MockStores: &mockstore.MockStores{
@@ -268,7 +268,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	const testNetworkChange networkchange.ID = "Test_SetNetworkConfig"
 	err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "SetTargetConfig error")
-	time.Sleep(time.Millisecond * 10) // Have to wait for change to be reconciled
+	time.Sleep(time.Millisecond * 100) // Have to wait for change to be reconciled
 
 	testUpdate, _ := mgrTest.NetworkChangesStore.Get(testNetworkChange)
 	assert.Assert(t, testUpdate != nil)
