@@ -23,8 +23,8 @@ import (
 	log "k8s.io/klog"
 	"os"
 	"strings"
+	"sync"
 	"testing"
-	"time"
 )
 
 var (
@@ -91,16 +91,19 @@ func Test_listen_operational(t *testing.T) {
 	})
 	// Create a channel on which to send these
 	opStateCh := make(chan events.OperationalStateEvent, 10)
-	go d.ListenOperationalState(opStateCh)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		d.ListenOperationalState(opStateCh)
+		wg.Done()
+	}()
 	// Send down some changes
 	event := events.NewOperationalStateEvent("foobar", "testpath",
 		devicechange.NewTypedValueString("testValue"), events.EventItemUpdated)
 	opStateCh <- event
 
-	// Wait for the changes to get distributed
-	time.Sleep(time.Second)
-
 	close(opStateCh)
+	wg.Wait()
 
 	d.UnregisterOperationalState("nbiOpState")
 }

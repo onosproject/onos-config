@@ -51,11 +51,11 @@ func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan event
 	log.Info("Operational State Event listener initialized")
 
 	nbiChans := make([]chan events.OperationalStateEvent, 0)
-	d.nbiOpStateListenersLock.RLock()
+	d.nbiOpStateListenersLock.Lock()
 	for _, nbiChan := range d.nbiOpStateListeners {
 		nbiChans = append(nbiChans, nbiChan)
 	}
-	d.nbiOpStateListenersLock.RUnlock()
+	d.nbiOpStateListenersLock.Unlock()
 
 	for operationalStateEvent := range operationalStateChannel {
 		for _, nbiChan := range nbiChans {
@@ -79,8 +79,8 @@ func (d *Dispatcher) RegisterOpState(subscriber string) (chan events.Operational
 
 // UnregisterOperationalState closes the device channel and removes it from the deviceListeners
 func (d *Dispatcher) UnregisterOperationalState(subscriber string) {
-	d.nbiOpStateListenersLock.Lock()
-	defer d.nbiOpStateListenersLock.Unlock()
+	d.nbiOpStateListenersLock.RLock()
+	defer d.nbiOpStateListenersLock.RUnlock()
 	channel, ok := d.nbiOpStateListeners[subscriber]
 	if !ok {
 		log.Infof("Subscriber %s had not been registered", subscriber)
