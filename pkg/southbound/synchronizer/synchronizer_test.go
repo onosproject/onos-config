@@ -32,6 +32,7 @@ import (
 	"gotest.tools/assert"
 	"io/ioutil"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -217,8 +218,14 @@ func TestNew(t *testing.T) {
 	).Return(nil).MinTimes(1)
 
 	// Called asynchronously as after building up the opStateCache it subscribes and waits
-	go s.syncOperationalStateByPaths(context2.Background(), mockTarget, params.responseChan)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		s.syncOperationalStateByPaths(context2.Background(), mockTarget, params.responseChan)
+		wg.Done()
+	}()
 
+	wg.Wait()
 	time.Sleep(200 * time.Millisecond) // Wait for response message
 	os1, ok := params.opstateCache[cont1bState+leaf2d]
 	assert.Assert(t, ok, "Retrieving 1st path from Op State cache")
@@ -786,7 +793,13 @@ func Test_LikeStratum(t *testing.T) {
 	).Return(nil).MinTimes(1)
 
 	// Called asynchronously as after building up the opStateCache it subscribes and waits
-	go s.syncOperationalStateByPaths(context2.Background(), mockTarget, responseChan)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		s.syncOperationalStateByPaths(context2.Background(), mockTarget, responseChan)
+		wg.Done()
+	}()
+	wg.Wait()
 
 	time.Sleep(200 * time.Millisecond) // Wait for response message
 	os1, ok := opStateCache[interfacesInterfaceEth1StateIfindex]
