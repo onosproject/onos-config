@@ -33,6 +33,8 @@ github.com/atomix/atomix-go-local v0.0.0-20191015003449-684edaca8be2/go.mod h1:u
 github.com/atomix/atomix-go-local v0.0.0-20191018192811-4de2cabe75ef/go.mod h1:L+GH0tZ1TrF+T/KrzgIKL1evb5x+V+ABBEYeHFcxEZ8=
 github.com/atomix/atomix-go-local v0.0.0-20191021234710-cca1c26bf4d8 h1:22STT0uRZt409miwAlGghoQhSpKIYT5KvdLk4cG/2L8=
 github.com/atomix/atomix-go-local v0.0.0-20191021234710-cca1c26bf4d8/go.mod h1:oRfnzGG5NU/uAQclc6chtLQ97/7WC5u+4t8lDouZIIE=
+github.com/atomix/atomix-go-local v0.0.0-20191108201451-9131cc896ed6 h1:qMdzRqZt7Jj7iyQOGRzQjoPRSTCRXjwKkPAhRUsYewo=
+github.com/atomix/atomix-go-local v0.0.0-20191108201451-9131cc896ed6/go.mod h1:aI/yXHQlpmA3DlJwFtmfvBSA6hyk1ANZLeXRYdZZ9wk=
 github.com/atomix/atomix-go-node v0.0.0-20190827191929-2d3dc9c550d9/go.mod h1:PL1T5R78itch1QC1CN4JmbRL/2XQlg4R95R14822C6Q=
 github.com/atomix/atomix-go-node v0.0.0-20190828183436-fc30340cd8db/go.mod h1:dyh8Bb50qKfMlpqDE6X+dQ1tZ399WKEABa3ntDYImnA=
 github.com/atomix/atomix-go-node v0.0.0-20190830183721-649263a17223/go.mod h1:KJxB/MAgndAbyCOqTV2hatw7lExiZZs7QCOr45IfC9U=
@@ -45,6 +47,8 @@ github.com/atomix/atomix-go-node v0.0.0-20191015003435-f70de243fb25/go.mod h1:Lt
 github.com/atomix/atomix-go-node v0.0.0-20191018192345-6fbb86e5f5ef/go.mod h1:SmM+sWPwscnx6AIqGbu9Y2EqCGdUlyHTnrJa/A3XqWA=
 github.com/atomix/atomix-go-node v0.0.0-20191021234659-c841a97bec89 h1:Xe8eyruUnCkTRlZbg+BWXGICFgMB0+82bcmIgHY1S+s=
 github.com/atomix/atomix-go-node v0.0.0-20191021234659-c841a97bec89/go.mod h1:wLJ9+8FK7p8R8tz3bXPQ6GTvpwhkwjyPomkL9ok5AzM=
+github.com/atomix/atomix-go-node v0.0.0-20191108201428-59c0962b63c8 h1:M9Spu1hySxpvTSZlwBkhcgPCxzS8GL+4Oizn2hxAbd4=
+github.com/atomix/atomix-go-node v0.0.0-20191108201428-59c0962b63c8/go.mod h1:wLJ9+8FK7p8R8tz3bXPQ6GTvpwhkwjyPomkL9ok5AzM=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
