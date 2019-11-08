@@ -50,10 +50,15 @@ func NewDispatcher() *Dispatcher {
 func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan events.OperationalStateEvent) {
 	log.Info("Operational State Event listener initialized")
 
+	nbiChans := make([]chan events.OperationalStateEvent, 0)
 	d.nbiOpStateListenersLock.RLock()
-	defer d.nbiOpStateListenersLock.RUnlock()
+	for _, nbiChan := range d.nbiOpStateListeners {
+		nbiChans = append(nbiChans, nbiChan)
+	}
+	d.nbiOpStateListenersLock.RUnlock()
+
 	for operationalStateEvent := range operationalStateChannel {
-		for _, nbiChan := range d.nbiOpStateListeners {
+		for _, nbiChan := range nbiChans {
 			nbiChan <- operationalStateEvent
 		}
 	}
