@@ -111,8 +111,13 @@ func LoadManager(leadershipStore leadership.Store, mastershipStore mastership.St
 		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, topoChannel)
 }
 
+// setTargetGenerator is generally only called from test
+func (m *Manager) setTargetGenerator(targetGen func() southbound.TargetIf) {
+	southbound.TargetGenerator = targetGen
+}
+
 // Run starts a synchronizer based on the devices and the northbound services.
-func (m *Manager) Run(targetFn func() southbound.TargetIf) {
+func (m *Manager) Run() {
 	log.Info("Starting Manager")
 
 	// Start the NetworkChange controller
@@ -142,7 +147,7 @@ func (m *Manager) Run(targetFn func() southbound.TargetIf) {
 	go listenOnResponseChannel(m.SouthboundErrorChan, m)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.TopoChannel, m.OperationalStateChannel, m.SouthboundErrorChan,
-		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache, targetFn)
+		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache, southbound.TargetGenerator)
 
 	err := m.DeviceStore.Watch(m.TopoChannel)
 	if err != nil {

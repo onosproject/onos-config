@@ -42,7 +42,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
-	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
@@ -165,7 +164,7 @@ func main() {
 			}
 		}
 
-		mgr.Run(southbound.NewTarget)
+		mgr.Run()
 		err = startServer(*caPath, *keyPath, *certPath)
 		if err != nil {
 			log.Fatal("Unable to start onos-config ", err)

@@ -112,8 +112,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 		}).Times(3)
 	mockDeviceStore.EXPECT().Get(topodevice.ID(device1)).Return(device1Topo, nil).AnyTimes()
 	mockDeviceStore.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *topodevice.Device) (*topodevice.Device, error) {
-		device1Topo = updated
-		return device1Topo, nil
+		return updated, nil
 	})
 
 	networkChangesStore, err := networkstore.NewLocalStore()
@@ -208,7 +207,8 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 		return southbound.TargetIf(mockTarget)
 	}
 
-	mgrTest.Run(mockTargetCreationfn)
+	mgrTest.setTargetGenerator(mockTargetCreationfn)
+	mgrTest.Run()
 
 	time.Sleep(time.Millisecond * 100)
 
