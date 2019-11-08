@@ -15,7 +15,8 @@ RUN go get -u github.com/golang/protobuf/protoc-gen-go && \
     go get -u github.com/gogo/protobuf/protoc-gen-gogo && \
     go get -u github.com/gogo/protobuf/protoc-gen-gogofast && \
     go get -u github.com/gogo/protobuf/protoc-gen-gogofaster && \
-    go get -u github.com/gogo/protobuf/protoc-gen-gogoslick
+    go get -u github.com/gogo/protobuf/protoc-gen-gogoslick && \
+    go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
 
 RUN mkdir -p /go/src/github.com/google && \
     git clone --branch master https://github.com/google/protobuf /go/src/github.com/google/protobuf && \
