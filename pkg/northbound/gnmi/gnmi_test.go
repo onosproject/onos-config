@@ -219,7 +219,8 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 		deviceCache,
 		mockStores.NetworkChangesStore,
 		mockStores.NetworkSnapshotStore,
-		mockStores.DeviceSnapshotStore)
+		mockStores.DeviceSnapshotStore,
+		mockStores.DeviceStore)
 
 	if err != nil {
 		log.Error("Expected manager to be loaded ", err)

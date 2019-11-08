@@ -138,8 +138,13 @@ func main() {
 		log.Error("Cannot load network atomix store ", err)
 	}
 
+	deviceStore, err := devicestore.NewTopoStore(opts...)
+	if err != nil {
+		log.Error("Cannot load device store ", err)
+	}
+
 	mgr, err := manager.LoadManager(leadershipStore, mastershipStore, deviceChangesStore, deviceCache,
-		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, opts...)
+		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceStore)
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {

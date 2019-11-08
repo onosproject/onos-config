@@ -21,6 +21,10 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
+// TargetGenerator is a function for generating gnmi southbound Targets
+// Default target generator is the NewTarget func below - can be overridden for tests
+var TargetGenerator func() TargetIf = NewTarget
+
 // TargetIf defines the API for Target
 type TargetIf interface {
 	ConnectTarget(ctx context.Context, device topodevice.Device) (topodevice.ID, error)

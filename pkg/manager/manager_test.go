@@ -252,6 +252,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 func makeDeviceChanges(device string, updates devicechange.TypedValueMap, deletes []string) (
 	map[string]devicechange.TypedValueMap, map[string][]string, map[devicetype.ID]devicestore.Info) {
 	deviceInfo := make(map[devicetype.ID]devicestore.Info)
+	deviceInfo[devicetype.ID(device)] = devicestore.Info{DeviceID: devicetype.ID(device), Type: deviceTypeTd, Version: deviceVersion1}
 
 	updatesForDevice := make(map[string]devicechange.TypedValueMap)
 	updatesForDevice[device] = updates

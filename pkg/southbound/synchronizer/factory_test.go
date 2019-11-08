@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/southbound"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
 	"sync"
@@ -58,7 +59,7 @@ func TestFactory_Revert(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		Factory(topoChan, opstateChan, responseChan, dispatcher, models, opstateCache)
+		Factory(topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, southbound.NewTarget)
 		wg.Done()
 	}()
 

@@ -27,6 +27,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
@@ -36,7 +37,6 @@ import (
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
@@ -104,17 +104,16 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 // LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
 func LoadManager(leadershipStore leadership.Store, mastershipStore mastership.Store, deviceChangesStore device.Store,
 	deviceCache devicestore.Cache, networkChangesStore network.Store,
-	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store, opts ...grpc.DialOption) (*Manager, error) {
+	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store, deviceStore devicestore.Store) (*Manager, error) {
 	topoChannel := make(chan *topodevice.ListResponse, 10)
-
-	deviceStore, err := devicestore.NewTopoStore(opts...)
-	if err != nil {
-		log.Error("Cannot load device store ", err)
-		return nil, err
-	}
 
 	return NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStore, deviceCache,
 		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, topoChannel)
+}
+
+// setTargetGenerator is generally only called from test
+func (m *Manager) setTargetGenerator(targetGen func() southbound.TargetIf) {
+	southbound.TargetGenerator = targetGen
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
@@ -148,7 +147,7 @@ func (m *Manager) Run() {
 	go listenOnResponseChannel(m.SouthboundErrorChan, m)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.TopoChannel, m.OperationalStateChannel, m.SouthboundErrorChan,
-		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache)
+		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache, southbound.TargetGenerator)
 
 	err := m.DeviceStore.Watch(m.TopoChannel)
 	if err != nil {
