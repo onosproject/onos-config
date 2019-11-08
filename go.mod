@@ -4,8 +4,8 @@ go 1.12
 
 require (
 	github.com/atomix/atomix-go-client v0.0.0-20191022230401-78955a5abbef
-	github.com/atomix/atomix-go-local v0.0.0-20191021234710-cca1c26bf4d8
-	github.com/atomix/atomix-go-node v0.0.0-20191021234659-c841a97bec89
+	github.com/atomix/atomix-go-local v0.0.0-20191108201451-9131cc896ed6
+	github.com/atomix/atomix-go-node v0.0.0-20191108201428-59c0962b63c8
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
