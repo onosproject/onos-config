@@ -39,6 +39,7 @@ import (
 	"io/ioutil"
 	log "k8s.io/klog"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -209,6 +210,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	}
 
 	mgrTest.setTargetGenerator(mockTargetCreationfn)
+	mgrTest.OperationalStateCacheLock = &sync.RWMutex{}
 	mgrTest.Run()
 
 	assert.Assert(t, networkChange1 != nil)

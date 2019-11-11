@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/api/diags"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
@@ -26,6 +27,7 @@ import (
 	log "k8s.io/klog"
 	"net"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -37,6 +39,8 @@ func TestMain(m *testing.M) {
 }
 
 func Test_GetOpState_DeviceSubscribe(t *testing.T) {
+	manager.GetManager().OperationalStateCacheLock = &sync.RWMutex{}
+
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 	defer s.Stop()

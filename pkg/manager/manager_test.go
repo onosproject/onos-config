@@ -34,6 +34,7 @@ import (
 	log "k8s.io/klog"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -246,6 +247,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 
 	allMocks.MockStores = mockStores
 	allMocks.MockDeviceCache = mockDeviceCache
+	mgrTest.OperationalStateCacheLock = &sync.RWMutex{}
 	return mgrTest, &allMocks
 }
 
@@ -535,7 +537,9 @@ func TestManager_GetTargetState(t *testing.T) {
 	change2 := devicechange.NewTypedValueString(value2)
 	device1ValueMap[path1] = change1
 	device1ValueMap[path2] = change2
+	mgrTest.OperationalStateCacheLock.RLock()
 	mgrTest.OperationalStateCache[device1] = device1ValueMap
+	mgrTest.OperationalStateCacheLock.RUnlock()
 
 	// Test fetching a known path from the cache
 	state1 := mgrTest.GetTargetState(device1, path1WC)
