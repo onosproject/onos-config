@@ -25,7 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	log "k8s.io/klog"
-	"sync"
+	syncPrimitives "sync"
 )
 
 // Factory is a go routine thread that listens out for Device creation
@@ -35,7 +35,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
 	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap,
 	newTargetFn func() southbound.TargetIf,
-	operationalStateCacheLock *sync.RWMutex) {
+	operationalStateCacheLock *syncPrimitives.RWMutex) {
 
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
@@ -61,7 +61,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			operationalStateCache[notifiedDevice.ID] = make(devicechange.TypedValueMap)
 			target := newTargetFn()
 			sync, err := New(ctx, notifiedDevice, opStateChan, southboundErrorChan,
-				operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode)
+				operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode, operationalStateCacheLock)
 			operationalStateCacheLock.Unlock()
 			if err != nil {
 				log.Errorf("Error connecting to device %v: %v", notifiedDevice, err)

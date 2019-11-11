@@ -33,7 +33,7 @@ import (
 	log "k8s.io/klog"
 	"regexp"
 	"strings"
-	"sync"
+	syncPrimitives "sync"
 )
 
 const matchOnIndex = `(\=.*?]).*?`
@@ -47,7 +47,7 @@ type Synchronizer struct {
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
 	operationalCache     devicechange.TypedValueMap
-	operationalCacheLock *sync.RWMutex
+	operationalCacheLock *syncPrimitives.RWMutex
 	encoding             gnmi.Encoding
 	getStateMode         modelregistry.GetStateMode
 }
@@ -56,13 +56,14 @@ type Synchronizer struct {
 func New(context context.Context,
 	device *topodevice.Device, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache devicechange.TypedValueMap,
-	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode) (*Synchronizer, error) {
+	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode,
+	opStateCacheLock *syncPrimitives.RWMutex) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		Device:               device,
 		operationalStateChan: opStateChan,
 		operationalCache:     opStateCache,
-		operationalCacheLock: &sync.RWMutex{},
+		operationalCacheLock: opStateCacheLock,
 		modelReadOnlyPaths:   mReadOnlyPaths,
 		getStateMode:         getStateMode,
 	}
