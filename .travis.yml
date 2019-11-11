@@ -27,8 +27,10 @@ jobs:
   include:
     - stage: build
       script:
-        - make coverage
+        - make test
         - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash ./build/bin/push-images; fi'
+    - stage coverage:
+        - make coverage
     - stage: integration tests
       if: type != pull_request
       script:
