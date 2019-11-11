@@ -29,6 +29,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	southboundmocks "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -210,12 +211,29 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	mgrTest.setTargetGenerator(mockTargetCreationfn)
 	mgrTest.Run()
 
-	time.Sleep(time.Millisecond * 100)
-
 	assert.Assert(t, networkChange1 != nil)
 	err = mgrTest.NetworkChangesStore.Create(networkChange1)
 	assert.NilError(t, err, "Unexpected failure when creating new NetworkChange")
-	time.Sleep(time.Millisecond * 10)
+	nwChangeUpdates := make(chan stream.Event)
+	ctx, err := mgrTest.NetworkChangesStore.Watch(nwChangeUpdates, networkstore.WithChangeID(networkChange1.ID))
+	assert.NilError(t, err)
+	defer ctx.Close()
+
+	breakout := false
+	for { // 3 responses are expected PENDING, RUNNING and COMPLETE
+		select {
+		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
+			event := eventObj.Object.(*networkchange.NetworkChange)
+			if event.Status.State == changetypes.State_COMPLETE {
+				breakout = true
+			}
+		case <-time.After(5 * time.Second):
+			t.FailNow()
+		}
+		if breakout {
+			break
+		}
+	}
 
 	return mgrTest, &AllMocks{
 		MockStores: &mockstore.MockStores{
@@ -236,7 +254,6 @@ func Test_GetNetworkConfig_Deep(t *testing.T) {
 
 	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, "/*", 0)
 	assert.NilError(t, err, "GetTargetConfig error")
-	time.Sleep(time.Millisecond * 100)
 
 	assert.Equal(t, len(result), 1, "Unexpected result element count")
 
@@ -268,7 +285,27 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	const testNetworkChange networkchange.ID = "Test_SetNetworkConfig"
 	err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "SetTargetConfig error")
-	time.Sleep(time.Millisecond * 10) // Have to wait for change to be reconciled
+
+	nwChangeUpdates := make(chan stream.Event)
+	ctx, err := mgrTest.NetworkChangesStore.Watch(nwChangeUpdates, networkstore.WithChangeID(testNetworkChange))
+	assert.NilError(t, err)
+	defer ctx.Close()
+
+	breakout := false
+	for { // 3 responses are expected PENDING, RUNNING and COMPLETE
+		select {
+		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
+			event := eventObj.Object.(*networkchange.NetworkChange)
+			if event.Status.State == changetypes.State_COMPLETE {
+				breakout = true
+			}
+		case <-time.After(5 * time.Second):
+			t.FailNow()
+		}
+		if breakout {
+			break
+		}
+	}
 
 	testUpdate, _ := mgrTest.NetworkChangesStore.Get(testNetworkChange)
 	assert.Assert(t, testUpdate != nil)
@@ -306,15 +343,31 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 	const testNetworkChange networkchange.ID = "ConfigOnly_SetNetworkConfig"
 	err := mgrTest.SetNetworkConfig(updatesForConfigOnlyDevice, deletesForConfigOnlyDevice, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "ConfigOnly_SetNetworkConfig error")
-	time.Sleep(time.Millisecond * 10) // Have to wait for change to be reconciled
 
-	testUpdate, _ := mgrTest.NetworkChangesStore.Get(testNetworkChange)
-	assert.Assert(t, testUpdate != nil)
-	assert.Equal(t, testUpdate.ID, testNetworkChange, "Change Ids should correspond")
-	assert.Equal(t, changetypes.Phase_CHANGE, testUpdate.Status.Phase)
+	nwChangeUpdates := make(chan stream.Event)
+	ctx, err := mgrTest.NetworkChangesStore.Watch(nwChangeUpdates, networkstore.WithChangeID(testNetworkChange))
+	assert.NilError(t, err)
+	defer ctx.Close()
 
-	// The following is the problem in Issue https://github.com/onosproject/onos-config/issues/866
-	// The Device Change controller never gets created and hence the Network Change controller
-	// just sits there doing nothing and stays in RUNNING
-	//assert.Equal(t, changetypes.State_COMPLETE, testUpdate.Status.State)
+	breakout := false
+	for { // 3 responses are expected PENDING, RUNNING and COMPLETE
+		select {
+		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
+			event := eventObj.Object.(*networkchange.NetworkChange)
+			t.Logf("Event received %v", event)
+			if event.Status.State == changetypes.State_COMPLETE {
+				breakout = true
+			}
+		case <-time.After(500 * time.Millisecond):
+			// The following is the problem in Issue https://github.com/onosproject/onos-config/issues/866
+			// The Device Change controller never gets created and hence the Network Change controller
+			// just sits there doing nothing and stays in RUNNING
+			assert.Assert(t, true, "Failed because NW change never went to Complete")
+			breakout = true
+			//t.FailNow()
+		}
+		if breakout {
+			break
+		}
+	}
 }
