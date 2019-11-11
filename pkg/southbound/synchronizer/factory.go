@@ -57,12 +57,13 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			} else {
 				mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
 			}
+			valueMap := make(devicechange.TypedValueMap)
 			operationalStateCacheLock.Lock()
-			operationalStateCache[notifiedDevice.ID] = make(devicechange.TypedValueMap)
+			operationalStateCache[notifiedDevice.ID] = valueMap
+			operationalStateCacheLock.Unlock()
 			target := newTargetFn()
 			sync, err := New(ctx, notifiedDevice, opStateChan, southboundErrorChan,
-				operationalStateCache[notifiedDevice.ID], mReadOnlyPaths, target, mStateGetMode, operationalStateCacheLock)
-			operationalStateCacheLock.Unlock()
+				valueMap, mReadOnlyPaths, target, mStateGetMode, operationalStateCacheLock)
 			if err != nil {
 				log.Errorf("Error connecting to device %v: %v", notifiedDevice, err)
 				southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
