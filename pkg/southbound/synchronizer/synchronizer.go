@@ -442,7 +442,6 @@ func (sync *Synchronizer) opStateSubHandler(msg proto.Message) error {
 			}
 		}
 
-		sync.operationalCacheLock.Lock()
 		for _, del := range notification.Delete {
 			if del.Elem == nil {
 				return fmt.Errorf("invalid nil path in update: %v", del)
@@ -450,9 +449,10 @@ func (sync *Synchronizer) opStateSubHandler(msg proto.Message) error {
 			pathStr := utils.StrPathElem(del.Elem)
 			log.Info("Delete path ", pathStr, " for device ", sync.ID)
 			sync.operationalStateChan <- events.NewOperationalStateEvent(string(sync.Device.ID), pathStr, nil, events.EventItemDeleted)
+			sync.operationalCacheLock.Lock()
 			delete(sync.operationalCache, pathStr)
+			sync.operationalCacheLock.Unlock()
 		}
-		sync.operationalCacheLock.Unlock()
 	}
 	return nil
 }
