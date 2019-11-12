@@ -42,7 +42,8 @@ Use `gnmi_cli -get` to get configuration for a particular device (target) from t
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
-    -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 
 ### List all device names (targets)
@@ -50,7 +51,8 @@ A useful way to retrieve all stored device names is with the command:
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path: <target: '*'>" \
-    -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 
 > The value in the response can be an individual value or a tree of values depending
@@ -78,7 +80,8 @@ For instance to retrieve all instances of an interface use `*` as the key:
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path:<target: 'devicesim-1', elem:<name:'interfaces' > elem:<name:'interface' key:<key:'name' value:'*' > > elem:<name:'config'> elem:<name:'enabled' >>" \
-        -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 > This returns the `enabled` config attribute of both interfaces 'eth1' and 'admin'
 
@@ -87,7 +90,8 @@ To retrieve both the config and state values of both then additionally the use
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path:<target: 'devicesim-1', elem:<name:'interfaces' > elem:<name:'interface' key:<key:'name' value:'*' > > elem:<name:'*'> elem:<name:'enabled' >>" \
-        -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 > If the device is connected and the OperationState cache is populated this returns
 > 4 values - `eth1` config and state enabled values and `admin` config and
@@ -98,8 +102,9 @@ To retrieve state, non-configurable values, there is no difference with a normal
 An example follows:
 ```bash
 gnmi_cli -get -address onos-config:5150 \
-   -proto "path: <target: 'devicesim-1',elem:<name:'system' > elem:<name:'openflow' > elem:<name:'controllers' > elem:<name:'controller' key:<key:'name' value:'main' > > elem:<name:'connections' > elem:<name:'connection' key:<key:'aux-id' value:'0' > > elem:<name:'state' > elem:<name:'address'>>" \
-   -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -proto "path: <target: 'devicesim-1',elem:<name:'system' > elem:<name:'openflow' > elem:<name:'controllers' > elem:<name:'controller' key:<key:'name' value:'main' > > elem:<name:'connections' > elem:<name:'connection' key:<key:'aux-id' value:'0' > > elem:<name:'state' > elem:<name:'address'>>" \
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 ## Northbound Set Request via gNMI
 Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
@@ -107,7 +112,8 @@ Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the
 ```bash
 gnmi_cli -address onos-config:5150 -set \
     -proto "update: <path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
-    -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 giving a response like
 ```bash
@@ -168,7 +174,8 @@ applied changes and push it to the `target` with a standard `set` operation.
 
 In the case where the `target` device is not known, a special feature of onos-config
 has to be invoked to tell the system the type and version to use as a model plugin
-for validation - these are given in extensions 101 and 102.
+for validation - these are given in extensions [101](./gnmi_extensions.md) (version)
+and [102](./gnmi_extensions.md) (type).
 > This can be used to pre-provision new devices or new versions of devices before
 > they are available in the `onos-topo` topology.  
 
@@ -176,14 +183,15 @@ For example using the
 gnmi_cli:
 ```bash
 gnmi_cli -address onos-config:5150 -set \
-    -proto "update: <path: <target: 'new-device', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>, extension: <registered_ext: <id: 100, msg: 'my2ndchange'>>  , extension <registered_ext: <id: 101, msg: 'Devicesim'>>, extension: <registered_ext: <id: 102, msg: '1.0.0'>>" \
-    -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -proto "update: <path: <target: 'new-device', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>, extension: <registered_ext: <id: 100, msg: 'my2ndchange'>>  , extension <registered_ext: <id: 101, msg: '1.0.0'>>, extension: <registered_ext: <id: 102, msg: 'Devicesim'>>" \
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 
 > There are restrictions on the use of these extensions in this context:
 > * All targets specified in this `set` command will have to be of the same type
 > and version as given in extension 101 and 102, even if they already exist on
-> the system
+> the system.
 
 ## Northbound Delete Request via gNMI
 A delete request in gNMI is done using the set request with `delete` paths instead of `update` or `replace`.
@@ -192,7 +200,8 @@ To make a gNMI Set request do delete a path, use the `gnmi_cli -set` command as 
 ```bash
 gnmi_cli -address onos-config:5150 -set \
     -proto "delete: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
-    -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 
 ## Northbound Subscribe Request for Stream Notifications via gNMI
@@ -202,7 +211,8 @@ please note the `0` as subscription mode to indicate streaming:
 ```bash
 gnmi_cli -address onos-config:5150 \
     -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
-    -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 
 > This command will block until there is a change at the requested value that gets
@@ -215,7 +225,8 @@ please note the `1` as subscription mode to indicate to send the response once:
 ```bash
 gnmi_cli -address onos-config:5150 \
     -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
-    -timeout 5s -en PROTO -alsologtostderr -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 
 > This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
@@ -226,7 +237,8 @@ please note the `2` as subscription mode to indicate to send the response in a p
 
 ```bash
 gnmi_cli -address onos-config:5150 -polling_interval 5s \
-     -proto "subscribe:<mode: 2, prefix:<>, subscription:<sample_interval: 5, path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
-     -timeout 5s -en PROTO -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+    -proto "subscribe:<mode: 2, prefix:<>, subscription:<sample_interval: 5, path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 > This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.

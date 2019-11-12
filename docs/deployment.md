@@ -354,7 +354,8 @@ service and port:
 > gnmi_cli -set \
     -address config.onosproject.org:443 \
     -proto "update: <path: <target: 'device-1-device-simulator', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Dublin'>>" \
-    -timeout 5s -en PROTO -client_crt deployments/helm/onos-config/files/certs/tls.crt -client_key deployments/helm/onos-config/files/certs/tls.key -ca_crt deployments/helm/onos-config/files/certs/tls.cacrt -alsologtostderr
+    -timeout 5s -en PROTO \
+    -client_crt deployments/helm/onos-config/files/certs/tls.crt -client_key deployments/helm/onos-config/files/certs/tls.key -ca_crt deployments/helm/onos-config/files/certs/tls.cacrt -alsologtostderr
 response: <
   path: <
     elem: <
@@ -391,7 +392,8 @@ through the northbound API:
 > gnmi_cli -get \
     -address config.onosproject.org:443 \
     -proto "path: <target: 'device-1-device-simulator', elem: <name: 'system'> elem: <name: 'clock' > elem:<name:'config'> elem: <name: 'timezone-name'>>" \
-    -timeout 5s -en PROTO -alsologtostderr -client_crt deployments/helm/onos-config/files/certs/tls.crt -client_key deployments/helm/onos-config/files/certs/tls.key -ca_crt deployments/helm/onos-config/files/certs/tls.cacrt
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt deployments/helm/onos-config/files/certs/tls.crt -client_key deployments/helm/onos-config/files/certs/tls.key -ca_crt deployments/helm/onos-config/files/certs/tls.cacrt
 notification: <
   timestamp: 1557856109
   update: <
