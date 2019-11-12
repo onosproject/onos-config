@@ -282,10 +282,7 @@ should give an appropriate error
 ```bash
 > gnmi_cli -address localhost:5150 -set \
     -proto "update: <path: <target: 'localhost-1', elem: <name: 'system'> elem: <name: 'openflow'> elem: <name: 'controllers'> elem: <name: 'controller' key: <key: 'name' value: 'main'>> elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>> elem: <name: 'state'> elem: <name: 'address'>> val: <string_val: '192.0.2.11'>>" \
-    -timeout 5s -alsologtostderr \
-    -client_crt pkg/southbound/testdata/client1.crt \
-    -client_key pkg/southbound/testdata/client1.key \
-    -ca_crt pkg/southbound/testdata/onfca.crt
+    -timeout 5s -en PROTO -alsologtostderr -client_crt pkg/southbound/testdata/client1.crt -client_key pkg/southbound/testdata/client1.key -ca_crt pkg/southbound/testdata/onfca.crt
 ```
 gives the error:
 ```bash
