@@ -34,11 +34,11 @@ func factorySetUp() (chan *topodevice.ListResponse, chan<- events.OperationalSta
 	dispatcher := dispatcherpkg.NewDispatcher()
 	modelregistry := new(modelregistrypkg.ModelRegistry)
 	opStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
-	var opStateCacheLock sync.RWMutex
+	opStateCacheLock := &sync.RWMutex{}
 	return make(chan *topodevice.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
-		dispatcher, modelregistry, opStateCache, &opStateCacheLock, nil
+		dispatcher, modelregistry, opStateCache, opStateCacheLock, nil
 }
 
 /**

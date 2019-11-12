@@ -34,7 +34,6 @@ import (
 	log "k8s.io/klog"
 	"os"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -247,7 +246,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 
 	allMocks.MockStores = mockStores
 	allMocks.MockDeviceCache = mockDeviceCache
-	mgrTest.OperationalStateCacheLock = &sync.RWMutex{}
+
 	return mgrTest, &allMocks
 }
 

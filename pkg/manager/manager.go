@@ -99,6 +99,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
 		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
+		OperationalStateCacheLock: &sync.RWMutex{},
 	}
 	return &mgr, nil
 }
