@@ -16,9 +16,9 @@ package synchronizer
 
 import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	"github.com/onosproject/onos-config/pkg/dispatcher"
+	dispatcherpkg "github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
+	modelregistrypkg "github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
@@ -28,16 +28,17 @@ import (
 )
 
 func factorySetUp() (chan *topodevice.ListResponse, chan<- events.OperationalStateEvent,
-	chan events.DeviceResponse, *dispatcher.Dispatcher,
-	*modelregistry.ModelRegistry, map[topodevice.ID]devicechange.TypedValueMap, error) {
+	chan events.DeviceResponse, *dispatcherpkg.Dispatcher,
+	*modelregistrypkg.ModelRegistry, map[topodevice.ID]devicechange.TypedValueMap, *sync.RWMutex, error) {
 
-	dispatcher := dispatcher.NewDispatcher()
-	modelregistry := new(modelregistry.ModelRegistry)
+	dispatcher := dispatcherpkg.NewDispatcher()
+	modelregistry := new(modelregistrypkg.ModelRegistry)
 	opStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
+	opStateCacheLock := &sync.RWMutex{}
 	return make(chan *topodevice.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
-		dispatcher, modelregistry, opStateCache, nil
+		dispatcher, modelregistry, opStateCache, opStateCacheLock, nil
 }
 
 /**
@@ -45,9 +46,7 @@ func factorySetUp() (chan *topodevice.ListResponse, chan<- events.OperationalSta
  * and then un-does everything
  */
 func TestFactory_Revert(t *testing.T) {
-	// TODO - Fix opstateCache data race
-	t.Skip()
-	topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, err := factorySetUp()
+	topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, opStateCacheLock, err := factorySetUp()
 	assert.NilError(t, err, "Error in factorySetUp()")
 	assert.Assert(t, topoChan != nil)
 	assert.Assert(t, opstateChan != nil)
@@ -59,7 +58,7 @@ func TestFactory_Revert(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		Factory(topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, southbound.NewTarget)
+		Factory(topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, southbound.NewTarget, opStateCacheLock)
 		wg.Done()
 	}()
 
@@ -94,8 +93,10 @@ func TestFactory_Revert(t *testing.T) {
 
 	// Wait for gRPC connection to timeout
 	time.Sleep(time.Millisecond * 600) // Give it a moment for the event to take effect
-	opStateCacheUpdated, sok := opstateCache[device1.ID]
-	assert.Assert(t, sok, "Op state cache entry created")
+	opStateCacheLock.RLock()
+	opStateCacheUpdated, ok := opstateCache[device1.ID]
+	opStateCacheLock.RUnlock()
+	assert.Assert(t, ok, "Op state cache entry created")
 	assert.Equal(t, len(opStateCacheUpdated), 0)
 
 	for resp := range responseChan {
@@ -115,6 +116,8 @@ func TestFactory_Revert(t *testing.T) {
 	listeners := dispatcher.GetListeners()
 	assert.Equal(t, 0, len(listeners))
 
-	_, ok := opstateCache[device1.ID]
+	opStateCacheLock.RLock()
+	_, ok = opstateCache[device1.ID]
+	opStateCacheLock.RUnlock()
 	assert.Assert(t, !ok, "Op state cache entry deleted")
 }

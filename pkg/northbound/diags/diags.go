@@ -50,7 +50,9 @@ type Server struct {
 
 // GetOpState provides a stream of Operational and State data
 func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_GetOpStateServer) error {
+	manager.GetManager().OperationalStateCacheLock.RLock()
 	deviceCache, ok := manager.GetManager().OperationalStateCache[topodevice.ID(r.DeviceId)]
+	manager.GetManager().OperationalStateCacheLock.RUnlock()
 	if !ok {
 		return fmt.Errorf("no Operational State cache available for %s", r.DeviceId)
 	}

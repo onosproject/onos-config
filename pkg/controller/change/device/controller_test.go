@@ -37,6 +37,7 @@ import (
 	"io"
 	log "k8s.io/klog"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -595,7 +596,7 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	_, err := synchronizer.New(context.Background(), &mockDevice,
 		make(chan<- events.OperationalStateEvent), make(chan<- events.DeviceResponse),
 		opStateCache, roPathMap, mockTargetDevice,
-		modelregistry.GetStateExplicitRoPaths)
+		modelregistry.GetStateExplicitRoPaths, &sync.RWMutex{})
 	assert.NoError(t, err, "Unable to create new synchronizer for", mockDevice.ID)
 
 	// Finally to make it visible to tests - add it to `Targets`

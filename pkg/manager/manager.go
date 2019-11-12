@@ -41,6 +41,7 @@ import (
 	"google.golang.org/grpc/status"
 	log "k8s.io/klog"
 	"strings"
+	"sync"
 )
 
 var mgr Manager
@@ -65,6 +66,7 @@ type Manager struct {
 	SouthboundErrorChan       chan events.DeviceResponse
 	Dispatcher                *dispatcher.Dispatcher
 	OperationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
+	OperationalStateCacheLock *sync.RWMutex
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -97,6 +99,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
 		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
+		OperationalStateCacheLock: &sync.RWMutex{},
 	}
 	return &mgr, nil
 }
@@ -147,7 +150,7 @@ func (m *Manager) Run() {
 	go listenOnResponseChannel(m.SouthboundErrorChan, m)
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.TopoChannel, m.OperationalStateChannel, m.SouthboundErrorChan,
-		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache, southbound.TargetGenerator)
+		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache, southbound.TargetGenerator, m.OperationalStateCacheLock)
 
 	err := m.DeviceStore.Watch(m.TopoChannel)
 	if err != nil {

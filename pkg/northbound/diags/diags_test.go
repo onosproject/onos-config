@@ -37,6 +37,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test_GetOpState_DeviceSubscribe(t *testing.T) {
+
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 	defer s.Stop()

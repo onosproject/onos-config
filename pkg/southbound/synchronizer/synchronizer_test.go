@@ -59,13 +59,14 @@ const (
 )
 
 type synchronizerParameters struct {
-	topoChan     chan topodevice.ListResponse
-	opstateChan  chan events.OperationalStateEvent
-	responseChan chan events.DeviceResponse
-	dispatcher   *dispatcher.Dispatcher
-	models       *modelregistry.ModelRegistry
-	roPathMap    modelregistry.ReadOnlyPathMap
-	opstateCache devicechange.TypedValueMap
+	topoChan         chan topodevice.ListResponse
+	opstateChan      chan events.OperationalStateEvent
+	responseChan     chan events.DeviceResponse
+	dispatcher       *dispatcher.Dispatcher
+	models           *modelregistry.ModelRegistry
+	roPathMap        modelregistry.ReadOnlyPathMap
+	opstateCache     devicechange.TypedValueMap
+	opstateCacheLock *sync.RWMutex
 }
 
 func synchronizerSetUp() (synchronizerParameters, error) {
@@ -83,13 +84,14 @@ func synchronizerSetUp() (synchronizerParameters, error) {
 	roPathMap[cont1bState] = roSubPath2
 
 	return synchronizerParameters{
-		topoChan:     make(chan topodevice.ListResponse),
-		opstateChan:  make(chan events.OperationalStateEvent),
-		responseChan: make(chan events.DeviceResponse),
-		dispatcher:   dispatcher,
-		models:       mr,
-		roPathMap:    roPathMap,
-		opstateCache: opStateCache,
+		topoChan:         make(chan topodevice.ListResponse),
+		opstateChan:      make(chan events.OperationalStateEvent),
+		responseChan:     make(chan events.DeviceResponse),
+		dispatcher:       dispatcher,
+		models:           mr,
+		roPathMap:        roPathMap,
+		opstateCache:     opStateCache,
+		opstateCacheLock: &sync.RWMutex{},
 	}, nil
 }
 
@@ -166,7 +168,7 @@ func TestNew(t *testing.T) {
 
 	s, err := New(context2.Background(), &mockDevice1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
-		modelregistry.GetStateExplicitRoPaths)
+		modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock)
 	assert.NilError(t, err, "Creating s")
 	assert.Equal(t, string(s.ID), mock1NameStr)
 	assert.Equal(t, string(s.Device.ID), mock1NameStr)
@@ -440,7 +442,8 @@ func TestNewWithExistingConfig(t *testing.T) {
 	}()
 
 	s, err := New(context2.Background(), device1,
-		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget, modelregistry.GetStateOpState)
+		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
+		modelregistry.GetStateOpState, params.opstateCacheLock)
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
 	assert.Equal(t, s.Device.ID, device1.ID)
@@ -559,7 +562,8 @@ func TestNewWithExistingConfigError(t *testing.T) {
 	}()
 
 	s, err := New(context2.Background(), device1,
-		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget, modelregistry.GetStateOpState)
+		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
+		modelregistry.GetStateOpState, params.opstateCacheLock)
 
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
@@ -684,7 +688,7 @@ func Test_LikeStratum(t *testing.T) {
 
 	s, err := New(context2.Background(), &mockDevice1,
 		opstateChan, responseChan, opStateCache, roPathMap, mockTarget,
-		modelregistry.GetStateExplicitRoPathsExpandWildcards)
+		modelregistry.GetStateExplicitRoPathsExpandWildcards, &sync.RWMutex{})
 	assert.NilError(t, err, "Creating s")
 	assert.Equal(t, string(s.ID), mock1NameStr)
 	assert.Equal(t, string(s.Device.ID), mock1NameStr)
