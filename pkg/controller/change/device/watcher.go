@@ -17,12 +17,12 @@ package device
 import (
 	"github.com/onosproject/onos-config/api/types"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	"github.com/onosproject/onos-config/api/types/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	log "k8s.io/klog"
 	"sync"
 )
 
@@ -30,10 +30,11 @@ const queueSize = 100
 
 // Watcher is a device change watcher
 type Watcher struct {
-	DeviceStore devicestore.Store
+	DeviceCache devicestore.Cache
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
-	streams     map[device.VersionedID]stream.Context
+	streams     map[devicetype.VersionedID]stream.Context
+	cacheStream stream.Context
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
@@ -47,42 +48,55 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	}
 
 	w.ch = ch
-	w.streams = make(map[device.VersionedID]stream.Context)
+	w.streams = make(map[devicetype.VersionedID]stream.Context)
 	w.mu.Unlock()
 
-	deviceCh := make(chan *topodevice.ListResponse)
-	if err := w.DeviceStore.Watch(deviceCh); err != nil {
+	deviceCacheCh := make(chan stream.Event)
+	go func() {
+		for eventObj := range deviceCacheCh {
+			if eventObj.Type == stream.Created {
+				event := eventObj.Object.(*devicestore.Info)
+				w.watchDevice(devicetype.NewVersionedID(event.DeviceID, event.Version), ch)
+			}
+		}
+		w.mu.Lock()
+		w.cacheStream.Close()
+		w.mu.Unlock()
+	}()
+
+	var err error
+	w.mu.Lock()
+	w.cacheStream, err = w.DeviceCache.Watch(deviceCacheCh, true)
+	w.mu.Unlock()
+	if err != nil {
 		return err
 	}
 
-	go func() {
-		for event := range deviceCh {
-			w.watchDevice(device.NewVersionedID(device.ID(event.Device.ID), device.Version(event.Device.Version)), ch)
-		}
-	}()
 	return nil
 }
 
 // watchDevice watches changes for the given device
-func (w *Watcher) watchDevice(deviceID device.VersionedID, ch chan<- types.ID) {
+func (w *Watcher) watchDevice(deviceID devicetype.VersionedID, ch chan<- types.ID) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	ctx := w.streams[deviceID]
 	if ctx != nil {
+		log.Errorf("Watcher stream for %s is not nil", deviceID)
 		return
 	}
 
-	deviceCh := make(chan stream.Event, queueSize)
-	ctx, err := w.ChangeStore.Watch(deviceID, deviceCh, devicechangestore.WithReplay())
+	deviceChangeCh := make(chan stream.Event, queueSize)
+	ctx, err := w.ChangeStore.Watch(deviceID, deviceChangeCh, devicechangestore.WithReplay())
 	if err != nil {
+		log.Errorf("setting up Watcher stream for %s: %s", deviceID, err)
 		return
 	}
 	w.streams[deviceID] = ctx
 
 	w.wg.Add(1)
 	go func() {
-		for event := range deviceCh {
+		for event := range deviceChangeCh {
 			ch <- types.ID(event.Object.(*devicechange.DeviceChange).ID)
 		}
 		w.wg.Done()

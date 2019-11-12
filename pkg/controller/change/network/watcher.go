@@ -24,7 +24,7 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	log "k8s.io/klog"
 	"sync"
 )
 
@@ -74,10 +74,11 @@ var _ controller.Watcher = &Watcher{}
 
 // DeviceWatcher is a device change watcher
 type DeviceWatcher struct {
-	DeviceStore devicestore.Store
+	DeviceCache devicestore.Cache
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
 	streams     map[device.VersionedID]stream.Context
+	cacheStream stream.Context
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
@@ -94,16 +95,28 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	w.streams = make(map[device.VersionedID]stream.Context)
 	w.mu.Unlock()
 
-	deviceCh := make(chan *topodevice.ListResponse)
-	if err := w.DeviceStore.Watch(deviceCh); err != nil {
+	deviceCacheCh := make(chan stream.Event)
+	go func() {
+		for eventObj := range deviceCacheCh {
+			if eventObj.Type == stream.Created {
+				event := eventObj.Object.(*devicestore.Info)
+				w.watchDevice(device.NewVersionedID(event.DeviceID, event.Version), ch)
+			}
+		}
+		w.mu.Lock()
+		w.cacheStream.Close()
+		w.mu.Unlock()
+	}()
+
+	var err error
+	w.mu.Lock()
+	w.cacheStream, err = w.DeviceCache.Watch(deviceCacheCh, true)
+	w.mu.Unlock()
+	if err != nil {
 		return err
 	}
+	log.Infof("Network DeviceWatcher - watching cache started %v", deviceCacheCh)
 
-	go func() {
-		for event := range deviceCh {
-			w.watchDevice(device.NewVersionedID(device.ID(event.Device.ID), device.Version(event.Device.Version)), ch)
-		}
-	}()
 	return nil
 }
 
@@ -114,6 +127,7 @@ func (w *DeviceWatcher) watchDevice(deviceID device.VersionedID, ch chan<- types
 
 	ctx := w.streams[deviceID]
 	if ctx != nil {
+		log.Errorf("Network DeviceWatcher for device changes %s - ctx already found", deviceID)
 		return
 	}
 
@@ -123,6 +137,8 @@ func (w *DeviceWatcher) watchDevice(deviceID device.VersionedID, ch chan<- types
 		return
 	}
 	w.streams[deviceID] = ctx
+
+	log.Infof("Network DeviceWatcher - watching device changes store for %s", deviceID)
 
 	w.wg.Add(1)
 	go func() {

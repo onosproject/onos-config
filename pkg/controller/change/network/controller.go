@@ -28,7 +28,7 @@ import (
 )
 
 // NewController returns a new config controller
-func NewController(leadership leadershipstore.Store, deviceStore devicestore.Store, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
+func NewController(leadership leadershipstore.Store, deviceCache devicestore.Cache, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
 	c := controller.NewController("NetworkChange")
 	c.Activate(&controller.LeadershipActivator{
 		Store: leadership,
@@ -37,7 +37,7 @@ func NewController(leadership leadershipstore.Store, deviceStore devicestore.Sto
 		Store: networkChanges,
 	})
 	c.Watch(&DeviceWatcher{
-		DeviceStore: deviceStore,
+		DeviceCache: deviceCache,
 		ChangeStore: deviceChanges,
 	})
 	c.Reconcile(&Reconciler{
@@ -57,6 +57,7 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	change, err := r.networkChanges.Get(networkchange.ID(id))
 	if err != nil {
+		log.Warningf("Could not get NW change %s", id)
 		return false, err
 	}
 
@@ -102,6 +103,8 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 
 	// If the change can be applied, update the change state to RUNNING
 	change.Status.State = changetypes.State_RUNNING
+	change.Status.Reason = changetypes.Reason_NONE
+	change.Status.Message = ""
 	log.Infof("Running NetworkChange %v", change)
 	if err := r.networkChanges.Update(change); err != nil {
 		return false, err
@@ -217,6 +220,7 @@ func (r *Reconciler) reconcileRunningChange(change *networkchange.NetworkChange)
 		if r.isDeviceChangeRollbacksComplete(deviceChanges) {
 			change.Status.State = changetypes.State_PENDING
 			change.Status.Reason = changetypes.Reason_ERROR
+			change.Status.Message = "At least one device failed"
 			log.Infof("Failing NetworkChange %v", change)
 			if err := r.networkChanges.Update(change); err != nil {
 				return false, err

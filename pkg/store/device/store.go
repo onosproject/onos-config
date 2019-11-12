@@ -16,6 +16,7 @@ package device
 
 import (
 	"context"
+	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/client/util"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
@@ -42,9 +43,8 @@ type Store interface {
 
 // NewTopoStore returns a new topo-based device store
 func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
-	//OPTS can be empty for TESTING purposes
 	if len(opts) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf("no opts given when creating topo store")
 	}
 	opts = append(opts, grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(100*time.Millisecond)))
 	conn, err := getTopoConn(opts...)

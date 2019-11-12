@@ -206,7 +206,6 @@ func (s *atomixStore) Get(id devicechange.ID) (*devicechange.DeviceChange, error
 }
 
 func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
-	log.Infof("Creating new device change %v", change)
 	if change.Change.DeviceID == "" {
 		return errors.New("no device ID specified")
 	}
@@ -250,6 +249,8 @@ func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
 	change.Revision = devicechange.Revision(entry.Version)
 	change.Created = entry.Created
 	change.Updated = entry.Updated
+	log.Infof("Created new device change %s", change.ID)
+
 	return nil
 }
 

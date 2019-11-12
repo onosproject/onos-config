@@ -16,6 +16,7 @@ package manager
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -112,6 +113,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 			return nil
 		}).Times(3)
 	mockDeviceStore.EXPECT().Get(topodevice.ID(device1)).Return(device1Topo, nil).AnyTimes()
+	mockDeviceStore.EXPECT().Get(topodevice.ID(deviceConfigOnly)).Return(nil, fmt.Errorf("device not found")).AnyTimes()
 	mockDeviceStore.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *topodevice.Device) (*topodevice.Device, error) {
 		return updated, nil
 	})
@@ -211,6 +213,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	mgrTest.setTargetGenerator(mockTargetCreationfn)
 	mgrTest.Run()
 
+	time.Sleep(10 * time.Millisecond)
 	assert.Assert(t, networkChange1 != nil)
 	err = mgrTest.NetworkChangesStore.Create(networkChange1)
 	assert.NilError(t, err, "Unexpected failure when creating new NetworkChange")
@@ -224,10 +227,11 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 		select {
 		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
 			event := eventObj.Object.(*networkchange.NetworkChange)
+			//t.Logf("Event received %v", event)
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(3 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -299,7 +303,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(3 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -317,20 +321,25 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	updatedVals := testUpdate.Changes[0].Values
 	assert.Equal(t, len(updatedVals), 2)
 
-	// Asserting update to 2A
-	assert.Equal(t, updatedVals[0].Path, test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, (*devicechange.TypedUint64)(updatedVals[0].GetValue()).Uint(), valueLeaf2A789)
-	assert.Equal(t, updatedVals[0].Removed, false)
-
-	// Asserting deletion of 2C
-	assert.Equal(t, updatedVals[1].Path, test1Cont1ACont2ALeaf2C)
-	assert.Equal(t, updatedVals[1].GetValue().ValueToString(), "")
-	assert.Equal(t, updatedVals[1].Removed, true)
+	for _, updatedVal := range updatedVals {
+		switch updatedVal.Path {
+		case test1Cont1ACont2ALeaf2A:
+			assert.Equal(t, (*devicechange.TypedUint64)(updatedVal.GetValue()).Uint(), valueLeaf2A789)
+			assert.Equal(t, updatedVal.Removed, false)
+		case test1Cont1ACont2ALeaf2C:
+			assert.Equal(t, updatedVal.GetValue().ValueToString(), "")
+			assert.Equal(t, updatedVal.Removed, true)
+		default:
+			t.Errorf("Unexpected path: %s", updatedVal.Path)
+		}
+	}
 }
 
-// Test a change on Device 2 - this device does not exist on Topo - a config-only device at this stage
+// Test a change on device-config-only - this device does not exist on Topo - a config-only device at this stage
 func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
-	mgrTest, _ := setUpDeepTest(t)
+	mgrTest, allMocks := setUpDeepTest(t)
+
+	allMocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID("device-config-only")).Return(nil, nil).AnyTimes()
 
 	// Making change
 	updates := make(devicechange.TypedValueMap)
@@ -354,17 +363,117 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 		select {
 		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
 			event := eventObj.Object.(*networkchange.NetworkChange)
-			t.Logf("Event received %v", event)
+			//t.Logf("Event received %v", event)
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(500 * time.Millisecond):
-			// The following is the problem in Issue https://github.com/onosproject/onos-config/issues/866
-			// The Device Change controller never gets created and hence the Network Change controller
-			// just sits there doing nothing and stays in RUNNING
-			assert.Assert(t, true, "Failed because NW change never went to Complete")
+		case <-time.After(3 * time.Second):
+			t.FailNow()
+		}
+		if breakout {
+			break
+		}
+	}
+
+	testUpdate, _ := mgrTest.NetworkChangesStore.Get(testNetworkChange)
+	assert.Assert(t, testUpdate != nil)
+	assert.Equal(t, testUpdate.ID, testNetworkChange, "Change Ids should correspond")
+	assert.Equal(t, changetypes.Phase_CHANGE, testUpdate.Status.Phase)
+	assert.Equal(t, changetypes.State_COMPLETE, testUpdate.Status.State)
+
+	// Check that the created change is correct
+	updatedVals := testUpdate.Changes[0].Values
+	assert.Equal(t, len(updatedVals), 2)
+
+	for _, updatedVal := range updatedVals {
+		switch updatedVal.Path {
+		case test1Cont1ACont2ALeaf2A:
+			assert.Equal(t, (*devicechange.TypedUint64)(updatedVal.GetValue()).Uint(), valueLeaf2A789)
+			assert.Equal(t, updatedVal.Removed, false)
+		case test1Cont1ACont2ALeaf2B:
+			assert.Equal(t, updatedVal.GetValue().ValueToString(), "1.590")
+			assert.Equal(t, updatedVal.Removed, false)
+		default:
+			t.Errorf("Unexpected path: %s", updatedVal.Path)
+		}
+	}
+}
+
+// Test a change on device-disconn - this device does not exist on Topo - a config-only device at this stage
+func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
+	mgrTest, allMocks := setUpDeepTest(t)
+	const deviceDisconn = "device-disconn"
+
+	// Mock Device Store
+	timeout := time.Millisecond * 10
+	deviceDisconnTopo := &topodevice.Device{
+		ID:      deviceDisconn,
+		Address: "1.2.3.4:1234",
+		Version: deviceVersion1,
+		Timeout: &timeout,
+		Type:    deviceTypeTd,
+		Protocols: []*topodevice.ProtocolState{
+			{
+				Protocol:          topodevice.Protocol_GNMI,
+				ConnectivityState: topodevice.ConnectivityState_UNREACHABLE,
+				ChannelState:      topodevice.ChannelState_DISCONNECTED,
+				ServiceState:      topodevice.ServiceState_UNAVAILABLE,
+			},
+		},
+	}
+	allMocks.MockStores.DeviceStore.EXPECT().Watch(gomock.Any()).DoAndReturn(
+		func(ch chan<- *topodevice.ListResponse) error {
+			go func() {
+				ch <- &topodevice.ListResponse{
+					Type:   topodevice.ListResponse_NONE,
+					Device: deviceDisconnTopo,
+				}
+			}()
+			return nil
+		}).Times(3)
+	allMocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID(deviceDisconn)).Return(deviceDisconnTopo, nil).AnyTimes()
+	allMocks.MockStores.DeviceStore.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *topodevice.Device) (*topodevice.Device, error) {
+		return updated, nil
+	})
+
+	// Making change
+	updates := make(devicechange.TypedValueMap)
+	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint64(valueLeaf2A789)
+	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueDecimal64(1590, 3)
+	deletes := []string{}
+	updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo := makeDeviceChanges(deviceDisconn, updates, deletes)
+	assert.Assert(t, updatesForDisconnectedDevice != nil)
+	assert.Assert(t, deletesForDisconnectedDevice != nil)
+	assert.Assert(t, deviceInfo != nil)
+
+	// Set the new change
+	const testNetworkChange networkchange.ID = "Disconnected_SetNetworkConfig"
+	err := mgrTest.SetNetworkConfig(updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo, string(testNetworkChange))
+	assert.NilError(t, err, "Disconnected_SetNetworkConfig error")
+
+	nwChangeUpdates := make(chan stream.Event)
+	ctx, err := mgrTest.NetworkChangesStore.Watch(nwChangeUpdates, networkstore.WithChangeID(testNetworkChange))
+	assert.NilError(t, err)
+	defer ctx.Close()
+
+	breakout := false
+	wasRunning := false
+	for { // 3 responses are expected PENDING, RUNNING and PENDING (because of failure)
+		select {
+		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
+			event := eventObj.Object.(*networkchange.NetworkChange)
+			//t.Logf("Event received %v", event)
+			switch event.Status.State {
+			case changetypes.State_RUNNING:
+				wasRunning = true
+			case changetypes.State_PENDING:
+				if wasRunning {
+					breakout = true
+				}
+			}
+		case <-time.After(1 * time.Second):
 			breakout = true
-			//t.FailNow()
+			t.FailNow()
 		}
 		if breakout {
 			break
