@@ -85,6 +85,14 @@ func (c *networkChangeStoreCache) listen() error {
 	go func() {
 		for event := range ch {
 			if event.Type == stream.Deleted {
+				// TODO handle delete properly - it should check to see if any
+				//  of the devices in the removed/deleted NW change exist in any
+				//  of the remaining NW changes. If they don't then remove them
+				//  from the cache and send an event to listeners to that effect
+				//  This will be needed in the case where a network change is made
+				//  but something in it is invalid and it needs to be removed.
+				//  The related devices should not be present in the cache after
+				//  this check
 				continue
 			}
 			netChange := event.Object.(*networkchange.NetworkChange)
@@ -164,9 +172,13 @@ func (c *networkChangeStoreCache) GetDevices() []*Info {
 }
 
 // Watch streams device cache updates to the caller
-// Unlike Watch on an Atomix store this watch has to take care that an event is
+// Unlike Watch on an Atomix store this Watch has to take care that an event is
 // sent to each watch caller - hence the listener array
 // A replay option allows former entries to be replayed to the caller
+// The stream.Context should be closed when the caller is finished, otherwise
+// a deadlock or panic will occur
+// Also **before** calling this Watch() please ensure that the channel `ch` is active
+// and listening on a thread - otherwise deadlock will occur
 func (c *networkChangeStoreCache) Watch(ch chan<- stream.Event, replay bool) (stream.Context, error) {
 	c.mu.RLock()
 	_, ok := c.listeners[ch]
@@ -174,8 +186,8 @@ func (c *networkChangeStoreCache) Watch(ch chan<- stream.Event, replay bool) (st
 	if ok {
 		return nil, fmt.Errorf("already listening to channel %v", ch)
 	}
+	c.mu.Lock()
 	if replay {
-		c.mu.RLock()
 		for _, info := range c.devices {
 			event := stream.Event{
 				Type:   stream.None,
@@ -183,9 +195,7 @@ func (c *networkChangeStoreCache) Watch(ch chan<- stream.Event, replay bool) (st
 			}
 			ch <- event
 		}
-		c.mu.RUnlock()
 	}
-	c.mu.Lock()
 	c.listeners[ch] = struct{}{}
 	c.mu.Unlock()
 

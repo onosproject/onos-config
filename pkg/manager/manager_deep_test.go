@@ -401,7 +401,6 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 
 // Test a change on device-disconn - this device does not exist on Topo - a config-only device at this stage
 func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
-	t.Skip()
 	mgrTest, allMocks := setUpDeepTest(t)
 	const deviceDisconn = "device-disconn"
 
@@ -458,13 +457,19 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 	defer ctx.Close()
 
 	breakout := false
-	for { // 3 responses are expected PENDING, RUNNING and COMPLETE
+	wasRunning := false
+	for { // 3 responses are expected PENDING, RUNNING and PENDING (because of failure)
 		select {
 		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
 			event := eventObj.Object.(*networkchange.NetworkChange)
 			//t.Logf("Event received %v", event)
-			if event.Status.State == changetypes.State_COMPLETE {
-				breakout = true
+			switch event.Status.State {
+			case changetypes.State_RUNNING:
+				wasRunning = true
+			case changetypes.State_PENDING:
+				if wasRunning {
+					breakout = true
+				}
 			}
 		case <-time.After(1 * time.Second):
 			breakout = true

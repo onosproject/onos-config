@@ -91,7 +91,7 @@ func TestDeviceCache(t *testing.T) {
 	watcher1Ctx, err := cache.Watch(cacheChan1, true)
 	assert.NoError(t, err)
 	assert.NotNil(t, watcher1Ctx)
-	// defer watcher1Ctx.Close() // Will close in this test
+	// defer watcher1Ctx.Close() // Will close later in this test
 
 	////// A second call to Watch with no replay ////////////////
 	t.Log("Setting up chan 2")
