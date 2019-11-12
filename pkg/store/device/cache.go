@@ -15,6 +15,7 @@
 package device
 
 import (
+	"fmt"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/api/types/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
@@ -30,8 +31,6 @@ type Info struct {
 	Type     device.Type
 	Version  device.Version
 }
-
-var listeners map[chan<- *Info]struct{}
 
 // Cache is a device type/version cache
 type Cache interface {
@@ -50,7 +49,7 @@ type Cache interface {
 	GetDevices() []*Info
 
 	// Watch allows tracking updates of the cache
-	Watch(chan<- *Info)
+	Watch(ch chan<- stream.Event, replay bool) (stream.Context, error)
 }
 
 // NewCache returns a new cache based on the NetworkChange store
@@ -58,8 +57,8 @@ func NewCache(networkChangeStore networkchangestore.Store) (Cache, error) {
 	cache := &networkChangeStoreCache{
 		networkChangeStore: networkChangeStore,
 		devices:            make(map[device.VersionedID]*Info),
+		listeners:          make(map[chan<- stream.Event]struct{}),
 	}
-	listeners = make(map[chan<- *Info]struct{})
 
 	if err := cache.listen(); err != nil {
 		return nil, err
@@ -72,6 +71,7 @@ type networkChangeStoreCache struct {
 	networkChangeStore networkchangestore.Store
 	devices            map[device.VersionedID]*Info
 	mu                 sync.RWMutex
+	listeners          map[chan<- stream.Event]struct{}
 }
 
 // listen starts listening for network changes
@@ -84,6 +84,9 @@ func (c *networkChangeStoreCache) listen() error {
 
 	go func() {
 		for event := range ch {
+			if event.Type == stream.Deleted {
+				continue
+			}
 			netChange := event.Object.(*networkchange.NetworkChange)
 			for _, devChange := range netChange.Changes {
 				key := device.NewVersionedID(devChange.DeviceID, devChange.DeviceVersion)
@@ -94,13 +97,15 @@ func (c *networkChangeStoreCache) listen() error {
 						Type:     devChange.DeviceType,
 						Version:  devChange.DeviceVersion,
 					}
-					log.Infof("Updating cache with %v", info)
 					c.devices[key] = &info
-					for l := range listeners {
-						if l == nil {
-							delete(listeners, l)
+					log.Infof("Updating cache with %v. Size %d Listeners %d", info, len(c.devices), len(c.listeners))
+					for l := range c.listeners {
+						if l != nil {
+							l <- stream.Event{
+								Type:   stream.Created,
+								Object: &info,
+							}
 						}
-						l <- &info
 					}
 				}
 				c.mu.Unlock()
@@ -158,10 +163,37 @@ func (c *networkChangeStoreCache) GetDevices() []*Info {
 	return devices
 }
 
-func (c *networkChangeStoreCache) Watch(ch chan<- *Info) {
+// Watch streams device cache updates to the caller
+// Unlike Watch on an Atomix store this watch has to take care that an event is
+// sent to each watch caller - hence the listener array
+// A replay option allows former entries to be replayed to the caller
+func (c *networkChangeStoreCache) Watch(ch chan<- stream.Event, replay bool) (stream.Context, error) {
+	c.mu.RLock()
+	_, ok := c.listeners[ch]
+	c.mu.RUnlock()
+	if ok {
+		return nil, fmt.Errorf("already listening to channel %v", ch)
+	}
+	if replay {
+		c.mu.RLock()
+		for _, info := range c.devices {
+			event := stream.Event{
+				Type:   stream.None,
+				Object: info,
+			}
+			ch <- event
+		}
+		c.mu.RUnlock()
+	}
 	c.mu.Lock()
-	listeners[ch] = struct{}{}
+	c.listeners[ch] = struct{}{}
 	c.mu.Unlock()
+
+	return stream.NewContext(func() {
+		c.mu.Lock()
+		delete(c.listeners, ch)
+		c.mu.Unlock()
+	}), nil
 }
 
 func (c *networkChangeStoreCache) Close() error {

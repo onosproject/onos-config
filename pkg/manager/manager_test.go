@@ -78,13 +78,21 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	ctrl := gomock.NewController(t)
 
 	mockDeviceCache := devicestore.NewMockCache(ctrl)
-	mockDeviceCache.EXPECT().Watch(gomock.Any()).DoAndReturn(
-		func(ch chan<- *devicestore.Info) {
-			ch <- &devicestore.Info{
-				DeviceID: device1,
-				Type:     deviceTypeTd,
-				Version:  deviceVersion1,
-			}
+	mockDeviceCache.EXPECT().Watch(gomock.Any(), true).DoAndReturn(
+		func(ch chan<- stream.Event, replay bool) (stream.Context, error) {
+			go func() {
+				event := stream.Event{
+					Type: stream.Created,
+					Object: &devicestore.Info{
+						DeviceID: device1,
+						Type:     deviceTypeTd,
+						Version:  deviceVersion1,
+					},
+				}
+				ch <- event
+				close(ch)
+			}()
+			return stream.NewContext(func() {}), nil
 		},
 	)
 	// Data for default configuration
@@ -178,7 +186,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 
 	// Mock Device Changes Store
 	mockDeviceChangesStore := mockstore.NewMockDeviceChangesStore(ctrl)
-	mockDeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
+	mockDeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	deviceChanges := make(map[devicechange.ID]*devicechange.DeviceChange)
 
 	mockDeviceChangesStore.EXPECT().Get(deviceChange1.ID).DoAndReturn(

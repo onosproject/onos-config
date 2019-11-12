@@ -7,6 +7,7 @@ package device
 import (
 	gomock "github.com/golang/mock/gomock"
 	device "github.com/onosproject/onos-config/api/types/device"
+	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	reflect "reflect"
 )
 
@@ -104,13 +105,16 @@ func (mr *MockCacheMockRecorder) GetDevices() *gomock.Call {
 }
 
 // Watch mocks base method
-func (m *MockCache) Watch(arg0 chan<- *Info) {
+func (m *MockCache) Watch(ch chan<- stream.Event, replay bool) (stream.Context, error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Watch", arg0)
+	ret := m.ctrl.Call(m, "Watch", ch, replay)
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Watch indicates an expected call of Watch
-func (mr *MockCacheMockRecorder) Watch(arg0 interface{}) *gomock.Call {
+func (mr *MockCacheMockRecorder) Watch(ch, replay interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockCache)(nil).Watch), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockCache)(nil).Watch), ch, replay)
 }

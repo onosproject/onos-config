@@ -83,17 +83,14 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	// Get the device from the device store
 	log.Infof("Checking Device store for %s", change.Change.DeviceID)
 	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))
-	if err != nil {
-		return false, err
-	}
-
 	// If the device is not present in topo then it is a config -only device
-	if device == nil {
-		log.Infof("Device %s is not present in topo", change.Change.DeviceID)
+	if err != nil || device == nil {
+		log.Infof("Device %s is not present in topo. Continuing as config only. %v", change.Change.DeviceID, err)
 	} else if getProtocolState(device) != topodevice.ChannelState_CONNECTED {
 		// If the device is not available, fail the change
 		change.Status.State = changetypes.State_FAILED
 		change.Status.Reason = changetypes.Reason_ERROR
+		change.Status.Message = fmt.Sprintf("Device %s not connected %v", change.Change.DeviceID, getProtocolState(device))
 		log.Infof("Failing DeviceChange %v", change)
 		if err := r.changes.Update(change); err != nil {
 			return false, err

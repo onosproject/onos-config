@@ -103,6 +103,8 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 
 	// If the change can be applied, update the change state to RUNNING
 	change.Status.State = changetypes.State_RUNNING
+	change.Status.Reason = changetypes.Reason_NONE
+	change.Status.Message = ""
 	log.Infof("Running NetworkChange %v", change)
 	if err := r.networkChanges.Update(change); err != nil {
 		return false, err
@@ -218,6 +220,7 @@ func (r *Reconciler) reconcileRunningChange(change *networkchange.NetworkChange)
 		if r.isDeviceChangeRollbacksComplete(deviceChanges) {
 			change.Status.State = changetypes.State_PENDING
 			change.Status.Reason = changetypes.Reason_ERROR
+			change.Status.Message = "At least one device failed"
 			log.Infof("Failing NetworkChange %v", change)
 			if err := r.networkChanges.Update(change); err != nil {
 				return false, err

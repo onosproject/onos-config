@@ -16,6 +16,7 @@ package manager
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -112,6 +113,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 			return nil
 		}).Times(3)
 	mockDeviceStore.EXPECT().Get(topodevice.ID(device1)).Return(device1Topo, nil).AnyTimes()
+	mockDeviceStore.EXPECT().Get(topodevice.ID(deviceConfigOnly)).Return(nil, fmt.Errorf("device not found")).AnyTimes()
 	mockDeviceStore.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *topodevice.Device) (*topodevice.Device, error) {
 		return updated, nil
 	})
@@ -301,7 +303,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(3 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -333,7 +335,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	}
 }
 
-// Test a change on Device 2 - this device does not exist on Topo - a config-only device at this stage
+// Test a change on device-config-only - this device does not exist on Topo - a config-only device at this stage
 func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 	mgrTest, allMocks := setUpDeepTest(t)
 
@@ -365,7 +367,7 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(3 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -395,5 +397,81 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 			t.Errorf("Unexpected path: %s", updatedVal.Path)
 		}
 	}
+}
 
+// Test a change on device-disconn - this device does not exist on Topo - a config-only device at this stage
+func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
+	t.Skip()
+	mgrTest, allMocks := setUpDeepTest(t)
+	const deviceDisconn = "device-disconn"
+
+	// Mock Device Store
+	timeout := time.Millisecond * 10
+	deviceDisconnTopo := &topodevice.Device{
+		ID:      deviceDisconn,
+		Address: "1.2.3.4:1234",
+		Version: deviceVersion1,
+		Timeout: &timeout,
+		Type:    deviceTypeTd,
+		Protocols: []*topodevice.ProtocolState{
+			{
+				Protocol:          topodevice.Protocol_GNMI,
+				ConnectivityState: topodevice.ConnectivityState_UNREACHABLE,
+				ChannelState:      topodevice.ChannelState_DISCONNECTED,
+				ServiceState:      topodevice.ServiceState_UNAVAILABLE,
+			},
+		},
+	}
+	allMocks.MockStores.DeviceStore.EXPECT().Watch(gomock.Any()).DoAndReturn(
+		func(ch chan<- *topodevice.ListResponse) error {
+			go func() {
+				ch <- &topodevice.ListResponse{
+					Type:   topodevice.ListResponse_NONE,
+					Device: deviceDisconnTopo,
+				}
+			}()
+			return nil
+		}).Times(3)
+	allMocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID(deviceDisconn)).Return(deviceDisconnTopo, nil).AnyTimes()
+	allMocks.MockStores.DeviceStore.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *topodevice.Device) (*topodevice.Device, error) {
+		return updated, nil
+	})
+
+	// Making change
+	updates := make(devicechange.TypedValueMap)
+	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint64(valueLeaf2A789)
+	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueDecimal64(1590, 3)
+	deletes := []string{}
+	updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo := makeDeviceChanges(deviceDisconn, updates, deletes)
+	assert.Assert(t, updatesForDisconnectedDevice != nil)
+	assert.Assert(t, deletesForDisconnectedDevice != nil)
+	assert.Assert(t, deviceInfo != nil)
+
+	// Set the new change
+	const testNetworkChange networkchange.ID = "Disconnected_SetNetworkConfig"
+	err := mgrTest.SetNetworkConfig(updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo, string(testNetworkChange))
+	assert.NilError(t, err, "Disconnected_SetNetworkConfig error")
+
+	nwChangeUpdates := make(chan stream.Event)
+	ctx, err := mgrTest.NetworkChangesStore.Watch(nwChangeUpdates, networkstore.WithChangeID(testNetworkChange))
+	assert.NilError(t, err)
+	defer ctx.Close()
+
+	breakout := false
+	for { // 3 responses are expected PENDING, RUNNING and COMPLETE
+		select {
+		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
+			event := eventObj.Object.(*networkchange.NetworkChange)
+			//t.Logf("Event received %v", event)
+			if event.Status.State == changetypes.State_COMPLETE {
+				breakout = true
+			}
+		case <-time.After(1 * time.Second):
+			breakout = true
+			t.FailNow()
+		}
+		if breakout {
+			break
+		}
+	}
 }

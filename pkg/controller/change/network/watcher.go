@@ -78,6 +78,7 @@ type DeviceWatcher struct {
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
 	streams     map[device.VersionedID]stream.Context
+	cacheStream stream.Context
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
@@ -94,15 +95,28 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	w.streams = make(map[device.VersionedID]stream.Context)
 	w.mu.Unlock()
 
-	deviceCacheCh := make(chan *devicestore.Info)
-	w.DeviceCache.Watch(deviceCacheCh)
+	deviceCacheCh := make(chan stream.Event)
+	go func() {
+		for eventObj := range deviceCacheCh {
+			if eventObj.Type == stream.Created {
+				event := eventObj.Object.(*devicestore.Info)
+				w.watchDevice(device.NewVersionedID(event.DeviceID, event.Version), ch)
+			}
+		}
+		w.mu.Lock()
+		w.cacheStream.Close()
+		w.mu.Unlock()
+	}()
+
+	var err error
+	w.mu.Lock()
+	w.cacheStream, err = w.DeviceCache.Watch(deviceCacheCh, true)
+	w.mu.Unlock()
+	if err != nil {
+		return err
+	}
 	log.Infof("Network DeviceWatcher - watching cache started %v", deviceCacheCh)
 
-	go func() {
-		for event := range deviceCacheCh {
-			w.watchDevice(device.NewVersionedID(event.DeviceID, event.Version), ch)
-		}
-	}()
 	return nil
 }
 
