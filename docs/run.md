@@ -35,7 +35,7 @@ Here is an example on how to use `gnmi_cli -get` to get configuration for a part
 ```bash
 > gnmi_cli -get -address onos-config:5150 \
     -proto "path: <target: 'localhost-1', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
-    -timeout 5s -alsologtostderr \
+    -timeout 5s -en PROTO -alsologtostderr \
     -client_crt /etc/ssl/certs/client1.crt \
     -client_key /etc/ssl/certs/client1.key \
     -ca_crt /etc/ssl/certs/onfca.crt
