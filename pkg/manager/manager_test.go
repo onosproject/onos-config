@@ -66,7 +66,6 @@ type AllMocks struct {
 }
 
 func setUp(t *testing.T) (*Manager, *AllMocks) {
-	log.SetOutput(os.Stdout)
 	var (
 		mgrTest  *Manager
 		err      error
@@ -245,7 +244,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		mockDeviceSnapshotStore,
 		make(chan *topodevice.ListResponse, 10))
 	if err != nil {
-		log.Warning(err)
+		log.Warn(err)
 		os.Exit(-1)
 	}
 	mgrTest.Run()

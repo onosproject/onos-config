@@ -32,7 +32,6 @@ import (
 
 // TestMain initializes the test suite context.
 func TestMain(m *testing.M) {
-	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
 }
 

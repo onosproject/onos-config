@@ -35,7 +35,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"io"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -482,8 +481,6 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 }
 
 func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
-	log.SetOutput(os.Stdout)
-
 	ctrl := gomock.NewController(t)
 
 	devices := map[topodevice.ID]*topodevice.Device{
