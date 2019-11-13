@@ -45,6 +45,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
@@ -123,7 +124,7 @@ func main() {
 	}
 	log.Info("Network Configuration store connected")
 
-	deviceCache, err := devicestore.NewCache(networkChangesStore)
+	deviceCache, err := cache.NewCache(networkChangesStore)
 	if err != nil {
 		log.Error("Cannot load device cache", err)
 	}

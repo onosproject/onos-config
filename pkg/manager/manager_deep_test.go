@@ -25,7 +25,7 @@ import (
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
@@ -127,7 +127,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	deviceSnapshotStore, err := devicesnapstore.NewLocalStore()
 	assert.NilError(t, err)
 
-	deviceCache, err := devicestore.NewCache(networkChangesStore)
+	deviceCache, err := cache.NewCache(networkChangesStore)
 	assert.NilError(t, err)
 
 	leadershipStore, err := leadership.NewLocalStore("test", cluster.NodeID("node1"))

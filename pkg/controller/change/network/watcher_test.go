@@ -22,8 +22,9 @@ import (
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	"github.com/stretchr/testify/assert"
 	log "k8s.io/klog"
 	"os"
@@ -139,7 +140,7 @@ func TestDeviceWatcher(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	t.Log("Testing")
-	cachedDevices := []*devicestore.Info{
+	cachedDevices := []*cache.Info{
 		{
 			DeviceID: "device-1",
 			Type:     "DeviceSim",
@@ -151,7 +152,7 @@ func TestDeviceWatcher(t *testing.T) {
 			Version:  "1.0.0",
 		},
 	}
-	deviceCache := devicestore.NewMockCache(ctrl)
+	deviceCache := mockcache.NewMockCache(ctrl)
 	deviceCache.EXPECT().Watch(gomock.Any(), true).DoAndReturn(
 		func(ch chan<- stream.Event, replay bool) (stream.Context, error) {
 			go func() {

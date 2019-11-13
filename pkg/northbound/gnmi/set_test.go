@@ -22,8 +22,7 @@ import (
 	td1 "github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice_1_0_0"
 	td2 "github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/store/device"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -50,14 +49,14 @@ func setUpLocalhostDeviceCache(mocks *AllMocks) {
 	const localhost1 = "localhost-1"
 	const localhost2 = "localhost-2"
 	// Setting up device cache
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("localhost-1")).Return([]*devicestore.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("localhost-1")).Return([]*cache.Info{
 		{
 			DeviceID: localhost1,
 			Version:  "1.0.0",
 			Type:     "TestDevice",
 		},
 	}).AnyTimes()
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("localhost-2")).Return([]*devicestore.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("localhost-2")).Return([]*cache.Info{
 		{
 			DeviceID: localhost2,
 			Version:  "1.0.0",
@@ -69,7 +68,7 @@ func setUpLocalhostDeviceCache(mocks *AllMocks) {
 
 func setUpDeviceWithMultipleVersions(mocks *AllMocks, deviceName string) {
 	// Setting up mocks
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID(deviceName)).Return([]*devicestore.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID(deviceName)).Return([]*cache.Info{
 		{
 			DeviceID: devicetype.ID(deviceName),
 			Version:  "1.0.0",
@@ -506,26 +505,26 @@ func TestSet_checkForReadOnly(t *testing.T) {
 	readOnlyPathsTd2, _ := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
 	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-2.0.0"] = readOnlyPathsTd2
 
-	cacheInfo1v1 := device.Info{
+	cacheInfo1v1 := cache.Info{
 		DeviceID: "device-1",
 		Type:     "TestDevice",
 		Version:  "1.0.0",
 	}
 
-	cacheInfo1v2 := device.Info{
+	cacheInfo1v2 := cache.Info{
 		DeviceID: "device-1",
 		Type:     "TestDevice",
 		Version:  "2.0.0",
 	}
 
-	cacheInfo2v1 := device.Info{
+	cacheInfo2v1 := cache.Info{
 		DeviceID: "device-2",
 		Type:     "TestDevice",
 		Version:  "1.0.0",
 	}
 
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*device.Info{&cacheInfo1v1, &cacheInfo1v2})
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-2")).Return([]*device.Info{&cacheInfo2v1})
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*cache.Info{&cacheInfo1v1, &cacheInfo1v2})
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-2")).Return([]*cache.Info{&cacheInfo2v1})
 
 	updateT1 := make(map[string]*devicechange.TypedValue)
 	updateT1[cont1aCont2aLeaf2a] = devicechange.NewTypedValueUint64(10)
@@ -552,7 +551,7 @@ func TestSet_MissingDeviceType(t *testing.T) {
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	// Setting up mocks
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*devicestore.Info, 0))
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*cache.Info, 0))
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	// Making change

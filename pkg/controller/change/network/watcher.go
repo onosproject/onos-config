@@ -22,7 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	log "k8s.io/klog"
 	"sync"
@@ -74,7 +74,7 @@ var _ controller.Watcher = &Watcher{}
 
 // DeviceWatcher is a device change watcher
 type DeviceWatcher struct {
-	DeviceCache devicestore.Cache
+	DeviceCache cache.Cache
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
 	streams     map[device.VersionedID]stream.Context
@@ -99,7 +99,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	go func() {
 		for eventObj := range deviceCacheCh {
 			if eventObj.Type == stream.Created {
-				event := eventObj.Object.(*devicestore.Info)
+				event := eventObj.Object.(*cache.Info)
 				w.watchDevice(device.NewVersionedID(event.DeviceID, event.Version), ch)
 			}
 		}

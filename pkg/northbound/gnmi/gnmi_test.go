@@ -23,9 +23,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -43,7 +44,7 @@ import (
 // because of circular dependencies.
 type AllMocks struct {
 	MockStores      *mockstore.MockStores
-	MockDeviceCache *devicestore.MockCache
+	MockDeviceCache *mockcache.MockCache
 }
 
 // TestMain should only contain static data.
@@ -208,7 +209,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 		LeadershipStore:      mockstore.NewMockLeadershipStore(ctrl),
 		MastershipStore:      mockstore.NewMockMastershipStore(ctrl),
 	}
-	deviceCache := devicestore.NewMockCache(ctrl)
+	deviceCache := mockcache.NewMockCache(ctrl)
 	allMocks.MockStores = mockStores
 	allMocks.MockDeviceCache = deviceCache
 
@@ -262,8 +263,8 @@ func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
 	_ = store.Create(networkChange1)
 }
 
-func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *devicestore.MockCache) {
-	deviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*devicestore.Info{
+func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *mockcache.MockCache) {
+	deviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",

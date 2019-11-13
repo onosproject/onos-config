@@ -17,7 +17,7 @@ package gnmi
 import (
 	"context"
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -82,8 +82,8 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	server, mgr, mocks := setUp(t)
 
 	setUpChangesMock(mocks)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*device.Info, 0)).Times(1)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*cache.Info, 0)).Times(1)
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
@@ -130,7 +130,7 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with updates for that path
 func Test_SubscribeLeafStream(t *testing.T) {
 	server, mgr, mocks := setUp(t)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
@@ -325,7 +325,7 @@ func Test_ErrorDoubleSubscription(t *testing.T) {
 
 func Test_Poll(t *testing.T) {
 	server, mgr, mocks := setUp(t)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
@@ -394,7 +394,7 @@ func Test_Poll(t *testing.T) {
 // Test_SubscribeLeafDelete tests subscribing with mode STREAM and then issuing a set request with delete paths
 func Test_SubscribeLeafStreamDelete(t *testing.T) {
 	server, mgr, mocks := setUp(t)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
@@ -472,7 +472,7 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 		ID: target,
 	}
 
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",

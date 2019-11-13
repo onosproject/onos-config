@@ -23,9 +23,10 @@ import (
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -62,7 +63,7 @@ const (
 
 type AllMocks struct {
 	MockStores      *mockstore.MockStores
-	MockDeviceCache *devicestore.MockCache
+	MockDeviceCache *mockcache.MockCache
 }
 
 func setUp(t *testing.T) (*Manager, *AllMocks) {
@@ -77,13 +78,13 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 
 	ctrl := gomock.NewController(t)
 
-	mockDeviceCache := devicestore.NewMockCache(ctrl)
+	mockDeviceCache := mockcache.NewMockCache(ctrl)
 	mockDeviceCache.EXPECT().Watch(gomock.Any(), true).DoAndReturn(
 		func(ch chan<- stream.Event, replay bool) (stream.Context, error) {
 			go func() {
 				event := stream.Event{
 					Type: stream.Created,
-					Object: &devicestore.Info{
+					Object: &cache.Info{
 						DeviceID: device1,
 						Type:     deviceTypeTd,
 						Version:  deviceVersion1,
@@ -267,9 +268,9 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 }
 
 func makeDeviceChanges(device string, updates devicechange.TypedValueMap, deletes []string) (
-	map[string]devicechange.TypedValueMap, map[string][]string, map[devicetype.ID]devicestore.Info) {
-	deviceInfo := make(map[devicetype.ID]devicestore.Info)
-	deviceInfo[devicetype.ID(device)] = devicestore.Info{DeviceID: devicetype.ID(device), Type: deviceTypeTd, Version: deviceVersion1}
+	map[string]devicechange.TypedValueMap, map[string][]string, map[devicetype.ID]cache.Info) {
+	deviceInfo := make(map[devicetype.ID]cache.Info)
+	deviceInfo[devicetype.ID(device)] = cache.Info{DeviceID: devicetype.ID(device), Type: deviceTypeTd, Version: deviceVersion1}
 
 	updatesForDevice := make(map[string]devicechange.TypedValueMap)
 	updatesForDevice[device] = updates
@@ -724,7 +725,7 @@ func TestManager_CheckCacheForDevice(t *testing.T) {
 		deviceTest3 = "DeviceTest3"
 	)
 
-	deviceInfos := []*devicestore.Info{
+	deviceInfos := []*cache.Info{
 		{
 			DeviceID: deviceTest1,
 			Version:  v1,
@@ -744,7 +745,7 @@ func TestManager_CheckCacheForDevice(t *testing.T) {
 
 	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID(deviceTest1)).Return(deviceInfos[:2]).AnyTimes()
 	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID(deviceTest2)).Return(deviceInfos[2:]).AnyTimes()
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*devicestore.Info, 0)).AnyTimes()
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return(make([]*cache.Info, 0)).AnyTimes()
 	mocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID(deviceTest1)).Return(&topodevice.Device{
 		ID:      deviceTest1,
 		Address: "1.2.3.4",
