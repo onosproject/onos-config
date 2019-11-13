@@ -24,7 +24,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	log "k8s.io/klog"
 	syncPrimitives "sync"
 )
 
@@ -46,13 +45,13 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			modelName := utils.ToModelName(devicetype.Type(notifiedDevice.Type), devicetype.Version(notifiedDevice.Version))
 			mReadOnlyPaths, ok := modelRegistry.ModelReadOnlyPaths[modelName]
 			if !ok {
-				log.Warningf("Cannot check for read only paths for target %s with %s because "+
+				log.Warnf("Cannot check for read only paths for target %s with %s because "+
 					"Model Plugin not available - continuing", notifiedDevice.ID, notifiedDevice.Version)
 			}
 			mStateGetMode := modelregistry.GetStateOpState // default
 			mPlugin, ok := modelRegistry.ModelPlugins[modelName]
 			if !ok {
-				log.Warningf("Cannot check for StateGetMode for target %s with %s because "+
+				log.Warnf("Cannot check for StateGetMode for target %s with %s because "+
 					"Model Plugin not available - continuing", notifiedDevice.ID, notifiedDevice.Version)
 			} else {
 				mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())

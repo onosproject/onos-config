@@ -20,7 +20,6 @@ import (
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	log "k8s.io/klog"
 )
 
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.

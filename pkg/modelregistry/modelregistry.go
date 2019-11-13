@@ -19,15 +19,17 @@ import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
-	log "k8s.io/klog"
 	"plugin"
 	"regexp"
 	"sort"
 	"strings"
 )
+
+var log = logging.GetLogger("modelregistry")
 
 // PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
 type PathMap interface {
@@ -159,17 +161,17 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 	log.Info("Loading module ", moduleName)
 	modelPluginModule, err := plugin.Open(moduleName)
 	if err != nil {
-		log.Warning("Unable to load module ", moduleName)
+		log.Warn("Unable to load module ", moduleName)
 		return "", "", err
 	}
 	symbolMP, err := modelPluginModule.Lookup("ModelPlugin")
 	if err != nil {
-		log.Warning("Unable to find ModelPlugin in module ", moduleName)
+		log.Warn("Unable to find ModelPlugin in module ", moduleName)
 		return "", "", err
 	}
 	modelPlugin, ok := symbolMP.(ModelPlugin)
 	if !ok {
-		log.Warning("Unable to use ModelPlugin in ", moduleName)
+		log.Warn("Unable to use ModelPlugin in ", moduleName)
 		return "", "", fmt.Errorf("symbol loaded from module %s is not a ModelPlugin",
 			moduleName)
 	}
@@ -180,7 +182,7 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 	registry.LocationStore[modelName] = moduleName
 	modelschema, err := modelPlugin.Schema()
 	if err != nil {
-		log.Warning("Error loading schema from model plugin", modelName, err)
+		log.Warn("Error loading schema from model plugin", modelName, err)
 		return "", "", err
 	}
 	readOnlyPaths, readWritePaths := ExtractPaths(modelschema["Device"], yang.TSUnset, "", "")

@@ -38,7 +38,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"io/ioutil"
-	log "k8s.io/klog"
 	"os"
 	"testing"
 	"time"

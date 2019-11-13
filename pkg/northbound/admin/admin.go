@@ -28,13 +28,15 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"io"
-	log "k8s.io/klog"
 	"os"
 	"strings"
 )
+
+var log = logging.GetLogger("northbound", "admin")
 
 // Service is a Service implementation for administration.
 type Service struct {
@@ -137,7 +139,7 @@ func (s Server) ListRegisteredModels(req *admin.ListModelsRequest, stream admin.
 		if req.Verbose {
 			roPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(name), devicetype.Version(version))]
 			if !ok {
-				log.Warningf("no list of Read Only Paths found for %s %s\n", name, version)
+				log.Warnf("no list of Read Only Paths found for %s %s\n", name, version)
 			} else {
 				for path, subpathList := range roPathsAndValues {
 					subPathsPb := make([]*admin.ReadOnlySubPath, 0)
@@ -161,7 +163,7 @@ func (s Server) ListRegisteredModels(req *admin.ListModelsRequest, stream admin.
 		if req.Verbose {
 			rwPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadWritePaths[utils.ToModelName(devicetype.Type(name), devicetype.Version(version))]
 			if !ok {
-				log.Warningf("no list of Read Write Paths found for %s %s\n", name, version)
+				log.Warnf("no list of Read Write Paths found for %s %s\n", name, version)
 			} else {
 				for path, rwObj := range rwPathsAndValues {
 					rwObjProto := admin.ReadWritePath{

@@ -16,10 +16,12 @@ package controller
 
 import (
 	"github.com/onosproject/onos-config/api/types"
-	log "k8s.io/klog"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"sync"
 	"time"
 )
+
+var log = logging.GetLogger("controller")
 
 // Watcher is implemented by controllers to implement watching for specific events
 // Type identifiers that are written to the watcher channel will eventually be processed by

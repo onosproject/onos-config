@@ -25,9 +25,11 @@ package dispatcher
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/events"
-	log "k8s.io/klog"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"sync"
 )
+
+var log = logging.GetLogger("dispatcher")
 
 // Dispatcher manages SB and NB configuration event listeners
 type Dispatcher struct {

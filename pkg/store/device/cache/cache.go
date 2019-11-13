@@ -20,10 +20,12 @@ import (
 	"github.com/onosproject/onos-config/api/types/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"io"
-	log "k8s.io/klog"
 	"sync"
 )
+
+var log = logging.GetLogger("store", "device", "cache")
 
 // Info is device type/version info
 type Info struct {

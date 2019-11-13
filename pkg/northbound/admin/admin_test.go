@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
-	log "k8s.io/klog"
 	"net"
 	"os"
 	"testing"

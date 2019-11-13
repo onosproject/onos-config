@@ -28,7 +28,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	log "k8s.io/klog"
 	"strings"
 	"time"
 )
@@ -197,7 +196,7 @@ func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*devicechang
 	} else if len(configValues) == 1 {
 		value, err = values.NativeTypeToGnmiTypedValue(configValues[0].GetValue())
 		if err != nil {
-			log.Warning("Unable to convert native value to gnmi", err)
+			log.Warn("Unable to convert native value to gnmi", err)
 			return nil, err
 		}
 		// These should match the assignments made in changevalue.go

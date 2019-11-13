@@ -17,7 +17,6 @@ package manager
 import (
 	"github.com/onosproject/onos-config/pkg/store/device"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	log "k8s.io/klog"
 )
 
 // DeviceConnected signals the corresponding topology service that the device connected.

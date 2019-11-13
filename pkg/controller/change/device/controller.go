@@ -26,11 +26,13 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	log "k8s.io/klog"
 	"strings"
 )
+
+var log = logging.GetLogger("controller", "change", "device")
 
 // NewController returns a new network controller
 func NewController(mastership mastershipstore.Store, devices devicestore.Store,

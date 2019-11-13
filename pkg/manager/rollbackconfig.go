@@ -20,7 +20,6 @@ import (
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	log "k8s.io/klog"
 )
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target, by setting phase to

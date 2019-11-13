@@ -26,14 +26,12 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	"github.com/stretchr/testify/assert"
-	log "k8s.io/klog"
 	"os"
 	"testing"
 	"time"
 )
 
 func TestMain(m *testing.M) {
-	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
 }
 

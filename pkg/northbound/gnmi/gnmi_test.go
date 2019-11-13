@@ -33,7 +33,6 @@ import (
 	"github.com/openconfig/ygot/ygot"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	log "k8s.io/klog"
 	"os"
 	"sync"
 	"testing"

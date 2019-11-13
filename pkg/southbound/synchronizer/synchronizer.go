@@ -26,15 +26,17 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	log "k8s.io/klog"
 	"regexp"
 	"strings"
 	syncPrimitives "sync"
 )
+
+var log = logging.GetLogger("southbound", "synchronizer")
 
 const matchOnIndex = `(\=.*?]).*?`
 
@@ -71,7 +73,7 @@ func New(context context.Context,
 	key, err := target.ConnectTarget(context, *sync.Device)
 	sync.key = key
 	if err != nil {
-		log.Warning(err)
+		log.Warn(err)
 		return nil, err
 	}
 	log.Info(sync.Device.Address, " connected over gNMI")
@@ -107,14 +109,14 @@ func (sync Synchronizer) syncOperationalStateByPartition(ctx context.Context, ta
 	notifications := make([]*gnmi.Notification, 0)
 	stateNotif, errState := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_STATE)
 	if errState != nil {
-		log.Warning("Can't request read-only state paths to target ", sync.key, errState)
+		log.Warn("Can't request read-only state paths to target ", sync.key, errState)
 	} else {
 		notifications = append(notifications, stateNotif...)
 	}
 
 	operNotif, errOp := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_OPERATIONAL)
 	if errState != nil {
-		log.Warning("Can't request read-only operational paths to target ", sync.key, errOp)
+		log.Warn("Can't request read-only operational paths to target ", sync.key, errOp)
 	} else {
 		notifications = append(notifications, operNotif...)
 	}
@@ -143,7 +145,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 		noPathErr := fmt.Errorf("target %#v has no paths to subscribe to", sync.ID)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorSubscribe,
 			string(sync.key), noPathErr)
-		log.Warning(noPathErr)
+		log.Warn(noPathErr)
 		return
 	}
 	log.Infof("Getting state by %d ReadOnly paths for %s", len(sync.modelReadOnlyPaths), string(sync.key))
@@ -156,7 +158,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 		}
 		gnmiPath, err := utils.ParseGNMIElements(utils.SplitPath(path))
 		if err != nil {
-			log.Warning("Error converting RO path to gNMI")
+			log.Warn("Error converting RO path to gNMI")
 			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
 				string(sync.key), err)
 			return
@@ -177,7 +179,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 			if strings.Contains(roPath, "*") {
 				ewPath, err := utils.ParseGNMIElements(utils.SplitPath(roPath))
 				if err != nil {
-					log.Warningf("Unable to parse %s", roPath)
+					log.Warnf("Unable to parse %s", roPath)
 					continue
 				}
 				ewStringPaths[roPath] = nil // Just holding the keys
@@ -193,7 +195,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 		if len(ewGetPaths) > 0 {
 			responseEwRoPaths, errRoPaths := target.Get(ctx, requestEwRoPaths)
 			if errRoPaths != nil {
-				log.Warning("Error on request for expanded wildcard read-only paths", sync.key, errRoPaths)
+				log.Warn("Error on request for expanded wildcard read-only paths", sync.key, errRoPaths)
 				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
 					string(sync.key), errRoPaths)
 				return
@@ -249,7 +251,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 
 	responseRoPaths, errRoPaths := target.Get(ctx, requestRoPaths)
 	if errRoPaths != nil {
-		log.Warning("Error on request for read-only paths", sync.key, errRoPaths)
+		log.Warn("Error on request for read-only paths", sync.key, errRoPaths)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
 			string(sync.key), errRoPaths)
 		return
@@ -315,7 +317,7 @@ func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 			} else if sync.encoding == gnmi.Encoding_PROTO {
 				typedVal, err := values.GnmiTypedValueToNativeType(update.Val)
 				if err != nil {
-					log.Warning("Error converting gnmi value to Typed"+
+					log.Warn("Error converting gnmi value to Typed"+
 						" Value", update.Val, " for ", update.Path)
 				} else {
 					sync.operationalCache[utils.StrPath(update.Path)] = typedVal
@@ -376,7 +378,7 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 
 	subErr := target.Subscribe(sync.Context, req, sync.opStateSubHandler)
 	if subErr != nil {
-		log.Warning("Error in subscribe", subErr)
+		log.Warn("Error in subscribe", subErr)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorSubscribe,
 			string(sync.key), subErr)
 		return

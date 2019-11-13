@@ -35,7 +35,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"io"
-	log "k8s.io/klog"
 	"os"
 	"sync"
 	"testing"

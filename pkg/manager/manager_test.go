@@ -32,7 +32,6 @@ import (
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	"gotest.tools/assert"
-	log "k8s.io/klog"
 	"os"
 	"strings"
 	"testing"
