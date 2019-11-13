@@ -24,9 +24,10 @@ import (
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetypes "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
@@ -69,7 +70,7 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, diags.Change
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
-		devicestore.NewMockCache(ctrl),
+		mockcache.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl),
@@ -168,9 +169,9 @@ func Test_ListDeviceChanges(t *testing.T) {
 		}, nil,
 	)
 
-	mockDeviceCache, ok := mgrTest.DeviceCache.(*devicestore.MockCache)
+	mockDeviceCache, ok := mgrTest.DeviceCache.(*mockcache.MockCache)
 	assert.Assert(t, ok, "casting mock cache")
-	mockDeviceCache.EXPECT().GetDevicesByID(devicetypes.ID("device-1")).Return([]*devicestore.Info{
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetypes.ID("device-1")).Return([]*cache.Info{
 		{
 			DeviceID: "device-1",
 			Type:     "Devicesim",
@@ -216,9 +217,9 @@ func Test_ListDeviceChangesNoVersionManyPresent(t *testing.T) {
 		nil, nil,
 	)
 
-	mockDeviceCache, ok := mgrTest.DeviceCache.(*devicestore.MockCache)
+	mockDeviceCache, ok := mgrTest.DeviceCache.(*mockcache.MockCache)
 	assert.Assert(t, ok, "casting mock cache")
-	mockDeviceCache.EXPECT().GetDevicesByID(devicetypes.ID("device-1")).Return([]*devicestore.Info{
+	mockDeviceCache.EXPECT().GetDevicesByID(devicetypes.ID("device-1")).Return([]*cache.Info{
 		{
 			DeviceID: "device-1",
 			Type:     "Devicesim",

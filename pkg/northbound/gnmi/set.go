@@ -27,7 +27,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
@@ -106,14 +106,14 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	mgr := manager.GetManager()
-	deviceInfo := make(map[devicetype.ID]devicestore.Info)
+	deviceInfo := make(map[devicetype.ID]cache.Info)
 	//Checking for wrong configuration against the device models for updates
 	for target, updates := range targetUpdates {
 		deviceType, version, err = mgr.CheckCacheForDevice(devicetype.ID(target), deviceType, version)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		deviceInfo[devicetype.ID(target)] = devicestore.Info{
+		deviceInfo[devicetype.ID(target)] = cache.Info{
 			DeviceID: devicetype.ID(target),
 			Type:     deviceType,
 			Version:  version,
@@ -144,7 +144,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		deviceInfo[devicetype.ID(target)] = devicestore.Info{
+		deviceInfo[devicetype.ID(target)] = cache.Info{
 			DeviceID: devicetype.ID(target),
 			Type:     deviceType,
 			Version:  version,

@@ -20,8 +20,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/pkg/manager"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	"github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
@@ -65,7 +65,7 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, admin.Config
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
-		devicestore.NewMockCache(ctrl),
+		cache.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl),

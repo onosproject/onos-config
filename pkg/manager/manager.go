@@ -32,6 +32,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
@@ -52,7 +53,7 @@ type Manager struct {
 	MastershipStore           mastership.Store
 	DeviceChangesStore        device.Store
 	DeviceStore               devicestore.Store
-	DeviceCache               devicestore.Cache
+	DeviceCache               cache.Cache
 	NetworkChangesStore       network.Store
 	NetworkSnapshotStore      networksnap.Store
 	DeviceSnapshotStore       devicesnap.Store
@@ -71,7 +72,7 @@ type Manager struct {
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Store,
-	deviceChangesStore device.Store, deviceStore devicestore.Store, deviceCache devicestore.Cache,
+	deviceChangesStore device.Store, deviceStore devicestore.Store, deviceCache cache.Cache,
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
 	deviceSnapshotStore devicesnap.Store, topoCh chan *topodevice.ListResponse) (*Manager, error) {
 	log.Info("Creating Manager")
@@ -106,7 +107,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 
 // LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
 func LoadManager(leadershipStore leadership.Store, mastershipStore mastership.Store, deviceChangesStore device.Store,
-	deviceCache devicestore.Cache, networkChangesStore network.Store,
+	deviceCache cache.Cache, networkChangesStore network.Store,
 	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store, deviceStore devicestore.Store) (*Manager, error) {
 	topoChannel := make(chan *topodevice.ListResponse, 10)
 

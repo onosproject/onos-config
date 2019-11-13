@@ -18,7 +18,7 @@ import (
 	"context"
 	"github.com/golang/mock/gomock"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
-	"github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
@@ -64,7 +64,7 @@ func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
 // Test_getNoPathElems tests for  Paths with no elements - should treat it like /
 func Test_getNoPathElems(t *testing.T) {
 	server, _, mocks := setUp(t)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Version:  "1.0.0",
@@ -138,7 +138,7 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 func Test_get2PathsWithPrefix(t *testing.T) {
 	server, _, mocks := setUp(t)
 	setUpChangesMock(mocks)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Type:     "Devicesim",
@@ -186,7 +186,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	server, _, mocks := setUp(t)
 	setUpChangesMock(mocks)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Type:     "Devicesim",
@@ -221,7 +221,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 
 func Test_targetDoesNotExist(t *testing.T) {
 	server, _, mocks := setUp(t)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device3")).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device3")).Return([]*cache.Info{
 		{
 			DeviceID: "Device3",
 			Type:     "Devicesim",
@@ -251,7 +251,7 @@ func Test_targetDoesNotExist(t *testing.T) {
 // No error - just an empty value
 func Test_pathDoesNotExist(t *testing.T) {
 	server, _, mocks := setUp(t)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*device.Info{
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
 			Type:     "Devicesim",

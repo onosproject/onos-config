@@ -22,13 +22,13 @@ import (
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	log "k8s.io/klog"
 )
 
 // NewController returns a new config controller
-func NewController(leadership leadershipstore.Store, deviceCache devicestore.Cache, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
+func NewController(leadership leadershipstore.Store, deviceCache cache.Cache, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
 	c := controller.NewController("NetworkChange")
 	c.Activate(&controller.LeadershipActivator{
 		Store: leadership,

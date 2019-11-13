@@ -2,11 +2,12 @@
 // Source: pkg/store/device/cache.go
 
 // Package device is a generated GoMock package.
-package device
+package cache
 
 import (
 	gomock "github.com/golang/mock/gomock"
 	device "github.com/onosproject/onos-config/api/types/device"
+	cache "github.com/onosproject/onos-config/pkg/store/device/cache"
 	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	reflect "reflect"
 )
@@ -49,10 +50,10 @@ func (mr *MockCacheMockRecorder) Close() *gomock.Call {
 }
 
 // GetDevicesByID mocks base method
-func (m *MockCache) GetDevicesByID(id device.ID) []*Info {
+func (m *MockCache) GetDevicesByID(id device.ID) []*cache.Info {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDevicesByID", id)
-	ret0, _ := ret[0].([]*Info)
+	ret0, _ := ret[0].([]*cache.Info)
 	return ret0
 }
 
@@ -63,10 +64,10 @@ func (mr *MockCacheMockRecorder) GetDevicesByID(id interface{}) *gomock.Call {
 }
 
 // GetDevicesByType mocks base method
-func (m *MockCache) GetDevicesByType(deviceType device.Type) []*Info {
+func (m *MockCache) GetDevicesByType(deviceType device.Type) []*cache.Info {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDevicesByType", deviceType)
-	ret0, _ := ret[0].([]*Info)
+	ret0, _ := ret[0].([]*cache.Info)
 	return ret0
 }
 
@@ -77,10 +78,10 @@ func (mr *MockCacheMockRecorder) GetDevicesByType(deviceType interface{}) *gomoc
 }
 
 // GetDevicesByVersion mocks base method
-func (m *MockCache) GetDevicesByVersion(deviceType device.Type, deviceVersion device.Version) []*Info {
+func (m *MockCache) GetDevicesByVersion(deviceType device.Type, deviceVersion device.Version) []*cache.Info {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDevicesByVersion", deviceType, deviceVersion)
-	ret0, _ := ret[0].([]*Info)
+	ret0, _ := ret[0].([]*cache.Info)
 	return ret0
 }
 
@@ -91,10 +92,10 @@ func (mr *MockCacheMockRecorder) GetDevicesByVersion(deviceType, deviceVersion i
 }
 
 // GetDevices mocks base method
-func (m *MockCache) GetDevices() []*Info {
+func (m *MockCache) GetDevices() []*cache.Info {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDevices")
-	ret0, _ := ret[0].([]*Info)
+	ret0, _ := ret[0].([]*cache.Info)
 	return ret0
 }
 

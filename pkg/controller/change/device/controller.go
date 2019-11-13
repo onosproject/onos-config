@@ -24,6 +24,7 @@ import (
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -33,7 +34,7 @@ import (
 
 // NewController returns a new network controller
 func NewController(mastership mastershipstore.Store, devices devicestore.Store,
-	cache devicestore.Cache, changes changestore.Store) *controller.Controller {
+	cache cache.Cache, changes changestore.Store) *controller.Controller {
 
 	c := controller.NewController("DeviceChange")
 	c.Filter(&controller.MastershipFilter{

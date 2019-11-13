@@ -20,7 +20,7 @@ import (
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	log "k8s.io/klog"
 )
@@ -71,7 +71,7 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 
 // SetNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
 func (m *Manager) SetNetworkConfig(targetUpdates map[string]devicechange.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info, netcfgchangename string) error {
+	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info, netcfgchangename string) error {
 	//TODO evaluate need of user and add it back if need be.
 	allDeviceChanges, errChanges := m.computeNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 	if errChanges != nil {
@@ -91,7 +91,7 @@ func (m *Manager) SetNetworkConfig(targetUpdates map[string]devicechange.TypedVa
 
 //computeNetworkConfig computes each device change
 func (m *Manager) computeNetworkConfig(targetUpdates map[string]devicechange.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]devicestore.Info,
+	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info,
 	description string) ([]*devicechange.Change, error) {
 
 	deviceChanges := make([]*devicechange.Change, 0)
