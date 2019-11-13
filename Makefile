@@ -100,6 +100,7 @@ all: build images
 
 clean: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
+	go clean -testcache github.com/onosproject/onos-config/...
 
 help:
 	@grep -E '^.*: *# *@HELP' $(MAKEFILE_LIST) \
