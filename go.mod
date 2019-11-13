@@ -6,7 +6,6 @@ require (
 	github.com/atomix/atomix-go-client v0.0.0-20191022230401-78955a5abbef
 	github.com/atomix/atomix-go-local v0.0.0-20191108201451-9131cc896ed6
 	github.com/atomix/atomix-go-node v0.0.0-20191108201428-59c0962b63c8
-	github.com/creack/pty v1.1.9 // indirect
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
@@ -18,18 +17,14 @@ require (
 	github.com/openconfig/goyang v0.0.0-20190924211109-064f9690516f
 	github.com/openconfig/ygot v0.6.0
 	github.com/pkg/errors v0.8.1
-	github.com/rogpeppe/go-internal v1.5.0 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.5.0
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.12.0
-	golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708 // indirect
 	golang.org/x/net v0.0.0-20191112182307-2180aed22343 // indirect
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20191113165036-4c7a9d0fe056 // indirect
 	golang.org/x/tools v0.0.0-20191113183821-b2a5ed324b91 // indirect
-	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
 	google.golang.org/grpc v1.25.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.5 // indirect
