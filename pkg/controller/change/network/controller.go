@@ -24,8 +24,10 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
-	log "k8s.io/klog"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 )
+
+var log = logging.GetLogger("controller", "change", "network")
 
 // NewController returns a new config controller
 func NewController(leadership leadershipstore.Store, deviceCache cache.Cache, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
@@ -57,7 +59,7 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	change, err := r.networkChanges.Get(networkchange.ID(id))
 	if err != nil {
-		log.Warningf("Could not get NW change %s", id)
+		log.Warnf("Could not get NW change %s", id)
 		return false, err
 	}
 

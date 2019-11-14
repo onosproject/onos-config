@@ -14,6 +14,10 @@
 
 package gnmi
 
+import "github.com/onosproject/onos-config/pkg/utils/logging"
+
+var log = logging.GetLogger("northbound", "gnmi")
+
 const (
 	// GnmiExtensionNetwkChangeID is the extension number used in SetRequest and SetResponse
 	GnmiExtensionNetwkChangeID = 100

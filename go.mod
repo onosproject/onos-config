@@ -20,7 +20,13 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.5.0
 	github.com/stretchr/testify v1.4.0
+	go.uber.org/multierr v1.4.0 // indirect
+	go.uber.org/zap v1.12.0
+	golang.org/x/net v0.0.0-20191112182307-2180aed22343 // indirect
+	golang.org/x/sys v0.0.0-20191113165036-4c7a9d0fe056 // indirect
+	golang.org/x/tools v0.0.0-20191113183821-b2a5ed324b91 // indirect
 	google.golang.org/grpc v1.25.0
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/yaml.v2 v2.2.5 // indirect
 	gotest.tools v2.2.0+incompatible
-	k8s.io/klog v1.0.0
 )

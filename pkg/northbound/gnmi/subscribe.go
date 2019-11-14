@@ -32,7 +32,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"
-	log "k8s.io/klog"
 	"regexp"
 	"time"
 )
@@ -58,7 +57,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	//Registering one listener for opStateChan
 	opStateChan, err := mgr.Dispatcher.RegisterOpState(hash)
 	if err != nil {
-		log.Warning("Subscription present: ", err)
+		log.Warn("Subscription present: ", err)
 		return status.Error(codes.AlreadyExists, err.Error())
 	}
 	resChan := make(chan result)
@@ -213,7 +212,7 @@ func listenForDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manag
 				if matchRegex(value.Path, subs) {
 					pathGnmi, err := utils.ParseGNMIElements(utils.SplitPath(value.Path))
 					if err != nil {
-						log.Warning("Error in parsing path ", err)
+						log.Warn("Error in parsing path ", err)
 						continue
 					}
 					log.Infof("Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
@@ -238,7 +237,7 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 			pathArr := utils.SplitPath(opStateChange.Path())
 			pathGnmi, err := utils.ParseGNMIElements(pathArr)
 			if err != nil {
-				log.Warning("Error in parsing path", err)
+				log.Warn("Error in parsing path", err)
 				resChan <- result{success: true, err: nil}
 				continue
 			}
@@ -272,7 +271,7 @@ func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechange.
 	} else {
 		valueGnmi, err := values.NativeTypeToGnmiTypedValue(value)
 		if err != nil {
-			log.Warning("Unable to convert native value to gnmiValue", err)
+			log.Warn("Unable to convert native value to gnmiValue", err)
 			return err
 		}
 
@@ -352,7 +351,7 @@ func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeSe
 	log.Info("Sending SubscribeResponse out to gNMI client ", response)
 	err := stream.Send(response)
 	if err != nil {
-		log.Warning("Error in sending response to client ", err)
+		log.Warn("Error in sending response to client ", err)
 		return status.Error(codes.Internal, err.Error())
 	}
 	return nil

@@ -36,7 +36,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	log "k8s.io/klog"
 	"strings"
 	"time"
 )
@@ -68,7 +67,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		var err error
 		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
 		if err != nil {
-			log.Warning("Error in update ", err)
+			log.Warn("Error in update ", err)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
@@ -79,7 +78,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		var err error
 		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
 		if err != nil {
-			log.Warning("Error in replace", err)
+			log.Warn("Error in replace", err)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
@@ -275,7 +274,7 @@ func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
 		correctedValues, err := jsonvalues.CorrectJSONPaths(
 			utils.StrPath(u.Path), intermediateConfigValues, rwPaths, true)
 		if err != nil {
-			log.Warning("Json value in Set could not be parsed", err)
+			log.Warn("Json value in Set could not be parsed", err)
 			return nil, err
 		}
 
@@ -320,7 +319,7 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 	model, ok := modelreg.
 		ModelReadOnlyPaths[utils.ToModelName(deviceType, version)]
 	if !ok {
-		log.Warningf("Cannot check for Read Only paths for %s %s because "+
+		log.Warnf("Cannot check for Read Only paths for %s %s because "+
 			"Model Plugin not available - continuing", deviceType, version)
 		return nil
 	}

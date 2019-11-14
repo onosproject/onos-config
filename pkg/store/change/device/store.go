@@ -29,14 +29,16 @@ import (
 	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"io"
-	log "k8s.io/klog"
 	"net"
 	"sync"
 	"time"
 )
+
+var log = logging.GetLogger("store", "change", "device")
 
 // getDeviceChangesName returns the name of the changes map for the given device ID
 func getDeviceChangesName(deviceID device.VersionedID) string {

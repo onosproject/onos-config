@@ -50,9 +50,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	log "k8s.io/klog"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"time"
 )
+
+var log = logging.GetLogger("main")
 
 type arrayFlags []string
 
@@ -73,6 +75,7 @@ func main() {
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
+	flag.Bool("debug", false, "enable debug logging")
 
 	//lines 93-109 are implemented according to
 	// https://github.com/kubernetes/klog/blob/master/examples/coexist_glog/coexist_glog.go
@@ -85,17 +88,6 @@ func main() {
 	}
 	flag.Parse()
 
-	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
-	log.InitFlags(klogFlags)
-
-	// Sync the glog and klog flags.
-	flag.CommandLine.VisitAll(func(f1 *flag.Flag) {
-		f2 := klogFlags.Lookup(f1.Name)
-		if f2 != nil {
-			value := f1.Value.String()
-			_ = f2.Value.Set(value)
-		}
-	})
 	log.Info("Starting onos-config")
 
 	opts, err := certs.HandleCertArgs(keyPath, certPath)

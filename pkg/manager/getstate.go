@@ -18,7 +18,6 @@ import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	log "k8s.io/klog"
 )
 
 // GetTargetState returns a set of state values given a target and a path.
@@ -36,7 +35,7 @@ func (m *Manager) GetTargetState(target string, path string) []*devicechange.Pat
 		}
 	}
 	if len(configValues) == 0 {
-		log.Warningf("Path %s is not in the operational state cache of device %s", path, target)
+		log.Warnf("Path %s is not in the operational state cache of device %s", path, target)
 	}
 	return configValues
 }

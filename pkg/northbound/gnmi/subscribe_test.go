@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
-	log "k8s.io/klog"
 	"strconv"
 	"sync"
 	"testing"

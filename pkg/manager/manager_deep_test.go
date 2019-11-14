@@ -38,8 +38,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"io/ioutil"
-	log "k8s.io/klog"
-	"os"
 	"testing"
 	"time"
 )
@@ -56,7 +54,6 @@ const (
 // part of the test. With this only the DeviceStore (a proxy for onos-topo) and
 // the 'target' (the gnmi client to the device) are mocked.
 func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
-	log.SetOutput(os.Stdout)
 	var (
 		mgrTest *Manager
 		err     error

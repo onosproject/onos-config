@@ -33,7 +33,6 @@ import (
 	"github.com/openconfig/ygot/ygot"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	log "k8s.io/klog"
 	"os"
 	"sync"
 	"testing"
@@ -52,7 +51,6 @@ type AllMocks struct {
 // anything is shared the order of it's modification is not deterministic
 // Also there can only be one TestMain per package
 func TestMain(m *testing.M) {
-	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
 }
 

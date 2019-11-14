@@ -25,8 +25,6 @@ import (
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
-	log "k8s.io/klog"
-	"os"
 	"strings"
 	"testing"
 )
@@ -260,7 +258,6 @@ func makeDevice(ID topodevice.ID) *topodevice.Device {
 }
 
 func setUp(t *testing.T) (*devicechange.DeviceChange, *devicechange.DeviceChange, device.Store) {
-	log.SetOutput(os.Stdout)
 	ctrl := gomock.NewController(t)
 	mockChangeStore := mockstore.NewMockDeviceChangesStore(ctrl)
 	config1Value01, _ := devicechange.NewChangeValue(Test1Cont1A, devicechange.NewTypedValueEmpty(), false)

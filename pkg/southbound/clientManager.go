@@ -23,15 +23,17 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"io/ioutil"
-	log "k8s.io/klog"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
+
+var log = logging.GetLogger("southbound")
 
 // Targets is a global cache of connected targets
 var Targets = make(map[topodevice.ID]TargetIf)

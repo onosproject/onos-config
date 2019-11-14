@@ -24,10 +24,12 @@ import (
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	log "k8s.io/klog"
 	"strings"
 )
+
+var log = logging.GetLogger("controller", "snapshot", "device")
 
 // NewController returns a new device snapshot controller
 func NewController(mastership mastershipstore.Store, changes changestore.Store, snapshots snapstore.Store) *controller.Controller {

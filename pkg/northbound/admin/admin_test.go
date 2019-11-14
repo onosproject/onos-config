@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
-	log "k8s.io/klog"
 	"net"
 	"os"
 	"testing"
@@ -33,7 +32,6 @@ import (
 
 // TestMain initializes the test suite context.
 func TestMain(m *testing.M) {
-	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
 }
 

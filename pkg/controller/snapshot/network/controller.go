@@ -27,9 +27,11 @@ import (
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	log "k8s.io/klog"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"time"
 )
+
+var log = logging.GetLogger("controller", "snapshot", "network")
 
 // NewController returns a new network snapshot controller
 func NewController(leadership leadershipstore.Store, networkChanges networkchangestore.Store, networkSnapshots networksnapstore.Store, deviceSnapshots devicesnapstore.Store) *controller.Controller {

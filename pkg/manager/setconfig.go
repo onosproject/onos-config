@@ -22,7 +22,6 @@ import (
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
-	log "k8s.io/klog"
 )
 
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
@@ -40,7 +39,7 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 	modelName := utils.ToModelName(deviceType, version)
 	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
 	if !ok {
-		log.Warning("No model ", modelName, " available as a plugin")
+		log.Warn("No model ", modelName, " available as a plugin")
 		return nil
 	}
 

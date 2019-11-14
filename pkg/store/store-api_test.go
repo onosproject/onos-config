@@ -18,7 +18,6 @@ import (
 	"fmt"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"gotest.tools/assert"
-	log "k8s.io/klog"
 	"os"
 	"strconv"
 	"testing"
@@ -40,7 +39,6 @@ const (
 )
 
 func TestMain(m *testing.M) {
-	log.SetOutput(os.Stdout)
 	os.Exit(m.Run())
 }
 

@@ -37,15 +37,17 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	log "k8s.io/klog"
 	"strings"
 	"sync"
 )
 
 var mgr Manager
+
+var log = logging.GetLogger("manager")
 
 // Manager single point of entry for the config system.
 type Manager struct {
@@ -210,7 +212,7 @@ func (m *Manager) ComputeDeviceChange(deviceName devicetype.ID, version devicety
 	for path, value := range updates {
 		updateValue, err := devicechange.NewChangeValue(path, value, false)
 		if err != nil {
-			log.Warningf("Error creating value for %s %v", path, err)
+			log.Warnf("Error creating value for %s %v", path, err)
 			continue
 		}
 		newChanges = append(newChanges, updateValue)

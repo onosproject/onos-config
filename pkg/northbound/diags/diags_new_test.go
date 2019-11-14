@@ -33,7 +33,6 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
 	"io"
-	log "k8s.io/klog"
 	"net"
 	"strings"
 	"testing"

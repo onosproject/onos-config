@@ -19,9 +19,12 @@ import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/api/types/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"sort"
 	"strings"
 )
+
+var log = logging.GetLogger("store", "change", "device")
 
 // ExtractFullConfig retrieves the full consolidated config for a Configuration
 // This gets the change up to and including the latest

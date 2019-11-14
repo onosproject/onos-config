@@ -24,7 +24,6 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	log "k8s.io/klog"
 	"sync"
 )
 

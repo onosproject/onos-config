@@ -28,10 +28,12 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/pkg/utils/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("northbound", "diags")
 
 // Service is a Service implementation for administration.
 type Service struct {
@@ -74,7 +76,7 @@ func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_Ge
 		streamID := fmt.Sprintf("diags-%p", stream)
 		listener, err := manager.GetManager().Dispatcher.RegisterOpState(streamID)
 		if err != nil {
-			log.Warning("Failed setting up a listener for OpState events on ", r.DeviceId)
+			log.Warnf("Failed setting up a listener for OpState events on %s", r.DeviceId)
 			return err
 		}
 		log.Infof("NBI Diags OpState started on %s for %s", streamID, r.DeviceId)
@@ -96,7 +98,7 @@ func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_Ge
 				msg := &diags.OpStateResponse{Type: admin.Type_ADDED, Pathvalue: pathValue}
 				err = stream.SendMsg(msg)
 				if err != nil {
-					log.Warningf("Error sending message on stream %s. Closing. %v",
+					log.Warnf("Error sending message on stream %s. Closing. %v",
 						streamID, msg)
 					return err
 				}

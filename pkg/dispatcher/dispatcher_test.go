@@ -20,7 +20,6 @@ import (
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
-	log "k8s.io/klog"
 	"os"
 	"strings"
 	"sync"
@@ -48,8 +47,6 @@ func tearDown(t *testing.T, d *Dispatcher) {
 }
 
 func TestMain(m *testing.M) {
-	log.SetOutput(os.Stdout)
-
 	device1 = topodevice.Device{ID: "localhost-1", Address: "localhost:10161"}
 	device2 = topodevice.Device{ID: "localhost-2", Address: "localhost:10162"}
 	device3 = topodevice.Device{ID: "localhost-3", Address: "localhost:10163"}
