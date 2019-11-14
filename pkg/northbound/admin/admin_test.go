@@ -59,15 +59,16 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, admin.Config
 	client := admin.CreateConfigAdminServiceClient(conn)
 
 	ctrl := gomock.NewController(t)
-	mgrTest, err := manager.LoadManager(
+	mgrTest, err := manager.NewManager(
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
+		mockstore.NewMockDeviceStore(ctrl),
 		cache.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl),
-		mockstore.NewMockDeviceStore(ctrl))
+		true)
 	if err != nil {
 		log.Error("Unable to load manager")
 	}

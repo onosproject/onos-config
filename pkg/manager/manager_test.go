@@ -242,7 +242,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		mockNetworkChangesStore,
 		mockNetworkSnapshotStore,
 		mockDeviceSnapshotStore,
-		make(chan *topodevice.ListResponse, 10))
+		true)
 	if err != nil {
 		log.Warn(err)
 		os.Exit(-1)

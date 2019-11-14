@@ -15,6 +15,7 @@
 package manager
 
 import (
+	"fmt"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -40,6 +41,9 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
 	if !ok {
 		log.Warn("No model ", modelName, " available as a plugin")
+		if !mgr.allowUnvalidatedConfig {
+			return fmt.Errorf("no model %s available as a plugin", modelName)
+		}
 		return nil
 	}
 
