@@ -132,8 +132,8 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	mastershipStore, err := mastership.NewLocalStore("test", cluster.NodeID("node1"))
 	assert.NilError(t, err)
 
-	mgrTest, err = LoadManager(leadershipStore, mastershipStore, deviceChangesStore, deviceCache,
-		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, mockDeviceStore)
+	mgrTest, err = NewManager(leadershipStore, mastershipStore, deviceChangesStore, mockDeviceStore,
+		deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true)
 	if err != nil {
 		t.Fatalf("could not load manager %v", err)
 	}
@@ -228,7 +228,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(3 * time.Second):
+		case <-time.After(5 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -300,7 +300,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(3 * time.Second):
+		case <-time.After(5 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -364,7 +364,7 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(3 * time.Second):
+		case <-time.After(5 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -468,7 +468,7 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 					breakout = true
 				}
 			}
-		case <-time.After(1 * time.Second):
+		case <-time.After(5 * time.Second):
 			breakout = true
 			t.FailNow()
 		}

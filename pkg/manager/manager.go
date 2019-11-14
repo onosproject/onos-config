@@ -70,13 +70,14 @@ type Manager struct {
 	Dispatcher                *dispatcher.Dispatcher
 	OperationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
 	OperationalStateCacheLock *sync.RWMutex
+	allowUnvalidatedConfig    bool
 }
 
 // NewManager initializes the network config manager subsystem.
 func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Store,
 	deviceChangesStore device.Store, deviceStore devicestore.Store, deviceCache cache.Cache,
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
-	deviceSnapshotStore devicesnap.Store, topoCh chan *topodevice.ListResponse) (*Manager, error) {
+	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool) (*Manager, error) {
 	log.Info("Creating Manager")
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
@@ -96,25 +97,16 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		deviceChangeController:    devicechangectl.NewController(mastershipStore, deviceStore, deviceCache, deviceChangesStore),
 		networkSnapshotController: networksnapshotctl.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore),
 		deviceSnapshotController:  devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
-		TopoChannel:               topoCh,
+		TopoChannel:               make(chan *topodevice.ListResponse, 10),
 		ModelRegistry:             modelReg,
 		OperationalStateChannel:   make(chan events.OperationalStateEvent, 10),
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
 		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
 		OperationalStateCacheLock: &sync.RWMutex{},
+		allowUnvalidatedConfig:    allowUnvalidatedConfig,
 	}
 	return &mgr, nil
-}
-
-// LoadManager creates a configuration subsystem manager primed with stores loaded from the specified files.
-func LoadManager(leadershipStore leadership.Store, mastershipStore mastership.Store, deviceChangesStore device.Store,
-	deviceCache cache.Cache, networkChangesStore network.Store,
-	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store, deviceStore devicestore.Store) (*Manager, error) {
-	topoChannel := make(chan *topodevice.ListResponse, 10)
-
-	return NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStore, deviceCache,
-		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, topoChannel)
 }
 
 // setTargetGenerator is generally only called from test

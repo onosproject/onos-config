@@ -20,6 +20,7 @@ gives a gNMI interface northbound for other systems to connect to, and an
 Admin service through gRPC
 
 Arguments
+-allowUnvalidatedConfig <allow configuration for devices without a corresponding model plugin>
 
 -modelPlugin (repeated) <the location of a shared object library that implements the Model Plugin interface>
 
@@ -70,7 +71,7 @@ func (i *arrayFlags) Set(value string) error {
 // The main entry point
 func main() {
 	var modelPlugins arrayFlags
-
+	allowUnvalidatedConfig := flag.Bool("-allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
 	flag.Var(&modelPlugins, "modelPlugin", "names of model plugins to load (repeated)")
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
@@ -136,8 +137,9 @@ func main() {
 		log.Error("Cannot load device store ", err)
 	}
 
-	mgr, err := manager.LoadManager(leadershipStore, mastershipStore, deviceChangesStore, deviceCache,
-		networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceStore)
+	mgr, err := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
+		deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
+		deviceSnapshotStore, *allowUnvalidatedConfig)
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {
