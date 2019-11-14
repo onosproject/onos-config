@@ -114,7 +114,6 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	}()
 
 	serverFake.Signal <- struct{}{}
-	assert.NilError(t, err, "Unexpected error doing Subscribe")
 
 	device1 := "Device1"
 	path1Once := "cont1a"
