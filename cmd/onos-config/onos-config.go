@@ -71,7 +71,7 @@ func (i *arrayFlags) Set(value string) error {
 // The main entry point
 func main() {
 	var modelPlugins arrayFlags
-	allowUnvalidatedConfig := flag.Bool("-allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
+	allowUnvalidatedConfig := flag.Bool("allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
 	flag.Var(&modelPlugins, "modelPlugin", "names of model plugins to load (repeated)")
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
