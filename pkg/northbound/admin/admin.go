@@ -53,18 +53,6 @@ func (s Service) Register(r *grpc.Server) {
 type Server struct {
 }
 
-// RegisterModel registers a model plugin already on the onos-configs file system.
-func (s Server) RegisterModel(ctx context.Context, req *admin.RegisterRequest) (*admin.RegisterResponse, error) {
-	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(req.SoFile)
-	if err != nil {
-		return nil, err
-	}
-	return &admin.RegisterResponse{
-		Name:    name,
-		Version: version,
-	}, nil
-}
-
 // UploadRegisterModel uploads and registers a new model plugin.
 func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegisterModelServer) error {
 	response := admin.RegisterResponse{Name: "Unknown"}

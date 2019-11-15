@@ -40,15 +40,8 @@ type mockConfigAdminServiceClient struct {
 
 var LastCreatedClient *mockConfigAdminServiceClient
 
-func (c mockConfigAdminServiceClient) RegisterModel(ctx context.Context, in *admin.RegisterRequest, opts ...grpc.CallOption) (*admin.RegisterResponse, error) {
-	response := &admin.RegisterResponse{
-		Name:    in.GetSoFile(),
-		Version: "1.0",
-	}
-	return response, nil
-}
-
 func (c mockConfigAdminServiceClient) UploadRegisterModel(ctx context.Context, opts ...grpc.CallOption) (admin.ConfigAdminService_UploadRegisterModelClient, error) {
+	// TODO Implement this
 	return nil, nil
 }
 

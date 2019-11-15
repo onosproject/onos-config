@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/spf13/cobra"
 	"io"
+	"os"
 	"text/template"
 )
 
@@ -97,18 +98,57 @@ func runAddPluginCommand(cmd *cobra.Command, args []string) error {
 	if clientConnectionError != nil {
 		return clientConnectionError
 	}
-	client := admin.CreateConfigAdminServiceClient(clientConnection)
 
 	pluginFileName := ""
 	if len(args) == 1 {
 		pluginFileName = args[0]
 	}
-
-	resp, err := client.RegisterModel(
-		context.Background(), &admin.RegisterRequest{SoFile: pluginFileName})
+	pluginFile, err := os.Open(pluginFileName)
 	if err != nil {
 		return err
 	}
-	Output("load plugin success %s %s\n", resp.Name, resp.Version)
-	return nil
+	defer pluginFile.Close()
+
+	client := admin.CreateConfigAdminServiceClient(clientConnection)
+
+	uploadClient, err := client.UploadRegisterModel(context.Background())
+	if err != nil {
+		return err
+	}
+
+	const chunkSize = 2000000
+	data := make([]byte, chunkSize)
+	var chunkNo int64 = 0
+	for {
+		count, err := pluginFile.ReadAt(data, chunkNo*chunkSize)
+		if err == io.EOF {
+			err := uploadClient.Send(&admin.Chunk{
+				SoFile:  pluginFileName,
+				Content: data[:count],
+			})
+			if err != nil {
+				return err
+			}
+			resp, err := uploadClient.CloseAndRecv()
+			if err != nil {
+				return err
+			}
+			Output("Plugin %s uploaded to server as %s:%s. %d chunks. %d bytes",
+				resp.GetName(), resp.GetVersion(),
+				pluginFileName, chunkNo, chunkNo*chunkSize+int64(count))
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		err = uploadClient.Send(&admin.Chunk{
+			SoFile:  pluginFileName,
+			Content: data,
+		})
+		Output("Plugin %s uploading to server - chunk %d", pluginFileName, chunkNo)
+		if err != nil {
+			return err
+		}
+		chunkNo++
+	}
 }

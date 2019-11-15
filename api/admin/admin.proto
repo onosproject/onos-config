@@ -40,108 +40,163 @@ enum Type {
     REMOVED = 3;
 }
 
+// ReadOnlySubPath is an extension to the ReadOnlyPath to define the datatype of
+// the subpath
 message ReadOnlySubPath {
+    // sub_path is the relative path of a child object e.g. /list2b/index
     string sub_path = 1;
-    onos.config.change.device.ValueType value_type = 2; // from diags.proto
+    // value_type is the datatype of the read only path
+    onos.config.change.device.ValueType value_type = 2;
 }
 
+// ReadOnlyPath extracted from the model plugin as the definition of a tree of read only items.
+// In YANG models items are defined as ReadOnly with the `config false` keyword.
+// This can be applied to single items (leafs) or collections (containers or lists).
+// When this `config false` is applied to an object every item beneath it will
+// also become readonly - here these are shown as subpaths.
+// The complete read only path then will be a concatenation of both e.g.
+// /cont1a/cont1b-state/list2b/index and the type is defined in the SubPath as UInt8.
 message ReadOnlyPath {
+    // path of the topmost `config false` object e.g. /cont1a/cont1b-state
     string path = 1;
+    // ReadOnlySubPath is a set of children of the path including an entry for the
+    // type of the topmost object with subpath `/`
+    // An example is /list2b/index
     repeated ReadOnlySubPath sub_path = 2;
 }
 
+// ReadWritePath is extracted from the model plugin as the definition of a writeable attributes.
+// In YANG models items are writable by default unless they are specified as `config false` or
+// have an item with `config false` as a parent.
+// Each configurable item has metadata with meanings taken from the YANG specification RFC 6020.
 message ReadWritePath {
+    // path is the full path to the attribute (leaf or leaf-list)
     string path = 1;
-    onos.config.change.device.ValueType value_type = 2; // from diags.proto
+    // value_type is the data type of the attribute
+    onos.config.change.device.ValueType value_type = 2;
+    // units is the unit of measurement e.g. dB, mV
     string units = 3;
+    // description is an explaination of the meaning of the attribute
     string description = 4;
+    // mandatory shows whether the attribute is optional (false) or required (true)
     bool mandatory = 5;
+    // default is a default value used with optional attributes
     string default = 6;
+    // range is definition of the range of values a value is allowed
     repeated string range = 7;
+    // length is a defintion of the length restrictions for the attribute
     repeated string length = 8;
 }
 
+// ModelInfo is general information about a model plugin.
 message ModelInfo {
+    // name is the name given to the model plugin - no spaces and title case.
     string name = 1;
+    // version is the semantic version of the Plugin e.g. 1.0.0.
     string version = 2;
+    // model_data is a set of metadata about the YANG files that went in to
+    // generating the model plugin. It includes name, version and organization for
+    // each YANG file, similar to how they are represented in gNMI Capabilities.
     repeated gnmi.ModelData model_data = 3;
+    // module is the name of the Model Plugin on the file system - usually ending in .so.<version>.
     string module = 4;
+    // getStateMode is flag that defines how the "get state" operation works.
+    //  0) means that no retrieval of state is attempted
+    //  1) means that the synchronizer will make 2 requests to the device - one for
+    //      Get with State and another for Get with Operational.
+    //  2) means that the synchronizer will do a Get request comprising of each
+    //      one of the ReadOnlyPaths and their sub paths. If there is a `list`
+    //      in any one of these paths it will be sent down as is, expecting the
+    //      devices implementation of gNMI will be able to expand wildcards.
+    //  3) means that the synchronizer will do a Get request comprising of each
+    //      one of the ReadOnlyPaths and their sub paths. If there is a `list`
+    //      in any one of these paths, a separate call will be made first to find
+    //      all the instances in the list and a Get including these expanded wildcards
+    //      will be sent down to the device.
     uint32 getStateMode = 5;
-    repeated ReadOnlyPath read_only_path = 7; // 6 was used previously
+    // read_only_path is all of the read only paths for the model plugin.
+    repeated ReadOnlyPath read_only_path = 7;
+    // read_write_path is all of the read write paths for the model plugin.
     repeated ReadWritePath read_write_path = 8;
 }
 
-// Chunk is for streaming a model plugin file to the server
+// Chunk is for streaming a model plugin file to the server.
 // There is a built in limit in gRPC of 4MB - plugin is usually around 20MB
-// so break in to chunks of approx 1MB
+// so break in to chunks of approx 1-2MB.
 message Chunk {
+    // so_file is the name being streamed.
     string so_file = 1;
-    bytes Content = 2;
+    // content is the bytes content.
+    bytes content = 2;
 }
 
-// RegisterRequest carries data for registering a YANG model.
-message RegisterRequest {
-    // Full path and filename of a shared object library as a model plugin
-    string so_file = 1;
-}
-
-message SchemaEntry {
-    string schema_path = 1;
-    string schema_json = 2;
-}
-
-// RegisterResponse carries status of YANG model registration.
+// RegisterResponse carries status of model plugin registration.
 message RegisterResponse {
+    // name is name of the model plugin.
     string name = 1;
+    // version is the semantic version of the model plugin.
     string version = 2;
 }
 
-// ListModelsRequest carries data for querying registered models.
+// ListModelsRequest carries data for querying registered model plugins.
 message ListModelsRequest {
+    // verbose option causes all of the ReadWrite and ReadOnly paths to be included.
     bool verbose = 1;
-    string model_name = 2; // If blank all are listed
-    string model_version = 3; // If blank all are listed
+    // An optional filter on the name of the model plugins to list.
+    string model_name = 2;
+    // An optional filter on the version of the model plugins to list
+    string model_version = 3;
 }
 
 // RollbackRequest carries the name of a network config to rollback. If there
 // are subsequent changes to any of the devices in that config, the rollback will
-// be rejected. If no name is given the last network change will be rolled back.
+// be rejected.
 message RollbackRequest {
+    // name is an optional name of a Network Change to rollback.
+    // If no name is given the last network change will be rolled back.
+    // If the name given is not of the last network change and error will be given.
     string name = 1;
+    // On optional comment to leave on the rollback.
     string comment = 2;
 }
 
+// RollbackResponse carries the response of the rollback operation
 message RollbackResponse {
+    // A message showing the result of the rollback.
     string message = 1;
 }
 
-// GetSnapshotRequest gets a snapshot
+// GetSnapshotRequest gets the details of a snapshot for a specific device and version.
 message GetSnapshotRequest {
+    // device_id is the ID of a device that has been configured through a NetworkChange.
     string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.ID"];
+    // device version is the semantic version of a device that has been configured through a NetworkChange.
     string device_version = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.Version"];
 }
 
-// ListSnapshotsRequest requests a list of snapshots
+// ListSnapshotsRequest requests a list of snapshots for all devices and versions.
 message ListSnapshotsRequest {
 
 }
 
-// CompactChangesRequest requests a compaction of the change stores
+// CompactChangesRequest requests a compaction of the Network Change and Device Change stores
 message CompactChangesRequest {
+    // retention_period is an optional duration of time counting back from the present moment
+    // Network changes that were created during this period should not be compacted
+    // Any network changes that are older should be compacted
+    // If not specified the duration is 0
     google.protobuf.Duration retention_period = 1 [(gogoproto.stdduration) = true];
 }
 
-// CompactChangesResponse is a compact response
+// CompactChangesResponse is a response to the Compact Changes command
 message CompactChangesResponse {
 }
 
 // ConfigAdminService provides means for enhanced interactions with the configuration subsystem.
 service ConfigAdminService {
-    // RegisterModel adds the specified YANG model to the list of supported models.
-    // There is no unregister because once loaded plugins cannot be unloaded
-    rpc RegisterModel(RegisterRequest) returns (RegisterResponse);
-
     // UploadRegisterModel uploads and adds the model plugin to the list of supported models.
+    // The file is serialized in to Chunks of less than 4MB so as not to break the
+    // gRPC byte array limit
     rpc UploadRegisterModel(stream Chunk) returns (RegisterResponse);
 
     // ListRegisteredModels returns a stream of registered models.
@@ -150,12 +205,20 @@ service ConfigAdminService {
     // RollbackNetworkChange rolls back the specified network change (or the latest one).
     rpc RollbackNetworkChange(RollbackRequest) returns (RollbackResponse);
 
-    // GetSnapshot gets a snapshot
+    // GetSnapshot gets a snapshot for a specific device and version
     rpc GetSnapshot(GetSnapshotRequest) returns (onos.config.snapshot.device.Snapshot);
 
-    // ListSnapshots gets a list of snapshots
+    // ListSnapshots gets a list of snapshots across all devices and versions,
+    // and streams them back to the caller.
+    // The result includes a "replay" of existing snapshots and will watch for any
+    // subsequent new changes that come later.
     rpc ListSnapshots(ListSnapshotsRequest) returns (stream onos.config.snapshot.device.Snapshot);
 
-    // CompactChanges requests a snapshot of NetworkChange and DeviceChange stores
+    // CompactChanges requests a snapshot of NetworkChange and DeviceChange stores.
+    // This will take all of the Network Changes older than the retention period and
+    // flatten them down to just one snapshot (replacing any older snapshot).
+    // This will act as a baseline for those changes within the retention period and any future changes.
+    // DeviceChanges will be snapshotted to correspond to these NetworkChange compactions
+    // leaving an individual snapshot perv device and version combination.
     rpc CompactChanges(CompactChangesRequest) returns (CompactChangesResponse);
 }
