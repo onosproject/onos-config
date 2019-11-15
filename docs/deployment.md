@@ -207,7 +207,7 @@ service to be reached through the `config.onosproject.org` domain. Thus, to conn
 to the service through the ingress, you must configure `/etc/hosts` to point to the
 load balancer's IP:
 
-```
+```bash
 192.168.99.102 config.onosproject.org
 ```
 

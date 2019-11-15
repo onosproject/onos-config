@@ -1,4 +1,5 @@
 # ONOS configuration overview
+
 ## Design Objectives
 gNMI provides transactionality with respect to a single device; all configuration operations specified as part of a 
 single batch are all applied or none of them are. The core capability of the configuration platform should build on 
