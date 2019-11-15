@@ -198,8 +198,8 @@ You can repeat the above steps by adding another simulator to onos-config and mo
     github.com/onosproject/onos-config/pkg/southbound.DeviceID {
         DeviceID: "sim2:10161",}
 ```
+or to print `capResponse` variable:
 
-    or to print `capResponse` variable:
 ```bash
     (dlv) print capResponse
     *github.com/openconfig/gnmi/proto/gnmi.CapabilityResponse {
@@ -255,7 +255,7 @@ You can repeat the above steps by adding another simulator to onos-config and mo
       Goroutine 9 - User: /go/src/github.com/onosproject/onos-config/pkg/dispatcher/dispatcher.go:58 github.com/onosproject/onos-config/pkg/dispatcher.(*Dispatcher).Listen (0x82a193)
       Goroutine 10 - User: /go/src/github.com/onosproject/onos-config/pkg/dispatcher/dispatcher.go:86 github.com/onosproject/onos-config/pkg/dispatcher.(*Dispatcher).ListenOperationalState (0x82a96b)
       Goroutine 11 - User: /go/src/github.com/onosproject/onos-config/pkg/manager/manager.go:236 github.com/onosproject/onos-config/pkg/manager.listenOnResponseChannel (0xcdfd20)
-    * Goroutine 12 - User: /go/src/github.com/onosproject/onos-config/pkg/southbound/synchronizer/synchronizer.go:83 github.com/onosproject/onos-config/pkg/southbound/synchronizer.New (0xcd62a2) (thread 60)
+      Goroutine 12 - User: /go/src/github.com/onosproject/onos-config/pkg/southbound/synchronizer/synchronizer.go:83 github.com/onosproject/onos-config/pkg/southbound/synchronizer.New (0xcd62a2) (thread 60)
       Goroutine 18 - User: /usr/local/go/src/runtime/lock_futex.go:228 runtime.notetsleepg (0x685a74)
       Goroutine 19 - User: /usr/local/go/src/runtime/proc.go:302 runtime.gopark (0x6ae2c4)
       Goroutine 20 - User: /usr/local/go/src/runtime/proc.go:302 runtime.gopark (0x6ae2c4)

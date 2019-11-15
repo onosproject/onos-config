@@ -147,15 +147,15 @@ extension: <
 > The result will include a field as a gNMI SetResponse extension 100
 > giving randomly generated Network Change identifier, which may be subsequently used
 > to rollback the change.
-
+>
 > If a specific name is desired for a Network Change, the set may be given in the
 SetRequest() with the 100 extension at the end of the -proto section like:
 > `, extension: <registered_ext: <id: 100, msg: 'myfirstchange'>>`
 > See [gnmi_extensions.md](./gnmi_extensions.md) for more on gNMI extensions supported.
-
+>
 > The corresponding -get for this require using the -proto
 > `path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>`
-
+>
 > Currently (Nov '19) checking of the contents done only when a Model Plugin is
 > loaded for the device type. 2 checks are done
 >

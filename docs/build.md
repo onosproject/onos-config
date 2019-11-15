@@ -17,7 +17,6 @@ linters                         examines Go source code and reports coding probl
 onos-config-base-docker         build onos-config base Docker image
 protos                          compile the protobuf files (using protoc-go Docker)
 test                            run the unit tests and source code validation
-
 ```
 
 ## Building Go binaries

@@ -210,10 +210,10 @@ YANGS:
         openconfig-hercules                   0.2.0    OpenConfig working group
         openconfig-hercules-interfaces        0.2.0    OpenConfig working group
         openconfig-hercules-platform-node     0.2.0    OpenConfig working group
-
 ```
 
 To see a list of Read-Only and Read-Write paths use the command:
+
 ```bash
 > onos config get plugins -v
 ```
