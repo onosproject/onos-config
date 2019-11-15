@@ -1,4 +1,5 @@
 # ONOS configuration overview
+
 ## Design Objectives
 gNMI provides transactionality with respect to a single device; all configuration operations specified as part of a 
 single batch are all applied or none of them are. The core capability of the configuration platform should build on 
@@ -32,18 +33,18 @@ provided as additional layers:
 
 ## Key Tenets
 * Principal northbound API for the subsystem will be gNMI and gNOI.
-   * These interfaces are already accepted standards and are well-defined, low-profile interfaces 
+    * These interfaces are already accepted standards and are well-defined, low-profile interfaces 
      with support for transaction semantics.
-   * YANG models that will be exposed as part of the NB API are yet to be determined (or defined).
+    * YANG models that will be exposed as part of the NB API are yet to be determined (or defined).
 * Enhanced northbound API will be a gRPC service providing access to administrative functionality.
-   * Applications can navigate the change-log and roll-back various changes as they were 
-     previously submitted via gNMI
+    * Applications can navigate the change-log and roll-back various changes as they were 
+      previously submitted via gNMI
 * Southbound API for the subsystem will be gNMI and gNOI.
-   * This will allow direct use with Stratum-compliant switches without requiring an adaptation layer.
-   * Adapters can be created for devices that do not directly support gNMI/gNOI interfaces. 
+    * This will allow direct use with Stratum-compliant switches without requiring an adaptation layer.
+    * Adapters can be created for devices that do not directly support gNMI/gNOI interfaces. 
      Such adapters can be deployed either as proxy agents or potentially can be hosted on the devices themselves.
 * Diagnostic gRPC service will allow for inspection of internal state using various remote tools.
-   * This interface is not subject to backward compatibility constraints.  
+    * This interface is not subject to backward compatibility constraints.  
 * The subsystem will be designed as a separate entity to allow its use with the existing 
   ONOS 2.0 architecture and to fit with the NG ONOS architecture.
 

@@ -110,8 +110,8 @@ TREE:
 
 > This displays the list of changes IDs and the aggregate effect of layering each
 > one on top of the other. This is the _effective_ configuration.
-
+>
 > By default all layers are shown (`layer=0`). To show the previous _effective_
 > configuration use `layer=-1`
-
+>
 > To display the devices trees for all devices, just omit the device name.
