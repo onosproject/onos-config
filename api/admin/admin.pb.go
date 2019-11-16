@@ -12,8 +12,8 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/gogo/protobuf/types"
 	device "github.com/onosproject/onos-config/api/types/change/device"
+	github_com_onosproject_onos_config_api_types_device "github.com/onosproject/onos-config/api/types/device"
 	device1 "github.com/onosproject/onos-config/api/types/snapshot/device"
-	github_com_onosproject_onos_config_pkg_types_device "github.com/onosproject/onos-config/api/types/device"
 	gnmi "github.com/openconfig/gnmi/proto/gnmi"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -32,7 +32,7 @@ var _ = time.Kitchen
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Streaming event type
 type Type int32
@@ -70,8 +70,12 @@ func (Type) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d6b467461202c036, []int{0}
 }
 
+// ReadOnlySubPath is an extension to the ReadOnlyPath to define the datatype of
+// the subpath
 type ReadOnlySubPath struct {
-	SubPath              string           `protobuf:"bytes,1,opt,name=sub_path,json=subPath,proto3" json:"sub_path,omitempty"`
+	// sub_path is the relative path of a child object e.g. /list2b/index
+	SubPath string `protobuf:"bytes,1,opt,name=sub_path,json=subPath,proto3" json:"sub_path,omitempty"`
+	// value_type is the datatype of the read only path
 	ValueType            device.ValueType `protobuf:"varint,2,opt,name=value_type,json=valueType,proto3,enum=onos.config.change.device.ValueType" json:"value_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
@@ -116,8 +120,19 @@ func (m *ReadOnlySubPath) GetValueType() device.ValueType {
 	return device.ValueType_EMPTY
 }
 
+// ReadOnlyPath extracted from the model plugin as the definition of a tree of read only items.
+// In YANG models items are defined as ReadOnly with the `config false` keyword.
+// This can be applied to single items (leafs) or collections (containers or lists).
+// When this `config false` is applied to an object every item beneath it will
+// also become readonly - here these are shown as subpaths.
+// The complete read only path then will be a concatenation of both e.g.
+// /cont1a/cont1b-state/list2b/index and the type is defined in the SubPath as UInt8.
 type ReadOnlyPath struct {
-	Path                 string             `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	// path of the topmost `config false` object e.g. /cont1a/cont1b-state
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	// ReadOnlySubPath is a set of children of the path including an entry for the
+	// type of the topmost object with subpath `/`
+	// An example is /list2b/index
 	SubPath              []*ReadOnlySubPath `protobuf:"bytes,2,rep,name=sub_path,json=subPath,proto3" json:"sub_path,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
@@ -162,18 +177,30 @@ func (m *ReadOnlyPath) GetSubPath() []*ReadOnlySubPath {
 	return nil
 }
 
+// ReadWritePath is extracted from the model plugin as the definition of a writeable attributes.
+// In YANG models items are writable by default unless they are specified as `config false` or
+// have an item with `config false` as a parent.
+// Each configurable item has metadata with meanings taken from the YANG specification RFC 6020.
 type ReadWritePath struct {
-	Path                 string           `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	ValueType            device.ValueType `protobuf:"varint,2,opt,name=value_type,json=valueType,proto3,enum=onos.config.change.device.ValueType" json:"value_type,omitempty"`
-	Units                string           `protobuf:"bytes,3,opt,name=units,proto3" json:"units,omitempty"`
-	Description          string           `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Mandatory            bool             `protobuf:"varint,5,opt,name=mandatory,proto3" json:"mandatory,omitempty"`
-	Default              string           `protobuf:"bytes,6,opt,name=default,proto3" json:"default,omitempty"`
-	Range                []string         `protobuf:"bytes,7,rep,name=range,proto3" json:"range,omitempty"`
-	Length               []string         `protobuf:"bytes,8,rep,name=length,proto3" json:"length,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	// path is the full path to the attribute (leaf or leaf-list)
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	// value_type is the data type of the attribute
+	ValueType device.ValueType `protobuf:"varint,2,opt,name=value_type,json=valueType,proto3,enum=onos.config.change.device.ValueType" json:"value_type,omitempty"`
+	// units is the unit of measurement e.g. dB, mV
+	Units string `protobuf:"bytes,3,opt,name=units,proto3" json:"units,omitempty"`
+	// description is an explaination of the meaning of the attribute
+	Description string `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	// mandatory shows whether the attribute is optional (false) or required (true)
+	Mandatory bool `protobuf:"varint,5,opt,name=mandatory,proto3" json:"mandatory,omitempty"`
+	// default is a default value used with optional attributes
+	Default string `protobuf:"bytes,6,opt,name=default,proto3" json:"default,omitempty"`
+	// range is definition of the range of values a value is allowed
+	Range []string `protobuf:"bytes,7,rep,name=range,proto3" json:"range,omitempty"`
+	// length is a defintion of the length restrictions for the attribute
+	Length               []string `protobuf:"bytes,8,rep,name=length,proto3" json:"length,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *ReadWritePath) Reset()         { *m = ReadWritePath{} }
@@ -256,17 +283,39 @@ func (m *ReadWritePath) GetLength() []string {
 	return nil
 }
 
+// ModelInfo is general information about a model plugin.
 type ModelInfo struct {
-	Name                 string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version              string            `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	ModelData            []*gnmi.ModelData `protobuf:"bytes,3,rep,name=model_data,json=modelData,proto3" json:"model_data,omitempty"`
-	Module               string            `protobuf:"bytes,4,opt,name=module,proto3" json:"module,omitempty"`
-	GetStateMode         uint32            `protobuf:"varint,5,opt,name=getStateMode,proto3" json:"getStateMode,omitempty"`
-	ReadOnlyPath         []*ReadOnlyPath   `protobuf:"bytes,7,rep,name=read_only_path,json=readOnlyPath,proto3" json:"read_only_path,omitempty"`
-	ReadWritePath        []*ReadWritePath  `protobuf:"bytes,8,rep,name=read_write_path,json=readWritePath,proto3" json:"read_write_path,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	// name is the name given to the model plugin - no spaces and title case.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// version is the semantic version of the Plugin e.g. 1.0.0.
+	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	// model_data is a set of metadata about the YANG files that went in to
+	// generating the model plugin. It includes name, version and organization for
+	// each YANG file, similar to how they are represented in gNMI Capabilities.
+	ModelData []*gnmi.ModelData `protobuf:"bytes,3,rep,name=model_data,json=modelData,proto3" json:"model_data,omitempty"`
+	// module is the name of the Model Plugin on the file system - usually ending in .so.<version>.
+	Module string `protobuf:"bytes,4,opt,name=module,proto3" json:"module,omitempty"`
+	// getStateMode is flag that defines how the "get state" operation works.
+	//  0) means that no retrieval of state is attempted
+	//  1) means that the synchronizer will make 2 requests to the device - one for
+	//      Get with State and another for Get with Operational.
+	//  2) means that the synchronizer will do a Get request comprising of each
+	//      one of the ReadOnlyPaths and their sub paths. If there is a `list`
+	//      in any one of these paths it will be sent down as is, expecting the
+	//      devices implementation of gNMI will be able to expand wildcards.
+	//  3) means that the synchronizer will do a Get request comprising of each
+	//      one of the ReadOnlyPaths and their sub paths. If there is a `list`
+	//      in any one of these paths, a separate call will be made first to find
+	//      all the instances in the list and a Get including these expanded wildcards
+	//      will be sent down to the device.
+	GetStateMode uint32 `protobuf:"varint,5,opt,name=getStateMode,proto3" json:"getStateMode,omitempty"`
+	// read_only_path is all of the read only paths for the model plugin.
+	ReadOnlyPath []*ReadOnlyPath `protobuf:"bytes,7,rep,name=read_only_path,json=readOnlyPath,proto3" json:"read_only_path,omitempty"`
+	// read_write_path is all of the read write paths for the model plugin.
+	ReadWritePath        []*ReadWritePath `protobuf:"bytes,8,rep,name=read_write_path,json=readWritePath,proto3" json:"read_write_path,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *ModelInfo) Reset()         { *m = ModelInfo{} }
@@ -342,12 +391,14 @@ func (m *ModelInfo) GetReadWritePath() []*ReadWritePath {
 	return nil
 }
 
-// Chunk is for streaming a model plugin file to the server
+// Chunk is for streaming a model plugin file to the server.
 // There is a built in limit in gRPC of 4MB - plugin is usually around 20MB
-// so break in to chunks of approx 1MB
+// so break in to chunks of approx 1-2MB.
 type Chunk struct {
-	SoFile               string   `protobuf:"bytes,1,opt,name=so_file,json=soFile,proto3" json:"so_file,omitempty"`
-	Content              []byte   `protobuf:"bytes,2,opt,name=Content,proto3" json:"Content,omitempty"`
+	// so_file is the name being streamed.
+	SoFile string `protobuf:"bytes,1,opt,name=so_file,json=soFile,proto3" json:"so_file,omitempty"`
+	// content is the bytes content.
+	Content              []byte   `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -391,95 +442,11 @@ func (m *Chunk) GetContent() []byte {
 	return nil
 }
 
-// RegisterRequest carries data for registering a YANG model.
-type RegisterRequest struct {
-	// Full path and filename of a shared object library as a model plugin
-	SoFile               string   `protobuf:"bytes,1,opt,name=so_file,json=soFile,proto3" json:"so_file,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *RegisterRequest) Reset()         { *m = RegisterRequest{} }
-func (m *RegisterRequest) String() string { return proto.CompactTextString(m) }
-func (*RegisterRequest) ProtoMessage()    {}
-func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{5}
-}
-func (m *RegisterRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RegisterRequest.Unmarshal(m, b)
-}
-func (m *RegisterRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RegisterRequest.Marshal(b, m, deterministic)
-}
-func (m *RegisterRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RegisterRequest.Merge(m, src)
-}
-func (m *RegisterRequest) XXX_Size() int {
-	return xxx_messageInfo_RegisterRequest.Size(m)
-}
-func (m *RegisterRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RegisterRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RegisterRequest proto.InternalMessageInfo
-
-func (m *RegisterRequest) GetSoFile() string {
-	if m != nil {
-		return m.SoFile
-	}
-	return ""
-}
-
-type SchemaEntry struct {
-	SchemaPath           string   `protobuf:"bytes,1,opt,name=schema_path,json=schemaPath,proto3" json:"schema_path,omitempty"`
-	SchemaJson           string   `protobuf:"bytes,2,opt,name=schema_json,json=schemaJson,proto3" json:"schema_json,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *SchemaEntry) Reset()         { *m = SchemaEntry{} }
-func (m *SchemaEntry) String() string { return proto.CompactTextString(m) }
-func (*SchemaEntry) ProtoMessage()    {}
-func (*SchemaEntry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{6}
-}
-func (m *SchemaEntry) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_SchemaEntry.Unmarshal(m, b)
-}
-func (m *SchemaEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_SchemaEntry.Marshal(b, m, deterministic)
-}
-func (m *SchemaEntry) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SchemaEntry.Merge(m, src)
-}
-func (m *SchemaEntry) XXX_Size() int {
-	return xxx_messageInfo_SchemaEntry.Size(m)
-}
-func (m *SchemaEntry) XXX_DiscardUnknown() {
-	xxx_messageInfo_SchemaEntry.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_SchemaEntry proto.InternalMessageInfo
-
-func (m *SchemaEntry) GetSchemaPath() string {
-	if m != nil {
-		return m.SchemaPath
-	}
-	return ""
-}
-
-func (m *SchemaEntry) GetSchemaJson() string {
-	if m != nil {
-		return m.SchemaJson
-	}
-	return ""
-}
-
-// RegisterResponse carries status of YANG model registration.
+// RegisterResponse carries status of model plugin registration.
 type RegisterResponse struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// name is name of the model plugin.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// version is the semantic version of the model plugin.
 	Version              string   `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -490,7 +457,7 @@ func (m *RegisterResponse) Reset()         { *m = RegisterResponse{} }
 func (m *RegisterResponse) String() string { return proto.CompactTextString(m) }
 func (*RegisterResponse) ProtoMessage()    {}
 func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{7}
+	return fileDescriptor_d6b467461202c036, []int{5}
 }
 func (m *RegisterResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RegisterResponse.Unmarshal(m, b)
@@ -524,10 +491,13 @@ func (m *RegisterResponse) GetVersion() string {
 	return ""
 }
 
-// ListModelsRequest carries data for querying registered models.
+// ListModelsRequest carries data for querying registered model plugins.
 type ListModelsRequest struct {
-	Verbose              bool     `protobuf:"varint,1,opt,name=verbose,proto3" json:"verbose,omitempty"`
-	ModelName            string   `protobuf:"bytes,2,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
+	// verbose option causes all of the ReadWrite and ReadOnly paths to be included.
+	Verbose bool `protobuf:"varint,1,opt,name=verbose,proto3" json:"verbose,omitempty"`
+	// An optional filter on the name of the model plugins to list.
+	ModelName string `protobuf:"bytes,2,opt,name=model_name,json=modelName,proto3" json:"model_name,omitempty"`
+	// An optional filter on the version of the model plugins to list
 	ModelVersion         string   `protobuf:"bytes,3,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -538,7 +508,7 @@ func (m *ListModelsRequest) Reset()         { *m = ListModelsRequest{} }
 func (m *ListModelsRequest) String() string { return proto.CompactTextString(m) }
 func (*ListModelsRequest) ProtoMessage()    {}
 func (*ListModelsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{8}
+	return fileDescriptor_d6b467461202c036, []int{6}
 }
 func (m *ListModelsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListModelsRequest.Unmarshal(m, b)
@@ -581,9 +551,13 @@ func (m *ListModelsRequest) GetModelVersion() string {
 
 // RollbackRequest carries the name of a network config to rollback. If there
 // are subsequent changes to any of the devices in that config, the rollback will
-// be rejected. If no name is given the last network change will be rolled back.
+// be rejected.
 type RollbackRequest struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// name is an optional name of a Network Change to rollback.
+	// If no name is given the last network change will be rolled back.
+	// If the name given is not of the last network change and error will be given.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// On optional comment to leave on the rollback.
 	Comment              string   `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -594,7 +568,7 @@ func (m *RollbackRequest) Reset()         { *m = RollbackRequest{} }
 func (m *RollbackRequest) String() string { return proto.CompactTextString(m) }
 func (*RollbackRequest) ProtoMessage()    {}
 func (*RollbackRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{9}
+	return fileDescriptor_d6b467461202c036, []int{7}
 }
 func (m *RollbackRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RollbackRequest.Unmarshal(m, b)
@@ -628,7 +602,9 @@ func (m *RollbackRequest) GetComment() string {
 	return ""
 }
 
+// RollbackResponse carries the response of the rollback operation
 type RollbackResponse struct {
+	// A message showing the result of the rollback.
 	Message              string   `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -639,7 +615,7 @@ func (m *RollbackResponse) Reset()         { *m = RollbackResponse{} }
 func (m *RollbackResponse) String() string { return proto.CompactTextString(m) }
 func (*RollbackResponse) ProtoMessage()    {}
 func (*RollbackResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{10}
+	return fileDescriptor_d6b467461202c036, []int{8}
 }
 func (m *RollbackResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RollbackResponse.Unmarshal(m, b)
@@ -666,10 +642,12 @@ func (m *RollbackResponse) GetMessage() string {
 	return ""
 }
 
-// GetSnapshotRequest gets a snapshot
+// GetSnapshotRequest gets the details of a snapshot for a specific device and version.
 type GetSnapshotRequest struct {
-	DeviceID             github_com_onosproject_onos_config_pkg_types_device.ID      `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3,casttype=github.com/onosproject/onos-config/api/types/device.ID" json:"device_id,omitempty"`
-	DeviceVersion        github_com_onosproject_onos_config_pkg_types_device.Version `protobuf:"bytes,2,opt,name=device_version,json=deviceVersion,proto3,casttype=github.com/onosproject/onos-config/api/types/device.Version" json:"device_version,omitempty"`
+	// device_id is the ID of a device that has been configured through a NetworkChange.
+	DeviceID github_com_onosproject_onos_config_api_types_device.ID `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3,casttype=github.com/onosproject/onos-config/api/types/device.ID" json:"device_id,omitempty"`
+	// device version is the semantic version of a device that has been configured through a NetworkChange.
+	DeviceVersion        github_com_onosproject_onos_config_api_types_device.Version `protobuf:"bytes,2,opt,name=device_version,json=deviceVersion,proto3,casttype=github.com/onosproject/onos-config/api/types/device.Version" json:"device_version,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                                    `json:"-"`
 	XXX_unrecognized     []byte                                                      `json:"-"`
 	XXX_sizecache        int32                                                       `json:"-"`
@@ -679,7 +657,7 @@ func (m *GetSnapshotRequest) Reset()         { *m = GetSnapshotRequest{} }
 func (m *GetSnapshotRequest) String() string { return proto.CompactTextString(m) }
 func (*GetSnapshotRequest) ProtoMessage()    {}
 func (*GetSnapshotRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{11}
+	return fileDescriptor_d6b467461202c036, []int{9}
 }
 func (m *GetSnapshotRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetSnapshotRequest.Unmarshal(m, b)
@@ -699,21 +677,21 @@ func (m *GetSnapshotRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetSnapshotRequest proto.InternalMessageInfo
 
-func (m *GetSnapshotRequest) GetDeviceID() github_com_onosproject_onos_config_pkg_types_device.ID {
+func (m *GetSnapshotRequest) GetDeviceID() github_com_onosproject_onos_config_api_types_device.ID {
 	if m != nil {
 		return m.DeviceID
 	}
 	return ""
 }
 
-func (m *GetSnapshotRequest) GetDeviceVersion() github_com_onosproject_onos_config_pkg_types_device.Version {
+func (m *GetSnapshotRequest) GetDeviceVersion() github_com_onosproject_onos_config_api_types_device.Version {
 	if m != nil {
 		return m.DeviceVersion
 	}
 	return ""
 }
 
-// ListSnapshotsRequest requests a list of snapshots
+// ListSnapshotsRequest requests a list of snapshots for all devices and versions.
 type ListSnapshotsRequest struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -724,7 +702,7 @@ func (m *ListSnapshotsRequest) Reset()         { *m = ListSnapshotsRequest{} }
 func (m *ListSnapshotsRequest) String() string { return proto.CompactTextString(m) }
 func (*ListSnapshotsRequest) ProtoMessage()    {}
 func (*ListSnapshotsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{12}
+	return fileDescriptor_d6b467461202c036, []int{10}
 }
 func (m *ListSnapshotsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListSnapshotsRequest.Unmarshal(m, b)
@@ -744,8 +722,12 @@ func (m *ListSnapshotsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ListSnapshotsRequest proto.InternalMessageInfo
 
-// CompactChangesRequest requests a compaction of the change stores
+// CompactChangesRequest requests a compaction of the Network Change and Device Change stores
 type CompactChangesRequest struct {
+	// retention_period is an optional duration of time counting back from the present moment
+	// Network changes that were created during this period should not be compacted
+	// Any network changes that are older should be compacted
+	// If not specified the duration is 0
 	RetentionPeriod      *time.Duration `protobuf:"bytes,1,opt,name=retention_period,json=retentionPeriod,proto3,stdduration" json:"retention_period,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
@@ -756,7 +738,7 @@ func (m *CompactChangesRequest) Reset()         { *m = CompactChangesRequest{} }
 func (m *CompactChangesRequest) String() string { return proto.CompactTextString(m) }
 func (*CompactChangesRequest) ProtoMessage()    {}
 func (*CompactChangesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{13}
+	return fileDescriptor_d6b467461202c036, []int{11}
 }
 func (m *CompactChangesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CompactChangesRequest.Unmarshal(m, b)
@@ -783,7 +765,7 @@ func (m *CompactChangesRequest) GetRetentionPeriod() *time.Duration {
 	return nil
 }
 
-// CompactChangesResponse is a compact response
+// CompactChangesResponse is a response to the Compact Changes command
 type CompactChangesResponse struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -794,7 +776,7 @@ func (m *CompactChangesResponse) Reset()         { *m = CompactChangesResponse{}
 func (m *CompactChangesResponse) String() string { return proto.CompactTextString(m) }
 func (*CompactChangesResponse) ProtoMessage()    {}
 func (*CompactChangesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d6b467461202c036, []int{14}
+	return fileDescriptor_d6b467461202c036, []int{12}
 }
 func (m *CompactChangesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CompactChangesResponse.Unmarshal(m, b)
@@ -821,8 +803,6 @@ func init() {
 	proto.RegisterType((*ReadWritePath)(nil), "onos.config.admin.ReadWritePath")
 	proto.RegisterType((*ModelInfo)(nil), "onos.config.admin.ModelInfo")
 	proto.RegisterType((*Chunk)(nil), "onos.config.admin.Chunk")
-	proto.RegisterType((*RegisterRequest)(nil), "onos.config.admin.RegisterRequest")
-	proto.RegisterType((*SchemaEntry)(nil), "onos.config.admin.SchemaEntry")
 	proto.RegisterType((*RegisterResponse)(nil), "onos.config.admin.RegisterResponse")
 	proto.RegisterType((*ListModelsRequest)(nil), "onos.config.admin.ListModelsRequest")
 	proto.RegisterType((*RollbackRequest)(nil), "onos.config.admin.RollbackRequest")
@@ -836,75 +816,71 @@ func init() {
 func init() { proto.RegisterFile("api/admin/admin.proto", fileDescriptor_d6b467461202c036) }
 
 var fileDescriptor_d6b467461202c036 = []byte{
-	// 1077 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0xdd, 0x6e, 0x1b, 0x45,
-	0x14, 0xc6, 0xce, 0x8f, 0xed, 0xe3, 0x38, 0x71, 0x87, 0x36, 0x6c, 0xad, 0x82, 0xad, 0x6d, 0x11,
-	0xa6, 0x82, 0x75, 0x14, 0x04, 0x17, 0x20, 0x54, 0x12, 0xdb, 0xa1, 0xa9, 0x68, 0x12, 0x6d, 0xda,
-	0x80, 0x04, 0x92, 0x19, 0xef, 0x8e, 0xd7, 0xdb, 0xec, 0xee, 0x6c, 0x76, 0x66, 0x53, 0xf9, 0x05,
-	0x78, 0x06, 0x5e, 0x82, 0x5b, 0x1e, 0x27, 0x08, 0x1e, 0xa3, 0x57, 0x68, 0xfe, 0x1c, 0x3b, 0x71,
-	0xaa, 0x14, 0x71, 0x63, 0xcd, 0x99, 0x39, 0xe7, 0xfb, 0xce, 0xff, 0x1a, 0xee, 0xe1, 0x34, 0xec,
-	0x60, 0x3f, 0x0e, 0x13, 0xf5, 0xeb, 0xa4, 0x19, 0xe5, 0x14, 0xdd, 0xa1, 0x09, 0x65, 0x8e, 0x47,
-	0x93, 0x51, 0x18, 0x38, 0xf2, 0xa1, 0xf1, 0x51, 0x40, 0x69, 0x10, 0x91, 0x8e, 0x54, 0x18, 0xe6,
-	0xa3, 0x8e, 0x9f, 0x67, 0x98, 0x87, 0x54, 0x9b, 0x34, 0xee, 0x06, 0x34, 0xa0, 0xf2, 0xd8, 0x11,
-	0x27, 0x7d, 0xbb, 0x15, 0x84, 0x7c, 0x9c, 0x0f, 0x1d, 0x8f, 0xc6, 0x1d, 0x9a, 0x92, 0x44, 0x41,
-	0x76, 0x82, 0x24, 0x0e, 0x3b, 0x5a, 0x59, 0x1c, 0xc5, 0x8f, 0xb6, 0xd8, 0x9b, 0xb5, 0x48, 0x28,
-	0x4b, 0x33, 0xfa, 0x8a, 0x78, 0x5c, 0x9e, 0x3f, 0xd7, 0xe6, 0xc2, 0x69, 0x3e, 0x49, 0x09, 0xeb,
-	0x78, 0x63, 0x9c, 0x04, 0xa4, 0xe3, 0x93, 0xf3, 0xd0, 0x23, 0xea, 0x4e, 0xe3, 0x3c, 0x7d, 0x27,
-	0x1c, 0x96, 0xe0, 0x94, 0x8d, 0x29, 0x5f, 0x80, 0x64, 0x9f, 0xc1, 0x86, 0x4b, 0xb0, 0x7f, 0x98,
-	0x44, 0x93, 0xe3, 0x7c, 0x78, 0x84, 0xf9, 0x18, 0xdd, 0x87, 0x32, 0xcb, 0x87, 0x83, 0x14, 0xf3,
-	0xb1, 0x55, 0x68, 0x15, 0xda, 0x15, 0xb7, 0xc4, 0xf4, 0x53, 0x17, 0xe0, 0x1c, 0x47, 0x39, 0x19,
-	0x08, 0x08, 0xab, 0xd8, 0x2a, 0xb4, 0xd7, 0xb7, 0x1f, 0x39, 0xb3, 0xf9, 0x54, 0x3e, 0x3b, 0x8a,
-	0xc9, 0x39, 0x11, 0xca, 0x2f, 0x26, 0x29, 0x71, 0x2b, 0xe7, 0xe6, 0x68, 0x63, 0x58, 0x33, 0x94,
-	0x12, 0x14, 0xc1, 0xf2, 0x0c, 0x97, 0x3c, 0xa3, 0x6f, 0x67, 0x7c, 0x28, 0xb6, 0x96, 0xda, 0xd5,
-	0x6d, 0xdb, 0xb9, 0x56, 0x36, 0xe7, 0x8a, 0xe7, 0x53, 0x3f, 0xed, 0xdf, 0x8a, 0x50, 0x13, 0x8f,
-	0x3f, 0x66, 0x21, 0x27, 0x37, 0x92, 0xfc, 0x1f, 0xd1, 0xa0, 0xbb, 0xb0, 0x92, 0x27, 0x21, 0x67,
-	0xd6, 0x92, 0x44, 0x56, 0x02, 0x6a, 0x41, 0xd5, 0x27, 0xcc, 0xcb, 0xc2, 0x54, 0x74, 0x91, 0xb5,
-	0x2c, 0xdf, 0x66, 0xaf, 0xd0, 0x03, 0xa8, 0xc4, 0x38, 0xf1, 0x31, 0xa7, 0xd9, 0xc4, 0x5a, 0x69,
-	0x15, 0xda, 0x65, 0xf7, 0xf2, 0x02, 0x59, 0x50, 0xf2, 0xc9, 0x08, 0xe7, 0x11, 0xb7, 0x56, 0x55,
-	0x09, 0xb4, 0x28, 0xf8, 0x32, 0xe1, 0x94, 0x55, 0x6a, 0x2d, 0x09, 0x3e, 0x29, 0xa0, 0x4d, 0x58,
-	0x8d, 0x48, 0x12, 0xf0, 0xb1, 0x55, 0x96, 0xd7, 0x5a, 0xb2, 0xff, 0x2c, 0x42, 0xe5, 0x39, 0xf5,
-	0x49, 0xb4, 0x9f, 0x8c, 0xa8, 0x48, 0x42, 0x82, 0x63, 0x62, 0x92, 0x20, 0xce, 0x82, 0xe9, 0x9c,
-	0x64, 0x4c, 0x78, 0x59, 0x54, 0x4c, 0x5a, 0x44, 0x0e, 0x40, 0x2c, 0x4c, 0x07, 0x3e, 0xe6, 0xd8,
-	0x5a, 0x92, 0x55, 0xd8, 0x70, 0x64, 0x37, 0x4b, 0xc8, 0x1e, 0xe6, 0xd8, 0xad, 0xc4, 0xe6, 0x28,
-	0x7c, 0x88, 0xa9, 0x9f, 0x47, 0x44, 0x87, 0xab, 0x25, 0x64, 0xc3, 0x5a, 0x40, 0xf8, 0x31, 0xc7,
-	0x9c, 0x08, 0x3b, 0x19, 0x6c, 0xcd, 0x9d, 0xbb, 0x43, 0x7d, 0x58, 0xcf, 0x08, 0xf6, 0x07, 0x34,
-	0x89, 0x26, 0xaa, 0xea, 0x25, 0xc9, 0xd7, 0x7c, 0x4b, 0xd5, 0x65, 0xc9, 0xd7, 0xb2, 0xd9, 0x56,
-	0x7a, 0x0a, 0x1b, 0x12, 0xe6, 0xb5, 0xa8, 0xbb, 0xc2, 0x29, 0x4b, 0x9c, 0xd6, 0x0d, 0x38, 0xd3,
-	0x06, 0x71, 0x6b, 0xd9, 0xac, 0x68, 0x7f, 0x0d, 0x2b, 0xdd, 0x71, 0x9e, 0x9c, 0xa2, 0x0f, 0xa0,
-	0xc4, 0xe8, 0x60, 0x14, 0x46, 0x26, 0x6d, 0xab, 0x8c, 0xee, 0x85, 0x91, 0x4c, 0x5c, 0x97, 0x26,
-	0x9c, 0x24, 0x5c, 0x26, 0x6e, 0xcd, 0x35, 0xa2, 0xfd, 0x58, 0xcc, 0x54, 0x10, 0x32, 0x4e, 0x32,
-	0x97, 0x9c, 0xe5, 0x84, 0xf1, 0x1b, 0x51, 0xec, 0x43, 0xa8, 0x1e, 0x7b, 0x63, 0x12, 0xe3, 0x7e,
-	0xc2, 0xb3, 0x09, 0x6a, 0x42, 0x95, 0x49, 0x71, 0x76, 0xfc, 0x40, 0x5d, 0xc9, 0x08, 0x2f, 0x15,
-	0x5e, 0xb1, 0x69, 0xc9, 0xb4, 0xc2, 0x33, 0x46, 0x13, 0xfb, 0x3b, 0xa8, 0x5f, 0x92, 0xb3, 0x94,
-	0x26, 0x8c, 0xbc, 0x5b, 0xdd, 0xed, 0x33, 0xb8, 0xf3, 0x43, 0xc8, 0xb8, 0xac, 0x31, 0x33, 0x01,
-	0x28, 0xf5, 0x21, 0x65, 0x0a, 0xa5, 0xec, 0x1a, 0x11, 0x7d, 0x68, 0xda, 0x44, 0x52, 0x28, 0x2c,
-	0xd5, 0x15, 0x07, 0x82, 0xe7, 0x21, 0xd4, 0xd4, 0xb3, 0x61, 0x53, 0x73, 0xb2, 0x26, 0x2f, 0x4f,
-	0x34, 0xe5, 0x13, 0xd8, 0x70, 0x69, 0x14, 0x0d, 0xb1, 0x77, 0x6a, 0x08, 0x6f, 0xf0, 0xd9, 0xa3,
-	0x71, 0x6c, 0x52, 0x5e, 0x71, 0x8d, 0x68, 0x7f, 0x06, 0xf5, 0x4b, 0x00, 0x1d, 0xb5, 0x05, 0xa5,
-	0x98, 0x30, 0x86, 0x03, 0x03, 0x62, 0x44, 0xfb, 0xef, 0x02, 0xa0, 0xef, 0x09, 0x3f, 0xd6, 0x7b,
-	0xd1, 0x50, 0x7a, 0x50, 0x51, 0x93, 0x3e, 0x08, 0x7d, 0x65, 0xb2, 0xbb, 0xf7, 0xcf, 0x45, 0xb3,
-	0xdc, 0x93, 0x97, 0xfb, 0xbd, 0x37, 0x17, 0xcd, 0xaf, 0x6e, 0xb1, 0x78, 0xd3, 0xd3, 0x40, 0x2f,
-	0x5e, 0xbd, 0x37, 0xf6, 0x7b, 0x6e, 0x59, 0x1d, 0xf7, 0x7d, 0x34, 0x82, 0x75, 0x4d, 0x32, 0x97,
-	0xfe, 0xdd, 0x27, 0x6f, 0x2e, 0x9a, 0xdf, 0xfc, 0x17, 0x74, 0x9d, 0x43, 0xb7, 0xa6, 0x64, 0x93,
-	0xd2, 0x4d, 0xb8, 0x2b, 0xaa, 0x68, 0x62, 0x34, 0x85, 0xb4, 0x3d, 0xb8, 0xd7, 0xa5, 0x71, 0x8a,
-	0x3d, 0xde, 0x95, 0xcb, 0x6d, 0x5a, 0xe1, 0x67, 0x50, 0xcf, 0x88, 0xe8, 0xdf, 0x90, 0x26, 0x83,
-	0x94, 0x64, 0x21, 0x55, 0x49, 0xa8, 0x6e, 0xdf, 0x77, 0xd4, 0xe7, 0xd1, 0x31, 0x9f, 0x47, 0xa7,
-	0xa7, 0x3f, 0x8f, 0xbb, 0xcb, 0xbf, 0xff, 0xd5, 0x2c, 0xb8, 0x1b, 0x53, 0xc3, 0x23, 0x69, 0x67,
-	0x5b, 0xb0, 0x79, 0x95, 0x44, 0x15, 0xe5, 0xf1, 0x97, 0xb0, 0x2c, 0xd7, 0x66, 0x19, 0x96, 0x0f,
-	0x0e, 0x0f, 0xfa, 0xf5, 0xf7, 0x50, 0x05, 0x56, 0x76, 0x7a, 0xbd, 0x7e, 0xaf, 0x5e, 0x40, 0x55,
-	0x28, 0xbd, 0x3c, 0xea, 0xed, 0xbc, 0xe8, 0xf7, 0xea, 0x45, 0x21, 0xb8, 0xfd, 0xe7, 0x87, 0x27,
-	0xfd, 0x5e, 0x7d, 0x69, 0xfb, 0x8f, 0x15, 0x40, 0x5d, 0x99, 0x80, 0x1d, 0x31, 0xbb, 0xc7, 0x24,
-	0x13, 0xb1, 0xa2, 0x9f, 0xc4, 0x9a, 0x57, 0xcd, 0x2e, 0xdb, 0x15, 0x2d, 0xfe, 0x4a, 0xcc, 0xcd,
-	0x62, 0xe3, 0xe1, 0x5b, 0x75, 0x74, 0xf3, 0x9c, 0xc0, 0xfb, 0x2f, 0xd3, 0x88, 0x62, 0x7f, 0x1e,
-	0xdf, 0x5a, 0x60, 0x2b, 0xf7, 0xc4, 0xad, 0x50, 0xdb, 0x05, 0xf4, 0x8b, 0x2a, 0x8b, 0x79, 0x21,
-	0xbe, 0x1a, 0x33, 0xf4, 0x68, 0x81, 0xf9, 0xb5, 0x29, 0x6c, 0x3c, 0x58, 0xa0, 0x35, 0x5d, 0xef,
-	0x5b, 0x05, 0xf4, 0x2b, 0xdc, 0x33, 0x63, 0x70, 0x40, 0xf8, 0x6b, 0x9a, 0x9d, 0xaa, 0xfc, 0x2f,
-	0xce, 0xcb, 0xfc, 0xc4, 0x2d, 0x8e, 0xe0, 0xea, 0x50, 0xfd, 0x0c, 0xd5, 0x99, 0xc9, 0x41, 0x1f,
-	0x2f, 0xb0, 0xb9, 0x3e, 0x59, 0x8d, 0x79, 0x35, 0xf3, 0x7f, 0xc4, 0x7c, 0x57, 0xa7, 0x68, 0x18,
-	0x6a, 0x73, 0x3d, 0x8b, 0x3e, 0xb9, 0x21, 0x2b, 0x57, 0xbb, 0xfa, 0x96, 0x04, 0x5b, 0x05, 0x44,
-	0x60, 0x7d, 0xbe, 0x33, 0x51, 0x7b, 0x51, 0x49, 0x17, 0x4d, 0x48, 0xe3, 0xd3, 0x5b, 0x68, 0xaa,
-	0x34, 0x0d, 0x57, 0xe5, 0xa8, 0x7c, 0xf1, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x52, 0xb2, 0xb8,
-	0xc5, 0x83, 0x0a, 0x00, 0x00,
+	// 1020 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xdf, 0x6e, 0xe3, 0xc4,
+	0x17, 0xfe, 0x25, 0x4d, 0x9b, 0xe4, 0xb4, 0x69, 0xb3, 0xf3, 0x6b, 0x8b, 0x37, 0x5a, 0x68, 0xe4,
+	0x5d, 0x44, 0x40, 0xe0, 0x54, 0x45, 0x70, 0x01, 0x42, 0x4b, 0x5b, 0xa7, 0x6c, 0x11, 0xdb, 0x56,
+	0xee, 0x6e, 0xb9, 0x00, 0x29, 0x4c, 0xec, 0x89, 0x63, 0x6a, 0x7b, 0x5c, 0xcf, 0xb8, 0xab, 0xbe,
+	0x00, 0xcf, 0xc0, 0x93, 0xf0, 0x22, 0xdc, 0x17, 0xc1, 0x63, 0xec, 0x15, 0x9a, 0x7f, 0xd9, 0xa4,
+	0x75, 0xd1, 0x16, 0x71, 0x63, 0x9d, 0x33, 0x33, 0xe7, 0xfb, 0xce, 0x9c, 0xf3, 0x1d, 0x0f, 0x6c,
+	0xe0, 0x2c, 0xea, 0xe3, 0x20, 0x89, 0x52, 0xf5, 0x75, 0xb2, 0x9c, 0x72, 0x8a, 0x1e, 0xd0, 0x94,
+	0x32, 0xc7, 0xa7, 0xe9, 0x38, 0x0a, 0x1d, 0xb9, 0xd1, 0x79, 0x2f, 0xa4, 0x34, 0x8c, 0x49, 0x5f,
+	0x1e, 0x18, 0x15, 0xe3, 0x7e, 0x50, 0xe4, 0x98, 0x47, 0x54, 0x87, 0x74, 0xd6, 0x43, 0x1a, 0x52,
+	0x69, 0xf6, 0x85, 0xa5, 0x57, 0xb7, 0xc3, 0x88, 0x4f, 0x8a, 0x91, 0xe3, 0xd3, 0xa4, 0x4f, 0x33,
+	0x92, 0x2a, 0xc8, 0x7e, 0x98, 0x26, 0x51, 0x5f, 0x1f, 0x16, 0xa6, 0xf8, 0xe8, 0x88, 0x83, 0xd9,
+	0x88, 0x94, 0xb2, 0x2c, 0xa7, 0x3f, 0x13, 0x9f, 0x4b, 0xfb, 0x13, 0x1d, 0x2e, 0x92, 0xe6, 0x57,
+	0x19, 0x61, 0x7d, 0x7f, 0x82, 0xd3, 0x90, 0xf4, 0x03, 0x72, 0x19, 0xf9, 0x44, 0xad, 0x69, 0x9c,
+	0x67, 0xf7, 0xc2, 0x61, 0x29, 0xce, 0xd8, 0x84, 0xf2, 0x12, 0x24, 0xfb, 0x02, 0xd6, 0x3c, 0x82,
+	0x83, 0xe3, 0x34, 0xbe, 0x3a, 0x2d, 0x46, 0x27, 0x98, 0x4f, 0xd0, 0x43, 0x68, 0xb0, 0x62, 0x34,
+	0xcc, 0x30, 0x9f, 0x58, 0x95, 0x6e, 0xa5, 0xd7, 0xf4, 0xea, 0x4c, 0x6f, 0xed, 0x03, 0x5c, 0xe2,
+	0xb8, 0x20, 0x43, 0x01, 0x61, 0x55, 0xbb, 0x95, 0xde, 0xea, 0xce, 0x13, 0x67, 0xb6, 0x9e, 0x2a,
+	0x67, 0x47, 0x31, 0x39, 0x67, 0xe2, 0xf0, 0x8b, 0xab, 0x8c, 0x78, 0xcd, 0x4b, 0x63, 0xda, 0x18,
+	0x56, 0x0c, 0xa5, 0x04, 0x45, 0x50, 0x9b, 0xe1, 0x92, 0x36, 0xfa, 0x6a, 0x26, 0x87, 0x6a, 0x77,
+	0xa1, 0xb7, 0xbc, 0x63, 0x3b, 0xb7, 0xda, 0xe6, 0xdc, 0xc8, 0x7c, 0x9a, 0xa7, 0xfd, 0x4b, 0x15,
+	0x5a, 0x62, 0xf3, 0xfb, 0x3c, 0xe2, 0xe4, 0x4e, 0x92, 0xff, 0xe2, 0x36, 0x68, 0x1d, 0x16, 0x8b,
+	0x34, 0xe2, 0xcc, 0x5a, 0x90, 0xc8, 0xca, 0x41, 0x5d, 0x58, 0x0e, 0x08, 0xf3, 0xf3, 0x28, 0x13,
+	0x2a, 0xb2, 0x6a, 0x72, 0x6f, 0x76, 0x09, 0x3d, 0x82, 0x66, 0x82, 0xd3, 0x00, 0x73, 0x9a, 0x5f,
+	0x59, 0x8b, 0xdd, 0x4a, 0xaf, 0xe1, 0xbd, 0x59, 0x40, 0x16, 0xd4, 0x03, 0x32, 0xc6, 0x45, 0xcc,
+	0xad, 0x25, 0xd5, 0x02, 0xed, 0x0a, 0xbe, 0x5c, 0x24, 0x65, 0xd5, 0xbb, 0x0b, 0x82, 0x4f, 0x3a,
+	0x68, 0x13, 0x96, 0x62, 0x92, 0x86, 0x7c, 0x62, 0x35, 0xe4, 0xb2, 0xf6, 0xec, 0xdf, 0xaa, 0xd0,
+	0x7c, 0x4e, 0x03, 0x12, 0x1f, 0xa6, 0x63, 0x2a, 0x8a, 0x90, 0xe2, 0x84, 0x98, 0x22, 0x08, 0x5b,
+	0x30, 0x5d, 0x92, 0x9c, 0x89, 0x2c, 0xab, 0x8a, 0x49, 0xbb, 0xc8, 0x01, 0x48, 0x44, 0xe8, 0x30,
+	0xc0, 0x1c, 0x5b, 0x0b, 0xb2, 0x0b, 0x6b, 0x8e, 0x54, 0xb3, 0x84, 0x74, 0x31, 0xc7, 0x5e, 0x33,
+	0x31, 0xa6, 0xc8, 0x21, 0xa1, 0x41, 0x11, 0x13, 0x7d, 0x5d, 0xed, 0x21, 0x1b, 0x56, 0x42, 0xc2,
+	0x4f, 0x39, 0xe6, 0x44, 0xc4, 0xc9, 0xcb, 0xb6, 0xbc, 0xb9, 0x35, 0x34, 0x80, 0xd5, 0x9c, 0xe0,
+	0x60, 0x48, 0xd3, 0xf8, 0x4a, 0x75, 0xbd, 0x2e, 0xf9, 0xb6, 0xfe, 0xa1, 0xeb, 0xb2, 0xe5, 0x2b,
+	0xf9, 0xac, 0x94, 0x9e, 0xc1, 0x9a, 0x84, 0x79, 0x25, 0xfa, 0xae, 0x70, 0x1a, 0x12, 0xa7, 0x7b,
+	0x07, 0xce, 0x54, 0x20, 0x5e, 0x2b, 0x9f, 0x75, 0xed, 0x2f, 0x60, 0x71, 0x7f, 0x52, 0xa4, 0xe7,
+	0xe8, 0x1d, 0xa8, 0x33, 0x3a, 0x1c, 0x47, 0xb1, 0x29, 0xdb, 0x12, 0xa3, 0x07, 0x51, 0x2c, 0x0b,
+	0xe7, 0xd3, 0x94, 0x93, 0x94, 0xcb, 0xc2, 0xad, 0x78, 0xc6, 0xb5, 0xbf, 0x86, 0xb6, 0x47, 0xc2,
+	0x88, 0x71, 0x92, 0x7b, 0x84, 0x65, 0x34, 0x65, 0xe4, 0x7e, 0xa5, 0xb7, 0x2f, 0xe0, 0xc1, 0x77,
+	0x11, 0xe3, 0xb2, 0xcc, 0xcc, 0x23, 0x17, 0x05, 0x61, 0x5c, 0x1f, 0x1f, 0x51, 0xa6, 0x50, 0x1a,
+	0x9e, 0x71, 0xd1, 0xbb, 0xa6, 0x53, 0x92, 0x42, 0x61, 0xa9, 0xc6, 0x1c, 0x09, 0x9e, 0xc7, 0xd0,
+	0x52, 0xdb, 0x86, 0x4d, 0x49, 0x75, 0x45, 0x2e, 0x9e, 0x69, 0xca, 0xa7, 0xb0, 0xe6, 0xd1, 0x38,
+	0x1e, 0x61, 0xff, 0xdc, 0x10, 0xde, 0x91, 0xb3, 0x4f, 0x93, 0xc4, 0xdc, 0xba, 0xe9, 0x19, 0xd7,
+	0xfe, 0x18, 0xda, 0x6f, 0x00, 0xf4, 0xad, 0x2d, 0xa8, 0x27, 0x84, 0x31, 0x1c, 0x1a, 0x10, 0xe3,
+	0xda, 0x7f, 0x56, 0x00, 0x7d, 0x43, 0xf8, 0xa9, 0xfe, 0x35, 0x19, 0x4a, 0x1f, 0x9a, 0x6a, 0xd8,
+	0x86, 0x51, 0xa0, 0x42, 0xf6, 0x0e, 0xfe, 0xba, 0xde, 0x6a, 0xb8, 0x72, 0xf1, 0xd0, 0x7d, 0x7d,
+	0xbd, 0xf5, 0xf9, 0xbd, 0xfe, 0x7d, 0x7a, 0x74, 0x0f, 0x5d, 0xaf, 0xa1, 0xcc, 0xc3, 0x00, 0x8d,
+	0x61, 0x55, 0x93, 0xcc, 0x95, 0x7f, 0xef, 0xe9, 0xeb, 0xeb, 0xad, 0x2f, 0xff, 0x0d, 0xba, 0xae,
+	0xa1, 0xd7, 0x52, 0xbe, 0x29, 0xe9, 0x26, 0xac, 0x8b, 0x2e, 0x9a, 0x3b, 0x9a, 0x46, 0xda, 0x3e,
+	0x6c, 0xec, 0xd3, 0x24, 0xc3, 0x3e, 0xdf, 0x97, 0xff, 0x97, 0x69, 0x87, 0xbf, 0x85, 0x76, 0x4e,
+	0x84, 0x84, 0x22, 0x9a, 0x0e, 0x33, 0x92, 0x47, 0x54, 0x15, 0x61, 0x79, 0xe7, 0xa1, 0xa3, 0x5e,
+	0x28, 0xc7, 0xbc, 0x50, 0x8e, 0xab, 0x5f, 0xa8, 0xbd, 0xda, 0xaf, 0x7f, 0x6c, 0x55, 0xbc, 0xb5,
+	0x69, 0xe0, 0x89, 0x8c, 0xb3, 0x2d, 0xd8, 0xbc, 0x49, 0xa2, 0x9a, 0xf2, 0xd1, 0x67, 0x50, 0x93,
+	0x7f, 0xae, 0x06, 0xd4, 0x8e, 0x8e, 0x8f, 0x06, 0xed, 0xff, 0xa1, 0x26, 0x2c, 0xee, 0xba, 0xee,
+	0xc0, 0x6d, 0x57, 0xd0, 0x32, 0xd4, 0x5f, 0x9e, 0xb8, 0xbb, 0x2f, 0x06, 0x6e, 0xbb, 0x2a, 0x1c,
+	0x6f, 0xf0, 0xfc, 0xf8, 0x6c, 0xe0, 0xb6, 0x17, 0x76, 0x7e, 0xaf, 0x01, 0xda, 0x97, 0x05, 0xd8,
+	0x15, 0xe3, 0x73, 0x4a, 0x72, 0x71, 0x57, 0x74, 0x06, 0xff, 0x7f, 0x99, 0xc5, 0x14, 0x07, 0x46,
+	0xf2, 0x52, 0xb4, 0xc8, 0x2a, 0x19, 0x38, 0x39, 0x50, 0x9d, 0xc7, 0xa5, 0xa3, 0x38, 0x3f, 0x2e,
+	0xbd, 0x0a, 0xfa, 0x51, 0x15, 0xcf, 0xec, 0x90, 0x40, 0x0d, 0x03, 0x7a, 0x52, 0x12, 0x7e, 0x6b,
+	0x56, 0x3a, 0x8f, 0x4a, 0x4e, 0x4d, 0xff, 0x83, 0xdb, 0x15, 0xf4, 0x13, 0x6c, 0x18, 0xb1, 0x1e,
+	0x11, 0xfe, 0x8a, 0xe6, 0xe7, 0xaa, 0x4a, 0xa8, 0xf4, 0x99, 0x99, 0x9f, 0x8b, 0xf2, 0x1b, 0xdc,
+	0x94, 0xfe, 0x0f, 0xb0, 0x3c, 0xa3, 0x6f, 0xf4, 0x7e, 0x49, 0xcc, 0x6d, 0xfd, 0x77, 0xe6, 0x8f,
+	0x99, 0x87, 0xdb, 0x3c, 0x40, 0x53, 0x34, 0x0c, 0xad, 0x39, 0x65, 0xa1, 0x0f, 0xee, 0xa8, 0xca,
+	0x4d, 0xed, 0xbd, 0x25, 0xc1, 0x76, 0x05, 0x11, 0x58, 0x9d, 0xd7, 0x0f, 0xea, 0x95, 0xb5, 0xb4,
+	0x4c, 0xc7, 0x9d, 0x0f, 0xdf, 0xe2, 0xa4, 0x2a, 0xd3, 0x68, 0x49, 0x0a, 0xfa, 0xd3, 0xbf, 0x03,
+	0x00, 0x00, 0xff, 0xff, 0xcd, 0x2a, 0xad, 0x8e, 0xac, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -919,20 +895,27 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ConfigAdminServiceClient interface {
-	// RegisterModel adds the specified YANG model to the list of supported models.
-	// There is no unregister because once loaded plugins cannot be unloaded
-	RegisterModel(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	// UploadRegisterModel uploads and adds the model plugin to the list of supported models.
+	// The file is serialized in to Chunks of less than 4MB so as not to break the
+	// gRPC byte array limit
 	UploadRegisterModel(ctx context.Context, opts ...grpc.CallOption) (ConfigAdminService_UploadRegisterModelClient, error)
 	// ListRegisteredModels returns a stream of registered models.
 	ListRegisteredModels(ctx context.Context, in *ListModelsRequest, opts ...grpc.CallOption) (ConfigAdminService_ListRegisteredModelsClient, error)
 	// RollbackNetworkChange rolls back the specified network change (or the latest one).
 	RollbackNetworkChange(ctx context.Context, in *RollbackRequest, opts ...grpc.CallOption) (*RollbackResponse, error)
-	// GetSnapshot gets a snapshot
+	// GetSnapshot gets a snapshot for a specific device and version
 	GetSnapshot(ctx context.Context, in *GetSnapshotRequest, opts ...grpc.CallOption) (*device1.Snapshot, error)
-	// ListSnapshots gets a list of snapshots
+	// ListSnapshots gets a list of snapshots across all devices and versions,
+	// and streams them back to the caller.
+	// The result includes a "replay" of existing snapshots and will watch for any
+	// subsequent new changes that come later.
 	ListSnapshots(ctx context.Context, in *ListSnapshotsRequest, opts ...grpc.CallOption) (ConfigAdminService_ListSnapshotsClient, error)
-	// CompactChanges requests a snapshot of NetworkChange and DeviceChange stores
+	// CompactChanges requests a snapshot of NetworkChange and DeviceChange stores.
+	// This will take all of the Network Changes older than the retention period and
+	// flatten them down to just one snapshot (replacing any older snapshot).
+	// This will act as a baseline for those changes within the retention period and any future changes.
+	// DeviceChanges will be snapshotted to correspond to these NetworkChange compactions
+	// leaving an individual snapshot perv device and version combination.
 	CompactChanges(ctx context.Context, in *CompactChangesRequest, opts ...grpc.CallOption) (*CompactChangesResponse, error)
 }
 
@@ -942,15 +925,6 @@ type configAdminServiceClient struct {
 
 func NewConfigAdminServiceClient(cc *grpc.ClientConn) ConfigAdminServiceClient {
 	return &configAdminServiceClient{cc}
-}
-
-func (c *configAdminServiceClient) RegisterModel(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
-	out := new(RegisterResponse)
-	err := c.cc.Invoke(ctx, "/onos.config.admin.ConfigAdminService/RegisterModel", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *configAdminServiceClient) UploadRegisterModel(ctx context.Context, opts ...grpc.CallOption) (ConfigAdminService_UploadRegisterModelClient, error) {
@@ -1080,20 +1054,27 @@ func (c *configAdminServiceClient) CompactChanges(ctx context.Context, in *Compa
 
 // ConfigAdminServiceServer is the server API for ConfigAdminService service.
 type ConfigAdminServiceServer interface {
-	// RegisterModel adds the specified YANG model to the list of supported models.
-	// There is no unregister because once loaded plugins cannot be unloaded
-	RegisterModel(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	// UploadRegisterModel uploads and adds the model plugin to the list of supported models.
+	// The file is serialized in to Chunks of less than 4MB so as not to break the
+	// gRPC byte array limit
 	UploadRegisterModel(ConfigAdminService_UploadRegisterModelServer) error
 	// ListRegisteredModels returns a stream of registered models.
 	ListRegisteredModels(*ListModelsRequest, ConfigAdminService_ListRegisteredModelsServer) error
 	// RollbackNetworkChange rolls back the specified network change (or the latest one).
 	RollbackNetworkChange(context.Context, *RollbackRequest) (*RollbackResponse, error)
-	// GetSnapshot gets a snapshot
+	// GetSnapshot gets a snapshot for a specific device and version
 	GetSnapshot(context.Context, *GetSnapshotRequest) (*device1.Snapshot, error)
-	// ListSnapshots gets a list of snapshots
+	// ListSnapshots gets a list of snapshots across all devices and versions,
+	// and streams them back to the caller.
+	// The result includes a "replay" of existing snapshots and will watch for any
+	// subsequent new changes that come later.
 	ListSnapshots(*ListSnapshotsRequest, ConfigAdminService_ListSnapshotsServer) error
-	// CompactChanges requests a snapshot of NetworkChange and DeviceChange stores
+	// CompactChanges requests a snapshot of NetworkChange and DeviceChange stores.
+	// This will take all of the Network Changes older than the retention period and
+	// flatten them down to just one snapshot (replacing any older snapshot).
+	// This will act as a baseline for those changes within the retention period and any future changes.
+	// DeviceChanges will be snapshotted to correspond to these NetworkChange compactions
+	// leaving an individual snapshot perv device and version combination.
 	CompactChanges(context.Context, *CompactChangesRequest) (*CompactChangesResponse, error)
 }
 
@@ -1101,9 +1082,6 @@ type ConfigAdminServiceServer interface {
 type UnimplementedConfigAdminServiceServer struct {
 }
 
-func (*UnimplementedConfigAdminServiceServer) RegisterModel(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterModel not implemented")
-}
 func (*UnimplementedConfigAdminServiceServer) UploadRegisterModel(srv ConfigAdminService_UploadRegisterModelServer) error {
 	return status.Errorf(codes.Unimplemented, "method UploadRegisterModel not implemented")
 }
@@ -1125,24 +1103,6 @@ func (*UnimplementedConfigAdminServiceServer) CompactChanges(ctx context.Context
 
 func RegisterConfigAdminServiceServer(s *grpc.Server, srv ConfigAdminServiceServer) {
 	s.RegisterService(&_ConfigAdminService_serviceDesc, srv)
-}
-
-func _ConfigAdminService_RegisterModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ConfigAdminServiceServer).RegisterModel(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/onos.config.admin.ConfigAdminService/RegisterModel",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConfigAdminServiceServer).RegisterModel(ctx, req.(*RegisterRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _ConfigAdminService_UploadRegisterModel_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -1271,10 +1231,6 @@ var _ConfigAdminService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "onos.config.admin.ConfigAdminService",
 	HandlerType: (*ConfigAdminServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "RegisterModel",
-			Handler:    _ConfigAdminService_RegisterModel_Handler,
-		},
 		{
 			MethodName: "RollbackNetworkChange",
 			Handler:    _ConfigAdminService_RollbackNetworkChange_Handler,

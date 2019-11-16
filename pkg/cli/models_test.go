@@ -90,6 +90,8 @@ func Test_ListPlugins(t *testing.T) {
 }
 
 func Test_AddPlugin(t *testing.T) {
+	// TODO remove this when the UploadRegisterModel is accessed
+	t.SkipNow()
 	const (
 		pluginName    = "MyNewPlugin.file"
 		pluginVersion = "1.0"
