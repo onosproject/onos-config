@@ -165,7 +165,7 @@ The Model Plugin can be loaded at the start up of onos-config by specifying the
 ```
 Alternatively these can be loaded later with the onos cli tool - see [cli.md](./cli.md).
 ```bash
-> onos config add plugin <full path on target machine to shared object model>
+> onos config add plugin <plugin path and filename>
 ```
 > Model Plugins cannot be unloaded once loaded, without restarting onos-config.
 

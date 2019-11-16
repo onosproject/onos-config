@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"io"
 	"os"
+	"path/filepath"
 	"text/template"
 )
 
@@ -123,7 +124,7 @@ func runAddPluginCommand(cmd *cobra.Command, args []string) error {
 		count, err := pluginFile.ReadAt(data, chunkNo*chunkSize)
 		if err == io.EOF {
 			err := uploadClient.Send(&admin.Chunk{
-				SoFile:  pluginFileName,
+				SoFile:  filepath.Base(pluginFileName),
 				Content: data[:count],
 			})
 			if err != nil {
@@ -133,19 +134,18 @@ func runAddPluginCommand(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			Output("Plugin %s uploaded to server as %s:%s. %d chunks. %d bytes",
-				resp.GetName(), resp.GetVersion(),
-				pluginFileName, chunkNo, chunkNo*chunkSize+int64(count))
+			Output("Plugin %s uploaded to server as %s:%s. %d chunks. %d bytes\n",
+				pluginFileName, resp.GetName(), resp.GetVersion(),
+				chunkNo, chunkNo*chunkSize+int64(count))
 			return nil
 		}
 		if err != nil {
 			return err
 		}
 		err = uploadClient.Send(&admin.Chunk{
-			SoFile:  pluginFileName,
+			SoFile:  filepath.Base(pluginFileName),
 			Content: data,
 		})
-		Output("Plugin %s uploading to server - chunk %d", pluginFileName, chunkNo)
 		if err != nil {
 			return err
 		}

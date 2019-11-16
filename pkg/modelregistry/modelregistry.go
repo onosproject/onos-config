@@ -161,17 +161,17 @@ func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, s
 	log.Info("Loading module ", moduleName)
 	modelPluginModule, err := plugin.Open(moduleName)
 	if err != nil {
-		log.Warn("Unable to load module ", moduleName)
+		log.Warnf("Unable to load module %s %s", moduleName, err)
 		return "", "", err
 	}
 	symbolMP, err := modelPluginModule.Lookup("ModelPlugin")
 	if err != nil {
-		log.Warn("Unable to find ModelPlugin in module ", moduleName)
+		log.Warn("Unable to find ModelPlugin in module ", moduleName, err)
 		return "", "", err
 	}
 	modelPlugin, ok := symbolMP.(ModelPlugin)
 	if !ok {
-		log.Warn("Unable to use ModelPlugin in ", moduleName)
+		log.Warnf("Unable to use ModelPlugin in %s", moduleName)
 		return "", "", fmt.Errorf("symbol loaded from module %s is not a ModelPlugin",
 			moduleName)
 	}
