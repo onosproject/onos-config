@@ -78,15 +78,15 @@ func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegist
 				"failed while reading chunks from stream")
 			return err
 		}
-		n2, err := f.Write(chunk.Content)
+		_, err = f.Write(chunk.Content)
 		if err != nil {
 			return errors.Wrapf(err, "failed to write chunk %d to %s", i, TEMPFILE)
 		}
-		log.Infof("Wrote %d bytes to file %s. Chunk %d", n2, TEMPFILE, i)
 		soFileName = chunk.SoFile
 		i++
 	}
 	f.Close()
+
 	soFileName = "/tmp/" + soFileName
 	log.Infof("File %s written from %d chunks. Renaming to %s", TEMPFILE, i, soFileName)
 	err = os.Rename(TEMPFILE, soFileName)
