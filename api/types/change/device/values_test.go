@@ -21,8 +21,6 @@ import (
 	"testing"
 )
 
-//func NewChangeValue(path string, value *TypedValue, isRemove bool) (*ChangeValue, error) {
-
 func Test_NewChangedValue(t *testing.T) {
 	path := "/a/b/c"
 	badPath := "a@b@c"
