@@ -47,28 +47,28 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	setPath := makeDevicePath(simulator.Name(), tzPath)
 	setPath[0].pathDataValue = tzValue
 	setPath[0].pathDataType = StringVal
-	_, extensions, errorSet := GNMISet(MakeContext(), c, setPath, noPaths)
+	_, extensions, errorSet := gNMISet(MakeContext(), c, setPath, noPaths)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := GNMIGet(MakeContext(), c, makeDevicePath(simulator.Name(), tzPath))
+	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(simulator.Name(), tzPath))
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
 	assert.Equal(t, tzValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
 
 	// Remove the path we added
-	_, extensions, errorDelete := GNMISet(MakeContext(), c, noPaths, makeDevicePath(simulator.Name(), tzPath))
+	_, extensions, errorDelete := gNMISet(MakeContext(), c, noPaths, makeDevicePath(simulator.Name(), tzPath))
 	assert.NoError(t, errorDelete)
 	assert.Equal(t, 1, len(extensions))
 	extension = extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
 	//  Make sure it got removed
-	valueAfterDelete, extensions, errorAfterDelete := GNMIGet(MakeContext(), c, makeDevicePath(simulator.Name(), tzPath))
+	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(MakeContext(), c, makeDevicePath(simulator.Name(), tzPath))
 	assert.NoError(t, errorAfterDelete)
 	assert.Equal(t, 0, len(extensions))
 	assert.Equal(t, valueAfterDelete[0].pathDataValue, "",

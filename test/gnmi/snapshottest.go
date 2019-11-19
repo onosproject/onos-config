@@ -43,7 +43,7 @@ func (s *TestSuite) TestSnapshot(t *testing.T) {
 			setPath[0].pathDataValue = uuid.New().String()
 			setPath[0].pathDataType = StringVal
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			_, _, err := GNMISet(ctx, c, setPath, noPaths)
+			_, _, err := gNMISet(ctx, c, setPath, noPaths)
 			cancel()
 			assert.NoError(t, err)
 		}

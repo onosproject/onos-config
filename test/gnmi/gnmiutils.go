@@ -67,8 +67,8 @@ func extractSetTransactionID(response *gpb.SetResponse) string {
 	return string(response.Extension[0].GetRegisteredExt().Msg)
 }
 
-// GNMIGet generates a GET request on the given client for a path on a device
-func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePath, []*gnmi_ext.Extension, error) {
+// gNMIGet generates a GET request on the given client for a path on a device
+func gNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePath, []*gnmi_ext.Extension, error) {
 	protoString := ""
 	for _, devicePath := range paths {
 		protoString = protoString + MakeProtoPath(devicePath.deviceName, devicePath.path)
@@ -87,8 +87,8 @@ func GNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePa
 	return convertGetResults(response)
 }
 
-// GNMISet generates a SET request on the given client for update and delete paths on a device
-func GNMISet(ctx context.Context, c client.Impl, updatePaths []DevicePath, deletePaths []DevicePath) (string, []*gnmi_ext.Extension, error) {
+// gNMISet generates a SET request on the given client for update and delete paths on a device
+func gNMISet(ctx context.Context, c client.Impl, updatePaths []DevicePath, deletePaths []DevicePath) (string, []*gnmi_ext.Extension, error) {
 	var protoBuilder strings.Builder
 	for _, updatePath := range updatePaths {
 		protoBuilder.WriteString(MakeProtoUpdatePath(updatePath))
