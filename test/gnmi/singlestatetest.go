@@ -37,7 +37,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	assert.True(t, c != nil, "Fetching client returned nil")
 
 	// Check that the value was correctly retrieved from the device and store in the state cache
-	valueAfter, extensions, errorAfter := GNMIGet(MakeContext(), c, makeDevicePath(simulator.Name(), stateControllersPath))
+	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(simulator.Name(), stateControllersPath))
 	assert.NoError(t, errorAfter)
 	assert.NotEqual(t, "", valueAfter, "Query after state returned an error: %s\n", errorAfter)
 	re := regexp.MustCompile(stateValueRegexp)
