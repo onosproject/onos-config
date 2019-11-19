@@ -16,11 +16,13 @@ devices: []
 plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0,stratum.so.1.0.0]
 
 store:
-  enabled: false
+  enabled: true
+  namespace: kube-system
+  raftgroup: raft
   controller: atomix-controller.kube-system.svc.cluster.local:5679
   raft:
-    partitions: 3
-    partitionSize: 3
+    partitions: 1
+    partitionSize: 1
 
 resources:
   requests:

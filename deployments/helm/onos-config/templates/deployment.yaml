@@ -2,9 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "fullname" . }}
-  chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-  release: "{{ .Release.Name }}"
-  heritage: "{{ .Release.Service }}"
+  labels:
+     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+     release: "{{ .Release.Name }}"
+     heritage: "{{ .Release.Service }}"
 spec:
   replicas: {{ .Values.replicas }}
   selector:
@@ -43,7 +44,9 @@ spec:
             - name: ATOMIX_APP
               value: {{ template "fullname" . }}
             - name: ATOMIX_RAFT_GROUP
-              value: {{ template "fullname" . }}-raft
+              value: {{ .Values.store.raftgroup }}
+            - name: ATOMIX_NAMESPACE
+              value: {{ .Values.store.namespace }}
           args:
             - "-caPath=/etc/onos-config/certs/tls.cacrt"
             - "-keyPath=/etc/onos-config/certs/tls.key"
