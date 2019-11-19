@@ -42,8 +42,8 @@ spec:
             - name: ATOMIX_CONTROLLER
               value: {{ .Values.store.controller | quote }}
             - name: ATOMIX_APP
-              value: {{ template "fullname" . }}
-            - name: ATOMIX_RAFT_GROUP
+              value: onos
+            - name: ATOMIX_RAFT
               value: {{ .Values.store.raftgroup }}
             - name: ATOMIX_NAMESPACE
               value: {{ .Values.store.namespace }}
