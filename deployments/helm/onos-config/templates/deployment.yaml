@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "fullname" . }}
+  name: {{ template "onos-config.fullname" . }}
   labels:
      chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
      release: "{{ .Release.Name }}"
@@ -10,17 +10,19 @@ spec:
   replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
-      name: {{ template "fullname" . }}
+      name: {{ template "onos-config.fullname" . }}
   template:
     metadata:
       labels:
-        name: {{ template "fullname" . }}
-      {{ if .Values.annotations }}
+        name: {{ template "onos-config.fullname" . }}
+        app: onos
+        type: config
+        resource: {{ template "onos-config.fullname" . }}
       annotations:
+        "seccomp.security.alpha.kubernetes.io/pod": "unconfined"
         {{- range $key, $value := .Values.annotations }}
         {{ $key }}: {{ $value }}
         {{- end }}
-      {{ end }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
@@ -42,7 +44,7 @@ spec:
             - name: ATOMIX_CONTROLLER
               value: {{ .Values.store.controller | quote }}
             - name: ATOMIX_APP
-              value: onos
+              value: {{ include "onos-config.fullname" . }}
             - name: ATOMIX_RAFT
               value: {{ .Values.store.raftgroup }}
             - name: ATOMIX_NAMESPACE
@@ -99,4 +101,4 @@ spec:
       volumes:
         - name: secret
           secret:
-            secretName: {{ template "fullname" . }}-secret
+            secretName: {{ template "onos-config.fullname" . }}-secret
