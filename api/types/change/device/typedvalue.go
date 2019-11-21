@@ -225,6 +225,9 @@ func caseValueTypeLeafListBYTES(bytes []byte, typeOpts []int32) (*TypedValue, er
 			byteArrays = append(byteArrays, buf)
 			buf = make([]byte, 0)
 			idx = idx + 1
+			if idx >= len(byteArrays) {
+				return nil, fmt.Errorf("not enough typeOpts provided - found %d need at least %d", len(byteArrays), idx+1)
+			}
 			startAt = startAt + int(valueLen)
 		}
 		buf = append(buf, b)

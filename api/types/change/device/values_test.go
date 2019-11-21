@@ -36,3 +36,11 @@ func Test_NewChangedValue(t *testing.T) {
 	assert.Assert(t, changeValue.Path == path)
 	assert.Assert(t, changeValue.Value.ValueToString() == "64")
 }
+
+func TestLeafListBytesCrash(t *testing.T) {
+	bytes := []byte("12345678")
+	typeOpts := []int32{4}
+	value, err := NewTypedValue(bytes, ValueType_LEAFLIST_BYTES, typeOpts)
+	assert.Assert(t, value == nil)
+	assert.Assert(t, err != nil)
+}
