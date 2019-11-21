@@ -331,6 +331,12 @@ func TestTypedLeafListBool(t *testing.T) {
 	assert.Equal(t, listValue.ValueType(), ValueType_LEAFLIST_BOOL)
 }
 
+func TestTypedLeafListFloat(t *testing.T) {
+	values := []float32{111.0, 112.0}
+	listValue := NewLeafListFloat32(values)
+	assert.Equal(t, listValue.ValueType(), ValueType_LEAFLIST_FLOAT)
+}
+
 func TestTypedLeafListDecimal(t *testing.T) {
 	digits := []int64{22, 33}
 	listValue := NewLeafListDecimal64(digits, 2)
