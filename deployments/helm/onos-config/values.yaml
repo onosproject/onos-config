@@ -1,7 +1,8 @@
-nameOverride: ""
+# Default values for onos-config.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
 
-replicas: 1
-annotations: {}
+replicaCount: 1
 
 image:
   repository: onosproject/onos-config
@@ -9,11 +10,17 @@ image:
   pullPolicy: IfNotPresent
   pullSecrets: []
 
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
 debug: false
 
 devices: []
 
 plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0,stratum.so.1.0.0]
+
+namespace: default
 
 store:
   enabled: false
@@ -24,10 +31,16 @@ store:
     partitions: 1
     partitionSize: 1
 
-resources:
-  requests:
-    cpu: 0.5
-    memory: 512Mi
-
 ingress:
   enabled: false
+
+service:
+  type: ClusterIP
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

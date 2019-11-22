@@ -2,15 +2,18 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "onos-config.fullname" . }}
+  namespace: default
   labels:
-     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-     release: "{{ .Release.Name }}"
-     heritage: "{{ .Release.Service }}"
+     {{- include "onos-config.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicas }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       name: {{ template "onos-config.fullname" . }}
+      app: onos
+      type: config
+      resource: {{ template "onos-config.fullname" . }}
+      {{- include "onos-config.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
@@ -18,6 +21,7 @@ spec:
         app: onos
         type: config
         resource: {{ template "onos-config.fullname" . }}
+        {{- include "onos-config.selectorLabels" . | nindent 8 }}
       annotations:
         "seccomp.security.alpha.kubernetes.io/pod": "unconfined"
         {{- range $key, $value := .Values.annotations }}
@@ -68,33 +72,32 @@ spec:
           # Disable probes for debugging since application starts paused
           # See https://github.com/go-delve/delve/issues/245
           {{- if not .Values.debug }}
-          readinessProbe:
-            tcpSocket:
-              port: 5150
-            initialDelaySeconds: 5
-            periodSeconds: 10
           livenessProbe:
             tcpSocket:
               port: 5150
             initialDelaySeconds: 15
             periodSeconds: 20
+          readinessProbe:
+            tcpSocket:
+              port: 5150
+            initialDelaySeconds: 5
+            periodSeconds: 10
           {{- end }}
           volumeMounts:
             - name: secret
               mountPath: /etc/onos-config/certs
               readOnly: true
       # Enable ptrace for debugging
-      {{- if .Values.debug }}
       securityContext:
+        {{- toYaml .Values.securityContext | nindent 12 }}
+        {{- if .Values.debug }}
         capabilities:
           add:
             - SYS_PTRACE
-      {{- end }}
-      {{- if .Values.image.pullSecrets }}
-      imagePullSecrets:
-        {{- range .Values.image.pullSecrets }}
-        - name: {{ . | quote }}
         {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       # Mount test volumes
       # TODO: This should be removed when stores are added!
@@ -102,3 +105,15 @@ spec:
         - name: secret
           secret:
             secretName: {{ template "onos-config.fullname" . }}-secret
+    {{- with .Values.nodeSelector }}
+    nodeSelector:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+    affinity:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}

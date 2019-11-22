@@ -30,3 +30,24 @@ Create chart name and version as used by the chart label.
 {{- define "onos-config.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+
+{{/*
+Common labels
+*/}}
+{{- define "onos-config.labels" -}}
+helm.sh/chart: {{ include "onos-config.chart" . }}
+{{ include "onos-config.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end -}}
+
+{{/*
+Selector labels
+*/}}
+{{- define "onos-config.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "onos-config.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}

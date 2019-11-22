@@ -136,10 +136,13 @@ func main() {
 	if err != nil {
 		log.Error("Cannot load device store ", err)
 	}
+	log.Info("Topology Service connected")
 
 	mgr, err := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
 		deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
 		deviceSnapshotStore, *allowUnvalidatedConfig)
+	log.Info("Manager started")
+
 	if err != nil {
 		log.Fatal("Unable to load onos-config ", err)
 	} else {
@@ -160,6 +163,7 @@ func main() {
 		}
 
 		mgr.Run()
+		log.Info("Manger Running")
 		err = startServer(*caPath, *keyPath, *certPath)
 		if err != nil {
 			log.Fatal("Unable to start onos-config ", err)

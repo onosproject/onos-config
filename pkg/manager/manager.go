@@ -146,6 +146,7 @@ func (m *Manager) Run() {
 	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
 	go synchronizer.Factory(m.TopoChannel, m.OperationalStateChannel, m.SouthboundErrorChan,
 		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache, southbound.TargetGenerator, m.OperationalStateCacheLock)
+	log.Info("Device Factory has started")
 
 	err := m.DeviceStore.Watch(m.TopoChannel)
 	if err != nil {
