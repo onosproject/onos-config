@@ -210,16 +210,16 @@ func Test_comparables(t *testing.T) {
 		expectedType devicechange.ValueType
 		testValue    *gnmi.TypedValue
 	}{
-		{description: "Int", expectedType: devicechange.ValueType_LEAFLIST_INT, testValue: intListTestValue},
-		{description: "Uint", expectedType: devicechange.ValueType_LEAFLIST_UINT, testValue: uintListTestValue},
-		{description: "Decimal", expectedType: devicechange.ValueType_LEAFLIST_DECIMAL, testValue: decimalListTestValue},
-		{description: "Boolean", expectedType: devicechange.ValueType_LEAFLIST_BOOL, testValue: booleanListTestValue},
-		{description: "Float", expectedType: devicechange.ValueType_LEAFLIST_FLOAT, testValue: floatListTestValue},
-		{description: "Bytes", expectedType: devicechange.ValueType_LEAFLIST_BYTES, testValue: bytesListTestValue},
-		{description: "Strings", expectedType: devicechange.ValueType_LEAFLIST_STRING, testValue: stringListTestValue},
-		{description: "Bytes", expectedType: devicechange.ValueType_BYTES, testValue: bytesLeafTestValue},
-		{description: "Float", expectedType: devicechange.ValueType_FLOAT, testValue: floatLeafTestValue},
-		{description: "Decimal", expectedType: devicechange.ValueType_DECIMAL, testValue: decimalLeafTestValue},
+		{description: "Int List", expectedType: devicechange.ValueType_LEAFLIST_INT, testValue: intListTestValue},
+		{description: "Uint List", expectedType: devicechange.ValueType_LEAFLIST_UINT, testValue: uintListTestValue},
+		{description: "Decimal List", expectedType: devicechange.ValueType_LEAFLIST_DECIMAL, testValue: decimalListTestValue},
+		{description: "Boolean List", expectedType: devicechange.ValueType_LEAFLIST_BOOL, testValue: booleanListTestValue},
+		{description: "Float List", expectedType: devicechange.ValueType_LEAFLIST_FLOAT, testValue: floatListTestValue},
+		{description: "Bytes List", expectedType: devicechange.ValueType_LEAFLIST_BYTES, testValue: bytesListTestValue},
+		{description: "Strings List", expectedType: devicechange.ValueType_LEAFLIST_STRING, testValue: stringListTestValue},
+		{description: "Bytes Leaf", expectedType: devicechange.ValueType_BYTES, testValue: bytesLeafTestValue},
+		{description: "Float Leaf", expectedType: devicechange.ValueType_FLOAT, testValue: floatLeafTestValue},
+		{description: "Decimal Leaf", expectedType: devicechange.ValueType_DECIMAL, testValue: decimalLeafTestValue},
 	}
 
 	for _, testCase := range testCases {
