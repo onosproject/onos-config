@@ -21,6 +21,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -186,6 +187,53 @@ func Test_Leaflists(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Assert(t, nativeType != nil)
 		assert.Equal(t, nativeType.Type, testCase.expectedType)
+
+		convertedValue, convertedErr := NativeTypeToGnmiTypedValue(nativeType)
+		assert.NilError(t, convertedErr)
+		assert.Assert(t, reflect.DeepEqual(*convertedValue, *testCase.testValue), "%s", testCase.description)
+	}
+}
+
+func Test_Scalars(t *testing.T) {
+	const floatValue = 1.234
+	floatTestValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_FloatVal{
+			FloatVal: floatValue,
+		},
+	}
+
+	decimalTestValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_DecimalVal{
+			DecimalVal: &gnmi.Decimal64{
+				Digits:    1234,
+				Precision: 2,
+			},
+		},
+	}
+
+	const abc = "abc123"
+	bytesTestValue := &gnmi.TypedValue{
+		Value: &gnmi.TypedValue_BytesVal{
+			BytesVal: []byte(abc)},
+	}
+
+	testCases := []struct {
+		description    string
+		expectedType   devicechange.ValueType
+		expectedString string
+		testValue      *gnmi.TypedValue
+	}{
+		{description: "Float", expectedType: devicechange.ValueType_FLOAT, expectedString: `type:FLOAT`, testValue: floatTestValue},
+		{description: "Decimal", expectedType: devicechange.ValueType_DECIMAL, expectedString: `type:DECIMAL type_opts:2`, testValue: decimalTestValue},
+		{description: "Bytes", expectedType: devicechange.ValueType_BYTES, expectedString: abc, testValue: bytesTestValue},
+	}
+
+	for _, testCase := range testCases {
+		nativeType, nativeErr := GnmiTypedValueToNativeType(testCase.testValue)
+		assert.NilError(t, nativeErr, testCase.description)
+		assert.Equal(t, nativeType.Type, testCase.expectedType)
+		s := nativeType.String()
+		assert.Assert(t, strings.Contains(s, testCase.expectedString), testCase.description)
 
 		convertedValue, convertedErr := NativeTypeToGnmiTypedValue(nativeType)
 		assert.NilError(t, convertedErr)
