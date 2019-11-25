@@ -200,7 +200,7 @@ var leafDecimalTestValue = &gnmi.TypedValue{
 	},
 }
 
-var leafAsciiTestValue = &gnmi.TypedValue{
+var leafASCIITestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_AsciiVal{AsciiVal: "ascii"},
 }
 
@@ -235,7 +235,7 @@ func Test_comparables(t *testing.T) {
 }
 
 func Test_ascii(t *testing.T) {
-	nativeType, err := GnmiTypedValueToNativeType(leafAsciiTestValue)
+	nativeType, err := GnmiTypedValueToNativeType(leafASCIITestValue)
 	assert.NilError(t, err)
 	assert.Assert(t, nativeType != nil)
 	assert.Equal(t, nativeType.Type, devicechange.ValueType_STRING)
@@ -269,7 +269,7 @@ func Test_errors(t *testing.T) {
 	//  Bad length on typed value
 	badTypedValue := devicechange.NewTypedValueEmpty()
 	badTypedValue.Type = devicechange.ValueType_BYTES
-	badTypedValue.Bytes = make ([]byte, 0)
+	badTypedValue.Bytes = make([]byte, 0)
 	invalidTypedLength, invalidTypedLengthErr := NativeTypeToGnmiTypedValue(badTypedValue)
 	assert.ErrorContains(t, invalidTypedLengthErr, "invalid TypedValue Length 0")
 	assert.Assert(t, invalidTypedLength == nil)
