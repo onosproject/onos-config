@@ -72,7 +72,7 @@ func Test_GnmiBoolToNative(t *testing.T) {
 	assert.Equal(t, nativeBool.Bool(), true)
 }
 
-var intTestValue = &gnmi.TypedValue{
+var intListTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_LeaflistVal{
 		LeaflistVal: &gnmi.ScalarArray{
 			Element: []*gnmi.TypedValue{
@@ -85,7 +85,7 @@ var intTestValue = &gnmi.TypedValue{
 	},
 }
 
-var uintTestValue = &gnmi.TypedValue{
+var uintListTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_LeaflistVal{
 		LeaflistVal: &gnmi.ScalarArray{
 			Element: []*gnmi.TypedValue{
@@ -98,7 +98,7 @@ var uintTestValue = &gnmi.TypedValue{
 	},
 }
 
-var decimalTestValue = &gnmi.TypedValue{
+var decimalListTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_LeaflistVal{
 		LeaflistVal: &gnmi.ScalarArray{
 			Element: []*gnmi.TypedValue{
@@ -115,7 +115,7 @@ var decimalTestValue = &gnmi.TypedValue{
 	},
 }
 
-var booleanTestValue = &gnmi.TypedValue{
+var booleanListTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_LeaflistVal{
 		LeaflistVal: &gnmi.ScalarArray{
 			Element: []*gnmi.TypedValue{
@@ -128,7 +128,7 @@ var booleanTestValue = &gnmi.TypedValue{
 	},
 }
 
-var floatTestValue = &gnmi.TypedValue{
+var floatListTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_LeaflistVal{
 		LeaflistVal: &gnmi.ScalarArray{
 			Element: []*gnmi.TypedValue{
@@ -141,7 +141,7 @@ var floatTestValue = &gnmi.TypedValue{
 	},
 }
 
-var bytesTestValue = &gnmi.TypedValue{
+var bytesListTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_LeaflistVal{
 		LeaflistVal: &gnmi.ScalarArray{
 			Element: []*gnmi.TypedValue{
@@ -154,7 +154,7 @@ var bytesTestValue = &gnmi.TypedValue{
 	},
 }
 
-var stringTestValue = &gnmi.TypedValue{
+var stringListTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_LeaflistVal{
 		LeaflistVal: &gnmi.ScalarArray{
 			Element: []*gnmi.TypedValue{
@@ -167,7 +167,7 @@ var stringTestValue = &gnmi.TypedValue{
 	},
 }
 
-var asciiTestValue = &gnmi.TypedValue{
+var asciiListTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_LeaflistVal{
 		LeaflistVal: &gnmi.ScalarArray{
 			Element: []*gnmi.TypedValue{
@@ -180,18 +180,18 @@ var asciiTestValue = &gnmi.TypedValue{
 	},
 }
 
-var leafBytesTestValue = &gnmi.TypedValue{
+var bytesLeafTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_BytesVal{
 		BytesVal: []byte("abc")},
 }
 
-var leafFloatTestValue = &gnmi.TypedValue{
+var floatLeafTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_FloatVal{
 		FloatVal: 1.234,
 	},
 }
 
-var leafDecimalTestValue = &gnmi.TypedValue{
+var decimalLeafTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_DecimalVal{
 		DecimalVal: &gnmi.Decimal64{
 			Digits:    1234,
@@ -200,7 +200,7 @@ var leafDecimalTestValue = &gnmi.TypedValue{
 	},
 }
 
-var leafASCIITestValue = &gnmi.TypedValue{
+var asciiLeafTestValue = &gnmi.TypedValue{
 	Value: &gnmi.TypedValue_AsciiVal{AsciiVal: "ascii"},
 }
 
@@ -210,16 +210,16 @@ func Test_comparables(t *testing.T) {
 		expectedType devicechange.ValueType
 		testValue    *gnmi.TypedValue
 	}{
-		{description: "Int", expectedType: devicechange.ValueType_LEAFLIST_INT, testValue: intTestValue},
-		{description: "Uint", expectedType: devicechange.ValueType_LEAFLIST_UINT, testValue: uintTestValue},
-		{description: "Decimal", expectedType: devicechange.ValueType_LEAFLIST_DECIMAL, testValue: decimalTestValue},
-		{description: "Boolean", expectedType: devicechange.ValueType_LEAFLIST_BOOL, testValue: booleanTestValue},
-		{description: "Float", expectedType: devicechange.ValueType_LEAFLIST_FLOAT, testValue: floatTestValue},
-		{description: "Bytes", expectedType: devicechange.ValueType_LEAFLIST_BYTES, testValue: bytesTestValue},
-		{description: "Strings", expectedType: devicechange.ValueType_LEAFLIST_STRING, testValue: stringTestValue},
-		{description: "Bytes", expectedType: devicechange.ValueType_BYTES, testValue: leafBytesTestValue},
-		{description: "Float", expectedType: devicechange.ValueType_FLOAT, testValue: leafFloatTestValue},
-		{description: "Decimal", expectedType: devicechange.ValueType_DECIMAL, testValue: leafDecimalTestValue},
+		{description: "Int", expectedType: devicechange.ValueType_LEAFLIST_INT, testValue: intListTestValue},
+		{description: "Uint", expectedType: devicechange.ValueType_LEAFLIST_UINT, testValue: uintListTestValue},
+		{description: "Decimal", expectedType: devicechange.ValueType_LEAFLIST_DECIMAL, testValue: decimalListTestValue},
+		{description: "Boolean", expectedType: devicechange.ValueType_LEAFLIST_BOOL, testValue: booleanListTestValue},
+		{description: "Float", expectedType: devicechange.ValueType_LEAFLIST_FLOAT, testValue: floatListTestValue},
+		{description: "Bytes", expectedType: devicechange.ValueType_LEAFLIST_BYTES, testValue: bytesListTestValue},
+		{description: "Strings", expectedType: devicechange.ValueType_LEAFLIST_STRING, testValue: stringListTestValue},
+		{description: "Bytes", expectedType: devicechange.ValueType_BYTES, testValue: bytesLeafTestValue},
+		{description: "Float", expectedType: devicechange.ValueType_FLOAT, testValue: floatLeafTestValue},
+		{description: "Decimal", expectedType: devicechange.ValueType_DECIMAL, testValue: decimalLeafTestValue},
 	}
 
 	for _, testCase := range testCases {
@@ -235,7 +235,7 @@ func Test_comparables(t *testing.T) {
 }
 
 func Test_ascii(t *testing.T) {
-	nativeType, err := GnmiTypedValueToNativeType(leafASCIITestValue)
+	nativeType, err := GnmiTypedValueToNativeType(asciiLeafTestValue)
 	assert.NilError(t, err)
 	assert.Assert(t, nativeType != nil)
 	assert.Equal(t, nativeType.Type, devicechange.ValueType_STRING)
@@ -246,7 +246,7 @@ func Test_ascii(t *testing.T) {
 }
 
 func Test_asciiList(t *testing.T) {
-	nativeType, err := GnmiTypedValueToNativeType(asciiTestValue)
+	nativeType, err := GnmiTypedValueToNativeType(asciiListTestValue)
 	assert.NilError(t, err)
 	assert.Assert(t, nativeType != nil)
 	assert.Equal(t, nativeType.Type, devicechange.ValueType_LEAFLIST_STRING)
