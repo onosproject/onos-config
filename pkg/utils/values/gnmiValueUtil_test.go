@@ -167,7 +167,44 @@ var stringTestValue = &gnmi.TypedValue{
 	},
 }
 
-func Test_Leaflists(t *testing.T) {
+var asciiTestValue = &gnmi.TypedValue{
+	Value: &gnmi.TypedValue_LeaflistVal{
+		LeaflistVal: &gnmi.ScalarArray{
+			Element: []*gnmi.TypedValue{
+				{Value: &gnmi.TypedValue_AsciiVal{AsciiVal: "abc"}},
+				{Value: &gnmi.TypedValue_AsciiVal{AsciiVal: "def"}},
+				{Value: &gnmi.TypedValue_AsciiVal{AsciiVal: "ghi"}},
+				{Value: &gnmi.TypedValue_AsciiVal{AsciiVal: "jkl"}},
+			},
+		},
+	},
+}
+
+var leafBytesTestValue = &gnmi.TypedValue{
+	Value: &gnmi.TypedValue_BytesVal{
+		BytesVal: []byte("abc")},
+}
+
+var leafFloatTestValue = &gnmi.TypedValue{
+	Value: &gnmi.TypedValue_FloatVal{
+		FloatVal: 1.234,
+	},
+}
+
+var leafDecimalTestValue = &gnmi.TypedValue{
+	Value: &gnmi.TypedValue_DecimalVal{
+		DecimalVal: &gnmi.Decimal64{
+			Digits:    1234,
+			Precision: 2,
+		},
+	},
+}
+
+var leafAsciiTestValue = &gnmi.TypedValue{
+	Value: &gnmi.TypedValue_AsciiVal{AsciiVal: "ascii"},
+}
+
+func Test_comparables(t *testing.T) {
 	testCases := []struct {
 		description  string
 		expectedType devicechange.ValueType
@@ -180,6 +217,9 @@ func Test_Leaflists(t *testing.T) {
 		{description: "Float", expectedType: devicechange.ValueType_LEAFLIST_FLOAT, testValue: floatTestValue},
 		{description: "Bytes", expectedType: devicechange.ValueType_LEAFLIST_BYTES, testValue: bytesTestValue},
 		{description: "Strings", expectedType: devicechange.ValueType_LEAFLIST_STRING, testValue: stringTestValue},
+		{description: "Bytes", expectedType: devicechange.ValueType_BYTES, testValue: leafBytesTestValue},
+		{description: "Float", expectedType: devicechange.ValueType_FLOAT, testValue: leafFloatTestValue},
+		{description: "Decimal", expectedType: devicechange.ValueType_DECIMAL, testValue: leafDecimalTestValue},
 	}
 
 	for _, testCase := range testCases {
@@ -194,51 +234,52 @@ func Test_Leaflists(t *testing.T) {
 	}
 }
 
-func Test_Scalars(t *testing.T) {
-	const floatValue = 1.234
-	floatTestValue := &gnmi.TypedValue{
-		Value: &gnmi.TypedValue_FloatVal{
-			FloatVal: floatValue,
-		},
-	}
+func Test_ascii(t *testing.T) {
+	nativeType, err := GnmiTypedValueToNativeType(leafAsciiTestValue)
+	assert.NilError(t, err)
+	assert.Assert(t, nativeType != nil)
+	assert.Equal(t, nativeType.Type, devicechange.ValueType_STRING)
 
-	decimalTestValue := &gnmi.TypedValue{
-		Value: &gnmi.TypedValue_DecimalVal{
-			DecimalVal: &gnmi.Decimal64{
-				Digits:    1234,
-				Precision: 2,
-			},
-		},
-	}
+	convertedValue, convertedErr := NativeTypeToGnmiTypedValue(nativeType)
+	assert.NilError(t, convertedErr)
+	assert.Assert(t, strings.Contains(convertedValue.String(), "ascii"), "%s", "Ascii")
+}
 
-	const abc = "abc123"
-	bytesTestValue := &gnmi.TypedValue{
-		Value: &gnmi.TypedValue_BytesVal{
-			BytesVal: []byte(abc)},
-	}
+func Test_asciiList(t *testing.T) {
+	nativeType, err := GnmiTypedValueToNativeType(asciiTestValue)
+	assert.NilError(t, err)
+	assert.Assert(t, nativeType != nil)
+	assert.Equal(t, nativeType.Type, devicechange.ValueType_LEAFLIST_STRING)
 
-	testCases := []struct {
-		description    string
-		expectedType   devicechange.ValueType
-		expectedString string
-		testValue      *gnmi.TypedValue
-	}{
-		{description: "Float", expectedType: devicechange.ValueType_FLOAT, expectedString: `type:FLOAT`, testValue: floatTestValue},
-		{description: "Decimal", expectedType: devicechange.ValueType_DECIMAL, expectedString: `type:DECIMAL type_opts:2`, testValue: decimalTestValue},
-		{description: "Bytes", expectedType: devicechange.ValueType_BYTES, expectedString: abc, testValue: bytesTestValue},
-	}
+	convertedValue, convertedErr := NativeTypeToGnmiTypedValue(nativeType)
+	assert.NilError(t, convertedErr)
+	s := convertedValue.String()
+	assert.Assert(t, strings.Contains(s, `element:<string_val:"abc"`), "%s", "Ascii")
+	assert.Assert(t, strings.Contains(s, `element:<string_val:"jkl"`), "%s", "Ascii")
+}
 
-	for _, testCase := range testCases {
-		nativeType, nativeErr := GnmiTypedValueToNativeType(testCase.testValue)
-		assert.NilError(t, nativeErr, testCase.description)
-		assert.Equal(t, nativeType.Type, testCase.expectedType)
-		s := nativeType.String()
-		assert.Assert(t, strings.Contains(s, testCase.expectedString), testCase.description)
+func Test_empty(t *testing.T) {
+	convertedValue, convertedErr := NativeTypeToGnmiTypedValue(devicechange.NewTypedValueEmpty())
+	assert.NilError(t, convertedErr)
+	s := convertedValue.String()
+	assert.Assert(t, strings.Contains(s, "nil"), "%s", "Ascii")
+}
 
-		convertedValue, convertedErr := NativeTypeToGnmiTypedValue(nativeType)
-		assert.NilError(t, convertedErr)
-		assert.Assert(t, reflect.DeepEqual(*convertedValue, *testCase.testValue), "%s", testCase.description)
-	}
+func Test_errors(t *testing.T) {
+	//  Bad length on typed value
+	badTypedValue := devicechange.NewTypedValueEmpty()
+	badTypedValue.Type = devicechange.ValueType_BYTES
+	badTypedValue.Bytes = make ([]byte, 0)
+	invalidTypedLength, invalidTypedLengthErr := NativeTypeToGnmiTypedValue(badTypedValue)
+	assert.ErrorContains(t, invalidTypedLengthErr, "invalid TypedValue Length 0")
+	assert.Assert(t, invalidTypedLength == nil)
+
+	//  Bad type
+	badTypedValue.Type = 99
+	badTypedValue.Bytes = make([]byte, 4)
+	badType, badTypeErr := NativeTypeToGnmiTypedValue(badTypedValue)
+	assert.ErrorContains(t, badTypeErr, "Unsupported type 99")
+	assert.Assert(t, badType == nil)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
