@@ -15,6 +15,7 @@ future, this chart will be extended for production use.
 
 The Helm chart provides resources for deploying the config service and accessing
 it over the network, both inside and outside the k8s cluster:
+
 * `Deployment` - Provides a template for ONOS Config pods
 * `ConfigMap` - Provides test configurations for the application
 * `Service` - Exposes ONOS Config to other applications on the network
