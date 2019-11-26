@@ -28,6 +28,12 @@ spec:
         {{ $key }}: {{ $value }}
         {{- end }}
     spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -71,34 +77,17 @@ spec:
             {{- end }}
           # Disable probes for debugging since application starts paused
           # See https://github.com/go-delve/delve/issues/245
-          {{- if not .Values.debug }}
-          livenessProbe:
-            tcpSocket:
-              port: 5150
-            initialDelaySeconds: 15
-            periodSeconds: 20
-          readinessProbe:
-            tcpSocket:
-              port: 5150
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          {{- end }}
           volumeMounts:
             - name: secret
               mountPath: /etc/onos-config/certs
               readOnly: true
-      # Enable ptrace for debugging
-      securityContext:
-        {{- toYaml .Values.securityContext | nindent 12 }}
-        {{- if .Values.debug }}
-        capabilities:
-          add:
-            - SYS_PTRACE
-        {{- end }}
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+          # Enable ptrace for debugging
+          securityContext:
+            {{- if .Values.debug }}
+            capabilities:
+              add:
+                - SYS_PTRACE
+            {{- end }}
       # Mount test volumes
       # TODO: This should be removed when stores are added!
       volumes:
