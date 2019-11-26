@@ -23,9 +23,9 @@ devices: []
 plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0,stratum.so.1.0.0]
 
 store:
-  enabled: false
+  enabled: true
   namespace: default
-  raftgroup: raft
+  raftgroup: onos-config
   controller: atomix-controller.default.svc.cluster.local:5679
   raft:
     partitions: 1
