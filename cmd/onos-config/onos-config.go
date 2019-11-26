@@ -115,12 +115,6 @@ func main() {
 	if err != nil {
 		log.Error("Cannot load network atomix store ", err)
 	}
-	log.Info("Network Configuration store connected")
-
-	deviceCache, err := cache.NewCache(networkChangesStore)
-	if err != nil {
-		log.Error("Cannot load device cache", err)
-	}
 
 	networkSnapshotStore, err := networksnap.NewAtomixStore()
 	if err != nil {
@@ -132,11 +126,18 @@ func main() {
 		log.Error("Cannot load network atomix store ", err)
 	}
 
+	log.Info("Network Configuration store connected")
+
+	deviceCache, err := cache.NewCache(networkChangesStore)
+	if err != nil {
+		log.Error("Cannot load device cache", err)
+	}
+
 	deviceStore, err := devicestore.NewTopoStore(opts...)
 	if err != nil {
 		log.Error("Cannot load device store ", err)
 	}
-	log.Info("Topology Service connected")
+	log.Info("Topology service connected")
 
 	mgr, err := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
 		deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
@@ -163,7 +164,6 @@ func main() {
 		}
 
 		mgr.Run()
-		log.Info("Manger Running")
 		err = startServer(*caPath, *keyPath, *certPath)
 		if err != nil {
 			log.Fatal("Unable to start onos-config ", err)

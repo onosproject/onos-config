@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/client/util"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 	"io"
@@ -26,8 +25,6 @@ import (
 )
 
 const topoAddress = "onos-topo:5150"
-
-var log = logging.GetLogger("device-topo-store")
 
 // Store is a device store
 type Store interface {
@@ -54,7 +51,6 @@ func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("gRPC topo conn state {}, ", conn.GetState().String())
 	client := topodevice.NewDeviceServiceClient(conn)
 
 	return &topoStore{
@@ -119,28 +115,19 @@ func (s *topoStore) List(ch chan<- *topodevice.Device) error {
 }
 
 func (s *topoStore) Watch(ch chan<- *topodevice.ListResponse) error {
-	log.Info("Watching devices from topo")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	clientDeadline := time.Now().Add(10 * time.Second)
-	ctxDead, _ := context.WithDeadline(ctx, clientDeadline)
-	list, err := s.client.List(ctxDead, &topodevice.ListRequest{
+	list, err := s.client.List(context.Background(), &topodevice.ListRequest{
 		Subscribe: true,
 	})
 	if err != nil {
-		cancel()
 		return err
 	}
-
-	log.Infof("List request is done {}", list)
 	go func() {
 		for {
 			response, err := list.Recv()
 			if err == io.EOF {
-				cancel()
 				break
 			}
 			if err != nil {
-				cancel()
 				break
 			}
 			ch <- response
@@ -151,6 +138,5 @@ func (s *topoStore) Watch(ch chan<- *topodevice.ListResponse) error {
 
 // getTopoConn gets a gRPC connection to the topology service
 func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
-	return grpc.DialContext(ctx, topoAddress, opts...)
+	return grpc.Dial(topoAddress, opts...)
 }
