@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "onos-config.fullname" . }}
-  namespace: default
+  namespace: {{ .Values.namespace }}
   labels:
      {{- include "onos-config.labels" . | nindent 4 }}
 spec:

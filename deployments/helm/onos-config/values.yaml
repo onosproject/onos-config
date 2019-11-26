@@ -16,11 +16,11 @@ fullnameOverride: ""
 
 debug: false
 
+namespace: default
+
 devices: []
 
 plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0,stratum.so.1.0.0]
-
-namespace: default
 
 store:
   enabled: false
