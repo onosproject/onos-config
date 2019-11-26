@@ -228,7 +228,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(10 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -300,7 +300,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(10 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -360,11 +360,11 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 		select {
 		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
 			event := eventObj.Object.(*networkchange.NetworkChange)
-			//t.Logf("Event received %v", event)
+			t.Logf("Event received %v", event)
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(10 * time.Second):
 			t.FailNow()
 		}
 		if breakout {
@@ -468,7 +468,7 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 					breakout = true
 				}
 			}
-		case <-time.After(5 * time.Second):
+		case <-time.After(10 * time.Second):
 			breakout = true
 			t.FailNow()
 		}
