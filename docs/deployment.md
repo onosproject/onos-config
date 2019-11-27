@@ -139,55 +139,6 @@ NAME                                        TYPE                                
 onos-config-secret           Opaque                                4      109s
 ```
 
-#Deploy onos-topo, CLI and Simulator. Links to all those files. 
-
-Once you have modified the device, you can verify that onos-config handled the update successfully
-by checking the onos-config logs:
-
-```bash
-> kubectl logs onos-config-onos-config-6f476ddc95-rgpgs
-...
-2019/05/15 07:07:36 device-1-device-simulator:10161 Connected over gNMI
-2019/05/15 07:07:36 device-1-device-simulator:10161 Capabilities supported_models:<name:"openconfig-interfaces" organization:"OpenConfig working group" version:"2.0.0" > supported_models:<name:"openconfig-openflow" organization:"OpenConfig working group" version:"0.1.0" > supported_models:<name:"openconfig-platform" organization:"OpenConfig working group" version:"0.5.0" > supported_models:<name:"openconfig-system" organization:"OpenConfig working group" version:"0.2.0" > supported_encodings:JSON supported_encodings:JSON_IETF gNMI_version:"0.7.0"
-2019/05/15 07:10:58 Added change M/IUW67JikD+V0clLfTEz5lTm6s= to ChangeStore (in memory)
-2019/05/15 07:10:58 Change formatted to gNMI setRequest update:<path:<elem:<name:"system" > elem:<name:"clock" > elem:<name:"config" > elem:<name:"timezone-name" > > val:<string_val:"Europe/Dublin" > >
-2019/05/15 07:10:58 device-1-device-simulator:10161 SetResponse response:<path:<elem:<name:"system" > elem:<name:"clock" > elem:<name:"config" > elem:<name:"timezone-name" > > op:UPDATE >
-```
-
-If the update was successful, you should be able to read the updated state of the device
-through the northbound API:
-
-```bash
-> gnmi_cli -get \
-    -address config.onosproject.org:443 \
-    -proto "path: <target: 'device-1-device-simulator', elem: <name: 'system'> elem: <name: 'clock' > elem:<name:'config'> elem: <name: 'timezone-name'>>" \
-    -timeout 5s -en PROTO -alsologtostderr \
-    -client_crt deployments/helm/onos-config/files/certs/tls.crt -client_key deployments/helm/onos-config/files/certs/tls.key -ca_crt deployments/helm/onos-config/files/certs/tls.cacrt
-notification: <
-  timestamp: 1557856109
-  update: <
-    path: <
-      elem: <
-        name: "system"
-      >
-      elem: <
-        name: "clock"
-      >
-      elem: <
-        name: "config"
-      >
-      elem: <
-        name: "timezone-name"
-      >
-      target: "device-1-device-simulator"
-    >
-    val: <
-      ascii_val: "Europe/Dublin"
-    >
-  >
->
-```
-
 [Brew]: https://brew.sh/
 [Helm]: https://helm.sh/
 [Kubernetes]: https://kubernetes.io/
