@@ -1,9 +1,10 @@
 # Deploying onos-config
 
-This guide deploy `onos-config` through it's [Helm] chart assumes you have a [Kubernets] cluster running 
-with an atomix controller deployed in a namespace. if you dont' specify the `--namespace` in the commands 
+This guide deploy `onos-config` through it's [Helm] chart assumes you have a [Kubernetes] cluster running 
+with an atomix controller deployed in a namespace.  
+If you dont' specify the `--namespace` in the commands 
 below atomix controller must be deployed in the `default`
-`onos-config` Helm chart is based on Helm 3.0 version, with no need for the Tiller pod to be present. 
+`onos-config` Helm chart is based on Helm 3.0 version, with no need for the Tiller pod to be present.   
 If you don't have a cluster running and want to try on your local machine please follow first 
 the [Kubernetes] setup steps outlined to [deploy with Helm](https://docs.onosproject.org/developers/deploy_with_helm/).
 
@@ -49,15 +50,15 @@ default       onos-config-77765c9dc4-vsjjn                 1/1     Running   0  
 One can customize the number of partitions and replicas by modifying, in `values.yaml`, under `store/raft` 
 the values of 
 ```bash 
-    partitions: 1
-    partitionSize: 1
+partitions: 1
+partitionSize: 1
 ```
 
 ### Installing the chart in a different namespace.
 
-To install the chart in a different namespace please modify the `default` occurances in the `values.yaml` file. 
+To install the chart in a different namespace please modify the `default` occurances in the `values.yaml` file.  
 Please be aware to change also `atomix-controller.default.svc.cluster.local:5679` 
-to `atomix-controller.<your_name_space_here>.svc.cluster.local:5679`.
+to `atomix-controller.<your_name_space_here>.svc.cluster.local:5679`.  
 Then issue the `helm install` command
 ```bash
 helm install --namespace <your_name_space> onos-config deployments/helm/onos-config
@@ -72,9 +73,11 @@ helm install onos-config deployments/helm/onos-config --set debug=true
 ### Troubleshoot
 
 If your chart does not install or the pod is not running for some reason and/or you modified values Helm offers two flags to help you
-debug your chart:  
-- `--dry-run` check the chart without actually installing the pod. 
-- `--debug` prints out more information about your chart
+debug your chart: 
+
+* `--dry-run` check the chart without actually installing the pod. 
+* `--debug` prints out more information about your chart
+
 ```bash
 helm install onos-config --debug --dry-run ./deployments/helm/onos-topo/
 ```
