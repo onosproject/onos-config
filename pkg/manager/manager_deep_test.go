@@ -224,7 +224,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 		select {
 		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
 			event := eventObj.Object.(*networkchange.NetworkChange)
-			//t.Logf("Event received %v", event)
+			t.Logf("Event received %v", event)
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
@@ -297,6 +297,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 		select {
 		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
 			event := eventObj.Object.(*networkchange.NetworkChange)
+			t.Logf("Event received %v", event)
 			if event.Status.State == changetypes.State_COMPLETE {
 				breakout = true
 			}
@@ -459,7 +460,7 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 		select {
 		case eventObj := <-nwChangeUpdates: //Blocks until event from NW change
 			event := eventObj.Object.(*networkchange.NetworkChange)
-			//t.Logf("Event received %v", event)
+			t.Logf("Event received %v", event)
 			switch event.Status.State {
 			case changetypes.State_RUNNING:
 				wasRunning = true
