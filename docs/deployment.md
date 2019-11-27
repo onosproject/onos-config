@@ -2,19 +2,18 @@
 
 This guide deploy `onos-config` through it's [Helm] chart assumes you have a [Kubernetes] cluster running 
 with an atomix controller deployed in a namespace.  
-If you dont' specify the `--namespace` in the commands 
-below atomix controller must be deployed in the `default`
 `onos-config` Helm chart is based on Helm 3.0 version, with no need for the Tiller pod to be present.   
 If you don't have a cluster running and want to try on your local machine please follow first 
 the [Kubernetes] setup steps outlined to [deploy with Helm](https://docs.onosproject.org/developers/deploy_with_helm/).
+The following steps assume you have the setup outlined in that page, including the `micro-onos` namespace configured. 
 
 ## Installing the Chart
 
-To install the chart, simply run `helm install onos-config deployments/helm/onos-config` from
+To install the chart in the `micro-onos` namespace, simply run `helm install -n micro-onos onos-config deployments/helm/onos-config` from
 the root directory of this project:
 
 ```bash
-helm install onos-config deployments/helm/onos-config
+helm install -n micro-onos onos-config deployments/helm/onos-config
 NAME: onos-config
 LAST DEPLOYED: Tue Nov 26 13:38:20 2019
 NAMESPACE: default
@@ -56,18 +55,15 @@ partitionSize: 1
 
 ### Installing the chart in a different namespace.
 
-To install the chart in a different namespace please modify the `default` occurances in the `values.yaml` file.  
-Please be aware to change also `atomix-controller.default.svc.cluster.local:5679` 
-to `atomix-controller.<your_name_space_here>.svc.cluster.local:5679`.  
-Then issue the `helm install` command
+Issue the `helm install` command substituting `micro-onos` with your namespace.
 ```bash
-helm install --namespace <your_name_space> onos-config deployments/helm/onos-config
+helm install -n <your_name_space> onos-config deployments/helm/onos-config
 ```
 ### Installing the chart with debug. 
 `onos-config` offers the capability to open a debug port (4000) to the image.
 To enable the debug capabilities please set the debug flag to true in `values.yaml` or pass it to `helm install`
 ```bash
-helm install onos-config deployments/helm/onos-config --set debug=true
+helm install -n micro-onos onos-config deployments/helm/onos-config --set debug=true
 ```
 
 ### Troubleshoot
@@ -79,20 +75,20 @@ debug your chart:
 * `--debug` prints out more information about your chart
 
 ```bash
-helm install onos-config --debug --dry-run ./deployments/helm/onos-topo/
+helm install -n micro-onos onos-config --debug --dry-run ./deployments/helm/onos-topo/
 ```
 ## Uninstalling the chart.
 
 To remove the `onos-config` pod issue
 ```bash
- helm delete onos-config
+ helm delete -n micro-onos onos-config
 ```
 ## Pod Information
 
-To view the pods that are deployed, run `kubectl get pods`:
+To view the pods that are deployed, run `kubectl -n micro-onos get pods`:
 
 ```bash
-> kubectl get pods
+> kubectl -n micro-onos get pods
 NAME                                                  READY   STATUS    RESTARTS   AGE
 ...
 onos-config-655964cbf5-tkcfb           1/1     Running   0          52s
@@ -101,7 +97,7 @@ onos-config-655964cbf5-tkcfb           1/1     Running   0          52s
 You can view more detailed information about the pod and other resources by running `kubectl describe`:
 
 ```bash
-> kubectl describe pod onos-config-655964cbf5-tkcfb
+> kubectl -n micro-onos describe pod onos-config-655964cbf5-tkcfb
 Name:               onos-config-655964cbf5-tkcfb
 Namespace:          default
 Priority:           0
@@ -115,7 +111,7 @@ The onos-config pods are reached through a `Service` which load balances request
 To view the services, run `kubectl get services`:
 
 ```bash
-> kubectl get svc
+> kubectl -n micro-onos get svc
 NAME                                        DATA   AGE
 ...
 onos-config-config           5      86s
@@ -124,7 +120,7 @@ onos-config-config           5      86s
 The application's configuration is stored in a `ConfigMap` which can be viewed by running
 `kubectl get configmaps`:
 ```bash
-> kubectl get cm
+> kubectl -n micro-onos get cm
 NAME                                        DATA   AGE
 ...
 onos-config-config           5      97s
@@ -133,7 +129,7 @@ onos-config-config           5      97s
 And TLS keys and certs are stored in a `Secret` resource:
 
 ```bash
-> kubectl get secrets
+> kubectl -n micro-onos get secrets
 NAME                                        TYPE                                  DATA   AGE
 ...
 onos-config-secret           Opaque                                4      109s

@@ -16,17 +16,14 @@ fullnameOverride: ""
 
 debug: false
 
-namespace: default
-
 devices: []
 
 plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0,stratum.so.1.0.0]
 
 store:
   enabled: true
-  namespace: default
-  raftgroup: onos-config
-  controller: atomix-controller.default.svc.cluster.local:5679
+  raftgroup: onos-config-raft
+  controller: atomix-controller.kube-system.svc.cluster.local:5679
   raft:
     partitions: 1
     partitionSize: 1
