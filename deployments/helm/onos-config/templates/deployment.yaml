@@ -1,26 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "fullname" . }}
-  chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-  release: "{{ .Release.Name }}"
-  heritage: "{{ .Release.Service }}"
+  name: {{ template "onos-config.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+     {{- include "onos-config.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicas }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      name: {{ template "fullname" . }}
+      name: {{ template "onos-config.fullname" . }}
+      app: onos
+      type: config
+      resource: {{ template "onos-config.fullname" . }}
+      {{- include "onos-config.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        name: {{ template "fullname" . }}
-      {{ if .Values.annotations }}
+        name: {{ template "onos-config.fullname" . }}
+        app: onos
+        type: config
+        resource: {{ template "onos-config.fullname" . }}
+        {{- include "onos-config.selectorLabels" . | nindent 8 }}
       annotations:
+        "seccomp.security.alpha.kubernetes.io/pod": "unconfined"
         {{- range $key, $value := .Values.annotations }}
         {{ $key }}: {{ $value }}
         {{- end }}
-      {{ end }}
     spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -41,9 +54,11 @@ spec:
             - name: ATOMIX_CONTROLLER
               value: {{ .Values.store.controller | quote }}
             - name: ATOMIX_APP
-              value: {{ template "fullname" . }}
-            - name: ATOMIX_RAFT_GROUP
-              value: {{ template "fullname" . }}-raft
+              value: {{ include "onos-config.fullname" . }}
+            - name: ATOMIX_RAFT
+              value: {{ .Values.store.raftgroup }}
+            - name: ATOMIX_NAMESPACE
+              value: {{ .Values.store.namespace }}
           args:
             - "-caPath=/etc/onos-config/certs/tls.cacrt"
             - "-keyPath=/etc/onos-config/certs/tls.key"
@@ -62,38 +77,32 @@ spec:
             {{- end }}
           # Disable probes for debugging since application starts paused
           # See https://github.com/go-delve/delve/issues/245
-          {{- if not .Values.debug }}
-          readinessProbe:
-            tcpSocket:
-              port: 5150
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            tcpSocket:
-              port: 5150
-            initialDelaySeconds: 15
-            periodSeconds: 20
-          {{- end }}
           volumeMounts:
             - name: secret
               mountPath: /etc/onos-config/certs
               readOnly: true
-      # Enable ptrace for debugging
-      {{- if .Values.debug }}
-      securityContext:
-        capabilities:
-          add:
-            - SYS_PTRACE
-      {{- end }}
-      {{- if .Values.image.pullSecrets }}
-      imagePullSecrets:
-        {{- range .Values.image.pullSecrets }}
-        - name: {{ . | quote }}
-        {{- end }}
-      {{- end }}
+          # Enable ptrace for debugging
+          securityContext:
+            {{- if .Values.debug }}
+            capabilities:
+              add:
+                - SYS_PTRACE
+            {{- end }}
       # Mount test volumes
       # TODO: This should be removed when stores are added!
       volumes:
         - name: secret
           secret:
-            secretName: {{ template "fullname" . }}-secret
+            secretName: {{ template "onos-config.fullname" . }}-secret
+    {{- with .Values.nodeSelector }}
+    nodeSelector:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+    affinity:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}

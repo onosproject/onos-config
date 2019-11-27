@@ -2,10 +2,11 @@
 apiVersion: k8s.atomix.io/v1alpha1
 kind: PartitionSet
 metadata:
-  name: {{ template "fullname" . }}-raft
-  chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-  release: "{{ .Release.Name }}"
-  heritage: "{{ .Release.Service }}"
+  name: {{ .Values.store.raftgroup }}
+  labels:
+     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+     release: "{{ .Release.Name }}"
+     heritage: "{{ .Release.Service }}"
 spec:
   partitions: {{ .Values.store.raft.partitions }}
   template:

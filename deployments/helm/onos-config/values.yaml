@@ -1,7 +1,8 @@
-nameOverride: ""
+# Default values for onos-config.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
 
-replicas: 1
-annotations: {}
+replicaCount: 1
 
 image:
   repository: onosproject/onos-config
@@ -9,23 +10,37 @@ image:
   pullPolicy: IfNotPresent
   pullSecrets: []
 
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
 debug: false
+
+namespace: default
 
 devices: []
 
 plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0,stratum.so.1.0.0]
 
 store:
-  enabled: false
-  controller: atomix-controller.kube-system.svc.cluster.local:5679
+  enabled: true
+  namespace: default
+  raftgroup: onos-config
+  controller: atomix-controller.default.svc.cluster.local:5679
   raft:
-    partitions: 3
-    partitionSize: 3
-
-resources:
-  requests:
-    cpu: 0.5
-    memory: 512Mi
+    partitions: 1
+    partitionSize: 1
 
 ingress:
   enabled: false
+
+service:
+  type: ClusterIP
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

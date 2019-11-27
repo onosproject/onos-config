@@ -2,17 +2,18 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: {{ template "fullname" . }}-ingress
-  chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-  release: "{{ .Release.Name }}"
-  heritage: "{{ .Release.Service }}"
+  name: {{ template "onos-config.fullname" . }}-ingress
+  labels:
+     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+     release: "{{ .Release.Name }}"
+     heritage: "{{ .Release.Service }}"
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/backend-protocol: "GRPCS"
 spec:
   tls:
-    - secretName: {{ template "fullname" . }}-secret
+    - secretName: {{ template "onos-config.fullname" . }}-secret
       hosts:
         - config.onosproject.org
   rules:
@@ -20,6 +21,6 @@ spec:
       http:
         paths:
           - backend:
-              serviceName: {{ template "fullname" . }}
+              serviceName: {{ template "onos-config.fullname" . }}
               servicePort: grpc
 {{- end }}

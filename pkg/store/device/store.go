@@ -51,7 +51,6 @@ func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	client := topodevice.NewDeviceServiceClient(conn)
 
 	return &topoStore{
@@ -122,7 +121,6 @@ func (s *topoStore) Watch(ch chan<- *topodevice.ListResponse) error {
 	if err != nil {
 		return err
 	}
-
 	go func() {
 		for {
 			response, err := list.Recv()
