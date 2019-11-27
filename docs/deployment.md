@@ -60,7 +60,7 @@ Please be aware to change also `atomix-controller.default.svc.cluster.local:5679
 to `atomix-controller.<your_name_space_here>.svc.cluster.local:5679`.
 Then issue the `helm install` command
 ```bash
-helm install --namespace <your_name_space> deployments/helm/onos-config
+helm install --namespace <your_name_space> onos-config deployments/helm/onos-config
 ```
 ### Installing the chart with debug. 
 `onos-config` offers the capability to open a debug port (4000) to the image.
