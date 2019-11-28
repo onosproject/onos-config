@@ -24,8 +24,6 @@ import (
 	"time"
 )
 
-const topoAddress = "onos-topo:5150"
-
 // Store is a device store
 type Store interface {
 	// Get gets a device by ID
@@ -42,12 +40,12 @@ type Store interface {
 }
 
 // NewTopoStore returns a new topo-based device store
-func NewTopoStore(opts ...grpc.DialOption) (Store, error) {
+func NewTopoStore(topoEndpoint string, opts ...grpc.DialOption) (Store, error) {
 	if len(opts) == 0 {
 		return nil, fmt.Errorf("no opts given when creating topo store")
 	}
 	opts = append(opts, grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(100*time.Millisecond)))
-	conn, err := getTopoConn(opts...)
+	conn, err := getTopoConn(topoEndpoint, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +135,6 @@ func (s *topoStore) Watch(ch chan<- *topodevice.ListResponse) error {
 }
 
 // getTopoConn gets a gRPC connection to the topology service
-func getTopoConn(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	return grpc.Dial(topoAddress, opts...)
+func getTopoConn(topoEndpoint string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	return grpc.Dial(topoEndpoint, opts...)
 }

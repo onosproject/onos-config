@@ -20,6 +20,9 @@ devices: []
 
 plugins: [devicesim.so.1.0.0,testdevice.so.1.0.0,testdevice.so.2.0.0,stratum.so.1.0.0]
 
+#Variable to change to onos topo service endpoint for the default onos-topo:5150
+#topoEndpoint: onos-topo-classic:5150
+
 store:
   enabled: true
   raftgroup: onos-config-raft
