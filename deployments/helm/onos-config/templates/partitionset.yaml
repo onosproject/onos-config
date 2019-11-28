@@ -3,6 +3,7 @@ apiVersion: k8s.atomix.io/v1alpha1
 kind: PartitionSet
 metadata:
   name: {{ .Values.store.raftgroup }}
+  namespace: {{ .Release.Namespace }}
   labels:
      chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
      release: "{{ .Release.Name }}"

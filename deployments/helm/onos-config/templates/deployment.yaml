@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "onos-config.fullname" . }}
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
      {{- include "onos-config.labels" . | nindent 4 }}
 spec:
@@ -58,7 +58,7 @@ spec:
             - name: ATOMIX_RAFT
               value: {{ .Values.store.raftgroup }}
             - name: ATOMIX_NAMESPACE
-              value: {{ .Values.store.namespace }}
+              value: {{ .Release.Namespace }}
           args:
             - "-caPath=/etc/onos-config/certs/tls.cacrt"
             - "-keyPath=/etc/onos-config/certs/tls.key"
