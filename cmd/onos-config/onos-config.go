@@ -76,6 +76,8 @@ func main() {
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
+	topoEndpoint := flag.String("topoEndpoint", "onos-topo:5150", "topology service endpoint")
+	//This flag is used in logging.init()
 	flag.Bool("debug", false, "enable debug logging")
 
 	//lines 93-109 are implemented according to
@@ -133,11 +135,11 @@ func main() {
 		log.Error("Cannot load device cache", err)
 	}
 
-	deviceStore, err := devicestore.NewTopoStore(opts...)
+	deviceStore, err := devicestore.NewTopoStore(*topoEndpoint, opts...)
 	if err != nil {
-		log.Error("Cannot load device store ", err)
+		log.Errorf("Cannot load device store with address %s:", *topoEndpoint, err)
 	}
-	log.Info("Topology service connected")
+	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
 
 	mgr, err := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
 		deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,

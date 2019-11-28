@@ -66,6 +66,9 @@ spec:
             {{- range $i, $plugin := .Values.plugins }}
             - {{ printf "-modelPlugin=/usr/local/lib/%s" $plugin }}
             {{- end }}
+            {{- if .Values.topoEndpoint }}
+            - {{ printf "-topoEndpoint=%s" .Values.topoEndpoint }}
+            {{- end }}
           ports:
             - name: grpc
               containerPort: 5150
