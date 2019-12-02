@@ -32,6 +32,7 @@ const ( // For event types
 	EventTypeErrorParseConfig
 	EventTypeErrorDeviceConnect
 	EventTypeErrorDeviceCapabilities
+	EventTypeErrorDeviceConnectInitialConfigSync
 	EventTypeErrorDeviceDisconnect
 	EventTypeErrorSubscribe
 	EventTypeErrorMissingModelPlugin

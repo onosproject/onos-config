@@ -16,13 +16,18 @@ package synchronizer
 
 import (
 	context2 "context"
+	"errors"
 	"fmt"
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/test/mocks/southbound"
+	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -59,17 +64,18 @@ const (
 )
 
 type synchronizerParameters struct {
-	topoChan         chan topodevice.ListResponse
-	opstateChan      chan events.OperationalStateEvent
-	responseChan     chan events.DeviceResponse
-	dispatcher       *dispatcher.Dispatcher
-	models           *modelregistry.ModelRegistry
-	roPathMap        modelregistry.ReadOnlyPathMap
-	opstateCache     devicechange.TypedValueMap
-	opstateCacheLock *sync.RWMutex
+	topoChan          chan topodevice.ListResponse
+	opstateChan       chan events.OperationalStateEvent
+	responseChan      chan events.DeviceResponse
+	dispatcher        *dispatcher.Dispatcher
+	models            *modelregistry.ModelRegistry
+	roPathMap         modelregistry.ReadOnlyPathMap
+	opstateCache      devicechange.TypedValueMap
+	opstateCacheLock  *sync.RWMutex
+	deviceChangeStore device.Store
 }
 
-func synchronizerSetUp() (synchronizerParameters, error) {
+func synchronizerSetUp(t *testing.T) (synchronizerParameters, error) {
 	dispatcher := dispatcher.NewDispatcher()
 	mr := new(modelregistry.ModelRegistry)
 	opStateCache := make(devicechange.TypedValueMap)
@@ -83,15 +89,24 @@ func synchronizerSetUp() (synchronizerParameters, error) {
 	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
 	roPathMap[cont1bState] = roSubPath2
 
+	ctrl := gomock.NewController(t)
+	deviceChangeStore := storemock.NewMockDeviceChangesStore(ctrl)
+	deviceChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(deviceID devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
+			ctx := stream.NewContext(func() {})
+			return ctx, errors.New("no Configuration found")
+		}).AnyTimes()
+
 	return synchronizerParameters{
-		topoChan:         make(chan topodevice.ListResponse),
-		opstateChan:      make(chan events.OperationalStateEvent),
-		responseChan:     make(chan events.DeviceResponse),
-		dispatcher:       dispatcher,
-		models:           mr,
-		roPathMap:        roPathMap,
-		opstateCache:     opStateCache,
-		opstateCacheLock: &sync.RWMutex{},
+		topoChan:          make(chan topodevice.ListResponse),
+		opstateChan:       make(chan events.OperationalStateEvent),
+		responseChan:      make(chan events.DeviceResponse),
+		dispatcher:        dispatcher,
+		models:            mr,
+		roPathMap:         roPathMap,
+		opstateCache:      opStateCache,
+		opstateCacheLock:  &sync.RWMutex{},
+		deviceChangeStore: deviceChangeStore,
 	}, nil
 }
 
@@ -103,7 +118,7 @@ func synchronizerSetUp() (synchronizerParameters, error) {
  * getting the OpState attributes
  */
 func TestNew(t *testing.T) {
-	params, err := synchronizerSetUp()
+	params, err := synchronizerSetUp(t)
 	assert.NilError(t, err, "Error in factorySetUp()")
 	assert.Assert(t, params.topoChan != nil)
 	assert.Assert(t, params.opstateChan != nil)
@@ -168,7 +183,7 @@ func TestNew(t *testing.T) {
 
 	s, err := New(context2.Background(), &mockDevice1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
-		modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock)
+		modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock, params.deviceChangeStore)
 	assert.NilError(t, err, "Creating s")
 	assert.Equal(t, string(s.ID), mock1NameStr)
 	assert.Equal(t, string(s.Device.ID), mock1NameStr)
@@ -336,7 +351,7 @@ func setUpStatePaths(t *testing.T) (*gnmi.Path, *gnmi.TypedValue, *gnmi.Path, *g
  * Also in this case we test the GetState_OpState for getting the OpState attribs
  */
 func TestNewWithExistingConfig(t *testing.T) {
-	params, err := synchronizerSetUp()
+	params, err := synchronizerSetUp(t)
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
@@ -443,7 +458,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 
 	s, err := New(context2.Background(), device1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
-		modelregistry.GetStateOpState, params.opstateCacheLock)
+		modelregistry.GetStateOpState, params.opstateCacheLock, params.deviceChangeStore)
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
 	assert.Equal(t, s.Device.ID, device1.ID)
@@ -535,7 +550,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 }
 
 func TestNewWithExistingConfigError(t *testing.T) {
-	params, err := synchronizerSetUp()
+	params, err := synchronizerSetUp(t)
 	assert.NilError(t, err, "Error in factorySetUp()")
 
 	mockTarget, device1, capabilitiesResp := synchronizerBootstrap(t)
@@ -563,7 +578,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 
 	s, err := New(context2.Background(), device1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
-		modelregistry.GetStateOpState, params.opstateCacheLock)
+		modelregistry.GetStateOpState, params.opstateCacheLock, params.deviceChangeStore)
 
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
@@ -685,10 +700,15 @@ func Test_LikeStratum(t *testing.T) {
 			assert.NilError(t, resp.Error(), "Expecting no error response")
 		}
 	}()
-
+	deviceChangeStore := storemock.NewMockDeviceChangesStore(ctrl)
+	deviceChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(deviceID devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
+			ctx := stream.NewContext(func() {})
+			return ctx, errors.New("no Configuration found")
+		}).AnyTimes()
 	s, err := New(context2.Background(), &mockDevice1,
 		opstateChan, responseChan, opStateCache, roPathMap, mockTarget,
-		modelregistry.GetStateExplicitRoPathsExpandWildcards, &sync.RWMutex{})
+		modelregistry.GetStateExplicitRoPathsExpandWildcards, &sync.RWMutex{}, deviceChangeStore)
 	assert.NilError(t, err, "Creating s")
 	assert.Equal(t, string(s.ID), mock1NameStr)
 	assert.Equal(t, string(s.Device.ID), mock1NameStr)

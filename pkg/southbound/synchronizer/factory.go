@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	syncPrimitives "sync"
@@ -34,7 +35,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
 	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap,
 	newTargetFn func() southbound.TargetIf,
-	operationalStateCacheLock *syncPrimitives.RWMutex) {
+	operationalStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store) {
 
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
@@ -62,7 +63,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			operationalStateCacheLock.Unlock()
 			target := newTargetFn()
 			sync, err := New(ctx, notifiedDevice, opStateChan, southboundErrorChan,
-				valueMap, mReadOnlyPaths, target, mStateGetMode, operationalStateCacheLock)
+				valueMap, mReadOnlyPaths, target, mStateGetMode, operationalStateCacheLock, deviceChangeStore)
 			if err != nil {
 				log.Errorf("Error connecting to device %v: %v", notifiedDevice, err)
 				southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
