@@ -3,7 +3,7 @@ module github.com/onosproject/onos-config
 go 1.12
 
 require (
-	github.com/atomix/atomix-go-client v0.0.0-20191022230401-78955a5abbef
+	github.com/atomix/atomix-go-client v0.0.0-20191127222459-36981d701c6e
 	github.com/atomix/atomix-go-local v0.0.0-20191108201451-9131cc896ed6
 	github.com/atomix/atomix-go-node v0.0.0-20191108201428-59c0962b63c8
 	github.com/docker/docker v1.13.1
