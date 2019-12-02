@@ -20,17 +20,21 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
+	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"google.golang.org/grpc/status"
 	"regexp"
 	"strings"
 	syncPrimitives "sync"
@@ -59,7 +63,7 @@ func New(context context.Context,
 	device *topodevice.Device, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache devicechange.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode,
-	opStateCacheLock *syncPrimitives.RWMutex) (*Synchronizer, error) {
+	opStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		Device:               device,
@@ -70,6 +74,7 @@ func New(context context.Context,
 		getStateMode:         getStateMode,
 	}
 	log.Info("Connecting to ", sync.Device.Address, " over gNMI for ", sync.Device.ID)
+
 	key, err := target.ConnectTarget(context, *sync.Device)
 	sync.key = key
 	if err != nil {
@@ -98,7 +103,43 @@ func New(context context.Context,
 	}
 	log.Info(sync.Device.Address, " Encoding:", sync.encoding, " Capabilities ", capResponse)
 
+	log.Infof("Getting initial configuration for device %s with type %s and version %s", device.ID, device.Type, device.Version)
+	onosExistingConfig, errConfigGet := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(devicetype.ID(device.ID),
+		devicetype.Version(device.Version)), nil, deviceChangeStore, 0)
+	if errConfigGet != nil {
+		//TODO what should we do in this case
+		log.Errorf("Can't extract initial configuration for %s due to: %s", sync.Device.Address, errConfigGet)
+		//return nil, errConfigGet
+	}
+
+	if len(onosExistingConfig) != 0 {
+		errSet := initialSet(context, onosExistingConfig, device, target)
+		if errSet != nil {
+			//TODO what should we do in this case ?
+			log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address, errSet)
+			return nil, errSet
+		}
+	} else {
+		log.Infof("No pre-existing configuration for %s", device.ID)
+	}
 	return sync, nil
+}
+
+func initialSet(context context.Context, onosExistingConfig []*devicechange.PathValue, device *topodevice.Device, target southbound.TargetIf) error {
+	setRequest, errExtract := values.PathValuesToGnmiChange(onosExistingConfig)
+	log.Info("Setting initial configuration for device %s : %s", device.ID, setRequest)
+	if errExtract != nil {
+		return errExtract
+	}
+	setResponse, errSet := target.Set(context, setRequest)
+	if errSet != nil {
+		errGnmi, _ := status.FromError(errSet)
+		log.Errorf("Can't set initial configuration for %s due to: %s", device.Address,
+			strings.Split(errGnmi.Message(), " desc = ")[1])
+		return errSet
+	}
+	log.Info("Response for initial configuration ", setResponse)
+	return nil
 }
 
 // For use when device model has modelregistry.GetStateOpState

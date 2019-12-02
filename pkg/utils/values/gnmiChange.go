@@ -55,3 +55,34 @@ func NativeChangeToGnmiChange(c *devicechange.Change) (*gnmi.SetRequest, error) 
 
 	return &setRequest, nil
 }
+
+// PathValuesToGnmiChange converts a Protobuf defined array of values objects to gNMI format
+func PathValuesToGnmiChange(values []*devicechange.PathValue) (*gnmi.SetRequest, error) {
+	var deletePaths = []*gnmi.Path{}
+	var replacedPaths = []*gnmi.Update{}
+	var updatedPaths = []*gnmi.Update{}
+
+	for _, pathValue := range values {
+		elems := utils.SplitPath(pathValue.Path)
+		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
+
+		if parseError != nil {
+			return nil, parseError
+		}
+
+		gnmiValue, err := NativeTypeToGnmiTypedValue(pathValue.GetValue())
+		if err != nil {
+			return nil, fmt.Errorf("error converting %s: %s", pathValue.Path, err)
+		}
+		updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
+		updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: gnmiValue})
+	}
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	return &setRequest, nil
+}

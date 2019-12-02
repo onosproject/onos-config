@@ -15,11 +15,17 @@
 package synchronizer
 
 import (
+	"errors"
+	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	dispatcherpkg "github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	modelregistrypkg "github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/store/stream"
+	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
 	"sync"
@@ -27,18 +33,25 @@ import (
 	"time"
 )
 
-func factorySetUp() (chan *topodevice.ListResponse, chan<- events.OperationalStateEvent,
+func factorySetUp(t *testing.T) (chan *topodevice.ListResponse, chan<- events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcherpkg.Dispatcher,
-	*modelregistrypkg.ModelRegistry, map[topodevice.ID]devicechange.TypedValueMap, *sync.RWMutex, error) {
+	*modelregistrypkg.ModelRegistry, map[topodevice.ID]devicechange.TypedValueMap, *sync.RWMutex, device.Store, error) {
 
 	dispatcher := dispatcherpkg.NewDispatcher()
 	modelregistry := new(modelregistrypkg.ModelRegistry)
 	opStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
 	opStateCacheLock := &sync.RWMutex{}
+	ctrl := gomock.NewController(t)
+	deviceChangeStore := storemock.NewMockDeviceChangesStore(ctrl)
+	deviceChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(deviceID devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
+			ctx := stream.NewContext(func() {})
+			return ctx, errors.New("no Configuration found")
+		}).AnyTimes()
 	return make(chan *topodevice.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
-		dispatcher, modelregistry, opStateCache, opStateCacheLock, nil
+		dispatcher, modelregistry, opStateCache, opStateCacheLock, deviceChangeStore, nil
 }
 
 /**
@@ -46,8 +59,8 @@ func factorySetUp() (chan *topodevice.ListResponse, chan<- events.OperationalSta
  * and then un-does everything
  */
 func TestFactory_Revert(t *testing.T) {
-	topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, opStateCacheLock, err := factorySetUp()
-	assert.NilError(t, err, "Error in factorySetUp()")
+	topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, opStateCacheLock, deviceChangeStore, err := factorySetUp(t)
+	assert.NilError(t, err, "Error in factorySetUp(t)")
 	assert.Assert(t, topoChan != nil)
 	assert.Assert(t, opstateChan != nil)
 	assert.Assert(t, responseChan != nil)
@@ -58,7 +71,8 @@ func TestFactory_Revert(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		Factory(topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, southbound.NewTarget, opStateCacheLock)
+		Factory(topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, southbound.NewTarget,
+			opStateCacheLock, deviceChangeStore)
 		wg.Done()
 	}()
 

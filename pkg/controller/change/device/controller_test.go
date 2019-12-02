@@ -16,12 +16,14 @@ package device
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/types"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/api/types/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
@@ -29,7 +31,9 @@ import (
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	southboundmock "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
+	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -588,11 +592,16 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	//modelregistry := new(modelregistry.ModelRegistry)
 	opStateCache := make(devicechange.TypedValueMap)
 	roPathMap := make(modelregistry.ReadOnlyPathMap)
-
+	deviceChangeStore := storemock.NewMockDeviceChangesStore(ctrl)
+	deviceChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(deviceID devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
+			ctx := stream.NewContext(func() {})
+			return ctx, errors.New("no Configuration found")
+		}).AnyTimes()
 	_, err := synchronizer.New(context.Background(), &mockDevice,
 		make(chan<- events.OperationalStateEvent), make(chan<- events.DeviceResponse),
 		opStateCache, roPathMap, mockTargetDevice,
-		modelregistry.GetStateExplicitRoPaths, &sync.RWMutex{})
+		modelregistry.GetStateExplicitRoPaths, &sync.RWMutex{}, deviceChangeStore)
 	assert.NoError(t, err, "Unable to create new synchronizer for", mockDevice.ID)
 
 	// Finally to make it visible to tests - add it to `Targets`
