@@ -104,20 +104,19 @@ func New(context context.Context,
 	log.Info(sync.Device.Address, " Encoding:", sync.encoding, " Capabilities ", capResponse)
 
 	log.Infof("Getting initial configuration for device %s with type %s and version %s", device.ID, device.Type, device.Version)
-	onosExistingConfig, errConfigGet := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(devicetype.ID(device.ID),
+	onosExistingConfig, errExtract := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(devicetype.ID(device.ID),
 		devicetype.Version(device.Version)), nil, deviceChangeStore, 0)
-	if errConfigGet != nil {
-		//TODO what should we do in this case
-		log.Errorf("Can't extract initial configuration for %s due to: %s", sync.Device.Address, errConfigGet)
-		//return nil, errConfigGet
+	if errExtract != nil && !strings.Contains(errExtract.Error(), "no Configuration found") {
+		log.Errorf("Can't extract initial configuration for %s due to: %s", sync.Device.Address, errExtract)
+		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorParseConfig, string(device.ID), errExtract)
 	}
 
 	if len(onosExistingConfig) != 0 {
 		errSet := initialSet(context, onosExistingConfig, device, target)
 		if errSet != nil {
-			//TODO what should we do in this case ?
 			log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address, errSet)
-			return nil, errSet
+			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnectInitialConfigSync,
+				string(device.ID), errSet)
 		}
 	} else {
 		log.Infof("No pre-existing configuration for %s", device.ID)
