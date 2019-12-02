@@ -126,7 +126,7 @@ func New(context context.Context,
 
 func initialSet(context context.Context, onosExistingConfig []*devicechange.PathValue, device *topodevice.Device, target southbound.TargetIf) error {
 	setRequest, errExtract := values.PathValuesToGnmiChange(onosExistingConfig)
-	log.Info("Setting initial configuration for device %s : %s", device.ID, setRequest)
+	log.Infof("Setting initial configuration for device %s : %s", device.ID, setRequest)
 	if errExtract != nil {
 		return errExtract
 	}
