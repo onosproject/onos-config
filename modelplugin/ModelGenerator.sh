@@ -24,9 +24,6 @@ if [ -z "$MODELDATA" ] ; then
     exit 1
 fi
 
-#TYPEVERSION=Devicesim-1.0.0
-#TYPEVERSIONPKG=devicesim_1_0_0
-#TYPEMODULE=devicesim.so.1.0.0
 TYPEVERSION=$TYPE-$VERSION
 TYPELOWER=${TYPE,,}
 VERSIONUS=${VERSION//[\.]/_}
@@ -36,20 +33,36 @@ TYPEMODULE=$TYPELOWER.so.$VERSION
 mkdir -p $TYPEVERSION/$TYPEVERSIONPKG
 
 createYangList() {
-  IFS='\' read -r -a array <<< "$MODELDATA"
+  readarray -d ';' array <<< "$MODELDATA"
   for yang in "${array[@]}"
   do
-    YANGNAME=$(echo $yang | awk -F ',' '{print $1}' | awk -F '"' '{print $2}')
-    YANGORG=$(echo $yang | awk -F ',' '{print $2}' | awk -F '"' '{print $2}')
-    YANGVER=$(echo $yang | awk -F ',' '{print $3}' | awk -F '"' '{print $2}')
-    echo $YANGNAME@$YANGVER.yang" "
+    YANGNAME=$(echo $yang | awk -F ',' '{print $1}')
+    YANGORG=$(echo $yang | awk -F ',' '{print $2}')
+    YANGVER=$(echo $yang | awk -F ',' '{print $3}')
+    YANGFILEVER=$(echo $yang | awk -F ',' '{print $4}')
+    if [ -z "$YANGFILEVER" ] ; then
+      echo $YANGNAME@$YANGVER.yang" "
+    else
+      echo $YANGNAME@$YANGFILEVER.yang" "
+    fi
   done
 }
 
-if [ -z "$YANGLIST" ] ; then
-  YANGLIST="$( createYangList )"
-fi
+createModelDataJson() {
+  readarray -d ';' array <<< "$MODELDATA"
+  for yang in "${array[@]}"
+  do
+    YANGNAME=$(echo $yang | awk -F ',' '{print $1}')
+    YANGORG=$(echo $yang | awk -F ',' '{print $2}')
+    YANGVER=$(echo $yang | awk -F ',' '{print $3}')
+    echo "    {Name:\""$YANGNAME"\",Organization:\""$YANGORG"\",Version:\""$YANGVER"\"},"
+  done
+}
+
+YANGLIST="$( createYangList )"
 echo "YANGLIST "$YANGLIST
+
+MODELDATAJSON="$( createModelDataJson )"
 
 go run $GOPATH/src/github.com/openconfig/ygot/generator/generator.go \
 -path yang/$TYPEVERSION -output_file=$TYPEVERSION/$TYPEVERSIONPKG/generated.go -package_name=$TYPEVERSIONPKG \
@@ -95,7 +108,7 @@ const modelversion = "$VERSION"
 const modulename = "$TYPEMODULE"
 
 var modelData = []*gnmi.ModelData{
-      $MODELDATA	
+$MODELDATAJSON
 }
 
 func (m modelplugin) ModelData() (string, string, []*gnmi.ModelData, string) {
