@@ -77,13 +77,22 @@ MODELDATA but can be overridden if required)
 Once the files are created:
 
 1. Change directory back to _onos-config_
-2. Compile the plugin with (replacing the names as appropriate)
+2. Compile the plugin with (replacing the name 'testdevice' and 'version' as appropriate)
 ```bash
-> GO111MODULE=on CGO_ENABLED=1 go build -o modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
+docker run --rm -v $PWD:/go/src/github.com/onosproject/onos-config/newplugin \
+-w /go/src/github.com/onosproject/onos-config -e GOFLAGS=-mod=vendor -e GO111MODULE=on -e CGO_ENABLED=1 \
+--entrypoint go onosproject/onos-config-plugins:latest \
+build -o newplugin/testdevice.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-1.0.0
 ```
 
-Edit the Makefile to include the Model Plugin in the build (or alternatively
-create a new Makefile if you want to keep it in a separate project)
+To build a **debug** version of the plugin (to run with onos-config compiled in
+debug mode) it is necessary to add some compile flags as follows:
+```bash
+docker run --rm -v $PWD:/go/src/github.com/onosproject/onos-config/newplugin \
+-w /go/src/github.com/onosproject/onos-config -e GOFLAGS=-mod=vendor -e GO111MODULE=on -e CGO_ENABLED=1 \
+--entrypoint go onosproject/onos-config-plugins:latest \
+build -o newplugin/testdevice-debug.so.1.0.0 -buildmode=plugin -tags=modelplugin -gcflags "all=-N -l" ./modelplugin/TestDevice-1.0.0
+``` 
 
 Follow the steps in **Loading the Model Plugin** below for how to load it.
 
@@ -129,44 +138,47 @@ dash, underscore and colon.
 This should be the version number of the device in [Semantic Versioning](https://semver.org/)
 form. Only numeric characters and '.' character are allowed.
 
-### modulename
-This should be the same as the filename given to the Model Plugin when compiled.
-It comprises
-
-* the modeltype (converted to lower case),
-* concatenated with '.so.' and
-* the version.
-
-e.g. devicesim.so.1.0.0 
-
 ### modeldata
 The primary YANG files of the device should be listed in the ModelData section
 of the `modelmain.go` file. These are the YANG files that define the top level
-containers and lists. During compilation other YANG files may get pulled in
-because they define reusable types (but should not be listed in model data).
+`containers` and `lists`, and files that contain `augments` and `deviations` on these.
+During compilation other YANG files may get pulled in because they define reusable
+types (but should not be listed in model data).
 
-Each entry in modeldata should be in the format of
-
-* name - the name of the `module` inside the YANG file
-* version - the value of the `latest` revision inside the YANG file in the
-format YYYY-MM-DD
+Each entry in modeldata should be in the format of:
+```bash
+name,organization,version,altversion,;\
+```
+where:
+* name - the name of the `module` inside the YANG file and also the start of the
+ name of the YANG file before `@`
 * organization - the value from the `organization` field of the YANG file
+* version - in the name of the YANG file, which should correspond to the latest
+ revision inside the YANG file - usually in the format of YYYY-MM-DD
+* altversion - an optional alternate version that will be listed as the version in
+the model plugin.
 
 > There should be no duplicate entries (of name) in the list and the list should be ordered alphabetically.
+> Also there should be no ';' delimiter on the last item. See examples.
 
-# Loading the Model Plugin
+> The modelmain.go file will have a MODELDATA section which is JSON formed from these variables.
+
+## Loading the Model Plugin
 The Model Plugin can be loaded at the start up of onos-config by specifying the
--modelPlugin argument.
+-modelPlugin argument in a Helm Chart. By default 4 are loaded:
 ```bash
--modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0 \
--modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice.so.2.0.0 \
--modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Devicesim-1.0.0/devicesim.so.1.0.0 \
--modelPlugin=$HOME/go/src/github.com/onosproject/onos-config/modelplugin/Stratum-1.0.0/stratum.so.1.0.0
+-modelPlugin=/usr/local/lib/testdevice.so.1.0.0 \
+-modelPlugin=/usr/local/lib/testdevice.so.2.0.0 \
+-modelPlugin=/usr/local/lib/devicesim.so.1.0.0 \
+-modelPlugin=/usr/local/lib/stratum.so.1.0.0
 ```
-Alternatively these can be loaded later with the onos cli tool - see [cli.md](./cli.md).
+Alternatively a model plugin can be loaded later with the onos cli tool - see [cli.md](./cli.md).
 ```bash
 > onos config add plugin <plugin path and filename>
 ```
+> This will load the file from the system where the `onos` CLI tool is run from,
+> and will upload the plugin in 2MB chunks to the onos-config server.
+
 > Model Plugins cannot be unloaded once loaded, without restarting onos-config.
 
 To see a list of loaded plugins use the command:
@@ -212,7 +224,7 @@ YANGS:
         openconfig-hercules-platform-node     0.2.0    OpenConfig working group
 ```
 
-To see a list of Read-Only and Read-Write paths use the command:
+To see a list of Read-Only and Read-Write paths use the command with the verbose switch:
 
 ```bash
 > onos config get plugins -v
@@ -221,18 +233,18 @@ To see a list of Read-Only and Read-Write paths use the command:
 >In a distributed installation the ModelPlugin will have to be loaded
 >on all running instances of onos-config.
 
-# Model Plugins and gNMI Capabilities
-## Capabilities on gNMI Northbound interface
+## Model Plugins and gNMI Capabilities
+### Capabilities on gNMI Northbound interface
 The CapabilitiesResponse on the gNMI northound interface is generated dynamically
 from the `modeldata` section of all of the loaded Model Plugins.
 
-## Capabilities comparison on Southbound gNMI interface
+### Capabilities comparison on Southbound gNMI interface
 At runtime when devices are connected to onos-config the response to the
 Capabilities request are compared with the
 modeldata for their corresponding ModelPlugin - if there is not an exact
 match a warning is displayed.
 
-# OpenConfig Models
+## OpenConfig Models
 Some devices that support OpenConfig Models report their capabilities using an
 OpenConfig versioning scheme e.g. 0.5.0, rather than the YANG revision date in
 the format 2017-07-06. If the device can correct its capabilities to give the
@@ -266,7 +278,7 @@ was needed.
 `openconfig-inet-types.yang` then the version of this file with a date equal
 to or before 2017-07-14 should be downloaded - it is `openconfig-inet-types@2017-07-14.yang`
 
-## Readonly paths in OpenConfig models
+### Readonly paths in OpenConfig models
 When an item in an Openconfig YANG file has "config false" it is effectively a
 read-only attribute. Usually with OpenConfig read-only objects are interspersed
 throughout the YANG model.
