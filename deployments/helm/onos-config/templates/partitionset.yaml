@@ -13,8 +13,7 @@ spec:
   template:
     spec:
       size: {{ .Values.store.raft.partitionSize }}
-      protocol: raft
-      config: |
-        electionTimeout: 5s
-        heartbeatInterval: 1s
+      raft:
+         electionTimeoutMillis: 5000
+         heartbeatPeriodMillis: 1000
 {{- end }}
