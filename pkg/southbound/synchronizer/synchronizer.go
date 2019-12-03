@@ -29,6 +29,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"github.com/onosproject/onos-config/pkg/utils/values"
@@ -44,6 +45,9 @@ import (
 var log = logging.GetLogger("southbound", "synchronizer")
 
 const matchOnIndex = `(\=.*?]).*?`
+
+type SetNetworkConfig func(targetUpdates map[string]devicechange.TypedValueMap,
+	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info, netcfgchangename string) error
 
 // Synchronizer enables proper configuring of a device based on store events and cache of operational data
 type Synchronizer struct {
@@ -66,7 +70,7 @@ func New(context context.Context,
 	errChan chan<- events.DeviceResponse, opStateCache devicechange.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap, mReadWritePaths modelregistry.ReadWritePathMap, target southbound.TargetIf,
 	getStateMode modelregistry.GetStateMode, opStateCacheLock *syncPrimitives.RWMutex,
-	deviceChangeStore device.Store) (*Synchronizer, error) {
+	deviceChangeStore device.Store, setNetworkConfig SetNetworkConfig) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		Device:               device,
@@ -142,7 +146,7 @@ func New(context context.Context,
 	configValues := make([]*devicechange.PathValue, 0)
 	for _, notification := range configResponse.Notification {
 		for _, update := range notification.Update {
-			cfg, err := sync.getValuesFromJSON(update)
+			cfg, err := sync.getValuesFromJSON(update, sync.modelReadWritePaths)
 			configValues = append(configValues, cfg...)
 			if err != nil {
 				log.Errorf("error in getting from json", err)
@@ -154,8 +158,24 @@ func New(context context.Context,
 		}
 	}
 	log.Infof("complete config values of configurable parameters %s", configValues)
-	//manager.GetManager().SetNetworkConfig()
-
+	deviceInfo := make(map[devicetype.ID]cache.Info)
+	deviceInfo[devicetype.ID(device.ID)] = cache.Info{
+		DeviceID: devicetype.ID(device.ID),
+		Type:     devicetype.Type(device.Type),
+		Version:  devicetype.Version(device.Version),
+	}
+	targetUpdates := make(map[string]devicechange.TypedValueMap)
+	typedValueMap := make(devicechange.TypedValueMap)
+	for _, value := range configValues {
+		typedValueMap[value.Path] = value.Value
+	}
+	targetUpdates[string(device.ID)] = typedValueMap
+	errSetIntitialConfig := setNetworkConfig(targetUpdates, make(map[string][]string), deviceInfo, "initial_config_present_on_device")
+	if errSetIntitialConfig != nil {
+		log.Errorf("error in saving devices initial configuration", err)
+		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnectInitialConfigSync,
+			string(sync.key), err)
+	}
 	return sync, nil
 }
 
@@ -278,7 +298,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 			for _, n := range responseEwRoPaths.Notification {
 				for _, u := range n.Update {
 					if sync.encoding == gnmi.Encoding_JSON || sync.encoding == gnmi.Encoding_JSON_IETF {
-						configValues, err := sync.getValuesFromJSON(u)
+						configValues, err := sync.getValuesFromJSON(u, sync.modelReadOnlyPaths)
 						if err != nil {
 							errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
 								string(sync.key), err)
@@ -379,7 +399,7 @@ func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 	for _, notification := range notifications {
 		for _, update := range notification.Update {
 			if sync.encoding == gnmi.Encoding_JSON || sync.encoding == gnmi.Encoding_JSON_IETF {
-				configValues, err := sync.getValuesFromJSON(update)
+				configValues, err := sync.getValuesFromJSON(update, sync.modelReadOnlyPaths)
 				if err != nil {
 					errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
 						string(sync.key), err)
@@ -402,7 +422,7 @@ func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 	}
 }
 
-func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechange.PathValue, error) {
+func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update, pathMap modelregistry.PathMap) ([]*devicechange.PathValue, error) {
 	jsonVal := update.Val.GetJsonVal()
 	if jsonVal == nil {
 		jsonVal = update.Val.GetJsonIetfVal()
@@ -418,7 +438,7 @@ func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechange
 		return nil, err
 	}
 	//this is based on the r/o paths --> move to also r/w
-	configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, sync.modelReadOnlyPaths, true)
+	configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, pathMap, true)
 	if err != nil {
 		return nil, err
 	}

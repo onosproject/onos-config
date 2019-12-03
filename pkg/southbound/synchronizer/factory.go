@@ -35,7 +35,8 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
 	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap,
 	newTargetFn func() southbound.TargetIf,
-	operationalStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store) {
+	operationalStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store,
+	setNetworkConfig SetNetworkConfig) {
 
 	for topoEvent := range topoChannel {
 		notifiedDevice := topoEvent.Device
@@ -68,7 +69,8 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			operationalStateCacheLock.Unlock()
 			target := newTargetFn()
 			sync, err := New(ctx, notifiedDevice, opStateChan, southboundErrorChan,
-				valueMap, mReadOnlyPaths, mReadWritePaths, target, mStateGetMode, operationalStateCacheLock, deviceChangeStore)
+				valueMap, mReadOnlyPaths, mReadWritePaths, target, mStateGetMode, operationalStateCacheLock,
+				deviceChangeStore, setNetworkConfig)
 			if err != nil {
 				log.Errorf("Error connecting to device %v: %v", notifiedDevice, err)
 				southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
