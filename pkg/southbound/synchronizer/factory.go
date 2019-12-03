@@ -57,13 +57,18 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			} else {
 				mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
 			}
+			mReadWritePaths, ok := modelRegistry.ModelReadWritePaths[modelName]
+			if !ok {
+				log.Warnf("Cannot check for read write paths for target %s with %s because "+
+					"Model Plugin not available - continuing", notifiedDevice.ID, notifiedDevice.Version)
+			}
 			valueMap := make(devicechange.TypedValueMap)
 			operationalStateCacheLock.Lock()
 			operationalStateCache[notifiedDevice.ID] = valueMap
 			operationalStateCacheLock.Unlock()
 			target := newTargetFn()
 			sync, err := New(ctx, notifiedDevice, opStateChan, southboundErrorChan,
-				valueMap, mReadOnlyPaths, target, mStateGetMode, operationalStateCacheLock, deviceChangeStore)
+				valueMap, mReadOnlyPaths, mReadWritePaths, target, mStateGetMode, operationalStateCacheLock, deviceChangeStore)
 			if err != nil {
 				log.Errorf("Error connecting to device %v: %v", notifiedDevice, err)
 				southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,

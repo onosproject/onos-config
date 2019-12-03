@@ -17,6 +17,7 @@ package synchronizer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -52,6 +53,7 @@ type Synchronizer struct {
 	key                  topodevice.ID
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
+	modelReadWritePaths  modelregistry.ReadWritePathMap
 	operationalCache     devicechange.TypedValueMap
 	operationalCacheLock *syncPrimitives.RWMutex
 	encoding             gnmi.Encoding
@@ -62,8 +64,9 @@ type Synchronizer struct {
 func New(context context.Context,
 	device *topodevice.Device, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache devicechange.TypedValueMap,
-	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode modelregistry.GetStateMode,
-	opStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store) (*Synchronizer, error) {
+	mReadOnlyPaths modelregistry.ReadOnlyPathMap, mReadWritePaths modelregistry.ReadWritePathMap, target southbound.TargetIf,
+	getStateMode modelregistry.GetStateMode, opStateCacheLock *syncPrimitives.RWMutex,
+	deviceChangeStore device.Store) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
 		Device:               device,
@@ -71,6 +74,7 @@ func New(context context.Context,
 		operationalCache:     opStateCache,
 		operationalCacheLock: opStateCacheLock,
 		modelReadOnlyPaths:   mReadOnlyPaths,
+		modelReadWritePaths:  mReadWritePaths,
 		getStateMode:         getStateMode,
 	}
 	log.Info("Connecting to ", sync.Device.Address, " over gNMI for ", sync.Device.ID)
@@ -103,6 +107,7 @@ func New(context context.Context,
 	}
 	log.Info(sync.Device.Address, " Encoding:", sync.encoding, " Capabilities ", capResponse)
 
+	//Getting initial configuration present in onos-config if any
 	log.Infof("Getting initial configuration for device %s with type %s and version %s", device.ID, device.Type, device.Version)
 	onosExistingConfig, errExtract := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(devicetype.ID(device.ID),
 		devicetype.Version(device.Version)), nil, deviceChangeStore, 0)
@@ -121,6 +126,36 @@ func New(context context.Context,
 	} else {
 		log.Infof("No pre-existing configuration for %s", device.ID)
 	}
+
+	//Getting initial configuration present on the device (if any) and storing it into onos-config
+	getAllRequest := &gnmi.GetRequest{
+		Type:     gnmi.GetRequest_CONFIG,
+		Encoding: gnmi.Encoding_JSON,
+	}
+	configResponse, errGet := target.Get(context, getAllRequest)
+	if errGet != nil {
+		log.Error("Can't load configuration on device %s : %s", device.ID, errGet)
+		//TODO propagate
+	}
+	log.Infof("complete response of configurable parameters %s", configResponse)
+	//THis shoudl really be just one, iterating for better safety
+	configValues := make([]*devicechange.PathValue, 0)
+	for _, notification := range configResponse.Notification {
+		for _, update := range notification.Update {
+			cfg, err := sync.getValuesFromJSON(update)
+			configValues = append(configValues, cfg...)
+			if err != nil {
+				log.Errorf("error in getting from json", err)
+				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
+					string(sync.key), err)
+				continue
+			}
+			log.Infof("partial config values of configurable parameters %s", cfg)
+		}
+	}
+	log.Infof("complete config values of configurable parameters %s", configValues)
+	//manager.GetManager().SetNetworkConfig()
+
 	return sync, nil
 }
 
@@ -372,10 +407,17 @@ func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechange
 	if jsonVal == nil {
 		jsonVal = update.Val.GetJsonIetfVal()
 	}
+	var f interface{}
+	err := json.Unmarshal(jsonVal, &f)
+	if err != nil {
+		return nil, err
+	}
+	log.Info(f)
 	configValuesUnparsed, err := store.DecomposeTree(jsonVal)
 	if err != nil {
 		return nil, err
 	}
+	//this is based on the r/o paths --> move to also r/w
 	configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, sync.modelReadOnlyPaths, true)
 	if err != nil {
 		return nil, err
