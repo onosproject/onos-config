@@ -2,7 +2,7 @@ cmd/onos-config/onos-config
 cmd/southbound_main/southbound_main
 pkg/store/testout
 vendor
-build/_output
+**/_output
 *.DS_Store
 coverage.txt
 *.coverprofile
