@@ -14,6 +14,6 @@ spec:
     spec:
       size: {{ .Values.store.raft.partitionSize }}
       raft:
-         electionTimeoutMillis: 5000
-         heartbeatPeriodMillis: 1000
+        electionTimeoutMillis: 5000
+        heartbeatPeriodMillis: 1000
 {{- end }}
