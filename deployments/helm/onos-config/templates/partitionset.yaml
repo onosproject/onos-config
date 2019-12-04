@@ -5,15 +5,15 @@ metadata:
   name: {{ .Values.store.raftgroup }}
   namespace: {{ .Release.Namespace }}
   labels:
-     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-     release: "{{ .Release.Name }}"
-     heritage: "{{ .Release.Service }}"
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
 spec:
   partitions: {{ .Values.store.raft.partitions }}
   template:
     spec:
       size: {{ .Values.store.raft.partitionSize }}
       raft:
-         electionTimeoutMillis: 5000
-         heartbeatPeriodMillis: 1000
+        electionTimeoutMillis: 5000
+        heartbeatPeriodMillis: 1000
 {{- end }}
