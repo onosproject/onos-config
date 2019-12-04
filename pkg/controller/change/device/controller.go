@@ -83,6 +83,10 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 		return true, nil
 	}
 
+	if change.ExistingDeviceConfig == true {
+		return true, nil
+	}
+
 	// Get the device from the device store
 	log.Infof("Checking Device store for %s", change.Change.DeviceID)
 	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))

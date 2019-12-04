@@ -22,7 +22,7 @@ import (
 )
 
 // NewNetworkChange creates a new network configuration
-func NewNetworkChange(networkChangeID string, changes []*devicechange.Change) (*NetworkChange, error) {
+func NewNetworkChange(networkChangeID string, changes []*devicechange.Change, existingDeviceConfig bool) (*NetworkChange, error) {
 	r1 := regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 	match := r1.FindString(networkChangeID)
 	if networkChangeID == "" {
@@ -32,9 +32,10 @@ func NewNetworkChange(networkChangeID string, changes []*devicechange.Change) (*
 	}
 
 	return &NetworkChange{
-		ID:      ID(networkChangeID),
-		Created: time.Now(),
-		Updated: time.Now(),
-		Changes: changes,
+		ID:                   ID(networkChangeID),
+		Created:              time.Now(),
+		Updated:              time.Now(),
+		Changes:              changes,
+		ExistingDeviceConfig: existingDeviceConfig,
 	}, nil
 }

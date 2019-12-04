@@ -169,7 +169,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	//Creating and setting the config on the atomix Store
-	errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
+	errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName, false)
 
 	if errSet != nil {
 		log.Errorf("Error while setting config in atomix %s", errSet.Error())

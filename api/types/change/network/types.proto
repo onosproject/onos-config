@@ -60,6 +60,10 @@ message NetworkChange {
 
     // 'deleted' is a flag indicating whether this change is being deleted by a snapshot
     bool deleted = 9;
+
+    // 'existingDeviceConfig' is a flag indicating whether this change is the result
+    // of a get to the device at connection, thus not having to be re-applied to it.
+    bool existingDeviceConfig = 10;
 }
 
 // DeviceChangeRef is a reference to a device change

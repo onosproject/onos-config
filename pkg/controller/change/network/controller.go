@@ -138,6 +138,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 				Index: types.Index(networkChange.Index),
 			},
 			Change: change,
+			ExistingDeviceConfig: networkChange.ExistingDeviceConfig,
 		}
 		log.Infof("Creating DeviceChange %v for %v", deviceChange, networkChange.ID)
 		if err := r.deviceChanges.Create(deviceChange); err != nil {

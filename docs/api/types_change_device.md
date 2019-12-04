@@ -78,6 +78,7 @@ DeviceChange is a stored configuration change for a single device
 | status | [onos.config.change.Status](#onos.config.change.Status) |  | &#39;status&#39; is the lifecycle status of the change |
 | created | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  | &#39;created&#39; is the time at which the change was created |
 | updated | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  | &#39;updated&#39; is the time at which the change was last updated |
+| existingDeviceConfig | [bool](#bool) |  | &#39;existingDeviceConfig&#39; is a flag indicating whether this change is the result of a get to the device at connection, thus not having to be re-applied to it. |
 
 
 

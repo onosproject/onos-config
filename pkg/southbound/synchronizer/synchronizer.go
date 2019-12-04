@@ -47,7 +47,8 @@ var log = logging.GetLogger("southbound", "synchronizer")
 const matchOnIndex = `(\=.*?]).*?`
 
 type SetNetworkConfig func(targetUpdates map[string]devicechange.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info, netcfgchangename string) error
+	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info, netcfgchangename string,
+	existingDeviceConfig bool) error
 
 // Synchronizer enables proper configuring of a device based on store events and cache of operational data
 type Synchronizer struct {
@@ -170,7 +171,8 @@ func New(context context.Context,
 		typedValueMap[value.Path] = value.Value
 	}
 	targetUpdates[string(device.ID)] = typedValueMap
-	errSetIntitialConfig := setNetworkConfig(targetUpdates, make(map[string][]string), deviceInfo, "initial_config_present_on_device")
+	errSetIntitialConfig := setNetworkConfig(targetUpdates, make(map[string][]string), deviceInfo,
+		"initial_config_present_on_device", true)
 	if errSetIntitialConfig != nil {
 		log.Errorf("error in saving devices initial configuration", err)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnectInitialConfigSync,

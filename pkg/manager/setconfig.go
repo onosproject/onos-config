@@ -74,13 +74,14 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 
 // SetNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
 func (m *Manager) SetNetworkConfig(targetUpdates map[string]devicechange.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info, netcfgchangename string) error {
+	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info, netcfgchangename string,
+	existingDeviceConfig bool) error {
 	//TODO evaluate need of user and add it back if need be.
 	allDeviceChanges, errChanges := m.computeNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
 	if errChanges != nil {
 		return errChanges
 	}
-	newNetworkConfig, errNetChange := networkchange.NewNetworkChange(netcfgchangename, allDeviceChanges)
+	newNetworkConfig, errNetChange := networkchange.NewNetworkChange(netcfgchangename, allDeviceChanges, existingDeviceConfig)
 	if errNetChange != nil {
 		return errNetChange
 	}

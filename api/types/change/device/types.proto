@@ -52,6 +52,10 @@ message DeviceChange {
 
     // 'updated' is the time at which the change was last updated
     google.protobuf.Timestamp updated = 8 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+
+    // 'existingDeviceConfig' is a flag indicating whether this change is the result
+    // of a get to the device at connection, thus not having to be re-applied to it.
+    bool existingDeviceConfig = 9;
 }
 
 // NetworkChangeRef is a back reference to the NetworkChange that created a DeviceChange

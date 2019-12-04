@@ -56,6 +56,7 @@ per-device changes to be applied to the network.
 | changes | [onos.config.change.device.Change](#onos.config.change.device.Change) | repeated | &#39;changes&#39; is a set of changes to apply to devices The list of changes should contain only a single change per device/version pair. |
 | refs | [DeviceChangeRef](#onos.config.change.network.DeviceChangeRef) | repeated | &#39;refs&#39; is a set of references to stored device changes |
 | deleted | [bool](#bool) |  | &#39;deleted&#39; is a flag indicating whether this change is being deleted by a snapshot |
+| existingDeviceConfig | [bool](#bool) |  | &#39;existingDeviceConfig&#39; is a flag indicating whether this change is the result of a get to the device at connection, thus not having to be re-applied to it. |
 
 
 
