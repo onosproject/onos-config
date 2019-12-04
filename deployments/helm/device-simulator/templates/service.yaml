@@ -1,15 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "onos-config.fullname" . }}
+  name: {{ template "device-simulator.fullname" . }}
   labels:
-    app: {{ template "onos-config.fullname" . }}
+    app: {{ template "device-simulator.fullname" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
+    {{- include "device-simulator.labels" . | nindent 4 }}
 spec:
+  type: {{ .Values.service.type }}
   selector:
-    name: {{ template "onos-config.fullname" . }}
+    name: {{ template "device-simulator.fullname" . }}
   ports:
     - name: gnmi
       port: 10161

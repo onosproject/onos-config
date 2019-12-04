@@ -1,12 +1,10 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{ template "onos-config.fullname" . }}
-  chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-  release: "{{ .Release.Name }}"
-  heritage: "{{ .Release.Service }}"
+  name: {{ template "device-simulator.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
-    name: {{ template "onos-config.fullname" . }}
+    name: {{ template "device-simulator.fullname" . }}
   {{ if .Values.annotations }}
   annotations:
     {{- range $key, $value := .Values.annotations }}
@@ -57,4 +55,4 @@ spec:
   volumes:
     - name: config
       configMap:
-        name: {{ template "onos-config.fullname" . }}-config
+        name: {{ template "device-simulator.fullname" . }}-config

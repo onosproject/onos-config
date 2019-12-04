@@ -1,6 +1,6 @@
 nameOverride: ""
 
-replicas: 3
+replicas: 1
 annotations: {}
 
 image:
@@ -13,3 +13,6 @@ resources:
   requests:
     cpu: 0.5
     memory: 512Mi
+
+service:
+  type: ClusterIP
