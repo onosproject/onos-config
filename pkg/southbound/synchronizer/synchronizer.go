@@ -17,7 +17,6 @@ package synchronizer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -425,11 +424,6 @@ func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update, pathMap modelreg
 	jsonVal := update.Val.GetJsonVal()
 	if jsonVal == nil {
 		jsonVal = update.Val.GetJsonIetfVal()
-	}
-	var f interface{}
-	err := json.Unmarshal(jsonVal, &f)
-	if err != nil {
-		return nil, err
 	}
 	configValuesUnparsed, err := store.DecomposeTree(jsonVal)
 	if err != nil {
