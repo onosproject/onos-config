@@ -270,6 +270,23 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *mockcache.M
 			Type:     "TestDevice",
 		},
 	}).AnyTimes()
+	deviceCache.EXPECT().GetDevices().Return([]*cache.Info{
+		{
+			DeviceID: "Device1",
+			Version:  "1.0.0",
+			Type:     "TestDevice",
+		},
+		{
+			DeviceID: "Device2",
+			Version:  "2.0.0",
+			Type:     "TestDevice",
+		},
+		{
+			DeviceID: "Device3",
+			Version:  "1.0.0",
+			Type:     "TestDevice",
+		},
+	}).AnyTimes()
 
 	mockStores.DeviceStore.EXPECT().Get(topodevice.ID(device1)).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 	mockStores.DeviceStore.EXPECT().List(gomock.Any()).DoAndReturn(

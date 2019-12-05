@@ -59,7 +59,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		}
 		//if target is already disconnected we don't do a get again.
 		_, ok := disconnectedDevicesMap[topodevice.ID(target)]
-		if !ok {
+		if !ok && target != "*" {
 			_, errGet := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
 
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
@@ -87,7 +87,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		target := prefix.GetTarget()
 		//if target is already disconnected we don't do a get again.
 		_, ok := disconnectedDevicesMap[topodevice.ID(target)]
-		if !ok {
+		if !ok && target != "*" {
 			_, errGet := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
 				log.Infof("Device is not connected %s, %s", target, errGet)
