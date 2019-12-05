@@ -113,7 +113,7 @@ func New(context context.Context,
 	log.Info(sync.Device.Address, " Encoding:", sync.encoding, " Capabilities ", capResponse)
 
 	//Getting initial configuration present in onos-config if any
-	log.Infof("Getting initial configuration for device %s with type %s and version %s", device.ID, device.Type, device.Version)
+	log.Infof("Getting initial store configuration for device %s with type %s and version %s", device.ID, device.Type, device.Version)
 	onosExistingConfig, errExtract := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(devicetype.ID(device.ID),
 		devicetype.Version(device.Version)), nil, deviceChangeStore, 0)
 	if errExtract != nil && !strings.Contains(errExtract.Error(), "no Configuration found") {
@@ -129,9 +129,9 @@ func New(context context.Context,
 				string(device.ID), errSet)
 		}
 	} else {
-		log.Infof("No pre-existing configuration for %s", device.ID)
+		log.Infof("No pre-existing configuration in the store for %s", device.ID)
 	}
-
+	log.Infof("Getting initial configuration from the device %s", device.ID, device.Type, device.Version)
 	//Getting initial configuration present on the device (if any) and storing it into onos-config
 	getAllRequest := &gnmi.GetRequest{
 		Type:     gnmi.GetRequest_CONFIG,
@@ -142,7 +142,6 @@ func New(context context.Context,
 		log.Error("Can't load configuration on device %s : %s", device.ID, errGet)
 		//TODO propagate
 	}
-	log.Infof("complete response of configurable parameters %s", configResponse)
 	//THis shoudl really be just one, iterating for better safety
 	configValues := make([]*devicechange.PathValue, 0)
 	for _, notification := range configResponse.Notification {
@@ -150,15 +149,13 @@ func New(context context.Context,
 			cfg, err := sync.getValuesFromJSON(update, sync.modelReadWritePaths)
 			configValues = append(configValues, cfg...)
 			if err != nil {
-				log.Errorf("error in getting from json", err)
 				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorTranslation,
 					string(sync.key), err)
 				continue
 			}
-			log.Infof("partial config values of configurable parameters %s", cfg)
 		}
 	}
-	log.Infof("complete config values of configurable parameters %s", configValues)
+	log.Debugf("Device %s has initial configuration %s", device.Target, configValues)
 	deviceInfo := make(map[devicetype.ID]cache.Info)
 	deviceInfo[devicetype.ID(device.ID)] = cache.Info{
 		DeviceID: devicetype.ID(device.ID),
@@ -434,12 +431,10 @@ func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update, pathMap modelreg
 	if err != nil {
 		return nil, err
 	}
-	log.Info(f)
 	configValuesUnparsed, err := store.DecomposeTree(jsonVal)
 	if err != nil {
 		return nil, err
 	}
-	//this is based on the r/o paths --> move to also r/w
 	configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, pathMap, true)
 	if err != nil {
 		return nil, err
