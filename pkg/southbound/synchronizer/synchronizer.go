@@ -421,7 +421,6 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 	if subErr != nil {
 		log.Warn("Error in subscribe", subErr)
 		stat, ok := status.FromError(subErr)
-		log.Infof("Status code %s %s %s", ok, stat.Code().String(),stat.Err().Error())
 		if !ok && stat.Code() == codes.Unknown && strings.Contains(stat.Err().Error(), "transport is closing") {
 			log.Info("Device is closing transport")
 			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
