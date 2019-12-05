@@ -21,6 +21,7 @@ import (
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	dispatcherpkg "github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/manager"
 	modelregistrypkg "github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
@@ -72,7 +73,7 @@ func TestFactory_Revert(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		Factory(topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, southbound.NewTarget,
-			opStateCacheLock, deviceChangeStore)
+			opStateCacheLock, deviceChangeStore, manager.GetManager().SetNetworkConfig)
 		wg.Done()
 	}()
 

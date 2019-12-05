@@ -23,6 +23,7 @@ import (
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -185,7 +186,7 @@ func TestNew(t *testing.T) {
 
 	s, err := New(context2.Background(), &mockDevice1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, params.rwPathMap,
-		mockTarget, modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock, params.deviceChangeStore)
+		mockTarget, modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock, params.deviceChangeStore, manager.GetManager().SetNetworkConfig)
 	assert.NilError(t, err, "Creating s")
 	assert.Equal(t, string(s.ID), mock1NameStr)
 	assert.Equal(t, string(s.Device.ID), mock1NameStr)
@@ -460,7 +461,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 
 	s, err := New(context2.Background(), device1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, params.rwPathMap,
-		mockTarget, modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock, params.deviceChangeStore)
+		mockTarget, modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock, params.deviceChangeStore,  manager.GetManager().SetNetworkConfig)
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
 	assert.Equal(t, s.Device.ID, device1.ID)
@@ -580,7 +581,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 
 	s, err := New(context2.Background(), device1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, params.rwPathMap,
-		mockTarget, modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock, params.deviceChangeStore)
+		mockTarget, modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock, params.deviceChangeStore,  manager.GetManager().SetNetworkConfig)
 
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
@@ -712,7 +713,7 @@ func Test_LikeStratum(t *testing.T) {
 		}).AnyTimes()
 	s, err := New(context2.Background(), &mockDevice1,
 		opstateChan, responseChan, opStateCache, roPathMap, rwPathMap, mockTarget,
-		modelregistry.GetStateExplicitRoPathsExpandWildcards, &sync.RWMutex{}, deviceChangeStore)
+		modelregistry.GetStateExplicitRoPathsExpandWildcards, &sync.RWMutex{}, deviceChangeStore,  manager.GetManager().SetNetworkConfig)
 	assert.NilError(t, err, "Creating s")
 	assert.Equal(t, string(s.ID), mock1NameStr)
 	assert.Equal(t, string(s.Device.ID), mock1NameStr)

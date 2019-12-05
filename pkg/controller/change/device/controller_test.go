@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/api/types/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
@@ -592,6 +593,7 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	//modelregistry := new(modelregistry.ModelRegistry)
 	opStateCache := make(devicechange.TypedValueMap)
 	roPathMap := make(modelregistry.ReadOnlyPathMap)
+	rwPathMap := make(modelregistry.ReadWritePathMap)
 	deviceChangeStore := storemock.NewMockDeviceChangesStore(ctrl)
 	deviceChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(deviceID devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
@@ -600,8 +602,8 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 		}).AnyTimes()
 	_, err := synchronizer.New(context.Background(), &mockDevice,
 		make(chan<- events.OperationalStateEvent), make(chan<- events.DeviceResponse),
-		opStateCache, roPathMap, mockTargetDevice,
-		modelregistry.GetStateExplicitRoPaths, &sync.RWMutex{}, deviceChangeStore)
+		opStateCache, roPathMap, rwPathMap, mockTargetDevice,
+		modelregistry.GetStateExplicitRoPaths, &sync.RWMutex{}, deviceChangeStore, manager.GetManager().SetNetworkConfig)
 	assert.NoError(t, err, "Unable to create new synchronizer for", mockDevice.ID)
 
 	// Finally to make it visible to tests - add it to `Targets`
