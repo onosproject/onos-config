@@ -34,6 +34,7 @@ import (
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"regexp"
 	"strings"
@@ -419,6 +420,12 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 	subErr := target.Subscribe(sync.Context, req, sync.opStateSubHandler)
 	if subErr != nil {
 		log.Warn("Error in subscribe", subErr)
+		stat, ok := status.FromError(subErr)
+		if !ok && stat.Code() == codes.Unknown && strings.Contains(stat.Err().Error(), "transport is closing") {
+			log.Info("Device is closing transport")
+			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+				string(sync.ID), err)
+		}
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorSubscribe,
 			string(sync.key), subErr)
 		return
