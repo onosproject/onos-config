@@ -80,6 +80,16 @@ spec:
             {{- end }}
           # Disable probes for debugging since application starts paused
           # See https://github.com/go-delve/delve/issues/245
+          livenessProbe:
+            tcpSocket:
+              port: 5150
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            tcpSocket:
+                port: 5150
+            initialDelaySeconds: 5
+            periodSeconds: 10
           volumeMounts:
             - name: secret
               mountPath: /etc/onos-config/certs
