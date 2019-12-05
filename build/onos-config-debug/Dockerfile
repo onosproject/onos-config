@@ -1,5 +1,5 @@
-ARG ONOS_CONFIG_BASE_VERSION=latest
-ARG ONOS_CONFIG_PLUGINS_VERSION=latest
+ARG ONOS_CONFIG_BASE_VERSION=debug
+ARG ONOS_CONFIG_PLUGINS_VERSION=debug
 
 # The base image contains the onos-config binaries
 FROM onosproject/onos-config-base:$ONOS_CONFIG_BASE_VERSION as base
