@@ -78,8 +78,6 @@ spec:
               containerPort: 40000
               protocol: TCP
             {{- end }}
-          # Disable probes for debugging since application starts paused
-          # See https://github.com/go-delve/delve/issues/245
           livenessProbe:
             tcpSocket:
               port: 5150
