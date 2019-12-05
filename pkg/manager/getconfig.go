@@ -19,7 +19,6 @@ import (
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/utils"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
@@ -44,17 +43,12 @@ func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Ver
 	return filteredValues, nil
 }
 
-// GetAllDeviceIds returns a list of just DeviceIDs from the Config store
+// GetAllDeviceIds returns a list of just DeviceIDs from the device cache
 func (m *Manager) GetAllDeviceIds() *[]string {
+
 	var deviceIds = make([]string, 0)
-	deviceChan := make(chan *topodevice.Device)
-	err := m.DeviceStore.List(deviceChan)
-	if err != nil {
-		log.Errorf("Cant get a list for devices %s", err)
-		return &deviceIds
-	}
-	for dev := range deviceChan {
-		deviceIds = append(deviceIds, string(dev.ID))
+	for _, dev := range m.DeviceCache.GetDevices() {
+		deviceIds = append(deviceIds, string(dev.DeviceID))
 	}
 
 	return &deviceIds

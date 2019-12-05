@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -93,8 +94,7 @@ func Test_getNoPathElems(t *testing.T) {
 
 // Test_getAllDevices is where a wildcard is used for target - path is ignored
 func Test_getAllDevices(t *testing.T) {
-	server, mocks := setUpForGetSetTests(t)
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	server, _ := setUpForGetSetTests(t)
 
 	allDevicesPath := gnmi.Path{Elem: make([]*gnmi.PathElem, 0), Target: "*"}
 
@@ -111,14 +111,12 @@ func Test_getAllDevices(t *testing.T) {
 	assert.Equal(t, result.Notification[0].Update[0].Path.Target, "*")
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
-
-	assert.Equal(t, deviceListStr, "[Device1 (1.0.0), Device2 (2.0.0), Device3]")
+	assert.Assert(t, strings.Contains(deviceListStr, "Device1, Device2, Device3"))
 }
 
 // Test_getalldevices is where a wildcard is used for target - path is ignored
 func Test_getAllDevicesInPrefix(t *testing.T) {
-	server, mocks := setUpForGetSetTests(t)
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	server, _ := setUpForGetSetTests(t)
 
 	request := gnmi.GetRequest{
 		Prefix: &gnmi.Path{Target: "*"},
@@ -132,7 +130,7 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
-	assert.Equal(t, deviceListStr, "[Device1 (1.0.0), Device2 (2.0.0), Device3]", "Expected value")
+	assert.Assert(t, strings.Contains(deviceListStr, "Device1, Device2, Device3"))
 }
 
 func Test_get2PathsWithPrefix(t *testing.T) {
