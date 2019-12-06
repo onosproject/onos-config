@@ -41,7 +41,13 @@ type Watcher interface {
 // against the current state of the cluster.
 type Reconciler interface {
 	// Reconcile is called to reconcile the state of an object
-	Reconcile(types.ID) (bool, error)
+	Reconcile(types.ID) (Result, error)
+}
+
+// Result is a reconciler result
+type Result struct {
+	// Requeue is the identifier of an event to requeue
+	Requeue types.ID
 }
 
 // NewController creates a new controller
@@ -246,9 +252,9 @@ func (c *Controller) processRequests(ch chan types.ID) {
 	for id := range ch {
 		// Reconcile the request. If the reconciliation is not successful, requeue the request to be processed
 		// after the remaining enqueued events.
-		succeeded := c.reconcile(id, reconciler)
-		if !succeeded {
-			go c.requeueRequest(ch, id)
+		result := c.reconcile(id, reconciler)
+		if result.Requeue != "" {
+			go c.requeueRequest(ch, result.Requeue)
 		}
 	}
 }
@@ -259,17 +265,17 @@ func (c *Controller) requeueRequest(ch chan types.ID, id types.ID) {
 }
 
 // reconcile reconciles the given request ID until complete
-func (c *Controller) reconcile(id types.ID, reconciler Reconciler) bool {
+func (c *Controller) reconcile(id types.ID, reconciler Reconciler) Result {
 	iteration := 1
 	for {
 		// Reconcile the request. If an error occurs, use exponential backoff to retry in order.
 		// Otherwise, return the result.
-		succeeded, err := reconciler.Reconcile(id)
+		result, err := reconciler.Reconcile(id)
 		if err != nil {
 			log.Errorf("An error occurred during reconciliation of %s: %v", id, err)
 			time.Sleep(time.Duration(iteration*2) * time.Millisecond)
 		} else {
-			return succeeded
+			return result
 		}
 		iteration++
 	}

@@ -241,24 +241,18 @@ func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.
 		return err
 	}
 
-	ok, err := reconciler.Reconcile(types.ID(deviceChangeIf.ID))
+	_, err = reconciler.Reconcile(types.ID(deviceChangeIf.ID))
 	if err != nil {
 		return err
-	}
-	if !ok {
-		return fmt.Errorf("failed to reconcile")
 	}
 	deviceChangeIf.Status.Incarnation++
 	err = deviceChangesStore.Update(deviceChangeIf)
 	if err != nil {
 		return err
 	}
-	ok, err = reconciler.Reconcile(types.ID(deviceChangeIf.ID))
+	_, err = reconciler.Reconcile(types.ID(deviceChangeIf.ID))
 	if err != nil {
 		return err
-	}
-	if !ok {
-		return fmt.Errorf("failed to reconcile")
 	}
 	return nil
 }

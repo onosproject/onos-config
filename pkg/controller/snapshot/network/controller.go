@@ -69,10 +69,10 @@ type Reconciler struct {
 }
 
 // Reconcile reconciles the state of a network configuration
-func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
+func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 	snapshot, err := r.networkSnapshots.Get(networksnapshot.ID(id))
 	if err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
 
 	// Handle the snapshot for each phase
@@ -84,11 +84,11 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 			return r.reconcileDelete(snapshot)
 		}
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
 // reconcileMark reconciles a snapshot in the MARK phase
-func (r *Reconciler) reconcileMark(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcileMark(snapshot *networksnapshot.NetworkSnapshot) (controller.Result, error) {
 	// Handle each possible state of the phase
 	switch snapshot.Status.State {
 	case snaptypes.State_PENDING:
@@ -96,27 +96,27 @@ func (r *Reconciler) reconcileMark(snapshot *networksnapshot.NetworkSnapshot) (b
 	case snaptypes.State_RUNNING:
 		return r.reconcileRunningMark(snapshot)
 	default:
-		return true, nil
+		return controller.Result{}, nil
 	}
 }
 
 // reconcilePendingMark reconciles a snapshot in the PENDING state during the MARK phase
-func (r *Reconciler) reconcilePendingMark(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcilePendingMark(snapshot *networksnapshot.NetworkSnapshot) (controller.Result, error) {
 	// Determine whether the snapshot can be applied
 	canApply, err := r.canApplySnapshot(snapshot)
 	if err != nil {
-		return false, err
+		return controller.Result{}, err
 	} else if !canApply {
-		return false, nil
+		return controller.Result{Requeue: types.ID(snapshot.ID)}, nil
 	}
 
 	// If the snapshot can be applied, update the snapshot state to RUNNING
 	snapshot.Status.State = snaptypes.State_RUNNING
 	log.Infof("Running MARK phase for NetworkSnapshot %v", snapshot)
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
 // canApplySnapshot returns a bool indicating whether the snapshot can be taken
@@ -136,7 +136,7 @@ func hasDeviceSnapshots(snapshot *networksnapshot.NetworkSnapshot) bool {
 }
 
 // reconcileRunningMark reconciles a snapshot in the RUNNING state during the MARK phase
-func (r *Reconciler) reconcileRunningMark(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcileRunningMark(snapshot *networksnapshot.NetworkSnapshot) (controller.Result, error) {
 	// If device snapshots have not been created, run the mark phase
 	if !hasDeviceSnapshots(snapshot) {
 		return r.createDeviceSnapshots(snapshot)
@@ -145,7 +145,7 @@ func (r *Reconciler) reconcileRunningMark(snapshot *networksnapshot.NetworkSnaps
 }
 
 // createDeviceSnapshots marks NetworkChanges for deletion and creates device snapshots
-func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnapshot) (controller.Result, error) {
 	// Iterate through network changes
 	deviceChanges := make(map[devicebase.VersionedID]networkchange.Index)
 	deviceMaxChanges := make(map[devicebase.VersionedID]networkchange.Index)
@@ -155,7 +155,7 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnap
 	changes := make(chan *networkchange.NetworkChange)
 	ctx, err := r.networkChanges.List(changes)
 	if err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
 	defer ctx.Close()
 
@@ -190,7 +190,7 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnap
 			// Mark the change deleted
 			change.Deleted = true
 			if err := r.networkChanges.Update(change); err != nil {
-				return false, err
+				return controller.Result{}, err
 			}
 
 			// Record the change ID for each device in the change
@@ -229,7 +229,7 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnap
 			},
 		}
 		if err := r.deviceSnapshots.Create(deviceSnapshot); err != nil {
-			return false, err
+			return controller.Result{}, err
 		}
 		refs = append(refs, &networksnapshot.DeviceSnapshotRef{
 			DeviceSnapshotID: deviceSnapshot.ID,
@@ -245,19 +245,19 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnap
 	// Once the device snapshots have been created, update the network snapshot
 	snapshot.Refs = refs
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
 // completeRunningMark attempts to complete the MARK phase
-func (r *Reconciler) completeRunningMark(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) completeRunningMark(snapshot *networksnapshot.NetworkSnapshot) (controller.Result, error) {
 	for _, ref := range snapshot.Refs {
 		deviceSnapshot, err := r.deviceSnapshots.Get(ref.DeviceSnapshotID)
 		if err != nil {
-			return false, err
+			return controller.Result{}, err
 		} else if deviceSnapshot != nil && deviceSnapshot.Status.State != snaptypes.State_COMPLETE {
-			return true, nil
+			return controller.Result{}, nil
 		}
 	}
 
@@ -266,13 +266,13 @@ func (r *Reconciler) completeRunningMark(snapshot *networksnapshot.NetworkSnapsh
 	snapshot.Status.State = snaptypes.State_PENDING
 	log.Infof("Completing MARK phase for NetworkSnapshot %v", snapshot)
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
 // reconcileDelete reconciles a snapshot in the DELETE phase
-func (r *Reconciler) reconcileDelete(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcileDelete(snapshot *networksnapshot.NetworkSnapshot) (controller.Result, error) {
 	// Handle each possible state of the phase
 	switch snapshot.Status.State {
 	case snaptypes.State_PENDING:
@@ -280,23 +280,23 @@ func (r *Reconciler) reconcileDelete(snapshot *networksnapshot.NetworkSnapshot) 
 	case snaptypes.State_RUNNING:
 		return r.reconcileRunningDelete(snapshot)
 	default:
-		return true, nil
+		return controller.Result{}, nil
 	}
 }
 
 // reconcilePendingDelete reconciles a snapshot in the PENDING state during the DELETE phase
-func (r *Reconciler) reconcilePendingDelete(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcilePendingDelete(snapshot *networksnapshot.NetworkSnapshot) (controller.Result, error) {
 	// Ensure device snapshots are in the DELETE phase
 	if ok, err := r.ensureDeviceSnapshotsDelete(snapshot); ok || err != nil {
-		return ok, err
+		return controller.Result{}, err
 	}
 
 	snapshot.Status.State = snaptypes.State_RUNNING
 	log.Infof("Running DELETE phase for NetworkSnapshot %v", snapshot)
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
 // ensureDeviceSnapshotsDelete ensures device device snapshots are pending in the DELETE phase
@@ -322,31 +322,31 @@ func (r *Reconciler) ensureDeviceSnapshotsDelete(snapshot *networksnapshot.Netwo
 }
 
 // reconcileRunningDelete reconciles a snapshot in the RUNNING state during the DELETE phase
-func (r *Reconciler) reconcileRunningDelete(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
+func (r *Reconciler) reconcileRunningDelete(snapshot *networksnapshot.NetworkSnapshot) (controller.Result, error) {
 	// Ensure device snapshots are in the RUNNING state
 	if ok, err := r.ensureDeleteRunning(snapshot); ok || err != nil {
-		return ok, err
+		return controller.Result{}, err
 	}
 
 	// Delete all network changes marked for deletion
 	if ok, err := r.deleteNetworkChanges(snapshot); !ok || err != nil {
-		return ok, err
+		return controller.Result{}, err
 	}
 
 	// If device snapshots have finished DELETE, complete the snapshot
 	complete, err := r.isDeleteComplete(snapshot)
 	if err != nil {
-		return false, err
+		return controller.Result{}, err
 	} else if !complete {
-		return true, nil
+		return controller.Result{}, nil
 	}
 
 	snapshot.Status.State = snaptypes.State_COMPLETE
 	log.Infof("Completing DELETE phase for NetworkSnapshot %v", snapshot)
 	if err := r.networkSnapshots.Update(snapshot); err != nil {
-		return false, nil
+		return controller.Result{}, nil
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
 // deleteNetworkChanges deletes network changes marked for deletion

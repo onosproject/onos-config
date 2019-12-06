@@ -68,16 +68,16 @@ type Reconciler struct {
 }
 
 // Reconcile reconciles the state of a device snapshot
-func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
+func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 	// Get the snapshot from the store
 	deviceSnapshot, err := r.snapshots.Get(devicesnapshot.ID(id))
 	if err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
 
 	// The device controller only needs to handle snapshots in the RUNNING state
 	if deviceSnapshot == nil || deviceSnapshot.Status.State != snaptype.State_RUNNING {
-		return true, nil
+		return controller.Result{}, nil
 	}
 
 	// Handle the snapshot for each phase
@@ -87,16 +87,16 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	case snaptype.Phase_DELETE:
 		return r.reconcileDelete(deviceSnapshot)
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
 // reconcileMark reconciles a snapshot in the MARK phase
-func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnapshot.DeviceSnapshot) (bool, error) {
+func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnapshot.DeviceSnapshot) (controller.Result, error) {
 	// Get the previous snapshot if any
 	var prevIndex devicechange.Index
 	prevSnapshot, err := r.snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	if err != nil {
-		return false, err
+		return controller.Result{}, err
 	} else if prevSnapshot != nil {
 		prevIndex = prevSnapshot.ChangeIndex
 	}
@@ -115,7 +115,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnapshot.DeviceSnapshot
 	changes := make(chan *devicechange.DeviceChange)
 	ctx, err := r.changes.List(deviceSnapshot.GetVersionedDeviceID(), changes)
 	if err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
 	defer ctx.Close()
 
@@ -173,7 +173,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnapshot.DeviceSnapshot
 		}
 		log.Infof("Storing Snapshot %v", snapshot)
 		if err := r.snapshots.Store(snapshot); err != nil {
-			return false, err
+			return controller.Result{}, err
 		}
 	}
 
@@ -181,31 +181,31 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnapshot.DeviceSnapshot
 	deviceSnapshot.Status.State = snaptype.State_COMPLETE
 	log.Infof("Completing DeviceSnapshot %v", deviceSnapshot)
 	if err := r.snapshots.Update(deviceSnapshot); err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
 // reconcileDelete reconciles a snapshot in the DELETE phase
-func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnapshot.DeviceSnapshot) (bool, error) {
+func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnapshot.DeviceSnapshot) (controller.Result, error) {
 	// Load the current snapshot
 	snapshot, err := r.snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	if err != nil {
-		return false, err
+		return controller.Result{}, err
 	} else if snapshot == nil {
 		deviceSnapshot.Status.State = snaptype.State_COMPLETE
 		log.Infof("Completing DeviceSnapshot %v", deviceSnapshot)
 		if err := r.snapshots.Update(deviceSnapshot); err != nil {
-			return false, err
+			return controller.Result{}, err
 		}
-		return true, nil
+		return controller.Result{}, nil
 	}
 
 	// List the changes for the device
 	changes := make(chan *devicechange.DeviceChange)
 	ctx, err := r.changes.List(deviceSnapshot.GetVersionedDeviceID(), changes)
 	if err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
 	defer ctx.Close()
 
@@ -214,7 +214,7 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnapshot.DeviceSnapsh
 	for change := range changes {
 		if change.Index <= snapshot.ChangeIndex {
 			if err := r.changes.Delete(change); err != nil {
-				return false, err
+				return controller.Result{}, err
 			}
 			count++
 		}
@@ -225,9 +225,9 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnapshot.DeviceSnapsh
 	deviceSnapshot.Status.State = snaptype.State_COMPLETE
 	log.Infof("Completing DeviceSnapshot %v", deviceSnapshot)
 	if err := r.snapshots.Update(deviceSnapshot); err != nil {
-		return false, err
+		return controller.Result{}, err
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
 var _ controller.Reconciler = &Reconciler{}
