@@ -15,16 +15,20 @@
 package network
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/types"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
+	devicetopo "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -149,6 +153,60 @@ func TestDeviceWatcher(t *testing.T) {
 			Version:  "1.0.0",
 		},
 	}
+
+	deviceClient := NewMockDeviceServiceClient(ctrl)
+	deviceClient.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *devicetopo.ListRequest) (devicetopo.DeviceService_ListClient, error) {
+		listClient := NewMockDeviceService_ListClient(ctrl)
+		listClient.EXPECT().Recv().Return(&devicetopo.ListResponse{
+			Type: devicetopo.ListResponse_NONE,
+			Device: &devicetopo.Device{
+				ID:      devicetopo.ID("device-1"),
+				Type:    "DeviceSim",
+				Version: "1.0.0",
+				Protocols: []*devicetopo.ProtocolState{
+					{
+						Protocol:          devicetopo.Protocol_GNMI,
+						ChannelState:      devicetopo.ChannelState_CONNECTED,
+						ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+					},
+				},
+			},
+		}, nil)
+		listClient.EXPECT().Recv().Return(&devicetopo.ListResponse{
+			Type: devicetopo.ListResponse_NONE,
+			Device: &devicetopo.Device{
+				ID:      devicetopo.ID("device-2"),
+				Type:    "DeviceSim",
+				Version: "1.0.0",
+				Protocols: []*devicetopo.ProtocolState{
+					{
+						Protocol:          devicetopo.Protocol_GNMI,
+						ChannelState:      devicetopo.ChannelState_CONNECTED,
+						ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+					},
+				},
+			},
+		}, nil)
+		listClient.EXPECT().Recv().Return(nil, io.EOF)
+		return listClient, nil
+	}).AnyTimes()
+	deviceClient.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *devicetopo.GetRequest) (*devicetopo.GetResponse, error) {
+		return &devicetopo.GetResponse{
+			Device: &devicetopo.Device{
+				ID: request.ID,
+				Protocols: []*devicetopo.ProtocolState{
+					{
+						Protocol:          devicetopo.Protocol_GNMI,
+						ChannelState:      devicetopo.ChannelState_CONNECTED,
+						ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+					},
+				},
+			},
+		}, nil
+	}).AnyTimes()
+	deviceStore, err := devicestore.NewStore(deviceClient)
+	assert.NoError(t, err)
+
 	deviceCache := mockcache.NewMockCache(ctrl)
 	deviceCache.EXPECT().Watch(gomock.Any(), true).DoAndReturn(
 		func(ch chan<- stream.Event, replay bool) (stream.Context, error) {
@@ -170,6 +228,7 @@ func TestDeviceWatcher(t *testing.T) {
 	defer changeStore.Close()
 
 	watcher := &DeviceWatcher{
+		DeviceStore: deviceStore,
 		DeviceCache: deviceCache,
 		ChangeStore: changeStore,
 	}
