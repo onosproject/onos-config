@@ -51,6 +51,7 @@ per-device changes to be applied to the network.
 | index | [uint64](#uint64) |  | &#39;index&#39; is a monotonically increasing, globally unique index of the change The index is provided by the store, is static and unique for each unique change identifier, and should not be modified by client code. |
 | revision | [uint64](#uint64) |  | &#39;revision&#39; is the change revision number The revision number is provided by the store and should not be modified by client code. Each unique state of the change will be assigned a unique revision number which can be used for optimistic concurrency control when updating or deleting the change state. |
 | status | [onos.config.change.Status](#onos.config.change.Status) |  | &#39;status&#39; is the current lifecycle status of the change |
+| attempt | [uint32](#uint32) |  | &#39;attempt&#39; indicates the number of attempts to apply the change |
 | created | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  | &#39;created&#39; is the time at which the change was created |
 | updated | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  | &#39;updated&#39; is the time at which the change was last updated |
 | changes | [onos.config.change.device.Change](#onos.config.change.device.Change) | repeated | &#39;changes&#39; is a set of changes to apply to devices The list of changes should contain only a single change per device/version pair. |
