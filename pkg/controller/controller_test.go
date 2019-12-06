@@ -87,26 +87,26 @@ func TestController(t *testing.T) {
 
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("2"))).
-		Return(false, nil)
+		Return(Result{}, nil)
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("2"))).
-		Return(false, errors.New("some error"))
+		Return(Result{}, errors.New("some error"))
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("2"))).
-		Return(false, errors.New("some error"))
+		Return(Result{}, errors.New("some error"))
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("2"))).
-		Return(false, errors.New("some error"))
+		Return(Result{}, errors.New("some error"))
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("2"))).
-		Return(true, nil)
+		Return(Result{Requeue: types.ID("2")}, nil)
 
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("4"))).
-		Return(false, errors.New("some error"))
+		Return(Result{}, errors.New("some error"))
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("4"))).
-		Return(true, nil)
+		Return(Result{Requeue: types.ID("4")}, nil)
 
 	wg.Wait()
 	watcherCh := watcherValue.Load().(chan<- types.ID)
