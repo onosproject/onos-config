@@ -25,12 +25,28 @@ import (
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target, by setting phase to
 // rollback and state to pending.
 func (m *Manager) RollbackTargetConfig(networkChangeID networkchange.ID) error {
-	//TODO make sure this change is the last applied one
+
 	changeRollback, errGet := m.NetworkChangesStore.Get(networkChangeID)
 	if errGet != nil {
 		log.Errorf("Error on get change %s for rollback: %s", networkChangeID, errGet)
 		return errGet
 	}
+
+	//Making sure that the change is the last one
+	next, errGetNext := m.NetworkChangesStore.GetNext(changeRollback.Index)
+	if errGetNext != nil {
+		log.Errorf("Error on get next change during rollback: %s", errGetNext)
+		return errGet
+	}
+	// if the error is nil and the change is nil the requested one is the last one thus we proceed.
+	// if there is a next change but the phase is different from ROLLBACK and the status is different from COMPLETE we
+	// fail the operation because there is a need to rollback the previous one.
+	if next != nil && (next.Status.Phase != changetypes.Phase_ROLLBACK ||
+		(next.Status.Phase == changetypes.Phase_ROLLBACK && next.Status.State != changetypes.State_COMPLETE)) {
+		errLast := fmt.Errorf("change %s is not the last active on the stack of changes", networkChangeID)
+		return errLast
+	}
+
 	changeRollback.Status.Phase = changetypes.Phase_ROLLBACK
 	changeRollback.Status.State = changetypes.State_PENDING
 	changeRollback.Status.Reason = changetypes.Reason_NONE
