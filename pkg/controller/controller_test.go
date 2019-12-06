@@ -36,6 +36,7 @@ func TestController(t *testing.T) {
 			activatorValue.Store(ch)
 			return nil
 		})
+	activator.EXPECT().Stop()
 
 	filter := NewMockFilter(ctrl)
 	filter.EXPECT().
@@ -78,6 +79,7 @@ func TestController(t *testing.T) {
 		Watch(watcher).
 		Partition(partitioner).
 		Reconcile(reconciler)
+	defer controller.Stop()
 
 	err := controller.Start()
 	assert.NoError(t, err)
@@ -99,14 +101,14 @@ func TestController(t *testing.T) {
 		Return(Result{}, errors.New("some error"))
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("2"))).
-		Return(Result{Requeue: types.ID("2")}, nil)
+		Return(Result{}, nil)
 
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("4"))).
 		Return(Result{}, errors.New("some error"))
 	reconciler.EXPECT().
 		Reconcile(gomock.Eq(types.ID("4"))).
-		Return(Result{Requeue: types.ID("4")}, nil)
+		Return(Result{}, nil)
 
 	wg.Wait()
 	watcherCh := watcherValue.Load().(chan<- types.ID)
