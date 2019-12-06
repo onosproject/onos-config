@@ -165,6 +165,27 @@ SetRequest() with the 100 extension at the end of the -proto section like:
 > The config is only forwarded down to the southbound layer only if the config is
 > correct and the device is registered in the topocache (currently in the deviceStore)
 
+### Set on multiple targets in one request.
+`onos-config` gNMI NB supports etting multiple elements on multiple targets at the same time.   
+An example of an attribute on two targets is:
+```bash
+gnmi_cli -address onos-config:5150 -set \
+    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 100, msg:'added_devicesim-1-IF'>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 100, msg:'2nd_devicesim'>> extension: <registered_ext: <id: 101, msg:'1.0.0'>> extension: <registered_ext: <id: 102, msg:'Devicesim'>>" \
+    -timeout 5s -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt \
+    -client_key /etc/ssl/certs/client1.key \
+    -ca_crt /etc/ssl/certs/onfca.crt
+```
+An example of two attributes on two target:
+```bash
+gnmi_cli -address onos-config:5150 -set \
+    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'up'>> val: <uint_val: 123456>> update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'down'>> val: <uint_val: 54321>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'up'>> val: <uint_val: 765432>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'down'>> val: <uint_val: 234567>> extension: <registered_ext: <id: 100, msg:'add_hold_times'>>" \
+    -timeout 5s -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt \
+    -client_key /etc/ssl/certs/client1.key \
+    -ca_crt /etc/ssl/certs/onfca.crt
+```
+
 ### Target device not known/creating a new device target
 If the `target` device is not currently known to `onos-config` the system will store the configuration internally and apply
 it to the `target` device when/if it becomes available.
