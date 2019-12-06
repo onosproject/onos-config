@@ -15,6 +15,8 @@
 package network
 
 import (
+	"context"
+	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -22,6 +24,8 @@ import (
 	"github.com/onosproject/onos-config/api/types/device"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	devicetopo "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -37,13 +41,14 @@ const (
 
 // TestReconcilerChangeRollback tests applying and then rolling back a change
 func TestReconcilerChangeRollback(t *testing.T) {
-	networkChanges, deviceChanges := newStores(t)
+	networkChanges, deviceChanges, devices := newStores(t)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
 		networkChanges: networkChanges,
 		deviceChanges:  deviceChanges,
+		devices:        devices,
 	}
 
 	// Create a network change
@@ -190,13 +195,14 @@ func TestReconcilerChangeRollback(t *testing.T) {
 
 // TestReconcilerError tests an error reverting a change to PENDING
 func TestReconcilerError(t *testing.T) {
-	networkChanges, deviceChanges := newStores(t)
+	networkChanges, deviceChanges, devices := newStores(t)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
 		networkChanges: networkChanges,
 		deviceChanges:  deviceChanges,
+		devices:        devices,
 	}
 
 	// Create a network change
@@ -317,12 +323,30 @@ func TestReconcilerError(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
 }
 
-func newStores(t *testing.T) (networkchanges.Store, devicechanges.Store) {
+func newStores(t *testing.T) (networkchanges.Store, devicechanges.Store, devicestore.Store) {
 	networkChanges, err := networkchanges.NewLocalStore()
 	assert.NoError(t, err)
 	deviceChanges, err := devicechanges.NewLocalStore()
 	assert.NoError(t, err)
-	return networkChanges, deviceChanges
+	ctrl := gomock.NewController(t)
+	client := NewMockDeviceServiceClient(ctrl)
+	client.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *devicetopo.GetRequest) (*devicetopo.GetResponse, error) {
+		return &devicetopo.GetResponse{
+			Device: &devicetopo.Device{
+				ID: request.ID,
+				Protocols: []*devicetopo.ProtocolState{
+					{
+						Protocol:          devicetopo.Protocol_GNMI,
+						ChannelState:      devicetopo.ChannelState_CONNECTED,
+						ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+					},
+				},
+			},
+		}, nil
+	}).AnyTimes()
+	devices, err := devicestore.NewStore(client)
+	assert.NoError(t, err)
+	return networkChanges, deviceChanges, devices
 }
 
 func newChange(id networkchange.ID, devices ...device.ID) *networkchange.NetworkChange {

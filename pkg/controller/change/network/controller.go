@@ -22,15 +22,17 @@ import (
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/utils/logging"
+	devicetopo "github.com/onosproject/onos-topo/api/device"
 )
 
 var log = logging.GetLogger("controller", "change", "network")
 
 // NewController returns a new config controller
-func NewController(leadership leadershipstore.Store, deviceCache cache.Cache, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
+func NewController(leadership leadershipstore.Store, deviceCache cache.Cache, devices devicestore.Store, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
 	c := controller.NewController("NetworkChange")
 	c.Activate(&controller.LeadershipActivator{
 		Store: leadership,
@@ -45,6 +47,7 @@ func NewController(leadership leadershipstore.Store, deviceCache cache.Cache, ne
 	c.Reconcile(&Reconciler{
 		networkChanges: networkChanges,
 		deviceChanges:  deviceChanges,
+		devices:        devices,
 	})
 	return c
 }
@@ -53,6 +56,7 @@ func NewController(leadership leadershipstore.Store, deviceCache cache.Cache, ne
 type Reconciler struct {
 	networkChanges networkchangestore.Store
 	deviceChanges  devicechangestore.Store
+	devices        devicestore.Store
 }
 
 // Reconcile reconciles the state of a network configuration
@@ -159,6 +163,19 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 
 // canApplyChange returns a bool indicating whether the change can be applied
 func (r *Reconciler) canApplyChange(change *networkchange.NetworkChange) (bool, error) {
+	// First, check if the devices affected by the change are available
+	for _, deviceChange := range change.Changes {
+		device, err := r.devices.Get(devicetopo.ID(deviceChange.DeviceID))
+		if err != nil {
+			return false, err
+		}
+		state := getProtocolState(device)
+		if state != devicetopo.ChannelState_CONNECTED {
+			return false, nil
+		}
+	}
+
+	// If the devices are available, ensure the change does not intersect prior changes
 	prevChange, err := r.networkChanges.GetPrev(change.Index)
 	if err != nil {
 		return false, err
@@ -465,6 +482,21 @@ func isIntersectingChange(config *networkchange.NetworkChange, history *networkc
 		}
 	}
 	return false
+}
+
+func getProtocolState(device *devicetopo.Device) devicetopo.ChannelState {
+	// Find the gNMI protocol state for the device
+	var protocol *devicetopo.ProtocolState
+	for _, p := range device.Protocols {
+		if p.Protocol == devicetopo.Protocol_GNMI {
+			protocol = p
+			break
+		}
+	}
+	if protocol == nil {
+		return devicetopo.ChannelState_UNKNOWN_CHANNEL_STATE
+	}
+	return protocol.ChannelState
 }
 
 var _ controller.Reconciler = &Reconciler{}

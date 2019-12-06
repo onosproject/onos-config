@@ -93,7 +93,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		NetworkChangesStore:       networkChangesStore,
 		NetworkSnapshotStore:      networkSnapshotStore,
 		DeviceSnapshotStore:       deviceSnapshotStore,
-		networkChangeController:   networkchangectl.NewController(leadershipStore, deviceCache, networkChangesStore, deviceChangesStore),
+		networkChangeController:   networkchangectl.NewController(leadershipStore, deviceCache, deviceStore, networkChangesStore, deviceChangesStore),
 		deviceChangeController:    devicechangectl.NewController(mastershipStore, deviceStore, deviceCache, deviceChangesStore),
 		networkSnapshotController: networksnapshotctl.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore),
 		deviceSnapshotController:  devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
