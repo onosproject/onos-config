@@ -174,12 +174,12 @@ func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
 		subject := topodevice.ID(event.Subject())
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
-			_, err := m.DeviceConnected(subject)
+			err := m.DeviceConnected(subject)
 			if err != nil {
 				log.Error("Can't notify connection", err)
 			}
 		case events.EventTypeErrorDeviceConnect:
-			_, err := m.DeviceDisconnected(subject, event.Error())
+			err := m.DeviceDisconnected(subject, event.Error())
 			if err != nil {
 				log.Error("Can't notify disconnection", err)
 			}

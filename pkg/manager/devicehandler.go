@@ -15,30 +15,36 @@
 package manager
 
 import (
+	"github.com/cenkalti/backoff"
 	"github.com/onosproject/onos-config/pkg/store/device"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
 // DeviceConnected signals the corresponding topology service that the device connected.
-func (m *Manager) DeviceConnected(id topodevice.ID) (*topodevice.Device, error) {
+func (m *Manager) DeviceConnected(id topodevice.ID) error {
 	log.Infof("Device %s connected", id)
-	return updateDevice(m.DeviceStore, id, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
-		topodevice.ServiceState_AVAILABLE)
+	// TODO: Retry only on write conflicts
+	return backoff.Retry(func() error {
+		return updateDevice(m.DeviceStore, id, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
+			topodevice.ServiceState_AVAILABLE)
+	}, backoff.NewExponentialBackOff())
 }
 
 // DeviceDisconnected signal the corresponding topology service that the device disconnected.
-func (m *Manager) DeviceDisconnected(id topodevice.ID, err error) (*topodevice.Device, error) {
+func (m *Manager) DeviceDisconnected(id topodevice.ID, err error) error {
 	log.Infof("Device %s disconnected or had error in connection %s", id, err)
-	//TODO check different possible availabilities based on error
-	return updateDevice(m.DeviceStore, id, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
-		topodevice.ServiceState_UNAVAILABLE)
+	// TODO: Retry only on write conflicts
+	return backoff.Retry(func() error {
+		return updateDevice(m.DeviceStore, id, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
+			topodevice.ServiceState_UNAVAILABLE)
+	}, backoff.NewExponentialBackOff())
 }
 
 func updateDevice(deviceStore device.Store, id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
-	service topodevice.ServiceState) (*topodevice.Device, error) {
+	service topodevice.ServiceState) error {
 	topoDevice, err := deviceStore.Get(id)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	protocolState, index := containsGnmi(topoDevice.Protocols)
 	if protocolState != nil {
@@ -46,18 +52,21 @@ func updateDevice(deviceStore device.Store, id topodevice.ID, connectivity topod
 	} else {
 		protocolState = new(topodevice.ProtocolState)
 	}
+	if protocolState.ConnectivityState == connectivity && protocolState.ChannelState == channel && protocolState.ServiceState == service {
+		return nil
+	}
 	protocolState.Protocol = topodevice.Protocol_GNMI
 	protocolState.ConnectivityState = connectivity
 	protocolState.ChannelState = channel
 	protocolState.ServiceState = service
 	topoDevice.Protocols = append(topoDevice.Protocols, protocolState)
-	updatedDevice, err := deviceStore.Update(topoDevice)
+	_, err = deviceStore.Update(topoDevice)
 	if err != nil {
 		log.Errorf("Device %s is not updated %s", id, err.Error())
-		return nil, err
+		return err
 	}
 	log.Infof("Device %s is updated with states %s, %s, %s", id, connectivity, channel, service)
-	return updatedDevice, nil
+	return nil
 }
 
 func containsGnmi(protocols []*topodevice.ProtocolState) (*topodevice.ProtocolState, int) {
