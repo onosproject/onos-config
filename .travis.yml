@@ -15,9 +15,9 @@ branches:
   only:
     - master
 
-cache:
-  directories:
-    - $HOME/gopath/pkg/mod         # Cache the Go modules
+#cache:
+#  directories:
+#    - $HOME/gopath/pkg/mod         # Cache the Go modules
 
 before_script:
   - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin latest
