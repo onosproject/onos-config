@@ -73,6 +73,7 @@ DeviceChange is a stored configuration change for a single device
 | id | [string](#string) |  | &#39;id&#39; is the unique identifier of the change |
 | index | [uint64](#uint64) |  | &#39;index&#39; is a monotonically increasing, globally unique index of the change The index is provided by the store, is static and unique for each unique change identifier, and should not be modified by client code. |
 | revision | [uint64](#uint64) |  | &#39;revision&#39; is the change revision number The revision number is provided by the store and should not be modified by client code. Each unique state of the change will be assigned a unique revision number which can be used for optimistic concurrency control when updating or deleting the change state. |
+| attempt | [uint32](#uint32) |  | &#39;attempt&#39; indicates the number of attempts to apply the change |
 | network_change | [NetworkChangeRef](#onos.config.change.device.NetworkChangeRef) |  | &#39;network_change&#39; is a reference to the NetworkChange that created this change |
 | change | [Change](#onos.config.change.device.Change) |  | &#39;change&#39; is the change object |
 | status | [onos.config.change.Status](#onos.config.change.Status) |  | &#39;status&#39; is the lifecycle status of the change |

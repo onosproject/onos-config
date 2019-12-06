@@ -38,6 +38,9 @@ message DeviceChange {
     // used for optimistic concurrency control when updating or deleting the change state.
     uint64 revision = 3 [(gogoproto.casttype) = "Revision"];
 
+    // 'attempt' indicates the number of attempts to apply the change
+    uint32 attempt = 9;
+
     // 'network_change' is a reference to the NetworkChange that created this change
     NetworkChangeRef network_change = 4 [(gogoproto.nullable) = false];
 
