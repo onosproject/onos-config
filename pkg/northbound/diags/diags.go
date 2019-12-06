@@ -265,7 +265,7 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 		}
 	} else {
 		changeCh := make(chan *devicechange.DeviceChange)
-		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, r.DeviceVersion), changeCh)
+		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, version), changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err
