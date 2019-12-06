@@ -22,8 +22,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	devicetopo "github.com/onosproject/onos-topo/api/device"
 	"sync"
 )
 
@@ -74,6 +76,7 @@ var _ controller.Watcher = &Watcher{}
 // DeviceWatcher is a device change watcher
 type DeviceWatcher struct {
 	DeviceCache cache.Cache
+	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
 	ch          chan<- types.ID
 	streams     map[device.VersionedID]stream.Context
@@ -94,12 +97,29 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	w.streams = make(map[device.VersionedID]stream.Context)
 	w.mu.Unlock()
 
+	deviceCh := make(chan *devicetopo.ListResponse)
+	if err := w.DeviceStore.Watch(deviceCh); err != nil {
+		return err
+	}
+
+	go func() {
+		for response := range deviceCh {
+			w.updateWatch(response.Device, ch)
+		}
+	}()
+
 	deviceCacheCh := make(chan stream.Event)
 	go func() {
 		for eventObj := range deviceCacheCh {
-			if eventObj.Type == stream.Created {
-				event := eventObj.Object.(*cache.Info)
-				w.watchDevice(device.NewVersionedID(event.DeviceID, event.Version), ch)
+			event := eventObj.Object.(*cache.Info)
+			log.Infof("Received device event for device %v %v", event.DeviceID, event.Version)
+			device, err := w.DeviceStore.Get(devicetopo.ID(event.DeviceID))
+			if err != nil {
+				log.Errorf("Could not find device %v", event.DeviceID)
+				return
+			}
+			if device.Version == string(event.Version) {
+				w.updateWatch(device, ch)
 			}
 		}
 		w.mu.Lock()
@@ -119,25 +139,40 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	return nil
 }
 
-// watchDevice watches changes for the given device
-func (w *DeviceWatcher) watchDevice(deviceID device.VersionedID, ch chan<- types.ID) {
+// updateWatch watches changes for the given device
+func (w *DeviceWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- types.ID) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	deviceID := device.NewVersionedID(device.ID(topodevice.ID), device.Version(topodevice.Version))
+	log.Infof("Updating watch for device %v", deviceID)
+
+	// If the protocol state is connected, ensure a stream is open
+	// If the protocol state is not connected, close any stream that's open
 	ctx := w.streams[deviceID]
-	if ctx != nil {
-		log.Errorf("Network DeviceWatcher for device changes %s - ctx already found", deviceID)
+	state := getProtocolState(topodevice)
+	if state == devicetopo.ChannelState_CONNECTED {
+		if ctx != nil {
+			return
+		}
+	} else {
+		if ctx != nil {
+			log.Infof("Closing watch for device %v: device disconnected", deviceID)
+			ctx.Close()
+		}
 		return
 	}
 
+	// Open a new device event stream
 	deviceCh := make(chan stream.Event, queueSize)
 	ctx, err := w.ChangeStore.Watch(deviceID, deviceCh, devicechangestore.WithReplay())
 	if err != nil {
+		log.Errorf("Failed to watch device %v: %v", deviceID, err)
 		return
 	}
 	w.streams[deviceID] = ctx
 
-	log.Infof("Network DeviceWatcher - watching device changes store for %s", deviceID)
+	log.Infof("Watching device %v", deviceID)
 
 	w.wg.Add(1)
 	go func() {
