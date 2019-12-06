@@ -600,14 +600,8 @@ func TestManager_DeviceConnected(t *testing.T) {
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(deviceDisconnected, nil)
 	mocks.MockStores.DeviceStore.EXPECT().Update(gomock.Any()).Return(device1Connected, nil)
 
-	deviceConnected, err := mgrTest.DeviceConnected(device1)
-
+	err := mgrTest.DeviceConnected(device1)
 	assert.NilError(t, err)
-	assert.Equal(t, deviceConnected.ID, device1Connected.ID)
-	assert.Equal(t, deviceConnected.Protocols[0].Protocol, topodevice.Protocol_GNMI)
-	assert.Equal(t, deviceConnected.Protocols[0].ConnectivityState, topodevice.ConnectivityState_REACHABLE)
-	assert.Equal(t, deviceConnected.Protocols[0].ChannelState, topodevice.ChannelState_CONNECTED)
-	assert.Equal(t, deviceConnected.Protocols[0].ServiceState, topodevice.ServiceState_AVAILABLE)
 }
 
 func TestManager_DeviceDisconnected(t *testing.T) {
@@ -649,14 +643,8 @@ func TestManager_DeviceDisconnected(t *testing.T) {
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(device1Connected, nil)
 	mocks.MockStores.DeviceStore.EXPECT().Update(gomock.Any()).Return(deviceDisconnected, nil)
 
-	deviceUpdated, err := mgrTest.DeviceDisconnected(device1, errors.New("device reported disconnection"))
-
+	err := mgrTest.DeviceDisconnected(device1, errors.New("device reported disconnection"))
 	assert.NilError(t, err)
-	assert.Equal(t, deviceUpdated.ID, device1Connected.ID)
-	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, topodevice.Protocol_GNMI)
-	assert.Equal(t, deviceUpdated.Protocols[0].ConnectivityState, topodevice.ConnectivityState_UNREACHABLE)
-	assert.Equal(t, deviceUpdated.Protocols[0].ChannelState, topodevice.ChannelState_DISCONNECTED)
-	assert.Equal(t, deviceUpdated.Protocols[0].ServiceState, topodevice.ServiceState_UNAVAILABLE)
 }
 
 type MockModelPlugin struct{}
