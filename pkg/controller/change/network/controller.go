@@ -104,6 +104,7 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 	}
 
 	// If the change can be applied, update the change state to RUNNING
+	change.Attempt++
 	change.Status.State = changetypes.State_RUNNING
 	change.Status.Reason = changetypes.Reason_NONE
 	change.Status.Message = ""
@@ -195,7 +196,7 @@ func (r *Reconciler) reconcileRunningChange(change *networkchange.NetworkChange)
 	}
 
 	// Ensure the device changes are being applied
-	succeeded, err := r.ensureDeviceChangesRunning(deviceChanges)
+	succeeded, err := r.ensureDeviceChangesRunning(change, deviceChanges)
 	if succeeded || err != nil {
 		return succeeded, err
 	}
@@ -211,7 +212,7 @@ func (r *Reconciler) reconcileRunningChange(change *networkchange.NetworkChange)
 	}
 
 	// If a device change failed, rollback pending changes and requeue the change
-	if r.isDeviceChangesFailed(deviceChanges) {
+	if r.isDeviceChangesFailed(change, deviceChanges) {
 		// Ensure changes that have not failed are being rolled back
 		succeeded, err = r.ensureDeviceChangeRollbacksRunning(deviceChanges)
 		if succeeded || err != nil {
@@ -233,11 +234,12 @@ func (r *Reconciler) reconcileRunningChange(change *networkchange.NetworkChange)
 }
 
 // ensureDeviceChangesRunning ensures device changes are in the running state
-func (r *Reconciler) ensureDeviceChangesRunning(changes []*devicechange.DeviceChange) (bool, error) {
+func (r *Reconciler) ensureDeviceChangesRunning(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) (bool, error) {
 	// Ensure all device changes are being applied
 	updated := false
 	for _, deviceChange := range changes {
-		if deviceChange.Status.State == changetypes.State_PENDING {
+		if deviceChange.Status.State == changetypes.State_PENDING || deviceChange.Attempt < networkChange.Attempt {
+			deviceChange.Attempt = networkChange.Attempt
 			deviceChange.Status.State = changetypes.State_RUNNING
 			log.Infof("Running DeviceChange %v", deviceChange)
 			if err := r.deviceChanges.Update(deviceChange); err != nil {
@@ -273,9 +275,9 @@ func (r *Reconciler) isDeviceChangesComplete(changes []*devicechange.DeviceChang
 }
 
 // isDeviceChangesFailed checks whether the device changes are complete
-func (r *Reconciler) isDeviceChangesFailed(changes []*devicechange.DeviceChange) bool {
+func (r *Reconciler) isDeviceChangesFailed(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) bool {
 	for _, change := range changes {
-		if change.Status.State == changetypes.State_FAILED {
+		if change.Attempt == networkChange.Attempt && change.Status.State == changetypes.State_FAILED {
 			return true
 		}
 	}
