@@ -133,6 +133,11 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	mockNetworkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
 	mockNetworkChangesStore.EXPECT().Create(gomock.Any()).DoAndReturn(
 		func(networkChange *networkchange.NetworkChange) error {
+			status := changetypes.Status{
+				Phase: changetypes.Phase_CHANGE,
+				State: changetypes.State_COMPLETE,
+			}
+			networkChange.Status = status
 			networkChangesList = append(networkChangesList, networkChange)
 			return nil
 		}).AnyTimes()
@@ -483,8 +488,8 @@ func TestManager_GetManager(t *testing.T) {
 	assert.Equal(t, mgrTest, GetManager())
 }
 
-func TestManager_ComputeRollbackDelete(t *testing.T) {
-	mgrTest, _ := setUp(t)
+func TestManager_ComputeRollbackFailure(t *testing.T) {
+	mgrTest, mocks := setUp(t)
 
 	updates := make(devicechange.TypedValueMap)
 	deletes := make([]string, 0)
@@ -507,6 +512,48 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	updatesForDevice1, deletesForDevice1, deviceInfo = makeDeviceChanges(device1, updates, deletes)
 	err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
 	assert.NilError(t, err, "Can't create change")
+
+	testingRollback, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback")
+	assert.NilError(t, err, "Cant' retrieve Config")
+
+	testingRollback2, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback2")
+	assert.NilError(t, err, "Cant' retrieve Config")
+
+	mocks.MockStores.NetworkChangesStore.EXPECT().GetNext(testingRollback.Index).Return(testingRollback2, nil)
+
+	err = mgrTest.RollbackTargetConfig("TestingRollback")
+	assert.Error(t, err, "change TestingRollback is not the last active on the stack of changes")
+}
+
+func TestManager_ComputeRollbackDelete(t *testing.T) {
+	mgrTest, mocks := setUp(t)
+
+	updates := make(devicechange.TypedValueMap)
+	deletes := make([]string, 0)
+	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B159)
+
+	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
+
+	err := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
+	assert.NilError(t, err, "ValidateTargetConfig error")
+	err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback")
+	assert.NilError(t, err, "Can't create change", err)
+
+	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B314)
+	updates[test1Cont1ACont2ALeaf2D] = devicechange.NewTypedValueFloat(valueLeaf2D123)
+	deletes = append(deletes, test1Cont1ACont2ALeaf2A)
+
+	err = mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
+	assert.NilError(t, err, "ValidateTargetConfig error")
+
+	updatesForDevice1, deletesForDevice1, deviceInfo = makeDeviceChanges(device1, updates, deletes)
+	err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
+	assert.NilError(t, err, "Can't create change")
+
+	testingRollback2, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback2")
+	assert.NilError(t, err, "Cant' retrieve Config")
+
+	mocks.MockStores.NetworkChangesStore.EXPECT().GetNext(testingRollback2.Index).Return(nil, nil)
 
 	err = mgrTest.RollbackTargetConfig("TestingRollback2")
 	assert.NilError(t, err, "Can't roll back change")
