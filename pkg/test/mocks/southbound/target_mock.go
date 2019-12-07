@@ -5,13 +5,13 @@
 package southbound
 
 import (
-	"context"
-	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/pkg/southbound"
+	context "context"
+	gomock "github.com/golang/mock/gomock"
+	southbound "github.com/onosproject/onos-config/pkg/southbound"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"github.com/openconfig/gnmi/client"
-	"github.com/openconfig/gnmi/proto/gnmi"
-	"reflect"
+	client "github.com/openconfig/gnmi/client"
+	gnmi "github.com/openconfig/gnmi/proto/gnmi"
+	reflect "reflect"
 )
 
 // MockTargetIf is a mock of TargetIf interface
@@ -164,7 +164,7 @@ func (m *MockTargetIf) Destination() *client.Destination {
 }
 
 // Destination indicates an expected call of Destination
-func (mr *MockTargetIfMockRecorder) Dest() *gomock.Call {
+func (mr *MockTargetIfMockRecorder) Destination() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Destination", reflect.TypeOf((*MockTargetIf)(nil).Destination))
 }
@@ -181,4 +181,18 @@ func (m *MockTargetIf) Client() southbound.GnmiClient {
 func (mr *MockTargetIfMockRecorder) Client() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Client", reflect.TypeOf((*MockTargetIf)(nil).Client))
+}
+
+// Close mocks base method
+func (m *MockTargetIf) Close() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close
+func (mr *MockTargetIfMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockTargetIf)(nil).Close))
 }
