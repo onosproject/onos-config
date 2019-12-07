@@ -27,6 +27,7 @@ import (
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"io/ioutil"
 	"strings"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/openconfig/gnmi/client"
@@ -37,6 +38,7 @@ var log = logging.GetLogger("southbound")
 
 // Targets is a global cache of connected targets
 var Targets = make(map[topodevice.ID]TargetIf)
+var targetMu = &sync.RWMutex{}
 
 func createDestination(device topodevice.Device) (*client.Destination, topodevice.ID) {
 	d := &client.Destination{}
@@ -85,7 +87,9 @@ func createDestination(device topodevice.Device) (*client.Destination, topodevic
 
 // GetTarget attempts to get a specific target from the targets cache
 func GetTarget(key topodevice.ID) (TargetIf, error) {
+	targetMu.RLock()
 	t, ok := Targets[key].(TargetIf)
+	targetMu.RUnlock()
 	if ok {
 		return t, nil
 	}
@@ -103,10 +107,17 @@ func (target *Target) ConnectTarget(ctx context.Context, device topodevice.Devic
 	if err != nil {
 		return "", fmt.Errorf("could not create a gNMI client: %v", err)
 	}
+	if target.clt != nil {
+		target.clt.Close()
+	}
+
 	target.dest = *dest
 	target.clt = c
 	target.ctx = ctx
+
+	targetMu.Lock()
 	Targets[key] = target
+	targetMu.Unlock()
 	return key, err
 }
 
@@ -238,6 +249,11 @@ func (target *Target) Destination() *client.Destination {
 // Client allows retrieval of the context for the target
 func (target *Target) Client() GnmiClient {
 	return target.clt
+}
+
+// Close closes the target
+func (target *Target) Close() error {
+	return target.clt.Close()
 }
 
 // NewSubscribeRequest returns a SubscribeRequest for the given paths

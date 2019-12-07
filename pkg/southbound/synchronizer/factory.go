@@ -54,7 +54,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 				dispatcher:                dispatcher,
 				modelRegistry:             modelRegistry,
 				operationalStateCache:     operationalStateCache,
-				newTargetFn:               newTargetFn,
+				target:                    newTargetFn(),
 				operationalStateCacheLock: operationalStateCacheLock,
 				deviceChangeStore:         deviceChangeStore,
 			}
@@ -71,7 +71,7 @@ type deviceListener struct {
 	dispatcher                *dispatcher.Dispatcher
 	modelRegistry             *modelregistry.ModelRegistry
 	operationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
-	newTargetFn               func() southbound.TargetIf
+	target                    southbound.TargetIf
 	operationalStateCacheLock *syncPrimitives.RWMutex
 	deviceChangeStore         device.Store
 	state                     *topodevice.ProtocolState
@@ -101,7 +101,7 @@ func (s *deviceListener) notify(device *topodevice.Device) {
 			dispatcher:                s.dispatcher,
 			modelRegistry:             s.modelRegistry,
 			operationalStateCache:     s.operationalStateCache,
-			newTargetFn:               s.newTargetFn,
+			target:                    s.target,
 			operationalStateCacheLock: s.operationalStateCacheLock,
 			deviceChangeStore:         s.deviceChangeStore,
 			device:                    device,
@@ -119,7 +119,6 @@ type deviceSynchronizer struct {
 	dispatcher                *dispatcher.Dispatcher
 	modelRegistry             *modelregistry.ModelRegistry
 	operationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
-	newTargetFn               func() southbound.TargetIf
 	operationalStateCacheLock *syncPrimitives.RWMutex
 	deviceChangeStore         device.Store
 	device                    *topodevice.Device
@@ -132,6 +131,7 @@ func (s *deviceSynchronizer) connect() {
 	count := 0
 	for {
 		count++
+
 		s.mu.Lock()
 		closed := s.closed
 		s.mu.Unlock()
@@ -140,25 +140,18 @@ func (s *deviceSynchronizer) connect() {
 			return
 		}
 
-		target, err := s.synchronize()
+		err := s.synchronize()
 		if err != nil {
 			backoffTime := time.Duration(math.Min(float64(backoffInterval)*float64(2^count), float64(maxBackoffTime)))
 			time.Sleep(backoffTime)
 		} else {
-			s.mu.Lock()
-			s.target = target
-			closed := s.closed
-			s.mu.Unlock()
-			if closed {
-				_ = target.Client().Close()
-			}
 			return
 		}
 	}
 }
 
 // synchronize connects to the device for synchronization
-func (s *deviceSynchronizer) synchronize() (southbound.TargetIf, error) {
+func (s *deviceSynchronizer) synchronize() error {
 	modelName := utils.ToModelName(devicetype.Type(s.device.Type), devicetype.Version(s.device.Version))
 	mReadOnlyPaths, ok := s.modelRegistry.ModelReadOnlyPaths[modelName]
 	if !ok {
@@ -177,11 +170,10 @@ func (s *deviceSynchronizer) synchronize() (southbound.TargetIf, error) {
 	s.operationalStateCacheLock.Lock()
 	s.operationalStateCache[s.device.ID] = valueMap
 	s.operationalStateCacheLock.Unlock()
-	target := s.newTargetFn()
 
 	ctx := context.Background()
 	sync, err := New(ctx, s.device, s.opStateChan, s.southboundErrorChan,
-		valueMap, mReadOnlyPaths, target, mStateGetMode, s.operationalStateCacheLock, s.deviceChangeStore)
+		valueMap, mReadOnlyPaths, s.target, mStateGetMode, s.operationalStateCacheLock, s.deviceChangeStore)
 	if err != nil {
 		log.Errorf("Error connecting to device %v: %v", s.device, err)
 		s.southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
@@ -192,27 +184,24 @@ func (s *deviceSynchronizer) synchronize() (southbound.TargetIf, error) {
 		s.operationalStateCacheLock.Lock()
 		delete(s.operationalStateCache, s.device.ID)
 		s.operationalStateCacheLock.Unlock()
-		return nil, err
+		return err
 	}
 
 	//spawning two go routines to propagate changes and to get operational state
 	//go sync.syncConfigEventsToDevice(target, respChan)
 	if sync.getStateMode == modelregistry.GetStateOpState {
-		go sync.syncOperationalStateByPartition(ctx, target, s.southboundErrorChan)
+		go sync.syncOperationalStateByPartition(ctx, s.target, s.southboundErrorChan)
 	} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||
 		sync.getStateMode == modelregistry.GetStateExplicitRoPathsExpandWildcards {
-		go sync.syncOperationalStateByPaths(ctx, target, s.southboundErrorChan)
+		go sync.syncOperationalStateByPaths(ctx, s.target, s.southboundErrorChan)
 	}
 	s.southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
-	return target, nil
+	return nil
 }
 
 // close closes the synchronizer
 func (s *deviceSynchronizer) close() {
 	s.mu.Lock()
-	if s.target != nil {
-		_ = s.target.Client().Close()
-	}
 	s.closed = true
 	s.mu.Unlock()
 }
