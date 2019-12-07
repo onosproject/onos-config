@@ -12,7 +12,7 @@ require (
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
-	github.com/onosproject/onos-test v0.0.0-20191206205352-52764eecc36c
+	github.com/onosproject/onos-test v0.0.0-20191208155532-5293aeae7c43
 	github.com/onosproject/onos-topo v0.0.0-20191113170912-88eeee89f4eb
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c
 	github.com/openconfig/goyang v0.0.0-20190924211109-064f9690516f
