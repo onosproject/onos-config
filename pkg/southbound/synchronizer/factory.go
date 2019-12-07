@@ -109,6 +109,7 @@ func (s *deviceListener) notify(device *topodevice.Device) {
 		s.sync = sync
 		go sync.connect()
 	}
+	s.state = state
 }
 
 // deviceSynchronizer reacts to device events to establish connections to the device
