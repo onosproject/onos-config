@@ -236,8 +236,8 @@ func (target *Target) Destination() *client.Destination {
 }
 
 // Client allows retrieval of the context for the target
-func (target *Target) Client() *GnmiClient {
-	return &target.clt
+func (target *Target) Client() GnmiClient {
+	return target.clt
 }
 
 // NewSubscribeRequest returns a SubscribeRequest for the given paths

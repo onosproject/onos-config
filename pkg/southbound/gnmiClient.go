@@ -27,6 +27,7 @@ type GnmiClient interface {
 	Get(ctx context.Context, r *gpb.GetRequest) (*gpb.GetResponse, error)
 	Set(ctx context.Context, r *gpb.SetRequest) (*gpb.SetResponse, error)
 	Subscribe(ctx context.Context, q client.Query) error
+	Close() error
 }
 
 // GnmiClientFactory : Default GnmiClient creation.
@@ -64,4 +65,9 @@ func (client gnmiClientImpl) Set(ctx context.Context, r *gpb.SetRequest) (*gpb.S
 // Subscribe : GNMI subscribe
 func (client gnmiClientImpl) Subscribe(ctx context.Context, q client.Query) error {
 	return client.c.Subscribe(ctx, q)
+}
+
+// Close : GNMI close
+func (client gnmiClientImpl) Close() error {
+	return client.c.Close()
 }

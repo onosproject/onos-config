@@ -37,7 +37,7 @@ type TargetIf interface {
 	Subscribe(ctx context.Context, request *gpb.SubscribeRequest, handler client.ProtoHandler) error
 	Context() *context.Context
 	Destination() *client.Destination
-	Client() *GnmiClient
+	Client() GnmiClient
 }
 
 // Target struct for connecting to gNMI
