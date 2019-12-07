@@ -170,10 +170,10 @@ func (mr *MockTargetIfMockRecorder) Dest() *gomock.Call {
 }
 
 // Client mocks base method
-func (m *MockTargetIf) Client() *southbound.GnmiClient {
+func (m *MockTargetIf) Client() southbound.GnmiClient {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Client")
-	ret0, _ := ret[0].(*southbound.GnmiClient)
+	ret0, _ := ret[0].(southbound.GnmiClient)
 	return ret0
 }
 

@@ -157,7 +157,7 @@ func Test_ConnectTarget(t *testing.T) {
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
 	assert.DeepEqual(t, target.Destination().Addrs, targetFetch.Destination().Addrs)
-	assert.DeepEqual(t, *target.Client(), *targetFetch.Client())
+	assert.DeepEqual(t, target.Client(), targetFetch.Client())
 	tearDown()
 }
 
@@ -183,7 +183,7 @@ func Test_ConnectTargetUserPassword(t *testing.T) {
 	assert.NilError(t, fetchError)
 	assert.Equal(t, target.Destination().Credentials.Username, "User")
 	assert.Equal(t, target.Destination().Credentials.Password, "Password")
-	assert.DeepEqual(t, target.clt, *targetFetch.Client())
+	assert.DeepEqual(t, target.clt, targetFetch.Client())
 
 	tearDown()
 }
@@ -198,7 +198,7 @@ func Test_ConnectTargetInsecurePaths(t *testing.T) {
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
 	assert.Equal(t, targetFetch.Destination().TLS.InsecureSkipVerify, false)
-	assert.DeepEqual(t, target.clt, *targetFetch.Client())
+	assert.DeepEqual(t, target.clt, targetFetch.Client())
 
 	tearDown()
 }
@@ -212,7 +212,7 @@ func Test_ConnectTargetInsecureFlag(t *testing.T) {
 	targetFetch, fetchError := GetTarget(key)
 	assert.NilError(t, fetchError)
 	assert.Equal(t, targetFetch.Destination().TLS.InsecureSkipVerify, true)
-	assert.DeepEqual(t, target.clt, *targetFetch.Client())
+	assert.DeepEqual(t, target.clt, targetFetch.Client())
 
 	tearDown()
 }
@@ -231,7 +231,7 @@ func Test_ConnectTargetWithCert(t *testing.T) {
 	assert.DeepEqual(t, targetFetch.Destination().TLS.RootCAs.Subjects()[0], ca.Subjects()[0])
 	cert := setCertificate("testdata/client1.crt", "testdata/client1.key")
 	assert.DeepEqual(t, targetFetch.Destination().TLS.Certificates[0].Certificate, cert.Certificate)
-	assert.DeepEqual(t, target.clt, *targetFetch.Client())
+	assert.DeepEqual(t, target.clt, targetFetch.Client())
 
 	tearDown()
 }
