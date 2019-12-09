@@ -138,8 +138,8 @@ func tearDown() {
 	GnmiBaseClientFactory = saveGnmiBaseClientFactory
 }
 
-func getDevice1Target(t *testing.T) (Target, topodevice.ID, context.Context) {
-	target := Target{}
+func getDevice1Target(t *testing.T) (*Target, topodevice.ID, context.Context) {
+	target := &Target{}
 	ctx := context.Background()
 	key, err := target.ConnectTarget(ctx, device)
 	assert.NilError(t, err)

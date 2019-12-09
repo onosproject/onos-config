@@ -30,7 +30,8 @@ import (
 	"time"
 )
 
-var listeners = make(map[topodevice.ID]*deviceListener)
+var synchronizers = make(map[topodevice.ID]*deviceSynchronizer)
+var connections = make(map[topodevice.ID]bool)
 
 const backoffInterval = 10 * time.Millisecond
 const maxBackoffTime = 5 * time.Second
@@ -44,72 +45,66 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 	newTargetFn func() southbound.TargetIf,
 	operationalStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store) {
 
-	for topoEvent := range topoChannel {
-		device := topoEvent.Device
-		listener, ok := listeners[device.ID]
-		if !ok {
-			listener = &deviceListener{
-				opStateChan:               opStateChan,
-				southboundErrorChan:       southboundErrorChan,
-				dispatcher:                dispatcher,
-				modelRegistry:             modelRegistry,
-				operationalStateCache:     operationalStateCache,
-				target:                    newTargetFn(),
-				operationalStateCacheLock: operationalStateCacheLock,
-				deviceChangeStore:         deviceChangeStore,
+	errChan := make(chan events.DeviceResponse)
+	for {
+		select {
+		case topoEvent, ok := <-topoChannel:
+			if !ok {
+				return
 			}
-			listeners[device.ID] = listener
-		}
-		listener.notify(device)
-	}
-}
 
-// deviceListener reacts to device events to establish connections to the device
-type deviceListener struct {
-	opStateChan               chan<- events.OperationalStateEvent
-	southboundErrorChan       chan<- events.DeviceResponse
-	dispatcher                *dispatcher.Dispatcher
-	modelRegistry             *modelregistry.ModelRegistry
-	operationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
-	target                    southbound.TargetIf
-	operationalStateCacheLock *syncPrimitives.RWMutex
-	deviceChangeStore         device.Store
-	state                     *topodevice.ProtocolState
-	sync                      *deviceSynchronizer
-}
+			device := topoEvent.Device
+			log.Infof("Received device event %v", device)
+			_, ok = synchronizers[device.ID]
+			if !ok {
+				synchronizer := &deviceSynchronizer{
+					opStateChan:               opStateChan,
+					southboundErrorChan:       errChan,
+					dispatcher:                dispatcher,
+					modelRegistry:             modelRegistry,
+					operationalStateCache:     operationalStateCache,
+					operationalStateCacheLock: operationalStateCacheLock,
+					deviceChangeStore:         deviceChangeStore,
+					device:                    device,
+					target:                    newTargetFn(),
+				}
+				synchronizers[device.ID] = synchronizer
+				go synchronizer.connect()
+			}
+		case event, ok := <-errChan:
+			if !ok {
+				return
+			}
 
-// getDeviceState returns the gNMI state for the given device
-func getDeviceState(device *topodevice.Device) *topodevice.ProtocolState {
-	for _, state := range device.Protocols {
-		if state.Protocol == topodevice.Protocol_GNMI {
-			return state
+			log.Infof("Received error event %v", event)
+			deviceID := topodevice.ID(event.Subject())
+			switch event.EventType() {
+			case events.EventTypeErrorDeviceConnect:
+				deviceID := topodevice.ID(event.Subject())
+				synchronizer, ok := synchronizers[deviceID]
+				if ok && connections[deviceID] {
+					synchronizer.close()
+					synchronizer = &deviceSynchronizer{
+						opStateChan:               synchronizer.opStateChan,
+						southboundErrorChan:       synchronizer.southboundErrorChan,
+						dispatcher:                synchronizer.dispatcher,
+						modelRegistry:             synchronizer.modelRegistry,
+						operationalStateCache:     synchronizer.operationalStateCache,
+						operationalStateCacheLock: synchronizer.operationalStateCacheLock,
+						deviceChangeStore:         synchronizer.deviceChangeStore,
+						device:                    synchronizer.device,
+						target:                    synchronizer.target,
+					}
+					synchronizers[deviceID] = synchronizer
+					connections[deviceID] = false
+					go synchronizer.connect()
+				}
+			case events.EventTypeDeviceConnected:
+				connections[deviceID] = true
+			}
+			southboundErrorChan <- event
 		}
 	}
-	return nil
-}
-
-// notify notifies the device synchronizer of a device change
-func (s *deviceListener) notify(device *topodevice.Device) {
-	state := getDeviceState(device)
-	if s.state == nil || (s.state.ChannelState != state.ChannelState && state.ChannelState == topodevice.ChannelState_DISCONNECTED) {
-		if s.sync != nil {
-			s.sync.close()
-		}
-		sync := &deviceSynchronizer{
-			opStateChan:               s.opStateChan,
-			southboundErrorChan:       s.southboundErrorChan,
-			dispatcher:                s.dispatcher,
-			modelRegistry:             s.modelRegistry,
-			operationalStateCache:     s.operationalStateCache,
-			target:                    s.target,
-			operationalStateCacheLock: s.operationalStateCacheLock,
-			deviceChangeStore:         s.deviceChangeStore,
-			device:                    device,
-		}
-		s.sync = sync
-		go sync.connect()
-	}
-	s.state = state
 }
 
 // deviceSynchronizer reacts to device events to establish connections to the device
@@ -152,6 +147,7 @@ func (s *deviceSynchronizer) connect() {
 
 // synchronize connects to the device for synchronization
 func (s *deviceSynchronizer) synchronize() error {
+	log.Infof("Connecting to device %v", s.device)
 	modelName := utils.ToModelName(devicetype.Type(s.device.Type), devicetype.Version(s.device.Version))
 	mReadOnlyPaths, ok := s.modelRegistry.ModelReadOnlyPaths[modelName]
 	if !ok {
@@ -189,13 +185,13 @@ func (s *deviceSynchronizer) synchronize() error {
 
 	//spawning two go routines to propagate changes and to get operational state
 	//go sync.syncConfigEventsToDevice(target, respChan)
+	s.southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
 	if sync.getStateMode == modelregistry.GetStateOpState {
 		go sync.syncOperationalStateByPartition(ctx, s.target, s.southboundErrorChan)
 	} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||
 		sync.getStateMode == modelregistry.GetStateExplicitRoPathsExpandWildcards {
 		go sync.syncOperationalStateByPaths(ctx, s.target, s.southboundErrorChan)
 	}
-	s.southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
 	return nil
 }
 

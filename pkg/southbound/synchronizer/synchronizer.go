@@ -113,7 +113,7 @@ func New(context context.Context,
 	}
 
 	if len(onosExistingConfig) != 0 {
-		errSet := initialSet(context, onosExistingConfig, device, target)
+		errSet := sync.initialSet(context, onosExistingConfig, device, target, errChan)
 		if errSet != nil {
 			log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address, errSet)
 			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnectInitialConfigSync,
@@ -125,7 +125,8 @@ func New(context context.Context,
 	return sync, nil
 }
 
-func initialSet(context context.Context, onosExistingConfig []*devicechange.PathValue, device *topodevice.Device, target southbound.TargetIf) error {
+func (sync Synchronizer) initialSet(context context.Context, onosExistingConfig []*devicechange.PathValue,
+	device *topodevice.Device, target southbound.TargetIf, errChan chan<- events.DeviceResponse) error {
 	setRequest, errExtract := values.PathValuesToGnmiChange(onosExistingConfig)
 	log.Infof("Setting initial configuration for device %s : %s", device.ID, setRequest)
 	if errExtract != nil {
@@ -133,9 +134,12 @@ func initialSet(context context.Context, onosExistingConfig []*devicechange.Path
 	}
 	setResponse, errSet := target.Set(context, setRequest)
 	if errSet != nil {
-		errGnmi, _ := status.FromError(errSet)
+		status, ok := status.FromError(errSet)
+		if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {
+			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect, string(sync.ID), errSet)
+		}
 		log.Errorf("Can't set initial configuration for %s due to: %s", device.Address,
-			strings.Split(errGnmi.Message(), " desc = ")[1])
+			strings.Split(status.Message(), " desc = ")[1])
 		return errSet
 	}
 	log.Info("Response for initial configuration ", setResponse)
@@ -148,15 +152,23 @@ func (sync Synchronizer) syncOperationalStateByPartition(ctx context.Context, ta
 
 	log.Infof("Syncing Op & State of %s started. Mode %v", string(sync.key), sync.getStateMode)
 	notifications := make([]*gnmi.Notification, 0)
-	stateNotif, errState := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_STATE)
+	stateNotif, errState := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_STATE, errChan)
 	if errState != nil {
+		status, ok := status.FromError(errState)
+		if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {
+			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect, string(sync.ID), errState)
+		}
 		log.Warn("Can't request read-only state paths to target ", sync.key, errState)
 	} else {
 		notifications = append(notifications, stateNotif...)
 	}
 
-	operNotif, errOp := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_OPERATIONAL)
-	if errState != nil {
+	operNotif, errOp := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_OPERATIONAL, errChan)
+	if errOp != nil {
+		status, ok := status.FromError(errOp)
+		if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {
+			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect, string(sync.ID), errOp)
+		}
 		log.Warn("Can't request read-only operational paths to target ", sync.key, errOp)
 	} else {
 		notifications = append(notifications, operNotif...)
@@ -239,6 +251,10 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 				log.Warn("Error on request for expanded wildcard read-only paths", sync.key, errRoPaths)
 				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
 					string(sync.key), errRoPaths)
+				status, ok := status.FromError(errRoPaths)
+				if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {
+					errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect, string(sync.ID), errRoPaths)
+				}
 				return
 			}
 			for _, n := range responseEwRoPaths.Notification {
@@ -295,6 +311,10 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 		log.Warn("Error on request for read-only paths", sync.key, errRoPaths)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
 			string(sync.key), errRoPaths)
+		status, ok := status.FromError(errRoPaths)
+		if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {
+			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect, string(sync.ID), errRoPaths)
+		}
 		return
 	}
 	sync.opCacheUpdate(responseRoPaths.Notification, errChan)
@@ -421,10 +441,8 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 	if subErr != nil {
 		log.Warn("Error in subscribe", subErr)
 		stat, ok := status.FromError(subErr)
-		if !ok && stat.Code() == codes.Unknown && strings.Contains(stat.Err().Error(), "transport is closing") {
-			log.Info("Device is closing transport")
-			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
-				string(sync.ID), err)
+		if !ok && (stat.Code() == codes.Unknown || stat.Code() == codes.Unavailable) {
+			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect, string(sync.ID), err)
 		}
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorSubscribe,
 			string(sync.key), subErr)
@@ -435,7 +453,8 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 
 func (sync *Synchronizer) getOpStatePathsByType(ctx context.Context,
 	target southbound.TargetIf,
-	reqtype gnmi.GetRequest_DataType) ([]*gnmi.Notification, error) {
+	reqtype gnmi.GetRequest_DataType,
+	errChan chan<- events.DeviceResponse) ([]*gnmi.Notification, error) {
 
 	log.Infof("Getting %s partition for %s", reqtype, string(sync.key))
 	requestState := &gnmi.GetRequest{
@@ -445,6 +464,10 @@ func (sync *Synchronizer) getOpStatePathsByType(ctx context.Context,
 
 	responseState, err := target.Get(ctx, requestState)
 	if err != nil {
+		status, ok := status.FromError(err)
+		if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {
+			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect, string(sync.ID), err)
+		}
 		return nil, err
 	}
 

@@ -107,13 +107,17 @@ func (target *Target) ConnectTarget(ctx context.Context, device topodevice.Devic
 	if err != nil {
 		return "", fmt.Errorf("could not create a gNMI client: %v", err)
 	}
+
+	target.mu.Lock()
 	if target.clt != nil {
+		log.Infof("Closing connection to %v", key)
 		target.clt.Close()
 	}
 
 	target.dest = *dest
 	target.clt = c
 	target.ctx = ctx
+	target.mu.Unlock()
 
 	targetMu.Lock()
 	Targets[key] = target
@@ -161,7 +165,7 @@ func (target *Target) CapabilitiesWithString(ctx context.Context, request string
 
 // Capabilities get capabilities according to a formatted request
 func (target *Target) Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
-	response, err := target.clt.Capabilities(ctx, request)
+	response, err := target.Client().Capabilities(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Capabilities(%q): %v", request.String(), err)
 	}
@@ -183,7 +187,7 @@ func (target *Target) GetWithString(ctx context.Context, request string) (*gpb.G
 
 // Get can make a get request according to a formatted request
 func (target *Target) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error) {
-	response, err := target.clt.Get(ctx, request)
+	response, err := target.Client().Get(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Get(%q) : %v", request.String(), err)
 	}
@@ -205,7 +209,7 @@ func (target *Target) SetWithString(ctx context.Context, request string) (*gpb.S
 
 // Set can make a set request according to a formatted request
 func (target *Target) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.SetResponse, error) {
-	response, err := target.clt.Set(ctx, request)
+	response, err := target.Client().Set(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("target returned RPC error for Set(%q) : %v", request.String(), err)
 	}
@@ -248,12 +252,14 @@ func (target *Target) Destination() *client.Destination {
 
 // Client allows retrieval of the context for the target
 func (target *Target) Client() GnmiClient {
+	target.mu.RLock()
+	defer target.mu.RUnlock()
 	return target.clt
 }
 
 // Close closes the target
 func (target *Target) Close() error {
-	return target.clt.Close()
+	return target.Client().Close()
 }
 
 // NewSubscribeRequest returns a SubscribeRequest for the given paths
