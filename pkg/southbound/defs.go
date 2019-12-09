@@ -19,6 +19,7 @@ import (
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
+	"sync"
 )
 
 // TargetGenerator is a function for generating gnmi southbound Targets
@@ -37,7 +38,8 @@ type TargetIf interface {
 	Subscribe(ctx context.Context, request *gpb.SubscribeRequest, handler client.ProtoHandler) error
 	Context() *context.Context
 	Destination() *client.Destination
-	Client() *GnmiClient
+	Client() GnmiClient
+	Close() error
 }
 
 // Target struct for connecting to gNMI
@@ -45,6 +47,7 @@ type Target struct {
 	dest client.Destination
 	clt  GnmiClient
 	ctx  context.Context
+	mu   sync.RWMutex
 }
 
 // NewTarget is a method for constructing a target
