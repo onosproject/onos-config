@@ -26,7 +26,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/utils/logging"
-	devicetopo "github.com/onosproject/onos-topo/api/device"
 )
 
 var log = logging.GetLogger("controller", "change", "network")
@@ -163,17 +162,6 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 
 // canApplyChange returns a bool indicating whether the change can be applied
 func (r *Reconciler) canApplyChange(change *networkchange.NetworkChange) (bool, error) {
-	// First, check if the devices affected by the change are available
-	for _, deviceChange := range change.Changes {
-		device, err := r.devices.Get(devicetopo.ID(deviceChange.DeviceID))
-		if err != nil {
-			return false, err
-		}
-		state := getProtocolState(device)
-		if state != devicetopo.ChannelState_CONNECTED {
-			return false, nil
-		}
-	}
 
 	// If the devices are available, ensure the change does not intersect prior changes
 	prevChange, err := r.networkChanges.GetPrev(change.Index)
@@ -482,21 +470,6 @@ func isIntersectingChange(config *networkchange.NetworkChange, history *networkc
 		}
 	}
 	return false
-}
-
-func getProtocolState(device *devicetopo.Device) devicetopo.ChannelState {
-	// Find the gNMI protocol state for the device
-	var protocol *devicetopo.ProtocolState
-	for _, p := range device.Protocols {
-		if p.Protocol == devicetopo.Protocol_GNMI {
-			protocol = p
-			break
-		}
-	}
-	if protocol == nil {
-		return devicetopo.ChannelState_UNKNOWN_CHANNEL_STATE
-	}
-	return protocol.ChannelState
 }
 
 var _ controller.Reconciler = &Reconciler{}
