@@ -28,6 +28,7 @@ import (
 
 const (
 	modPath           = "/system/clock/config/timezone-name"
+	modValue          = "Europe/Rome"
 	offlineDeviceName = "offline-dev-1"
 )
 
@@ -53,42 +54,28 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 			Msg: []byte("1.0.0"),
 		},
 	}
-
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
 
-	setPath := makeDevicePath(offlineDeviceName, tzPath)
-	setPath[0].pathDataValue = tzValue
+	setPath := makeDevicePath(offlineDeviceName, modPath)
+	setPath[0].pathDataValue = modValue
 	setPath[0].pathDataType = StringVal
 
-	go func() {
-		_, extensions, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, extensions)
-		assert.NoError(t, errorSet)
-		assert.Equal(t, 2, len(extensions))
-		extensionBefore := extensions[0].GetRegisteredExt()
-		assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
-	}()
+	_, extensions, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, extensions)
+	assert.NoError(t, errorSet)
+	assert.Equal(t, 2, len(extensions))
+	extensionBefore := extensions[0].GetRegisteredExt()
+	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
 
 	// Check that the value was set correctly
-	simulator.AddOrDie()
-	time.Sleep(5 * time.Second)
+	simulatorEnv := simulator.AddOrDie()
+	time.Sleep(2 * time.Second)
 
 	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(offlineDeviceName, modPath))
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, tzValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
+	assert.Equal(t, modValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
 
-	// Remove the path we added
-	_, extensions, errorDelete := gNMISet(MakeContext(), c, noPaths, makeDevicePath(offlineDeviceName, modPath), noExtensions)
-	assert.NoError(t, errorDelete)
-	assert.Equal(t, 1, len(extensions))
-	extensionAfter := extensions[0].GetRegisteredExt()
-	assert.Equal(t, extensionAfter.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
-
-	//  Make sure it got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(MakeContext(), c, makeDevicePath(offlineDeviceName, modPath))
-	assert.NoError(t, errorAfterDelete)
-	assert.Equal(t, 0, len(extensions))
-	assert.Equal(t, valueAfterDelete[0].pathDataValue, "",
-		"incorrect value found for path %s after delete", modPath)
+	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
+	checkDeviceValue(t, deviceGnmiClient, makeDevicePath(offlineDeviceName, modPath), modValue)
 }
