@@ -18,17 +18,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/pkg/namesgenerator"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store"
-	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
-	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -176,12 +172,24 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, status.Error(codes.Internal, errSet.Error())
 	}
 
-	// TODO: Not clear if there is a period of time where this misses out on events
-	//Obtaining response based on distributed store generated events
-	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchange.ID(netCfgChangeName))
-	if errListen != nil {
-		log.Errorf("Error while building atomix based response %s", errListen.Error())
-		return nil, status.Error(codes.Internal, errListen.Error())
+	updateResults := make([]*gnmi.UpdateResult, 0)
+	for target, updates := range targetUpdates {
+		for path := range updates {
+			updateResult, err := buildUpdateResult(path, target, gnmi.UpdateResult_UPDATE)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			updateResults = append(updateResults, updateResult)
+		}
+	}
+	for target, removes := range targetRemoves {
+		for _, path := range removes {
+			updateResult, err := buildUpdateResult(path, target, gnmi.UpdateResult_DELETE)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			updateResults = append(updateResults, updateResult)
+		}
 	}
 
 	extensions := []*gnmi_ext.Extension{
@@ -209,7 +217,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	setResponse := &gnmi.SetResponse{
-		Response:  updateResultsAtomix,
+		Response:  updateResults,
 		Timestamp: time.Now().Unix(),
 		Extension: extensions,
 	}
@@ -349,52 +357,6 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 	}
 
 	return nil
-}
-
-func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]*gnmi.UpdateResult, error) {
-	networkChan := make(chan stream.Event)
-	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
-	if errWatch != nil {
-		return nil, fmt.Errorf("can't complete set operation on target due to %s", errWatch)
-	}
-	defer ctx.Close()
-	updateResults := make([]*gnmi.UpdateResult, 0)
-	for changeEvent := range networkChan {
-		change := changeEvent.Object.(*networkchange.NetworkChange)
-		log.Infof("Received notification for change ID %s, phase %s, state %s", change.ID,
-			change.Status.Phase, change.Status.State)
-		if change.Status.Phase == changetypes.Phase_CHANGE {
-			switch changeStatus := change.Status.State; changeStatus {
-			case changetypes.State_COMPLETE:
-				for _, deviceChange := range change.Changes {
-					deviceID := deviceChange.DeviceID
-					for _, valueUpdate := range deviceChange.Values {
-						var updateResult *gnmi.UpdateResult
-						var errBuild error
-						if valueUpdate.Removed {
-							updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
-								string(deviceID), gnmi.UpdateResult_DELETE)
-						} else {
-							updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
-								string(deviceID), gnmi.UpdateResult_UPDATE)
-						}
-						if errBuild != nil {
-							log.Error(errBuild)
-							continue
-						}
-						updateResults = append(updateResults, updateResult)
-					}
-				}
-			case changetypes.State_FAILED:
-				return nil, fmt.Errorf("issue in setting config reson %s, error %s, rolling back change %s",
-					change.Status.Reason, change.Status.Message, changeID)
-			default:
-				continue
-			}
-			break
-		}
-	}
-	return updateResults, nil
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
