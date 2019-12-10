@@ -60,7 +60,7 @@ func opstateCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 	deviceID := args[0]
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 	tmplGetOpState, _ := template.New("change").Funcs(funcMapChanges).Parse(opstateTemplate)
-	clientConnection, clientConnectionError := getConnection()
+	clientConnection, clientConnectionError := getConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError

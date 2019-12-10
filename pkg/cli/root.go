@@ -15,15 +15,33 @@
 // Package cli holds ONOS command-line command implementations.
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	viperapi "github.com/spf13/viper"
+)
+
+var viper = viperapi.New()
+
+// init initializes the command line
+func init() {
+	initConfig()
+}
+
+// Init is a hook called after cobra initialization
+func Init() {
+	// noop for now
+}
 
 // GetCommand returns the root command for the config service.
 func GetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "config {get,add} [args]",
+		Use:   "config {get,add,rollback,snapshot,compact-changes,watch} [args]",
 		Short: "ONOS configuration subsystem commands",
 	}
 
+	addConfigFlags(cmd)
+
+	cmd.AddCommand(getConfigCommand())
 	cmd.AddCommand(getGetCommand())
 	cmd.AddCommand(getAddCommand())
 	cmd.AddCommand(getRollbackCommand())

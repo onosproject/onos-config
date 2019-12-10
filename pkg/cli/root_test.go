@@ -58,6 +58,7 @@ func Test_SubCommands(t *testing.T) {
 		commandName   string
 		expectedShort string
 	}{
+		{commandName: "Config", expectedShort: "Manage the CLI configuration"},
 		{commandName: "Rollback", expectedShort: "Rolls-back a network change"},
 		{commandName: "Add", expectedShort: "Add a config resource"},
 		{commandName: "Get", expectedShort: "Get config resources"},

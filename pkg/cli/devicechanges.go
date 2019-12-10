@@ -67,7 +67,7 @@ func deviceChangesCommand(cmd *cobra.Command, subscribe bool, args []string) err
 	version, _ := cmd.Flags().GetString("version")
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
-	clientConnection, clientConnectionError := getConnection()
+	clientConnection, clientConnectionError := getConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError
