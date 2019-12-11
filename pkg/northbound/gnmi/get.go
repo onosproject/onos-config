@@ -60,14 +60,18 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		//if target is already disconnected we don't do a get again.
 		_, ok := disconnectedDevicesMap[topodevice.ID(target)]
 		if !ok && target != "*" {
-			_, errGet := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
+			deviceTopo, errGet := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
 
 			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
-				log.Infof("Device is not connected %s, %s", target, errGet)
+				log.Infof("Device is not known to topo %s, %s", target, errGet)
 				disconnectedDevicesMap[topodevice.ID(path.GetTarget())] = true
 			} else if errGet != nil {
 				//handling gRPC errors
 				return nil, errGet
+			} else if getProtocolState(deviceTopo) != topodevice.ServiceState_AVAILABLE {
+				log.Infof("Device is known to topo but gNMI service is not available %s, %s", target,
+					getProtocolState(deviceTopo))
+				disconnectedDevicesMap[topodevice.ID(path.GetTarget())] = true
 			}
 		}
 		notification := &gnmi.Notification{
