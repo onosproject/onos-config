@@ -93,7 +93,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Set values
 	var devicePathsForSet = getDevicePathsWithValues(devices, paths, values)
-	changeID, extensions, errorSet := gNMISet(MakeContext(), gnmiClient, devicePathsForSet, noPaths)
+	changeID, extensions, errorSet := gNMISet(MakeContext(), gnmiClient, devicePathsForSet, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 	assert.True(t, changeID != "")
 	assert.Equal(t, 1, len(extensions))

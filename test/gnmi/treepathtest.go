@@ -45,7 +45,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	setNamePath := []DevicePath{
 		{deviceName: device.Name(), path: newRootConfigNamePath, pathDataValue: newRootName, pathDataType: StringVal},
 	}
-	_, _, errorSet := gNMISet(MakeContext(), c, setNamePath, noPaths)
+	_, _, errorSet := gNMISet(MakeContext(), c, setNamePath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 
 	// Set values using gNMI client
@@ -53,7 +53,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 		{deviceName: device.Name(), path: newRootDescriptionPath, pathDataValue: newDescription, pathDataType: StringVal},
 		{deviceName: device.Name(), path: newRootEnabledPath, pathDataValue: "false", pathDataType: BoolVal},
 	}
-	_, _, errorSet = gNMISet(MakeContext(), c, setPath, noPaths)
+	_, _, errorSet = gNMISet(MakeContext(), c, setPath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 
 	// Check that the name value was set correctly
@@ -71,7 +71,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	assert.Equal(t, 0, len(extensions))
 
 	// Remove the root path we added
-	_, extensions, errorDelete := gNMISet(MakeContext(), c, noPaths, makeDevicePath(device.Name(), newRootPath))
+	_, extensions, errorDelete := gNMISet(MakeContext(), c, noPaths, makeDevicePath(device.Name(), newRootPath), noExtensions)
 	assert.NoError(t, errorDelete)
 	assert.Equal(t, 1, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
