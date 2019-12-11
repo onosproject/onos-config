@@ -76,7 +76,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 				return
 			}
 
-			log.Infof("Received error event %v", event)
+			log.Infof("Received event %v", event)
 			deviceID := topodevice.ID(event.Subject())
 			switch event.EventType() {
 			case events.EventTypeErrorDeviceConnect:
@@ -97,6 +97,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 					}
 					synchronizers[deviceID] = synchronizer
 					connections[deviceID] = false
+					log.Info("Retrying connecting to device %s ", deviceID)
 					go synchronizer.connect()
 				}
 			case events.EventTypeDeviceConnected:
