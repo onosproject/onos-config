@@ -17,47 +17,46 @@ package cli
 import (
 	"crypto/tls"
 	"github.com/onosproject/onos-config/pkg/certs"
-	"github.com/spf13/viper"
+	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
-const (
-	defaultAddress = "onos-config:5150"
-)
-
 // getConnection returns a gRPC client connection to the config service
-func getConnection() (*grpc.ClientConn, error) {
-	addressObj := viper.Get("address")
-	if addressObj == nil {
-		addressObj = defaultAddress
-	}
-	address := addressObj.(string)
-	certPath := viper.GetString("tls.certPath")
-	keyPath := viper.GetString("tls.keyPath")
+func getConnection(cmd *cobra.Command) (*grpc.ClientConn, error) {
+	address := getAddress(cmd)
+	certPath := getCertPath(cmd)
+	keyPath := getKeyPath(cmd)
 	var opts []grpc.DialOption
-	if certPath != "" && keyPath != "" {
-		cert, err := tls.LoadX509KeyPair(certPath, keyPath)
-		if err != nil {
-			return nil, err
-		}
+
+	if noTLS(cmd) {
 		opts = []grpc.DialOption{
-			grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
-				Certificates:       []tls.Certificate{cert},
-				InsecureSkipVerify: true,
-			})),
+			grpc.WithInsecure(),
 		}
 	} else {
-		// Load default Certificates
-		cert, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
-		if err != nil {
-			return nil, err
-		}
-		opts = []grpc.DialOption{
-			grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
-				Certificates:       []tls.Certificate{cert},
-				InsecureSkipVerify: true,
-			})),
+		if certPath != "" && keyPath != "" {
+			cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+			if err != nil {
+				return nil, err
+			}
+			opts = []grpc.DialOption{
+				grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+					Certificates:       []tls.Certificate{cert},
+					InsecureSkipVerify: true,
+				})),
+			}
+		} else {
+			// Load default Certificates
+			cert, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+			if err != nil {
+				return nil, err
+			}
+			opts = []grpc.DialOption{
+				grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+					Certificates:       []tls.Certificate{cert},
+					InsecureSkipVerify: true,
+				})),
+			}
 		}
 	}
 

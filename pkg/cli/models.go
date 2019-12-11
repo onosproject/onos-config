@@ -58,7 +58,7 @@ func getGetPluginsCommand() *cobra.Command {
 func runListPluginsCommand(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	tmplModelList, _ := template.New("change").Parse(modellistTemplate)
-	clientConnection, clientConnectionError := getConnection()
+	clientConnection, clientConnectionError := getConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError
@@ -94,7 +94,7 @@ func getAddPluginCommand() *cobra.Command {
 }
 
 func runAddPluginCommand(cmd *cobra.Command, args []string) error {
-	clientConnection, clientConnectionError := getConnection()
+	clientConnection, clientConnectionError := getConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError

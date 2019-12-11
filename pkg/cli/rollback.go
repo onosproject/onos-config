@@ -31,7 +31,7 @@ func getRollbackCommand() *cobra.Command {
 }
 
 func runRollbackCommand(cmd *cobra.Command, args []string) error {
-	clientConnection, clientConnectionError := getConnection()
+	clientConnection, clientConnectionError := getConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError

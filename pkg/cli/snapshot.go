@@ -35,7 +35,7 @@ func getSnapshotCommand() *cobra.Command {
 }
 
 func runSnapshotCommand(cmd *cobra.Command, args []string) error {
-	clientConnection, clientConnectionError := getConnection()
+	clientConnection, clientConnectionError := getConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError
@@ -83,7 +83,7 @@ func getCompactCommand() *cobra.Command {
 }
 
 func runCompactCommand(cmd *cobra.Command, args []string) error {
-	clientConnection, clientConnectionError := getConnection()
+	clientConnection, clientConnectionError := getConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError

@@ -79,7 +79,7 @@ func networkChangesCommand(cmd *cobra.Command, subscribe bool, args []string) er
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
-	clientConnection, clientConnectionError := getConnection()
+	clientConnection, clientConnectionError := getConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError
