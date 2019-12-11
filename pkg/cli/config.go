@@ -69,6 +69,7 @@ func getConfigCommand() *cobra.Command {
 func getConfigGetCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:       "get <key>",
+		Short:     "Get CLI option value",
 		Args:      cobra.ExactArgs(1),
 		ValidArgs: configOptions,
 		RunE:      runConfigGetCommand,
@@ -84,6 +85,7 @@ func runConfigGetCommand(_ *cobra.Command, args []string) error {
 func getConfigSetCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:       "set <key> <value>",
+		Short:     "Set CLI option value",
 		Args:      cobra.ExactArgs(2),
 		ValidArgs: configOptions,
 		RunE:      runConfigSetCommand,
@@ -104,6 +106,7 @@ func runConfigSetCommand(_ *cobra.Command, args []string) error {
 func getConfigDeleteCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:       "delete <key>",
+		Short:     "Delete CLI option value",
 		Args:      cobra.ExactArgs(1),
 		ValidArgs: configOptions,
 		RunE:      runConfigDeleteCommand,
@@ -124,7 +127,7 @@ func runConfigDeleteCommand(_ *cobra.Command, args []string) error {
 func getConfigInitCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init",
-		Short: "Initialize the topo CLI configuration",
+		Short: "Initialize the onos-config CLI configuration",
 		RunE:  runConfigInitCommand,
 	}
 }
