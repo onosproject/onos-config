@@ -150,8 +150,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 
 		deviceTopo, errDevice := mgr.DeviceStore.Get(topodevice.ID(target))
-		if (errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound) ||
-			(getProtocolState(deviceTopo) == topodevice.ServiceState_UNAVAILABLE) {
+		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 			log.Infof("Device is not known to topo %s, %s", target, errDevice)
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
