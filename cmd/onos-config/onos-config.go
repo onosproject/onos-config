@@ -130,7 +130,7 @@ func main() {
 
 	log.Info("Network Configuration store connected")
 
-	deviceCache, err := cache.NewCache(networkChangesStore)
+	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
 	if err != nil {
 		log.Error("Cannot load device cache", err)
 	}
