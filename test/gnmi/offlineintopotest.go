@@ -36,7 +36,7 @@ const (
 	offlineInTopoModDeviceType    = "Devicesim"
 )
 
-// TestOfflineDeviceInTopo tests set/query of a single GNMI path to a single device that is in the config
+// TestOfflineDeviceInTopo tests set/query of a single GNMI path to a single device that is in the config but offline
 func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 
 	deviceClient, deviceClientError := env.Topo().NewDeviceServiceClient()
