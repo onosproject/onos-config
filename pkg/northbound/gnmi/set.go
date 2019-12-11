@@ -149,12 +149,17 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Version:  version,
 		}
 
-		_, errDevice := mgr.DeviceStore.Get(topodevice.ID(target))
+		deviceTopo, errDevice := mgr.DeviceStore.Get(topodevice.ID(target))
 		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
+			log.Infof("Device is not known to topo %s, %s", target, errDevice)
 			disconnectedDevices = append(disconnectedDevices, target)
 		} else if errDevice != nil {
 			//handling gRPC errors
 			return nil, status.Error(codes.Internal, errDevice.Error())
+		} else if getProtocolState(deviceTopo) != topodevice.ServiceState_AVAILABLE {
+			log.Infof("Device is known to topo but gNMI service is not available %s, %s", target,
+				getProtocolState(deviceTopo))
+			disconnectedDevices = append(disconnectedDevices, target)
 		}
 
 		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes)
@@ -427,4 +432,19 @@ func validateChange(target string, deviceType devicetype.Type, version devicetyp
 	}
 	log.Infof("Validating change %s:%s:%s DONE", target, deviceType, version)
 	return nil
+}
+
+func getProtocolState(device *topodevice.Device) topodevice.ServiceState {
+	// Find the gNMI protocol state for the device
+	var protocol *topodevice.ProtocolState
+	for _, p := range device.Protocols {
+		if p.Protocol == topodevice.Protocol_GNMI {
+			protocol = p
+			break
+		}
+	}
+	if protocol == nil {
+		return topodevice.ServiceState_UNKNOWN_SERVICE_STATE
+	}
+	return protocol.ServiceState
 }
