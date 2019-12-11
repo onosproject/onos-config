@@ -44,7 +44,7 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	setNamePath := []DevicePath{
 		{deviceName: device.Name(), path: udtestNamePath, pathDataValue: udtestNameValue, pathDataType: StringVal},
 	}
-	_, _, errorSet := gNMISet(MakeContext(), c, setNamePath, noPaths)
+	_, _, errorSet := gNMISet(MakeContext(), c, setNamePath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 
 	// Set initial values for Enabled and Description using gNMI client
@@ -52,7 +52,7 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 		{deviceName: device.Name(), path: udtestEnabledPath, pathDataValue: "true", pathDataType: BoolVal},
 		{deviceName: device.Name(), path: udtestDescriptionPath, pathDataValue: udtestDescriptionValue, pathDataType: StringVal},
 	}
-	_, _, errorSet = gNMISet(MakeContext(), c, setInitialValuesPath, noPaths)
+	_, _, errorSet = gNMISet(MakeContext(), c, setInitialValuesPath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 
 	// Update Enabled, delete Description using gNMI client
@@ -62,7 +62,7 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	deleteDescriptionPath := []DevicePath{
 		{deviceName: device.Name(), path: udtestDescriptionPath},
 	}
-	_, _, errorSet = gNMISet(MakeContext(), c, updateEnabledPath, deleteDescriptionPath)
+	_, _, errorSet = gNMISet(MakeContext(), c, updateEnabledPath, deleteDescriptionPath, noExtensions)
 	assert.NoError(t, errorSet)
 
 	// Check that the Enabled value is set correctly

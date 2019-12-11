@@ -36,6 +36,7 @@ type DevicePath struct {
 }
 
 var noPaths = make([]DevicePath, 0)
+var noExtensions = make([]*gnmi_ext.Extension, 0)
 
 func convertGetResults(response *gpb.GetResponse) ([]DevicePath, []*gnmi_ext.Extension, error) {
 	entryCount := len(response.Notification)
@@ -88,7 +89,7 @@ func gNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePa
 }
 
 // gNMISet generates a SET request on the given client for update and delete paths on a device
-func gNMISet(ctx context.Context, c client.Impl, updatePaths []DevicePath, deletePaths []DevicePath) (string, []*gnmi_ext.Extension, error) {
+func gNMISet(ctx context.Context, c client.Impl, updatePaths []DevicePath, deletePaths []DevicePath, extensions []*gnmi_ext.Extension) (string, []*gnmi_ext.Extension, error) {
 	var protoBuilder strings.Builder
 	for _, updatePath := range updatePaths {
 		protoBuilder.WriteString(MakeProtoUpdatePath(updatePath))
@@ -98,10 +99,12 @@ func gNMISet(ctx context.Context, c client.Impl, updatePaths []DevicePath, delet
 	}
 
 	setTZRequest := &gpb.SetRequest{}
+
 	if err := proto.UnmarshalText(protoBuilder.String(), setTZRequest); err != nil {
 		return "", nil, err
 	}
 
+	setTZRequest.Extension = extensions
 	setResult, setError := c.(*gclient.Client).Set(ctx, setTZRequest)
 	if setError != nil {
 		return "", nil, setError

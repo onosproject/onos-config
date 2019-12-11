@@ -92,7 +92,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	setPath := makeDevicePath(simulator.Name(), subPath)
 	setPath[0].pathDataValue = subValue
 	setPath[0].pathDataType = StringVal
-	_, _, errorSet := gNMISet(MakeContext(), c, setPath, noPaths)
+	_, _, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 	var response *gnmi.SubscribeResponse
 
@@ -121,7 +121,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 		"Query after set returned the wrong value: %s\n", valueAfter)
 
 	// Remove the path we added
-	_, extensions, errorDelete := gNMISet(MakeContext(), c, noPaths, makeDevicePath(simulator.Name(), subPath))
+	_, extensions, errorDelete := gNMISet(MakeContext(), c, noPaths, makeDevicePath(simulator.Name(), subPath), noExtensions)
 	assert.NoError(t, errorDelete)
 	assert.Equal(t, 1, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
