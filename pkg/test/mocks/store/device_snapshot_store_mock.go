@@ -18,7 +18,7 @@ type MockDeviceSnapshotStore struct {
 	recorder *MockDeviceSnapshotStoreMockRecorder
 }
 
-// MockDeviceSnapshotStoreMockRecorder is the mock recorder for MockStore
+// MockDeviceSnapshotStoreMockRecorder is the mock recorder for MockDeviceSnapshotStore
 type MockDeviceSnapshotStoreMockRecorder struct {
 	mock *MockDeviceSnapshotStore
 }

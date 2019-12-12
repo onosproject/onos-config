@@ -166,6 +166,7 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnapshot.DeviceSnapshot
 			ID:            devicesnapshot.ID(deviceSnapshot.DeviceID),
 			DeviceID:      deviceSnapshot.DeviceID,
 			DeviceVersion: deviceSnapshot.DeviceVersion,
+			DeviceType:    deviceSnapshot.DeviceType,
 			SnapshotID:    deviceSnapshot.ID,
 			ChangeIndex:   snapshotIndex,
 			Values:        values,
