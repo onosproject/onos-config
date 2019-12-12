@@ -40,6 +40,7 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 	change1 := &devicesnapshot.DeviceSnapshot{
 		DeviceID:      "device-1",
 		DeviceVersion: "1.0.0",
+		DeviceType:    "Devicesim",
 		NetworkSnapshot: devicesnapshot.NetworkSnapshotRef{
 			ID:    "snapshot-1",
 			Index: 1,
@@ -59,6 +60,7 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 	change2 := &devicesnapshot.DeviceSnapshot{
 		DeviceID:      "device-2",
 		DeviceVersion: "1.0.0",
+		DeviceType:    "Devicesim",
 		NetworkSnapshot: devicesnapshot.NetworkSnapshotRef{
 			ID:    "snapshot-1",
 			Index: 1,

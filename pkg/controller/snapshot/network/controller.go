@@ -15,14 +15,17 @@
 package network
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-config/api/types"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
-	"github.com/onosproject/onos-config/api/types/device"
+	devicebase "github.com/onosproject/onos-config/api/types/device"
 	snaptypes "github.com/onosproject/onos-config/api/types/snapshot"
 	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/controller"
+	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
@@ -34,7 +37,10 @@ import (
 var log = logging.GetLogger("controller", "snapshot", "network")
 
 // NewController returns a new network snapshot controller
-func NewController(leadership leadershipstore.Store, networkChanges networkchangestore.Store, networkSnapshots networksnapstore.Store, deviceSnapshots devicesnapstore.Store) *controller.Controller {
+func NewController(leadership leadershipstore.Store, networkChanges networkchangestore.Store,
+	networkSnapshots networksnapstore.Store, deviceSnapshots devicesnapstore.Store,
+	deviceChanges devicechangestore.Store) *controller.Controller {
+
 	c := controller.NewController("NetworkSnapshot")
 	c.Activate(&controller.LeadershipActivator{
 		Store: leadership,
@@ -47,6 +53,7 @@ func NewController(leadership leadershipstore.Store, networkChanges networkchang
 	})
 	c.Reconcile(&Reconciler{
 		networkChanges:   networkChanges,
+		deviceChanges:    deviceChanges,
 		networkSnapshots: networkSnapshots,
 		deviceSnapshots:  deviceSnapshots,
 	})
@@ -56,6 +63,7 @@ func NewController(leadership leadershipstore.Store, networkChanges networkchang
 // Reconciler is a network snapshot reconciler
 type Reconciler struct {
 	networkChanges   networkchangestore.Store
+	deviceChanges    devicechangestore.Store
 	networkSnapshots networksnapstore.Store
 	deviceSnapshots  devicesnapstore.Store
 }
@@ -139,8 +147,9 @@ func (r *Reconciler) reconcileRunningMark(snapshot *networksnapshot.NetworkSnaps
 // createDeviceSnapshots marks NetworkChanges for deletion and creates device snapshots
 func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	// Iterate through network changes
-	deviceChanges := make(map[device.VersionedID]networkchange.Index)
-	deviceMaxChanges := make(map[device.VersionedID]networkchange.Index)
+	deviceChanges := make(map[devicebase.VersionedID]networkchange.Index)
+	deviceMaxChanges := make(map[devicebase.VersionedID]networkchange.Index)
+	deviceTypes := make(map[devicebase.VersionedID]devicebase.Type)
 
 	// List network changes
 	changes := make(chan *networkchange.NetworkChange)
@@ -172,6 +181,10 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnap
 					prevChangeIndex := deviceChanges[device.DeviceChangeID.GetDeviceVersionedID()]
 					deviceMaxChanges[device.DeviceChangeID.GetDeviceVersionedID()] = prevChangeIndex
 				}
+				if _, ok := deviceTypes[device.DeviceChangeID.GetDeviceVersionedID()]; !ok {
+					deviceTypes[device.DeviceChangeID.GetDeviceVersionedID()] =
+						r.deviceChangeType(change.ID, device.GetDeviceChangeID().GetDeviceID(), device.GetDeviceChangeID().GetDeviceVersion())
+				}
 			}
 		} else {
 			// Mark the change deleted
@@ -183,6 +196,10 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnap
 			// Record the change ID for each device in the change
 			for _, device := range change.Refs {
 				deviceChanges[device.DeviceChangeID.GetDeviceVersionedID()] = change.Index
+				if _, ok := deviceTypes[device.DeviceChangeID.GetDeviceVersionedID()]; !ok {
+					deviceTypes[device.DeviceChangeID.GetDeviceVersionedID()] =
+						r.deviceChangeType(change.ID, device.GetDeviceChangeID().GetDeviceID(), device.GetDeviceChangeID().GetDeviceVersion())
+				}
 			}
 		}
 	}
@@ -200,6 +217,7 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnap
 		deviceSnapshot := &devicesnapshot.DeviceSnapshot{
 			DeviceID:      device.GetID(),
 			DeviceVersion: device.GetVersion(),
+			DeviceType:    deviceTypes[device],
 			NetworkSnapshot: devicesnapshot.NetworkSnapshotRef{
 				ID:    types.ID(snapshot.ID),
 				Index: types.Index(snapshot.Index),
@@ -384,6 +402,16 @@ func (r *Reconciler) isDeleteComplete(networkChange *networksnapshot.NetworkSnap
 		}
 	}
 	return true, nil
+}
+
+func (r *Reconciler) deviceChangeType(nwChangeID networkchange.ID, deviceID devicebase.ID, deviceVersion devicebase.Version) devicebase.Type {
+	dcID := devicechange.ID(fmt.Sprintf("%s:%s:%s", nwChangeID, deviceID, deviceVersion))
+	dc, err := r.deviceChanges.Get(dcID)
+	if err != nil || dc.GetChange() == nil {
+		log.Warnf("Unable to get Device change for %s", dcID)
+		return ""
+	}
+	return dc.GetChange().GetDeviceType()
 }
 
 var _ controller.Reconciler = &Reconciler{}

@@ -34,6 +34,7 @@ DeviceSnapshot is a device snapshot
 | id | [string](#string) |  | &#39;id&#39; is the unique snapshot identifier |
 | device_id | [string](#string) |  | &#39;device_id&#39; is the device to which the snapshot applies |
 | device_version | [string](#string) |  | &#39;device_version&#39; is the version to which the snapshot applies |
+| device_type | [string](#string) |  | &#39;device_type&#39; is an optional device type to which to apply this change |
 | revision | [uint64](#uint64) |  | &#39;revision&#39; is the request revision number |
 | network_snapshot | [NetworkSnapshotRef](#onos.config.snapshot.device.NetworkSnapshotRef) |  | &#39;network_snapshot&#39; is a reference to the network snapshot from which this snapshot was created |
 | max_network_change_index | [uint64](#uint64) |  | &#39;max_network_change_index&#39; is the maximum network change index to be snapshotted for the device |
@@ -73,6 +74,7 @@ Snapshot is a snapshot of the state of a single device
 | id | [string](#string) |  | &#39;id&#39; is a unique snapshot identifier |
 | device_id | [string](#string) |  | &#39;device_id&#39; is the device to which the snapshot applies |
 | device_version | [string](#string) |  | &#39;device_version&#39; is the version to which the snapshot applies |
+| device_type | [string](#string) |  | &#39;device_type&#39; is an optional device type to which to apply this change |
 | snapshot_id | [string](#string) |  | &#39;snapshot_id&#39; is the ID of the snapshot |
 | change_index | [uint64](#uint64) |  | &#39;change_index&#39; is the change index at which the snapshot ended |
 | values | [onos.config.change.device.PathValue](#onos.config.change.device.PathValue) | repeated | &#39;values&#39; is a list of values to set |

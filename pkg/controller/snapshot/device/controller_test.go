@@ -68,6 +68,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	deviceSnapshot := &devicesnapshot.DeviceSnapshot{
 		DeviceID:              device1,
 		DeviceVersion:         "1.0.0",
+		DeviceType:            "Devicesim",
 		MaxNetworkChangeIndex: 4,
 	}
 	err = snapshots.Create(deviceSnapshot)
@@ -192,6 +193,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	deviceSnapshot := &devicesnapshot.DeviceSnapshot{
 		DeviceID:              device1,
 		DeviceVersion:         "1.0.0",
+		DeviceType:            "Devicesim",
 		MaxNetworkChangeIndex: 3,
 	}
 	err = snapshots.Create(deviceSnapshot)
