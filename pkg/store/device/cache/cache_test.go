@@ -19,6 +19,7 @@ import (
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	devicebase "github.com/onosproject/onos-config/api/types/device"
 	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -93,7 +94,7 @@ func TestDeviceCache(t *testing.T) {
 					breakout = true
 				}
 			case <-time.After(3 * time.Second):
-				t.Fail()
+				t.Error("Timed out waiting for cache event on stream 1")
 			}
 			if breakout {
 				break
@@ -123,7 +124,7 @@ func TestDeviceCache(t *testing.T) {
 					breakout = true
 				}
 			case <-time.After(3 * time.Second):
-				t.Fail()
+				t.Error("Timed out waiting for cache event on stream 2")
 			}
 			if breakout {
 				break
@@ -179,10 +180,10 @@ func TestDeviceCache(t *testing.T) {
 	chSnapshots <- stream.Event{
 		Type: stream.Created,
 		Object: &devicesnapshot.DeviceSnapshot{
-			ID:       "dev-snapshot-1",
-			DeviceID: "device-old-ss",
-			// DeviceType - TODO add in Device Type for device snapshot
-			DeviceVersion: "1.0.0",
+			ID:            "dev-snapshot-1",
+			DeviceID:      "device-old-ss",
+			DeviceType:    "TestDevice",
+			DeviceVersion: "2.0.0",
 		},
 	}
 
@@ -191,9 +192,9 @@ func TestDeviceCache(t *testing.T) {
 	chSnapshots <- stream.Event{
 		Type: stream.Created,
 		Object: &devicesnapshot.DeviceSnapshot{
-			ID:       "dev-snapshot-2",
-			DeviceID: "device-2",
-			// DeviceType - TODO add in Device Type for device snapshot
+			ID:            "dev-snapshot-2",
+			DeviceID:      "device-2",
+			DeviceType:    "Devicesim",
 			DeviceVersion: "1.0.0",
 		},
 	}
@@ -219,6 +220,15 @@ func TestDeviceCache(t *testing.T) {
 
 	devices := cache.GetDevicesByID("device-1")
 	assert.Len(t, devices, 2)
+	for _, device := range devices {
+		switch device.Version {
+		case "1.0.0":
+		case "3.0.0":
+			assert.Equal(t, devicebase.Type("Stratum"), device.Type)
+		default:
+			t.Error("Unexpected version for device-1", device.Version)
+		}
+	}
 
 	devices = cache.GetDevicesByID("device-2")
 	assert.Len(t, devices, 2)
@@ -234,6 +244,8 @@ func TestDeviceCache(t *testing.T) {
 
 	devices = cache.GetDevicesByID("device-old-ss")
 	assert.Len(t, devices, 1)
+	assert.Equal(t, devicebase.Version("2.0.0"), devices[0].Version)
+	assert.Equal(t, devicebase.Type("TestDevice"), devices[0].Type)
 
 	/////////// unregister the first watcher ///////////////////
 	watcher1Ctx.Close()

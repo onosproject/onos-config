@@ -138,8 +138,8 @@ func (c *networkChangeStoreCache) listen() error {
 				key := device.NewVersionedID(ssChange.DeviceID, ssChange.DeviceVersion)
 				info := Info{
 					DeviceID: ssChange.DeviceID,
-					//Type:     ssChange.DeviceType - todo add the device type to device snapshot
-					Version: ssChange.DeviceVersion,
+					Type:     ssChange.DeviceType,
+					Version:  ssChange.DeviceVersion,
 				}
 				c.mu.Lock()
 				if _, ok := c.devices[key]; !ok {
