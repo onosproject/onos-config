@@ -19,6 +19,8 @@ import (
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	devicebase "github.com/onosproject/onos-config/api/types/device"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/test/mocks/store"
@@ -29,22 +31,33 @@ import (
 )
 
 func TestDeviceCache(t *testing.T) {
-	chVal := &atomic.Value{}
+	chNwChangesVal := &atomic.Value{}
+	chSnapshotsVal := &atomic.Value{}
+
 	ctrl := gomock.NewController(t)
 	netChangeStore := store.NewMockNetworkChangesStore(ctrl)
 	netChangeStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ch chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
-			chVal.Store(ch)
+			chNwChangesVal.Store(ch)
 			return stream.NewContext(func() {
 			}), nil
 		}).AnyTimes()
 
-	cache, err := NewCache(netChangeStore)
+	devSnapshotStore := store.NewMockDeviceSnapshotStore(ctrl)
+	devSnapshotStore.EXPECT().Watch(gomock.Any()).DoAndReturn(
+		func(chSs chan<- stream.Event) (stream.Context, error) {
+			chSnapshotsVal.Store(chSs)
+			return stream.NewContext(func() {
+			}), nil
+		}).AnyTimes()
+	cache, err := NewCache(netChangeStore, devSnapshotStore)
 	assert.NoError(t, err)
 
 	// Before there are any listeners - create an entry in Network Change store
-	ch := chVal.Load().(chan<- stream.Event)
-	ch <- stream.Event{
+	chNwChanges := chNwChangesVal.Load().(chan<- stream.Event)
+	chSnapshots := chSnapshotsVal.Load().(chan<- stream.Event)
+
+	chNwChanges <- stream.Event{
 		Type: stream.Created,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
@@ -77,11 +90,11 @@ func TestDeviceCache(t *testing.T) {
 				assert.True(t, ok)
 				t.Log("Chan 1 Event", event)
 				count++
-				if count == 5 { // Expecting 5 results on chan 1
+				if count == 6 { // Expecting 6 results on chan 1
 					breakout = true
 				}
 			case <-time.After(3 * time.Second):
-				t.Fail()
+				t.Error("Timed out waiting for cache event on stream 1")
 			}
 			if breakout {
 				break
@@ -111,7 +124,7 @@ func TestDeviceCache(t *testing.T) {
 					breakout = true
 				}
 			case <-time.After(3 * time.Second):
-				t.Fail()
+				t.Error("Timed out waiting for cache event on stream 2")
 			}
 			if breakout {
 				break
@@ -123,8 +136,8 @@ func TestDeviceCache(t *testing.T) {
 	assert.NotNil(t, watcher1Ctx)
 	defer watcher2Ctx.Close()
 
-	//ch = chVal.Load().(chan<- stream.Event)
-	ch <- stream.Event{
+	//chNwChanges = chNwChangesVal.Load().(chan<- stream.Event)
+	chNwChanges <- stream.Event{
 		Type: stream.Created,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
@@ -143,7 +156,7 @@ func TestDeviceCache(t *testing.T) {
 			},
 		},
 	}
-	ch <- stream.Event{
+	chNwChanges <- stream.Event{
 		Type: stream.Created,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
@@ -162,7 +175,32 @@ func TestDeviceCache(t *testing.T) {
 			},
 		},
 	}
-	ch <- stream.Event{
+	// Send a Device Snapshot - this might have been the result of a previous compaction
+	// there are no network changes left but it still exists
+	chSnapshots <- stream.Event{
+		Type: stream.Created,
+		Object: &devicesnapshot.DeviceSnapshot{
+			ID:            "dev-snapshot-1",
+			DeviceID:      "device-old-ss",
+			DeviceType:    "TestDevice",
+			DeviceVersion: "2.0.0",
+		},
+	}
+
+	// Send an event for something that already exists as a NW change
+	// Should be ignored
+	chSnapshots <- stream.Event{
+		Type: stream.Created,
+		Object: &devicesnapshot.DeviceSnapshot{
+			ID:            "dev-snapshot-2",
+			DeviceID:      "device-2",
+			DeviceType:    "Devicesim",
+			DeviceVersion: "1.0.0",
+		},
+	}
+
+	// A network change could come after a Dev Snapshot
+	chNwChanges <- stream.Event{
 		Type: stream.Created,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
@@ -182,12 +220,21 @@ func TestDeviceCache(t *testing.T) {
 
 	devices := cache.GetDevicesByID("device-1")
 	assert.Len(t, devices, 2)
+	for _, device := range devices {
+		switch device.Version {
+		case "1.0.0":
+		case "3.0.0":
+			assert.Equal(t, devicebase.Type("Stratum"), device.Type)
+		default:
+			t.Error("Unexpected version for device-1", device.Version)
+		}
+	}
 
 	devices = cache.GetDevicesByID("device-2")
 	assert.Len(t, devices, 2)
 
 	devices = cache.GetDevices()
-	assert.Len(t, devices, 5)
+	assert.Len(t, devices, 6)
 
 	devices = cache.GetDevicesByType("Stratum")
 	assert.Len(t, devices, 4)
@@ -195,11 +242,16 @@ func TestDeviceCache(t *testing.T) {
 	devices = cache.GetDevicesByVersion("Stratum", "1.0.0")
 	assert.Len(t, devices, 2)
 
+	devices = cache.GetDevicesByID("device-old-ss")
+	assert.Len(t, devices, 1)
+	assert.Equal(t, devicebase.Version("2.0.0"), devices[0].Version)
+	assert.Equal(t, devicebase.Type("TestDevice"), devices[0].Type)
+
 	/////////// unregister the first watcher ///////////////////
 	watcher1Ctx.Close()
 
 	// Make another change
-	ch <- stream.Event{
+	chNwChanges <- stream.Event{
 		Type: stream.Created,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-4",
@@ -215,7 +267,7 @@ func TestDeviceCache(t *testing.T) {
 	}
 
 	////////////// Send a deleted event - should be ignored ////////////////////
-	ch <- stream.Event{
+	chNwChanges <- stream.Event{
 		Type: stream.Deleted,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-4",

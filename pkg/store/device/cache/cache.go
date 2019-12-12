@@ -18,7 +18,9 @@ import (
 	"fmt"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/api/types/device"
+	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
+	devicesnapshotstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"io"
@@ -55,11 +57,13 @@ type Cache interface {
 }
 
 // NewCache returns a new cache based on the NetworkChange store
-func NewCache(networkChangeStore networkchangestore.Store) (Cache, error) {
+func NewCache(networkChangeStore networkchangestore.Store,
+	deviceSnapshotStore devicesnapshotstore.Store) (Cache, error) {
 	cache := &networkChangeStoreCache{
-		networkChangeStore: networkChangeStore,
-		devices:            make(map[device.VersionedID]*Info),
-		listeners:          make(map[chan<- stream.Event]struct{}),
+		networkChangeStore:  networkChangeStore,
+		deviceSnapshotStore: deviceSnapshotStore,
+		devices:             make(map[device.VersionedID]*Info),
+		listeners:           make(map[chan<- stream.Event]struct{}),
 	}
 
 	if err := cache.listen(); err != nil {
@@ -70,16 +74,23 @@ func NewCache(networkChangeStore networkchangestore.Store) (Cache, error) {
 
 // networkChangeStoreCache is a device cache based on the NetworkChange store
 type networkChangeStoreCache struct {
-	networkChangeStore networkchangestore.Store
-	devices            map[device.VersionedID]*Info
-	mu                 sync.RWMutex
-	listeners          map[chan<- stream.Event]struct{}
+	networkChangeStore  networkchangestore.Store
+	deviceSnapshotStore devicesnapshotstore.Store
+	devices             map[device.VersionedID]*Info
+	mu                  sync.RWMutex
+	listeners           map[chan<- stream.Event]struct{}
 }
 
 // listen starts listening for network changes
 func (c *networkChangeStoreCache) listen() error {
 	ch := make(chan stream.Event)
 	ctx, err := c.networkChangeStore.Watch(ch, networkchangestore.WithReplay())
+	if err != nil {
+		return err
+	}
+
+	// Also check the snapshots
+	ssCtx, err := c.deviceSnapshotStore.Watch(ch)
 	if err != nil {
 		return err
 	}
@@ -97,16 +108,41 @@ func (c *networkChangeStoreCache) listen() error {
 				//  this check
 				continue
 			}
-			netChange := event.Object.(*networkchange.NetworkChange)
-			for _, devChange := range netChange.Changes {
-				key := device.NewVersionedID(devChange.DeviceID, devChange.DeviceVersion)
+			netChange, ok := event.Object.(*networkchange.NetworkChange)
+			if ok {
+				for _, devChange := range netChange.Changes {
+					key := device.NewVersionedID(devChange.DeviceID, devChange.DeviceVersion)
+					c.mu.Lock()
+					if _, ok := c.devices[key]; !ok {
+						info := Info{
+							DeviceID: devChange.DeviceID,
+							Type:     devChange.DeviceType,
+							Version:  devChange.DeviceVersion,
+						}
+						c.devices[key] = &info
+						log.Infof("Updating cache with %v. Size %d Listeners %d", info, len(c.devices), len(c.listeners))
+						for l := range c.listeners {
+							if l != nil {
+								l <- stream.Event{
+									Type:   stream.Created,
+									Object: &info,
+								}
+							}
+						}
+					}
+					c.mu.Unlock()
+				}
+			}
+			ssChange, ok := event.Object.(*devicesnapshot.DeviceSnapshot)
+			if ok {
+				key := device.NewVersionedID(ssChange.DeviceID, ssChange.DeviceVersion)
+				info := Info{
+					DeviceID: ssChange.DeviceID,
+					Type:     ssChange.DeviceType,
+					Version:  ssChange.DeviceVersion,
+				}
 				c.mu.Lock()
 				if _, ok := c.devices[key]; !ok {
-					info := Info{
-						DeviceID: devChange.DeviceID,
-						Type:     devChange.DeviceType,
-						Version:  devChange.DeviceVersion,
-					}
 					c.devices[key] = &info
 					log.Infof("Updating cache with %v. Size %d Listeners %d", info, len(c.devices), len(c.listeners))
 					for l := range c.listeners {
@@ -122,6 +158,7 @@ func (c *networkChangeStoreCache) listen() error {
 			}
 		}
 		ctx.Close()
+		ssCtx.Close()
 	}()
 	return nil
 }

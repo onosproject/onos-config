@@ -124,7 +124,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	deviceSnapshotStore, err := devicesnapstore.NewLocalStore()
 	assert.NilError(t, err)
 
-	deviceCache, err := cache.NewCache(networkChangesStore)
+	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
 	assert.NilError(t, err)
 
 	leadershipStore, err := leadership.NewLocalStore("test", cluster.NodeID("node1"))
