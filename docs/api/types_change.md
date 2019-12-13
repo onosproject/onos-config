@@ -76,7 +76,6 @@ State is the state of a phase
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | PENDING | 0 | PENDING indicates the phase is pending |
-| RUNNING | 1 | RUNNING indicates the phase is in progress |
 | COMPLETE | 2 | COMPLETE indicates the phase is complete |
 | FAILED | 3 | FAILED indicates the phase failed |
 

@@ -17,7 +17,6 @@ package device
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/api/types"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/stretchr/testify/assert"
@@ -246,7 +245,7 @@ func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.
 	if !ok {
 		return fmt.Errorf("failed to reconcile")
 	}
-	deviceChangeIf.Status.State = changetypes.State_RUNNING
+	deviceChangeIf.Attempt++
 	err = deviceChangesStore.Update(deviceChangeIf)
 	if err != nil {
 		return err

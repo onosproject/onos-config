@@ -17,7 +17,6 @@ package network
 import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/types"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
@@ -123,7 +122,7 @@ func TestNetworkWatcher(t *testing.T) {
 		t.FailNow()
 	}
 
-	change1.Status.State = changetypes.State_RUNNING
+	change1.Attempt++
 	err = store.Update(change1)
 	assert.NoError(t, err)
 
@@ -247,7 +246,7 @@ func TestDeviceWatcher(t *testing.T) {
 		t.FailNow()
 	}
 
-	change1.Status.State = changetypes.State_RUNNING
+	change1.Attempt++
 	err = changeStore.Update(change1)
 	assert.NoError(t, err)
 

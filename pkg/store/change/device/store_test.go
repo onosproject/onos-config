@@ -191,7 +191,7 @@ func TestDeviceStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Update one of the changes
-	change2.Status.State = changetypes.State_RUNNING
+	change2.Attempt++
 	revision := change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
@@ -205,7 +205,7 @@ func TestDeviceStore(t *testing.T) {
 	change2, err = store2.Get(devicechange.ID("network-change-2:device-1:1.0.0"))
 	assert.NoError(t, err)
 	assert.NotNil(t, change2)
-	change2.Status.State = changetypes.State_RUNNING
+	change2.Attempt++
 	revision = change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
@@ -221,7 +221,7 @@ func TestDeviceStore(t *testing.T) {
 	change32, err := store2.Get(devicechange.ID("network-change-3:device-1:1.0.0"))
 	assert.NoError(t, err)
 
-	change31.Status.State = changetypes.State_RUNNING
+	change31.Attempt++
 	err = store1.Update(change31)
 	assert.NoError(t, err)
 

@@ -47,9 +47,6 @@ enum State {
     // PENDING indicates the phase is pending
     PENDING = 0;
 
-    // RUNNING indicates the phase is in progress
-    RUNNING = 1;
-
     // COMPLETE indicates the phase is complete
     COMPLETE = 2;
 
