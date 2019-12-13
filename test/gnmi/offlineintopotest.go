@@ -38,7 +38,6 @@ const (
 
 // TestOfflineDeviceInTopo tests set/query of a single GNMI path to a single device that is in the config but offline
 func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
-
 	deviceClient, deviceClientError := env.Topo().NewDeviceServiceClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)
@@ -72,7 +71,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
 			Id:  gnmi.GnmiExtensionDeviceType,
-			Msg: []byte("Devicesim"),
+			Msg: []byte("offlineInTopoModDeviceType"),
 		},
 	}
 	extNameDeviceVersion := gnmi_ext.Extension_RegisteredExt{
@@ -93,10 +92,6 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	extensionBefore := extensionsSet[0].GetRegisteredExt()
 	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
 
-	//  Start the simulator
-	simulatorEnv := simulator.AddOrDie()
-	time.Sleep(2 * time.Second)
-
 	// Check that the value was set correctly
 	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath))
 	assert.NoError(t, errorAfter)
@@ -104,7 +99,11 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
 	assert.Equal(t, offlineInTopoModValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
 
-	// interrogate the device to check that the value was set properly
+	//  Start the simulator
+	simulatorEnv := simulator.AddOrDie()
+	time.Sleep(2 * time.Second)
+
+	// Interrogate the device to check that the value was set properly
 	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
 	checkDeviceValue(t, deviceGnmiClient, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath), offlineInTopoModValue)
 }
