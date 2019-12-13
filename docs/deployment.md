@@ -9,11 +9,12 @@ The following steps assume you have the setup outlined in that page, including t
 
 ## Installing the Chart
 
-To install the chart in the `micro-onos` namespace, simply run `helm install -n micro-onos onos-config deployments/helm/onos-config` from
-the root directory of this project:
-
+To install the chart in the `micro-onos` namespace run from the root directory of the `onos-helm-charts` repo the command:
 ```bash
-helm install -n micro-onos onos-config deployments/helm/onos-config
+helm install -n micro-onos onos-config onos-config
+```
+The output should be:
+```bash
 NAME: onos-config
 LAST DEPLOYED: Tue Nov 26 13:38:20 2019
 NAMESPACE: default
@@ -57,13 +58,13 @@ partitionSize: 1
 
 Issue the `helm install` command substituting `micro-onos` with your namespace.
 ```bash
-helm install -n <your_name_space> onos-config deployments/helm/onos-config
+helm install -n <your_name_space> onos-config onos-config
 ```
 ### Installing the chart with debug. 
 `onos-config` offers the capability to open a debug port (4000) to the image.
 To enable the debug capabilities please set the debug flag to true in `values.yaml` or pass it to `helm install`
 ```bash
-helm install -n micro-onos onos-config deployments/helm/onos-config --set debug=true
+helm install -n micro-onos onos-config onos-config --set debug=true
 ```
 
 ### Troubleshoot
@@ -75,8 +76,13 @@ debug your chart:
 * `--debug` prints out more information about your chart
 
 ```bash
-helm install -n micro-onos onos-config --debug --dry-run ./deployments/helm/onos-topo/
+helm install -n micro-onos onos-config --debug --dry-run onos-topo
 ```
+Also to verify how template values are expanded, run:
+```bash
+helm install template onos-config
+```
+
 ## Uninstalling the chart.
 
 To remove the `onos-config` pod issue
