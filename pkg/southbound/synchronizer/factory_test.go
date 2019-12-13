@@ -89,7 +89,7 @@ func TestFactory_Revert(t *testing.T) {
 		TLS:         topodevice.TlsConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
-		Attributes:  nil,
+		Attributes:  make(map[string]string),
 	}
 	topoEvent := topodevice.ListResponse{
 		Type:   topodevice.ListResponse_ADDED,
@@ -97,13 +97,6 @@ func TestFactory_Revert(t *testing.T) {
 	}
 
 	topoChan <- &topoEvent
-
-	time.Sleep(time.Millisecond * 100) // Give it a second for the event to take effect
-
-	//listeners := dispatcher.GetListeners()
-	//assert.Equal(t, 2, len(listeners))
-	//assert.Equal(t, listeners[0], device1NameStr) // One for DeviceListeners
-	//assert.Equal(t, listeners[1], device1NameStr) // One for OpState
 
 	// Wait for gRPC connection to timeout
 	time.Sleep(time.Millisecond * 600) // Give it a moment for the event to take effect
@@ -118,6 +111,41 @@ func TestFactory_Revert(t *testing.T) {
 			"could not create a gNMI client: Dialer(1.2.3.4:11161, 500ms): context deadline exceeded", "after gRPC timeout")
 		break
 	}
+
+	// Device removed from topo
+	//device1.Attributes["t1"] = "test"
+	device1Update := topodevice.Device{
+		ID:          topodevice.ID(device1NameStr),
+		Revision:    0,
+		Address:     "1.2.3.4:11161",
+		Target:      "",
+		Version:     "1.0.0",
+		Timeout:     &timeout,
+		Credentials: topodevice.Credentials{},
+		TLS:         topodevice.TlsConfig{},
+		Type:        "TestDevice",
+		Role:        "spine",
+		Attributes:  make(map[string]string),
+	}
+	topoEventUpdated := topodevice.ListResponse{
+		Type:   topodevice.ListResponse_UPDATED,
+		Device: &device1Update,
+	}
+	topoChan <- &topoEventUpdated
+
+	// Device removed from topo
+	topoEventRemove := topodevice.ListResponse{
+		Type:   topodevice.ListResponse_REMOVED,
+		Device: &device1,
+	}
+
+	topoChan <- &topoEventRemove
+
+	time.Sleep(time.Millisecond * 100) // Give it a moment for the event to take effect
+	opStateCacheLock.RLock()
+	_, ok = opstateCache[device1.ID]
+	opStateCacheLock.RUnlock()
+	assert.Assert(t, !ok, "Expected Op state cache entry to have been removed")
 
 	close(topoChan)
 
