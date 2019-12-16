@@ -78,6 +78,8 @@ func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 		return false, err
 	}
 
+	log.Infof("Reconciling DeviceChange %v", change)
+
 	// The device controller only needs to handle changes in the RUNNING state
 	if change == nil || change.Status.Incarnation == 0 || change.Status.State != changetypes.State_PENDING {
 		return true, nil

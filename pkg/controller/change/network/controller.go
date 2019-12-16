@@ -63,9 +63,11 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(id types.ID) (bool, error) {
 	change, err := r.networkChanges.Get(networkchange.ID(id))
 	if err != nil {
-		log.Warnf("Could not get NW change %s", id)
+		log.Warnf("Could not get NetworkChange %s", id)
 		return false, err
 	}
+
+	log.Infof("Reconciling NetworkChange %v", change)
 
 	// Handle the change for each phase
 	if change != nil {
@@ -104,7 +106,7 @@ func (r *Reconciler) reconcileChange(change *networkchange.NetworkChange) (bool,
 	}
 
 	// If the network change can be applied, apply it by incrementing the incarnation number
-	apply, err := r.canApplyChange(change, deviceChanges)
+	apply, err := r.canTryChange(change, deviceChanges)
 	if err != nil {
 		return false, err
 	} else if apply {
@@ -179,8 +181,8 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 	return true, nil
 }
 
-// canApplyChange returns a bool indicating whether the change can be applied
-func (r *Reconciler) canApplyChange(change *networkchange.NetworkChange, deviceChanges []*devicechange.DeviceChange) (bool, error) {
+// canTryChange returns a bool indicating whether the change can be attempted
+func (r *Reconciler) canTryChange(change *networkchange.NetworkChange, deviceChanges []*devicechange.DeviceChange) (bool, error) {
 	// If the incarnation number is positive, verify all device changes have been rolled back
 	if change.Status.Incarnation > 0 {
 		for _, deviceChange := range deviceChanges {
@@ -326,7 +328,7 @@ func (r *Reconciler) reconcileRollback(change *networkchange.NetworkChange) (boo
 	}
 
 	// If the network rollback can be applied, apply it by incrementing the incarnation number
-	apply, err := r.canApplyRollback(change, deviceChanges)
+	apply, err := r.canTryRollback(change, deviceChanges)
 	if err != nil {
 		return false, err
 	} else if apply {
@@ -395,14 +397,16 @@ func (r *Reconciler) isDeviceRollbacksComplete(networkChange *networkchange.Netw
 	return true
 }
 
-// canApplyRollback returns a bool indicating whether the rollback can be applied
-func (r *Reconciler) canApplyRollback(change *networkchange.NetworkChange, deviceChanges []*devicechange.DeviceChange) (bool, error) {
+// canTryRollback returns a bool indicating whether the rollback can be attempted
+func (r *Reconciler) canTryRollback(change *networkchange.NetworkChange, deviceChanges []*devicechange.DeviceChange) (bool, error) {
 	// Verify all device changes are being rolled back
-	for _, deviceChange := range deviceChanges {
-		if deviceChange.Status.Incarnation != change.Status.Incarnation ||
-			deviceChange.Status.Phase != changetypes.Phase_ROLLBACK ||
-			deviceChange.Status.State == changetypes.State_FAILED {
-			return false, nil
+	if change.Status.Incarnation > 0 {
+		for _, deviceChange := range deviceChanges {
+			if deviceChange.Status.Incarnation != change.Status.Incarnation ||
+				deviceChange.Status.Phase != changetypes.Phase_ROLLBACK ||
+				deviceChange.Status.State != changetypes.State_FAILED {
+				return false, nil
+			}
 		}
 	}
 
@@ -415,7 +419,8 @@ func (r *Reconciler) canApplyRollback(change *networkchange.NetworkChange, devic
 		// If the change intersects this change, verify it has been rolled back
 		if isIntersectingChange(change, nextChange) {
 			return nextChange.Status.Phase == changetypes.Phase_ROLLBACK &&
-				(nextChange.Status.State == changetypes.State_COMPLETE || nextChange.Status.State == changetypes.State_FAILED), nil
+				(nextChange.Status.State == changetypes.State_COMPLETE ||
+					nextChange.Status.State == changetypes.State_FAILED), nil
 		}
 
 		nextChange, err = r.networkChanges.GetNext(nextChange.Index)
