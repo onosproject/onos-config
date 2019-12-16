@@ -245,7 +245,7 @@ func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.
 	if !ok {
 		return fmt.Errorf("failed to reconcile")
 	}
-	deviceChangeIf.Attempt++
+	deviceChangeIf.Status.Incarnation++
 	err = deviceChangesStore.Update(deviceChangeIf)
 	if err != nil {
 		return err

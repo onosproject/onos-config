@@ -31,6 +31,9 @@ message Status {
 
     // message is a result message
     string message = 4;
+
+    // incarnation is the status incarnation number
+    uint64 incarnation = 5;
 }
 
 // Phase is the phase of a NetworkChange

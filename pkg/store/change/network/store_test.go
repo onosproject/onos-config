@@ -133,7 +133,7 @@ func TestNetworkChangeStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Update one of the changes
-	change2.Attempt++
+	change2.Status.Incarnation++
 	revision := change2.Revision
 	err = store1.Update(change2)
 	assert.NoError(t, err)
