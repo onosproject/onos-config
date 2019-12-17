@@ -115,13 +115,13 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, changetypes.State_PENDING, deviceChange2.Status.State)
 
-	// Change the state of device-1 change 1 to RUNNING
-	deviceChange1.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-1 change 1
+	deviceChange1.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
-	// Change the state of device-2 change 1 to RUNNING
-	deviceChange2.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-2 change 1
+	deviceChange2.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -184,13 +184,13 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, changetypes.State_PENDING, deviceChange2.Status.State)
 
-	// Change the state of device-1 change 1 to RUNNING
-	deviceChange1.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-1 change 1
+	deviceChange1.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
-	// Change the state of device-2 change 1 to RUNNING
-	deviceChange2.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-2 change 1
+	deviceChange2.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -239,8 +239,8 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, changetypes.State_PENDING, deviceChange1.Status.State)
 
-	// Change the state of device-1 change 1 to RUNNING
-	deviceChange1.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-1 change 1
+	deviceChange1.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
@@ -266,8 +266,8 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	// Change the state of device-1 change 1 to RUNNING
-	deviceChange2.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-1 change 2
+	deviceChange2.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -317,8 +317,10 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	// Change the state of device-1 change 1 to RUNNING
-	deviceChange2.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-1 change 2
+	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
+	assert.NoError(t, err)
+	deviceChange2.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -374,8 +376,8 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	// Change the state of device-1 change 1 to RUNNING
-	deviceChange1.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-1 change 1
+	deviceChange1.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange1)
 	assert.NoError(t, err)
 
@@ -417,8 +419,8 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	// Change the state of device-1 change 1 to RUNNING
-	deviceChange2.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-1 change 2
+	deviceChange2.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 
@@ -450,8 +452,10 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	// Change the state of device-1 change 1 to RUNNING
-	deviceChange2.Status.State = changetypes.State_RUNNING
+	// Increment the incarnation number for device-1 change 2
+	deviceChange2, err = deviceChanges.Get(deviceChange2.ID)
+	assert.NoError(t, err)
+	deviceChange2.Status.Incarnation++
 	err = deviceChanges.Update(deviceChange2)
 	assert.NoError(t, err)
 

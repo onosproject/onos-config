@@ -36,6 +36,7 @@ Status is the status of a NetworkChange
 | state | [State](#onos.config.change.State) |  | &#39;state&#39; is the state of the change within a Phase |
 | reason | [Reason](#onos.config.change.Reason) |  | &#39;reason&#39; is a failure reason |
 | message | [string](#string) |  | message is a result message |
+| incarnation | [uint64](#uint64) |  | incarnation is the status incarnation number |
 
 
 
@@ -76,7 +77,6 @@ State is the state of a phase
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | PENDING | 0 | PENDING indicates the phase is pending |
-| RUNNING | 1 | RUNNING indicates the phase is in progress |
 | COMPLETE | 2 | COMPLETE indicates the phase is complete |
 | FAILED | 3 | FAILED indicates the phase failed |
 

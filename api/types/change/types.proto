@@ -31,6 +31,9 @@ message Status {
 
     // message is a result message
     string message = 4;
+
+    // incarnation is the status incarnation number
+    uint64 incarnation = 5;
 }
 
 // Phase is the phase of a NetworkChange
@@ -46,9 +49,6 @@ enum Phase {
 enum State {
     // PENDING indicates the phase is pending
     PENDING = 0;
-
-    // RUNNING indicates the phase is in progress
-    RUNNING = 1;
 
     // COMPLETE indicates the phase is complete
     COMPLETE = 2;

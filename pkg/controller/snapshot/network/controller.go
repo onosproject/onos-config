@@ -174,7 +174,7 @@ func (r *Reconciler) createDeviceSnapshots(snapshot *networksnapshot.NetworkSnap
 		}
 
 		// If the change is still pending, ensure snapshots are not taken of devices following this change
-		if change.Status.State == changetypes.State_PENDING || change.Status.State == changetypes.State_RUNNING {
+		if change.Status.State == changetypes.State_PENDING {
 			// Record max device changes if necessary
 			for _, device := range change.Refs {
 				if _, ok := deviceMaxChanges[device.DeviceChangeID.GetDeviceVersionedID()]; !ok {
