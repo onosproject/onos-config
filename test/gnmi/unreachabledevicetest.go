@@ -68,7 +68,7 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
 			Id:  gnmi.GnmiExtensionDeviceType,
-			Msg: []byte("Devicesim"),
+			Msg: []byte(unreachableDeviceModDeviceType),
 		},
 	}
 	extNameDeviceVersion := gnmi_ext.Extension_RegisteredExt{
@@ -83,6 +83,7 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	setPath[0].pathDataValue = unreachableDeviceModValue
 	setPath[0].pathDataType = StringVal
 
+	// Set the value - should return a pending change
 	_, extensionsSet, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, extensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensionsSet))
