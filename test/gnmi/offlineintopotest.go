@@ -17,16 +17,13 @@ package gnmi
 
 import (
 	"context"
-	"fmt"
 	"github.com/onosproject/onos-config/api/diags"
 	"github.com/onosproject/onos-config/api/types/change"
 	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
-	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -70,30 +67,17 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	assert.True(t, c != nil, "Fetching client returned nil")
 
 	// Set a value using gNMI client to the offline device
-	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnmi.GnmiExtensionDeviceType,
-			Msg: []byte(offlineInTopoModDeviceType),
-		},
-	}
-	extNameDeviceVersion := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnmi.GnmiExtensionVersion,
-			Msg: []byte(offlineInTopoModDeviceVersion),
-		},
-	}
-	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
 
 	setPath := makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath)
 	setPath[0].pathDataValue = offlineInTopoModValue
 	setPath[0].pathDataType = StringVal
 
-	_, extensionsSet, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, extensions)
+	_, extensionsSet, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensionsSet))
 	extensionBefore := extensionsSet[0].GetRegisteredExt()
 	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
-	networkChangeId := network.ID(extensionBefore.Msg)
+	networkChangeID := network.ID(extensionBefore.Msg)
 
 	// Check that the value was set correctly
 	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath))
@@ -107,25 +91,30 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	assert.Nil(t, changeServiceClientErr)
 	assert.True(t, changeServiceClient != nil)
 	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
-		Subscribe:            false,
-		ChangeID:             networkChangeId,
-		WithoutReplay:        false,
+		Subscribe:     false,
+		ChangeID:      networkChangeID,
+		WithoutReplay: false,
 	}
-	listDeviceChangesClient, listDeviceChangesClientErr := changeServiceClient.ListNetworkChanges(context.Background(), listNetworkChangeRequest)
-	assert.Nil(t, listDeviceChangesClientErr)
-	assert.True(t, listDeviceChangesClient != nil)
-	response, responseErr := listDeviceChangesClient.Recv()
-	_, _ = fmt.Fprintf(os.Stderr, "Network Change state is %s", response.Change.Status.State)
-	assert.Nil(t, responseErr)
-	assert.True(t, response != nil)
-	assert.Equal(t, change.State_PENDING, response.Change.Status.State)
+	listNetworkChangesClient, listNetworkChangesClientErr := changeServiceClient.ListNetworkChanges(context.Background(), listNetworkChangeRequest)
+	assert.Nil(t, listNetworkChangesClientErr)
+	assert.True(t, listNetworkChangesClient != nil)
+	networkChangeResponse, networkChangeResponseErr := listNetworkChangesClient.Recv()
+	assert.Nil(t, networkChangeResponseErr)
+	assert.True(t, networkChangeResponse != nil)
+	assert.Equal(t, change.State_PENDING, networkChangeResponse.Change.Status.State)
 
 	// Start the device simulator
-	//simulator := env.NewSimulator().SetName(offlineInTopoModDeviceName)
-	//simulatorEnv := simulator.AddOrDie()
+	simulator := env.NewSimulator().SetName(offlineInTopoModDeviceName)
+	simulatorEnv := simulator.AddOrDie()
 	time.Sleep(2 * time.Second)
 
 	// Interrogate the device to check that the value was set properly
-	//deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
-	//checkDeviceValue(t, deviceGnmiClient, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath), offlineInTopoModValue)
+	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
+	checkDeviceValue(t, deviceGnmiClient, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath), offlineInTopoModValue)
+
+	// Check that the network change has completed
+	networkChangeResponse, networkChangeResponseErr = listNetworkChangesClient.Recv()
+	assert.Nil(t, networkChangeResponseErr)
+	assert.True(t, networkChangeResponse != nil)
+	assert.Equal(t, change.State_COMPLETE, networkChangeResponse.Change.Status.State)
 }
