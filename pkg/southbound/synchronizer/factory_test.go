@@ -99,7 +99,7 @@ func TestFactory_Revert(t *testing.T) {
 	topoChan <- &topoEvent
 
 	// Wait for gRPC connection to timeout
-	time.Sleep(time.Millisecond * 600) // Give it a moment for the event to take effect
+	time.Sleep(time.Millisecond * 600) // Give it a moment for the event to take effect and for timeout to happen
 	opStateCacheLock.RLock()
 	opStateCacheUpdated, ok := opstateCache[device1.ID]
 	opStateCacheLock.RUnlock()
@@ -124,7 +124,7 @@ func TestFactory_Revert(t *testing.T) {
 		Credentials: topodevice.Credentials{},
 		TLS:         topodevice.TlsConfig{},
 		Type:        "TestDevice",
-		Role:        "spine",
+		Role:        "spine", // Role is changed - will be ignored
 		Attributes:  make(map[string]string),
 	}
 	topoEventUpdated := topodevice.ListResponse{
@@ -133,6 +133,12 @@ func TestFactory_Revert(t *testing.T) {
 	}
 	topoChan <- &topoEventUpdated
 
+	for resp := range responseChan {
+		assert.Error(t, resp.Error(),
+			"topo update event ignored type:UPDATED device:<id:\"factoryTd\" address:\"1.2.3.4:11161\" version:\"1.0.0\" timeout:<nanos:500000000 > credentials:<> tls:<> type:\"TestDevice\" role:\"spine\" > ", "after topo update")
+		break
+	}
+
 	// Device removed from topo
 	topoEventRemove := topodevice.ListResponse{
 		Type:   topodevice.ListResponse_REMOVED,
@@ -140,6 +146,12 @@ func TestFactory_Revert(t *testing.T) {
 	}
 
 	topoChan <- &topoEventRemove
+
+	for resp := range responseChan {
+		assert.Error(t, resp.Error(),
+			"could not create a gNMI client: Dialer(1.2.3.4:11161, 500ms): context deadline exceeded", "after topo remove")
+		break
+	}
 
 	time.Sleep(time.Millisecond * 100) // Give it a moment for the event to take effect
 	opStateCacheLock.RLock()

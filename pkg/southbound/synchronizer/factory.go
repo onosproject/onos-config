@@ -16,6 +16,7 @@ package synchronizer
 
 import (
 	"context"
+	"fmt"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
@@ -32,7 +33,7 @@ import (
 
 var connectionMonitors = make(map[topodevice.ID]*connectionMonitor)
 var connections = make(map[topodevice.ID]bool)
-var commMonitorMu = syncPrimitives.RWMutex{}
+var connMonitorMu = syncPrimitives.RWMutex{}
 
 const backoffInterval = 10 * time.Millisecond
 const maxBackoffTime = 5 * time.Second
@@ -55,8 +56,9 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			}
 
 			device := topoEvent.Device
-			commMonitorMu.Lock()
+			connMonitorMu.Lock()
 			connMon, ok := connectionMonitors[device.ID]
+			connMonitorMu.Unlock()
 			if !ok && topoEvent.Type != topodevice.ListResponse_REMOVED {
 				log.Infof("Topo device %s %s", device.ID, topoEvent.Type)
 				connMon = &connectionMonitor{
@@ -70,7 +72,9 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 					device:                    device,
 					target:                    newTargetFn(),
 				}
+				connMonitorMu.Lock()
 				connectionMonitors[device.ID] = connMon
+				connMonitorMu.Unlock()
 				go connMon.connect()
 			} else if ok && topoEvent.Type == topodevice.ListResponse_UPDATED {
 				changed := false
@@ -99,25 +103,32 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 					connMon.mu.Unlock()
 					log.Infof("Topo device %s UPDATED timeout %s -> %s ", device.ID, oldTimeout, topoEvent.Device.Timeout)
 				}
+				if len(connMon.device.Protocols) != len(topoEvent.Device.Protocols) {
+					// Ignoring any topo protocol updates - we set the gNMI one and
+					// Don't really care about the others
+					changed = true
+				}
 				if !changed {
 					log.Infof("Topo device %s UPDATE not supported %v", device.ID, device)
+					southboundErrorChan <- events.NewErrorEventNoChangeID(
+						events.EventTypeTopoUpdate, string(device.ID),
+						fmt.Errorf("topo update event ignored %v", topoEvent))
 				}
 			} else if ok && topoEvent.Type == topodevice.ListResponse_REMOVED {
 				log.Infof("Topo device %s is being REMOVED - waiting to complete", device.ID)
+				connMonitorMu.Lock()
 				delete(connectionMonitors, device.ID)
+				delete(connections, device.ID)
+				connMonitorMu.Unlock()
 				connMon.close()
 				// TODO Change grpc.DialContext() used to non blocking so that we can
 				//  close the connection right away See https://github.com/onosproject/onos-config/issues/981
-				waitTime := *connMon.device.GetTimeout() //Use the old timeout in case it has changed
-				if maxBackoffTime > waitTime {
-					waitTime = maxBackoffTime
-				}
-				time.Sleep(waitTime + time.Millisecond*20) // close might not take effect until timeout
-				log.Infof("Topo device %s REMOVED", device.ID)
+				waitTime := time.Duration(math.Max(float64(*connMon.device.GetTimeout()), float64(maxBackoffTime)))
+				time.Sleep(waitTime + 100*time.Millisecond)
+				log.Infof("Topo device %s REMOVED after %s", device.ID, waitTime)
 			} else {
 				log.Warnf("Unhandled event from topo service %v", topoEvent)
 			}
-			commMonitorMu.Unlock()
 		case event, ok := <-errChan:
 			if !ok {
 				return
@@ -126,33 +137,8 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			log.Infof("Received event %v", event)
 			deviceID := topodevice.ID(event.Subject())
 			switch event.EventType() {
-			case events.EventTypeErrorDeviceConnect:
-				deviceID := topodevice.ID(event.Subject())
-				commMonitorMu.Lock()
-				connMon, ok := connectionMonitors[deviceID]
-				if ok && connections[deviceID] {
-					connMon.close()
-					connMon = &connectionMonitor{
-						opStateChan:               connMon.opStateChan,
-						southboundErrorChan:       connMon.southboundErrorChan,
-						dispatcher:                connMon.dispatcher,
-						modelRegistry:             connMon.modelRegistry,
-						operationalStateCache:     connMon.operationalStateCache,
-						operationalStateCacheLock: connMon.operationalStateCacheLock,
-						deviceChangeStore:         connMon.deviceChangeStore,
-						device:                    connMon.device,
-						target:                    connMon.target,
-					}
-					connectionMonitors[deviceID] = connMon
-					connections[deviceID] = false
-					log.Info("Retrying connecting to device %s ", deviceID)
-					go connMon.connect()
-				}
-				commMonitorMu.Unlock()
 			case events.EventTypeDeviceConnected:
-				commMonitorMu.RLock()
 				connections[deviceID] = true
-				commMonitorMu.RUnlock()
 			}
 			southboundErrorChan <- event
 		}
@@ -189,7 +175,8 @@ func (cm *connectionMonitor) connect() {
 
 		err := cm.synchronize()
 		if err != nil {
-			backoffTime := time.Duration(math.Min(float64(backoffInterval)*float64(2^count), float64(maxBackoffTime)))
+			backoffTime := time.Duration(math.Min(float64(backoffInterval)*math.Pow(2, float64(count)), float64(maxBackoffTime)))
+			log.Infof("Failed to connect to %s. Retry after %v Attempt %d", cm.device.ID, backoffTime, count)
 			time.Sleep(backoffTime)
 		} else {
 			return
@@ -226,14 +213,14 @@ func (cm *connectionMonitor) synchronize() error {
 		valueMap, mReadOnlyPaths, cm.target, mStateGetMode, cm.operationalStateCacheLock, cm.deviceChangeStore)
 	if err != nil {
 		log.Errorf("Error connecting to device %v: %v", cm.device, err)
-		cm.southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
-			string(cm.device.ID), err)
 		//unregistering the listener for changes to the device
 		//unregistering the listener for changes to the device
 		cm.dispatcher.UnregisterOperationalState(string(cm.device.ID))
 		cm.operationalStateCacheLock.Lock()
 		delete(cm.operationalStateCache, cm.device.ID)
 		cm.operationalStateCacheLock.Unlock()
+		cm.southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+			string(cm.device.ID), err)
 		return err
 	}
 

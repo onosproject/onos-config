@@ -38,6 +38,7 @@ const ( // For event types
 	EventTypeErrorMissingModelPlugin
 	EventTypeErrorTranslation
 	EventTypeErrorGetWithRoPaths
+	EventTypeTopoUpdate
 )
 
 // EventAction is an enumerated type
@@ -52,10 +53,12 @@ const (
 )
 
 func (et EventType) String() string {
-	return [...]string{"OperationalState", "EventTypeAchievedSetConfig",
-		"EventTypeErrorSetConfig", "EventTypeErrorParseConfig",
-		"EventTypeErrorDeviceConnect", "EventTypeErrorDeviceCapabilities", "EventTypeErrorDeviceDisconnect",
-		"EventTypeErrorSubscribe, EventTypeErrorMissingModelPlugin, EventTypeErrorTranslation"}[et]
+	return [...]string{"EventOperationalState", "EventTypeDeviceConnected",
+		"EventTypeErrorParseConfig", "EventTypeErrorDeviceConnect",
+		"EventTypeErrorDeviceCapabilities", "EventTypeErrorDeviceConnectInitialConfigSync",
+		"EventTypeErrorDeviceDisconnect",
+		"EventTypeErrorSubscribe, EventTypeErrorMissingModelPlugin, EventTypeErrorTranslation",
+		"EventTypeErrorGetWithRoPaths", "EventTypeTopoUpdate"}[et]
 }
 
 // Event is a general purpose base type of event
