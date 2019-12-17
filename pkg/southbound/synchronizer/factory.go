@@ -16,6 +16,7 @@ package synchronizer
 
 import (
 	"context"
+	"fmt"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
@@ -30,15 +31,16 @@ import (
 	"time"
 )
 
-var synchronizers = make(map[topodevice.ID]*deviceSynchronizer)
+var connectionMonitors = make(map[topodevice.ID]*connectionMonitor)
 var connections = make(map[topodevice.ID]bool)
+var connMonitorMu = syncPrimitives.RWMutex{}
 
 const backoffInterval = 10 * time.Millisecond
 const maxBackoffTime = 5 * time.Second
 
 // Factory is a go routine thread that listens out for Device creation
 // and deletion events and spawns Synchronizer threads for them
-// These synchronizers then listen out for configEvents relative to a device and
+// These connectionMonitors then listen out for configEvents relative to a device and
 func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- events.OperationalStateEvent,
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
 	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap,
@@ -54,10 +56,12 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			}
 
 			device := topoEvent.Device
-			log.Infof("Received device event %v", device)
-			_, ok = synchronizers[device.ID]
-			if !ok {
-				synchronizer := &deviceSynchronizer{
+			connMonitorMu.Lock()
+			connMon, ok := connectionMonitors[device.ID]
+			connMonitorMu.Unlock()
+			if !ok && topoEvent.Type != topodevice.ListResponse_REMOVED {
+				log.Infof("Topo device %s %s", device.ID, topoEvent.Type)
+				connMon = &connectionMonitor{
 					opStateChan:               opStateChan,
 					southboundErrorChan:       errChan,
 					dispatcher:                dispatcher,
@@ -68,8 +72,62 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 					device:                    device,
 					target:                    newTargetFn(),
 				}
-				synchronizers[device.ID] = synchronizer
-				go synchronizer.connect()
+				connMonitorMu.Lock()
+				connectionMonitors[device.ID] = connMon
+				connMonitorMu.Unlock()
+				go connMon.connect()
+			} else if ok && topoEvent.Type == topodevice.ListResponse_UPDATED {
+				changed := false
+				if connMon.device.Address != topoEvent.Device.Address {
+					oldAddress := connMon.device.Address
+					connMon.device.Address = topoEvent.Device.Address
+					changed = true
+					log.Infof("Topo device %s is being UPDATED - waiting to complete", device.ID)
+					connMon.close()
+					// TODO Change grpc.DialContext() used to non blocking so that we can
+					//  close the connection right away See https://github.com/onosproject/onos-config/issues/981
+					waitTime := *connMon.device.GetTimeout() //Use the old timeout in case it has changed
+					if maxBackoffTime > waitTime {
+						waitTime = maxBackoffTime
+					}
+					time.Sleep(waitTime + time.Millisecond*20) // close might not take effect until timeout
+					connMon.reopen()
+					go connMon.connect()
+					log.Infof("Topo device %s UPDATED address %s -> %s ", device.ID, oldAddress, topoEvent.Device.Address)
+				}
+				if connMon.device.Timeout.String() != topoEvent.Device.Timeout.String() {
+					connMon.mu.Lock()
+					oldTimeout := connMon.device.Timeout
+					connMon.device.Timeout = topoEvent.Device.Timeout
+					changed = true
+					connMon.mu.Unlock()
+					log.Infof("Topo device %s UPDATED timeout %s -> %s ", device.ID, oldTimeout, topoEvent.Device.Timeout)
+				}
+				if len(connMon.device.Protocols) != len(topoEvent.Device.Protocols) {
+					// Ignoring any topo protocol updates - we set the gNMI one and
+					// Don't really care about the others
+					changed = true
+				}
+				if !changed {
+					log.Infof("Topo device %s UPDATE not supported %v", device.ID, device)
+					southboundErrorChan <- events.NewErrorEventNoChangeID(
+						events.EventTypeTopoUpdate, string(device.ID),
+						fmt.Errorf("topo update event ignored %v", topoEvent))
+				}
+			} else if ok && topoEvent.Type == topodevice.ListResponse_REMOVED {
+				log.Infof("Topo device %s is being REMOVED - waiting to complete", device.ID)
+				connMonitorMu.Lock()
+				delete(connectionMonitors, device.ID)
+				delete(connections, device.ID)
+				connMonitorMu.Unlock()
+				connMon.close()
+				// TODO Change grpc.DialContext() used to non blocking so that we can
+				//  close the connection right away See https://github.com/onosproject/onos-config/issues/981
+				waitTime := time.Duration(math.Max(float64(*connMon.device.GetTimeout()), float64(maxBackoffTime)))
+				time.Sleep(waitTime + 100*time.Millisecond)
+				log.Infof("Topo device %s REMOVED after %s", device.ID, waitTime)
+			} else {
+				log.Warnf("Unhandled event from topo service %v", topoEvent)
 			}
 		case event, ok := <-errChan:
 			if !ok {
@@ -79,27 +137,6 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			log.Infof("Received event %v", event)
 			deviceID := topodevice.ID(event.Subject())
 			switch event.EventType() {
-			case events.EventTypeErrorDeviceConnect:
-				deviceID := topodevice.ID(event.Subject())
-				synchronizer, ok := synchronizers[deviceID]
-				if ok && connections[deviceID] {
-					synchronizer.close()
-					synchronizer = &deviceSynchronizer{
-						opStateChan:               synchronizer.opStateChan,
-						southboundErrorChan:       synchronizer.southboundErrorChan,
-						dispatcher:                synchronizer.dispatcher,
-						modelRegistry:             synchronizer.modelRegistry,
-						operationalStateCache:     synchronizer.operationalStateCache,
-						operationalStateCacheLock: synchronizer.operationalStateCacheLock,
-						deviceChangeStore:         synchronizer.deviceChangeStore,
-						device:                    synchronizer.device,
-						target:                    synchronizer.target,
-					}
-					synchronizers[deviceID] = synchronizer
-					connections[deviceID] = false
-					log.Info("Retrying connecting to device %s ", deviceID)
-					go synchronizer.connect()
-				}
 			case events.EventTypeDeviceConnected:
 				connections[deviceID] = true
 			}
@@ -108,8 +145,8 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 	}
 }
 
-// deviceSynchronizer reacts to device events to establish connections to the device
-type deviceSynchronizer struct {
+// connectionMonitor reacts to device events to establish connections to the device
+type connectionMonitor struct {
 	opStateChan               chan<- events.OperationalStateEvent
 	southboundErrorChan       chan<- events.DeviceResponse
 	dispatcher                *dispatcher.Dispatcher
@@ -120,25 +157,26 @@ type deviceSynchronizer struct {
 	device                    *topodevice.Device
 	target                    southbound.TargetIf
 	closed                    bool
-	mu                        syncPrimitives.Mutex
+	mu                        syncPrimitives.RWMutex
 }
 
-func (s *deviceSynchronizer) connect() {
+func (cm *connectionMonitor) connect() {
 	count := 0
 	for {
 		count++
 
-		s.mu.Lock()
-		closed := s.closed
-		s.mu.Unlock()
+		cm.mu.Lock()
+		closed := cm.closed
+		cm.mu.Unlock()
 
 		if closed {
 			return
 		}
 
-		err := s.synchronize()
+		err := cm.synchronize()
 		if err != nil {
-			backoffTime := time.Duration(math.Min(float64(backoffInterval)*float64(2^count), float64(maxBackoffTime)))
+			backoffTime := time.Duration(math.Min(float64(backoffInterval)*math.Pow(2, float64(count)), float64(maxBackoffTime)))
+			log.Infof("Failed to connect to %s. Retry after %v Attempt %d", cm.device.ID, backoffTime, count)
 			time.Sleep(backoffTime)
 		} else {
 			return
@@ -147,58 +185,69 @@ func (s *deviceSynchronizer) connect() {
 }
 
 // synchronize connects to the device for synchronization
-func (s *deviceSynchronizer) synchronize() error {
-	log.Infof("Connecting to device %v", s.device)
-	modelName := utils.ToModelName(devicetype.Type(s.device.Type), devicetype.Version(s.device.Version))
-	mReadOnlyPaths, ok := s.modelRegistry.ModelReadOnlyPaths[modelName]
+func (cm *connectionMonitor) synchronize() error {
+	cm.mu.RLock()
+	log.Infof("Connecting to device %v", cm.device)
+	modelName := utils.ToModelName(devicetype.Type(cm.device.Type), devicetype.Version(cm.device.Version))
+	mReadOnlyPaths, ok := cm.modelRegistry.ModelReadOnlyPaths[modelName]
 	if !ok {
-		log.Warnf("Cannot check for read only paths for target %s with %s because "+
-			"Model Plugin not available - continuing", s.device.ID, s.device.Version)
+		log.Warnf("Cannot check for read only paths for target %cm with %cm because "+
+			"Model Plugin not available - continuing", cm.device.ID, cm.device.Version)
 	}
 	mStateGetMode := modelregistry.GetStateOpState // default
-	mPlugin, ok := s.modelRegistry.ModelPlugins[modelName]
+	mPlugin, ok := cm.modelRegistry.ModelPlugins[modelName]
 	if !ok {
-		log.Warnf("Cannot check for StateGetMode for target %s with %s because "+
-			"Model Plugin not available - continuing", s.device.ID, s.device.Version)
+		log.Warnf("Cannot check for StateGetMode for target %cm with %cm because "+
+			"Model Plugin not available - continuing", cm.device.ID, cm.device.Version)
 	} else {
 		mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
 	}
 	valueMap := make(devicechange.TypedValueMap)
-	s.operationalStateCacheLock.Lock()
-	s.operationalStateCache[s.device.ID] = valueMap
-	s.operationalStateCacheLock.Unlock()
+	cm.operationalStateCacheLock.Lock()
+	cm.operationalStateCache[cm.device.ID] = valueMap
+	cm.operationalStateCacheLock.Unlock()
+	cm.mu.RUnlock()
 
 	ctx := context.Background()
-	sync, err := New(ctx, s.device, s.opStateChan, s.southboundErrorChan,
-		valueMap, mReadOnlyPaths, s.target, mStateGetMode, s.operationalStateCacheLock, s.deviceChangeStore)
+	sync, err := New(ctx, cm.device, cm.opStateChan, cm.southboundErrorChan,
+		valueMap, mReadOnlyPaths, cm.target, mStateGetMode, cm.operationalStateCacheLock, cm.deviceChangeStore)
 	if err != nil {
-		log.Errorf("Error connecting to device %v: %v", s.device, err)
-		s.southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
-			string(s.device.ID), err)
+		log.Errorf("Error connecting to device %v: %v", cm.device, err)
 		//unregistering the listener for changes to the device
 		//unregistering the listener for changes to the device
-		s.dispatcher.UnregisterOperationalState(string(s.device.ID))
-		s.operationalStateCacheLock.Lock()
-		delete(s.operationalStateCache, s.device.ID)
-		s.operationalStateCacheLock.Unlock()
+		cm.dispatcher.UnregisterOperationalState(string(cm.device.ID))
+		cm.operationalStateCacheLock.Lock()
+		delete(cm.operationalStateCache, cm.device.ID)
+		cm.operationalStateCacheLock.Unlock()
+		cm.southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
+			string(cm.device.ID), err)
 		return err
 	}
 
 	//spawning two go routines to propagate changes and to get operational state
 	//go sync.syncConfigEventsToDevice(target, respChan)
-	s.southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
+	cm.southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(cm.device.ID))
 	if sync.getStateMode == modelregistry.GetStateOpState {
-		go sync.syncOperationalStateByPartition(ctx, s.target, s.southboundErrorChan)
+		go sync.syncOperationalStateByPartition(ctx, cm.target, cm.southboundErrorChan)
 	} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||
 		sync.getStateMode == modelregistry.GetStateExplicitRoPathsExpandWildcards {
-		go sync.syncOperationalStateByPaths(ctx, s.target, s.southboundErrorChan)
+		go sync.syncOperationalStateByPaths(ctx, cm.target, cm.southboundErrorChan)
 	}
 	return nil
 }
 
 // close closes the synchronizer
-func (s *deviceSynchronizer) close() {
-	s.mu.Lock()
-	s.closed = true
-	s.mu.Unlock()
+func (cm *connectionMonitor) close() {
+	cm.mu.Lock()
+	cm.closed = true
+	cm.mu.Unlock()
+	cm.operationalStateCacheLock.Lock()
+	delete(cm.operationalStateCache, cm.device.ID)
+	cm.operationalStateCacheLock.Unlock()
+}
+
+func (cm *connectionMonitor) reopen() {
+	cm.mu.Lock()
+	cm.closed = false
+	cm.mu.Unlock()
 }
