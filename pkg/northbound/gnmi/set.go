@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/pkg/namesgenerator"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -368,35 +367,26 @@ func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]
 		change := changeEvent.Object.(*networkchange.NetworkChange)
 		log.Infof("Received notification for change ID %s, phase %s, state %s", change.ID,
 			change.Status.Phase, change.Status.State)
-		if change.Status.Phase == changetypes.Phase_CHANGE {
-			switch changeStatus := change.Status.State; changeStatus {
-			case changetypes.State_COMPLETE:
-				for _, deviceChange := range change.Changes {
-					deviceID := deviceChange.DeviceID
-					for _, valueUpdate := range deviceChange.Values {
-						var updateResult *gnmi.UpdateResult
-						var errBuild error
-						if valueUpdate.Removed {
-							updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
-								string(deviceID), gnmi.UpdateResult_DELETE)
-						} else {
-							updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
-								string(deviceID), gnmi.UpdateResult_UPDATE)
-						}
-						if errBuild != nil {
-							log.Error(errBuild)
-							continue
-						}
-						updateResults = append(updateResults, updateResult)
+		if len(change.Changes) > 0 {
+			for _, deviceChange := range change.Changes {
+				deviceID := deviceChange.DeviceID
+				for _, valueUpdate := range deviceChange.Values {
+					var updateResult *gnmi.UpdateResult
+					var errBuild error
+					if valueUpdate.Removed {
+						updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
+							string(deviceID), gnmi.UpdateResult_DELETE)
+					} else {
+						updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
+							string(deviceID), gnmi.UpdateResult_UPDATE)
 					}
+					if errBuild != nil {
+						log.Error(errBuild)
+						continue
+					}
+					updateResults = append(updateResults, updateResult)
 				}
-			case changetypes.State_FAILED:
-				return nil, fmt.Errorf("issue in setting config reson %s, error %s, rolling back change %s",
-					change.Status.Reason, change.Status.Message, changeID)
-			default:
-				continue
 			}
-			break
 		}
 	}
 	return updateResults, nil
