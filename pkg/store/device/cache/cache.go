@@ -81,6 +81,14 @@ type networkChangeStoreCache struct {
 	listeners           map[chan<- stream.Event]struct{}
 }
 
+func (c *networkChangeStoreCache) getListeners() []chan<- stream.Event {
+	listeners := make([]chan<- stream.Event, 0, len(c.listeners))
+	for listener := range c.listeners {
+		listeners = append(listeners, listener)
+	}
+	return listeners
+}
+
 // listen starts listening for network changes
 func (c *networkChangeStoreCache) listen() error {
 	ch := make(chan stream.Event)
@@ -121,7 +129,9 @@ func (c *networkChangeStoreCache) listen() error {
 						}
 						c.devices[key] = &info
 						log.Infof("Updating cache with %v. Size %d Listeners %d", info, len(c.devices), len(c.listeners))
-						for l := range c.listeners {
+						listeners := c.getListeners()
+						c.mu.Unlock()
+						for _, l := range listeners {
 							if l != nil {
 								l <- stream.Event{
 									Type:   stream.Created,
@@ -129,8 +139,9 @@ func (c *networkChangeStoreCache) listen() error {
 								}
 							}
 						}
+					} else {
+						c.mu.Unlock()
 					}
-					c.mu.Unlock()
 				}
 			}
 			ssChange, ok := event.Object.(*devicesnapshot.DeviceSnapshot)
@@ -145,7 +156,9 @@ func (c *networkChangeStoreCache) listen() error {
 				if _, ok := c.devices[key]; !ok {
 					c.devices[key] = &info
 					log.Infof("Updating cache with %v. Size %d Listeners %d", info, len(c.devices), len(c.listeners))
-					for l := range c.listeners {
+					listeners := c.getListeners()
+					c.mu.Unlock()
+					for _, l := range listeners {
 						if l != nil {
 							l <- stream.Event{
 								Type:   stream.Created,
@@ -153,8 +166,9 @@ func (c *networkChangeStoreCache) listen() error {
 							}
 						}
 					}
+				} else {
+					c.mu.Unlock()
 				}
-				c.mu.Unlock()
 			}
 		}
 		ctx.Close()
@@ -226,17 +240,23 @@ func (c *networkChangeStoreCache) Watch(ch chan<- stream.Event, replay bool) (st
 		return nil, fmt.Errorf("already listening to channel %v", ch)
 	}
 	c.mu.Lock()
+	c.listeners[ch] = struct{}{}
 	if replay {
-		for _, info := range c.devices {
+		devices := make(map[device.VersionedID]*Info)
+		for device, info := range c.devices {
+			devices[device] = info
+		}
+		c.mu.Unlock()
+		for _, info := range devices {
 			event := stream.Event{
 				Type:   stream.None,
 				Object: info,
 			}
 			ch <- event
 		}
+	} else {
+		c.mu.Unlock()
 	}
-	c.listeners[ch] = struct{}{}
-	c.mu.Unlock()
 
 	return stream.NewContext(func() {
 		c.mu.Lock()
