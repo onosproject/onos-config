@@ -24,7 +24,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -176,9 +175,6 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 
 	assert.Equal(t, utils.StrPath(result.Notification[1].Update[0].Path),
 		"/leaf2b")
-
-	assert.Equal(t, result.Extension[0].GetRegisteredExt().Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
-	assert.Equal(t, string(result.Extension[0].GetRegisteredExt().Msg), "Device1")
 }
 
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
@@ -241,8 +237,6 @@ func Test_targetDoesNotExist(t *testing.T) {
 	assert.NilError(t, err, "get should not return an error")
 	assert.Assert(t, result != nil)
 	assert.Assert(t, result.Notification[0].Update[0].Val == nil)
-	extension := result.Extension[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected), "extension 103 is not specified")
 }
 
 // Target does exist, but specified path does not

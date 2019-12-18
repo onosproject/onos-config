@@ -63,7 +63,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	// Remove the path we added
 	_, extensions, errorDelete := gNMISet(MakeContext(), c, noPaths, makeDevicePath(simulator.Name(), tzPath), noExtensions)
 	assert.NoError(t, errorDelete)
-	assert.Equal(t, 1, len(extensions))
+	assert.Equal(t, 0, len(extensions))
 	extension = extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
