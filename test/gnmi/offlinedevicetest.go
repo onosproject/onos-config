@@ -29,7 +29,7 @@ import (
 const (
 	modPath           = "/system/clock/config/timezone-name"
 	modValue          = "Europe/Rome"
-	offlineDeviceName = "TestOfflineDevice-1"
+	offlineDeviceName = "test-offline-device-1"
 )
 
 // TestOfflineDevice tests set/query of a single GNMI path to a single device that is initially not in the config
