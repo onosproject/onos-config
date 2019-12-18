@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/docker/docker/pkg/namesgenerator"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -387,9 +388,10 @@ func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]
 					updateResults = append(updateResults, updateResult)
 				}
 			}
+			return updateResults, nil
 		}
 	}
-	return updateResults, nil
+	return nil, errors.New("failed to propagate NetworkChange")
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
