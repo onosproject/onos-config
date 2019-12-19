@@ -86,8 +86,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 						waitTime = maxBackoffTime
 					}
 					time.Sleep(waitTime + time.Millisecond*20) // close might not take effect until timeout
-					connMon.reopen()
-					go connMon.connect()
+					go connMon.reconnect()
 					log.Infof("Topo device %s UPDATED address %s -> %s ", device.ID, oldAddress, topoEvent.Device.Address)
 				}
 				if connMon.device.Timeout.String() != topoEvent.Device.Timeout.String() {
@@ -132,23 +131,10 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			switch event.EventType() {
 			case events.EventTypeErrorDeviceConnect:
 				deviceID := topodevice.ID(event.Subject())
-				synchronizer, ok := connectionMonitors[deviceID]
+				connMon, ok := connectionMonitors[deviceID]
 				if ok && connections[deviceID] {
-					synchronizer.close()
-					synchronizer = &connectionMonitor{
-						opStateChan:               synchronizer.opStateChan,
-						southboundErrorChan:       synchronizer.southboundErrorChan,
-						dispatcher:                synchronizer.dispatcher,
-						modelRegistry:             synchronizer.modelRegistry,
-						operationalStateCache:     synchronizer.operationalStateCache,
-						operationalStateCacheLock: synchronizer.operationalStateCacheLock,
-						deviceChangeStore:         synchronizer.deviceChangeStore,
-						device:                    synchronizer.device,
-						target:                    synchronizer.target,
-					}
-					connectionMonitors[deviceID] = synchronizer
 					connections[deviceID] = false
-					go synchronizer.connect()
+					go connMon.reconnect()
 				}
 			case events.EventTypeDeviceConnected:
 				connections[deviceID] = true
@@ -171,6 +157,13 @@ type connectionMonitor struct {
 	target                    southbound.TargetIf
 	closed                    bool
 	mu                        syncPrimitives.RWMutex
+}
+
+func (cm *connectionMonitor) reconnect() {
+	cm.operationalStateCacheLock.Lock()
+	delete(cm.operationalStateCache, cm.device.ID)
+	cm.operationalStateCacheLock.Unlock()
+	cm.connect()
 }
 
 func (cm *connectionMonitor) connect() {
@@ -255,10 +248,4 @@ func (cm *connectionMonitor) close() {
 	cm.operationalStateCacheLock.Lock()
 	delete(cm.operationalStateCache, cm.device.ID)
 	cm.operationalStateCacheLock.Unlock()
-}
-
-func (cm *connectionMonitor) reopen() {
-	cm.mu.Lock()
-	cm.closed = false
-	cm.mu.Unlock()
 }
