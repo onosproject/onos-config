@@ -49,7 +49,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	setPath[0].pathDataType = StringVal
 	_, extensions, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
-	assert.Equal(t, 1, len(extensions))
+	assert.Equal(t, 0, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
