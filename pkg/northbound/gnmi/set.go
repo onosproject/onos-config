@@ -368,7 +368,7 @@ func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]
 		change := changeEvent.Object.(*networkchange.NetworkChange)
 		log.Infof("Received notification for change ID %s, phase %s, state %s", change.ID,
 			change.Status.Phase, change.Status.State)
-		if len(change.Changes) > 0 {
+		if len(change.Refs) > 0 {
 			for _, deviceChange := range change.Changes {
 				deviceID := deviceChange.DeviceID
 				for _, valueUpdate := range deviceChange.Values {
