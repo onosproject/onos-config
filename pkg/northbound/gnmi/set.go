@@ -321,7 +321,7 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 
 func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]*gnmi.UpdateResult, error) {
 	networkChan := make(chan stream.Event)
-	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID), networkchangestore.WithReplay())
+	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
 	if errWatch != nil {
 		return nil, fmt.Errorf("can't complete set operation on target due to %s", errWatch)
 	}
