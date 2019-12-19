@@ -18,12 +18,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/onosproject/onos-config/api/diags"
+	"github.com/onosproject/onos-config/api/types/change"
+	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
+	"github.com/stretchr/testify/assert"
 	"strings"
+	"testing"
+	"time"
 )
 
 // DevicePath describes the results of a get operation for a single path
@@ -117,4 +124,34 @@ func MakeContext() context.Context {
 	// TODO: Investigate using context.WithCancel() here
 	ctx := context.Background()
 	return ctx
+}
+
+// WaitForNetworkChangeComplete waits for a COMPLETED status on the given change
+func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool {
+	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
+		Subscribe:     false,
+		ChangeID:      networkChangeID,
+		WithoutReplay: false,
+	}
+
+	changeServiceClient, changeServiceClientErr := env.Config().NewChangeServiceClient()
+	assert.Nil(t, changeServiceClientErr)
+	assert.True(t, changeServiceClient != nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	listNetworkChangesClient, listNetworkChangesClientErr := changeServiceClient.ListNetworkChanges(ctx, listNetworkChangeRequest)
+	assert.Nil(t, listNetworkChangesClientErr)
+	assert.True(t, listNetworkChangesClient != nil)
+
+	for {
+		// Check if the network change has completed
+		networkChangeResponse, networkChangeResponseErr := listNetworkChangesClient.Recv()
+		assert.Nil(t, networkChangeResponseErr)
+		assert.True(t, networkChangeResponse != nil)
+		if change.State_COMPLETE == networkChangeResponse.Change.Status.State {
+			return true
+		}
+	}
 }

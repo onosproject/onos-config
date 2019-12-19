@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"strconv"
 	"testing"
@@ -99,6 +100,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.Equal(t, 1, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
+	networkChangeID := network.ID(extension.Msg)
 
 	// Check that the values were set correctly
 	var devicePathsForGet = getDevicePaths(devices, paths)
@@ -108,6 +110,10 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.Equal(t, value1, getValuesAfterSet[0].pathDataValue, "Query after set returned the wrong value: %s\n", getValuesAfterSet)
 	assert.Equal(t, value2, getValuesAfterSet[1].pathDataValue, "Query after set 2 returned the wrong value: %s\n", getValuesAfterSet)
 	assert.Equal(t, 0, len(extensions))
+
+	// Wait for the network change to complete
+	complete := WaitForNetworkChangeComplete(t, networkChangeID)
+	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices
 	device1GnmiClient := getDeviceGNMIClient(t, device1)
