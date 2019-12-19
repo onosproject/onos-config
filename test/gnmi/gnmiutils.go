@@ -151,7 +151,7 @@ func IsNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool {
 			return true
 		}
 
-		time.Sleep(2*time.Second)
+		time.Sleep(2 * time.Second)
 	}
 	return false
 }
