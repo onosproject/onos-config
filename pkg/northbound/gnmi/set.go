@@ -51,10 +51,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		netCfgChangeName    string             // May be specified as 100 in extension
 		version             devicetype.Version // May be specified as 101 in extension
 		deviceType          devicetype.Type    // May be specified as 102 in extension
-		disconnectedDevices []string
 	)
 
-	disconnectedDevices = make([]string, 0)
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
@@ -118,14 +116,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Version:  version,
 		}
 
-		_, errDevice := mgr.DeviceStore.Get(topodevice.ID(target))
-		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
-			disconnectedDevices = append(disconnectedDevices, target)
-		} else if errDevice != nil {
-			//handling gRPC errors
-			return nil, status.Error(codes.Internal, errDevice.Error())
-		}
-
 		err := validateChange(target, deviceType, version, updates, targetRemoves[target])
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -147,19 +137,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			DeviceID: devicetype.ID(target),
 			Type:     deviceType,
 			Version:  version,
-		}
-
-		deviceTopo, errDevice := mgr.DeviceStore.Get(topodevice.ID(target))
-		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
-			log.Infof("Device is not known to topo %s, %s", target, errDevice)
-			disconnectedDevices = append(disconnectedDevices, target)
-		} else if errDevice != nil {
-			//handling gRPC errors
-			return nil, status.Error(codes.Internal, errDevice.Error())
-		} else if getProtocolState(deviceTopo) != topodevice.ServiceState_AVAILABLE {
-			log.Infof("Device is known to topo but gNMI service is not available %s, %s", target,
-				getProtocolState(deviceTopo))
-			disconnectedDevices = append(disconnectedDevices, target)
 		}
 
 		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes)
@@ -198,19 +175,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 				},
 			},
 		},
-	}
-
-	if len(disconnectedDevices) != 0 {
-		disconnectedDeviceString := strings.Join(disconnectedDevices, ",")
-		disconnectedExt := &gnmi_ext.Extension{
-			Ext: &gnmi_ext.Extension_RegisteredExt{
-				RegisteredExt: &gnmi_ext.RegisteredExtension{
-					Id:  GnmiExtensionDevicesNotConnected,
-					Msg: []byte(disconnectedDeviceString),
-				},
-			},
-		}
-		extensions = append(extensions, disconnectedExt)
 	}
 
 	setResponse := &gnmi.SetResponse{
