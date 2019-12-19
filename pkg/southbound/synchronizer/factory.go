@@ -257,6 +257,7 @@ func (cm *connectionMonitor) close() {
 	cm.closed = true
 	if cm.cancel != nil {
 		cm.cancel()
+		cm.cancel = nil
 	}
 	cm.mu.Unlock()
 	cm.operationalStateCacheLock.Lock()
