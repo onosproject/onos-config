@@ -138,20 +138,20 @@ func IsNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool {
 	assert.Nil(t, changeServiceClientErr)
 	assert.True(t, changeServiceClient != nil)
 
-	for i := 1; i < 5; i++ {
-		// Check if the network change has completed
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-		listNetworkChangesClient, listNetworkChangesClientErr := changeServiceClient.ListNetworkChanges(context.Background(), listNetworkChangeRequest)
-		assert.Nil(t, listNetworkChangesClientErr)
-		assert.True(t, listNetworkChangesClient != nil)
+	listNetworkChangesClient, listNetworkChangesClientErr := changeServiceClient.ListNetworkChanges(ctx, listNetworkChangeRequest)
+	assert.Nil(t, listNetworkChangesClientErr)
+	assert.True(t, listNetworkChangesClient != nil)
+
+	for {
+		// Check if the network change has completed
 		networkChangeResponse, networkChangeResponseErr := listNetworkChangesClient.Recv()
 		assert.Nil(t, networkChangeResponseErr)
 		assert.True(t, networkChangeResponse != nil)
 		if change.State_COMPLETE == networkChangeResponse.Change.Status.State {
 			return true
 		}
-
-		time.Sleep(2 * time.Second)
 	}
-	return false
 }
