@@ -112,7 +112,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.Equal(t, 0, len(extensions))
 
 	// Wait for the network change to complete
-	complete := IsNetworkChangeComplete(t, networkChangeID)
+	complete := WaitForNetworkChangeComplete(t, networkChangeID)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices

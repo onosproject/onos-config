@@ -126,8 +126,8 @@ func MakeContext() context.Context {
 	return ctx
 }
 
-// IsNetworkChangeComplete checks for a COMPLETED status on the given change, retying for 15 seconds
-func IsNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool {
+// WaitForNetworkChangeComplete waits for a COMPLETED status on the given change
+func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool {
 	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
 		Subscribe:     false,
 		ChangeID:      networkChangeID,
