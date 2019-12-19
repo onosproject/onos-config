@@ -73,7 +73,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	// Remove the root path we added
 	_, extensions, errorDelete := gNMISet(MakeContext(), c, noPaths, makeDevicePath(device.Name(), newRootPath), noExtensions)
 	assert.NoError(t, errorDelete)
-	assert.Equal(t, 0, len(extensions))
+	assert.Equal(t, 1, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
