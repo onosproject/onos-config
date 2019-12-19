@@ -155,11 +155,18 @@ type connectionMonitor struct {
 	deviceChangeStore         device.Store
 	device                    *topodevice.Device
 	target                    southbound.TargetIf
+	cancel                    context.CancelFunc
 	closed                    bool
 	mu                        syncPrimitives.RWMutex
 }
 
 func (cm *connectionMonitor) reconnect() {
+	cm.mu.Lock()
+	if cm.cancel != nil {
+		cm.cancel()
+		cm.cancel = nil
+	}
+	cm.mu.Unlock()
 	cm.operationalStateCacheLock.Lock()
 	delete(cm.operationalStateCache, cm.device.ID)
 	cm.operationalStateCacheLock.Unlock()
@@ -192,6 +199,11 @@ func (cm *connectionMonitor) connect() {
 
 // synchronize connects to the device for synchronization
 func (cm *connectionMonitor) synchronize() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	cm.mu.Lock()
+	cm.cancel = cancel
+	cm.mu.Unlock()
+
 	cm.mu.RLock()
 	log.Infof("Connecting to device %v", cm.device)
 	modelName := utils.ToModelName(devicetype.Type(cm.device.Type), devicetype.Version(cm.device.Version))
@@ -214,7 +226,6 @@ func (cm *connectionMonitor) synchronize() error {
 	cm.operationalStateCacheLock.Unlock()
 	cm.mu.RUnlock()
 
-	ctx := context.Background()
 	sync, err := New(ctx, cm.device, cm.opStateChan, cm.southboundErrorChan,
 		valueMap, mReadOnlyPaths, cm.target, mStateGetMode, cm.operationalStateCacheLock, cm.deviceChangeStore)
 	if err != nil {
@@ -244,6 +255,9 @@ func (cm *connectionMonitor) synchronize() error {
 func (cm *connectionMonitor) close() {
 	cm.mu.Lock()
 	cm.closed = true
+	if cm.cancel != nil {
+		cm.cancel()
+	}
 	cm.mu.Unlock()
 	cm.operationalStateCacheLock.Lock()
 	delete(cm.operationalStateCache, cm.device.ID)
