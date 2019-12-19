@@ -31,7 +31,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -48,9 +47,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	// There is only one set of extensions in Set request, regardless of number of
 	// updates
 	var (
-		netCfgChangeName    string             // May be specified as 100 in extension
-		version             devicetype.Version // May be specified as 101 in extension
-		deviceType          devicetype.Type    // May be specified as 102 in extension
+		netCfgChangeName string             // May be specified as 100 in extension
+		version          devicetype.Version // May be specified as 101 in extension
+		deviceType       devicetype.Type    // May be specified as 102 in extension
 	)
 
 	targetUpdates := make(mapTargetUpdates)
@@ -322,7 +321,7 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 
 func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]*gnmi.UpdateResult, error) {
 	networkChan := make(chan stream.Event)
-	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
+	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID), networkchangestore.WithReplay())
 	if errWatch != nil {
 		return nil, fmt.Errorf("can't complete set operation on target due to %s", errWatch)
 	}
@@ -388,19 +387,4 @@ func validateChange(target string, deviceType devicetype.Type, version devicetyp
 	}
 	log.Infof("Validating change %s:%s:%s DONE", target, deviceType, version)
 	return nil
-}
-
-func getProtocolState(device *topodevice.Device) topodevice.ServiceState {
-	// Find the gNMI protocol state for the device
-	var protocol *topodevice.ProtocolState
-	for _, p := range device.Protocols {
-		if p.Protocol == topodevice.Protocol_GNMI {
-			protocol = p
-			break
-		}
-	}
-	if protocol == nil {
-		return topodevice.ServiceState_UNKNOWN_SERVICE_STATE
-	}
-	return protocol.ServiceState
 }
