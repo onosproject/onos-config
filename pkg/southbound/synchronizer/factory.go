@@ -33,7 +33,6 @@ import (
 
 var connectionMonitors = make(map[topodevice.ID]*connectionMonitor)
 var connections = make(map[topodevice.ID]bool)
-var connMonitorMu = syncPrimitives.RWMutex{}
 
 const backoffInterval = 10 * time.Millisecond
 const maxBackoffTime = 5 * time.Second
@@ -56,9 +55,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			}
 
 			device := topoEvent.Device
-			connMonitorMu.Lock()
 			connMon, ok := connectionMonitors[device.ID]
-			connMonitorMu.Unlock()
 			if !ok && topoEvent.Type != topodevice.ListResponse_REMOVED {
 				log.Infof("Topo device %s %s", device.ID, topoEvent.Type)
 				connMon = &connectionMonitor{
@@ -72,9 +69,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 					device:                    device,
 					target:                    newTargetFn(),
 				}
-				connMonitorMu.Lock()
 				connectionMonitors[device.ID] = connMon
-				connMonitorMu.Unlock()
 				go connMon.connect()
 			} else if ok && topoEvent.Type == topodevice.ListResponse_UPDATED {
 				changed := false
@@ -116,10 +111,8 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 				}
 			} else if ok && topoEvent.Type == topodevice.ListResponse_REMOVED {
 				log.Infof("Topo device %s is being REMOVED - waiting to complete", device.ID)
-				connMonitorMu.Lock()
 				delete(connectionMonitors, device.ID)
 				delete(connections, device.ID)
-				connMonitorMu.Unlock()
 				connMon.close()
 				// TODO Change grpc.DialContext() used to non blocking so that we can
 				//  close the connection right away See https://github.com/onosproject/onos-config/issues/981
@@ -137,6 +130,26 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			log.Infof("Received event %v", event)
 			deviceID := topodevice.ID(event.Subject())
 			switch event.EventType() {
+			case events.EventTypeErrorDeviceConnect:
+				deviceID := topodevice.ID(event.Subject())
+				synchronizer, ok := connectionMonitors[deviceID]
+				if ok && connections[deviceID] {
+					synchronizer.close()
+					synchronizer = &connectionMonitor{
+						opStateChan:               synchronizer.opStateChan,
+						southboundErrorChan:       synchronizer.southboundErrorChan,
+						dispatcher:                synchronizer.dispatcher,
+						modelRegistry:             synchronizer.modelRegistry,
+						operationalStateCache:     synchronizer.operationalStateCache,
+						operationalStateCacheLock: synchronizer.operationalStateCacheLock,
+						deviceChangeStore:         synchronizer.deviceChangeStore,
+						device:                    synchronizer.device,
+						target:                    synchronizer.target,
+					}
+					connectionMonitors[deviceID] = synchronizer
+					connections[deviceID] = false
+					go synchronizer.connect()
+				}
 			case events.EventTypeDeviceConnected:
 				connections[deviceID] = true
 			}
@@ -219,8 +232,6 @@ func (cm *connectionMonitor) synchronize() error {
 		cm.operationalStateCacheLock.Lock()
 		delete(cm.operationalStateCache, cm.device.ID)
 		cm.operationalStateCacheLock.Unlock()
-		cm.southboundErrorChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect,
-			string(cm.device.ID), err)
 		return err
 	}
 
