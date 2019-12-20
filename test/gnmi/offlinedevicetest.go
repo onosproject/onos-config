@@ -16,6 +16,7 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
@@ -62,9 +63,10 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 
 	_, extensions, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, extensions)
 	assert.NoError(t, errorSet)
-	assert.Equal(t, 2, len(extensions))
+	assert.Equal(t, 1, len(extensions))
 	extensionBefore := extensions[0].GetRegisteredExt()
 	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
+	networkChangeID := network.ID(extensionBefore.Msg)
 
 	// Check that the value was set correctly
 	simulatorEnv := simulator.AddOrDie()
@@ -75,6 +77,8 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
 	assert.Equal(t, modValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
+
+	WaitForNetworkChangeComplete(t, networkChangeID)
 
 	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
 	checkDeviceValue(t, deviceGnmiClient, makeDevicePath(offlineDeviceName, modPath), modValue)
