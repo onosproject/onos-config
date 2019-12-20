@@ -27,5 +27,3 @@ require (
 	gotest.tools v2.2.0+incompatible
 	k8s.io/klog v0.3.3
 )
-
-replace github.com/onosproject/onos-test => ../onos-test
