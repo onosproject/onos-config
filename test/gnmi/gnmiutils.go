@@ -28,6 +28,7 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -129,7 +130,7 @@ func MakeContext() context.Context {
 // WaitForNetworkChangeComplete waits for a COMPLETED status on the given change
 func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool {
 	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
-		Subscribe:     false,
+		Subscribe:     true,
 		ChangeID:      networkChangeID,
 		WithoutReplay: false,
 	}
@@ -148,6 +149,9 @@ func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool
 	for {
 		// Check if the network change has completed
 		networkChangeResponse, networkChangeResponseErr := listNetworkChangesClient.Recv()
+		if networkChangeResponseErr == io.EOF {
+			return false
+		}
 		assert.Nil(t, networkChangeResponseErr)
 		assert.True(t, networkChangeResponse != nil)
 		if change.State_COMPLETE == networkChangeResponse.Change.Status.State {
