@@ -23,12 +23,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
 	"time"
 )
 
@@ -37,8 +34,6 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	notifications := make([]*gnmi.Notification, 0)
 
 	prefix := req.GetPrefix()
-
-	disconnectedDevicesMap := make(map[topodevice.ID]bool)
 
 	version, err := extractGetVersion(req)
 	if err != nil {
@@ -51,28 +46,6 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		update, err := getUpdate(version, prefix, path)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
-		}
-		//Assigning to a new string, if this assignment is not made the getRequest id field results empty.
-		target := path.GetTarget()
-		if target == "" {
-			target = prefix.GetTarget()
-		}
-		//if target is already disconnected we don't do a get again.
-		_, ok := disconnectedDevicesMap[topodevice.ID(target)]
-		if !ok && target != "*" {
-			deviceTopo, errGet := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
-
-			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
-				log.Infof("Device is not known to topo %s, %s", target, errGet)
-				disconnectedDevicesMap[topodevice.ID(path.GetTarget())] = true
-			} else if errGet != nil {
-				//handling gRPC errors
-				return nil, errGet
-			} else if getProtocolState(deviceTopo) != topodevice.ServiceState_AVAILABLE {
-				log.Infof("Device is known to topo but gNMI service is not available %s, %s", target,
-					getProtocolState(deviceTopo))
-				disconnectedDevicesMap[topodevice.ID(path.GetTarget())] = true
-			}
 		}
 		notification := &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
@@ -88,19 +61,6 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		target := prefix.GetTarget()
-		//if target is already disconnected we don't do a get again.
-		_, ok := disconnectedDevicesMap[topodevice.ID(target)]
-		if !ok && target != "*" {
-			_, errGet := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
-			if errGet != nil && status.Convert(errGet).Code() == codes.NotFound {
-				log.Infof("Device is not connected %s, %s", target, errGet)
-				disconnectedDevicesMap[topodevice.ID(target)] = true
-			} else if errGet != nil {
-				//handling gRPC errors
-				return nil, errGet
-			}
-		}
 		notification := &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
 			Update:    []*gnmi.Update{update},
@@ -112,24 +72,6 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	response := gnmi.GetResponse{
 		Notification: notifications,
-	}
-	if len(disconnectedDevicesMap) != 0 {
-		disconnectedDevices := make([]string, 0)
-		log.Info("Device Map {}", disconnectedDevicesMap)
-		for k := range disconnectedDevicesMap {
-			disconnectedDevices = append(disconnectedDevices, string(k))
-		}
-		disconnectedDeviceString := strings.Join(disconnectedDevices, ",")
-		response.Extension = []*gnmi_ext.Extension{
-			{
-				Ext: &gnmi_ext.Extension_RegisteredExt{
-					RegisteredExt: &gnmi_ext.RegisteredExtension{
-						Id:  GnmiExtensionDevicesNotConnected,
-						Msg: []byte(disconnectedDeviceString),
-					},
-				},
-			},
-		}
 	}
 	return &response, nil
 }

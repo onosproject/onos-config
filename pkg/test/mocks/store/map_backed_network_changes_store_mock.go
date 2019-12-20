@@ -16,33 +16,43 @@ package store
 
 import (
 	"github.com/golang/mock/gomock"
+	"github.com/onosproject/onos-config/api/types"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
+	"github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"sync"
 )
 
 //SetUpMapBackedNetworkChangesStore : creates a map backed store for the given mock
 func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChangesStore) {
+	mu := &sync.RWMutex{}
 	networkChangesList := make([]*networkchange.NetworkChange, 0)
 	mockNetworkChangesStore.EXPECT().Create(gomock.Any()).DoAndReturn(
 		func(networkChange *networkchange.NetworkChange) error {
+			mu.Lock()
 			networkChangesList = append(networkChangesList, networkChange)
+			mu.Unlock()
 			return nil
 		}).AnyTimes()
 	mockNetworkChangesStore.EXPECT().Update(gomock.Any()).DoAndReturn(
 		func(networkChange *networkchange.NetworkChange) error {
+			mu.Lock()
 			networkChangesList = append(networkChangesList, networkChange)
+			mu.Unlock()
 			return nil
 		}).AnyTimes()
 	mockNetworkChangesStore.EXPECT().Get(gomock.Any()).DoAndReturn(
 		func(id networkchange.ID) (*networkchange.NetworkChange, error) {
 			var found *networkchange.NetworkChange
+			mu.RLock()
 			for _, networkChange := range networkChangesList {
 				if networkChange.ID == id {
 					found = networkChange
 				}
 			}
+			mu.RUnlock()
 			if found != nil {
 				return found, nil
 			}
@@ -52,6 +62,8 @@ func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChang
 	mockNetworkChangesStore.EXPECT().List(gomock.Any()).DoAndReturn(
 		func(c chan<- *networkchange.NetworkChange) error {
 			go func() {
+				mu.RLock()
+				defer mu.RUnlock()
 				for _, networkChange := range networkChangesList {
 					c <- networkChange
 				}
@@ -62,14 +74,36 @@ func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChang
 	mockNetworkChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(c chan<- stream.Event, o ...networkstore.WatchOption) (stream.Context, error) {
 			go func() {
-				lastChange := networkChangesList[len(networkChangesList)-1]
-				if lastChange.Status.Phase == changetypes.Phase_ROLLBACK ||
-					lastChange.Status.State == changetypes.State_PENDING {
-					lastChange.Status.State = changetypes.State_COMPLETE
+				mu.RLock()
+				defer mu.RUnlock()
+				change := networkChangesList[len(networkChangesList)-1]
+				if change == nil {
+					close(c)
+					return
+				}
+
+				change1 := *change
+				if change1.Status.Phase == changetypes.Phase_ROLLBACK ||
+					change1.Status.State == changetypes.State_PENDING {
+					change1.Status.State = changetypes.State_COMPLETE
 				}
 				event := stream.Event{
 					Type:   "",
-					Object: lastChange,
+					Object: &change1,
+				}
+				c <- event
+
+				change2 := change1
+				refs := make([]*networkchange.DeviceChangeRef, len(change2.Changes))
+				for i, change := range change2.Changes {
+					refs[i] = &networkchange.DeviceChangeRef{
+						DeviceChangeID: device.NewID(types.ID(change2.ID), change.DeviceID, change.DeviceVersion),
+					}
+				}
+				change2.Refs = refs
+				event = stream.Event{
+					Type:   "",
+					Object: &change2,
 				}
 				c <- event
 				close(c)

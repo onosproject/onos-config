@@ -84,16 +84,24 @@ func setUpWatchMock(mocks *AllMocks) {
 		ID:       "",
 		Index:    0,
 		Revision: 0,
-		Status: changetypes.Status{
-			Phase:   0,
-			State:   changetypes.State_COMPLETE,
-			Reason:  0,
-			Message: "",
+		Created:  now,
+		Updated:  now,
+		Changes:  nil,
+		Refs:     nil,
+		Deleted:  false,
+	}
+	watchUpdate := networkchange.NetworkChange{
+		ID:       "",
+		Index:    0,
+		Revision: 0,
+		Created:  now,
+		Updated:  now,
+		Changes:  nil,
+		Refs: []*networkchange.DeviceChangeRef{
+			{
+				DeviceChangeID: "network-change-1:device-change-1",
+			},
 		},
-		Created: now,
-		Updated: now,
-		Changes: nil,
-		Refs:    nil,
 		Deleted: false,
 	}
 
@@ -129,6 +137,7 @@ func setUpWatchMock(mocks *AllMocks) {
 		func(c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
 			go func() {
 				c <- stream.Event{Object: &watchChange}
+				c <- stream.Event{Object: &watchUpdate}
 				close(c)
 			}()
 			return stream.NewContext(func() {

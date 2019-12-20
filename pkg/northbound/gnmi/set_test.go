@@ -32,7 +32,6 @@ import (
 	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
 	"strconv"
-	"strings"
 	"testing"
 )
 
@@ -132,15 +131,11 @@ func Test_doSingleSet(t *testing.T) {
 	assert.Equal(t, path.Elem[2].Name, "leaf2a")
 
 	// Check that an the network change ID is given in extension 100 and that devices show up as disconnected
-	assert.Equal(t, len(setResponse.Extension), 2)
+	assert.Equal(t, len(setResponse.Extension), 1)
 
 	extensionChgID := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extensionChgID.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extensionChgID.Msg), "TestChange")
-
-	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
-	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
-	assert.Equal(t, string(extensionDeviceState.Msg), "Device1")
 }
 
 // Test_doSingleSet shows how a value of 1 list can be set on a target
@@ -191,16 +186,11 @@ func Test_doSingleSetList(t *testing.T) {
 	assert.Equal(t, path.Elem[2].Name, "tx-power")
 
 	// Check that an the network change ID is given in extension 100 and that the device is currently disconnected
-	assert.Equal(t, len(setResponse.Extension), 2)
+	assert.Equal(t, len(setResponse.Extension), 1)
 
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extension.Msg), "TestChange")
-
-	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
-	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
-	assert.Equal(t, string(extensionDeviceState.Msg), "Device1")
-
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
@@ -279,11 +269,6 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 2)
-
-	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
-	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
-	assert.Assert(t, strings.Contains(string(extensionDeviceState.Msg), "localhost-1"))
-	assert.Assert(t, strings.Contains(string(extensionDeviceState.Msg), "localhost-2"))
 
 	// It's a map, so the order of element's is not guaranteed
 	for _, result := range setResponse.Response {
@@ -396,15 +381,11 @@ func Test_doSingleDelete(t *testing.T) {
 	assert.Equal(t, path.Elem[2].Name, "leaf2a")
 
 	// Check that an the network change ID is given in extension 100 and that the device is currently disconnected
-	assert.Equal(t, len(setResponse.Extension), 2)
+	assert.Equal(t, len(setResponse.Extension), 1)
 
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extension.Msg), "TestChange")
-
-	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
-	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
-	assert.Equal(t, string(extensionDeviceState.Msg), "Device1")
 }
 
 // Test_doUpdateDeleteSet shows how a request with a delete and an update can be applied on a target
@@ -472,16 +453,11 @@ func Test_doUpdateDeleteSet(t *testing.T) {
 	assert.Equal(t, pathDelete.Elem[2].Name, "leaf2c")
 
 	// Check that an the network change ID is given in extension 100 and that the device is currently disconnected
-	assert.Equal(t, len(setResponse.Extension), 2)
+	assert.Equal(t, len(setResponse.Extension), 1)
 
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extension.Msg), "TestChange")
-
-	extensionDeviceState := setResponse.Extension[1].GetRegisteredExt()
-	assert.Equal(t, extensionDeviceState.Id.String(), strconv.Itoa(GnmiExtensionDevicesNotConnected))
-	assert.Equal(t, string(extensionDeviceState.Msg), "Device1")
-
 }
 
 //TODO test with update and delete at the same time.

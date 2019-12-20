@@ -52,14 +52,14 @@ func ExtractFullConfig(deviceID device.VersionedID, newChange *devicechange.Chan
 
 	if nBack == 0 {
 		for storeChange := range changeChan {
-			if storeChange.Status.State == changetypes.State_COMPLETE && storeChange.Status.Phase != changetypes.Phase_ROLLBACK {
+			if storeChange.Status.Phase == changetypes.Phase_CHANGE {
 				consolidatedConfig = getPathValue(storeChange.Change, consolidatedConfig)
 			}
 		}
 	} else {
 		changes := make([]*devicechange.DeviceChange, 0)
 		for storeChange := range changeChan {
-			if storeChange.Status.State == changetypes.State_COMPLETE && storeChange.Status.Phase != changetypes.Phase_ROLLBACK {
+			if storeChange.Status.Phase == changetypes.Phase_CHANGE {
 				changes = append(changes, storeChange)
 			}
 		}

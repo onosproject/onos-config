@@ -16,9 +16,9 @@ package gnmi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/docker/docker/pkg/namesgenerator"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -31,7 +31,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
@@ -48,13 +47,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	// There is only one set of extensions in Set request, regardless of number of
 	// updates
 	var (
-		netCfgChangeName    string             // May be specified as 100 in extension
-		version             devicetype.Version // May be specified as 101 in extension
-		deviceType          devicetype.Type    // May be specified as 102 in extension
-		disconnectedDevices []string
+		netCfgChangeName string             // May be specified as 100 in extension
+		version          devicetype.Version // May be specified as 101 in extension
+		deviceType       devicetype.Type    // May be specified as 102 in extension
 	)
 
-	disconnectedDevices = make([]string, 0)
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
@@ -118,14 +115,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Version:  version,
 		}
 
-		_, errDevice := mgr.DeviceStore.Get(topodevice.ID(target))
-		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
-			disconnectedDevices = append(disconnectedDevices, target)
-		} else if errDevice != nil {
-			//handling gRPC errors
-			return nil, status.Error(codes.Internal, errDevice.Error())
-		}
-
 		err := validateChange(target, deviceType, version, updates, targetRemoves[target])
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -147,19 +136,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			DeviceID: devicetype.ID(target),
 			Type:     deviceType,
 			Version:  version,
-		}
-
-		deviceTopo, errDevice := mgr.DeviceStore.Get(topodevice.ID(target))
-		if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
-			log.Infof("Device is not known to topo %s, %s", target, errDevice)
-			disconnectedDevices = append(disconnectedDevices, target)
-		} else if errDevice != nil {
-			//handling gRPC errors
-			return nil, status.Error(codes.Internal, errDevice.Error())
-		} else if getProtocolState(deviceTopo) != topodevice.ServiceState_AVAILABLE {
-			log.Infof("Device is known to topo but gNMI service is not available %s, %s", target,
-				getProtocolState(deviceTopo))
-			disconnectedDevices = append(disconnectedDevices, target)
 		}
 
 		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes)
@@ -198,19 +174,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 				},
 			},
 		},
-	}
-
-	if len(disconnectedDevices) != 0 {
-		disconnectedDeviceString := strings.Join(disconnectedDevices, ",")
-		disconnectedExt := &gnmi_ext.Extension{
-			Ext: &gnmi_ext.Extension_RegisteredExt{
-				RegisteredExt: &gnmi_ext.RegisteredExtension{
-					Id:  GnmiExtensionDevicesNotConnected,
-					Msg: []byte(disconnectedDeviceString),
-				},
-			},
-		}
-		extensions = append(extensions, disconnectedExt)
 	}
 
 	setResponse := &gnmi.SetResponse{
@@ -368,38 +331,30 @@ func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]
 		change := changeEvent.Object.(*networkchange.NetworkChange)
 		log.Infof("Received notification for change ID %s, phase %s, state %s", change.ID,
 			change.Status.Phase, change.Status.State)
-		if change.Status.Phase == changetypes.Phase_CHANGE {
-			switch changeStatus := change.Status.State; changeStatus {
-			case changetypes.State_COMPLETE:
-				for _, deviceChange := range change.Changes {
-					deviceID := deviceChange.DeviceID
-					for _, valueUpdate := range deviceChange.Values {
-						var updateResult *gnmi.UpdateResult
-						var errBuild error
-						if valueUpdate.Removed {
-							updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
-								string(deviceID), gnmi.UpdateResult_DELETE)
-						} else {
-							updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
-								string(deviceID), gnmi.UpdateResult_UPDATE)
-						}
-						if errBuild != nil {
-							log.Error(errBuild)
-							continue
-						}
-						updateResults = append(updateResults, updateResult)
+		if len(change.Refs) > 0 {
+			for _, deviceChange := range change.Changes {
+				deviceID := deviceChange.DeviceID
+				for _, valueUpdate := range deviceChange.Values {
+					var updateResult *gnmi.UpdateResult
+					var errBuild error
+					if valueUpdate.Removed {
+						updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
+							string(deviceID), gnmi.UpdateResult_DELETE)
+					} else {
+						updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
+							string(deviceID), gnmi.UpdateResult_UPDATE)
 					}
+					if errBuild != nil {
+						log.Error(errBuild)
+						continue
+					}
+					updateResults = append(updateResults, updateResult)
 				}
-			case changetypes.State_FAILED:
-				return nil, fmt.Errorf("issue in setting config reson %s, error %s, rolling back change %s",
-					change.Status.Reason, change.Status.Message, changeID)
-			default:
-				continue
 			}
-			break
+			return updateResults, nil
 		}
 	}
-	return updateResults, nil
+	return nil, errors.New("failed to propagate NetworkChange")
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
@@ -432,19 +387,4 @@ func validateChange(target string, deviceType devicetype.Type, version devicetyp
 	}
 	log.Infof("Validating change %s:%s:%s DONE", target, deviceType, version)
 	return nil
-}
-
-func getProtocolState(device *topodevice.Device) topodevice.ServiceState {
-	// Find the gNMI protocol state for the device
-	var protocol *topodevice.ProtocolState
-	for _, p := range device.Protocols {
-		if p.Protocol == topodevice.Protocol_GNMI {
-			protocol = p
-			break
-		}
-	}
-	if protocol == nil {
-		return topodevice.ServiceState_UNKNOWN_SERVICE_STATE
-	}
-	return protocol.ServiceState
 }
