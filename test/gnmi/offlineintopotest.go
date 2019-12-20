@@ -44,11 +44,11 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	assert.Nil(t, deviceClientError)
 	timeout := 10 * time.Second
 	newDevice := &device.Device{
-		ID:          offlineInTopoModDeviceName,
-		Address:     offlineInTopoModDeviceName + ":11161",
-		Type:        offlineInTopoModDeviceType,
-		Version:     offlineInTopoModDeviceVersion,
-		Timeout:     &timeout,
+		ID:      offlineInTopoModDeviceName,
+		Address: offlineInTopoModDeviceName + ":11161",
+		Type:    offlineInTopoModDeviceType,
+		Version: offlineInTopoModDeviceVersion,
+		Timeout: &timeout,
 		TLS: device.TlsConfig{
 			Plain: true,
 		},
