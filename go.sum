@@ -227,6 +227,7 @@ github.com/onosproject/onos-test v0.0.0-20191205200644-de708d513062 h1:CK+mD5Cv4
 github.com/onosproject/onos-test v0.0.0-20191205200644-de708d513062/go.mod h1:MuqvLb93cywFHf5jU+UzmTke214TqKQsHeHrGYctAa0=
 github.com/onosproject/onos-test v0.0.0-20191205203302-6ce74d42a7d1 h1:gG3YS91EeE3Ioa75la53Nlm3GraJEndbOlgurDVPv9k=
 github.com/onosproject/onos-test v0.0.0-20191205203302-6ce74d42a7d1/go.mod h1:MuqvLb93cywFHf5jU+UzmTke214TqKQsHeHrGYctAa0=
+github.com/onosproject/onos-test v0.0.0-20191206153216-44197dd3eef7/go.mod h1:MuqvLb93cywFHf5jU+UzmTke214TqKQsHeHrGYctAa0=
 github.com/onosproject/onos-test v0.0.0-20191206205352-52764eecc36c h1:9pD1ono1cHmIXAMIeQC/KnIOdzp9LERn7+9iUMhrOnE=
 github.com/onosproject/onos-test v0.0.0-20191206205352-52764eecc36c/go.mod h1:MuqvLb93cywFHf5jU+UzmTke214TqKQsHeHrGYctAa0=
 github.com/onosproject/onos-test v0.0.0-20191207030459-707b622df92c/go.mod h1:MuqvLb93cywFHf5jU+UzmTke214TqKQsHeHrGYctAa0=
