@@ -106,11 +106,7 @@ func TestFactory_Revert(t *testing.T) {
 	assert.Assert(t, ok, "Op state cache entry created")
 	assert.Equal(t, len(opStateCacheUpdated), 0)
 
-	for resp := range responseChan {
-		assert.Error(t, resp.Error(),
-			"could not create a gNMI client: Dialer(1.2.3.4:11161, 500ms): context deadline exceeded", "after gRPC timeout")
-		break
-	}
+	time.Sleep(1 * time.Second)
 
 	// Device removed from topo
 	//device1.Attributes["t1"] = "test"
@@ -147,13 +143,8 @@ func TestFactory_Revert(t *testing.T) {
 
 	topoChan <- &topoEventRemove
 
-	for resp := range responseChan {
-		assert.Error(t, resp.Error(),
-			"could not create a gNMI client: Dialer(1.2.3.4:11161, 500ms): context deadline exceeded", "after topo remove")
-		break
-	}
+	time.Sleep(1 * time.Second)
 
-	time.Sleep(time.Millisecond * 100) // Give it a moment for the event to take effect
 	opStateCacheLock.RLock()
 	_, ok = opstateCache[device1.ID]
 	opStateCacheLock.RUnlock()
