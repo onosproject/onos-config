@@ -17,6 +17,7 @@ package gnmi
 import (
 	"fmt"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-topo/api/device"
 	"strconv"
 	"testing"
 	"time"
@@ -37,6 +38,9 @@ const (
 // TestSubscribe tests a stream subscription to updates to a device
 func (s *TestSuite) TestSubscribe(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
+
+	// Wait for config to connect to the device
+	WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
@@ -100,7 +104,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	select {
 	case response = <-respChan:
 		validateResponse(t, response, simulator.Name(), false)
-	case <-time.After(1 * time.Second):
+	case <-time.After(10 * time.Second):
 		assert.FailNow(t, "Expected Update Response")
 	}
 

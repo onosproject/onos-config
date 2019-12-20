@@ -23,6 +23,7 @@ import (
 	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
@@ -125,6 +126,43 @@ func MakeContext() context.Context {
 	// TODO: Investigate using context.WithCancel() here
 	ctx := context.Background()
 	return ctx
+}
+
+// WaitForDevice waits for a device to match the given predicate
+func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout time.Duration) bool {
+	client, err := env.Topo().NewDeviceServiceClient()
+	assert.NoError(t, err)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	stream, err := client.List(ctx, &device.ListRequest{
+		Subscribe: true,
+	})
+	assert.NoError(t, err)
+	for {
+		response, err := stream.Recv()
+		if err == io.EOF {
+			return false
+		}
+		if predicate(response.Device) {
+			return true
+		}
+	}
+}
+
+// WaitForDeviceAvailable waits for a device to become available
+func WaitForDeviceAvailable(t *testing.T, deviceID device.ID, timeout time.Duration) bool {
+	return WaitForDevice(t, func(dev *device.Device) bool {
+		if dev.ID != deviceID {
+			return false
+		}
+
+		for _, protocol := range dev.Protocols {
+			if protocol.Protocol == device.Protocol_GNMI && protocol.ServiceState == device.ServiceState_AVAILABLE {
+				return true
+			}
+		}
+		return false
+	}, timeout)
 }
 
 // WaitForNetworkChangeComplete waits for a COMPLETED status on the given change
