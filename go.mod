@@ -8,7 +8,6 @@ require (
 	github.com/atomix/atomix-go-node v0.0.0-20191108201428-59c0962b63c8
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1
-	github.com/fatih/color v1.7.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2

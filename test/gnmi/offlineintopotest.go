@@ -17,8 +17,6 @@ package gnmi
 
 import (
 	"context"
-	"fmt"
-	"github.com/fatih/color"
 	"github.com/onosproject/onos-config/api/diags"
 	"github.com/onosproject/onos-config/api/types/change"
 	"github.com/onosproject/onos-config/api/types/change/network"
@@ -26,7 +24,6 @@ import (
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -104,18 +101,12 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, networkChangeResponse.Change.Status.State)
 
 	// Start the device simulator
-	fmt.Fprintln(os.Stderr, color.MagentaString(color.MagentaString(fmt.Sprintf("Starting simulator %s", offlineInTopoModDeviceName))))
 	simulator := env.NewSimulator().SetName(offlineInTopoModDeviceName).SetAddDevice(false)
 	simulatorEnv := simulator.AddOrDie()
 	time.Sleep(100 * time.Second)
 
 	// Check that the network change has completed
-	fmt.Fprintf(os.Stdout, color.MagentaString(fmt.Sprintf("Waiting for network change %s to complete\n", networkChangeID)))
 	WaitForNetworkChangeComplete(t, networkChangeID)
-	//networkChangeResponse, networkChangeResponseErr = listNetworkChangesClient.Recv()
-	//assert.Nil(t, networkChangeResponseErr)
-	//assert.True(t, networkChangeResponse != nil)
-	//assert.Equal(t, change.State_COMPLETE, networkChangeResponse.Change.Status.State)
 
 	// Interrogate the device to check that the value was set properly
 	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
