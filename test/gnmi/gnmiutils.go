@@ -141,9 +141,12 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 	for {
 		response, err := stream.Recv()
 		if err == io.EOF {
+			assert.Fail(t, "device stream closed prematurely")
 			return false
-		}
-		if predicate(response.Device) {
+		} else if err != nil {
+			assert.Error(t, err)
+			return false
+		} else if predicate(response.Device) {
 			return true
 		}
 	}

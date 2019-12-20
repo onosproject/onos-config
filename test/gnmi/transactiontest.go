@@ -19,8 +19,10 @@ import (
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-topo/api/device"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/openconfig/gnmi/client"
 	"github.com/stretchr/testify/assert"
@@ -86,6 +88,10 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	devices := make([]string, 2)
 	devices[0] = device1.Name()
 	devices[1] = device2.Name()
+
+	// Wait for config to connect to the devices
+	WaitForDeviceAvailable(t, device.ID(device1.Name()), 10*time.Second)
+	WaitForDeviceAvailable(t, device.ID(device2.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
 	gnmiClient, gnmiClientError := env.Config().NewGNMIClient()
