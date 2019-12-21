@@ -105,7 +105,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	simulatorEnv := simulator.AddOrDie()
 
 	// Wait for config to connect to the device
-	WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1 * time.Minute)
+	WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
 	WaitForNetworkChangeComplete(t, networkChangeID)
