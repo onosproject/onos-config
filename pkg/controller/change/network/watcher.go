@@ -116,7 +116,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 			device, err := w.DeviceStore.Get(devicetopo.ID(event.DeviceID))
 			if err != nil {
 				log.Errorf("Could not find device %v", event.DeviceID)
-				return
+				continue
 			}
 			if device.Version == string(event.Version) {
 				w.updateWatch(device, ch)

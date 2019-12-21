@@ -53,8 +53,10 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	deviceCacheCh := make(chan stream.Event)
 	go func() {
 		for eventObj := range deviceCacheCh {
-			if eventObj.Type == stream.Created {
+			// TODO: Handle device deletes
+			if eventObj.Type == stream.None || eventObj.Type == stream.Created {
 				event := eventObj.Object.(*cache.Info)
+				log.Infof("Received device event for device %v %v", event.DeviceID, event.Version)
 				w.watchDevice(devicetype.NewVersionedID(event.DeviceID, event.Version), ch)
 			}
 		}
@@ -88,7 +90,7 @@ func (w *Watcher) watchDevice(deviceID devicetype.VersionedID, ch chan<- types.I
 	deviceChangeCh := make(chan stream.Event, queueSize)
 	ctx, err := w.ChangeStore.Watch(deviceID, deviceChangeCh, devicechangestore.WithReplay())
 	if err != nil {
-		log.Errorf("setting up Watcher stream for %s: %s", deviceID, err)
+		log.Errorf("Setting up Watcher stream for %s: %s", deviceID, err)
 		return
 	}
 	w.streams[deviceID] = ctx
