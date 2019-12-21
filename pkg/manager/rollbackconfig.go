@@ -47,7 +47,7 @@ func (m *Manager) RollbackTargetConfig(networkChangeID networkchange.ID) error {
 		return errLast
 	}
 
-	changeRollback.Status.Incarnation = 0
+	changeRollback.Status.Incarnation++
 	changeRollback.Status.Phase = changetypes.Phase_ROLLBACK
 	changeRollback.Status.State = changetypes.State_PENDING
 	changeRollback.Status.Reason = changetypes.Reason_NONE
