@@ -20,6 +20,8 @@ import (
 	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strconv"
 	"testing"
 	"time"
@@ -67,10 +69,20 @@ func getDevicePathsWithValues(devices []string, paths []string, values []string)
 }
 
 func checkDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []DevicePath, expectedValue string) {
-	deviceValues, extensions, deviceValuesError := gNMIGet(MakeContext(), deviceGnmiClient, devicePaths)
-	assert.NoError(t, deviceValuesError, "GNMI get operation to device returned an error")
-	assert.Equal(t, expectedValue, deviceValues[0].pathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
-	assert.Equal(t, 0, len(extensions))
+	for i := 0; i < 30; i++ {
+		deviceValues, extensions, deviceValuesError := gNMIGet(MakeContext(), deviceGnmiClient, devicePaths)
+		if deviceValuesError == nil {
+			assert.NoError(t, deviceValuesError, "GNMI get operation to device returned an error")
+			assert.Equal(t, expectedValue, deviceValues[0].pathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
+			assert.Equal(t, 0, len(extensions))
+			return
+		} else if status.Code(deviceValuesError) == codes.Unavailable {
+			time.Sleep(1 * time.Second)
+		} else {
+			assert.Fail(t, "Failed to query device: %v", deviceValuesError)
+		}
+	}
+	assert.Fail(t, "Failed to query device")
 }
 
 func getDeviceGNMIClient(t *testing.T, simulator env.SimulatorEnv) client.Impl {

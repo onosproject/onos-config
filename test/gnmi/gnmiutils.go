@@ -144,7 +144,7 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 			assert.Fail(t, "device stream closed prematurely")
 			return false
 		} else if err != nil {
-			assert.Error(t, err)
+			assert.Fail(t, "device stream failed with error: %v", err)
 			return false
 		} else if predicate(response.Device) {
 			return true
@@ -191,12 +191,16 @@ func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool
 		// Check if the network change has completed
 		networkChangeResponse, networkChangeResponseErr := listNetworkChangesClient.Recv()
 		if networkChangeResponseErr == io.EOF {
+			assert.Fail(t, "change stream closed prematurely")
 			return false
-		}
-		assert.Nil(t, networkChangeResponseErr)
-		assert.True(t, networkChangeResponse != nil)
-		if change.State_COMPLETE == networkChangeResponse.Change.Status.State {
-			return true
+		} else if networkChangeResponseErr != nil {
+			assert.Fail(t, "change stream failed with error: %v", networkChangeResponseErr)
+			return false
+		} else {
+			assert.True(t, networkChangeResponse != nil)
+			if change.State_COMPLETE == networkChangeResponse.Change.Status.State {
+				return true
+			}
 		}
 	}
 }
