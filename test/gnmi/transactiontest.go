@@ -18,16 +18,16 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/api/types/change/network"
+	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
+	"github.com/openconfig/gnmi/client"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/openconfig/gnmi/client"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -102,8 +102,8 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	devices[1] = device2.Name()
 
 	// Wait for config to connect to the devices
-	WaitForDeviceAvailable(t, device.ID(device1.Name()), 10*time.Second)
-	WaitForDeviceAvailable(t, device.ID(device2.Name()), 10*time.Second)
+	testutils.WaitForDeviceAvailable(t, device.ID(device1.Name()), 10*time.Second)
+	testutils.WaitForDeviceAvailable(t, device.ID(device2.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
 	gnmiClient, gnmiClientError := env.Config().NewGNMIClient()
@@ -130,7 +130,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.Equal(t, 0, len(extensions))
 
 	// Wait for the network change to complete
-	complete := WaitForNetworkChangeComplete(t, networkChangeID)
+	complete := testutils.WaitForNetworkChangeComplete(t, networkChangeID)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices

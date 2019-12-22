@@ -15,6 +15,7 @@
 package gnmi
 
 import (
+	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
 
 	// Wait for config to connect to the device
-	WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+	testutils.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
 	c, err := env.Config().NewGNMIClient()

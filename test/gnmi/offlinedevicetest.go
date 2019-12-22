@@ -18,6 +18,7 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"strconv"
@@ -78,7 +79,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
 	assert.Equal(t, modValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
 
-	WaitForNetworkChangeComplete(t, networkChangeID)
+	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
 
 	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
 	checkDeviceValue(t, deviceGnmiClient, makeDevicePath(offlineDeviceName, modPath), modValue)

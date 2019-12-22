@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/api/types/change"
 	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -105,10 +106,10 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	simulatorEnv := simulator.AddOrDie()
 
 	// Wait for config to connect to the device
-	WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
+	testutils.WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	WaitForNetworkChangeComplete(t, networkChangeID)
+	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
 
 	// Interrogate the device to check that the value was set properly
 	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)

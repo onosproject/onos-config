@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
+	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +41,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
 
 	// Wait for config to connect to the device
-	WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+	testutils.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
