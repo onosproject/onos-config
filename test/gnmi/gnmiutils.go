@@ -18,18 +18,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/onosproject/onos-config/api/diags"
-	"github.com/onosproject/onos-config/api/types/change"
-	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/utils"
+	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
-	"io"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strings"
 	"testing"
 	"time"
@@ -121,86 +119,52 @@ func gNMISet(ctx context.Context, c client.Impl, updatePaths []DevicePath, delet
 	return extractSetTransactionID(setResult), setResult.Extension, nil
 }
 
-// MakeContext returns a new context for use in GNMI requests
-func MakeContext() context.Context {
-	// TODO: Investigate using context.WithCancel() here
-	ctx := context.Background()
-	return ctx
-}
-
-// WaitForDevice waits for a device to match the given predicate
-func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout time.Duration) bool {
-	client, err := env.Topo().NewDeviceServiceClient()
-	assert.NoError(t, err)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	stream, err := client.List(ctx, &device.ListRequest{
-		Subscribe: true,
-	})
-	assert.NoError(t, err)
-	for {
-		response, err := stream.Recv()
-		if err == io.EOF {
-			assert.Fail(t, "device stream closed prematurely")
-			return false
-		} else if err != nil {
-			assert.Fail(t, "device stream failed with error: %v", err)
-			return false
-		} else if predicate(response.Device) {
-			return true
+func getDevicePaths(devices []string, paths []string) []DevicePath {
+	var devicePaths = make([]DevicePath, len(paths)*len(devices))
+	pathIndex := 0
+	for _, device := range devices {
+		for _, path := range paths {
+			devicePaths[pathIndex].deviceName = device
+			devicePaths[pathIndex].path = path
+			pathIndex++
 		}
 	}
+	return devicePaths
 }
 
-// WaitForDeviceAvailable waits for a device to become available
-func WaitForDeviceAvailable(t *testing.T, deviceID device.ID, timeout time.Duration) bool {
-	return WaitForDevice(t, func(dev *device.Device) bool {
-		if dev.ID != deviceID {
-			return false
+func getDevicePathsWithValues(devices []string, paths []string, values []string) []DevicePath {
+	var devicePaths = getDevicePaths(devices, paths)
+	valueIndex := 0
+	for range devices {
+		for _, value := range values {
+			devicePaths[valueIndex].pathDataValue = value
+			devicePaths[valueIndex].pathDataType = StringVal
+			valueIndex++
 		}
-
-		for _, protocol := range dev.Protocols {
-			if protocol.Protocol == device.Protocol_GNMI && protocol.ServiceState == device.ServiceState_AVAILABLE {
-				return true
-			}
-		}
-		return false
-	}, timeout)
-}
-
-// WaitForNetworkChangeComplete waits for a COMPLETED status on the given change
-func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool {
-	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
-		Subscribe:     true,
-		ChangeID:      networkChangeID,
-		WithoutReplay: false,
 	}
+	return devicePaths
+}
 
-	changeServiceClient, changeServiceClientErr := env.Config().NewChangeServiceClient()
-	assert.Nil(t, changeServiceClientErr)
-	assert.True(t, changeServiceClient != nil)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	listNetworkChangesClient, listNetworkChangesClientErr := changeServiceClient.ListNetworkChanges(ctx, listNetworkChangeRequest)
-	assert.Nil(t, listNetworkChangesClientErr)
-	assert.True(t, listNetworkChangesClient != nil)
-
-	for {
-		// Check if the network change has completed
-		networkChangeResponse, networkChangeResponseErr := listNetworkChangesClient.Recv()
-		if networkChangeResponseErr == io.EOF {
-			assert.Fail(t, "change stream closed prematurely")
-			return false
-		} else if networkChangeResponseErr != nil {
-			assert.Fail(t, "change stream failed with error: %v", networkChangeResponseErr)
-			return false
+func checkDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []DevicePath, expectedValue string) {
+	for i := 0; i < 30; i++ {
+		deviceValues, extensions, deviceValuesError := gNMIGet(testutils.MakeContext(), deviceGnmiClient, devicePaths)
+		if deviceValuesError == nil {
+			assert.NoError(t, deviceValuesError, "GNMI get operation to device returned an error")
+			assert.Equal(t, expectedValue, deviceValues[0].pathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
+			assert.Equal(t, 0, len(extensions))
+			return
+		} else if status.Code(deviceValuesError) == codes.Unavailable {
+			time.Sleep(1 * time.Second)
 		} else {
-			assert.True(t, networkChangeResponse != nil)
-			if change.State_COMPLETE == networkChangeResponse.Change.Status.State {
-				return true
-			}
+			assert.Fail(t, "Failed to query device: %v", deviceValuesError)
 		}
 	}
+	assert.Fail(t, "Failed to query device")
+}
+
+func getDeviceGNMIClient(t *testing.T, simulator env.SimulatorEnv) client.Impl {
+	deviceGnmiClient, deviceGnmiClientError := simulator.NewGNMIClient()
+	assert.NoError(t, deviceGnmiClientError)
+	assert.True(t, deviceGnmiClient != nil, "Fetching device client returned nil")
+	return deviceGnmiClient
 }

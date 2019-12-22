@@ -18,16 +18,13 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/api/types/change/network"
+	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/openconfig/gnmi/client"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -42,56 +39,6 @@ var (
 	values = []string{value1, value2}
 )
 
-func getDevicePaths(devices []string, paths []string) []DevicePath {
-	var devicePaths = make([]DevicePath, len(paths)*len(devices))
-	pathIndex := 0
-	for _, device := range devices {
-		for _, path := range paths {
-			devicePaths[pathIndex].deviceName = device
-			devicePaths[pathIndex].path = path
-			pathIndex++
-		}
-	}
-	return devicePaths
-}
-
-func getDevicePathsWithValues(devices []string, paths []string, values []string) []DevicePath {
-	var devicePaths = getDevicePaths(devices, paths)
-	valueIndex := 0
-	for range devices {
-		for _, value := range values {
-			devicePaths[valueIndex].pathDataValue = value
-			devicePaths[valueIndex].pathDataType = StringVal
-			valueIndex++
-		}
-	}
-	return devicePaths
-}
-
-func checkDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []DevicePath, expectedValue string) {
-	for i := 0; i < 30; i++ {
-		deviceValues, extensions, deviceValuesError := gNMIGet(MakeContext(), deviceGnmiClient, devicePaths)
-		if deviceValuesError == nil {
-			assert.NoError(t, deviceValuesError, "GNMI get operation to device returned an error")
-			assert.Equal(t, expectedValue, deviceValues[0].pathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
-			assert.Equal(t, 0, len(extensions))
-			return
-		} else if status.Code(deviceValuesError) == codes.Unavailable {
-			time.Sleep(1 * time.Second)
-		} else {
-			assert.Fail(t, "Failed to query device: %v", deviceValuesError)
-		}
-	}
-	assert.Fail(t, "Failed to query device")
-}
-
-func getDeviceGNMIClient(t *testing.T, simulator env.SimulatorEnv) client.Impl {
-	deviceGnmiClient, deviceGnmiClientError := simulator.NewGNMIClient()
-	assert.NoError(t, deviceGnmiClientError)
-	assert.True(t, deviceGnmiClient != nil, "Fetching device client returned nil")
-	return deviceGnmiClient
-}
-
 // TestTransaction tests setting multiple paths in a single request and rolling it back
 func (s *TestSuite) TestTransaction(t *testing.T) {
 	// Get the configured devices from the environment.
@@ -102,8 +49,8 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	devices[1] = device2.Name()
 
 	// Wait for config to connect to the devices
-	WaitForDeviceAvailable(t, device.ID(device1.Name()), 10*time.Second)
-	WaitForDeviceAvailable(t, device.ID(device2.Name()), 10*time.Second)
+	testutils.WaitForDeviceAvailable(t, device.ID(device1.Name()), 10*time.Second)
+	testutils.WaitForDeviceAvailable(t, device.ID(device2.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
 	gnmiClient, gnmiClientError := env.Config().NewGNMIClient()
@@ -112,7 +59,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Set values
 	var devicePathsForSet = getDevicePathsWithValues(devices, paths, values)
-	changeID, extensions, errorSet := gNMISet(MakeContext(), gnmiClient, devicePathsForSet, noPaths, noExtensions)
+	changeID, extensions, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, devicePathsForSet, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 	assert.True(t, changeID != "")
 	assert.Equal(t, 1, len(extensions))
@@ -122,7 +69,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Check that the values were set correctly
 	var devicePathsForGet = getDevicePaths(devices, paths)
-	getValuesAfterSet, extensions, getValueAfterSetError := gNMIGet(MakeContext(), gnmiClient, devicePathsForGet)
+	getValuesAfterSet, extensions, getValueAfterSetError := gNMIGet(testutils.MakeContext(), gnmiClient, devicePathsForGet)
 	assert.NoError(t, getValueAfterSetError, "GNMI get operation returned an error")
 	assert.NotEqual(t, "", getValuesAfterSet, "Query after set returned an error: %s\n", getValueAfterSetError)
 	assert.Equal(t, value1, getValuesAfterSet[0].pathDataValue, "Query after set returned the wrong value: %s\n", getValuesAfterSet)
@@ -130,7 +77,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.Equal(t, 0, len(extensions))
 
 	// Wait for the network change to complete
-	complete := WaitForNetworkChangeComplete(t, networkChangeID)
+	complete := testutils.WaitForNetworkChangeComplete(t, networkChangeID)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices
@@ -153,7 +100,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
 
 	// Check that the values were really rolled back
-	getValuesAfterRollback, extensions, errorGetAfterRollback := gNMIGet(MakeContext(), gnmiClient, devicePathsForGet)
+	getValuesAfterRollback, extensions, errorGetAfterRollback := gNMIGet(testutils.MakeContext(), gnmiClient, devicePathsForGet)
 	assert.NoError(t, errorGetAfterRollback, "Get after rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for get after rollback is nil")
 	assert.Equal(t, "", getValuesAfterRollback[0].pathDataValue, "Query after rollback returned the wrong value: %s\n", getValuesAfterRollback)

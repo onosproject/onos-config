@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-config/api/types/change"
 	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -69,7 +70,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	setPath[0].pathDataValue = offlineInTopoModValue
 	setPath[0].pathDataType = StringVal
 
-	_, extensionsSet, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, noExtensions)
+	_, extensionsSet, errorSet := gNMISet(testutils.MakeContext(), c, setPath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensionsSet))
 	extensionBefore := extensionsSet[0].GetRegisteredExt()
@@ -77,7 +78,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	networkChangeID := network.ID(extensionBefore.Msg)
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath))
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
@@ -105,10 +106,10 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	simulatorEnv := simulator.AddOrDie()
 
 	// Wait for config to connect to the device
-	WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
+	testutils.WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	WaitForNetworkChangeComplete(t, networkChangeID)
+	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
 
 	// Interrogate the device to check that the value was set properly
 	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)

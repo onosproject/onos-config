@@ -18,6 +18,7 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
@@ -84,14 +85,14 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	setPath[0].pathDataType = StringVal
 
 	// Set the value - should return a pending change
-	_, extensionsSet, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, extensions)
+	_, extensionsSet, errorSet := gNMISet(testutils.MakeContext(), c, setPath, noPaths, extensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensionsSet))
 	extensionBefore := extensionsSet[0].GetRegisteredExt()
 	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
 
 	// Check that the value was set correctly in the cache
-	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(unreachableDeviceModDeviceName, unreachableDeviceModPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(unreachableDeviceModDeviceName, unreachableDeviceModPath))
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
