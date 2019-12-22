@@ -70,7 +70,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	setPath[0].pathDataValue = offlineInTopoModValue
 	setPath[0].pathDataType = StringVal
 
-	_, extensionsSet, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, noExtensions)
+	_, extensionsSet, errorSet := gNMISet(testutils.MakeContext(), c, setPath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensionsSet))
 	extensionBefore := extensionsSet[0].GetRegisteredExt()
@@ -78,7 +78,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	networkChangeID := network.ID(extensionBefore.Msg)
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath))
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)

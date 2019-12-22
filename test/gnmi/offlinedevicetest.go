@@ -62,7 +62,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	setPath[0].pathDataValue = modValue
 	setPath[0].pathDataType = StringVal
 
-	_, extensions, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, extensions)
+	_, extensions, errorSet := gNMISet(testutils.MakeContext(), c, setPath, noPaths, extensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensions))
 	extensionBefore := extensions[0].GetRegisteredExt()
@@ -73,7 +73,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	simulatorEnv := simulator.AddOrDie()
 	time.Sleep(2 * time.Second)
 
-	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(offlineDeviceName, modPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(offlineDeviceName, modPath))
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)

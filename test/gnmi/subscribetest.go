@@ -16,19 +16,18 @@ package gnmi
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/onosproject/onos-topo/api/device"
-	"strconv"
-	"testing"
-	"time"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
 	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	log "k8s.io/klog"
+	"strconv"
+	"testing"
+	"time"
 )
 
 const (
@@ -81,7 +80,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 	// Subscription has to be spawned into a separate thread as it is blocking.
 	go func() {
-		errSubscribe := subC.Subscribe(MakeContext(), q, "gnmi")
+		errSubscribe := subC.Subscribe(testutils.MakeContext(), q, "gnmi")
 		assert.NoError(t, errSubscribe, "Subscription Error")
 	}()
 
@@ -97,7 +96,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	setPath := makeDevicePath(simulator.Name(), subPath)
 	setPath[0].pathDataValue = subValue
 	setPath[0].pathDataType = StringVal
-	_, _, errorSet := gNMISet(MakeContext(), c, setPath, noPaths, noExtensions)
+	_, _, errorSet := gNMISet(testutils.MakeContext(), c, setPath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 	var response *gnmi.SubscribeResponse
 
@@ -118,7 +117,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	}
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(MakeContext(), c, makeDevicePath(simulator.Name(), subPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(simulator.Name(), subPath))
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
@@ -126,7 +125,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 		"Query after set returned the wrong value: %s\n", valueAfter)
 
 	// Remove the path we added
-	_, extensions, errorDelete := gNMISet(MakeContext(), c, noPaths, makeDevicePath(simulator.Name(), subPath), noExtensions)
+	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), c, noPaths, makeDevicePath(simulator.Name(), subPath), noExtensions)
 	assert.NoError(t, errorDelete)
 	assert.Equal(t, 1, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
@@ -149,7 +148,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	}
 
 	//  Make sure it got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(MakeContext(), c, makeDevicePath(simulator.Name(), subPath))
+	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), c, makeDevicePath(simulator.Name(), subPath))
 	assert.NoError(t, errorAfterDelete)
 	assert.Equal(t, 0, len(extensions))
 	assert.Equal(t, valueAfterDelete[0].pathDataValue, "",
