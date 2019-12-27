@@ -92,6 +92,8 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, c != nil, "Fetching client returned nil")
 
+	getPath := makeDevicePath(simulator.Name(), subPath)
+
 	// Set a value using gNMI client
 	setPath := makeDevicePath(simulator.Name(), subPath)
 	setPath[0].pathDataValue = subValue
@@ -117,7 +119,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	}
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(simulator.Name(), subPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
@@ -125,7 +127,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 		"Query after set returned the wrong value: %s\n", valueAfter)
 
 	// Remove the path we added
-	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), c, noPaths, makeDevicePath(simulator.Name(), subPath), noExtensions)
+	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), c, noPaths, getPath, noExtensions)
 	assert.NoError(t, errorDelete)
 	assert.Equal(t, 1, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
@@ -148,7 +150,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	}
 
 	//  Make sure it got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), c, makeDevicePath(simulator.Name(), subPath))
+	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfterDelete)
 	assert.Equal(t, 0, len(extensions))
 	assert.Equal(t, valueAfterDelete[0].pathDataValue, "",
