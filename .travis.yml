@@ -16,7 +16,7 @@ branches:
     - master
 
 before_script:
-  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v1.19.1/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.19.1
+  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v1.19.1/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.21.0
 
 
 jobs:
