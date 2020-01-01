@@ -80,6 +80,7 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
 
+	getPath := makeDevicePath(unreachableDeviceModDeviceName, unreachableDeviceModPath)
 	setPath := makeDevicePath(unreachableDeviceModDeviceName, unreachableDeviceModPath)
 	setPath[0].pathDataValue = unreachableDeviceModValue
 	setPath[0].pathDataType = StringVal
@@ -92,7 +93,7 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
 
 	// Check that the value was set correctly in the cache
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(unreachableDeviceModDeviceName, unreachableDeviceModPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)

@@ -27,13 +27,6 @@ const (
 	tzPath  = "/system/clock/config/timezone-name"
 )
 
-func makeDevicePath(device string, path string) []DevicePath {
-	devicePath := make([]DevicePath, 1)
-	devicePath[0].deviceName = device
-	devicePath[0].path = path
-	return devicePath
-}
-
 // TestSinglePath tests query/set/delete of a single GNMI path to a single device
 func (s *TestSuite) TestSinglePath(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
@@ -44,6 +37,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	assert.True(t, c != nil, "Fetching client returned nil")
 
 	// Set a value using gNMI client
+	getPath := makeDevicePath(simulator.Name(), tzPath)
 	setPath := makeDevicePath(simulator.Name(), tzPath)
 	setPath[0].pathDataValue = tzValue
 	setPath[0].pathDataType = StringVal
@@ -54,21 +48,21 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(simulator.Name(), tzPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
 	assert.Equal(t, tzValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
 
 	// Remove the path we added
-	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), c, noPaths, makeDevicePath(simulator.Name(), tzPath), noExtensions)
+	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), c, noPaths, getPath, noExtensions)
 	assert.NoError(t, errorDelete)
 	assert.Equal(t, 1, len(extensions))
 	extension = extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
 	//  Make sure it got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), c, makeDevicePath(simulator.Name(), tzPath))
+	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfterDelete)
 	assert.Equal(t, 0, len(extensions))
 	assert.Equal(t, valueAfterDelete[0].pathDataValue, "",

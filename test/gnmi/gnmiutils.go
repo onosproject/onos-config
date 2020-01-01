@@ -45,6 +45,13 @@ type DevicePath struct {
 var noPaths = make([]DevicePath, 0)
 var noExtensions = make([]*gnmi_ext.Extension, 0)
 
+func makeDevicePath(device string, path string) []DevicePath {
+	devicePath := make([]DevicePath, 1)
+	devicePath[0].deviceName = device
+	devicePath[0].path = path
+	return devicePath
+}
+
 func convertGetResults(response *gpb.GetResponse) ([]DevicePath, []*gnmi_ext.Extension, error) {
 	entryCount := len(response.Notification)
 	result := make([]DevicePath, entryCount)

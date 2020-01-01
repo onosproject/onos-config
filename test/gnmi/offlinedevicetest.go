@@ -58,6 +58,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
 
+	getPath := makeDevicePath(offlineDeviceName, modPath)
 	setPath := makeDevicePath(offlineDeviceName, modPath)
 	setPath[0].pathDataValue = modValue
 	setPath[0].pathDataType = StringVal
@@ -73,7 +74,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	simulatorEnv := simulator.AddOrDie()
 	time.Sleep(2 * time.Second)
 
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(offlineDeviceName, modPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
@@ -82,5 +83,5 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
 
 	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
-	checkDeviceValue(t, deviceGnmiClient, makeDevicePath(offlineDeviceName, modPath), modValue)
+	checkDeviceValue(t, deviceGnmiClient, getPath, modValue)
 }

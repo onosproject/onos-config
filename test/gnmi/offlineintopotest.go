@@ -66,6 +66,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 
 	// Set a value using gNMI client to the offline device
 
+	getPath := makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath)
 	setPath := makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath)
 	setPath[0].pathDataValue = offlineInTopoModValue
 	setPath[0].pathDataType = StringVal
@@ -78,7 +79,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	networkChangeID := network.ID(extensionBefore.Msg)
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath))
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
@@ -113,5 +114,5 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 
 	// Interrogate the device to check that the value was set properly
 	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
-	checkDeviceValue(t, deviceGnmiClient, makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath), offlineInTopoModValue)
+	checkDeviceValue(t, deviceGnmiClient, getPath, offlineInTopoModValue)
 }

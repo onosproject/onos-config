@@ -41,6 +41,8 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, c != nil, "Fetching client returned nil")
 
+	getPath := makeDevicePath(device.Name(), newRootEnabledPath)
+
 	// Set name of new root using gNMI client
 	setNamePath := []DevicePath{
 		{deviceName: device.Name(), path: newRootConfigNamePath, pathDataValue: newRootName, pathDataType: StringVal},
@@ -64,27 +66,27 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	assert.Equal(t, newRootName, valueAfter[0].pathDataValue, "Query name after set returned the wrong value: %s\n", valueAfter)
 
 	// Check that the enabled value was set correctly
-	valueAfter, extensions, errorAfter = gNMIGet(testutils.MakeContext(), c, makeDevicePath(device.Name(), newRootEnabledPath))
+	valueAfter, extensions, errorAfter = gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfter)
 	assert.NotEqual(t, "", valueAfter, "Query enabled after set returned an error: %s\n", errorAfter)
 	assert.Equal(t, "false", valueAfter[0].pathDataValue, "Query enabled after set returned the wrong value: %s\n", valueAfter)
 	assert.Equal(t, 0, len(extensions))
 
 	// Remove the root path we added
-	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), c, noPaths, makeDevicePath(device.Name(), newRootPath), noExtensions)
+	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), c, noPaths, getPath, noExtensions)
 	assert.NoError(t, errorDelete)
 	assert.Equal(t, 1, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
 	//  Make sure child got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), c, makeDevicePath(device.Name(), newRootConfigNamePath))
+	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfterDelete)
 	assert.Equal(t, valueAfterDelete[0].pathDataValue, "", "New child was not removed")
 	assert.Equal(t, 0, len(extensions))
 
 	//  Make sure new root got removed
-	valueAfterRootDelete, extensions, errorAfterRootDelete := gNMIGet(testutils.MakeContext(), c, makeDevicePath(device.Name(), newRootPath))
+	valueAfterRootDelete, extensions, errorAfterRootDelete := gNMIGet(testutils.MakeContext(), c, getPath)
 	assert.NoError(t, errorAfterRootDelete)
 	assert.Equal(t, valueAfterRootDelete[0].pathDataValue, "",
 		"New root was not removed")
