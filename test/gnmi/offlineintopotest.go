@@ -60,18 +60,15 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	assert.Nil(t, addResponseError)
 
 	// Make a GNMI client to use for requests
-	c, err := env.Config().NewGNMIClient()
-	assert.NoError(t, err)
-	assert.True(t, c != nil, "Fetching client returned nil")
+	gnmiClient := getGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the offline device
-
 	getPath := makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath)
 	setPath := makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath)
 	setPath[0].pathDataValue = offlineInTopoModValue
 	setPath[0].pathDataType = StringVal
 
-	_, extensionsSet, errorSet := gNMISet(testutils.MakeContext(), c, setPath, noPaths, noExtensions)
+	_, extensionsSet, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setPath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensionsSet))
 	extensionBefore := extensionsSet[0].GetRegisteredExt()
@@ -79,7 +76,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	networkChangeID := network.ID(extensionBefore.Msg)
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, getPath)
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
@@ -113,6 +110,6 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
 
 	// Interrogate the device to check that the value was set properly
-	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
+	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
 	checkDeviceValue(t, deviceGnmiClient, getPath, offlineInTopoModValue)
 }

@@ -39,9 +39,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	simulator := env.NewSimulator().SetName(offlineDeviceName)
 
 	// Make a GNMI client to use for requests
-	c, err := env.Config().NewGNMIClient()
-	assert.NoError(t, err)
-	assert.True(t, c != nil, "Fetching client returned nil")
+	gnmiClient := getGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the offline device
 	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
@@ -63,7 +61,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	setPath[0].pathDataValue = modValue
 	setPath[0].pathDataType = StringVal
 
-	_, extensions, errorSet := gNMISet(testutils.MakeContext(), c, setPath, noPaths, extensions)
+	_, extensions, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setPath, noPaths, extensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensions))
 	extensionBefore := extensions[0].GetRegisteredExt()
@@ -74,7 +72,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	simulatorEnv := simulator.AddOrDie()
 	time.Sleep(2 * time.Second)
 
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, getPath)
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
@@ -82,6 +80,6 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 
 	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
 
-	deviceGnmiClient := getDeviceGNMIClient(t, simulatorEnv)
+	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
 	checkDeviceValue(t, deviceGnmiClient, getPath, modValue)
 }

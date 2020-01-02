@@ -169,9 +169,19 @@ func checkDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []
 	assert.Fail(t, "Failed to query device")
 }
 
-func getDeviceGNMIClient(t *testing.T, simulator env.SimulatorEnv) client.Impl {
+func getDeviceGNMIClientOrFail(t *testing.T, simulator env.SimulatorEnv) client.Impl {
+	t.Helper()
 	deviceGnmiClient, deviceGnmiClientError := simulator.NewGNMIClient()
 	assert.NoError(t, deviceGnmiClientError)
 	assert.True(t, deviceGnmiClient != nil, "Fetching device client returned nil")
 	return deviceGnmiClient
+}
+
+// getGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
+func getGNMIClientOrFail(t *testing.T) client.Impl {
+	t.Helper()
+	gnmiClient, err := env.Config().NewGNMIClient()
+	assert.NoError(t, err)
+	assert.True(t, gnmiClient != nil, "Fetching GNMI client returned nil")
+	return gnmiClient
 }

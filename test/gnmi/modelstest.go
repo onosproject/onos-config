@@ -48,9 +48,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 	}
 
 	// Make a GNMI client to use for requests
-	gnmiClient, gnmiClientError := env.Config().NewGNMIClient()
-	assert.NoError(t, gnmiClientError)
-	assert.True(t, gnmiClient != nil, "Fetching client returned nil")
+	gnmiClient := getGNMIClientOrFail(t)
 
 	// Run the test cases
 	for _, testCase := range testCases {
