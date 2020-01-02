@@ -39,7 +39,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := getGNMIClientOrFail(t)
 
-	getPath := makeDevicePath(device.Name(), newRootEnabledPath)
+	getPath := getDevicePath(device.Name(), newRootEnabledPath)
 
 	// Set name of new root using gNMI client
 	setNamePath := []DevicePath{

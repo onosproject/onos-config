@@ -35,32 +35,30 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	gnmiClient := getGNMIClientOrFail(t)
 
 	// Set a value using gNMI client
-	getPath := makeDevicePath(simulator.Name(), tzPath)
-	setPath := makeDevicePath(simulator.Name(), tzPath)
-	setPath[0].pathDataValue = tzValue
-	setPath[0].pathDataType = StringVal
-	_, extensions, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setPath, noPaths, noExtensions)
+	devicePath := getDevicePathWithValue(simulator.Name(), tzPath, tzValue, StringVal)
+
+	_, extensions, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, devicePath, noPaths, noExtensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensions))
 	extension := extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, devicePath)
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
 	assert.Equal(t, tzValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
 
 	// Remove the path we added
-	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), gnmiClient, noPaths, getPath, noExtensions)
+	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), gnmiClient, noPaths, devicePath, noExtensions)
 	assert.NoError(t, errorDelete)
 	assert.Equal(t, 1, len(extensions))
 	extension = extensions[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
 	//  Make sure it got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
+	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), gnmiClient, devicePath)
 	assert.NoError(t, errorAfterDelete)
 	assert.Equal(t, 0, len(extensions))
 	assert.Equal(t, valueAfterDelete[0].pathDataValue, "",

@@ -46,7 +46,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	for attempt := 1; attempt <= 10; attempt++ {
 		// If the device cache has not been completely initialized, we can hit a race here where the value
 		// will be returned as null. Needs further investigation.
-		valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, makeDevicePath(simulator.Name(), stateControllersPath))
+		valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, getDevicePath(simulator.Name(), stateControllersPath))
 		assert.NoError(t, errorAfter)
 		assert.NotEqual(t, nil, valueAfter, "Query after state returned nil")
 		address := valueAfter[0].pathDataValue

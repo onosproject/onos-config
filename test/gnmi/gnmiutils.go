@@ -45,13 +45,6 @@ type DevicePath struct {
 var noPaths = make([]DevicePath, 0)
 var noExtensions = make([]*gnmi_ext.Extension, 0)
 
-func makeDevicePath(device string, path string) []DevicePath {
-	devicePath := make([]DevicePath, 1)
-	devicePath[0].deviceName = device
-	devicePath[0].path = path
-	return devicePath
-}
-
 func convertGetResults(response *gpb.GetResponse) ([]DevicePath, []*gnmi_ext.Extension, error) {
 	entryCount := len(response.Notification)
 	result := make([]DevicePath, entryCount)
@@ -124,6 +117,19 @@ func gNMISet(ctx context.Context, c client.Impl, updatePaths []DevicePath, delet
 		return "", nil, setError
 	}
 	return extractSetTransactionID(setResult), setResult.Extension, nil
+}
+
+func getDevicePath(device string, path string) []DevicePath {
+	return getDevicePathWithValue(device, path, "", "")
+}
+
+func getDevicePathWithValue(device string, path string, value string, valueType string) []DevicePath {
+	devicePath := make([]DevicePath, 1)
+	devicePath[0].deviceName = device
+	devicePath[0].path = path
+	devicePath[0].pathDataValue = value
+	devicePath[0].pathDataType = valueType
+	return devicePath
 }
 
 func getDevicePaths(devices []string, paths []string) []DevicePath {

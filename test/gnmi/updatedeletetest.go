@@ -71,7 +71,7 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	assert.Equal(t, "false", valueAfter[0].pathDataValue, "Query name after set returned the wrong value: %s\n", valueAfter)
 
 	//  Make sure Description got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), gnmiClient, makeDevicePath(device.Name(), udtestDescriptionPath))
+	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), gnmiClient, getDevicePath(device.Name(), udtestDescriptionPath))
 	assert.NoError(t, errorAfterDelete)
 	assert.Equal(t, valueAfterDelete[0].pathDataValue, "", "New child was not removed")
 	assert.Equal(t, 0, len(extensions))
