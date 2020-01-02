@@ -73,11 +73,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	networkChangeID := network.ID(extensionBefore.Msg)
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, devicePath)
-	assert.NoError(t, errorAfter)
-	assert.Equal(t, 0, len(extensions))
-	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, offlineInTopoModValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
+	checkGnmiValue(t, gnmiClient, devicePath, offlineInTopoModValue, 0, "Query after set returned the wrong value")
 
 	// Check for pending state on the network change
 	changeServiceClient, changeServiceClientErr := env.Config().NewChangeServiceClient()

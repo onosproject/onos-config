@@ -68,15 +68,10 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	// Check that the value was set correctly
 	simulatorEnv := simulator.AddOrDie()
 	time.Sleep(2 * time.Second)
+	checkGnmiValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, devicePath)
-	assert.NoError(t, errorAfter)
-	assert.Equal(t, 0, len(extensions))
-	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, modValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
-
+	// Check that the value was set properly on the device
 	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
-
 	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
 	checkDeviceValue(t, deviceGnmiClient, devicePath, modValue)
 }

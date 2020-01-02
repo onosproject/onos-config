@@ -64,15 +64,8 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	assert.NoError(t, errorSet)
 
 	// Check that the Enabled value is set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, updateEnabledPath)
-	assert.NoError(t, errorAfter)
-	assert.Equal(t, 0, len(extensions))
-	assert.NotEqual(t, "", valueAfter, "Query name after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, "false", valueAfter[0].pathDataValue, "Query name after set returned the wrong value: %s\n", valueAfter)
+	checkGnmiValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
 
 	//  Make sure Description got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), gnmiClient, getDevicePath(device.Name(), udtestDescriptionPath))
-	assert.NoError(t, errorAfterDelete)
-	assert.Equal(t, valueAfterDelete[0].pathDataValue, "", "New child was not removed")
-	assert.Equal(t, 0, len(extensions))
+	checkGnmiValue(t, gnmiClient, getDevicePath(device.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
 }

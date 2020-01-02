@@ -88,9 +88,5 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
 
 	// Check that the value was set correctly in the cache
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, devicePath)
-	assert.NoError(t, errorAfter)
-	assert.Equal(t, 0, len(extensions))
-	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, unreachableDeviceModValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
+	checkGnmiValue(t, gnmiClient, devicePath, unreachableDeviceModValue, 0, "Query after set returned the wrong value")
 }

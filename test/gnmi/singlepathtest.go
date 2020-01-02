@@ -44,11 +44,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, devicePath)
-	assert.NoError(t, errorAfter)
-	assert.Equal(t, 0, len(extensions))
-	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, tzValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
+	checkGnmiValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
 	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), gnmiClient, noPaths, devicePath, noExtensions)
@@ -58,9 +54,5 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 
 	//  Make sure it got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), gnmiClient, devicePath)
-	assert.NoError(t, errorAfterDelete)
-	assert.Equal(t, 0, len(extensions))
-	assert.Equal(t, valueAfterDelete[0].pathDataValue, "",
-		"incorrect value found for path /system/clock/config/timezone-name after delete")
+	checkGnmiValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 }

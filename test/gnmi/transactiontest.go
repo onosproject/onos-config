@@ -65,14 +65,11 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
 	networkChangeID := network.ID(extension.Msg)
 
+	devicePathsForGet := getDevicePaths(devices, paths)
+
 	// Check that the values were set correctly
-	var devicePathsForGet = getDevicePaths(devices, paths)
-	getValuesAfterSet, extensions, getValueAfterSetError := gNMIGet(testutils.MakeContext(), gnmiClient, devicePathsForGet)
-	assert.NoError(t, getValueAfterSetError, "GNMI get operation returned an error")
-	assert.NotEqual(t, "", getValuesAfterSet, "Query after set returned an error: %s\n", getValueAfterSetError)
-	assert.Equal(t, value1, getValuesAfterSet[0].pathDataValue, "Query after set returned the wrong value: %s\n", getValuesAfterSet)
-	assert.Equal(t, value2, getValuesAfterSet[1].pathDataValue, "Query after set 2 returned the wrong value: %s\n", getValuesAfterSet)
-	assert.Equal(t, 0, len(extensions))
+	expectedValues := []string{value1, value2}
+	checkGnmiValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
 	complete := testutils.WaitForNetworkChangeComplete(t, networkChangeID)
@@ -98,10 +95,6 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
 
 	// Check that the values were really rolled back
-	getValuesAfterRollback, extensions, errorGetAfterRollback := gNMIGet(testutils.MakeContext(), gnmiClient, devicePathsForGet)
-	assert.NoError(t, errorGetAfterRollback, "Get after rollback returned an error")
-	assert.NotNil(t, rollbackResponse, "Response for get after rollback is nil")
-	assert.Equal(t, "", getValuesAfterRollback[0].pathDataValue, "Query after rollback returned the wrong value: %s\n", getValuesAfterRollback)
-	assert.Equal(t, "", getValuesAfterRollback[1].pathDataValue, "Query after rollback returned the wrong value: %s\n", getValuesAfterRollback)
-	assert.Equal(t, 0, len(extensions))
+	expectedValuesAfterRollback := []string{"", ""}
+	checkGnmiValues(t, gnmiClient, devicePathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
 }

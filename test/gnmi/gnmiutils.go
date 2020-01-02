@@ -191,3 +191,21 @@ func getGNMIClientOrFail(t *testing.T) client.Impl {
 	assert.True(t, gnmiClient != nil, "Fetching GNMI client returned nil")
 	return gnmiClient
 }
+
+func checkGnmiValue(t *testing.T, gnmiClient client.Impl, paths []DevicePath, expectedValue string, expectedExtensions int, failMessage string) {
+	t.Helper()
+	value, extensions, err := gNMIGet(testutils.MakeContext(), gnmiClient, paths)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedExtensions, len(extensions))
+	assert.Equal(t, expectedValue, value[0].pathDataValue, "%s: %s", failMessage, value)
+}
+
+func checkGnmiValues(t *testing.T, gnmiClient client.Impl, paths []DevicePath, expectedValues []string, expectedExtensions int, failMessage string) {
+	t.Helper()
+	value, extensions, err := gNMIGet(testutils.MakeContext(), gnmiClient, paths)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedExtensions, len(extensions))
+	for index, expectedValue := range expectedValues {
+		assert.Equal(t, expectedValue, value[index].pathDataValue, "%s: %s", failMessage, value)
+	}
+}
