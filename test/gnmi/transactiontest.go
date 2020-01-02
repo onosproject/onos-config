@@ -53,9 +53,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	testutils.WaitForDeviceAvailable(t, device.ID(device2.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	gnmiClient, gnmiClientError := env.Config().NewGNMIClient()
-	assert.NoError(t, gnmiClientError)
-	assert.True(t, gnmiClient != nil, "Fetching client returned nil")
+	gnmiClient := getGNMIClientOrFail(t)
 
 	// Set values
 	var devicePathsForSet = getDevicePathsWithValues(devices, paths, values)
@@ -81,8 +79,8 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices
-	device1GnmiClient := getDeviceGNMIClient(t, device1)
-	device2GnmiClient := getDeviceGNMIClient(t, device2)
+	device1GnmiClient := getDeviceGNMIClientOrFail(t, device1)
+	device2GnmiClient := getDeviceGNMIClientOrFail(t, device2)
 
 	checkDeviceValue(t, device1GnmiClient, devicePathsForGet[0:1], value1)
 	checkDeviceValue(t, device1GnmiClient, devicePathsForGet[1:2], value2)

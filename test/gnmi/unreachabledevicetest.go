@@ -61,9 +61,7 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	assert.Nil(t, addResponseError)
 
 	// Make a GNMI client to use for requests
-	c, err := env.Config().NewGNMIClient()
-	assert.NoError(t, err)
-	assert.True(t, c != nil, "Fetching client returned nil")
+	gnmiClient := getGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the device
 	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
@@ -86,14 +84,14 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	setPath[0].pathDataType = StringVal
 
 	// Set the value - should return a pending change
-	_, extensionsSet, errorSet := gNMISet(testutils.MakeContext(), c, setPath, noPaths, extensions)
+	_, extensionsSet, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setPath, noPaths, extensions)
 	assert.NoError(t, errorSet)
 	assert.Equal(t, 1, len(extensionsSet))
 	extensionBefore := extensionsSet[0].GetRegisteredExt()
 	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
 
 	// Check that the value was set correctly in the cache
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, getPath)
+	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
 	assert.NoError(t, errorAfter)
 	assert.Equal(t, 0, len(extensions))
 	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)

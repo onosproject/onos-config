@@ -38,9 +38,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	testutils.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	c, err := env.Config().NewGNMIClient()
-	assert.NoError(t, err)
-	assert.True(t, c != nil, "Fetching client returned nil")
+	gnmiClient := getGNMIClientOrFail(t)
 
 	// Check that the value was correctly retrieved from the device and stored in the state cache
 	success := false
@@ -48,7 +46,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	for attempt := 1; attempt <= 10; attempt++ {
 		// If the device cache has not been completely initialized, we can hit a race here where the value
 		// will be returned as null. Needs further investigation.
-		valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), c, makeDevicePath(simulator.Name(), stateControllersPath))
+		valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, makeDevicePath(simulator.Name(), stateControllersPath))
 		assert.NoError(t, errorAfter)
 		assert.NotEqual(t, nil, valueAfter, "Query after state returned nil")
 		address := valueAfter[0].pathDataValue
