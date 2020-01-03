@@ -25,7 +25,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	log "k8s.io/klog"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -92,8 +91,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 	// Set a value using gNMI client
 	devicePath := getDevicePathWithValue(simulator.Name(), subPath, subValue, StringVal)
-	_, _, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, devicePath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
+	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
 	var response *gnmi.SubscribeResponse
 
 	// Wait for the Update response with Update
@@ -113,14 +111,10 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	}
 
 	// Check that the value was set correctly
-	checkGnmiValue(t, gnmiClient, devicePath, subValue, 0, "Query after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, devicePath, subValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
-	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), gnmiClient, noPaths, devicePath, noExtensions)
-	assert.NoError(t, errorDelete)
-	assert.Equal(t, 1, len(extensions))
-	extension := extensions[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
+	setGNMIValueOrFail(t, gnmiClient, noPaths, devicePath, noExtensions)
 
 	// Wait for the Update response with delete
 	select {
@@ -139,7 +133,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	}
 
 	//  Make sure it got removed
-	checkGnmiValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+	checkGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 }
 
 func buildRequest(path *gnmi.Path, mode gnmi.SubscriptionList_Mode) (*gnmi.SubscribeRequest, error) {

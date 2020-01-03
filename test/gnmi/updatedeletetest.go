@@ -15,9 +15,7 @@
 package gnmi
 
 import (
-	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -42,16 +40,14 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	setNamePath := []DevicePath{
 		{deviceName: device.Name(), path: udtestNamePath, pathDataValue: udtestNameValue, pathDataType: StringVal},
 	}
-	_, _, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setNamePath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
+	setGNMIValueOrFail(t, gnmiClient, setNamePath, noPaths, noExtensions)
 
 	// Set initial values for Enabled and Description using gNMI client
 	setInitialValuesPath := []DevicePath{
 		{deviceName: device.Name(), path: udtestEnabledPath, pathDataValue: "true", pathDataType: BoolVal},
 		{deviceName: device.Name(), path: udtestDescriptionPath, pathDataValue: udtestDescriptionValue, pathDataType: StringVal},
 	}
-	_, _, errorSet = gNMISet(testutils.MakeContext(), gnmiClient, setInitialValuesPath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
+	setGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, noPaths, noExtensions)
 
 	// Update Enabled, delete Description using gNMI client
 	updateEnabledPath := []DevicePath{
@@ -60,12 +56,11 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	deleteDescriptionPath := []DevicePath{
 		{deviceName: device.Name(), path: udtestDescriptionPath},
 	}
-	_, _, errorSet = gNMISet(testutils.MakeContext(), gnmiClient, updateEnabledPath, deleteDescriptionPath, noExtensions)
-	assert.NoError(t, errorSet)
+	setGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, noExtensions)
 
 	// Check that the Enabled value is set correctly
-	checkGnmiValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
 
 	//  Make sure Description got removed
-	checkGnmiValue(t, gnmiClient, getDevicePath(device.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
+	checkGNMIValue(t, gnmiClient, getDevicePath(device.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
 }

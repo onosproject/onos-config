@@ -19,13 +19,10 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/diags"
 	"github.com/onosproject/onos-config/api/types/change"
-	"github.com/onosproject/onos-config/api/types/change/network"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -64,16 +61,10 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 
 	// Set a value using gNMI client to the offline device
 	devicePath := getDevicePathWithValue(offlineInTopoModDeviceName, offlineInTopoModPath, offlineInTopoModValue, StringVal)
-
-	_, extensionsSet, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, devicePath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
-	assert.Equal(t, 1, len(extensionsSet))
-	extensionBefore := extensionsSet[0].GetRegisteredExt()
-	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
-	networkChangeID := network.ID(extensionBefore.Msg)
+	networkChangeID := setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
 
 	// Check that the value was set correctly
-	checkGnmiValue(t, gnmiClient, devicePath, offlineInTopoModValue, 0, "Query after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, devicePath, offlineInTopoModValue, 0, "Query after set returned the wrong value")
 
 	// Check for pending state on the network change
 	changeServiceClient, changeServiceClientErr := env.Config().NewChangeServiceClient()

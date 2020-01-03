@@ -65,7 +65,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 				t.Logf("testing %q", description)
 
 				setResult := getDevicePathWithValue(simulator.Name(), path, value, valueType)
-				msg, _, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setResult, noPaths, noExtensions)
+				msg, _, errorSet := setGNMIValue(testutils.MakeContext(), gnmiClient, setResult, noPaths, noExtensions)
 				assert.NotNil(t, errorSet, "Set operation for %s does not generate an error", description)
 				assert.Contains(t, status.Convert(errorSet).Message(), expectedError,
 					"set operation for %s generates wrong error %s", description, msg)

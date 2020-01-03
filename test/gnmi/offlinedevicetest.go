@@ -16,16 +16,12 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
-	"strconv"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -55,20 +51,13 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 		},
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
-
 	devicePath := getDevicePathWithValue(offlineDeviceName, modPath, modValue, StringVal)
-
-	_, extensions, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, devicePath, noPaths, extensions)
-	assert.NoError(t, errorSet)
-	assert.Equal(t, 1, len(extensions))
-	extensionBefore := extensions[0].GetRegisteredExt()
-	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
-	networkChangeID := network.ID(extensionBefore.Msg)
+	networkChangeID := setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, extensions)
 
 	// Check that the value was set correctly
 	simulatorEnv := simulator.AddOrDie()
 	time.Sleep(2 * time.Second)
-	checkGnmiValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the device
 	testutils.WaitForNetworkChangeComplete(t, networkChangeID)

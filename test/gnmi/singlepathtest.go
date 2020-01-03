@@ -15,10 +15,7 @@
 package gnmi
 
 import (
-	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 )
 
@@ -34,25 +31,17 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := getGNMIClientOrFail(t)
 
-	// Set a value using gNMI client
 	devicePath := getDevicePathWithValue(simulator.Name(), tzPath, tzValue, StringVal)
 
-	_, extensions, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, devicePath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
-	assert.Equal(t, 1, len(extensions))
-	extension := extensions[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
+	// Set a value using gNMI client
+	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
 
 	// Check that the value was set correctly
-	checkGnmiValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
-	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), gnmiClient, noPaths, devicePath, noExtensions)
-	assert.NoError(t, errorDelete)
-	assert.Equal(t, 1, len(extensions))
-	extension = extensions[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
+	setGNMIValueOrFail(t, gnmiClient, noPaths, devicePath, noExtensions)
 
 	//  Make sure it got removed
-	checkGnmiValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+	checkGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 }

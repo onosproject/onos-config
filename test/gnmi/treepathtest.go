@@ -15,10 +15,7 @@
 package gnmi
 
 import (
-	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 )
 
@@ -45,33 +42,27 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	setNamePath := []DevicePath{
 		{deviceName: device.Name(), path: newRootConfigNamePath, pathDataValue: newRootName, pathDataType: StringVal},
 	}
-	_, _, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setNamePath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
+	setGNMIValueOrFail(t, gnmiClient, setNamePath, noPaths, noExtensions)
 
 	// Set values using gNMI client
 	setPath := []DevicePath{
 		{deviceName: device.Name(), path: newRootDescriptionPath, pathDataValue: newDescription, pathDataType: StringVal},
 		{deviceName: device.Name(), path: newRootEnabledPath, pathDataValue: "false", pathDataType: BoolVal},
 	}
-	_, _, errorSet = gNMISet(testutils.MakeContext(), gnmiClient, setPath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
+	setGNMIValueOrFail(t, gnmiClient, setPath, noPaths, noExtensions)
 
 	// Check that the name value was set correctly
-	checkGnmiValue(t, gnmiClient, setNamePath, newRootName, 0, "Query name after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "Query name after set returned the wrong value")
 
 	// Check that the enabled value was set correctly
-	checkGnmiValue(t, gnmiClient, getPath, "false", 0, "Query enabled after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, getPath, "false", 0, "Query enabled after set returned the wrong value")
 
 	// Remove the root path we added
-	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), gnmiClient, noPaths, getPath, noExtensions)
-	assert.NoError(t, errorDelete)
-	assert.Equal(t, 1, len(extensions))
-	extension := extensions[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
+	setGNMIValueOrFail(t, gnmiClient, noPaths, getPath, noExtensions)
 
 	//  Make sure child got removed
-	checkGnmiValue(t, gnmiClient, setNamePath, newRootName, 0, "New child was not removed")
+	checkGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "New child was not removed")
 
 	//  Make sure new root got removed
-	checkGnmiValue(t, gnmiClient, getPath, "", 0, "New root was not removed")
+	checkGNMIValue(t, gnmiClient, getPath, "", 0, "New root was not removed")
 }

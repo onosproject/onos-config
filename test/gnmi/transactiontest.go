@@ -17,12 +17,10 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
-	"github.com/onosproject/onos-config/api/types/change/network"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -57,22 +55,16 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Set values
 	var devicePathsForSet = getDevicePathsWithValues(devices, paths, values)
-	changeID, extensions, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, devicePathsForSet, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
-	assert.True(t, changeID != "")
-	assert.Equal(t, 1, len(extensions))
-	extension := extensions[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
-	networkChangeID := network.ID(extension.Msg)
+	changeID := setGNMIValueOrFail(t, gnmiClient, devicePathsForSet, noPaths, noExtensions)
 
 	devicePathsForGet := getDevicePaths(devices, paths)
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}
-	checkGnmiValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
+	checkGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
-	complete := testutils.WaitForNetworkChangeComplete(t, networkChangeID)
+	complete := testutils.WaitForNetworkChangeComplete(t, changeID)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices
@@ -88,7 +80,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	adminClient, err := env.Config().NewAdminServiceClient()
 	assert.NoError(t, err)
 	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
-		context.Background(), &admin.RollbackRequest{Name: changeID})
+		context.Background(), &admin.RollbackRequest{Name: string(changeID)})
 
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
@@ -96,5 +88,5 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Check that the values were really rolled back
 	expectedValuesAfterRollback := []string{"", ""}
-	checkGnmiValues(t, gnmiClient, devicePathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
+	checkGNMIValues(t, gnmiClient, devicePathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
 }
