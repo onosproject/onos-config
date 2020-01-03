@@ -17,13 +17,20 @@ Usage:
   onos config [command]
 
 Available Commands:
-  add         Add a config resource
-  get         Get config resources
-  rollback    Rolls-back a network configuration change
-  watch       Watch for updates to a config resource type
+  add             Add a config resource
+  compact-changes Takes a snapshot of network and device changes
+  config          Manage the CLI configuration
+  get             Get config resources
+  rollback        Rolls-back a network change
+  snapshot        Commands for managing snapshots
+  watch           Watch for updates to a config resource type
 
 Flags:
-  -h, --help   help for config
+  -h, --help                     help for config
+      --no-tls                   if present, do not use TLS
+      --service-address string   the onos-config service address (default "onos-config:5150")
+      --tls-cert-path string     the path to the TLS certificate
+      --tls-key-path string      the path to the TLS key
 
 Use "onos config [command] --help" for more information about a command.
 ```
