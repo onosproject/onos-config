@@ -15,10 +15,7 @@
 package gnmi
 
 import (
-	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 )
 
@@ -39,54 +36,33 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := getGNMIClientOrFail(t)
 
-	getPath := makeDevicePath(device.Name(), newRootEnabledPath)
+	getPath := getDevicePath(device.Name(), newRootEnabledPath)
 
 	// Set name of new root using gNMI client
 	setNamePath := []DevicePath{
 		{deviceName: device.Name(), path: newRootConfigNamePath, pathDataValue: newRootName, pathDataType: StringVal},
 	}
-	_, _, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setNamePath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
+	setGNMIValueOrFail(t, gnmiClient, setNamePath, noPaths, noExtensions)
 
 	// Set values using gNMI client
 	setPath := []DevicePath{
 		{deviceName: device.Name(), path: newRootDescriptionPath, pathDataValue: newDescription, pathDataType: StringVal},
 		{deviceName: device.Name(), path: newRootEnabledPath, pathDataValue: "false", pathDataType: BoolVal},
 	}
-	_, _, errorSet = gNMISet(testutils.MakeContext(), gnmiClient, setPath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
+	setGNMIValueOrFail(t, gnmiClient, setPath, noPaths, noExtensions)
 
 	// Check that the name value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, setNamePath)
-	assert.NoError(t, errorAfter)
-	assert.Equal(t, 0, len(extensions))
-	assert.NotEqual(t, "", valueAfter, "Query name after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, newRootName, valueAfter[0].pathDataValue, "Query name after set returned the wrong value: %s\n", valueAfter)
+	checkGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "Query name after set returned the wrong value")
 
 	// Check that the enabled value was set correctly
-	valueAfter, extensions, errorAfter = gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
-	assert.NoError(t, errorAfter)
-	assert.NotEqual(t, "", valueAfter, "Query enabled after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, "false", valueAfter[0].pathDataValue, "Query enabled after set returned the wrong value: %s\n", valueAfter)
-	assert.Equal(t, 0, len(extensions))
+	checkGNMIValue(t, gnmiClient, getPath, "false", 0, "Query enabled after set returned the wrong value")
 
 	// Remove the root path we added
-	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), gnmiClient, noPaths, getPath, noExtensions)
-	assert.NoError(t, errorDelete)
-	assert.Equal(t, 1, len(extensions))
-	extension := extensions[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
+	setGNMIValueOrFail(t, gnmiClient, noPaths, getPath, noExtensions)
 
 	//  Make sure child got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
-	assert.NoError(t, errorAfterDelete)
-	assert.Equal(t, valueAfterDelete[0].pathDataValue, "", "New child was not removed")
-	assert.Equal(t, 0, len(extensions))
+	checkGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "New child was not removed")
 
 	//  Make sure new root got removed
-	valueAfterRootDelete, extensions, errorAfterRootDelete := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
-	assert.NoError(t, errorAfterRootDelete)
-	assert.Equal(t, valueAfterRootDelete[0].pathDataValue, "",
-		"New root was not removed")
-	assert.Equal(t, 0, len(extensions))
+	checkGNMIValue(t, gnmiClient, getPath, "", 0, "New root was not removed")
 }

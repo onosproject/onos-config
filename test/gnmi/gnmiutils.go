@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/utils"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
@@ -28,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -44,13 +47,6 @@ type DevicePath struct {
 
 var noPaths = make([]DevicePath, 0)
 var noExtensions = make([]*gnmi_ext.Extension, 0)
-
-func makeDevicePath(device string, path string) []DevicePath {
-	devicePath := make([]DevicePath, 1)
-	devicePath[0].deviceName = device
-	devicePath[0].path = path
-	return devicePath
-}
 
 func convertGetResults(response *gpb.GetResponse) ([]DevicePath, []*gnmi_ext.Extension, error) {
 	entryCount := len(response.Notification)
@@ -82,8 +78,8 @@ func extractSetTransactionID(response *gpb.SetResponse) string {
 	return string(response.Extension[0].GetRegisteredExt().Msg)
 }
 
-// gNMIGet generates a GET request on the given client for a path on a device
-func gNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePath, []*gnmi_ext.Extension, error) {
+// getGNMIValue generates a GET request on the given client for a path on a device
+func getGNMIValue(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePath, []*gnmi_ext.Extension, error) {
 	protoString := ""
 	for _, devicePath := range paths {
 		protoString = protoString + MakeProtoPath(devicePath.deviceName, devicePath.path)
@@ -102,8 +98,8 @@ func gNMIGet(ctx context.Context, c client.Impl, paths []DevicePath) ([]DevicePa
 	return convertGetResults(response)
 }
 
-// gNMISet generates a SET request on the given client for update and delete paths on a device
-func gNMISet(ctx context.Context, c client.Impl, updatePaths []DevicePath, deletePaths []DevicePath, extensions []*gnmi_ext.Extension) (string, []*gnmi_ext.Extension, error) {
+// setGNMIValue generates a SET request on the given client for update and delete paths on a device
+func setGNMIValue(ctx context.Context, c client.Impl, updatePaths []DevicePath, deletePaths []DevicePath, extensions []*gnmi_ext.Extension) (string, []*gnmi_ext.Extension, error) {
 	var protoBuilder strings.Builder
 	for _, updatePath := range updatePaths {
 		protoBuilder.WriteString(MakeProtoUpdatePath(updatePath))
@@ -124,6 +120,19 @@ func gNMISet(ctx context.Context, c client.Impl, updatePaths []DevicePath, delet
 		return "", nil, setError
 	}
 	return extractSetTransactionID(setResult), setResult.Extension, nil
+}
+
+func getDevicePath(device string, path string) []DevicePath {
+	return getDevicePathWithValue(device, path, "", "")
+}
+
+func getDevicePathWithValue(device string, path string, value string, valueType string) []DevicePath {
+	devicePath := make([]DevicePath, 1)
+	devicePath[0].deviceName = device
+	devicePath[0].path = path
+	devicePath[0].pathDataValue = value
+	devicePath[0].pathDataType = valueType
+	return devicePath
 }
 
 func getDevicePaths(devices []string, paths []string) []DevicePath {
@@ -154,7 +163,7 @@ func getDevicePathsWithValues(devices []string, paths []string, values []string)
 
 func checkDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []DevicePath, expectedValue string) {
 	for i := 0; i < 30; i++ {
-		deviceValues, extensions, deviceValuesError := gNMIGet(testutils.MakeContext(), deviceGnmiClient, devicePaths)
+		deviceValues, extensions, deviceValuesError := getGNMIValue(testutils.MakeContext(), deviceGnmiClient, devicePaths)
 		if deviceValuesError == nil {
 			assert.NoError(t, deviceValuesError, "GNMI get operation to device returned an error")
 			assert.Equal(t, expectedValue, deviceValues[0].pathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
@@ -184,4 +193,35 @@ func getGNMIClientOrFail(t *testing.T) client.Impl {
 	assert.NoError(t, err)
 	assert.True(t, gnmiClient != nil, "Fetching GNMI client returned nil")
 	return gnmiClient
+}
+
+func checkGNMIValue(t *testing.T, gnmiClient client.Impl, paths []DevicePath, expectedValue string, expectedExtensions int, failMessage string) {
+	t.Helper()
+	value, extensions, err := getGNMIValue(testutils.MakeContext(), gnmiClient, paths)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedExtensions, len(extensions))
+	assert.Equal(t, expectedValue, value[0].pathDataValue, "%s: %s", failMessage, value)
+}
+
+func checkGNMIValues(t *testing.T, gnmiClient client.Impl, paths []DevicePath, expectedValues []string, expectedExtensions int, failMessage string) {
+	t.Helper()
+	value, extensions, err := getGNMIValue(testutils.MakeContext(), gnmiClient, paths)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedExtensions, len(extensions))
+	for index, expectedValue := range expectedValues {
+		assert.Equal(t, expectedValue, value[index].pathDataValue, "%s: %s", failMessage, value)
+	}
+}
+
+func setGNMIValueOrFail(t *testing.T, gnmiClient client.Impl,
+	updatePaths []DevicePath, deletePaths []DevicePath,
+	extensions []*gnmi_ext.Extension) network.ID {
+	t.Helper()
+	_, extensionsSet, errorSet := setGNMIValue(testutils.MakeContext(), gnmiClient, updatePaths, deletePaths, extensions)
+	assert.NoError(t, errorSet)
+	assert.Equal(t, 1, len(extensionsSet))
+	extensionBefore := extensionsSet[0].GetRegisteredExt()
+	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
+	networkChangeID := network.ID(extensionBefore.Msg)
+	return networkChangeID
 }

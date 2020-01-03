@@ -19,13 +19,10 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/diags"
 	"github.com/onosproject/onos-config/api/types/change"
-	"github.com/onosproject/onos-config/api/types/change/network"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -63,24 +60,11 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	gnmiClient := getGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the offline device
-	getPath := makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath)
-	setPath := makeDevicePath(offlineInTopoModDeviceName, offlineInTopoModPath)
-	setPath[0].pathDataValue = offlineInTopoModValue
-	setPath[0].pathDataType = StringVal
-
-	_, extensionsSet, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setPath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
-	assert.Equal(t, 1, len(extensionsSet))
-	extensionBefore := extensionsSet[0].GetRegisteredExt()
-	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
-	networkChangeID := network.ID(extensionBefore.Msg)
+	devicePath := getDevicePathWithValue(offlineInTopoModDeviceName, offlineInTopoModPath, offlineInTopoModValue, StringVal)
+	networkChangeID := setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
-	assert.NoError(t, errorAfter)
-	assert.Equal(t, 0, len(extensions))
-	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, offlineInTopoModValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
+	checkGNMIValue(t, gnmiClient, devicePath, offlineInTopoModValue, 0, "Query after set returned the wrong value")
 
 	// Check for pending state on the network change
 	changeServiceClient, changeServiceClientErr := env.Config().NewChangeServiceClient()
@@ -111,5 +95,5 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 
 	// Interrogate the device to check that the value was set properly
 	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
-	checkDeviceValue(t, deviceGnmiClient, getPath, offlineInTopoModValue)
+	checkDeviceValue(t, deviceGnmiClient, devicePath, offlineInTopoModValue)
 }

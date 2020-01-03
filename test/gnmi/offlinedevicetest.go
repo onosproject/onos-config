@@ -16,16 +16,12 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
-	"strconv"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -55,31 +51,16 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 		},
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
-
-	getPath := makeDevicePath(offlineDeviceName, modPath)
-	setPath := makeDevicePath(offlineDeviceName, modPath)
-	setPath[0].pathDataValue = modValue
-	setPath[0].pathDataType = StringVal
-
-	_, extensions, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setPath, noPaths, extensions)
-	assert.NoError(t, errorSet)
-	assert.Equal(t, 1, len(extensions))
-	extensionBefore := extensions[0].GetRegisteredExt()
-	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
-	networkChangeID := network.ID(extensionBefore.Msg)
+	devicePath := getDevicePathWithValue(offlineDeviceName, modPath, modValue, StringVal)
+	networkChangeID := setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, extensions)
 
 	// Check that the value was set correctly
 	simulatorEnv := simulator.AddOrDie()
 	time.Sleep(2 * time.Second)
+	checkGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
-	assert.NoError(t, errorAfter)
-	assert.Equal(t, 0, len(extensions))
-	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, modValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
-
+	// Check that the value was set properly on the device
 	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
-
 	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
-	checkDeviceValue(t, deviceGnmiClient, getPath, modValue)
+	checkDeviceValue(t, deviceGnmiClient, devicePath, modValue)
 }

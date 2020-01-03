@@ -15,10 +15,7 @@
 package gnmi
 
 import (
-	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 )
 
@@ -34,35 +31,17 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := getGNMIClientOrFail(t)
 
+	devicePath := getDevicePathWithValue(simulator.Name(), tzPath, tzValue, StringVal)
+
 	// Set a value using gNMI client
-	getPath := makeDevicePath(simulator.Name(), tzPath)
-	setPath := makeDevicePath(simulator.Name(), tzPath)
-	setPath[0].pathDataValue = tzValue
-	setPath[0].pathDataType = StringVal
-	_, extensions, errorSet := gNMISet(testutils.MakeContext(), gnmiClient, setPath, noPaths, noExtensions)
-	assert.NoError(t, errorSet)
-	assert.Equal(t, 1, len(extensions))
-	extension := extensions[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
+	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
 
 	// Check that the value was set correctly
-	valueAfter, extensions, errorAfter := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
-	assert.NoError(t, errorAfter)
-	assert.Equal(t, 0, len(extensions))
-	assert.NotEqual(t, "", valueAfter, "Query after set returned an error: %s\n", errorAfter)
-	assert.Equal(t, tzValue, valueAfter[0].pathDataValue, "Query after set returned the wrong value: %s\n", valueAfter)
+	checkGNMIValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
-	_, extensions, errorDelete := gNMISet(testutils.MakeContext(), gnmiClient, noPaths, getPath, noExtensions)
-	assert.NoError(t, errorDelete)
-	assert.Equal(t, 1, len(extensions))
-	extension = extensions[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(100))
+	setGNMIValueOrFail(t, gnmiClient, noPaths, devicePath, noExtensions)
 
 	//  Make sure it got removed
-	valueAfterDelete, extensions, errorAfterDelete := gNMIGet(testutils.MakeContext(), gnmiClient, getPath)
-	assert.NoError(t, errorAfterDelete)
-	assert.Equal(t, 0, len(extensions))
-	assert.Equal(t, valueAfterDelete[0].pathDataValue, "",
-		"incorrect value found for path /system/clock/config/timezone-name after delete")
+	checkGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 }
