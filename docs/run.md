@@ -9,11 +9,11 @@
 
 ## Run with `onit`
 `onos-config` can run through the `onit` tool. You can find more information on how to setup `onit` in the
- [setup.md](../../onos-test/docs/setup.md) page,
- and how to run `onit` at [run.md](../../onos-test/docs/run.md)
+ [debugging](../../onos-test/docs/debugging.md) page,
+ and how to run `onit` at [getting started](../../onos-test/docs/getting-started.md) page.
 
 ## Loading Model Plugins 
-The model-plugin for your device can be built and loaded as outlined in the [modelplugin.md](modelplugins.md) guide.
+The model-plugin for your device can be built and loaded as outlined in the [modelplugin](modelplugin.md) guide.
 > When running with Docker or Kubernetes these plugins will be built and (optionally) loaded
 at startup. To check the list of currently loaded plugins use:
 ```bash
