@@ -25,13 +25,21 @@ The system provides a full implementation of the gNMI spec as a northbound servi
 
 > On a deployed cluster the onos-cli pod has a gNMI client that can be used to
 > format and send gNMI messages.
-To access the CLI use
+
+You can run the following command to get in to the **onos-cli** pod and then run gnmi_cli from there:
+
+```bash
+kubectl -n onos exec -it $(kubectl -n onos get pods -l type=cli -o name) -- /bin/sh
 ```
-onit onos-cli
+
+Or you can use k8s port forwarding to run gnmi_cli locally on your machine as follows:
+
+```bash
+kubectl port-forward -n <onos-namespace> <onos-config-pod-id> 5150:5150
 ```
-to get in to the **onos-cli** pod and then run gnmi_cli from there.
 
 Here is an example on how to use `gnmi_cli -get` to get configuration for a particular device (target) from the system.
+
 ```bash
 > gnmi_cli -get -address onos-config:5150 \
     -proto "path: <target: 'localhost-1', elem: <name: 'system'> elem:<name:'config'> elem: <name: 'motd-banner'>>" \
@@ -48,13 +56,13 @@ diagnostic tools, which are integrated into the consolidated `onos` command.
 
 For example, to list all network changes submitted through the northbound gNMI interface run:
 ```bash
-> onos config get net-changes
+> onos config get network-changes
 ```
 
 Or, run the following to list all changes submitted through the northbound gNMI 
 as they are tracked by the system broken-up into device specific batches:
 ```bash
-> onos config get changes
+> onos config get device-changes <device-name>
 ```
 
 You can read more comprehensive documentation of the various 

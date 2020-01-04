@@ -7,20 +7,28 @@ gNMI extensions supported on the Northbound are described in [gnmi_extensions.md
 A simple way to issue a gNMI requests is to use the `gnmi_cli` utility from
 the [OpenConfig](https://github.com/openconfig/gnmi) project.
 
-### gnmi_cli utility through 'onit'
+### gnmi_cli utility through onos-cli
 > On a deployed cluster the onos-cli pod has a gNMI client that can be used to
 > format and send gNMI messages.
-To access the CLI use
+
+You can run the following command to get in to the **onos-cli** pod and then run gnmi_cli from there:
+
+```bash
+kubectl -n onos exec -it $(kubectl -n onos get pods -l type=cli -o name) -- /bin/sh
 ```
-onit onos-cli
-```
-to get in to the `onos-cli` pod and then run gnmi_cli from there.
 
 ### Accessing from local machine
 An alternative is to install on your system, install as follows:
 ```bash
 go get -u github.com/openconfig/gnmi/cmd/gnmi_cli
 ```
+
+Then you can use k8s port forwarding to run gnmi_cli locally on your machine as follows:
+
+```bash
+kubectl port-forward -n <onos-namespace> <onos-config-pod-id> 5150:5150
+```
+
 > For troubleshooting information see [gnmi_user_manual.md](https://github.com/onosproject/simulators/blob/master/docs/gnmi/gnmi_user_manual.md)
 ## Namespaces
 __onos-config__ follows the YGOT project in simplification by not using namespaces in paths. This can be achieved 
