@@ -41,6 +41,13 @@ func makeKey(pluginName string, pluginVersion string, pluginObject string) strin
 	return pluginName + "-" + pluginVersion + "-" + pluginObject
 }
 
+func makeDescription(path string) string {
+	if len(path) <= 25 {
+		return path
+	}
+	return "..." + path[len(path)-22:]
+}
+
 func parsePluginsCommandOutput(t *testing.T, output []string) map[string]map[string]pluginAttributes {
 	t.Helper()
 	var pluginKey string
