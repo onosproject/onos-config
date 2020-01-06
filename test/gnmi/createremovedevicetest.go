@@ -29,7 +29,7 @@ const (
 	createRemoveDeviceModPath          = "/system/clock/config/timezone-name"
 	createRemoveDeviceModValue1        = "Europe/Paris"
 	createRemoveDeviceModValue2        = "Europe/London"
-	createRemoveDeviceModDeviceName    = "offline-dev-1"
+	createRemoveDeviceModDeviceName    = "offline-sim-crd"
 	createRemoveDeviceModDeviceVersion = "1.0.0"
 	createRemoveDeviceModDeviceType    = "Devicesim"
 )
@@ -110,4 +110,8 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	// interrogate the device to check that the value was set properly
 	deviceGnmiClient2 := getDeviceGNMIClientOrFail(t, simulatorEnv2)
 	checkDeviceValue(t, deviceGnmiClient2, devicePath, createRemoveDeviceModValue2)
+
+	// Clean up the simulator, as it isn't under onit control
+	simulatorEnv.KillOrDie()
+	simulatorEnv.RemoveOrDie()
 }
