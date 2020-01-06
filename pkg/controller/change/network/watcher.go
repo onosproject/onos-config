@@ -159,6 +159,7 @@ func (w *DeviceWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- typ
 		if ctx != nil {
 			log.Infof("Closing watch for device %v: device disconnected", deviceID)
 			ctx.Close()
+			delete(w.streams, deviceID)
 		}
 		return
 	}
