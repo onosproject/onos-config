@@ -87,7 +87,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	//  Shut down the simulator
 	simulatorEnv.KillOrDie()
 	simulatorEnv.RemoveOrDie()
-	time.Sleep(60 * time.Second)
+	testutils.WaitForDeviceUnavailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
 
 	// Set a value using gNMI client - device is down
 	setPath2 := getDevicePathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue2, StringVal)
@@ -95,6 +95,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	assert.True(t, networkChangeID2 != "")
 
 	//  Restart simulated device
+	time.Sleep(45 * time.Second) // Wait for simulator to shut down. Is there a better way to do this?
 	simulatorEnv2 := simulator.AddOrDie()
 
 	// Wait for config to connect to the device
@@ -104,7 +105,6 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	checkGNMIValue(t, c, devicePath, createRemoveDeviceModValue2, 0, "Query after set 2 returns wrong value")
 
 	// Check that the network change has completed
-	// Test currently fails here
 	testutils.WaitForNetworkChangeComplete(t, networkChangeID2)
 
 	// interrogate the device to check that the value was set properly

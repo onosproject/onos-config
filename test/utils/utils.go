@@ -75,6 +75,22 @@ func WaitForDeviceAvailable(t *testing.T, deviceID device.ID, timeout time.Durat
 	}, timeout)
 }
 
+// WaitForDeviceUnavailable waits for a device to become available
+func WaitForDeviceUnavailable(t *testing.T, deviceID device.ID, timeout time.Duration) bool {
+	return WaitForDevice(t, func(dev *device.Device) bool {
+		if dev.ID != deviceID {
+			return false
+		}
+
+		for _, protocol := range dev.Protocols {
+			if protocol.Protocol == device.Protocol_GNMI && protocol.ServiceState == device.ServiceState_UNAVAILABLE {
+				return true
+			}
+		}
+		return false
+	}, timeout)
+}
+
 // WaitForNetworkChangeComplete waits for a COMPLETED status on the given change
 func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool {
 	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
