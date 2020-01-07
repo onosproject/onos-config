@@ -16,6 +16,9 @@ package gnmi
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
 	testutils "github.com/onosproject/onos-config/test/utils"
@@ -25,14 +28,18 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	log "k8s.io/klog"
-	"testing"
-	"time"
 )
 
 const (
 	subValue = "Europe/Madrid"
 	subPath  = "/system/clock/config/timezone-name"
 )
+
+type subscribeRequest struct {
+	path          *gnmi.Path
+	subListMode   gnmi.SubscriptionList_Mode // Mode of the subscription: ONCE, STREAM, POLL
+	subStreamMode gnmi.SubscriptionMode      // mode of subscribe STREAM: ON_CHANGE, SAMPLE, TARGET_DEFINED
+}
 
 // TestSubscribe tests a stream subscription to updates to a device
 func (s *TestSuite) TestSubscribe(t *testing.T) {
@@ -50,7 +57,13 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 	path.Target = simulator.Name()
 
-	request, errReq := buildRequest(path, gnmi.SubscriptionList_STREAM)
+	subReq := subscribeRequest{
+		path:          path,
+		subListMode:   gnmi.SubscriptionList_STREAM,
+		subStreamMode: gnmi.SubscriptionMode_TARGET_DEFINED,
+	}
+
+	request, errReq := buildRequest(subReq)
 
 	assert.NoError(t, errReq, "Can't build Request")
 
@@ -136,20 +149,32 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	checkGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 }
 
-func buildRequest(path *gnmi.Path, mode gnmi.SubscriptionList_Mode) (*gnmi.SubscribeRequest, error) {
+func buildRequest(subReq subscribeRequest) (*gnmi.SubscribeRequest, error) {
 	prefixPath, err := utils.ParseGNMIElements(utils.SplitPath(""))
 	if err != nil {
 		return nil, err
 	}
-	subscription := &gnmi.Subscription{
-		Path: path,
-		Mode: gnmi.SubscriptionMode_TARGET_DEFINED,
+	subscription := &gnmi.Subscription{}
+	switch subReq.subListMode {
+	case gnmi.SubscriptionList_STREAM:
+		subscription = &gnmi.Subscription{
+			Path: subReq.path,
+			Mode: subReq.subStreamMode,
+		}
+	case gnmi.SubscriptionList_ONCE:
+		subscription = &gnmi.Subscription{
+			Path: subReq.path,
+		}
+	case gnmi.SubscriptionList_POLL:
+		subscription = &gnmi.Subscription{
+			Path: subReq.path,
+		}
 	}
 	subscriptions := make([]*gnmi.Subscription, 0)
 	subscriptions = append(subscriptions, subscription)
 	subList := &gnmi.SubscriptionList{
 		Subscription: subscriptions,
-		Mode:         mode,
+		Mode:         subReq.subListMode,
 		UpdatesOnly:  true,
 		Prefix:       prefixPath,
 	}
