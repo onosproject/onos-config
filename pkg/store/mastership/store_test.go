@@ -23,7 +23,7 @@ import (
 )
 
 func TestMastershipStore(t *testing.T) {
-	node, conn := utils.StartLocalNode()
+	node, address := utils.StartLocalNode()
 
 	node1 := cluster.NodeID("node1")
 	node2 := cluster.NodeID("node2")
@@ -33,13 +33,13 @@ func TestMastershipStore(t *testing.T) {
 	device2 := topodevice.ID("device2")
 
 	// Create three stores for three different nodes
-	store1, err := newLocalStore(node1, conn)
+	store1, err := newLocalStore(node1, address)
 	assert.NoError(t, err)
 
-	store2, err := newLocalStore(node2, conn)
+	store2, err := newLocalStore(node2, address)
 	assert.NoError(t, err)
 
-	store3, err := newLocalStore(node3, conn)
+	store3, err := newLocalStore(node3, address)
 	assert.NoError(t, err)
 
 	// Verify that the first node that checks mastership for a device wins the election
@@ -136,6 +136,5 @@ func TestMastershipStore(t *testing.T) {
 	assert.True(t, master)
 
 	_ = store3.Close()
-	_ = conn.Close()
 	_ = node.Stop()
 }

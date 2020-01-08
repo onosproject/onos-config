@@ -35,19 +35,19 @@ const (
 
 const basePort = 45000
 
-var localPort = basePort
-
 // StartLocalNode starts a single local Atomix node
 func StartLocalNode() (*atomix.Node, netutil.Address) {
-	localPort++
-	address := netutil.Address(fmt.Sprintf("localhost:%d", localPort))
-	lis, err := net.Listen("tcp", string(address))
-	if err != nil {
-		panic(err)
+	for port := basePort; port < basePort+100; port++ {
+		address := netutil.Address(fmt.Sprintf("localhost:%d", port))
+		lis, err := net.Listen("tcp", string(address))
+		if err != nil {
+			continue
+		}
+		node := local.NewNode(lis, registry.Registry)
+		_ = node.Start()
+		return node, address
 	}
-	node := local.NewNode(lis, registry.Registry)
-	_ = node.Start()
-	return node, netutil.Address(address)
+	panic("cannot find open port")
 }
 
 // NewNodeCloser returns a new closer for an Atomix node
