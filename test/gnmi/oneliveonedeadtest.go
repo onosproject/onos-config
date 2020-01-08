@@ -16,6 +16,7 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
 )
@@ -45,7 +46,8 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 
 	// Set a value to the online device
 	onlineDevicePath := getDevicePathWithValue(onlineSimulator.Name(), modPath, modValue, StringVal)
-	setGNMIValueOrFail(t, gnmiClient, onlineDevicePath, noPaths, noExtensions)
+	nid := setGNMIValueOrFail(t, gnmiClient, onlineDevicePath, noPaths, noExtensions)
+	utils.WaitForNetworkChangeComplete(t, nid)
 
 	// Check that the value was set correctly in the cache
 	checkGNMIValue(t, gnmiClient, onlineDevicePath, modValue, 0, "Query after set returned the wrong value")
