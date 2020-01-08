@@ -20,19 +20,14 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
-	"github.com/atomix/atomix-go-local/pkg/atomix/local"
-	"github.com/atomix/atomix-go-node/pkg/atomix"
-	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
+	"github.com/atomix/atomix-go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
 	"io"
-	"net"
 	"time"
 )
 
@@ -66,17 +61,17 @@ func NewAtomixStore() (Store, error) {
 
 // NewLocalStore returns a new local network change store
 func NewLocalStore() (Store, error) {
-	_, conn := startLocalNode()
-	return newLocalStore(conn)
+	_, address := utils.StartLocalNode()
+	return newLocalStore(address)
 }
 
 // newLocalStore creates a new local network change store
-func newLocalStore(conn *grpc.ClientConn) (Store, error) {
+func newLocalStore(address net.Address) (Store, error) {
 	configsName := primitive.Name{
 		Namespace: "local",
 		Name:      changesName,
 	}
-	changes, err := indexedmap.New(context.Background(), configsName, []*grpc.ClientConn{conn})
+	changes, err := indexedmap.New(context.Background(), configsName, []net.Address{address})
 	if err != nil {
 		return nil, err
 	}
@@ -84,23 +79,6 @@ func newLocalStore(conn *grpc.ClientConn) (Store, error) {
 	return &atomixStore{
 		changes: changes,
 	}, nil
-}
-
-// startLocalNode starts a single local node
-func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
-	lis := bufconn.Listen(1024 * 1024)
-	node := local.NewNode(lis, registry.Registry)
-	_ = node.Start()
-
-	dialer := func(ctx context.Context, address string) (net.Conn, error) {
-		return lis.Dial()
-	}
-
-	conn, err := grpc.DialContext(context.Background(), changesName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
-	if err != nil {
-		panic("Failed to dial network configurations")
-	}
-	return node, conn
 }
 
 // Store stores NetworkConfig changes

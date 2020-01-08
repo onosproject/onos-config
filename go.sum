@@ -20,6 +20,10 @@ github.com/atomix/atomix-api v0.0.0-20191014233757-4786daa5a314/go.mod h1:joWKUd
 github.com/atomix/atomix-api v0.0.0-20191017192115-4d6a4f8e87a3/go.mod h1:joWKUd0zIeYbAQ0vmYHGsnV03ZgRalhceHgnJ3EN0mI=
 github.com/atomix/atomix-api v0.0.0-20191021183656-837bfda65c82 h1:jqTiJj5KfEADMgkVd06NhUC0DxSLwrWE56KghT9vGgw=
 github.com/atomix/atomix-api v0.0.0-20191021183656-837bfda65c82/go.mod h1:joWKUd0zIeYbAQ0vmYHGsnV03ZgRalhceHgnJ3EN0mI=
+github.com/atomix/atomix-api v0.0.0-20191217054529-55159c51ab6e h1:j4GEpQhi/Z2vpwA0icEQZAOemoUU7vjSIVWjRzFyWps=
+github.com/atomix/atomix-api v0.0.0-20191217054529-55159c51ab6e/go.mod h1:joWKUd0zIeYbAQ0vmYHGsnV03ZgRalhceHgnJ3EN0mI=
+github.com/atomix/atomix-api v0.0.0-20191219205733-d87d186a4fba h1:bk1yizJhis3QYkmC0oxtzDAC7kEuG7N3JbMIFShYo2I=
+github.com/atomix/atomix-api v0.0.0-20191219205733-d87d186a4fba/go.mod h1:joWKUd0zIeYbAQ0vmYHGsnV03ZgRalhceHgnJ3EN0mI=
 github.com/atomix/atomix-go-client v0.0.0-20190827234201-188602d4e780/go.mod h1:/UAIApUE5+Ghzu8oBVcYUoz6nCosrRPa0eUlluBtKz0=
 github.com/atomix/atomix-go-client v0.0.0-20191002230120-837d618e27c5/go.mod h1:MoPkrAL33saKe2GbTi+NJgLzW7ejCwrrLDrYIwGYNcE=
 github.com/atomix/atomix-go-client v0.0.0-20191007173732-5328130c1310/go.mod h1:OJHBatYnC3NkjfQl59ecAM+3UjJRN1KmjmBd5E6O4bg=
@@ -28,6 +32,8 @@ github.com/atomix/atomix-go-client v0.0.0-20191018192841-3644d110cbec/go.mod h1:
 github.com/atomix/atomix-go-client v0.0.0-20191022230401-78955a5abbef/go.mod h1:3VrFe1rCx3N6puiQOS0L9XoReGSaapaSH9pVZ3vW614=
 github.com/atomix/atomix-go-client v0.0.0-20191127222459-36981d701c6e h1:aLn+oZd73fkB11hrCGuqpFPug7rleIT0cCxloffYzMM=
 github.com/atomix/atomix-go-client v0.0.0-20191127222459-36981d701c6e/go.mod h1:3VrFe1rCx3N6puiQOS0L9XoReGSaapaSH9pVZ3vW614=
+github.com/atomix/atomix-go-client v0.0.0-20191219053757-bad855985f00 h1:ZlWT6LwOC6KD/XqaDnJMJcx7sNotRsONjwseYhcNzXY=
+github.com/atomix/atomix-go-client v0.0.0-20191219053757-bad855985f00/go.mod h1:riSQMsP+Pn2ZffC1AiPAc9HhTwcnlPRYTmW73KNM7hA=
 github.com/atomix/atomix-go-local v0.0.0-20190827233944-938e35b06834/go.mod h1:qLBTOiVKoEqzYOjgxIgWFa+Hfa3SR+VexA6jGBcv0HA=
 github.com/atomix/atomix-go-local v0.0.0-20190828183508-3db728c0fc3b/go.mod h1:VnwyXJvHzUHuVzzTmPhZ6/ktbBnz3CZk3aKMX7VlTmY=
 github.com/atomix/atomix-go-local v0.0.0-20190830183800-73f964b0f75a/go.mod h1:lt/qUsFF29yT2ofmxOXfFzIz0poN22/Qa5SPdalgTKw=
@@ -41,6 +47,11 @@ github.com/atomix/atomix-go-local v0.0.0-20191021234710-cca1c26bf4d8 h1:22STT0uR
 github.com/atomix/atomix-go-local v0.0.0-20191021234710-cca1c26bf4d8/go.mod h1:oRfnzGG5NU/uAQclc6chtLQ97/7WC5u+4t8lDouZIIE=
 github.com/atomix/atomix-go-local v0.0.0-20191108201451-9131cc896ed6 h1:qMdzRqZt7Jj7iyQOGRzQjoPRSTCRXjwKkPAhRUsYewo=
 github.com/atomix/atomix-go-local v0.0.0-20191108201451-9131cc896ed6/go.mod h1:aI/yXHQlpmA3DlJwFtmfvBSA6hyk1ANZLeXRYdZZ9wk=
+github.com/atomix/atomix-go-local v0.0.0-20191218214123-a72c188f976e h1:w9hhk7Bn0gdUQZAbznd+1LJ9DUVOXEOOKRog4+muGkg=
+github.com/atomix/atomix-go-local v0.0.0-20191218214123-a72c188f976e/go.mod h1:TNYeoT2heNTgytoOXq1juZ/X/6GctzWC1bTmmAUBWIM=
+github.com/atomix/atomix-go-local v0.0.0-20191219211400-d2c88ae3b162/go.mod h1:GhjFshTc1hk4dOl8KN3IjvW7C7sKgRHe16paqz16qPU=
+github.com/atomix/atomix-go-local v0.0.0-20200108223830-0291169cab55 h1:QO0J59B6sZLgA/8MJjMEEYNPNSfrU9qbsV9qOqEGKOs=
+github.com/atomix/atomix-go-local v0.0.0-20200108223830-0291169cab55/go.mod h1:wgqb4FgkCTUgqxpVI0DNPH4Rf3fF5qBm6vWkKEwshm8=
 github.com/atomix/atomix-go-node v0.0.0-20190827191929-2d3dc9c550d9/go.mod h1:PL1T5R78itch1QC1CN4JmbRL/2XQlg4R95R14822C6Q=
 github.com/atomix/atomix-go-node v0.0.0-20190828183436-fc30340cd8db/go.mod h1:dyh8Bb50qKfMlpqDE6X+dQ1tZ399WKEABa3ntDYImnA=
 github.com/atomix/atomix-go-node v0.0.0-20190830183721-649263a17223/go.mod h1:KJxB/MAgndAbyCOqTV2hatw7lExiZZs7QCOr45IfC9U=
@@ -55,6 +66,12 @@ github.com/atomix/atomix-go-node v0.0.0-20191021234659-c841a97bec89 h1:Xe8eyruUn
 github.com/atomix/atomix-go-node v0.0.0-20191021234659-c841a97bec89/go.mod h1:wLJ9+8FK7p8R8tz3bXPQ6GTvpwhkwjyPomkL9ok5AzM=
 github.com/atomix/atomix-go-node v0.0.0-20191108201428-59c0962b63c8 h1:M9Spu1hySxpvTSZlwBkhcgPCxzS8GL+4Oizn2hxAbd4=
 github.com/atomix/atomix-go-node v0.0.0-20191108201428-59c0962b63c8/go.mod h1:wLJ9+8FK7p8R8tz3bXPQ6GTvpwhkwjyPomkL9ok5AzM=
+github.com/atomix/atomix-go-node v0.0.0-20191218180435-f58b519050d0/go.mod h1:CwNyxY+AwoQt76lt5EjK7PCIVuNe48c5mh/kJNBBEAg=
+github.com/atomix/atomix-go-node v0.0.0-20191218215657-d6b301251224 h1:K5FaKpcaZV3WCJvMYsCkqKwoYx0nnPAaYfprz1/xieI=
+github.com/atomix/atomix-go-node v0.0.0-20191218215657-d6b301251224/go.mod h1:Io61YHRSVo0k3wgq+ZSZH0Wyjrp7B4pNC5Jj0gQ+Ko8=
+github.com/atomix/atomix-go-node v0.0.0-20191219211341-c5c395d1bc60/go.mod h1:hgqxWxx0JDLYX5Ekf1Pt8esnaxCe7gyNPGke0Pc8w4E=
+github.com/atomix/atomix-go-node v0.0.0-20200108075738-abed9e2478db h1:FZNM+6XKiUSE/S/2wDzMck9r1ZcZR5lcg6nLOT1Fz/Q=
+github.com/atomix/atomix-go-node v0.0.0-20200108075738-abed9e2478db/go.mod h1:sFa3CXb7khBF2wEfk9qCY9rs7GrwsukqIGbrYkiAGz0=
 github.com/atomix/atomix-k8s-controller v0.0.0-20191203231043-ae7d3a341174 h1:G54rAlp/BYJPhp80++aggUwOdo2uIhVsNpZdC9jkOus=
 github.com/atomix/atomix-k8s-controller v0.0.0-20191203231043-ae7d3a341174/go.mod h1:nfCaQUuz6VyvpXvcCjre09PLc6vR4tyJ7Vnu7/wt2ZY=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=

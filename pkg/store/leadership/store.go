@@ -20,9 +20,9 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/election"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
+	"github.com/atomix/atomix-go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
-	"google.golang.org/grpc"
 	"io"
 	"sync"
 	"time"
@@ -83,26 +83,26 @@ func NewAtomixStore() (Store, error) {
 	return store, nil
 }
 
-var localConns = make(map[string]*grpc.ClientConn)
+var localAddresses = make(map[string]net.Address)
 
 // NewLocalStore returns a new local election store
 func NewLocalStore(clusterID string, nodeID cluster.NodeID) (Store, error) {
-	conn, ok := localConns[clusterID]
+	address, ok := localAddresses[clusterID]
 	if !ok {
-		_, conn = utils.StartLocalNode()
-		localConns[clusterID] = conn
+		_, address = utils.StartLocalNode()
+		localAddresses[clusterID] = address
 	}
-	return newLocalStore(nodeID, conn)
+	return newLocalStore(nodeID, address)
 }
 
 // newLocalStore returns a new local election store
-func newLocalStore(nodeID cluster.NodeID, conn *grpc.ClientConn) (Store, error) {
+func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
 	name := primitive.Name{
 		Namespace: "local",
 		Name:      primitiveName,
 	}
 
-	election, err := election.New(context.Background(), name, []*grpc.ClientConn{conn}, session.WithID(string(nodeID)))
+	election, err := election.New(context.Background(), name, []net.Address{address}, session.WithID(string(nodeID)))
 	if err != nil {
 		return nil, err
 	}

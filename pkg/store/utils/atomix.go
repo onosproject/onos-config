@@ -15,13 +15,12 @@
 package utils
 
 import (
-	"context"
+	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/client"
+	netutil "github.com/atomix/atomix-go-client/pkg/client/util/net"
 	"github.com/atomix/atomix-go-local/pkg/atomix/local"
 	"github.com/atomix/atomix-go-node/pkg/atomix"
 	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
 	"io"
 	"net"
 	"os"
@@ -34,21 +33,21 @@ const (
 	atomixRaftGroup     = "ATOMIX_RAFT"
 )
 
+const basePort = 45000
+
+var localPort = basePort
+
 // StartLocalNode starts a single local Atomix node
-func StartLocalNode() (*atomix.Node, *grpc.ClientConn) {
-	lis := bufconn.Listen(1024 * 1024)
+func StartLocalNode() (*atomix.Node, netutil.Address) {
+	localPort++
+	address := netutil.Address(fmt.Sprintf("localhost:%d", localPort))
+	lis, err := net.Listen("tcp", string(address))
+	if err != nil {
+		panic(err)
+	}
 	node := local.NewNode(lis, registry.Registry)
 	_ = node.Start()
-
-	dialer := func(ctx context.Context, address string) (net.Conn, error) {
-		return lis.Dial()
-	}
-
-	conn, err := grpc.DialContext(context.Background(), "local", grpc.WithContextDialer(dialer), grpc.WithInsecure())
-	if err != nil {
-		panic("Failed to dial leadership store")
-	}
-	return node, conn
+	return node, netutil.Address(address)
 }
 
 // NewNodeCloser returns a new closer for an Atomix node
