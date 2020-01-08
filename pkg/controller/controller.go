@@ -266,6 +266,7 @@ func (c *Controller) reconcile(id types.ID, reconciler Reconciler) bool {
 		// Otherwise, return the result.
 		succeeded, err := reconciler.Reconcile(id)
 		if err != nil {
+			log.Errorf("An error occurred during reconciliation of %s: %v", id, err)
 			time.Sleep(time.Duration(iteration*2) * time.Millisecond)
 		} else {
 			return succeeded
