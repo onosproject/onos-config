@@ -22,19 +22,19 @@ import (
 )
 
 func TestLeadershipStore(t *testing.T) {
-	node, conn := utils.StartLocalNode()
+	node, address := utils.StartLocalNode()
 
-	store1, err := newLocalStore("a", conn)
+	store1, err := newLocalStore("a", address)
 	assert.NoError(t, err)
 
-	store2, err := newLocalStore("b", conn)
+	store2, err := newLocalStore("b", address)
 	assert.NoError(t, err)
 
 	store2Ch := make(chan Leadership)
 	err = store2.Watch(store2Ch)
 	assert.NoError(t, err)
 
-	store3, err := newLocalStore("c", conn)
+	store3, err := newLocalStore("c", address)
 	assert.NoError(t, err)
 
 	store3Ch := make(chan Leadership)
@@ -81,6 +81,5 @@ func TestLeadershipStore(t *testing.T) {
 	assert.True(t, leader)
 
 	_ = store3.Close()
-	_ = conn.Close()
 	_ = node.Stop()
 }

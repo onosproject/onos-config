@@ -21,19 +21,14 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
-	"github.com/atomix/atomix-go-local/pkg/atomix/local"
-	"github.com/atomix/atomix-go-node/pkg/atomix"
-	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
+	"github.com/atomix/atomix-go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	"github.com/onosproject/onos-config/pkg/utils/logging"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
 	"io"
-	"net"
 	"sync"
 	"time"
 )
@@ -69,41 +64,24 @@ func NewAtomixStore() (Store, error) {
 
 // NewLocalStore returns a new local device store
 func NewLocalStore() (Store, error) {
-	_, conn := startLocalNode()
-	return newLocalStore(conn)
+	_, address := utils.StartLocalNode()
+	return newLocalStore(address)
 }
 
 // newLocalStore creates a new local device change store
-func newLocalStore(conn *grpc.ClientConn) (Store, error) {
+func newLocalStore(address net.Address) (Store, error) {
 	changesFactory := func(deviceID device.VersionedID) (indexedmap.IndexedMap, error) {
 		counterName := primitive.Name{
 			Namespace: "local",
 			Name:      getDeviceChangesName(deviceID),
 		}
-		return indexedmap.New(context.Background(), counterName, []*grpc.ClientConn{conn})
+		return indexedmap.New(context.Background(), counterName, []net.Address{address})
 	}
 
 	return &atomixStore{
 		changesFactory: changesFactory,
 		deviceChanges:  make(map[device.VersionedID]indexedmap.IndexedMap),
 	}, nil
-}
-
-// startLocalNode starts a single local node
-func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
-	lis := bufconn.Listen(1024 * 1024)
-	node := local.NewNode(lis, registry.Registry)
-	_ = node.Start()
-
-	dialer := func(ctx context.Context, address string) (net.Conn, error) {
-		return lis.Dial()
-	}
-
-	conn, err := grpc.DialContext(context.Background(), "device-changes", grpc.WithContextDialer(dialer), grpc.WithInsecure())
-	if err != nil {
-		panic("Failed to dial network configurations")
-	}
-	return node, conn
 }
 
 // Store stores DeviceChanges

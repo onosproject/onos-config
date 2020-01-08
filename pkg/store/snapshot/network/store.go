@@ -20,19 +20,14 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
-	"github.com/atomix/atomix-go-local/pkg/atomix/local"
-	"github.com/atomix/atomix-go-node/pkg/atomix"
-	"github.com/atomix/atomix-go-node/pkg/atomix/registry"
+	"github.com/atomix/atomix-go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
 	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
 	"io"
-	"net"
 	"time"
 )
 
@@ -66,40 +61,23 @@ func NewAtomixStore() (Store, error) {
 
 // NewLocalStore returns a new local network snapshot store
 func NewLocalStore() (Store, error) {
-	_, conn := startLocalNode()
-	return newLocalStore(conn)
+	_, address := utils.StartLocalNode()
+	return newLocalStore(address)
 }
 
 // newLocalStore creates a new local network snapshot store
-func newLocalStore(conn *grpc.ClientConn) (Store, error) {
+func newLocalStore(address net.Address) (Store, error) {
 	snapshotsName := primitive.Name{
 		Namespace: "local",
 		Name:      snapshotsName,
 	}
-	snapshots, err := indexedmap.New(context.Background(), snapshotsName, []*grpc.ClientConn{conn})
+	snapshots, err := indexedmap.New(context.Background(), snapshotsName, []net.Address{address})
 	if err != nil {
 		return nil, err
 	}
 	return &atomixStore{
 		snapshots: snapshots,
 	}, nil
-}
-
-// startLocalNode starts a single local node
-func startLocalNode() (*atomix.Node, *grpc.ClientConn) {
-	lis := bufconn.Listen(1024 * 1024)
-	node := local.NewNode(lis, registry.Registry)
-	_ = node.Start()
-
-	dialer := func(ctx context.Context, address string) (net.Conn, error) {
-		return lis.Dial()
-	}
-
-	conn, err := grpc.DialContext(context.Background(), snapshotsName, grpc.WithContextDialer(dialer), grpc.WithInsecure())
-	if err != nil {
-		panic("Failed to dial")
-	}
-	return node, conn
 }
 
 // Store stores NetworkSnapshots

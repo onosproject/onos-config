@@ -23,19 +23,19 @@ import (
 )
 
 func TestMastershipElection(t *testing.T) {
-	node, conn := utils.StartLocalNode()
+	node, address := utils.StartLocalNode()
 
-	store1, err := newLocalElection(topodevice.ID("test"), "a", conn)
+	store1, err := newLocalElection(topodevice.ID("test"), "a", address)
 	assert.NoError(t, err)
 
-	store2, err := newLocalElection(topodevice.ID("test"), "b", conn)
+	store2, err := newLocalElection(topodevice.ID("test"), "b", address)
 	assert.NoError(t, err)
 
 	store2Ch := make(chan Mastership)
 	err = store2.watch(store2Ch)
 	assert.NoError(t, err)
 
-	store3, err := newLocalElection(topodevice.ID("test"), "c", conn)
+	store3, err := newLocalElection(topodevice.ID("test"), "c", address)
 	assert.NoError(t, err)
 
 	store3Ch := make(chan Mastership)
@@ -82,6 +82,5 @@ func TestMastershipElection(t *testing.T) {
 	assert.True(t, master)
 
 	_ = store3.Close()
-	_ = conn.Close()
 	_ = node.Stop()
 }

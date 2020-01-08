@@ -3,9 +3,9 @@ module github.com/onosproject/onos-config
 go 1.12
 
 require (
-	github.com/atomix/atomix-go-client v0.0.0-20191127222459-36981d701c6e
-	github.com/atomix/atomix-go-local v0.0.0-20191108201451-9131cc896ed6
-	github.com/atomix/atomix-go-node v0.0.0-20191108201428-59c0962b63c8
+	github.com/atomix/atomix-go-client v0.0.0-20191219053757-bad855985f00
+	github.com/atomix/atomix-go-local v0.0.0-20200108223830-0291169cab55
+	github.com/atomix/atomix-go-node v0.0.0-20200108075738-abed9e2478db
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.3.1

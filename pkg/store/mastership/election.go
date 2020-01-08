@@ -22,9 +22,9 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/election"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
+	"github.com/atomix/atomix-go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"google.golang.org/grpc"
 	"io"
 	"sync"
 	"time"
@@ -42,12 +42,12 @@ func newAtomixElection(deviceID topodevice.ID, group *client.PartitionGroup) (de
 }
 
 // newLocalElection returns a new local device mastership election
-func newLocalElection(deviceID topodevice.ID, nodeID cluster.NodeID, conn *grpc.ClientConn) (deviceMastershipElection, error) {
+func newLocalElection(deviceID topodevice.ID, nodeID cluster.NodeID, address net.Address) (deviceMastershipElection, error) {
 	name := primitive.Name{
 		Namespace: "local",
 		Name:      fmt.Sprintf("mastership-%s", deviceID),
 	}
-	election, err := election.New(context.Background(), name, []*grpc.ClientConn{conn}, session.WithID(string(nodeID)), session.WithTimeout(15*time.Second))
+	election, err := election.New(context.Background(), name, []net.Address{address}, session.WithID(string(nodeID)), session.WithTimeout(15*time.Second))
 	if err != nil {
 		return nil, err
 	}

@@ -20,6 +20,7 @@ import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-config/pkg/store/utils"
 	"github.com/stretchr/testify/assert"
 	assert2 "gotest.tools/assert"
 	"testing"
@@ -27,15 +28,14 @@ import (
 )
 
 func TestDeviceStore(t *testing.T) {
-	node, conn := startLocalNode()
+	node, address := utils.StartLocalNode()
 	defer node.Stop()
-	defer conn.Close()
 
-	store1, err := newLocalStore(conn)
+	store1, err := newLocalStore(address)
 	assert.NoError(t, err)
 	defer store1.Close()
 
-	store2, err := newLocalStore(conn)
+	store2, err := newLocalStore(address)
 	assert.NoError(t, err)
 	defer store2.Close()
 
