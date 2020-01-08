@@ -225,3 +225,24 @@ func setGNMIValueOrFail(t *testing.T, gnmiClient client.Impl,
 	networkChangeID := network.ID(extensionBefore.Msg)
 	return networkChangeID
 }
+
+func getSimulatorExtensions() []*gnmi_ext.Extension {
+	const (
+		deviceVersion = "1.0.0"
+		deviceType    = "Devicesim"
+	)
+
+	extDeviceType := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  gnmi.GnmiExtensionDeviceType,
+			Msg: []byte(deviceType),
+		},
+	}
+	extDeviceVersion := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  gnmi.GnmiExtensionVersion,
+			Msg: []byte(deviceVersion),
+		},
+	}
+	return []*gnmi_ext.Extension{{Ext: &extDeviceType}, {Ext: &extDeviceVersion}}
+}
