@@ -95,7 +95,6 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	assert.True(t, networkChangeID2 != "")
 
 	//  Restart simulated device
-	time.Sleep(45 * time.Second) // Wait for simulator to shut down. Is there a better way to do this?
 	simulatorEnv2 := simulator.AddOrDie()
 
 	// Wait for config to connect to the device
