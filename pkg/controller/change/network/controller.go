@@ -27,6 +27,8 @@ import (
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/utils/logging"
 	devicetopo "github.com/onosproject/onos-topo/api/device"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var log = logging.GetLogger("controller", "change", "network")
@@ -198,8 +200,10 @@ func (r *Reconciler) canTryChange(change *networkchange.NetworkChange, deviceCha
 	// First, check if the devices affected by the change are available
 	for _, deviceChange := range change.Changes {
 		device, err := r.devices.Get(devicetopo.ID(deviceChange.DeviceID))
-		if err != nil {
+		if err != nil && status.Code(err) != codes.NotFound {
 			return false, err
+		} else if device == nil {
+			return false, nil
 		}
 		state := getProtocolState(device)
 		if state != devicetopo.ChannelState_CONNECTED {
