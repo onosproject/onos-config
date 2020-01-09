@@ -17,7 +17,7 @@ type MockDeviceStateStore struct {
 	recorder *MockDeviceStateStoreMockRecorder
 }
 
-// MockStoreMockRecorder is the mock recorder for MockStore
+// MockDeviceStateStoreMockRecorder is the mock recorder for MockStore
 type MockDeviceStateStoreMockRecorder struct {
 	mock *MockDeviceStateStore
 }
@@ -35,16 +35,16 @@ func (m *MockDeviceStateStore) EXPECT() *MockDeviceStateStoreMockRecorder {
 }
 
 // Get mocks base method
-func (m *MockDeviceStateStore) Get(id device0.VersionedID) ([]*device.PathValue, error) {
+func (m *MockDeviceStateStore) Get(id device0.VersionedID, index device.Index) ([]*device.PathValue, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", id)
+	ret := m.ctrl.Call(m, "Get", id, index)
 	ret0, _ := ret[0].([]*device.PathValue)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get
-func (mr *MockDeviceStateStoreMockRecorder) Get(id interface{}) *gomock.Call {
+func (mr *MockDeviceStateStoreMockRecorder) Get(id, index interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDeviceStateStore)(nil).Get), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDeviceStateStore)(nil).Get), id, index)
 }
