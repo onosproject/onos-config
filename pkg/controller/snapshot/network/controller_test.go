@@ -71,23 +71,23 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	err = networkChanges.Create(networkChange4)
 	assert.NoError(t, err)
 
-	nwChange1DevCh1 := newDeviceChange(networkChange1.GetID(), device1, v1, devicesim)
+	nwChange1DevCh1 := newDeviceChange(1, networkChange1.GetID(), device1, v1, devicesim)
 	err = deviceChanges.Create(nwChange1DevCh1)
 	assert.NoError(t, err)
 
-	nwChange2DevCh1 := newDeviceChange(networkChange2.GetID(), device1, v1, devicesim)
+	nwChange2DevCh1 := newDeviceChange(2, networkChange2.GetID(), device1, v1, devicesim)
 	err = deviceChanges.Create(nwChange2DevCh1)
 	assert.NoError(t, err)
 
-	nwChange2DevCh2 := newDeviceChange(networkChange2.GetID(), device2, v1, devicesim)
+	nwChange2DevCh2 := newDeviceChange(3, networkChange2.GetID(), device2, v1, devicesim)
 	err = deviceChanges.Create(nwChange2DevCh2)
 	assert.NoError(t, err)
 
-	nwChange3DevCh1 := newDeviceChange(networkChange3.GetID(), device2, v1, devicesim)
+	nwChange3DevCh1 := newDeviceChange(4, networkChange3.GetID(), device2, v1, devicesim)
 	err = deviceChanges.Create(nwChange3DevCh1)
 	assert.NoError(t, err)
 
-	nwChange4DevCh1 := newDeviceChange(networkChange4.GetID(), device3, v1, devicesim)
+	nwChange4DevCh1 := newDeviceChange(5, networkChange4.GetID(), device3, v1, devicesim)
 	err = deviceChanges.Create(nwChange4DevCh1)
 	assert.NoError(t, err)
 
@@ -372,11 +372,12 @@ func newNetworkChange(id networkchange.ID, phase changetypes.Phase, state change
 	}
 }
 
-func newDeviceChange(nwChangeID networkchange.ID, deviceID devicebase.ID, deviceVersion devicebase.Version, deviceType devicebase.Type) *devicechange.DeviceChange {
+func newDeviceChange(index devicechange.Index, nwChangeID networkchange.ID, deviceID devicebase.ID, deviceVersion devicebase.Version, deviceType devicebase.Type) *devicechange.DeviceChange {
 	dcID := devicechange.ID(fmt.Sprintf("%s:%s:%s", nwChangeID, deviceID, deviceVersion))
 
 	return &devicechange.DeviceChange{
-		ID: dcID,
+		Index: index,
+		ID:    dcID,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(nwChangeID),
 			Index: 0,

@@ -224,7 +224,7 @@ func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.changes.Put(ctx, string(change.ID), bytes, indexedmap.IfNotSet())
+	entry, err := s.changes.Append(ctx, string(change.ID), bytes)
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func (s *atomixStore) Update(change *networkchange.NetworkChange) error {
 		return err
 	}
 
-	entry, err := s.changes.Put(ctx, string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
+	entry, err := s.changes.Set(ctx, indexedmap.Index(change.Index), string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
 	if err != nil {
 		return err
 	}

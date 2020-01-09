@@ -161,6 +161,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 	refs := make([]*networkchange.DeviceChangeRef, len(networkChange.Changes))
 	for i, change := range networkChange.Changes {
 		deviceChange := &devicechange.DeviceChange{
+			Index: devicechange.Index(networkChange.Index),
 			NetworkChange: devicechange.NetworkChangeRef{
 				ID:    types.ID(networkChange.ID),
 				Index: types.Index(networkChange.Index),

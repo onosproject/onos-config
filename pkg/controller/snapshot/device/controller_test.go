@@ -103,7 +103,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	// Verify the correct snapshot was taken
 	snapshot, err := snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
+	assert.Equal(t, devicechange.Index(4), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 2)
 	for _, value := range snapshot.Values {
 		switch value.GetPath() {
@@ -321,6 +321,7 @@ func newRemove(index networkchange.Index, device device.ID, path string, created
 
 func newChange(index networkchange.Index, created time.Time, phase changetypes.Phase, state changetypes.State, change *devicechange.Change) *devicechange.DeviceChange {
 	return &devicechange.DeviceChange{
+		Index: devicechange.Index(index),
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("network-change-%d", index)),
 			Index: types.Index(index),

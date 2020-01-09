@@ -29,11 +29,12 @@ func TestReconciler_computeRollback_singleUpdate(t *testing.T) {
 		devices: devices,
 		changes: deviceChangesStore,
 	}
-	err := setUpComputeDelta(reconciler, deviceChangesStore, 1)
+	err := setUpComputeDelta(reconciler, deviceChangesStore, 1, 1)
 	assert.NoError(t, err)
 	defer deviceChangesStore.Close()
 
 	deviceChangeIf1Change := &devicechange.DeviceChange{
+		Index: 1,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-change", device1, 1)),
 			Index: types.Index(1),
@@ -67,11 +68,12 @@ func TestReconciler_computeRollback_mixedUpdate(t *testing.T) {
 		devices: devices,
 		changes: deviceChangesStore,
 	}
-	err := setUpComputeDelta(reconciler, deviceChangesStore, 1)
+	err := setUpComputeDelta(reconciler, deviceChangesStore, 1, 1)
 	assert.NoError(t, err)
 	defer deviceChangesStore.Close()
 
 	deviceChangeIf1Change := &devicechange.DeviceChange{
+		Index: 1,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-change", device1, 1)),
 			Index: types.Index(1),
@@ -128,10 +130,11 @@ func TestReconciler_computeRollback_addInterface(t *testing.T) {
 		devices: devices,
 		changes: deviceChangesStore,
 	}
-	err := setUpComputeDelta(reconciler, deviceChangesStore, 1)
+	err := setUpComputeDelta(reconciler, deviceChangesStore, 1, 1)
 	assert.NoError(t, err)
 
 	deviceChangeIf2Add := &devicechange.DeviceChange{
+		Index: 1,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-add", device1, 2)),
 			Index: types.Index(1),
@@ -185,13 +188,14 @@ func TestReconciler_computeRollback_removeInterface(t *testing.T) {
 		devices: devices,
 		changes: deviceChangesStore,
 	}
-	err := setUpComputeDelta(reconciler, deviceChangesStore, 1)
+	err := setUpComputeDelta(reconciler, deviceChangesStore, 1, 1)
 	assert.NoError(t, err)
 
-	err = setUpComputeDelta(reconciler, deviceChangesStore, 2)
+	err = setUpComputeDelta(reconciler, deviceChangesStore, 2, 2)
 	assert.NoError(t, err)
 
 	deviceChangeIf2Delete := &devicechange.DeviceChange{
+		Index: 1,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-delete", device1, 2)),
 			Index: types.Index(1),
@@ -230,9 +234,8 @@ func TestReconciler_computeRollback_removeInterface(t *testing.T) {
 	}
 }
 
-func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.Store, iface int) error {
-	deviceChangeIf := newChangeInterface(device1, v1, iface)
-
+func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.Store, index devicechange.Index, iface int) error {
+	deviceChangeIf := newChangeInterface(index, device1, v1, iface)
 	err := deviceChangesStore.Create(deviceChangeIf)
 	if err != nil {
 		return err
