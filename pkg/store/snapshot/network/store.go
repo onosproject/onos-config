@@ -158,7 +158,7 @@ func (s *atomixStore) Create(snapshot *networksnapshot.NetworkSnapshot) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.snapshots.Put(ctx, string(snapshot.ID), bytes, indexedmap.IfNotSet())
+	entry, err := s.snapshots.Append(ctx, string(snapshot.ID), bytes)
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func (s *atomixStore) Update(snapshot *networksnapshot.NetworkSnapshot) error {
 		return err
 	}
 
-	entry, err := s.snapshots.Put(ctx, string(snapshot.ID), bytes, indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
+	entry, err := s.snapshots.Replace(ctx, string(snapshot.ID), bytes, indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
 	if err != nil {
 		return err
 	}

@@ -87,12 +87,12 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 	}
 
 	// Create a device-1 change 1
-	deviceChange1 := newChange(device1, v1)
+	deviceChange1 := newChange(1, device1, v1)
 	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
 	// Create a device-2 change 1
-	deviceChange2 := newChange(device2, v1)
+	deviceChange2 := newChange(2, device2, v1)
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
@@ -154,13 +154,13 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 	}
 
 	// Create a device-1 change 1
-	deviceChange1 := newChange(device1, v1)
+	deviceChange1 := newChange(1, device1, v1)
 	deviceChange1.Status.Phase = changetypes.Phase_ROLLBACK
 	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
 	// Create a device-2 change 1
-	deviceChange2 := newChange(device2, v1)
+	deviceChange2 := newChange(2, device2, v1)
 	deviceChange2.Status.Phase = changetypes.Phase_ROLLBACK
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
@@ -612,8 +612,9 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	southbound.Targets[topodevice.ID(name)] = mockTargetDevice
 }
 
-func newChange(device device.ID, version device.Version) *devicechange.DeviceChange {
+func newChange(index devicechange.Index, device device.ID, version device.Version) *devicechange.DeviceChange {
 	return &devicechange.DeviceChange{
+		Index: index,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(device),
 			Index: 1,

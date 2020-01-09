@@ -51,6 +51,7 @@ func TestDeviceStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	change1 := &devicechange.DeviceChange{
+		Index: 1,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID("network-change-1"),
 			Index: 1,
@@ -79,6 +80,7 @@ func TestDeviceStore(t *testing.T) {
 	}
 
 	change2 := &devicechange.DeviceChange{
+		Index: 2,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID("network-change-2"),
 			Index: 2,
@@ -122,6 +124,7 @@ func TestDeviceStore(t *testing.T) {
 	assert.NotEqual(t, devicechange.Revision(0), change2.Revision)
 
 	change3 := &devicechange.DeviceChange{
+		Index: 3,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID("network-change-3"),
 			Index: 3,
@@ -148,6 +151,7 @@ func TestDeviceStore(t *testing.T) {
 
 	// For two devices
 	change4 := &devicechange.DeviceChange{
+		Index: 4,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID("network-change-3"),
 			Index: 3,

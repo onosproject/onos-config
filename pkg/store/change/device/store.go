@@ -186,6 +186,9 @@ func (s *atomixStore) Get(id devicechange.ID) (*devicechange.DeviceChange, error
 }
 
 func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
+	if change.Index == 0 {
+		return errors.New("no change index specified")
+	}
 	if change.Change.DeviceID == "" {
 		return errors.New("no device ID specified")
 	}
@@ -220,7 +223,7 @@ func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := changes.Put(ctx, string(change.ID), bytes, indexedmap.IfNotSet())
+	entry, err := changes.Set(ctx, indexedmap.Index(change.Index), string(change.ID), bytes, indexedmap.IfNotSet())
 	if err != nil {
 		return err
 	}
@@ -267,7 +270,7 @@ func (s *atomixStore) Update(change *devicechange.DeviceChange) error {
 		return err
 	}
 
-	entry, err := changes.Put(ctx, string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
+	entry, err := changes.Replace(ctx, string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
 	if err != nil {
 		return err
 	}

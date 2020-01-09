@@ -238,9 +238,10 @@ func TestDeviceWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	change1 := &devicechange.DeviceChange{
+		Index: 1,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    "network-change-1",
-			Index: 2,
+			Index: 1,
 		},
 		Change: &devicechange.Change{
 			DeviceID:      "device-1",

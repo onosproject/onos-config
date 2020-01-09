@@ -321,6 +321,7 @@ func newRemove(index networkchange.Index, device device.ID, path string, created
 
 func newChange(index networkchange.Index, created time.Time, phase changetypes.Phase, state changetypes.State, change *devicechange.Change) *devicechange.DeviceChange {
 	return &devicechange.DeviceChange{
+		Index: devicechange.Index(index),
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("network-change-%d", index)),
 			Index: types.Index(index),
