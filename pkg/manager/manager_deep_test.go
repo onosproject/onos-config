@@ -23,6 +23,7 @@ import (
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/store/change/device/state"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
@@ -123,6 +124,8 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	assert.NilError(t, err)
 	deviceSnapshotStore, err := devicesnapstore.NewLocalStore()
 	assert.NilError(t, err)
+	deviceStateStore, err := state.NewStore(deviceChangesStore, deviceSnapshotStore)
+	assert.NilError(t, err)
 
 	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
 	assert.NilError(t, err)
@@ -132,8 +135,8 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	mastershipStore, err := mastership.NewLocalStore("test", cluster.NodeID("node1"))
 	assert.NilError(t, err)
 
-	mgrTest, err = NewManager(leadershipStore, mastershipStore, deviceChangesStore, mockDeviceStore,
-		deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true)
+	mgrTest, err = NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStateStore,
+		mockDeviceStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true)
 	if err != nil {
 		t.Fatalf("could not load manager %v", err)
 	}

@@ -234,6 +234,9 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	mockDeviceSnapshotStore := mockstore.NewMockDeviceSnapshotStore(ctrl)
 	mockDeviceSnapshotStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 
+	// Mock Device State Store
+	mockDeviceStateStore := mockstore.NewMockDeviceStateStore(ctrl)
+
 	// Mock Device Store
 	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
 	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
@@ -242,6 +245,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		mockLeadershipStore,
 		mockMastershipStore,
 		mockDeviceChangesStore,
+		mockDeviceStateStore,
 		mockDeviceStore,
 		mockDeviceCache,
 		mockNetworkChangesStore,

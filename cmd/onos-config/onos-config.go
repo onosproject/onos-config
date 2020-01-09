@@ -44,6 +44,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/store/change/device/state"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
@@ -128,6 +129,12 @@ func main() {
 		log.Error("Cannot load network atomix store ", err)
 	}
 
+	deviceStateStore, err := state.NewStore(deviceChangesStore, deviceSnapshotStore)
+	if err != nil {
+		log.Errorf("Cannot load device store with address %s:", *topoEndpoint, err)
+	}
+	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
+
 	log.Info("Network Configuration store connected")
 
 	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
@@ -142,7 +149,7 @@ func main() {
 	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
 
 	mgr, err := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
-		deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
+		deviceStateStore, deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
 		deviceSnapshotStore, *allowUnvalidatedConfig)
 	log.Info("Manager started")
 

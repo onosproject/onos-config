@@ -69,6 +69,7 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, diags.Change
 		mockstore.NewMockLeadershipStore(ctrl),
 		mockstore.NewMockMastershipStore(ctrl),
 		mockstore.NewMockDeviceChangesStore(ctrl),
+		mockstore.NewMockDeviceStateStore(ctrl),
 		mockstore.NewMockDeviceStore(ctrl),
 		mockcache.NewMockCache(ctrl),
 		mockstore.NewMockNetworkChangesStore(ctrl),
