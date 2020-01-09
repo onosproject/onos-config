@@ -15,6 +15,7 @@
 package state
 
 import (
+	"errors"
 	changetype "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -23,6 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"sort"
 	"sync"
+	"time"
 )
 
 // NewStore returns a new store backed by the device change store
@@ -37,7 +39,7 @@ func NewStore(deviceChangeStore devicechangestore.Store, deviceSnapshotStore dev
 // Store is a device state store
 type Store interface {
 	// Get gets the state of the given device
-	Get(id devicetype.VersionedID) ([]*devicechange.PathValue, error)
+	Get(id devicetype.VersionedID, index devicechange.Index) ([]*devicechange.PathValue, error)
 }
 
 // deviceChangeStoreStateStore is a device state store that listens to the device change store
@@ -48,12 +50,12 @@ type deviceChangeStoreStateStore struct {
 	mu            sync.RWMutex
 }
 
-func (s *deviceChangeStoreStateStore) Get(id devicetype.VersionedID) ([]*devicechange.PathValue, error) {
+func (s *deviceChangeStoreStateStore) Get(id devicetype.VersionedID, index devicechange.Index) ([]*devicechange.PathValue, error) {
 	s.mu.RLock()
 	device, ok := s.devices[id]
 	s.mu.RUnlock()
 	if ok {
-		return device.get()
+		return device.get(index)
 	}
 
 	s.mu.Lock()
@@ -61,7 +63,7 @@ func (s *deviceChangeStoreStateStore) Get(id devicetype.VersionedID) ([]*devicec
 
 	device, ok = s.devices[id]
 	if ok {
-		return device.get()
+		return device.get(index)
 	}
 
 	device, err := newDeviceStore(id, s.changeStore, s.snapshotStore, func() {
@@ -73,7 +75,7 @@ func (s *deviceChangeStoreStateStore) Get(id devicetype.VersionedID) ([]*devicec
 		return nil, err
 	}
 	s.devices[id] = device
-	return device.get()
+	return device.get(index)
 }
 
 // newDeviceStore returns the state store for the given device
@@ -84,6 +86,7 @@ func newDeviceStore(deviceID devicetype.VersionedID, deviceChangeStore devicecha
 		snapshotStore: deviceSnapshotStore,
 		closeFunc:     closeFunc,
 		state:         make(map[string]*devicechange.TypedValue),
+		waiters:       make(map[devicechange.Index]chan struct{}),
 	}
 	if err := store.listen(); err != nil {
 		return nil, err
@@ -98,6 +101,8 @@ type deviceChangeStateStore struct {
 	snapshotStore devicesnapshotstore.Store
 	closeFunc     func()
 	state         map[string]*devicechange.TypedValue
+	waiters       map[devicechange.Index]chan struct{}
+	index         devicechange.Index
 	mu            sync.RWMutex
 }
 
@@ -123,7 +128,12 @@ func (s *deviceChangeStateStore) listen() error {
 					return
 				}
 			}
+			s.index = change.Index
+			waiter, ok := s.waiters[change.Index]
 			s.mu.Unlock()
+			if ok {
+				close(waiter)
+			}
 		}
 	}()
 	return nil
@@ -182,10 +192,33 @@ func (s *deviceChangeStateStore) updateRollback(change *devicechange.DeviceChang
 	return nil
 }
 
-// get gets the state of the device
-func (s *deviceChangeStateStore) get() ([]*devicechange.PathValue, error) {
+// get gets the state of the device up to the given index
+func (s *deviceChangeStateStore) get(index devicechange.Index) ([]*devicechange.PathValue, error) {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
+	if s.index < index {
+		s.mu.RUnlock()
+		s.mu.Lock()
+		if s.index < index {
+			waiter, ok := s.waiters[index]
+			if !ok {
+				waiter = make(chan struct{})
+				s.waiters[index] = waiter
+			}
+			s.mu.Unlock()
+			select {
+			case <-waiter:
+			case <-time.After(15 * time.Second):
+				return nil, errors.New("get timeout")
+			}
+			s.mu.RLock()
+			defer s.mu.RUnlock()
+		} else {
+			defer s.mu.Unlock()
+		}
+	} else {
+		defer s.mu.RUnlock()
+	}
+
 	state := make([]*devicechange.PathValue, 0, len(s.state))
 	for path, value := range s.state {
 		state = append(state, &devicechange.PathValue{
