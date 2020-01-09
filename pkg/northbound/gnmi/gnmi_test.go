@@ -224,6 +224,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 		mockStores.LeadershipStore,
 		mockStores.MastershipStore,
 		mockStores.DeviceChangesStore,
+		mockStores.DeviceStateStore,
 		mockStores.DeviceStore,
 		deviceCache,
 		mockStores.NetworkChangesStore,
