@@ -17,6 +17,7 @@ package network
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/client/indexedmap"
 	"github.com/atomix/atomix-go-client/pkg/client/primitive"
 	"github.com/atomix/atomix-go-client/pkg/client/session"
@@ -28,6 +29,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	"io"
+	"sync"
 	"time"
 )
 
@@ -54,9 +56,15 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	return &atomixStore{
-		changes: changes,
-	}, nil
+	store := &atomixStore{
+		changes:      changes,
+		idWatches:    make(map[networkchange.ID]chan<- stream.Event),
+		indexWatches: make(map[networkchange.Index]chan<- stream.Event),
+	}
+	if err := store.watch(); err != nil {
+		return nil, err
+	}
+	return store, nil
 }
 
 // NewLocalStore returns a new local network change store
@@ -76,9 +84,15 @@ func newLocalStore(address net.Address) (Store, error) {
 		return nil, err
 	}
 
-	return &atomixStore{
-		changes: changes,
-	}, nil
+	store := &atomixStore{
+		changes:      changes,
+		idWatches:    make(map[networkchange.ID]chan<- stream.Event),
+		indexWatches: make(map[networkchange.Index]chan<- stream.Event),
+	}
+	if err := store.watch(); err != nil {
+		return nil, err
+	}
+	return store, nil
 }
 
 // Store stores NetworkConfig changes
@@ -113,17 +127,24 @@ type Store interface {
 	Watch(chan<- stream.Event, ...WatchOption) (stream.Context, error)
 }
 
+// watchOptions is a set of options for the store's Watch call
+type watchOptions struct {
+	replay      bool
+	changeID    networkchange.ID
+	changeIndex networkchange.Index
+}
+
 // WatchOption is a configuration option for Watch calls
 type WatchOption interface {
-	apply([]indexedmap.WatchOption) []indexedmap.WatchOption
+	apply(*watchOptions)
 }
 
 // watchReplyOption is an option to replay events on watch
 type watchReplayOption struct {
 }
 
-func (o watchReplayOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
-	return append(opts, indexedmap.WithReplay())
+func (o watchReplayOption) apply(options *watchOptions) {
+	options.replay = true
 }
 
 // WithReplay returns a WatchOption that replays past changes
@@ -135,15 +156,26 @@ type watchIDOption struct {
 	id networkchange.ID
 }
 
-func (o watchIDOption) apply(opts []indexedmap.WatchOption) []indexedmap.WatchOption {
-	return append(opts, indexedmap.WithFilter(indexedmap.Filter{
-		Key: string(o.id),
-	}))
+func (o watchIDOption) apply(options *watchOptions) {
+	options.changeID = o.id
 }
 
 // WithChangeID returns a Watch option that watches for changes to the given change ID
 func WithChangeID(id networkchange.ID) WatchOption {
 	return watchIDOption{id: id}
+}
+
+type watchIndexOption struct {
+	index networkchange.Index
+}
+
+func (o watchIndexOption) apply(options *watchOptions) {
+	options.changeIndex = o.index
+}
+
+// WithChangeIndex returns a Watch option that watches for changes to the given index
+func WithChangeIndex(index networkchange.Index) WatchOption {
+	return watchIndexOption{index: index}
 }
 
 // newChangeID creates a new network change ID
@@ -153,7 +185,60 @@ func newChangeID() networkchange.ID {
 
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
-	changes indexedmap.IndexedMap
+	changes      indexedmap.IndexedMap
+	idWatches    map[networkchange.ID]chan<- stream.Event
+	indexWatches map[networkchange.Index]chan<- stream.Event
+	mu           sync.RWMutex
+}
+
+func (s *atomixStore) watch() error {
+	ch := make(chan *indexedmap.Event)
+	if err := s.changes.Watch(context.Background(), ch); err != nil {
+		return err
+	}
+
+	go func() {
+		for event := range ch {
+			id := networkchange.ID(event.Entry.Key)
+			s.mu.RLock()
+			watch, ok := s.idWatches[id]
+			s.mu.RUnlock()
+			if !ok {
+				index := networkchange.Index(event.Entry.Index)
+				s.mu.RLock()
+				watch, ok = s.indexWatches[index]
+				s.mu.RUnlock()
+				if !ok {
+					continue
+				}
+			}
+			if change, err := decodeChange(event.Entry); err == nil {
+				switch event.Type {
+				case indexedmap.EventNone:
+					watch <- stream.Event{
+						Type:   stream.None,
+						Object: change,
+					}
+				case indexedmap.EventInserted:
+					watch <- stream.Event{
+						Type:   stream.Created,
+						Object: change,
+					}
+				case indexedmap.EventUpdated:
+					watch <- stream.Event{
+						Type:   stream.Updated,
+						Object: change,
+					}
+				case indexedmap.EventRemoved:
+					watch <- stream.Event{
+						Type:   stream.Deleted,
+						Object: change,
+					}
+				}
+			}
+		}
+	}()
+	return nil
 }
 
 func (s *atomixStore) Get(id networkchange.ID) (*networkchange.NetworkChange, error) {
@@ -298,15 +383,33 @@ func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) (stream.Conte
 }
 
 func (s *atomixStore) Watch(ch chan<- stream.Event, opts ...WatchOption) (stream.Context, error) {
-	watchOpts := make([]indexedmap.WatchOption, 0)
+	watchOpts := &watchOptions{}
 	for _, opt := range opts {
-		watchOpts = opt.apply(watchOpts)
+		opt.apply(watchOpts)
+	}
+
+	// If a change ID was specified and replay is disabled, watch the change on a single stream
+	if (watchOpts.changeID != "" || watchOpts.changeIndex > 0) && !watchOpts.replay {
+		if watchOpts.changeID != "" {
+			return s.watchChangeID(watchOpts.changeID, ch)
+		}
+		return s.watchChangeIndex(watchOpts.changeIndex, ch)
+	}
+
+	mapOpts := []indexedmap.WatchOption{}
+	if watchOpts.changeID != "" {
+		mapOpts = append(mapOpts, indexedmap.WithFilter(indexedmap.Filter{
+			Key: string(watchOpts.changeID),
+		}))
+	}
+	if watchOpts.replay {
+		mapOpts = append(mapOpts, indexedmap.WithReplay())
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	mapCh := make(chan *indexedmap.Event)
-	if err := s.changes.Watch(ctx, mapCh, watchOpts...); err != nil {
+	if err := s.changes.Watch(ctx, mapCh, mapOpts...); err != nil {
 		cancel()
 		return nil, err
 	}
@@ -342,6 +445,42 @@ func (s *atomixStore) Watch(ch chan<- stream.Event, opts ...WatchOption) (stream
 	}()
 	return stream.NewContext(func() {
 		cancel()
+	}), nil
+}
+
+func (s *atomixStore) watchChangeID(id networkchange.ID, ch chan<- stream.Event) (stream.Context, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.idWatches[id]; ok {
+		return nil, fmt.Errorf("watch already exists for %v", id)
+	}
+	s.idWatches[id] = ch
+	return stream.NewContext(func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		watch, ok := s.idWatches[id]
+		if ok {
+			delete(s.idWatches, id)
+			close(watch)
+		}
+	}), nil
+}
+
+func (s *atomixStore) watchChangeIndex(index networkchange.Index, ch chan<- stream.Event) (stream.Context, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.indexWatches[index]; ok {
+		return nil, fmt.Errorf("watch already exists for %d", index)
+	}
+	s.indexWatches[index] = ch
+	return stream.NewContext(func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		watch, ok := s.indexWatches[index]
+		if ok {
+			delete(s.indexWatches, index)
+			close(watch)
+		}
 	}), nil
 }
 
