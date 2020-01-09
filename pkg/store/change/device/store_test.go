@@ -176,7 +176,7 @@ func TestDeviceStore(t *testing.T) {
 	err = store1.Create(change4)
 	assert.NoError(t, err)
 	assert.Equal(t, devicechange.ID("network-change-3:device-2:1.0.0"), change4.ID)
-	assert.Equal(t, devicechange.Index(1), change4.Index)
+	assert.Equal(t, devicechange.Index(4), change4.Index)
 	assert.NotEqual(t, devicechange.Revision(0), change4.Revision)
 
 	// Verify events were received for the changes

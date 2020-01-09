@@ -277,6 +277,7 @@ func TestDeviceWatcher(t *testing.T) {
 	}
 
 	change2 := &devicechange.DeviceChange{
+		Index: 2,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    "network-change-2",
 			Index: 2,

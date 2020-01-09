@@ -225,7 +225,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	}
 
 	// Create a device-1 change 1
-	deviceChange1 := newChangeInterface(device1, v1, 1)
+	deviceChange1 := newChangeInterface(1, device1, v1, 1)
 	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
@@ -258,7 +258,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	//**********************************************************
 	// Create eth2 in a second change
 	//**********************************************************
-	deviceChange2 := newChangeInterface(device1, v1, 2)
+	deviceChange2 := newChangeInterface(2, device1, v1, 2)
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
@@ -367,7 +367,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	//**********************************************
 	// First create an interface eth1
 	//**********************************************
-	deviceChange1 := newChangeInterface(device1, v1, 1)
+	deviceChange1 := newChangeInterface(1, device1, v1, 1)
 	err := deviceChanges.Create(deviceChange1)
 	assert.NoError(t, err)
 
@@ -411,7 +411,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	//**********************************************
 	// Then remove the interface eth1
 	//**********************************************
-	deviceChange2 := newChangeInterfaceRemove(device1, v1, 1)
+	deviceChange2 := newChangeInterfaceRemove(2, device1, v1, 1)
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
@@ -634,7 +634,7 @@ func newChange(index devicechange.Index, device device.ID, version device.Versio
 }
 
 // newChangeInterface creates a new interface eth<n> in the OpenConfig model style
-func newChangeInterface(device device.ID, version device.Version, iface int) *devicechange.DeviceChange {
+func newChangeInterface(index devicechange.Index, device device.ID, version device.Version, iface int) *devicechange.DeviceChange {
 	ifaceID := fmt.Sprintf("%s%d", ethPrefix, iface)
 	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
 	healthValue := healthUp
@@ -643,6 +643,7 @@ func newChangeInterface(device device.ID, version device.Version, iface int) *de
 	}
 
 	return &devicechange.DeviceChange{
+		Index: index,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-added", device, iface)),
 			Index: types.Index(iface),
@@ -673,10 +674,11 @@ func newChangeInterface(device device.ID, version device.Version, iface int) *de
 }
 
 // newChangeInterfaceRemove removes an interface eth<n> of the OpenConfig model style
-func newChangeInterfaceRemove(device device.ID, version device.Version, iface int) *devicechange.DeviceChange {
+func newChangeInterfaceRemove(index devicechange.Index, device device.ID, version device.Version, iface int) *devicechange.DeviceChange {
 	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
 
 	return &devicechange.DeviceChange{
+		Index: index,
 		NetworkChange: devicechange.NetworkChangeRef{
 			ID:    types.ID(fmt.Sprintf("%s-if%d-removed", device, iface)),
 			Index: types.Index(iface),

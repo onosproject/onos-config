@@ -103,7 +103,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	// Verify the correct snapshot was taken
 	snapshot, err := snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	assert.NoError(t, err)
-	assert.Equal(t, devicechange.Index(3), snapshot.ChangeIndex)
+	assert.Equal(t, devicechange.Index(4), snapshot.ChangeIndex)
 	assert.Len(t, snapshot.Values, 2)
 	for _, value := range snapshot.Values {
 		switch value.GetPath() {

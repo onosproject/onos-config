@@ -270,7 +270,7 @@ func (s *atomixStore) Update(change *devicechange.DeviceChange) error {
 		return err
 	}
 
-	entry, err := changes.Replace(ctx, string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
+	entry, err := changes.Set(ctx, indexedmap.Index(change.Index), string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
 	if err != nil {
 		return err
 	}

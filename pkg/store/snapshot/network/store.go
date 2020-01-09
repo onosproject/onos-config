@@ -183,7 +183,7 @@ func (s *atomixStore) Update(snapshot *networksnapshot.NetworkSnapshot) error {
 		return err
 	}
 
-	entry, err := s.snapshots.Replace(ctx, string(snapshot.ID), bytes, indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
+	entry, err := s.snapshots.Set(ctx, indexedmap.Index(snapshot.Index), string(snapshot.ID), bytes, indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
 	if err != nil {
 		return err
 	}
