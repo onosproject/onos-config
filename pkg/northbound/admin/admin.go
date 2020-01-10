@@ -31,6 +31,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"os"
 	"strings"
@@ -201,7 +203,19 @@ func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRe
 
 // GetSnapshot gets a snapshot for a specific device
 func (s Server) GetSnapshot(ctx context.Context, request *admin.GetSnapshotRequest) (*devicesnapshot.Snapshot, error) {
-	return manager.GetManager().DeviceSnapshotStore.Load(devicetype.NewVersionedID(request.DeviceID, request.DeviceVersion))
+	if len(request.DeviceID) == 0 || len(request.DeviceVersion) == 0 {
+		return nil, status.Error(codes.InvalidArgument,
+			fmt.Sprintf("An ID and Version must be given. Got ID: %s, Version: %s", request.DeviceID, request.DeviceVersion))
+	}
+
+	snapshot, err := manager.GetManager().DeviceSnapshotStore.Load(devicetype.NewVersionedID(request.DeviceID, request.DeviceVersion))
+	if err != nil {
+		return nil, err
+	}
+	if snapshot == nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("No snapshot found for %s:%s", request.DeviceID, request.DeviceVersion))
+	}
+	return snapshot, err
 }
 
 // ListSnapshots lists snapshots for all devices
