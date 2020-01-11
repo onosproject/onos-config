@@ -64,7 +64,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	checkGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
-	complete := testutils.WaitForNetworkChangeComplete(t, changeID)
+	complete := testutils.WaitForNetworkChangeComplete(t, changeID, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices

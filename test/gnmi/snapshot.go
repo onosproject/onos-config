@@ -24,6 +24,7 @@ import (
 )
 
 // TestSnapshotErrors tests the Snapshot RPCs on the Admin gRPC interface
+// Se also TestCompactChanges
 func (s *TestSuite) TestSnapshotErrors(t *testing.T) {
 	// Data to run the test cases
 	testCases := []struct {
@@ -59,5 +60,4 @@ func (s *TestSuite) TestSnapshotErrors(t *testing.T) {
 				assert.Error(t, err, "Expected error response", expectedError)
 			})
 	}
-
 }
