@@ -41,6 +41,86 @@ type subscribeRequest struct {
 	subStreamMode gnmi.SubscriptionMode      // mode of subscribe STREAM: ON_CHANGE, SAMPLE, TARGET_DEFINED
 }
 
+// TestSubscribeOnce tests subscription ONCE mode
+func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
+	simulator := env.NewSimulator().AddOrDie()
+
+	// Wait for config to connect to the device
+	testutils.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+
+	// Make a GNMI client to use for subscribe
+	subC := client.BaseClient{}
+
+	path, err := utils.ParseGNMIElements(utils.SplitPath(subPath))
+
+	assert.NoError(t, err, "Unexpected error doing parsing")
+
+	path.Target = simulator.Name()
+
+	subReq := subscribeRequest{
+		path:        path,
+		subListMode: gnmi.SubscriptionList_ONCE,
+	}
+
+	request, errReq := buildRequest(subReq)
+
+	assert.NoError(t, errReq, "Can't build Request")
+
+	q, errQuery := client.NewQuery(request)
+
+	assert.NoError(t, errQuery, "Can't build Query")
+
+	dest := env.Config().Destination()
+
+	q.Addrs = dest.Addrs
+	q.Timeout = dest.Timeout
+	q.Target = dest.Target
+	q.Credentials = dest.Credentials
+	q.TLS = dest.TLS
+
+	respChan := make(chan *gnmi.SubscribeResponse)
+
+	q.ProtoHandler = func(msg proto.Message) error {
+		resp, ok := msg.(*gnmi.SubscribeResponse)
+		if !ok {
+			return fmt.Errorf("failed to type assert message %#v", msg)
+		}
+		respChan <- resp
+		return nil
+	}
+
+	// Make a GNMI client to use for requests
+	gnmiClient := getGNMIClientOrFail(t)
+	// Set a value using gNMI client
+	devicePath := getDevicePathWithValue(simulator.Name(), subPath, subValue, StringVal)
+	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
+	// Check that the value was set correctly
+	checkGNMIValue(t, gnmiClient, devicePath, subValue, 0, "Query after set returned the wrong value")
+
+	var response *gnmi.SubscribeResponse
+
+	go func() {
+		errSubscribe := subC.Subscribe(testutils.MakeContext(), q, "gnmi")
+		assert.NoError(t, errSubscribe, "Subscription Error")
+	}()
+
+	select {
+	case response = <-respChan:
+		validateResponse(t, response, simulator.Name(), false)
+	case <-time.After(10 * time.Second):
+		assert.FailNow(t, "Expected Update Response")
+	}
+
+	// Wait for the Sync response
+	select {
+	case response = <-respChan:
+		validateResponse(t, response, simulator.Name(), false)
+	case <-time.After(1 * time.Second):
+		assert.FailNow(t, "Expected Sync Response")
+	}
+
+}
+
 // TestSubscribe tests a stream subscription to updates to a device
 func (s *TestSuite) TestSubscribe(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
