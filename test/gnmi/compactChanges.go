@@ -17,9 +17,9 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
-	"github.com/onosproject/onos-config/api/types/device"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
@@ -56,6 +56,9 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	// Create 2 simulators
 	simulator1 := env.NewSimulator().SetDeviceVersion(version).SetDeviceType(deviceType).AddOrDie()
 	simulator2 := env.NewSimulator().SetDeviceVersion(version).SetDeviceType(deviceType).AddOrDie()
+
+	testutils.WaitForDeviceAvailable(t, device.ID(simulator1.Name()), 2*time.Minute)
+	testutils.WaitForDeviceAvailable(t, device.ID(simulator2.Name()), 2*time.Minute)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := getGNMIClientOrFail(t)
@@ -95,47 +98,15 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	adminClient, err := env.Config().NewAdminServiceClient()
 	assert.NoError(t, err)
 
-	// First time around we should get an error
-	snapshot, err := adminClient.GetSnapshot(context.Background(), &admin.GetSnapshotRequest{
-		DeviceID:      device.ID(simulator1.Name()),
-		DeviceVersion: device.Version(version),
-	})
-	assert.Errorf(t, err, "No simulator1 found", "expecting snapshot to not be found")
-	assert.Nil(t, snapshot)
-
 	// Now try compacting changes
 	compacted, err := adminClient.CompactChanges(context.Background(), &admin.CompactChangesRequest{})
 	assert.NoError(t, err)
 	assert.NotNil(t, compacted)
 
-	// Second time around we should get a response - this is using GetSnapshot
-	snapshot, err = adminClient.GetSnapshot(context.Background(), &admin.GetSnapshotRequest{
-		DeviceID:      device.ID(simulator1.Name()),
-		DeviceVersion: device.Version(version),
-	})
-	assert.NoError(t, err)
-	assert.NotNil(t, snapshot)
-	if snapshot != nil {
-		assert.Equal(t, simulator1.Name(), string(snapshot.DeviceID))
-		assert.Equal(t, version, string(snapshot.DeviceVersion))
-		assert.Equal(t, deviceType, string(snapshot.DeviceType))
-		assert.Equal(t, 3, len(snapshot.GetValues()))
-		for _, v := range snapshot.GetValues() {
-			switch v.Path {
-			case tzPath:
-				assert.Equal(t, tzValue, v.Value.ValueToString())
-			case motdPath:
-				assert.Equal(t, motdValue1, v.Value.ValueToString())
-			case loginBnrPath:
-				assert.Equal(t, loginBnr1, v.Value.ValueToString())
-			default:
-				assert.Fail(t, "Unexpected path %s Value %s", v.Path, v.Value.ValueToString())
-			}
-		}
-	}
-
 	// Use ListSnapshots to list all snapshots in the system - there should be two
-	stream, err := adminClient.ListSnapshots(context.Background(), &admin.ListSnapshotsRequest{})
+	stream, err := adminClient.ListSnapshots(context.Background(), &admin.ListSnapshotsRequest{
+		Subscribe: false,
+	})
 	assert.NoError(t, err, "Unexpected error listing snapshots")
 
 	for {
@@ -155,9 +126,35 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 			case simulator1.Name():
 				assert.Equal(t, simulator1.Name()+":"+version, string(response.GetID()))
 				assert.Equal(t, 3, len(response.GetValues()))
+				for _, v := range response.GetValues() {
+					switch v.Path {
+					case tzPath:
+						assert.Equal(t, tzValue, v.Value.ValueToString(), "Unexpected value for", simulator1.Name(), v.Path)
+					case motdPath:
+						assert.Equal(t, motdValue1, v.Value.ValueToString(), "Unexpected value for", simulator1.Name(), v.Path)
+					case loginBnrPath:
+						assert.Equal(t, loginBnr1, v.Value.ValueToString(), "Unexpected value for", simulator1.Name(), v.Path)
+					default:
+						assert.Fail(t, "Unexpected path for", simulator1.Name(), v.Path)
+					}
+				}
 			case simulator2.Name():
 				assert.Equal(t, simulator2.Name()+":"+version, string(response.GetID()))
 				assert.Equal(t, 4, len(response.GetValues()))
+				for _, v := range response.GetValues() {
+					switch v.Path {
+					case tzPath:
+						assert.Equal(t, tzParis, v.Value.ValueToString(), "Unexpected value for", simulator2.Name(), v.Path)
+					case motdPath:
+						assert.Equal(t, motdValue2, v.Value.ValueToString(), "Unexpected value for", simulator2.Name(), v.Path)
+					case loginBnrPath:
+						assert.Equal(t, loginBnr2, v.Value.ValueToString(), "Unexpected value for", simulator2.Name(), v.Path)
+					case domainNamePath:
+						assert.Equal(t, domainNameSim2, v.Value.ValueToString(), "Unexpected value for", simulator2.Name(), v.Path)
+					default:
+						assert.Fail(t, "Unexpected path for", simulator2.Name(), v.Path)
+					}
+				}
 			default:
 				assert.Fail(t, "Unexpected Device ID in response %s", response.DeviceID)
 			}

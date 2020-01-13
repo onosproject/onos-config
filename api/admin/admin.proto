@@ -166,17 +166,15 @@ message RollbackResponse {
     string message = 1;
 }
 
-// GetSnapshotRequest gets the details of a snapshot for a specific device and version.
-message GetSnapshotRequest {
-    // device_id is the ID of a device that has been configured through a NetworkChange.
-    string device_id = 1 [(gogoproto.customname) = "DeviceID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.ID"];
-    // device version is the semantic version of a device that has been configured through a NetworkChange.
-    string device_version = 2 [(gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/device.Version"];
-}
-
 // ListSnapshotsRequest requests a list of snapshots for all devices and versions.
 message ListSnapshotsRequest {
+    // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
+    // after all devices have been streamed to the client
+    bool subscribe = 1;
 
+    // option to specify a specific device - if blank or '*' then select all
+    // Can support `*` (match many chars) or '?' (match one char) as wildcard
+    string id = 2 [(gogoproto.customname) = "ID", (gogoproto.casttype) = "github.com/onosproject/onos-config/api/types/snapshot/device.ID"];
 }
 
 // CompactChangesRequest requests a compaction of the Network Change and Device Change stores
@@ -205,13 +203,8 @@ service ConfigAdminService {
     // RollbackNetworkChange rolls back the specified network change (or the latest one).
     rpc RollbackNetworkChange(RollbackRequest) returns (RollbackResponse);
 
-    // GetSnapshot gets a snapshot for a specific device and version
-    rpc GetSnapshot(GetSnapshotRequest) returns (onos.config.snapshot.device.Snapshot);
-
     // ListSnapshots gets a list of snapshots across all devices and versions,
     // and streams them back to the caller.
-    // The result includes a "replay" of existing snapshots and will watch for any
-    // subsequent new changes that come later.
     rpc ListSnapshots(ListSnapshotsRequest) returns (stream onos.config.snapshot.device.Snapshot);
 
     // CompactChanges requests a snapshot of NetworkChange and DeviceChange stores.

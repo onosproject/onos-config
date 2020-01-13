@@ -26,13 +26,11 @@ import (
 	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/store/stream"
+	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"io"
 	"os"
 	"strings"
@@ -201,37 +199,88 @@ func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRe
 	}, nil
 }
 
-// GetSnapshot gets a snapshot for a specific device
-func (s Server) GetSnapshot(ctx context.Context, request *admin.GetSnapshotRequest) (*devicesnapshot.Snapshot, error) {
-	if len(request.DeviceID) == 0 || len(request.DeviceVersion) == 0 {
-		return nil, status.Error(codes.InvalidArgument,
-			fmt.Sprintf("An ID and Version must be given. Got ID: %s, Version: %s", request.DeviceID, request.DeviceVersion))
-	}
-
-	snapshot, err := manager.GetManager().DeviceSnapshotStore.Load(devicetype.NewVersionedID(request.DeviceID, request.DeviceVersion))
-	if err != nil {
-		return nil, err
-	}
-	if snapshot == nil {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("No snapshot found for %s:%s", request.DeviceID, request.DeviceVersion))
-	}
-	return snapshot, err
-}
-
 // ListSnapshots lists snapshots for all devices
-func (s Server) ListSnapshots(request *admin.ListSnapshotsRequest, stream admin.ConfigAdminService_ListSnapshotsServer) error {
-	ch := make(chan *devicesnapshot.Snapshot)
-	ctx, err := manager.GetManager().DeviceSnapshotStore.LoadAll(ch)
-	if err != nil {
-		return err
-	}
-	defer ctx.Close()
+func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.ConfigAdminService_ListSnapshotsServer) error {
+	log.Infof("ListSnapshots called with %s. Subscribe %v", r.ID, r.Subscribe)
 
-	for snapshot := range ch {
-		if err := stream.SendMsg(snapshot); err != nil {
+	// There may be a wildcard given - we only want to reply with changes that match
+	matcher := utils.MatchWildcardChNameRegexp(string(r.ID))
+
+	if r.Subscribe {
+		eventCh := make(chan streams.Event)
+		ctx, err := manager.GetManager().DeviceSnapshotStore.WatchAll(eventCh)
+		if err != nil {
+			log.Errorf("Error watching Network Changes %s", err)
 			return err
 		}
+		defer ctx.Close()
+
+		for {
+			breakout := false
+			select { // Blocks until one of the following are received
+			case event, ok := <-eventCh:
+				if !ok { // Will happen at the end of stream
+					breakout = true
+					break
+				}
+
+				change := event.Object.(*devicesnapshot.Snapshot)
+
+				if matcher.MatchString(string(change.ID)) {
+					msg := change
+					log.Infof("Sending matching change %v", change.ID)
+					err := stream.Send(msg)
+					if err != nil {
+						log.Errorf("Error sending Snapshot %v %v", change.ID, err)
+						return err
+					}
+				}
+			case <-stream.Context().Done():
+				log.Infof("ListSnapshots remote client closed connection")
+				return nil
+			}
+			if breakout {
+				break
+			}
+		}
+	} else {
+		changeCh := make(chan *devicesnapshot.Snapshot)
+		ctx, err := manager.GetManager().DeviceSnapshotStore.LoadAll(changeCh)
+		if err != nil {
+			log.Errorf("Error ListSnapshots %s", err)
+			return err
+		}
+		defer ctx.Close()
+
+		for {
+			breakout := false
+			select { // Blocks until one of the following are received
+			case change, ok := <-changeCh:
+				if !ok { // Will happen at the end of stream
+					breakout = true
+					break
+				}
+
+				if matcher.MatchString(string(change.ID)) {
+					msg := change
+					log.Infof("Sending matching change %v", change.ID)
+					err := stream.Send(msg)
+					if err != nil {
+						log.Errorf("Error sending Snapshot %v %v", change.ID, err)
+						return err
+					}
+				}
+			case <-stream.Context().Done():
+				log.Infof("ListSnapshots remote client closed connection")
+				return nil
+			}
+			if breakout {
+				break
+			}
+		}
 	}
+	log.Infof("Closing ListSnapshots for %s", r.ID)
+
 	return nil
 }
 
@@ -243,7 +292,7 @@ func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChange
 		},
 	}
 
-	ch := make(chan stream.Event)
+	ch := make(chan streams.Event)
 	stream, err := manager.GetManager().NetworkSnapshotStore.Watch(ch)
 	if err != nil {
 		return nil, err

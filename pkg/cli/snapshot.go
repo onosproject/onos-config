@@ -17,88 +17,100 @@ package cli
 import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
-	"github.com/onosproject/onos-config/api/types/device"
+	device_snapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/spf13/cobra"
 	"io"
+	"text/template"
 )
 
-func getSnapshotCommand() *cobra.Command {
+const snapshotHeader = "ID                      DEVICE          VERSION TYPE        INDEX SNAPSHOTID\n"
+
+const snapshotsHeaderFormat = "{{printf \"%-24s %-16s %-8s %-12s %-6d %s\" .ID .DeviceID .DeviceVersion .DeviceType .ChangeIndex .SnapshotID}}\n"
+
+const pathValueTemplate = "{{wrappath .Path 80 0| printf \"%-80s|\"}}" +
+	"{{valuetostring .Value | printf \"(%s) %s\" .Value.Type | printf \"%-40s|\" }}"
+
+const snapshotsTemplate = snapshotsHeaderFormat
+
+const snapshotsTemplateVerbose = snapshotsHeaderFormat +
+	"{{range .Values}}" + pathValueTemplate + "\n{{end}}\n"
+
+func getWatchSnapshotsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "snapshot",
-		Aliases: []string{"snapshots"},
-		Short:   "Commands for managing snapshots",
-		Args:    cobra.MaximumNArgs(1),
-		RunE:    runSnapshotCommand,
+		Use:   "snapshots [id wildcard]",
+		Short: "Watch for snapshots with updates",
+		Args:  cobra.MaximumNArgs(1),
+		RunE:  runWatchSnapshotsCommand,
 	}
-	cmd.Flags().StringP("version", "v", "", "device version")
+	cmd.Flags().BoolP("verbose", "v", false, "whether to print the change with verbose output")
+	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	return cmd
 }
 
-func runSnapshotCommand(cmd *cobra.Command, args []string) error {
+func getListSnapshotsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "snapshots [id wildcard]",
+		Short: "List snapshots",
+		Args:  cobra.MaximumNArgs(1),
+		RunE:  runListSnapshotsCommand,
+	}
+	cmd.Flags().BoolP("verbose", "v", false, "whether to print the change with verbose output")
+	cmd.Flags().Bool("no-headers", false, "disables output headers")
+	return cmd
+}
+
+func runWatchSnapshotsCommand(cmd *cobra.Command, args []string) error {
+	return snapshotsCommand(cmd, true, args)
+}
+
+func runListSnapshotsCommand(cmd *cobra.Command, args []string) error {
+	return snapshotsCommand(cmd, false, args)
+}
+
+func snapshotsCommand(cmd *cobra.Command, subscribe bool, args []string) error {
+	var id device_snapshot.ID
+	if len(args) > 0 {
+		id = device_snapshot.ID(args[0])
+	}
+	verbose, _ := cmd.Flags().GetBool("verbose")
+	noHeaders, _ := cmd.Flags().GetBool("no-headers")
+
 	clientConnection, clientConnectionError := getConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError
 	}
 	client := admin.CreateConfigAdminServiceClient(clientConnection)
-
-	if len(args) == 0 {
-		stream, err := client.ListSnapshots(context.Background(), &admin.ListSnapshotsRequest{})
-		if err != nil {
-			return err
-		}
-
-		for {
-			response, err := stream.Recv()
-			if err == io.EOF {
-				return nil
-			} else if err != nil {
-				return err
-			}
-			Output("%s\n", response.DeviceID)
-		}
-	} else {
-		version, _ := cmd.Flags().GetString("version")
-		snapshot, err := client.GetSnapshot(context.Background(), &admin.GetSnapshotRequest{
-			DeviceID:      device.ID(args[0]),
-			DeviceVersion: device.Version(version),
-		})
-		if err != nil {
-			return err
-		}
-		Output("%v", snapshot)
+	snapshotsRequest := admin.ListSnapshotsRequest{
+		Subscribe: subscribe,
+		ID:        id,
 	}
-	return nil
-}
 
-func getCompactCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "compact-changes",
-		Short: "Takes a snapshot of network and device changes",
-		Args:  cobra.NoArgs,
-		RunE:  runCompactCommand,
+	var tmplSnapshots *template.Template
+	tmplSnapshots, _ = template.New("snapshots").Funcs(funcMapChanges).Parse(snapshotsTemplate)
+	if verbose {
+		tmplSnapshots, _ = template.New("snapshots").Funcs(funcMapChanges).Parse(snapshotsTemplateVerbose)
 	}
-	cmd.Flags().DurationP("retention-period", "r", 0, "the period for which to retain all changes")
-	return cmd
-}
 
-func runCompactCommand(cmd *cobra.Command, args []string) error {
-	clientConnection, clientConnectionError := getConnection(cmd)
-
-	if clientConnectionError != nil {
-		return clientConnectionError
-	}
-	client := admin.CreateConfigAdminServiceClient(clientConnection)
-
-	retentionPeriod, _ := cmd.Flags().GetDuration("retention-period")
-	request := &admin.CompactChangesRequest{}
-	if retentionPeriod != 0 {
-		request.RetentionPeriod = &retentionPeriod
-	}
-	_, err := client.CompactChanges(context.Background(), request)
+	stream, err := client.ListSnapshots(context.Background(), &snapshotsRequest)
 	if err != nil {
 		return err
 	}
-	Output("Completed compaction\n")
-	return nil
+
+	if !noHeaders {
+		GetOutput().Write([]byte(snapshotHeader))
+	}
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		err = tmplSnapshots.Execute(GetOutput(), in)
+		if err != nil {
+			Output("ERROR on template %s", err)
+		}
+	}
 }
