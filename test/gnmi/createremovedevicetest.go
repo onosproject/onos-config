@@ -78,7 +78,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	testutils.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
+	testutils.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
 	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
@@ -104,7 +104,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	checkGNMIValue(t, c, devicePath, createRemoveDeviceModValue2, 0, "Query after set 2 returns wrong value")
 
 	// Check that the network change has completed
-	testutils.WaitForNetworkChangeComplete(t, networkChangeID2)
+	testutils.WaitForNetworkChangeComplete(t, networkChangeID2, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
 	deviceGnmiClient2 := getDeviceGNMIClientOrFail(t, simulatorEnv2)

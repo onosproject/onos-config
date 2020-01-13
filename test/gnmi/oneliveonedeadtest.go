@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
+	"time"
 )
 
 // TestOneLiveOneDeadDevice tests GNMI operations to an offline device followed by operations to a connected device
@@ -47,7 +48,7 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 	// Set a value to the online device
 	onlineDevicePath := getDevicePathWithValue(onlineSimulator.Name(), modPath, modValue, StringVal)
 	nid := setGNMIValueOrFail(t, gnmiClient, onlineDevicePath, noPaths, noExtensions)
-	utils.WaitForNetworkChangeComplete(t, nid)
+	utils.WaitForNetworkChangeComplete(t, nid, 10*time.Second)
 
 	// Check that the value was set correctly in the cache
 	checkGNMIValue(t, gnmiClient, onlineDevicePath, modValue, 0, "Query after set returned the wrong value")

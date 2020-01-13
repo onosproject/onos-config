@@ -92,7 +92,7 @@ func WaitForDeviceUnavailable(t *testing.T, deviceID device.ID, timeout time.Dur
 }
 
 // WaitForNetworkChangeComplete waits for a COMPLETED status on the given change
-func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool {
+func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID, wait time.Duration) bool {
 	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
 		Subscribe:     true,
 		ChangeID:      networkChangeID,
@@ -103,7 +103,7 @@ func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID) bool
 	assert.Nil(t, changeServiceClientErr)
 	assert.True(t, changeServiceClient != nil)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 
 	listNetworkChangesClient, listNetworkChangesClientErr := changeServiceClient.ListNetworkChanges(ctx, listNetworkChangeRequest)

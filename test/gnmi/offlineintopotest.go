@@ -91,7 +91,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	testutils.WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	testutils.WaitForNetworkChangeComplete(t, networkChangeID)
+	testutils.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
 
 	// Interrogate the device to check that the value was set properly
 	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
