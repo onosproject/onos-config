@@ -123,6 +123,9 @@ type Store interface {
 
 	// Load loads all snapshots
 	LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Context, error)
+
+	// Watch watches the snapshot store for changes
+	WatchAll(chan<- stream.Event) (stream.Context, error)
 }
 
 // atomixStore is the default implementation of the DeviceSnapshot store
@@ -334,6 +337,48 @@ func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Contex
 		for entry := range mapCh {
 			if snapshot, err := decodeSnapshot(entry); err == nil {
 				ch <- snapshot
+			}
+		}
+	}()
+	return stream.NewCancelContext(cancel), nil
+}
+
+// WatchAll is similar to LoadAll for "Snapshot"s, but for continuous streaming
+func (s *atomixStore) WatchAll(ch chan<- stream.Event) (stream.Context, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	mapCh := make(chan *_map.Event)
+	if err := s.snapshots.Watch(ctx, mapCh, _map.WithReplay()); err != nil {
+		cancel()
+		return nil, err
+	}
+
+	go func() {
+		defer close(ch)
+		for event := range mapCh {
+			if snapshot, err := decodeSnapshot(event.Entry); err == nil {
+				switch event.Type {
+				case _map.EventNone:
+					ch <- stream.Event{
+						Type:   stream.None,
+						Object: snapshot,
+					}
+				case _map.EventInserted:
+					ch <- stream.Event{
+						Type:   stream.Created,
+						Object: snapshot,
+					}
+				case _map.EventUpdated:
+					ch <- stream.Event{
+						Type:   stream.Updated,
+						Object: snapshot,
+					}
+				case _map.EventRemoved:
+					ch <- stream.Event{
+						Type:   stream.Deleted,
+						Object: snapshot,
+					}
+				}
 			}
 		}
 	}()

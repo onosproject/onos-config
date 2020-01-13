@@ -24,14 +24,17 @@ import (
 	"github.com/onosproject/onos-config/api/types/device"
 	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
+	"io"
 	"net"
 	"os"
 	"testing"
+	"time"
 )
 
 // TestMain initializes the test suite context.
@@ -107,63 +110,81 @@ func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 	assert.ErrorContains(t, err, "is not")
 }
 
-func Test_GetSnapshot(t *testing.T) {
+func Test_ListSnapshots(t *testing.T) {
+	const numSnapshots = 2
 	mgrTest, conn, client, server := setUpServer(t)
 	defer server.Stop()
 	defer conn.Close()
 
-	const dev1ID = "presentdevice"
-	const dev1Ver = "2.0.0"
-	snapshotID := devicesnapshot.ID(fmt.Sprintf("Snapshot:%s:%s", dev1ID, dev1Ver))
+	snapshots := generateSnapshotData(numSnapshots)
 
 	mockDevSnapshotStore, ok := mgrTest.DeviceSnapshotStore.(*mockstore.MockDeviceSnapshotStore)
 	assert.Assert(t, ok, "casting mock store")
 
-	mockDevSnapshotStore.EXPECT().Load(gomock.Any()).DoAndReturn(
-		func(devId device.VersionedID) (*devicesnapshot.Snapshot, error) {
-			if devId.GetID() == dev1ID && devId.GetVersion() == dev1Ver {
-				return &devicesnapshot.Snapshot{
-					ID:            snapshotID,
-					DeviceID:      dev1ID,
-					DeviceVersion: dev1Ver,
-					DeviceType:    "TestDevice",
-					SnapshotID:    "test-snapshot",
-					ChangeIndex:   0,
-					Values: []*device2.PathValue{
-						{Path: "/a/b/c", Value: device2.NewTypedValueInt64(12345)},
-						{Path: "/a/b/d", Value: device2.NewTypedValueInt64(12346)},
-					},
-				}, nil
+	mockDevSnapshotStore.EXPECT().LoadAll(gomock.Any()).DoAndReturn(
+		func(ch chan<- *devicesnapshot.Snapshot) (stream.Context, error) {
+			go func() {
+				for _, snapshot := range snapshots {
+					ch <- snapshot
+				}
+				close(ch)
+			}()
+			return stream.NewContext(func() {
+			}), nil
+		})
+
+	stream, err := client.ListSnapshots(context.Background(), &admin.ListSnapshotsRequest{
+		ID:        "device-*",
+		Subscribe: false,
+	})
+	assert.NilError(t, err, "Not expecting error on ListSnapshots")
+
+	go func() {
+		count := 0
+		for {
+			snapshot, err := stream.Recv()
+			if err == io.EOF || snapshot == nil {
+				break
 			}
-			return nil, nil
-		}).AnyTimes()
+			assert.NilError(t, err, "unable to receive message")
 
-	snapshot, err := client.GetSnapshot(context.Background(), &admin.GetSnapshotRequest{
-		DeviceID:      device.ID("testdevice"),
-		DeviceVersion: device.Version(""),
-	})
-	assert.ErrorContains(t, err, "An ID and Version must be given")
-	assert.Assert(t, snapshot == nil, "Expecting snapshot to be nil")
+			assert.Equal(t, "test-snapshot", string(snapshot.SnapshotID))
+			assert.Equal(t, "1.0.0", string(snapshot.DeviceVersion))
+			assert.Equal(t, "TestDevice", string(snapshot.DeviceType))
+			assert.Equal(t, 2, len(snapshot.GetValues()))
+			switch string(snapshot.ID) {
+			case "device-0:1.0.0":
+				assert.Equal(t, "device-0", string(snapshot.DeviceID))
+			case "device-1:1.0.0":
+				assert.Equal(t, "device-1", string(snapshot.DeviceID))
+			default:
+				assert.Assert(t, false, "Unhandled case %s", string(snapshot.ID))
+			}
+			count++
+		}
+		assert.Equal(t, numSnapshots, count)
+	}()
 
-	// Try again with a version
-	snapshot, err = client.GetSnapshot(context.Background(), &admin.GetSnapshotRequest{
-		DeviceID:      device.ID("absentdevice"),
-		DeviceVersion: device.Version("1.0.0"),
-	})
-	assert.ErrorContains(t, err, "No snapshot found")
-	assert.Assert(t, snapshot == nil, "Expecting snapshot to be nil")
+	time.Sleep(time.Millisecond * numSnapshots * 2)
+}
 
-	// Try again with a positive response
-	snapshot, err = client.GetSnapshot(context.Background(), &admin.GetSnapshotRequest{
-		DeviceID:      dev1ID,
-		DeviceVersion: dev1Ver,
-	})
-	assert.NilError(t, err, "Not expecting error on GetSnapshot")
+func generateSnapshotData(count int) []*devicesnapshot.Snapshot {
+	snapshots := make([]*devicesnapshot.Snapshot, count)
 
-	assert.Equal(t, string(snapshotID), string(snapshot.ID))
-	assert.Equal(t, dev1ID, string(snapshot.DeviceID))
-	assert.Equal(t, dev1Ver, string(snapshot.DeviceVersion))
-	assert.Equal(t, "TestDevice", string(snapshot.DeviceType))
-	assert.Equal(t, "test-snapshot", string(snapshot.SnapshotID))
-	assert.Equal(t, 2, len(snapshot.GetValues()))
+	for shIdx := range snapshots {
+		deviceID := fmt.Sprintf("device-%d", shIdx)
+		snapshots[shIdx] = &devicesnapshot.Snapshot{
+			ID:            devicesnapshot.ID(deviceID + ":1.0.0"),
+			DeviceID:      device.ID(deviceID),
+			DeviceVersion: device.Version("1.0.0"),
+			DeviceType:    "TestDevice",
+			SnapshotID:    "test-snapshot",
+			ChangeIndex:   device2.Index(shIdx),
+			Values: []*device2.PathValue{
+				{Path: "/a/b/c", Value: device2.NewTypedValueInt64(shIdx)},
+				{Path: "/a/b/d", Value: device2.NewTypedValueInt64(10 * shIdx)},
+			},
+		}
+	}
+	return snapshots
 }

@@ -18,6 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/api/types/device"
+	device_snapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -46,15 +47,15 @@ func (s *TestSuite) TestSnapshotErrors(t *testing.T) {
 		t.Run(thisTestCase.description,
 			func(t *testing.T) {
 				description := device.ID(thisTestCase.description)
-				id := device.ID(thisTestCase.id)
-				version := device.Version(thisTestCase.version)
+				id := thisTestCase.id
+				version := thisTestCase.version
 				expectedError := thisTestCase.expectedError
 
 				t.Logf("testing %q", description)
 
-				snapshot, err := adminClient.GetSnapshot(context.Background(), &admin.GetSnapshotRequest{
-					DeviceID:      id,
-					DeviceVersion: version,
+				snapshot, err := adminClient.ListSnapshots(context.Background(), &admin.ListSnapshotsRequest{
+					Subscribe: false,
+					ID:        device_snapshot.ID(id + ":" + version),
 				})
 				assert.Nil(t, snapshot, "Expected snapshot to be nil")
 				assert.Error(t, err, "Expected error response", expectedError)

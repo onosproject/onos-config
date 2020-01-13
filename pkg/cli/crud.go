@@ -21,19 +21,20 @@ import (
 
 func getGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get {device-changes,devicetree,network-changes,plugins,opstate} [args]",
+		Use:   "get {device-changes,network-changes,plugins,opstate,snapshots} [args]",
 		Short: "Get config resources",
 	}
 	cmd.AddCommand(getListNetworkChangesCommand())
 	cmd.AddCommand(getListDeviceChangesCommand())
 	cmd.AddCommand(getGetPluginsCommand())
 	cmd.AddCommand(getGetOpstateCommand())
+	cmd.AddCommand(getListSnapshotsCommand())
 	return cmd
 }
 
 func getAddCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "add {plugin,device} [args]",
+		Use:   "add {plugin} [args]",
 		Short: "Add a config resource",
 	}
 	cmd.AddCommand(getAddPluginCommand())
@@ -48,6 +49,7 @@ func getWatchCommand() *cobra.Command {
 	cmd.AddCommand(getWatchDeviceChangesCommand())
 	cmd.AddCommand(getWatchNetworkChangesCommand())
 	cmd.AddCommand(getWatchOpstateCommand())
+	cmd.AddCommand(getWatchSnapshotsCommand())
 	return cmd
 }
 

@@ -179,3 +179,18 @@ func (mr *MockDeviceSnapshotStoreMockRecorder) LoadAll(ch interface{}) *gomock.C
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAll", reflect.TypeOf((*MockDeviceSnapshotStore)(nil).LoadAll), ch)
 }
+
+// WatchAll mocks base method
+func (m *MockDeviceSnapshotStore) WatchAll(arg0 chan<- stream.Event) (stream.Context, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WatchAll", arg0)
+	ret0, _ := ret[0].(stream.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// WatchAll indicates an expected call of WatchAll
+func (mr *MockDeviceSnapshotStoreMockRecorder) WatchAll(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchAll", reflect.TypeOf((*MockDeviceSnapshotStore)(nil).WatchAll), arg0)
+}

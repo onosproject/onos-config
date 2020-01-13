@@ -7,7 +7,6 @@
     - [Chunk](#onos.config.admin.Chunk)
     - [CompactChangesRequest](#onos.config.admin.CompactChangesRequest)
     - [CompactChangesResponse](#onos.config.admin.CompactChangesResponse)
-    - [GetSnapshotRequest](#onos.config.admin.GetSnapshotRequest)
     - [ListModelsRequest](#onos.config.admin.ListModelsRequest)
     - [ListSnapshotsRequest](#onos.config.admin.ListSnapshotsRequest)
     - [ModelInfo](#onos.config.admin.ModelInfo)
@@ -78,22 +77,6 @@ CompactChangesResponse is a response to the Compact Changes command
 
 
 
-<a name="onos.config.admin.GetSnapshotRequest"></a>
-
-### GetSnapshotRequest
-GetSnapshotRequest gets the details of a snapshot for a specific device and version.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| device_id | [string](#string) |  | device_id is the ID of a device that has been configured through a NetworkChange. |
-| device_version | [string](#string) |  | device version is the semantic version of a device that has been configured through a NetworkChange. |
-
-
-
-
-
-
 <a name="onos.config.admin.ListModelsRequest"></a>
 
 ### ListModelsRequest
@@ -115,6 +98,12 @@ ListModelsRequest carries data for querying registered model plugins.
 
 ### ListSnapshotsRequest
 ListSnapshotsRequest requests a list of snapshots for all devices and versions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| subscribe | [bool](#bool) |  | subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur after all devices have been streamed to the client |
+| id | [string](#string) |  | option to specify a specific device - if blank or &#39;*&#39; then select all Can support `*` (match many chars) or &#39;?&#39; (match one char) as wildcard |
 
 
 
@@ -285,8 +274,7 @@ ConfigAdminService provides means for enhanced interactions with the configurati
 | UploadRegisterModel | [Chunk](#onos.config.admin.Chunk) stream | [RegisterResponse](#onos.config.admin.RegisterResponse) | UploadRegisterModel uploads and adds the model plugin to the list of supported models. The file is serialized in to Chunks of less than 4MB so as not to break the gRPC byte array limit |
 | ListRegisteredModels | [ListModelsRequest](#onos.config.admin.ListModelsRequest) | [ModelInfo](#onos.config.admin.ModelInfo) stream | ListRegisteredModels returns a stream of registered models. |
 | RollbackNetworkChange | [RollbackRequest](#onos.config.admin.RollbackRequest) | [RollbackResponse](#onos.config.admin.RollbackResponse) | RollbackNetworkChange rolls back the specified network change (or the latest one). |
-| GetSnapshot | [GetSnapshotRequest](#onos.config.admin.GetSnapshotRequest) | [.onos.config.snapshot.device.Snapshot](#onos.config.snapshot.device.Snapshot) | GetSnapshot gets a snapshot for a specific device and version |
-| ListSnapshots | [ListSnapshotsRequest](#onos.config.admin.ListSnapshotsRequest) | [.onos.config.snapshot.device.Snapshot](#onos.config.snapshot.device.Snapshot) stream | ListSnapshots gets a list of snapshots across all devices and versions, and streams them back to the caller. The result includes a &#34;replay&#34; of existing snapshots and will watch for any subsequent new changes that come later. |
+| ListSnapshots | [ListSnapshotsRequest](#onos.config.admin.ListSnapshotsRequest) | [.onos.config.snapshot.device.Snapshot](#onos.config.snapshot.device.Snapshot) stream | ListSnapshots gets a list of snapshots across all devices and versions, and streams them back to the caller. |
 | CompactChanges | [CompactChangesRequest](#onos.config.admin.CompactChangesRequest) | [CompactChangesResponse](#onos.config.admin.CompactChangesResponse) | CompactChanges requests a snapshot of NetworkChange and DeviceChange stores. This will take all of the Network Changes older than the retention period and flatten them down to just one snapshot (replacing any older snapshot). This will act as a baseline for those changes within the retention period and any future changes. DeviceChanges will be snapshotted to correspond to these NetworkChange compactions leaving an individual snapshot perv device and version combination. |
 
  
