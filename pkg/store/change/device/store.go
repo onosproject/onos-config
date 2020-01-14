@@ -23,6 +23,7 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/session"
 	"github.com/atomix/atomix-go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
+	changetype "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -362,22 +363,22 @@ func (s *atomixStore) Watch(deviceID device.VersionedID, ch chan<- stream.Event,
 				switch event.Type {
 				case indexedmap.EventNone:
 					ch <- stream.Event{
-						Type:   stream.None,
+						Type:   changetype.ListResponseType_LISTNONE,
 						Object: change,
 					}
 				case indexedmap.EventInserted:
 					ch <- stream.Event{
-						Type:   stream.Created,
+						Type:   changetype.ListResponseType_LISTADDED,
 						Object: change,
 					}
 				case indexedmap.EventUpdated:
 					ch <- stream.Event{
-						Type:   stream.Updated,
+						Type:   changetype.ListResponseType_LISTUPDATED,
 						Object: change,
 					}
 				case indexedmap.EventRemoved:
 					ch <- stream.Event{
-						Type:   stream.Deleted,
+						Type:   changetype.ListResponseType_LISTREMOVED,
 						Object: change,
 					}
 				}

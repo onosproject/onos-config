@@ -60,6 +60,7 @@ ListDeviceChangeResponse carries a single network change event
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | change | [onos.config.change.device.DeviceChange](#onos.config.change.device.DeviceChange) |  | change is the device change on which the event occurred |
+| type | [onos.config.change.ListResponseType](#onos.config.change.ListResponseType) |  | type is a qualification of the type of change being made |
 
 
 
@@ -97,6 +98,7 @@ ListNetworkChangeResponse carries a single network change event
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | change | [onos.config.change.network.NetworkChange](#onos.config.change.network.NetworkChange) |  | change is the network change on which the event occurred |
+| type | [onos.config.change.ListResponseType](#onos.config.change.ListResponseType) |  | type is a qualification of the type of change being made |
 
 
 

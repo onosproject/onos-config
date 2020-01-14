@@ -17,6 +17,7 @@ package cache
 
 import (
 	"github.com/golang/mock/gomock"
+	changetype "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicebase "github.com/onosproject/onos-config/api/types/device"
@@ -58,7 +59,7 @@ func TestDeviceCache(t *testing.T) {
 	chSnapshots := chSnapshotsVal.Load().(chan<- stream.Event)
 
 	chNwChanges <- stream.Event{
-		Type: stream.Created,
+		Type: changetype.ListResponseType_LISTADDED,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
 			Index: 1,
@@ -138,7 +139,7 @@ func TestDeviceCache(t *testing.T) {
 
 	//chNwChanges = chNwChangesVal.Load().(chan<- stream.Event)
 	chNwChanges <- stream.Event{
-		Type: stream.Created,
+		Type: changetype.ListResponseType_LISTADDED,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
 			Index: 1,
@@ -157,7 +158,7 @@ func TestDeviceCache(t *testing.T) {
 		},
 	}
 	chNwChanges <- stream.Event{
-		Type: stream.Created,
+		Type: changetype.ListResponseType_LISTADDED,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
 			Index: 1,
@@ -178,7 +179,7 @@ func TestDeviceCache(t *testing.T) {
 	// Send a Device Snapshot - this might have been the result of a previous compaction
 	// there are no network changes left but it still exists
 	chSnapshots <- stream.Event{
-		Type: stream.Created,
+		Type: changetype.ListResponseType_LISTADDED,
 		Object: &devicesnapshot.DeviceSnapshot{
 			ID:            "dev-snapshot-1",
 			DeviceID:      "device-old-ss",
@@ -190,7 +191,7 @@ func TestDeviceCache(t *testing.T) {
 	// Send an event for something that already exists as a NW change
 	// Should be ignored
 	chSnapshots <- stream.Event{
-		Type: stream.Created,
+		Type: changetype.ListResponseType_LISTADDED,
 		Object: &devicesnapshot.DeviceSnapshot{
 			ID:            "dev-snapshot-2",
 			DeviceID:      "device-2",
@@ -201,7 +202,7 @@ func TestDeviceCache(t *testing.T) {
 
 	// A network change could come after a Dev Snapshot
 	chNwChanges <- stream.Event{
-		Type: stream.Created,
+		Type: changetype.ListResponseType_LISTADDED,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-1",
 			Index: 1,
@@ -252,7 +253,7 @@ func TestDeviceCache(t *testing.T) {
 
 	// Make another change
 	chNwChanges <- stream.Event{
-		Type: stream.Created,
+		Type: changetype.ListResponseType_LISTADDED,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-4",
 			Index: 1,
@@ -268,7 +269,7 @@ func TestDeviceCache(t *testing.T) {
 
 	////////////// Send a deleted event - should be ignored ////////////////////
 	chNwChanges <- stream.Event{
-		Type: stream.Deleted,
+		Type: changetype.ListResponseType_LISTREMOVED,
 		Object: &networkchange.NetworkChange{
 			ID:    "network-change-4",
 			Index: 1,

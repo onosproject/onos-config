@@ -22,6 +22,7 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/session"
 	"github.com/atomix/atomix-go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
+	changetype "github.com/onosproject/onos-config/api/types/change"
 	"github.com/onosproject/onos-config/api/types/device"
 	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -262,22 +263,22 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 				switch event.Type {
 				case _map.EventNone:
 					ch <- stream.Event{
-						Type:   stream.None,
+						Type:   changetype.ListResponseType_LISTNONE,
 						Object: snapshot,
 					}
 				case _map.EventInserted:
 					ch <- stream.Event{
-						Type:   stream.Created,
+						Type:   changetype.ListResponseType_LISTADDED,
 						Object: snapshot,
 					}
 				case _map.EventUpdated:
 					ch <- stream.Event{
-						Type:   stream.Updated,
+						Type:   changetype.ListResponseType_LISTUPDATED,
 						Object: snapshot,
 					}
 				case _map.EventRemoved:
 					ch <- stream.Event{
-						Type:   stream.Deleted,
+						Type:   changetype.ListResponseType_LISTREMOVED,
 						Object: snapshot,
 					}
 				}
@@ -360,22 +361,22 @@ func (s *atomixStore) WatchAll(ch chan<- stream.Event) (stream.Context, error) {
 				switch event.Type {
 				case _map.EventNone:
 					ch <- stream.Event{
-						Type:   stream.None,
+						Type:   changetype.ListResponseType_LISTNONE,
 						Object: snapshot,
 					}
 				case _map.EventInserted:
 					ch <- stream.Event{
-						Type:   stream.Created,
+						Type:   changetype.ListResponseType_LISTADDED,
 						Object: snapshot,
 					}
 				case _map.EventUpdated:
 					ch <- stream.Event{
-						Type:   stream.Updated,
+						Type:   changetype.ListResponseType_LISTUPDATED,
 						Object: snapshot,
 					}
 				case _map.EventRemoved:
 					ch <- stream.Event{
-						Type:   stream.Deleted,
+						Type:   changetype.ListResponseType_LISTREMOVED,
 						Object: snapshot,
 					}
 				}

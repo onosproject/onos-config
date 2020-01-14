@@ -22,6 +22,7 @@ import "gogoproto/gogo.proto";
 import "github.com/onosproject/onos-config/api/admin/admin.proto";
 import "github.com/onosproject/onos-config/api/types/change/device/types.proto";
 import "github.com/onosproject/onos-config/api/types/change/network/types.proto";
+import "github.com/onosproject/onos-config/api/types/change/types.proto";
 
 // OpStateRequest is a message for specifying GetOpState query parameters.
 message OpStateRequest {
@@ -66,6 +67,9 @@ message ListNetworkChangeResponse {
 
     // change is the network change on which the event occurred
     onos.config.change.network.NetworkChange change = 1;
+
+    // type is a qualification of the type of change being made
+    onos.config.change.ListResponseType type = 2;
 }
 
 
@@ -97,6 +101,9 @@ message ListDeviceChangeResponse {
 
     // change is the device change on which the event occurred
     onos.config.change.device.DeviceChange change = 1;
+
+    // type is a qualification of the type of change being made
+    onos.config.change.ListResponseType type = 2;
 }
 
 service ChangeService {

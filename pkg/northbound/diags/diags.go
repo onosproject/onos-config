@@ -245,9 +245,9 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 				}
 
 				change := event.Object.(*devicechange.DeviceChange)
-
 				msg := &diags.ListDeviceChangeResponse{
 					Change: change,
+					Type:   event.Type,
 				}
 				log.Infof("Sending matching change %v", change.ID)
 				err := stream.Send(msg)

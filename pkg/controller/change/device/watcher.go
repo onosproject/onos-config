@@ -16,6 +16,7 @@ package device
 
 import (
 	"github.com/onosproject/onos-config/api/types"
+	changetype "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/controller"
@@ -54,7 +55,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 	go func() {
 		for eventObj := range deviceCacheCh {
 			// TODO: Handle device deletes
-			if eventObj.Type == stream.None || eventObj.Type == stream.Created {
+			if eventObj.Type == changetype.ListResponseType_LISTNONE || eventObj.Type == changetype.ListResponseType_LISTADDED {
 				event := eventObj.Object.(*cache.Info)
 				log.Infof("Received device event for device %v %v", event.DeviceID, event.Version)
 				w.watchDevice(devicetype.NewVersionedID(event.DeviceID, event.Version), ch)

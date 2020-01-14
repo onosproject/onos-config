@@ -81,7 +81,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		func(ch chan<- stream.Event, replay bool) (stream.Context, error) {
 			go func() {
 				event := stream.Event{
-					Type: stream.Created,
+					Type: changetypes.ListResponseType_LISTADDED,
 					Object: &cache.Info{
 						DeviceID: device1,
 						Type:     deviceTypeTd,
@@ -179,7 +179,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 					lastChange.Status.State = changetypes.State_COMPLETE
 				}
 				event := stream.Event{
-					Type:   "",
+					Type:   changetypes.ListResponseType_LISTNONE,
 					Object: lastChange,
 				}
 				c <- event
