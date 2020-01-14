@@ -126,14 +126,19 @@ onos-config-tests-docker: # @HELP build onos-config tests Docker image
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-config-tests/_output/bin/onos-config-tests ./cmd/onos-config-tests
 	docker build . -f build/onos-config-tests/Dockerfile -t onosproject/onos-config-tests:${ONOS_CONFIG_VERSION}
 
+onos-config-benchmarks-docker: # @HELP build onos-config benchmarks Docker image
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-config-benchmarks/_output/bin/onos-config-benchmarks ./cmd/onos-config-benchmarks
+	docker build . -f build/onos-config-benchmarks/Dockerfile -t onosproject/onos-config-benchmarks:${ONOS_CONFIG_VERSION}
+
 images: # @HELP build all Docker images
-images: build onos-config-docker onos-config-tests-docker
+images: build onos-config-docker onos-config-tests-docker onos-config-benchmarks-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
 	kind load docker-image onosproject/onos-config:${ONOS_CONFIG_VERSION}
 	kind load docker-image onosproject/onos-config-tests:${ONOS_CONFIG_VERSION}
+	kind load docker-image onosproject/onos-config-benchmarks:${ONOS_CONFIG_VERSION}
 
 all: build images
 

@@ -1,4 +1,4 @@
-// Copyright 2019-present Open Networking Foundation.
+// Copyright 2020-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package gnmi
 
 import (
-	"github.com/onosproject/onos-config/benchmark/gnmi"
+	"context"
 	"github.com/onosproject/onos-test/pkg/benchmark"
+	"github.com/onosproject/onos-test/pkg/benchmark/params"
+	"time"
 )
 
-func main() {
-	benchmark.Register("gnmi", &gnmi.BenchmarkSuite{})
-	benchmark.Main()
+// BenchmarkSet tests set of GNMI paths
+func (s *BenchmarkSuite) BenchmarkSet(b *benchmark.Benchmark) {
+	b.Run(func(value string) error {
+		devicePath := getDevicePathWithValue(s.simulator.Name(), "/system/config/motd-banner", value, StringVal)
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		_, _, err := setGNMIValue(ctx, s.client, devicePath, noPaths, noExtensions)
+		return err
+	}, params.RandomString(8))
 }
