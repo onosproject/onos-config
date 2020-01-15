@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # See ../docs/modelplugin.md for how to use this file to generate a Model Plugin
 
