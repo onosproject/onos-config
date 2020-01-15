@@ -40,10 +40,8 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		return nil, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	for _, path := range req.GetPath() {
-		update, err := getUpdate(version, prefix, path)
+		update, err := s.getUpdate(version, prefix, path)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -57,7 +55,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	}
 	// Alternatively - if there's only the prefix
 	if len(req.GetPath()) == 0 {
-		update, err := getUpdate(version, prefix, nil)
+		update, err := s.getUpdate(version, prefix, nil)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -77,7 +75,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 }
 
 // getUpdate utility method for getting an Update for a given path
-func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
+func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
 	if (path == nil || path.Target == "") && (prefix == nil || prefix.Target == "") {
 		return nil, fmt.Errorf("Invalid request - Path %s has no target", utils.StrPath(path))
 	}
@@ -119,8 +117,12 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 	if prefix != nil && prefix.Elem != nil {
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
-	// TODO: Use index extension to provide read-your-own-writes consistency via the 'index' argument
-	configValues, errGetTargetCfg := manager.GetManager().DeviceStateStore.Get(devicetype.NewVersionedID(devicetype.ID(target), version), 0)
+
+	s.mu.RLock()
+	index := s.lastWrite
+	s.mu.RUnlock()
+
+	configValues, errGetTargetCfg := manager.GetManager().DeviceStateStore.Get(devicetype.NewVersionedID(devicetype.ID(target), version), devicechange.Index(index))
 	if errGetTargetCfg != nil {
 		log.Error("Error while extracting config", errGetTargetCfg)
 		return nil, errGetTargetCfg
