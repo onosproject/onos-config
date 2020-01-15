@@ -149,6 +149,14 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 	}
 
+	// Subscribe to the network change prior to writing it to ensure no events are missed
+	networkChan := make(chan stream.Event)
+	watchCtx, watchErr := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(networkchange.ID(netCfgChangeName)))
+	if watchErr != nil {
+		return nil, fmt.Errorf("can't complete set operation on target due to %s", watchErr)
+	}
+	defer watchCtx.Close()
+
 	//Creating and setting the config on the atomix Store
 	errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
 
@@ -157,9 +165,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, status.Error(codes.Internal, errSet.Error())
 	}
 
-	// TODO: Not clear if there is a period of time where this misses out on events
-	//Obtaining response based on distributed store generated events
-	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchange.ID(netCfgChangeName))
+	// Wait for network change to be propagated before responding
+	updateResultsAtomix, errListen := listenAndBuildResponse(networkChan)
 	if errListen != nil {
 		log.Errorf("Error while building atomix based response %s", errListen.Error())
 		return nil, status.Error(codes.Internal, errListen.Error())
@@ -319,15 +326,9 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 	return nil
 }
 
-func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]*gnmi.UpdateResult, error) {
-	networkChan := make(chan stream.Event)
-	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
-	if errWatch != nil {
-		return nil, fmt.Errorf("can't complete set operation on target due to %s", errWatch)
-	}
-	defer ctx.Close()
+func listenAndBuildResponse(ch <-chan stream.Event) ([]*gnmi.UpdateResult, error) {
 	updateResults := make([]*gnmi.UpdateResult, 0)
-	for changeEvent := range networkChan {
+	for changeEvent := range ch {
 		change := changeEvent.Object.(*networkchange.NetworkChange)
 		log.Infof("Received notification for change ID %s, phase %s, state %s", change.ID,
 			change.Status.Phase, change.Status.State)
