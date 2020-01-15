@@ -189,6 +189,12 @@ func setUpChangesMock(mocks *AllMocks) {
 			Message: "",
 		},
 	}
+	mocks.MockStores.DeviceStateStore.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]*devicechange.PathValue{
+		{
+			Path:  configValue01.Path,
+			Value: configValue01.Value,
+		},
+	}, nil).AnyTimes()
 	mocks.MockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(device devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
 			go func() {
@@ -209,6 +215,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 	ctrl := gomock.NewController(t)
 	mockStores := &mockstore.MockStores{
 		DeviceStore:          mockstore.NewMockDeviceStore(ctrl),
+		DeviceStateStore:     mockstore.NewMockDeviceStateStore(ctrl),
 		NetworkChangesStore:  mockstore.NewMockNetworkChangesStore(ctrl),
 		DeviceChangesStore:   mockstore.NewMockDeviceChangesStore(ctrl),
 		NetworkSnapshotStore: mockstore.NewMockNetworkSnapshotStore(ctrl),
