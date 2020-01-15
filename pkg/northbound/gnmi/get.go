@@ -119,9 +119,8 @@ func getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (
 	if prefix != nil && prefix.Elem != nil {
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
-	//TODO the following can be optimized by looking if the path is in the read only
-	configValues, errGetTargetCfg := manager.GetManager().GetTargetConfig(
-		devicetype.ID(target), version, pathAsString, 0)
+	// TODO: Use index extension to provide read-your-own-writes consistency via the 'index' argument
+	configValues, errGetTargetCfg := manager.GetManager().DeviceStateStore.Get(devicetype.NewVersionedID(devicetype.ID(target), version), 0)
 	if errGetTargetCfg != nil {
 		log.Error("Error while extracting config", errGetTargetCfg)
 		return nil, errGetTargetCfg

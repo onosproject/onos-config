@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"github.com/golang/mock/gomock"
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -72,6 +73,7 @@ func Test_getNoPathElems(t *testing.T) {
 		},
 	}).AnyTimes()
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mocks.MockStores.DeviceStateStore.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]*devicechange.PathValue{}, nil).AnyTimes()
 	setUpListMock(mocks)
 
 	noPath1 := gnmi.Path{Target: "Device1"}
@@ -223,6 +225,7 @@ func Test_targetDoesNotExist(t *testing.T) {
 		},
 	}).AnyTimes()
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mocks.MockStores.DeviceStateStore.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]*devicechange.PathValue{}, nil).AnyTimes()
 	setUpListMock(mocks)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
@@ -251,6 +254,7 @@ func Test_pathDoesNotExist(t *testing.T) {
 		},
 	}).AnyTimes()
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
+	mocks.MockStores.DeviceStateStore.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]*devicechange.PathValue{}, nil).AnyTimes()
 	setUpListMock(mocks)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
