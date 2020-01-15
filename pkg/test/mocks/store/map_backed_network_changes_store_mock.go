@@ -75,9 +75,9 @@ func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChang
 		func(c chan<- stream.Event, o ...networkstore.WatchOption) (stream.Context, error) {
 			go func() {
 				mu.RLock()
-				defer mu.RUnlock()
 				change := networkChangesList[len(networkChangesList)-1]
 				if change == nil {
+					mu.RUnlock()
 					close(c)
 					return
 				}
@@ -91,9 +91,12 @@ func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChang
 					Type:   "",
 					Object: &change1,
 				}
+				mu.RUnlock()
 				c <- event
 
 				change2 := change1
+
+				mu.RLock()
 				refs := make([]*networkchange.DeviceChangeRef, len(change2.Changes))
 				for i, change := range change2.Changes {
 					refs[i] = &networkchange.DeviceChangeRef{
@@ -105,6 +108,7 @@ func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChang
 					Type:   "",
 					Object: &change2,
 				}
+				mu.RUnlock()
 				c <- event
 				close(c)
 			}()
