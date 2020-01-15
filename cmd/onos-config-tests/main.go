@@ -15,11 +15,16 @@
 package main
 
 import (
-	"github.com/onosproject/onos-config/benchmark/gnmi"
-	"github.com/onosproject/onos-test/pkg/benchmark"
+	"github.com/onosproject/onos-config/test/cli"
+	"github.com/onosproject/onos-config/test/gnmi"
+	"github.com/onosproject/onos-config/test/ha"
+	"github.com/onosproject/onos-test/pkg/test"
 )
 
 func main() {
-	benchmark.Register("gnmi", &gnmi.BenchmarkSuite{})
-	benchmark.Main()
+	test.Register("cli", &cli.TestSuite{})
+	test.Register("gnmi", &gnmi.TestSuite{})
+	test.Register("ha", &ha.TestSuite{})
+
+	test.Main()
 }

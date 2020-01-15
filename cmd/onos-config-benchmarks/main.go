@@ -1,4 +1,4 @@
-// Copyright 2019-present Open Networking Foundation.
+// Copyright 2020-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,16 +15,11 @@
 package main
 
 import (
-	"github.com/onosproject/onos-config/test/cli"
-	"github.com/onosproject/onos-config/test/gnmi"
-	"github.com/onosproject/onos-config/test/ha"
-	"github.com/onosproject/onos-test/pkg/test"
+	"github.com/onosproject/onos-config/benchmark/gnmi"
+	"github.com/onosproject/onos-test/pkg/benchmark"
 )
 
 func main() {
-	test.Register("cli", &cli.TestSuite{})
-	test.Register("gnmi", &gnmi.TestSuite{})
-	test.Register("ha", &ha.TestSuite{})
-
-	test.Main()
+	benchmark.Register("gnmi", &gnmi.BenchmarkSuite{})
+	benchmark.Main()
 }
