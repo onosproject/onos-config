@@ -14,7 +14,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/onosproject/onos-test v0.0.0-20200110210314-9e9ce2c945d0
+	github.com/onosproject/onos-test v0.0.0-20200114235320-ec5e1c74a5d2
 	github.com/onosproject/onos-topo v0.0.0-20191113170912-88eeee89f4eb
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c
 	github.com/openconfig/goyang v0.0.0-20190924211109-064f9690516f
