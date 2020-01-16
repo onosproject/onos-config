@@ -16,7 +16,6 @@ package cache
 
 import (
 	"fmt"
-	changetype "github.com/onosproject/onos-config/api/types/change"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/api/types/device"
 	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
@@ -106,7 +105,7 @@ func (c *networkChangeStoreCache) listen() error {
 
 	go func() {
 		for event := range ch {
-			if event.Type == changetype.ListResponseType_LISTREMOVED {
+			if event.Type == stream.Deleted {
 				// TODO handle delete properly - it should check to see if any
 				//  of the devices in the removed/deleted NW change exist in any
 				//  of the remaining NW changes. If they don't then remove them
@@ -135,7 +134,7 @@ func (c *networkChangeStoreCache) listen() error {
 						for _, l := range listeners {
 							if l != nil {
 								l <- stream.Event{
-									Type:   changetype.ListResponseType_LISTADDED,
+									Type:   stream.Created,
 									Object: &info,
 								}
 							}
@@ -162,7 +161,7 @@ func (c *networkChangeStoreCache) listen() error {
 					for _, l := range listeners {
 						if l != nil {
 							l <- stream.Event{
-								Type:   changetype.ListResponseType_LISTADDED,
+								Type:   stream.Created,
 								Object: &info,
 							}
 						}
@@ -250,7 +249,7 @@ func (c *networkChangeStoreCache) Watch(ch chan<- stream.Event, replay bool) (st
 		c.mu.Unlock()
 		for _, info := range devices {
 			event := stream.Event{
-				Type:   changetype.ListResponseType_LISTNONE,
+				Type:   stream.None,
 				Object: info,
 			}
 			ch <- event

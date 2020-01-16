@@ -6,7 +6,6 @@
 - [api/types/change/types.proto](#api/types/change/types.proto)
     - [Status](#onos.config.change.Status)
   
-    - [ListResponseType](#onos.config.change.ListResponseType)
     - [Phase](#onos.config.change.Phase)
     - [Reason](#onos.config.change.Reason)
     - [State](#onos.config.change.State)
@@ -44,20 +43,6 @@ Status is the status of a NetworkChange
 
 
  
-
-
-<a name="onos.config.change.ListResponseType"></a>
-
-### ListResponseType
-List Response Type
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LISTNONE | 0 | LISTNONE indicates this response does not represent a state change |
-| LISTADDED | 1 | LISTADDED is an event which occurs when a change is added to the list |
-| LISTUPDATED | 2 | LISTUPDATED is an event which occurs when a change is updated |
-| LISTREMOVED | 3 | LISTREMOVED is an event which occurs when a change is removed from the list |
-
 
 
 <a name="onos.config.change.Phase"></a>

@@ -18,7 +18,6 @@ import (
 	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/types"
-	changetype "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
@@ -214,7 +213,7 @@ func TestDeviceWatcher(t *testing.T) {
 			go func() {
 				for _, di := range cachedDevices {
 					event := stream.Event{
-						Type:   changetype.ListResponseType_LISTADDED,
+						Type:   stream.Created,
 						Object: di,
 					}
 					ch <- event

@@ -65,18 +65,3 @@ enum Reason {
     // ERROR indicates an error occurred when applying the change
     ERROR = 1;
 }
-
-// List Response Type
-enum ListResponseType {
-    // LISTNONE indicates this response does not represent a state change
-    LISTNONE = 0;
-
-    // LISTADDED is an event which occurs when a change is added to the list
-    LISTADDED = 1;
-
-    // LISTUPDATED is an event which occurs when a change is updated
-    LISTUPDATED = 2;
-
-    // LISTREMOVED is an event which occurs when a change is removed from the list
-    LISTREMOVED = 3;
-}

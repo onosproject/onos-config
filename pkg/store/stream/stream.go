@@ -14,10 +14,7 @@
 
 package stream
 
-import (
-	"context"
-	"github.com/onosproject/onos-config/api/types/change"
-)
+import "context"
 
 // Context is a stream context
 type Context interface {
@@ -51,10 +48,24 @@ func (c *closerContext) Close() {
 	c.close()
 }
 
+// EventType is a stream event type
+type EventType string
+
+const (
+	// None indicates an object was not changed
+	None EventType = ""
+	// Created indicates an object was created
+	Created EventType = "Created"
+	// Updated indicates an object was updated
+	Updated EventType = "Updated"
+	// Deleted indicates an object was deleted
+	Deleted EventType = "Deleted"
+)
+
 // Event is a stream event
 type Event struct {
 	// Type is the stream event type
-	Type change.ListResponseType
+	Type EventType
 
 	// Object is the event object
 	Object interface{}

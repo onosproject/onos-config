@@ -23,7 +23,6 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
-	changetype "github.com/onosproject/onos-config/api/types/change"
 	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -248,22 +247,22 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 				switch event.Type {
 				case indexedmap.EventNone:
 					ch <- stream.Event{
-						Type:   changetype.ListResponseType_LISTNONE,
+						Type:   stream.None,
 						Object: snapshot,
 					}
 				case indexedmap.EventInserted:
 					ch <- stream.Event{
-						Type:   changetype.ListResponseType_LISTADDED,
+						Type:   stream.Created,
 						Object: snapshot,
 					}
 				case indexedmap.EventUpdated:
 					ch <- stream.Event{
-						Type:   changetype.ListResponseType_LISTUPDATED,
+						Type:   stream.Updated,
 						Object: snapshot,
 					}
 				case indexedmap.EventRemoved:
 					ch <- stream.Event{
-						Type:   changetype.ListResponseType_LISTREMOVED,
+						Type:   stream.Deleted,
 						Object: snapshot,
 					}
 				}

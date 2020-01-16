@@ -125,6 +125,7 @@ func Test_ListNetworkChanges(t *testing.T) {
 
 			//t.Logf("Recv network change %v", netwChange.ID)
 			assert.Assert(t, strings.HasPrefix(string(in.Change.ID), "change-"))
+			assert.Equal(t, diags.Type_NONE, in.Type)
 			count++
 		}
 		assert.Equal(t, count, numevents)
@@ -199,6 +200,7 @@ func Test_ListDeviceChanges(t *testing.T) {
 
 			//t.Logf("Recv device change %v", in.Change.ID)
 			assert.Assert(t, strings.HasPrefix(string(in.Change.ID), "device-"))
+			assert.Equal(t, diags.Type_NONE, in.Type)
 			count++
 		}
 		assert.Equal(t, count, numevents)
