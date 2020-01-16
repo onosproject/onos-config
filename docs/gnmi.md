@@ -67,20 +67,27 @@ gnmi_cli -get -address onos-config:5150 \
 > on the scope of the request.
 
 ### List complete configuration for a device (target)
->Use the following value for proto to get all configuration and operational state on a particular device
->    -proto "path: <target: 'devicesim-1'>"
+```bash
+gnmi_cli -get -address onos-config:5150 \
+    -proto "path: <target: 'devicesim-1'>" \
+    -timeout 5s -en PROTO -alsologtostderr \
+    -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
+```
+> Here all `elem` components are omitted, which is like requesting '/'.
 
 ### Get a keyed index in a list
 Use a proto value like:
->    -proto "path: <target: 'devicesim-1',
->         elem: <name: 'system'>
->         elem: <name: 'openflow'> elem: <name: 'controllers'>
->         elem: <name: 'controller' key: <key: 'name' value: 'main'>>
->         elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>>
->         elem: <name: 'config'> elem: <name: 'address'>>"
+```
+-proto "path: <target: 'devicesim-1',
+         elem: <name: 'system'>
+         elem: <name: 'openflow'> elem: <name: 'controllers'>
+         elem: <name: 'controller' key: <key: 'name' value: 'main'>>
+         elem: <name: 'connections'> elem: <name: 'connection' key: <key: 'aux-id' value: '0'>>
+         elem: <name: 'config'> elem: <name: 'address'>>"
+```
 
 ### Use wildcards in a path
-onos-config supports the wildcards `*` and `...` in gNMI paths, meaning match
+`onos-config` supports the wildcards `*` and `...` in gNMI paths, meaning match
 one item of match all items respectively as defined in the gNMI
 [specification](https://github.com/openconfig/reference/blob/master/rpc/gnmi/gnmi-path-conventions.md#wildcards-in-paths).
 
@@ -106,14 +113,25 @@ gnmi_cli -get -address onos-config:5150 \
 > state enabled values.
 
 ### Device read only state get
-To retrieve state, non-configurable values, there is no difference with a normal gNMI get request.
-An example follows:
+To retrieve state attributes (those defined in YANG with `config false`, non-configurable
+leafs), in general there is no difference with a normal gNMI Get request.
+
+There is however a `type` qualifier **STATE** in gNMI Get, that allows only
+**STATE** values to be requested (excluding any **CONFIG** attributes. For example
+to retrieve all the `STATE` values from `devicesim-1`:
 ```bash
 gnmi_cli -get -address onos-config:5150 \
-    -proto "path: <target: 'devicesim-1',elem:<name:'system' > elem:<name:'openflow' > elem:<name:'controllers' > elem:<name:'controller' key:<key:'name' value:'main' > > elem:<name:'connections' > elem:<name:'connection' key:<key:'aux-id' value:'0' > > elem:<name:'state' > elem:<name:'address'>>" \
+    -proto "path: <target: 'devicesim-1'>, type: STATE" \
     -timeout 5s -en PROTO -alsologtostderr \
     -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
+
+> The set of possible values for type are: `ALL`, `STATE`, `CONFIG` and `OPERATIONAL`.
+> If not specified `ALL` is the default `type`.
+> In onos-config there is no distinction made between `STATE` and `OPERATIONAL`
+> and requesting either will get both.
+> This `type` can be combined with any other proto qualifier like `elem` and `prefix`
+
 ## Northbound Set Request via gNMI
 Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
 
@@ -164,17 +182,17 @@ SetRequest() with the 100 extension at the end of the -proto section like:
 > The corresponding -get for this require using the -proto
 > `path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>`
 >
-> Currently (Nov '19) checking of the contents done only when a Model Plugin is
+> Currently (Jan '20) checking of the contents is done only when a Model Plugin is
 > loaded for the device type. 2 checks are done
 >
 >   1. that a attempt is not being made to change a readonly attribute and
 >   2. that valid data types and values are being used.
 >
 > The config is only forwarded down to the southbound layer only if the config is
-> correct and the device is registered in the topocache (currently in the deviceStore)
+> correct and the device is currently in the deviceStore.
 
 ### Set on multiple targets in one request.
-`onos-config` gNMI NB supports etting multiple elements on multiple targets at the same time.   
+`onos-config` gNMI NB supports setting multiple elements on multiple targets at the same time.   
 An example of an attribute on two targets is:
 ```bash
 gnmi_cli -address onos-config:5150 -set \
