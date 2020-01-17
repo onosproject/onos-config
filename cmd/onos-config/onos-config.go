@@ -129,7 +129,7 @@ func main() {
 		log.Error("Cannot load network atomix store ", err)
 	}
 
-	deviceStateStore, err := state.NewStore(deviceChangesStore, deviceSnapshotStore)
+	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
 	if err != nil {
 		log.Errorf("Cannot load device store with address %s:", *topoEndpoint, err)
 	}

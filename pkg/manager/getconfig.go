@@ -16,18 +16,19 @@ package manager
 
 import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
-	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/utils"
 )
 
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest (Atomix based)
-func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Version, path string, layer int) ([]*devicechange.PathValue, error) {
+func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Version, path string, revision networkchange.Revision) ([]*devicechange.PathValue, error) {
 	log.Infof("Getting config for %s at %s", deviceID, path)
-	configValues, errExtract := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(deviceID, version), nil, m.DeviceChangesStore, layer)
-	if errExtract != nil {
-		return nil, errExtract
+	configValues, errGetTargetCfg := m.DeviceStateStore.Get(devicetype.NewVersionedID(deviceID, version), revision)
+	if errGetTargetCfg != nil {
+		log.Error("Error while extracting config", errGetTargetCfg)
+		return nil, errGetTargetCfg
 	}
 	if len(configValues) == 0 {
 		return configValues, nil

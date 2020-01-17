@@ -20,6 +20,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"io/ioutil"
 	"sync"
@@ -43,7 +44,8 @@ func (s Service) Register(r *grpc.Server) {
 
 // Server implements the grpc GNMI service
 type Server struct {
-	mu sync.RWMutex
+	mu        sync.RWMutex
+	lastWrite networkchange.Revision
 }
 
 // Capabilities implements gNMI Capabilities

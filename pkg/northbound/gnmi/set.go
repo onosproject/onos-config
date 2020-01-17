@@ -16,7 +16,6 @@ package gnmi
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/docker/docker/pkg/namesgenerator"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -26,9 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store"
-	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
-	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -56,8 +53,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	targetRemoves := make(mapTargetRemoves)
 
 	log.Info("gNMI Set Request", req)
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	//Update
 	for _, u := range req.GetUpdate() {
 		target := u.Path.GetTarget()
@@ -101,6 +96,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		targetRemovesTmp[k] = v
 	}
 
+	s.mu.RLock()
+	lastWrite := s.lastWrite
+	s.mu.RUnlock()
+
 	mgr := manager.GetManager()
 	deviceInfo := make(map[devicetype.ID]cache.Info)
 	//Checking for wrong configuration against the device models for updates
@@ -115,7 +114,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Version:  version,
 		}
 
-		err := validateChange(target, deviceType, version, updates, targetRemoves[target])
+		// TODO: Since the change has not been stored yet, we cannot guarantee the change will be validated against
+		//       the same state as will be pushed to the device. Changes must be validated after they're stored
+		//       to achieve this level of consistency.
+		err := validateChange(target, deviceType, version, updates, targetRemoves[target], lastWrite)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -138,7 +140,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Version:  version,
 		}
 
-		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes)
+		// TODO: Since the change has not been stored yet, we cannot guarantee the change will be validated against
+		//       the same state as will be pushed to the device. Changes must be validated after they're stored
+		//       to achieve this level of consistency.
+		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes, lastWrite)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -149,20 +154,41 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 	}
 
-	//Creating and setting the config on the atomix Store
-	errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
+	// Creating and setting the config on the atomix Store
+	change, errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
 
 	if errSet != nil {
 		log.Errorf("Error while setting config in atomix %s", errSet.Error())
 		return nil, status.Error(codes.Internal, errSet.Error())
 	}
 
-	// TODO: Not clear if there is a period of time where this misses out on events
-	//Obtaining response based on distributed store generated events
-	updateResultsAtomix, errListen := listenAndBuildResponse(mgr, networkchange.ID(netCfgChangeName))
-	if errListen != nil {
-		log.Errorf("Error while building atomix based response %s", errListen.Error())
-		return nil, status.Error(codes.Internal, errListen.Error())
+	// Store the highest known change index
+	s.mu.Lock()
+	if change.Revision > s.lastWrite {
+		s.lastWrite = change.Revision
+	}
+	s.mu.Unlock()
+
+	// Build the responses
+	updateResults := make([]*gnmi.UpdateResult, 0)
+	for _, deviceChange := range change.Changes {
+		deviceID := deviceChange.DeviceID
+		for _, valueUpdate := range deviceChange.Values {
+			var updateResult *gnmi.UpdateResult
+			var errBuild error
+			if valueUpdate.Removed {
+				updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
+					string(deviceID), gnmi.UpdateResult_DELETE)
+			} else {
+				updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
+					string(deviceID), gnmi.UpdateResult_UPDATE)
+			}
+			if errBuild != nil {
+				log.Error(errBuild)
+				continue
+			}
+			updateResults = append(updateResults, updateResult)
+		}
 	}
 
 	extensions := []*gnmi_ext.Extension{
@@ -177,7 +203,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	setResponse := &gnmi.SetResponse{
-		Response:  updateResultsAtomix,
+		Response:  updateResults,
 		Timestamp: time.Now().Unix(),
 		Extension: extensions,
 	}
@@ -319,44 +345,6 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 	return nil
 }
 
-func listenAndBuildResponse(mgr *manager.Manager, changeID networkchange.ID) ([]*gnmi.UpdateResult, error) {
-	networkChan := make(chan stream.Event)
-	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
-	if errWatch != nil {
-		return nil, fmt.Errorf("can't complete set operation on target due to %s", errWatch)
-	}
-	defer ctx.Close()
-	updateResults := make([]*gnmi.UpdateResult, 0)
-	for changeEvent := range networkChan {
-		change := changeEvent.Object.(*networkchange.NetworkChange)
-		log.Infof("Received notification for change ID %s, phase %s, state %s", change.ID,
-			change.Status.Phase, change.Status.State)
-		if len(change.Refs) > 0 {
-			for _, deviceChange := range change.Changes {
-				deviceID := deviceChange.DeviceID
-				for _, valueUpdate := range deviceChange.Values {
-					var updateResult *gnmi.UpdateResult
-					var errBuild error
-					if valueUpdate.Removed {
-						updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
-							string(deviceID), gnmi.UpdateResult_DELETE)
-					} else {
-						updateResult, errBuild = buildUpdateResult(valueUpdate.Path,
-							string(deviceID), gnmi.UpdateResult_UPDATE)
-					}
-					if errBuild != nil {
-						log.Error(errBuild)
-						continue
-					}
-					updateResults = append(updateResults, updateResult)
-				}
-			}
-			return updateResults, nil
-		}
-	}
-	return nil, errors.New("failed to propagate NetworkChange")
-}
-
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
 	path, errInPath := utils.ParseGNMIElements(utils.SplitPath(pathStr))
 	if errInPath != nil {
@@ -373,13 +361,13 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 }
 
 func validateChange(target string, deviceType devicetype.Type, version devicetype.Version,
-	targetUpdates devicechange.TypedValueMap, targetRemoves []string) error {
+	targetUpdates devicechange.TypedValueMap, targetRemoves []string, lastWrite networkchange.Revision) error {
 	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
 		return fmt.Errorf("no updates found in change on %s - invalid", target)
 	}
 	log.Infof("Validating change %s:%s:%s", target, deviceType, version)
 	errValidation := manager.GetManager().ValidateNetworkConfig(devicetype.ID(target), version, deviceType,
-		targetUpdates, targetRemoves)
+		targetUpdates, targetRemoves, lastWrite)
 	if errValidation != nil {
 		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
 			targetRemoves, target, errValidation)

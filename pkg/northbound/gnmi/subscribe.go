@@ -62,7 +62,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	}
 	resChan := make(chan result)
 	//Handles each subscribe request coming into the server, blocks until a new request or an error comes in
-	go listenOnChannel(stream, mgr, hash, resChan, subscribe, opStateChan)
+	go s.listenOnChannel(stream, mgr, hash, resChan, subscribe, opStateChan)
 
 	res := <-resChan
 
@@ -72,7 +72,7 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	return nil
 }
 
-func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, hash string,
+func (s *Server) listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, hash string,
 	resChan chan result, subscribe *gnmi.SubscriptionList, opStateChan chan events.OperationalStateEvent) {
 	for {
 		in, err := stream.Recv()
@@ -121,7 +121,7 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 			if err != nil {
 				resChan <- result{success: false, err: err}
 			} else {
-				go collector(mgr, version, stream, subscribe, resChan, mode)
+				go s.collector(mgr, version, stream, subscribe, resChan, mode)
 			}
 		} else {
 
@@ -141,7 +141,7 @@ func listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, has
 	}
 }
 
-func collector(mgr *manager.Manager, version devicetype.Version, stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result, mode gnmi.SubscriptionList_Mode) {
+func (s *Server) collector(mgr *manager.Manager, version devicetype.Version, stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result, mode gnmi.SubscriptionList_Mode) {
 	for _, sub := range request.Subscription {
 		_, version, err := mgr.CheckCacheForDevice(devicetype.ID(sub.GetPath().GetTarget()), devicetype.Type(""), version)
 		if err != nil {
@@ -149,7 +149,7 @@ func collector(mgr *manager.Manager, version devicetype.Version, stream gnmi.GNM
 			resChan <- result{success: false, err: err}
 		}
 		//We get the stated of the device, for each path we build an update and send it out.
-		update, err := getUpdate(version, request.Prefix, sub.Path)
+		update, err := s.getUpdate(version, request.Prefix, sub.Path)
 		if err != nil {
 			log.Error("Error while collecting data for subscribe once or poll ", err)
 			resChan <- result{success: false, err: err}

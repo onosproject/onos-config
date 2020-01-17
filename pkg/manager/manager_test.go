@@ -236,6 +236,17 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 
 	// Mock Device State Store
 	mockDeviceStateStore := mockstore.NewMockDeviceStateStore(ctrl)
+	mockDeviceStateStore.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(id devicetype.VersionedID, revision networkchange.Revision) ([]*devicechange.PathValue, error) {
+		if id == devicetype.NewVersionedID(device1, deviceVersion1) {
+			return []*devicechange.PathValue{
+				{
+					Path:  config1Value03.Path,
+					Value: config1Value03.Value,
+				},
+			}, nil
+		}
+		return nil, errors.New("no Configuration found")
+	}).AnyTimes()
 
 	// Mock Device Store
 	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
@@ -262,6 +273,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		DeviceStore:          mockDeviceStore,
 		NetworkChangesStore:  mockNetworkChangesStore,
 		DeviceChangesStore:   mockDeviceChangesStore,
+		DeviceStateStore:     mockDeviceStateStore,
 		NetworkSnapshotStore: mockNetworkSnapshotStore,
 		DeviceSnapshotStore:  mockDeviceSnapshotStore,
 		LeadershipStore:      mockLeadershipStore,
@@ -315,12 +327,12 @@ func Test_SetNetworkConfig(t *testing.T) {
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
 	// Verify the change
-	validationError := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
+	validationError := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
 	assert.NilError(t, validationError, "ValidateTargetConfig error")
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "Test_SetNetworkConfig"
-	err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, string(testNetworkChange))
+	_, err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "SetTargetConfig error")
 	testUpdate, _ := mgrTest.NetworkChangesStore.Get(testNetworkChange)
 	assert.Assert(t, testUpdate != nil)
@@ -355,7 +367,7 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 
 	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(Device5, updates, deletes)
 
-	err := mgrTest.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo, NetworkChangeAddDevice5)
+	_, err := mgrTest.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo, NetworkChangeAddDevice5)
 	assert.NilError(t, err, "SetTargetConfig error")
 	testUpdate, _ := mgrTest.NetworkChangesStore.Get(NetworkChangeAddDevice5)
 	assert.Assert(t, testUpdate != nil)
@@ -385,7 +397,7 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B159)
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
-	err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "Testing")
+	_, err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "Testing")
 
 	// TODO - similar configs are currently not detected
 	t.Skip()
@@ -402,7 +414,7 @@ func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B159)
 	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
-	err := mgrTest.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo, "Testing")
+	_, err := mgrTest.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo, "Testing")
 	assert.NilError(t, err, "Similar config not found")
 }
 
@@ -419,10 +431,10 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueFloat(valueLeaf2B314)
 	deletes := []string{test1Cont1ACont2ALeaf2C}
 	updatesForDevice2, deletesForDevice2, deviceInfo2 := makeDeviceChanges("Device2", updates, deletes)
-	err := mgrTest.SetNetworkConfig(updatesForDevice2, deletesForDevice2, deviceInfo2, "Device2")
+	_, err := mgrTest.SetNetworkConfig(updatesForDevice2, deletesForDevice2, deviceInfo2, "Device2")
 	assert.NilError(t, err, "SetTargetConfig error")
 	updatesForDevice3, deletesForDevice3, deviceInfo3 := makeDeviceChanges("Device2", updates, deletes)
-	err = mgrTest.SetNetworkConfig(updatesForDevice3, deletesForDevice3, deviceInfo3, "Device3")
+	_, err = mgrTest.SetNetworkConfig(updatesForDevice3, deletesForDevice3, deviceInfo3, "Device3")
 	assert.NilError(t, err, "SetTargetConfig error")
 	mocks.MockStores.DeviceStore.EXPECT().List(gomock.Any()).AnyTimes()
 	deviceIds := mgrTest.GetAllDeviceIds()
@@ -501,20 +513,20 @@ func TestManager_ComputeRollbackFailure(t *testing.T) {
 
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
-	err := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
+	err := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
 	assert.NilError(t, err, "ValidateTargetConfig error")
-	err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback")
+	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback")
 	assert.NilError(t, err, "Can't create change", err)
 
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B314)
 	updates[test1Cont1ACont2ALeaf2D] = devicechange.NewTypedValueFloat(valueLeaf2D123)
 	deletes = append(deletes, test1Cont1ACont2ALeaf2A)
 
-	err = mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
+	err = mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
 	assert.NilError(t, err, "ValidateTargetConfig error")
 
 	updatesForDevice1, deletesForDevice1, deviceInfo = makeDeviceChanges(device1, updates, deletes)
-	err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
+	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
 	assert.NilError(t, err, "Can't create change")
 
 	testingRollback, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback")
@@ -538,20 +550,20 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
-	err := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
+	err := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
 	assert.NilError(t, err, "ValidateTargetConfig error")
-	err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback")
+	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback")
 	assert.NilError(t, err, "Can't create change", err)
 
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B314)
 	updates[test1Cont1ACont2ALeaf2D] = devicechange.NewTypedValueFloat(valueLeaf2D123)
 	deletes = append(deletes, test1Cont1ACont2ALeaf2A)
 
-	err = mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
+	err = mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
 	assert.NilError(t, err, "ValidateTargetConfig error")
 
 	updatesForDevice1, deletesForDevice1, deviceInfo = makeDeviceChanges(device1, updates, deletes)
-	err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
+	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
 	assert.NilError(t, err, "Can't create change")
 
 	testingRollback2, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback2")

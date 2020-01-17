@@ -26,6 +26,7 @@ func (m *Manager) GetTargetState(target string, path string) []*devicechange.Pat
 	configValues := make([]*devicechange.PathValue, 0)
 	//First check the cache, if it's not empty for this path we read that and return,
 	pathRegexp := utils.MatchWildcardRegexp(path)
+	m.OperationalStateCacheLock.RLock()
 	for pathCache, value := range m.OperationalStateCache[topodevice.ID(target)] {
 		if pathRegexp.MatchString(pathCache) {
 			configValues = append(configValues, &devicechange.PathValue{
@@ -34,6 +35,7 @@ func (m *Manager) GetTargetState(target string, path string) []*devicechange.Pat
 			})
 		}
 	}
+	m.OperationalStateCacheLock.RUnlock()
 	if len(configValues) == 0 {
 		log.Warnf("Path %s is not in the operational state cache of device %s", path, target)
 	}

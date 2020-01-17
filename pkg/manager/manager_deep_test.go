@@ -124,7 +124,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	assert.NilError(t, err)
 	deviceSnapshotStore, err := devicesnapstore.NewLocalStore()
 	assert.NilError(t, err)
-	deviceStateStore, err := state.NewStore(deviceChangesStore, deviceSnapshotStore)
+	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
 	assert.NilError(t, err)
 
 	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
@@ -285,12 +285,12 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
 	// Verify the change
-	validationError := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
+	validationError := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
 	assert.NilError(t, validationError, "ValidateTargetConfig error")
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "Test_SetNetworkConfig"
-	err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, string(testNetworkChange))
+	_, err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "SetTargetConfig error")
 
 	nwChangeUpdates := make(chan stream.Event)
@@ -356,7 +356,7 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "ConfigOnly_SetNetworkConfig"
-	err := mgrTest.SetNetworkConfig(updatesForConfigOnlyDevice, deletesForConfigOnlyDevice, deviceInfo, string(testNetworkChange))
+	_, err := mgrTest.SetNetworkConfig(updatesForConfigOnlyDevice, deletesForConfigOnlyDevice, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "ConfigOnly_SetNetworkConfig error")
 
 	nwChangeUpdates := make(chan stream.Event)
@@ -456,7 +456,7 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "Disconnected_SetNetworkConfig"
-	err := mgrTest.SetNetworkConfig(updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo, string(testNetworkChange))
+	_, err := mgrTest.SetNetworkConfig(updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "Disconnected_SetNetworkConfig error")
 
 	nwChangeUpdates := make(chan stream.Event)
