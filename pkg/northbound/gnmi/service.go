@@ -45,7 +45,7 @@ func (s Service) Register(r *grpc.Server) {
 // Server implements the grpc GNMI service
 type Server struct {
 	mu        sync.RWMutex
-	lastWrite networkchange.Index
+	lastWrite networkchange.Revision
 }
 
 // Capabilities implements gNMI Capabilities

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/docker/docker/pkg/namesgenerator"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -95,6 +96,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		targetRemovesTmp[k] = v
 	}
 
+	s.mu.RLock()
+	lastWrite := s.lastWrite
+	s.mu.RUnlock()
+
 	mgr := manager.GetManager()
 	deviceInfo := make(map[devicetype.ID]cache.Info)
 	//Checking for wrong configuration against the device models for updates
@@ -109,7 +114,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Version:  version,
 		}
 
-		err := validateChange(target, deviceType, version, updates, targetRemoves[target])
+		// TODO: Since the change has not been stored yet, we cannot guarantee the change will be validated against
+		//       the same state as will be pushed to the device. Changes must be validated after they're stored
+		//       to achieve this level of consistency.
+		err := validateChange(target, deviceType, version, updates, targetRemoves[target], lastWrite)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -132,7 +140,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Version:  version,
 		}
 
-		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes)
+		// TODO: Since the change has not been stored yet, we cannot guarantee the change will be validated against
+		//       the same state as will be pushed to the device. Changes must be validated after they're stored
+		//       to achieve this level of consistency.
+		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes, lastWrite)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -153,8 +164,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	// Store the highest known change index
 	s.mu.Lock()
-	if change.Index > s.lastWrite {
-		s.lastWrite = change.Index
+	if change.Revision > s.lastWrite {
+		s.lastWrite = change.Revision
 	}
 	s.mu.Unlock()
 
@@ -350,13 +361,13 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 }
 
 func validateChange(target string, deviceType devicetype.Type, version devicetype.Version,
-	targetUpdates devicechange.TypedValueMap, targetRemoves []string) error {
+	targetUpdates devicechange.TypedValueMap, targetRemoves []string, lastWrite networkchange.Revision) error {
 	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
 		return fmt.Errorf("no updates found in change on %s - invalid", target)
 	}
 	log.Infof("Validating change %s:%s:%s", target, deviceType, version)
 	errValidation := manager.GetManager().ValidateNetworkConfig(devicetype.ID(target), version, deviceType,
-		targetUpdates, targetRemoves)
+		targetUpdates, targetRemoves, lastWrite)
 	if errValidation != nil {
 		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
 			targetRemoves, target, errValidation)

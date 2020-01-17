@@ -119,10 +119,11 @@ func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *
 	}
 
 	s.mu.RLock()
-	index := s.lastWrite
+	revision := s.lastWrite
 	s.mu.RUnlock()
 
-	configValues, errGetTargetCfg := manager.GetManager().DeviceStateStore.Get(devicetype.NewVersionedID(devicetype.ID(target), version), devicechange.Index(index))
+	configValues, errGetTargetCfg := manager.GetManager().GetTargetConfig(
+		devicetype.ID(target), version, pathAsString, revision)
 	if errGetTargetCfg != nil {
 		log.Error("Error while extracting config", errGetTargetCfg)
 		return nil, errGetTargetCfg

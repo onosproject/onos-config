@@ -16,77 +16,27 @@ package state
 
 import (
 	"errors"
+	"github.com/cenkalti/backoff"
 	changetype "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
-	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapshotstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
 
 // NewStore returns a new store backed by the device change store
-func NewStore(deviceChangeStore devicechangestore.Store, deviceSnapshotStore devicesnapshotstore.Store) (Store, error) {
-	return &deviceChangeStoreStateStore{
-		changeStore:   deviceChangeStore,
+func NewStore(networkChangeStore networkchangestore.Store, deviceSnapshotStore devicesnapshotstore.Store) (Store, error) {
+	store := &deviceChangeStoreStateStore{
+		changeStore:   networkChangeStore,
 		snapshotStore: deviceSnapshotStore,
 		devices:       make(map[devicetype.VersionedID]*deviceChangeStateStore),
-	}, nil
-}
-
-// Store is a device state store
-type Store interface {
-	// Get gets the state of the given device
-	Get(id devicetype.VersionedID, index devicechange.Index) ([]*devicechange.PathValue, error)
-}
-
-// deviceChangeStoreStateStore is a device state store that listens to the device change store
-type deviceChangeStoreStateStore struct {
-	changeStore   devicechangestore.Store
-	snapshotStore devicesnapshotstore.Store
-	devices       map[devicetype.VersionedID]*deviceChangeStateStore
-	mu            sync.RWMutex
-}
-
-func (s *deviceChangeStoreStateStore) Get(id devicetype.VersionedID, index devicechange.Index) ([]*devicechange.PathValue, error) {
-	s.mu.RLock()
-	device, ok := s.devices[id]
-	s.mu.RUnlock()
-	if ok {
-		return device.get(index)
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	device, ok = s.devices[id]
-	if ok {
-		return device.get(index)
-	}
-
-	device, err := newDeviceStore(id, s.changeStore, s.snapshotStore, func() {
-		s.mu.Lock()
-		delete(s.devices, id)
-		s.mu.Unlock()
-	})
-	if err != nil {
-		return nil, err
-	}
-	s.devices[id] = device
-	return device.get(index)
-}
-
-// newDeviceStore returns the state store for the given device
-func newDeviceStore(deviceID devicetype.VersionedID, deviceChangeStore devicechangestore.Store, deviceSnapshotStore devicesnapshotstore.Store, closeFunc func()) (*deviceChangeStateStore, error) {
-	store := &deviceChangeStateStore{
-		deviceID:      deviceID,
-		changeStore:   deviceChangeStore,
-		snapshotStore: deviceSnapshotStore,
-		closeFunc:     closeFunc,
-		state:         make(map[string]*devicechange.TypedValue),
-		waiters:       make(map[devicechange.Index]chan struct{}),
+		waiters:       make(map[networkchange.Revision]chan struct{}),
 	}
 	if err := store.listen(); err != nil {
 		return nil, err
@@ -94,115 +44,157 @@ func newDeviceStore(deviceID devicetype.VersionedID, deviceChangeStore devicecha
 	return store, nil
 }
 
-// deviceChangeStateStore is a device state store that listens to changes for a specific device
-type deviceChangeStateStore struct {
-	deviceID      devicetype.VersionedID
-	changeStore   devicechangestore.Store
+// Store is a device state store
+type Store interface {
+	// Get gets the state of the given device
+	Get(id devicetype.VersionedID, revision networkchange.Revision) ([]*devicechange.PathValue, error)
+}
+
+// deviceChangeStoreStateStore is a device state store that listens to the device change store
+type deviceChangeStoreStateStore struct {
+	changeStore   networkchangestore.Store
 	snapshotStore devicesnapshotstore.Store
-	closeFunc     func()
-	state         map[string]*devicechange.TypedValue
-	waiters       map[devicechange.Index]chan struct{}
-	index         devicechange.Index
+	devices       map[devicetype.VersionedID]*deviceChangeStateStore
+	waiters       map[networkchange.Revision]chan struct{}
+	revision      networkchange.Revision
 	mu            sync.RWMutex
 }
 
-// listen starts listening for device changes
-func (s *deviceChangeStateStore) listen() error {
+func (s *deviceChangeStoreStateStore) listen() error {
+	return backoff.Retry(s.watch, backoff.NewConstantBackOff(1*time.Second))
+}
+
+func (s *deviceChangeStoreStateStore) watch() error {
 	ch := make(chan stream.Event)
-	if _, err := s.changeStore.Watch(s.deviceID, ch); err != nil {
+	watchCtx, err := s.changeStore.Watch(ch, networkchangestore.WithReplay())
+	if err != nil {
 		return err
 	}
 	go func() {
-		for event := range ch {
-			s.mu.Lock()
-			change := event.Object.(*devicechange.DeviceChange)
-			switch change.Status.Phase {
-			case changetype.Phase_CHANGE:
-				if err := s.updateChange(change); err != nil {
-					s.closeFunc()
-					return
-				}
-			case changetype.Phase_ROLLBACK:
-				if err := s.updateRollback(change); err != nil {
-					s.closeFunc()
-					return
-				}
-			}
-			s.index = change.Index
-			waiter, ok := s.waiters[change.Index]
-			s.mu.Unlock()
-			if ok {
-				close(waiter)
-			}
-		}
+		defer watchCtx.Close()
+		s.processCh(ch)
 	}()
 	return nil
 }
 
-func (s *deviceChangeStateStore) updateChange(change *devicechange.DeviceChange) error {
-	for _, changeValue := range change.Change.Values {
-		if changeValue.Removed {
-			delete(s.state, changeValue.Path)
-		} else {
-			s.state[changeValue.Path] = changeValue.Value
+func (s *deviceChangeStoreStateStore) processCh(ch chan stream.Event) {
+	for event := range ch {
+		s.mu.Lock()
+		err := s.processChange(event.Object.(*networkchange.NetworkChange))
+		s.mu.Unlock()
+		if err != nil {
+			go s.listen()
+			return
 		}
 	}
-	return nil
 }
 
-func (s *deviceChangeStateStore) updateRollback(change *devicechange.DeviceChange) error {
-	if change.Status.State != changetype.State_COMPLETE {
+func (s *deviceChangeStoreStateStore) processChange(networkChange *networkchange.NetworkChange) error {
+	if networkChange.Revision <= s.revision {
 		return nil
 	}
 
-	snapshot, err := s.snapshotStore.Load(s.deviceID)
-	if err != nil {
-		return err
-	}
-
-	changes := make(map[string]*devicechange.TypedValue)
-	for _, snapshotChange := range snapshot.Values {
-		changes[snapshotChange.Path] = snapshotChange.Value
-	}
-
-	ch := make(chan *devicechange.DeviceChange)
-	_, err = s.changeStore.List(s.deviceID, ch)
-	if err != nil {
-		return err
-	}
-
-	for prevChange := range ch {
-		if prevChange.Index >= change.Index {
-			break
+	for _, deviceChange := range networkChange.Changes {
+		state, ok := s.devices[deviceChange.GetVersionedDeviceID()]
+		if !ok {
+			state = &deviceChangeStateStore{
+				deviceID: deviceChange.GetVersionedDeviceID(),
+				state:    make(map[string]*devicechange.TypedValue),
+			}
+			snapshot, err := s.snapshotStore.Load(deviceChange.GetVersionedDeviceID())
+			if err != nil {
+				continue
+			} else if snapshot != nil {
+				for _, value := range snapshot.Values {
+					state.update(value)
+				}
+			}
+			s.devices[deviceChange.GetVersionedDeviceID()] = state
 		}
-		for _, value := range prevChange.Change.Values {
-			changes[value.Path] = value.Value
+
+		switch networkChange.Status.Phase {
+		case changetype.Phase_CHANGE:
+			for _, value := range deviceChange.Values {
+				if value.Removed {
+					state.remove(value.Path)
+				} else {
+					state.update(&devicechange.PathValue{
+						Path:  value.Path,
+						Value: value.Value,
+					})
+				}
+			}
+		case changetype.Phase_ROLLBACK:
+			state := &deviceChangeStateStore{
+				deviceID: deviceChange.GetVersionedDeviceID(),
+				state:    make(map[string]*devicechange.TypedValue),
+			}
+			listCh := make(chan *networkchange.NetworkChange)
+			listCtx, err := s.changeStore.List(listCh)
+			if err != nil {
+				listCtx.Close()
+				return err
+			}
+			states := make(map[devicetype.VersionedID]*deviceChangeStateStore)
+			for netChange := range listCh {
+				if netChange.Index > networkChange.Index {
+					listCtx.Close()
+					break
+				}
+				if netChange.Status.Phase == changetype.Phase_CHANGE {
+					for _, devChange := range netChange.Changes {
+						state, ok := s.devices[deviceChange.GetVersionedDeviceID()]
+						if !ok {
+							state = &deviceChangeStateStore{
+								deviceID: deviceChange.GetVersionedDeviceID(),
+								state:    make(map[string]*devicechange.TypedValue),
+							}
+							snapshot, err := s.snapshotStore.Load(deviceChange.GetVersionedDeviceID())
+							if err != nil {
+								listCtx.Close()
+								return err
+							} else if snapshot != nil {
+								for _, value := range snapshot.Values {
+									state.update(value)
+								}
+							}
+							states[deviceChange.GetVersionedDeviceID()] = state
+						}
+						for _, value := range devChange.Values {
+							if value.Removed {
+								state.remove(value.Path)
+							} else {
+								state.update(&devicechange.PathValue{
+									Path:  value.Path,
+									Value: value.Value,
+								})
+							}
+						}
+					}
+				}
+			}
+			s.devices[deviceChange.GetVersionedDeviceID()] = state
 		}
 	}
-
-	for path, value := range changes {
-		s.state[path] = value
-	}
-
-	for _, changeValue := range change.Change.Values {
-		if _, ok := changes[changeValue.Path]; !ok {
-			delete(s.state, changeValue.Path)
-		}
+	s.revision = networkChange.Revision
+	waiter, ok := s.waiters[networkChange.Revision]
+	if ok {
+		delete(s.waiters, networkChange.Revision)
+		close(waiter)
 	}
 	return nil
 }
 
-// get gets the state of the device up to the given index
-func (s *deviceChangeStateStore) get(index devicechange.Index) ([]*devicechange.PathValue, error) {
+func (s *deviceChangeStoreStateStore) Get(id devicetype.VersionedID, revision networkchange.Revision) ([]*devicechange.PathValue, error) {
 	s.mu.RLock()
-	if s.index < index {
+	if s.revision < revision {
 		s.mu.RUnlock()
 		s.mu.Lock()
-		if s.index < index {
-			waiter, ok := s.waiters[index]
+		if s.revision < revision {
+			waiter, ok := s.waiters[revision]
 			if !ok {
 				waiter = make(chan struct{})
-				s.waiters[index] = waiter
+				s.waiters[revision] = waiter
 			}
 			s.mu.Unlock()
 			select {
@@ -219,6 +211,35 @@ func (s *deviceChangeStateStore) get(index devicechange.Index) ([]*devicechange.
 		defer s.mu.RUnlock()
 	}
 
+	device, ok := s.devices[id]
+	if !ok {
+		return []*devicechange.PathValue{}, nil
+	}
+	return device.get()
+}
+
+// deviceChangeStateStore is a device state store that listens to changes for a specific device
+type deviceChangeStateStore struct {
+	deviceID devicetype.VersionedID
+	state    map[string]*devicechange.TypedValue
+	changes  networkchangestore.Store
+}
+
+func (s *deviceChangeStateStore) update(value *devicechange.PathValue) {
+	s.state[value.Path] = value.Value
+}
+
+func (s *deviceChangeStateStore) remove(rootPath string) {
+	delete(s.state, rootPath)
+	for path := range s.state {
+		if strings.Contains(path, rootPath) {
+			delete(s.state, path)
+		}
+	}
+}
+
+// get gets the state of the device up to the given revision
+func (s *deviceChangeStateStore) get() ([]*devicechange.PathValue, error) {
 	state := make([]*devicechange.PathValue, 0, len(s.state))
 	for path, value := range s.state {
 		state = append(state, &devicechange.PathValue{

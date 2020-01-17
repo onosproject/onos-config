@@ -20,9 +20,9 @@ import (
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store"
-	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"sort"
 )
 
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
@@ -31,7 +31,7 @@ const SetConfigAlreadyApplied = "Already applied:"
 // ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target (Atomix Based)
 func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
-	deviceType devicetype.Type, updates devicechange.TypedValueMap, deletes []string) error {
+	deviceType devicetype.Type, updates devicechange.TypedValueMap, deletes []string, lastWrite networkchange.Revision) error {
 
 	chg, err := m.ComputeDeviceChange(deviceName, version, deviceType, updates, deletes, "Generated for validation")
 	if err != nil {
@@ -47,10 +47,34 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 		return nil
 	}
 
-	configValues, err := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(deviceName, version), chg, m.DeviceChangesStore, 0)
+	configValues, err := m.DeviceStateStore.Get(devicetype.NewVersionedID(deviceName, version), lastWrite)
 	if err != nil {
 		return err
 	}
+
+	pathValues := make(map[string]*devicechange.TypedValue)
+	for _, configValue := range configValues {
+		pathValues[configValue.Path] = configValue.Value
+	}
+	for _, changeValue := range chg.Values {
+		if changeValue.Removed {
+			delete(pathValues, changeValue.Path)
+		} else {
+			pathValues[changeValue.Path] = changeValue.Value
+		}
+	}
+
+	configValues = make([]*devicechange.PathValue, 0, len(pathValues))
+	for path, value := range pathValues {
+		configValues = append(configValues, &devicechange.PathValue{
+			Path:  path,
+			Value: value,
+		})
+	}
+	sort.Slice(configValues, func(i, j int) bool {
+		return configValues[i].Path < configValues[j].Path
+	})
+
 	jsonTree, err := store.BuildTree(configValues, true)
 	if err != nil {
 		log.Error("Error building JSON tree from Config Values ", err, jsonTree)
