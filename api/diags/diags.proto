@@ -66,6 +66,9 @@ message ListNetworkChangeResponse {
 
     // change is the network change on which the event occurred
     onos.config.change.network.NetworkChange change = 1;
+
+    // type is a qualification of the type of change being made
+    Type type = 2;
 }
 
 
@@ -97,6 +100,9 @@ message ListDeviceChangeResponse {
 
     // change is the device change on which the event occurred
     onos.config.change.device.DeviceChange change = 1;
+
+    // type is a qualification of the type of change being made
+    Type type = 2;
 }
 
 service ChangeService {
@@ -116,4 +122,19 @@ service OpStateDiags {
     // GetOpState returns a stream of submitted OperationalStateCache aimed at individual devices.
     // If subscribe is true keep on streaming after the initial set are finished
     rpc GetOpState (OpStateRequest) returns (stream OpStateResponse);
+}
+
+// Change (Network or Device) event type
+enum Type {
+    // NONE indicates this response does not represent a modification of the Change
+    NONE = 0;
+
+    // ADDED is an event which occurs when a Change is added to the topology
+    ADDED = 1;
+
+    // UPDATED is an event which occurs when a Change is updated
+    UPDATED = 2;
+
+    // REMOVED is an event which occurs when a Change is removed from the configuration
+    REMOVED = 3;
 }

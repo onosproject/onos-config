@@ -152,6 +152,7 @@ func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream dia
 				if matcher.MatchString(string(change.ID)) {
 					msg := &diags.ListNetworkChangeResponse{
 						Change: change,
+						Type:   streamTypeToResponseType(event.Type),
 					}
 					log.Infof("Sending matching change %v", change.ID)
 					err := stream.Send(msg)
@@ -189,6 +190,7 @@ func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream dia
 				if matcher.MatchString(string(change.ID)) {
 					msg := &diags.ListNetworkChangeResponse{
 						Change: change,
+						Type:   diags.Type_NONE,
 					}
 					log.Infof("Sending matching change %v", change.ID)
 					err := stream.Send(msg)
@@ -245,9 +247,9 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 				}
 
 				change := event.Object.(*devicechange.DeviceChange)
-
 				msg := &diags.ListDeviceChangeResponse{
 					Change: change,
+					Type:   streamTypeToResponseType(event.Type),
 				}
 				log.Infof("Sending matching change %v", change.ID)
 				err := stream.Send(msg)
@@ -283,6 +285,7 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 
 				msg := &diags.ListDeviceChangeResponse{
 					Change: change,
+					Type:   diags.Type_NONE,
 				}
 				log.Infof("Sending matching change %v", change.ID)
 				err := stream.Send(msg)
@@ -301,4 +304,17 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 	}
 	log.Infof("Closing ListDeviceChanges for %s", r.DeviceID)
 	return nil
+}
+
+func streamTypeToResponseType(eventType streams.EventType) diags.Type {
+	switch eventType {
+	case streams.Created:
+		return diags.Type_ADDED
+	case streams.Updated:
+		return diags.Type_UPDATED
+	case streams.Deleted:
+		return diags.Type_REMOVED
+	default:
+		return diags.Type_NONE
+	}
 }

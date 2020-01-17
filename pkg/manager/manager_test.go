@@ -179,7 +179,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 					lastChange.Status.State = changetypes.State_COMPLETE
 				}
 				event := stream.Event{
-					Type:   "",
+					Type:   stream.None,
 					Object: lastChange,
 				}
 				c <- event

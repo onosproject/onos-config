@@ -88,7 +88,7 @@ func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChang
 					change1.Status.State = changetypes.State_COMPLETE
 				}
 				event := stream.Event{
-					Type:   "",
+					Type:   stream.None,
 					Object: &change1,
 				}
 				c <- event
@@ -102,7 +102,7 @@ func SetUpMapBackedNetworkChangesStore(mockNetworkChangesStore *MockNetworkChang
 				}
 				change2.Refs = refs
 				event = stream.Event{
-					Type:   "",
+					Type:   stream.None,
 					Object: &change2,
 				}
 				c <- event

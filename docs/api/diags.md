@@ -11,6 +11,7 @@
     - [OpStateRequest](#onos.config.diags.OpStateRequest)
     - [OpStateResponse](#onos.config.diags.OpStateResponse)
   
+    - [Type](#onos.config.diags.Type)
   
   
     - [ChangeService](#onos.config.diags.ChangeService)
@@ -60,6 +61,7 @@ ListDeviceChangeResponse carries a single network change event
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | change | [onos.config.change.device.DeviceChange](#onos.config.change.device.DeviceChange) |  | change is the device change on which the event occurred |
+| type | [Type](#onos.config.diags.Type) |  | type is a qualification of the type of change being made |
 
 
 
@@ -97,6 +99,7 @@ ListNetworkChangeResponse carries a single network change event
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | change | [onos.config.change.network.NetworkChange](#onos.config.change.network.NetworkChange) |  | change is the network change on which the event occurred |
+| type | [Type](#onos.config.diags.Type) |  | type is a qualification of the type of change being made |
 
 
 
@@ -135,6 +138,20 @@ OpStateRequest is a message for specifying GetOpState query parameters.
 
 
  
+
+
+<a name="onos.config.diags.Type"></a>
+
+### Type
+Change (Network or Device) event type
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NONE | 0 | NONE indicates this response does not represent a modification of the Change |
+| ADDED | 1 | ADDED is an event which occurs when a Change is added to the topology |
+| UPDATED | 2 | UPDATED is an event which occurs when a Change is updated |
+| REMOVED | 3 | REMOVED is an event which occurs when a Change is removed from the configuration |
+
 
  
 
