@@ -298,6 +298,8 @@ github.com/openconfig/goyang v0.0.0-20190924211109-064f9690516f h1:BaekRUaWpfaRB
 github.com/openconfig/goyang v0.0.0-20190924211109-064f9690516f/go.mod h1:dhXaV0JgHJzdrHi2l+w0fZrwArtXL7jEFoiqLEdmkvU=
 github.com/openconfig/ygot v0.6.0 h1:kJJFPBrczC6TDnz/HMlFTJEdW2CuyUftV13XveIukg0=
 github.com/openconfig/ygot v0.6.0/go.mod h1:o30svNf7O0xK+R35tlx95odkDmZWS9JyWWQSmIhqwAs=
+github.com/openconfig/ygot v0.6.1-0.20200103195725-e3c44fa43926 h1:58WpM0gs8tt1CbZorr4zyDsbjjbQ2Ua+Yr12ufyGHlc=
+github.com/openconfig/ygot v0.6.1-0.20200103195725-e3c44fa43926/go.mod h1:o30svNf7O0xK+R35tlx95odkDmZWS9JyWWQSmIhqwAs=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
 github.com/pelletier/go-toml v1.2.0 h1:T5zMGML61Wp+FlcbWjRDT7yAxhJNAiPPLOFECq181zc=

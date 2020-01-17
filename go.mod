@@ -18,7 +18,7 @@ require (
 	github.com/onosproject/onos-topo v0.0.0-20191113170912-88eeee89f4eb
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c
 	github.com/openconfig/goyang v0.0.0-20190924211109-064f9690516f
-	github.com/openconfig/ygot v0.6.0
+	github.com/openconfig/ygot v0.6.1-0.20200103195725-e3c44fa43926
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.5.0
