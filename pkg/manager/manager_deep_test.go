@@ -124,7 +124,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	assert.NilError(t, err)
 	deviceSnapshotStore, err := devicesnapstore.NewLocalStore()
 	assert.NilError(t, err)
-	deviceStateStore, err := state.NewStore(deviceChangesStore, deviceSnapshotStore)
+	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
 	assert.NilError(t, err)
 
 	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
@@ -285,7 +285,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
 	// Verify the change
-	validationError := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes)
+	validationError := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
 	assert.NilError(t, validationError, "ValidateTargetConfig error")
 
 	// Set the new change

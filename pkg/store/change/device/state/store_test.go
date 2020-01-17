@@ -16,8 +16,9 @@ package state
 
 import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/api/types/device"
-	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -25,7 +26,7 @@ import (
 
 // TestDeviceStateStore tests that device changes are propagated to the device state store
 func TestDeviceStateStore(t *testing.T) {
-	changeStore, err := devicechangestore.NewLocalStore()
+	changeStore, err := networkchangestore.NewLocalStore()
 	assert.NoError(t, err)
 	snapshotStore, err := devicesnapstore.NewLocalStore()
 	assert.NoError(t, err)
@@ -38,54 +39,50 @@ func TestDeviceStateStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, state, 0)
 
-	err = changeStore.Create(&devicechange.DeviceChange{
-		Index: 1,
-		NetworkChange: devicechange.NetworkChangeRef{
-			ID:    "change-1",
-			Index: 1,
-		},
-		Change: &devicechange.Change{
-			DeviceID:      "test",
-			DeviceVersion: "1.0.0",
-			DeviceType:    "Stratum",
-			Values: []*devicechange.ChangeValue{
-				{
-					Path: "foo",
-					Value: &devicechange.TypedValue{
-						Bytes: []byte("Hello world!"),
-						Type:  devicechange.ValueType_STRING,
+	change := &networkchange.NetworkChange{
+		Changes: []*devicechange.Change{
+			{
+				DeviceID:      "test",
+				DeviceVersion: "1.0.0",
+				DeviceType:    "Stratum",
+				Values: []*devicechange.ChangeValue{
+					{
+						Path: "foo",
+						Value: &devicechange.TypedValue{
+							Bytes: []byte("Hello world!"),
+							Type:  devicechange.ValueType_STRING,
+						},
 					},
 				},
 			},
 		},
-	})
+	}
+	err = changeStore.Create(change)
 	assert.NoError(t, err)
 
-	state, err = store.Get(deviceID, 1)
+	state, err = store.Get(deviceID, change.Revision)
 	assert.NoError(t, err)
 	assert.Len(t, state, 1)
 
-	err = changeStore.Create(&devicechange.DeviceChange{
-		Index: 2,
-		NetworkChange: devicechange.NetworkChangeRef{
-			ID:    "change-2",
-			Index: 2,
-		},
-		Change: &devicechange.Change{
-			DeviceID:      "test",
-			DeviceVersion: "1.0.0",
-			DeviceType:    "Stratum",
-			Values: []*devicechange.ChangeValue{
-				{
-					Path:    "foo",
-					Removed: true,
+	change = &networkchange.NetworkChange{
+		Changes: []*devicechange.Change{
+			{
+				DeviceID:      "test",
+				DeviceVersion: "1.0.0",
+				DeviceType:    "Stratum",
+				Values: []*devicechange.ChangeValue{
+					{
+						Path:    "foo",
+						Removed: true,
+					},
 				},
 			},
 		},
-	})
+	}
+	err = changeStore.Create(change)
 	assert.NoError(t, err)
 
-	state, err = store.Get(deviceID, 2)
+	state, err = store.Get(deviceID, change.Revision)
 	assert.NoError(t, err)
 	assert.Len(t, state, 0)
 }

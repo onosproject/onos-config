@@ -83,7 +83,9 @@ func (s *deviceChangeStoreStateStore) processCh(ch chan stream.Event) {
 		err := s.processChange(event.Object.(*networkchange.NetworkChange))
 		s.mu.Unlock()
 		if err != nil {
-			go s.listen()
+			go func() {
+				_ = s.listen()
+			}()
 			return
 		}
 	}
@@ -222,7 +224,6 @@ func (s *deviceChangeStoreStateStore) Get(id devicetype.VersionedID, revision ne
 type deviceChangeStateStore struct {
 	deviceID devicetype.VersionedID
 	state    map[string]*devicechange.TypedValue
-	changes  networkchangestore.Store
 }
 
 func (s *deviceChangeStateStore) update(value *devicechange.PathValue) {
