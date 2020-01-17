@@ -8,11 +8,13 @@ require (
 	github.com/atomix/atomix-go-node v0.0.0-20200114212450-178a2dc70336
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1
+	github.com/go-playground/overalls v0.0.0-20191218162659-7df9f728c018 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0 // indirect
+	github.com/mattn/goveralls v0.0.5 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onosproject/onos-test v0.0.0-20200114235320-ec5e1c74a5d2
 	github.com/onosproject/onos-topo v0.0.0-20191113170912-88eeee89f4eb
