@@ -56,6 +56,8 @@ type deviceChangeStoreStateStore struct {
 	snapshotStore devicesnapshotstore.Store
 	devices       map[devicetype.VersionedID]*deviceChangeStateStore
 	waiters       map[networkchange.Revision]chan struct{}
+	changeIndex   networkchange.Index
+	rollbackIndex networkchange.Index
 	revision      networkchange.Revision
 	mu            sync.RWMutex
 }
@@ -116,6 +118,10 @@ func (s *deviceChangeStoreStateStore) processChange(networkChange *networkchange
 
 		switch networkChange.Status.Phase {
 		case changetype.Phase_CHANGE:
+			if s.changeIndex >= networkChange.Index {
+				continue
+			}
+
 			for _, value := range deviceChange.Values {
 				if value.Removed {
 					state.remove(value.Path)
@@ -126,11 +132,12 @@ func (s *deviceChangeStoreStateStore) processChange(networkChange *networkchange
 					})
 				}
 			}
+			s.changeIndex = networkChange.Index
 		case changetype.Phase_ROLLBACK:
-			state := &deviceChangeStateStore{
-				deviceID: deviceChange.GetVersionedDeviceID(),
-				state:    make(map[string]*devicechange.TypedValue),
+			if s.rollbackIndex >= networkChange.Index {
+				continue
 			}
+
 			listCh := make(chan *networkchange.NetworkChange)
 			listCtx, err := s.changeStore.List(listCh)
 			if err != nil {
@@ -175,7 +182,10 @@ func (s *deviceChangeStoreStateStore) processChange(networkChange *networkchange
 					}
 				}
 			}
-			s.devices[deviceChange.GetVersionedDeviceID()] = state
+			for device, state := range states {
+				s.devices[device] = state
+			}
+			s.rollbackIndex = networkChange.Index
 		}
 	}
 	s.revision = networkChange.Revision
