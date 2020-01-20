@@ -7,8 +7,8 @@ ONOS_CONFIG_VERSION := latest
 ONOS_CONFIG_DEBUG_VERSION := debug
 ONOS_BUILD_VERSION := stable
 
-MODELPLUGINS = build/_output/testdevice.so.1.0.0 build/_output/testdevice.so.2.0.0 build/_output/devicesim.so.1.0.0 build/_output/stratum.so.1.0.0
-MODELPLUGINSDEBUG = build/_output/testdevice-debug.so.1.0.0 build/_output/testdevice-debug.so.2.0.0 build/_output/devicesim-debug.so.1.0.0 build/_output/stratum-debug.so.1.0.0
+MODELPLUGINS = build/_output/testdevice.so.1.0.0 build/_output/testdevice.so.2.0.0 build/_output/devicesim.so.1.0.0 build/_output/stratum.so.1.0.0 build/_output/junos.so.19.3R1.8
+MODELPLUGINSDEBUG = build/_output/testdevice-debug.so.1.0.0 build/_output/testdevice-debug.so.2.0.0 build/_output/devicesim-debug.so.1.0.0 build/_output/stratum-debug.so.1.0.0 build/_output/junos-debug.so.19.3R1.8
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
@@ -47,6 +47,12 @@ build/_output/stratum.so.1.0.0: modelplugin/Stratum-1.0.0/modelmain.go modelplug
 
 build/_output/stratum-debug.so.1.0.0: modelplugin/Stratum-1.0.0/modelmain.go modelplugin/Stratum-1.0.0/stratum_1_0_0/generated.go
 	CGO_ENABLED=1 go build -o build/_output/debug/stratum-debug.so.1.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Stratum-1.0.0
+
+build/_output/junos.so.19.3R1.8: modelplugin/Junos-19.3R1.8/modelmain.go modelplugin/Junos-19.3R1.8/junos_19_3R1_8/generated.go
+	CGO_ENABLED=1 go build -o build/_output/junos.so.19.3R1.8 -buildmode=plugin -tags=modelplugin ./modelplugin/Junos-19.3R1.8
+
+build/_output/junos-debug.so.19.3R1.8: modelplugin/junos-19.3R1.8/modelmain.go modelplugin/junos-19.3R1.8/junos_19_3R1_8/generated.go
+	CGO_ENABLED=1 go build -o build/_output/debug/junos-debug.so.19.3R1.8 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/Junos-19.3R1.8
 
 test: # @HELP run the unit tests and source code validation
 test: build deps linters license_check
