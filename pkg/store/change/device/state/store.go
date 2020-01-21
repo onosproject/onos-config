@@ -94,10 +94,38 @@ func (s *deviceChangeStoreStateStore) processCh(ch chan stream.Event) {
 }
 
 func (s *deviceChangeStoreStateStore) processChange(networkChange *networkchange.NetworkChange) error {
-	if networkChange.Revision <= s.revision {
-		return nil
+	switch networkChange.Status.Phase {
+	case changetype.Phase_CHANGE:
+		if networkChange.Index <= s.changeIndex {
+			return nil
+		}
+		if err := s.processNetworkChange(networkChange); err != nil {
+			return err
+		}
+		s.changeIndex = networkChange.Index
+	case changetype.Phase_ROLLBACK:
+		if networkChange.Index <= s.rollbackIndex {
+			return nil
+		}
+		if err := s.processNetworkRollback(networkChange); err != nil {
+			return err
+		}
+		s.rollbackIndex = networkChange.Index
 	}
 
+	if networkChange.Revision > s.revision {
+		s.revision = networkChange.Revision
+	}
+
+	waiter, ok := s.waiters[networkChange.Revision]
+	if ok {
+		delete(s.waiters, networkChange.Revision)
+		close(waiter)
+	}
+	return nil
+}
+
+func (s *deviceChangeStoreStateStore) processNetworkChange(networkChange *networkchange.NetworkChange) error {
 	for _, deviceChange := range networkChange.Changes {
 		state, ok := s.devices[deviceChange.GetVersionedDeviceID()]
 		if !ok {
@@ -107,7 +135,7 @@ func (s *deviceChangeStoreStateStore) processChange(networkChange *networkchange
 			}
 			snapshot, err := s.snapshotStore.Load(deviceChange.GetVersionedDeviceID())
 			if err != nil {
-				continue
+				return err
 			} else if snapshot != nil {
 				for _, value := range snapshot.Values {
 					state.update(value)
@@ -116,83 +144,71 @@ func (s *deviceChangeStoreStateStore) processChange(networkChange *networkchange
 			s.devices[deviceChange.GetVersionedDeviceID()] = state
 		}
 
-		switch networkChange.Status.Phase {
-		case changetype.Phase_CHANGE:
-			if s.changeIndex >= networkChange.Index {
-				continue
+		for _, value := range deviceChange.Values {
+			if value.Removed {
+				state.remove(value.Path)
+			} else {
+				state.update(&devicechange.PathValue{
+					Path:  value.Path,
+					Value: value.Value,
+				})
 			}
+		}
+	}
+	return nil
+}
 
-			for _, value := range deviceChange.Values {
-				if value.Removed {
-					state.remove(value.Path)
-				} else {
-					state.update(&devicechange.PathValue{
-						Path:  value.Path,
-						Value: value.Value,
-					})
-				}
-			}
-			s.changeIndex = networkChange.Index
-		case changetype.Phase_ROLLBACK:
-			if s.rollbackIndex >= networkChange.Index {
-				continue
-			}
+func (s *deviceChangeStoreStateStore) processNetworkRollback(networkChange *networkchange.NetworkChange) error {
+	listCh := make(chan *networkchange.NetworkChange)
+	listCtx, err := s.changeStore.List(listCh)
+	if err != nil {
+		listCtx.Close()
+		return err
+	}
 
-			listCh := make(chan *networkchange.NetworkChange)
-			listCtx, err := s.changeStore.List(listCh)
-			if err != nil {
-				listCtx.Close()
-				return err
+	states := make(map[devicetype.VersionedID]*deviceChangeStateStore)
+	for _, devChange := range networkChange.Changes {
+		state := &deviceChangeStateStore{
+			deviceID: devChange.GetVersionedDeviceID(),
+			state:    make(map[string]*devicechange.TypedValue),
+		}
+		snapshot, err := s.snapshotStore.Load(devChange.GetVersionedDeviceID())
+		if err != nil {
+			listCtx.Close()
+			return err
+		} else if snapshot != nil {
+			for _, value := range snapshot.Values {
+				state.update(value)
 			}
-			states := make(map[devicetype.VersionedID]*deviceChangeStateStore)
-			for netChange := range listCh {
-				if netChange.Index > networkChange.Index {
-					listCtx.Close()
-					break
-				}
-				if netChange.Status.Phase == changetype.Phase_CHANGE {
-					for _, devChange := range netChange.Changes {
-						state, ok := s.devices[deviceChange.GetVersionedDeviceID()]
-						if !ok {
-							state = &deviceChangeStateStore{
-								deviceID: deviceChange.GetVersionedDeviceID(),
-								state:    make(map[string]*devicechange.TypedValue),
-							}
-							snapshot, err := s.snapshotStore.Load(deviceChange.GetVersionedDeviceID())
-							if err != nil {
-								listCtx.Close()
-								return err
-							} else if snapshot != nil {
-								for _, value := range snapshot.Values {
-									state.update(value)
-								}
-							}
-							states[deviceChange.GetVersionedDeviceID()] = state
-						}
-						for _, value := range devChange.Values {
-							if value.Removed {
-								state.remove(value.Path)
-							} else {
-								state.update(&devicechange.PathValue{
-									Path:  value.Path,
-									Value: value.Value,
-								})
-							}
+		}
+		states[devChange.GetVersionedDeviceID()] = state
+	}
+
+	for netChange := range listCh {
+		if netChange.Index >= networkChange.Index {
+			listCtx.Close()
+			break
+		}
+		if netChange.Status.Phase == changetype.Phase_CHANGE {
+			for _, devChange := range netChange.Changes {
+				state, ok := s.devices[devChange.GetVersionedDeviceID()]
+				if ok {
+					for _, value := range devChange.Values {
+						if value.Removed {
+							state.remove(value.Path)
+						} else {
+							state.update(&devicechange.PathValue{
+								Path:  value.Path,
+								Value: value.Value,
+							})
 						}
 					}
 				}
 			}
-			for device, state := range states {
-				s.devices[device] = state
-			}
-			s.rollbackIndex = networkChange.Index
 		}
 	}
-	s.revision = networkChange.Revision
-	waiter, ok := s.waiters[networkChange.Revision]
-	if ok {
-		delete(s.waiters, networkChange.Revision)
-		close(waiter)
+	for device, state := range states {
+		s.devices[device] = state
 	}
 	return nil
 }
