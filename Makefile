@@ -34,7 +34,7 @@ build/_output/testdevice.so.2.0.0: modelplugin/TestDevice-2.0.0/modelmain.go mod
 	CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
 
 build/_output/testdevice-debug.so.2.0.0: modelplugin/TestDevice-2.0.0/modelmain.go modelplugin/TestDevice-2.0.0/testdevice_2_0_0/generated.go
-    CGO_ENABLED=1 go build -o build/_output/debug/testdevice-debug.so.2.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
+	CGO_ENABLED=1 go build -o build/_output/debug/testdevice-debug.so.2.0.0 -gcflags "all=-N -l" -buildmode=plugin -tags=modelplugin ./modelplugin/TestDevice-2.0.0
 
 build/_output/devicesim.so.1.0.0: modelplugin/Devicesim-1.0.0/modelmain.go modelplugin/Devicesim-1.0.0/devicesim_1_0_0/generated.go
 	CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin -tags=modelplugin ./modelplugin/Devicesim-1.0.0
