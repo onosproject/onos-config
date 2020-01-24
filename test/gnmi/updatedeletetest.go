@@ -65,7 +65,6 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	assert.Assert(t, deleteNetworkID != "")
 	utils.WaitForNetworkChangeComplete(t, deleteNetworkID, 10*time.Second)
 
-
 	// Check that the Enabled value is set correctly
 	checkGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
 
