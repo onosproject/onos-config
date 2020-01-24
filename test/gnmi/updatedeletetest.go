@@ -15,8 +15,11 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"gotest.tools/assert"
 	"testing"
+	"time"
 )
 
 const (
@@ -47,7 +50,9 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 		{deviceName: device.Name(), path: udtestEnabledPath, pathDataValue: "true", pathDataType: BoolVal},
 		{deviceName: device.Name(), path: udtestDescriptionPath, pathDataValue: udtestDescriptionValue, pathDataType: StringVal},
 	}
-	setGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, noPaths, noExtensions)
+	setNetworkID := setGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, noPaths, noExtensions)
+	assert.Assert(t, setNetworkID != "")
+	utils.WaitForNetworkChangeComplete(t, setNetworkID, 10*time.Second)
 
 	// Update Enabled, delete Description using gNMI client
 	updateEnabledPath := []DevicePath{
@@ -56,7 +61,10 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	deleteDescriptionPath := []DevicePath{
 		{deviceName: device.Name(), path: udtestDescriptionPath},
 	}
-	setGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, noExtensions)
+	deleteNetworkID := setGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, noExtensions)
+	assert.Assert(t, deleteNetworkID != "")
+	utils.WaitForNetworkChangeComplete(t, deleteNetworkID, 10*time.Second)
+
 
 	// Check that the Enabled value is set correctly
 	checkGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
