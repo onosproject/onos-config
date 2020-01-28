@@ -92,6 +92,8 @@ github.com/atomix/go-framework v0.0.0-20200124061342-61b0ae5140c9 h1:GyxC/X6SMje
 github.com/atomix/go-framework v0.0.0-20200124061342-61b0ae5140c9/go.mod h1:G/yTdMGpfwbA2YXym/VEi7op3qZKd1jtGJX0sjcZmpQ=
 github.com/atomix/go-local v0.0.0-20200124003802-357f6682b2f4 h1:acDXXOuqzbqfOYDTMvz4dhckHfmH0DMfXSQE+gLFGOA=
 github.com/atomix/go-local v0.0.0-20200124003802-357f6682b2f4/go.mod h1:MabPkX/j2bN399GVAYGigyvDaAslu7omZoujEfzdKDg=
+github.com/atomix/kubernetes-controller v0.0.0-20200124024416-04b783c4ede4 h1:1MPcQB8Q1YpR3mKA5ybpVUpr16zgGZCLU8X2CbYrpfo=
+github.com/atomix/kubernetes-controller v0.0.0-20200124024416-04b783c4ede4/go.mod h1:6Jz1WZ379QpUynR5+7WoSC1/pCIn+yDxopSOV2Lmjas=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
@@ -262,6 +264,8 @@ github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn
 github.com/onosproject/onos-config v0.0.0-20191116095118-2ca4b5f98ae2/go.mod h1:KqXDEuf9d/uiHCL1iso0s8j3UUofZjCHUhs5pVWwJ0E=
 github.com/onosproject/onos-test v0.0.0-20200124000609-2c23d699896e h1:kv4nCTX9hnw1LvpynvHtoHZOjhyhERn4zKxKUkkqJIY=
 github.com/onosproject/onos-test v0.0.0-20200124000609-2c23d699896e/go.mod h1:yL/WBZiJEjdBPtVRP7OkP6qdg9+kW1N+92c6xz12cSs=
+github.com/onosproject/onos-test v0.0.0-20200124030233-2ce11592f40b h1:rtjgklvuQoh+6CzcWKBqiqxuDxVbBjxVuvMZLvcN5L8=
+github.com/onosproject/onos-test v0.0.0-20200124030233-2ce11592f40b/go.mod h1:1LWbQObEmAY+C0jIQ2CPaD2vIoaMn5BfZ+39n5q9AAM=
 github.com/onosproject/onos-topo v0.0.0-20191107000708-af85b82cfca3 h1:J0qw6ZRZiLvWm94Yu1HI7K/hNG/52aRdnBErYmLJL3M=
 github.com/onosproject/onos-topo v0.0.0-20191107000708-af85b82cfca3/go.mod h1:oPGdJnMHy5UGx4slrbf84DEFqcKXuGMv36N+EBc3QwM=
 github.com/onosproject/onos-topo v0.0.0-20191113170912-88eeee89f4eb h1:jcQhZMMGue2jeAs0A2HVTGpybxywHjyRoyd+b0R96B8=
