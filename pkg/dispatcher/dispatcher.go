@@ -52,17 +52,12 @@ func NewDispatcher() *Dispatcher {
 func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan events.OperationalStateEvent) {
 	log.Info("Operational State Event listener initialized")
 
-	nbiChans := make([]chan events.OperationalStateEvent, 0)
-	d.nbiOpStateListenersLock.Lock()
-	for _, nbiChan := range d.nbiOpStateListeners {
-		nbiChans = append(nbiChans, nbiChan)
-	}
-	d.nbiOpStateListenersLock.Unlock()
-
 	for operationalStateEvent := range operationalStateChannel {
-		for _, nbiChan := range nbiChans {
+		d.nbiOpStateListenersLock.RLock()
+		for _, nbiChan := range d.nbiOpStateListeners {
 			nbiChan <- operationalStateEvent
 		}
+		d.nbiOpStateListenersLock.RUnlock()
 	}
 }
 
@@ -71,7 +66,7 @@ func (d *Dispatcher) ListenOperationalState(operationalStateChannel <-chan event
 func (d *Dispatcher) RegisterOpState(subscriber string) (chan events.OperationalStateEvent, error) {
 	d.nbiOpStateListenersLock.Lock()
 	defer d.nbiOpStateListenersLock.Unlock()
-	if d.nbiOpStateListeners[subscriber] != nil {
+	if _, ok := d.nbiOpStateListeners[subscriber]; ok {
 		return nil, fmt.Errorf("NBI operational state %s is already registered", subscriber)
 	}
 	channel := make(chan events.OperationalStateEvent)
