@@ -16,11 +16,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/atomix/go-local/pkg/atomix/local"
-	"github.com/atomix/go-framework/pkg/atomix"
-	"github.com/atomix/go-framework/pkg/atomix/registry"
 	"github.com/atomix/go-client/pkg/client"
 	netutil "github.com/atomix/go-client/pkg/client/util/net"
+	"github.com/atomix/go-framework/pkg/atomix"
+	"github.com/atomix/go-framework/pkg/atomix/registry"
+	"github.com/atomix/go-local/pkg/atomix/local"
 	"io"
 	"net"
 	"os"
