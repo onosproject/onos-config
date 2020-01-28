@@ -102,7 +102,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		deviceSnapshotController:  devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
 		TopoChannel:               make(chan *topodevice.ListResponse, 10),
 		ModelRegistry:             modelReg,
-		OperationalStateChannel:   make(chan events.OperationalStateEvent, 10),
+		OperationalStateChannel:   make(chan events.OperationalStateEvent),
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
 		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
