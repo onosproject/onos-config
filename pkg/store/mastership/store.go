@@ -16,7 +16,7 @@ package mastership
 
 import (
 	"context"
-	"github.com/atomix/atomix-go-client/pkg/client/util/net"
+	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"

@@ -5,7 +5,7 @@
 package store
 
 import (
-	indexedmap "github.com/atomix/atomix-go-client/pkg/client/indexedmap"
+	indexedmap "github.com/atomix/go-client/pkg/client/indexedmap"
 	gomock "github.com/golang/mock/gomock"
 	network0 "github.com/onosproject/onos-config/api/types/change/network"
 	network "github.com/onosproject/onos-config/pkg/store/change/network"

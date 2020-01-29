@@ -17,7 +17,7 @@ package device
 import (
 	"context"
 	"fmt"
-	"github.com/atomix/atomix-go-client/pkg/client/util"
+	"github.com/atomix/go-client/pkg/client/util"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 	"io"
