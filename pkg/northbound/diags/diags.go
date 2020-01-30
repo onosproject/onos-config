@@ -75,6 +75,7 @@ func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_Ge
 	if r.Subscribe {
 		streamID := fmt.Sprintf("diags-%p", stream)
 		listener, err := manager.GetManager().Dispatcher.RegisterOpState(streamID)
+		defer manager.GetManager().Dispatcher.UnregisterOperationalState(streamID)
 		if err != nil {
 			log.Warnf("Failed setting up a listener for OpState events on %s", r.DeviceId)
 			return err
@@ -103,7 +104,6 @@ func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_Ge
 					return err
 				}
 			case <-stream.Context().Done():
-				manager.GetManager().Dispatcher.UnregisterOperationalState(streamID)
 				log.Infof("NBI Diags OpState subscribe channel %s for %s closed",
 					streamID, r.DeviceId)
 				return nil
