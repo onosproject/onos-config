@@ -40,7 +40,7 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	group, err := client.GetGroup(context.Background(), utils.GetAtomixRaftGroup())
+	group, err := client.GetDatabase(context.Background(), utils.GetAtomixRaftGroup())
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func newLocalStore(address net.Address) (Store, error) {
 		Namespace: "local",
 		Name:      deviceSnapshotsName,
 	}
-	deviceSnapshots, err := _map.New(context.Background(), deviceSnapshotsName, []net.Address{address})
+	deviceSnapshots, err := _map.New(context.Background(), deviceSnapshotsName, []primitive.Partition{{ID: 1, Address: address}})
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func newLocalStore(address net.Address) (Store, error) {
 		Namespace: "local",
 		Name:      snapshotsName,
 	}
-	snapshots, err := _map.New(context.Background(), snapshotsName, []net.Address{address})
+	snapshots, err := _map.New(context.Background(), snapshotsName, []primitive.Partition{{ID: 1, Address: address}})
 	if err != nil {
 		return nil, err
 	}

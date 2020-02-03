@@ -3,10 +3,11 @@ module github.com/onosproject/onos-config
 go 1.12
 
 require (
+	github.com/atomix/api v0.0.0-20200202100958-13b24edbe32d
 	github.com/atomix/atomix-k8s-controller v0.0.0-20191203231043-ae7d3a341174 // indirect
-	github.com/atomix/go-client v0.0.0-20200124061314-d0420ff9ffa8
-	github.com/atomix/go-framework v0.0.0-20200124061342-61b0ae5140c9
-	github.com/atomix/go-local v0.0.0-20200124003802-357f6682b2f4
+	github.com/atomix/go-client v0.0.0-20200202124444-2b0271852fac
+	github.com/atomix/go-framework v0.0.0-20200202102454-440bc2678f1c
+	github.com/atomix/go-local v0.0.0-20200202105028-743d224c66eb
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.3.1
@@ -14,7 +15,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/onosproject/onos-test v0.0.0-20200124030233-2ce11592f40b
+	github.com/onosproject/onos-test v0.0.0-20200202125349-5b744e8890fb
 	github.com/onosproject/onos-topo v0.0.0-20191113170912-88eeee89f4eb
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c
 	github.com/openconfig/goyang v0.0.0-20190924211109-064f9690516f
