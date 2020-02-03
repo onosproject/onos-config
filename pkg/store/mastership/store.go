@@ -60,7 +60,7 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	group, err := client.GetGroup(context.Background(), utils.GetAtomixRaftGroup())
+	database, err := client.GetDatabase(context.Background(), utils.GetAtomixRaftGroup())
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func NewAtomixStore() (Store, error) {
 	return &atomixStore{
 		nodeID: cluster.GetNodeID(),
 		newElection: func(id topodevice.ID) (deviceMastershipElection, error) {
-			return newAtomixElection(id, group)
+			return newAtomixElection(id, database)
 		},
 		elections: make(map[topodevice.ID]deviceMastershipElection),
 	}, nil

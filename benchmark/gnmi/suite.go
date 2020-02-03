@@ -31,7 +31,7 @@ type BenchmarkSuite struct {
 // SetupSuite :: benchmark
 func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) {
 	setup.Atomix()
-	setup.Partitions().Raft()
+	setup.Database().Raft()
 	setup.Topo().SetReplicas(2)
 	setup.Config().SetReplicas(2)
 	setup.SetupOrDie()

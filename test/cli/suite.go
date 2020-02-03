@@ -31,7 +31,7 @@ type SmokeTestSuite struct {
 // SetupTestSuite sets up the onos-config test suite
 func (s *SmokeTestSuite) SetupTestSuite() {
 	setup.Atomix()
-	setup.Partitions().Raft()
+	setup.Database().Raft()
 	setup.Topo().SetReplicas(2)
 	setup.Config().SetReplicas(2)
 	setup.SetupOrDie()
@@ -45,7 +45,7 @@ type TestSuite struct {
 // SetupTestSuite sets up the onos-config CLI test suite
 func (s *TestSuite) SetupTestSuite() {
 	setup.Atomix()
-	setup.Partitions().Raft()
+	setup.Database().Raft()
 	setup.CLI().SetEnabled()
 	setup.Topo().SetReplicas(2)
 	setup.Config().SetReplicas(2)
@@ -60,7 +60,7 @@ type HATestSuite struct {
 // SetupTestSuite sets up the onos-config CLI test suite
 func (s *HATestSuite) SetupTestSuite() {
 	setup.Atomix()
-	setup.Partitions().Raft()
+	setup.Database().Raft()
 	setup.Topo().SetReplicas(2)
 	setup.Config().SetReplicas(2)
 	setup.SetupOrDie()

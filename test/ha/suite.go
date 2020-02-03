@@ -26,9 +26,9 @@ type TestSuite struct {
 
 // SetupTestSuite sets up the onos-config CLI test suite
 func (s *TestSuite) SetupTestSuite() {
-	setup.Partitions().Raft().
+	setup.Database().Raft().
 		SetPartitions(3).
-		SetReplicasPerPartition(3)
+		SetReplicas(3)
 	setup.Topo().
 		SetReplicas(2)
 	setup.Config().

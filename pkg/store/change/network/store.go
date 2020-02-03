@@ -44,7 +44,7 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	group, err := client.GetGroup(context.Background(), utils.GetAtomixRaftGroup())
+	group, err := client.GetDatabase(context.Background(), utils.GetAtomixRaftGroup())
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func newLocalStore(address net.Address) (Store, error) {
 		Namespace: "local",
 		Name:      changesName,
 	}
-	changes, err := indexedmap.New(context.Background(), configsName, []net.Address{address})
+	changes, err := indexedmap.New(context.Background(), configsName, []primitive.Partition{{ID: 1, Address: address}})
 	if err != nil {
 		return nil, err
 	}

@@ -31,9 +31,9 @@ import (
 )
 
 // newAtomixElection returns a new persistent device mastership election
-func newAtomixElection(deviceID topodevice.ID, group *client.PartitionGroup) (deviceMastershipElection, error) {
+func newAtomixElection(deviceID topodevice.ID, database *client.Database) (deviceMastershipElection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	election, err := group.GetElection(ctx, fmt.Sprintf("mastership-%s", deviceID), session.WithID(string(cluster.GetNodeID())), session.WithTimeout(15*time.Second))
+	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%s", deviceID), session.WithID(string(cluster.GetNodeID())), session.WithTimeout(15*time.Second))
 	cancel()
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func newLocalElection(deviceID topodevice.ID, nodeID cluster.NodeID, address net
 		Namespace: "local",
 		Name:      fmt.Sprintf("mastership-%s", deviceID),
 	}
-	election, err := election.New(context.Background(), name, []net.Address{address}, session.WithID(string(nodeID)), session.WithTimeout(15*time.Second))
+	election, err := election.New(context.Background(), name, []primitive.Partition{{ID: 1, Address: address}}, session.WithID(string(nodeID)), session.WithTimeout(15*time.Second))
 	if err != nil {
 		return nil, err
 	}

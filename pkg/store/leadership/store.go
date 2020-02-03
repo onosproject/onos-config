@@ -63,7 +63,7 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	group, err := client.GetGroup(context.Background(), utils.GetAtomixRaftGroup())
+	group, err := client.GetDatabase(context.Background(), utils.GetAtomixRaftGroup())
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
 		Name:      primitiveName,
 	}
 
-	election, err := election.New(context.Background(), name, []net.Address{address}, session.WithID(string(nodeID)))
+	election, err := election.New(context.Background(), name, []primitive.Partition{{ID: 1, Address: address}}, session.WithID(string(nodeID)))
 	if err != nil {
 		return nil, err
 	}
