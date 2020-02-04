@@ -242,7 +242,7 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 				continue
 			}
 
-			err = buildAndSendUpdate(pathGnmi, target, opStateChange.Value(), len(opStateChange.Value().Bytes) > 0, stream)
+			err = buildAndSendUpdate(pathGnmi, target, opStateChange.Value(), len(opStateChange.Value().Bytes) == 0, stream)
 			if err != nil {
 				log.Error("Error in sending update path ", err)
 				resChan <- result{success: false, err: err}
