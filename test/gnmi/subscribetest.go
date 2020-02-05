@@ -120,8 +120,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 	// Subscription has to be spawned into a separate thread as it is blocking.
 	go func() {
-		errSubscribe := subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
-		assert.NoError(t, errSubscribe, "Subscription Error: %v", errSubscribe)
+		_ = subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
 	}()
 
 	// Sleeping in order to make sure the subscribe request is properly stored and processed.
