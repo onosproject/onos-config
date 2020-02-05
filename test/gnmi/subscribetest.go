@@ -15,11 +15,9 @@
 package gnmi
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
@@ -28,17 +26,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 )
-
-const (
-	subValue = "Europe/Madrid"
-	subPath  = "/system/clock/config/timezone-name"
-)
-
-type subscribeRequest struct {
-	path          *gnmi.Path
-	subListMode   gnmi.SubscriptionList_Mode // Mode of the subscription: ONCE, STREAM, POLL
-	subStreamMode gnmi.SubscriptionMode      // mode of subscribe STREAM: ON_CHANGE, SAMPLE, TARGET_DEFINED
-}
 
 // TestSubscribeOnce tests subscription ONCE mode
 func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
@@ -50,7 +37,7 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
 
-	path, err := utils.ParseGNMIElements(utils.SplitPath(subPath))
+	path, err := utils.ParseGNMIElements(utils.SplitPath(subTzPath))
 
 	assert.NoError(t, err, "Unexpected error doing parsing")
 
@@ -61,45 +48,21 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 		subListMode: gnmi.SubscriptionList_ONCE,
 	}
 
-	request, errReq := buildRequest(subReq)
-
-	assert.NoError(t, errReq, "Can't build Request")
-
-	q, errQuery := client.NewQuery(request)
-
+	q, respChan, errQuery := buildQueryRequest(subReq)
 	assert.NoError(t, errQuery, "Can't build Query")
-
-	dest := env.Config().Destination()
-
-	q.Addrs = dest.Addrs
-	q.Timeout = dest.Timeout
-	q.Target = dest.Target
-	q.Credentials = dest.Credentials
-	q.TLS = dest.TLS
-
-	respChan := make(chan *gnmi.SubscribeResponse)
-
-	q.ProtoHandler = func(msg proto.Message) error {
-		resp, ok := msg.(*gnmi.SubscribeResponse)
-		if !ok {
-			return fmt.Errorf("failed to type assert message %#v", msg)
-		}
-		respChan <- resp
-		return nil
-	}
 
 	// Make a GNMI client to use for requests
 	gnmiClient := getGNMIClientOrFail(t)
 	// Set a value using gNMI client
-	devicePath := getDevicePathWithValue(simulator.Name(), subPath, subValue, StringVal)
+	devicePath := getDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, StringVal)
 	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
 	// Check that the value was set correctly
-	checkGNMIValue(t, gnmiClient, devicePath, subValue, 0, "Query after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
 
 	var response *gnmi.SubscribeResponse
 
 	go func() {
-		errSubscribe := subC.Subscribe(testutils.MakeContext(), q, "gnmi")
+		errSubscribe := subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
 		assert.NoError(t, errSubscribe, "Subscription Error")
 	}()
 
@@ -130,7 +93,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
 
-	path, err := utils.ParseGNMIElements(utils.SplitPath(subPath))
+	path, err := utils.ParseGNMIElements(utils.SplitPath(subTzPath))
 
 	assert.NoError(t, err, "Unexpected error doing parsing")
 
@@ -142,16 +105,13 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 		subStreamMode: gnmi.SubscriptionMode_TARGET_DEFINED,
 	}
 
-	request, errReq := buildRequest(subReq)
-	assert.NoError(t, errReq, "Can't build Request")
-
-	q, respChan, errQuery := buildQuery(request)
+	q, respChan, errQuery := buildQueryRequest(subReq)
 	assert.NoError(t, errQuery, "Can't build Query")
 
 	// Subscription has to be spawned into a separate thread as it is blocking.
 	go func() {
 		errSubscribe := subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
-		assert.NoError(t, errSubscribe, "Subscription Error")
+		assert.NoError(t, errSubscribe, "Subscription Error: %v", errSubscribe)
 	}()
 
 	// Sleeping in order to make sure the subscribe request is properly stored and processed.
@@ -161,7 +121,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	gnmiClient := getGNMIClientOrFail(t)
 
 	// Set a value using gNMI client
-	devicePath := getDevicePathWithValue(simulator.Name(), subPath, subValue, StringVal)
+	devicePath := getDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, StringVal)
 	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
 	var response *gnmi.SubscribeResponse
 
@@ -182,7 +142,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	}
 
 	// Check that the value was set correctly
-	checkGNMIValue(t, gnmiClient, devicePath, subValue, 0, "Query after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
 	setGNMIValueOrFail(t, gnmiClient, noPaths, devicePath, noExtensions)
@@ -222,7 +182,7 @@ func validateResponse(t *testing.T, resp *gnmi.SubscribeResponse, device string,
 		if delete {
 			assertDeleteResponse(t, v, device, subTzPath)
 		} else {
-			assertUpdateResponse(t, v, device, subTzPath, subValue)
+			assertUpdateResponse(t, v, device, subTzPath, subTzValue)
 		}
 	}
 }

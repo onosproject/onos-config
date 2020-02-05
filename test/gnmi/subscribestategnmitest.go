@@ -57,10 +57,7 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 		subStreamMode: gnmi.SubscriptionMode_TARGET_DEFINED,
 	}
 
-	request, errReq := buildRequest(subReq)
-	assert.NoError(t, errReq, "Can't build Request")
-
-	q, respChan, errQuery := buildQuery(request)
+	q, respChan, errQuery := buildQueryRequest(subReq)
 	assert.NoError(t, errQuery, "Can't build Query")
 
 	var response *gnmi.SubscribeResponse

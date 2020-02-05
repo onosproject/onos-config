@@ -33,6 +33,12 @@ const (
 	subDateTimePath = "/system/state/current-datetime"
 )
 
+type subscribeRequest struct {
+	path          *gnmi.Path
+	subListMode   gnmi.SubscriptionList_Mode // Mode of the subscription: ONCE, STREAM, POLL
+	subStreamMode gnmi.SubscriptionMode      // mode of subscribe STREAM: ON_CHANGE, SAMPLE, TARGET_DEFINED
+}
+
 func buildRequest(subReq subscribeRequest) (*gnmi.SubscribeRequest, error) {
 	prefixPath, err := utils.ParseGNMIElements(utils.SplitPath(""))
 	if err != nil {
@@ -96,6 +102,19 @@ func buildQuery(request *gnmi.SubscribeRequest) (*client.Query, chan *gnmi.Subsc
 	}
 
 	return &q, respChan, nil
+}
+
+func buildQueryRequest(subReq subscribeRequest) (*client.Query, chan *gnmi.SubscribeResponse, error) {
+	request, errReq := buildRequest(subReq)
+	if errReq != nil {
+		return nil, nil, errReq
+	}
+
+	q, respChan, errQuery := buildQuery(request)
+	if errQuery != nil {
+		return nil, nil, errReq
+	}
+	return q, respChan, nil
 }
 
 func assertPathSegments(t *testing.T, pathResponse *gnmi.Path, path string) {
