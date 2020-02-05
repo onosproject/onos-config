@@ -126,17 +126,7 @@ func validateGnmiStateResponse(t *testing.T, resp *gnmi.SubscribeResponse, devic
 
 func validateGnmiStateUpdateResponse(t *testing.T, update *gnmi.SubscribeResponse_Update, device string) {
 	t.Helper()
-
-	assert.True(t, update.Update != nil, "Update should not be nil")
-	assert.Equal(t, 1, len(update.Update.GetUpdate()))
-	assert.NotNil(t, update.Update.GetUpdate()[0])
-
-	pathResponse := update.Update.GetUpdate()[0].Path
-	assert.Equal(t, pathResponse.Target, device)
-	assert.Equal(t, 3, len(pathResponse.Elem), "Expected 3 path elements")
-	assert.Equal(t, pathResponse.Elem[0].Name, "system")
-	assert.Equal(t, pathResponse.Elem[1].Name, "state")
-	assert.Equal(t, pathResponse.Elem[2].Name, "current-datetime")
+	assertUpdateResponse(t, update, device, subDateTimePath, "")
 	updatedTimeString := update.Update.GetUpdate()[0].Val.GetStringVal()
 	updatedTime, timeParseError := time.Parse("2006-01-02T15:04:05Z-07:00", updatedTimeString)
 	assert.NoError(t, timeParseError)
@@ -147,5 +137,5 @@ func validateGnmiStateUpdateResponse(t *testing.T, update *gnmi.SubscribeRespons
 
 func validateGnmiStateSyncResponse(t *testing.T, sync *gnmi.SubscribeResponse_SyncResponse) {
 	t.Helper()
-	assert.True(t, sync.SyncResponse)
+	assertSyncResponse(t, sync)
 }

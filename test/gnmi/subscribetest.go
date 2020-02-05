@@ -27,7 +27,6 @@ import (
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
-	log "k8s.io/klog"
 )
 
 const (
@@ -279,43 +278,9 @@ func validateResponse(t *testing.T, resp *gnmi.SubscribeResponse, device string,
 		assert.Equal(t, v.SyncResponse, true, "Sync should be true")
 	case *gnmi.SubscribeResponse_Update:
 		if delete {
-			assertDeleteResponse(t, v, device)
+			assertDeleteResponse(t, v, device, subTzPath)
 		} else {
-			assertUpdateResponse(t, v, device)
+			assertUpdateResponse(t, v, device, subTzPath, subValue)
 		}
 	}
-}
-
-func assertUpdateResponse(t *testing.T, response *gnmi.SubscribeResponse_Update, device string) {
-	assert.True(t, response.Update != nil, "Update should not be nil")
-	assert.Equal(t, len(response.Update.GetUpdate()), 1)
-	if response.Update.GetUpdate()[0] == nil {
-		log.Error("response should contain at least one update and that should not be nil")
-		t.FailNow()
-	}
-	pathResponse := response.Update.GetUpdate()[0].Path
-	assert.Equal(t, pathResponse.Target, device)
-	assert.Equal(t, len(pathResponse.Elem), 4, "Expected 4 path elements")
-	assert.Equal(t, pathResponse.Elem[0].Name, "system")
-	assert.Equal(t, pathResponse.Elem[1].Name, "clock")
-	assert.Equal(t, pathResponse.Elem[2].Name, "config")
-	assert.Equal(t, pathResponse.Elem[3].Name, "timezone-name")
-	assert.Equal(t, response.Update.GetUpdate()[0].Val.GetStringVal(), subValue)
-	assert.Equal(t, response.Update.GetUpdate()[0].Val.GetStringVal(), subValue)
-}
-
-func assertDeleteResponse(t *testing.T, response *gnmi.SubscribeResponse_Update, device string) {
-	assert.True(t, response.Update != nil, "Delete should not be nil")
-	assert.Equal(t, len(response.Update.GetDelete()), 1)
-	if response.Update.GetDelete()[0] == nil {
-		log.Error("response should contain at least one delete path")
-		t.FailNow()
-	}
-	pathResponse := response.Update.GetDelete()[0]
-	assert.Equal(t, pathResponse.Target, device)
-	assert.Equal(t, len(pathResponse.Elem), 4, "Expected 3 path elements")
-	assert.Equal(t, pathResponse.Elem[0].Name, "system")
-	assert.Equal(t, pathResponse.Elem[1].Name, "clock")
-	assert.Equal(t, pathResponse.Elem[2].Name, "config")
-	assert.Equal(t, pathResponse.Elem[3].Name, "timezone-name")
 }
