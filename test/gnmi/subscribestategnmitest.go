@@ -15,14 +15,12 @@
 package gnmi
 
 import (
-	"fmt"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
@@ -60,37 +58,16 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 	}
 
 	request, errReq := buildRequest(subReq)
-
 	assert.NoError(t, errReq, "Can't build Request")
 
-	q, errQuery := client.NewQuery(request)
-
+	q, respChan, errQuery := buildQuery(request)
 	assert.NoError(t, errQuery, "Can't build Query")
-
-	dest := env.Config().Destination()
-
-	q.Addrs = dest.Addrs
-	q.Timeout = dest.Timeout
-	q.Target = dest.Target
-	q.Credentials = dest.Credentials
-	q.TLS = dest.TLS
-
-	respChan := make(chan *gnmi.SubscribeResponse)
-
-	q.ProtoHandler = func(msg proto.Message) error {
-		resp, ok := msg.(*gnmi.SubscribeResponse)
-		if !ok {
-			return fmt.Errorf("failed to type assert message %#v", msg)
-		}
-		respChan <- resp
-		return nil
-	}
 
 	var response *gnmi.SubscribeResponse
 
 	// Subscription has to be spawned into a separate thread as it is blocking.
 	go func() {
-		errSubscribe := subC.Subscribe(testutils.MakeContext(), q, "gnmi")
+		errSubscribe := subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
 		assert.NoError(t, errSubscribe, "Subscription Error")
 	}()
 

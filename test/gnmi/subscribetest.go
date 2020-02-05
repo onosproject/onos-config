@@ -143,35 +143,14 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	}
 
 	request, errReq := buildRequest(subReq)
-
 	assert.NoError(t, errReq, "Can't build Request")
 
-	q, errQuery := client.NewQuery(request)
-
+	q, respChan, errQuery := buildQuery(request)
 	assert.NoError(t, errQuery, "Can't build Query")
-
-	dest := env.Config().Destination()
-
-	q.Addrs = dest.Addrs
-	q.Timeout = dest.Timeout
-	q.Target = dest.Target
-	q.Credentials = dest.Credentials
-	q.TLS = dest.TLS
-
-	respChan := make(chan *gnmi.SubscribeResponse)
-
-	q.ProtoHandler = func(msg proto.Message) error {
-		resp, ok := msg.(*gnmi.SubscribeResponse)
-		if !ok {
-			return fmt.Errorf("failed to type assert message %#v", msg)
-		}
-		respChan <- resp
-		return nil
-	}
 
 	// Subscription has to be spawned into a separate thread as it is blocking.
 	go func() {
-		errSubscribe := subC.Subscribe(testutils.MakeContext(), q, "gnmi")
+		errSubscribe := subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
 		assert.NoError(t, errSubscribe, "Subscription Error")
 	}()
 
@@ -226,43 +205,6 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 	//  Make sure it got removed
 	checkGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
-}
-
-func buildRequest(subReq subscribeRequest) (*gnmi.SubscribeRequest, error) {
-	prefixPath, err := utils.ParseGNMIElements(utils.SplitPath(""))
-	if err != nil {
-		return nil, err
-	}
-	subscription := &gnmi.Subscription{}
-	switch subReq.subListMode {
-	case gnmi.SubscriptionList_STREAM:
-		subscription = &gnmi.Subscription{
-			Path: subReq.path,
-			Mode: subReq.subStreamMode,
-		}
-	case gnmi.SubscriptionList_ONCE:
-		subscription = &gnmi.Subscription{
-			Path: subReq.path,
-		}
-	case gnmi.SubscriptionList_POLL:
-		subscription = &gnmi.Subscription{
-			Path: subReq.path,
-		}
-	}
-	subscriptions := make([]*gnmi.Subscription, 0)
-	subscriptions = append(subscriptions, subscription)
-	subList := &gnmi.SubscriptionList{
-		Subscription: subscriptions,
-		Mode:         subReq.subListMode,
-		UpdatesOnly:  true,
-		Prefix:       prefixPath,
-	}
-	request := &gnmi.SubscribeRequest{
-		Request: &gnmi.SubscribeRequest_Subscribe{
-			Subscribe: subList,
-		},
-	}
-	return request, nil
 }
 
 func validateResponse(t *testing.T, resp *gnmi.SubscribeResponse, device string, delete bool) {

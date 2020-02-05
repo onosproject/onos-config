@@ -33,20 +33,7 @@ const (
 	subDateTimePath = "/system/state/current-datetime"
 )
 
-func xxxbuildRequest(pathString string, target string) (*gnmi.SubscribeRequest, error) {
-	path, err := utils.ParseGNMIElements(utils.SplitPath(pathString))
-
-	if err != nil {
-		return nil, err
-	}
-
-	path.Target = target
-
-	subReq := subscribeRequest{
-		path:        path,
-		subListMode: gnmi.SubscriptionList_ONCE,
-	}
-
+func buildRequest(subReq subscribeRequest) (*gnmi.SubscribeRequest, error) {
 	prefixPath, err := utils.ParseGNMIElements(utils.SplitPath(""))
 	if err != nil {
 		return nil, err
@@ -119,7 +106,6 @@ func assertPathSegments(t *testing.T, pathResponse *gnmi.Path, path string) {
 		assert.Equal(t, segment, pathResponse.Elem[i].Name)
 	}
 }
-
 
 func assertUpdateResponse(t *testing.T, response *gnmi.SubscribeResponse_Update, device string, path string, expectedValue string) {
 	assert.True(t, response.Update != nil, "Update should not be nil")
