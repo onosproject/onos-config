@@ -1,4 +1,4 @@
-// Copyright 2019-present Open Networking Foundation.
+// Copyright 2020-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -71,13 +71,13 @@ func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
 		}
 		assert.NoError(t, responseErr)
 		if filterResponse(response) {
-			validateDiagsStateResponse(t, response, simulator.Name(), false)
+			validateDiagsStateResponse(t, response)
 			i++
 		}
 	}
 }
 
-func validateDiagsStateResponse(t *testing.T, resp *diags.OpStateResponse, device string, delete bool) {
+func validateDiagsStateResponse(t *testing.T, resp *diags.OpStateResponse) {
 	t.Helper()
 	assert.Equal(t, resp.Pathvalue.Path, dateTimePath)
 
