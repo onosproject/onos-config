@@ -83,6 +83,15 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 
 }
 
+func awaitResponse(t *testing.T, respChan chan *gnmi.SubscribeResponse, name string, delete bool, responseType string) {
+	select {
+	case response := <-respChan:
+		validateResponse(t, response, name, delete)
+	case <-time.After(10 * time.Second):
+		assert.FailNow(t, "Expected "+responseType+" Response")
+	}
+}
+
 // TestSubscribe tests a stream subscription to updates to a device
 func (s *TestSuite) TestSubscribe(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
@@ -97,7 +106,8 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 	assert.NoError(t, err, "Unexpected error doing parsing")
 
-	path.Target = simulator.Name()
+	name := simulator.Name()
+	path.Target = name
 
 	subReq := subscribeRequest{
 		path:          path,
@@ -123,23 +133,15 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	// Set a value using gNMI client
 	devicePath := getDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, StringVal)
 	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
-	var response *gnmi.SubscribeResponse
+
+	const deleted = true
+	const notDeleted = false
 
 	// Wait for the Update response with Update
-	select {
-	case response = <-respChan:
-		validateResponse(t, response, simulator.Name(), false)
-	case <-time.After(10 * time.Second):
-		assert.FailNow(t, "Expected Update Response")
-	}
+	awaitResponse(t, respChan, name, notDeleted, "Update")
 
 	// Wait for the Sync response
-	select {
-	case response = <-respChan:
-		validateResponse(t, response, simulator.Name(), false)
-	case <-time.After(1 * time.Second):
-		assert.FailNow(t, "Expected Sync Response")
-	}
+	awaitResponse(t, respChan, name, notDeleted, "Sync")
 
 	// Check that the value was set correctly
 	checkGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
@@ -148,20 +150,10 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	setGNMIValueOrFail(t, gnmiClient, noPaths, devicePath, noExtensions)
 
 	// Wait for the Update response with delete
-	select {
-	case response = <-respChan:
-		validateResponse(t, response, simulator.Name(), true)
-	case <-time.After(1 * time.Second):
-		assert.FailNow(t, "Expected Delete Response")
-	}
+	awaitResponse(t, respChan, name, deleted, "Update")
 
 	// Wait for the Sync response
-	select {
-	case response = <-respChan:
-		validateResponse(t, response, simulator.Name(), false)
-	case <-time.After(1 * time.Second):
-		assert.FailNow(t, "Expected Sync Response")
-	}
+	awaitResponse(t, respChan, name, notDeleted, "Sync")
 
 	//  Make sure it got removed
 	checkGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
