@@ -19,7 +19,6 @@ import (
 	"errors"
 	"github.com/atomix/go-client/pkg/client/election"
 	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/session"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/utils"
@@ -68,7 +67,7 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	election, err := group.GetElection(context.Background(), primitiveName, session.WithID(string(cluster.GetNodeID())), session.WithTimeout(30*time.Second))
+	election, err := group.GetElection(context.Background(), primitiveName, election.WithID(string(cluster.GetNodeID())))
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +101,14 @@ func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
 		Name:      primitiveName,
 	}
 
-	election, err := election.New(context.Background(), name, []primitive.Partition{{ID: 1, Address: address}}, session.WithID(string(nodeID)))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
+	if err != nil {
+		return nil, err
+	}
+
+	election, err := election.New(context.Background(), name, []*primitive.Session{session}, election.WithID(string(nodeID)))
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +143,7 @@ func (s *atomixStore) enter() error {
 	term, err := s.election.Enter(ctx)
 	cancel()
 	if err != nil {
-		_ = s.election.Close()
+		_ = s.election.Close(context.Background())
 		return err
 	}
 
@@ -157,7 +163,7 @@ func (s *atomixStore) enter() error {
 		}
 	}
 
-	_ = s.election.Close()
+	_ = s.election.Close(context.Background())
 	return errors.New("failed to enter election")
 }
 
@@ -206,5 +212,5 @@ func (s *atomixStore) Watch(ch chan<- Leadership) error {
 }
 
 func (s *atomixStore) Close() error {
-	return s.election.Close()
+	return s.election.Close(context.Background())
 }

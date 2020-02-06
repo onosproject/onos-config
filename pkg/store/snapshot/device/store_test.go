@@ -26,8 +26,7 @@ import (
 )
 
 func TestDeviceSnapshotStore(t *testing.T) {
-	node, address := utils.StartLocalNode()
-	defer node.Stop()
+	_, address := utils.StartLocalNode()
 
 	store1, err := newLocalStore(address)
 	assert.NoError(t, err)

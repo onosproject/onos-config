@@ -23,7 +23,7 @@ import (
 )
 
 func TestMastershipStore(t *testing.T) {
-	node, address := utils.StartLocalNode()
+	_, address := utils.StartLocalNode()
 
 	node1 := cluster.NodeID("node1")
 	node2 := cluster.NodeID("node2")
@@ -136,5 +136,4 @@ func TestMastershipStore(t *testing.T) {
 	assert.True(t, master)
 
 	_ = store3.Close()
-	_ = node.Stop()
 }

@@ -19,7 +19,6 @@ import (
 	"errors"
 	"github.com/atomix/go-client/pkg/client/map"
 	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/session"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/api/types/device"
@@ -45,12 +44,12 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	deviceSnapshots, err := group.GetMap(context.Background(), deviceSnapshotsName, session.WithTimeout(30*time.Second))
+	deviceSnapshots, err := group.GetMap(context.Background(), deviceSnapshotsName)
 	if err != nil {
 		return nil, err
 	}
 
-	snapshots, err := group.GetMap(context.Background(), snapshotsName, session.WithTimeout(30*time.Second))
+	snapshots, err := group.GetMap(context.Background(), snapshotsName)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +72,13 @@ func newLocalStore(address net.Address) (Store, error) {
 		Namespace: "local",
 		Name:      deviceSnapshotsName,
 	}
-	deviceSnapshots, err := _map.New(context.Background(), deviceSnapshotsName, []primitive.Partition{{ID: 1, Address: address}})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
+	if err != nil {
+		return nil, err
+	}
+	deviceSnapshots, err := _map.New(context.Background(), deviceSnapshotsName, []*primitive.Session{session})
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +87,7 @@ func newLocalStore(address net.Address) (Store, error) {
 		Namespace: "local",
 		Name:      snapshotsName,
 	}
-	snapshots, err := _map.New(context.Background(), snapshotsName, []primitive.Partition{{ID: 1, Address: address}})
+	snapshots, err := _map.New(context.Background(), snapshotsName, []*primitive.Session{session})
 	if err != nil {
 		return nil, err
 	}
@@ -386,8 +391,8 @@ func (s *atomixStore) WatchAll(ch chan<- stream.Event) (stream.Context, error) {
 }
 
 func (s *atomixStore) Close() error {
-	_ = s.deviceSnapshots.Close()
-	return s.snapshots.Close()
+	_ = s.deviceSnapshots.Close(context.Background())
+	return s.snapshots.Close(context.Background())
 }
 
 func decodeDeviceSnapshot(entry *_map.Entry) (*devicesnapshot.DeviceSnapshot, error) {

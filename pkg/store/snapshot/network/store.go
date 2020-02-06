@@ -19,7 +19,6 @@ import (
 	"errors"
 	"github.com/atomix/go-client/pkg/client/indexedmap"
 	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/session"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
@@ -49,7 +48,7 @@ func NewAtomixStore() (Store, error) {
 		return nil, err
 	}
 
-	snapshots, err := group.GetIndexedMap(context.Background(), snapshotsName, session.WithTimeout(30*time.Second))
+	snapshots, err := group.GetIndexedMap(context.Background(), snapshotsName)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +70,13 @@ func newLocalStore(address net.Address) (Store, error) {
 		Namespace: "local",
 		Name:      snapshotsName,
 	}
-	snapshots, err := indexedmap.New(context.Background(), snapshotsName, []primitive.Partition{{ID: 1, Address: address}})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
+	if err != nil {
+		return nil, err
+	}
+	snapshots, err := indexedmap.New(context.Background(), snapshotsName, []*primitive.Session{session})
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +278,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 }
 
 func (s *atomixStore) Close() error {
-	return s.snapshots.Close()
+	return s.snapshots.Close(context.Background())
 }
 
 func decodeSnapshot(entry *indexedmap.Entry) (*networksnapshot.NetworkSnapshot, error) {

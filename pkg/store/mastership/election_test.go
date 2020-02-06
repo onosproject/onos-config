@@ -23,7 +23,7 @@ import (
 )
 
 func TestMastershipElection(t *testing.T) {
-	node, address := utils.StartLocalNode()
+	_, address := utils.StartLocalNode()
 
 	store1, err := newLocalElection(topodevice.ID("test"), "a", address)
 	assert.NoError(t, err)
@@ -82,5 +82,4 @@ func TestMastershipElection(t *testing.T) {
 	assert.True(t, master)
 
 	_ = store3.Close()
-	_ = node.Stop()
 }
