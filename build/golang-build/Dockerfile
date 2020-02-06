@@ -2,8 +2,8 @@ FROM golang:1.12
 
 COPY dep-*.sha256 .
 
-RUN apt-get update && \
-    mkdir release && \
+RUN apt-get update
+RUN mkdir release && \
     wget -q -O release/dep-$(go env GOOS)-$(go env GOARCH) https://github.com/golang/dep/releases/download/v0.5.0/dep-$(go env GOOS)-$(go env GOARCH) && \
     sha256sum -c dep-$(go env GOOS)-$(go env GOARCH).sha256 && \
     mv release/dep-$(go env GOOS)-$(go env GOARCH) /go/bin/dep && \
@@ -18,6 +18,7 @@ RUN apt-get update && \
     go get -u github.com/fzipp/gocyclo && \
     go get -u github.com/client9/misspell/cmd/misspell && \
     go get -u github.com/gordonklaus/ineffassign && \
+    go get -u github.com/openconfig/ygot/generator && \
     mkdir -p /go/src/github.com/
 
 WORKDIR "/go/src/github.com"
