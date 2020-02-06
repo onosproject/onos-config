@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/atomix/go-client/pkg/client/indexedmap"
 	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/session"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -53,7 +52,7 @@ func NewAtomixStore() (Store, error) {
 	}
 
 	changesFactory := func(deviceID device.VersionedID) (indexedmap.IndexedMap, error) {
-		return group.GetIndexedMap(context.Background(), getDeviceChangesName(deviceID), session.WithTimeout(30*time.Second))
+		return group.GetIndexedMap(context.Background(), getDeviceChangesName(deviceID))
 	}
 
 	return &atomixStore{
@@ -75,7 +74,13 @@ func newLocalStore(address net.Address) (Store, error) {
 			Namespace: "local",
 			Name:      getDeviceChangesName(deviceID),
 		}
-		return indexedmap.New(context.Background(), counterName, []primitive.Partition{{ID: 1, Address: address}})
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
+		if err != nil {
+			return nil, err
+		}
+		return indexedmap.New(context.Background(), counterName, []*primitive.Session{session})
 	}
 
 	return &atomixStore{
@@ -390,7 +395,7 @@ func (s *atomixStore) Watch(deviceID device.VersionedID, ch chan<- stream.Event,
 func (s *atomixStore) Close() error {
 	var returnErr error
 	for _, changes := range s.deviceChanges {
-		if err := changes.Close(); err != nil {
+		if err := changes.Close(context.Background()); err != nil {
 			returnErr = err
 		}
 	}

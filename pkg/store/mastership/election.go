@@ -21,7 +21,6 @@ import (
 	"github.com/atomix/go-client/pkg/client"
 	"github.com/atomix/go-client/pkg/client/election"
 	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/session"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -33,7 +32,7 @@ import (
 // newAtomixElection returns a new persistent device mastership election
 func newAtomixElection(deviceID topodevice.ID, database *client.Database) (deviceMastershipElection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%s", deviceID), session.WithID(string(cluster.GetNodeID())), session.WithTimeout(15*time.Second))
+	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%s", deviceID), election.WithID(string(cluster.GetNodeID())))
 	cancel()
 	if err != nil {
 		return nil, err
@@ -47,7 +46,13 @@ func newLocalElection(deviceID topodevice.ID, nodeID cluster.NodeID, address net
 		Namespace: "local",
 		Name:      fmt.Sprintf("mastership-%s", deviceID),
 	}
-	election, err := election.New(context.Background(), name, []primitive.Partition{{ID: 1, Address: address}}, session.WithID(string(nodeID)), session.WithTimeout(15*time.Second))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
+	if err != nil {
+		return nil, err
+	}
+	election, err := election.New(context.Background(), name, []*primitive.Session{session}, election.WithID(string(nodeID)))
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +118,7 @@ func (e *atomixDeviceMastershipElection) enter() error {
 	term, err := e.election.Enter(ctx)
 	cancel()
 	if err != nil {
-		_ = e.election.Close()
+		_ = e.election.Close(context.Background())
 		return err
 	}
 
@@ -134,7 +139,7 @@ func (e *atomixDeviceMastershipElection) enter() error {
 		}
 	}
 
-	_ = e.election.Close()
+	_ = e.election.Close(context.Background())
 	return errors.New("failed to enter election")
 }
 
@@ -180,7 +185,7 @@ func (e *atomixDeviceMastershipElection) watch(ch chan<- Mastership) error {
 }
 
 func (e *atomixDeviceMastershipElection) Close() error {
-	return e.election.Close()
+	return e.election.Close(context.Background())
 }
 
 var _ deviceMastershipElection = &atomixDeviceMastershipElection{}
