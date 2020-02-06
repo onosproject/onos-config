@@ -22,7 +22,7 @@ import (
 )
 
 func TestLeadershipStore(t *testing.T) {
-	node, address := utils.StartLocalNode()
+	_, address := utils.StartLocalNode()
 
 	store1, err := newLocalStore("a", address)
 	assert.NoError(t, err)
@@ -81,5 +81,4 @@ func TestLeadershipStore(t *testing.T) {
 	assert.True(t, leader)
 
 	_ = store3.Close()
-	_ = node.Stop()
 }
