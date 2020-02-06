@@ -15,11 +15,9 @@
 package gnmi
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
 	testutils "github.com/onosproject/onos-config/test/utils"
 	"github.com/onosproject/onos-test/pkg/onit/env"
@@ -27,19 +25,7 @@ import (
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
-	log "k8s.io/klog"
 )
-
-const (
-	subValue = "Europe/Madrid"
-	subPath  = "/system/clock/config/timezone-name"
-)
-
-type subscribeRequest struct {
-	path          *gnmi.Path
-	subListMode   gnmi.SubscriptionList_Mode // Mode of the subscription: ONCE, STREAM, POLL
-	subStreamMode gnmi.SubscriptionMode      // mode of subscribe STREAM: ON_CHANGE, SAMPLE, TARGET_DEFINED
-}
 
 // TestSubscribeOnce tests subscription ONCE mode
 func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
@@ -51,7 +37,7 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
 
-	path, err := utils.ParseGNMIElements(utils.SplitPath(subPath))
+	path, err := utils.ParseGNMIElements(utils.SplitPath(subTzPath))
 
 	assert.NoError(t, err, "Unexpected error doing parsing")
 
@@ -62,45 +48,21 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 		subListMode: gnmi.SubscriptionList_ONCE,
 	}
 
-	request, errReq := buildRequest(subReq)
-
-	assert.NoError(t, errReq, "Can't build Request")
-
-	q, errQuery := client.NewQuery(request)
-
+	q, respChan, errQuery := buildQueryRequest(subReq)
 	assert.NoError(t, errQuery, "Can't build Query")
-
-	dest := env.Config().Destination()
-
-	q.Addrs = dest.Addrs
-	q.Timeout = dest.Timeout
-	q.Target = dest.Target
-	q.Credentials = dest.Credentials
-	q.TLS = dest.TLS
-
-	respChan := make(chan *gnmi.SubscribeResponse)
-
-	q.ProtoHandler = func(msg proto.Message) error {
-		resp, ok := msg.(*gnmi.SubscribeResponse)
-		if !ok {
-			return fmt.Errorf("failed to type assert message %#v", msg)
-		}
-		respChan <- resp
-		return nil
-	}
 
 	// Make a GNMI client to use for requests
 	gnmiClient := getGNMIClientOrFail(t)
 	// Set a value using gNMI client
-	devicePath := getDevicePathWithValue(simulator.Name(), subPath, subValue, StringVal)
+	devicePath := getDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, StringVal)
 	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
 	// Check that the value was set correctly
-	checkGNMIValue(t, gnmiClient, devicePath, subValue, 0, "Query after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
 
 	var response *gnmi.SubscribeResponse
 
 	go func() {
-		errSubscribe := subC.Subscribe(testutils.MakeContext(), q, "gnmi")
+		errSubscribe := subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
 		assert.NoError(t, errSubscribe, "Subscription Error")
 	}()
 
@@ -119,6 +81,15 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 		assert.FailNow(t, "Expected Sync Response")
 	}
 
+}
+
+func awaitResponse(t *testing.T, respChan chan *gnmi.SubscribeResponse, name string, delete bool, responseType string) {
+	select {
+	case response := <-respChan:
+		validateResponse(t, response, name, delete)
+	case <-time.After(10 * time.Second):
+		assert.FailNow(t, "Expected "+responseType+" Response")
+	}
 }
 
 // TestSubscribe tests a stream subscription to updates to a device
@@ -131,11 +102,12 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
 
-	path, err := utils.ParseGNMIElements(utils.SplitPath(subPath))
+	path, err := utils.ParseGNMIElements(utils.SplitPath(subTzPath))
 
 	assert.NoError(t, err, "Unexpected error doing parsing")
 
-	path.Target = simulator.Name()
+	name := simulator.Name()
+	path.Target = name
 
 	subReq := subscribeRequest{
 		path:          path,
@@ -143,37 +115,12 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 		subStreamMode: gnmi.SubscriptionMode_TARGET_DEFINED,
 	}
 
-	request, errReq := buildRequest(subReq)
-
-	assert.NoError(t, errReq, "Can't build Request")
-
-	q, errQuery := client.NewQuery(request)
-
+	q, respChan, errQuery := buildQueryRequest(subReq)
 	assert.NoError(t, errQuery, "Can't build Query")
-
-	dest := env.Config().Destination()
-
-	q.Addrs = dest.Addrs
-	q.Timeout = dest.Timeout
-	q.Target = dest.Target
-	q.Credentials = dest.Credentials
-	q.TLS = dest.TLS
-
-	respChan := make(chan *gnmi.SubscribeResponse)
-
-	q.ProtoHandler = func(msg proto.Message) error {
-		resp, ok := msg.(*gnmi.SubscribeResponse)
-		if !ok {
-			return fmt.Errorf("failed to type assert message %#v", msg)
-		}
-		respChan <- resp
-		return nil
-	}
 
 	// Subscription has to be spawned into a separate thread as it is blocking.
 	go func() {
-		errSubscribe := subC.Subscribe(testutils.MakeContext(), q, "gnmi")
-		assert.NoError(t, errSubscribe, "Subscription Error")
+		_ = subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
 	}()
 
 	// Sleeping in order to make sure the subscribe request is properly stored and processed.
@@ -183,87 +130,32 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	gnmiClient := getGNMIClientOrFail(t)
 
 	// Set a value using gNMI client
-	devicePath := getDevicePathWithValue(simulator.Name(), subPath, subValue, StringVal)
+	devicePath := getDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, StringVal)
 	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
-	var response *gnmi.SubscribeResponse
+
+	const deleted = true
+	const notDeleted = false
 
 	// Wait for the Update response with Update
-	select {
-	case response = <-respChan:
-		validateResponse(t, response, simulator.Name(), false)
-	case <-time.After(10 * time.Second):
-		assert.FailNow(t, "Expected Update Response")
-	}
+	awaitResponse(t, respChan, name, notDeleted, "Update")
 
 	// Wait for the Sync response
-	select {
-	case response = <-respChan:
-		validateResponse(t, response, simulator.Name(), false)
-	case <-time.After(1 * time.Second):
-		assert.FailNow(t, "Expected Sync Response")
-	}
+	awaitResponse(t, respChan, name, notDeleted, "Sync")
 
 	// Check that the value was set correctly
-	checkGNMIValue(t, gnmiClient, devicePath, subValue, 0, "Query after set returned the wrong value")
+	checkGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
 	setGNMIValueOrFail(t, gnmiClient, noPaths, devicePath, noExtensions)
 
 	// Wait for the Update response with delete
-	select {
-	case response = <-respChan:
-		validateResponse(t, response, simulator.Name(), true)
-	case <-time.After(1 * time.Second):
-		assert.FailNow(t, "Expected Delete Response")
-	}
+	awaitResponse(t, respChan, name, deleted, "Update")
 
 	// Wait for the Sync response
-	select {
-	case response = <-respChan:
-		validateResponse(t, response, simulator.Name(), false)
-	case <-time.After(1 * time.Second):
-		assert.FailNow(t, "Expected Sync Response")
-	}
+	awaitResponse(t, respChan, name, notDeleted, "Sync")
 
 	//  Make sure it got removed
 	checkGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
-}
-
-func buildRequest(subReq subscribeRequest) (*gnmi.SubscribeRequest, error) {
-	prefixPath, err := utils.ParseGNMIElements(utils.SplitPath(""))
-	if err != nil {
-		return nil, err
-	}
-	subscription := &gnmi.Subscription{}
-	switch subReq.subListMode {
-	case gnmi.SubscriptionList_STREAM:
-		subscription = &gnmi.Subscription{
-			Path: subReq.path,
-			Mode: subReq.subStreamMode,
-		}
-	case gnmi.SubscriptionList_ONCE:
-		subscription = &gnmi.Subscription{
-			Path: subReq.path,
-		}
-	case gnmi.SubscriptionList_POLL:
-		subscription = &gnmi.Subscription{
-			Path: subReq.path,
-		}
-	}
-	subscriptions := make([]*gnmi.Subscription, 0)
-	subscriptions = append(subscriptions, subscription)
-	subList := &gnmi.SubscriptionList{
-		Subscription: subscriptions,
-		Mode:         subReq.subListMode,
-		UpdatesOnly:  true,
-		Prefix:       prefixPath,
-	}
-	request := &gnmi.SubscribeRequest{
-		Request: &gnmi.SubscribeRequest_Subscribe{
-			Subscribe: subList,
-		},
-	}
-	return request, nil
 }
 
 func validateResponse(t *testing.T, resp *gnmi.SubscribeResponse, device string, delete bool) {
@@ -279,43 +171,9 @@ func validateResponse(t *testing.T, resp *gnmi.SubscribeResponse, device string,
 		assert.Equal(t, v.SyncResponse, true, "Sync should be true")
 	case *gnmi.SubscribeResponse_Update:
 		if delete {
-			assertDeleteResponse(t, v, device)
+			assertDeleteResponse(t, v, device, subTzPath)
 		} else {
-			assertUpdateResponse(t, v, device)
+			assertUpdateResponse(t, v, device, subTzPath, subTzValue)
 		}
 	}
-}
-
-func assertUpdateResponse(t *testing.T, response *gnmi.SubscribeResponse_Update, device string) {
-	assert.True(t, response.Update != nil, "Update should not be nil")
-	assert.Equal(t, len(response.Update.GetUpdate()), 1)
-	if response.Update.GetUpdate()[0] == nil {
-		log.Error("response should contain at least one update and that should not be nil")
-		t.FailNow()
-	}
-	pathResponse := response.Update.GetUpdate()[0].Path
-	assert.Equal(t, pathResponse.Target, device)
-	assert.Equal(t, len(pathResponse.Elem), 4, "Expected 4 path elements")
-	assert.Equal(t, pathResponse.Elem[0].Name, "system")
-	assert.Equal(t, pathResponse.Elem[1].Name, "clock")
-	assert.Equal(t, pathResponse.Elem[2].Name, "config")
-	assert.Equal(t, pathResponse.Elem[3].Name, "timezone-name")
-	assert.Equal(t, response.Update.GetUpdate()[0].Val.GetStringVal(), subValue)
-	assert.Equal(t, response.Update.GetUpdate()[0].Val.GetStringVal(), subValue)
-}
-
-func assertDeleteResponse(t *testing.T, response *gnmi.SubscribeResponse_Update, device string) {
-	assert.True(t, response.Update != nil, "Delete should not be nil")
-	assert.Equal(t, len(response.Update.GetDelete()), 1)
-	if response.Update.GetDelete()[0] == nil {
-		log.Error("response should contain at least one delete path")
-		t.FailNow()
-	}
-	pathResponse := response.Update.GetDelete()[0]
-	assert.Equal(t, pathResponse.Target, device)
-	assert.Equal(t, len(pathResponse.Elem), 4, "Expected 3 path elements")
-	assert.Equal(t, pathResponse.Elem[0].Name, "system")
-	assert.Equal(t, pathResponse.Elem[1].Name, "clock")
-	assert.Equal(t, pathResponse.Elem[2].Name, "config")
-	assert.Equal(t, pathResponse.Elem[3].Name, "timezone-name")
 }
