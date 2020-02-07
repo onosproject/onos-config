@@ -68,6 +68,7 @@ function par {
     for p in $ONOS_REPOS; do
         cd $GOPATH/src/github.com/onosproject/$p
         echo -e "\033[0;32m$p\033[0m:"
+        git checkout go.mod 1>/dev/null 2>&1
         if git status | grep -q "nothing to commit"; then
             gpm && git push
         else
