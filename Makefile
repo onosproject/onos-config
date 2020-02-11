@@ -65,8 +65,7 @@ deps: # @HELP ensure that the required dependencies are in place
 	bash -c "diff -u <(echo -n) <(git diff go.sum)"
 
 linters: # @HELP examines Go source code and reports coding problems
-	# Retry as a workaround for https://github.com/golangci/golangci-lint/issues/840
-	for retry in 1 2 3; do echo "Running linter, attempt #$$retry";  golangci-lint run --timeout 30m && s=0 && break || s=$$? && sleep 1; done; (exit $$s)
+	golangci-lint run --timeout 30m
 
 license_check: # @HELP examine and ensure license headers exist
 	@if [ ! -d "../build-tools" ]; then cd .. && git clone https://github.com/onosproject/build-tools.git; fi
