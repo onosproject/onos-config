@@ -15,8 +15,8 @@
 package modelregistry
 
 import (
+	td2 "github.com/onosproject/config-models/modelplugin/testdevice-2.0.0/testdevice_2_0_0"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	td2 "github.com/onosproject/onos-config/modelplugin/TestDevice-2.0.0/testdevice_2_0_0"
 	"github.com/openconfig/goyang/pkg/yang"
 	"gotest.tools/assert"
 	"testing"
