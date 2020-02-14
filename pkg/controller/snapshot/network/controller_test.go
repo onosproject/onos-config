@@ -97,9 +97,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network snapshot
-	ok, err := reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify that no device snapshots were created
 	deviceSnapshot1, err := deviceSnapshots.Get(devicesnapshot.GetSnapshotID(types.ID(networkSnapshot.ID), device1, v1))
@@ -118,9 +117,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshot.State_RUNNING, networkSnapshot.Status.State)
 
 	// Reconcile the network snapshot again
-	ok, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify network changes were marked for deletion
 	networkChange1, err = networkChanges.Get(networkChange1.ID)
@@ -154,9 +152,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Len(t, networkSnapshot.Refs, 3)
 
 	// Reconcile the network snapshot again
-	ok, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify the network snapshot state is still RUNNING
 	networkSnapshot, err = networkSnapshots.Get(networkSnapshot.ID)
@@ -169,9 +166,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network snapshot again
-	ok, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify the network snapshot state is still RUNNING
 	networkSnapshot, err = networkSnapshots.Get(networkSnapshot.ID)
@@ -187,9 +183,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network snapshot again
-	ok, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify the network snapshot state is PENDING in the DELETE phase
 	networkSnapshot, err = networkSnapshots.Get(networkSnapshot.ID)
@@ -198,9 +193,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshot.State_PENDING, networkSnapshot.Status.State)
 
 	// Reconcile the network snapshot again
-	ok, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify the device snapshots are PENDING in the DELETE phase
 	deviceSnapshot1, err = deviceSnapshots.Get(devicesnapshot.GetSnapshotID(types.ID(networkSnapshot.ID), device1, v1))
@@ -223,9 +217,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshot.State_PENDING, networkSnapshot.Status.State)
 
 	// Reconcile the network snapshot again
-	ok, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify the device snapshots are RUNNING in the DELETE phase
 	deviceSnapshot1, err = deviceSnapshots.Get(devicesnapshot.GetSnapshotID(types.ID(networkSnapshot.ID), device1, v1))
@@ -248,9 +241,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshot.State_RUNNING, networkSnapshot.Status.State)
 
 	// Reconcile the network snapshot again
-	ok, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify the device snapshots are RUNNING in the DELETE phase
 	deviceSnapshot1, err = deviceSnapshots.Get(devicesnapshot.GetSnapshotID(types.ID(networkSnapshot.ID), device1, v1))
@@ -278,9 +270,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network snapshot again
-	ok, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify the network snapshot state is still RUNNING
 	networkSnapshot, err = networkSnapshots.Get(networkSnapshot.ID)
@@ -301,9 +292,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, devicesim, deviceSnapshot3.DeviceType)
 
 	// Reconcile the network snapshot again
-	ok, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// Verify the network snapshot is COMPLETE
 	networkSnapshot, err = networkSnapshots.Get(networkSnapshot.ID)
