@@ -17,6 +17,7 @@ package main
 import (
 	"github.com/onosproject/onos-config/benchmark/gnmi"
 	"github.com/onosproject/onos-test/pkg/benchmark"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 func main() {

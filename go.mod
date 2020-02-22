@@ -34,5 +34,6 @@ require (
 	google.golang.org/genproto v0.0.0-20200212174721-66ed5ce911ce // indirect
 	google.golang.org/grpc v1.27.1
 	gotest.tools v2.2.0+incompatible
+	k8s.io/client-go v0.0.0-20190620074045-585a16d2e773
 	k8s.io/klog v1.0.0
 )
