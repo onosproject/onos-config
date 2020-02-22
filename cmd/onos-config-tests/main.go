@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/onos-config/test/gnmi"
 	"github.com/onosproject/onos-config/test/ha"
 	"github.com/onosproject/onos-test/pkg/test"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 func main() {
