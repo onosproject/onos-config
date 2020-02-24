@@ -18,6 +18,10 @@ package admin
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+
 	"github.com/onosproject/onos-config/api/admin"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -28,12 +32,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"io"
-	"os"
-	"strings"
 )
 
 var log = logging.GetLogger("northbound", "admin")

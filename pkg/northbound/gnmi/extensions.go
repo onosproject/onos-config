@@ -14,7 +14,7 @@
 
 package gnmi
 
-import "github.com/onosproject/onos-config/pkg/utils/logging"
+import "github.com/onosproject/onos-lib-go/pkg/logging"
 
 var log = logging.GetLogger("northbound", "gnmi")
 

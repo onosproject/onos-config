@@ -24,9 +24,10 @@ package dispatcher
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"sync"
+
+	"github.com/onosproject/onos-config/pkg/events"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
 var log = logging.GetLogger("dispatcher")

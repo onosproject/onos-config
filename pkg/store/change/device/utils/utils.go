@@ -15,13 +15,14 @@
 package utils
 
 import (
+	"sort"
+	"strings"
+
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/api/types/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
-	"sort"
-	"strings"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
 var log = logging.GetLogger("store", "change", "device")

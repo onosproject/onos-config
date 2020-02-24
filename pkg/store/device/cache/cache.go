@@ -16,15 +16,16 @@ package cache
 
 import (
 	"fmt"
+	"io"
+	"sync"
+
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/api/types/device"
 	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapshotstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
-	"io"
-	"sync"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
 var log = logging.GetLogger("store", "device", "cache")

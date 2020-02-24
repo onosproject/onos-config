@@ -16,6 +16,8 @@ package network
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/onosproject/onos-config/api/types"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -30,8 +32,7 @@ import (
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
-	"time"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
 var log = logging.GetLogger("controller", "snapshot", "network")

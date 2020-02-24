@@ -17,6 +17,7 @@ package diags
 
 import (
 	"fmt"
+
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/api/diags"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -28,7 +29,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 )
