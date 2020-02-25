@@ -61,7 +61,7 @@ function godocPackages {
         | bash
 }
 
-export ONOS_REPOS="onos-topo onos-config onos-ran onos-control onos-ztp onos-cli onos-test"
+export ONOS_REPOS="onos-topo onos-config onos-ric onos-control onos-ztp onos-cli onos-test"
 
 # Pull All Repos
 function par {
