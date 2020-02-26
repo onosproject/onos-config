@@ -17,11 +17,11 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/client"
-	"github.com/openconfig/gnmi/proto/gnmi"
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
-	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +39,7 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 	deviceID := device.ID(deviceName)
 
 	// Wait for config to connect to the device
-	testutils.WaitForDeviceAvailable(t, deviceID, 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, deviceID, 10*time.Second)
 	time.Sleep(250 * time.Millisecond)
 
 	// Make a GNMI client to use for subscribe
@@ -53,18 +53,18 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 
 	subReq := subscribeRequest{
 		path:          path,
-		subListMode:   gnmi.SubscriptionList_STREAM,
-		subStreamMode: gnmi.SubscriptionMode_TARGET_DEFINED,
+		subListMode:   gpb.SubscriptionList_STREAM,
+		subStreamMode: gpb.SubscriptionMode_TARGET_DEFINED,
 	}
 
 	q, respChan, errQuery := buildQueryRequest(subReq)
 	assert.NoError(t, errQuery, "Can't build Query")
 
-	var response *gnmi.SubscribeResponse
+	var response *gpb.SubscribeResponse
 
 	// Subscription has to be spawned into a separate thread as it is blocking.
 	go func() {
-		errSubscribe := subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
+		errSubscribe := subC.Subscribe(gnmi.MakeContext(), *q, "gnmi")
 		assert.NoError(t, errSubscribe, "Subscription Error")
 	}()
 
@@ -83,14 +83,14 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 	}
 }
 
-func validateGnmiStateResponse(t *testing.T, resp *gnmi.SubscribeResponse, device string) {
+func validateGnmiStateResponse(t *testing.T, resp *gpb.SubscribeResponse, device string) {
 	t.Helper()
 
 	switch v := resp.Response.(type) {
-	case *gnmi.SubscribeResponse_Update:
+	case *gpb.SubscribeResponse_Update:
 		validateGnmiStateUpdateResponse(t, v, device)
 
-	case *gnmi.SubscribeResponse_SyncResponse:
+	case *gpb.SubscribeResponse_SyncResponse:
 		validateGnmiStateSyncResponse(t, v)
 
 	default:
@@ -98,7 +98,7 @@ func validateGnmiStateResponse(t *testing.T, resp *gnmi.SubscribeResponse, devic
 	}
 }
 
-func validateGnmiStateUpdateResponse(t *testing.T, update *gnmi.SubscribeResponse_Update, device string) {
+func validateGnmiStateUpdateResponse(t *testing.T, update *gpb.SubscribeResponse_Update, device string) {
 	t.Helper()
 	assertUpdateResponse(t, update, device, subDateTimePath, "")
 	updatedTimeString := update.Update.GetUpdate()[0].Val.GetStringVal()
@@ -109,7 +109,7 @@ func validateGnmiStateUpdateResponse(t *testing.T, update *gnmi.SubscribeRespons
 	previousTime = updatedTime
 }
 
-func validateGnmiStateSyncResponse(t *testing.T, sync *gnmi.SubscribeResponse_SyncResponse) {
+func validateGnmiStateSyncResponse(t *testing.T, sync *gpb.SubscribeResponse_SyncResponse) {
 	t.Helper()
 	assertSyncResponse(t, sync)
 }

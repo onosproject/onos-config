@@ -15,6 +15,8 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
 )
@@ -29,19 +31,19 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
-	devicePath := getDevicePathWithValue(simulator.Name(), tzPath, tzValue, StringVal)
+	devicePath := gnmi.GetDevicePathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 
 	// Set a value using gNMI client
-	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Check that the value was set correctly
-	checkGNMIValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
-	setGNMIValueOrFail(t, gnmiClient, noPaths, devicePath, noExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, devicePath, gnmi.NoExtensions)
 
 	//  Make sure it got removed
-	checkGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 }

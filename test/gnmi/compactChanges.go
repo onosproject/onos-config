@@ -17,7 +17,8 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
-	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -57,39 +58,39 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	simulator1 := env.NewSimulator().SetDeviceVersion(version).SetDeviceType(deviceType).AddOrDie()
 	simulator2 := env.NewSimulator().SetDeviceVersion(version).SetDeviceType(deviceType).AddOrDie()
 
-	testutils.WaitForDeviceAvailable(t, device.ID(simulator1.Name()), 2*time.Minute)
-	testutils.WaitForDeviceAvailable(t, device.ID(simulator2.Name()), 2*time.Minute)
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator1.Name()), 2*time.Minute)
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator2.Name()), 2*time.Minute)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client
-	sim1Path1 := getDevicePathWithValue(simulator1.Name(), tzPath, tzValue, StringVal)
-	sim1nwChangeID1 := setGNMIValueOrFail(t, gnmiClient, sim1Path1, noPaths, noExtensions)
-	complete := testutils.WaitForNetworkChangeComplete(t, sim1nwChangeID1, wait)
+	sim1Path1 := gnmi.GetDevicePathWithValue(simulator1.Name(), tzPath, tzValue, proto.StringVal)
+	sim1nwChangeID1 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path1, gnmi.NoPaths, gnmi.NoExtensions)
+	complete := gnmi.WaitForNetworkChangeComplete(t, sim1nwChangeID1, wait)
 	assert.True(t, complete)
 
-	sim1Path2 := getDevicePathWithValue(simulator1.Name(), motdPath, motdValue1, StringVal)
-	sim1nwChangeID2 := setGNMIValueOrFail(t, gnmiClient, sim1Path2, noPaths, noExtensions)
-	complete = testutils.WaitForNetworkChangeComplete(t, sim1nwChangeID2, wait)
+	sim1Path2 := gnmi.GetDevicePathWithValue(simulator1.Name(), motdPath, motdValue1, proto.StringVal)
+	sim1nwChangeID2 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path2, gnmi.NoPaths, gnmi.NoExtensions)
+	complete = gnmi.WaitForNetworkChangeComplete(t, sim1nwChangeID2, wait)
 	assert.True(t, complete)
 
 	// Make a triple path change to Sim2
-	sim2Path1 := getDevicePathWithValue(simulator2.Name(), tzPath, tzParis, StringVal)
-	sim2Path2 := getDevicePathWithValue(simulator2.Name(), motdPath, motdValue2, StringVal)
-	sim2Path3 := getDevicePathWithValue(simulator2.Name(), domainNamePath, domainNameSim2, StringVal)
+	sim2Path1 := gnmi.GetDevicePathWithValue(simulator2.Name(), tzPath, tzParis, proto.StringVal)
+	sim2Path2 := gnmi.GetDevicePathWithValue(simulator2.Name(), motdPath, motdValue2, proto.StringVal)
+	sim2Path3 := gnmi.GetDevicePathWithValue(simulator2.Name(), domainNamePath, domainNameSim2, proto.StringVal)
 
-	sim2nwChangeID1 := setGNMIValueOrFail(t, gnmiClient, []DevicePath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, noPaths, noExtensions)
-	complete = testutils.WaitForNetworkChangeComplete(t, sim2nwChangeID1, wait)
+	sim2nwChangeID1 := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.DevicePath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	complete = gnmi.WaitForNetworkChangeComplete(t, sim2nwChangeID1, wait)
 	assert.True(t, complete)
 
 	// Finally make a change to both devices
-	sim1Path3 := getDevicePathWithValue(simulator1.Name(), loginBnrPath, loginBnr1, StringVal)
-	sim2Path4 := getDevicePathWithValue(simulator2.Name(), loginBnrPath, loginBnr2, StringVal)
-	bothSimNwChangeID := setGNMIValueOrFail(t, gnmiClient, []DevicePath{sim1Path3[0], sim2Path4[0]}, noPaths, noExtensions)
+	sim1Path3 := gnmi.GetDevicePathWithValue(simulator1.Name(), loginBnrPath, loginBnr1, proto.StringVal)
+	sim2Path4 := gnmi.GetDevicePathWithValue(simulator2.Name(), loginBnrPath, loginBnr2, proto.StringVal)
+	bothSimNwChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.DevicePath{sim1Path3[0], sim2Path4[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Wait for the change to transition to complete
-	complete = testutils.WaitForNetworkChangeComplete(t, bothSimNwChangeID, wait)
+	complete = gnmi.WaitForNetworkChangeComplete(t, bothSimNwChangeID, wait)
 	assert.True(t, complete)
 
 	t.Logf("Testing CompactChanges - nw changes %s, %s on %s AND %s on %s AND %s on both",
@@ -165,25 +166,25 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	}
 
 	// Set a value using gNMI client
-	sim1Path4 := getDevicePathWithValue(simulator1.Name(), tzPath, tzMilan, StringVal)
-	sim1Path5 := getDevicePathWithValue(simulator1.Name(), domainNamePath, domainNameSim1, StringVal)
-	afterSnapshotChangeID := setGNMIValueOrFail(t, gnmiClient, []DevicePath{sim1Path4[0], sim1Path5[0]}, noPaths, noExtensions)
+	sim1Path4 := gnmi.GetDevicePathWithValue(simulator1.Name(), tzPath, tzMilan, proto.StringVal)
+	sim1Path5 := gnmi.GetDevicePathWithValue(simulator1.Name(), domainNamePath, domainNameSim1, proto.StringVal)
+	afterSnapshotChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.DevicePath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Wait for the change to transition to complete
-	complete = testutils.WaitForNetworkChangeComplete(t, afterSnapshotChangeID, wait)
+	complete = gnmi.WaitForNetworkChangeComplete(t, afterSnapshotChangeID, wait)
 	assert.True(t, complete)
 
 	// Now check every value for both sim1 and sim2
-	expectedValues, _, err := getGNMIValue(testutils.MakeContext(), gnmiClient,
-		[]DevicePath{
+	expectedValues, _, err := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient,
+		[]proto.DevicePath{
 			sim1Path4[0], sim1Path2[0], sim1Path3[0], sim1Path5[0],
 			sim2Path1[0], sim2Path2[0], sim2Path3[0], sim2Path4[0],
 		})
 	assert.NoError(t, err)
 	for _, expectedValue := range expectedValues {
-		switch expectedValue.deviceName + "," + expectedValue.path {
+		switch expectedValue.DeviceName + "," + expectedValue.Path {
 		case simulator1.Name() + "," + tzPath:
-			assert.Equal(t, tzMilan, expectedValue.pathDataValue, "Unexpected value for TZ on sim1")
+			assert.Equal(t, tzMilan, expectedValue.PathDataValue, "Unexpected value for TZ on sim1")
 		case simulator2.Name() + "," + tzPath:
 			// Commented out because of issue https://github.com/onosproject/onos-config/issues/1031
 			//assert.Equal(t, tzParis, expectedValue.pathDataValue, "Unexpected value for TZ on sim2")
@@ -200,12 +201,12 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 			// Commented out because of issue https://github.com/onosproject/onos-config/issues/1031
 			//assert.Equal(t, loginBnr2, expectedValue.pathDataValue, "Unexpected value for LB on sim2")
 		case simulator1.Name() + "," + domainNamePath:
-			assert.Equal(t, domainNameSim1, expectedValue.pathDataValue, "Unexpected value for DN on sim1")
+			assert.Equal(t, domainNameSim1, expectedValue.PathDataValue, "Unexpected value for DN on sim1")
 		case simulator2.Name() + "," + domainNamePath:
 			// Commented out because of issue https://github.com/onosproject/onos-config/issues/1031
 			//assert.Equal(t, domainNameSim1, expectedValue.pathDataValue, "Unexpected value for DN on sim2")
 		default:
-			assert.Failf(t, "Unhandled value %s,%s", expectedValue.deviceName, expectedValue.path)
+			assert.Failf(t, "Unhandled value %s,%s", expectedValue.DeviceName, expectedValue.Path)
 		}
 	}
 }

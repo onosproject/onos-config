@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gnmi
+package proto
 
 import (
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -29,6 +29,15 @@ const (
 	// BoolVal :
 	BoolVal = "bool_val"
 )
+
+// DevicePath describes the results of a get operation for a single Path
+// It specifies the device, Path, and value
+type DevicePath struct {
+	DeviceName    string
+	Path          string
+	PathDataType  string
+	PathDataValue string
+}
 
 // MakeProtoTarget returns a GNMI proto path for a given target
 func MakeProtoTarget(target string, path string) string {
@@ -83,8 +92,8 @@ func MakeProtoUpdatePath(devicePath DevicePath) string {
 	var protoBuilder strings.Builder
 
 	protoBuilder.WriteString("update: <")
-	protoBuilder.WriteString(MakeProtoPath(devicePath.deviceName, devicePath.path))
-	protoBuilder.WriteString(makeProtoValue(devicePath.pathDataValue, devicePath.pathDataType))
+	protoBuilder.WriteString(MakeProtoPath(devicePath.DeviceName, devicePath.Path))
+	protoBuilder.WriteString(makeProtoValue(devicePath.PathDataValue, devicePath.PathDataType))
 	protoBuilder.WriteString(">")
 	return protoBuilder.String()
 }

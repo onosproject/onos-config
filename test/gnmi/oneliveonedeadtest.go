@@ -16,7 +16,8 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
 	"time"
@@ -31,29 +32,29 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 	)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the offline device
-	offlineDevicePath := getDevicePathWithValue("offline-device", modPath, modValue, StringVal)
+	offlineDevicePath := gnmi.GetDevicePathWithValue("offline-device", modPath, modValue, proto.StringVal)
 
 	// Set the value - should return a pending change
-	setGNMIValueOrFail(t, gnmiClient, offlineDevicePath, noPaths, getSimulatorExtensions())
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, offlineDevicePath, gnmi.NoPaths, gnmi.GetSimulatorExtensions())
 
 	// Check that the value was set correctly in the cache
-	checkGNMIValue(t, gnmiClient, offlineDevicePath, modValue, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, offlineDevicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Create an online device
 	onlineSimulator := env.NewSimulator().AddOrDie()
 
 	// Set a value to the online device
-	onlineDevicePath := getDevicePathWithValue(onlineSimulator.Name(), modPath, modValue, StringVal)
-	nid := setGNMIValueOrFail(t, gnmiClient, onlineDevicePath, noPaths, noExtensions)
-	utils.WaitForNetworkChangeComplete(t, nid, 10*time.Second)
+	onlineDevicePath := gnmi.GetDevicePathWithValue(onlineSimulator.Name(), modPath, modValue, proto.StringVal)
+	nid := gnmi.SetGNMIValueOrFail(t, gnmiClient, onlineDevicePath, gnmi.NoPaths, gnmi.NoExtensions)
+	gnmi.WaitForNetworkChangeComplete(t, nid, 10*time.Second)
 
 	// Check that the value was set correctly in the cache
-	checkGNMIValue(t, gnmiClient, onlineDevicePath, modValue, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, onlineDevicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set correctly on the device
-	deviceGnmiClient := getDeviceGNMIClientOrFail(t, onlineSimulator)
-	checkDeviceValue(t, deviceGnmiClient, onlineDevicePath, modValue)
+	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, onlineSimulator)
+	gnmi.CheckDeviceValue(t, deviceGnmiClient, onlineDevicePath, modValue)
 }

@@ -17,7 +17,9 @@ package gnmi
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
@@ -59,28 +61,28 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	assert.Nil(t, addResponseError)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the device
 	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnmi.GnmiExtensionDeviceType,
+			Id:  gnb.GnmiExtensionDeviceType,
 			Msg: []byte(unreachableDeviceModDeviceType),
 		},
 	}
 	extNameDeviceVersion := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnmi.GnmiExtensionVersion,
+			Id:  gnb.GnmiExtensionVersion,
 			Msg: []byte(unreachableDeviceModDeviceVersion),
 		},
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
 
-	devicePath := getDevicePathWithValue(unreachableDeviceModDeviceName, unreachableDeviceModPath, unreachableDeviceModValue, StringVal)
+	devicePath := gnmi.GetDevicePathWithValue(unreachableDeviceModDeviceName, unreachableDeviceModPath, unreachableDeviceModValue, proto.StringVal)
 
 	// Set the value - should return a pending change
-	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, extensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
 
 	// Check that the value was set correctly in the cache
-	checkGNMIValue(t, gnmiClient, devicePath, unreachableDeviceModValue, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, unreachableDeviceModValue, 0, "Query after set returned the wrong value")
 }

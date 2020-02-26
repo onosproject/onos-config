@@ -17,7 +17,7 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
-	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -47,34 +47,34 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	devices[1] = device2.Name()
 
 	// Wait for config to connect to the devices
-	testutils.WaitForDeviceAvailable(t, device.ID(device1.Name()), 10*time.Second)
-	testutils.WaitForDeviceAvailable(t, device.ID(device2.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(device1.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(device2.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set values
-	var devicePathsForSet = getDevicePathsWithValues(devices, paths, values)
-	changeID := setGNMIValueOrFail(t, gnmiClient, devicePathsForSet, noPaths, noExtensions)
+	var devicePathsForSet = gnmi.GetDevicePathsWithValues(devices, paths, values)
+	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
 
-	devicePathsForGet := getDevicePaths(devices, paths)
+	devicePathsForGet := gnmi.GetDevicePaths(devices, paths)
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}
-	checkGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
-	complete := testutils.WaitForNetworkChangeComplete(t, changeID, 10*time.Second)
+	complete := gnmi.WaitForNetworkChangeComplete(t, changeID, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices
-	device1GnmiClient := getDeviceGNMIClientOrFail(t, device1)
-	device2GnmiClient := getDeviceGNMIClientOrFail(t, device2)
+	device1GnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, device1)
+	device2GnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, device2)
 
-	checkDeviceValue(t, device1GnmiClient, devicePathsForGet[0:1], value1)
-	checkDeviceValue(t, device1GnmiClient, devicePathsForGet[1:2], value2)
-	checkDeviceValue(t, device2GnmiClient, devicePathsForGet[2:3], value1)
-	checkDeviceValue(t, device2GnmiClient, devicePathsForGet[3:4], value2)
+	gnmi.CheckDeviceValue(t, device1GnmiClient, devicePathsForGet[0:1], value1)
+	gnmi.CheckDeviceValue(t, device1GnmiClient, devicePathsForGet[1:2], value2)
+	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[2:3], value1)
+	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[3:4], value2)
 
 	// Now rollback the change
 	adminClient, err := env.Config().NewAdminServiceClient()
@@ -88,5 +88,5 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Check that the values were really rolled back
 	expectedValuesAfterRollback := []string{"", ""}
-	checkGNMIValues(t, gnmiClient, devicePathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
+	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
 }
