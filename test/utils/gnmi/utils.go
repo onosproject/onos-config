@@ -359,7 +359,7 @@ func GetSimulatorExtensions() []*gnmi_ext.Extension {
 func MakeProtoPath(target string, path string) string {
 	var protoBuilder strings.Builder
 
-	protoBuilder.WriteString("Path: ")
+	protoBuilder.WriteString("path: ")
 	gnmiPath := protoutils.MakeProtoTarget(target, path)
 	protoBuilder.WriteString(gnmiPath)
 	return protoBuilder.String()
