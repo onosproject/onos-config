@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
 	deviceID := device.ID(deviceName)
 
 	// Wait for config to connect to the device
-	testutils.WaitForDeviceAvailable(t, deviceID, 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, deviceID, 10*time.Second)
 	time.Sleep(250 * time.Millisecond)
 
 	// Make an opstate diags client

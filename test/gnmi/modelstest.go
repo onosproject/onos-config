@@ -15,7 +15,8 @@
 package gnmi
 
 import (
-	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/status"
@@ -41,14 +42,14 @@ func (s *TestSuite) TestModels(t *testing.T) {
 		valueType     string
 		expectedError string
 	}{
-		{description: "Unknown path", path: unknownPath, valueType: StringVal, value: "123456", expectedError: "no-such-path"},
-		{description: "Read only path", path: ntpPath, valueType: BoolVal, value: "false", expectedError: "read only"},
-		{description: "Wrong type", path: clockTimeZonePath, valueType: IntVal, value: "11111", expectedError: "expect string"},
-		{description: "Constraint violation", path: hostNamePath, valueType: StringVal, value: "not a host name", expectedError: "does not match regular expression pattern"},
+		{description: "Unknown path", path: unknownPath, valueType: proto.StringVal, value: "123456", expectedError: "no-such-path"},
+		{description: "Read only path", path: ntpPath, valueType: proto.BoolVal, value: "false", expectedError: "read only"},
+		{description: "Wrong type", path: clockTimeZonePath, valueType: proto.IntVal, value: "11111", expectedError: "expect string"},
+		{description: "Constraint violation", path: hostNamePath, valueType: proto.StringVal, value: "not a host name", expectedError: "does not match regular expression pattern"},
 	}
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Run the test cases
 	for _, testCase := range testCases {
@@ -64,8 +65,8 @@ func (s *TestSuite) TestModels(t *testing.T) {
 
 				t.Logf("testing %q", description)
 
-				setResult := getDevicePathWithValue(simulator.Name(), path, value, valueType)
-				msg, _, errorSet := setGNMIValue(testutils.MakeContext(), gnmiClient, setResult, noPaths, noExtensions)
+				setResult := gnmi.GetDevicePathWithValue(simulator.Name(), path, value, valueType)
+				msg, _, errorSet := gnmi.SetGNMIValue(gnmi.MakeContext(), gnmiClient, setResult, gnmi.NoPaths, gnmi.NoExtensions)
 				assert.NotNil(t, errorSet, "Set operation for %s does not generate an error", description)
 				assert.Contains(t, status.Convert(errorSet).Message(), expectedError,
 					"set operation for %s generates wrong error %s", description, msg)

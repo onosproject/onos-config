@@ -19,7 +19,8 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/diags"
 	"github.com/onosproject/onos-config/api/types/change"
-	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -57,14 +58,14 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	assert.Nil(t, addResponseError)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the offline device
-	devicePath := getDevicePathWithValue(offlineInTopoModDeviceName, offlineInTopoModPath, offlineInTopoModValue, StringVal)
-	networkChangeID := setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
+	devicePath := gnmi.GetDevicePathWithValue(offlineInTopoModDeviceName, offlineInTopoModPath, offlineInTopoModValue, proto.StringVal)
+	networkChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Check that the value was set correctly
-	checkGNMIValue(t, gnmiClient, devicePath, offlineInTopoModValue, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, offlineInTopoModValue, 0, "Query after set returned the wrong value")
 
 	// Check for pending state on the network change
 	changeServiceClient, changeServiceClientErr := env.Config().NewChangeServiceClient()
@@ -88,12 +89,12 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	simulatorEnv := simulator.AddOrDie()
 
 	// Wait for config to connect to the device
-	testutils.WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
+	gnmi.WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	testutils.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
+	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
 
 	// Interrogate the device to check that the value was set properly
-	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
-	checkDeviceValue(t, deviceGnmiClient, devicePath, offlineInTopoModValue)
+	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulatorEnv)
+	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, offlineInTopoModValue)
 }

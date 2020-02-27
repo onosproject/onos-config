@@ -15,7 +15,7 @@
 package gnmi
 
 import (
-	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -35,10 +35,10 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
 
 	// Wait for config to connect to the device
-	testutils.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Check that the value was correctly retrieved from the device and stored in the state cache
 	success := false
@@ -46,10 +46,10 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	for attempt := 1; attempt <= 10; attempt++ {
 		// If the device cache has not been completely initialized, we can hit a race here where the value
 		// will be returned as null. Needs further investigation.
-		valueAfter, extensions, errorAfter := getGNMIValue(testutils.MakeContext(), gnmiClient, getDevicePath(simulator.Name(), stateControllersPath))
+		valueAfter, extensions, errorAfter := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient, gnmi.GetDevicePath(simulator.Name(), stateControllersPath))
 		assert.NoError(t, errorAfter)
 		assert.NotEqual(t, nil, valueAfter, "Query after state returned nil")
-		address := valueAfter[0].pathDataValue
+		address := valueAfter[0].PathDataValue
 		if !strings.Contains(address, ".") {
 			time.Sleep(time.Second)
 			continue

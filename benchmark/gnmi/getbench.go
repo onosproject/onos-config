@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-test/pkg/benchmark"
 	"time"
 )
@@ -23,10 +24,10 @@ import (
 // BenchmarkGet tests get of GNMI paths
 func (s *BenchmarkSuite) BenchmarkGet(b *benchmark.Benchmark) {
 	b.Run(func() error {
-		devicePath := getDevicePath(s.simulator.Name(), "/system/config/motd-banner")
+		devicePath := gnmi.GetDevicePath(s.simulator.Name(), "/system/config/motd-banner")
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
-		_, _, err := getGNMIValue(ctx, s.client, devicePath)
+		_, _, err := gnmi.GetGNMIValue(ctx, s.client, devicePath)
 		return err
 	})
 }

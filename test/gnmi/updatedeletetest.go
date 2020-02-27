@@ -15,6 +15,8 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
 )
@@ -34,33 +36,33 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	device := env.NewSimulator().AddOrDie()
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Create interface tree using gNMI client
-	setNamePath := []DevicePath{
-		{deviceName: device.Name(), path: udtestNamePath, pathDataValue: udtestNameValue, pathDataType: StringVal},
+	setNamePath := []proto.DevicePath{
+		{DeviceName: device.Name(), Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
 	}
-	setGNMIValueOrFail(t, gnmiClient, setNamePath, noPaths, noExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Set initial values for Enabled and Description using gNMI client
-	setInitialValuesPath := []DevicePath{
-		{deviceName: device.Name(), path: udtestEnabledPath, pathDataValue: "true", pathDataType: BoolVal},
-		{deviceName: device.Name(), path: udtestDescriptionPath, pathDataValue: udtestDescriptionValue, pathDataType: StringVal},
+	setInitialValuesPath := []proto.DevicePath{
+		{DeviceName: device.Name(), Path: udtestEnabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
+		{DeviceName: device.Name(), Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
 	}
-	setGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, noPaths, noExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Update Enabled, delete Description using gNMI client
-	updateEnabledPath := []DevicePath{
-		{deviceName: device.Name(), path: udtestEnabledPath, pathDataValue: "false", pathDataType: BoolVal},
+	updateEnabledPath := []proto.DevicePath{
+		{DeviceName: device.Name(), Path: udtestEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
-	deleteDescriptionPath := []DevicePath{
-		{deviceName: device.Name(), path: udtestDescriptionPath},
+	deleteDescriptionPath := []proto.DevicePath{
+		{DeviceName: device.Name(), Path: udtestDescriptionPath},
 	}
-	setGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, noExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, gnmi.NoExtensions)
 
 	// Check that the Enabled value is set correctly
-	checkGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
 
 	//  Make sure Description got removed
-	checkGNMIValue(t, gnmiClient, getDevicePath(device.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
+	gnmi.CheckGNMIValue(t, gnmiClient, gnmi.GetDevicePath(device.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
 }

@@ -15,6 +15,8 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
 )
@@ -34,35 +36,35 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	device := env.NewSimulator().AddOrDie()
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
-	getPath := getDevicePath(device.Name(), newRootEnabledPath)
+	getPath := gnmi.GetDevicePath(device.Name(), newRootEnabledPath)
 
 	// Set name of new root using gNMI client
-	setNamePath := []DevicePath{
-		{deviceName: device.Name(), path: newRootConfigNamePath, pathDataValue: newRootName, pathDataType: StringVal},
+	setNamePath := []proto.DevicePath{
+		{DeviceName: device.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
-	setGNMIValueOrFail(t, gnmiClient, setNamePath, noPaths, noExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Set values using gNMI client
-	setPath := []DevicePath{
-		{deviceName: device.Name(), path: newRootDescriptionPath, pathDataValue: newDescription, pathDataType: StringVal},
-		{deviceName: device.Name(), path: newRootEnabledPath, pathDataValue: "false", pathDataType: BoolVal},
+	setPath := []proto.DevicePath{
+		{DeviceName: device.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
+		{DeviceName: device.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
-	setGNMIValueOrFail(t, gnmiClient, setPath, noPaths, noExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, setPath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Check that the name value was set correctly
-	checkGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "Query name after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "Query name after set returned the wrong value")
 
 	// Check that the enabled value was set correctly
-	checkGNMIValue(t, gnmiClient, getPath, "false", 0, "Query enabled after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, getPath, "false", 0, "Query enabled after set returned the wrong value")
 
 	// Remove the root path we added
-	setGNMIValueOrFail(t, gnmiClient, noPaths, getPath, noExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, getPath, gnmi.NoExtensions)
 
 	//  Make sure child got removed
-	checkGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "New child was not removed")
+	gnmi.CheckGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "New child was not removed")
 
 	//  Make sure new root got removed
-	checkGNMIValue(t, gnmiClient, getPath, "", 0, "New root was not removed")
+	gnmi.CheckGNMIValue(t, gnmiClient, getPath, "", 0, "New root was not removed")
 }

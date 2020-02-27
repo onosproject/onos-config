@@ -15,15 +15,16 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"testing"
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/utils"
-	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
-	"github.com/openconfig/gnmi/proto/gnmi"
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +33,7 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
 
 	// Wait for config to connect to the device
-	testutils.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
@@ -45,24 +46,24 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 
 	subReq := subscribeRequest{
 		path:        path,
-		subListMode: gnmi.SubscriptionList_ONCE,
+		subListMode: gpb.SubscriptionList_ONCE,
 	}
 
 	q, respChan, errQuery := buildQueryRequest(subReq)
 	assert.NoError(t, errQuery, "Can't build Query")
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 	// Set a value using gNMI client
-	devicePath := getDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, StringVal)
-	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
+	devicePath := gnmi.GetDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, proto.StringVal)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 	// Check that the value was set correctly
-	checkGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
 
-	var response *gnmi.SubscribeResponse
+	var response *gpb.SubscribeResponse
 
 	go func() {
-		errSubscribe := subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
+		errSubscribe := subC.Subscribe(gnmi.MakeContext(), *q, "gnmi")
 		assert.NoError(t, errSubscribe, "Subscription Error")
 	}()
 
@@ -83,7 +84,7 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 
 }
 
-func awaitResponse(t *testing.T, respChan chan *gnmi.SubscribeResponse, name string, delete bool, responseType string) {
+func awaitResponse(t *testing.T, respChan chan *gpb.SubscribeResponse, name string, delete bool, responseType string) {
 	select {
 	case response := <-respChan:
 		validateResponse(t, response, name, delete)
@@ -97,7 +98,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	simulator := env.NewSimulator().AddOrDie()
 
 	// Wait for config to connect to the device
-	testutils.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
@@ -111,8 +112,8 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 	subReq := subscribeRequest{
 		path:          path,
-		subListMode:   gnmi.SubscriptionList_STREAM,
-		subStreamMode: gnmi.SubscriptionMode_TARGET_DEFINED,
+		subListMode:   gpb.SubscriptionList_STREAM,
+		subStreamMode: gpb.SubscriptionMode_TARGET_DEFINED,
 	}
 
 	q, respChan, errQuery := buildQueryRequest(subReq)
@@ -120,18 +121,18 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 	// Subscription has to be spawned into a separate thread as it is blocking.
 	go func() {
-		_ = subC.Subscribe(testutils.MakeContext(), *q, "gnmi")
+		_ = subC.Subscribe(gnmi.MakeContext(), *q, "gnmi")
 	}()
 
 	// Sleeping in order to make sure the subscribe request is properly stored and processed.
 	time.Sleep(100000)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client
-	devicePath := getDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, StringVal)
-	setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, noExtensions)
+	devicePath := gnmi.GetDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, proto.StringVal)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	const deleted = true
 	const notDeleted = false
@@ -143,10 +144,10 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	awaitResponse(t, respChan, name, notDeleted, "Sync")
 
 	// Check that the value was set correctly
-	checkGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
-	setGNMIValueOrFail(t, gnmiClient, noPaths, devicePath, noExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, devicePath, gnmi.NoExtensions)
 
 	// Wait for the Update response with delete
 	awaitResponse(t, respChan, name, deleted, "Update")
@@ -155,21 +156,21 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	awaitResponse(t, respChan, name, notDeleted, "Sync")
 
 	//  Make sure it got removed
-	checkGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 }
 
-func validateResponse(t *testing.T, resp *gnmi.SubscribeResponse, device string, delete bool) {
+func validateResponse(t *testing.T, resp *gpb.SubscribeResponse, device string, delete bool) {
 	//No extension should be provided since the device should be connected.
 	assert.Equal(t, 0, len(resp.Extension))
 
 	switch v := resp.Response.(type) {
 	default:
 		assert.Fail(t, "Unknown type", v)
-	case *gnmi.SubscribeResponse_Error:
+	case *gpb.SubscribeResponse_Error:
 		assert.Fail(t, "Error ", v)
-	case *gnmi.SubscribeResponse_SyncResponse:
+	case *gpb.SubscribeResponse_SyncResponse:
 		assert.Equal(t, v.SyncResponse, true, "Sync should be true")
-	case *gnmi.SubscribeResponse_Update:
+	case *gpb.SubscribeResponse_Update:
 		if delete {
 			assertDeleteResponse(t, v, device, subTzPath)
 		} else {

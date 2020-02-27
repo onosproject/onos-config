@@ -16,8 +16,9 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
-	testutils "github.com/onosproject/onos-config/test/utils"
+	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"testing"
@@ -35,32 +36,32 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	simulator := env.NewSimulator().SetName(offlineDeviceName)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := getGNMIClientOrFail(t)
+	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the offline device
 	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnmi.GnmiExtensionDeviceType,
+			Id:  gnb.GnmiExtensionDeviceType,
 			Msg: []byte("Devicesim"),
 		},
 	}
 	extNameDeviceVersion := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnmi.GnmiExtensionVersion,
+			Id:  gnb.GnmiExtensionVersion,
 			Msg: []byte("1.0.0"),
 		},
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
-	devicePath := getDevicePathWithValue(offlineDeviceName, modPath, modValue, StringVal)
-	networkChangeID := setGNMIValueOrFail(t, gnmiClient, devicePath, noPaths, extensions)
+	devicePath := gnmi.GetDevicePathWithValue(offlineDeviceName, modPath, modValue, proto.StringVal)
+	networkChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
 
 	// Check that the value was set correctly
 	simulatorEnv := simulator.AddOrDie()
 	time.Sleep(2 * time.Second)
-	checkGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the device
-	testutils.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
-	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
-	checkDeviceValue(t, deviceGnmiClient, devicePath, modValue)
+	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
+	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulatorEnv)
+	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, modValue)
 }

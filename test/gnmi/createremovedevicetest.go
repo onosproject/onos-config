@@ -17,7 +17,8 @@ package gnmi
 
 import (
 	"context"
-	testutils "github.com/onosproject/onos-config/test/utils"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -60,55 +61,55 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	simulatorEnv := simulator.AddOrDie()
 
 	// Wait for config to connect to the device
-	testutils.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
+	gnmi.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
 
 	// Make a GNMI client to use for requests
-	c := getGNMIClientOrFail(t)
+	c := gnmi.GetGNMIClientOrFail(t)
 
-	devicePath := getDevicePathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue1, StringVal)
+	devicePath := gnmi.GetDevicePathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue1, proto.StringVal)
 
 	// Set a value using gNMI client - device is up
-	networkChangeID := setGNMIValueOrFail(t, c, devicePath, noPaths, noExtensions)
+	networkChangeID := gnmi.SetGNMIValueOrFail(t, c, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 	assert.True(t, networkChangeID != "")
 
 	// Check that the value was set correctly
-	checkGNMIValue(t, c, devicePath, createRemoveDeviceModValue1, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, c, devicePath, createRemoveDeviceModValue1, 0, "Query after set returned the wrong value")
 
 	// Wait for config to reconnect to the device
-	testutils.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
+	gnmi.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	testutils.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
+	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
-	deviceGnmiClient := getDeviceGNMIClientOrFail(t, simulatorEnv)
-	checkDeviceValue(t, deviceGnmiClient, devicePath, createRemoveDeviceModValue1)
+	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulatorEnv)
+	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, createRemoveDeviceModValue1)
 
 	//  Shut down the simulator
 	simulatorEnv.KillOrDie()
 	simulatorEnv.RemoveOrDie()
-	testutils.WaitForDeviceUnavailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
+	gnmi.WaitForDeviceUnavailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
 
 	// Set a value using gNMI client - device is down
-	setPath2 := getDevicePathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue2, StringVal)
-	networkChangeID2 := setGNMIValueOrFail(t, c, setPath2, noPaths, noExtensions)
+	setPath2 := gnmi.GetDevicePathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue2, proto.StringVal)
+	networkChangeID2 := gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
 	assert.True(t, networkChangeID2 != "")
 
 	//  Restart simulated device
 	simulatorEnv2 := simulator.AddOrDie()
 
 	// Wait for config to connect to the device
-	testutils.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 2*time.Minute)
+	gnmi.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 2*time.Minute)
 
 	// Check that the value was set correctly
-	checkGNMIValue(t, c, devicePath, createRemoveDeviceModValue2, 0, "Query after set 2 returns wrong value")
+	gnmi.CheckGNMIValue(t, c, devicePath, createRemoveDeviceModValue2, 0, "Query after set 2 returns wrong value")
 
 	// Check that the network change has completed
-	testutils.WaitForNetworkChangeComplete(t, networkChangeID2, 10*time.Second)
+	gnmi.WaitForNetworkChangeComplete(t, networkChangeID2, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
-	deviceGnmiClient2 := getDeviceGNMIClientOrFail(t, simulatorEnv2)
-	checkDeviceValue(t, deviceGnmiClient2, devicePath, createRemoveDeviceModValue2)
+	deviceGnmiClient2 := gnmi.GetDeviceGNMIClientOrFail(t, simulatorEnv2)
+	gnmi.CheckDeviceValue(t, deviceGnmiClient2, devicePath, createRemoveDeviceModValue2)
 
 	// Clean up the simulator, as it isn't under onit control
 	simulatorEnv.KillOrDie()
