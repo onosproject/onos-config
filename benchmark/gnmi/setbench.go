@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/benchmark"
-	"github.com/onosproject/onos-test/pkg/benchmark/params"
+	"github.com/onosproject/onos-test/pkg/input"
 	"time"
 )
 
@@ -31,5 +31,5 @@ func (s *BenchmarkSuite) BenchmarkSet(b *benchmark.Benchmark) {
 		defer cancel()
 		_, _, err := gnmi.SetGNMIValue(ctx, s.client, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 		return err
-	}, params.RandomString(8))
+	}, input.RandomString(8))
 }
