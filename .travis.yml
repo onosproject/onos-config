@@ -21,10 +21,12 @@ before_script:
 jobs:
   include:
     - stage: build
+      name: "build and test"
       script:
         - make test
         - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash ./build/bin/push-images; fi'
-    - stage: coverage
+    -
+      name: "coverage"
       script:
         - make coverage
     - stage: integration tests
