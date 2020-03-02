@@ -62,12 +62,12 @@ onos-config-base-debug-docker: # @HELP build onos-config base Docker image
 		-t onosproject/onos-config-base:${ONOS_CONFIG_DEBUG_VERSION}
 	@rm -rf vendor
 
-onos-config-docker: onos-config-base-docker onos-config-plugins-docker # @HELP build onos-config Docker image
+onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
 
-onos-config-debug-docker: onos-config-base-debug-docker onos-config-plugins-debug-docker # @HELP build onos-config Docker debug image
+onos-config-debug-docker: onos-config-base-debug-docker # @HELP build onos-config Docker debug image
 	docker build . -f build/onos-config-debug/Dockerfile \
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_DEBUG_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
@@ -103,82 +103,3 @@ help:
         BEGIN {FS = ": *# *@HELP"}; \
         {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}; \
     '
-
-# All this plugins targets should eventually be moved out in to the config-models
-# repo, but with Go 1.13 this is not possible, since a plugin built under a
-# different path cannot be loaded successfully - it will give an error like:
-# "plugin was built with a different version of package internal/cpu"
-# So for the moment all of the build files for plugins have to stay here.
-
-# Also for the first iteration of this Plugins can be loaded
-# so that this can be run in
-# 1) the old way - with plugins embeddeed in onosproject/onos-config:latest
-# AND
-# 2) the new way - with plugins in sidecar containers from onosproject/config-model--:latest
-# after I update "onit" to support method 2, I will remove support for 1)
-MODELPLUGINS = build/_output/testdevice.so.1.0.0 build/_output/testdevice.so.2.0.0 build/_output/devicesim.so.1.0.0 build/_output/stratum.so.1.0.0 build/_output/copylibandstay
-MODELPLUGINSDEBUG = build/_output/testdevice-debug.so.1.0.0 build/_output/testdevice-debug.so.2.0.0 build/_output/devicesim-debug.so.1.0.0 build/_output/stratum-debug.so.1.0.0
-
-build-plugins: # @HELP build plugin binaries
-build-plugins: $(MODELPLUGINS)
-
-build-plugins-debug: # @HELP build plugin binaries
-build-plugins-debug: $(MODELPLUGINSDEBUG)
-
-build/_output/copylibandstay:
-	CGO_ENABLED=1 go build -o build/_output/copylibandstay github.com/onosproject/config-models/cmd
-
-build/_output/testdevice.so.1.0.0:
-	CGO_ENABLED=1 go build -o build/_output/testdevice.so.1.0.0 -buildmode=plugin github.com/onosproject/config-models/modelplugin/testdevice-1.0.0
-
-build/_output/testdevice.so.2.0.0:
-	CGO_ENABLED=1 go build -o build/_output/testdevice.so.2.0.0 -buildmode=plugin github.com/onosproject/config-models/modelplugin/testdevice-2.0.0
-
-build/_output/devicesim.so.1.0.0:
-	CGO_ENABLED=1 go build -o build/_output/devicesim.so.1.0.0 -buildmode=plugin github.com/onosproject/config-models/modelplugin/devicesim-1.0.0
-
-build/_output/stratum.so.1.0.0:
-	CGO_ENABLED=1 go build -o build/_output/stratum.so.1.0.0 -buildmode=plugin github.com/onosproject/config-models/modelplugin/stratum-1.0.0
-
-onos-config-plugins-docker: # @HELP build onos-config plugins Docker image
-	@go mod vendor
-	docker build . -f build/plugins/Dockerfile \
-		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
-		--build-arg ONOS_MAKE_TARGET=build-plugins \
-		-t onosproject/onos-config-plugins:${ONOS_CONFIG_VERSION}
-	@rm -rf vendor
-
-PHONY: config-plugin-docker-testdevice-1.0.0
-config-plugin-docker-testdevice-1.0.0: # @HELP build testdevice 1.0.0 plugin Docker image
-	docker build . -f build/plugins/Dockerfile.plugin \
-		--build-arg PLUGIN_MAKE_TARGET=testdevice \
-		--build-arg PLUGIN_MAKE_VERSION=1.0.0 \
-		--build-arg PLUGIN_BUILD_VERSION=${ONOS_CONFIG_VERSION} \
-		-t onosproject/config-model-testdevice-1.0.0:${ONOS_CONFIG_VERSION}
-
-PHONY: config-plugin-docker-testdevice-2.0.0
-config-plugin-docker-testdevice-2.0.0: # @HELP build testdevice 2.0.0 plugin Docker image
-	docker build . -f build/plugins/Dockerfile.plugin \
-		--build-arg PLUGIN_MAKE_TARGET=testdevice \
-		--build-arg PLUGIN_MAKE_VERSION=2.0.0 \
-		--build-arg PLUGIN_BUILD_VERSION=${ONOS_CONFIG_VERSION} \
-		-t onosproject/config-model-testdevice-2.0.0:${ONOS_CONFIG_VERSION}
-
-PHONY: config-plugin-docker-devicesim-1.0.0
-config-plugin-docker-devicesim-1.0.0: # @HELP build devicesim 1.0.0 plugin Docker image
-	docker build . -f build/plugins/Dockerfile.plugin \
-		--build-arg PLUGIN_MAKE_TARGET=devicesim \
-		--build-arg PLUGIN_MAKE_VERSION=1.0.0 \
-		--build-arg PLUGIN_BUILD_VERSION=${ONOS_CONFIG_VERSION} \
-		-t onosproject/config-model-devicesim-1.0.0:${ONOS_CONFIG_VERSION}
-
-PHONY: config-plugin-docker-stratum-1.0.0
-config-plugin-docker-stratum-1.0.0: # @HELP build stratum 1.0.0 plugin Docker image
-	docker build . -f build/plugins/Dockerfile.plugin \
-		--build-arg PLUGIN_MAKE_TARGET=stratum \
-		--build-arg PLUGIN_MAKE_VERSION=1.0.0 \
-		--build-arg PLUGIN_BUILD_VERSION=${ONOS_CONFIG_VERSION} \
-		-t onosproject/config-model-stratum-1.0.0:${ONOS_CONFIG_VERSION}
-
-PHONY: all-plugin-images
-all-plugin-images: config-plugin-docker-testdevice-1.0.0 config-plugin-docker-testdevice-2.0.0 config-plugin-docker-devicesim-1.0.0 config-plugin-docker-stratum-1.0.0
