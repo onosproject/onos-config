@@ -16,16 +16,20 @@ package gnmi
 
 import (
 	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
-	log "k8s.io/klog"
+
 	"strings"
 	"testing"
 )
+
+var log = logging.GetLogger("test", "gnmi")
 
 const (
 	subTzValue      = "Europe/Madrid"
