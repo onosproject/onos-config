@@ -25,7 +25,7 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	devicetopo "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

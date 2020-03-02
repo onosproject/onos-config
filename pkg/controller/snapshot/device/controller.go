@@ -15,6 +15,8 @@
 package device
 
 import (
+	"strings"
+
 	"github.com/onosproject/onos-config/api/types"
 	changetype "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -24,9 +26,8 @@ import (
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"strings"
 )
 
 var log = logging.GetLogger("controller", "snapshot", "device")

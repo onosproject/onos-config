@@ -19,6 +19,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/stratum-1.0.0 v0.0.0-20200214111606-c266c76f882c // indirect
 	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200214110049-38f1117cd24a
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200214110049-38f1117cd24a
+	github.com/onosproject/onos-lib-go v0.0.0-20200302190914-1f7a2e625e9d
 	github.com/onosproject/onos-test v0.0.0-20200225182923-ec7134d073e6
 	github.com/onosproject/onos-topo v0.0.0-20200218171206-55029b503689
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c
@@ -28,8 +29,6 @@ require (
 	github.com/spf13/cobra v0.0.6
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.5.1
-	go.uber.org/zap v1.12.0
-	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
 	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
 	google.golang.org/genproto v0.0.0-20200212174721-66ed5ce911ce // indirect
 	google.golang.org/grpc v1.27.1

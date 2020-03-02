@@ -21,13 +21,14 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/certs"
-	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"io/ioutil"
 	"strings"
 	"sync"
+
+	"github.com/onosproject/onos-config/pkg/certs"
+	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/openconfig/gnmi/client"

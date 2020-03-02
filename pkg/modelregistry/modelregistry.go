@@ -16,17 +16,18 @@ package modelregistry
 
 import (
 	"fmt"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	devicetype "github.com/onosproject/onos-config/api/types/device"
-	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
-	"github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/openconfig/goyang/pkg/yang"
-	"github.com/openconfig/ygot/ygot"
 	"plugin"
 	"regexp"
 	"sort"
 	"strings"
+
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicetype "github.com/onosproject/onos-config/api/types/device"
+	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/goyang/pkg/yang"
+	"github.com/openconfig/ygot/ygot"
 )
 
 var log = logging.GetLogger("modelregistry")

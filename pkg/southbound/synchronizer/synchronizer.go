@@ -18,6 +18,10 @@ package synchronizer
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+	syncPrimitives "sync"
+
 	"github.com/golang/protobuf/proto"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -29,16 +33,13 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"github.com/onosproject/onos-config/pkg/utils/values"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"regexp"
-	"strings"
-	syncPrimitives "sync"
 )
 
 var log = logging.GetLogger("southbound", "synchronizer")

@@ -18,6 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"sync"
+	"time"
+
 	"github.com/atomix/go-client/pkg/client/indexedmap"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
@@ -26,10 +30,7 @@ import (
 	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/store/utils"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
-	"io"
-	"sync"
-	"time"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
 var log = logging.GetLogger("store", "change", "device")

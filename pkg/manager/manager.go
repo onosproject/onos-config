@@ -17,6 +17,9 @@ package manager
 
 import (
 	"fmt"
+	"strings"
+	"sync"
+
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/controller"
@@ -38,12 +41,10 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
-	"sync"
 )
 
 var mgr Manager

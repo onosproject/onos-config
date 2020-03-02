@@ -15,10 +15,11 @@
 package controller
 
 import (
-	"github.com/onosproject/onos-config/api/types"
-	"github.com/onosproject/onos-config/pkg/utils/logging"
 	"sync"
 	"time"
+
+	"github.com/onosproject/onos-config/api/types"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
 var log = logging.GetLogger("controller")
