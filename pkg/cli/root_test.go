@@ -16,9 +16,10 @@ package cli
 
 import (
 	"bytes"
-	"gotest.tools/assert"
 	"strings"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 // Test_RootUsage tests the creation of the root command and checks that the ONOS usage messages are included
@@ -64,6 +65,7 @@ func Test_SubCommands(t *testing.T) {
 		{commandName: "Get", expectedShort: "Get config resources"},
 		{commandName: "Compact-Changes", expectedShort: "Takes a snapshot of network and device changes"},
 		{commandName: "Watch", expectedShort: "Watch for updates to a config resource type"},
+		{commandName: "Log", expectedShort: "logging api commands"},
 	}
 
 	var subCommandsFound = make(map[string]bool)
