@@ -16,6 +16,7 @@
 package cli
 
 import (
+	loglib "github.com/onosproject/onos-lib-go/pkg/logging/cli"
 	"github.com/spf13/cobra"
 	viperapi "github.com/spf13/viper"
 )
@@ -47,5 +48,6 @@ func GetCommand() *cobra.Command {
 	cmd.AddCommand(getRollbackCommand())
 	cmd.AddCommand(getCompactCommand())
 	cmd.AddCommand(getWatchCommand())
+	cmd.AddCommand(loglib.GetCommand())
 	return cmd
 }

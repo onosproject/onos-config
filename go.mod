@@ -14,9 +14,7 @@ require (
 	github.com/golang/protobuf v1.3.3
 	github.com/google/uuid v1.1.1
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/onosproject/config-models v0.0.0-20200214135352-e7b5a6a6c992 // indirect
 	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20200214110049-38f1117cd24a
-	github.com/onosproject/config-models/modelplugin/stratum-1.0.0 v0.0.0-20200214111606-c266c76f882c // indirect
 	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200214110049-38f1117cd24a
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200214110049-38f1117cd24a
 	github.com/onosproject/onos-lib-go v0.0.0-20200302190914-1f7a2e625e9d
@@ -34,5 +32,4 @@ require (
 	google.golang.org/grpc v1.27.1
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.0.0-20190620074045-585a16d2e773
-	k8s.io/klog v1.0.0
 )
