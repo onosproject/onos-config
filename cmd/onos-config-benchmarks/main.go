@@ -17,10 +17,11 @@ package main
 import (
 	"github.com/onosproject/onos-config/benchmark/gnmi"
 	"github.com/onosproject/onos-test/pkg/benchmark"
+	"github.com/onosproject/onos-test/pkg/registry"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 func main() {
-	benchmark.Register("gnmi", &gnmi.BenchmarkSuite{})
+	registry.RegisterBenchmarkSuite("gnmi", &gnmi.BenchmarkSuite{})
 	benchmark.Main()
 }
