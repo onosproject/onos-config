@@ -68,7 +68,7 @@ func Test_SchemaTestDevice2(t *testing.T) {
 	/// Read write paths
 	////////////////////////////////////////////////////
 	readWritePathsKeys := PathsRW(readWritePathsTestDevice2)
-	assert.Equal(t, len(readWritePathsKeys), 11)
+	assert.Equal(t, len(readWritePathsKeys), 15)
 
 	// Can be in any order
 	for _, p := range readWritePathsKeys {
@@ -84,7 +84,11 @@ func Test_SchemaTestDevice2(t *testing.T) {
 			"/cont1a/cont2a/leaf2e",
 			"/cont1a/cont2a/leaf2f",
 			"/cont1a/cont2a/leaf2g",
-			"/leafAtTopLevel":
+			"/leafAtTopLevel",
+			"/cont1a/cont2d/beer",
+			"/cont1a/cont2d/pretzel",
+			"/cont1a/cont2d/chocolate",
+			"/cont1a/cont2d/leaf2d3c":
 
 		default:
 			t.Fatal("Unexpected readWritePath", p)
@@ -135,4 +139,19 @@ func Test_SchemaTestDevice2(t *testing.T) {
 	assert.Assert(t, leafTopLevelOk, "expected to get /leafAtTopLevel")
 	assert.Equal(t, leafTopLevel.ValueType, devicechange.ValueType_STRING, "expected /leafAtTopLevel to be STRING")
 
+	leaf2d3c, leaf2d3cOk := readWritePathsTestDevice2["/cont1a/cont2d/leaf2d3c"]
+	assert.Assert(t, leaf2d3cOk, "expected to get /cont1a/cont2d/leaf2d3c")
+	assert.Equal(t, leaf2d3c.ValueType, devicechange.ValueType_STRING, "expected /cont1a/cont2d/leaf2d3c to be STRING")
+
+	beer, beerOk := readWritePathsTestDevice2["/cont1a/cont2d/beer"]
+	assert.Assert(t, beerOk, "expected to get /cont1a/cont2d/beer")
+	assert.Equal(t, beer.ValueType, devicechange.ValueType_EMPTY, "expected /cont1a/cont2d/beer to be EMPTY")
+
+	pretzel, pretzelOk := readWritePathsTestDevice2["/cont1a/cont2d/pretzel"]
+	assert.Assert(t, pretzelOk, "expected to get /cont1a/cont2d/pretzel")
+	assert.Equal(t, pretzel.ValueType, devicechange.ValueType_EMPTY, "expected /cont1a/cont2d/pretzel to be EMPTY")
+
+	chocolate, chocolateOk := readWritePathsTestDevice2["/cont1a/cont2d/chocolate"]
+	assert.Assert(t, chocolateOk, "expected to get /cont1a/cont2d/chocolate")
+	assert.Equal(t, chocolate.ValueType, devicechange.ValueType_STRING, "expected /cont1a/cont2d/chocolate to be STRING")
 }
