@@ -343,8 +343,18 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 			for k, v := range readWritePathsTemp {
 				readWritePaths[k] = v
 			}
+
+		} else if dirEntry.IsChoice() || dirEntry.IsCase() {
+			// Recurse down through Choice and Case
+			readOnlyPathsTemp, readWritePathsTemp := ExtractPaths(dirEntry, dirEntry.Config, parentPath, "")
+			for k, v := range readOnlyPathsTemp {
+				readOnlyPaths[k] = v
+			}
+			for k, v := range readWritePathsTemp {
+				readWritePaths[k] = v
+			}
 		} else {
-			log.Errorf("Unexpected type of leaf for %s", itemPath)
+			log.Errorf("Unexpected type of leaf for %s %v", itemPath, dirEntry)
 		}
 	}
 	return readOnlyPaths, readWritePaths

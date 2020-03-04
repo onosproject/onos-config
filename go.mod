@@ -14,9 +14,9 @@ require (
 	github.com/golang/protobuf v1.3.3
 	github.com/google/uuid v1.1.1
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20200214110049-38f1117cd24a
-	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200214110049-38f1117cd24a
-	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200214110049-38f1117cd24a
+	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20200303111912-723f2289d4c2
+	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200303111912-723f2289d4c2
+	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200304144136-6992f473b240
 	github.com/onosproject/onos-lib-go v0.0.0-20200302190914-1f7a2e625e9d
 	github.com/onosproject/onos-test v0.0.0-20200303000010-770fcdc350a0
 	github.com/onosproject/onos-topo v0.0.0-20200218171206-55029b503689
