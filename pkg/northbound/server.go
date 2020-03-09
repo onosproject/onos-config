@@ -23,7 +23,7 @@ import (
 	"io/ioutil"
 	"net"
 
-	"github.com/onosproject/onos-config/pkg/certs"
+	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"google.golang.org/grpc/credentials"
 
