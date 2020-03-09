@@ -40,7 +40,6 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
@@ -55,6 +54,7 @@ import (
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/onosproject/onos-lib-go/pkg/northbound"
 )
 
 var log = logging.GetLogger("main")
