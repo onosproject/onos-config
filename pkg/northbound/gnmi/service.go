@@ -27,7 +27,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/onosproject/onos-config/pkg/northbound"
+	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 )
