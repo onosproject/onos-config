@@ -160,29 +160,6 @@ func runConfigInitCommand(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func getAddress(cmd *cobra.Command) string {
-	address, _ := cmd.Flags().GetString(addressFlag)
-	if address == "" {
-		return defaultAddress
-	}
-	return address
-}
-
-func getCertPath(cmd *cobra.Command) string {
-	certPath, _ := cmd.Flags().GetString(tlsCertPathFlag)
-	return certPath
-}
-
-func getKeyPath(cmd *cobra.Command) string {
-	keyPath, _ := cmd.Flags().GetString(tlsKeyPathFlag)
-	return keyPath
-}
-
-func noTLS(cmd *cobra.Command) bool {
-	tls, _ := cmd.Flags().GetBool("no-tls")
-	return tls
-}
-
 func initConfig() {
 	home, err := homedir.Dir()
 	if err != nil {

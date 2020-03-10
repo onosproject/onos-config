@@ -18,6 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
 	device_snapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
@@ -75,7 +76,7 @@ func snapshotsCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
-	clientConnection, clientConnectionError := getConnection(cmd)
+	clientConnection, clientConnectionError := cli.GetConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError

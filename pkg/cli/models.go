@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/spf13/cobra"
 	"io"
 	"os"
@@ -58,7 +59,7 @@ func getGetPluginsCommand() *cobra.Command {
 func runListPluginsCommand(cmd *cobra.Command, args []string) error {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	tmplModelList, _ := template.New("change").Parse(modellistTemplate)
-	clientConnection, clientConnectionError := getConnection(cmd)
+	clientConnection, clientConnectionError := cli.GetConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError
@@ -94,7 +95,7 @@ func getAddPluginCommand() *cobra.Command {
 }
 
 func runAddPluginCommand(cmd *cobra.Command, args []string) error {
-	clientConnection, clientConnectionError := getConnection(cmd)
+	clientConnection, clientConnectionError := cli.GetConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError
