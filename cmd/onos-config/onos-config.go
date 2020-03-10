@@ -39,9 +39,7 @@ import (
 	"flag"
 	"time"
 
-	"github.com/onosproject/onos-config/pkg/certs"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/northbound"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
@@ -54,7 +52,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
+	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/onosproject/onos-lib-go/pkg/northbound"
 )
 
 var log = logging.GetLogger("main")
@@ -183,7 +183,7 @@ func main() {
 
 // Creates gRPC server and registers various services; then serves.
 func startServer(caPath string, keyPath string, certPath string) error {
-	s := northbound.NewServer(northbound.NewServerConfig(caPath, keyPath, certPath))
+	s := northbound.NewServer(northbound.NewServerConfig(caPath, keyPath, certPath, 5150, true))
 	s.AddService(admin.Service{})
 	s.AddService(diags.Service{})
 	s.AddService(gnmi.Service{})

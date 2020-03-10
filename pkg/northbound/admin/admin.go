@@ -29,10 +29,10 @@ import (
 	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/northbound"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )

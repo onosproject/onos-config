@@ -324,6 +324,8 @@ github.com/onosproject/onos-config v0.0.0-20200131171925-566694cf7e94/go.mod h1:
 github.com/onosproject/onos-config v0.0.0-20200204191831-5c2803ee469d/go.mod h1:rVNKd9v/Y4ZvttCte8jrf1KnfKSHbe0nwCXVxZC4EHk=
 github.com/onosproject/onos-lib-go v0.0.0-20200302190914-1f7a2e625e9d h1:FhoPu05GZG8iRcukU29lxO2xZagEcq+ho8B/gFdMnKA=
 github.com/onosproject/onos-lib-go v0.0.0-20200302190914-1f7a2e625e9d/go.mod h1:tbdH7aqxvcOLSfz8cgiDwNP5szPnll1/m9HYKbXruSI=
+github.com/onosproject/onos-lib-go v0.0.0-20200307155659-8ad70c22b981 h1:ao+nAtL8RslrH8v/7XoXHU7q71JgvajFMIp3rcExrns=
+github.com/onosproject/onos-lib-go v0.0.0-20200307155659-8ad70c22b981/go.mod h1:tbdH7aqxvcOLSfz8cgiDwNP5szPnll1/m9HYKbXruSI=
 github.com/onosproject/onos-ran v0.0.0-20200205211410-0667c7147453/go.mod h1:mDd/65obXVUsEGFSLmxokw6QaW/3YCYal+HV1Y08kf8=
 github.com/onosproject/onos-ran v0.0.0-20200210203428-df3953bf0fb1 h1:fXm7bKsrvhohMYk/YZtZ++sFZGhdEgPDvHJuPjw7FdQ=
 github.com/onosproject/onos-ran v0.0.0-20200210203428-df3953bf0fb1/go.mod h1:mIi1jgByW+1Ns9vZg/lAXyTXDGi7wI6zWiqhnB9qiKU=
