@@ -18,6 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/diags"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
@@ -79,7 +80,7 @@ func networkChangesCommand(cmd *cobra.Command, subscribe bool, args []string) er
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
-	clientConnection, clientConnectionError := getConnection(cmd)
+	clientConnection, clientConnectionError := cli.GetConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError

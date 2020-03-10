@@ -17,6 +17,7 @@ package cli
 import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +33,7 @@ func getCompactCommand() *cobra.Command {
 }
 
 func runCompactCommand(cmd *cobra.Command, args []string) error {
-	clientConnection, clientConnectionError := getConnection(cmd)
+	clientConnection, clientConnectionError := cli.GetConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError

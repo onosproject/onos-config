@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-config/api/diags"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/spf13/cobra"
 	"io"
 	"text/template"
@@ -60,7 +61,7 @@ func opstateCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 	deviceID := args[0]
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 	tmplGetOpState, _ := template.New("change").Funcs(funcMapChanges).Parse(opstateTemplate)
-	clientConnection, clientConnectionError := getConnection(cmd)
+	clientConnection, clientConnectionError := cli.GetConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError

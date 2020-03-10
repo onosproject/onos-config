@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/api/diags"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/api/types/device"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/spf13/cobra"
 	"io"
 	"strings"
@@ -67,7 +68,7 @@ func deviceChangesCommand(cmd *cobra.Command, subscribe bool, args []string) err
 	version, _ := cmd.Flags().GetString("version")
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 
-	clientConnection, clientConnectionError := getConnection(cmd)
+	clientConnection, clientConnectionError := cli.GetConnection(cmd)
 
 	if clientConnectionError != nil {
 		return clientConnectionError
