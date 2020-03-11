@@ -88,6 +88,8 @@ github.com/atomix/go-client v0.0.0-20200211010855-927b10345735 h1:Z/6toeKbFBefKm
 github.com/atomix/go-client v0.0.0-20200211010855-927b10345735/go.mod h1:THcFijpvzJI1W3ePewp5nnJEj6gdX2dfVpOJ1/AgwYY=
 github.com/atomix/go-client v0.0.0-20200218200323-6fd69e684d05 h1:BXCRt2NzbiJDCR5WWFcwEu6Cdiy3SVPjU42xHFfjuVk=
 github.com/atomix/go-client v0.0.0-20200218200323-6fd69e684d05/go.mod h1:GWfCdTYMKNFkyf9lWHjuJeuPvNeuAjTui6Hi7JC0yrw=
+github.com/atomix/go-client v0.0.0-20200307025134-f638fa3fb644 h1:G58/XSZszNKlP7DkvFsdO7f29+QfsvIEwJ++fj5eGXI=
+github.com/atomix/go-client v0.0.0-20200307025134-f638fa3fb644/go.mod h1:dsxE5H6NSYpV7q/Dr9BTkzxSvL5xAs96bcDa2VPt19E=
 github.com/atomix/go-framework v0.0.0-20200123235029-e29fc7d6e104/go.mod h1:Dn7tjt5LIRA/qr5afQZDh9hdtvK82uQpMrADYIlVtfQ=
 github.com/atomix/go-framework v0.0.0-20200124003840-f24758b13aa2/go.mod h1:vo5K/v+rc5mohoZIw9vbyj+Y/EGGaEdF6XVkEvM9CSM=
 github.com/atomix/go-framework v0.0.0-20200124061342-61b0ae5140c9/go.mod h1:G/yTdMGpfwbA2YXym/VEi7op3qZKd1jtGJX0sjcZmpQ=
@@ -326,6 +328,8 @@ github.com/onosproject/onos-lib-go v0.0.0-20200302190914-1f7a2e625e9d h1:FhoPu05
 github.com/onosproject/onos-lib-go v0.0.0-20200302190914-1f7a2e625e9d/go.mod h1:tbdH7aqxvcOLSfz8cgiDwNP5szPnll1/m9HYKbXruSI=
 github.com/onosproject/onos-lib-go v0.0.0-20200307155659-8ad70c22b981 h1:ao+nAtL8RslrH8v/7XoXHU7q71JgvajFMIp3rcExrns=
 github.com/onosproject/onos-lib-go v0.0.0-20200307155659-8ad70c22b981/go.mod h1:tbdH7aqxvcOLSfz8cgiDwNP5szPnll1/m9HYKbXruSI=
+github.com/onosproject/onos-lib-go v0.0.0-20200311221003-fad88142208e h1:gmR2xTdzpbSYgoPH3R83l8P/JnCUDK7eVaTqhWo9X6s=
+github.com/onosproject/onos-lib-go v0.0.0-20200311221003-fad88142208e/go.mod h1:gnWmBzxrrUIdMPbwcBudAxIJCALzRj/CdSpaCfrgwkU=
 github.com/onosproject/onos-ran v0.0.0-20200205211410-0667c7147453/go.mod h1:mDd/65obXVUsEGFSLmxokw6QaW/3YCYal+HV1Y08kf8=
 github.com/onosproject/onos-ran v0.0.0-20200210203428-df3953bf0fb1 h1:fXm7bKsrvhohMYk/YZtZ++sFZGhdEgPDvHJuPjw7FdQ=
 github.com/onosproject/onos-ran v0.0.0-20200210203428-df3953bf0fb1/go.mod h1:mIi1jgByW+1Ns9vZg/lAXyTXDGi7wI6zWiqhnB9qiKU=

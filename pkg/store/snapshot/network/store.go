@@ -25,7 +25,7 @@ import (
 	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-config/pkg/store/utils"
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"io"
 	"time"
 )
@@ -38,12 +38,12 @@ func init() {
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore() (Store, error) {
-	client, err := utils.GetAtomixClient()
+	client, err := atomix.GetAtomixClient()
 	if err != nil {
 		return nil, err
 	}
 
-	group, err := client.GetDatabase(context.Background(), utils.GetAtomixRaftGroup())
+	group, err := client.GetDatabase(context.Background(), atomix.GetAtomixRaftGroup())
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func NewAtomixStore() (Store, error) {
 
 // NewLocalStore returns a new local network snapshot store
 func NewLocalStore() (Store, error) {
-	_, address := utils.StartLocalNode()
+	_, address := atomix.StartLocalNode()
 	return newLocalStore(address)
 }
 

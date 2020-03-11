@@ -16,13 +16,13 @@ package leadership
 
 import (
 	"github.com/onosproject/onos-config/pkg/store/cluster"
-	"github.com/onosproject/onos-config/pkg/store/utils"
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestLeadershipStore(t *testing.T) {
-	_, address := utils.StartLocalNode()
+	_, address := atomix.StartLocalNode()
 
 	store1, err := newLocalStore("a", address)
 	assert.NoError(t, err)

@@ -18,7 +18,7 @@ import (
 	"context"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
-	"github.com/onosproject/onos-config/pkg/store/utils"
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"io"
 	"sync"
@@ -55,12 +55,12 @@ type Mastership struct {
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore() (Store, error) {
-	client, err := utils.GetAtomixClient()
+	client, err := atomix.GetAtomixClient()
 	if err != nil {
 		return nil, err
 	}
 
-	database, err := client.GetDatabase(context.Background(), utils.GetAtomixRaftGroup())
+	database, err := client.GetDatabase(context.Background(), atomix.GetAtomixRaftGroup())
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ var localAddresses = make(map[string]net.Address)
 func NewLocalStore(clusterID string, nodeID cluster.NodeID) (Store, error) {
 	address, ok := localAddresses[clusterID]
 	if !ok {
-		_, address = utils.StartLocalNode()
+		_, address = atomix.StartLocalNode()
 		localAddresses[clusterID] = address
 	}
 	return newLocalStore(nodeID, address)

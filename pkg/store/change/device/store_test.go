@@ -20,7 +20,7 @@ import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-config/pkg/store/utils"
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/stretchr/testify/assert"
 	assert2 "gotest.tools/assert"
 	"testing"
@@ -28,7 +28,7 @@ import (
 )
 
 func TestDeviceStore(t *testing.T) {
-	_, address := utils.StartLocalNode()
+	_, address := atomix.StartLocalNode()
 
 	store1, err := newLocalStore(address)
 	assert.NoError(t, err)

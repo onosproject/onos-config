@@ -16,14 +16,14 @@ package mastership
 
 import (
 	"github.com/onosproject/onos-config/pkg/store/cluster"
-	"github.com/onosproject/onos-config/pkg/store/utils"
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestMastershipElection(t *testing.T) {
-	_, address := utils.StartLocalNode()
+	_, address := atomix.StartLocalNode()
 
 	store1, err := newLocalElection(topodevice.ID("test"), "a", address)
 	assert.NoError(t, err)
