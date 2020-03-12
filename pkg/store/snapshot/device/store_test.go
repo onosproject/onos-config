@@ -19,14 +19,14 @@ import (
 	"github.com/onosproject/onos-config/api/types/snapshot"
 	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-config/pkg/store/utils"
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
 func TestDeviceSnapshotStore(t *testing.T) {
-	_, address := utils.StartLocalNode()
+	_, address := atomix.StartLocalNode()
 
 	store1, err := newLocalStore(address)
 	assert.NoError(t, err)
