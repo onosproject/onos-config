@@ -521,6 +521,8 @@ github.com/onosproject/onos-test v0.0.0-20200313225620-d84e30c66ae8 h1:QUCqOMikt
 github.com/onosproject/onos-test v0.0.0-20200313225620-d84e30c66ae8/go.mod h1:nGLyVAb80262DCtY/QOa2Rt7JzQCAVSHmdnDBdWARr8=
 github.com/onosproject/onos-test v0.0.0-20200313230914-05e10e423dd9 h1:+sm1NdjsuiO5hiDEvXR3QZDn9tgSI/9CfxDRZ7e0ieM=
 github.com/onosproject/onos-test v0.0.0-20200313230914-05e10e423dd9/go.mod h1:nGLyVAb80262DCtY/QOa2Rt7JzQCAVSHmdnDBdWARr8=
+github.com/onosproject/onos-test v0.0.0-20200313233135-f5819bf14c9c h1:7GqQrrpOA6qr32SHXFar5hhVq5n0OVYhs65Wzc4On1E=
+github.com/onosproject/onos-test v0.0.0-20200313233135-f5819bf14c9c/go.mod h1:nGLyVAb80262DCtY/QOa2Rt7JzQCAVSHmdnDBdWARr8=
 github.com/onosproject/onos-topo v0.0.0-20191107000708-af85b82cfca3/go.mod h1:oPGdJnMHy5UGx4slrbf84DEFqcKXuGMv36N+EBc3QwM=
 github.com/onosproject/onos-topo v0.0.0-20191113170912-88eeee89f4eb/go.mod h1:oPGdJnMHy5UGx4slrbf84DEFqcKXuGMv36N+EBc3QwM=
 github.com/onosproject/onos-topo v0.0.0-20200124005303-f1408bf8e513/go.mod h1:wlq75QesuY4KsfpdCD0kbG6F9yi5ytQwMel47QhMRuM=

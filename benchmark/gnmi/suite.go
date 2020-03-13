@@ -35,32 +35,32 @@ type BenchmarkSuite struct {
 // SetupSuite :: benchmark
 func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 	// Setup the Atomix controller
-	err := helm.Namespace().
+	err := helm.Helm().
 		Chart("/etc/charts/atomix-controller").
 		Release("atomix-controller").
-		Set("namespace", helm.Namespace().Namespace()).
+		Set("namespace", helm.Namespace()).
 		Install(true)
 	if err != nil {
 		return err
 	}
 
 	// Install the onos-topo chart
-	err = helm.Namespace().
+	err = helm.Helm().
 		Chart("/etc/charts/onos-topo").
 		Release("onos-topo").
 		Set("replicaCount", 2).
-		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", helm.Namespace().Namespace())).
+		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", helm.Namespace())).
 		Install(false)
 	if err != nil {
 		return err
 	}
 
 	// Install the onos-config chart
-	err = helm.Namespace().
+	err = helm.Helm().
 		Chart("/etc/charts/onos-config").
 		Release("onos-config").
 		Set("replicaCount", 2).
-		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", helm.Namespace().Namespace())).
+		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", helm.Namespace())).
 		Install(true)
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 // SetupWorker :: benchmark
 func (s *BenchmarkSuite) SetupWorker(c *benchmark.Context) error {
 	s.value = input.RandomString(8)
-	s.simulator = helm.Namespace().
+	s.simulator = helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	if err := s.simulator.Install(true); err != nil {
