@@ -16,7 +16,9 @@ package gnmi
 
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-test/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"regexp"
@@ -32,7 +34,11 @@ const (
 
 // TestSingleState tests query of a single GNMI path of a read/only value to a single device
 func (s *TestSuite) TestSingleState(t *testing.T) {
-	simulator := env.NewSimulator().AddOrDie()
+	simulator := helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := simulator.Install(true)
+	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)

@@ -15,40 +15,79 @@
 package gnmi
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-test/pkg/benchmark"
+	"github.com/onosproject/onos-test/pkg/helm"
+	"github.com/onosproject/onos-test/pkg/input"
 	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/onosproject/onos-test/pkg/onit/setup"
+	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/openconfig/gnmi/client/gnmi"
 )
 
 // BenchmarkSuite is an onos-config gNMI benchmark suite
 type BenchmarkSuite struct {
 	benchmark.Suite
-	simulator env.SimulatorEnv
+	simulator *helm.Release
 	client    *client.Client
+	value     input.Source
 }
 
 // SetupSuite :: benchmark
-func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) {
-	setup.Atomix()
-	setup.Database().Raft()
-	setup.Topo().SetReplicas(2)
-	setup.Config().SetReplicas(2)
-	setup.SetupOrDie()
+func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
+	namespace := helm.Namespace()
+
+	// Setup the Atomix controller
+	err := namespace.Chart("/etc/charts/atomix-controller").
+		Release("atomix-controller").
+		Set("namespace", namespace.Namespace()).
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	// Install the onos-topo chart
+	err = namespace.Chart("/etc/charts/onos-topo").
+		Release("onos-topo").
+		Set("replicaCount", 2).
+		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", namespace.Namespace())).
+		Install(false)
+	if err != nil {
+		return err
+	}
+
+	// Install the onos-config chart
+	err = namespace.Chart("/etc/charts/onos-config").
+		Release("onos-config").
+		Set("replicaCount", 2).
+		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", namespace.Namespace())).
+		Install(true)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-// SetupBenchmark :: benchmark
-func (s *BenchmarkSuite) SetupBenchmark(c *benchmark.Context) {
-	s.simulator = env.NewSimulator().AddOrDie()
+// SetupWorker :: benchmark
+func (s *BenchmarkSuite) SetupWorker(c *benchmark.Context) error {
+	s.value = input.RandomString(8)
+	s.simulator = helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	if err := s.simulator.Install(true); err != nil {
+		return err
+	}
 	client, err := env.Config().NewGNMIClient()
 	if err != nil {
 		panic(err)
 	}
 	s.client = client
+	return nil
 }
 
-// TearDownBenchmark :: benchmark
-func (s *BenchmarkSuite) TearDownBenchmark(c *benchmark.Context) {
-	s.simulator.RemoveOrDie()
+// TearDownWorker :: benchmark
+func (s *BenchmarkSuite) TearDownWorker(c *benchmark.Context) error {
 	s.client.Close()
+	return s.simulator.Uninstall()
 }
+
+var _ benchmark.SetupWorker = &BenchmarkSuite{}

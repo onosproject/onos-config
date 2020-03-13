@@ -18,7 +18,9 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-test/pkg/helm"
+	"github.com/onosproject/onos-test/pkg/util/random"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -44,7 +46,11 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 	gnmi.CheckGNMIValue(t, gnmiClient, offlineDevicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Create an online device
-	onlineSimulator := env.NewSimulator().AddOrDie()
+	onlineSimulator := helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := onlineSimulator.Install(true)
+	assert.NoError(t, err)
 
 	// Set a value to the online device
 	onlineDevicePath := gnmi.GetDevicePathWithValue(onlineSimulator.Name(), modPath, modValue, proto.StringVal)

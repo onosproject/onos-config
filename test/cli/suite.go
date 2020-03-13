@@ -15,53 +15,54 @@
 package cli
 
 import (
-	"github.com/onosproject/onos-test/pkg/onit/setup"
+	"fmt"
+	"github.com/onosproject/onos-test/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/test"
 )
 
-type testSuite struct {
+// TestSuite is the onos-config CLI test suite
+type TestSuite struct {
 	test.Suite
 }
 
-// SmokeTestSuite is the primary onos-config test suite
-type SmokeTestSuite struct {
-	testSuite
-}
-
-// SetupTestSuite sets up the onos-config test suite
-func (s *SmokeTestSuite) SetupTestSuite() {
-	setup.Atomix()
-	setup.Database().Raft()
-	setup.Topo().SetReplicas(2)
-	setup.Config().SetReplicas(2)
-	setup.SetupOrDie()
-}
-
-// TestSuite is the onos-config CLI test suite
-type TestSuite struct {
-	testSuite
-}
-
 // SetupTestSuite sets up the onos-config CLI test suite
-func (s *TestSuite) SetupTestSuite() {
-	setup.Atomix()
-	setup.Database().Raft()
-	setup.CLI().SetEnabled()
-	setup.Topo().SetReplicas(2)
-	setup.Config().SetReplicas(2)
-	setup.SetupOrDie()
-}
+func (s *TestSuite) SetupTestSuite() error {
+	namespace := helm.Namespace()
 
-// HATestSuite is the onos-config HA test suite
-type HATestSuite struct {
-	testSuite
-}
+	// Setup the Atomix controller
+	err := namespace.Chart("/etc/charts/atomix-controller").
+		Release("atomix-controller").
+		Set("namespace", namespace.Namespace()).
+		Install(true)
+	if err != nil {
+		return err
+	}
 
-// SetupTestSuite sets up the onos-config CLI test suite
-func (s *HATestSuite) SetupTestSuite() {
-	setup.Atomix()
-	setup.Database().Raft()
-	setup.Topo().SetReplicas(2)
-	setup.Config().SetReplicas(2)
-	setup.SetupOrDie()
+	// Install the onos-topo chart
+	err = namespace.Chart("/etc/charts/onos-topo").
+		Release("onos-topo").
+		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", namespace.Namespace())).
+		Install(false)
+	if err != nil {
+		return err
+	}
+
+	// Install the onos-config chart
+	err = namespace.Chart("/etc/charts/onos-config").
+		Release("onos-config").
+		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", namespace.Namespace())).
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	// Install the onos-cli chart
+	err = namespace.Chart("/etc/charts/onos-cli").
+		Release("onos-cli").
+		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", namespace.Namespace())).
+		Install(false)
+	if err != nil {
+		return err
+	}
+	return nil
 }

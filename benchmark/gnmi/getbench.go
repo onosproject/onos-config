@@ -22,12 +22,10 @@ import (
 )
 
 // BenchmarkGet tests get of GNMI paths
-func (s *BenchmarkSuite) BenchmarkGet(b *benchmark.Benchmark) {
-	b.Run(func() error {
-		devicePath := gnmi.GetDevicePath(s.simulator.Name(), "/system/config/motd-banner")
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		_, _, err := gnmi.GetGNMIValue(ctx, s.client, devicePath)
-		return err
-	})
+func (s *BenchmarkSuite) BenchmarkGet(b *benchmark.Benchmark) error {
+	devicePath := gnmi.GetDevicePath(s.simulator.Name(), "/system/config/motd-banner")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	_, _, err := gnmi.GetGNMIValue(ctx, s.client, devicePath)
+	return err
 }

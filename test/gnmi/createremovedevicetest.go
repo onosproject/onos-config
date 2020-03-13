@@ -19,7 +19,9 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	"github.com/onosproject/onos-test/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -57,8 +59,11 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	assert.Nil(t, addResponseError)
 
 	//  Start a new simulated device
-	simulator := env.NewSimulator().SetName(createRemoveDeviceModDeviceName).SetAddDevice(false)
-	simulatorEnv := simulator.AddOrDie()
+	simulator := helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := simulator.Install(true)
+	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
@@ -82,12 +87,12 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
-	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulatorEnv)
+	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulator)
 	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, createRemoveDeviceModValue1)
 
 	//  Shut down the simulator
-	simulatorEnv.KillOrDie()
-	simulatorEnv.RemoveOrDie()
+	err = simulator.Uninstall()
+	assert.NoError(t, err)
 	gnmi.WaitForDeviceUnavailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
 
 	// Set a value using gNMI client - device is down
@@ -95,8 +100,9 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	networkChangeID2 := gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
 	assert.True(t, networkChangeID2 != "")
 
-	//  Restart simulated device
-	simulatorEnv2 := simulator.AddOrDie()
+	// Restart simulated device
+	err = simulator.Install(true)
+	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 2*time.Minute)
@@ -108,10 +114,10 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	gnmi.WaitForNetworkChangeComplete(t, networkChangeID2, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
-	deviceGnmiClient2 := gnmi.GetDeviceGNMIClientOrFail(t, simulatorEnv2)
+	deviceGnmiClient2 := gnmi.GetDeviceGNMIClientOrFail(t, simulator)
 	gnmi.CheckDeviceValue(t, deviceGnmiClient2, devicePath, createRemoveDeviceModValue2)
 
 	// Clean up the simulator, as it isn't under onit control
-	simulatorEnv.KillOrDie()
-	simulatorEnv.RemoveOrDie()
+	err = simulator.Uninstall()
+	assert.NoError(t, err)
 }

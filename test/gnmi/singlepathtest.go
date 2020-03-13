@@ -17,7 +17,9 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-test/pkg/helm"
+	"github.com/onosproject/onos-test/pkg/util/random"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -28,7 +30,11 @@ const (
 
 // TestSinglePath tests query/set/delete of a single GNMI path to a single device
 func (s *TestSuite) TestSinglePath(t *testing.T) {
-	simulator := env.NewSimulator().AddOrDie()
+	simulator := helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := simulator.Install(true)
+	assert.NoError(t, err)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)

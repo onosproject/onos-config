@@ -17,7 +17,9 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	"github.com/onosproject/onos-test/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/status"
 	"testing"
@@ -32,7 +34,11 @@ func (s *TestSuite) TestModels(t *testing.T) {
 		clockTimeZonePath = "/system/clock/config/timezone-name"
 	)
 
-	simulator := env.NewSimulator().AddOrDie()
+	simulator := helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := simulator.Install(true)
+	assert.NoError(t, err)
 
 	// Data to run the test cases
 	testCases := []struct {

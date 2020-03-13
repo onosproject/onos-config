@@ -18,7 +18,9 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-test/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -40,8 +42,16 @@ var (
 // TestTransaction tests setting multiple paths in a single request and rolling it back
 func (s *TestSuite) TestTransaction(t *testing.T) {
 	// Get the configured devices from the environment.
-	device1 := env.NewSimulator().AddOrDie()
-	device2 := env.NewSimulator().AddOrDie()
+	device1 := helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := device1.Install(true)
+	assert.NoError(t, err)
+	device2 := helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err = device2.Install(true)
+	assert.NoError(t, err)
 	devices := make([]string, 2)
 	devices[0] = device1.Name()
 	devices[1] = device2.Name()

@@ -1,9 +1,12 @@
 FROM alpine:3.8
 
-RUN apk upgrade --update --no-cache && apk add libc6-compat
+RUN apk upgrade --update --no-cache && apk add git
+RUN git clone --branch master https://github.com/onosproject/onos-helm-charts /etc/charts
 
-USER nobody
+RUN addgroup -S test && adduser -S test -G test
 
-ADD build/onos-config-tests/_output/bin/onos-config-tests /usr/local/bin/onos-config-tests
+USER test
+
+ADD _output/bin/onos-config-tests /usr/local/bin/onos-config-tests
 
 ENTRYPOINT ["onos-config-tests"]

@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
+	"github.com/onosproject/onos-test/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
@@ -282,7 +283,7 @@ func CheckDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []
 }
 
 // GetDeviceGNMIClientOrFail creates a GNMI client to a device. If there is an error, the test is failed
-func GetDeviceGNMIClientOrFail(t *testing.T, simulator env.SimulatorEnv) client.Impl {
+func GetDeviceGNMIClientOrFail(t *testing.T, simulator *helm.Release) client.Impl {
 	t.Helper()
 	deviceGnmiClient, deviceGnmiClientError := simulator.NewGNMIClient()
 	assert.NoError(t, deviceGnmiClientError)

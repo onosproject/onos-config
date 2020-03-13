@@ -16,6 +16,8 @@ package gnmi
 
 import (
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-test/pkg/helm"
+	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
@@ -34,7 +36,11 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 	previousTime = time.Now().Add(-5 * time.Second)
 
 	// Bring up a new simulated device
-	simulator := env.NewSimulator().AddOrDie()
+	simulator := helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := simulator.Install(true)
+	assert.NoError(t, err)
 	deviceName := simulator.Name()
 	deviceID := device.ID(deviceName)
 

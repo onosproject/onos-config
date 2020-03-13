@@ -17,6 +17,8 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/onos-config/api/diags"
+	"github.com/onosproject/onos-test/pkg/helm"
+	"github.com/onosproject/onos-test/pkg/util/random"
 	"io"
 	"testing"
 	"time"
@@ -42,7 +44,11 @@ func filterResponse(response *diags.OpStateResponse) bool {
 // TestSubscribeStateDiags tests a stream subscription to updates to a device using the diags API
 func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
 	// Bring up a new simulated device
-	simulator := env.NewSimulator().AddOrDie()
+	simulator := helm.Namespace().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := simulator.Install(true)
+	assert.NoError(t, err)
 	deviceName := simulator.Name()
 	deviceID := device.ID(deviceName)
 
