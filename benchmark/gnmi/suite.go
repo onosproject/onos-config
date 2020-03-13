@@ -34,32 +34,33 @@ type BenchmarkSuite struct {
 
 // SetupSuite :: benchmark
 func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
-	namespace := helm.Namespace()
-
 	// Setup the Atomix controller
-	err := namespace.Chart("/etc/charts/atomix-controller").
+	err := helm.Namespace().
+		Chart("/etc/charts/atomix-controller").
 		Release("atomix-controller").
-		Set("namespace", namespace.Namespace()).
+		Set("namespace", helm.Namespace().Namespace()).
 		Install(true)
 	if err != nil {
 		return err
 	}
 
 	// Install the onos-topo chart
-	err = namespace.Chart("/etc/charts/onos-topo").
+	err = helm.Namespace().
+		Chart("/etc/charts/onos-topo").
 		Release("onos-topo").
 		Set("replicaCount", 2).
-		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", namespace.Namespace())).
+		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", helm.Namespace().Namespace())).
 		Install(false)
 	if err != nil {
 		return err
 	}
 
 	// Install the onos-config chart
-	err = namespace.Chart("/etc/charts/onos-config").
+	err = helm.Namespace().
+		Chart("/etc/charts/onos-config").
 		Release("onos-config").
 		Set("replicaCount", 2).
-		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", namespace.Namespace())).
+		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", helm.Namespace().Namespace())).
 		Install(true)
 	if err != nil {
 		return err
