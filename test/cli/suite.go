@@ -15,7 +15,6 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/onosproject/onos-test/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/test"
 )
@@ -28,20 +27,26 @@ type TestSuite struct {
 // SetupTestSuite sets up the onos-config CLI test suite
 func (s *TestSuite) SetupTestSuite() error {
 	// Setup the Atomix controller
-	err := helm.Helm().
+	atomix := helm.Helm().
 		Chart("/etc/charts/atomix-controller").
 		Release("atomix-controller").
-		Set("namespace", helm.Namespace()).
-		Install(true)
+		Set("namespace", helm.Namespace())
+	err := atomix.Install(true)
 	if err != nil {
 		return err
 	}
+
+	service, err := atomix.Core().V1().Services().Get("atomix-controller")
+	if err != nil {
+		return err
+	}
+	controller := service.Ports()[0].Address(true)
 
 	// Install the onos-topo chart
 	err = helm.Helm().
 		Chart("/etc/charts/onos-topo").
 		Release("onos-topo").
-		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", helm.Namespace())).
+		Set("store.controller", controller).
 		Install(false)
 	if err != nil {
 		return err
@@ -51,7 +56,7 @@ func (s *TestSuite) SetupTestSuite() error {
 	err = helm.Helm().
 		Chart("/etc/charts/onos-config").
 		Release("onos-config").
-		Set("store.controller", fmt.Sprintf("atomix-controller.%s.svc.cluster.local:5679", helm.Namespace())).
+		Set("store.controller", controller).
 		Install(true)
 	if err != nil {
 		return err
