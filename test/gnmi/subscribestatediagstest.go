@@ -44,7 +44,7 @@ func filterResponse(response *diags.OpStateResponse) bool {
 // TestSubscribeStateDiags tests a stream subscription to updates to a device using the diags API
 func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
 	// Bring up a new simulated device
-	simulator := helm.Namespace().
+	simulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := simulator.Install(true)

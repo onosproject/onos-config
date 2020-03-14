@@ -34,7 +34,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 		clockTimeZonePath = "/system/clock/config/timezone-name"
 	)
 
-	simulator := helm.Namespace().
+	simulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := simulator.Install(true)

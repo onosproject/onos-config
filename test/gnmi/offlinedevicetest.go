@@ -34,7 +34,7 @@ const (
 
 // TestOfflineDevice tests set/query of a single GNMI path to a single device that is initially not in the config
 func (s *TestSuite) TestOfflineDevice(t *testing.T) {
-	simulator := helm.Namespace().
+	simulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(offlineDeviceName)
 

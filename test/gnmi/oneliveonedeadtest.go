@@ -46,7 +46,7 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 	gnmi.CheckGNMIValue(t, gnmiClient, offlineDevicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Create an online device
-	onlineSimulator := helm.Namespace().
+	onlineSimulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := onlineSimulator.Install(true)

@@ -21,7 +21,9 @@ import (
 	"github.com/onosproject/onos-config/api/types/change"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	"github.com/onosproject/onos-test/pkg/helm"
 	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -85,8 +87,11 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, networkChangeResponse.Change.Status.State)
 
 	// Start the device simulator
-	simulator := env.NewSimulator().SetName(offlineInTopoModDeviceName).SetAddDevice(false)
-	simulatorEnv := simulator.AddOrDie()
+	simulator := helm.Helm().
+		Chart("/etc/charts/device-simulator").
+		Release(offlineInTopoModDeviceName)
+	err := simulator.Install(true)
+	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
@@ -95,6 +100,6 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
 
 	// Interrogate the device to check that the value was set properly
-	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulatorEnv)
+	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulator)
 	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, offlineInTopoModValue)
 }

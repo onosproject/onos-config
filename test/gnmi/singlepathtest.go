@@ -30,7 +30,7 @@ const (
 
 // TestSinglePath tests query/set/delete of a single GNMI path to a single device
 func (s *TestSuite) TestSinglePath(t *testing.T) {
-	simulator := helm.Namespace().
+	simulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := simulator.Install(true)

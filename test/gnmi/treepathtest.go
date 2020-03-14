@@ -36,7 +36,7 @@ const (
 // TestTreePath tests create/set/delete of a tree of GNMI paths to a single device
 func (s *TestSuite) TestTreePath(t *testing.T) {
 	// Get the first configured device from the environment.
-	device := helm.Namespace().
+	device := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := device.Install(true)

@@ -34,7 +34,7 @@ const (
 
 // TestSingleState tests query of a single GNMI path of a read/only value to a single device
 func (s *TestSuite) TestSingleState(t *testing.T) {
-	simulator := helm.Namespace().
+	simulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := simulator.Install(true)

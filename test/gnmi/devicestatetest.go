@@ -26,7 +26,7 @@ import (
 
 // TestDeviceState tests that a device is connected and available.
 func (s *TestSuite) TestDeviceState(t *testing.T) {
-	simulator := helm.Namespace().
+	simulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := simulator.Install(true)

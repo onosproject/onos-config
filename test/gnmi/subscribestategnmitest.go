@@ -36,7 +36,7 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 	previousTime = time.Now().Add(-5 * time.Second)
 
 	// Bring up a new simulated device
-	simulator := helm.Namespace().
+	simulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := simulator.Install(true)

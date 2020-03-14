@@ -32,7 +32,7 @@ import (
 
 // TestSubscribeOnce tests subscription ONCE mode
 func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
-	simulator := helm.Namespace().
+	simulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := simulator.Install(true)
@@ -101,7 +101,11 @@ func awaitResponse(t *testing.T, respChan chan *gpb.SubscribeResponse, name stri
 
 // TestSubscribe tests a stream subscription to updates to a device
 func (s *TestSuite) TestSubscribe(t *testing.T) {
-	simulator := env.NewSimulator().AddOrDie()
+	simulator := helm.Helm().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := simulator.Install(true)
+	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)

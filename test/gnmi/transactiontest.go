@@ -42,12 +42,12 @@ var (
 // TestTransaction tests setting multiple paths in a single request and rolling it back
 func (s *TestSuite) TestTransaction(t *testing.T) {
 	// Get the configured devices from the environment.
-	device1 := helm.Namespace().
+	device1 := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := device1.Install(true)
 	assert.NoError(t, err)
-	device2 := helm.Namespace().
+	device2 := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err = device2.Install(true)

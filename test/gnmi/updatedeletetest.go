@@ -36,7 +36,7 @@ const (
 // TestUpdateDelete tests update and delete paths in a single GNMI request
 func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	// Get the first configured device from the environment.
-	device := helm.Namespace().
+	device := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := device.Install(true)
