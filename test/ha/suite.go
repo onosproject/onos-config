@@ -15,9 +15,7 @@
 package ha
 
 import (
-	"fmt"
 	"github.com/onosproject/onos-test/pkg/helm"
-	"github.com/onosproject/onos-test/pkg/onit/setup"
 	"github.com/onosproject/onos-test/pkg/test"
 )
 
@@ -38,7 +36,7 @@ func (s *TestSuite) SetupTestSuite() error {
 		return err
 	}
 
-	service, err := atomix.Core().V1().Services().Get("atomix-controller")
+	service, err := atomix.CoreV1().Services().Get("atomix-controller")
 	if err != nil {
 		return err
 	}

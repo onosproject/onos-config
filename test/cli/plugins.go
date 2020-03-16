@@ -97,7 +97,7 @@ func parsePluginsCommandOutput(t *testing.T, output []string) map[string]map[str
 // TestPluginsGetCLI tests the config service's plugin CLI commands
 func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	// Create a device simulator
-	device1 := helm.Namespace().
+	device1 := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
 	err := device1.Install(true)
@@ -106,17 +106,16 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	time.Sleep(10 * time.Second)
 
 	// Get one of the onos-cli pods
-	pods, err := helm.Namespace().
+	pods, err := helm.Helm().
 		Chart("/etc/charts/onos-cli").
 		Release("onos-cli").
-		Core().
-		V1().
+		CoreV1().
 		Pods().
 		List()
 	assert.NoError(t, err)
 	pod := pods[0]
 
-	output, code, err := pod.Containers()[0].Execute(fmt.Sprintf("onos config get plugins %s", device1.Name()))
+	output, code, err := pod.Containers()[0].Exec(fmt.Sprintf("onos config get plugins %s", device1.Name()))
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 

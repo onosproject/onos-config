@@ -20,7 +20,6 @@ import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/helm"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -39,9 +38,8 @@ const (
 
 // TestCreatedRemovedDevice tests set/query of a single GNMI path to a single device that is created, removed, then created again
 func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
-	deviceClient, deviceClientError := env.Topo().NewDeviceServiceClient()
-	assert.NotNil(t, deviceClient)
-	assert.Nil(t, deviceClientError)
+	deviceClient, err := gnmi.NewDeviceServiceClient()
+	assert.NoError(t, err)
 	timeout := 10 * time.Second
 	newDevice := &device.Device{
 		ID:      createRemoveDeviceModDeviceName,
@@ -62,7 +60,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	simulator := helm.Helm().
 		Chart("/etc/charts/device-simulator").
 		Release(random.NewPetName(2))
-	err := simulator.Install(true)
+	err = simulator.Install(true)
 	assert.NoError(t, err)
 
 	// Wait for config to connect to the device

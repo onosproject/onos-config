@@ -19,7 +19,8 @@ import (
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/onos-test/pkg/helm"
+	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -55,8 +56,23 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	const wait = 60 * time.Second
 
 	// Create 2 simulators
-	simulator1 := env.NewSimulator().SetDeviceVersion(version).SetDeviceType(deviceType).AddOrDie()
-	simulator2 := env.NewSimulator().SetDeviceVersion(version).SetDeviceType(deviceType).AddOrDie()
+	simulator1 := helm.Helm().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err := simulator1.Install(true)
+	assert.NoError(t, err)
+	device1, err := gnmi.NewDevice(simulator1, deviceType, version)
+	assert.NoError(t, err)
+	err = gnmi.AddDeviceToTopo(device1)
+	assert.NoError(t, err)
+	simulator2 := helm.Helm().
+		Chart("/etc/charts/device-simulator").
+		Release(random.NewPetName(2))
+	err = simulator2.Install(true)
+	device2, err := gnmi.NewDevice(simulator1, deviceType, version)
+	assert.NoError(t, err)
+	err = gnmi.AddDeviceToTopo(device2)
+	assert.NoError(t, err)
 
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator1.Name()), 2*time.Minute)
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator2.Name()), 2*time.Minute)
@@ -96,7 +112,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	t.Logf("Testing CompactChanges - nw changes %s, %s on %s AND %s on %s AND %s on both",
 		sim1nwChangeID1, sim1nwChangeID2, simulator1.Name(), sim2nwChangeID1, simulator2.Name(), bothSimNwChangeID)
 
-	adminClient, err := env.Config().NewAdminServiceClient()
+	adminClient, err := gnmi.NewAdminServiceClient()
 	assert.NoError(t, err)
 
 	// Now try compacting changes

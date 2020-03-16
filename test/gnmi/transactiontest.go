@@ -19,7 +19,6 @@ import (
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-test/pkg/helm"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
@@ -87,7 +86,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[3:4], value2)
 
 	// Now rollback the change
-	adminClient, err := env.Config().NewAdminServiceClient()
+	adminClient, err := gnmi.NewAdminServiceClient()
 	assert.NoError(t, err)
 	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
 		context.Background(), &admin.RollbackRequest{Name: string(changeID)})

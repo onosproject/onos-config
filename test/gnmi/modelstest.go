@@ -18,7 +18,6 @@ import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/helm"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/status"

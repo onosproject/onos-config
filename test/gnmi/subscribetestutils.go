@@ -16,11 +16,11 @@ package gnmi
 
 import (
 	"fmt"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -86,7 +86,7 @@ func buildQuery(request *gnmi.SubscribeRequest) (*client.Query, chan *gnmi.Subsc
 		return nil, nil, errQuery
 	}
 
-	dest := env.Config().Destination()
+	dest, _ := gnmiutils.GetDestination()
 
 	q.Addrs = dest.Addrs
 	q.Timeout = dest.Timeout

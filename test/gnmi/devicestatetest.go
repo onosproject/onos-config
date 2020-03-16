@@ -15,13 +15,12 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-test/pkg/helm"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 // TestDeviceState tests that a device is connected and available.
@@ -31,12 +30,16 @@ func (s *TestSuite) TestDeviceState(t *testing.T) {
 		Release(random.NewPetName(2))
 	err := simulator.Install(true)
 	assert.NoError(t, err)
-	err = simulator.Await(func(d *device.Device) bool {
+	d, err := gnmi.NewDevice(simulator, "devicesim", "1.0.0")
+	assert.NoError(t, err)
+	err = gnmi.AddDeviceToTopo(d)
+	assert.NoError(t, err)
+	err = gnmi.AwaitDeviceState(simulator, func(d *device.Device) bool {
 		return len(d.Protocols) > 0 &&
 			d.Protocols[0].Protocol == device.Protocol_GNMI &&
 			d.Protocols[0].ConnectivityState == device.ConnectivityState_REACHABLE &&
 			d.Protocols[0].ChannelState == device.ChannelState_CONNECTED &&
 			d.Protocols[0].ServiceState == device.ServiceState_AVAILABLE
-	}, 5*time.Second)
+	})
 	assert.NoError(t, err)
 }

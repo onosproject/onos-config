@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 )

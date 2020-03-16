@@ -36,7 +36,7 @@ func (s *TestSuite) SetupTestSuite() error {
 		return err
 	}
 
-	service, err := atomix.Core().V1().Services().Get("atomix-controller")
+	service, err := atomix.CoreV1().Services().Get("atomix-controller")
 	if err != nil {
 		return err
 	}

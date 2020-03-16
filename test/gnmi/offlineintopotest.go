@@ -22,8 +22,6 @@ import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-test/pkg/helm"
-	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/onosproject/onos-test/pkg/util/random"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -40,7 +38,7 @@ const (
 
 // TestOfflineDeviceInTopo tests set/query of a single GNMI path to a single device that is in the config but offline
 func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
-	deviceClient, deviceClientError := env.Topo().NewDeviceServiceClient()
+	deviceClient, deviceClientError := gnmi.NewDeviceServiceClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)
 	timeout := 10 * time.Second
@@ -70,7 +68,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, offlineInTopoModValue, 0, "Query after set returned the wrong value")
 
 	// Check for pending state on the network change
-	changeServiceClient, changeServiceClientErr := env.Config().NewChangeServiceClient()
+	changeServiceClient, changeServiceClientErr := gnmi.NewChangeServiceClient()
 	assert.Nil(t, changeServiceClientErr)
 	assert.True(t, changeServiceClient != nil)
 	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{

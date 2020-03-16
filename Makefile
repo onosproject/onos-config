@@ -74,11 +74,11 @@ onos-config-debug-docker: onos-config-base-debug-docker # @HELP build onos-confi
 
 onos-config-tests-docker: # @HELP build onos-config tests Docker image
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-config-tests/_output/bin/onos-config-tests ./cmd/onos-config-tests
-	docker build . -f build/onos-config-tests/Dockerfile -t onosproject/onos-config-tests:${ONOS_CONFIG_VERSION}
+	docker build build/onos-config-tests -f build/onos-config-tests/Dockerfile -t onosproject/onos-config-tests:${ONOS_CONFIG_VERSION}
 
 onos-config-benchmarks-docker: # @HELP build onos-config benchmarks Docker image
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-config-benchmarks/_output/bin/onos-config-benchmarks ./cmd/onos-config-benchmarks
-	docker build . -f build/onos-config-benchmarks/Dockerfile -t onosproject/onos-config-benchmarks:${ONOS_CONFIG_VERSION}
+	docker build build/onos-config-benchmarks -f build/onos-config-benchmarks/Dockerfile -t onosproject/onos-config-benchmarks:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
 images: build onos-config-docker onos-config-tests-docker onos-config-benchmarks-docker
