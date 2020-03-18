@@ -37,6 +37,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"github.com/onosproject/onos-config/pkg/config"
+	"os"
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/manager"
@@ -56,8 +59,6 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 )
-
-var log = logging.GetLogger("main")
 
 type arrayFlags []string
 
@@ -83,6 +84,15 @@ func main() {
 	flag.Bool("debug", false, "enable debug logging")
 	flag.Parse()
 
+	config, err := config.GetConfig()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	logging.Configure(config.Logging)
+
+	log := logging.GetLogger("main")
 	log.Info("Starting onos-config")
 
 	opts, err := certs.HandleCertArgs(keyPath, certPath)
@@ -90,32 +100,32 @@ func main() {
 		log.Fatal(err)
 	}
 
-	leadershipStore, err := leadership.NewAtomixStore()
+	leadershipStore, err := leadership.NewAtomixStore(config)
 	if err != nil {
 		log.Error("Cannot load leadership atomix store ", err)
 	}
 
-	mastershipStore, err := mastership.NewAtomixStore()
+	mastershipStore, err := mastership.NewAtomixStore(config)
 	if err != nil {
 		log.Error("Cannot load mastership atomix store ", err)
 	}
 
-	deviceChangesStore, err := device.NewAtomixStore()
+	deviceChangesStore, err := device.NewAtomixStore(config)
 	if err != nil {
 		log.Error("Cannot load device atomix store ", err)
 	}
 
-	networkChangesStore, err := network.NewAtomixStore()
+	networkChangesStore, err := network.NewAtomixStore(config)
 	if err != nil {
 		log.Error("Cannot load network atomix store ", err)
 	}
 
-	networkSnapshotStore, err := networksnap.NewAtomixStore()
+	networkSnapshotStore, err := networksnap.NewAtomixStore(config)
 	if err != nil {
 		log.Error("Cannot load network snapshot atomix store ", err)
 	}
 
-	deviceSnapshotStore, err := devicesnap.NewAtomixStore()
+	deviceSnapshotStore, err := devicesnap.NewAtomixStore(config)
 	if err != nil {
 		log.Error("Cannot load network atomix store ", err)
 	}
@@ -164,7 +174,7 @@ func main() {
 		}
 
 		mgr.Run()
-		err = startServer(*caPath, *keyPath, *certPath)
+		err = startServer(*caPath, *keyPath, *certPath, log)
 		if err != nil {
 			log.Fatal("Unable to start onos-config ", err)
 		}
@@ -172,7 +182,7 @@ func main() {
 }
 
 // Creates gRPC server and registers various services; then serves.
-func startServer(caPath string, keyPath string, certPath string) error {
+func startServer(caPath string, keyPath string, certPath string, log *logging.Log) error {
 	s := northbound.NewServer(northbound.NewServerConfig(caPath, keyPath, certPath, 5150, true))
 	s.AddService(admin.Service{})
 	s.AddService(diags.Service{})

@@ -23,6 +23,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
@@ -37,18 +38,13 @@ func init() {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client, err := atomix.GetAtomixClient()
+func NewAtomixStore(config config.Config) (Store, error) {
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
 		return nil, err
 	}
 
-	group, err := client.GetDatabase(context.Background(), atomix.GetAtomixRaftGroup())
-	if err != nil {
-		return nil, err
-	}
-
-	changes, err := group.GetIndexedMap(context.Background(), changesName)
+	changes, err := database.GetIndexedMap(context.Background(), changesName)
 	if err != nil {
 		return nil, err
 	}

@@ -23,6 +23,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-config/api/types/device"
 	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"io"
@@ -33,23 +34,18 @@ const deviceSnapshotsName = "device-snapshots"
 const snapshotsName = "snapshots"
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client, err := atomix.GetAtomixClient()
+func NewAtomixStore(config config.Config) (Store, error) {
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
 		return nil, err
 	}
 
-	group, err := client.GetDatabase(context.Background(), atomix.GetAtomixRaftGroup())
+	deviceSnapshots, err := database.GetMap(context.Background(), deviceSnapshotsName)
 	if err != nil {
 		return nil, err
 	}
 
-	deviceSnapshots, err := group.GetMap(context.Background(), deviceSnapshotsName)
-	if err != nil {
-		return nil, err
-	}
-
-	snapshots, err := group.GetMap(context.Background(), snapshotsName)
+	snapshots, err := database.GetMap(context.Background(), snapshotsName)
 	if err != nil {
 		return nil, err
 	}
