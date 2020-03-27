@@ -15,8 +15,8 @@
 package mastership
 
 import (
-	"context"
 	"github.com/atomix/go-client/pkg/client/util/net"
+	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -54,13 +54,8 @@ type Mastership struct {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client, err := atomix.GetAtomixClient()
-	if err != nil {
-		return nil, err
-	}
-
-	database, err := client.GetDatabase(context.Background(), atomix.GetAtomixRaftGroup())
+func NewAtomixStore(config config.Config) (Store, error) {
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
 		return nil, err
 	}

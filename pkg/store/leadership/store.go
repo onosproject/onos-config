@@ -20,6 +20,7 @@ import (
 	"github.com/atomix/go-client/pkg/client/election"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
+	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"io"
@@ -56,18 +57,13 @@ type Leadership struct {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client, err := atomix.GetAtomixClient()
+func NewAtomixStore(config config.Config) (Store, error) {
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
 		return nil, err
 	}
 
-	group, err := client.GetDatabase(context.Background(), atomix.GetAtomixRaftGroup())
-	if err != nil {
-		return nil, err
-	}
-
-	election, err := group.GetElection(context.Background(), primitiveName, election.WithID(string(cluster.GetNodeID())))
+	election, err := database.GetElection(context.Background(), primitiveName, election.WithID(string(cluster.GetNodeID())))
 	if err != nil {
 		return nil, err
 	}

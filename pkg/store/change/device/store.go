@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/config"
 	"io"
 	"sync"
 	"time"
@@ -41,19 +42,14 @@ func getDeviceChangesName(deviceID device.VersionedID) string {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client, err := atomix.GetAtomixClient()
-	if err != nil {
-		return nil, err
-	}
-
-	group, err := client.GetDatabase(context.Background(), atomix.GetAtomixRaftGroup())
+func NewAtomixStore(config config.Config) (Store, error) {
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
 		return nil, err
 	}
 
 	changesFactory := func(deviceID device.VersionedID) (indexedmap.IndexedMap, error) {
-		return group.GetIndexedMap(context.Background(), getDeviceChangesName(deviceID))
+		return database.GetIndexedMap(context.Background(), getDeviceChangesName(deviceID))
 	}
 
 	return &atomixStore{
