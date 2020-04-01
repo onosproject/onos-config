@@ -23,6 +23,7 @@ import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/api/types/device"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"gotest.tools/assert"
 	"io"
 	"strings"
@@ -91,7 +92,7 @@ func recvDeviceChangesMock() (*diags.ListDeviceChangeResponse, error) {
 
 func Test_WatchDeviceChanges(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
-	CaptureOutput(outputBuffer)
+	cli.CaptureOutput(outputBuffer)
 	generateDeviceChangeData(4)
 	generateNetworkChangeData(4)
 
@@ -127,7 +128,7 @@ func recvListDeviceChangesMock() (*diags.ListDeviceChangeResponse, error) {
 
 func Test_ListDeviceChanges(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
-	CaptureOutput(outputBuffer)
+	cli.CaptureOutput(outputBuffer)
 	generateDeviceChangeData(4)
 	generateNetworkChangeData(4)
 

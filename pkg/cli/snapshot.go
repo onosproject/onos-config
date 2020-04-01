@@ -99,7 +99,7 @@ func snapshotsCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 	}
 
 	if !noHeaders {
-		GetOutput().Write([]byte(snapshotHeader))
+		cli.GetOutput().Write([]byte(snapshotHeader))
 	}
 	for {
 		in, err := stream.Recv()
@@ -109,9 +109,10 @@ func snapshotsCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 		if err != nil {
 			return err
 		}
-		err = tmplSnapshots.Execute(GetOutput(), in)
+		err = tmplSnapshots.Execute(cli.GetOutput(), in)
 		if err != nil {
-			Output("ERROR on template %s", err)
+			cli.Output("ERROR on template: %s", snapshotsTemplate)
+			return err
 		}
 	}
 }

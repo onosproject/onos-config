@@ -69,8 +69,8 @@ func opstateCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 	client := diags.CreateOpStateDiagsClient(clientConnection)
 
 	if !noHeaders {
-		Output("OPSTATE CACHE: %s\n", deviceID)
-		Output("%-82s|%-20s|\n", "PATH", "VALUE")
+		cli.Output("OPSTATE CACHE: %s\n", deviceID)
+		cli.Output("%-82s|%-20s|\n", "PATH", "VALUE")
 	}
 
 	stream, err := client.GetOpState(context.Background(), &diags.OpStateRequest{DeviceId: deviceID, Subscribe: subscribe})
@@ -87,7 +87,7 @@ func opstateCommand(cmd *cobra.Command, subscribe bool, args []string) error {
 		if err != nil {
 			return err
 		}
-		_ = tmplGetOpState.Execute(GetOutput(), in)
-		Output("\n")
+		_ = tmplGetOpState.Execute(cli.GetOutput(), in)
+		cli.Output("\n")
 	}
 }

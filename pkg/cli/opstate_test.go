@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-config/api/diags"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"gotest.tools/assert"
 	"io"
 	"regexp"
@@ -58,7 +59,7 @@ func recvOpstateMock() (*diags.OpStateResponse, error) {
 
 func Test_Opstate(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
-	CaptureOutput(outputBuffer)
+	cli.CaptureOutput(outputBuffer)
 
 	opStateClient := MockOpStateDiagsGetOpStateClient{
 		recvFn: recvOpstateMock,

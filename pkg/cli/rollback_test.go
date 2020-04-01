@@ -17,6 +17,7 @@ package cli
 
 import (
 	"bytes"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
@@ -24,7 +25,7 @@ import (
 
 func Test_rollback(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
-	CaptureOutput(outputBuffer)
+	cli.CaptureOutput(outputBuffer)
 
 	setUpMockClients(MockClientsConfig{})
 	rollback := getRollbackCommand()

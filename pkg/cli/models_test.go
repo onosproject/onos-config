@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"io"
@@ -66,7 +67,7 @@ func recvMock() (*admin.ModelInfo, error) {
 
 func Test_ListPlugins(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
-	CaptureOutput(outputBuffer)
+	cli.CaptureOutput(outputBuffer)
 	generateModelData(4)
 
 	modelsClient := MockConfigAdminServiceListRegisteredModelsClient{
@@ -98,7 +99,7 @@ func Test_AddPlugin(t *testing.T) {
 	)
 
 	outputBuffer := bytes.NewBufferString("")
-	CaptureOutput(outputBuffer)
+	cli.CaptureOutput(outputBuffer)
 
 	setUpMockClients(MockClientsConfig{})
 	addPlugin := getAddPluginCommand()

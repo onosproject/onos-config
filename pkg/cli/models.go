@@ -79,8 +79,8 @@ func runListPluginsCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		_ = tmplModelList.Execute(GetOutput(), in)
-		Output("\n")
+		_ = tmplModelList.Execute(cli.GetOutput(), in)
+		cli.Output("\n")
 	}
 }
 
@@ -135,7 +135,7 @@ func runAddPluginCommand(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			Output("Plugin %s uploaded to server as %s:%s. %d chunks. %d bytes\n",
+			cli.Output("Plugin %s uploaded to server as %s:%s. %d chunks. %d bytes\n",
 				pluginFileName, resp.GetName(), resp.GetVersion(),
 				chunkNo, chunkNo*chunkSize+int64(count))
 			return nil

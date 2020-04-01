@@ -22,6 +22,7 @@ import (
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"gotest.tools/assert"
 	"io"
 	"strings"
@@ -93,7 +94,7 @@ func generateNetworkChangeData(count int) {
 
 func Test_WatchNetworkChanges(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
-	CaptureOutput(outputBuffer)
+	cli.CaptureOutput(outputBuffer)
 	generateDeviceChangeData(4)
 	generateNetworkChangeData(4)
 
@@ -128,7 +129,7 @@ func recvWatchNetworkChangesMock() (*diags.ListNetworkChangeResponse, error) {
 
 func Test_GetNetworkChanges(t *testing.T) {
 	outputBuffer := bytes.NewBufferString("")
-	CaptureOutput(outputBuffer)
+	cli.CaptureOutput(outputBuffer)
 	generateDeviceChangeData(4)
 	generateNetworkChangeData(4)
 	var nextNwChIndex = 0
