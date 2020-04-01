@@ -49,6 +49,6 @@ func runRollbackCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	Output("Rollback success %s\n", resp.Message)
+	cli.Output("Rollback success %s\n", resp.Message)
 	return nil
 }

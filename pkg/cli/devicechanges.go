@@ -88,7 +88,7 @@ func deviceChangesCommand(cmd *cobra.Command, subscribe bool, args []string) err
 		return err
 	}
 	if !noHeaders {
-		GetOutput().Write([]byte(changeHeader))
+		cli.GetOutput().Write([]byte(changeHeader))
 	}
 	for {
 		in, err := stream.Recv()
@@ -98,7 +98,7 @@ func deviceChangesCommand(cmd *cobra.Command, subscribe bool, args []string) err
 		if err != nil {
 			return err
 		}
-		_ = tmplChanges.Execute(GetOutput(), in.Change)
+		_ = tmplChanges.Execute(cli.GetOutput(), in.Change)
 	}
 }
 
