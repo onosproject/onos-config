@@ -18,7 +18,7 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto" //nolint
 	"github.com/onosproject/onos-config/api/diags"
 	"github.com/onosproject/onos-config/api/types/change"
 	"github.com/onosproject/onos-config/api/types/change/network"
@@ -34,6 +34,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/prototext"
 	"io"
 	"strconv"
 	"strings"
@@ -184,7 +185,7 @@ func GetGNMIValue(ctx context.Context, c client.Impl, paths []protoutils.DeviceP
 	}
 
 	getTZRequest := &gpb.GetRequest{}
-	if err := proto.UnmarshalText(protoString, getTZRequest); err != nil {
+	if err := prototext.Unmarshal([]byte(protoString), protov1.MessageV2(getTZRequest)); err != nil {
 		fmt.Printf("unable to parse gnmi.GetRequest from %q : %v\n", protoString, err)
 		return nil, nil, err
 	}
@@ -208,7 +209,7 @@ func SetGNMIValue(ctx context.Context, c client.Impl, updatePaths []protoutils.D
 
 	setTZRequest := &gpb.SetRequest{}
 
-	if err := proto.UnmarshalText(protoBuilder.String(), setTZRequest); err != nil {
+	if err := prototext.Unmarshal([]byte(protoBuilder.String()), protov1.MessageV2(setTZRequest)); err != nil {
 		return "", nil, err
 	}
 

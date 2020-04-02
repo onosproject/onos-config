@@ -335,7 +335,7 @@ func Test_StrVal_Ascii(t *testing.T) {
 
 func Test_StrVal_Any(t *testing.T) {
 	source := "ABC-123"
-	expected := "value:\"ABC-123\" "
+	expected := "value:\"ABC-123\""
 	typedValue := &gnmi.TypedValue{
 		Value: &gnmi.TypedValue_AnyVal{
 			AnyVal: &any.Any{Value: []byte(source)},

@@ -17,7 +17,7 @@ package gnmi
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto" //nolint
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-test/pkg/onit/env"
@@ -96,7 +96,7 @@ func buildQuery(request *gnmi.SubscribeRequest) (*client.Query, chan *gnmi.Subsc
 
 	respChan := make(chan *gnmi.SubscribeResponse)
 
-	q.ProtoHandler = func(msg proto.Message) error {
+	q.ProtoHandler = func(msg protov1.Message) error {
 		resp, ok := msg.(*gnmi.SubscribeResponse)
 		if !ok {
 			return fmt.Errorf("failed to type assert message %#v", msg)

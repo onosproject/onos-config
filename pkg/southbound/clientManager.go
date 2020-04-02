@@ -30,9 +30,10 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto" //nolint
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
+	"google.golang.org/protobuf/encoding/prototext"
 )
 
 var log = logging.GetLogger("southbound")
@@ -157,9 +158,8 @@ func getCertPoolDefault() *x509.CertPool {
 // CapabilitiesWithString allows a request for the capabilities by a string - can be empty
 func (target *Target) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
 	r := &gpb.CapabilityRequest{}
-	reqProto := &request
-	if err := proto.UnmarshalText(*reqProto, r); err != nil {
-		return nil, fmt.Errorf("unable to parse gnmi.CapabilityRequest from %q : %v", *reqProto, err)
+	if err := prototext.Unmarshal([]byte(request), protov1.MessageV2(r)); err != nil {
+		return nil, fmt.Errorf("unable to parse gnmi.CapabilityRequest from %s : %v", request, err)
 	}
 	return target.Capabilities(ctx, r)
 }
@@ -179,9 +179,8 @@ func (target *Target) GetWithString(ctx context.Context, request string) (*gpb.G
 		return nil, errors.New("cannot get and empty request")
 	}
 	r := &gpb.GetRequest{}
-	reqProto := &request
-	if err := proto.UnmarshalText(*reqProto, r); err != nil {
-		return nil, fmt.Errorf("unable to parse gnmi.GetRequest from %q : %v", *reqProto, err)
+	if err := prototext.Unmarshal([]byte(request), protov1.MessageV2(r)); err != nil {
+		return nil, fmt.Errorf("unable to parse gnmi.GetRequest from %s : %v", request, err)
 	}
 	return target.Get(ctx, r)
 }
@@ -201,9 +200,9 @@ func (target *Target) SetWithString(ctx context.Context, request string) (*gpb.S
 		return nil, errors.New("cannot get and empty request")
 	}
 	r := &gpb.SetRequest{}
-	reqProto := &request
-	if err := proto.UnmarshalText(*reqProto, r); err != nil {
-		return nil, fmt.Errorf("unable to parse gnmi.SetRequest from %q : %v", *reqProto, err)
+
+	if err := prototext.Unmarshal([]byte(request), protov1.MessageV2(r)); err != nil {
+		return nil, fmt.Errorf("unable to parse gnmi.SetRequest from %s : %v", request, err)
 	}
 	return target.Set(ctx, r)
 }

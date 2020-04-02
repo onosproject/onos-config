@@ -44,7 +44,7 @@ protos: # @HELP compile the protobuf files (using protoc-go Docker)
 	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config \
 		-w /go/src/github.com/onosproject/onos-config \
 		--entrypoint build/bin/compile-protos.sh \
-		onosproject/protoc-go:stable
+		onosproject/protoc-go:latest
 
 onos-config-base-docker: # @HELP build onos-config base Docker image
 	@go mod vendor

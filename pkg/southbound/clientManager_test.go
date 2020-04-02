@@ -16,7 +16,7 @@ package southbound
 
 import (
 	"context"
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto" //nolint
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
@@ -329,7 +329,7 @@ func Test_Subscribe(t *testing.T) {
 	tearDown()
 }
 
-func handler(msg proto.Message) error {
+func handler(msg protov1.Message) error {
 	return nil
 }
 

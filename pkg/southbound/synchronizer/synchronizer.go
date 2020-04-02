@@ -22,7 +22,7 @@ import (
 	"strings"
 	syncPrimitives "sync"
 
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto" //nolint
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/events"
@@ -475,7 +475,7 @@ func (sync *Synchronizer) getOpStatePathsByType(ctx context.Context,
 	return responseState.Notification, nil
 }
 
-func (sync *Synchronizer) opStateSubHandler(msg proto.Message) error {
+func (sync *Synchronizer) opStateSubHandler(msg protov1.Message) error {
 
 	resp, ok := msg.(*gnmi.SubscribeResponse)
 	if !ok {

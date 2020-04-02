@@ -25,11 +25,11 @@ import (
 	"io/ioutil"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
+	protov2 "google.golang.org/protobuf/proto"
 )
 
 // Service implements Service for GNMI
@@ -72,12 +72,13 @@ func getGNMIServiceVersion() (*string, error) {
 		return nil, fmt.Errorf("error in reading gzip data: %v", err)
 	}
 	desc := &descriptor.FileDescriptorProto{}
-	if err := proto.Unmarshal(b, desc); err != nil {
+	if err := protov2.Unmarshal(b, desc); err != nil {
 		return nil, fmt.Errorf("error in unmarshaling proto: %v", err)
 	}
-	ver, err := proto.GetExtension(desc.Options, gnmi.E_GnmiService)
-	if err != nil {
-		return nil, fmt.Errorf("error in getting version from proto extension: %v", err)
+	ver := protov2.GetExtension(desc.Options, gnmi.E_GnmiService)
+	verStr, ok := ver.(string)
+	if !ok {
+		return nil, fmt.Errorf("can't cast version to string %v", ver)
 	}
-	return ver.(*string), nil
+	return &verStr, nil
 }

@@ -262,7 +262,7 @@ func Test_empty(t *testing.T) {
 	convertedValue, convertedErr := NativeTypeToGnmiTypedValue(devicechange.NewTypedValueEmpty())
 	assert.NilError(t, convertedErr)
 	s := convertedValue.String()
-	assert.Assert(t, strings.Contains(s, "nil"), "%s", "Ascii")
+	assert.Assert(t, strings.Contains(s, "<>"), "Expected nil. Got: %s", s)
 }
 
 func Test_errors(t *testing.T) {
