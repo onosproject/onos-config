@@ -16,7 +16,9 @@ package cli
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-test/pkg/onit/env"
+	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/helmit/pkg/kubernetes"
+	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -95,11 +97,27 @@ func parsePluginsCommandOutput(t *testing.T, output []string) map[string]map[str
 
 // TestPluginsGetCLI tests the config service's plugin CLI commands
 func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
-	device1 := env.NewSimulator().AddOrDie()
+	// Create a device simulator
+	device1 := helm.
+		Chart("device-simulator").
+		Release(random.NewPetName(2))
+	err := device1.Install(true)
+	assert.NoError(t, err)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(60 * time.Second)
 
-	output, code, err := env.CLI().Execute(fmt.Sprintf("onos config get plugins %s", device1.Name()))
+	// Get one of the onos-cli pods
+	release := helm.Chart("onos-cli").
+		Release("onos-cli")
+	client := kubernetes.NewForReleaseOrDie(release)
+	pods, err := client.
+		CoreV1().
+		Pods().
+		List()
+	assert.NoError(t, err)
+	pod := pods[0]
+
+	output, code, err := pod.Containers()[0].Exec(fmt.Sprintf("onos config get plugins %s", device1.Name()))
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
