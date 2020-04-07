@@ -66,4 +66,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 
 	//  Make sure new root got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, getPath, "", 0, "New root was not removed")
+
+	// Shut down the device we created
+	gnmi.DeleteSimulator(t, simulator)
 }

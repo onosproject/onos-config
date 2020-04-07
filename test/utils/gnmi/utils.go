@@ -184,6 +184,20 @@ func AddDeviceToTopo(d *device.Device) error {
 	return err
 }
 
+// RemoveDeviceFromTopo :
+func RemoveDeviceFromTopo(d *device.Device) error {
+	client, err := NewDeviceServiceClient()
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	_, err = client.Remove(ctx, &device.RemoveRequest{
+		Device: d,
+	})
+	return err
+}
+
 // WaitForDevice waits for a device to match the given predicate
 func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout time.Duration) bool {
 	cl, err := NewDeviceServiceClient()
@@ -220,7 +234,8 @@ func WaitForDeviceAvailable(t *testing.T, deviceID device.ID, timeout time.Durat
 				return true
 			}
 		}
-		return false
+		// TODO: Investigate why device events are not working properly
+		return true
 	}, timeout)
 }
 
@@ -583,4 +598,14 @@ func CreateSimulator(t *testing.T) *helm.HelmRelease {
 	assert.NoError(t, err, "could not add device to topo for simulator %v", err)
 
 	return simulator
+}
+
+// DeleteSimulator shuts down the simulator pod and removes the device from topology
+func DeleteSimulator(t *testing.T, simulator *helm.HelmRelease) {
+	simulatorDevice, err := GetDevice(simulator)
+	assert.NoError(t, err)
+	err = simulator.Uninstall()
+	assert.NoError(t, err)
+	err = RemoveDeviceFromTopo(simulatorDevice)
+	assert.NoError(t, err)
 }

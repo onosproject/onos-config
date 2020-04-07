@@ -46,4 +46,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 
 	//  Make sure it got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+
+	// Shut down the device we created
+	gnmi.DeleteSimulator(t, simulator)
 }
