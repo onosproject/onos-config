@@ -548,6 +548,10 @@ github.com/onosproject/helmit v0.0.0-20200330181216-4d6d0cba5916 h1:LcFWtveYyqCZ
 github.com/onosproject/helmit v0.0.0-20200330181216-4d6d0cba5916/go.mod h1:xLBMRjyjNe95ZQ0wlRxhArSn5Nx5Uoql1yiGmfS2gYw=
 github.com/onosproject/helmit v0.0.0-20200404155116-d45fbf55211e h1:3doFPO5y6gx1jumHNj/4GdrLSR0k0v7siNVP7Hf+bcY=
 github.com/onosproject/helmit v0.0.0-20200404155116-d45fbf55211e/go.mod h1:xLBMRjyjNe95ZQ0wlRxhArSn5Nx5Uoql1yiGmfS2gYw=
+github.com/onosproject/helmit v0.0.0-20200405200336-5fc56d83e7cc h1:bDpz5+iBnH0U/c5Jr3c0+h+PRy53qwXkTHirOf51VQI=
+github.com/onosproject/helmit v0.0.0-20200405200336-5fc56d83e7cc/go.mod h1:xLBMRjyjNe95ZQ0wlRxhArSn5Nx5Uoql1yiGmfS2gYw=
+github.com/onosproject/helmit v0.0.0-20200406192519-65b59f740f73 h1:GPC/wr2umsVTXFYE7+8/+mn8ESqs67OmpjFgjOSjZdY=
+github.com/onosproject/helmit v0.0.0-20200406192519-65b59f740f73/go.mod h1:xLBMRjyjNe95ZQ0wlRxhArSn5Nx5Uoql1yiGmfS2gYw=
 github.com/onosproject/onos-cli v0.0.0-20200205222355-b174234b2ffa/go.mod h1:aUcsRKvZxiJOoT1KCUgp4iiDe71pvawPqPrXWoPmKjI=
 github.com/onosproject/onos-config v0.0.0-20191116095118-2ca4b5f98ae2/go.mod h1:KqXDEuf9d/uiHCL1iso0s8j3UUofZjCHUhs5pVWwJ0E=
 github.com/onosproject/onos-config v0.0.0-20200124182344-6c3f5eb1e6ed/go.mod h1:rQfBju27qOGvL7Qtvxo6H9TlvU0oEw91emQzS14hmnE=
