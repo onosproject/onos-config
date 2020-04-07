@@ -42,7 +42,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -212,13 +211,11 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 // WaitForDeviceAvailable waits for a device to become available
 func WaitForDeviceAvailable(t *testing.T, deviceID device.ID, timeout time.Duration) bool {
 	return WaitForDevice(t, func(dev *device.Device) bool {
-		fmt.Fprintf(os.Stderr, "WaitForDeviceAvailable: device ID is %s\n", dev.ID)
 		if dev.ID != deviceID {
 			return false
 		}
 
 		for _, protocol := range dev.Protocols {
-			fmt.Fprintf(os.Stderr, "WaitForDeviceAvailable: protocol is %v\n", protocol)
 			if protocol.Protocol == device.Protocol_GNMI && protocol.ServiceState == device.ServiceState_AVAILABLE {
 				return true
 			}
