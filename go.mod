@@ -15,7 +15,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200304144136-6992f473b240
 	github.com/onosproject/helmit v0.0.0-20200407154219-01143f65f143
 	github.com/onosproject/onos-lib-go v0.0.0-20200402192250-b62cfb0d4bf8
-	github.com/onosproject/onos-test v0.0.0-20200212201952-fb8d2ac644a0
+	github.com/onosproject/onos-test v0.0.0-20200408023315-9803e5763d03
 	github.com/onosproject/onos-topo v0.0.0-20200218171206-55029b503689
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c
 	github.com/openconfig/goyang v0.0.0-20200115183954-d0a48929f0ea

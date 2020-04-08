@@ -420,6 +420,7 @@ github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79/go.mod h1:Fecb
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-middleware v1.1.0/go.mod h1:f5nM7jw/oeRSadq3xCzHAvxcr8HZnzsqU6ILg/0NiiE=
+github.com/grpc-ecosystem/go-grpc-middleware v1.2.0 h1:0IKlLyQ3Hs9nDaiK5cSHAGmcQEIC8l2Ts1u6x5Dfrqg=
 github.com/grpc-ecosystem/go-grpc-middleware v1.2.0/go.mod h1:mJzapYve32yjrKlk9GbyCZHuPgZsrbyIbyKhSzOpg6s=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
@@ -576,6 +577,8 @@ github.com/onosproject/onos-test v0.0.0-20200212201952-fb8d2ac644a0/go.mod h1:c8
 github.com/onosproject/onos-test v0.0.0-20200222204048-99418ae1ce43/go.mod h1:9tviKLS0zfLMJhihooVPaeUuz/aIaWWCLr3YVOh2+kI=
 github.com/onosproject/onos-test v0.0.0-20200331165451-432066544250 h1:xVxSweck00Kao4Py2pdt0vxO1qdjUUPGvUujOSbfUUM=
 github.com/onosproject/onos-test v0.0.0-20200331165451-432066544250/go.mod h1:q5sYsKteLmkKX2OYJPXJM5Ws+D56DksLd9Xu0uYuLos=
+github.com/onosproject/onos-test v0.0.0-20200408023315-9803e5763d03 h1:cE8fqaQo4w3Rsb40zk/J6+GYYMa69PSGxYJQpCUrvlw=
+github.com/onosproject/onos-test v0.0.0-20200408023315-9803e5763d03/go.mod h1:q5sYsKteLmkKX2OYJPXJM5Ws+D56DksLd9Xu0uYuLos=
 github.com/onosproject/onos-topo v0.0.0-20191107000708-af85b82cfca3/go.mod h1:oPGdJnMHy5UGx4slrbf84DEFqcKXuGMv36N+EBc3QwM=
 github.com/onosproject/onos-topo v0.0.0-20191113170912-88eeee89f4eb/go.mod h1:oPGdJnMHy5UGx4slrbf84DEFqcKXuGMv36N+EBc3QwM=
 github.com/onosproject/onos-topo v0.0.0-20200124005303-f1408bf8e513/go.mod h1:wlq75QesuY4KsfpdCD0kbG6F9yi5ytQwMel47QhMRuM=
