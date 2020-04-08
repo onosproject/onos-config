@@ -33,9 +33,9 @@ import (
 var log = logging.GetLogger("test", "gnmi")
 
 const (
-	subTzValue = "Europe/Madrid"
-	subTzPath  = "/system/clock/config/timezone-name"
-	//subDateTimePath = "/system/state/current-datetime"
+	subTzValue      = "Europe/Madrid"
+	subTzPath       = "/system/clock/config/timezone-name"
+	subDateTimePath = "/system/state/current-datetime"
 )
 
 type subscribeRequest struct {
@@ -165,7 +165,7 @@ func assertDeleteResponse(t *testing.T, response *gnmi.SubscribeResponse_Update,
 	assertPathSegments(t, pathResponse, path)
 }
 
-//func assertSyncResponse(t *testing.T, sync *gnmi.SubscribeResponse_SyncResponse) {
-//	t.Helper()
-//	assert.True(t, sync.SyncResponse)
-//}
+func assertSyncResponse(t *testing.T, sync *gnmi.SubscribeResponse_SyncResponse) {
+	t.Helper()
+	assert.True(t, sync.SyncResponse)
+}

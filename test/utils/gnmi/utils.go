@@ -594,7 +594,7 @@ func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
 	err := simulator.Install(true)
 	assert.NoError(t, err, "could not install device simulator %v", err)
 
-	time.Sleep(60 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	simulatorDevice, err := NewDevice(simulator, SimulatorDeviceType, SimulatorDeviceVersion)
 	assert.NoError(t, err, "could not make device for simulator %v", err)
