@@ -25,7 +25,6 @@ import (
 func main() {
 	registry.RegisterTestSuite("cli", &cli.TestSuite{})
 	registry.RegisterTestSuite("gnmi", &gnmi.TestSuite{})
-	//registry.RegisterTestSuite("ha", &ha.TestSuite{})
 
 	test.Main()
 }
