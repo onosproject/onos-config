@@ -4,16 +4,11 @@ export GO111MODULE=on
 .PHONY: build
 
 ONOS_CONFIG_VERSION := latest
-ONOS_CONFIG_DEBUG_VERSION := debug
 ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
 	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
-
-build-debug: # @HELP build the Go binaries and run all validations (default)
-build-debug:
-	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-config-debug ./cmd/onos-config
 
 test: # @HELP run the unit tests and source code validation
 test: build deps linters license_check
@@ -54,23 +49,10 @@ onos-config-base-docker: # @HELP build onos-config base Docker image
 		-t onosproject/onos-config-base:${ONOS_CONFIG_VERSION}
 	@rm -rf vendor
 
-onos-config-base-debug-docker: # @HELP build onos-config base Docker image
-	@go mod vendor
-	docker build . -f build/base/Dockerfile \
-		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
-		--build-arg ONOS_MAKE_TARGET=build-debug \
-		-t onosproject/onos-config-base:${ONOS_CONFIG_DEBUG_VERSION}
-	@rm -rf vendor
-
 onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
-
-onos-config-debug-docker: onos-config-base-debug-docker # @HELP build onos-config Docker debug image
-	docker build . -f build/onos-config-debug/Dockerfile \
-		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_DEBUG_VERSION} \
-		-t onosproject/onos-config:${ONOS_CONFIG_DEBUG_VERSION}
 
 onos-config-tests-docker: # @HELP build onos-config tests Docker image
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-config-tests/_output/bin/onos-config-tests ./cmd/onos-config-tests
