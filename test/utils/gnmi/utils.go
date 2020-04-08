@@ -583,9 +583,14 @@ func MakeProtoPath(target string, path string) string {
 
 // CreateSimulator creates a device simulator
 func CreateSimulator(t *testing.T) *helm.HelmRelease {
+	return CreateSimulatorWithName(t, random.NewPetName(2))
+}
+
+// CreateSimulatorWithName creates a device simulator
+func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
 	simulator := helm.
 		Chart("device-simulator").
-		Release(random.NewPetName(2))
+		Release(name)
 	err := simulator.Install(true)
 	assert.NoError(t, err, "could not install device simulator %v", err)
 
