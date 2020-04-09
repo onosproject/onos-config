@@ -16,7 +16,6 @@ package gnmi
 
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"regexp"
@@ -32,10 +31,11 @@ const (
 
 // TestSingleState tests query of a single GNMI path of a read/only value to a single device
 func (s *TestSuite) TestSingleState(t *testing.T) {
-	simulator := env.NewSimulator().AddOrDie()
+	// Create a simulated device
+	simulator := gnmi.CreateSimulator(t)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 30*time.Second)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
@@ -61,4 +61,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 		break
 	}
 	assert.Equal(t, success, true, "state value was not found")
+
+	// Shut down the device we created
+	gnmi.DeleteSimulator(t, simulator)
 }

@@ -17,7 +17,6 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
 )
 
@@ -28,7 +27,8 @@ const (
 
 // TestSinglePath tests query/set/delete of a single GNMI path to a single device
 func (s *TestSuite) TestSinglePath(t *testing.T) {
-	simulator := env.NewSimulator().AddOrDie()
+	// Create a simulated device
+	simulator := gnmi.CreateSimulator(t)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
@@ -46,4 +46,7 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 
 	//  Make sure it got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+
+	// Shut down the device we created
+	gnmi.DeleteSimulator(t, simulator)
 }

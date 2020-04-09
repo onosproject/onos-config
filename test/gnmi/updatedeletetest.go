@@ -17,7 +17,6 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
 )
 
@@ -33,7 +32,7 @@ const (
 // TestUpdateDelete tests update and delete paths in a single GNMI request
 func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	// Get the first configured device from the environment.
-	device := env.NewSimulator().AddOrDie()
+	device := gnmi.CreateSimulator(t)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)

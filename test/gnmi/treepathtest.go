@@ -17,7 +17,6 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
 )
 
@@ -32,24 +31,24 @@ const (
 
 // TestTreePath tests create/set/delete of a tree of GNMI paths to a single device
 func (s *TestSuite) TestTreePath(t *testing.T) {
-	// Get the first configured device from the environment.
-	device := env.NewSimulator().AddOrDie()
+	// Make a simulated device
+	simulator := gnmi.CreateSimulator(t)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
-	getPath := gnmi.GetDevicePath(device.Name(), newRootEnabledPath)
+	getPath := gnmi.GetDevicePath(simulator.Name(), newRootEnabledPath)
 
 	// Set name of new root using gNMI client
 	setNamePath := []proto.DevicePath{
-		{DeviceName: device.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
+		{DeviceName: simulator.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Set values using gNMI client
 	setPath := []proto.DevicePath{
-		{DeviceName: device.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
-		{DeviceName: device.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
+		{DeviceName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
+		{DeviceName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setPath, gnmi.NoPaths, gnmi.NoExtensions)
 
@@ -67,4 +66,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 
 	//  Make sure new root got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, getPath, "", 0, "New root was not removed")
+
+	// Shut down the device we created
+	gnmi.DeleteSimulator(t, simulator)
 }

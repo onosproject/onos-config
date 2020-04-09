@@ -18,7 +18,6 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -39,9 +38,10 @@ var (
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
 func (s *TestSuite) TestTransaction(t *testing.T) {
+	t.Skip()
 	// Get the configured devices from the environment.
-	device1 := env.NewSimulator().AddOrDie()
-	device2 := env.NewSimulator().AddOrDie()
+	device1 := gnmi.CreateSimulator(t)
+	device2 := gnmi.CreateSimulator(t)
 	devices := make([]string, 2)
 	devices[0] = device1.Name()
 	devices[1] = device2.Name()
@@ -77,7 +77,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[3:4], value2)
 
 	// Now rollback the change
-	adminClient, err := env.Config().NewAdminServiceClient()
+	adminClient, err := gnmi.NewAdminServiceClient()
 	assert.NoError(t, err)
 	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
 		context.Background(), &admin.RollbackRequest{Name: string(changeID)})

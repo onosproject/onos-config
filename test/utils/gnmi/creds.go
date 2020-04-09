@@ -1,4 +1,4 @@
-// Copyright 2019-present Open Networking Foundation.
+// Copyright 2020-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,26 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ha
+package gnmi
 
 import (
-	"github.com/onosproject/onos-test/pkg/onit/setup"
-	"github.com/onosproject/onos-test/pkg/test"
+	"crypto/tls"
+	"github.com/onosproject/onos-lib-go/pkg/certs"
 )
 
-// TestSuite is the onos-config HA test suite
-type TestSuite struct {
-	test.Suite
-}
-
-// SetupTestSuite sets up the onos-config CLI test suite
-func (s *TestSuite) SetupTestSuite() {
-	setup.Database().Raft().
-		SetPartitions(3).
-		SetReplicas(3)
-	setup.Topo().
-		SetReplicas(2)
-	setup.Config().
-		SetReplicas(2)
-	setup.SetupOrDie()
+// getClientCredentials returns the credentials for a service client
+func getClientCredentials() (*tls.Config, error) {
+	cert, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		Certificates:       []tls.Certificate{cert},
+		InsecureSkipVerify: true,
+	}, nil
 }

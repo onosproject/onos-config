@@ -20,7 +20,6 @@ import (
 	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +37,7 @@ const (
 
 // TestUnreachableDevice tests set/query of a single GNMI path to a device that will never respond
 func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
-	deviceClient, deviceClientError := env.Topo().NewDeviceServiceClient()
+	deviceClient, deviceClientError := gnmi.NewDeviceServiceClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)
 	newDevice := &device.Device{

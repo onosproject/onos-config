@@ -17,7 +17,6 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/status"
 	"testing"
@@ -32,7 +31,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 		clockTimeZonePath = "/system/clock/config/timezone-name"
 	)
 
-	simulator := env.NewSimulator().AddOrDie()
+	simulator := gnmi.CreateSimulator(t)
 
 	// Data to run the test cases
 	testCases := []struct {

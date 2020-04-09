@@ -15,40 +15,133 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-test/pkg/benchmark"
-	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/onosproject/onos-test/pkg/onit/setup"
+	"context"
+	"crypto/tls"
+	"github.com/onosproject/helmit/pkg/benchmark"
+	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/helmit/pkg/input"
+	"github.com/onosproject/helmit/pkg/kubernetes"
+	"github.com/onosproject/helmit/pkg/util/random"
+	"github.com/onosproject/onos-lib-go/pkg/certs"
+	gclient "github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/client/gnmi"
+	"time"
 )
 
 // BenchmarkSuite is an onos-config gNMI benchmark suite
 type BenchmarkSuite struct {
 	benchmark.Suite
-	simulator env.SimulatorEnv
+	simulator *helm.HelmRelease
 	client    *client.Client
+	value     input.Source
 }
 
 // SetupSuite :: benchmark
-func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) {
-	setup.Atomix()
-	setup.Database().Raft()
-	setup.Topo().SetReplicas(2)
-	setup.Config().SetReplicas(2)
-	setup.SetupOrDie()
-}
-
-// SetupBenchmark :: benchmark
-func (s *BenchmarkSuite) SetupBenchmark(c *benchmark.Context) {
-	s.simulator = env.NewSimulator().AddOrDie()
-	client, err := env.Config().NewGNMIClient()
+func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
+	// Setup the Atomix controller
+	atomix := helm.
+		Chart("atomix-controller").
+		Release("atomix-controller").
+		Set("namespace", helm.Namespace())
+	err := atomix.Install(true)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	s.client = client
+
+	controller := "atomix-controller:5679"
+
+	// Install the onos-topo chart
+	err = helm.
+		Chart("onos-topo").
+		Release("onos-topo").
+		Set("replicaCount", 2).
+		Set("store.controller", controller).
+		Install(false)
+	if err != nil {
+		return err
+	}
+
+	// Install the onos-config chart
+	err = helm.
+		Chart("onos-config").
+		Release("onos-config").
+		Set("replicaCount", 2).
+		Set("store.controller", controller).
+		Install(true)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-// TearDownBenchmark :: benchmark
-func (s *BenchmarkSuite) TearDownBenchmark(c *benchmark.Context) {
-	s.simulator.RemoveOrDie()
+// SetupWorker :: benchmark
+func (s *BenchmarkSuite) SetupWorker(c *benchmark.Context) error {
+	s.value = input.RandomString(8)
+	s.simulator = helm.
+		Chart("device-simulator").
+		Release(random.NewPetName(2))
+	if err := s.simulator.Install(true); err != nil {
+		return err
+	}
+	gnmiClient, err := getGNMIClient()
+	if err != nil {
+		return err
+	}
+	s.client = gnmiClient
+	return nil
+}
+
+// TearDownWorker :: benchmark
+func (s *BenchmarkSuite) TearDownWorker(c *benchmark.Context) error {
 	s.client.Close()
+	return s.simulator.Uninstall()
+}
+
+var _ benchmark.SetupWorker = &BenchmarkSuite{}
+
+func getDestination() (gclient.Destination, error) {
+	creds, err := getClientCredentials()
+	if err != nil {
+		return gclient.Destination{}, err
+	}
+	onosConfig := helm.Release("onos-config")
+	onosConfigClient := kubernetes.NewForReleaseOrDie(onosConfig)
+	services, err := onosConfigClient.CoreV1().Services().List()
+	if err != nil {
+		return gclient.Destination{}, err
+	}
+	service := services[0]
+	return gclient.Destination{
+		Addrs:   []string{service.Ports()[0].Address(true)},
+		Target:  service.Name,
+		TLS:     creds,
+		Timeout: 10 * time.Second,
+	}, nil
+}
+
+// getGNMIClient makes a GNMI client to use for requests
+func getGNMIClient() (*client.Client, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	dest, err := getDestination()
+	if err != nil {
+		return nil, err
+	}
+	gnmiClient, err := client.New(ctx, dest)
+	if err != nil {
+		return nil, err
+	}
+	return gnmiClient.(*client.Client), nil
+}
+
+// getClientCredentials returns the credentials for a service client
+func getClientCredentials() (*tls.Config, error) {
+	cert, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		Certificates:       []tls.Certificate{cert},
+		InsecureSkipVerify: true,
+	}, nil
 }

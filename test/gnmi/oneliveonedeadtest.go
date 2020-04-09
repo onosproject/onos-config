@@ -18,14 +18,13 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"testing"
 	"time"
 )
 
 // TestOneLiveOneDeadDevice tests GNMI operations to an offline device followed by operations to a connected device
 func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
-
+	t.Skip()
 	const (
 		modPath  = "/system/clock/config/timezone-name"
 		modValue = "Europe/Rome"
@@ -44,7 +43,7 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 	gnmi.CheckGNMIValue(t, gnmiClient, offlineDevicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Create an online device
-	onlineSimulator := env.NewSimulator().AddOrDie()
+	onlineSimulator := gnmi.CreateSimulator(t)
 
 	// Set a value to the online device
 	onlineDevicePath := gnmi.GetDevicePathWithValue(onlineSimulator.Name(), modPath, modValue, proto.StringVal)

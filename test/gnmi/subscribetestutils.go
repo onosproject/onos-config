@@ -16,11 +16,12 @@ package gnmi
 
 import (
 	"fmt"
+	"github.com/onosproject/helmit/pkg/helm"
+	gnmi2 "github.com/onosproject/onos-config/test/utils/gnmi"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -80,13 +81,13 @@ func buildRequest(subReq subscribeRequest) (*gnmi.SubscribeRequest, error) {
 	return request, nil
 }
 
-func buildQuery(request *gnmi.SubscribeRequest) (*client.Query, chan *gnmi.SubscribeResponse, error) {
+func buildQuery(request *gnmi.SubscribeRequest, simulator *helm.HelmRelease) (*client.Query, chan *gnmi.SubscribeResponse, error) {
 	q, errQuery := client.NewQuery(request)
 	if errQuery != nil {
 		return nil, nil, errQuery
 	}
 
-	dest := env.Config().Destination()
+	dest, _ := gnmi2.GetDeviceDestination(simulator)
 
 	q.Addrs = dest.Addrs
 	q.Timeout = dest.Timeout
@@ -108,13 +109,13 @@ func buildQuery(request *gnmi.SubscribeRequest) (*client.Query, chan *gnmi.Subsc
 	return &q, respChan, nil
 }
 
-func buildQueryRequest(subReq subscribeRequest) (*client.Query, chan *gnmi.SubscribeResponse, error) {
+func buildQueryRequest(subReq subscribeRequest, simulator *helm.HelmRelease) (*client.Query, chan *gnmi.SubscribeResponse, error) {
 	request, errReq := buildRequest(subReq)
 	if errReq != nil {
 		return nil, nil, errReq
 	}
 
-	q, respChan, errQuery := buildQuery(request)
+	q, respChan, errQuery := buildQuery(request, simulator)
 	if errQuery != nil {
 		return nil, nil, errReq
 	}

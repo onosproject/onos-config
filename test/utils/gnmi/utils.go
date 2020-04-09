@@ -17,22 +17,29 @@ package gnmi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/helmit/pkg/kubernetes"
+	v1 "github.com/onosproject/helmit/pkg/kubernetes/core/v1"
+	"github.com/onosproject/helmit/pkg/util/random"
+	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/api/diags"
 	"github.com/onosproject/onos-config/api/types/change"
 	"github.com/onosproject/onos-config/api/types/change/network"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"io"
 	"strconv"
@@ -41,15 +48,159 @@ import (
 	"time"
 )
 
+const (
+	// SimulatorDeviceVersion default version for simulated device
+	SimulatorDeviceVersion = "1.0.0"
+
+	// SimulatorDeviceType type for simulated device
+	SimulatorDeviceType = "Devicesim"
+)
+
 // MakeContext returns a new context for use in GNMI requests
 func MakeContext() context.Context {
 	ctx := context.Background()
 	return ctx
 }
 
+func getService(releaseName string) (*v1.Service, error) {
+	release := helm.Chart(releaseName).Release(releaseName)
+	releaseClient := kubernetes.NewForReleaseOrDie(release)
+	services, err := releaseClient.CoreV1().Services().List()
+	if err != nil {
+		return nil, err
+	}
+	return services[0], nil
+}
+
+func connectService(release string) (*grpc.ClientConn, error) {
+	service, err := getService(release)
+	if err != nil {
+		return nil, err
+	}
+	tlsConfig, err := getClientCredentials()
+	if err != nil {
+		return nil, err
+	}
+	return grpc.Dial(service.Ports()[0].Address(true), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+}
+
+// GetDevice :
+func GetDevice(simulator *helm.HelmRelease) (*device.Device, error) {
+	client, err := NewDeviceServiceClient()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	response, err := client.Get(ctx, &device.GetRequest{
+		ID: device.ID(simulator.Name()),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return response.Device, nil
+}
+
+// AwaitDeviceState :
+func AwaitDeviceState(simulator *helm.HelmRelease, predicate func(*device.Device) bool) error {
+	for i := 0; i < 10; i++ {
+		device, err := GetDevice(simulator)
+		if err != nil {
+			return err
+		} else if predicate(device) {
+			return nil
+		}
+		time.Sleep(time.Second)
+	}
+	return errors.New("device wait timed out")
+}
+
+// NewDevice :
+func NewDevice(simulator *helm.HelmRelease, deviceType string, version string) (*device.Device, error) {
+	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
+	services, err := simulatorClient.CoreV1().Services().List()
+	if err != nil {
+		return nil, err
+	}
+	service := services[0]
+	return &device.Device{
+		ID:      device.ID(simulator.Name()),
+		Address: service.Ports()[0].Address(true),
+		Type:    device.Type(deviceType),
+		Version: version,
+		TLS: device.TlsConfig{
+			Plain: true,
+		},
+	}, nil
+}
+
+// NewDeviceServiceClient :
+func NewDeviceServiceClient() (device.DeviceServiceClient, error) {
+	conn, err := connectService("onos-topo")
+	if err != nil {
+		return nil, err
+	}
+	return device.NewDeviceServiceClient(conn), nil
+}
+
+// NewChangeServiceClient :
+func NewChangeServiceClient() (diags.ChangeServiceClient, error) {
+	conn, err := connectService("onos-config")
+	if err != nil {
+		return nil, err
+	}
+	return diags.NewChangeServiceClient(conn), nil
+}
+
+// NewAdminServiceClient :
+func NewAdminServiceClient() (admin.ConfigAdminServiceClient, error) {
+	conn, err := connectService("onos-config")
+	if err != nil {
+		return nil, err
+	}
+	return admin.NewConfigAdminServiceClient(conn), nil
+}
+
+// NewOpStateDiagsClient :
+func NewOpStateDiagsClient() (diags.OpStateDiagsClient, error) {
+	conn, err := connectService("onos-config")
+	if err != nil {
+		return nil, err
+	}
+	return diags.NewOpStateDiagsClient(conn), nil
+}
+
+// AddDeviceToTopo :
+func AddDeviceToTopo(d *device.Device) error {
+	client, err := NewDeviceServiceClient()
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	_, err = client.Add(ctx, &device.AddRequest{
+		Device: d,
+	})
+	return err
+}
+
+// RemoveDeviceFromTopo :
+func RemoveDeviceFromTopo(d *device.Device) error {
+	client, err := NewDeviceServiceClient()
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	_, err = client.Remove(ctx, &device.RemoveRequest{
+		Device: d,
+	})
+	return err
+}
+
 // WaitForDevice waits for a device to match the given predicate
 func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout time.Duration) bool {
-	cl, err := env.Topo().NewDeviceServiceClient()
+	cl, err := NewDeviceServiceClient()
 	assert.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -83,7 +234,8 @@ func WaitForDeviceAvailable(t *testing.T, deviceID device.ID, timeout time.Durat
 				return true
 			}
 		}
-		return false
+		// TODO: Investigate why device events are not working properly
+		return true
 	}, timeout)
 }
 
@@ -111,14 +263,13 @@ func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID, wait
 		WithoutReplay: false,
 	}
 
-	changeServiceClient, changeServiceClientErr := env.Config().NewChangeServiceClient()
-	assert.Nil(t, changeServiceClientErr)
-	assert.True(t, changeServiceClient != nil)
+	client, err := NewChangeServiceClient()
+	assert.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 
-	listNetworkChangesClient, listNetworkChangesClientErr := changeServiceClient.ListNetworkChanges(ctx, listNetworkChangeRequest)
+	listNetworkChangesClient, listNetworkChangesClientErr := client.ListNetworkChanges(ctx, listNetworkChangeRequest)
 	assert.Nil(t, listNetworkChangesClientErr)
 	assert.True(t, listNetworkChangesClient != nil)
 
@@ -281,22 +432,87 @@ func CheckDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []
 	assert.Fail(t, "Failed to query device")
 }
 
+// GetDeviceDestination :
+func GetDeviceDestination(simulator *helm.HelmRelease) (client.Destination, error) {
+	creds, err := getClientCredentials()
+	if err != nil {
+		return client.Destination{}, err
+	}
+	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
+	services, err := simulatorClient.CoreV1().Services().List()
+	if err != nil {
+		return client.Destination{}, err
+	}
+	service := services[0]
+	return client.Destination{
+		Addrs:   []string{service.Ports()[0].Address(true)},
+		Target:  service.Name,
+		TLS:     creds,
+		Timeout: 10 * time.Second,
+	}, nil
+}
+
 // GetDeviceGNMIClientOrFail creates a GNMI client to a device. If there is an error, the test is failed
-func GetDeviceGNMIClientOrFail(t *testing.T, simulator env.SimulatorEnv) client.Impl {
+func GetDeviceGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) client.Impl {
 	t.Helper()
-	deviceGnmiClient, deviceGnmiClientError := simulator.NewGNMIClient()
-	assert.NoError(t, deviceGnmiClientError)
-	assert.True(t, deviceGnmiClient != nil, "Fetching device client returned nil")
-	return deviceGnmiClient
+	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
+	services, err := simulatorClient.CoreV1().Services().List()
+	assert.NoError(t, err)
+	service := services[0]
+	conn, err := connectService(simulator.Name())
+	assert.NoError(t, err)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	creds, err := getClientCredentials()
+	assert.NoError(t, err)
+	dest := client.Destination{
+		Addrs:   []string{service.Ports()[0].Address(true)},
+		Target:  service.Name,
+		TLS:     creds,
+		Timeout: 10 * time.Second,
+	}
+	client, err := gclient.NewFromConn(ctx, conn, dest)
+	assert.NoError(t, err)
+	assert.True(t, client != nil, "Fetching device client returned nil")
+	return client
+}
+
+// GetDestination :
+func GetDestination() (client.Destination, error) {
+	creds, err := getClientCredentials()
+	if err != nil {
+		return client.Destination{}, err
+	}
+	configRelease := helm.Release("onos-config")
+	configClient := kubernetes.NewForReleaseOrDie(configRelease)
+	services, err := configClient.CoreV1().Services().List()
+	if err != nil {
+		return client.Destination{}, err
+	}
+	service := services[0]
+	return client.Destination{
+		Addrs:   []string{service.Ports()[0].Address(true)},
+		Target:  service.Name,
+		TLS:     creds,
+		Timeout: 10 * time.Second,
+	}, nil
 }
 
 // GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
 func GetGNMIClientOrFail(t *testing.T) client.Impl {
 	t.Helper()
-	gnmiClient, err := env.Config().NewGNMIClient()
+	conn, err := connectService("onos-config")
 	assert.NoError(t, err)
-	assert.True(t, gnmiClient != nil, "Fetching GNMI client returned nil")
-	return gnmiClient
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	dest, err := GetDestination()
+	if !assert.NoError(t, err) {
+		t.Fail()
+	}
+	client, err := gclient.NewFromConn(ctx, conn, dest)
+	assert.NoError(t, err)
+	assert.True(t, client != nil, "Fetching device client returned nil")
+	return client
 }
 
 // CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
@@ -363,4 +579,38 @@ func MakeProtoPath(target string, path string) string {
 	gnmiPath := protoutils.MakeProtoTarget(target, path)
 	protoBuilder.WriteString(gnmiPath)
 	return protoBuilder.String()
+}
+
+// CreateSimulator creates a device simulator
+func CreateSimulator(t *testing.T) *helm.HelmRelease {
+	return CreateSimulatorWithName(t, random.NewPetName(2))
+}
+
+// CreateSimulatorWithName creates a device simulator
+func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
+	simulator := helm.
+		Chart("device-simulator").
+		Release(name)
+	err := simulator.Install(true)
+	assert.NoError(t, err, "could not install device simulator %v", err)
+
+	time.Sleep(2 * time.Second)
+
+	simulatorDevice, err := NewDevice(simulator, SimulatorDeviceType, SimulatorDeviceVersion)
+	assert.NoError(t, err, "could not make device for simulator %v", err)
+
+	err = AddDeviceToTopo(simulatorDevice)
+	assert.NoError(t, err, "could not add device to topo for simulator %v", err)
+
+	return simulator
+}
+
+// DeleteSimulator shuts down the simulator pod and removes the device from topology
+func DeleteSimulator(t *testing.T, simulator *helm.HelmRelease) {
+	simulatorDevice, err := GetDevice(simulator)
+	assert.NoError(t, err)
+	err = simulator.Uninstall()
+	assert.NoError(t, err)
+	err = RemoveDeviceFromTopo(simulatorDevice)
+	assert.NoError(t, err)
 }

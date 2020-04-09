@@ -15,32 +15,44 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-test/pkg/onit/setup"
-	"github.com/onosproject/onos-test/pkg/test"
+	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/helmit/pkg/test"
 )
 
-// TestSuite is the primary onos-config test suite
+type testSuite struct {
+	test.Suite
+}
+
+// TestSuite is the onos-config CLI test suite
 type TestSuite struct {
-	test.Suite
-}
-
-// SetupTestSuite sets up the onos-config gNMI test suite
-func (s *TestSuite) SetupTestSuite() {
-	setup.Atomix()
-	setup.Database().Raft()
-	setup.Topo().SetReplicas(2)
-	setup.Config().SetReplicas(2)
-	setup.SetupOrDie()
-}
-
-// HATestSuite is the onos-config HA test suite
-type HATestSuite struct {
-	test.Suite
+	testSuite
 }
 
 // SetupTestSuite sets up the onos-config CLI test suite
-func (s *HATestSuite) SetupTestSuite() {
-	setup.Topo().SetReplicas(2)
-	setup.Config().SetReplicas(2)
-	setup.SetupOrDie()
+func (s *TestSuite) SetupTestSuite() error {
+	err := helm.Chart("atomix-controller").
+		Release("atomix-controller").
+		Set("scope", "Namespace").
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	err = helm.Chart("onos-topo").
+		Release("onos-topo").
+		Set("store.controller", "atomix-controller:5679").
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	err = helm.Chart("onos-config").
+		Release("onos-config").
+		Set("store.controller", "atomix-controller:5679").
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

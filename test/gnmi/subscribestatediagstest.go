@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,7 +41,7 @@ func filterResponse(response *diags.OpStateResponse) bool {
 // TestSubscribeStateDiags tests a stream subscription to updates to a device using the diags API
 func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
 	// Bring up a new simulated device
-	simulator := env.NewSimulator().AddOrDie()
+	simulator := gnmi.CreateSimulator(t)
 	deviceName := simulator.Name()
 	deviceID := device.ID(deviceName)
 
@@ -51,9 +50,8 @@ func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
 	time.Sleep(250 * time.Millisecond)
 
 	// Make an opstate diags client
-	clientConnection, clientConnectionError := env.Config().Connect()
-	assert.NoError(t, clientConnectionError)
-	opstateClient := diags.CreateOpStateDiagsClient(clientConnection)
+	opstateClient, err := gnmi.NewOpStateDiagsClient()
+	assert.NoError(t, err)
 
 	subscribe := &diags.OpStateRequest{
 		DeviceId:  deviceName,
