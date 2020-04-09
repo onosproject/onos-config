@@ -27,6 +27,7 @@ github.com/atomix/api v0.0.0-20200211005812-591fe8b07ea8 h1:2srz701GShOqVPRrBKJP
 github.com/atomix/api v0.0.0-20200211005812-591fe8b07ea8/go.mod h1:N+Jv8qV9klP+/RDAVxRbPdluB0cm1ZjKLDjd40/Ccv4=
 github.com/atomix/api v0.0.0-20200219005318-0350f11bfcde h1:r6a6Uqw4UIXQfuqJo5EzRgfDXZuHHJO7rb7QeKktLiI=
 github.com/atomix/api v0.0.0-20200219005318-0350f11bfcde/go.mod h1:N+Jv8qV9klP+/RDAVxRbPdluB0cm1ZjKLDjd40/Ccv4=
+github.com/atomix/api v0.1.0 h1:bnvw1x7NVTcOuxBb3XDdHQcU9cxAqwMzULwq3lAn9Fg=
 github.com/atomix/api v0.1.0/go.mod h1:G8fCdKYiPhZMYTgfz7QAtw6JqIfY2szigiz/gILNY50=
 github.com/atomix/atomix-api v0.0.0-20190826211343-dd8f4db3bf77/go.mod h1:joWKUd0zIeYbAQ0vmYHGsnV03ZgRalhceHgnJ3EN0mI=
 github.com/atomix/atomix-api v0.0.0-20191002225141-1ee9c98c7dfd/go.mod h1:joWKUd0zIeYbAQ0vmYHGsnV03ZgRalhceHgnJ3EN0mI=
