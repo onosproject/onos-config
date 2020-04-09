@@ -77,6 +77,9 @@ all: build images
 publish: # @HELP publish version on github and dockerhub
 	./../build-tools/publish-version ${VERSION} onosproject/onos-config
 
+bumponosdeps: # @HELP update "onosproject" go dependencies and push patch to git.
+	./../build-tools/bump-onos-deps ${VERSION}
+
 clean: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
 	go clean -testcache github.com/onosproject/onos-config/...
