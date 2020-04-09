@@ -17,7 +17,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20200303111912-723f2289d4c2
 	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200303111912-723f2289d4c2
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200304144136-6992f473b240
-	github.com/onosproject/helmit v0.0.0-20200407154219-01143f65f143
+	github.com/onosproject/helmit v0.5.0
 	github.com/onosproject/onos-lib-go v0.0.0-20200402192250-b62cfb0d4bf8
 	github.com/onosproject/onos-topo v0.5.0
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c

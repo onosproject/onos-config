@@ -514,6 +514,8 @@ github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-2020030
 github.com/onosproject/helmit v0.0.0-20200330181216-4d6d0cba5916/go.mod h1:xLBMRjyjNe95ZQ0wlRxhArSn5Nx5Uoql1yiGmfS2gYw=
 github.com/onosproject/helmit v0.0.0-20200407154219-01143f65f143 h1:QdQ6HdDVqZFz7jAaog0gx6RHFqFetGruNOpWwHregd4=
 github.com/onosproject/helmit v0.0.0-20200407154219-01143f65f143/go.mod h1:GwfwgPCBykeIOQJnii780T7J114+s4DLP8D/HUTdflk=
+github.com/onosproject/helmit v0.5.0 h1:qHHhbrC1aESpQI9R2XMHWwxX5gLSVeKsmdN2zeXs6Wc=
+github.com/onosproject/helmit v0.5.0/go.mod h1:GwfwgPCBykeIOQJnii780T7J114+s4DLP8D/HUTdflk=
 github.com/onosproject/onos-lib-go v0.0.0-20200326231039-c3be4036032a/go.mod h1:gnWmBzxrrUIdMPbwcBudAxIJCALzRj/CdSpaCfrgwkU=
 github.com/onosproject/onos-lib-go v0.0.0-20200402192250-b62cfb0d4bf8 h1:DD5bzC7oVV6Vm3LffdCy1+nC1TS/BgrrIq9XA3QWpIc=
 github.com/onosproject/onos-lib-go v0.0.0-20200402192250-b62cfb0d4bf8/go.mod h1:Uxn1CzDp88h8iGp+oV6JQ05QlheUaNi8W/LAcpAF2Ds=
