@@ -23,20 +23,6 @@ type testSuite struct {
 	test.Suite
 }
 
-// SmokeTestSuite is the primary onos-config test suite
-type SmokeTestSuite struct {
-	testSuite
-}
-
-// SetupTestSuite sets up the onos-config test suite
-//func (s *SmokeTestSuite) SetupTestSuite() {
-//	setup.Atomix()
-//	setup.Database().Raft()
-//	setup.Topo().SetReplicas(2)
-//	setup.Config().SetReplicas(2)
-//	setup.SetupOrDie()
-//}
-
 // TestSuite is the onos-config CLI test suite
 type TestSuite struct {
 	testSuite
@@ -77,17 +63,3 @@ func (s *TestSuite) SetupTestSuite() error {
 
 	return nil
 }
-
-// HATestSuite is the onos-config HA test suite
-type HATestSuite struct {
-	testSuite
-}
-
-// SetupTestSuite sets up the onos-config CLI test suite
-//func (s *HATestSuite) SetupTestSuite() {
-//	setup.Atomix()
-//	setup.Database().Raft()
-//	setup.Topo().SetReplicas(2)
-//	setup.Config().SetReplicas(2)
-//	setup.SetupOrDie()
-//}

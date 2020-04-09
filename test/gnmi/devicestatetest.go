@@ -15,11 +15,9 @@
 package gnmi
 
 import (
-	"fmt"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 	"time"
 )
@@ -29,7 +27,6 @@ func (s *TestSuite) TestDeviceState(t *testing.T) {
 	simulator := gnmi.CreateSimulator(t)
 	assert.NotNil(t, simulator)
 	found := gnmi.WaitForDevice(t, func(d *device.Device) bool {
-		fmt.Fprintf(os.Stderr, "device event: %v\n", d)
 		return len(d.Protocols) > 0 &&
 			d.Protocols[0].Protocol == device.Protocol_GNMI &&
 			d.Protocols[0].ConnectivityState == device.ConnectivityState_REACHABLE &&
