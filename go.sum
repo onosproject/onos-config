@@ -519,6 +519,8 @@ github.com/onosproject/helmit v0.5.0/go.mod h1:GwfwgPCBykeIOQJnii780T7J114+s4DLP
 github.com/onosproject/onos-lib-go v0.0.0-20200326231039-c3be4036032a/go.mod h1:gnWmBzxrrUIdMPbwcBudAxIJCALzRj/CdSpaCfrgwkU=
 github.com/onosproject/onos-lib-go v0.0.0-20200402192250-b62cfb0d4bf8 h1:DD5bzC7oVV6Vm3LffdCy1+nC1TS/BgrrIq9XA3QWpIc=
 github.com/onosproject/onos-lib-go v0.0.0-20200402192250-b62cfb0d4bf8/go.mod h1:Uxn1CzDp88h8iGp+oV6JQ05QlheUaNi8W/LAcpAF2Ds=
+github.com/onosproject/onos-lib-go v0.5.0 h1:BPM5YMFKBjPRx9bZ1gHG3hjOQ3MB7irqEpiGvayPcFQ=
+github.com/onosproject/onos-lib-go v0.5.0/go.mod h1:Uxn1CzDp88h8iGp+oV6JQ05QlheUaNi8W/LAcpAF2Ds=
 github.com/onosproject/onos-topo v0.5.0 h1:WHGUvjLsmaF2FR86oAdt+tp0SZyRk+ma+nK1ADPPCXM=
 github.com/onosproject/onos-topo v0.5.0/go.mod h1:n5tH6MavKMswgCqMA2cXo3fadfQdSwf1ah1z4xFXOrY=
 github.com/onsi/ginkgo v0.0.0-20170829012221-11459a886d9c/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
