@@ -1,4 +1,4 @@
-ARG ONOS_BUILD_VERSION=stable
+ARG ONOS_BUILD_VERSION=v0.5.0
 
 FROM onosproject/golang-build:$ONOS_BUILD_VERSION
 
