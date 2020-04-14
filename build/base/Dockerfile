@@ -1,8 +1,6 @@
-ARG ONOS_BUILD_VERSION=v0.5.0
+ARG ONOS_BUILD_VERSION=undefined
 
 FROM onosproject/golang-build:$ONOS_BUILD_VERSION
-
-RUN go get -u github.com/go-delve/delve/cmd/dlv
 
 ENV GO111MODULE=on
 ARG ONOS_MAKE_TARGET=build
