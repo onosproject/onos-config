@@ -1,6 +1,6 @@
 module github.com/onosproject/onos-config
 
-go 1.13
+go 1.14
 
 require (
 	github.com/atomix/go-client v0.1.0
