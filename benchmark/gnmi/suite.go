@@ -42,7 +42,7 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 	atomix := helm.
 		Chart("atomix-controller").
 		Release("atomix-controller").
-		Set("namespace", helm.Namespace())
+		Set("scope", "Namespace")
 	err := atomix.Install(true)
 	if err != nil {
 		return err
