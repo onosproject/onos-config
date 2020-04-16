@@ -7,6 +7,9 @@ gNMI extensions supported on the Northbound are described in [gnmi_extensions.md
 A simple way to issue a gNMI requests is to use the `gnmi_cli` utility from
 the [OpenConfig](https://github.com/openconfig/gnmi) project.
 
+More instructions including all the examples below can be found in
+[gnmi_cli](https://github.com/onosproject/onos-config/tree/master/gnmi_cli).
+
 ### gnmi_cli utility through onos-cli
 > On a deployed cluster the onos-cli pod has a gNMI client that can be used to
 > format and send gNMI messages.
@@ -47,6 +50,8 @@ The gNMI Northbound interface is available through https on port 5150.
 Use `gnmi_cli -get` to get configuration for a particular device (target) from the system.
 > Use "target" as the identifier of the device, and the "elem" collection is the path to the requested element.
 > If config from several devices are required, several paths can be added
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/get.timezone.gnmi)
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
@@ -56,6 +61,8 @@ gnmi_cli -get -address onos-config:5150 \
 
 ### List all device names (targets)
 A useful way to retrieve all stored device names is with the command:
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/get.alldevices.gnmi)
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path: <target: '*'>" \
@@ -67,6 +74,8 @@ gnmi_cli -get -address onos-config:5150 \
 > on the scope of the request.
 
 ### List complete configuration for a device (target)
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/get.devicesim1.gnmi)
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path: <target: 'devicesim-1'>" \
@@ -77,6 +86,8 @@ gnmi_cli -get -address onos-config:5150 \
 
 ### Get a keyed index in a list
 Use a proto value like:
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/get.connections.gnmi)
 ```
 -proto "path: <target: 'devicesim-1',
          elem: <name: 'system'>
@@ -92,6 +103,8 @@ one item of match all items respectively as defined in the gNMI
 [specification](https://github.com/openconfig/reference/blob/master/rpc/gnmi/gnmi-path-conventions.md#wildcards-in-paths).
 
 For instance to retrieve all instances of an interface use `*` as the key: 
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/get.interfaceswc.gnmi)
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path:<target: 'devicesim-1', elem:<name:'interfaces' > elem:<name:'interface' key:<key:'name' value:'*' > > elem:<name:'config'> elem:<name:'enabled' >>" \
@@ -102,6 +115,8 @@ gnmi_cli -get -address onos-config:5150 \
 
 To retrieve both the config and state values of both then additionally the use
 `*` in place of `config`:
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/get.interfaceswc2.gnmi)
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path:<target: 'devicesim-1', elem:<name:'interfaces' > elem:<name:'interface' key:<key:'name' value:'*' > > elem:<name:'*'> elem:<name:'enabled' >>" \
@@ -119,6 +134,8 @@ leafs), in general there is no difference with a normal gNMI Get request.
 There is however a `type` qualifier **STATE** in gNMI Get, that allows only
 **STATE** values to be requested (excluding any **CONFIG** attributes. For example
 to retrieve all the `STATE` values from `devicesim-1`:
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/get.state.gnmi)
 ```bash
 gnmi_cli -get -address onos-config:5150 \
     -proto "path: <target: 'devicesim-1'>, type: STATE" \
@@ -135,6 +152,7 @@ gnmi_cli -get -address onos-config:5150 \
 ## Northbound Set Request via gNMI
 Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
 
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.timezone.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
     -proto "update: <path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
@@ -194,6 +212,8 @@ SetRequest() with the 100 extension at the end of the -proto section like:
 ### Set on multiple targets in one request.
 `onos-config` gNMI NB supports setting multiple elements on multiple targets at the same time.   
 An example of an attribute on two targets is:
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.multipleif.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
     -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 100, msg:'added_devicesim-1-IF'>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 100, msg:'2nd_devicesim'>> extension: <registered_ext: <id: 101, msg:'1.0.0'>> extension: <registered_ext: <id: 102, msg:'Devicesim'>>" \
@@ -202,7 +222,9 @@ gnmi_cli -address onos-config:5150 -set \
     -client_key /etc/ssl/certs/client1.key \
     -ca_crt /etc/ssl/certs/onfca.crt
 ```
-An example of two attributes on two target:
+An example of two attributes on two targets:
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.multipleif2.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
     -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'up'>> val: <uint_val: 123456>> update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'down'>> val: <uint_val: 54321>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'up'>> val: <uint_val: 765432>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'hold-time'> elem: <name: 'config'> elem: <name: 'down'>> val: <uint_val: 234567>> extension: <registered_ext: <id: 100, msg:'add_hold_times'>>" \
@@ -226,8 +248,9 @@ and [102](./gnmi_extensions.md) (type).
 > This can be used to pre-provision new devices or new versions of devices before
 > they are available in the `onos-topo` topology.  
 
-For example using the
-gnmi_cli:
+For example using the gnmi_cli:
+
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.targetukn.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
     -proto "update: <path: <target: 'new-device', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>, extension: <registered_ext: <id: 100, msg: 'my2ndchange'>>  , extension <registered_ext: <id: 101, msg: '1.0.0'>>, extension: <registered_ext: <id: 102, msg: 'Devicesim'>>" \
@@ -244,6 +267,7 @@ gnmi_cli -address onos-config:5150 -set \
 A delete request in gNMI is done using the set request with `delete` paths instead of `update` or `replace`.
 To make a gNMI Set request do delete a path, use the `gnmi_cli -set` command as in the example below:
 
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/delete.timezone.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
     -proto "delete: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>" \
@@ -255,6 +279,7 @@ gnmi_cli -address onos-config:5150 -set \
 Similarly, to make a gNMI Subscribe request for streaming, use the `gnmi_cli` command as in the example below, 
 please note the `0` as subscription mode to indicate streaming:
 
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/subscribe.mode0.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 \
     -proto "subscribe:<mode: 0, prefix:<>, subscription:<path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
@@ -269,6 +294,7 @@ gnmi_cli -address onos-config:5150 \
 Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as in the example below, 
 please note the `1` as subscription mode to indicate to send the response once:
 
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/subscribe.mode1.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 \
     -proto "subscribe:<mode: 1, prefix:<>, subscription:<path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \
@@ -280,8 +306,10 @@ gnmi_cli -address onos-config:5150 \
 
 ## Northbound Subscribe Poll Request via gNMI
 Similarly, to make a gNMI Subscribe POLL request, use the `gnmi_cli` command as in the example below, 
-please note the `2` as subscription mode to indicate to send the response in a polling way every `polling_interval` specified seconds:
+please note the `2` as subscription mode to indicate to send the response in a polling way every `polling_interval`
+specified seconds:
 
+[gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/subscribe.mode2.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -polling_interval 5s \
     -proto "subscribe:<mode: 2, prefix:<>, subscription:<sample_interval: 5, path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>>>" \

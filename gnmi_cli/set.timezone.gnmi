@@ -1,0 +1,20 @@
+update: <
+    path: <
+        target: 'devicesim-1',
+        elem: <
+            name: 'system'
+        >
+        elem: <
+            name: 'clock'
+        >
+        elem: <
+            name: 'config'
+        >
+        elem: <
+            name: 'timezone-name'
+        >
+    >
+    val: <
+        string_val: 'Europe/Paris'
+    >
+>
