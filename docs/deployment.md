@@ -33,38 +33,33 @@ NAME          	REVISION	UPDATED                 	STATUS  	CHART                 
 jumpy-tortoise	1       	Tue May 14 18:56:39 2019	DEPLOYED	onos-config-0.0.1	        0.0.1      	default
 ```
 
-### Onos Config Partition Set
-
-The `onos-config` chart also deployes a `PartitionSet` custom Atomix resource to store all the 
-configuration in a replicated and fail safe manner. 
-In the following example there is only one partition set deployed
-`onos-config-1-0`.
+### Onos Config Deployment
 
 ```bash
 NAME                                 READY   STATUS    RESTARTS   AGE
 atomix-controller-6bb9555f48-6qckx   1/1     Running   0          18h
 device-simulator-597559fdd4-s6z8w    1/1     Running   0          14h
 onos-cli-5ffc6748cc-zfm74            1/1     Running   0          18h
-onos-config-85d6bd66b4-jmjnx         5/5     Running   3          18h
+onos-config-85d6bd66b4-jmjnx         5/5     Running   0          18h
 onos-config-consensus-1-0            1/1     Running   0          18h
 onos-gui-6f849cc8f5-mth2s            2/2     Running   0          18h
-onos-topo-757855bcf-z7vwn            1/1     Running   1          18h
+onos-topo-757855bcf-z7vwn            1/1     Running   0          18h
 onos-topo-consensus-1-0              1/1     Running   0          18h
 ```
 
 > `onos-config` is dependent on the `onos-topo` service which has been started here
 > through its own Helm chart. Also a `device-simulator` has been started - it
-> supports the gNMI interface and is configured with the **Devicesim-1.0.0" model
+> supports the gNMI interface and is configured with the **Devicesim-1.0.0** model
 >
 > Note here that `onos-config` is showing 5 containers in the pod - 1 for `onos-config`
 > itself and 4 model plugins have been loaded. In addition another pod "consensus"
 > is running to connect to the "atomix-controller".  
 
-One can customize the number of partitions and replicas by modifying, in `values.yaml`, under `store/raft` 
-the values of 
+One can customize the number of partitions and replicas by modifying, in `values.yaml` 
+the values of:
 ```bash 
-partitions: 1
-partitionSize: 1
+store.consensus.partitions: 1
+store.consensus.backend.replicas: 1
 ```
 
 ### Installing the chart in a different namespace.
