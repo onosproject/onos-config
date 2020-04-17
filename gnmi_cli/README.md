@@ -19,3 +19,9 @@ gnmi_cli -get -address localhost:5150 \
 > 1. that there is a device `devicesim-1` created in 'onos-topo'. `helm -n micro-onos install device-simulator device-simulator`
 > done on the onos cli with `onos topo add device devicesim-1 --address device-simulator:11161 --version 1.0.0 --type Devicesim --plain`
 > 1. that you have checked the connectivity with `onos config get opstate devicesim-1`
+
+Similar calls can be made for **-set**, **-delete**, **-subscribe** etc.
+
+In addition the `gnmi_cli` can also be called directly on the device at
+"device-simulator:11161" (which is a plain connection - use `gnmi_cli -tlsDisabled` -
+only available on the ONF [fork](https://github.com/opennetworkinglab/gnmi) )

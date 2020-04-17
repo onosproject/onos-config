@@ -32,7 +32,7 @@ provided as additional layers:
   configuration specifications into lower-level (device-specific) operations
 
 ## Key Tenets
-* Principal northbound API for the subsystem will be gNMI and gNOI.
+* Principal northbound API for the subsystem will be gNMI.
    * These interfaces are already accepted standards and are well-defined, low-profile interfaces 
      with support for transaction semantics.
    * YANG models that will be exposed as part of the NB API are yet to be determined (or defined).
