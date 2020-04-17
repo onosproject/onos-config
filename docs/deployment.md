@@ -41,11 +41,24 @@ In the following example there is only one partition set deployed
 `onos-config-1-0`.
 
 ```bash
-NAMESPACE     NAME                                         READY   STATUS    RESTARTS   AGE
-default       atomix-controller-b579b9f48-lgvxf            1/1     Running   0          63m
-default       onos-config-1-0                              1/1     Running   0          61m
-default       onos-config-77765c9dc4-vsjjn                 1/1     Running   0          61m
+NAME                                 READY   STATUS    RESTARTS   AGE
+atomix-controller-6bb9555f48-6qckx   1/1     Running   0          18h
+device-simulator-597559fdd4-s6z8w    1/1     Running   0          14h
+onos-cli-5ffc6748cc-zfm74            1/1     Running   0          18h
+onos-config-85d6bd66b4-jmjnx         5/5     Running   3          18h
+onos-config-consensus-1-0            1/1     Running   0          18h
+onos-gui-6f849cc8f5-mth2s            2/2     Running   0          18h
+onos-topo-757855bcf-z7vwn            1/1     Running   1          18h
+onos-topo-consensus-1-0              1/1     Running   0          18h
 ```
+
+> `onos-config` is dependent on the `onos-topo` service which has been started here
+> through its own Helm chart. Also a `device-simulator` has been started - it
+> supports the gNMI interface and is configured with the **Devicesim-1.0.0" model
+>
+> Note here that `onos-config` is showing 5 containers in the pod - 1 for `onos-config`
+> itself and 4 model plugins have been loaded. In addition another pod "consensus"
+> is running to connect to the "atomix-controller".  
 
 One can customize the number of partitions and replicas by modifying, in `values.yaml`, under `store/raft` 
 the values of 

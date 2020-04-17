@@ -1,0 +1,19 @@
+path:<
+    target: 'devicesim-1',
+    elem:<
+        name:'interfaces'
+    >
+    elem:<
+        name:'interface'
+        key:<
+            key:'name'
+            value:'*'
+        >
+    >
+    elem:<
+        name:'*'
+    >
+    elem:<
+        name:'enabled'
+    >
+>

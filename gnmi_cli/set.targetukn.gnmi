@@ -1,0 +1,38 @@
+update: <
+    path: <
+        target: 'new-device',
+        elem: <
+            name: 'system'
+        >
+        elem: <
+            name: 'clock'
+        >
+        elem: <
+            name: 'config'
+        >
+        elem: <
+            name: 'timezone-name'
+        >
+    >
+    val: <
+        string_val: 'Europe/Paris'
+    >
+>,
+extension: <
+    registered_ext: <
+        id: 100,
+        msg: 'my2ndchange'
+    >
+>,
+extension <
+    registered_ext: <
+        id: 101,
+        msg: '1.0.0'
+    >
+>,
+extension: <
+    registered_ext: <
+        id: 102,
+        msg: 'Devicesim'
+    >
+>

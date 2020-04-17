@@ -1,0 +1,15 @@
+delete: <
+    target: 'devicesim-1',
+    elem: <
+        name: 'system'
+    >
+    elem: <
+        name: 'clock'
+    >
+    elem: <
+        name: 'config'
+    >
+    elem: <
+        name: 'timezone-name'
+    >
+>

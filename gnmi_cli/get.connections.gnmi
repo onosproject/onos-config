@@ -1,0 +1,33 @@
+path: <
+    target:'devicesim-1',
+    elem: <
+        name: 'system'
+    >
+    elem: <
+        name: 'openflow'
+    >
+    elem: <
+        name: 'controllers'
+    >
+    elem: <
+        name: 'controller' key: <
+            key: 'name'
+            value: 'main'
+        >
+    >
+    elem: <
+        name: 'connections'
+    >
+    elem: <
+        name: 'connection' key: <
+            key: 'aux-id'
+            value: '0'
+        >
+    >
+    elem: <
+        name: 'config'
+    >
+    elem: <
+        name: 'address'
+    >
+>

@@ -1,0 +1,72 @@
+update: <
+    path: <
+        target: 'devicesim-1'
+        elem: <
+            name: 'interfaces'
+        >
+        elem: <
+            name: 'interface'
+            key:<
+                key:'name'
+                value:'eth2'
+             >
+         >
+        elem: <
+            name: 'config'
+        >
+        elem: <
+            name: 'name'
+        >
+    >
+    val: <
+        string_val: 'eth2'
+    >
+>
+extension: <
+    registered_ext: <
+        id: 100,
+        msg:'added_devicesim-1-IF2'
+    >
+>
+update: <
+    path: <
+        target: 'devicesim-2',
+        elem: <
+            name: 'interfaces'
+        >
+        elem: <
+            name: 'interface'
+            key:<
+                key:'name'
+                value:'eth2'
+            >
+        >
+        elem: <
+            name: 'config'
+        >
+        elem: <
+            name: 'name'
+        >
+    >
+    val: <
+        string_val: 'eth2'
+    >
+>
+extension: <
+    registered_ext: <
+        id: 100,
+        msg:'2nd_devicesimIF2'
+    >
+>
+extension: <
+    registered_ext: <
+        id: 101,
+        msg:'1.0.0'
+    >
+>
+extension: <
+    registered_ext: <
+        id: 102,
+        msg:'Devicesim'
+    >
+>
