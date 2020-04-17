@@ -10,13 +10,21 @@ device's object model usually comprises of a number of YANG files including
 augments and deviations, and must be considered as a combined unit.
 
 In _onos-config_ a set of these combined YANG files defining a particular
-version of a device type is known as a `model`.
+version of a device type is known as a **model**.
 
 Over its lifecycle onos-config will have to deal with many different models as
 its scope is expanded and as devices go through new release cycles. To allow
 this, models are loadable dynamically as plugins in the form of Linux or Mac
 shared object libraries `(\*.so)` using the YGOT library and are known as
 **Model Plugins**.
+
+For convenience this shared object library is bundled up in to a docker image,
+and when loaded as a "sidecar" container in the `onos-config` Pod in Kubernetes
+will be copied across in to the pod (through a shared mounted folder), and
+loaded in to the main process.
+
+> The model plugin must have been built with the same version of "go" and with
+> the same version of dependencies to load correctly. 
 
 The diagram shows the connection between the Model Plugin and the configuration
 store - linked by Device Type and Version. Effectively the primary key

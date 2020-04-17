@@ -1,12 +1,12 @@
 # Northbound gNMI service
-The system provides a Northbound gNMI service. gNMI is a specialization of gRPC
+The system provides a Northbound gNMI service. gNMI is a specialization of gRPC,
 specifically for configuration of systems or devices. In `onos-config` the gNMI
 interface is secured through TLS, and is made available on port **5150**.
 
 gNMI extensions supported on the Northbound are described in [gnmi_extensions.md](./gnmi_extensions.md)
 
 The impact of the gNMI changes given below can be visualized by running the
-Configuration Dashboard [see](https://docs.onosproject.org/onos-gui/docs/config-gui/)
+[Configuration Dashboard](https://docs.onosproject.org/onos-gui/docs/config-gui/).
 
 ## gnmi_cli utility
 A simple way to issue a gNMI requests is to use the `gnmi_cli` utility from
@@ -26,7 +26,7 @@ More instructions including all the examples below can be found in
 You can run the following command to get in to the **onos-cli** pod and then run gnmi_cli from there:
 
 ```bash
-kubectl -n onos exec -it $(kubectl -n onos get pods -l type=cli -o name) -- /bin/sh
+kubectl -n micro-onos exec -it $(kubectl -n micro-onos get pods -l type=cli -o name) -- /bin/sh
 ```
 
 ### Accessing from local machine
@@ -41,7 +41,7 @@ Then you can use k8s port forwarding to run gnmi_cli locally on your machine as 
 kubectl port-forward -n <onos-namespace> <onos-config-pod-id> 5150:5150
 ```
 
-> For troubleshooting information see [gnmi_user_manual.md](https://github.com/onosproject/simulators/blob/master/docs/gnmi/gnmi_user_manual.md)
+> For troubleshooting information see [gnmi_user_manual.md](https://github.com/onosproject/gnxi-simulators/blob/master/docs/gnmi/gnmi_user_manual.md)
 
 ## Namespaces
 __onos-config__ follows the YGOT project in simplification by not using namespaces in paths. This can be achieved
@@ -52,7 +52,7 @@ This helps developers, avoiding un-needed complication and redundancy.
 For example use `gnmi_cli -capabilities` to get the capabilities from the system.
 
 ```bash
-> gnmi_cli -capabilities --address=onos-config:5150 \ 
+> gnmi_cli -capabilities --address=onos-config:5150 \
   -timeout 5s -insecure \
   -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
@@ -62,7 +62,7 @@ For example use `gnmi_cli -capabilities` to get the capabilities from the system
 > Here the certificate locations are inside the `onos-cli` pod.
 > If the CA does not exactly match the cert inside `onos-config` and the hostname
 > of the server does not match the cert it is necessary to use the `-insecure`
-> flag - encryption is still used in this case.    
+> flag. Encryption is still used in this case.
 
 ## Northbound gNMI Get Request
 __onos-config__ extends standard gNMI as a method of accessing a complete
@@ -77,7 +77,7 @@ The gNMI Northbound interface is available through https on port 5150.
 > is done. A Set operation is necessary before a Get will show any results.
 
 ## Northbound Set Request via gNMI
-Similarly, to make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
+To make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
 
 [gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.timezone.gnmi)
 ```bash
@@ -123,18 +123,15 @@ extension: <
 SetRequest() with the 100 extension at the end of the -proto section like:
 > `, extension: <registered_ext: <id: 100, msg: 'myfirstchange'>>`
 > See [gnmi_extensions.md](./gnmi_extensions.md) for more on gNMI extensions supported.
->
-> The corresponding -get for this require using the -proto
-> `path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>>`
->
-> Currently (Jan '20) checking of the contents is done only when a Model Plugin is
-> loaded for the device type. 2 checks are done
->
->   1. that a attempt is not being made to change a readonly attribute and
->   2. that valid data types and values are being used.
->
-> The config is only forwarded down to the southbound layer only if the config is
-> correct and the device is currently in the deviceStore.
+
+Checking of the contents is done only when a Model Plugin is
+loaded for the device type. 2 checks are done
+
+1. that a attempt is not being made to change a readonly attribute and
+2. that valid data types and values are being used.
+
+The config is only forwarded down to the southbound layer only if the config is
+correct and the device is currently in the deviceStore.
 
 ### Set on multiple targets in one request.
 `onos-config` gNMI NB supports setting multiple elements on multiple targets at the same time.   
@@ -180,6 +177,7 @@ gnmi_cli -address onos-config:5150 -set \
 > will occur. 
 
 Adding attributes to existing interface
+
 [gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.multipleifenabled.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
