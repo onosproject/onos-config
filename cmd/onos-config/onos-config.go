@@ -38,9 +38,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/config"
 	"os"
 	"time"
+
+	"github.com/onosproject/onos-config/pkg/config"
 
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
@@ -71,6 +72,8 @@ func (i *arrayFlags) Set(value string) error {
 	return nil
 }
 
+var log = logging.GetLogger("main")
+
 // The main entry point
 func main() {
 	var modelPlugins arrayFlags
@@ -90,9 +93,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	logging.Configure(config.Logging)
-
-	log := logging.GetLogger("main")
 	log.Info("Starting onos-config")
 
 	opts, err := certs.HandleCertPaths(*caPath, *keyPath, *certPath, true)
