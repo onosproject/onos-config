@@ -510,6 +510,8 @@ github.com/onosproject/helmit v0.6.0 h1:4MVgYP8nf/+6SNMxTcYOKsSIVrLt8y0Z+ae+Felc
 github.com/onosproject/helmit v0.6.0/go.mod h1:ZvjMu26Kd19hCHzkpnUH1Zgv/htt7iZbPG1EsFXBlhc=
 github.com/onosproject/onos-lib-go v0.6.0 h1:P0Te4gYgaC2s9WBzx+n9WoLu7k2kwzAmbWz5CmIEk+M=
 github.com/onosproject/onos-lib-go v0.6.0/go.mod h1:MBoPR4BPGajt9CeBEPxdl5zi9R+q/JxLqBGGN7/mL7I=
+github.com/onosproject/onos-lib-go v0.6.1 h1:lUDbuTzm9beAjc6Zk5K+8YdAzEZhCC2/WrAjNyTXevc=
+github.com/onosproject/onos-lib-go v0.6.1/go.mod h1:MBoPR4BPGajt9CeBEPxdl5zi9R+q/JxLqBGGN7/mL7I=
 github.com/onosproject/onos-topo v0.6.0 h1:d7uQ7bUqdg4hjXJyD/Jl2V2Tom1RU2BEoLtoxsc74JE=
 github.com/onosproject/onos-topo v0.6.0/go.mod h1:wcWSoimPCYyqqqxKUmEea4kpp7b/0RBJ30r3LlEwEXM=
 github.com/onsi/ginkgo v0.0.0-20170829012221-11459a886d9c/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
