@@ -30,8 +30,16 @@ type TestSuite struct {
 
 // SetupTestSuite sets up the onos-config CLI test suite
 func (s *TestSuite) SetupTestSuite() error {
-	err := helm.Chart("atomix-controller").
-		Release("atomix-controller").
+	err := helm.Chart("kubernetes-controller", "https://charts.atomix.io").
+		Release("onos-config-atomix").
+		Set("scope", "Namespace").
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	err = helm.Chart("raft-storage-controller", "https://charts.atomix.io").
+		Release("onos-config-raft").
 		Set("scope", "Namespace").
 		Install(true)
 	if err != nil {
@@ -40,7 +48,7 @@ func (s *TestSuite) SetupTestSuite() error {
 
 	err = helm.Chart("onos-topo").
 		Release("onos-topo").
-		Set("store.controller", "atomix-controller:5679").
+		Set("store.controller", "onos-config-atomix-kubernetes-controller:5679").
 		Install(true)
 	if err != nil {
 		return err
@@ -48,7 +56,7 @@ func (s *TestSuite) SetupTestSuite() error {
 
 	err = helm.Chart("onos-config").
 		Release("onos-config").
-		Set("store.controller", "atomix-controller:5679").
+		Set("store.controller", "onos-config-atomix-kubernetes-controller:5679").
 		Install(true)
 	if err != nil {
 		return err

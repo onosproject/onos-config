@@ -39,16 +39,23 @@ type BenchmarkSuite struct {
 // SetupSuite :: benchmark
 func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 	// Setup the Atomix controller
-	atomix := helm.
-		Chart("atomix-controller").
-		Release("atomix-controller").
-		Set("scope", "Namespace")
-	err := atomix.Install(true)
+	err := helm.Chart("kubernetes-controller", "https://charts.atomix.io").
+		Release("onos-config-atomix").
+		Set("scope", "Namespace").
+		Install(true)
 	if err != nil {
 		return err
 	}
 
-	controller := "atomix-controller:5679"
+	err = helm.Chart("raft-storage-controller", "https://charts.atomix.io").
+		Release("onos-config-raft").
+		Set("scope", "Namespace").
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	controller := "onos-config-atomix-kubernetes-controller:5679"
 
 	// Install the onos-topo chart
 	err = helm.
