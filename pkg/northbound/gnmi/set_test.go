@@ -138,7 +138,7 @@ func Test_doSingleSet(t *testing.T) {
 	assert.Equal(t, string(extensionChgID.Msg), "TestChange")
 }
 
-// Test_doSingleSet shows how a value of 1 list can be set on a target
+// Test_doSingleSet shows how a value of 1 list can be set on a target - using prefix
 func Test_doSingleSetList(t *testing.T) {
 	server, _ := setUpForGetSetTests(t)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
