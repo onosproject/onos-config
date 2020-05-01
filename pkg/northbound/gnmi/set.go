@@ -255,6 +255,12 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 	if target == "" {
 		target = prefix.GetTarget()
 	}
+	prefixPath := utils.StrPath(prefix)
+	path := utils.StrPath(u.Path)
+	if prefixPath != "/" {
+		path = fmt.Sprintf("%s%s", prefixPath, path)
+	}
+
 	updates, ok := targetUpdates[target]
 	if !ok {
 		updates = make(devicechange.TypedValueMap)
@@ -284,7 +290,7 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 				"Model Plugin not available for target %s", target)
 		}
 		correctedValues, err := jsonvalues.CorrectJSONPaths(
-			utils.StrPath(u.Path), intermediateConfigValues, rwPaths, true)
+			path, intermediateConfigValues, rwPaths, true)
 		if err != nil {
 			log.Warn("Json value in Set could not be parsed", err)
 			return nil, err
@@ -294,11 +300,7 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 			updates[cv.Path] = cv.GetValue()
 		}
 	} else {
-		prefixPath := utils.StrPath(prefix)
-		path := utils.StrPath(u.Path)
-		if prefixPath != "/" {
-			path = fmt.Sprintf("%s%s", prefixPath, path)
-		}
+
 		update, err := values.GnmiTypedValueToNativeType(u.Val)
 		if err != nil {
 			return nil, err
