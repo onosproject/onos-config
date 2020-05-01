@@ -143,10 +143,12 @@ func Test_doSingleSetList(t *testing.T) {
 	server, _ := setUpForGetSetTests(t)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
-	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a/list2a[name=a/b]/tx-power"))
+	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
+	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/list2a[name=a/b]/tx-power"))
 	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
 	value := gnmi.TypedValue{Value: &typedValue}
-	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
+	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
+	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
 
 	ext100Name := gnmi_ext.Extension_RegisteredExt{
@@ -157,6 +159,7 @@ func Test_doSingleSetList(t *testing.T) {
 	}
 
 	var setRequest = gnmi.SetRequest{
+		Prefix:  prefix,
 		Delete:  deletePaths,
 		Replace: replacedPaths,
 		Update:  updatedPaths,

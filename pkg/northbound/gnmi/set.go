@@ -56,8 +56,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	//Update
 	for _, u := range req.GetUpdate() {
 		target := u.Path.GetTarget()
+		if target == "" { //Try the prefix
+			target = req.GetPrefix().GetTarget()
+		}
 		var err error
-		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
+		targetUpdates[target], err = s.formatUpdateOrReplace(req.GetPrefix(), u, targetUpdates)
 		if err != nil {
 			log.Warn("Error in update ", err)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -67,8 +70,14 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	//Replace
 	for _, u := range req.GetReplace() {
 		target := u.Path.GetTarget()
+		if target == "" { //Try the prefix
+			target = req.GetPrefix().GetTarget()
+		}
+		if target == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "No target given in update %v", u)
+		}
 		var err error
-		targetUpdates[target], err = s.formatUpdateOrReplace(u, targetUpdates)
+		targetUpdates[target], err = s.formatUpdateOrReplace(req.GetPrefix(), u, targetUpdates)
 		if err != nil {
 			log.Warn("Error in replace", err)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -78,7 +87,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	//Delete
 	for _, u := range req.GetDelete() {
 		target := u.GetTarget()
-		targetRemoves[target] = s.doDelete(u, targetRemoves)
+		if target == "" { //Try the prefix
+			target = req.GetPrefix().GetTarget()
+		}
+		if target == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "No target given in delete %v", u)
+		}
+		targetRemoves[target] = s.doDelete(req.GetPrefix(), u, targetRemoves)
 	}
 
 	netCfgChangeName, version, deviceType, err := extractExtensions(req)
@@ -234,9 +249,12 @@ func extractExtensions(req *gnmi.SetRequest) (string, devicetype.Version, device
 
 // This deals with either a path and a value (simple case) or a path with
 // a JSON body which implies multiple paths and values.
-func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
+func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 	targetUpdates mapTargetUpdates) (devicechange.TypedValueMap, error) {
 	target := u.Path.GetTarget()
+	if target == "" {
+		target = prefix.GetTarget()
+	}
 	updates, ok := targetUpdates[target]
 	if !ok {
 		updates = make(devicechange.TypedValueMap)
@@ -262,7 +280,7 @@ func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
 			}
 		}
 		if rwPaths == nil {
-			return nil, fmt.Errorf("Cannot process JSON payload because "+
+			return nil, fmt.Errorf("cannot process JSON payload because "+
 				"Model Plugin not available for target %s", target)
 		}
 		correctedValues, err := jsonvalues.CorrectJSONPaths(
@@ -276,7 +294,11 @@ func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
 			updates[cv.Path] = cv.GetValue()
 		}
 	} else {
+		prefixPath := utils.StrPath(prefix)
 		path := utils.StrPath(u.Path)
+		if prefixPath != "/" {
+			path = fmt.Sprintf("%s%s", prefixPath, path)
+		}
 		update, err := values.GnmiTypedValueToNativeType(u.Val)
 		if err != nil {
 			return nil, err
@@ -288,13 +310,20 @@ func (s *Server) formatUpdateOrReplace(u *gnmi.Update,
 
 }
 
-func (s *Server) doDelete(u *gnmi.Path, targetRemoves mapTargetRemoves) []string {
+func (s *Server) doDelete(prefix *gnmi.Path, u *gnmi.Path, targetRemoves mapTargetRemoves) []string {
 	target := u.GetTarget()
+	if target == "" {
+		target = prefix.GetTarget()
+	}
 	deletes, ok := targetRemoves[target]
 	if !ok {
 		deletes = make([]string, 0)
 	}
+	prefixPath := utils.StrPath(prefix)
 	path := utils.StrPath(u)
+	if prefixPath != "/" {
+		path = fmt.Sprintf("%s%s", prefixPath, path)
+	}
 	deletes = append(deletes, path)
 	return deletes
 
