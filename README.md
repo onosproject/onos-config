@@ -6,6 +6,7 @@
 [![Coverage Status](https://img.shields.io/coveralls/github/onosproject/onos-config/badge.svg)](https://coveralls.io/github/onosproject/onos-config?branch=master)
 [![GoDoc](https://godoc.org/github.com/onosproject/onos-config?status.svg)](https://godoc.org/github.com/onosproject/onos-config)
 
+
 ONOS Configuration subsystem built using the µONOS architecture
 
 You can find all the documentation under [docs](docs).  
