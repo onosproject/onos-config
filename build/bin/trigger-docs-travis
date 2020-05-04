@@ -1,5 +1,5 @@
 TOKEN=$1
-MESSAGE=",\"message\": \"Triggered by upstream build of onosproject/onos-config commit "`git rev-parse --short HEAD`"\""
+MESSAGE=",\"message\": \"Triggered by onosproject/onos-config commit "`git rev-parse --short HEAD`"\""
 BRANCH="master"
 body="{
 \"request\": {
@@ -9,5 +9,5 @@ body="{
 
 
 
-curl -s -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "Travis-API-Version: 3" -H "Authorization: token $TOKEN" -d "$body" https://api.travis-ci.org/repo/onosproject%2Fonos-docs/requests
+curl -s -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "Travis-API-Version: 3" -H "Authorization: token $TOKEN" -d "$body" https://api.travis-ci.com/repo/onosproject%2Fonos-docs/requests
 
