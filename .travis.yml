@@ -17,6 +17,7 @@ branches:
 
 before_script:
   - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.23.7
+  - pushd .. && git clone https://github.com/onosproject/build-tools.git && popd
 
 jobs:
   include:
@@ -28,8 +29,8 @@ jobs:
     - stage: integration tests
       if: type != pull_request
       script:
-        - sh build/bin/trigger-tests-travis $TRAVIS_ACCESS_TOKEN
+        - sh ../build-tools/build/travis/trigger-travis onosproject onos-test master "`git rev-parse --short HEAD`" $TRAVIS_ACCESS_TOKEN
     - stage: CLI build
       if: type != pull_request
       script:
-        - sh build/bin/trigger-cli-travis $TRAVIS_ACCESS_TOKEN
+        - sh ../build-tools/build/travis/trigger-travis onosproject onos-cli master "`git rev-parse --short HEAD`" $TRAVIS_ACCESS_TOKEN
