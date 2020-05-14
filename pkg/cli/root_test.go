@@ -66,6 +66,7 @@ func Test_SubCommands(t *testing.T) {
 		{commandName: "Compact-Changes", expectedShort: "Takes a snapshot of network and device changes"},
 		{commandName: "Watch", expectedShort: "Watch for updates to a config resource type"},
 		{commandName: "Log", expectedShort: "logging api commands"},
+		{commandName: "Load", expectedShort: "Load configuration from a file"},
 	}
 
 	var subCommandsFound = make(map[string]bool)

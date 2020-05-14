@@ -21,6 +21,7 @@ Available Commands:
   compact-changes Takes a snapshot of network and device changes
   config          Manage the CLI configuration
   get             Get config resources
+  load            Load configuration from a file
   rollback        Rolls-back a network change
   snapshot        Commands for managing snapshots
   watch           Watch for updates to a config resource type
@@ -74,15 +75,6 @@ plugins use the command:
 > onos config get plugins
 ```
 
-To load a plugin dynamically at runtime use the command:
-```bash
-> onos config add plugin <full path and filename of a compatible shared object library on target machine>
-```
-> NOTE: Model Plugins cannot be dynamically unloaded - a restart of onos-config
-> is required to unload.
-> In a distributed environment the ModelPlugin will have to be loaded on all
-> instances of onos-config
-
 ## Other Diagnostic Commands
 There are a number of commands that provide internal view into the state the onos-config store.
 These tools use a special-purpose gRPC interfaces to obtain the internal meta-data
@@ -102,23 +94,50 @@ or to watch `device-changes`
 ...
 ```
 
-### Devicetree
-To get the aggregate configuration of a device in a hierarchical JSON structure from the store use:
+### Loading configuration data in bulk
+Configuration data can be loaded in to onos-config through the cli with
 ```bash
-> onos config get devicetree --layer 0 Device1
-DEVICE			CONFIGURATION		TYPE		VERSION
-Device1                 Device1-1.0.0           TestDevice      1.0.0
-CHANGE:	2uUbeEV4i3ADedjeORmgQt6CVDM=
-CHANGE:	tAk3GZSh1qbdhdm5414r46RLvqw=
-CHANGE:	MY8s8Opw+xjbcARIMzIpUIzeXv0=
-TREE:
-{"cont1a":{"cont2a":{"leaf2a":13,"leaf2b":1.14159,"leaf2c":"def","leaf2d":0.002,"leaf2e":[-99,-4,5,200],"leaf2g":false},"leaf1a":"abcdef","list2a":[{"name":"txout1","tx-power":8},{"name":"txout3","tx-power":16}]},"test1:leafAtTopLevel":"WXY-1234"}
+onos config load yaml <filename(s)>
 ```
 
-> This displays the list of changes IDs and the aggregate effect of layering each
-> one on top of the other. This is the _effective_ configuration.
->
-> By default all layers are shown (`layer=0`). To show the previous _effective_
-> configuration use `layer=-1`
->
-> To display the devices trees for all devices, just omit the device name.
+The Yaml file must be in the form below. Several updates, replace or delete entries can be made.
+
+A separate NetworkChange will be created for each file given.
+> This allows the set of updates to be broken up in to smaller groups.
+
+```yaml
+setrequest:
+    prefix:
+        elem:
+            - name: e2node
+              key: {}
+        target: ""
+    delete: []
+    replace: []
+    update:
+        - path:
+              element: []
+              origin: ""
+              elem:
+                  - name: intervals
+                    key: {}
+                  - name: RadioMeasReportPerUe
+                    key: {}
+              target: 315010-0001420
+          val:
+              stringvalue: null
+              intvalue: null
+              uintvalue:
+                  uintval: 20
+              boolvalue: null
+              bytesvalue: null
+              floatvalue: null
+              decimalvalue: null
+              leaflistvalue: null
+              anyvalue: null
+              jsonvalue: null
+              jsonietfvalue: null
+              asciivalue: null
+              protobytes: null
+          duplicates: 0
+```

@@ -39,7 +39,7 @@ func Init() {
 // GetCommand returns the root command for the config service.
 func GetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "config {get,add,rollback,snapshot,compact-changes,watch} [args]",
+		Use:   "config {get,add,rollback,snapshot,compact-changes,watch,load} [args]",
 		Short: "ONOS configuration subsystem commands",
 	}
 
@@ -51,6 +51,7 @@ func GetCommand() *cobra.Command {
 	cmd.AddCommand(getRollbackCommand())
 	cmd.AddCommand(getCompactCommand())
 	cmd.AddCommand(getWatchCommand())
+	cmd.AddCommand(getLoadCommand())
 	cmd.AddCommand(loglib.GetCommand())
 	return cmd
 }
