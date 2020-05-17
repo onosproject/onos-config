@@ -42,6 +42,13 @@ kubectl port-forward -n <onos-namespace> <onos-config-pod-id> 5150:5150
 
 > For troubleshooting information see [gnmi_user_manual.md](https://github.com/onosproject/gnxi-simulators/blob/master/docs/gnmi/gnmi_user_manual.md)
 
+### Alternate to gNMI SetRequest in onos-cli
+For convenience, another method of calling gNMI SetRequest on `onos-config` is
+provided through the `onos-cli` tool with [onos config load yaml](./cli.md#Loading configuration data in bulk).
+This allows configuration in YAML to be loaded directly in to `onos-config`
+An example of a tool that creates YAML in this format can be seen at
+[Honeycomb](https://docs.onosproject.org/ran-simulator/docs/#creating-the-towercell-configuration-files)
+
 ## Namespaces
 __onos-config__ follows the YGOT project in simplification by not using namespaces in paths. This can be achieved
 because the YANG models used do not have clashing device names that need to be qualified by namespaces. 

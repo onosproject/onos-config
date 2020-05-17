@@ -102,6 +102,11 @@ onos config load yaml <filename(s)>
 
 The Yaml file must be in the form below. Several updates, replace or delete entries can be made.
 
+This effectively is the same as a gNMI SetRequest, but with the input in YAML
+format instead of PROTO.
+> Only the SeqRequest functionality is possible with this command. To do a gNMI GetRequest
+> use the **gnmi_cli** tool [GetRequest](./gnmi.md#Northbound gNMI Get Request)
+
 A separate NetworkChange will be created for each file given.
 > This allows the set of updates to be broken up in to smaller groups.
 
