@@ -23,20 +23,26 @@ import (
 // when forming configurations - it cuts out all of the unused parts like XXX_
 // and so results in a smaller file
 type SetRequest struct {
-	Prefix  *gnmi.Path   `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
-	Delete  []*gnmi.Path `protobuf:"bytes,2,rep,name=delete,proto3" json:"delete,omitempty"`
-	Replace []*Update    `protobuf:"bytes,3,rep,name=replace,proto3" json:"replace,omitempty"`
-	Update  []*Update    `protobuf:"bytes,4,rep,name=update,proto3" json:"update,omitempty"`
+	Prefix  *gnmi.Path
+	Delete  []*gnmi.Path
+	Replace []*Update
+	Update  []*Update
 	// Extension messages associated with the SetRequest. See the
 	// gNMI extension specification for further definition.
-	Extension []*gnmi_ext.Extension `protobuf:"bytes,5,rep,name=extension,proto3" json:"extension,omitempty"`
+	Extension []*Extension
+}
+
+// Extension - a simplified version of gnmi.Extension
+type Extension struct {
+	ID    int
+	Value string
 }
 
 // Update - a simplified version of the gnmi.Update
 type Update struct {
-	Path       *gnmi.Path  `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	Val        *TypedValue `protobuf:"bytes,3,opt,name=val,proto3" json:"val,omitempty"`
-	Duplicates uint32      `protobuf:"varint,4,opt,name=duplicates,proto3" json:"duplicates,omitempty"`
+	Path       *gnmi.Path
+	Val        *TypedValue
+	Duplicates uint32
 }
 
 // TypedValue - a simplified version of the gnmi.TypedValue
@@ -66,7 +72,7 @@ func ToGnmiSetRequest(sr *ConfigGnmiSimple) *gnmi.SetRequest {
 		Update:    make([]*gnmi.Update, 0),
 		Replace:   make([]*gnmi.Update, 0),
 		Delete:    sr.SetRequest.Delete,
-		Extension: sr.SetRequest.Extension,
+		Extension: make([]*gnmi_ext.Extension, 0),
 	}
 	for _, up := range sr.SetRequest.Update {
 		gnmiSr.Update = append(gnmiSr.Update, &gnmi.Update{
@@ -74,6 +80,10 @@ func ToGnmiSetRequest(sr *ConfigGnmiSimple) *gnmi.SetRequest {
 			Duplicates: up.Duplicates,
 			Val:        fromStructTypeValueToGnmi(up.Val),
 		})
+	}
+	for _, e := range sr.SetRequest.Extension {
+		gnmiRegExt := fromStructExtensionToGnmi(e)
+		gnmiSr.Extension = append(gnmiSr.Extension, gnmiRegExt)
 	}
 
 	return &gnmiSr
@@ -136,4 +146,17 @@ func fromStructTypeValueToGnmi(value *TypedValue) *gnmi.TypedValue {
 	}
 
 	return &gnmiVal
+}
+
+func fromStructExtensionToGnmi(ext *Extension) *gnmi_ext.Extension {
+	regExt := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  gnmi_ext.ExtensionID(ext.ID),
+			Msg: []byte(ext.Value),
+		},
+	}
+
+	return &gnmi_ext.Extension{
+		Ext: &regExt,
+	}
 }

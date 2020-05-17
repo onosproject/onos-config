@@ -110,34 +110,22 @@ setrequest:
     prefix:
         elem:
             - name: e2node
-              key: {}
         target: ""
     delete: []
     replace: []
     update:
-        - path:
-              element: []
-              origin: ""
-              elem:
-                  - name: intervals
-                    key: {}
-                  - name: RadioMeasReportPerUe
-                    key: {}
-              target: 315010-0001420
-          val:
-              stringvalue: null
-              intvalue: null
-              uintvalue:
-                  uintval: 20
-              boolvalue: null
-              bytesvalue: null
-              floatvalue: null
-              decimalvalue: null
-              leaflistvalue: null
-              anyvalue: null
-              jsonvalue: null
-              jsonietfvalue: null
-              asciivalue: null
-              protobytes: null
-          duplicates: 0
+    - path:
+          elem:
+              - name: intervals
+              - name: RadioMeasReportPerUe
+          target: 315010-0001420
+      val:
+          uintvalue:
+              uintval: 20
+      duplicates: 0
+    extension:
+    - id: 101
+      value: 1.0.0
+    - id: 102
+      value: E2Node
 ```

@@ -20,8 +20,7 @@ More instructions including all the examples below can be found in
 [gnmi_cli tool examples](https://github.com/onosproject/onos-config/tree/master/gnmi_cli).
 
 ### gnmi_cli utility through onos-cli
-> On a deployed cluster the onos-cli pod has a gNMI client that can be used to
-> format and send gNMI messages.
+> On a deployed cluster the onos-cli pod has this gNMI client installed.
 
 You can run the following command to get in to the **onos-cli** pod and then run gnmi_cli from there:
 
@@ -64,20 +63,11 @@ For example use `gnmi_cli -capabilities` to get the capabilities from the system
 > of the server does not match the cert it is necessary to use the `-insecure`
 > flag. Encryption is still used in this case.
 
-## Northbound gNMI Get Request
-__onos-config__ extends standard gNMI as a method of accessing a complete
-configuration system consisting of *several* devices - each identified by _target_.
-It supports network wide configuration actions (multiple
-updates on multiple devices at once, and rollback of same).
-
-The gNMI Northbound interface is available through https on port 5150.
-
-> As described in [Key Concepts](run.md), even if the `device-simulator` is connected
-> the configuration in `onos-config` will be empty as no initial synchronization
-> is done. A Set operation is necessary before a Get will show any results.
-
 ## Northbound Set Request via gNMI
 To make a gNMI Set request, use the `gnmi_cli -set` command as in the example below:
+
+> Since the onos-config data store is empty by default, the Set examples are shown
+> before the Get examples (below).
 
 [gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.timezone.gnmi)
 ```bash
@@ -225,6 +215,17 @@ Drilling down specifically in to "devicesim-1", we can see the layers of
 configuration:
 ![devicesim-1](images/config-view-devicesim1.png)
 
+## Northbound gNMI Get Request
+__onos-config__ extends standard gNMI as a method of accessing a complete
+configuration system consisting of *several* devices - each identified by _target_.
+It supports network wide configuration actions (multiple
+updates on multiple devices at once, and rollback of same).
+
+The gNMI Northbound interface is available through https on port 5150.
+
+> As described in [Key Concepts](run.md), even if the `device-simulator` is connected
+> the configuration in `onos-config` will be empty as no initial synchronization
+> is done. A Set operation is necessary before a Get will show any results.
 
 ### A simple Get operation
 Use `gnmi_cli -get` to get configuration for a particular device (target) from the system.

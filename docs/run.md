@@ -15,6 +15,12 @@ device. This means that when `onos-config` connects to a device the first time
 it does **not** synchronize the device's configuration up in to `onos-config` - if
 this is required it is recommended to do it through a service above `onos-config`.
 
+### Southbound interface
+`onos-config` **only** supports a `gnmi` interface on the southbound to devices.
+An adapter for connecting to NETCONF devices is [planned](https://github.com/onosproject/gnmi-netconf-adapter).
+A model plugin containing the YANG models for the device, must be loaded in to
+`onos-config` to allow configuration to happen.
+
 ### State attributes
 Corresponding to YANG definition of **config false** some attributes on a device
 are read only. These will be read from the device on connection and held in a cache.
