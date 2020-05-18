@@ -19,9 +19,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/onosproject/onos-config/pkg/config/load"
+	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/openconfig/gnmi/client"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"time"
@@ -42,6 +44,7 @@ func getLoadCommand() *cobra.Command {
 	}
 	cmd.AddCommand(getYamlCommand())
 	cmd.AddCommand(getProtoCommand())
+	cmd.PersistentFlags().StringP("name", "n", "", "Optional name for gNMI Set")
 	return cmd
 }
 
@@ -56,6 +59,7 @@ func getYamlCommand() *cobra.Command {
 }
 
 func runLoadYamlCommand(cmd *cobra.Command, args []string) error {
+	gnmiName, _ := cmd.Flags().GetString("name")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -88,14 +92,32 @@ func runLoadYamlCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	for _, arg := range args {
+	for idx, arg := range args {
 		fmt.Printf("Loading config %s\n", arg)
+		load.Clear()
 		configGnmi, err := load.GetConfigGnmi(arg)
 		if err != nil {
 			fmt.Printf("Error loading %s\n", arg)
 			return err
 		}
 		gnmiSetRequest := load.ToGnmiSetRequest(&configGnmi)
+
+		if gnmiName != "" {
+			gnmiNameExt := gnmiName
+			if len(args) > 1 {
+				gnmiNameExt = fmt.Sprintf("%s-%d", gnmiName, idx)
+			}
+			ext100Name := gnmi_ext.Extension_RegisteredExt{
+				RegisteredExt: &gnmi_ext.RegisteredExtension{
+					Id:  gnmi.GnmiExtensionNetwkChangeID,
+					Msg: []byte(gnmiNameExt),
+				},
+			}
+			gnmiSetRequest.Extension = append(gnmiSetRequest.Extension, &gnmi_ext.Extension{
+				Ext: &ext100Name,
+			})
+		}
+
 		resp, err := gnmiClient.Set(ctx, gnmiSetRequest)
 		if err != nil {
 			fmt.Printf("Error running set on %s \n%v\n", arg, configGnmi.SetRequest)

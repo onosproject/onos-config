@@ -34,6 +34,12 @@ func Test_LoadConfig1(t *testing.T) {
 	assert.Equal(t, "RadioMeasReportPerUe", config.SetRequest.Update[0].Path.Elem[1].Name)
 
 	assert.Equal(t, uint64(20), config.SetRequest.Update[0].Val.UIntValue.UintVal)
+
+	assert.Equal(t, 2, len(config.SetRequest.Extension))
+	assert.Equal(t, 101, config.SetRequest.Extension[0].ID)
+	assert.Equal(t, "1.0.0", config.SetRequest.Extension[0].Value)
+	assert.Equal(t, 102, config.SetRequest.Extension[1].ID)
+	assert.Equal(t, "E2Node", config.SetRequest.Extension[1].Value)
 }
 
 func Test_ConvertConfig(t *testing.T) {

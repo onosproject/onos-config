@@ -102,6 +102,11 @@ onos config load yaml <filename(s)>
 
 The Yaml file must be in the form below. Several updates, replace or delete entries can be made.
 
+This effectively is the same as a gNMI SetRequest, but with the input in YAML
+format instead of PROTO.
+> Only the SeqRequest functionality is possible with this command. To do a gNMI GetRequest
+> use the **gnmi_cli** tool [GetRequest](./gnmi.md#Northbound gNMI Get Request)
+
 A separate NetworkChange will be created for each file given.
 > This allows the set of updates to be broken up in to smaller groups.
 
@@ -110,34 +115,22 @@ setrequest:
     prefix:
         elem:
             - name: e2node
-              key: {}
         target: ""
     delete: []
     replace: []
     update:
-        - path:
-              element: []
-              origin: ""
-              elem:
-                  - name: intervals
-                    key: {}
-                  - name: RadioMeasReportPerUe
-                    key: {}
-              target: 315010-0001420
-          val:
-              stringvalue: null
-              intvalue: null
-              uintvalue:
-                  uintval: 20
-              boolvalue: null
-              bytesvalue: null
-              floatvalue: null
-              decimalvalue: null
-              leaflistvalue: null
-              anyvalue: null
-              jsonvalue: null
-              jsonietfvalue: null
-              asciivalue: null
-              protobytes: null
-          duplicates: 0
+    - path:
+          elem:
+              - name: intervals
+              - name: RadioMeasReportPerUe
+          target: 315010-0001420
+      val:
+          uintvalue:
+              uintval: 20
+      duplicates: 0
+    extension:
+    - id: 101
+      value: 1.0.0
+    - id: 102
+      value: E2Node
 ```
