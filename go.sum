@@ -109,7 +109,6 @@ github.com/atomix/go-client v0.0.0-20200124004211-e5e19cd4730d/go.mod h1:KBBiViO
 github.com/atomix/go-client v0.0.0-20200203180003-61799b5ca7c2/go.mod h1:VWAEeWdocSRL1cqMs3zZ32kuIzMAbheoV02wsEVYwhw=
 github.com/atomix/go-client v0.0.0-20200206051325-cdc03bd1c8bc/go.mod h1:8Gdux/UtiBQK5nmzN9jtWXuH16T6JPNsAxUA2wY4xVk=
 github.com/atomix/go-client v0.0.0-20200207221255-96f6ea5d353d/go.mod h1:xzh4ualJT1ftRWaYIZ3eMWkc9CW3GWJSUovzelObU4o=
-github.com/atomix/go-client v0.0.0-20200211010855-927b10345735/go.mod h1:THcFijpvzJI1W3ePewp5nnJEj6gdX2dfVpOJ1/AgwYY=
 github.com/atomix/go-client v0.1.0 h1:QdyjfvnbsBdEUY0L4VBACnqqlO/f7NFKu6q2v5NH35I=
 github.com/atomix/go-client v0.1.0/go.mod h1:ILrAqt6cUNOdPyifTt1yZ8f51HJ47AUWAzPEu3+bYro=
 github.com/atomix/go-client v0.1.1 h1:uaSuUyCWr6HgffMx1LQe8hNbi+4fvAs3AtVry0fPxhc=
@@ -123,8 +122,6 @@ github.com/atomix/go-framework v0.0.0-20200207202010-51e205d726d2/go.mod h1:Q/0V
 github.com/atomix/go-framework v0.0.0-20200207214715-0cee98c57cdd/go.mod h1:/KVF8Ab99yMqnkELF2LIwCTR9FO+KI5MW8trOfjIYSA=
 github.com/atomix/go-framework v0.0.0-20200211010411-ae512dcee9ad h1:uS3c91qr/3DFU/CjAiOyOJgwpdPurOyxxew/rt/zywo=
 github.com/atomix/go-framework v0.0.0-20200211010411-ae512dcee9ad/go.mod h1:cAfmWGrf5gLmELevIVzUN73vQJiQt38tZ2D6aZaZm8U=
-github.com/atomix/go-framework v0.1.0 h1:tN3NE3p6RPiZiJZrC7yj7w42IqHOzoFY/hAOxX+LMbw=
-github.com/atomix/go-framework v0.1.0/go.mod h1:XsChdgPlcojYG8BgpyZc9KPG0ykthPev1QXDu/ZcXKk=
 github.com/atomix/go-framework v0.1.1 h1:qpUZERvPMUM1ndEbodk9qcgNa9YWqOPOJGTPdJVsagc=
 github.com/atomix/go-framework v0.1.1/go.mod h1:G7+oWIJUlx5Z8ohAzpIon6BAUPUo9VDx7w9AeQ6g3Wo=
 github.com/atomix/go-local v0.0.0-20200124003802-357f6682b2f4/go.mod h1:MabPkX/j2bN399GVAYGigyvDaAslu7omZoujEfzdKDg=
@@ -134,8 +131,6 @@ github.com/atomix/go-local v0.0.0-20200207202057-4a81cbdd3325/go.mod h1:n2xWQV3v
 github.com/atomix/go-local v0.0.0-20200207214727-4a5d923aa934/go.mod h1:qGUGef763ZEO4mcEJi7Bn2S7U/amLUWQp9RsAd+EtcQ=
 github.com/atomix/go-local v0.0.0-20200211010611-c99e53e4c653 h1:IF6ndryG9FwBOB0Dq4VK64ez3T/ActGS7Hu7luA+Yc4=
 github.com/atomix/go-local v0.0.0-20200211010611-c99e53e4c653/go.mod h1:N3oigYZ/g2RRAHIBw/xk4GkBj6Dk0zDG/1VL52aSodk=
-github.com/atomix/go-local v0.1.0 h1:CJFzZEvYDpKbi2an4w9YYeorwR1wvzzJkRlVb8NwH1U=
-github.com/atomix/go-local v0.1.0/go.mod h1:jLFrhThMmUn+42OErqCnXwIn3vhKUAufACABSuAxwKo=
 github.com/atomix/go-local v0.1.1 h1:fvErzig2F6kDVu/HRxeQMeRVoT5WqOwqH71uBJESZ6c=
 github.com/atomix/go-local v0.1.1/go.mod h1:nx3J3Xzu2K9t/7EdCc6rhW4AjGQ/cauhETTyoVZk+6k=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
@@ -512,14 +507,12 @@ github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-2020030
 github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200303111912-723f2289d4c2/go.mod h1:WNjaBJ0e2gl1y7uu45AXmKCI0oxgCqSftha+FGMJ2JE=
 github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200304144136-6992f473b240 h1:sI0zCRmIsUjpYf0MpgEsK2YLBpXcB4ynPHamoFybRGU=
 github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200304144136-6992f473b240/go.mod h1:kHe1VPG+H+ow9IQYy5DW4qLxZsT3yVSc+3aGrO0KuVY=
-github.com/onosproject/helmit v0.6.0 h1:4MVgYP8nf/+6SNMxTcYOKsSIVrLt8y0Z+ae+Felc1P4=
-github.com/onosproject/helmit v0.6.0/go.mod h1:ZvjMu26Kd19hCHzkpnUH1Zgv/htt7iZbPG1EsFXBlhc=
-github.com/onosproject/onos-lib-go v0.6.0 h1:P0Te4gYgaC2s9WBzx+n9WoLu7k2kwzAmbWz5CmIEk+M=
-github.com/onosproject/onos-lib-go v0.6.0/go.mod h1:MBoPR4BPGajt9CeBEPxdl5zi9R+q/JxLqBGGN7/mL7I=
-github.com/onosproject/onos-lib-go v0.6.2 h1:ku/0U1Mzh2NufLaoBSl0nxeiwx1Mg5EMuoPMfxD/S6I=
-github.com/onosproject/onos-lib-go v0.6.2/go.mod h1:5YjAEEoqqZR0EYWkV1CxyP7XwOqDXFbeJpmGnYixG+I=
-github.com/onosproject/onos-topo v0.6.0 h1:d7uQ7bUqdg4hjXJyD/Jl2V2Tom1RU2BEoLtoxsc74JE=
-github.com/onosproject/onos-topo v0.6.0/go.mod h1:wcWSoimPCYyqqqxKUmEea4kpp7b/0RBJ30r3LlEwEXM=
+github.com/onosproject/helmit v0.6.3 h1:BIyU16afl+3ujyjbqL590KAPdjYK7oUHH86dNJUeyQk=
+github.com/onosproject/helmit v0.6.3/go.mod h1:ZvjMu26Kd19hCHzkpnUH1Zgv/htt7iZbPG1EsFXBlhc=
+github.com/onosproject/onos-lib-go v0.6.3 h1:AZNmgWssNxQiJWg5RrrFiAOmevMY+poNBwgBMAc/JeY=
+github.com/onosproject/onos-lib-go v0.6.3/go.mod h1:5YjAEEoqqZR0EYWkV1CxyP7XwOqDXFbeJpmGnYixG+I=
+github.com/onosproject/onos-topo v0.6.3 h1:hvGSfJWCswxaCyjzNvBWntQJwfKpgL3NcDdicjWBKtc=
+github.com/onosproject/onos-topo v0.6.3/go.mod h1:YUxOPZz32u2QseaNa7UuHFHl1ivs+kG4a9ntR2/cYQ0=
 github.com/onsi/ginkgo v0.0.0-20170829012221-11459a886d9c/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.10.1 h1:q/mM8GF/n0shIN8SaAZ0V+jnLPzen6WIVZdiwrRlMlo=
