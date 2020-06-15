@@ -117,7 +117,7 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	assert.NoError(t, err)
 	pod := pods[0]
 
-	output, code, err := pod.Containers()[0].Exec(fmt.Sprintf("onos config get plugins %s", device1.Name()))
+	output, code, err := pod.Containers()[0].Exec(fmt.Sprintf("sdran config get plugins %s", device1.Name()))
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
