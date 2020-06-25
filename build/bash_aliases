@@ -21,6 +21,9 @@ alias gp='git fetch upstream && git rebase upstream/master'
 # Review... meaning push the current branch to origin
 alias gr='git push origin $(git symbolic-ref HEAD)'
 
+# Where am I
+alias gs='git status -b'
+
 # Inject shell auto-completion for the 'onos' command
 alias ocomp='eval "$(onos completion bash)"'
 ocomp
@@ -28,10 +31,25 @@ ocomp
 # kubectl cluster-info... meaning show which cluster this terminal is pointing at
 alias ki='kubectl cluster-info'
 
+# kubectl in the micro-onos namespace - add on additional args as necessary
+alias km='kubectl -n micro-onos'
+
+# helm in the micro-onos namespace - add on additional args as necessary
+alias hm='helm -n micro-onos'
+
+# cli shortcut
+alias ocli='kubectl -n micro-onos exec -it $(kubectl -n micro-onos get pods -l type=cli -o name) -- /bin/sh'
 
 # onit shortcuts
 alias okctl='kubectl -n $(onit get cluster)'
-alias ocli='onit onos-cli --'
+
+function kmp {
+    km get pods
+}
+
+function wkmp {
+    watch kubectl -n micro-onos get pods
+}
 
 function okpid {
     okctl get pods | cut -d\  -f 1 | grep -v envoy | grep $1 2>/dev/null
@@ -61,7 +79,7 @@ function godocPackages {
         | bash
 }
 
-export ONOS_REPOS="onos-topo onos-config onos-ric onos-control onos-ztp onos-cli onos-test"
+export ONOS_REPOS="onos-topo onos-config onos-ric ran-simulator onos-control onos-ztp onos-cli onos-test"
 
 # Pull All Repos
 function par {
