@@ -18,6 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/types"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
@@ -35,13 +40,10 @@ import (
 	southboundmock "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	topodevice "github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
-	"io"
-	"sync"
-	"testing"
-	"time"
 )
 
 const (
@@ -471,51 +473,66 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	ctrl := gomock.NewController(t)
 
-	devices := map[topodevice.ID]*topodevice.Device{
-		topodevice.ID(device1): {
-			ID: topodevice.ID(device1),
-			Protocols: []*topodevice.ProtocolState{
-				{
-					Protocol:          topodevice.Protocol_GNMI,
-					ConnectivityState: topodevice.ConnectivityState_REACHABLE,
-					ChannelState:      topodevice.ChannelState_CONNECTED,
+	devices := map[topo.ID]*topo.Object{
+		topo.ID(device1): {
+			ID:   topo.ID(device1),
+			Type: topo.Object_ENTITY,
+			Obj: &topo.Object_Entity{
+				Entity: &topo.Entity{
+					Protocols: []*topodevice.ProtocolState{
+						{
+							Protocol:          topodevice.Protocol_GNMI,
+							ConnectivityState: topodevice.ConnectivityState_REACHABLE,
+							ChannelState:      topodevice.ChannelState_CONNECTED,
+						},
+					},
 				},
 			},
 		},
-		topodevice.ID(device2): {
-			ID: topodevice.ID(device2),
-			Protocols: []*topodevice.ProtocolState{
-				{
-					Protocol:          topodevice.Protocol_GNMI,
-					ConnectivityState: topodevice.ConnectivityState_REACHABLE,
-					ChannelState:      topodevice.ChannelState_CONNECTED,
+		topo.ID(device2): {
+			ID:   topo.ID(device2),
+			Type: topo.Object_ENTITY,
+			Obj: &topo.Object_Entity{
+				Entity: &topo.Entity{
+					Protocols: []*topodevice.ProtocolState{
+						{
+							Protocol:          topodevice.Protocol_GNMI,
+							ConnectivityState: topodevice.ConnectivityState_REACHABLE,
+							ChannelState:      topodevice.ChannelState_CONNECTED,
+						},
+					},
 				},
 			},
 		},
-		topodevice.ID(dcDevice): {
-			ID: topodevice.ID(dcDevice),
-			Protocols: []*topodevice.ProtocolState{
-				{
-					Protocol:          topodevice.Protocol_GNMI,
-					ConnectivityState: topodevice.ConnectivityState_UNREACHABLE,
-					ChannelState:      topodevice.ChannelState_DISCONNECTED,
+		topo.ID(dcDevice): {
+			ID:   topo.ID(dcDevice),
+			Type: topo.Object_ENTITY,
+			Obj: &topo.Object_Entity{
+				Entity: &topo.Entity{
+					Protocols: []*topodevice.ProtocolState{
+						{
+							Protocol:          topodevice.Protocol_GNMI,
+							ConnectivityState: topodevice.ConnectivityState_UNREACHABLE,
+							ChannelState:      topodevice.ChannelState_DISCONNECTED,
+						},
+					},
 				},
 			},
 		},
 	}
 
-	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: devices[topodevice.ID(device1)]}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: devices[topodevice.ID(device2)]}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: devices[topodevice.ID(dcDevice)]}, nil)
+	stream := NewMockTopo_ListClient(ctrl)
+	stream.EXPECT().Recv().Return(&topo.ListResponse{Object: devices[topo.ID(device1)]}, nil)
+	stream.EXPECT().Recv().Return(&topo.ListResponse{Object: devices[topo.ID(device2)]}, nil)
+	stream.EXPECT().Recv().Return(&topo.ListResponse{Object: devices[topo.ID(dcDevice)]}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
-	client := NewMockDeviceServiceClient(ctrl)
+	client := NewMockTopoClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, in *topodevice.GetRequest, opts ...grpc.CallOption) (*topodevice.GetResponse, error) {
-			return &topodevice.GetResponse{
-				Device: devices[in.ID],
+		DoAndReturn(func(ctx context.Context, in *topo.GetRequest, opts ...grpc.CallOption) (*topo.GetResponse, error) {
+			return &topo.GetResponse{
+				Object: devices[in.ID],
 			}, nil
 		}).AnyTimes()
 

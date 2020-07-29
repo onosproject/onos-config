@@ -17,6 +17,10 @@ package gnmi
 import (
 	"crypto/sha1"
 	"fmt"
+	"io"
+	"regexp"
+	"time"
+
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -26,14 +30,11 @@ import (
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"io"
-	"regexp"
-	"time"
 )
 
 //internal struct to handle return of methods
@@ -328,7 +329,7 @@ func buildSubscribeResponse(notification *gnmi.Notification, target string) (*gn
 	response := &gnmi.SubscribeResponse{
 		Response: responseUpdate,
 	}
-	_, errDevice := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
+	_, errDevice := manager.GetManager().DeviceStore.Get(topo.ID(target))
 	if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 		response.Extension = []*gnmi_ext.Extension{
 			{

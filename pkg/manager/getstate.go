@@ -17,7 +17,7 @@ package manager
 import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
 )
 
 // GetTargetState returns a set of state values given a target and a path.
@@ -27,7 +27,7 @@ func (m *Manager) GetTargetState(target string, path string) []*devicechange.Pat
 	//First check the cache, if it's not empty for this path we read that and return,
 	pathRegexp := utils.MatchWildcardRegexp(path)
 	m.OperationalStateCacheLock.RLock()
-	for pathCache, value := range m.OperationalStateCache[topodevice.ID(target)] {
+	for pathCache, value := range m.OperationalStateCache[topo.ID(target)] {
 		if pathRegexp.MatchString(pathCache) {
 			configValues = append(configValues, &devicechange.PathValue{
 				Path:  pathCache,
