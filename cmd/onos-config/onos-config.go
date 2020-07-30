@@ -173,7 +173,7 @@ func main() {
 		}
 
 		mgr.Run()
-		err = startServer(*caPath, *keyPath, *certPath, log)
+		err = startServer(*caPath, *keyPath, *certPath)
 		if err != nil {
 			log.Fatal("Unable to start onos-config ", err)
 		}
@@ -181,7 +181,7 @@ func main() {
 }
 
 // Creates gRPC server and registers various services; then serves.
-func startServer(caPath string, keyPath string, certPath string, log *logging.Log) error {
+func startServer(caPath string, keyPath string, certPath string) error {
 	s := northbound.NewServer(northbound.NewServerCfg(caPath, keyPath, certPath, 5150, true, northbound.SecurityConfig{}))
 	s.AddService(admin.Service{})
 	s.AddService(diags.Service{})
