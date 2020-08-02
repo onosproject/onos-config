@@ -166,11 +166,11 @@ func TestDeviceWatcher(t *testing.T) {
 					ID:   topo.ID("device-1"),
 					Type: topo.Object_ENTITY,
 					Attributes: map[string]string{
-						topo.Type:    "DeviceSim",
 						topo.Version: "1.0.0",
 					},
 					Obj: &topo.Object_Entity{
 						Entity: &topo.Entity{
+							KindID: "DeviceSim",
 							Protocols: []*devicetopo.ProtocolState{
 								{
 									Protocol:          devicetopo.Protocol_GNMI,
@@ -190,11 +190,11 @@ func TestDeviceWatcher(t *testing.T) {
 					ID:   topo.ID("device-2"),
 					Type: topo.Object_ENTITY,
 					Attributes: map[string]string{
-						topo.Type:    "DeviceSim",
 						topo.Version: "1.0.0",
 					},
 					Obj: &topo.Object_Entity{
 						Entity: &topo.Entity{
+							KindID: "DeviceSim",
 							Protocols: []*devicetopo.ProtocolState{
 								{
 									Protocol:          devicetopo.Protocol_GNMI,

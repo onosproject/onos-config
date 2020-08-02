@@ -241,17 +241,16 @@ func (m *Manager) CheckCacheForDevice(target devicetype.ID, deviceType devicetyp
 	version devicetype.Version) (devicetype.Type, devicetype.Version, error) {
 
 	deviceInfos := mgr.DeviceCache.GetDevicesByID(target)
-	object, errTopoDevice := mgr.DeviceStore.Get(topo.ID(target))
-	if errTopoDevice != nil {
-		log.Infof("Device %s not found in topo store", target)
-	}
-	topoDevice := topo.ObjectToDevice(object)
 
 	if len(deviceInfos) == 0 {
 		// New device - need type and version
 		if deviceType == "" || version == "" {
-			if errTopoDevice == nil && topoDevice != nil {
-				return devicetype.Type(topoDevice.Type), devicetype.Version(topoDevice.Version), nil
+			object, err := mgr.DeviceStore.Get(topo.ID(target))
+			if err == nil {
+				topoDevice := topo.ObjectToDevice(object)
+				if err == nil && topoDevice != nil {
+					return devicetype.Type(topoDevice.Type), devicetype.Version(topoDevice.Version), nil
+				}
 			}
 			return "", "", status.Error(codes.Internal,
 				fmt.Sprintf("target %s is not known. Need to supply a type and version through Extensions 101 and 102", target))
