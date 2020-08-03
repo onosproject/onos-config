@@ -30,7 +30,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
 	"google.golang.org/grpc"
 )
 
@@ -54,7 +54,7 @@ type Server struct {
 // GetOpState provides a stream of Operational and State data
 func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_GetOpStateServer) error {
 	manager.GetManager().OperationalStateCacheLock.RLock()
-	deviceCache, ok := manager.GetManager().OperationalStateCache[topodevice.ID(r.DeviceId)]
+	deviceCache, ok := manager.GetManager().OperationalStateCache[topo.ID(r.DeviceId)]
 	manager.GetManager().OperationalStateCacheLock.RUnlock()
 	if !ok {
 		return fmt.Errorf("no Operational State cache available for %s", r.DeviceId)

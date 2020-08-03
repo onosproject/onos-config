@@ -31,6 +31,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
 )
 
 var log = logging.GetLogger("controller", "change", "device")
@@ -88,7 +89,8 @@ func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 
 	// Get the device from the device store
 	log.Infof("Checking Device store for %s", change.Change.DeviceID)
-	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))
+	object, err := r.devices.Get(topo.ID(change.Change.DeviceID))
+	device := topo.ObjectToDevice(object)
 	if err != nil {
 		return controller.Result{}, err
 	} else if getProtocolState(device) != topodevice.ChannelState_CONNECTED {

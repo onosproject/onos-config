@@ -17,6 +17,11 @@ package synchronizer
 import (
 	"context"
 	"fmt"
+	"math"
+	"strconv"
+	syncPrimitives "sync"
+	"time"
+
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
@@ -26,13 +31,11 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"math"
-	syncPrimitives "sync"
-	"time"
+	"github.com/onosproject/onos-topo/api/topo"
 )
 
-var connectionMonitors = make(map[topodevice.ID]*connectionMonitor)
-var connections = make(map[topodevice.ID]bool)
+var connectionMonitors = make(map[topo.ID]*connectionMonitor)
+var connections = make(map[topo.ID]bool)
 
 const backoffInterval = 10 * time.Millisecond
 const maxBackoffTime = 5 * time.Second
@@ -40,9 +43,9 @@ const maxBackoffTime = 5 * time.Second
 // Factory is a go routine thread that listens out for Device creation
 // and deletion events and spawns Synchronizer threads for them
 // These connectionMonitors then listen out for configEvents relative to a device and
-func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- events.OperationalStateEvent,
+func Factory(topoChannel <-chan *topo.SubscribeResponse, opStateChan chan<- events.OperationalStateEvent,
 	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap,
+	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topo.ID]devicechange.TypedValueMap,
 	newTargetFn func() southbound.TargetIf,
 	operationalStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store) {
 
@@ -54,10 +57,10 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 				return
 			}
 
-			device := topoEvent.Device
-			connMon, ok := connectionMonitors[device.ID]
-			if !ok && topoEvent.Type != topodevice.ListResponse_REMOVED {
-				log.Infof("Topo device %s %s", device.ID, topoEvent.Type)
+			device := topo.ObjectToDevice(topoEvent.Update.Object)
+			connMon, ok := connectionMonitors[topo.ID(device.ID)]
+			if !ok && topoEvent.Update.Type != topo.Update_DELETE {
+				log.Infof("Topo device %s %s", device.ID, topoEvent.Update.Type)
 				connMon = &connectionMonitor{
 					opStateChan:               opStateChan,
 					southboundErrorChan:       errChan,
@@ -69,13 +72,13 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 					device:                    device,
 					target:                    newTargetFn(),
 				}
-				connectionMonitors[device.ID] = connMon
+				connectionMonitors[topo.ID(device.ID)] = connMon
 				go connMon.connect()
-			} else if ok && topoEvent.Type == topodevice.ListResponse_UPDATED {
+			} else if ok && topoEvent.Update.Type == topo.Update_MODIFY {
 				changed := false
-				if connMon.device.Address != topoEvent.Device.Address {
+				if topoEvent.Update.Object.Attributes["address"] != "" && connMon.device.Address != topoEvent.Update.Object.Attributes["address"] {
 					oldAddress := connMon.device.Address
-					connMon.device.Address = topoEvent.Device.Address
+					connMon.device.Address = topoEvent.Update.Object.Attributes["address"]
 					changed = true
 					log.Infof("Topo device %s is being UPDATED - waiting to complete", device.ID)
 					connMon.close()
@@ -87,17 +90,19 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 					}
 					time.Sleep(waitTime + time.Millisecond*20) // close might not take effect until timeout
 					go connMon.reconnect()
-					log.Infof("Topo device %s UPDATED address %s -> %s ", device.ID, oldAddress, topoEvent.Device.Address)
+					log.Infof("Topo device %s UPDATED address %s -> %s ", device.ID, oldAddress, topoEvent.Update.Object.Attributes["address"])
 				}
-				if connMon.device.Timeout.String() != topoEvent.Device.Timeout.String() {
+				if topoEvent.Update.Object.Attributes["timeout"] != "" && connMon.device.Timeout.String() != topoEvent.Update.Object.Attributes["timeout"] {
 					connMon.mu.Lock()
 					oldTimeout := connMon.device.Timeout
-					connMon.device.Timeout = topoEvent.Device.Timeout
+					t, _ := strconv.Atoi(topoEvent.Update.Object.Attributes["timeout"])
+					duration := time.Duration(t) * time.Second
+					connMon.device.Timeout = &duration
 					changed = true
 					connMon.mu.Unlock()
-					log.Infof("Topo device %s UPDATED timeout %s -> %s ", device.ID, oldTimeout, topoEvent.Device.Timeout)
+					log.Infof("Topo device %s UPDATED timeout %s -> %s ", device.ID, oldTimeout, topoEvent.Update.Object.Attributes["timeout"])
 				}
-				if len(connMon.device.Protocols) != len(topoEvent.Device.Protocols) {
+				if len(connMon.device.Protocols) != len(topoEvent.Update.Object.GetEntity().Protocols) {
 					// Ignoring any topo protocol updates - we set the gNMI one and
 					// Don't really care about the others
 					changed = true
@@ -108,10 +113,10 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 						events.EventTypeTopoUpdate, string(device.ID),
 						fmt.Errorf("topo update event ignored %v", topoEvent))
 				}
-			} else if ok && topoEvent.Type == topodevice.ListResponse_REMOVED {
+			} else if ok && topoEvent.Update.Type == topo.Update_DELETE {
 				log.Infof("Topo device %s is being REMOVED - waiting to complete", device.ID)
-				delete(connectionMonitors, device.ID)
-				delete(connections, device.ID)
+				delete(connectionMonitors, topo.ID(device.ID))
+				delete(connections, topo.ID(device.ID))
 				connMon.close()
 				// TODO Change grpc.DialContext() used to non blocking so that we can
 				//  close the connection right away See https://github.com/onosproject/onos-config/issues/981
@@ -127,10 +132,10 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			}
 
 			log.Infof("Received event %v", event)
-			deviceID := topodevice.ID(event.Subject())
+			deviceID := topo.ID(event.Subject())
 			switch event.EventType() {
 			case events.EventTypeErrorDeviceConnect:
-				deviceID := topodevice.ID(event.Subject())
+				deviceID := topo.ID(event.Subject())
 				connMon, ok := connectionMonitors[deviceID]
 				if ok && connections[deviceID] {
 					connections[deviceID] = false
@@ -150,7 +155,7 @@ type connectionMonitor struct {
 	southboundErrorChan       chan<- events.DeviceResponse
 	dispatcher                *dispatcher.Dispatcher
 	modelRegistry             *modelregistry.ModelRegistry
-	operationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
+	operationalStateCache     map[topo.ID]devicechange.TypedValueMap
 	operationalStateCacheLock *syncPrimitives.RWMutex
 	deviceChangeStore         device.Store
 	device                    *topodevice.Device
@@ -168,7 +173,7 @@ func (cm *connectionMonitor) reconnect() {
 	}
 	cm.mu.Unlock()
 	cm.operationalStateCacheLock.Lock()
-	delete(cm.operationalStateCache, cm.device.ID)
+	delete(cm.operationalStateCache, topo.ID(cm.device.ID))
 	cm.operationalStateCacheLock.Unlock()
 	cm.connect()
 }
@@ -222,7 +227,7 @@ func (cm *connectionMonitor) synchronize() error {
 	}
 	valueMap := make(devicechange.TypedValueMap)
 	cm.operationalStateCacheLock.Lock()
-	cm.operationalStateCache[cm.device.ID] = valueMap
+	cm.operationalStateCache[topo.ID(cm.device.ID)] = valueMap
 	cm.operationalStateCacheLock.Unlock()
 	cm.mu.RUnlock()
 
@@ -234,7 +239,7 @@ func (cm *connectionMonitor) synchronize() error {
 		//unregistering the listener for changes to the device
 		cm.dispatcher.UnregisterOperationalState(string(cm.device.ID))
 		cm.operationalStateCacheLock.Lock()
-		delete(cm.operationalStateCache, cm.device.ID)
+		delete(cm.operationalStateCache, topo.ID(cm.device.ID))
 		cm.operationalStateCacheLock.Unlock()
 		return err
 	}
@@ -261,6 +266,6 @@ func (cm *connectionMonitor) close() {
 	}
 	cm.mu.Unlock()
 	cm.operationalStateCacheLock.Lock()
-	delete(cm.operationalStateCache, cm.device.ID)
+	delete(cm.operationalStateCache, topo.ID(cm.device.ID))
 	cm.operationalStateCacheLock.Unlock()
 }

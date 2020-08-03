@@ -43,6 +43,7 @@ import (
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -67,11 +68,11 @@ type Manager struct {
 	networkSnapshotController *controller.Controller
 	deviceSnapshotController  *controller.Controller
 	ModelRegistry             *modelregistry.ModelRegistry
-	TopoChannel               chan *topodevice.ListResponse
+	TopoChannel               chan *topo.SubscribeResponse
 	OperationalStateChannel   chan events.OperationalStateEvent
 	SouthboundErrorChan       chan events.DeviceResponse
 	Dispatcher                *dispatcher.Dispatcher
-	OperationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
+	OperationalStateCache     map[topo.ID]devicechange.TypedValueMap
 	OperationalStateCacheLock *sync.RWMutex
 	allowUnvalidatedConfig    bool
 }
@@ -101,12 +102,12 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		deviceChangeController:    devicechangectl.NewController(mastershipStore, deviceStore, deviceCache, deviceChangesStore),
 		networkSnapshotController: networksnapshotctl.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceChangesStore),
 		deviceSnapshotController:  devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
-		TopoChannel:               make(chan *topodevice.ListResponse, 10),
+		TopoChannel:               make(chan *topo.SubscribeResponse, 10),
 		ModelRegistry:             modelReg,
 		OperationalStateChannel:   make(chan events.OperationalStateEvent),
 		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
 		Dispatcher:                dispatcher.NewDispatcher(),
-		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
+		OperationalStateCache:     make(map[topo.ID]devicechange.TypedValueMap),
 		OperationalStateCacheLock: &sync.RWMutex{},
 		allowUnvalidatedConfig:    allowUnvalidatedConfig,
 	}
@@ -240,16 +241,16 @@ func (m *Manager) CheckCacheForDevice(target devicetype.ID, deviceType devicetyp
 	version devicetype.Version) (devicetype.Type, devicetype.Version, error) {
 
 	deviceInfos := mgr.DeviceCache.GetDevicesByID(target)
-	topoDevice, errTopoDevice := mgr.DeviceStore.Get(topodevice.ID(target))
-	if errTopoDevice != nil {
-		log.Infof("Device %s not found in topo store", target)
-	}
 
 	if len(deviceInfos) == 0 {
 		// New device - need type and version
 		if deviceType == "" || version == "" {
-			if errTopoDevice == nil && topoDevice != nil {
-				return devicetype.Type(topoDevice.Type), devicetype.Version(topoDevice.Version), nil
+			object, err := mgr.DeviceStore.Get(topo.ID(target))
+			if err == nil {
+				topoDevice := topo.ObjectToDevice(object)
+				if err == nil && topoDevice != nil {
+					return devicetype.Type(topoDevice.Type), devicetype.Version(topoDevice.Version), nil
+				}
 			}
 			return "", "", status.Error(codes.Internal,
 				fmt.Sprintf("target %s is not known. Need to supply a type and version through Extensions 101 and 102", target))
