@@ -99,7 +99,7 @@ func parsePluginsCommandOutput(t *testing.T, output []string) map[string]map[str
 func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	// Create a device simulator
 	device1 := helm.
-		Chart("device-simulator").
+		Chart("device-simulator", "https://charts.onosproject.org").
 		Release(random.NewPetName(2))
 	err := device1.Install(true)
 	assert.NoError(t, err)
@@ -107,7 +107,7 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	time.Sleep(60 * time.Second)
 
 	// Get one of the onos-cli pods
-	release := helm.Chart("onos-cli").
+	release := helm.Chart("onos-cli", "https://charts.onosproject.org").
 		Release("onos-cli")
 	client := kubernetes.NewForReleaseOrDie(release)
 	pods, err := client.
