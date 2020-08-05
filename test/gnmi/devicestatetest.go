@@ -15,23 +15,25 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-topo/api/device"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestDeviceState tests that a device is connected and available.
 func (s *TestSuite) TestDeviceState(t *testing.T) {
 	simulator := gnmi.CreateSimulator(t)
 	assert.NotNil(t, simulator)
-	found := gnmi.WaitForDevice(t, func(d *device.Device) bool {
-		return len(d.Protocols) > 0 &&
-			d.Protocols[0].Protocol == device.Protocol_GNMI &&
-			d.Protocols[0].ConnectivityState == device.ConnectivityState_REACHABLE &&
-			d.Protocols[0].ChannelState == device.ChannelState_CONNECTED &&
-			d.Protocols[0].ServiceState == device.ServiceState_AVAILABLE
+	found := gnmi.WaitForDevice(t, func(d *topo.Object) bool {
+		return len(d.GetEntity().Protocols) > 0 &&
+			d.GetEntity().Protocols[0].Protocol == device.Protocol_GNMI &&
+			d.GetEntity().Protocols[0].ConnectivityState == device.ConnectivityState_REACHABLE &&
+			d.GetEntity().Protocols[0].ChannelState == device.ChannelState_CONNECTED &&
+			d.GetEntity().Protocols[0].ServiceState == device.ServiceState_AVAILABLE
 	}, 5*time.Second)
 	assert.Equal(t, true, found)
 }

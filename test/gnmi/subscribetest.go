@@ -15,13 +15,14 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-config/test/utils/proto"
 	"testing"
 	"time"
 
+	"github.com/onosproject/onos-config/test/utils/proto"
+
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-topo/api/device"
+	device "github.com/onosproject/onos-topo/api/topo"
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"

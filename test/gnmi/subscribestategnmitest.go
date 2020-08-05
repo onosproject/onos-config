@@ -16,15 +16,16 @@ package gnmi
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/openconfig/gnmi/client"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/openconfig/gnmi/client"
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
+
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-topo/api/device"
+	device "github.com/onosproject/onos-topo/api/topo"
 	"github.com/stretchr/testify/assert"
 )
 

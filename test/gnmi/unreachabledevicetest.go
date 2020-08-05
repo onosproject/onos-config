@@ -17,13 +17,15 @@ package gnmi
 
 import (
 	"context"
+	"testing"
+
 	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
+	device "github.com/onosproject/onos-topo/api/topo"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const (
@@ -40,22 +42,35 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	deviceClient, deviceClientError := gnmi.NewDeviceServiceClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)
-	newDevice := &device.Device{
-		ID:          unreachableDeviceModDeviceName,
-		Revision:    0,
-		Address:     unreachableDeviceAddress,
-		Target:      "",
-		Version:     unreachableDeviceModDeviceVersion,
-		Timeout:     nil,
-		Credentials: device.Credentials{},
-		TLS:         device.TlsConfig{},
-		Type:        unreachableDeviceModDeviceType,
-		Role:        "",
-		Attributes:  nil,
-		Protocols:   nil,
+	newKind := &topo.Object{
+		ID:   unreachableDeviceModDeviceType,
+		Type: topo.Object_KIND,
+		Obj: &topo.Object_Kind{
+			Kind: &topo.Kind{
+				Name: unreachableDeviceModDeviceType,
+			},
+		},
+		Attributes: map[string]string{},
 	}
-	addRequest := &device.AddRequest{Device: newDevice}
-	addResponse, addResponseError := deviceClient.Add(context.Background(), addRequest)
+	setRequest := &topo.SetRequest{Objects: []*topo.Object{newKind}}
+	setResponse, setResponseError := deviceClient.Set(context.Background(), setRequest)
+	assert.NotNil(t, setResponse)
+	assert.Nil(t, setResponseError)
+	newDevice := &device.Object{
+		ID:   unreachableDeviceModDeviceName,
+		Type: device.Object_ENTITY,
+		Obj: &device.Object_Entity{
+			Entity: &device.Entity{
+				KindID: unreachableDeviceModDeviceType,
+			},
+		},
+		Attributes: map[string]string{
+			device.Address: unreachableDeviceAddress,
+			device.Version: unreachableDeviceModDeviceVersion,
+		},
+	}
+	addRequest := &device.SetRequest{Objects: []*device.Object{newDevice}}
+	addResponse, addResponseError := deviceClient.Set(context.Background(), addRequest)
 	assert.NotNil(t, addResponse)
 	assert.Nil(t, addResponseError)
 

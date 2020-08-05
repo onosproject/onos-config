@@ -17,15 +17,16 @@ package gnmi
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/onos-config/api/diags"
 	"github.com/onosproject/onos-config/api/types/change"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -42,19 +43,43 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	deviceClient, deviceClientError := gnmi.NewDeviceServiceClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)
-	timeout := 10 * time.Second
-	newDevice := &device.Device{
-		ID:      offlineInTopoModDeviceName,
-		Address: offlineInTopoModDeviceName + ":11161",
-		Type:    offlineInTopoModDeviceType,
-		Version: offlineInTopoModDeviceVersion,
-		Timeout: &timeout,
-		TLS: device.TlsConfig{
-			Plain: true,
+	newKind := &topo.Object{
+		ID:   offlineInTopoModDeviceType,
+		Type: topo.Object_KIND,
+		Obj: &topo.Object_Kind{
+			Kind: &topo.Kind{
+				Name: offlineInTopoModDeviceType,
+			},
+		},
+		Attributes: map[string]string{
+			topo.Address:  "",
+			topo.Version:  "",
+			topo.TLSPlain: "true",
+			topo.Timeout:  "10",
 		},
 	}
-	addRequest := &device.AddRequest{Device: newDevice}
-	addResponse, addResponseError := deviceClient.Add(context.Background(), addRequest)
+	setRequest := &topo.SetRequest{Objects: []*topo.Object{newKind}}
+	setResponse, setResponseError := deviceClient.Set(context.Background(), setRequest)
+	assert.NotNil(t, setResponse)
+	assert.Nil(t, setResponseError)
+
+	newDevice := &topo.Object{
+		ID:   offlineInTopoModDeviceName,
+		Type: topo.Object_ENTITY,
+		Obj: &topo.Object_Entity{
+			Entity: &topo.Entity{
+				KindID: offlineInTopoModDeviceType,
+			},
+		},
+		Attributes: map[string]string{
+			topo.Address:  offlineInTopoModDeviceName + ":11161",
+			topo.Version:  offlineInTopoModDeviceVersion,
+			topo.Timeout:  "10",
+			topo.TLSPlain: "true",
+		},
+	}
+	addRequest := &topo.SetRequest{Objects: []*topo.Object{newDevice}}
+	addResponse, addResponseError := deviceClient.Set(context.Background(), addRequest)
 	assert.NotNil(t, addResponse)
 	assert.Nil(t, addResponseError)
 
@@ -93,7 +118,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	assert.NoError(t, err)
 	device, err := gnmi.GetDevice(simulator)
 	assert.NoError(t, err)
-	err = gnmi.AddDeviceToTopo(device)
+	err = gnmi.AddObjectToTopo(device)
 	assert.NoError(t, err)
 
 	// Wait for config to connect to the device

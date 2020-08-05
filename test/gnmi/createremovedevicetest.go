@@ -17,13 +17,15 @@ package gnmi
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-topo/api/topo"
+	device "github.com/onosproject/onos-topo/api/topo"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -41,21 +43,45 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	deviceClient, deviceClientError := gnmi.NewDeviceServiceClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)
-	timeout := 10 * time.Second
-	newDevice := &device.Device{
-		ID:      createRemoveDeviceModDeviceName,
-		Address: createRemoveDeviceModDeviceName + ":11161",
-		Type:    createRemoveDeviceModDeviceType,
-		Version: createRemoveDeviceModDeviceVersion,
-		Timeout: &timeout,
-		TLS: device.TlsConfig{
-			Plain: true,
+
+	newKind := &topo.Object{
+		ID:   createRemoveDeviceModDeviceType,
+		Type: topo.Object_KIND,
+		Obj: &topo.Object_Kind{
+			Kind: &topo.Kind{
+				Name: createRemoveDeviceModDeviceType,
+			},
+		},
+		Attributes: map[string]string{
+			topo.Address:  "",
+			topo.Version:  "",
+			topo.TLSPlain: "true",
+			topo.Timeout:  "10",
 		},
 	}
-	addRequest := &device.AddRequest{Device: newDevice}
-	addResponse, addResponseError := deviceClient.Add(context.Background(), addRequest)
-	assert.NotNil(t, addResponse)
-	assert.Nil(t, addResponseError)
+	setRequest := &topo.SetRequest{Objects: []*topo.Object{newKind}}
+	setResponse, setResponseError := deviceClient.Set(context.Background(), setRequest)
+	assert.NotNil(t, setResponse)
+	assert.Nil(t, setResponseError)
+	newDevice := &device.Object{
+		ID:   createRemoveDeviceModDeviceName,
+		Type: device.Object_ENTITY,
+		Obj: &device.Object_Entity{
+			Entity: &topo.Entity{
+				KindID: createRemoveDeviceModDeviceType,
+			},
+		},
+		Attributes: map[string]string{
+			device.Address:  createRemoveDeviceModDeviceName + ":11161",
+			device.Version:  createRemoveDeviceModDeviceVersion,
+			device.TLSPlain: "true",
+			device.Timeout:  "10",
+		},
+	}
+	setRequest = &device.SetRequest{Objects: []*device.Object{newDevice}}
+	setResponse, setResponseError = deviceClient.Set(context.Background(), setRequest)
+	assert.NotNil(t, setResponse)
+	assert.Nil(t, setResponseError)
 
 	//  Start a new simulated device
 	simulator := helm.

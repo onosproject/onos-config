@@ -16,12 +16,13 @@ package gnmi
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/api/admin"
-	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-topo/api/device"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	device "github.com/onosproject/onos-topo/api/topo"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

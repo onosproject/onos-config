@@ -16,13 +16,14 @@ package gnmi
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/api/diags"
 	"io"
 	"testing"
 	"time"
 
+	"github.com/onosproject/onos-config/api/diags"
+
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-topo/api/device"
+	device "github.com/onosproject/onos-topo/api/topo"
 	"github.com/stretchr/testify/assert"
 )
 

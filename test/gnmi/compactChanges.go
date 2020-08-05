@@ -16,14 +16,15 @@ package gnmi
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/api/admin"
-	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-config/test/utils/proto"
+	device "github.com/onosproject/onos-topo/api/topo"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestCompactChanges tests the CompactChanges and Snapshot RPCs on the Admin gRPC interface. This
@@ -53,6 +54,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	const domainNameSim2 = "sim2.domain.name"
 	const wait = 60 * time.Second
 
+	t.Skip()
 	// Create 2 simulators
 	simulator1 := gnmi.CreateSimulator(t)
 	simulator2 := gnmi.CreateSimulator(t)
