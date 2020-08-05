@@ -58,7 +58,7 @@ type Leadership struct {
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore(config config.Config) (Store, error) {
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConfig))
 	if err != nil {
 		return nil, err
 	}
