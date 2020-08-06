@@ -62,7 +62,7 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 		Chart("onos-topo").
 		Release("onos-topo").
 		Set("replicaCount", 2).
-		Set("store.controller", controller).
+		Set("storage.controller", controller).
 		Set("image.tag", "latest").
 		Install(false)
 	if err != nil {
@@ -74,7 +74,7 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 		Chart("onos-config").
 		Release("onos-config").
 		Set("replicaCount", 2).
-		Set("store.controller", controller).
+		Set("storage.controller", controller).
 		Set("image.tag", "latest").
 		Install(true)
 	if err != nil {

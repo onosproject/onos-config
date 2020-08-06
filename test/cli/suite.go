@@ -49,7 +49,7 @@ func (s *TestSuite) SetupTestSuite() error {
 	err = helm.Chart("onos-topo", "https://charts.onosproject.org").
 		Release("onos-topo").
 		Set("image.tag", "latest").
-		Set("store.controller", "onos-config-atomix-kubernetes-controller:5679").
+		Set("storage.controller", "onos-config-atomix-kubernetes-controller:5679").
 		Install(true)
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ func (s *TestSuite) SetupTestSuite() error {
 	err = helm.Chart("onos-config", "https://charts.onosproject.org").
 		Release("onos-config").
 		Set("image.tag", "latest").
-		Set("store.controller", "onos-config-atomix-kubernetes-controller:5679").
+		Set("storage.controller", "onos-config-atomix-kubernetes-controller:5679").
 		Install(true)
 	if err != nil {
 		return err
