@@ -16,20 +16,19 @@ package gnmi
 
 import (
 	"context"
-	"strconv"
-	"sync"
-	"testing"
-	"time"
-
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-topo/api/topo"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
+	"strconv"
+	"sync"
+	"testing"
+	"time"
 )
 
 const subscribeDelay = 100 * time.Millisecond
@@ -466,8 +465,8 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 	server, mgr, mocks := setUp(t)
 
 	targetStr := "Device1"
-	target := topo.ID(targetStr)
-	presentDevice := &topo.Object{
+	target := topodevice.ID(targetStr)
+	presentDevice := &topodevice.Device{
 		ID: target,
 	}
 

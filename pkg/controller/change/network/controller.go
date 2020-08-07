@@ -27,7 +27,6 @@ import (
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	devicetopo "github.com/onosproject/onos-topo/api/device"
-	"github.com/onosproject/onos-topo/api/topo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -229,13 +228,12 @@ func (r *Reconciler) canTryChange(change *networkchange.NetworkChange, deviceCha
 
 	// First, check if the devices affected by the change are available
 	for _, deviceChange := range change.Changes {
-		object, err := r.devices.Get(topo.ID(deviceChange.DeviceID))
+		device, err := r.devices.Get(devicetopo.ID(deviceChange.DeviceID))
 		if err != nil && status.Code(err) != codes.NotFound {
 			return false, err
-		} else if object == nil {
+		} else if device == nil {
 			return false, nil
 		}
-		device := topo.ObjectToDevice(object)
 		state := getProtocolState(device)
 		if state != devicetopo.ChannelState_CONNECTED {
 			log.Infof("Cannot apply NetworkChange %v: %v is offline", change.ID, deviceChange.DeviceID)

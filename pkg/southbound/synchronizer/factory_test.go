@@ -16,10 +16,6 @@ package synchronizer
 
 import (
 	"errors"
-	"sync"
-	"testing"
-	"time"
-
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -31,17 +27,19 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"github.com/onosproject/onos-topo/api/topo"
 	"gotest.tools/assert"
+	"sync"
+	"testing"
+	"time"
 )
 
-func factorySetUp(t *testing.T) (chan *topo.SubscribeResponse, chan<- events.OperationalStateEvent,
+func factorySetUp(t *testing.T) (chan *topodevice.ListResponse, chan<- events.OperationalStateEvent,
 	chan events.DeviceResponse, *dispatcherpkg.Dispatcher,
-	*modelregistrypkg.ModelRegistry, map[topo.ID]devicechange.TypedValueMap, *sync.RWMutex, device.Store, error) {
+	*modelregistrypkg.ModelRegistry, map[topodevice.ID]devicechange.TypedValueMap, *sync.RWMutex, device.Store, error) {
 
 	dispatcher := dispatcherpkg.NewDispatcher()
 	modelregistry := new(modelregistrypkg.ModelRegistry)
-	opStateCache := make(map[topo.ID]devicechange.TypedValueMap)
+	opStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
 	opStateCacheLock := &sync.RWMutex{}
 	ctrl := gomock.NewController(t)
 	deviceChangeStore := storemock.NewMockDeviceChangesStore(ctrl)
@@ -50,7 +48,7 @@ func factorySetUp(t *testing.T) (chan *topo.SubscribeResponse, chan<- events.Ope
 			ctx := stream.NewContext(func() {})
 			return ctx, errors.New("no Configuration found")
 		}).AnyTimes()
-	return make(chan *topo.SubscribeResponse),
+	return make(chan *topodevice.ListResponse),
 		make(chan events.OperationalStateEvent),
 		make(chan events.DeviceResponse),
 		dispatcher, modelregistry, opStateCache, opStateCacheLock, deviceChangeStore, nil
@@ -78,32 +76,24 @@ func TestFactory_Revert(t *testing.T) {
 		wg.Done()
 	}()
 
-	//timeout := time.Millisecond * 500
+	timeout := time.Millisecond * 500
 	device1NameStr := "factoryTd"
-	device1 := topo.Object{
-		ID:   topo.ID(device1NameStr),
-		Type: topo.Object_ENTITY,
-		Obj: &topo.Object_Entity{
-			Entity: &topo.Entity{Protocols: []*topodevice.ProtocolState{}},
-		},
-		Attributes: map[string]string{
-			topo.Address: "1.2.3.4:11161",
-			topo.Target:  "",
-			topo.Version: "1.0.0",
-			/*
-				topo.Timeout:     &timeout,
-				Credentials: topodevice.Credentials{},
-				TLS:         topodevice.TlsConfig{},
-			*/
-			topo.Type: "TestDevice",
-			topo.Role: "leaf",
-		},
+	device1 := topodevice.Device{
+		ID:          topodevice.ID(device1NameStr),
+		Revision:    0,
+		Address:     "1.2.3.4:11161",
+		Target:      "",
+		Version:     "1.0.0",
+		Timeout:     &timeout,
+		Credentials: topodevice.Credentials{},
+		TLS:         topodevice.TlsConfig{},
+		Type:        "TestDevice",
+		Role:        "leaf",
+		Attributes:  make(map[string]string),
 	}
-	topoEvent := topo.SubscribeResponse{
-		Update: &topo.Update{
-			Type:   topo.Update_INSERT,
-			Object: &device1,
-		},
+	topoEvent := topodevice.ListResponse{
+		Type:   topodevice.ListResponse_ADDED,
+		Device: &device1,
 	}
 
 	topoChan <- &topoEvent
@@ -120,43 +110,35 @@ func TestFactory_Revert(t *testing.T) {
 
 	// Device removed from topo
 	//device1.Attributes["t1"] = "test"
-	device1Update := topo.Object{
-		ID:   topo.ID(device1NameStr),
-		Type: topo.Object_ENTITY,
-		Obj: &topo.Object_Entity{
-			Entity: &topo.Entity{Protocols: []*topodevice.ProtocolState{}},
-		},
-		Attributes: map[string]string{
-			topo.Address: "1.2.3.4:11161",
-			topo.Target:  "",
-			topo.Version: "1.0.0",
-			/*Timeout:     &timeout,
-			Credentials: topodevice.Credentials{},
-			TLS:         topodevice.TlsConfig{},*/
-			topo.Type: "TestDevice",
-			topo.Role: "spine", // Role is changed - will be ignored
-		},
+	device1Update := topodevice.Device{
+		ID:          topodevice.ID(device1NameStr),
+		Revision:    0,
+		Address:     "1.2.3.4:11161",
+		Target:      "",
+		Version:     "1.0.0",
+		Timeout:     &timeout,
+		Credentials: topodevice.Credentials{},
+		TLS:         topodevice.TlsConfig{},
+		Type:        "TestDevice",
+		Role:        "spine", // Role is changed - will be ignored
+		Attributes:  make(map[string]string),
 	}
-	topoEventUpdated := topo.SubscribeResponse{
-		Update: &topo.Update{
-			Type:   topo.Update_MODIFY,
-			Object: &device1Update,
-		},
+	topoEventUpdated := topodevice.ListResponse{
+		Type:   topodevice.ListResponse_UPDATED,
+		Device: &device1Update,
 	}
 	topoChan <- &topoEventUpdated
 
 	for resp := range responseChan {
 		assert.Error(t, resp.Error(),
-			"topo update event ignored update:<type:MODIFY object:<id:\"factoryTd\" type:ENTITY entity:<> attributes:<key:\"address\" value:\"1.2.3.4:11161\" > attributes:<key:\"role\" value:\"spine\" > attributes:<key:\"target\" value:\"\" > attributes:<key:\"type\" value:\"TestDevice\" > attributes:<key:\"version\" value:\"1.0.0\" > > > ")
+			"topo update event ignored type:UPDATED device:<id:\"factoryTd\" address:\"1.2.3.4:11161\" version:\"1.0.0\" timeout:<nanos:500000000 > credentials:<> tls:<> type:\"TestDevice\" role:\"spine\" > ", "after topo update")
 		break
 	}
 
 	// Device removed from topo
-	topoEventRemove := topo.SubscribeResponse{
-		Update: &topo.Update{
-			Type:   topo.Update_DELETE,
-			Object: &device1,
-		},
+	topoEventRemove := topodevice.ListResponse{
+		Type:   topodevice.ListResponse_REMOVED,
+		Device: &device1,
 	}
 
 	topoChan <- &topoEventRemove
