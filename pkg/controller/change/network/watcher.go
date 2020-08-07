@@ -15,8 +15,6 @@
 package network
 
 import (
-	"sync"
-
 	"github.com/onosproject/onos-config/api/types"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
@@ -28,7 +26,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	devicetopo "github.com/onosproject/onos-topo/api/device"
-	"github.com/onosproject/onos-topo/api/topo"
+	"sync"
 )
 
 const queueSize = 100
@@ -99,15 +97,14 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 	w.streams = make(map[device.VersionedID]stream.Context)
 	w.mu.Unlock()
 
-	deviceCh := make(chan *topo.SubscribeResponse)
+	deviceCh := make(chan *devicetopo.ListResponse)
 	if err := w.DeviceStore.Watch(deviceCh); err != nil {
 		return err
 	}
 
 	go func() {
 		for response := range deviceCh {
-			device := topo.ObjectToDevice(response.Update.Object)
-			w.updateWatch(device, ch)
+			w.updateWatch(response.Device, ch)
 		}
 	}()
 
@@ -116,12 +113,11 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 		for eventObj := range deviceCacheCh {
 			event := eventObj.Object.(*cache.Info)
 			log.Infof("Received device event for device %v %v", event.DeviceID, event.Version)
-			object, err := w.DeviceStore.Get(topo.ID(event.DeviceID))
+			device, err := w.DeviceStore.Get(devicetopo.ID(event.DeviceID))
 			if err != nil {
 				log.Errorf("Could not find device %v", event.DeviceID)
 				continue
 			}
-			device := topo.ObjectToDevice(object)
 			if device.Version == string(event.Version) {
 				w.updateWatch(device, ch)
 			}

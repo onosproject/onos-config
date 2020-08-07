@@ -18,7 +18,6 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/onosproject/onos-config/pkg/store/device"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"github.com/onosproject/onos-topo/api/topo"
 )
 
 // DeviceConnected signals the corresponding topology service that the device connected.
@@ -41,12 +40,12 @@ func (m *Manager) DeviceDisconnected(id topodevice.ID, err error) error {
 	}, backoff.NewExponentialBackOff())
 }
 
-func updateDevice(deviceStore device.Store, id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState, service topodevice.ServiceState) error {
-	object, err := deviceStore.Get(topo.ID(id))
+func updateDevice(deviceStore device.Store, id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
+	service topodevice.ServiceState) error {
+	topoDevice, err := deviceStore.Get(id)
 	if err != nil {
 		return err
 	}
-	topoDevice := topo.ObjectToDevice(object)
 	protocolState, index := containsGnmi(topoDevice.Protocols)
 	if protocolState != nil {
 		topoDevice.Protocols = remove(topoDevice.Protocols, index)
@@ -61,8 +60,7 @@ func updateDevice(deviceStore device.Store, id topodevice.ID, connectivity topod
 	protocolState.ChannelState = channel
 	protocolState.ServiceState = service
 	topoDevice.Protocols = append(topoDevice.Protocols, protocolState)
-	object1 := topo.DeviceToObject(topoDevice)
-	_, err = deviceStore.Update(object1)
+	_, err = deviceStore.Update(topoDevice)
 	if err != nil {
 		log.Errorf("Device %s is not updated %s", id, err.Error())
 		return err

@@ -17,27 +17,26 @@ package device
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/southbound"
+	topodevice "github.com/onosproject/onos-topo/api/device"
+	"google.golang.org/grpc"
 	"io"
 	"time"
-
-	"github.com/onosproject/onos-lib-go/pkg/southbound"
-	topodevice "github.com/onosproject/onos-topo/api/topo"
-	"google.golang.org/grpc"
 )
 
 // Store is a device store
 type Store interface {
 	// Get gets a device by ID
-	Get(topodevice.ID) (*topodevice.Object, error)
+	Get(topodevice.ID) (*topodevice.Device, error)
 
 	// Update updates a given device
-	Update(*topodevice.Object) (*topodevice.Object, error)
+	Update(*topodevice.Device) (*topodevice.Device, error)
 
 	// List lists the devices in the store
-	List(chan<- *topodevice.Object) error
+	List(chan<- *topodevice.Device) error
 
 	// Watch watches the device store for changes
-	Watch(chan<- *topodevice.SubscribeResponse) error
+	Watch(chan<- *topodevice.ListResponse) error
 }
 
 // NewTopoStore returns a new topo-based device store
@@ -50,7 +49,7 @@ func NewTopoStore(topoEndpoint string, opts ...grpc.DialOption) (Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := topodevice.NewTopoClient(conn)
+	client := topodevice.NewDeviceServiceClient(conn)
 
 	return &topoStore{
 		client: client,
@@ -58,16 +57,16 @@ func NewTopoStore(topoEndpoint string, opts ...grpc.DialOption) (Store, error) {
 }
 
 // NewStore returns a new device store for the given client
-func NewStore(client topodevice.TopoClient) (Store, error) {
+func NewStore(client topodevice.DeviceServiceClient) (Store, error) {
 	return &topoStore{client: client}, nil
 }
 
 // A device Store that uses the topo service to propagate devices
 type topoStore struct {
-	client topodevice.TopoClient
+	client topodevice.DeviceServiceClient
 }
 
-func (s *topoStore) Get(id topodevice.ID) (*topodevice.Object, error) {
+func (s *topoStore) Get(id topodevice.ID) (*topodevice.Device, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	response, err := s.client.Get(ctx, &topodevice.GetRequest{
@@ -76,23 +75,23 @@ func (s *topoStore) Get(id topodevice.ID) (*topodevice.Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	return response.Object, nil
+	return response.Device, nil
 }
 
-func (s *topoStore) Update(updatedDevice *topodevice.Object) (*topodevice.Object, error) {
+func (s *topoStore) Update(updatedDevice *topodevice.Device) (*topodevice.Device, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	updateReq := &topodevice.SetRequest{
-		Objects: []*topodevice.Object{updatedDevice},
+	updateReq := &topodevice.UpdateRequest{
+		Device: updatedDevice,
 	}
-	response, err := s.client.Set(ctx, updateReq)
-	if response == nil || err != nil {
+	response, err := s.client.Update(ctx, updateReq)
+	if err != nil {
 		return nil, err
 	}
-	return updatedDevice, nil
+	return response.Device, nil
 }
 
-func (s *topoStore) List(ch chan<- *topodevice.Object) error {
+func (s *topoStore) List(ch chan<- *topodevice.Device) error {
 	list, err := s.client.List(context.Background(), &topodevice.ListRequest{})
 	if err != nil {
 		return err
@@ -107,16 +106,16 @@ func (s *topoStore) List(ch chan<- *topodevice.Object) error {
 			if err != nil {
 				break
 			}
-			if isDevice(response.Object) {
-				ch <- response.Object
-			}
+			ch <- response.Device
 		}
 	}()
 	return nil
 }
 
-func (s *topoStore) Watch(ch chan<- *topodevice.SubscribeResponse) error {
-	list, err := s.client.Subscribe(context.Background(), &topodevice.SubscribeRequest{})
+func (s *topoStore) Watch(ch chan<- *topodevice.ListResponse) error {
+	list, err := s.client.List(context.Background(), &topodevice.ListRequest{
+		Subscribe: true,
+	})
 	if err != nil {
 		return err
 	}
@@ -129,15 +128,7 @@ func (s *topoStore) Watch(ch chan<- *topodevice.SubscribeResponse) error {
 			if err != nil {
 				break
 			}
-			if response.Update.Object.Type != topodevice.Object_ENTITY {
-				continue
-			}
-			if len(response.Update.Object.GetEntity().Protocols) == 0 {
-				continue
-			}
-			if isDevice(response.Update.Object) {
-				ch <- response
-			}
+			ch <- response
 		}
 	}()
 	return nil
@@ -146,8 +137,4 @@ func (s *topoStore) Watch(ch chan<- *topodevice.SubscribeResponse) error {
 // getTopoConn gets a gRPC connection to the topology service
 func getTopoConn(topoEndpoint string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	return grpc.Dial(topoEndpoint, opts...)
-}
-
-func isDevice(device *topodevice.Object) bool {
-	return device.Type == topodevice.Object_ENTITY
 }

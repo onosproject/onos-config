@@ -16,9 +16,6 @@ package gnmi
 
 import (
 	"context"
-	"strconv"
-	"testing"
-
 	"github.com/golang/mock/gomock"
 	td1 "github.com/onosproject/config-models/modelplugin/testdevice-1.0.0/testdevice_1_0_0"
 	td2 "github.com/onosproject/config-models/modelplugin/testdevice-2.0.0/testdevice_2_0_0"
@@ -27,13 +24,15 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-topo/api/topo"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/openconfig/goyang/pkg/yang"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
+	"strconv"
+	"testing"
 )
 
 const (
@@ -80,7 +79,7 @@ func setUpDeviceWithMultipleVersions(mocks *AllMocks, deviceName string) {
 			Type:     "TestDevice",
 		},
 	}).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(topo.ID(deviceName)).Return(nil, nil).AnyTimes()
+	mocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID(deviceName)).Return(nil, nil).AnyTimes()
 }
 
 // Test_doSingleSet shows how a value of 1 path can be set on a target

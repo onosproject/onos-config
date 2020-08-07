@@ -16,8 +16,6 @@ package network
 
 import (
 	"context"
-	"testing"
-
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/api/types/change"
@@ -28,8 +26,8 @@ import (
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	devicetopo "github.com/onosproject/onos-topo/api/device"
-	"github.com/onosproject/onos-topo/api/topo"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 const (
@@ -317,21 +315,16 @@ func newStores(t *testing.T) (networkchanges.Store, devicechanges.Store, devices
 	deviceChanges, err := devicechanges.NewLocalStore()
 	assert.NoError(t, err)
 	ctrl := gomock.NewController(t)
-	client := NewMockTopoClient(ctrl)
-	client.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *topo.GetRequest) (*topo.GetResponse, error) {
-		return &topo.GetResponse{
-			Object: &topo.Object{
-				ID:   request.ID,
-				Type: topo.Object_ENTITY,
-				Obj: &topo.Object_Entity{
-					Entity: &topo.Entity{
-						Protocols: []*devicetopo.ProtocolState{
-							{
-								Protocol:          devicetopo.Protocol_GNMI,
-								ChannelState:      devicetopo.ChannelState_CONNECTED,
-								ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
-							},
-						},
+	client := NewMockDeviceServiceClient(ctrl)
+	client.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *devicetopo.GetRequest) (*devicetopo.GetResponse, error) {
+		return &devicetopo.GetResponse{
+			Device: &devicetopo.Device{
+				ID: request.ID,
+				Protocols: []*devicetopo.ProtocolState{
+					{
+						Protocol:          devicetopo.Protocol_GNMI,
+						ChannelState:      devicetopo.ChannelState_CONNECTED,
+						ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
 					},
 				},
 			},

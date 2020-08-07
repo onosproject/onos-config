@@ -17,10 +17,6 @@ package manager
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"testing"
-	"time"
-
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -42,6 +38,9 @@ import (
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
+	"io/ioutil"
+	"testing"
+	"time"
 )
 
 const (

@@ -17,12 +17,6 @@ package diags
 import (
 	"context"
 	"fmt"
-	"io"
-	"net"
-	"strings"
-	"testing"
-	"time"
-
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/api/diags"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
@@ -35,10 +29,14 @@ import (
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"github.com/onosproject/onos-topo/api/topo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
+	"io"
+	"net"
+	"strings"
+	"testing"
+	"time"
 )
 
 // SetUpServer sets up a test manager and a gRPC end-point
@@ -164,18 +162,12 @@ func Test_ListDeviceChanges(t *testing.T) {
 
 	mockDeviceStore, ok := mgrTest.DeviceStore.(*mockstore.MockDeviceStore)
 	assert.Assert(t, ok, "casting mock device store")
-	mockDeviceStore.EXPECT().Get(topo.ID("device-1")).Return(
-		&topo.Object{
-			ID:   "device-1",
-			Type: topo.Object_ENTITY,
-			Obj: &topo.Object_Entity{
-				Entity: &topo.Entity{Protocols: []*topodevice.ProtocolState{}},
-			},
-			Attributes: map[string]string{
-				topo.Address: "localhost:10126",
-				topo.Type:    "Devicesim",
-				topo.Role:    "leaf",
-			},
+	mockDeviceStore.EXPECT().Get(topodevice.ID("device-1")).Return(
+		&topodevice.Device{
+			ID:      "device-1",
+			Address: "localhost:10126",
+			Type:    "Devicesim",
+			Role:    "leaf",
 		}, nil,
 	)
 
@@ -224,7 +216,7 @@ func Test_ListDeviceChangesNoVersionManyPresent(t *testing.T) {
 
 	mockDeviceStore, ok := mgrTest.DeviceStore.(*mockstore.MockDeviceStore)
 	assert.Assert(t, ok, "casting mock device store")
-	mockDeviceStore.EXPECT().Get(topo.ID("device-1")).Return(
+	mockDeviceStore.EXPECT().Get(topodevice.ID("device-1")).Return(
 		nil, nil,
 	)
 

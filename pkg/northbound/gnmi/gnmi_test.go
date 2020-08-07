@@ -15,11 +15,6 @@
 package gnmi
 
 import (
-	"os"
-	"sync"
-	"testing"
-	"time"
-
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -33,12 +28,15 @@ import (
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"github.com/onosproject/onos-topo/api/topo"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"os"
+	"sync"
+	"testing"
+	"time"
 )
 
 // AllMocks is a place to hold references to mock stores and caches. It can't be put into test/mocks/store
@@ -307,7 +305,7 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *mockcache.M
 		},
 	}).AnyTimes()
 
-	mockStores.DeviceStore.EXPECT().Get(topo.ID(device1)).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
+	mockStores.DeviceStore.EXPECT().Get(topodevice.ID(device1)).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 	mockStores.DeviceStore.EXPECT().List(gomock.Any()).DoAndReturn(
 		func(c chan<- *topodevice.Device) (stream.Context, error) {
 			go func() {
@@ -356,7 +354,7 @@ func tearDown(mgr *manager.Manager, wg *sync.WaitGroup) {
 
 }
 
-func listenToTopoLoading(deviceChan <-chan *topo.SubscribeResponse) {
+func listenToTopoLoading(deviceChan <-chan *topodevice.ListResponse) {
 	for deviceConfigEvent := range deviceChan {
 		log.Info("Ignoring event for testing ", deviceConfigEvent)
 	}
