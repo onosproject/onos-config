@@ -28,17 +28,26 @@ type TestSuite struct {
 	testSuite
 }
 
+const (
+	atomixChartRepo      = "https://charts.atomix.io"
+	onosChartRepo        = "https://charts.onosproject.org"
+	atomixName           = "cli-test-onos-config-atomix"
+	atomixControllerName = atomixName + "-" + "kubernetes-controller"
+	atomixControllerPort = "5679"
+	atomixController     = atomixControllerName + ":" + atomixControllerPort
+)
+
 // SetupTestSuite sets up the onos-config CLI test suite
 func (s *TestSuite) SetupTestSuite() error {
-	err := helm.Chart("kubernetes-controller", "https://charts.atomix.io").
-		Release("onos-config-atomix").
+	err := helm.Chart("kubernetes-controller", atomixChartRepo).
+		Release(atomixName).
 		Set("scope", "Namespace").
 		Install(true)
 	if err != nil {
 		return err
 	}
 
-	err = helm.Chart("raft-storage-controller", "https://charts.atomix.io").
+	err = helm.Chart("raft-storage-controller", atomixChartRepo).
 		Release("onos-config-raft").
 		Set("scope", "Namespace").
 		Install(true)
@@ -46,19 +55,19 @@ func (s *TestSuite) SetupTestSuite() error {
 		return err
 	}
 
-	err = helm.Chart("onos-topo", "https://charts.onosproject.org").
+	err = helm.Chart("onos-topo", onosChartRepo).
 		Release("onos-topo").
 		Set("image.tag", "latest").
-		Set("storage.controller", "onos-config-atomix-kubernetes-controller:5679").
+		Set("storage.controller", atomixController).
 		Install(true)
 	if err != nil {
 		return err
 	}
 
-	err = helm.Chart("onos-config", "https://charts.onosproject.org").
+	err = helm.Chart("onos-config", onosChartRepo).
 		Release("onos-config").
 		Set("image.tag", "latest").
-		Set("storage.controller", "onos-config-atomix-kubernetes-controller:5679").
+		Set("storage.controller", atomixController).
 		Install(true)
 	if err != nil {
 		return err

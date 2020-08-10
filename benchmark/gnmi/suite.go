@@ -36,18 +36,27 @@ type BenchmarkSuite struct {
 	value     input.Source
 }
 
+const (
+	atomixChartRepo      = "https://charts.atomix.io"
+	onosChartRepo        = "https://charts.onosproject.org"
+	atomixName           = "cli-test-onos-config-atomix"
+	atomixControllerName = atomixName + "-" + "kubernetes-controller"
+	atomixControllerPort = "5679"
+	atomixController     = atomixControllerName + ":" + atomixControllerPort
+)
+
 // SetupSuite :: benchmark
 func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 	// Setup the Atomix controller
-	err := helm.Chart("kubernetes-controller", "https://charts.atomix.io").
-		Release("onos-config-atomix").
+	err := helm.Chart("kubernetes-controller", atomixChartRepo).
+		Release(atomixName).
 		Set("scope", "Namespace").
 		Install(true)
 	if err != nil {
 		return err
 	}
 
-	err = helm.Chart("raft-storage-controller", "https://charts.atomix.io").
+	err = helm.Chart("raft-storage-controller", atomixChartRepo).
 		Release("onos-config-raft").
 		Set("scope", "Namespace").
 		Install(true)
@@ -55,14 +64,12 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 		return err
 	}
 
-	controller := "onos-config-atomix-kubernetes-controller:5679"
-
 	// Install the onos-topo chart
 	err = helm.
-		Chart("onos-topo").
+		Chart("onos-topo", onosChartRepo).
 		Release("onos-topo").
 		Set("replicaCount", 2).
-		Set("storage.controller", controller).
+		Set("storage.controller", atomixController).
 		Set("image.tag", "latest").
 		Install(false)
 	if err != nil {
@@ -71,10 +78,10 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 
 	// Install the onos-config chart
 	err = helm.
-		Chart("onos-config").
+		Chart("onos-config", onosChartRepo).
 		Release("onos-config").
 		Set("replicaCount", 2).
-		Set("storage.controller", controller).
+		Set("storage.controller", atomixController).
 		Set("image.tag", "latest").
 		Install(true)
 	if err != nil {
