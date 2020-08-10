@@ -15,11 +15,8 @@
 package gnmi
 
 import (
-	"fmt"
-	"github.com/onosproject/helmit/pkg/helm"
-	gnmi2 "github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/client"
@@ -81,13 +78,13 @@ func buildRequest(subReq subscribeRequest) (*gnmi.SubscribeRequest, error) {
 	return request, nil
 }
 
-func buildQuery(request *gnmi.SubscribeRequest, simulator *helm.HelmRelease) (*client.Query, chan *gnmi.SubscribeResponse, error) {
+func buildQuery(request *gnmi.SubscribeRequest) (*client.Query, error) {
 	q, errQuery := client.NewQuery(request)
 	if errQuery != nil {
-		return nil, nil, errQuery
+		return nil, errQuery
 	}
 
-	dest, _ := gnmi2.GetDeviceDestination(simulator)
+	dest, _ := gnmiutils.GetDestination()
 
 	q.Addrs = dest.Addrs
 	q.Timeout = dest.Timeout
@@ -95,31 +92,20 @@ func buildQuery(request *gnmi.SubscribeRequest, simulator *helm.HelmRelease) (*c
 	q.Credentials = dest.Credentials
 	q.TLS = dest.TLS
 
-	respChan := make(chan *gnmi.SubscribeResponse)
-
-	q.ProtoHandler = func(msg proto.Message) error {
-		resp, ok := msg.(*gnmi.SubscribeResponse)
-		if !ok {
-			return fmt.Errorf("failed to type assert message %#v", msg)
-		}
-		respChan <- resp
-		return nil
-	}
-
-	return &q, respChan, nil
+	return &q, nil
 }
 
-func buildQueryRequest(subReq subscribeRequest, simulator *helm.HelmRelease) (*client.Query, chan *gnmi.SubscribeResponse, error) {
+func buildQueryRequest(subReq subscribeRequest) (*client.Query, error) {
 	request, errReq := buildRequest(subReq)
 	if errReq != nil {
-		return nil, nil, errReq
+		return nil, errReq
 	}
 
-	q, respChan, errQuery := buildQuery(request, simulator)
+	q, errQuery := buildQuery(request)
 	if errQuery != nil {
-		return nil, nil, errReq
+		return nil, errReq
 	}
-	return q, respChan, nil
+	return q, nil
 }
 
 func assertPathSegments(t *testing.T, pathResponse *gnmi.Path, path string) {
