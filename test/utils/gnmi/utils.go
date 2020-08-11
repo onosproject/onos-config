@@ -19,6 +19,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/kubernetes"
@@ -41,11 +47,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
-	"io"
-	"strconv"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
