@@ -20,7 +20,7 @@ import (
 	"testing"
 )
 
-const testJSON1 = `{"cont1a":{"cont2a":{"leaf2a":12,"leaf2b":1.14159,"leaf2c":"myvalue1a2c","leaf2d":1.14159,"leaf2e":12,"leaf2f":"YXMgYnl0ZSBhcnJheQ==","leaf2g":true},"leaf1a":"myvalue1a1a","list2a":[{"name":"First","rx-power":6,"tx-power":5},{"name":"Second","rx-power":8,"tx-power":7}]},"leafAtTopLevel":"WXY-1234"}`
+const testJSON1 = `{"cont1a":{"cont2a":{"leaf2a":12,"leaf2b":1.14159,"leaf2c":"myvalue1a2c","leaf2d":1.14159,"leaf2e":12,"leaf2f":"YXMgYnl0ZSBhcnJheQ==","leaf2g":true},"leaf1a":"myvalue1a1a","list2a":[{"name":"First","tx-power":5},{"name":"First","rx-power":6},{"name":"Second","tx-power":7},{"name":"Second","rx-power":8}],"list3a":[{"firstName":"First","secondName":"Second","tx-power":9}]},"leafAtTopLevel":"WXY-1234"}`
 
 const (
 	Test1Cont1ALeaf1a   = "/cont1a/leaf1a"
@@ -28,6 +28,7 @@ const (
 	Test1Cont1AList2a1r = "/cont1a/list2a[name=First]/rx-power"
 	Test1Cont1AList2a2t = "/cont1a/list2a[name=Second]/tx-power"
 	Test1Cont1AList2a2r = "/cont1a/list2a[name=Second]/rx-power"
+	Test1Cont1AList3a1t = "/cont1a/list3a[firstName=First][secondName=Second]/tx-power"
 )
 
 const (
@@ -42,6 +43,7 @@ const (
 	ValueList2b2PwrR   = 8
 	ValueList2A2F      = "as byte array"
 	ValueList2A2G      = true
+	ValueList3b2PwrR   = 9
 )
 
 var (
@@ -49,7 +51,7 @@ var (
 )
 
 func setUpTree() {
-	configValues = make([]*devicechange.PathValue, 13)
+	configValues = make([]*devicechange.PathValue, 14)
 	configValues[0] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: devicechange.NewTypedValueUint64(ValueLeaf2A12)}
 
 	configValues[1] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2B, Value: devicechange.NewTypedValueFloat(ValueLeaf2B114)}
@@ -65,8 +67,9 @@ func setUpTree() {
 	configValues[10] = &devicechange.PathValue{Path: Test1Cont1AList2a2t, Value: devicechange.NewTypedValueUint64(ValueList2b2PwrT)}
 	configValues[11] = &devicechange.PathValue{Path: Test1Cont1AList2a2r, Value: devicechange.NewTypedValueUint64(ValueList2b2PwrR)}
 
-	configValues[12] = &devicechange.PathValue{Path: Test1Leaftoplevel, Value: devicechange.NewTypedValueString(ValueLeaftopWxy1234)}
+	configValues[12] = &devicechange.PathValue{Path: Test1Cont1AList3a1t, Value: devicechange.NewTypedValueUint64(ValueList3b2PwrR)}
 
+	configValues[13] = &devicechange.PathValue{Path: Test1Leaftoplevel, Value: devicechange.NewTypedValueString(ValueLeaftopWxy1234)}
 }
 
 func Test_BuildTree(t *testing.T) {
