@@ -15,6 +15,8 @@
 package gnmi
 
 import (
+	"sync"
+
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/test"
 )
@@ -26,6 +28,7 @@ type testSuite struct {
 // TestSuite is the onos-config CLI test suite
 type TestSuite struct {
 	testSuite
+	mux sync.Mutex
 }
 
 const (

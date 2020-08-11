@@ -30,6 +30,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	timeOut            = 5
+	expectedNumUpdates = 2
+	expectedNumSyncs   = 2
+)
+
 // TestSubscribeOnce tests subscription ONCE mode
 func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 	// Create a simulated device
@@ -80,6 +86,7 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 // TestSubscribe tests a stream subscription to updates to a device
 func (s *TestSuite) TestSubscribe(t *testing.T) {
 	// Create a simulated device
+
 	simulator := gnmi.CreateSimulator(t)
 
 	// Wait for config to connect to the device
@@ -98,15 +105,18 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	subReq := subscribeRequest{
 		path:          path,
 		subListMode:   gpb.SubscriptionList_STREAM,
-		subStreamMode: gpb.SubscriptionMode_TARGET_DEFINED,
+		subStreamMode: gpb.SubscriptionMode_ON_CHANGE,
 	}
 
 	q, errQuery := buildQueryRequest(subReq)
 	assert.NoError(t, errQuery, "Can't build Query")
 
-	q.ProtoHandler = func(msg protobuf.Message) error {
+	updateCount := 0
+	syncCount := 0
 
-		fmt.Println("proto handler is called")
+	done := make(chan bool, 1)
+
+	q.ProtoHandler = func(msg protobuf.Message) error {
 		resp, ok := msg.(*ocgnmi.SubscribeResponse)
 		if !ok {
 			return fmt.Errorf("failed to type assert message %#v", msg)
@@ -114,23 +124,42 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 		switch v := resp.Response.(type) {
 		case *gpb.SubscribeResponse_Update:
-			fmt.Println("Update")
-			//validateResponse(t, resp, simulator.Name(), false)
+			// validate update response
+			if len(resp.GetUpdate().Update) == 1 {
+				validateResponse(t, resp, simulator.Name(), false)
+			}
+
+			// validate delete response
+			if len(resp.GetUpdate().Delete) == 1 {
+				validateResponse(t, resp, simulator.Name(), true)
+			}
+			s.mux.Lock()
+			updateCount++
+			s.mux.Unlock()
+
 		case *gpb.SubscribeResponse_Error:
-			fmt.Println("Error")
 			return fmt.Errorf("error in response: %s", v)
 		case *gpb.SubscribeResponse_SyncResponse:
-			fmt.Println("Sync")
-			//validateResponse(t, resp, simulator.Name(), false)
+			// validate sync response
+			validateResponse(t, resp, simulator.Name(), false)
+			s.mux.Lock()
+			syncCount++
+			s.mux.Unlock()
 		default:
 			return fmt.Errorf("unknown response %T: %s", v, v)
+		}
+
+		if syncCount == expectedNumSyncs && updateCount == expectedNumUpdates {
+			done <- true
 		}
 		return nil
 	}
 
-	err = subC.Subscribe(gnmi.MakeContext(), *q, "gnmi")
-	assert.NoError(t, err)
-	defer subC.Close()
+	go func() {
+		_ = subC.Subscribe(gnmi.MakeContext(), *q, "gnmi")
+		defer subC.Close()
+
+	}()
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
@@ -138,9 +167,6 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	// Set a value using gNMI client
 	devicePath := gnmi.GetDevicePathWithValue(simulator.Name(), subTzPath, subTzValue, proto.StringVal)
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
-
-	//const deleted = true
-	//const notDeleted = false
 
 	// Check that the value was set correctly
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, subTzValue, 0, "Query after set returned the wrong value")
@@ -151,7 +177,13 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	//  Make sure it got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 
-	gnmi.DeleteSimulator(t, simulator)
+	select {
+	case <-done:
+		gnmi.DeleteSimulator(t, simulator)
+	case <-time.After(timeOut * time.Second):
+		assert.FailNow(t, "timed out; the request should be processed under %d:", timeOut)
+	}
+
 }
 
 func validateResponse(t *testing.T, resp *gpb.SubscribeResponse, device string, delete bool) {
