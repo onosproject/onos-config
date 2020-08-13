@@ -18,6 +18,8 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/onosproject/onos-config/pkg/store/device"
 	topodevice "github.com/onosproject/onos-topo/api/device"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // DeviceConnected signals the corresponding topology service that the device connected.
@@ -43,9 +45,18 @@ func (m *Manager) DeviceDisconnected(id topodevice.ID, err error) error {
 func updateDevice(deviceStore device.Store, id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
 	service topodevice.ServiceState) error {
 	topoDevice, err := deviceStore.Get(id)
+
+	st, ok := status.FromError(err)
+
+	// If the device doesn't exist then we should not update its state
+	if ok && err != nil && st.Code() == codes.NotFound {
+		return nil
+	}
+
 	if err != nil {
 		return err
 	}
+
 	protocolState, index := containsGnmi(topoDevice.Protocols)
 	if protocolState != nil {
 		topoDevice.Protocols = remove(topoDevice.Protocols, index)

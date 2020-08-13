@@ -85,7 +85,6 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 // TestSubscribe tests a stream subscription to updates to a device
 func (s *TestSuite) TestSubscribe(t *testing.T) {
 	// Create a simulated device
-	t.Skip()
 	simulator := gnmi.CreateSimulator(t)
 
 	// Wait for config to connect to the device

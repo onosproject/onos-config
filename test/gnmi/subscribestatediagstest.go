@@ -16,10 +16,11 @@ package gnmi
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/api/diags"
 	"io"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-config/api/diags"
 
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-topo/api/device"
@@ -47,7 +48,6 @@ func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
 
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, deviceID, 10*time.Second)
-	time.Sleep(250 * time.Millisecond)
 
 	// Make an opstate diags client
 	opstateClient, err := gnmi.NewOpStateDiagsClient()
