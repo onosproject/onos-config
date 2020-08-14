@@ -19,6 +19,7 @@ import (
 	"fmt"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -75,14 +76,33 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 			return nil
 		}
 		refinePath = fmt.Sprintf("/%s", refinePath)
-		brktIdx := strings.Index(pathelems[0], bracketsq)
-		eqIdx := strings.Index(pathelems[0], equals)
-		brktIdx2 := strings.Index(pathelems[0], brktclose)
 
+		brktIdx := strings.Index(pathelems[0], bracketsq)
 		listName := pathelems[0][:brktIdx]
-		keyName := pathelems[0][brktIdx+1 : eqIdx]
-		keyVal := pathelems[0][eqIdx+1 : brktIdx2]
-		keyValNum, keyValNumErr := strconv.Atoi(keyVal)
+
+		// Build up a map of keyName to keyVal
+		keyMap := make(map[string]interface{})
+		keyString := pathelems[0][brktIdx:]
+		for strings.Contains(keyString, equals) {
+			brktIdx := strings.Index(keyString, bracketsq)
+			eqIdx := strings.Index(keyString, equals)
+			brktIdx2 := strings.Index(keyString, brktclose)
+
+			keyName := keyString[brktIdx+1 : eqIdx]
+			keyVal := keyString[eqIdx+1 : brktIdx2]
+			keyValNum, keyValNumErr := strconv.Atoi(keyVal)
+
+			// TODO: Bug here, see AETHER-506. 'ueid' and 'subscriber-ueid' are
+			// strings composed of digits, and get converted to integers.
+			if keyValNumErr == nil {
+				keyMap[keyName] = keyValNum
+			} else {
+				keyMap[keyName] = keyVal
+			}
+
+			// position to look at next potential key string
+			keyString = keyString[brktIdx2+1:]
+		}
 
 		listSlice, ok := nodemap[listName]
 		if !ok {
@@ -101,19 +121,14 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 			if !ok {
 				return fmt.Errorf("Failed to convert list slice %d", idx)
 			}
-			if (lsMap)[keyName] == keyVal || (keyValNumErr == nil && (lsMap)[keyName] == keyValNum) {
+			if reflect.DeepEqual(lsMap, keyMap) {
 				listItemMap = lsMap
 				foundit = true
 				break
 			}
 		}
 		if !foundit {
-			listItemMap = make(map[string]interface{})
-			if keyValNumErr == nil {
-				listItemMap[keyName] = keyValNum
-			} else {
-				listItemMap[keyName] = keyVal
-			}
+			listItemMap = keyMap
 		}
 		listItemIf := interface{}(listItemMap)
 		err := addPathToTree(refinePath, value, &listItemIf, floatAsStr)
