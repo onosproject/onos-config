@@ -44,9 +44,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -421,20 +419,15 @@ func GetDevicePathsWithValues(devices []string, paths []string, values []string)
 
 // CheckDeviceValue makes sure a value has been assigned properly to a device path by querying GNMI
 func CheckDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []protoutils.DevicePath, expectedValue string) {
-	for i := 0; i < 30; i++ {
-		deviceValues, extensions, deviceValuesError := GetGNMIValue(MakeContext(), deviceGnmiClient, devicePaths)
-		if deviceValuesError == nil {
-			assert.NoError(t, deviceValuesError, "GNMI get operation to device returned an error")
-			assert.Equal(t, expectedValue, deviceValues[0].PathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
-			assert.Equal(t, 0, len(extensions))
-			return
-		} else if status.Code(deviceValuesError) == codes.Unavailable {
-			time.Sleep(1 * time.Second)
-		} else {
-			assert.Fail(t, "Failed to query device: %v", deviceValuesError)
-		}
+	deviceValues, extensions, deviceValuesError := GetGNMIValue(MakeContext(), deviceGnmiClient, devicePaths)
+	if deviceValuesError == nil {
+		assert.NoError(t, deviceValuesError, "GNMI get operation to device returned an error")
+		assert.Equal(t, expectedValue, deviceValues[0].PathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
+		assert.Equal(t, 0, len(extensions))
+		return
+	} else {
+		assert.Fail(t, "Failed to query device: %v", deviceValuesError)
 	}
-	assert.Fail(t, "Failed to query device")
 }
 
 // GetDeviceDestination :
@@ -464,19 +457,14 @@ func GetDeviceGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) client
 	services, err := simulatorClient.CoreV1().Services().List()
 	assert.NoError(t, err)
 	service := services[0]
-	conn, err := connectService(simulator)
-	assert.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	creds, err := getClientCredentials()
-	assert.NoError(t, err)
 	dest := client.Destination{
 		Addrs:   []string{service.Ports()[0].Address(true)},
 		Target:  service.Name,
-		TLS:     creds,
 		Timeout: 10 * time.Second,
 	}
-	client, err := gclient.NewFromConn(ctx, conn, dest)
+	client, err := gclient.New(ctx, dest)
 	assert.NoError(t, err)
 	assert.True(t, client != nil, "Fetching device client returned nil")
 	return client
