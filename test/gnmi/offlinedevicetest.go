@@ -16,14 +16,14 @@
 package gnmi
 
 import (
-	"github.com/onosproject/helmit/pkg/helm"
+	"testing"
+	"time"
+
 	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -34,11 +34,6 @@ const (
 
 // TestOfflineDevice tests set/query of a single GNMI path to a single device that is initially not in the config
 func (s *TestSuite) TestOfflineDevice(t *testing.T) {
-	t.Skip()
-
-	simulator := helm.
-		Chart("device-simulator").
-		Release(offlineDeviceName)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
@@ -60,10 +55,9 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	devicePath := gnmi.GetDevicePathWithValue(offlineDeviceName, modPath, modValue, proto.StringVal)
 	networkChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
 
-	// Check that the value was set correctly
-	err := simulator.Install(true)
-	assert.NoError(t, err)
-	time.Sleep(2 * time.Second)
+	simulator := gnmi.CreateSimulatorWithName(t, offlineDeviceName)
+	// Wait for config to connect to the device
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the device
