@@ -425,9 +425,8 @@ func CheckDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []
 		assert.Equal(t, expectedValue, deviceValues[0].PathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
 		assert.Equal(t, 0, len(extensions))
 		return
-	} else {
-		assert.Fail(t, "Failed to query device: %v", deviceValuesError)
 	}
+	assert.Fail(t, "Failed to query device: %v", deviceValuesError)
 }
 
 // GetDeviceDestination :
