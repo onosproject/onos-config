@@ -35,9 +35,6 @@ type Store interface {
 	// NodeID returns the local node identifier used in mastership elections
 	NodeID() cluster.NodeID
 
-	// IsMaster returns a boolean indicating whether the local node is the master for the given device
-	IsMaster(id topodevice.ID) (bool, error)
-
 	// GetMastership returns the mastership for a given device
 	GetMastership(id topodevice.ID) (*Mastership, error)
 
@@ -137,15 +134,6 @@ func (s *atomixStore) GetMastership(deviceID topodevice.ID) (*Mastership, error)
 	}
 
 	return election.getMastership(), nil
-}
-
-// Deprecated use GetMastership instead
-func (s *atomixStore) IsMaster(deviceID topodevice.ID) (bool, error) {
-	election, err := s.getElection(deviceID)
-	if err != nil {
-		return false, err
-	}
-	return election.isMaster()
 }
 
 func (s *atomixStore) Watch(deviceID topodevice.ID, ch chan<- Mastership) error {

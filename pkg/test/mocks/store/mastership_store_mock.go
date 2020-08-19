@@ -63,34 +63,19 @@ func (mr *MockMastershipStoreMockRecorder) NodeID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodeID", reflect.TypeOf((*MockMastershipStore)(nil).NodeID))
 }
 
-// IsMaster mocks base method
-func (m *MockMastershipStore) IsMaster(id device.ID) (bool, error) {
+// GetMastership mocks base method
+func (m *MockMastershipStore) GetMastership(id device.ID) (*mastership.Mastership, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsMaster", id)
-	ret0, _ := ret[0].(bool)
+	ret := m.ctrl.Call(m, "GetMastership", id)
+	ret0, _ := ret[0].(*mastership.Mastership)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// IsMaster indicates an expected call of IsMaster
-func (mr *MockMastershipStoreMockRecorder) IsMaster(id interface{}) *gomock.Call {
+// GetMastership indicates an expected call of GetMastership
+func (mr *MockMastershipStoreMockRecorder) GetMastership(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMaster", reflect.TypeOf((*MockMastershipStore)(nil).IsMaster), id)
-}
-
-// GetTerm mocks base method
-func (m *MockMastershipStore) GetTerm(id device.ID) (mastership.Term, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTerm", id)
-	ret0, _ := ret[0].(mastership.Term)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetTerm indicates an expected call of GetTerm
-func (mr *MockMastershipStoreMockRecorder) GetTerm(id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTerm", reflect.TypeOf((*MockMastershipStore)(nil).GetTerm), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMastership", reflect.TypeOf((*MockMastershipStore)(nil).GetMastership), id)
 }
 
 // Watch mocks base method

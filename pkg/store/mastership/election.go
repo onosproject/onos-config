@@ -83,9 +83,6 @@ type deviceMastershipElection interface {
 	// DeviceID returns the device for which this election provides mastership
 	DeviceID() topodevice.ID
 
-	// isMaster returns a bool indicating whether the local node is the master for the device
-	isMaster() (bool, error)
-
 	// getMastership returns the mastership info
 	getMastership() *Mastership
 
@@ -179,16 +176,6 @@ func (e *atomixDeviceMastershipElection) getMastership() *Mastership {
 		return nil
 	}
 	return e.mastership
-}
-
-// Deprecated use getMastership instead
-func (e *atomixDeviceMastershipElection) isMaster() (bool, error) {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	if e.mastership == nil || string(e.mastership.Master) != e.election.ID() {
-		return false, nil
-	}
-	return true, nil
 }
 
 func (e *atomixDeviceMastershipElection) watch(ch chan<- Mastership) error {
