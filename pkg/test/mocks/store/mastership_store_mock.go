@@ -18,7 +18,7 @@ type MockMastershipStore struct {
 	recorder *MockMastershipStoreMockRecorder
 }
 
-// MockMastershipStoreMockRecorder is the mock recorder for MockStore
+// MockMastershipStoreMockRecorder is the mock recorder for MockMastershipStore
 type MockMastershipStoreMockRecorder struct {
 	mock *MockMastershipStore
 }
@@ -76,6 +76,21 @@ func (m *MockMastershipStore) IsMaster(id device.ID) (bool, error) {
 func (mr *MockMastershipStoreMockRecorder) IsMaster(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMaster", reflect.TypeOf((*MockMastershipStore)(nil).IsMaster), id)
+}
+
+// GetTerm mocks base method
+func (m *MockMastershipStore) GetTerm(id device.ID) (mastership.Term, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTerm", id)
+	ret0, _ := ret[0].(mastership.Term)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTerm indicates an expected call of GetTerm
+func (mr *MockMastershipStoreMockRecorder) GetTerm(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTerm", reflect.TypeOf((*MockMastershipStore)(nil).GetTerm), id)
 }
 
 // Watch mocks base method

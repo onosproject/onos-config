@@ -15,13 +15,14 @@
 package mastership
 
 import (
+	"io"
+	"sync"
+
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"io"
-	"sync"
 )
 
 // Term is a monotonically increasing mastership term
@@ -36,6 +37,9 @@ type Store interface {
 
 	// IsMaster returns a boolean indicating whether the local node is the master for the given device
 	IsMaster(id topodevice.ID) (bool, error)
+
+	// GetMastership returns the mastership for a given device
+	GetMastership(id topodevice.ID) (*Mastership, error)
 
 	// Watch watches the store for mastership changes
 	Watch(topodevice.ID, chan<- Mastership) error
@@ -126,6 +130,16 @@ func (s *atomixStore) NodeID() cluster.NodeID {
 	return s.nodeID
 }
 
+func (s *atomixStore) GetMastership(deviceID topodevice.ID) (*Mastership, error) {
+	election, err := s.getElection(deviceID)
+	if err != nil {
+		return nil, err
+	}
+
+	return election.getMastership(), nil
+}
+
+// Deprecated use GetMastership instead
 func (s *atomixStore) IsMaster(deviceID topodevice.ID) (bool, error) {
 	election, err := s.getElection(deviceID)
 	if err != nil {

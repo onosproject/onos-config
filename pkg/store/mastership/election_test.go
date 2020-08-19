@@ -15,11 +15,12 @@
 package mastership
 
 import (
+	"testing"
+
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestMastershipElection(t *testing.T) {
@@ -42,17 +43,14 @@ func TestMastershipElection(t *testing.T) {
 	err = store3.watch(store3Ch)
 	assert.NoError(t, err)
 
-	master, err := store1.isMaster()
-	assert.NoError(t, err)
-	assert.True(t, master)
+	master := store1.getMastership()
+	assert.NotNil(t, master)
 
-	master, err = store2.isMaster()
-	assert.NoError(t, err)
-	assert.False(t, master)
+	master = store2.getMastership()
+	assert.Nil(t, master)
 
-	master, err = store3.isMaster()
-	assert.NoError(t, err)
-	assert.False(t, master)
+	master = store3.getMastership()
+	assert.Nil(t, master)
 
 	err = store1.Close()
 	assert.NoError(t, err)
@@ -60,16 +58,14 @@ func TestMastershipElection(t *testing.T) {
 	mastership := <-store2Ch
 	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
 
-	master, err = store2.isMaster()
-	assert.NoError(t, err)
-	assert.True(t, master)
+	master = store2.getMastership()
+	assert.NotNil(t, master)
 
 	mastership = <-store3Ch
 	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
 
-	master, err = store3.isMaster()
-	assert.NoError(t, err)
-	assert.False(t, master)
+	master = store3.getMastership()
+	assert.Nil(t, master)
 
 	err = store2.Close()
 	assert.NoError(t, err)
@@ -77,9 +73,9 @@ func TestMastershipElection(t *testing.T) {
 	mastership = <-store3Ch
 	assert.Equal(t, cluster.NodeID("c"), mastership.Master)
 
-	master, err = store3.isMaster()
+	master = store3.getMastership()
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
 
 	_ = store3.Close()
 }

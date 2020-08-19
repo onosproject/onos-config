@@ -15,10 +15,11 @@
 package controller
 
 import (
+	"regexp"
+
 	"github.com/onosproject/onos-config/api/types"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"regexp"
 )
 
 // Filter filters individual events for a node
@@ -43,11 +44,12 @@ func (f *MastershipFilter) Accept(id types.ID) bool {
 	if err != nil {
 		return false
 	}
-	master, err := f.Store.IsMaster(device)
-	if err != nil {
-		return false
+	master, err := f.Store.GetMastership(device)
+	if err == nil && master != nil {
+		return true
 	}
-	return master
+
+	return false
 }
 
 var _ Filter = &MastershipFilter{}
