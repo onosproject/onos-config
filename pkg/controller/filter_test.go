@@ -15,13 +15,14 @@
 package controller
 
 import (
+	"testing"
+	"time"
+
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 type testDeviceResolver struct {
@@ -54,21 +55,21 @@ func TestMastershipFilter(t *testing.T) {
 	device1 := topodevice.ID("device1")
 	device2 := topodevice.ID("device2")
 
-	master, err := store1.IsMaster(device1)
+	master, err := store1.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
 
-	master, err = store2.IsMaster(device1)
+	master, err = store2.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.Nil(t, master)
 
-	master, err = store2.IsMaster(device2)
+	master, err = store2.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
 
-	master, err = store1.IsMaster(device2)
+	master, err = store1.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.Nil(t, master)
 
 	assert.True(t, filter1.Accept(types.ID(device1)))
 	assert.False(t, filter2.Accept(types.ID(device1)))
