@@ -17,6 +17,8 @@ package controller
 import (
 	"regexp"
 
+	"github.com/onosproject/onos-config/pkg/store/cluster"
+
 	"github.com/onosproject/onos-config/api/types"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -45,11 +47,15 @@ func (f *MastershipFilter) Accept(id types.ID) bool {
 		return false
 	}
 	master, err := f.Store.GetMastership(device)
-	if err == nil && master != nil {
-		return true
+	if err != nil {
+		return false
+	}
+	// checks whether the local node is the master
+	if master == nil || string(master.Master) != string(cluster.GetNodeID()) {
+		return false
 	}
 
-	return false
+	return true
 }
 
 var _ Filter = &MastershipFilter{}
