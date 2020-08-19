@@ -45,11 +45,13 @@ func TestMastershipFilter(t *testing.T) {
 	filter1 := &MastershipFilter{
 		Store:    store1,
 		Resolver: testDeviceResolver{},
+		NodeID:   node1,
 	}
 
 	filter2 := &MastershipFilter{
 		Store:    store2,
 		Resolver: testDeviceResolver{},
+		NodeID:   node2,
 	}
 
 	device1 := topodevice.ID("device1")
@@ -58,18 +60,22 @@ func TestMastershipFilter(t *testing.T) {
 	master, err := store1.GetMastership(device1)
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node1)
 
 	master, err = store2.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node2)
 
 	master, err = store2.GetMastership(device2)
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node2)
 
 	master, err = store1.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node1)
 
 	assert.True(t, filter1.Accept(types.ID(device1)))
 	assert.False(t, filter2.Accept(types.ID(device1)))

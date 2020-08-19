@@ -26,6 +26,10 @@ import (
 func TestMastershipElection(t *testing.T) {
 	_, address := atomix.StartLocalNode()
 
+	nodeA := cluster.NodeID("a")
+	nodeB := cluster.NodeID("b")
+	nodeC := cluster.NodeID("c")
+
 	store1, err := newLocalElection(topodevice.ID("test"), "a", address)
 	assert.NoError(t, err)
 
@@ -46,11 +50,15 @@ func TestMastershipElection(t *testing.T) {
 	master := store1.getMastership()
 	assert.NotNil(t, master)
 
+	assert.Equal(t, master.Master, nodeA)
+
 	master = store2.getMastership()
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, nodeB)
 
 	master = store3.getMastership()
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, nodeC)
 
 	err = store1.Close()
 	assert.NoError(t, err)
@@ -60,12 +68,14 @@ func TestMastershipElection(t *testing.T) {
 
 	master = store2.getMastership()
 	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, nodeB)
 
 	mastership = <-store3Ch
 	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
 
 	master = store3.getMastership()
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, nodeC)
 
 	err = store2.Close()
 	assert.NoError(t, err)
@@ -76,6 +86,7 @@ func TestMastershipElection(t *testing.T) {
 	master = store3.getMastership()
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, nodeC)
 
 	_ = store3.Close()
 }

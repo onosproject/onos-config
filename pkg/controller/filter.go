@@ -38,6 +38,7 @@ type Filter interface {
 type MastershipFilter struct {
 	Store    mastershipstore.Store
 	Resolver DeviceResolver
+	NodeID   cluster.NodeID
 }
 
 // Accept accepts the given ID if the local node is the master
@@ -50,8 +51,9 @@ func (f *MastershipFilter) Accept(id types.ID) bool {
 	if err != nil {
 		return false
 	}
+
 	// checks whether the local node is the master
-	if master == nil || string(master.Master) != string(cluster.GetNodeID()) {
+	if master == nil || string(master.Master) != string(f.NodeID) {
 		return false
 	}
 

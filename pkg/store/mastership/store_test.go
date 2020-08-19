@@ -48,17 +48,20 @@ func TestMastershipStore(t *testing.T) {
 	master, err := store1.GetMastership(device1)
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node1)
 	// Verify the master term for the given device is correct
 	// Since the election is performed once for device1 then the term will be 1
 	assert.Equal(t, master.Term, Term(1))
 
 	master, err = store2.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node2)
 
 	master, err = store3.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node3)
 
 	// Verify that listening for events for a device enters a node into the device mastership election
 	store2Ch2 := make(chan Mastership)
@@ -69,6 +72,7 @@ func TestMastershipStore(t *testing.T) {
 	master, err = store2.GetMastership(device2)
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node2)
 
 	// Verify the master term for the given device is correct
 	// Since the election is performed once for device2 then the term will be 1
@@ -76,11 +80,13 @@ func TestMastershipStore(t *testing.T) {
 
 	master, err = store1.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node1)
 
 	master, err = store3.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node3)
 
 	// Watch device2 mastership on an additional node and verify that it does not cause a mastership change
 	store3Ch2 := make(chan Mastership)
@@ -89,7 +95,8 @@ func TestMastershipStore(t *testing.T) {
 
 	master, err = store3.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node3)
 
 	// Listen for device1 events on remaining nodes
 	store2Ch1 := make(chan Mastership)
@@ -111,6 +118,7 @@ func TestMastershipStore(t *testing.T) {
 	master, err = store2.GetMastership(device1)
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node2)
 
 	// Verify the master term for the given device is correct
 	// Since the master of device1 is changed then its term has been increased by 1
@@ -123,7 +131,8 @@ func TestMastershipStore(t *testing.T) {
 
 	master, err = store3.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.Nil(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node3)
 
 	// Close node2 and verify mastership for both devices changes
 	err = store2.Close()
@@ -137,6 +146,7 @@ func TestMastershipStore(t *testing.T) {
 	master, err = store3.GetMastership(device1)
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node3)
 
 	// Verify the master term for the given device is correct
 	// Since master of device1 has been changed its term has been increased by 1
@@ -150,6 +160,7 @@ func TestMastershipStore(t *testing.T) {
 	master, err = store3.GetMastership(device2)
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node3)
 	// Since master of device2 has been changed its term has been increased by 1
 	assert.Equal(t, master.Term, Term(2))
 

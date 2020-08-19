@@ -17,6 +17,8 @@ package device
 import (
 	"strings"
 
+	"github.com/onosproject/onos-config/pkg/store/cluster"
+
 	"github.com/onosproject/onos-config/api/types"
 	changetype "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -40,6 +42,7 @@ func NewController(mastership mastershipstore.Store, changes changestore.Store, 
 		Resolver: &Resolver{
 			snapshots: snapshots,
 		},
+		NodeID: cluster.GetNodeID(),
 	})
 	c.Partition(&Partitioner{})
 	c.Watch(&Watcher{

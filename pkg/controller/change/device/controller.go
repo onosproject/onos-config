@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
+	"github.com/onosproject/onos-config/pkg/store/cluster"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
@@ -43,6 +44,7 @@ func NewController(mastership mastershipstore.Store, devices devicestore.Store,
 	c.Filter(&controller.MastershipFilter{
 		Store:    mastership,
 		Resolver: &Resolver{},
+		NodeID:   cluster.GetNodeID(),
 	})
 	c.Partition(&Partitioner{})
 	c.Watch(&Watcher{

@@ -169,16 +169,6 @@ func (e *atomixDeviceMastershipElection) watchElection(ch <-chan *election.Event
 	}
 }
 
-func (e *atomixDeviceMastershipElection) isLocalMaster() (bool, error) {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	if e.mastership == nil || string(e.mastership.Master) != e.election.ID() {
-		return false, nil
-	}
-
-	return true, nil
-}
-
 func (e *atomixDeviceMastershipElection) getMastership() *Mastership {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
