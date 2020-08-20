@@ -18,7 +18,7 @@ test: build deps linters license_check
 	CGO_ENABLED=1 go test -race github.com/onosproject/onos-config/api/...
 
 coverage: # @HELP generate unit test coverage data
-coverage: build deps
+coverage: build deps linters license_check
 	./build/bin/coveralls-coverage
 
 deps: # @HELP ensure that the required dependencies are in place
