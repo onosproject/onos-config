@@ -42,7 +42,7 @@ func (s *TestSuite) SetupTestSuite() error {
 		return err
 	}
 
-	err = helm.Chart("raft-storage-controller", onostest.AtomixChartRepo).
+	err = helm.Chart(onostest.RaftStorageControllerChartName, onostest.AtomixChartRepo).
 		Release(onostest.RaftReleaseName(onosComponentName)).
 		Set("scope", "Namespace").
 		Install(true)

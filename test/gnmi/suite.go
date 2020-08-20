@@ -15,6 +15,7 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-test/pkg/onostest"
 	"sync"
 
 	"github.com/onosproject/helmit/pkg/helm"
@@ -31,46 +32,40 @@ type TestSuite struct {
 	mux sync.Mutex
 }
 
-const (
-	atomixChartRepo      = "https://charts.atomix.io"
-	onosChartRepo        = "https://charts.onosproject.org"
-	atomixName           = "cli-test-onos-config-atomix"
-	atomixControllerName = atomixName + "-" + "kubernetes-controller"
-	atomixControllerPort = "5679"
-	atomixController     = atomixControllerName + ":" + atomixControllerPort
-)
+const onosComponentName = "onos-config"
+const testName = "gnmi-test"
 
 // SetupTestSuite sets up the onos-config CLI test suite
 func (s *TestSuite) SetupTestSuite() error {
-	err := helm.Chart("kubernetes-controller", atomixChartRepo).
-		Release(atomixName).
+	err := helm.Chart(onostest.ControllerChartName, onostest.AtomixChartRepo).
+		Release(onostest.AtomixName(testName, onosComponentName)).
 		Set("scope", "Namespace").
 		Install(true)
 	if err != nil {
 		return err
 	}
 
-	err = helm.Chart("raft-storage-controller", atomixChartRepo).
-		Release("onos-config-raft").
+	err = helm.Chart(onostest.RaftStorageControllerChartName, onostest.AtomixChartRepo).
+		Release(onostest.RaftReleaseName(onosComponentName)).
 		Set("scope", "Namespace").
 		Install(true)
 	if err != nil {
 		return err
 	}
 
-	err = helm.Chart("onos-topo", onosChartRepo).
+	err = helm.Chart("onos-topo", onostest.OnosChartRepo).
 		Release("onos-topo").
 		Set("image.tag", "latest").
-		Set("storage.controller", atomixController).
+		Set("storage.controller", onostest.AtomixController(testName, onosComponentName)).
 		Install(true)
 	if err != nil {
 		return err
 	}
 
-	err = helm.Chart("onos-config", onosChartRepo).
+	err = helm.Chart("onos-config", onostest.OnosChartRepo).
 		Release("onos-config").
 		Set("image.tag", "latest").
-		Set("storage.controller", atomixController).
+		Set("storage.controller", onostest.AtomixController(testName, onosComponentName)).
 		Install(true)
 	if err != nil {
 		return err
