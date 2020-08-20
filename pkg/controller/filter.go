@@ -38,7 +38,24 @@ type Filter interface {
 type MastershipFilter struct {
 	Store    mastershipstore.Store
 	Resolver DeviceResolver
-	NodeID   cluster.NodeID
+	nodeID   cluster.NodeID
+}
+
+// NewMastershipFilter creates an instance of mastershipFilter
+func NewMastershipFilter(store mastershipstore.Store, resolver DeviceResolver, nodeID cluster.NodeID) *MastershipFilter {
+	if string(nodeID) == "" {
+		nodeID = cluster.GetNodeID()
+	}
+	return &MastershipFilter{
+		Store:    store,
+		Resolver: resolver,
+		nodeID:   nodeID,
+	}
+}
+
+// GetNodeID returns node id
+func (f *MastershipFilter) GetNodeID() cluster.NodeID {
+	return f.nodeID
 }
 
 // Accept accepts the given ID if the local node is the master
@@ -53,7 +70,7 @@ func (f *MastershipFilter) Accept(id types.ID) bool {
 	}
 
 	// checks whether the local node is the master
-	if master == nil || string(master.Master) != string(f.NodeID) {
+	if master == nil || string(master.Master) != string(f.GetNodeID()) {
 		return false
 	}
 

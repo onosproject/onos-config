@@ -17,8 +17,6 @@ package device
 import (
 	"strings"
 
-	"github.com/onosproject/onos-config/pkg/store/cluster"
-
 	"github.com/onosproject/onos-config/api/types"
 	changetype "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -37,13 +35,8 @@ var log = logging.GetLogger("controller", "snapshot", "device")
 // NewController returns a new device snapshot controller
 func NewController(mastership mastershipstore.Store, changes changestore.Store, snapshots snapstore.Store) *controller.Controller {
 	c := controller.NewController("DeviceSnapshot")
-	c.Filter(&controller.MastershipFilter{
-		Store: mastership,
-		Resolver: &Resolver{
-			snapshots: snapshots,
-		},
-		NodeID: cluster.GetNodeID(),
-	})
+	masterShipFilter := controller.NewMastershipFilter(mastership, &Resolver{snapshots: snapshots}, "")
+	c.Filter(masterShipFilter)
 	c.Partition(&Partitioner{})
 	c.Watch(&Watcher{
 		Store: snapshots,
