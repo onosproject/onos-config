@@ -16,6 +16,10 @@ package synchronizer
 
 import (
 	"errors"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -28,9 +32,6 @@ import (
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
-	"sync"
-	"testing"
-	"time"
 )
 
 func factorySetUp(t *testing.T) (chan *topodevice.ListResponse, chan<- events.OperationalStateEvent,
@@ -70,9 +71,23 @@ func TestFactory_Revert(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+
+	factory, err := NewFactory(
+		TopoChannel(topoChan),
+		OpStateChannel(opstateChan),
+		SouthboundErrChan(responseChan),
+		Dispatcher(dispatcher),
+		ModelRegistry(models),
+		OperationalStateCache(opstateCache),
+		NewTargetFn(southbound.NewTarget),
+		OperationalStateCacheLock(opStateCacheLock),
+		DeviceChangeStore(deviceChangeStore),
+	)
+
+	assert.NilError(t, err)
+
 	go func() {
-		Factory(topoChan, opstateChan, responseChan, dispatcher, models, opstateCache, southbound.NewTarget,
-			opStateCacheLock, deviceChangeStore)
+		factory.TopoEventHandler()
 		wg.Done()
 	}()
 
