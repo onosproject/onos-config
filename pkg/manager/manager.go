@@ -149,15 +149,15 @@ func (m *Manager) Run() {
 	go listenOnResponseChannel(m.SouthboundErrorChan, m)
 
 	factory, err := synchronizer.NewFactory(
-		synchronizer.TopoChannel(m.TopoChannel),
-		synchronizer.OpStateChannel(m.OperationalStateChannel),
-		synchronizer.SouthboundErrChan(m.SouthboundErrorChan),
-		synchronizer.Dispatcher(m.Dispatcher),
-		synchronizer.ModelRegistry(m.ModelRegistry),
-		synchronizer.OperationalStateCache(m.OperationalStateCache),
-		synchronizer.NewTargetFn(southbound.TargetGenerator),
-		synchronizer.OperationalStateCacheLock(m.OperationalStateCacheLock),
-		synchronizer.DeviceChangeStore(m.DeviceChangesStore),
+		synchronizer.WithTopoChannel(m.TopoChannel),
+		synchronizer.WithOpStateChannel(m.OperationalStateChannel),
+		synchronizer.WithSouthboundErrChan(m.SouthboundErrorChan),
+		synchronizer.WithDispatcher(m.Dispatcher),
+		synchronizer.WithModelRegistry(m.ModelRegistry),
+		synchronizer.WithOperationalStateCache(m.OperationalStateCache),
+		synchronizer.WithNewTargetFn(southbound.TargetGenerator),
+		synchronizer.WithOperationalStateCacheLock(m.OperationalStateCacheLock),
+		synchronizer.WithDeviceChangeStore(m.DeviceChangesStore),
 	)
 
 	if err != nil {

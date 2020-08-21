@@ -73,15 +73,15 @@ func TestFactory_Revert(t *testing.T) {
 	wg.Add(1)
 
 	factory, err := NewFactory(
-		TopoChannel(topoChan),
-		OpStateChannel(opstateChan),
-		SouthboundErrChan(responseChan),
-		Dispatcher(dispatcher),
-		ModelRegistry(models),
-		OperationalStateCache(opstateCache),
-		NewTargetFn(southbound.NewTarget),
-		OperationalStateCacheLock(opStateCacheLock),
-		DeviceChangeStore(deviceChangeStore),
+		WithTopoChannel(topoChan),
+		WithOpStateChannel(opstateChan),
+		WithSouthboundErrChan(responseChan),
+		WithDispatcher(dispatcher),
+		WithModelRegistry(models),
+		WithOperationalStateCache(opstateCache),
+		WithNewTargetFn(southbound.NewTarget),
+		WithOperationalStateCacheLock(opStateCacheLock),
+		WithDeviceChangeStore(deviceChangeStore),
 	)
 
 	assert.NilError(t, err)

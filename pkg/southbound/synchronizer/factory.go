@@ -65,64 +65,64 @@ func NewFactory(options ...func(*Factory)) (*Factory, error) {
 
 }
 
-// TopoChannel sets factory topo channel
-func TopoChannel(topoChannel <-chan *topodevice.ListResponse) func(*Factory) {
+// WithTopoChannel sets factory topo channel
+func WithTopoChannel(topoChannel <-chan *topodevice.ListResponse) func(*Factory) {
 	return func(factory *Factory) {
 		factory.topoChannel = topoChannel
 	}
 }
 
-// OpStateChannel sets factory opStateChannel
-func OpStateChannel(opStateChan chan<- events.OperationalStateEvent) func(*Factory) {
+// WithOpStateChannel sets factory opStateChannel
+func WithOpStateChannel(opStateChan chan<- events.OperationalStateEvent) func(*Factory) {
 	return func(factory *Factory) {
 		factory.opStateChan = opStateChan
 	}
 }
 
-// SouthboundErrChan sets factory southbound error channel
-func SouthboundErrChan(southboundErrorChan chan<- events.DeviceResponse) func(*Factory) {
+// WithSouthboundErrChan sets factory southbound error channel
+func WithSouthboundErrChan(southboundErrorChan chan<- events.DeviceResponse) func(*Factory) {
 	return func(factory *Factory) {
 		factory.southboundErrorChan = southboundErrorChan
 	}
 }
 
-// Dispatcher sets factory dispatcher
-func Dispatcher(dispatcher *dispatcher.Dispatcher) func(*Factory) {
+// WithDispatcher sets factory dispatcher
+func WithDispatcher(dispatcher *dispatcher.Dispatcher) func(*Factory) {
 	return func(factory *Factory) {
 		factory.dispatcher = dispatcher
 	}
 }
 
-// ModelRegistry set factory model registry
-func ModelRegistry(modelRegistry *modelregistry.ModelRegistry) func(*Factory) {
+// WithModelRegistry set factory model registry
+func WithModelRegistry(modelRegistry *modelregistry.ModelRegistry) func(*Factory) {
 	return func(factory *Factory) {
 		factory.modelRegistry = modelRegistry
 	}
 }
 
-// OperationalStateCache sets factory operational state cache
-func OperationalStateCache(operationalStateCache map[topodevice.ID]devicechange.TypedValueMap) func(*Factory) {
-	return func(info *Factory) {
-		info.operationalStateCache = operationalStateCache
+// WithOperationalStateCache sets factory operational state cache
+func WithOperationalStateCache(operationalStateCache map[topodevice.ID]devicechange.TypedValueMap) func(*Factory) {
+	return func(factory *Factory) {
+		factory.operationalStateCache = operationalStateCache
 	}
 }
 
-// NewTargetFn sets factory southbound target function
-func NewTargetFn(newTargetFn func() southbound.TargetIf) func(*Factory) {
+// WithNewTargetFn sets factory southbound target function
+func WithNewTargetFn(newTargetFn func() southbound.TargetIf) func(*Factory) {
 	return func(factory *Factory) {
 		factory.newTargetFn = newTargetFn
 	}
 }
 
-// OperationalStateCacheLock sets factory operational state cache lock
-func OperationalStateCacheLock(operationalStateCacheLock *syncPrimitives.RWMutex) func(*Factory) {
+// WithOperationalStateCacheLock sets factory operational state cache lock
+func WithOperationalStateCacheLock(operationalStateCacheLock *syncPrimitives.RWMutex) func(*Factory) {
 	return func(factory *Factory) {
 		factory.operationalStateCacheLock = operationalStateCacheLock
 	}
 }
 
-// DeviceChangeStore sets factory device change store
-func DeviceChangeStore(deviceChangeStore device.Store) func(*Factory) {
+// WithDeviceChangeStore sets factory device change store
+func WithDeviceChangeStore(deviceChangeStore device.Store) func(*Factory) {
 	return func(factory *Factory) {
 		factory.deviceChangeStore = deviceChangeStore
 	}
