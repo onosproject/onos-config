@@ -15,15 +15,20 @@
 package mastership
 
 import (
+	"testing"
+
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestMastershipElection(t *testing.T) {
 	_, address := atomix.StartLocalNode()
+
+	nodeA := cluster.NodeID("a")
+	nodeB := cluster.NodeID("b")
+	nodeC := cluster.NodeID("c")
 
 	store1, err := newLocalElection(topodevice.ID("test"), "a", address)
 	assert.NoError(t, err)
@@ -42,17 +47,18 @@ func TestMastershipElection(t *testing.T) {
 	err = store3.watch(store3Ch)
 	assert.NoError(t, err)
 
-	master, err := store1.isMaster()
-	assert.NoError(t, err)
-	assert.True(t, master)
+	master := store1.getMastership()
+	assert.NotNil(t, master)
 
-	master, err = store2.isMaster()
-	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.Equal(t, master.Master, nodeA)
 
-	master, err = store3.isMaster()
-	assert.NoError(t, err)
-	assert.False(t, master)
+	master = store2.getMastership()
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, nodeB)
+
+	master = store3.getMastership()
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, nodeC)
 
 	err = store1.Close()
 	assert.NoError(t, err)
@@ -60,16 +66,16 @@ func TestMastershipElection(t *testing.T) {
 	mastership := <-store2Ch
 	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
 
-	master, err = store2.isMaster()
-	assert.NoError(t, err)
-	assert.True(t, master)
+	master = store2.getMastership()
+	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, nodeB)
 
 	mastership = <-store3Ch
 	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
 
-	master, err = store3.isMaster()
-	assert.NoError(t, err)
-	assert.False(t, master)
+	master = store3.getMastership()
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, nodeC)
 
 	err = store2.Close()
 	assert.NoError(t, err)
@@ -77,9 +83,10 @@ func TestMastershipElection(t *testing.T) {
 	mastership = <-store3Ch
 	assert.Equal(t, cluster.NodeID("c"), mastership.Master)
 
-	master, err = store3.isMaster()
+	master = store3.getMastership()
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, nodeC)
 
 	_ = store3.Close()
 }

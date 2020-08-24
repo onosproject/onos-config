@@ -15,10 +15,13 @@
 package controller
 
 import (
+	"regexp"
+
+	"github.com/onosproject/onos-config/pkg/store/cluster"
+
 	"github.com/onosproject/onos-config/api/types"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"regexp"
 )
 
 // Filter filters individual events for a node
@@ -35,6 +38,16 @@ type Filter interface {
 type MastershipFilter struct {
 	Store    mastershipstore.Store
 	Resolver DeviceResolver
+	nodeID   cluster.NodeID
+}
+
+// GetNodeID returns node id
+func (f *MastershipFilter) getNodeID() cluster.NodeID {
+	if f.nodeID != "" {
+		return f.nodeID
+	}
+	return cluster.GetNodeID()
+
 }
 
 // Accept accepts the given ID if the local node is the master
@@ -43,11 +56,17 @@ func (f *MastershipFilter) Accept(id types.ID) bool {
 	if err != nil {
 		return false
 	}
-	master, err := f.Store.IsMaster(device)
+	master, err := f.Store.GetMastership(device)
 	if err != nil {
 		return false
 	}
-	return master
+
+	// checks whether the local node is the master
+	if master == nil || string(master.Master) != string(f.getNodeID()) {
+		return false
+	}
+
+	return true
 }
 
 var _ Filter = &MastershipFilter{}

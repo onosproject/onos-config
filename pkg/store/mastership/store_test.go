@@ -15,11 +15,12 @@
 package mastership
 
 import (
+	"testing"
+
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestMastershipStore(t *testing.T) {
@@ -44,17 +45,23 @@ func TestMastershipStore(t *testing.T) {
 
 	// Verify that the first node that checks mastership for a device wins the election
 	// and no other node believes itself to be the master
-	master, err := store1.IsMaster(device1)
+	master, err := store1.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node1)
+	// Verify the master term for the given device is correct
+	// Since the election is performed once for device1 then the term will be 1
+	assert.Equal(t, master.Term, Term(1))
 
-	master, err = store2.IsMaster(device1)
+	master, err = store2.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node2)
 
-	master, err = store3.IsMaster(device1)
+	master, err = store3.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node3)
 
 	// Verify that listening for events for a device enters a node into the device mastership election
 	store2Ch2 := make(chan Mastership)
@@ -62,26 +69,34 @@ func TestMastershipStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify that the watching node is the master
-	master, err = store2.IsMaster(device2)
+	master, err = store2.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node2)
 
-	master, err = store1.IsMaster(device2)
-	assert.NoError(t, err)
-	assert.False(t, master)
+	// Verify the master term for the given device is correct
+	// Since the election is performed once for device2 then the term will be 1
+	assert.Equal(t, master.Term, Term(1))
 
-	master, err = store3.IsMaster(device2)
+	master, err = store1.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node1)
+
+	master, err = store3.GetMastership(device2)
+	assert.NoError(t, err)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node3)
 
 	// Watch device2 mastership on an additional node and verify that it does not cause a mastership change
 	store3Ch2 := make(chan Mastership)
 	err = store3.Watch(device2, store3Ch2)
 	assert.NoError(t, err)
 
-	master, err = store3.IsMaster(device1)
+	master, err = store3.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node3)
 
 	// Listen for device1 events on remaining nodes
 	store2Ch1 := make(chan Mastership)
@@ -100,18 +115,24 @@ func TestMastershipStore(t *testing.T) {
 	assert.Equal(t, device1, mastership.Device)
 	assert.Equal(t, node2, mastership.Master)
 
-	master, err = store2.IsMaster(device1)
+	master, err = store2.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node2)
+
+	// Verify the master term for the given device is correct
+	// Since the master of device1 is changed then its term has been increased by 1
+	assert.Equal(t, master.Term, Term(2))
 
 	// node3 should not be the master for device1
 	mastership = <-store3Ch1
 	assert.Equal(t, device1, mastership.Device)
 	assert.Equal(t, node2, mastership.Master)
 
-	master, err = store3.IsMaster(device1)
+	master, err = store3.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node3)
 
 	// Close node2 and verify mastership for both devices changes
 	err = store2.Close()
@@ -122,18 +143,26 @@ func TestMastershipStore(t *testing.T) {
 	assert.Equal(t, device1, mastership.Device)
 	assert.Equal(t, node3, mastership.Master)
 
-	master, err = store3.IsMaster(device1)
+	master, err = store3.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node3)
+
+	// Verify the master term for the given device is correct
+	// Since master of device1 has been changed its term has been increased by 1
+	assert.Equal(t, master.Term, Term(3))
 
 	// node3 should also be the master for device2
 	mastership = <-store3Ch2
 	assert.Equal(t, device2, mastership.Device)
 	assert.Equal(t, node3, mastership.Master)
 
-	master, err = store3.IsMaster(device2)
+	master, err = store3.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node3)
+	// Since master of device2 has been changed its term has been increased by 1
+	assert.Equal(t, master.Term, Term(2))
 
 	_ = store3.Close()
 }

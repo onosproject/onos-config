@@ -427,6 +427,7 @@ func CheckDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []
 	} else {
 		assert.Fail(t, "Failed to query device: %v", deviceValuesError)
 	}
+
 }
 
 // GetDeviceDestination :

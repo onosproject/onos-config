@@ -16,7 +16,7 @@ package cluster
 
 import "os"
 
-const nodeIDEnv = "NODE_ID"
+const nodeIDEnv = "POD_NAME"
 
 // NodeID is a node identifier provided by the environment
 type NodeID string

@@ -15,13 +15,14 @@
 package controller
 
 import (
+	"testing"
+	"time"
+
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 type testDeviceResolver struct {
@@ -41,34 +42,31 @@ func TestMastershipFilter(t *testing.T) {
 	store2, err := mastership.NewLocalStore("TestMastershipFilter", node2)
 	assert.NoError(t, err)
 
-	filter1 := &MastershipFilter{
-		Store:    store1,
-		Resolver: testDeviceResolver{},
-	}
-
-	filter2 := &MastershipFilter{
-		Store:    store2,
-		Resolver: testDeviceResolver{},
-	}
+	filter1 := MastershipFilter{store1, testDeviceResolver{}, node1}
+	filter2 := MastershipFilter{store2, testDeviceResolver{}, node2}
 
 	device1 := topodevice.ID("device1")
 	device2 := topodevice.ID("device2")
 
-	master, err := store1.IsMaster(device1)
+	master, err := store1.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node1)
 
-	master, err = store2.IsMaster(device1)
+	master, err = store2.GetMastership(device1)
 	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node2)
 
-	master, err = store2.IsMaster(device2)
+	master, err = store2.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.True(t, master)
+	assert.NotNil(t, master)
+	assert.Equal(t, master.Master, node2)
 
-	master, err = store1.IsMaster(device2)
+	master, err = store1.GetMastership(device2)
 	assert.NoError(t, err)
-	assert.False(t, master)
+	assert.NotNil(t, master)
+	assert.NotEqual(t, master.Master, node1)
 
 	assert.True(t, filter1.Accept(types.ID(device1)))
 	assert.False(t, filter2.Accept(types.ID(device1)))

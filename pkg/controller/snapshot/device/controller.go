@@ -36,10 +36,8 @@ var log = logging.GetLogger("controller", "snapshot", "device")
 func NewController(mastership mastershipstore.Store, changes changestore.Store, snapshots snapstore.Store) *controller.Controller {
 	c := controller.NewController("DeviceSnapshot")
 	c.Filter(&controller.MastershipFilter{
-		Store: mastership,
-		Resolver: &Resolver{
-			snapshots: snapshots,
-		},
+		Store:    mastership,
+		Resolver: &Resolver{snapshots: snapshots},
 	})
 	c.Partition(&Partitioner{})
 	c.Watch(&Watcher{

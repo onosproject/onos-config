@@ -18,15 +18,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"sync"
+	"time"
+
 	"github.com/atomix/go-client/pkg/client"
 	"github.com/atomix/go-client/pkg/client/election"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/store/cluster"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"io"
-	"sync"
-	"time"
 )
 
 // newAtomixElection returns a new persistent device mastership election
@@ -82,8 +83,8 @@ type deviceMastershipElection interface {
 	// DeviceID returns the device for which this election provides mastership
 	DeviceID() topodevice.ID
 
-	// isMaster returns a bool indicating whether the local node is the master for the device
-	isMaster() (bool, error)
+	// getMastership returns the mastership info
+	getMastership() *Mastership
 
 	// watch watches the election for changes
 	watch(ch chan<- Mastership) error
@@ -168,13 +169,10 @@ func (e *atomixDeviceMastershipElection) watchElection(ch <-chan *election.Event
 	}
 }
 
-func (e *atomixDeviceMastershipElection) isMaster() (bool, error) {
+func (e *atomixDeviceMastershipElection) getMastership() *Mastership {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	if e.mastership == nil || string(e.mastership.Master) != e.election.ID() {
-		return false, nil
-	}
-	return true, nil
+	return e.mastership
 }
 
 func (e *atomixDeviceMastershipElection) watch(ch chan<- Mastership) error {
