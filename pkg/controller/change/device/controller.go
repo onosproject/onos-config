@@ -40,8 +40,10 @@ func NewController(mastership mastershipstore.Store, devices devicestore.Store,
 	cache cache.Cache, changes changestore.Store) *controller.Controller {
 
 	c := controller.NewController("DeviceChange")
-	filter := controller.NewMastershipFilter(mastership, &Resolver{}, "")
-	c.Filter(filter)
+	c.Filter(&controller.MastershipFilter{
+		Store:    mastership,
+		Resolver: &Resolver{},
+	})
 	c.Partition(&Partitioner{})
 	c.Watch(&Watcher{
 		DeviceCache: cache,

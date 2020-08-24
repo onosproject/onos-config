@@ -42,8 +42,8 @@ func TestMastershipFilter(t *testing.T) {
 	store2, err := mastership.NewLocalStore("TestMastershipFilter", node2)
 	assert.NoError(t, err)
 
-	filter1 := NewMastershipFilter(store1, testDeviceResolver{}, node1)
-	filter2 := NewMastershipFilter(store2, testDeviceResolver{}, node2)
+	filter1 := MastershipFilter{store1, testDeviceResolver{}, node1}
+	filter2 := MastershipFilter{store2, testDeviceResolver{}, node2}
 
 	device1 := topodevice.ID("device1")
 	device2 := topodevice.ID("device2")
