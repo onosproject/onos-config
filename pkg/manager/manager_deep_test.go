@@ -17,6 +17,10 @@ package manager
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"testing"
+	"time"
+
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -25,7 +29,6 @@ import (
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/device/state"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
-	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
@@ -35,12 +38,10 @@ import (
 	southboundmocks "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
-	"io/ioutil"
-	"testing"
-	"time"
 )
 
 const (

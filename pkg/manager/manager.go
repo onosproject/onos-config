@@ -20,12 +20,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
-
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
-	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangectl "github.com/onosproject/onos-config/pkg/controller/change/device"
 	networkchangectl "github.com/onosproject/onos-config/pkg/controller/change/network"
@@ -47,7 +43,6 @@ import (
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -81,72 +76,12 @@ type Manager struct {
 	allowUnvalidatedConfig    bool
 }
 
-// ClusterFactory creates the cluster
-var ClusterFactory = func(configuration config.Config) (cluster.Cluster, error) {
-	client, err := atomix.GetClient(configuration.Atomix)
-	if err != nil {
-		return nil, err
-	}
-	return cluster.New(client)
-}
-
 // NewManager initializes the network config manager subsystem.
-func NewManager(topoEndPoint *string, opts []grpc.DialOption, allowUnvalidatedConfig bool) (*Manager, error) {
+func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Store, deviceChangesStore device.Store,
+	deviceStateStore state.Store, deviceStore devicestore.Store, deviceCache cache.Cache,
+	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
+	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool) (*Manager, error) {
 	log.Info("Creating Manager")
-
-	config, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	leadershipStore, err := leadership.NewAtomixStore(config)
-	if err != nil {
-		log.Error("Cannot load leadership atomix store ", err)
-	}
-
-	mastershipStore, err := mastership.NewAtomixStore(config)
-	if err != nil {
-		log.Error("Cannot load mastership atomix store ", err)
-	}
-
-	deviceChangesStore, err := device.NewAtomixStore(config)
-	if err != nil {
-		log.Error("Cannot load device atomix store ", err)
-	}
-
-	networkChangesStore, err := network.NewAtomixStore(config)
-	if err != nil {
-		log.Error("Cannot load network atomix store ", err)
-	}
-
-	networkSnapshotStore, err := networksnap.NewAtomixStore(config)
-	if err != nil {
-		log.Error("Cannot load network snapshot atomix store ", err)
-	}
-
-	deviceSnapshotStore, err := devicesnap.NewAtomixStore(config)
-	if err != nil {
-		log.Error("Cannot load network atomix store ", err)
-	}
-
-	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
-	if err != nil {
-		log.Errorf("Cannot load device store with address %s:", *topoEndPoint, err)
-	}
-	log.Infof("Topology service connected with endpoint %s", *topoEndPoint)
-
-	log.Info("Network Configuration store connected")
-
-	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
-	if err != nil {
-		log.Error("Cannot load device cache", err)
-	}
-
-	deviceStore, err := devicestore.NewTopoStore(*topoEndPoint, opts...)
-	if err != nil {
-		log.Errorf("Cannot load device store with address %s:", *topoEndPoint, err)
-	}
-	log.Infof("Topology service connected with endpoint %s", *topoEndPoint)
 
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),

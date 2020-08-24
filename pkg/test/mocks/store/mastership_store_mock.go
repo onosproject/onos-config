@@ -6,8 +6,8 @@ package store
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	cluster "github.com/onosproject/onos-config/pkg/store/cluster"
 	mastership "github.com/onosproject/onos-config/pkg/store/mastership"
+	cluster "github.com/onosproject/onos-lib-go/pkg/cluster"
 	device "github.com/onosproject/onos-topo/api/device"
 	reflect "reflect"
 )

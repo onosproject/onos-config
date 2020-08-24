@@ -15,10 +15,11 @@
 package leadership
 
 import (
-	"github.com/onosproject/onos-config/pkg/store/cluster"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLeadershipStore(t *testing.T) {

@@ -15,11 +15,12 @@
 package controller
 
 import (
-	"github.com/onosproject/onos-config/pkg/store/cluster"
-	"github.com/onosproject/onos-config/pkg/store/leadership"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-config/pkg/store/leadership"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLeadershipActivator(t *testing.T) {

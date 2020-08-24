@@ -37,12 +37,27 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
+
+	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-config/pkg/store/change/device/state"
+	"github.com/onosproject/onos-config/pkg/store/change/network"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
+	"github.com/onosproject/onos-config/pkg/store/leadership"
+	"github.com/onosproject/onos-config/pkg/store/mastership"
+	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
@@ -60,6 +75,15 @@ func (i *arrayFlags) Set(value string) error {
 }
 
 var log = logging.GetLogger("main")
+
+// ClusterFactory creates the cluster
+var ClusterFactory = func(configuration config.Config) (cluster.Cluster, error) {
+	client, err := atomix.GetClient(configuration.Atomix)
+	if err != nil {
+		return nil, err
+	}
+	return cluster.New(client)
+}
 
 // The main entry point
 func main() {
@@ -81,7 +105,69 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mgr, err := manager.NewManager(topoEndpoint, opts, *allowUnvalidatedConfig)
+	configuration, err := config.GetConfig()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	cluster, err := ClusterFactory(configuration)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	leadershipStore, err := leadership.NewAtomixStore(cluster, configuration)
+	if err != nil {
+		log.Error("Cannot load leadership atomix store ", err)
+	}
+
+	mastershipStore, err := mastership.NewAtomixStore(cluster, configuration)
+	if err != nil {
+		log.Error("Cannot load mastership atomix store ", err)
+	}
+
+	deviceChangesStore, err := device.NewAtomixStore(configuration)
+	if err != nil {
+		log.Error("Cannot load device atomix store ", err)
+	}
+
+	networkChangesStore, err := network.NewAtomixStore(cluster, configuration)
+	if err != nil {
+		log.Error("Cannot load network atomix store ", err)
+	}
+
+	networkSnapshotStore, err := networksnap.NewAtomixStore(cluster, configuration)
+	if err != nil {
+		log.Error("Cannot load network snapshot atomix store ", err)
+	}
+
+	deviceSnapshotStore, err := devicesnap.NewAtomixStore(configuration)
+	if err != nil {
+		log.Error("Cannot load network atomix store ", err)
+	}
+
+	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
+	if err != nil {
+		log.Errorf("Cannot load device store with address %s:", *topoEndpoint, err)
+	}
+	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
+
+	log.Info("Network Configuration store connected")
+
+	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
+	if err != nil {
+		log.Error("Cannot load device cache", err)
+	}
+
+	deviceStore, err := devicestore.NewTopoStore(*topoEndpoint, opts...)
+	if err != nil {
+		log.Errorf("Cannot load device store with address %s:", *topoEndpoint, err)
+	}
+	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
+
+	mgr, err := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
+		deviceStateStore, deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
+		deviceSnapshotStore, *allowUnvalidatedConfig)
 	log.Info("Manager started")
 
 	if err != nil {

@@ -6,8 +6,8 @@ package store
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	cluster "github.com/onosproject/onos-config/pkg/store/cluster"
 	leadership "github.com/onosproject/onos-config/pkg/store/leadership"
+	cluster "github.com/onosproject/onos-lib-go/pkg/cluster"
 	reflect "reflect"
 )
 
@@ -17,7 +17,7 @@ type MockLeadershipStore struct {
 	recorder *MockLeadershipStoreMockRecorder
 }
 
-// MockStoreMockRecorder is the mock recorder for MockStore
+// MockLeadershipStoreMockRecorder is the mock recorder for MockLeadershipStore
 type MockLeadershipStoreMockRecorder struct {
 	mock *MockLeadershipStore
 }

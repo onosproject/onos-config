@@ -17,15 +17,16 @@ package leadership
 import (
 	"context"
 	"errors"
+	"io"
+	"sync"
+	"time"
+
 	"github.com/atomix/go-client/pkg/client/election"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/config"
-	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
-	"io"
-	"sync"
-	"time"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 )
 
 const primitiveName = "leaderships"
@@ -57,13 +58,13 @@ type Leadership struct {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore(config config.Config) (Store, error) {
+func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error) {
 	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConfig))
 	if err != nil {
 		return nil, err
 	}
 
-	election, err := database.GetElection(context.Background(), primitiveName, election.WithID(string(cluster.GetNodeID())))
+	election, err := database.GetElection(context.Background(), primitiveName, election.WithID(string(cluster.Node().ID)))
 	if err != nil {
 		return nil, err
 	}
