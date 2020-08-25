@@ -18,14 +18,18 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/onos-config/pkg/config/load"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/openconfig/gnmi/client"
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io/ioutil"
+	"path/filepath"
 	"time"
 )
 
@@ -143,7 +147,81 @@ func getProtoCommand() *cobra.Command {
 }
 
 func runLoadProtoCommand(cmd *cobra.Command, args []string) error {
-	return fmt.Errorf("not yet implemented")
+	gnmiName, _ := cmd.Flags().GetString("name")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	dest := &client.Destination{
+		Addrs: []string{getAddress(cmd)},
+	}
+	if !noTLS(cmd) {
+		dest.TLS = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		cert := getCertPath(cmd)
+		key := getKeyPath(cmd)
+		dest.TLS.RootCAs, _ = certs.GetCertPoolDefault()
+		var clientCerts tls.Certificate
+		var err error
+		if cert == "" && key == "" {
+			clientCerts, _ = tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+		} else {
+			clientCerts, err = tls.LoadX509KeyPair(cert, key)
+			if err != nil {
+				return err
+			}
+		}
+		dest.TLS.Certificates = []tls.Certificate{clientCerts}
+	}
+
+	gnmiClient, err := southbound.GnmiClientFactory(ctx, *dest)
+	if err != nil {
+		fmt.Printf("Error loading gnmiClient at %v\n", dest.Addrs)
+		return err
+	}
+
+	for idx, arg := range args {
+		gnmiSetRequest := &gpb.SetRequest{}
+		abspath, err := filepath.Abs(arg)
+		if err != nil {
+			return fmt.Errorf("cannot get absolute path of %s: %v", arg, err)
+		}
+		protobuf, err := ioutil.ReadFile(abspath)
+		if err != nil {
+			return fmt.Errorf("unable to read protobuf file %s: %v", arg, err)
+		}
+		if err := proto.UnmarshalText(string(protobuf), gnmiSetRequest); err != nil {
+			return fmt.Errorf("unable to parse gnmi.GetRequest from %q : %v", arg, err)
+		}
+
+		if gnmiName != "" {
+			gnmiNameExt := gnmiName
+			if len(args) > 1 {
+				gnmiNameExt = fmt.Sprintf("%s-%d", gnmiName, idx)
+			}
+			ext100Name := gnmi_ext.Extension_RegisteredExt{
+				RegisteredExt: &gnmi_ext.RegisteredExtension{
+					Id:  gnmi.GnmiExtensionNetwkChangeID,
+					Msg: []byte(gnmiNameExt),
+				},
+			}
+			gnmiSetRequest.Extension = append(gnmiSetRequest.Extension, &gnmi_ext.Extension{
+				Ext: &ext100Name,
+			})
+		}
+
+		resp, err := gnmiClient.Set(ctx, gnmiSetRequest)
+		if err != nil {
+			fmt.Printf("Error running set on %s \n%v\n", arg, gnmiSetRequest)
+			return err
+		}
+		if len(resp.Response) == 0 {
+			return fmt.Errorf("empty response to gNMI Set %v", resp)
+		}
+		fmt.Printf("Load succeeded %v\n", resp.GetExtension())
+	}
+
+	return nil
 }
 
 func getAddress(cmd *cobra.Command) string {

@@ -38,6 +38,7 @@ require (
 	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
 	google.golang.org/genproto v0.0.0-20200212174721-66ed5ce911ce // indirect
 	google.golang.org/grpc v1.27.1
+	gopkg.in/yaml.v2 v2.2.8
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.17.3
 )
