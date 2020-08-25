@@ -1,0 +1,47 @@
+setrequest:
+  prefix:
+    target: internal
+    elem:
+      - name: rbac
+      - name: role
+        key:
+          roleid: aether-ops
+  delete: []
+  replace: []
+  update:
+    - path:
+        elem:
+          - name: description
+      val:
+        stringvalue:
+          stringval: Aether Operations
+    - path:
+        elem:
+          - name: permission
+          - name: operation
+      val:
+        stringvalue:
+          stringval: READ
+    - path:
+        elem:
+          - name: permission
+          - name: type
+      val:
+        stringvalue:
+          stringval: CONFIG
+    - path:
+        elem:
+          - name: permission
+          - name: noun
+      val:
+        leaflistvalue:
+          leaflistval:
+            element:
+              - stringvalue:
+                  stringval: abc
+
+  extension:
+    - id: 101
+      value: 1.0.0
+    - id: 102
+      value: Rbac

@@ -73,6 +73,9 @@ func Checker(config *ConfigGnmiSimple) error {
 
 func checkOnlyOneVal(u *Update) error {
 	count := 0
+	if u.Val == nil {
+		return fmt.Errorf("no value found for %s", u.Path)
+	}
 	if u.Val.StringValue != nil {
 		count++
 	}
