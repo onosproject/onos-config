@@ -17,6 +17,10 @@ package synchronizer
 import (
 	"context"
 	"fmt"
+	"math"
+	syncPrimitives "sync"
+	"time"
+
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
@@ -26,9 +30,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-topo/api/device"
-	"math"
-	syncPrimitives "sync"
-	"time"
 )
 
 var connectionMonitors = make(map[topodevice.ID]*connectionMonitor)
@@ -37,19 +38,102 @@ var connections = make(map[topodevice.ID]bool)
 const backoffInterval = 10 * time.Millisecond
 const maxBackoffTime = 5 * time.Second
 
-// Factory is a go routine thread that listens out for Device creation
-// and deletion events and spawns Synchronizer threads for them
-// These connectionMonitors then listen out for configEvents relative to a device and
-func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- events.OperationalStateEvent,
-	southboundErrorChan chan<- events.DeviceResponse, dispatcher *dispatcher.Dispatcher,
-	modelRegistry *modelregistry.ModelRegistry, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap,
-	newTargetFn func() southbound.TargetIf,
-	operationalStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store) {
+// Factory device factory data structures
+type Factory struct {
+	topoChannel               <-chan *topodevice.ListResponse
+	opStateChan               chan<- events.OperationalStateEvent
+	southboundErrorChan       chan<- events.DeviceResponse
+	dispatcher                *dispatcher.Dispatcher
+	modelRegistry             *modelregistry.ModelRegistry
+	operationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
+	newTargetFn               func() southbound.TargetIf
+	operationalStateCacheLock *syncPrimitives.RWMutex
+	deviceChangeStore         device.Store
+}
 
+// NewFactory create a new factory
+func NewFactory(options ...func(*Factory)) (*Factory, error) {
+	factory := &Factory{}
+
+	for _, option := range options {
+		option(factory)
+	}
+
+	// TODO do some checks to make sure the data structures initialized properly
+
+	return factory, nil
+
+}
+
+// WithTopoChannel sets factory topo channel
+func WithTopoChannel(topoChannel <-chan *topodevice.ListResponse) func(*Factory) {
+	return func(factory *Factory) {
+		factory.topoChannel = topoChannel
+	}
+}
+
+// WithOpStateChannel sets factory opStateChannel
+func WithOpStateChannel(opStateChan chan<- events.OperationalStateEvent) func(*Factory) {
+	return func(factory *Factory) {
+		factory.opStateChan = opStateChan
+	}
+}
+
+// WithSouthboundErrChan sets factory southbound error channel
+func WithSouthboundErrChan(southboundErrorChan chan<- events.DeviceResponse) func(*Factory) {
+	return func(factory *Factory) {
+		factory.southboundErrorChan = southboundErrorChan
+	}
+}
+
+// WithDispatcher sets factory dispatcher
+func WithDispatcher(dispatcher *dispatcher.Dispatcher) func(*Factory) {
+	return func(factory *Factory) {
+		factory.dispatcher = dispatcher
+	}
+}
+
+// WithModelRegistry set factory model registry
+func WithModelRegistry(modelRegistry *modelregistry.ModelRegistry) func(*Factory) {
+	return func(factory *Factory) {
+		factory.modelRegistry = modelRegistry
+	}
+}
+
+// WithOperationalStateCache sets factory operational state cache
+func WithOperationalStateCache(operationalStateCache map[topodevice.ID]devicechange.TypedValueMap) func(*Factory) {
+	return func(factory *Factory) {
+		factory.operationalStateCache = operationalStateCache
+	}
+}
+
+// WithNewTargetFn sets factory southbound target function
+func WithNewTargetFn(newTargetFn func() southbound.TargetIf) func(*Factory) {
+	return func(factory *Factory) {
+		factory.newTargetFn = newTargetFn
+	}
+}
+
+// WithOperationalStateCacheLock sets factory operational state cache lock
+func WithOperationalStateCacheLock(operationalStateCacheLock *syncPrimitives.RWMutex) func(*Factory) {
+	return func(factory *Factory) {
+		factory.operationalStateCacheLock = operationalStateCacheLock
+	}
+}
+
+// WithDeviceChangeStore sets factory device change store
+func WithDeviceChangeStore(deviceChangeStore device.Store) func(*Factory) {
+	return func(factory *Factory) {
+		factory.deviceChangeStore = deviceChangeStore
+	}
+}
+
+// TopoEventHandler handle topo device events
+func (f *Factory) TopoEventHandler() {
 	errChan := make(chan events.DeviceResponse)
 	for {
 		select {
-		case topoEvent, ok := <-topoChannel:
+		case topoEvent, ok := <-f.topoChannel:
 			if !ok {
 				return
 			}
@@ -59,15 +143,15 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			if !ok && topoEvent.Type != topodevice.ListResponse_REMOVED {
 				log.Infof("Topo device %s %s", device.ID, topoEvent.Type)
 				connMon = &connectionMonitor{
-					opStateChan:               opStateChan,
+					opStateChan:               f.opStateChan,
 					southboundErrorChan:       errChan,
-					dispatcher:                dispatcher,
-					modelRegistry:             modelRegistry,
-					operationalStateCache:     operationalStateCache,
-					operationalStateCacheLock: operationalStateCacheLock,
-					deviceChangeStore:         deviceChangeStore,
+					dispatcher:                f.dispatcher,
+					modelRegistry:             f.modelRegistry,
+					operationalStateCache:     f.operationalStateCache,
+					operationalStateCacheLock: f.operationalStateCacheLock,
+					deviceChangeStore:         f.deviceChangeStore,
 					device:                    device,
-					target:                    newTargetFn(),
+					target:                    f.newTargetFn(),
 				}
 				connectionMonitors[device.ID] = connMon
 				go connMon.connect()
@@ -104,7 +188,7 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 				}
 				if !changed {
 					log.Infof("Topo device %s UPDATE not supported %v", device.ID, device)
-					southboundErrorChan <- events.NewErrorEventNoChangeID(
+					f.southboundErrorChan <- events.NewErrorEventNoChangeID(
 						events.EventTypeTopoUpdate, string(device.ID),
 						fmt.Errorf("topo update event ignored %v", topoEvent))
 				}
@@ -139,9 +223,10 @@ func Factory(topoChannel <-chan *topodevice.ListResponse, opStateChan chan<- eve
 			case events.EventTypeDeviceConnected:
 				connections[deviceID] = true
 			}
-			southboundErrorChan <- event
+			f.southboundErrorChan <- event
 		}
 	}
+
 }
 
 // connectionMonitor reacts to device events to establish connections to the device

@@ -147,12 +147,27 @@ func (m *Manager) Run() {
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
 	// Listening for errors in the Southbound
 	go listenOnResponseChannel(m.SouthboundErrorChan, m)
-	//TODO we need to find a way to avoid passing down parameter but at the same time not hve circular dependecy sb-mgr
-	go synchronizer.Factory(m.TopoChannel, m.OperationalStateChannel, m.SouthboundErrorChan,
-		m.Dispatcher, m.ModelRegistry, m.OperationalStateCache, southbound.TargetGenerator, m.OperationalStateCacheLock, m.DeviceChangesStore)
-	log.Debug("Device factory started")
 
-	err := m.DeviceStore.Watch(m.TopoChannel)
+	factory, err := synchronizer.NewFactory(
+		synchronizer.WithTopoChannel(m.TopoChannel),
+		synchronizer.WithOpStateChannel(m.OperationalStateChannel),
+		synchronizer.WithSouthboundErrChan(m.SouthboundErrorChan),
+		synchronizer.WithDispatcher(m.Dispatcher),
+		synchronizer.WithModelRegistry(m.ModelRegistry),
+		synchronizer.WithOperationalStateCache(m.OperationalStateCache),
+		synchronizer.WithNewTargetFn(southbound.TargetGenerator),
+		synchronizer.WithOperationalStateCacheLock(m.OperationalStateCacheLock),
+		synchronizer.WithDeviceChangeStore(m.DeviceChangesStore),
+	)
+
+	if err != nil {
+		log.Error("Error in creating device factory", err)
+	}
+
+	go factory.TopoEventHandler()
+	log.Debug("Device Event Handler started")
+
+	err = m.DeviceStore.Watch(m.TopoChannel)
 	if err != nil {
 		log.Error("Error Watching devices", err)
 	}
