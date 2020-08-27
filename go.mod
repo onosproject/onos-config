@@ -3,7 +3,9 @@ module github.com/onosproject/onos-config
 go 1.14
 
 require (
-	github.com/atomix/go-client v0.2.1
+
+	cloud.google.com/go v0.43.0 // indirect
+	github.com/atomix/go-client v0.2.2
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.3.1
@@ -18,7 +20,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200303111912-723f2289d4c2
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200304144136-6992f473b240
 	github.com/onosproject/helmit v0.6.7
-	github.com/onosproject/onos-lib-go v0.6.15
+	github.com/onosproject/onos-lib-go v0.6.17
 	github.com/onosproject/onos-test v0.6.2
 	github.com/onosproject/onos-topo v0.6.14
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c
