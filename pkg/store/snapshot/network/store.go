@@ -34,10 +34,6 @@ import (
 
 const snapshotsName = "network-snapshots"
 
-/*func init() {
-	uuid.SetNodeID([]byte(cluster.GetNodeID()))
-}*/
-
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error) {
 	uuid.SetNodeID([]byte(cluster.Node().ID))
