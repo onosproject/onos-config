@@ -82,6 +82,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
 	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool) (*Manager, error) {
 	log.Info("Creating Manager")
+
 	modelReg := &modelregistry.ModelRegistry{
 		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
 		ModelReadOnlyPaths:  make(map[string]modelregistry.ReadOnlyPathMap),

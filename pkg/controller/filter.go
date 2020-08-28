@@ -17,7 +17,7 @@ package controller
 import (
 	"regexp"
 
-	"github.com/onosproject/onos-config/pkg/store/cluster"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 
 	"github.com/onosproject/onos-config/api/types"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
@@ -42,11 +42,11 @@ type MastershipFilter struct {
 }
 
 // GetNodeID returns node id
-func (f *MastershipFilter) getNodeID() cluster.NodeID {
+func (f *MastershipFilter) getNodeID(mastershipstore mastershipstore.Store) cluster.NodeID {
 	if f.nodeID != "" {
 		return f.nodeID
 	}
-	return cluster.GetNodeID()
+	return mastershipstore.NodeID()
 
 }
 
@@ -62,7 +62,7 @@ func (f *MastershipFilter) Accept(id types.ID) bool {
 	}
 
 	// checks whether the local node is the master
-	if master == nil || string(master.Master) != string(f.getNodeID()) {
+	if master == nil || string(master.Master) != string(f.getNodeID(f.Store)) {
 		return false
 	}
 

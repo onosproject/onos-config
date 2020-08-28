@@ -26,14 +26,14 @@ import (
 	"github.com/atomix/go-client/pkg/client/election"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/onosproject/onos-config/pkg/store/cluster"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
 // newAtomixElection returns a new persistent device mastership election
-func newAtomixElection(deviceID topodevice.ID, database *client.Database) (deviceMastershipElection, error) {
+func newAtomixElection(cluster cluster.Cluster, deviceID topodevice.ID, database *client.Database) (deviceMastershipElection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%s", deviceID), election.WithID(string(cluster.GetNodeID())))
+	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%s", deviceID), election.WithID(string(cluster.Node().ID)))
 	cancel()
 	if err != nil {
 		return nil, err

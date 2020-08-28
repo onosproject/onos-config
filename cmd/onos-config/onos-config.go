@@ -41,6 +41,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
+
 	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
@@ -73,6 +76,15 @@ func (i *arrayFlags) Set(value string) error {
 
 var log = logging.GetLogger("main")
 
+// ClusterFactory creates the cluster
+var ClusterFactory = func(configuration config.Config) (cluster.Cluster, error) {
+	client, err := atomix.GetClient(configuration.Atomix)
+	if err != nil {
+		return nil, err
+	}
+	return cluster.New(client)
+}
+
 // The main entry point
 func main() {
 	var modelPlugins arrayFlags
@@ -86,12 +98,6 @@ func main() {
 	flag.Bool("debug", false, "enable debug logging")
 	flag.Parse()
 
-	config, err := config.GetConfig()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
 	log.Info("Starting onos-config")
 
 	opts, err := certs.HandleCertPaths(*caPath, *keyPath, *certPath, true)
@@ -99,32 +105,43 @@ func main() {
 		log.Fatal(err)
 	}
 
-	leadershipStore, err := leadership.NewAtomixStore(config)
+	configuration, err := config.GetConfig()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	cluster, err := ClusterFactory(configuration)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	leadershipStore, err := leadership.NewAtomixStore(cluster, configuration)
 	if err != nil {
 		log.Error("Cannot load leadership atomix store ", err)
 	}
 
-	mastershipStore, err := mastership.NewAtomixStore(config)
+	mastershipStore, err := mastership.NewAtomixStore(cluster, configuration)
 	if err != nil {
 		log.Error("Cannot load mastership atomix store ", err)
 	}
 
-	deviceChangesStore, err := device.NewAtomixStore(config)
+	deviceChangesStore, err := device.NewAtomixStore(configuration)
 	if err != nil {
 		log.Error("Cannot load device atomix store ", err)
 	}
 
-	networkChangesStore, err := network.NewAtomixStore(config)
+	networkChangesStore, err := network.NewAtomixStore(cluster, configuration)
 	if err != nil {
 		log.Error("Cannot load network atomix store ", err)
 	}
 
-	networkSnapshotStore, err := networksnap.NewAtomixStore(config)
+	networkSnapshotStore, err := networksnap.NewAtomixStore(cluster, configuration)
 	if err != nil {
 		log.Error("Cannot load network snapshot atomix store ", err)
 	}
 
-	deviceSnapshotStore, err := devicesnap.NewAtomixStore(config)
+	deviceSnapshotStore, err := devicesnap.NewAtomixStore(configuration)
 	if err != nil {
 		log.Error("Cannot load network atomix store ", err)
 	}

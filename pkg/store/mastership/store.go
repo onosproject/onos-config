@@ -20,8 +20,8 @@ import (
 
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/config"
-	"github.com/onosproject/onos-config/pkg/store/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
@@ -55,16 +55,16 @@ type Mastership struct {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore(config config.Config) (Store, error) {
+func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error) {
 	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConfig))
 	if err != nil {
 		return nil, err
 	}
 
 	return &atomixStore{
-		nodeID: cluster.GetNodeID(),
+		nodeID: cluster.Node().ID,
 		newElection: func(id topodevice.ID) (deviceMastershipElection, error) {
-			return newAtomixElection(id, database)
+			return newAtomixElection(cluster, id, database)
 		},
 		elections: make(map[topodevice.ID]deviceMastershipElection),
 	}, nil
