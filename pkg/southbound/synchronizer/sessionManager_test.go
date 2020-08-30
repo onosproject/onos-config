@@ -69,11 +69,10 @@ func TestFactory_Revert(t *testing.T) {
 	assert.Assert(t, models != nil)
 	assert.Assert(t, opstateCache != nil)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+	//var wg sync.WaitGroup
+	//wg.Add(1)
 
-	factory, err := NewFactory(
-		WithTopoChannel(topoChan),
+	_, err = NewSessionManager(
 		WithOpStateChannel(opstateChan),
 		WithSouthboundErrChan(responseChan),
 		WithDispatcher(dispatcher),
@@ -86,10 +85,10 @@ func TestFactory_Revert(t *testing.T) {
 
 	assert.NilError(t, err)
 
-	go func() {
+	/*go func() {
 		factory.TopoEventHandler()
 		wg.Done()
-	}()
+	}()*/
 
 	timeout := time.Millisecond * 500
 	device1NameStr := "factoryTd"

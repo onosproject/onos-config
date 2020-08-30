@@ -15,8 +15,9 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-test/pkg/onostest"
 	"sync"
+
+	"github.com/onosproject/onos-test/pkg/onostest"
 
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/test"
@@ -65,6 +66,7 @@ func (s *TestSuite) SetupTestSuite() error {
 	err = helm.Chart("onos-config", onostest.OnosChartRepo).
 		Release("onos-config").
 		Set("image.tag", "latest").
+		Set("replicaCount", 1).
 		Set("storage.controller", onostest.AtomixController(testName, onosComponentName)).
 		Install(true)
 	if err != nil {
