@@ -16,9 +16,10 @@ package synchronizer
 
 import (
 	"context"
-	"math"
 	"sync"
 	"time"
+
+	"github.com/cenkalti/backoff"
 
 	"github.com/onosproject/onos-config/pkg/utils"
 
@@ -132,26 +133,24 @@ func (s *Session) open() error {
 func (s *Session) connect() error {
 	log.Info("Connecting to device:", s.device.ID)
 	count := 0
-	for {
+	b := backoff.NewExponentialBackOff()
+	b.InitialInterval = backoffInterval
+	// MaxInterval caps the RetryInterval
+	b.MaxInterval = maxBackoffTime
+	// Never stops retrying
+	b.MaxElapsedTime = 0
+
+	notify := func(err error, t time.Duration) {
 		count++
-
-		s.mu.Lock()
-		closed := s.closed
-		s.mu.Unlock()
-
-		if closed {
-			return nil
-		}
-
-		err := s.synchronize()
-		if err != nil {
-			backoffTime := time.Duration(math.Min(float64(backoffInterval)*math.Pow(2, float64(count)), float64(maxBackoffTime)))
-			log.Infof("Failed to connect to %s. Retry after %v Attempt %d", s.device.ID, backoffTime, count)
-			time.Sleep(backoffTime)
-		} else {
-			return nil
-		}
+		log.Infof("Failed to connect to %s. Retry after %v Attempt %d", s.device.ID, b.GetElapsedTime(), count)
 	}
+
+	err := backoff.RetryNotify(s.synchronize, b, notify)
+	if err != nil {
+		return err
+	}
+
+	return nil
 
 }
 

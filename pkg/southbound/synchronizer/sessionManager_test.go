@@ -69,9 +69,6 @@ func TestFactory_Revert(t *testing.T) {
 	assert.Assert(t, models != nil)
 	assert.Assert(t, opstateCache != nil)
 
-	//var wg sync.WaitGroup
-	//wg.Add(1)
-
 	_, err = NewSessionManager(
 		WithOpStateChannel(opstateChan),
 		WithSouthboundErrChan(responseChan),
@@ -84,11 +81,6 @@ func TestFactory_Revert(t *testing.T) {
 	)
 
 	assert.NilError(t, err)
-
-	/*go func() {
-		factory.TopoEventHandler()
-		wg.Done()
-	}()*/
 
 	timeout := time.Millisecond * 500
 	device1NameStr := "factoryTd"
@@ -165,8 +157,6 @@ func TestFactory_Revert(t *testing.T) {
 	assert.Assert(t, !ok, "Expected Op state cache entry to have been removed")
 
 	close(topoChan)
-
-	wg.Wait()
 
 	/*****************************************************************
 	 * Now it should have cleaned up after itself
