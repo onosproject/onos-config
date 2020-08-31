@@ -44,7 +44,7 @@ func BuildTree(values []*devicechange.PathValue, floatAsStr bool) ([]byte, error
 		}
 	}
 
-	buf, err := json.Marshal(root)
+	buf, err := json.MarshalIndent(root, "", "  ")
 	if err != nil {
 		return nil, err
 	}
