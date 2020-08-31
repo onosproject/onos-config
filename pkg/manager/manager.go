@@ -147,7 +147,8 @@ func (m *Manager) Run() {
 	// Start the main dispatcher system
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
 
-	_, err := synchronizer.NewSessionManager(
+	sessionManager, err := synchronizer.NewSessionManager(
+		synchronizer.WithTopoChannel(m.TopoChannel),
 		synchronizer.WithOpStateChannel(m.OperationalStateChannel),
 		synchronizer.WithSouthboundErrChan(m.SouthboundErrorChan),
 		synchronizer.WithDispatcher(m.Dispatcher),
@@ -162,7 +163,12 @@ func (m *Manager) Run() {
 	)
 
 	if err != nil {
-		log.Error("Error in creating device factory", err)
+		log.Error("Error in creating session manager", err)
+	}
+
+	err = sessionManager.Start()
+	if err != nil {
+		log.Errorf("Error in starting session manager", err)
 	}
 
 	log.Info("Manager Started")

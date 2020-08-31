@@ -30,8 +30,9 @@ import (
 
 // SessionManager is a gNMI session manager
 type SessionManager struct {
+	topoChannel               chan *topodevice.ListResponse
 	opStateChan               chan<- events.OperationalStateEvent
-	southboundErrorChan       chan<- events.DeviceResponse
+	southboundErrorChan       chan events.DeviceResponse
 	deviceStore               devicestore.Store
 	dispatcher                *dispatcher.Dispatcher
 	modelRegistry             *modelregistry.ModelRegistry
@@ -52,101 +53,103 @@ func NewSessionManager(options ...func(*SessionManager)) (*SessionManager, error
 		option(sessionManager)
 	}
 
-	err := sessionManager.start()
-	if err != nil {
-		return nil, err
-	}
-
 	return sessionManager, nil
 
 }
 
+// WithTopoChannel sets topo channel
+func WithTopoChannel(topoChannel chan *topodevice.ListResponse) func(*SessionManager) {
+	return func(sessionManager *SessionManager) {
+		sessionManager.topoChannel = topoChannel
+	}
+}
+
+// WithSessions sets list of sessions
 func WithSessions(sessions map[topodevice.ID]*Session) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.sessions = sessions
 	}
 }
 
-// WithDeviceStore sets factory device store
+// WithDeviceStore sets device store
 func WithDeviceStore(deviceStore devicestore.Store) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.deviceStore = deviceStore
 	}
 }
 
-// WithMastershipStore sets factory mastership store
+// WithMastershipStore sets mastership store
 func WithMastershipStore(mastershipStore mastership.Store) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.mastershipStore = mastershipStore
 	}
 }
 
-// WithOpStateChannel sets factory opStateChannel
+// WithOpStateChannel sets opStateChannel
 func WithOpStateChannel(opStateChan chan<- events.OperationalStateEvent) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.opStateChan = opStateChan
 	}
 }
 
-// WithSouthboundErrChan sets factory southbound error channel
-func WithSouthboundErrChan(southboundErrorChan chan<- events.DeviceResponse) func(*SessionManager) {
+// WithSouthboundErrChan sets southbound error channel
+func WithSouthboundErrChan(southboundErrorChan chan events.DeviceResponse) func(*SessionManager) {
 	return func(factory *SessionManager) {
 		factory.southboundErrorChan = southboundErrorChan
 	}
 }
 
-// WithDispatcher sets factory dispatcher
+// WithDispatcher sets dispatcher
 func WithDispatcher(dispatcher *dispatcher.Dispatcher) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.dispatcher = dispatcher
 	}
 }
 
-// WithModelRegistry set factory model registry
+// WithModelRegistry sets model registry
 func WithModelRegistry(modelRegistry *modelregistry.ModelRegistry) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.modelRegistry = modelRegistry
 	}
 }
 
-// WithOperationalStateCache sets factory operational state cache
+// WithOperationalStateCache sets operational state cache
 func WithOperationalStateCache(operationalStateCache map[topodevice.ID]devicechange.TypedValueMap) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.operationalStateCache = operationalStateCache
 	}
 }
 
-// WithNewTargetFn sets factory southbound target function
+// WithNewTargetFn sets southbound target function
 func WithNewTargetFn(newTargetFn func() southbound.TargetIf) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.newTargetFn = newTargetFn
 	}
 }
 
-// WithOperationalStateCacheLock sets factory operational state cache lock
+// WithOperationalStateCacheLock sets operational state cache lock
 func WithOperationalStateCacheLock(operationalStateCacheLock *sync.RWMutex) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.operationalStateCacheLock = operationalStateCacheLock
 	}
 }
 
-// WithDeviceChangeStore sets factory device change store
+// WithDeviceChangeStore sets device change store
 func WithDeviceChangeStore(deviceChangeStore device.Store) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
 		sessionManager.deviceChangeStore = deviceChangeStore
 	}
 }
 
-// start starts session manager
-func (sm *SessionManager) start() error {
+// Start starts session manager
+func (sm *SessionManager) Start() error {
 	log.Info("Session manager started")
-	deviceCh := make(chan *topodevice.ListResponse, 10)
-	err := sm.deviceStore.Watch(deviceCh)
+	err := sm.deviceStore.Watch(sm.topoChannel)
 	if err != nil {
 		return err
 	}
 
-	go sm.processDeviceEvents(deviceCh)
+	go sm.processDeviceEvents(sm.topoChannel)
 	return nil
 }
 
