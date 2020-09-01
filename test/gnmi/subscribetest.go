@@ -79,7 +79,7 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 	err = subC.Subscribe(gnmi.MakeContext(), *q, "gnmi")
 	defer subC.Close()
 	assert.NoError(t, err)
-	gnmi.DeleteSimulator(t, simulator)
+	//gnmi.DeleteSimulator(t, simulator)
 }
 
 // TestSubscribe tests a stream subscription to updates to a device

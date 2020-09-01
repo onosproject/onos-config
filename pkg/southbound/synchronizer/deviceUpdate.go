@@ -15,6 +15,8 @@
 package synchronizer
 
 import (
+	"strconv"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -25,10 +27,10 @@ import (
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
-func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
+func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
 	service topodevice.ServiceState) error {
 	log.Info("Update device state")
-	id := s.device.ID
+
 	topoDevice, err := s.deviceStore.Get(id)
 
 	st, ok := status.FromError(err)
@@ -48,9 +50,7 @@ func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channe
 	} else {
 		protocolState = new(topodevice.ProtocolState)
 	}
-	if protocolState.ConnectivityState == connectivity && protocolState.ChannelState == channel && protocolState.ServiceState == service {
-		return nil
-	}
+
 	protocolState.Protocol = topodevice.Protocol_GNMI
 	protocolState.ConnectivityState = connectivity
 	protocolState.ChannelState = channel
@@ -60,10 +60,12 @@ func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channe
 	if err != nil {
 		return err
 	}
+
 	if topoDevice.Attributes == nil {
 		topoDevice.Attributes = make(map[string]string)
 	}
-	topoDevice.Attributes[mastershipTermKey] = string(mastershipState.Term)
+
+	topoDevice.Attributes[mastershipTermKey] = strconv.FormatUint(uint64(mastershipState.Term), 10)
 	_, err = s.deviceStore.Update(topoDevice)
 	if err != nil {
 		log.Errorf("Device %s is not updated %s", id, err.Error())
@@ -93,15 +95,17 @@ func (s *Session) updateDeviceState() error {
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
 			log.Info("Device connected")
+			id := topodevice.ID(event.Subject())
 			// TODO: Retry only on write conflicts
 			return backoff.Retry(func() error {
-				return s.updateDevice(topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
+				return s.updateDevice(id, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
 					topodevice.ServiceState_AVAILABLE)
 			}, backoff.NewExponentialBackOff())
 		case events.EventTypeErrorDeviceConnect:
+			id := topodevice.ID(event.Subject())
 			// TODO: Retry only on write conflicts
 			return backoff.Retry(func() error {
-				return s.updateDevice(topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
+				return s.updateDevice(id, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
 					topodevice.ServiceState_UNAVAILABLE)
 			}, backoff.NewExponentialBackOff())
 

@@ -64,6 +64,16 @@ type Session struct {
 	mu                        sync.RWMutex
 }
 
+func (s *Session) getCurrentTerm() (int, error) {
+	device, err := s.deviceStore.Get(s.device.ID)
+	if err != nil {
+		return 0, err
+	}
+
+	term := device.Attributes[mastershipTermKey]
+	return strconv.Atoi(term)
+}
+
 // open open a new gNMI session
 func (s *Session) open() error {
 	log.Info("Opening a gNMI session")
@@ -87,11 +97,10 @@ func (s *Session) open() error {
 			s.mu.Lock()
 			s.mastershipState = state
 			s.mu.Unlock()
-			var currentTerm int
-			if s.device.Attributes == nil {
-				currentTerm = 0
-			} else {
-				currentTerm, _ = strconv.Atoi(s.device.Attributes[mastershipTermKey])
+
+			currentTerm, err := s.getCurrentTerm()
+			if err != nil {
+				log.Error(err)
 			}
 
 			if state.Master == s.mastershipStore.NodeID() && uint64(state.Term) >= uint64(currentTerm) {
@@ -112,9 +121,12 @@ func (s *Session) open() error {
 				s.mu.Lock()
 				s.mastershipState = &state
 				s.mu.Unlock()
-				currentTerm, _ := strconv.Atoi(s.device.Attributes[mastershipTermKey])
+				currentTerm, err := s.getCurrentTerm()
+				if err != nil {
+					log.Error(err)
+				}
 				if state.Master == s.mastershipStore.NodeID() && !connected && uint64(state.Term) >= uint64(currentTerm) {
-					log.Info("Election changed", s.mastershipStore.NodeID())
+					log.Info("Election changed", s.mastershipStore.NodeID(), currentTerm, state.Term)
 					err := s.connect()
 					if err != nil {
 						log.Error(err)

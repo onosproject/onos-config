@@ -215,6 +215,9 @@ func (sm *SessionManager) createSession(device *topodevice.Device) error {
 		mastershipStore:           sm.mastershipStore,
 		deviceStore:               sm.deviceStore,
 	}
+	if session.device.Attributes == nil {
+		session.device.Attributes = make(map[string]string)
+	}
 
 	err := session.open()
 	if err != nil {
