@@ -22,14 +22,14 @@ import (
 
 	"github.com/onosproject/onos-config/pkg/events"
 
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
-func updateDevice(deviceStore devicestore.Store, id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
+func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
 	service topodevice.ServiceState) error {
 	log.Info("Update device state")
-	topoDevice, err := deviceStore.Get(id)
+	id := s.device.ID
+	topoDevice, err := s.deviceStore.Get(id)
 
 	st, ok := status.FromError(err)
 
@@ -56,7 +56,15 @@ func updateDevice(deviceStore devicestore.Store, id topodevice.ID, connectivity 
 	protocolState.ChannelState = channel
 	protocolState.ServiceState = service
 	topoDevice.Protocols = append(topoDevice.Protocols, protocolState)
-	_, err = deviceStore.Update(topoDevice)
+	mastershipState, err := s.mastershipStore.GetMastership(topoDevice.ID)
+	if err != nil {
+		return err
+	}
+	if topoDevice.Attributes == nil {
+		topoDevice.Attributes = make(map[string]string)
+	}
+	topoDevice.Attributes[mastershipTermKey] = string(mastershipState.Term)
+	_, err = s.deviceStore.Update(topoDevice)
 	if err != nil {
 		log.Errorf("Device %s is not updated %s", id, err.Error())
 		return err
@@ -87,13 +95,13 @@ func (s *Session) updateDeviceState() error {
 			log.Info("Device connected")
 			// TODO: Retry only on write conflicts
 			return backoff.Retry(func() error {
-				return updateDevice(s.deviceStore, s.device.ID, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
+				return s.updateDevice(topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
 					topodevice.ServiceState_AVAILABLE)
 			}, backoff.NewExponentialBackOff())
 		case events.EventTypeErrorDeviceConnect:
 			// TODO: Retry only on write conflicts
 			return backoff.Retry(func() error {
-				return updateDevice(s.deviceStore, s.device.ID, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
+				return s.updateDevice(topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
 					topodevice.ServiceState_UNAVAILABLE)
 			}, backoff.NewExponentialBackOff())
 

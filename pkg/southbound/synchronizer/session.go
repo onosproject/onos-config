@@ -16,6 +16,7 @@ package synchronizer
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
@@ -38,8 +39,9 @@ import (
 )
 
 const (
-	backoffInterval = 10 * time.Millisecond
-	maxBackoffTime  = 5 * time.Second
+	backoffInterval   = 10 * time.Millisecond
+	maxBackoffTime    = 5 * time.Second
+	mastershipTermKey = "onos-config.mastership.term"
 )
 
 // Session a gNMI session
@@ -85,8 +87,15 @@ func (s *Session) open() error {
 			s.mu.Lock()
 			s.mastershipState = state
 			s.mu.Unlock()
-			if state.Master == s.mastershipStore.NodeID() {
-				log.Info("Master node", s.mastershipStore.NodeID())
+			var currentTerm int
+			if s.device.Attributes == nil {
+				currentTerm = 0
+			} else {
+				currentTerm, _ = strconv.Atoi(s.device.Attributes[mastershipTermKey])
+			}
+
+			if state.Master == s.mastershipStore.NodeID() && uint64(state.Term) >= uint64(currentTerm) {
+				log.Info("Master node", s.mastershipStore.NodeID(), ":", currentTerm, ":", state.Term)
 				err := s.connect()
 				if err != nil {
 					log.Error(err)
@@ -103,7 +112,8 @@ func (s *Session) open() error {
 				s.mu.Lock()
 				s.mastershipState = &state
 				s.mu.Unlock()
-				if state.Master == s.mastershipStore.NodeID() && !connected {
+				currentTerm, _ := strconv.Atoi(s.device.Attributes[mastershipTermKey])
+				if state.Master == s.mastershipStore.NodeID() && !connected && uint64(state.Term) >= uint64(currentTerm) {
 					log.Info("Election changed", s.mastershipStore.NodeID())
 					err := s.connect()
 					if err != nil {
