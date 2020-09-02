@@ -182,6 +182,23 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 			return err
 		}
 	case topodevice.ListResponse_UPDATED:
+		session, ok := sm.sessions[event.Device.ID]
+		if !ok {
+			log.Error("Session for the device %v does not exist", event.Device.ID)
+			return nil
+		}
+		// If the address is changed, delete the current session and creates  new one
+		if session.device.Address != event.Device.Address {
+			err := sm.deleteSession(event.Device)
+			if err != nil {
+				return err
+			}
+			err = sm.createSession(event.Device)
+			if err != nil {
+				return err
+			}
+		}
+
 		log.Info("Process device event updated")
 
 	case topodevice.ListResponse_REMOVED:

@@ -32,7 +32,6 @@ func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.Connect
 	log.Info("Update device state")
 
 	topoDevice, err := s.deviceStore.Get(id)
-
 	st, ok := status.FromError(err)
 
 	// If the device doesn't exist then we should not update its state
