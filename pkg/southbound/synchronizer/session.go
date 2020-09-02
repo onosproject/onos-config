@@ -71,6 +71,9 @@ func (s *Session) getCurrentTerm() (int, error) {
 	}
 
 	term := device.Attributes[mastershipTermKey]
+	if term == "" {
+		return 0, nil
+	}
 	return strconv.Atoi(term)
 }
 
