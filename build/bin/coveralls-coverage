@@ -1,9 +1,0 @@
-#!/bin/bash
-set -e
-
-go get github.com/go-playground/overalls && go get github.com/mattn/goveralls
-
-overalls -project=$GOPATH/src/github.com/onosproject/onos-config -concurrency 2 -covermode=count -ignore=".git,vendor,models,tools"
-mv overalls.coverprofile overalls.coverprofile.orig
-grep -v .pb.go overalls.coverprofile.orig >overalls.coverprofile
-goveralls -coverprofile=overalls.coverprofile -service travis-ci
