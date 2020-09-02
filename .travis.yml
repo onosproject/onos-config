@@ -27,19 +27,20 @@ before_install:
 
 jobs:
   include:
-    - stage: build
-      name: "build and test"
+    - stage: tests
+      if: type == pull_request ||  fork == false
       script:
         - make coverage
-        - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
-             bash ./build/bin/push-images &&
-             bash -x ../build-tools/release-merge-commit;
-           fi'
     - stage: integration tests
-      if: type != pull_request
+      if: type != pull_request && fork == false
       script:
         - sh ../build-tools/build/travis/trigger-travis onosproject onos-test master "`git rev-parse --short HEAD`" $TRAVIS_ACCESS_TOKEN
     - stage: CLI build
-      if: type != pull_request
+      if: type != pull_request && fork == false
       script:
         - sh ../build-tools/build/travis/trigger-travis onosproject onos-cli master "`git rev-parse --short HEAD`" $TRAVIS_ACCESS_TOKEN
+    - stage: release
+      if: type != pull_request && fork == false
+      script:
+        - bash ./build/bin/push-images
+        - bash ../build-tools/release-merge-commit
