@@ -19,7 +19,7 @@ require (
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20200303111912-723f2289d4c2
 	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200303111912-723f2289d4c2
-	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200304144136-6992f473b240
+	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200902145751-acff059d1869
 	github.com/onosproject/helmit v0.6.7
 	github.com/onosproject/onos-lib-go v0.6.18
 	github.com/onosproject/onos-test v0.6.2

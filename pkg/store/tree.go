@@ -19,7 +19,6 @@ import (
 	"fmt"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -115,19 +114,23 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 		}
 		//Reuse existing listSlice
 		var listItemMap map[string]interface{}
-		var foundit bool
+		var foundkeys int
+
 		for idx, ls := range listSliceIf {
 			lsMap, ok := ls.(map[string]interface{})
 			if !ok {
 				return fmt.Errorf("Failed to convert list slice %d", idx)
 			}
-			if reflect.DeepEqual(lsMap, keyMap) {
-				listItemMap = lsMap
-				foundit = true
-				break
+			for k, v := range keyMap {
+				if l, ok := lsMap[k]; ok {
+					if l == v {
+						foundkeys++
+						listItemMap = lsMap
+					}
+				}
 			}
 		}
-		if !foundit {
+		if foundkeys < len(keyMap) {
 			listItemMap = keyMap
 		}
 		listItemIf := interface{}(listItemMap)
@@ -135,7 +138,7 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 		if err != nil {
 			return err
 		}
-		if !foundit {
+		if foundkeys < len(keyMap) {
 			listSliceIf = append(listSliceIf, listItemIf)
 			(nodemap)[listName] = listSliceIf
 		}

@@ -33,19 +33,13 @@ const testJSON1 = `{
     "list2a": [
       {
         "name": "First",
+        "rx-power": 6,
         "tx-power": 5
       },
       {
-        "name": "First",
-        "rx-power": 6
-      },
-      {
         "name": "Second",
+        "rx-power": 8,
         "tx-power": 7
-      },
-      {
-        "name": "Second",
-        "rx-power": 8
       }
     ]
   },
