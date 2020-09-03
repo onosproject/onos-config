@@ -87,13 +87,6 @@ func (s *Session) open() error {
 	}
 
 	go func() {
-		err := s.updateDeviceState()
-		if err != nil {
-			return
-		}
-	}()
-
-	go func() {
 		connected := false
 		state, _ := s.mastershipStore.GetMastership(s.device.ID)
 		if state != nil {

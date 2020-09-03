@@ -150,6 +150,13 @@ func (sm *SessionManager) Start() error {
 	}
 
 	go sm.processDeviceEvents(sm.topoChannel)
+	go func() {
+		err := sm.updateDeviceState()
+		if err != nil {
+			return
+		}
+	}()
+
 	return nil
 }
 

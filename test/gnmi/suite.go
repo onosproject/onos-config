@@ -66,7 +66,7 @@ func (s *TestSuite) SetupTestSuite() error {
 	err = helm.Chart("onos-config", onostest.OnosChartRepo).
 		Release("onos-config").
 		Set("image.tag", "latest").
-		Set("replicaCount", 2).
+		Set("replicaCount", 1).
 		Set("storage.controller", onostest.AtomixController(testName, onosComponentName)).
 		Install(true)
 	if err != nil {
