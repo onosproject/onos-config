@@ -85,6 +85,12 @@ func (s *Session) open() error {
 	if err != nil {
 		return err
 	}
+	go func() {
+		err := s.updateDeviceState()
+		if err != nil {
+			return
+		}
+	}()
 
 	go func() {
 		connected := false
