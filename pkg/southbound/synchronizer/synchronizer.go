@@ -29,7 +29,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/southbound"
-	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -394,11 +393,7 @@ func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechange
 	if jsonVal == nil {
 		jsonVal = update.Val.GetJsonIetfVal()
 	}
-	configValuesUnparsed, err := store.DecomposeTree(jsonVal)
-	if err != nil {
-		return nil, err
-	}
-	configValues, err := jsonvalues.CorrectJSONPaths("", configValuesUnparsed, sync.modelReadOnlyPaths, true)
+	configValues, err := jsonvalues.DecomposeJSONWithPaths(jsonVal, sync.modelReadOnlyPaths, nil)
 	if err != nil {
 		return nil, err
 	}

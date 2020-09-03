@@ -2,7 +2,10 @@
   "interfaces": {
     "interface": [
       {
-        "name": "admin"
+        "name": "admin",
+        "config": {
+          "enabled": true
+        }
       }
     ]
   },

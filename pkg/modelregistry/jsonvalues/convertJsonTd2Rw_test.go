@@ -19,7 +19,6 @@ import (
 	td2 "github.com/onosproject/config-models/modelplugin/testdevice-2.0.0/testdevice_2_0_0"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -71,7 +70,7 @@ func Test_correctJsonPathValuesTd2(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(td2Schema), 8)
 
-	_, readWritePaths := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, readWritePaths := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
 	assert.Equal(t, len(readWritePaths), 15)
 
 	// All values are taken from testdata/sample-testdevice2-choice.json and defined
@@ -79,17 +78,12 @@ func Test_correctJsonPathValuesTd2(t *testing.T) {
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-choice.json")
 	assert.NilError(t, err)
 
-	values, err := store.DecomposeTree(sampleTree)
+	correctedPathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
-	assert.Equal(t, len(values), 2)
-
-	correctedPathValues, err := CorrectJSONPaths("", values, readWritePaths, true)
-	assert.NilError(t, err)
-
+	assert.Equal(t, len(correctedPathValues), 2)
 	for _, v := range correctedPathValues {
 		fmt.Printf("%s %v\n", (*v).Path, v.String())
 	}
-	assert.Equal(t, len(correctedPathValues), 2)
 
 	for _, correctedPathValue := range correctedPathValues {
 		switch correctedPathValue.Path {

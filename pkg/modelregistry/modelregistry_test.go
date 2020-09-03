@@ -147,9 +147,9 @@ func Test_Schema(t *testing.T) {
 			"/system/dns/servers/server[address=*]/state",
 			"/system/dns/state",
 			"/system/logging/console/state",
-			"/system/logging/console/selectors/selector[facility severity=*]/state",
+			"/system/logging/console/selectors/selector[facility=*][severity=*]/state",
 			"/system/logging/remote-servers/remote-server[host=*]/state",
-			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state",
+			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/state",
 			"/system/state",
 			"/system/telnet-server/state",
 			"/system/aaa/state",
@@ -314,7 +314,7 @@ func Test_LoggingConsole(t *testing.T) {
 
 func Test_LoggingSelector(t *testing.T) {
 
-	k := "/system/logging/console/selectors/selector[facility severity=*]/state"
+	k := "/system/logging/console/selectors/selector[facility=*][severity=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/facility", "/severity":
@@ -338,7 +338,7 @@ func Test_LoggingServer(t *testing.T) {
 
 func Test_Logging(t *testing.T) {
 
-	k := "/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state"
+	k := "/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/state"
 	for p := range readOnlyPaths[k] {
 		switch p {
 		case "/facility", "/severity":
