@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.43.0 // indirect
-	github.com/atomix/go-client v0.2.2
+	github.com/atomix/go-client v0.2.3
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.3.1
@@ -21,7 +21,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200303111912-723f2289d4c2
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200304144136-6992f473b240
 	github.com/onosproject/helmit v0.6.7
-	github.com/onosproject/onos-lib-go v0.6.17
+	github.com/onosproject/onos-lib-go v0.6.18
 	github.com/onosproject/onos-test v0.6.2
 	github.com/onosproject/onos-topo v0.6.14
 	github.com/openconfig/gnmi v0.0.0-20190823184014-89b2bf29312c
@@ -37,7 +37,7 @@ require (
 	golang.org/x/mobile v0.0.0-20190806162312-597adff16ade // indirect
 	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
 	google.golang.org/genproto v0.0.0-20200212174721-66ed5ce911ce // indirect
-	google.golang.org/grpc v1.27.1
+	google.golang.org/grpc v1.31.1
 	gopkg.in/yaml.v2 v2.2.8
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.17.3

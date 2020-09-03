@@ -56,7 +56,7 @@ type Mastership struct {
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error) {
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConfig))
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
 		return nil, err
 	}

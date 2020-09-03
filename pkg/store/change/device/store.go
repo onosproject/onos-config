@@ -43,7 +43,7 @@ func getDeviceChangesName(deviceID device.VersionedID) string {
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore(config config.Config) (Store, error) {
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConfig))
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
 		return nil, err
 	}
