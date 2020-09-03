@@ -48,19 +48,19 @@ func Test_SchemaTestDevice2(t *testing.T) {
 	assert.Assert(t, leaf2cVtOk, "expected /cont1a/cont2a/leaf2c to have subpath /")
 	assert.Equal(t, leaf2cVt.Datatype, devicechange.ValueType_STRING)
 
-	cont1b, cont1bOk := readOnlyPathsTestDevice2["/cont1b-state"]
-	assert.Assert(t, cont1bOk, "expected to get /cont1b-state")
-	assert.Equal(t, len(cont1b), 5, "expected /cont1b-state to have 5 subpaths")
+	cont1bState, cont1bStateOk := readOnlyPathsTestDevice2["/cont1b-state"]
+	assert.Assert(t, cont1bStateOk, "expected to get /cont1b-state")
+	assert.Equal(t, len(cont1bState), 7, "expected /cont1b-state to have 5 subpaths")
 
-	cont1bVt, cont1bVtOk := cont1b["/leaf2d"]
+	cont1bVt, cont1bVtOk := cont1bState["/leaf2d"]
 	assert.Assert(t, cont1bVtOk, "expected /cont1b-state to have subpath /leaf2d")
 	assert.Equal(t, cont1bVt.Datatype, devicechange.ValueType_UINT)
 
-	l2bIdxVt, l2bIdxVtOk := cont1b["/list2b[index=*]/index"]
+	l2bIdxVt, l2bIdxVtOk := cont1bState["/list2b[index1 index2=*]/index2"]
 	assert.Assert(t, l2bIdxVtOk, "expected /cont1b-state to have subpath /list2b[index[*]/index")
 	assert.Equal(t, l2bIdxVt.Datatype, devicechange.ValueType_UINT)
 
-	l2bLeaf3cVt, l2bLeaf3cVtOk := cont1b["/list2b[index=*]/leaf3c"]
+	l2bLeaf3cVt, l2bLeaf3cVtOk := cont1bState["/list2b[index1 index2=*]/leaf3c"]
 	assert.Assert(t, l2bLeaf3cVtOk, "expected /cont1b-state to have subpath /list2b[index[*]/leaf3c")
 	assert.Equal(t, l2bLeaf3cVt.Datatype, devicechange.ValueType_STRING)
 
