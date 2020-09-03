@@ -148,10 +148,14 @@ func (sm *SessionManager) Start() error {
 	if err != nil {
 		return err
 	}
-	//errChan := make(chan events.DeviceResponse)
-	//sm.southboundErrorChan = errChan
 
 	go sm.processDeviceEvents(sm.topoChannel)
+	go func() {
+		err := sm.updateDeviceState()
+		if err != nil {
+			return
+		}
+	}()
 
 	return nil
 }
@@ -179,11 +183,14 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 			return err
 		}
 
+		log.Info("len southbound error channel:", len(sm.southboundErrorChan))
+
 	case topodevice.ListResponse_NONE:
 		err := sm.createSession(event.Device)
 		if err != nil {
 			return err
 		}
+
 	case topodevice.ListResponse_UPDATED:
 		session, ok := sm.sessions[event.Device.ID]
 		if !ok {
@@ -221,11 +228,11 @@ func (sm *SessionManager) createSession(device *topodevice.Device) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	errChan := make(chan events.DeviceResponse)
+	//errChan := make(chan events.DeviceResponse)
 
 	session := &Session{
 		opStateChan:               sm.opStateChan,
-		southboundErrorChan:       errChan,
+		southboundErrorChan:       sm.southboundErrorChan,
 		dispatcher:                sm.dispatcher,
 		modelRegistry:             sm.modelRegistry,
 		operationalStateCache:     sm.operationalStateCache,
@@ -244,6 +251,8 @@ func (sm *SessionManager) createSession(device *topodevice.Device) error {
 	if err != nil {
 		return err
 	}
+
+	log.Info("Here after open session", len(sm.southboundErrorChan))
 
 	// Close the old session and adds the new session to the list of sessions
 	oldSession, ok := sm.sessions[device.ID]

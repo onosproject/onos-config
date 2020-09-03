@@ -105,7 +105,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		TopoChannel:               make(chan *topodevice.ListResponse, 10),
 		ModelRegistry:             modelReg,
 		OperationalStateChannel:   make(chan events.OperationalStateEvent),
-		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
+		SouthboundErrorChan:       make(chan events.DeviceResponse),
 		Dispatcher:                dispatcher.NewDispatcher(),
 		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
 		OperationalStateCacheLock: &sync.RWMutex{},

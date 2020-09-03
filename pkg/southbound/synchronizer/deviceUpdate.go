@@ -27,11 +27,11 @@ import (
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
-func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
+func (sm *SessionManager) updateDevice(id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
 	service topodevice.ServiceState) error {
 	log.Info("Update device state")
 
-	topoDevice, err := s.deviceStore.Get(id)
+	topoDevice, err := sm.deviceStore.Get(id)
 	st, ok := status.FromError(err)
 
 	// If the device doesn't exist then we should not update its state
@@ -55,7 +55,7 @@ func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.Connect
 	protocolState.ChannelState = channel
 	protocolState.ServiceState = service
 	topoDevice.Protocols = append(topoDevice.Protocols, protocolState)
-	mastershipState, err := s.mastershipStore.GetMastership(topoDevice.ID)
+	mastershipState, err := sm.mastershipStore.GetMastership(topoDevice.ID)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.Connect
 	}
 
 	topoDevice.Attributes[mastershipTermKey] = strconv.FormatUint(uint64(mastershipState.Term), 10)
-	_, err = s.deviceStore.Update(topoDevice)
+	_, err = sm.deviceStore.Update(topoDevice)
 	if err != nil {
 		log.Errorf("Device %s is not updated %s", id, err.Error())
 		return err
@@ -88,9 +88,9 @@ func remove(s []*topodevice.ProtocolState, i int) []*topodevice.ProtocolState {
 	return s[:len(s)-1]
 }
 
-func (s *Session) updateDeviceState() error {
-	log.Info("update device state started")
-	for event := range s.southboundErrorChan {
+func (sm *SessionManager) updateDeviceState() error {
+
+	for event := range sm.southboundErrorChan {
 		log.Info("update event received")
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
@@ -98,22 +98,30 @@ func (s *Session) updateDeviceState() error {
 			id := topodevice.ID(event.Subject())
 			// TODO: Retry only on write conflicts
 			return backoff.Retry(func() error {
+
 				/* This entire read-modify-write sequence has to be retried until one of two conditions is met:
 				   - The update is successful or
 				   - Upon retry, the node encounters a mastership term greater than its own */
 
-				currentTerm, err := s.getCurrentTerm()
-				if err != nil {
+				session := sm.sessions[id]
+				if session != nil {
+					currentTerm, err := session.getCurrentTerm()
+					if err != nil {
+						return nil
+					}
+					mastershipState, err := sm.mastershipStore.GetMastership(id)
+					if err != nil {
+						return nil
+					}
+					if uint64(mastershipState.Term) < uint64(currentTerm) {
+						return nil
+					}
+
+				} else {
 					return nil
 				}
-				mastershipState, err := s.mastershipStore.GetMastership(id)
-				if err != nil {
-					return nil
-				}
-				if uint64(mastershipState.Term) < uint64(currentTerm) {
-					return nil
-				}
-				err = s.updateDevice(id, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
+
+				err := sm.updateDevice(id, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
 					topodevice.ServiceState_AVAILABLE)
 				return err
 
@@ -123,26 +131,28 @@ func (s *Session) updateDeviceState() error {
 			// TODO: Retry only on write conflicts
 			return backoff.Retry(func() error {
 
-				currentTerm, err := s.getCurrentTerm()
+				/*currentTerm, err := sm.sessions[id].getCurrentTerm()
 				if err != nil {
 					return nil
 				}
-				mastershipState, err := s.mastershipStore.GetMastership(id)
+				mastershipState, err := sm.mastershipStore.GetMastership(id)
 				if err != nil {
 					return nil
 				}
 				if uint64(mastershipState.Term) < uint64(currentTerm) {
 					return nil
-				}
+				}*/
 
-				err = s.updateDevice(id, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
+				err := sm.updateDevice(id, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
 					topodevice.ServiceState_UNAVAILABLE)
 				return err
 			}, backoff.NewExponentialBackOff())
 
 		default:
+			log.Info("Here 0")
 		}
 	}
 
+	log.Info("Here 1")
 	return nil
 }

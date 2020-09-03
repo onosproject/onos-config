@@ -85,12 +85,6 @@ func (s *Session) open() error {
 	if err != nil {
 		return err
 	}
-	go func() {
-		err := s.updateDeviceState()
-		if err != nil {
-			return
-		}
-	}()
 
 	go func() {
 		connected := false
@@ -223,6 +217,7 @@ func (s *Session) synchronize() error {
 	//spawning two go routines to propagate changes and to get operational state
 	//go sync.syncConfigEventsToDevice(target, respChan)
 	s.southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
+	log.Info("len southbound err chan:", len(s.southboundErrorChan))
 	if sync.getStateMode == modelregistry.GetStateOpState {
 		go sync.syncOperationalStateByPartition(ctx, s.target, s.southboundErrorChan)
 	} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||
