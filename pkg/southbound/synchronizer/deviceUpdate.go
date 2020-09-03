@@ -102,18 +102,18 @@ func (s *Session) updateDeviceState() error {
 				   - The update is successful or
 				   - Upon retry, the node encounters a mastership term greater than its own */
 
-				/*currentTerm, err := sm.sessions[id].getCurrentTerm()
+				currentTerm, err := s.getCurrentTerm()
 				if err != nil {
 					return nil
 				}
-				mastershipState, err := sm.mastershipStore.GetMastership(id)
+				mastershipState, err := s.mastershipStore.GetMastership(id)
 				if err != nil {
 					return nil
 				}
 				if uint64(mastershipState.Term) < uint64(currentTerm) {
 					return nil
-				}*/
-				err := s.updateDevice(id, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
+				}
+				err = s.updateDevice(id, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
 					topodevice.ServiceState_AVAILABLE)
 				return err
 
@@ -123,19 +123,19 @@ func (s *Session) updateDeviceState() error {
 			// TODO: Retry only on write conflicts
 			return backoff.Retry(func() error {
 
-				/*currentTerm, err := sm.sessions[id].getCurrentTerm()
+				currentTerm, err := s.getCurrentTerm()
 				if err != nil {
 					return nil
 				}
-				mastershipState, err := sm.mastershipStore.GetMastership(id)
+				mastershipState, err := s.mastershipStore.GetMastership(id)
 				if err != nil {
 					return nil
 				}
 				if uint64(mastershipState.Term) < uint64(currentTerm) {
 					return nil
-				}*/
+				}
 
-				err := s.updateDevice(id, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
+				err = s.updateDevice(id, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
 					topodevice.ServiceState_UNAVAILABLE)
 				return err
 			}, backoff.NewExponentialBackOff())

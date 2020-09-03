@@ -148,6 +148,8 @@ func (sm *SessionManager) Start() error {
 	if err != nil {
 		return err
 	}
+	//errChan := make(chan events.DeviceResponse)
+	//sm.southboundErrorChan = errChan
 
 	go sm.processDeviceEvents(sm.topoChannel)
 
@@ -183,7 +185,7 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 			return err
 		}
 	case topodevice.ListResponse_UPDATED:
-		/*session, ok := sm.sessions[event.Device.ID]
+		session, ok := sm.sessions[event.Device.ID]
 		if !ok {
 			log.Error("Session for the device %v does not exist", event.Device.ID)
 			return nil
@@ -198,7 +200,7 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 			if err != nil {
 				return err
 			}
-		}*/
+		}
 
 		log.Info("Process device event updated")
 
@@ -219,11 +221,11 @@ func (sm *SessionManager) createSession(device *topodevice.Device) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	//errChan := make(chan events.DeviceResponse)
+	errChan := make(chan events.DeviceResponse)
 
 	session := &Session{
 		opStateChan:               sm.opStateChan,
-		southboundErrorChan:       sm.southboundErrorChan,
+		southboundErrorChan:       errChan,
 		dispatcher:                sm.dispatcher,
 		modelRegistry:             sm.modelRegistry,
 		operationalStateCache:     sm.operationalStateCache,
