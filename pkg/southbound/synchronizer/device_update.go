@@ -27,6 +27,15 @@ import (
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
+func (s *Session) getTermPerDevice(device *topodevice.Device) (int, error) {
+	term := device.Attributes[mastershipTermKey]
+	if term == "" {
+		return 0, nil
+	}
+	return strconv.Atoi(term)
+
+}
+
 func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
 	service topodevice.ServiceState) error {
 	log.Info("Update device state")
@@ -58,6 +67,16 @@ func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.Connect
 	mastershipState, err := s.mastershipStore.GetMastership(topoDevice.ID)
 	if err != nil {
 		return err
+	}
+
+	// Read the current term for the given device
+	currentTerm, err := s.getTermPerDevice(topoDevice)
+	if err != nil {
+		return err
+	}
+	// Do not update the state of a device if the node encounters a mastership term greater than its own
+	if uint64(mastershipState.Term) < uint64(currentTerm) {
+		return nil
 	}
 
 	if topoDevice.Attributes == nil {
@@ -108,35 +127,9 @@ func (s *Session) updateDeviceState() error {
 		case events.EventTypeDeviceConnected:
 			log.Info("Device connected")
 			// TODO: Retry only on write conflicts
-
 			_ = backoff.Retry(s.updateConnectedDevice, backoff.NewExponentialBackOff())
-
-			/*_ = backoff.Retry(func() error {
-
-			/* This entire read-modify-write sequence has to be retried until one of two conditions is met:
-			   - The update is successful or
-			   - Upon retry, the node encounters a mastership term greater than its own */
-
-			/*session := sm.sessions[id]
-			if session != nil {
-				currentTerm, err := session.getCurrentTerm()
-				if err != nil {
-					return nil
-				}
-				mastershipState, err := sm.mastershipStore.GetMastership(id)
-				if err != nil {
-					return nil
-				}
-				if uint64(mastershipState.Term) < uint64(currentTerm) {
-					return nil
-				}
-
-			} else {
-				return nil
-			}*/
-
-			//}, backoff.NewExponentialBackOff())
 		case events.EventTypeErrorDeviceConnect:
+			// TODO: Retry only on write conflicts
 			_ = backoff.Retry(s.updateDisconnectedDevice, backoff.NewExponentialBackOff())
 
 		default:
