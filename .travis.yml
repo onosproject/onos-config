@@ -20,26 +20,26 @@ before_script:
   - pushd .. && git clone https://github.com/onosproject/build-tools.git && popd
 
 before_install:
-  - 'if [[ $TRAVIS_PULL_REQUEST == "false" && $TRAVIS_BRANCH == "master" ]] ; then
+  - 'if [[ $TRAVIS_PULL_REQUEST == "false" && $TRAVIS_BRANCH == "master" && $TRAVIS_SECURE_ENV_VARS == "true" ]] ; then
        openssl aes-256-cbc -K $encrypted_f217180e22ee_key -iv $encrypted_f217180e22ee_iv -in .ssh/id_rsa.enc -out ~/.ssh/id_rsa -d &&
        chmod 600 ~/.ssh/id_rsa;
      fi'
 
 jobs:
   include:
-    - stage: tests
+    - stage: Tests
       if: type == pull_request ||  fork == false
       script:
         - make coverage
-    - stage: integration tests
+    - stage: Integration Tests
       if: type != pull_request && fork == false
       script:
         - sh ../build-tools/build/travis/trigger-travis onosproject onos-test master "`git rev-parse --short HEAD`" $TRAVIS_ACCESS_TOKEN
-    - stage: CLI build
+    - stage: CLI Build
       if: type != pull_request && fork == false
       script:
         - sh ../build-tools/build/travis/trigger-travis onosproject onos-cli master "`git rev-parse --short HEAD`" $TRAVIS_ACCESS_TOKEN
-    - stage: release
+    - stage: Release
       if: type != pull_request && fork == false
       script:
         - bash ./build/bin/push-images
