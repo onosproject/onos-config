@@ -17,52 +17,49 @@ package synchronizer
 import (
 	"testing"
 
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
+	"github.com/onosproject/onos-config/pkg/test/mocks"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 
 	"github.com/golang/mock/gomock"
-	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
 )
-
-type AllMocks struct {
-	MockStores *mockstore.MockStores
-}
 
 const (
 	device1        = "device1"
 	deviceVersion1 = "1.0.0"
 )
 
+type AllMocks struct {
+	DeviceStore     devicestore.Store
+	MastershipStore mastership.Store
+	DeviceClient    *mocks.MockDeviceServiceClient
+}
+
 func setUp(t *testing.T) *AllMocks {
-	var (
-		allMocks AllMocks
-	)
 
 	ctrl := gomock.NewController(t)
+	client := mocks.NewMockDeviceServiceClient(ctrl)
+	deviceStore, err := devicestore.NewStore(client)
+	assert.NilError(t, err)
 
-	// Mock Mastership Store
-	mockMastershipStore := mockstore.NewMockMastershipStore(ctrl)
-	mockMastershipStore.EXPECT().Watch(gomock.Any(), gomock.Any()).AnyTimes()
+	node1 := cluster.NodeID("node1")
+	mastershipStore, err := mastership.NewLocalStore("TestUpdateDisconnectedDevice", node1)
+	assert.NilError(t, err)
 
-	// Mock Device Store
-	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
-	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
-
-	mockStores := &mockstore.MockStores{
-		DeviceStore:     mockDeviceStore,
-		MastershipStore: mockMastershipStore,
+	allMocks := AllMocks{
+		DeviceStore:     deviceStore,
+		MastershipStore: mastershipStore,
+		DeviceClient:    client,
 	}
-
-	allMocks.MockStores = mockStores
 
 	return &allMocks
 }
 
 func TestUpdateDisconnectedDevice(t *testing.T) {
-	mocks := setUp(t)
+	allMocks := setUp(t)
 
 	device1Disconnected := &topodevice.Device{
 		ID:         device1,
@@ -72,35 +69,38 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 		Attributes: make(map[string]string),
 	}
 
-	mocks.MockStores.DeviceStore.EXPECT().Get(device1)
+	allMocks.DeviceClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topodevice.GetResponse{Device: device1Disconnected}, nil).AnyTimes()
 
 	protocolState := new(topodevice.ProtocolState)
 	protocolState.Protocol = topodevice.Protocol_GNMI
 	device1Disconnected.Protocols = append(device1Disconnected.Protocols, protocolState)
-	device1Disconnected.Attributes[mastershipTermKey] = "1"
+	device1Disconnected.Attributes[mastershipTermKey] = "0"
 
-	mocks.MockStores.DeviceStore.EXPECT().Update(gomock.Any()).Return(device1Disconnected, nil)
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(device1Disconnected, nil)
+	allMocks.DeviceClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topodevice.UpdateResponse{Device: device1Disconnected}, nil).AnyTimes()
 
-	mastershipState := mastership.Mastership{
-		Device: device1Disconnected.ID,
-		Term:   2,
-		Master: cluster.NodeID("node1"),
-	}
-	mocks.MockStores.MastershipStore.EXPECT().GetMastership(device1Disconnected.ID).Return(&mastershipState, nil)
-
-	session := &Session{
+	session1 := &Session{
 		device:          device1Disconnected,
-		mastershipStore: mocks.MockStores.MastershipStore,
-		deviceStore:     mocks.MockStores.DeviceStore,
+		mastershipStore: allMocks.MastershipStore,
+		deviceStore:     allMocks.DeviceStore,
 	}
 
-	err := session.updateDisconnectedDevice()
+	err := session1.updateDisconnectedDevice()
 	assert.NilError(t, err)
+	updatedDevice, err := session1.deviceStore.Get(device1)
+	assert.NilError(t, err)
+	newDeviceTerm := updatedDevice.Attributes[mastershipTermKey]
+	assert.Equal(t, newDeviceTerm, "1")
+	assert.Equal(t, updatedDevice.Protocols[0].ConnectivityState, topodevice.ConnectivityState_UNREACHABLE)
+	assert.Equal(t, updatedDevice.Protocols[0].ChannelState, topodevice.ChannelState_DISCONNECTED)
+	assert.Equal(t, updatedDevice.Protocols[0].ServiceState, topodevice.ServiceState_UNAVAILABLE)
 }
 
 func TestUpdateConnectedDevice(t *testing.T) {
-	mocks := setUp(t)
+	allMocks := setUp(t)
+
+	node1 := cluster.NodeID("node1")
+	mastershipStore1, err := mastership.NewLocalStore("TestUpdateConnectedDevice", node1)
+	assert.NilError(t, err)
 
 	device1Connected := &topodevice.Device{
 		ID:         device1,
@@ -110,29 +110,29 @@ func TestUpdateConnectedDevice(t *testing.T) {
 		Attributes: make(map[string]string),
 	}
 
-	mocks.MockStores.DeviceStore.EXPECT().Get(device1)
+	allMocks.DeviceClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topodevice.GetResponse{Device: device1Connected}, nil).AnyTimes()
 
 	protocolState := new(topodevice.ProtocolState)
 	protocolState.Protocol = topodevice.Protocol_GNMI
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
-	device1Connected.Attributes[mastershipTermKey] = "1"
+	device1Connected.Attributes[mastershipTermKey] = "0"
 
-	mocks.MockStores.DeviceStore.EXPECT().Update(gomock.Any()).Return(device1Connected, nil)
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(device1Connected, nil)
+	allMocks.DeviceClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topodevice.UpdateResponse{Device: device1Connected}, nil).AnyTimes()
 
-	mastershipState := mastership.Mastership{
-		Device: device1Connected.ID,
-		Term:   2,
-		Master: cluster.NodeID("node1"),
-	}
-	mocks.MockStores.MastershipStore.EXPECT().GetMastership(device1Connected.ID).Return(&mastershipState, nil)
-
-	session := &Session{
+	session1 := &Session{
 		device:          device1Connected,
-		mastershipStore: mocks.MockStores.MastershipStore,
-		deviceStore:     mocks.MockStores.DeviceStore,
+		mastershipStore: mastershipStore1,
+		deviceStore:     allMocks.DeviceStore,
 	}
 
-	err := session.updateConnectedDevice()
+	err = session1.updateConnectedDevice()
 	assert.NilError(t, err)
+	updatedDevice, err := session1.deviceStore.Get(device1)
+	assert.NilError(t, err)
+	newDeviceTerm := updatedDevice.Attributes[mastershipTermKey]
+	assert.Equal(t, newDeviceTerm, "1")
+	assert.Equal(t, updatedDevice.Protocols[0].ConnectivityState, topodevice.ConnectivityState_REACHABLE)
+	assert.Equal(t, updatedDevice.Protocols[0].ChannelState, topodevice.ChannelState_CONNECTED)
+	assert.Equal(t, updatedDevice.Protocols[0].ServiceState, topodevice.ServiceState_AVAILABLE)
+
 }
