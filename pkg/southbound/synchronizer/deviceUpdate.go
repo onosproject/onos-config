@@ -27,11 +27,11 @@ import (
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
-func (sm *SessionManager) updateDevice(id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
+func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
 	service topodevice.ServiceState) error {
 	log.Info("Update device state")
 
-	topoDevice, err := sm.deviceStore.Get(id)
+	topoDevice, err := s.deviceStore.Get(id)
 	st, ok := status.FromError(err)
 
 	// If the device doesn't exist then we should not update its state
@@ -55,7 +55,7 @@ func (sm *SessionManager) updateDevice(id topodevice.ID, connectivity topodevice
 	protocolState.ChannelState = channel
 	protocolState.ServiceState = service
 	topoDevice.Protocols = append(topoDevice.Protocols, protocolState)
-	mastershipState, err := sm.mastershipStore.GetMastership(topoDevice.ID)
+	mastershipState, err := s.mastershipStore.GetMastership(topoDevice.ID)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (sm *SessionManager) updateDevice(id topodevice.ID, connectivity topodevice
 	}
 
 	topoDevice.Attributes[mastershipTermKey] = strconv.FormatUint(uint64(mastershipState.Term), 10)
-	_, err = sm.deviceStore.Update(topoDevice)
+	_, err = s.deviceStore.Update(topoDevice)
 	if err != nil {
 		log.Errorf("Device %s is not updated %s", id, err.Error())
 		return err
@@ -88,50 +88,38 @@ func remove(s []*topodevice.ProtocolState, i int) []*topodevice.ProtocolState {
 	return s[:len(s)-1]
 }
 
-func (sm *SessionManager) updateDeviceState() error {
+func (s *Session) updateConnectedDevice() error {
+	err := s.updateDevice(s.device.ID, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
+		topodevice.ServiceState_AVAILABLE)
+	return err
+}
 
-	for event := range sm.southboundErrorChan {
+func (s *Session) updateDisconnectedDevice() error {
+	err := s.updateDevice(s.device.ID, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
+		topodevice.ServiceState_UNAVAILABLE)
+	return err
+
+}
+
+func (s *Session) updateDeviceState() error {
+	for event := range s.deviceResponseChan {
 		log.Info("update event received")
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
 			log.Info("Device connected")
-			id := topodevice.ID(event.Subject())
 			// TODO: Retry only on write conflicts
-			return backoff.Retry(func() error {
 
-				/* This entire read-modify-write sequence has to be retried until one of two conditions is met:
-				   - The update is successful or
-				   - Upon retry, the node encounters a mastership term greater than its own */
+			_ = backoff.Retry(s.updateConnectedDevice, backoff.NewExponentialBackOff())
 
-				session := sm.sessions[id]
-				if session != nil {
-					currentTerm, err := session.getCurrentTerm()
-					if err != nil {
-						return nil
-					}
-					mastershipState, err := sm.mastershipStore.GetMastership(id)
-					if err != nil {
-						return nil
-					}
-					if uint64(mastershipState.Term) < uint64(currentTerm) {
-						return nil
-					}
+			/*_ = backoff.Retry(func() error {
 
-				} else {
-					return nil
-				}
+			/* This entire read-modify-write sequence has to be retried until one of two conditions is met:
+			   - The update is successful or
+			   - Upon retry, the node encounters a mastership term greater than its own */
 
-				err := sm.updateDevice(id, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
-					topodevice.ServiceState_AVAILABLE)
-				return err
-
-			}, backoff.NewExponentialBackOff())
-		case events.EventTypeErrorDeviceConnect:
-			id := topodevice.ID(event.Subject())
-			// TODO: Retry only on write conflicts
-			return backoff.Retry(func() error {
-
-				/*currentTerm, err := sm.sessions[id].getCurrentTerm()
+			/*session := sm.sessions[id]
+			if session != nil {
+				currentTerm, err := session.getCurrentTerm()
 				if err != nil {
 					return nil
 				}
@@ -141,18 +129,20 @@ func (sm *SessionManager) updateDeviceState() error {
 				}
 				if uint64(mastershipState.Term) < uint64(currentTerm) {
 					return nil
-				}*/
+				}
 
-				err := sm.updateDevice(id, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
-					topodevice.ServiceState_UNAVAILABLE)
-				return err
-			}, backoff.NewExponentialBackOff())
+			} else {
+				return nil
+			}*/
+
+			//}, backoff.NewExponentialBackOff())
+		case events.EventTypeErrorDeviceConnect:
+			_ = backoff.Retry(s.updateDisconnectedDevice, backoff.NewExponentialBackOff())
 
 		default:
-			log.Info("Here 0")
+
 		}
 	}
 
-	log.Info("Here 1")
 	return nil
 }

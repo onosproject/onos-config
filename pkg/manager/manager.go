@@ -150,7 +150,6 @@ func (m *Manager) Run() {
 	sessionManager, err := synchronizer.NewSessionManager(
 		synchronizer.WithTopoChannel(m.TopoChannel),
 		synchronizer.WithOpStateChannel(m.OperationalStateChannel),
-		synchronizer.WithSouthboundErrChan(m.SouthboundErrorChan),
 		synchronizer.WithDispatcher(m.Dispatcher),
 		synchronizer.WithModelRegistry(m.ModelRegistry),
 		synchronizer.WithOperationalStateCache(m.OperationalStateCache),

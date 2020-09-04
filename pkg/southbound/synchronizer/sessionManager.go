@@ -32,7 +32,6 @@ import (
 type SessionManager struct {
 	topoChannel               chan *topodevice.ListResponse
 	opStateChan               chan<- events.OperationalStateEvent
-	southboundErrorChan       chan events.DeviceResponse
 	deviceStore               devicestore.Store
 	dispatcher                *dispatcher.Dispatcher
 	modelRegistry             *modelregistry.ModelRegistry
@@ -92,13 +91,6 @@ func WithOpStateChannel(opStateChan chan<- events.OperationalStateEvent) func(*S
 	}
 }
 
-// WithSouthboundErrChan sets southbound error channel
-func WithSouthboundErrChan(southboundErrorChan chan events.DeviceResponse) func(*SessionManager) {
-	return func(factory *SessionManager) {
-		factory.southboundErrorChan = southboundErrorChan
-	}
-}
-
 // WithDispatcher sets dispatcher
 func WithDispatcher(dispatcher *dispatcher.Dispatcher) func(*SessionManager) {
 	return func(sessionManager *SessionManager) {
@@ -150,13 +142,6 @@ func (sm *SessionManager) Start() error {
 	}
 
 	go sm.processDeviceEvents(sm.topoChannel)
-	go func() {
-		err := sm.updateDeviceState()
-		if err != nil {
-			return
-		}
-	}()
-
 	return nil
 }
 
@@ -174,7 +159,6 @@ func (sm *SessionManager) processDeviceEvents(ch <-chan *topodevice.ListResponse
 
 // processDeviceEvent process a device event
 func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) error {
-
 	switch event.Type {
 	case topodevice.ListResponse_ADDED:
 		log.Info("Process device event Added")
@@ -182,8 +166,6 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 		if err != nil {
 			return err
 		}
-
-		log.Info("len southbound error channel:", len(sm.southboundErrorChan))
 
 	case topodevice.ListResponse_NONE:
 		err := sm.createSession(event.Device)
@@ -225,14 +207,8 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 // createSession creates a new gNMI session
 func (sm *SessionManager) createSession(device *topodevice.Device) error {
 	log.Info("Creating session for device:", device.ID)
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-
-	//errChan := make(chan events.DeviceResponse)
-
 	session := &Session{
 		opStateChan:               sm.opStateChan,
-		southboundErrorChan:       sm.southboundErrorChan,
 		dispatcher:                sm.dispatcher,
 		modelRegistry:             sm.modelRegistry,
 		operationalStateCache:     sm.operationalStateCache,
@@ -251,8 +227,6 @@ func (sm *SessionManager) createSession(device *topodevice.Device) error {
 	if err != nil {
 		return err
 	}
-
-	log.Info("Here after open session", len(sm.southboundErrorChan))
 
 	// Close the old session and adds the new session to the list of sessions
 	oldSession, ok := sm.sessions[device.ID]

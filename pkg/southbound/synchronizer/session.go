@@ -51,7 +51,7 @@ type Session struct {
 	mastershipState           *mastership.Mastership
 	closeCh                   chan struct{}
 	opStateChan               chan<- events.OperationalStateEvent
-	southboundErrorChan       chan events.DeviceResponse
+	deviceResponseChan        chan events.DeviceResponse
 	dispatcher                *dispatcher.Dispatcher
 	modelRegistry             *modelregistry.ModelRegistry
 	operationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
@@ -85,6 +85,13 @@ func (s *Session) open() error {
 	if err != nil {
 		return err
 	}
+
+	s.deviceResponseChan = make(chan events.DeviceResponse)
+
+	go func() {
+		_ = s.updateDeviceState()
+
+	}()
 
 	go func() {
 		connected := false
@@ -201,7 +208,7 @@ func (s *Session) synchronize() error {
 	s.operationalStateCacheLock.Unlock()
 	s.mu.RUnlock()
 
-	sync, err := New(ctx, s.device, s.opStateChan, s.southboundErrorChan,
+	sync, err := New(ctx, s.device, s.opStateChan, s.deviceResponseChan,
 		valueMap, mReadOnlyPaths, s.target, mStateGetMode, s.operationalStateCacheLock, s.deviceChangeStore)
 	if err != nil {
 		log.Errorf("Error connecting to device %v: %v", s.device, err)
@@ -216,13 +223,12 @@ func (s *Session) synchronize() error {
 
 	//spawning two go routines to propagate changes and to get operational state
 	//go sync.syncConfigEventsToDevice(target, respChan)
-	s.southboundErrorChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
-	log.Info("len southbound err chan:", len(s.southboundErrorChan))
+	s.deviceResponseChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
 	if sync.getStateMode == modelregistry.GetStateOpState {
-		go sync.syncOperationalStateByPartition(ctx, s.target, s.southboundErrorChan)
+		go sync.syncOperationalStateByPartition(ctx, s.target, s.deviceResponseChan)
 	} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||
 		sync.getStateMode == modelregistry.GetStateExplicitRoPathsExpandWildcards {
-		go sync.syncOperationalStateByPaths(ctx, s.target, s.southboundErrorChan)
+		go sync.syncOperationalStateByPaths(ctx, s.target, s.deviceResponseChan)
 	}
 	return nil
 }
