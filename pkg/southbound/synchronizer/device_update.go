@@ -15,6 +15,7 @@
 package synchronizer
 
 import (
+	"errors"
 	"strconv"
 
 	"google.golang.org/grpc/codes"
@@ -36,10 +37,11 @@ func (s *Session) getTermPerDevice(device *topodevice.Device) (int, error) {
 
 }
 
-func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
+func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
 	service topodevice.ServiceState) error {
 	log.Info("Update device state")
 
+	id := s.device.ID
 	topoDevice, err := s.deviceStore.Get(id)
 	st, ok := status.FromError(err)
 
@@ -74,9 +76,10 @@ func (s *Session) updateDevice(id topodevice.ID, connectivity topodevice.Connect
 	if err != nil {
 		return err
 	}
+
 	// Do not update the state of a device if the node encounters a mastership term greater than its own
 	if uint64(mastershipState.Term) < uint64(currentTerm) {
-		return nil
+		return errors.New("device mastership term is greater than node mastership term")
 	}
 
 	if topoDevice.Attributes == nil {
@@ -108,18 +111,19 @@ func remove(s []*topodevice.ProtocolState, i int) []*topodevice.ProtocolState {
 }
 
 func (s *Session) updateConnectedDevice() error {
-	err := s.updateDevice(s.device.ID, topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
+	err := s.updateDevice(topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
 		topodevice.ServiceState_AVAILABLE)
 	return err
 }
 
 func (s *Session) updateDisconnectedDevice() error {
-	err := s.updateDevice(s.device.ID, topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
+	err := s.updateDevice(topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
 		topodevice.ServiceState_UNAVAILABLE)
 	return err
 
 }
 
+// updateDeviceState updates device state based on a device response event
 func (s *Session) updateDeviceState() error {
 	for event := range s.deviceResponseChan {
 		log.Info("update event received")

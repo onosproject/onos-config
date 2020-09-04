@@ -81,7 +81,7 @@ func createSessionManager(t *testing.T) *SessionManager {
  * and then un-does everything
  */
 func TestSessionManager(t *testing.T) {
-	// TODO Fix this unit test
+	// TODO Fix this unit test or replace with a new one
 	t.Skip()
 	sessionManager := createSessionManager(t)
 	_ = sessionManager.Start()
