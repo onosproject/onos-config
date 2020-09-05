@@ -79,7 +79,6 @@ func (s *Session) getCurrentTerm() (int, error) {
 
 // open open a new gNMI session
 func (s *Session) open() error {
-	log.Info("Opening a gNMI session")
 	ch := make(chan mastership.Mastership)
 	err := s.mastershipStore.Watch(s.device.ID, ch)
 	if err != nil {
@@ -107,7 +106,6 @@ func (s *Session) open() error {
 			}
 
 			if state.Master == s.mastershipStore.NodeID() && uint64(state.Term) >= uint64(currentTerm) {
-				log.Info("Master node", s.mastershipStore.NodeID(), ":", currentTerm, ":", state.Term)
 				err := s.connect()
 				if err != nil {
 					log.Error(err)
@@ -129,7 +127,6 @@ func (s *Session) open() error {
 					log.Error(err)
 				}
 				if state.Master == s.mastershipStore.NodeID() && !connected && uint64(state.Term) >= uint64(currentTerm) {
-					log.Info("Election changed", s.mastershipStore.NodeID(), currentTerm, state.Term)
 					err := s.connect()
 					if err != nil {
 						log.Error(err)
@@ -137,7 +134,6 @@ func (s *Session) open() error {
 						connected = true
 					}
 				} else if state.Master != s.mastershipStore.NodeID() && connected {
-					log.Info("It is not master then disconnect")
 					err := s.disconnect()
 					if err != nil {
 						log.Error(err)
@@ -156,7 +152,7 @@ func (s *Session) open() error {
 
 // connect connects to a device using a gNMI session
 func (s *Session) connect() error {
-	log.Info("Connecting to device:", s.device.ID)
+	log.Info("Connecting to device:", s.device)
 	count := 0
 	b := backoff.NewExponentialBackOff()
 	b.InitialInterval = backoffInterval
@@ -187,7 +183,6 @@ func (s *Session) synchronize() error {
 	s.mu.Unlock()
 
 	s.mu.RLock()
-	log.Infof("Connecting to device %v", s.device)
 	modelName := utils.ToModelName(devicetype.Type(s.device.Type), devicetype.Version(s.device.Version))
 	mReadOnlyPaths, ok := s.modelRegistry.ModelReadOnlyPaths[modelName]
 	if !ok {
@@ -235,7 +230,7 @@ func (s *Session) synchronize() error {
 
 // disconnects the gNMI session from the device
 func (s *Session) disconnect() error {
-	log.Info("Disconnecting device:", s.device.ID)
+	log.Info("Disconnecting device:", s.device)
 	s.mu.Lock()
 	s.closed = true
 	if s.cancel != nil {
@@ -251,7 +246,7 @@ func (s *Session) disconnect() error {
 
 // Close close a gNMI session
 func (s *Session) Close() {
-	log.Info("Close session for device:", s.device.ID)
+	log.Info("Close session for device:", s.device)
 	err := s.disconnect()
 	if err != nil {
 		log.Error(err)

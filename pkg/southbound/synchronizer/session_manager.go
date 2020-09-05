@@ -161,7 +161,6 @@ func (sm *SessionManager) processDeviceEvents(ch <-chan *topodevice.ListResponse
 func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) error {
 	switch event.Type {
 	case topodevice.ListResponse_ADDED:
-		log.Info("Process device event Added")
 		err := sm.createSession(event.Device)
 		if err != nil {
 			return err
@@ -190,8 +189,6 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 				return err
 			}
 		}
-
-		log.Info("Process device event updated")
 
 	case topodevice.ListResponse_REMOVED:
 		err := sm.deleteSession(event.Device)
