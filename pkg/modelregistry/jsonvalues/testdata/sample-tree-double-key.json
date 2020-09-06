@@ -1,0 +1,36 @@
+{
+  "system": {
+    "logging": {
+      "remote-servers": {
+        "remote-server": [
+          {
+            "host": "h1",
+            "config": {
+              "host": "h1",
+              "source-address": "192.168.0.10"
+            },
+            "selectors": {
+              "selector": [
+                {
+                  "facility": "f1",
+                  "severity": "s1",
+                  "config": {
+                    "facility": "f1",
+                    "severity": "s1"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "host": "h2",
+            "config": {
+              "host": "h2",
+              "source-address": "192.168.0.11"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,36 +1,42 @@
 {
-  "remote-servers": {
-    "remote-server": [
-      {
-        "host": "h1",
-        "source-address": "192.168.0.1",
+  "system": {
+    "logging": {
+      "remote-servers": {
+        "remote-server": [
+          {
+            "host": "h1",
+            "config": {
+              "source-address": "192.168.0.1"
+            },
+            "selectors": {
+              "selector": [
+                {
+                  "facility": 1,
+                  "severity": 2,
+                  "config": {
+                    "facility": 1,
+                    "severity": 2
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "console": {
         "selectors": {
           "selector": [
             {
-              "facility": 1,
-              "severity": 2,
+              "facility": 3,
+              "severity": 4,
               "config": {
-                "facility": 1,
-                "severity": 2
+                "facility": 3,
+                "severity": 4
               }
             }
           ]
         }
       }
-    ]
-  },
-  "console": {
-    "selectors": {
-      "selector": [
-        {
-          "facility": 3,
-          "severity": 4,
-          "config": {
-            "facility": 3,
-            "severity": 4
-          }
-        }
-      ]
     }
   }
 }

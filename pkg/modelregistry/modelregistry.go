@@ -384,7 +384,10 @@ func formatName(dirEntry *yang.Entry, isList bool, parentPath string, subpathPre
 		sort.Slice(keyParts, func(i, j int) bool {
 			return keyParts[i] < keyParts[j]
 		})
-		name = fmt.Sprintf("%s/%s[%s=*]", parentAndSubPath, dirEntry.Name, strings.Join(keyParts, " "))
+		name = fmt.Sprintf("%s/%s", parentAndSubPath, dirEntry.Name)
+		for _, k := range keyParts {
+			name += fmt.Sprintf("[%s=*]", k)
+		}
 	} else {
 		name = fmt.Sprintf("%s/%s", parentAndSubPath, dirEntry.Name)
 	}

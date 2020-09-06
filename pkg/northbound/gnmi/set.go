@@ -24,7 +24,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
-	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
@@ -270,11 +269,6 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 	if jsonVal != nil {
 		log.Info("Processing Json Value in set", string(jsonVal))
 
-		intermediateConfigValues, err := store.DecomposeTree(jsonVal)
-		if err != nil {
-			return nil, fmt.Errorf("invalid JSON payload %s", string(jsonVal))
-		}
-
 		var rwPaths modelregistry.ReadWritePathMap
 		infos := manager.GetManager().DeviceCache.GetDevicesByID(devicetype.ID(target))
 		// Iterate through configs to find match for target
@@ -289,8 +283,8 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 			return nil, fmt.Errorf("cannot process JSON payload because "+
 				"Model Plugin not available for target %s", target)
 		}
-		correctedValues, err := jsonvalues.CorrectJSONPaths(
-			path, intermediateConfigValues, rwPaths, true)
+
+		correctedValues, err := jsonvalues.DecomposeJSONWithPaths(jsonVal, nil, rwPaths)
 		if err != nil {
 			log.Warn("Json value in Set could not be parsed", err)
 			return nil, err

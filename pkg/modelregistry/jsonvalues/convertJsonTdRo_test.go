@@ -19,7 +19,6 @@ import (
 	td1 "github.com/onosproject/config-models/modelplugin/testdevice-1.0.0/testdevice_1_0_0"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -77,17 +76,13 @@ func Test_correctJsonPathValuesTd(t *testing.T) {
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice-opstate.json")
 	assert.NilError(t, err)
 
-	values, err := store.DecomposeTree(sampleTree)
+	correctedPathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, nil)
 	assert.NilError(t, err)
-	assert.Equal(t, len(values), 6)
-
-	correctedPathValues, err := CorrectJSONPaths("", values, readOnlyPaths, true)
-	assert.NilError(t, err)
+	assert.Equal(t, 4, len(correctedPathValues))
 
 	for _, v := range correctedPathValues {
 		fmt.Printf("%s %v\n", (*v).Path, v.String())
 	}
-	assert.Equal(t, len(correctedPathValues), 4)
 
 	for _, correctedPathValue := range correctedPathValues {
 		switch correctedPathValue.Path {

@@ -42,11 +42,11 @@ func Test_SchemaDeviceSim(t *testing.T) {
 			"/system/aaa/authorization/state",
 			"/components/component[name=*]/subcomponents/subcomponent[name=*]/state",
 			"/components/component[name=*]/properties/property[name=*]/state",
-			"/system/logging/console/selectors/selector[facility severity=*]/state",
+			"/system/logging/console/selectors/selector[facility=*][severity=*]/state",
 			"/system/aaa/authentication/state",
 			"/system/ntp/state",
 			"/interfaces/interface[name=*]/hold-time/state",
-			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/state",
+			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/state",
 			"/system/openflow/agent/state",
 			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/tacacs/state",
 			"/system/aaa/server-groups/server-group[name=*]/state",
@@ -91,10 +91,10 @@ func Test_SchemaDeviceSim(t *testing.T) {
 			"/system/openflow/agent/config/backoff-interval",
 			"/system/aaa/server-groups/server-group[name=*]/name",
 			"/system/aaa/authentication/users/user[username=*]/username",
-			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/config/facility",
+			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/config/facility",
 			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/address",
 			"/system/ntp/servers/server[address=*]/config/prefer",
-			"/system/logging/console/selectors/selector[facility severity=*]/config/severity",
+			"/system/logging/console/selectors/selector[facility=*][severity=*]/config/severity",
 			"/system/openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/config/address",
 			"/system/aaa/authentication/users/user[username=*]/config/password",
 			"/system/ntp/ntp-keys/ntp-key[key-id=*]/config/key-value",
@@ -134,7 +134,7 @@ func Test_SchemaDeviceSim(t *testing.T) {
 			"/system/aaa/accounting/events/event[event-type=*]/config/event-type",
 			"/system/ssh-server/config/enable",
 			"/system/ssh-server/config/timeout",
-			"/system/logging/console/selectors/selector[facility severity=*]/config/facility",
+			"/system/logging/console/selectors/selector[facility=*][severity=*]/config/facility",
 			"/interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/config/description",
 			"/interfaces/interface[name=*]/hold-time/config/up",
 			"/system/dns/host-entries/host-entry[hostname=*]/config/hostname",
@@ -145,7 +145,7 @@ func Test_SchemaDeviceSim(t *testing.T) {
 			"/system/config/hostname",
 			"/system/aaa/accounting/config/accounting-method",
 			"/system/dns/host-entries/host-entry[hostname=*]/config/ipv4-address",
-			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/severity",
+			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/severity",
 			"/components/component[name=*]/subcomponents/subcomponent[name=*]/config/name",
 			"/system/ntp/config/enable-ntp-auth",
 			"/system/ntp/servers/server[address=*]/config/iburst",
@@ -177,7 +177,7 @@ func Test_SchemaDeviceSim(t *testing.T) {
 			"/system/aaa/authentication/users/user[username=*]/config/ssh-key",
 			"/system/logging/remote-servers/remote-server[host=*]/config/host",
 			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/config/secret-key",
-			"/system/logging/console/selectors/selector[facility severity=*]/severity",
+			"/system/logging/console/selectors/selector[facility=*][severity=*]/severity",
 			"/system/ntp/servers/server[address=*]/config/port",
 			"/system/ntp/config/ntp-source-address",
 			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/config/retransmit-attempts",
@@ -185,9 +185,9 @@ func Test_SchemaDeviceSim(t *testing.T) {
 			"/system/aaa/server-groups/server-group[name=*]/config/type",
 			"/system/dns/config/search",
 			"/system/ntp/servers/server[address=*]/config/version",
-			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/facility",
+			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/facility",
 			"/system/ssh-server/config/session-limit",
-			"/system/logging/console/selectors/selector[facility severity=*]/facility",
+			"/system/logging/console/selectors/selector[facility=*][severity=*]/facility",
 			"/system/dns/host-entries/host-entry[hostname=*]/config/ipv6-address",
 			"/system/openflow/controllers/controller[name=*]/config/name",
 			"/system/dns/servers/server[address=*]/address",
@@ -198,14 +198,14 @@ func Test_SchemaDeviceSim(t *testing.T) {
 			"/system/aaa/authentication/users/user[username=*]/config/role",
 			"/system/telnet-server/config/session-limit",
 			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/config/timeout",
-			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/config/severity":
+			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/config/severity":
 		default:
 			t.Fatal("Unexpected readWritePath", p)
 		}
 	}
 
-	logSvrSelFacName, logSvrSelFacNameOk := readWritePathsDeviceSim1["/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/config/facility"]
-	assert.Assert(t, logSvrSelFacNameOk, "expected to get /system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/config/facility")
-	assert.Equal(t, logSvrSelFacName.ValueType, devicechange.ValueType_STRING, "expected /system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility severity=*]/config/facility to be STRING")
+	logSvrSelFacName, logSvrSelFacNameOk := readWritePathsDeviceSim1["/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/config/facility"]
+	assert.Assert(t, logSvrSelFacNameOk, "expected to get /system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/config/facility")
+	assert.Equal(t, logSvrSelFacName.ValueType, devicechange.ValueType_STRING, "expected /system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/config/facility to be STRING")
 
 }

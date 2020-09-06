@@ -57,6 +57,7 @@ const (
 	cont1aCont2aLeaf2g = "/cont1a/cont2a/leaf2g"
 	leaf2d             = "/leaf2d"
 	list2bWcLeaf3c     = "/list2b[index=*]/leaf3c"
+	list2bWcIndex      = "/list2b[index=*]/index"
 	list2b100Leaf3c    = "/list2b[index=100]/leaf3c"
 	list2b101Leaf3c    = "/list2b[index=101]/leaf3c"
 	cont1bState        = "/cont1b-state"
@@ -87,6 +88,7 @@ func synchronizerSetUp(t *testing.T) (synchronizerParameters, error) {
 	roSubPath2 := make(modelregistry.ReadOnlySubPathMap)
 	roSubPath2[leaf2d] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
 	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
+	roSubPath2[list2bWcIndex] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
 	roPathMap[cont1bState] = roSubPath2
 
 	ctrl := gomock.NewController(t)
