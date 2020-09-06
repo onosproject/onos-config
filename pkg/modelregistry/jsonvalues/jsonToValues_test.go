@@ -54,35 +54,35 @@ func Test_DecomposeTree(t *testing.T) {
 		t.Logf("%s %s\n", (*v).Path, (*v).GetValue().ValueToString())
 		switch v.Path {
 		case
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/address",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/aux-id",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/port",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/source-interface",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/transport",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/address",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/aux-id",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/port",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/source-interface",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/transport",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/address",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/aux-id",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/port",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/source-interface",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/transport",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/address",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/aux-id",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/port",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/source-interface",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/transport":
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/address",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/aux-id",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/port",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/source-interface",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/transport",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/address",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/aux-id",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/port",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/source-interface",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/transport",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/address",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/aux-id",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/port",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/source-interface",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/transport",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/address",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/aux-id",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/port",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/source-interface",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/transport":
 			assert.Equal(t, devicechange.ValueType_STRING, v.GetValue().GetType(), v.Path)
 		case
 			"/interfaces/interface[name=admin]/config/enabled":
 			assert.Equal(t, devicechange.ValueType_BOOL, v.GetValue().GetType(), v.Path)
 		case
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=0]/state/priority",
-			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=1]/state/priority",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=0]/state/priority",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=1]/state/priority":
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/priority",
+			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/priority",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/priority",
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/priority":
 			assert.Equal(t, devicechange.ValueType_UINT, v.GetValue().GetType(), v.Path)
 		default:
 			t.Fatal("Unexpected jsonPath", v.Path)

@@ -14,10 +14,10 @@
             "connections": {
               "connection": [
                 {
-                  "aux-id": 0,
+                  "aux-id": 10,
                   "state": {
                     "address": "192.0.2.10",
-                    "aux-id": 0,
+                    "aux-id": 10,
                     "port": 6633,
                     "priority": 1,
                     "source-interface": "admin",
@@ -25,10 +25,10 @@
                   }
                 },
                 {
-                  "aux-id": 1,
+                  "aux-id": 11,
                   "state": {
                     "address": "192.0.2.11",
-                    "aux-id": 1,
+                    "aux-id": 11,
                     "port": 6653,
                     "priority": 2,
                     "source-interface": "admin",
@@ -43,10 +43,10 @@
             "connections": {
               "connection": [
                 {
-                  "aux-id": 0,
+                  "aux-id": 10,
                   "state": {
                     "address": "192.0.3.10",
-                    "aux-id": 0,
+                    "aux-id": 10,
                     "port": 6633,
                     "priority": 1,
                     "source-interface": "admin",
@@ -54,10 +54,10 @@
                   }
                 },
                 {
-                  "aux-id": 1,
+                  "aux-id": 11,
                   "state": {
                     "address": "192.0.3.11",
-                    "aux-id": 1,
+                    "aux-id": 11,
                     "port": 6653,
                     "priority": 2,
                     "source-interface": "admin",
