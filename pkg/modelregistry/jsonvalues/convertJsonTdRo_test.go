@@ -16,69 +16,33 @@ package jsonvalues
 
 import (
 	"fmt"
-	td1 "github.com/onosproject/config-models/modelplugin/testdevice-1.0.0/testdevice_1_0_0"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
-	"github.com/openconfig/ygot/ygot"
 	"gotest.tools/assert"
 	"io/ioutil"
 	"testing"
 )
 
-type modelPluginTestDevice string
-
-func (m modelPluginTestDevice) ModelData() (string, string, []*gnmi.ModelData, string) {
-	return modelTypeTest, modelVersionTest, modelData, moduleNameTest
-}
-
-// UnmarshalConfigValues uses the `generated.go` of the TestDevice-1.0.0 plugin module
-func (m modelPluginTestDevice) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
-	device := &td1.Device{}
-	vgs := ygot.ValidatedGoStruct(device)
-
-	if err := td1.Unmarshal(jsonTree, device); err != nil {
-		return nil, err
-	}
-
-	return &vgs, nil
-}
-
-// Validate uses the `generated.go` of the TestDevice1 plugin module
-func (m modelPluginTestDevice) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
-	deviceDeref := *ygotModel
-	device, ok := deviceDeref.(*td1.Device)
-	if !ok {
-		return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
-	}
-	return device.Validate()
-}
-
-// Schema uses the `generated.go` of the TestDevice1 plugin module
-func (m modelPluginTestDevice) Schema() (map[string]*yang.Entry, error) {
-	return td1.UnzipSchema()
-}
-
 func Test_correctJsonPathValuesTd(t *testing.T) {
 
-	var modelPluginTest modelPluginTestDevice
+	var modelPluginTest modelPluginTestDevice2
 
-	td1Schema, err := modelPluginTest.Schema()
+	td2Schema, err := modelPluginTest.Schema()
 	assert.NilError(t, err)
-	assert.Equal(t, len(td1Schema), 6)
+	assert.Equal(t, len(td2Schema), 8)
 
-	readOnlyPaths, _ := modelregistry.ExtractPaths(td1Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, _ := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
 	assert.Equal(t, len(readOnlyPaths), 2)
 
 	// All values are taken from testdata/sample-testdevice-opstate.json and defined
 	// here in the intermediate jsonToValues format
-	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice-opstate.json")
+	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-opstate.json")
 	assert.NilError(t, err)
 
 	correctedPathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, nil)
 	assert.NilError(t, err)
-	assert.Equal(t, 4, len(correctedPathValues))
+	assert.Equal(t, 8, len(correctedPathValues))
 
 	for _, v := range correctedPathValues {
 		fmt.Printf("%s %v\n", (*v).Path, v.String())
@@ -88,14 +52,20 @@ func Test_correctJsonPathValuesTd(t *testing.T) {
 		switch correctedPathValue.Path {
 		case
 			"/cont1a/cont2a/leaf2c",
-			"/cont1b-state/list2b[index=100]/leaf3c",
-			"/cont1b-state/list2b[index=101]/leaf3c":
+			"/cont1b-state/list2b[index1=101][index2=102]/leaf3c",
+			"/cont1b-state/list2b[index1=101][index2=103]/leaf3c",
+			"/cont1b-state/list2b[index1=101][index2=102]/leaf3d",
+			"/cont1b-state/list2b[index1=101][index2=103]/leaf3d",
+			"/cont1b-state/cont2c/leaf3b":
 			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_STRING, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
 		case
 			"/cont1b-state/leaf2d":
 			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_UINT, correctedPathValue.Path)
 			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+		case
+			"/cont1b-state/cont2c/leaf3a":
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_BOOL, correctedPathValue.Path)
 		default:
 			t.Fatal("Unexpected path", correctedPathValue.Path)
 		}

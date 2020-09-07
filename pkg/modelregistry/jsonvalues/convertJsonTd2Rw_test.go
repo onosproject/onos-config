@@ -62,6 +62,69 @@ func (m modelPluginTestDevice2) Schema() (map[string]*yang.Entry, error) {
 }
 
 // chocolate is a "case" within a "choice"
+func Test_JsonPathValuesTd2_config(t *testing.T) {
+
+	var modelPluginTest modelPluginTestDevice2
+
+	td2Schema, err := modelPluginTest.Schema()
+	assert.NilError(t, err)
+	assert.Equal(t, 8, len(td2Schema))
+
+	readOnlyPaths, readWritePaths := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
+	assert.Equal(t, 15, len(readWritePaths))
+
+	// All values are taken from testdata/sample-testdevice2-config.json
+	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-config.json")
+	assert.NilError(t, err)
+
+	correctedPathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
+	assert.NilError(t, err)
+	assert.Equal(t, len(correctedPathValues), 10)
+	for _, v := range correctedPathValues {
+		fmt.Printf("%s %v\n", (*v).Path, v.String())
+	}
+
+	for _, correctedPathValue := range correctedPathValues {
+		switch correctedPathValue.Path {
+		case
+			"/cont1a/leaf1a":
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_STRING, correctedPathValue.Path)
+		case
+			"/cont1a/cont2a/leaf2e":
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_LEAFLIST_INT, correctedPathValue.Path)
+			leaf2eLl := (*devicechange.TypedLeafListInt64)(correctedPathValue.Value)
+			assert.Equal(t, 5, len(leaf2eLl.List()))
+			assert.Equal(t, 5, leaf2eLl.List()[0])
+			assert.Equal(t, 1, leaf2eLl.List()[4])
+		case
+			"/cont1a/cont2a/leaf2a",
+			"/cont1a/list2a[name=l2a1]/tx-power",
+			"/cont1a/list2a[name=l2a1]/rx-power",
+			"/cont1a/list2a[name=l2a2]/tx-power",
+			"/cont1a/list2a[name=l2a2]/rx-power":
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_UINT, correctedPathValue.Path)
+		case
+			"/cont1a/cont2a/leaf2b",
+			"/cont1a/cont2a/leaf2d":
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_DECIMAL, correctedPathValue.Path)
+		case
+			"/cont1a/cont2a/leaf2f":
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_BYTES, correctedPathValue.Path)
+		case
+			"/cont1a/cont2a/leaf2g":
+			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_BOOL, correctedPathValue.Path)
+
+		default:
+			t.Fatal("Unexpected path", correctedPathValue.Path)
+		}
+	}
+	ygotValues, err := modelPluginTest.UnmarshalConfigValues(sampleTree)
+	assert.NilError(t, err, "Unexpected error unmarshalling values")
+	err = modelPluginTest.Validate(ygotValues)
+	assert.NilError(t, err, "Unexpected error Validation error")
+}
+
+// chocolate is a "case" within a "choice"
 func Test_correctJsonPathValuesTd2(t *testing.T) {
 
 	var modelPluginTest modelPluginTestDevice2
