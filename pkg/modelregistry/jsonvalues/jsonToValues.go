@@ -116,11 +116,11 @@ func extractValuesWithPaths(f interface{}, parentPath string,
 			}
 		}
 	default:
-		attrChanges, err := handleAttribute(value, parentPath, modelROpaths, modelRWpaths)
+		attr, err := handleAttribute(value, parentPath, modelROpaths, modelRWpaths)
 		if err != nil {
 			return nil, fmt.Errorf("error handling json attribute value %v", err)
 		}
-		changes = append(changes, attrChanges...)
+		changes = append(changes, attr)
 	}
 
 	return changes, nil
@@ -209,15 +209,14 @@ func handleMap(value map[string]interface{}, parentPath string,
 }
 
 func handleAttribute(value interface{}, parentPath string, modelROpaths modelregistry.ReadOnlyPathMap,
-	modelRWpaths modelregistry.ReadWritePathMap) ([]*devicechange.PathValue, error) {
-
-	changes := make([]*devicechange.PathValue, 0)
+	modelRWpaths modelregistry.ReadWritePathMap) (*devicechange.PathValue, error) {
 
 	var modeltype devicechange.ValueType
 	var modelPath string
 	var ok bool
 	var pathElem *modelregistry.ReadWritePathElem
 	var subPath *modelregistry.ReadOnlyAttrib
+	var err error
 	pathElem, modelPath, ok = findModelRwPathNoIndices(modelRWpaths, parentPath)
 	if !ok {
 		subPath, modelPath, ok = findModelRoPathNoIndices(modelROpaths, parentPath)
@@ -228,6 +227,7 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 	} else {
 		modeltype = pathElem.ValueType
 	}
+	var typedValue *devicechange.TypedValue
 	switch modeltype {
 	case devicechange.ValueType_STRING:
 		var stringVal string
@@ -239,11 +239,9 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		case bool:
 			stringVal = fmt.Sprintf("%v", value)
 		}
-		newCv := devicechange.PathValue{Path: modelPath, Value: devicechange.NewTypedValueString(stringVal)}
-		changes = append(changes, &newCv)
+		typedValue = devicechange.NewTypedValueString(stringVal)
 	case devicechange.ValueType_BOOL:
-		newCv := devicechange.PathValue{Path: modelPath, Value: devicechange.NewTypedValueBool(value.(bool))}
-		changes = append(changes, &newCv)
+		typedValue = devicechange.NewTypedValueBool(value.(bool))
 	case devicechange.ValueType_UINT:
 		var uintVal uint
 		switch valueTyped := value.(type) {
@@ -258,8 +256,7 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		default:
 			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
 		}
-		newCv := devicechange.PathValue{Path: modelPath, Value: devicechange.NewTypedValueUint64(uintVal)}
-		changes = append(changes, &newCv)
+		typedValue = devicechange.NewTypedValueUint64(uintVal)
 	case devicechange.ValueType_DECIMAL:
 		var digits int64
 		var precision uint32 = 6 // TODO should get this from the model (when it is populated in it)
@@ -275,11 +272,9 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		default:
 			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
 		}
-		newCv := devicechange.PathValue{Path: modelPath, Value: devicechange.NewTypedValueDecimal64(digits, precision)}
-		changes = append(changes, &newCv)
+		typedValue = devicechange.NewTypedValueDecimal64(digits, precision)
 	case devicechange.ValueType_BYTES:
 		var dstBytes []byte
-		var err error
 		switch valueTyped := value.(type) {
 		case string:
 			// Values should be base64
@@ -290,24 +285,86 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		default:
 			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
 		}
-		newCv := devicechange.PathValue{Path: modelPath, Value: devicechange.NewTypedValueBytes(dstBytes)}
-		changes = append(changes, &newCv)
+		typedValue = devicechange.NewTypedValueBytes(dstBytes)
+	default:
+		typedValue, err = handleAttributeLeafList(modelPath, modeltype, value)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &devicechange.PathValue{Path: modelPath, Value: typedValue}, nil
+}
+
+// A continuation of handle attribute above
+func handleAttributeLeafList(modelPath string, modeltype devicechange.ValueType,
+	value interface{}) (*devicechange.TypedValue, error) {
+
+	var typedValue *devicechange.TypedValue
+
+	switch modeltype {
 	case devicechange.ValueType_LEAFLIST_INT:
 		var leafvalue int
 		switch valueTyped := value.(type) {
 		case float64:
-			// Values should be base64
 			leafvalue = int(valueTyped)
 		default:
 			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
 		}
-		// Have to find previous instances
-		newCv := devicechange.PathValue{Path: modelPath, Value: devicechange.NewLeafListInt64Tv([]int{leafvalue})}
-		changes = append(changes, &newCv)
+		typedValue = devicechange.NewLeafListInt64Tv([]int{leafvalue})
+	case devicechange.ValueType_LEAFLIST_UINT:
+		var leafvalue uint
+		switch valueTyped := value.(type) {
+		case float64:
+			leafvalue = uint(valueTyped)
+		default:
+			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
+		}
+		typedValue = devicechange.NewLeafListUint64Tv([]uint{leafvalue})
+	case devicechange.ValueType_LEAFLIST_FLOAT:
+		var leafvalue float32
+		switch valueTyped := value.(type) {
+		case float64:
+			leafvalue = float32(valueTyped)
+		default:
+			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
+		}
+		typedValue = devicechange.NewLeafListFloat32Tv([]float32{leafvalue})
+	case devicechange.ValueType_LEAFLIST_STRING:
+		var leafvalue string
+		switch valueTyped := value.(type) {
+		case string:
+			leafvalue = valueTyped
+		default:
+			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
+		}
+		typedValue = devicechange.NewLeafListStringTv([]string{leafvalue})
+	case devicechange.ValueType_LEAFLIST_BOOL:
+		var leafvalue bool
+		switch valueTyped := value.(type) {
+		case bool:
+			leafvalue = valueTyped
+		default:
+			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
+		}
+		typedValue = devicechange.NewLeafListBoolTv([]bool{leafvalue})
+	case devicechange.ValueType_LEAFLIST_BYTES:
+		var leafvalue []byte
+		var err error
+		switch valueTyped := value.(type) {
+		case string:
+			// Values should be base64
+			leafvalue, err = base64.StdEncoding.DecodeString(valueTyped)
+			if err != nil {
+				return nil, fmt.Errorf("expected binary value as base64. error decoding %s as base64 %v", valueTyped, err)
+			}
+		default:
+			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
+		}
+		typedValue = devicechange.NewLeafListBytesTv([][]byte{leafvalue})
 	default:
 		return nil, fmt.Errorf("unhandled conversion to %v", modeltype)
 	}
-	return changes, nil
+	return typedValue, nil
 }
 
 func findModelRwPathNoIndices(modelRWpaths modelregistry.ReadWritePathMap,
