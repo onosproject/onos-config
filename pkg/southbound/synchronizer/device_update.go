@@ -39,7 +39,7 @@ func (s *Session) getTermPerDevice(device *topodevice.Device) (int, error) {
 
 func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
 	service topodevice.ServiceState) error {
-	log.Info("Update device state")
+	log.Info("Update device %s state", s.device.ID)
 
 	id := s.device.ID
 	topoDevice, err := s.deviceStore.Get(id)
@@ -66,10 +66,6 @@ func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channe
 	protocolState.ChannelState = channel
 	protocolState.ServiceState = service
 	topoDevice.Protocols = append(topoDevice.Protocols, protocolState)
-	mastershipState, err := s.mastershipStore.GetMastership(topoDevice.ID)
-	if err != nil {
-		return err
-	}
 
 	// Read the current term for the given device
 	currentTerm, err := s.getTermPerDevice(topoDevice)
@@ -78,15 +74,15 @@ func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channe
 	}
 
 	// Do not update the state of a device if the node encounters a mastership term greater than its own
-	if uint64(mastershipState.Term) < uint64(currentTerm) {
-		return errors.New("device mastership term is greater than node mastership term")
+	if uint64(s.mastershipState.Term) < uint64(currentTerm) {
+		return backoff.Permanent(errors.New("device mastership term is greater than node mastership term"))
 	}
 
 	if topoDevice.Attributes == nil {
 		topoDevice.Attributes = make(map[string]string)
 	}
 
-	topoDevice.Attributes[mastershipTermKey] = strconv.FormatUint(uint64(mastershipState.Term), 10)
+	topoDevice.Attributes[mastershipTermKey] = strconv.FormatUint(uint64(s.mastershipState.Term), 10)
 	_, err = s.deviceStore.Update(topoDevice)
 	if err != nil {
 		log.Errorf("Device %s is not updated %s", id, err.Error())
@@ -126,10 +122,8 @@ func (s *Session) updateDisconnectedDevice() error {
 // updateDeviceState updates device state based on a device response event
 func (s *Session) updateDeviceState() error {
 	for event := range s.deviceResponseChan {
-		log.Info("update event received")
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
-			log.Info("Device connected")
 			// TODO: Retry only on write conflicts
 			_ = backoff.Retry(s.updateConnectedDevice, backoff.NewExponentialBackOff())
 		case events.EventTypeErrorDeviceConnect:

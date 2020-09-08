@@ -49,7 +49,7 @@ type Session struct {
 	mastershipStore           mastership.Store
 	deviceStore               devicestore.Store
 	mastershipState           *mastership.Mastership
-	closeCh                   chan struct{}
+	connected                 bool
 	opStateChan               chan<- events.OperationalStateEvent
 	deviceResponseChan        chan events.DeviceResponse
 	dispatcher                *dispatcher.Dispatcher
@@ -79,21 +79,16 @@ func (s *Session) getCurrentTerm() (int, error) {
 
 // open open a new gNMI session
 func (s *Session) open() error {
-	ch := make(chan mastership.Mastership)
-	err := s.mastershipStore.Watch(s.device.ID, ch)
-	if err != nil {
-		return err
-	}
-
 	s.deviceResponseChan = make(chan events.DeviceResponse)
 
 	go func() {
 		_ = s.updateDeviceState()
 
 	}()
-
 	go func() {
-		connected := false
+		s.mu.Lock()
+		s.connected = false
+		s.mu.Unlock()
 		state, _ := s.mastershipStore.GetMastership(s.device.ID)
 		if state != nil {
 			s.mu.Lock()
@@ -110,41 +105,14 @@ func (s *Session) open() error {
 				if err != nil {
 					log.Error(err)
 				} else {
-					connected = true
+					s.mu.Lock()
+					s.connected = true
+					s.mu.Unlock()
 				}
 			}
 
 		}
 
-		for {
-			select {
-			case state := <-ch:
-				s.mu.Lock()
-				s.mastershipState = &state
-				s.mu.Unlock()
-				currentTerm, err := s.getCurrentTerm()
-				if err != nil {
-					log.Error(err)
-				}
-				if state.Master == s.mastershipStore.NodeID() && !connected && uint64(state.Term) >= uint64(currentTerm) {
-					err := s.connect()
-					if err != nil {
-						log.Error(err)
-					} else {
-						connected = true
-					}
-				} else if state.Master != s.mastershipStore.NodeID() && connected {
-					err := s.disconnect()
-					if err != nil {
-						log.Error(err)
-					} else {
-						connected = false
-					}
-				}
-			case <-s.closeCh:
-				return
-			}
-		}
 	}()
 
 	return nil
@@ -251,7 +219,5 @@ func (s *Session) Close() {
 	if err != nil {
 		log.Error(err)
 	}
-	if s.closeCh != nil {
-		close(s.closeCh)
-	}
+
 }

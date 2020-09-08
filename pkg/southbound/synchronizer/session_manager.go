@@ -33,6 +33,7 @@ type SessionManager struct {
 	topoChannel               chan *topodevice.ListResponse
 	opStateChan               chan<- events.OperationalStateEvent
 	deviceStore               devicestore.Store
+	closeCh                   chan struct{}
 	dispatcher                *dispatcher.Dispatcher
 	modelRegistry             *modelregistry.ModelRegistry
 	sessions                  map[topodevice.ID]*Session
@@ -201,6 +202,47 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 
 }
 
+func (sm *SessionManager) handleMastershipEvents(session *Session) {
+	ch := make(chan mastership.Mastership)
+	err := sm.mastershipStore.Watch(session.device.ID, ch)
+	if err != nil {
+		return
+	}
+
+	for {
+		select {
+		case state := <-ch:
+			currentTerm, err := session.getCurrentTerm()
+			if err != nil {
+				log.Error(err)
+			}
+			if state.Master == sm.mastershipStore.NodeID() && !session.connected && uint64(state.Term) >= uint64(currentTerm) {
+				err := sm.createSession(session.device)
+				if err != nil {
+					log.Error(err)
+				} else {
+					sm.mu.Lock()
+					session.connected = true
+					sm.mu.Unlock()
+				}
+			} else if state.Master != sm.mastershipStore.NodeID() && session.connected {
+				err := sm.deleteSession(session.device)
+				if err != nil {
+					log.Error(err)
+				} else {
+					sm.mu.Lock()
+					session.connected = false
+					sm.mu.Unlock()
+
+				}
+			}
+		case <-sm.closeCh:
+			return
+		}
+	}
+
+}
+
 // createSession creates a new gNMI session
 func (sm *SessionManager) createSession(device *topodevice.Device) error {
 	log.Info("Creating session for device:", device.ID)
@@ -225,6 +267,10 @@ func (sm *SessionManager) createSession(device *topodevice.Device) error {
 		return err
 	}
 
+	go func() {
+		sm.handleMastershipEvents(session)
+	}()
+
 	// Close the old session and adds the new session to the list of sessions
 	oldSession, ok := sm.sessions[device.ID]
 	if ok {
@@ -244,6 +290,9 @@ func (sm *SessionManager) deleteSession(device *topodevice.Device) error {
 	if ok {
 		session.Close()
 		delete(sm.sessions, device.ID)
+		if sm.closeCh != nil {
+			close(sm.closeCh)
+		}
 	}
 	return nil
 
