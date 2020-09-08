@@ -25,10 +25,19 @@ import (
 	"gotest.tools/assert"
 	"io/ioutil"
 	"testing"
+	"time"
 )
 
 // For testing TestDevice-2.0.0 - which has an augmented YANG with Choice and Case
 type modelPluginTestDevice2 string
+
+const modelTypeTest = "TestModel"
+const modelVersionTest = "0.0.1"
+const moduleNameTest = "testmodel.so.1.0.0"
+
+var modelData = []*gnmi.ModelData{
+	{Name: "testmodel", Organization: "Open Networking Lab", Version: "2019-07-10"},
+}
 
 func (m modelPluginTestDevice2) ModelData() (string, string, []*gnmi.ModelData, string) {
 	return modelTypeTest, modelVersionTest, modelData, moduleNameTest
@@ -73,26 +82,23 @@ func Test_JsonPathValuesTd2_config(t *testing.T) {
 	readOnlyPaths, readWritePaths := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
 	assert.Equal(t, 15, len(readWritePaths))
 
-	// All values are taken from testdata/sample-testdevice2-config.json
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-config.json")
 	assert.NilError(t, err)
 
-	correctedPathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
+	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
-	assert.Equal(t, len(correctedPathValues), 10)
-	for _, v := range correctedPathValues {
-		fmt.Printf("%s %v\n", (*v).Path, v.String())
-	}
+	assert.Equal(t, len(pathValues), 10)
 
-	for _, correctedPathValue := range correctedPathValues {
-		switch correctedPathValue.Path {
+	for _, pathValue := range pathValues {
+		//t.Logf("%v", pathValue)
+		switch pathValue.Path {
 		case
 			"/cont1a/leaf1a":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_STRING, correctedPathValue.Path)
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
 		case
 			"/cont1a/cont2a/leaf2e":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_LEAFLIST_INT, correctedPathValue.Path)
-			leaf2eLl := (*devicechange.TypedLeafListInt64)(correctedPathValue.Value)
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_LEAFLIST_INT, pathValue.Path)
+			leaf2eLl := (*devicechange.TypedLeafListInt64)(pathValue.Value)
 			assert.Equal(t, 5, len(leaf2eLl.List()))
 			assert.Equal(t, 5, leaf2eLl.List()[0])
 			assert.Equal(t, 1, leaf2eLl.List()[4])
@@ -102,20 +108,20 @@ func Test_JsonPathValuesTd2_config(t *testing.T) {
 			"/cont1a/list2a[name=l2a1]/rx-power",
 			"/cont1a/list2a[name=l2a2]/tx-power",
 			"/cont1a/list2a[name=l2a2]/rx-power":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_UINT, correctedPathValue.Path)
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_UINT, pathValue.Path)
 		case
 			"/cont1a/cont2a/leaf2b",
 			"/cont1a/cont2a/leaf2d":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_DECIMAL, correctedPathValue.Path)
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_DECIMAL, pathValue.Path)
 		case
 			"/cont1a/cont2a/leaf2f":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_BYTES, correctedPathValue.Path)
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_BYTES, pathValue.Path)
 		case
 			"/cont1a/cont2a/leaf2g":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_BOOL, correctedPathValue.Path)
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_BOOL, pathValue.Path)
 
 		default:
-			t.Fatal("Unexpected path", correctedPathValue.Path)
+			t.Fatal("Unexpected path", pathValue.Path)
 		}
 	}
 	ygotValues, err := modelPluginTest.UnmarshalConfigValues(sampleTree)
@@ -134,29 +140,24 @@ func Test_correctJsonPathValuesTd2(t *testing.T) {
 	assert.Equal(t, len(td2Schema), 8)
 
 	readOnlyPaths, readWritePaths := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
-	assert.Equal(t, len(readWritePaths), 15)
 
-	// All values are taken from testdata/sample-testdevice2-choice.json and defined
-	// here in the intermediate jsonToValues format
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-choice.json")
 	assert.NilError(t, err)
 
-	correctedPathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
+	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
-	assert.Equal(t, len(correctedPathValues), 2)
-	for _, v := range correctedPathValues {
-		fmt.Printf("%s %v\n", (*v).Path, v.String())
-	}
+	assert.Equal(t, len(pathValues), 2)
 
-	for _, correctedPathValue := range correctedPathValues {
-		switch correctedPathValue.Path {
+	for _, pathValue := range pathValues {
+		//t.Logf("%v", pathValue)
+		switch pathValue.Path {
 		case
 			"/cont1a/cont2d/leaf2d3c",
 			"/cont1a/cont2d/chocolate":
-			assert.Equal(t, correctedPathValue.GetValue().GetType(), devicechange.ValueType_STRING, correctedPathValue.Path)
-			assert.Equal(t, len(correctedPathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
+			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 0)
 		default:
-			t.Fatal("Unexpected path", correctedPathValue.Path)
+			t.Fatal("Unexpected path", pathValue.Path)
 		}
 	}
 	ygotValues, err := modelPluginTest.UnmarshalConfigValues(sampleTree)
@@ -188,4 +189,46 @@ func Test_correctJsonPathValuesTd2Wrong(t *testing.T) {
 	t.Logf("Validate should be throwing error here since all elements of choice "+
 		"are present and should not be. Raise issue on YGOT. %v", err)
 	//assert.Error(t, err, "choice")
+}
+
+func Test_correctJsonPathValuesTd(t *testing.T) {
+
+	td2Schema, err := td2.UnzipSchema()
+	assert.NilError(t, err)
+	assert.Equal(t, len(td2Schema), 8)
+
+	readOnlyPaths, _ := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
+	assert.Equal(t, len(readOnlyPaths), 2)
+
+	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-opstate.json")
+	assert.NilError(t, err)
+	time.Sleep(10 * time.Millisecond)
+
+	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, nil)
+	assert.NilError(t, err)
+	assert.Equal(t, 8, len(pathValues))
+
+	for _, pathValue := range pathValues {
+		//t.Logf("%v", pathValue)
+		switch pathValue.Path {
+		case
+			"/cont1a/cont2a/leaf2c",
+			"/cont1b-state/list2b[index1=101][index2=102]/leaf3c",
+			"/cont1b-state/list2b[index1=101][index2=103]/leaf3c",
+			"/cont1b-state/list2b[index1=101][index2=102]/leaf3d",
+			"/cont1b-state/list2b[index1=101][index2=103]/leaf3d",
+			"/cont1b-state/cont2c/leaf3b":
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
+			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 0)
+		case
+			"/cont1b-state/leaf2d":
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_UINT, pathValue.Path)
+			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 0)
+		case
+			"/cont1b-state/cont2c/leaf3a":
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_BOOL, pathValue.Path)
+		default:
+			t.Fatal("Unexpected path", pathValue.Path)
+		}
+	}
 }

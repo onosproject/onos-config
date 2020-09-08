@@ -61,8 +61,6 @@ func DecomposeJSONWithPaths(genericJSON []byte, ropaths modelregistry.ReadOnlyPa
 
 // extractValuesIntermediate recursively walks a JSON tree to create a flat set
 // of paths and values.
-// Note: it is not possible to find indices of lists and accurate devicechange directly
-// from json - for that the RO Paths must be consulted
 func extractValuesWithPaths(f interface{}, parentPath string,
 	modelROpaths modelregistry.ReadOnlyPathMap,
 	modelRWpaths modelregistry.ReadWritePathMap) ([]*devicechange.PathValue, error) {
@@ -287,7 +285,7 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		}
 		typedValue = devicechange.NewTypedValueBytes(dstBytes)
 	default:
-		typedValue, err = handleAttributeLeafList(modelPath, modeltype, value)
+		typedValue, err = handleAttributeLeafList(modeltype, value)
 		if err != nil {
 			return nil, err
 		}
@@ -296,7 +294,7 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 }
 
 // A continuation of handle attribute above
-func handleAttributeLeafList(modelPath string, modeltype devicechange.ValueType,
+func handleAttributeLeafList(modeltype devicechange.ValueType,
 	value interface{}) (*devicechange.TypedValue, error) {
 
 	var typedValue *devicechange.TypedValue

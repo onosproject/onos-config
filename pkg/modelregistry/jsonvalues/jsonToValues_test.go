@@ -46,13 +46,13 @@ func Test_DecomposeTree(t *testing.T) {
 	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree", len(sampleTree))
 
 	ds1RoPaths, ds1RwPaths := setUpRwPaths()
-	values, err := DecomposeJSONWithPaths(sampleTree, ds1RoPaths, ds1RwPaths)
+	pathValues, err := DecomposeJSONWithPaths(sampleTree, ds1RoPaths, ds1RwPaths)
 	assert.NilError(t, err)
-	assert.Equal(t, len(values), 25)
+	assert.Equal(t, len(pathValues), 25)
 
-	for _, v := range values {
-		t.Logf("%s %s\n", (*v).Path, (*v).GetValue().ValueToString())
-		switch v.Path {
+	for _, pathValue := range pathValues {
+		//t.Logf("%v", pathValue)
+		switch pathValue.Path {
 		case
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/address",
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/aux-id",
@@ -74,18 +74,18 @@ func Test_DecomposeTree(t *testing.T) {
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/port",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/source-interface",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/transport":
-			assert.Equal(t, devicechange.ValueType_STRING, v.GetValue().GetType(), v.Path)
+			assert.Equal(t, devicechange.ValueType_STRING, pathValue.GetValue().GetType(), pathValue.Path)
 		case
 			"/interfaces/interface[name=admin]/config/enabled":
-			assert.Equal(t, devicechange.ValueType_BOOL, v.GetValue().GetType(), v.Path)
+			assert.Equal(t, devicechange.ValueType_BOOL, pathValue.GetValue().GetType(), pathValue.Path)
 		case
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/priority",
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/priority",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/priority",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/priority":
-			assert.Equal(t, devicechange.ValueType_UINT, v.GetValue().GetType(), v.Path)
+			assert.Equal(t, devicechange.ValueType_UINT, pathValue.GetValue().GetType(), pathValue.Path)
 		default:
-			t.Fatal("Unexpected jsonPath", v.Path)
+			t.Fatal("Unexpected jsonPath", pathValue.Path)
 		}
 	}
 }
@@ -97,12 +97,12 @@ func Test_DecomposeTreeConfigOnly(t *testing.T) {
 	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree", len(sampleTree))
 
 	_, ds1RwPaths := setUpRwPaths()
-	values, err := DecomposeJSONWithPaths(sampleTree, nil, ds1RwPaths)
+	pathValues, err := DecomposeJSONWithPaths(sampleTree, nil, ds1RwPaths)
 	assert.NilError(t, err)
-	assert.Equal(t, len(values), 6)
+	assert.Equal(t, len(pathValues), 6)
 
-	for _, v := range values {
-		t.Logf("%s %s\n", (*v).Path, (*v).GetValue().ValueToString())
+	for _, v := range pathValues {
+		//t.Logf("%v", v)
 		switch v.Path {
 		case
 			"/system/logging/remote-servers/remote-server[host=h2]/config/host",
