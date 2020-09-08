@@ -46,13 +46,13 @@ func Test_DecomposeTree(t *testing.T) {
 	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree", len(sampleTree))
 
 	ds1RoPaths, ds1RwPaths := setUpRwPaths()
-	values, err := DecomposeJSONWithPaths(sampleTree, ds1RoPaths, ds1RwPaths)
+	pathValues, err := DecomposeJSONWithPaths(sampleTree, ds1RoPaths, ds1RwPaths)
 	assert.NilError(t, err)
-	assert.Equal(t, len(values), 25)
+	assert.Equal(t, len(pathValues), 25)
 
-	for _, v := range values {
-		t.Logf("%s %s\n", (*v).Path, (*v).GetValue().ValueToString())
-		switch v.Path {
+	for _, pathValue := range pathValues {
+		//t.Logf("%v", pathValue)
+		switch pathValue.Path {
 		case
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/address",
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/aux-id",
@@ -74,18 +74,18 @@ func Test_DecomposeTree(t *testing.T) {
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/port",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/source-interface",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/transport":
-			assert.Equal(t, devicechange.ValueType_STRING, v.GetValue().GetType(), v.Path)
+			assert.Equal(t, devicechange.ValueType_STRING, pathValue.GetValue().GetType(), pathValue.Path)
 		case
 			"/interfaces/interface[name=admin]/config/enabled":
-			assert.Equal(t, devicechange.ValueType_BOOL, v.GetValue().GetType(), v.Path)
+			assert.Equal(t, devicechange.ValueType_BOOL, pathValue.GetValue().GetType(), pathValue.Path)
 		case
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/priority",
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/priority",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/priority",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/priority":
-			assert.Equal(t, devicechange.ValueType_UINT, v.GetValue().GetType(), v.Path)
+			assert.Equal(t, devicechange.ValueType_UINT, pathValue.GetValue().GetType(), pathValue.Path)
 		default:
-			t.Fatal("Unexpected jsonPath", v.Path)
+			t.Fatal("Unexpected jsonPath", pathValue.Path)
 		}
 	}
 }
@@ -94,15 +94,15 @@ func Test_DecomposeTree(t *testing.T) {
 func Test_DecomposeTreeConfigOnly(t *testing.T) {
 	sampleTree, err := setUpJSONToValues("./testdata/sample-tree-double-key.json")
 	assert.NilError(t, err)
-	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree", len(sampleTree))
+	assert.Equal(t, 762, len(sampleTree), "Empty sample tree", len(sampleTree))
 
 	_, ds1RwPaths := setUpRwPaths()
-	values, err := DecomposeJSONWithPaths(sampleTree, nil, ds1RwPaths)
+	pathValues, err := DecomposeJSONWithPaths(sampleTree, nil, ds1RwPaths)
 	assert.NilError(t, err)
-	assert.Equal(t, len(values), 6)
+	assert.Equal(t, len(pathValues), 6)
 
-	for _, v := range values {
-		t.Logf("%s %s\n", (*v).Path, (*v).GetValue().ValueToString())
+	for _, v := range pathValues {
+		//t.Logf("%v", v)
 		switch v.Path {
 		case
 			"/system/logging/remote-servers/remote-server[host=h2]/config/host",
@@ -133,7 +133,7 @@ func Test_findModelRwPathNoIndices(t *testing.T) {
 func Test_findModelRoPathNoIndices(t *testing.T) {
 	ds1RoPaths, _ := setUpRwPaths()
 	const jsonPath = "/system/logging/remote-servers/remote-server[0]/state/host"
-	const modelPath = "/system/logging/remote-servers/remote-server[host=*]/state/host"
+	const modelPath = "/system/logging/remote-servers/remote-server[host=0]/state/host"
 
 	roAttr, fullpath, ok := findModelRoPathNoIndices(ds1RoPaths, jsonPath)
 	assert.Equal(t, true, ok)
@@ -217,12 +217,12 @@ func Test_replaceIndices(t *testing.T) {
 	const modelPathExpected = "/p/q/r[a=12]/s/t[b=34][c=56]/u/v[d=78][e=9][f=10]/w"
 
 	indices := make([]indexValue, 0)
-	indices = append(indices, indexValue{"a", devicechange.NewTypedValueString("12")})
-	indices = append(indices, indexValue{"b", devicechange.NewTypedValueUint64(34)})
-	indices = append(indices, indexValue{"c", devicechange.NewTypedValueInt64(56)})
-	indices = append(indices, indexValue{"d", devicechange.NewTypedValueString("78")})
-	indices = append(indices, indexValue{"e", devicechange.NewTypedValueString("9")})
-	indices = append(indices, indexValue{"f", devicechange.NewTypedValueString("10")})
+	indices = append(indices, indexValue{"a", devicechange.NewTypedValueString("12"), 0})
+	indices = append(indices, indexValue{"b", devicechange.NewTypedValueUint64(34), 1})
+	indices = append(indices, indexValue{"c", devicechange.NewTypedValueInt64(56), 2})
+	indices = append(indices, indexValue{"d", devicechange.NewTypedValueString("78"), 3})
+	indices = append(indices, indexValue{"e", devicechange.NewTypedValueString("9"), 4})
+	indices = append(indices, indexValue{"f", devicechange.NewTypedValueString("10"), 5})
 	replaced, err := replaceIndices(modelPathNumericalIdx, len(modelPathNumericalIdx), indices)
 	assert.NilError(t, err, "unexpected error replacing numbers")
 	assert.Equal(t, modelPathExpected, replaced, "unexpected value after replacing numbers")
@@ -234,9 +234,9 @@ func Test_replaceIndices2(t *testing.T) {
 	const modelPathExpected = "/p/q/r[name=10]/s/t[b=20][name=20]/u/v[d=78][e=9][f=10]/w/x[name=40]/y"
 
 	indices := make([]indexValue, 0)
-	indices = append(indices, indexValue{"d", devicechange.NewTypedValueString("78")})
-	indices = append(indices, indexValue{"e", devicechange.NewTypedValueString("9")})
-	indices = append(indices, indexValue{"f", devicechange.NewTypedValueString("10")})
+	indices = append(indices, indexValue{"d", devicechange.NewTypedValueString("78"), 4})
+	indices = append(indices, indexValue{"e", devicechange.NewTypedValueString("9"), 5})
+	indices = append(indices, indexValue{"f", devicechange.NewTypedValueString("10"), 6})
 
 	replaced, err := replaceIndices(modelPathNumericalIdx, 57, indices)
 	assert.NilError(t, err, "unexpected error replacing numbers")

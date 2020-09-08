@@ -1,0 +1,30 @@
+{
+  "cont1a": {
+    "cont2a": {
+      "leaf2a": 1,
+      "leaf2b": "0.4321",
+      "leaf2e": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ],
+      "leaf2f": "dGhpcyBpcyBhIHRlc3QgdGVzdAo=",
+      "leaf2g": true
+    },
+    "leaf1a": "leaf1aval",
+    "list2a": [
+      {
+        "name": "l2a1",
+        "tx-power": 5,
+        "rx-power": 25
+      },
+      {
+        "name": "l2a2",
+        "rx-power": 26,
+        "tx-power": 6
+      }
+    ]
+  }
+}
