@@ -16,13 +16,13 @@ package jsonvalues
 
 import (
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"math"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -41,6 +41,7 @@ var rOnIndex = regexp.MustCompile(matchOnIndex)
 type indexValue struct {
 	name  string
 	value *devicechange.TypedValue
+	order int
 }
 
 // DecomposeJSONWithPaths - handling the decomposition and correction in one go
@@ -88,17 +89,20 @@ func extractValuesWithPaths(f interface{}, parentPath string,
 			}
 			for _, obj := range objs {
 				isIndex := false
-				for _, idxName := range indexNames {
+				for i, idxName := range indexNames {
 					if removePathIndices(obj.Path) == fmt.Sprintf("%s/%s", removePathIndices(parentPath), idxName) {
-						indices = append(indices, indexValue{name: idxName, value: obj.Value})
+						indices = append(indices, indexValue{name: idxName, value: obj.Value, order: i})
 						isIndex = true
-						continue
+						break
 					}
 				}
 				if !isIndex {
 					nonIndexPaths = append(nonIndexPaths, obj.Path)
 				}
 			}
+			sort.Slice(indices, func(i, j int) bool {
+				return indices[i].order < indices[j].order
+			})
 			// Now we have indices, need to go through again
 			for _, obj := range objs {
 				for _, nonIdxPath := range nonIndexPaths {
@@ -370,8 +374,7 @@ func findModelRwPathNoIndices(modelRWpaths modelregistry.ReadWritePathMap,
 
 	searchpathNoIndices := removePathIndices(searchpath)
 	for path, value := range modelRWpaths {
-		pathNoIndices := removePathIndices(path)
-		if pathNoIndices == searchpathNoIndices {
+		if removePathIndices(path) == searchpathNoIndices {
 			pathWithNumericalIdx, err := insertNumericalIndices(path, searchpath)
 			if err != nil {
 				return nil, fmt.Sprintf("could not replace wildcards in model path with numerical ids %v", err), false
@@ -394,9 +397,12 @@ func findModelRoPathNoIndices(modelROpaths modelregistry.ReadOnlyPathMap,
 			} else {
 				fullpath = fmt.Sprintf("%s%s", path, subpath)
 			}
-			pathNoIndices := removePathIndices(fullpath)
-			if pathNoIndices == searchpathNoIndices {
-				return &subpathValue, fullpath, true
+			if removePathIndices(fullpath) == searchpathNoIndices {
+				pathWithNumericalIdx, err := insertNumericalIndices(fullpath, searchpath)
+				if err != nil {
+					return nil, fmt.Sprintf("could not replace wildcards in model path with numerical ids %v", err), false
+				}
+				return &subpathValue, pathWithNumericalIdx, true
 			}
 		}
 	}
@@ -422,6 +428,7 @@ func indicesOfPath(modelROpaths modelregistry.ReadOnlyPathMap,
 	modelRWpaths modelregistry.ReadWritePathMap, searchpath string) []string {
 
 	searchpathNoIndices := removePathIndices(searchpath)
+	// First search through the RW paths
 	for path := range modelRWpaths {
 		pathNoIndices := removePathIndices(path)
 		// Find a short path
@@ -430,6 +437,7 @@ func indicesOfPath(modelROpaths modelregistry.ReadOnlyPathMap,
 		}
 	}
 
+	// If not found then search through the RO paths
 	for path, value := range modelROpaths {
 		for subpath := range value {
 			var fullpath string
@@ -508,14 +516,14 @@ func replaceIndices(path string, ignoreAfter int, indices []indexValue) (string,
 			}
 			index := indices[i-idxOffset-1]
 			if index.name != idxName {
-				continue
-				//return "", fmt.Errorf("unexpected index name %s", index.name)
+				//continue
+				return "", fmt.Errorf("unexpected index name %s", index.name)
 			}
 			switch index.value.Type {
 			case devicechange.ValueType_STRING:
 				actualValue = string(index.value.Bytes)
 			case devicechange.ValueType_UINT, devicechange.ValueType_INT:
-				actualValue = fmt.Sprintf("%d", binary.LittleEndian.Uint64(index.value.Bytes))
+				actualValue = fmt.Sprintf("%d", (*devicechange.TypedUint64)(index.value).Uint())
 			}
 			pathParts[i] = fmt.Sprintf("%s=%s%s", idxName, actualValue, pathPart[closeIdx:])
 		}

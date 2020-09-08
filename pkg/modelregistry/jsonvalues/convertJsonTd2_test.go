@@ -25,7 +25,6 @@ import (
 	"gotest.tools/assert"
 	"io/ioutil"
 	"testing"
-	"time"
 )
 
 // For testing TestDevice-2.0.0 - which has an augmented YANG with Choice and Case
@@ -71,7 +70,7 @@ func (m modelPluginTestDevice2) Schema() (map[string]*yang.Entry, error) {
 }
 
 // chocolate is a "case" within a "choice"
-func Test_JsonPathValuesTd2_config(t *testing.T) {
+func Test_DecomposeJSONWithPathsTd2_config(t *testing.T) {
 
 	var modelPluginTest modelPluginTestDevice2
 
@@ -84,6 +83,7 @@ func Test_JsonPathValuesTd2_config(t *testing.T) {
 
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-config.json")
 	assert.NilError(t, err)
+	assert.Equal(t, 462, len(sampleTree))
 
 	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
@@ -131,7 +131,7 @@ func Test_JsonPathValuesTd2_config(t *testing.T) {
 }
 
 // chocolate is a "case" within a "choice"
-func Test_correctJsonPathValuesTd2(t *testing.T) {
+func Test_DecomposeJSONWithPathsTd2Choice(t *testing.T) {
 
 	var modelPluginTest modelPluginTestDevice2
 
@@ -168,7 +168,7 @@ func Test_correctJsonPathValuesTd2(t *testing.T) {
 
 // "chocolate" leaf is a "case" within a "choice". The other case has "beer" and "pretzel" together.
 // See config-models/modelplugin/testdevice-2.0.0/yang/test1-augmented@2020-02-29.yang
-func Test_correctJsonPathValuesTd2Wrong(t *testing.T) {
+func Test_ValidateTd2Wrong(t *testing.T) {
 	var modelPluginTest modelPluginTestDevice2
 
 	td2Schema, err := modelPluginTest.Schema()
@@ -191,7 +191,7 @@ func Test_correctJsonPathValuesTd2Wrong(t *testing.T) {
 	//assert.Error(t, err, "choice")
 }
 
-func Test_correctJsonPathValuesTd(t *testing.T) {
+func Test_DecomposeJSONWithPathsTd2OpState(t *testing.T) {
 
 	td2Schema, err := td2.UnzipSchema()
 	assert.NilError(t, err)
@@ -202,7 +202,6 @@ func Test_correctJsonPathValuesTd(t *testing.T) {
 
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-opstate.json")
 	assert.NilError(t, err)
-	time.Sleep(10 * time.Millisecond)
 
 	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, nil)
 	assert.NilError(t, err)

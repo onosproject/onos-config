@@ -22,7 +22,6 @@ import (
 	"gotest.tools/assert"
 	"io/ioutil"
 	"testing"
-	"time"
 )
 
 func Test_correctJsonPathValues2(t *testing.T) {
@@ -85,8 +84,6 @@ func Test_correctJsonPathRwValuesSubInterfaces(t *testing.T) {
 	assert.NilError(t, err)
 	readOnlyPaths, readWritePaths := modelregistry.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 
-	// All values are taken from testdata/sample-openconfig.json and defined
-	// here in the intermediate jsonToValues format
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-openconfig-configuration.json")
 	assert.NilError(t, err)
 
@@ -131,7 +128,7 @@ func Test_correctJsonPathRwValuesSystemLogging(t *testing.T) {
 	// here in the intermediate jsonToValues format
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-openconfig-double-index.json")
 	assert.NilError(t, err)
-	time.Sleep(10 * time.Millisecond)
+	assert.Equal(t, 843, len(sampleTree))
 
 	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
