@@ -51,12 +51,15 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	targetUpdates := make(mapTargetUpdates)
 	targetRemoves := make(mapTargetRemoves)
 
-	log.Info("gNMI Set Request", req)
+	log.Infof("gNMI Set Request %v", req)
 	//Update
 	for _, u := range req.GetUpdate() {
 		target := u.Path.GetTarget()
 		if target == "" { //Try the prefix
 			target = req.GetPrefix().GetTarget()
+		}
+		if target == "" {
+			return nil, status.Error(codes.InvalidArgument, "no target given in update")
 		}
 		var err error
 		targetUpdates[target], err = s.formatUpdateOrReplace(req.GetPrefix(), u, targetUpdates)
@@ -240,9 +243,9 @@ func extractExtensions(req *gnmi.SetRequest) (string, devicetype.Version, device
 			return "", "", "", status.Error(codes.InvalidArgument, fmt.Errorf("unexpected extension %d = '%s' in Set()",
 				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
 		}
-		log.Infof("Set called with extensions; 100: %s, 101: %s, 102: %s",
-			netcfgchangename, version, deviceType)
 	}
+	log.Infof("Set called with extensions; 100: %s, 101: %s, 102: %s",
+		netcfgchangename, version, deviceType)
 	return netcfgchangename, devicetype.Version(version), devicetype.Type(deviceType), nil
 }
 
@@ -267,10 +270,15 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 
 	jsonVal := u.GetVal().GetJsonVal()
 	if jsonVal != nil {
-		log.Info("Processing Json Value in set", string(jsonVal))
+		log.Infof("Processing Json Value in set from base %s: %s",
+			path, string(jsonVal))
 
 		var rwPaths modelregistry.ReadWritePathMap
 		infos := manager.GetManager().DeviceCache.GetDevicesByID(devicetype.ID(target))
+		if len(infos) == 0 {
+			return nil, fmt.Errorf("cannot process JSON payload because "+
+				"device %s is not in DeviceCache", target)
+		}
 		// Iterate through configs to find match for target
 		for _, info := range infos {
 			rwPaths, ok = manager.GetManager().ModelRegistry.
@@ -284,7 +292,7 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 				"Model Plugin not available for target %s", target)
 		}
 
-		correctedValues, err := jsonvalues.DecomposeJSONWithPaths(jsonVal, nil, rwPaths)
+		correctedValues, err := jsonvalues.DecomposeJSONWithPaths(path, jsonVal, nil, rwPaths)
 		if err != nil {
 			log.Warn("Json value in Set could not be parsed", err)
 			return nil, err

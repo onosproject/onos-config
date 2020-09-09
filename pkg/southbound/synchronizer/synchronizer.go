@@ -393,7 +393,7 @@ func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechange
 	if jsonVal == nil {
 		jsonVal = update.Val.GetJsonIetfVal()
 	}
-	configValues, err := jsonvalues.DecomposeJSONWithPaths(jsonVal, sync.modelReadOnlyPaths, nil)
+	configValues, err := jsonvalues.DecomposeJSONWithPaths("", jsonVal, sync.modelReadOnlyPaths, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -118,82 +118,76 @@ func main() {
 
 	leadershipStore, err := leadership.NewAtomixStore(cluster, configuration)
 	if err != nil {
-		log.Error("Cannot load leadership atomix store ", err)
+		log.Fatal("Cannot load leadership atomix store ", err)
 	}
 
 	mastershipStore, err := mastership.NewAtomixStore(cluster, configuration)
 	if err != nil {
-		log.Error("Cannot load mastership atomix store ", err)
+		log.Fatal("Cannot load mastership atomix store ", err)
 	}
 
 	deviceChangesStore, err := device.NewAtomixStore(configuration)
 	if err != nil {
-		log.Error("Cannot load device atomix store ", err)
+		log.Fatal("Cannot load device atomix store ", err)
 	}
 
 	networkChangesStore, err := network.NewAtomixStore(cluster, configuration)
 	if err != nil {
-		log.Error("Cannot load network atomix store ", err)
+		log.Fatal("Cannot load network atomix store ", err)
 	}
 
 	networkSnapshotStore, err := networksnap.NewAtomixStore(cluster, configuration)
 	if err != nil {
-		log.Error("Cannot load network snapshot atomix store ", err)
+		log.Fatal("Cannot load network snapshot atomix store ", err)
 	}
 
 	deviceSnapshotStore, err := devicesnap.NewAtomixStore(configuration)
 	if err != nil {
-		log.Error("Cannot load network atomix store ", err)
+		log.Fatal("Cannot load network atomix store ", err)
 	}
 
 	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
 	if err != nil {
-		log.Errorf("Cannot load device store with address %s:", *topoEndpoint, err)
+		log.Fatal("Cannot load device store with address %s:", *topoEndpoint, err)
 	}
 	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
 
-	log.Info("Network Configuration store connected")
-
 	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
 	if err != nil {
-		log.Error("Cannot load device cache", err)
+		log.Fatal("Cannot load device cache", err)
 	}
 
 	deviceStore, err := devicestore.NewTopoStore(*topoEndpoint, opts...)
 	if err != nil {
-		log.Errorf("Cannot load device store with address %s:", *topoEndpoint, err)
+		log.Fatal("Cannot load device store with address %s:", *topoEndpoint, err)
 	}
 	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
 
-	mgr, err := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
+	mgr := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
 		deviceStateStore, deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
 		deviceSnapshotStore, *allowUnvalidatedConfig)
-	log.Info("Manager started")
+	log.Info("Manager created")
 
-	if err != nil {
-		log.Fatal("Unable to load onos-config ", err)
-	} else {
-		defer func() {
-			close(mgr.TopoChannel)
-			log.Info("Shutting down onos-config")
-			time.Sleep(time.Second)
-		}()
+	defer func() {
+		close(mgr.TopoChannel)
+		log.Info("Shutting down onos-config")
+		time.Sleep(time.Second)
+	}()
 
-		for _, modelPlugin := range modelPlugins {
-			if modelPlugin == "" {
-				continue
-			}
-			_, _, err := mgr.ModelRegistry.RegisterModelPlugin(modelPlugin)
-			if err != nil {
-				log.Fatal("Unable to start onos-config ", err)
-			}
+	for _, modelPlugin := range modelPlugins {
+		if modelPlugin == "" {
+			continue
 		}
-
-		mgr.Run()
-		err = startServer(*caPath, *keyPath, *certPath)
+		_, _, err := mgr.ModelRegistry.RegisterModelPlugin(modelPlugin)
 		if err != nil {
 			log.Fatal("Unable to start onos-config ", err)
 		}
+	}
+
+	mgr.Run()
+	err = startServer(*caPath, *keyPath, *certPath)
+	if err != nil {
+		log.Fatal("Unable to start onos-config ", err)
 	}
 }
 

@@ -45,10 +45,10 @@ func Test_DecomposeTree(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree", len(sampleTree))
 
-	ds1RoPaths, ds1RwPaths := setUpRwPaths()
-	pathValues, err := DecomposeJSONWithPaths(sampleTree, ds1RoPaths, ds1RwPaths)
+	ds1RoPaths, _ := setUpRwPaths()
+	pathValues, err := DecomposeJSONWithPaths("", sampleTree, ds1RoPaths, nil)
 	assert.NilError(t, err)
-	assert.Equal(t, len(pathValues), 25)
+	assert.Equal(t, len(pathValues), 24)
 
 	for _, pathValue := range pathValues {
 		//t.Logf("%v", pathValue)
@@ -76,9 +76,6 @@ func Test_DecomposeTree(t *testing.T) {
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/transport":
 			assert.Equal(t, devicechange.ValueType_STRING, pathValue.GetValue().GetType(), pathValue.Path)
 		case
-			"/interfaces/interface[name=admin]/config/enabled":
-			assert.Equal(t, devicechange.ValueType_BOOL, pathValue.GetValue().GetType(), pathValue.Path)
-		case
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/priority",
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/priority",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/priority",
@@ -90,14 +87,15 @@ func Test_DecomposeTree(t *testing.T) {
 	}
 }
 
-// Deal with double (and more) key lists and config only
+// Deal with double (and more) key lists and config only and with a prefix
+// We also test that when a RO path is given in the JSON that it is ignored
 func Test_DecomposeTreeConfigOnly(t *testing.T) {
 	sampleTree, err := setUpJSONToValues("./testdata/sample-tree-double-key.json")
 	assert.NilError(t, err)
-	assert.Equal(t, 762, len(sampleTree), "Empty sample tree", len(sampleTree))
+	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree %d", len(sampleTree))
 
 	_, ds1RwPaths := setUpRwPaths()
-	pathValues, err := DecomposeJSONWithPaths(sampleTree, nil, ds1RwPaths)
+	pathValues, err := DecomposeJSONWithPaths("/system/logging/remote-servers", sampleTree, nil, ds1RwPaths)
 	assert.NilError(t, err)
 	assert.Equal(t, len(pathValues), 6)
 
@@ -113,9 +111,12 @@ func Test_DecomposeTreeConfigOnly(t *testing.T) {
 			"/system/logging/remote-servers/remote-server[host=h1]/config/source-address":
 			assert.Equal(t, devicechange.ValueType_STRING, v.GetValue().GetType(), v.Path)
 		default:
+			// Should not find the state path (/system/logging/remote-servers/remote-server[0]/state/host),
+			// as we did not give any RO model paths - it should be silently ignored
 			t.Fatal("Unexpected jsonPath", v.Path)
 		}
 	}
+
 }
 
 func Test_findModelRwPathNoIndices(t *testing.T) {

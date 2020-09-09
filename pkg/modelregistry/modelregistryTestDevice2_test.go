@@ -28,14 +28,14 @@ func Test_SchemaTestDevice2(t *testing.T) {
 		ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
 
 	readOnlyPathsKeys := Paths(readOnlyPathsTestDevice2)
-	assert.Equal(t, len(readOnlyPathsKeys), 2)
+	assert.Equal(t, len(readOnlyPathsKeys), 3)
 	// Can be in any order
 	for _, p := range readOnlyPathsKeys {
 		switch p {
 		case
 			"/cont1b-state",
-			"/cont1a/cont2a/leaf2c":
-
+			"/cont1a/cont2a/leaf2c",
+			"/cont1a/list2a[name=*]":
 		default:
 			t.Fatal("Unexpected readOnlyPath", p)
 		}

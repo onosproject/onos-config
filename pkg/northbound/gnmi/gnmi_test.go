@@ -227,7 +227,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 	allMocks.MockStores = mockStores
 	allMocks.MockDeviceCache = deviceCache
 
-	mgr, err := manager.NewManager(
+	mgr := manager.NewManager(
 		mockStores.LeadershipStore,
 		mockStores.MastershipStore,
 		mockStores.DeviceChangesStore,
@@ -239,10 +239,6 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 		mockStores.DeviceSnapshotStore,
 		true)
 
-	if err != nil {
-		log.Error("Expected manager to be loaded ", err)
-		os.Exit(-1)
-	}
 	mgr.DeviceStore = mockStores.DeviceStore
 	mgr.DeviceChangesStore = mockStores.DeviceChangesStore
 	mgr.NetworkChangesStore = mockStores.NetworkChangesStore

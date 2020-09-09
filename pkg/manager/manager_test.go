@@ -32,7 +32,6 @@ import (
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	"gotest.tools/assert"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -68,7 +67,6 @@ type AllMocks struct {
 func setUp(t *testing.T) (*Manager, *AllMocks) {
 	var (
 		mgrTest  *Manager
-		err      error
 		allMocks AllMocks
 	)
 
@@ -252,7 +250,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
 	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 
-	mgrTest, err = NewManager(
+	mgrTest = NewManager(
 		mockLeadershipStore,
 		mockMastershipStore,
 		mockDeviceChangesStore,
@@ -263,10 +261,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		mockNetworkSnapshotStore,
 		mockDeviceSnapshotStore,
 		true)
-	if err != nil {
-		log.Warn(err)
-		os.Exit(-1)
-	}
+
 	mgrTest.Run()
 
 	mockStores := &mockstore.MockStores{

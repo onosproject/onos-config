@@ -85,7 +85,7 @@ func Test_DecomposeJSONWithPathsTd2_config(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, 462, len(sampleTree))
 
-	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
+	pathValues, err := DecomposeJSONWithPaths("", sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
 	assert.Equal(t, len(pathValues), 10)
 
@@ -144,7 +144,7 @@ func Test_DecomposeJSONWithPathsTd2Choice(t *testing.T) {
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-choice.json")
 	assert.NilError(t, err)
 
-	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
+	pathValues, err := DecomposeJSONWithPaths("", sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
 	assert.Equal(t, len(pathValues), 2)
 
@@ -198,12 +198,12 @@ func Test_DecomposeJSONWithPathsTd2OpState(t *testing.T) {
 	assert.Equal(t, len(td2Schema), 8)
 
 	readOnlyPaths, _ := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
-	assert.Equal(t, len(readOnlyPaths), 2)
+	assert.Equal(t, len(readOnlyPaths), 3)
 
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-opstate.json")
 	assert.NilError(t, err)
 
-	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, nil)
+	pathValues, err := DecomposeJSONWithPaths("", sampleTree, readOnlyPaths, nil)
 	assert.NilError(t, err)
 	assert.Equal(t, 8, len(pathValues))
 

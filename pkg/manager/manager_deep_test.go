@@ -136,11 +136,8 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	mastershipStore, err := mastership.NewLocalStore("test", cluster.NodeID("node1"))
 	assert.NilError(t, err)
 
-	mgrTest, err = NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStateStore,
+	mgrTest = NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStateStore,
 		mockDeviceStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true)
-	if err != nil {
-		t.Fatalf("could not load manager %v", err)
-	}
 
 	modelData1 := gnmi.ModelData{
 		Name:         "test1",

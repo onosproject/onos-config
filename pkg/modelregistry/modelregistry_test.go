@@ -107,7 +107,7 @@ func Test_CastModelPlugin(t *testing.T) {
 
 func Test_JustPaths(t *testing.T) {
 	roPaths := readOnlyPaths.JustPaths() // From Devicesim 1.0.0
-	assert.Equal(t, len(roPaths), 181)
+	assert.Equal(t, len(roPaths), 200)
 
 	rwPaths := readWritePaths.JustPaths() // From Devicesim 1.0.0
 	assert.Equal(t, len(rwPaths), 113)
@@ -132,47 +132,66 @@ func Test_Schema(t *testing.T) {
 	assert.Equal(t, len(ds1Schema), 137)
 
 	readOnlyPathsKeys := Paths(readOnlyPaths)
-	assert.Equal(t, len(readOnlyPathsKeys), 37)
+	assert.Equal(t, len(readOnlyPathsKeys), 56)
 	// Can be in any order
 	for _, p := range readOnlyPathsKeys {
 		switch p {
 		case
 			"/components/component[name=*]/properties/property[name=*]/state",
+			"/components/component[name=*]/properties/property[name=*]",
 			"/components/component[name=*]/state",
+			"/components/component[name=*]",
 			"/components/component[name=*]/subcomponents/subcomponent[name=*]/state",
+			"/components/component[name=*]/subcomponents/subcomponent[name=*]",
 			"/interfaces/interface[name=*]/subinterfaces/subinterface[index=*]/state",
+			"/interfaces/interface[name=*]/subinterfaces/subinterface[index=*]",
 			"/interfaces/interface[name=*]/hold-time/state",
 			"/interfaces/interface[name=*]/state",
+			"/interfaces/interface[name=*]",
 			"/system/dns/host-entries/host-entry[hostname=*]/state",
+			"/system/dns/host-entries/host-entry[hostname=*]",
 			"/system/dns/servers/server[address=*]/state",
+			"/system/dns/servers/server[address=*]",
 			"/system/dns/state",
 			"/system/logging/console/state",
 			"/system/logging/console/selectors/selector[facility=*][severity=*]/state",
+			"/system/logging/console/selectors/selector[facility=*][severity=*]",
 			"/system/logging/remote-servers/remote-server[host=*]/state",
+			"/system/logging/remote-servers/remote-server[host=*]",
 			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]/state",
+			"/system/logging/remote-servers/remote-server[host=*]/selectors/selector[facility=*][severity=*]",
 			"/system/state",
 			"/system/telnet-server/state",
 			"/system/aaa/state",
 			"/system/aaa/accounting/events/event[event-type=*]/state",
+			"/system/aaa/accounting/events/event[event-type=*]",
 			"/system/aaa/accounting/state",
 			"/system/aaa/authentication/admin-user/state",
 			"/system/aaa/authentication/state",
 			"/system/aaa/authentication/users/user[username=*]/state",
+			"/system/aaa/authentication/users/user[username=*]",
 			"/system/aaa/authorization/events/event[event-type=*]/state",
+			"/system/aaa/authorization/events/event[event-type=*]",
 			"/system/aaa/authorization/state",
 			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/radius/state",
 			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/state",
+			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]",
 			"/system/aaa/server-groups/server-group[name=*]/servers/server[address=*]/tacacs/state",
 			"/system/aaa/server-groups/server-group[name=*]/state",
+			"/system/aaa/server-groups/server-group[name=*]",
 			"/system/clock/state",
 			"/system/openflow/agent/state",
 			"/system/openflow/controllers/controller[name=*]/connections/connection[aux-id=*]/state",
+			"/system/openflow/controllers/controller[name=*]/connections/connection[aux-id=*]",
 			"/system/openflow/controllers/controller[name=*]/state",
+			"/system/openflow/controllers/controller[name=*]",
 			"/system/processes/process[pid=*]",
 			"/system/ssh-server/state",
 			"/system/memory/state",
 			"/system/ntp/ntp-keys/ntp-key[key-id=*]/state",
+			"/system/ntp/ntp-keys/ntp-key[key-id=*]",
 			"/system/ntp/servers/server[address=*]/state",
+			"/system/ntp/servers/server[address=*]",
 			"/system/ntp/state":
 
 		default:
