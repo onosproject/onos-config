@@ -35,7 +35,7 @@ func Test_correctJsonPathValues2(t *testing.T) {
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-openconfig2.json")
 	assert.NilError(t, err)
 
-	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
+	pathValues, err := DecomposeJSONWithPaths("", sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
 	assert.Equal(t, len(pathValues), 24)
 
@@ -87,7 +87,7 @@ func Test_correctJsonPathRwValuesSubInterfaces(t *testing.T) {
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-openconfig-configuration.json")
 	assert.NilError(t, err)
 
-	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
+	pathValues, err := DecomposeJSONWithPaths("", sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
 	assert.Equal(t, len(pathValues), 8)
 
@@ -130,7 +130,7 @@ func Test_correctJsonPathRwValuesSystemLogging(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, 843, len(sampleTree))
 
-	pathValues, err := DecomposeJSONWithPaths(sampleTree, readOnlyPaths, readWritePaths)
+	pathValues, err := DecomposeJSONWithPaths("", sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
 	assert.Equal(t, len(pathValues), 5)
 

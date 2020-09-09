@@ -80,7 +80,7 @@ type Manager struct {
 func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Store, deviceChangesStore device.Store,
 	deviceStateStore state.Store, deviceStore devicestore.Store, deviceCache cache.Cache,
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
-	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool) (*Manager, error) {
+	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool) *Manager {
 	log.Info("Creating Manager")
 
 	modelReg := &modelregistry.ModelRegistry{
@@ -111,7 +111,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		OperationalStateCacheLock: &sync.RWMutex{},
 		allowUnvalidatedConfig:    allowUnvalidatedConfig,
 	}
-	return &mgr, nil
+	return &mgr
 }
 
 // setTargetGenerator is generally only called from test

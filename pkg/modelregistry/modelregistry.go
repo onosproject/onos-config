@@ -342,6 +342,18 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 			}
 			for k, v := range readWritePathsTemp {
 				readWritePaths[k] = v
+				// Need to copy the index of the list across to the RO list too
+				roIdxName := k[:strings.LastIndex(k, "/")]
+				roIdxSubPath := k[strings.LastIndex(k, "/"):]
+				if roIdxName == itemPath {
+					roIdx := ReadOnlyAttrib{
+						Datatype:    v.ValueType,
+						Description: v.Description,
+						Units:       v.Units,
+					}
+					readOnlyPaths[roIdxName] = make(map[string]ReadOnlyAttrib)
+					readOnlyPaths[roIdxName][roIdxSubPath] = roIdx
+				}
 			}
 
 		} else if dirEntry.IsChoice() || dirEntry.IsCase() {

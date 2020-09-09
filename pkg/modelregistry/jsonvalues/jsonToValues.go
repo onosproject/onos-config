@@ -45,7 +45,7 @@ type indexValue struct {
 }
 
 // DecomposeJSONWithPaths - handling the decomposition and correction in one go
-func DecomposeJSONWithPaths(genericJSON []byte, ropaths modelregistry.ReadOnlyPathMap,
+func DecomposeJSONWithPaths(prefixPath string, genericJSON []byte, ropaths modelregistry.ReadOnlyPathMap,
 	rwpaths modelregistry.ReadWritePathMap) ([]*devicechange.PathValue, error) {
 
 	var f interface{}
@@ -53,7 +53,7 @@ func DecomposeJSONWithPaths(genericJSON []byte, ropaths modelregistry.ReadOnlyPa
 	if err != nil {
 		return nil, err
 	}
-	values, err := extractValuesWithPaths(f, "", ropaths, rwpaths)
+	values, err := extractValuesWithPaths(f, prefixPath, ropaths, rwpaths)
 	if err != nil {
 		return nil, fmt.Errorf("error decomposing JSON %v", err)
 	}
@@ -122,7 +122,9 @@ func extractValuesWithPaths(f interface{}, parentPath string,
 		if err != nil {
 			return nil, fmt.Errorf("error handling json attribute value %v", err)
 		}
-		changes = append(changes, attr)
+		if attr != nil {
+			changes = append(changes, attr)
+		}
 	}
 
 	return changes, nil
@@ -141,69 +143,83 @@ func handleMap(value map[string]interface{}, parentPath string,
 			return nil, err
 		}
 		if len(objs) > 0 {
-			switch (objs[0].Value).Type {
-			case devicechange.ValueType_LEAFLIST_INT:
-				llVals := make([]int, 0)
-				for _, obj := range objs {
-					llI := (*devicechange.TypedLeafListInt64)(obj.Value)
-					llVals = append(llVals, llI.List()...)
+			firstType := (objs[0].Value).Type
+			matching := true
+			for _, o := range objs {
+				// In a leaf list all value types have to match
+				if o.Value.Type != firstType {
+					// Not a leaf list
+					matching = false
+					break
 				}
-				newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListInt64Tv(llVals)}
-				changes = append(changes, &newCv)
-			case devicechange.ValueType_LEAFLIST_STRING:
-				llVals := make([]string, 0)
-				for _, obj := range objs {
-					llI := (*devicechange.TypedLeafListString)(obj.Value)
-					llVals = append(llVals, llI.List()...)
-				}
-				newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListStringTv(llVals)}
-				changes = append(changes, &newCv)
-			case devicechange.ValueType_LEAFLIST_UINT:
-				llVals := make([]uint, 0)
-				for _, obj := range objs {
-					llI := (*devicechange.TypedLeafListUint)(obj.Value)
-					llVals = append(llVals, llI.List()...)
-				}
-				newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListUint64Tv(llVals)}
-				changes = append(changes, &newCv)
-			case devicechange.ValueType_LEAFLIST_BOOL:
-				llVals := make([]bool, 0)
-				for _, obj := range objs {
-					llI := (*devicechange.TypedLeafListBool)(obj.Value)
-					llVals = append(llVals, llI.List()...)
-				}
-				newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListBoolTv(llVals)}
-				changes = append(changes, &newCv)
-			case devicechange.ValueType_LEAFLIST_BYTES:
-				llVals := make([][]byte, 0)
-				for _, obj := range objs {
-					llI := (*devicechange.TypedLeafListBytes)(obj.Value)
-					llVals = append(llVals, llI.List()...)
-				}
-				newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListBytesTv(llVals)}
-				changes = append(changes, &newCv)
-			case devicechange.ValueType_LEAFLIST_DECIMAL:
-				llDigits := make([]int64, 0)
-				var llPrecision uint32
-				for _, obj := range objs {
-					llD := (*devicechange.TypedLeafListDecimal)(obj.Value)
-					digitsList, precision := llD.List()
-					llPrecision = precision
-					llDigits = append(llDigits, digitsList...)
-				}
-				newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListDecimal64Tv(llDigits, llPrecision)}
-				changes = append(changes, &newCv)
-			case devicechange.ValueType_LEAFLIST_FLOAT:
-				llVals := make([]float32, 0)
-				for _, obj := range objs {
-					llI := (*devicechange.TypedLeafListFloat)(obj.Value)
-					llVals = append(llVals, llI.List()...)
-				}
-				newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListFloat32Tv(llVals)}
-				changes = append(changes, &newCv)
-			default:
-				// Not a leaf list
+			}
+			if !matching {
 				changes = append(changes, objs...)
+			} else {
+				switch (objs[0].Value).Type {
+				case devicechange.ValueType_LEAFLIST_INT:
+					llVals := make([]int, 0)
+					for _, obj := range objs {
+						llI := (*devicechange.TypedLeafListInt64)(obj.Value)
+						llVals = append(llVals, llI.List()...)
+					}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListInt64Tv(llVals)}
+					changes = append(changes, &newCv)
+				case devicechange.ValueType_LEAFLIST_STRING:
+					llVals := make([]string, 0)
+					for _, obj := range objs {
+						llI := (*devicechange.TypedLeafListString)(obj.Value)
+						llVals = append(llVals, llI.List()...)
+					}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListStringTv(llVals)}
+					changes = append(changes, &newCv)
+				case devicechange.ValueType_LEAFLIST_UINT:
+					llVals := make([]uint, 0)
+					for _, obj := range objs {
+						llI := (*devicechange.TypedLeafListUint)(obj.Value)
+						llVals = append(llVals, llI.List()...)
+					}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListUint64Tv(llVals)}
+					changes = append(changes, &newCv)
+				case devicechange.ValueType_LEAFLIST_BOOL:
+					llVals := make([]bool, 0)
+					for _, obj := range objs {
+						llI := (*devicechange.TypedLeafListBool)(obj.Value)
+						llVals = append(llVals, llI.List()...)
+					}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListBoolTv(llVals)}
+					changes = append(changes, &newCv)
+				case devicechange.ValueType_LEAFLIST_BYTES:
+					llVals := make([][]byte, 0)
+					for _, obj := range objs {
+						llI := (*devicechange.TypedLeafListBytes)(obj.Value)
+						llVals = append(llVals, llI.List()...)
+					}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListBytesTv(llVals)}
+					changes = append(changes, &newCv)
+				case devicechange.ValueType_LEAFLIST_DECIMAL:
+					llDigits := make([]int64, 0)
+					var llPrecision uint32
+					for _, obj := range objs {
+						llD := (*devicechange.TypedLeafListDecimal)(obj.Value)
+						digitsList, precision := llD.List()
+						llPrecision = precision
+						llDigits = append(llDigits, digitsList...)
+					}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListDecimal64Tv(llDigits, llPrecision)}
+					changes = append(changes, &newCv)
+				case devicechange.ValueType_LEAFLIST_FLOAT:
+					llVals := make([]float32, 0)
+					for _, obj := range objs {
+						llI := (*devicechange.TypedLeafListFloat)(obj.Value)
+						llVals = append(llVals, llI.List()...)
+					}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListFloat32Tv(llVals)}
+					changes = append(changes, &newCv)
+				default:
+					// Not a leaf list
+					changes = append(changes, objs...)
+				}
 			}
 		}
 	}
@@ -223,6 +239,10 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 	if !ok {
 		subPath, modelPath, ok = findModelRoPathNoIndices(modelROpaths, parentPath)
 		if !ok {
+			if modelROpaths == nil || modelRWpaths == nil {
+				// If RO paths was not given - then we assume this missing path was a RO path
+				return nil, nil
+			}
 			return nil, fmt.Errorf("unable to locate %s in model", parentPath)
 		}
 		modeltype = subPath.Datatype
