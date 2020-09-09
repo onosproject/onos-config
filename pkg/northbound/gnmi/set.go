@@ -353,28 +353,40 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 
 	// Now iterate through the consolidated set of targets and see if any are read-only paths
 	for path := range targetUpdates { // map - just need the key
-		log.Infof("Testing %s for read only", path)
-		for ropath := range model {
-			// Search through for list indices and replace with generic
-			modelPath := modelregistry.RemovePathIndices(path)
-			if strings.HasPrefix(modelPath, ropath) {
-				return fmt.Errorf("update contains a change to a read only path %s. Rejected", path)
-			}
+		if err := compareRoPaths(path, model); err != nil {
+			return fmt.Errorf("update %s", err)
 		}
 	}
 
 	// Now iterate through the consolidated set of targets and see if any are read-only paths
 	for _, path := range targetRemoves { // map - just need the key
-		log.Infof("Testing %s for read only", path)
-		for ropath := range model {
-			// Search through for list indices and replace with generic
-			modelPath := modelregistry.RemovePathIndices(path)
-			if strings.HasPrefix(modelPath, ropath) {
-				return fmt.Errorf("remove contains a change to a read only path %s. Rejected", path)
-			}
+		if err := compareRoPaths(path, model); err != nil {
+			return fmt.Errorf("remove %s", err)
 		}
 	}
 
+	return nil
+}
+
+func compareRoPaths(path string, model modelregistry.ReadOnlyPathMap) error {
+	log.Infof("Testing %s for read only", path)
+	for ropath, subpaths := range model {
+		// Search through for list indices and replace with generic
+		modelPath := modelregistry.RemovePathIndices(path)
+		if strings.HasPrefix(modelPath, ropath) {
+			for s := range subpaths {
+				fullpath := ropath
+				if s != "/" {
+					fullpath = fmt.Sprintf("%s%s", ropath, s)
+				}
+				if fullpath == modelPath {
+					return fmt.Errorf("contains a change to a "+
+						"read only path %s. Rejected. %s, %s, %s, %s",
+						path, modelPath, ropath, s, fullpath)
+				}
+			}
+		}
+	}
 	return nil
 }
 
