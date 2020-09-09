@@ -16,10 +16,6 @@ package manager
 
 import (
 	"errors"
-	"os"
-	"strings"
-	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
@@ -41,6 +37,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+)
 
 const (
 	test1Cont1ACont2ALeaf2A = "/cont1a/cont2a/leaf2a"

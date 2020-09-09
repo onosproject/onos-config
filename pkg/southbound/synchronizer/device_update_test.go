@@ -46,7 +46,7 @@ func setUp(t *testing.T) *AllMocks {
 	assert.NilError(t, err)
 
 	node1 := cluster.NodeID("node1")
-	mastershipStore, err := mastership.NewLocalStore("TestUpdateDisconnectedDevice", node1)
+	mastershipStore, err := mastership.NewLocalStore("TestUpdateDevice", node1)
 	assert.NilError(t, err)
 
 	allMocks := AllMocks{
@@ -78,13 +78,17 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 
 	allMocks.DeviceClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topodevice.UpdateResponse{Device: device1Disconnected}, nil).AnyTimes()
 
+	state, err := allMocks.MastershipStore.GetMastership(device1Disconnected.ID)
+	assert.NilError(t, err)
+
 	session1 := &Session{
 		device:          device1Disconnected,
 		mastershipStore: allMocks.MastershipStore,
 		deviceStore:     allMocks.DeviceStore,
+		mastershipState: state,
 	}
 
-	err := session1.updateDisconnectedDevice()
+	err = session1.updateDisconnectedDevice()
 	assert.NilError(t, err)
 	updatedDevice, err := session1.deviceStore.Get(device1)
 	assert.NilError(t, err)
@@ -97,10 +101,6 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 
 func TestUpdateConnectedDevice(t *testing.T) {
 	allMocks := setUp(t)
-
-	node1 := cluster.NodeID("node1")
-	mastershipStore1, err := mastership.NewLocalStore("TestUpdateConnectedDevice", node1)
-	assert.NilError(t, err)
 
 	device1Connected := &topodevice.Device{
 		ID:         device1,
@@ -119,10 +119,14 @@ func TestUpdateConnectedDevice(t *testing.T) {
 
 	allMocks.DeviceClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topodevice.UpdateResponse{Device: device1Connected}, nil).AnyTimes()
 
+	state, err := allMocks.MastershipStore.GetMastership(device1Connected.ID)
+	assert.NilError(t, err)
+
 	session1 := &Session{
 		device:          device1Connected,
-		mastershipStore: mastershipStore1,
+		mastershipStore: allMocks.MastershipStore,
 		deviceStore:     allMocks.DeviceStore,
+		mastershipState: state,
 	}
 
 	err = session1.updateConnectedDevice()
