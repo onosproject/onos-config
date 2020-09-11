@@ -3,6 +3,7 @@ module github.com/onosproject/onos-config
 go 1.14
 
 require (
+	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/atomix/go-client v0.2.3
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1
