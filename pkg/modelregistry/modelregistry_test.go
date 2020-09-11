@@ -661,22 +661,25 @@ func Test_Ntp(t *testing.T) {
 }
 
 func Test_RemovePathIndices(t *testing.T) {
-	assert.Equal(t,
-		RemovePathIndices("/cont1b-state"),
-		"/cont1b-state")
+	assert.Equal(t, "/cont1b-state",
+		RemovePathIndices("/cont1b-state"))
 
-	assert.Equal(t,
-		RemovePathIndices("/cont1b-state/list2b[index=test1]/index"),
-		"/cont1b-state/list2b[index=*]/index")
+	assert.Equal(t, "/cont1b-state/list2b/index",
+		RemovePathIndices("/cont1b-state/list2b[index=test1]/index"))
 
-	assert.Equal(t,
-		RemovePathIndices("/cont1b-state/list2b[index=test1,test2]/index"),
-		"/cont1b-state/list2b[index=*]/index")
+	assert.Equal(t, "/cont1b-state/list2b/index",
+		RemovePathIndices("/cont1b-state/list2b[index=test1,test2]/index"))
 
-	assert.Equal(t,
-		RemovePathIndices("/cont1b-state/list2b[index=test1]/index/t3[name=5]"),
-		"/cont1b-state/list2b[index=*]/index/t3[name=*]")
+	assert.Equal(t, "/cont1b-state/list2b/index/t3",
+		RemovePathIndices("/cont1b-state/list2b[index=test1]/index/t3[name=5]"))
 
+}
+
+func Test_RemovePathIndices2(t *testing.T) {
+	const jsonPath = "/p/q/r[10]/s/t[20]/u/v[30]/w"
+	const jsonPathRemovedIdx = "/p/q/r/s/t/u/v/w"
+	noIndices := RemovePathIndices(jsonPath)
+	assert.Equal(t, jsonPathRemovedIdx, noIndices)
 }
 
 func Test_formatName1(t *testing.T) {
@@ -694,4 +697,16 @@ func Test_formatName2(t *testing.T) {
 		Prefix: &yang.Value{Name: "pfx1"},
 	}
 	assert.Equal(t, formatName(&dirEntry1, true, "/testpath/testpath2", ""), "/testpath/testpath2/testname[name=*]")
+}
+
+func Test_extractIndexNames(t *testing.T) {
+	const modelPath = "/p/q/r[a=*]/s/t[b=*][c=*]/u/v[d=*][e=*][f=*]/w"
+	indexNames := ExtractIndexNames(modelPath)
+	assert.Equal(t, 6, len(indexNames))
+	assert.Equal(t, "a", indexNames[0])
+	assert.Equal(t, "b", indexNames[1])
+	assert.Equal(t, "c", indexNames[2])
+	assert.Equal(t, "d", indexNames[3])
+	assert.Equal(t, "e", indexNames[4])
+	assert.Equal(t, "f", indexNames[5])
 }

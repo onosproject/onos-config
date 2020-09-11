@@ -21,13 +21,11 @@ import (
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"math"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 )
 
-const matchOnIndex = `(\[.*?]).*?`
 const (
 	slash     = "/"
 	equals    = "="
@@ -35,8 +33,6 @@ const (
 	brktclose = "]"
 	colon     = ":"
 )
-
-var rOnIndex = regexp.MustCompile(matchOnIndex)
 
 type indexValue struct {
 	name  string
@@ -90,7 +86,7 @@ func extractValuesWithPaths(f interface{}, parentPath string,
 			for _, obj := range objs {
 				isIndex := false
 				for i, idxName := range indexNames {
-					if removePathIndices(obj.Path) == fmt.Sprintf("%s/%s", removePathIndices(parentPath), idxName) {
+					if modelregistry.RemovePathIndices(obj.Path) == fmt.Sprintf("%s/%s", modelregistry.RemovePathIndices(parentPath), idxName) {
 						indices = append(indices, indexValue{name: idxName, value: obj.Value, order: i})
 						isIndex = true
 						break
@@ -234,6 +230,7 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 	var ok bool
 	var pathElem *modelregistry.ReadWritePathElem
 	var subPath *modelregistry.ReadOnlyAttrib
+	var enum map[int]string
 	var err error
 	pathElem, modelPath, ok = findModelRwPathNoIndices(modelRWpaths, parentPath)
 	if !ok {
@@ -246,6 +243,7 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 			return nil, fmt.Errorf("unable to locate %s in model", parentPath)
 		}
 		modeltype = subPath.Datatype
+		enum = subPath.Enum
 	} else {
 		modeltype = pathElem.ValueType
 	}
@@ -255,7 +253,31 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		var stringVal string
 		switch valueTyped := value.(type) {
 		case string:
-			stringVal = valueTyped
+			if len(enum) > 0 {
+				// Compare values and convert from digit if necessary
+				for k, v := range enum {
+					if v == valueTyped {
+						stringVal = valueTyped
+						break
+					} else if fmt.Sprintf("%d", k) == valueTyped {
+						stringVal = v
+						break
+					}
+				}
+				if stringVal == "" {
+					enumOpts := make([]string, len(enum)*2)
+					i := 0
+					for k, v := range enum {
+						enumOpts[i*2] = fmt.Sprintf("%d", k)
+						enumOpts[i*2+1] = v
+						i++
+					}
+					return nil, fmt.Errorf("value %s for %s does not match any enumerated value %s",
+						valueTyped, parentPath, strings.Join(enumOpts, ";"))
+				}
+			} else {
+				stringVal = valueTyped
+			}
 		case float64:
 			stringVal = fmt.Sprintf("%g", value)
 		case bool:
@@ -392,9 +414,9 @@ func handleAttributeLeafList(modeltype devicechange.ValueType,
 func findModelRwPathNoIndices(modelRWpaths modelregistry.ReadWritePathMap,
 	searchpath string) (*modelregistry.ReadWritePathElem, string, bool) {
 
-	searchpathNoIndices := removePathIndices(searchpath)
+	searchpathNoIndices := modelregistry.RemovePathIndices(searchpath)
 	for path, value := range modelRWpaths {
-		if removePathIndices(path) == searchpathNoIndices {
+		if modelregistry.RemovePathIndices(path) == searchpathNoIndices {
 			pathWithNumericalIdx, err := insertNumericalIndices(path, searchpath)
 			if err != nil {
 				return nil, fmt.Sprintf("could not replace wildcards in model path with numerical ids %v", err), false
@@ -408,7 +430,7 @@ func findModelRwPathNoIndices(modelRWpaths modelregistry.ReadWritePathMap,
 func findModelRoPathNoIndices(modelROpaths modelregistry.ReadOnlyPathMap,
 	searchpath string) (*modelregistry.ReadOnlyAttrib, string, bool) {
 
-	searchpathNoIndices := removePathIndices(searchpath)
+	searchpathNoIndices := modelregistry.RemovePathIndices(searchpath)
 	for path, value := range modelROpaths {
 		for subpath, subpathValue := range value {
 			var fullpath string
@@ -417,7 +439,7 @@ func findModelRoPathNoIndices(modelROpaths modelregistry.ReadOnlyPathMap,
 			} else {
 				fullpath = fmt.Sprintf("%s%s", path, subpath)
 			}
-			if removePathIndices(fullpath) == searchpathNoIndices {
+			if modelregistry.RemovePathIndices(fullpath) == searchpathNoIndices {
 				pathWithNumericalIdx, err := insertNumericalIndices(fullpath, searchpath)
 				if err != nil {
 					return nil, fmt.Sprintf("could not replace wildcards in model path with numerical ids %v", err), false
@@ -447,13 +469,13 @@ func stripNamespace(path string) string {
 func indicesOfPath(modelROpaths modelregistry.ReadOnlyPathMap,
 	modelRWpaths modelregistry.ReadWritePathMap, searchpath string) []string {
 
-	searchpathNoIndices := removePathIndices(searchpath)
+	searchpathNoIndices := modelregistry.RemovePathIndices(searchpath)
 	// First search through the RW paths
 	for path := range modelRWpaths {
-		pathNoIndices := removePathIndices(path)
+		pathNoIndices := modelregistry.RemovePathIndices(path)
 		// Find a short path
 		if pathNoIndices[:strings.LastIndex(pathNoIndices, slash)] == searchpathNoIndices {
-			return extractIndexNames(path)
+			return modelregistry.ExtractIndexNames(path)
 		}
 	}
 
@@ -466,33 +488,15 @@ func indicesOfPath(modelROpaths modelregistry.ReadOnlyPathMap,
 			} else {
 				fullpath = fmt.Sprintf("%s%s", path, subpath)
 			}
-			pathNoIndices := removePathIndices(fullpath)
+			pathNoIndices := modelregistry.RemovePathIndices(fullpath)
 			// Find a short path
 			if pathNoIndices[:strings.LastIndex(pathNoIndices, slash)] == searchpathNoIndices {
-				return extractIndexNames(fullpath)
+				return modelregistry.ExtractIndexNames(fullpath)
 			}
 		}
 	}
 
 	return []string{}
-}
-
-func removePathIndices(path string) string {
-	jsonMatches := rOnIndex.FindAllStringSubmatch(path, -1)
-	for _, m := range jsonMatches {
-		path = strings.ReplaceAll(path, m[1], "")
-	}
-	return path
-}
-
-func extractIndexNames(path string) []string {
-	indexNames := make([]string, 0)
-	jsonMatches := rOnIndex.FindAllStringSubmatch(path, -1)
-	for _, m := range jsonMatches {
-		idxName := m[1][1:strings.LastIndex(m[1], "=")]
-		indexNames = append(indexNames, idxName)
-	}
-	return indexNames
 }
 
 func insertNumericalIndices(modelPath string, jsonPath string) (string, error) {

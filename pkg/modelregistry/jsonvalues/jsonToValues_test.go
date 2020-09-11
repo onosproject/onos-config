@@ -162,25 +162,6 @@ func Test_indicesOfPath(t *testing.T) {
 	assert.Equal(t, "severity", indices[2])
 }
 
-func Test_removePathIndices(t *testing.T) {
-	const jsonPath = "/p/q/r[10]/s/t[20]/u/v[30]/w"
-	const jsonPathRemovedIdx = "/p/q/r/s/t/u/v/w"
-	noIndices := removePathIndices(jsonPath)
-	assert.Equal(t, jsonPathRemovedIdx, noIndices)
-}
-
-func Test_extractIndexNames(t *testing.T) {
-	const modelPath = "/p/q/r[a=*]/s/t[b=*][c=*]/u/v[d=*][e=*][f=*]/w"
-	indexNames := extractIndexNames(modelPath)
-	assert.Equal(t, 6, len(indexNames))
-	assert.Equal(t, "a", indexNames[0])
-	assert.Equal(t, "b", indexNames[1])
-	assert.Equal(t, "c", indexNames[2])
-	assert.Equal(t, "d", indexNames[3])
-	assert.Equal(t, "e", indexNames[4])
-	assert.Equal(t, "f", indexNames[5])
-}
-
 func Test_insertNumericalIndices(t *testing.T) {
 	const modelPath = "/p/q/r[a=*]/s/t[b=*][c=*]/u/v[d=*][e=*][f=*]/w"
 	const jsonPath = "/p/q/r[10]/s/t[20]/u/v[30]/w"
