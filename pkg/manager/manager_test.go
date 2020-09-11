@@ -16,6 +16,7 @@ package manager
 
 import (
 	"errors"
+
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -32,6 +33,7 @@ import (
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
 	"gotest.tools/assert"
+
 	"strings"
 	"testing"
 	"time"
@@ -624,85 +626,6 @@ func TestManager_GetTargetState(t *testing.T) {
 	stateBad := mgrTest.GetTargetState(device1, badPath)
 	assert.Assert(t, stateBad != nil, "Bad Path Entry returns nil")
 	assert.Assert(t, len(stateBad) == 0, "Bad path entry has incorrect length %d", len(stateBad))
-}
-
-func TestManager_DeviceConnected(t *testing.T) {
-	mgrTest, mocks := setUp(t)
-	const (
-		device1 = "device1"
-	)
-
-	deviceDisconnected := &topodevice.Device{
-		ID:       "device1",
-		Revision: 1,
-		Address:  "device1:1234",
-		Version:  deviceVersion1,
-	}
-
-	device1Connected := &topodevice.Device{
-		ID:       "device1",
-		Revision: 1,
-		Address:  "device1:1234",
-		Version:  deviceVersion1,
-	}
-
-	mocks.MockStores.DeviceStore.EXPECT().Get("device1")
-
-	protocolState := new(topodevice.ProtocolState)
-	protocolState.Protocol = topodevice.Protocol_GNMI
-	protocolState.ConnectivityState = topodevice.ConnectivityState_REACHABLE
-	protocolState.ChannelState = topodevice.ChannelState_CONNECTED
-	protocolState.ServiceState = topodevice.ServiceState_AVAILABLE
-	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
-
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(deviceDisconnected, nil)
-	mocks.MockStores.DeviceStore.EXPECT().Update(gomock.Any()).Return(device1Connected, nil)
-
-	err := mgrTest.DeviceConnected(device1)
-	assert.NilError(t, err)
-}
-
-func TestManager_DeviceDisconnected(t *testing.T) {
-	mgrTest, mocks := setUp(t)
-	const (
-		device1 = "device1"
-	)
-
-	deviceDisconnected := &topodevice.Device{
-		ID:       "device1",
-		Revision: 1,
-		Address:  "device1:1234",
-		Version:  deviceVersion1,
-	}
-
-	device1Connected := &topodevice.Device{
-		ID:       "device1",
-		Revision: 1,
-		Address:  "device1:1234",
-		Version:  deviceVersion1,
-	}
-
-	mocks.MockStores.DeviceStore.EXPECT().Get("device1")
-
-	protocolState := new(topodevice.ProtocolState)
-	protocolState.Protocol = topodevice.Protocol_GNMI
-	protocolState.ConnectivityState = topodevice.ConnectivityState_REACHABLE
-	protocolState.ChannelState = topodevice.ChannelState_CONNECTED
-	protocolState.ServiceState = topodevice.ServiceState_AVAILABLE
-	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
-
-	protocolStateDisconnected := new(topodevice.ProtocolState)
-	protocolStateDisconnected.Protocol = topodevice.Protocol_GNMI
-	protocolStateDisconnected.ConnectivityState = topodevice.ConnectivityState_UNREACHABLE
-	protocolStateDisconnected.ChannelState = topodevice.ChannelState_DISCONNECTED
-	protocolStateDisconnected.ServiceState = topodevice.ServiceState_UNAVAILABLE
-	deviceDisconnected.Protocols = append(device1Connected.Protocols, protocolState)
-
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(device1Connected, nil)
-	mocks.MockStores.DeviceStore.EXPECT().Update(gomock.Any()).Return(deviceDisconnected, nil)
-
-	err := mgrTest.DeviceDisconnected(device1, errors.New("device reported disconnection"))
-	assert.NilError(t, err)
 }
 
 type MockModelPlugin struct{}

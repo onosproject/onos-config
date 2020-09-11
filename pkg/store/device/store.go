@@ -17,11 +17,12 @@ package device
 import (
 	"context"
 	"fmt"
+	"io"
+	"time"
+
 	"github.com/onosproject/onos-lib-go/pkg/southbound"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
-	"io"
-	"time"
 )
 
 // Store is a device store

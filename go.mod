@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/atomix/go-client v0.2.3
+	cloud.google.com/go v0.43.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.3.1
@@ -32,6 +33,8 @@ require (
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.5.1
 	go.uber.org/multierr v1.4.0 // indirect
+	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
+	golang.org/x/tools v0.0.0-20200113040837-eac381796e91 // indirect
 	google.golang.org/genproto v0.0.0-20200212174721-66ed5ce911ce // indirect
 	google.golang.org/grpc v1.31.1
 	gopkg.in/yaml.v2 v2.2.8

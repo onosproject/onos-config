@@ -15,8 +15,9 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-test/pkg/onostest"
 	"sync"
+
+	"github.com/onosproject/onos-test/pkg/onostest"
 
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/test"

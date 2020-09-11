@@ -17,7 +17,6 @@ package manager
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -95,6 +94,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		DeviceStateStore:          deviceStateStore,
 		DeviceStore:               deviceStore,
 		DeviceCache:               deviceCache,
+		MastershipStore:           mastershipStore,
 		NetworkChangesStore:       networkChangesStore,
 		NetworkSnapshotStore:      networkSnapshotStore,
 		DeviceSnapshotStore:       deviceSnapshotStore,
@@ -105,7 +105,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		TopoChannel:               make(chan *topodevice.ListResponse, 10),
 		ModelRegistry:             modelReg,
 		OperationalStateChannel:   make(chan events.OperationalStateEvent),
-		SouthboundErrorChan:       make(chan events.DeviceResponse, 10),
+		SouthboundErrorChan:       make(chan events.DeviceResponse),
 		Dispatcher:                dispatcher.NewDispatcher(),
 		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
 		OperationalStateCacheLock: &sync.RWMutex{},
@@ -146,32 +146,30 @@ func (m *Manager) Run() {
 
 	// Start the main dispatcher system
 	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
-	// Listening for errors in the Southbound
-	go listenOnResponseChannel(m.SouthboundErrorChan, m)
 
-	factory, err := synchronizer.NewFactory(
+	sessionManager, err := synchronizer.NewSessionManager(
 		synchronizer.WithTopoChannel(m.TopoChannel),
 		synchronizer.WithOpStateChannel(m.OperationalStateChannel),
-		synchronizer.WithSouthboundErrChan(m.SouthboundErrorChan),
 		synchronizer.WithDispatcher(m.Dispatcher),
 		synchronizer.WithModelRegistry(m.ModelRegistry),
 		synchronizer.WithOperationalStateCache(m.OperationalStateCache),
 		synchronizer.WithNewTargetFn(southbound.TargetGenerator),
 		synchronizer.WithOperationalStateCacheLock(m.OperationalStateCacheLock),
 		synchronizer.WithDeviceChangeStore(m.DeviceChangesStore),
+		synchronizer.WithMastershipStore(m.MastershipStore),
+		synchronizer.WithDeviceStore(m.DeviceStore),
+		synchronizer.WithSessions(make(map[topodevice.ID]*synchronizer.Session)),
 	)
 
 	if err != nil {
-		log.Error("Error in creating device factory", err)
+		log.Error("Error in creating session manager", err)
 	}
 
-	go factory.TopoEventHandler()
-	log.Debug("Device Event Handler started")
-
-	err = m.DeviceStore.Watch(m.TopoChannel)
+	err = sessionManager.Start()
 	if err != nil {
-		log.Error("Error Watching devices", err)
+		log.Errorf("Error in starting session manager", err)
 	}
+
 	log.Info("Manager Started")
 }
 
@@ -186,32 +184,6 @@ func (m *Manager) Close() {
 // Should be called only after NewManager and Run are done.
 func GetManager() *Manager {
 	return &mgr
-}
-
-func listenOnResponseChannel(respChan chan events.DeviceResponse, m *Manager) {
-	log.Info("Listening for Errors in Manager")
-	for event := range respChan {
-		subject := topodevice.ID(event.Subject())
-		switch event.EventType() {
-		case events.EventTypeDeviceConnected:
-			err := m.DeviceConnected(subject)
-			if err != nil {
-				log.Error("Can't notify connection", err)
-			}
-		case events.EventTypeErrorDeviceConnect:
-			err := m.DeviceDisconnected(subject, event.Error())
-			if err != nil {
-				log.Error("Can't notify disconnection", err)
-			}
-		default:
-			if strings.Contains(event.Error().Error(), "desc =") {
-				log.Errorf("Error reported to channel %s",
-					strings.Split(event.Error().Error(), " desc = ")[1])
-			} else {
-				log.Error("Response reported to channel ", event.Error().Error())
-			}
-		}
-	}
 }
 
 // ComputeDeviceChange computes a given device change the given updates and deletes, according to the path
