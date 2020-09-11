@@ -246,7 +246,6 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		enum = subPath.Enum
 	} else {
 		modeltype = pathElem.ValueType
-		//enum = pathElem.
 	}
 	var typedValue *devicechange.TypedValue
 	switch modeltype {
