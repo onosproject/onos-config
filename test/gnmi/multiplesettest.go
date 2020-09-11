@@ -67,7 +67,7 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 
 	// Make sure all of the changes have been completed
 	for _, changeID := range changeIDs {
-		complete := gnmi.WaitForNetworkChangeComplete(t, changeID, 1*time.Second)
+		complete := gnmi.WaitForNetworkChangeComplete(t, changeID, 5*time.Second)
 		assert.True(t, complete, "Set never completed")
 	}
 	// Shut down the device we created
