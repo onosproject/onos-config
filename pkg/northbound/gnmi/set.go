@@ -292,13 +292,15 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 				"Model Plugin not available for target %s", target)
 		}
 
-		correctedValues, err := jsonvalues.DecomposeJSONWithPaths(path, jsonVal, nil, rwPaths)
+		pathValues, err := jsonvalues.DecomposeJSONWithPaths(path, jsonVal, nil, rwPaths)
 		if err != nil {
-			log.Warn("Json value in Set could not be parsed", err)
+			log.Warnf("Json value in Set could not be parsed %v", err)
 			return nil, err
 		}
-
-		for _, cv := range correctedValues {
+		if len(pathValues) == 0 {
+			log.Warnf("no pathValues found for %s in %v", path, string(jsonVal))
+		}
+		for _, cv := range pathValues {
 			updates[cv.Path] = cv.GetValue()
 		}
 	} else {
@@ -373,16 +375,17 @@ func compareRoPaths(path string, model modelregistry.ReadOnlyPathMap) error {
 	for ropath, subpaths := range model {
 		// Search through for list indices and replace with generic
 		modelPath := modelregistry.RemovePathIndices(path)
-		if strings.HasPrefix(modelPath, ropath) {
+		ropathNoIdx := modelregistry.RemovePathIndices(ropath)
+		if strings.HasPrefix(modelPath, ropathNoIdx) {
 			for s := range subpaths {
-				fullpath := ropath
+				fullpath := ropathNoIdx
 				if s != "/" {
-					fullpath = fmt.Sprintf("%s%s", ropath, s)
+					fullpath = fmt.Sprintf("%s%s", ropathNoIdx, s)
 				}
 				if fullpath == modelPath {
 					return fmt.Errorf("contains a change to a "+
-						"read only path %s. Rejected. %s, %s, %s, %s",
-						path, modelPath, ropath, s, fullpath)
+						"read only path %s. Rejected. %s, %s, %s, %s, %s",
+						path, modelPath, ropath, ropathNoIdx, s, fullpath)
 				}
 			}
 		}

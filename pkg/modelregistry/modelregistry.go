@@ -57,11 +57,15 @@ const (
 	GetStateExplicitRoPathsExpandWildcards
 )
 
+// MatchOnIndex - regexp to find indices in paths names
+const MatchOnIndex = `(\[.*?]).*?`
+
 // ReadOnlyAttrib is the known metadata about a Read Only leaf
 type ReadOnlyAttrib struct {
 	Datatype    devicechange.ValueType
 	Description string
 	Units       string
+	Enum        map[int]string
 }
 
 // ReadOnlySubPathMap abstracts the read only subpath
@@ -69,6 +73,8 @@ type ReadOnlySubPathMap map[string]ReadOnlyAttrib
 
 // ReadOnlyPathMap abstracts the read only path
 type ReadOnlyPathMap map[string]ReadOnlySubPathMap
+
+var rOnIndex = regexp.MustCompile(MatchOnIndex)
 
 // JustPaths extracts keys from a read only path map
 func (ro ReadOnlyPathMap) JustPaths() []string {
@@ -112,6 +118,7 @@ type ReadWritePathElem struct {
 	Default     string
 	Range       []string
 	Length      []string
+	Enum        map[int]string
 }
 
 // ReadWritePathMap is a map of ReadWrite paths a their metadata
@@ -265,6 +272,11 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 			if err != nil {
 				log.Errorf(err.Error())
 			}
+			var enum map[int]string
+			if dirEntry.Type.Kind == yang.Yidentityref {
+				enum = handleIdentity(dirEntry.Type)
+			}
+			tObj.Enum = enum
 			if parentState == yang.TSFalse {
 				leafMap, ok := readOnlyPaths[parentPath]
 				if !ok {
@@ -293,6 +305,7 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 					Default:     dirEntry.Default,
 					Range:       ranges,
 					Length:      lengths,
+					Enum:        enum,
 				}
 				readWritePaths[itemPath] = rwElem
 			}
@@ -345,7 +358,14 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 				// Need to copy the index of the list across to the RO list too
 				roIdxName := k[:strings.LastIndex(k, "/")]
 				roIdxSubPath := k[strings.LastIndex(k, "/"):]
-				if roIdxName == itemPath {
+				indices := ExtractIndexNames(itemPath[strings.LastIndex(itemPath, "/"):])
+				kIsIdxAttr := false
+				for _, idx := range indices {
+					if roIdxSubPath == fmt.Sprintf("/%s", idx) {
+						kIsIdxAttr = true
+					}
+				}
+				if roIdxName == itemPath && kIsIdxAttr {
 					roIdx := ReadOnlyAttrib{
 						Datatype:    v.ValueType,
 						Description: v.Description,
@@ -374,13 +394,22 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 
 // RemovePathIndices removes the index value from a path to allow it to be compared to a model path
 func RemovePathIndices(path string) string {
-	const indexPattern = `=.*?]`
-	rname := regexp.MustCompile(indexPattern)
-	indices := rname.FindAllStringSubmatch(path, -1)
+	indices := rOnIndex.FindAllStringSubmatch(path, -1)
 	for _, i := range indices {
-		path = strings.Replace(path, i[0], "=*]", 1)
+		path = strings.Replace(path, i[0], "", 1)
 	}
 	return path
+}
+
+// ExtractIndexNames - get an ordered array of index names
+func ExtractIndexNames(path string) []string {
+	indexNames := make([]string, 0)
+	jsonMatches := rOnIndex.FindAllStringSubmatch(path, -1)
+	for _, m := range jsonMatches {
+		idxName := m[1][1:strings.LastIndex(m[1], "=")]
+		indexNames = append(indexNames, idxName)
+	}
+	return indexNames
 }
 
 func formatName(dirEntry *yang.Entry, isList bool, parentPath string, subpathPrefix string) string {
@@ -463,4 +492,13 @@ func toValueType(entry *yang.YangType, isLeafList bool) (devicechange.ValueType,
 	default:
 		return devicechange.ValueType_STRING, nil
 	}
+}
+
+func handleIdentity(yangType *yang.YangType) map[int]string {
+	identityMap := make(map[int]string)
+	identityMap[0] = "UNSET"
+	for i, val := range yangType.IdentityBase.Values {
+		identityMap[i+1] = val.Name
+	}
+	return identityMap
 }

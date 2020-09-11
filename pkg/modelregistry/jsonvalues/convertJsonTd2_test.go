@@ -215,10 +215,13 @@ func Test_DecomposeJSONWithPathsTd2OpState(t *testing.T) {
 			"/cont1b-state/list2b[index1=101][index2=102]/leaf3c",
 			"/cont1b-state/list2b[index1=101][index2=103]/leaf3c",
 			"/cont1b-state/list2b[index1=101][index2=102]/leaf3d",
-			"/cont1b-state/list2b[index1=101][index2=103]/leaf3d",
 			"/cont1b-state/cont2c/leaf3b":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
 			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 0)
+		case "/cont1b-state/list2b[index1=101][index2=103]/leaf3d":
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
+			strVal := (*devicechange.TypedString)(pathValue.GetValue()).String()
+			assert.Equal(t, "IDTYPE2", strVal) // Should do the conversion fron "2" to "IDTYPE2"
 		case
 			"/cont1b-state/leaf2d":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_UINT, pathValue.Path)
