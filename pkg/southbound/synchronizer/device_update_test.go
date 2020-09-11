@@ -83,7 +83,6 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 
 	session1 := &Session{
 		device:          device1Disconnected,
-		mastershipStore: allMocks.MastershipStore,
 		deviceStore:     allMocks.DeviceStore,
 		mastershipState: state,
 	}
@@ -124,7 +123,6 @@ func TestUpdateConnectedDevice(t *testing.T) {
 
 	session1 := &Session{
 		device:          device1Connected,
-		mastershipStore: allMocks.MastershipStore,
 		deviceStore:     allMocks.DeviceStore,
 		mastershipState: state,
 	}
