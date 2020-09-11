@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
+
 	"github.com/cenkalti/backoff"
 
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -46,9 +48,9 @@ const (
 
 // Session a gNMI session
 type Session struct {
-	mastershipStore           mastership.Store
 	deviceStore               devicestore.Store
 	mastershipState           *mastership.Mastership
+	nodeID                    cluster.NodeID
 	connected                 bool
 	opStateChan               chan<- events.OperationalStateEvent
 	deviceResponseChan        chan events.DeviceResponse
@@ -89,28 +91,21 @@ func (s *Session) open() error {
 		s.mu.Lock()
 		s.connected = false
 		s.mu.Unlock()
-		state, _ := s.mastershipStore.GetMastership(s.device.ID)
-		if state != nil {
-			s.mu.Lock()
-			s.mastershipState = state
-			s.mu.Unlock()
 
-			currentTerm, err := s.getCurrentTerm()
+		currentTerm, err := s.getCurrentTerm()
+		if err != nil {
+			log.Error(err)
+		}
+
+		if s.mastershipState.Master == s.nodeID && uint64(s.mastershipState.Term) >= uint64(currentTerm) {
+			err := s.connect()
 			if err != nil {
 				log.Error(err)
+			} else {
+				s.mu.Lock()
+				s.connected = true
+				s.mu.Unlock()
 			}
-
-			if state.Master == s.mastershipStore.NodeID() && uint64(state.Term) >= uint64(currentTerm) {
-				err := s.connect()
-				if err != nil {
-					log.Error(err)
-				} else {
-					s.mu.Lock()
-					s.connected = true
-					s.mu.Unlock()
-				}
-			}
-
 		}
 
 	}()

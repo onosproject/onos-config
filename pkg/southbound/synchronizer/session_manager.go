@@ -245,7 +245,14 @@ func (sm *SessionManager) handleMastershipEvents(session *Session) {
 
 // createSession creates a new gNMI session
 func (sm *SessionManager) createSession(device *topodevice.Device) error {
+
 	log.Info("Creating session for device:", device.ID)
+
+	state, err := sm.mastershipStore.GetMastership(device.ID)
+	if err != nil {
+		return err
+	}
+
 	session := &Session{
 		opStateChan:               sm.opStateChan,
 		dispatcher:                sm.dispatcher,
@@ -255,14 +262,15 @@ func (sm *SessionManager) createSession(device *topodevice.Device) error {
 		deviceChangeStore:         sm.deviceChangeStore,
 		device:                    device,
 		target:                    sm.newTargetFn(),
-		mastershipStore:           sm.mastershipStore,
 		deviceStore:               sm.deviceStore,
+		mastershipState:           state,
+		nodeID:                    sm.mastershipStore.NodeID(),
 	}
 	if session.device.Attributes == nil {
 		session.device.Attributes = make(map[string]string)
 	}
 
-	err := session.open()
+	err = session.open()
 	if err != nil {
 		return err
 	}
