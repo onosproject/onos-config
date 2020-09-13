@@ -105,8 +105,8 @@ func Test_DecomposeTreeConfigOnly(t *testing.T) {
 		case
 			"/system/logging/remote-servers/remote-server[host=h2]/config/host",
 			"/system/logging/remote-servers/remote-server[host=h2]/config/source-address",
-			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=f1][severity=s1]/config/facility",
-			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=f1][severity=s1]/config/severity",
+			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=LOCAL3][severity=s1]/config/facility",
+			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=LOCAL3][severity=s1]/config/severity",
 			"/system/logging/remote-servers/remote-server[host=h1]/config/host",
 			"/system/logging/remote-servers/remote-server[host=h1]/config/source-address":
 			assert.Equal(t, devicechange.ValueType_STRING, v.GetValue().GetType(), v.Path)
@@ -223,4 +223,15 @@ func Test_replaceIndices2(t *testing.T) {
 	replaced, err := replaceIndices(modelPathNumericalIdx, 57, indices)
 	assert.NilError(t, err, "unexpected error replacing numbers")
 	assert.Equal(t, modelPathExpected, replaced, "unexpected value after replacing numbers")
+}
+
+func Test_removeIndexNames(t *testing.T) {
+	samplePath1 := "/interfaces"
+	samplePath1Remove := "/interfaces"
+	assert.Equal(t, samplePath1Remove, removeIndexNames(samplePath1))
+
+	samplePath2 := "/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/config/description"
+	samplePath2Remove := "/interfaces/interface[eth1]/subinterfaces/subinterface[120]/config/description"
+	assert.Equal(t, samplePath2Remove, removeIndexNames(samplePath2))
+
 }

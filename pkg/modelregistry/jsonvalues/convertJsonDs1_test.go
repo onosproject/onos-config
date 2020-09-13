@@ -87,7 +87,7 @@ func Test_correctJsonPathRwValuesSubInterfaces(t *testing.T) {
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-openconfig-configuration.json")
 	assert.NilError(t, err)
 
-	pathValues, err := DecomposeJSONWithPaths("", sampleTree, readOnlyPaths, readWritePaths)
+	pathValues, err := DecomposeJSONWithPaths("/interfaces/interface[name=eth1]", sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
 	assert.Equal(t, len(pathValues), 8)
 
@@ -128,7 +128,7 @@ func Test_correctJsonPathRwValuesSystemLogging(t *testing.T) {
 	// here in the intermediate jsonToValues format
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-openconfig-double-index.json")
 	assert.NilError(t, err)
-	assert.Equal(t, 843, len(sampleTree))
+	assert.Equal(t, 851, len(sampleTree))
 
 	pathValues, err := DecomposeJSONWithPaths("", sampleTree, readOnlyPaths, readWritePaths)
 	assert.NilError(t, err)
@@ -139,12 +139,20 @@ func Test_correctJsonPathRwValuesSystemLogging(t *testing.T) {
 		switch pathValue.Path {
 		case
 			"/system/logging/remote-servers/remote-server[host=h1]/config/source-address",
-			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=1][severity=2]/config/severity",
-			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=1][severity=2]/config/facility",
-			"/system/logging/console/selectors/selector[facility=3][severity=4]/config/facility",
+			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=ALL][severity=2]/config/severity",
 			"/system/logging/console/selectors/selector[facility=3][severity=4]/config/severity":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
 			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 0)
+		case
+			"/system/logging/remote-servers/remote-server[host=h1]/selectors/selector[facility=ALL][severity=2]/config/facility":
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
+			strValue := (*devicechange.TypedString)(pathValue.Value)
+			assert.Equal(t, "ALL", strValue.String(), "expected IdentityRef to be translated")
+		case
+			"/system/logging/console/selectors/selector[facility=3][severity=4]/config/facility":
+			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
+			strValue := (*devicechange.TypedString)(pathValue.Value)
+			assert.Equal(t, "LOCAL4", strValue.String(), "expected IdentityRef to be translated from '3' to LOCAL4")
 		default:
 			t.Fatal("Unexpected path", pathValue.Path)
 		}

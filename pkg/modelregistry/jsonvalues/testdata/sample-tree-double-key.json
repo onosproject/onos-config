@@ -13,10 +13,10 @@
       "selectors": {
         "selector": [
           {
-            "facility": "f1",
+            "facility": "LOCAL3",
             "severity": "s1",
             "config": {
-              "facility": "f1",
+              "facility": "LOCAL3",
               "severity": "s1"
             }
           }
