@@ -521,7 +521,7 @@ func TestSet_checkForReadOnly(t *testing.T) {
 	err := server.checkForReadOnly("device-1", "TestDevice", "1.0.0", updateT1, make([]string, 0))
 	assert.NilError(t, err, "unexpected error on T1")
 	err = server.checkForReadOnly("device-2", "TestDevice", "1.0.0", updateT2, make([]string, 0))
-	assert.Error(t, err, `update contains a change to a read only path /cont1a/cont2a/leaf2c. Rejected. /cont1a/cont2a/leaf2c, /cont1a/cont2a/leaf2c, /cont1a/cont2a/leaf2c, /, /cont1a/cont2a/leaf2c`)
+	assert.NilError(t, err)
 }
 
 // Tests giving a new device without specifying a type

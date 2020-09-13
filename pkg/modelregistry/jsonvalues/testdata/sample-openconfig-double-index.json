@@ -11,10 +11,10 @@
             "selectors": {
               "selector": [
                 {
-                  "facility": 1,
+                  "facility": "ALL",
                   "severity": 2,
                   "config": {
-                    "facility": 1,
+                    "facility": "ALL",
                     "severity": 2
                   }
                 }

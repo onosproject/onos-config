@@ -10,13 +10,13 @@
         "index1": 101,
         "index2": 102,
         "leaf3c": "mock Value in JSON",
-        "leaf3d": "IDTYPE1"
+        "leaf3d": "1"
       },
       {
         "index1": 101,
         "index2": 103,
         "leaf3c": "Second mock Value",
-        "leaf3d": "2"
+        "leaf3d": 2
       }
     ],
     "leaf2d": 10001,

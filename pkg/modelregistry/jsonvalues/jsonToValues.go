@@ -49,7 +49,7 @@ func DecomposeJSONWithPaths(prefixPath string, genericJSON []byte, ropaths model
 	if err != nil {
 		return nil, err
 	}
-	values, err := extractValuesWithPaths(f, prefixPath, ropaths, rwpaths)
+	values, err := extractValuesWithPaths(f, removeIndexNames(prefixPath), ropaths, rwpaths)
 	if err != nil {
 		return nil, fmt.Errorf("error decomposing JSON %v", err)
 	}
@@ -246,6 +246,7 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		enum = subPath.Enum
 	} else {
 		modeltype = pathElem.ValueType
+		enum = pathElem.Enum
 	}
 	var typedValue *devicechange.TypedValue
 	switch modeltype {
@@ -254,32 +255,22 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		switch valueTyped := value.(type) {
 		case string:
 			if len(enum) > 0 {
-				// Compare values and convert from digit if necessary
-				for k, v := range enum {
-					if v == valueTyped {
-						stringVal = valueTyped
-						break
-					} else if fmt.Sprintf("%d", k) == valueTyped {
-						stringVal = v
-						break
-					}
-				}
-				if stringVal == "" {
-					enumOpts := make([]string, len(enum)*2)
-					i := 0
-					for k, v := range enum {
-						enumOpts[i*2] = fmt.Sprintf("%d", k)
-						enumOpts[i*2+1] = v
-						i++
-					}
-					return nil, fmt.Errorf("value %s for %s does not match any enumerated value %s",
-						valueTyped, parentPath, strings.Join(enumOpts, ";"))
+				stringVal, err = convertEnumIdx(valueTyped, enum, parentPath)
+				if err != nil {
+					return nil, err
 				}
 			} else {
 				stringVal = valueTyped
 			}
 		case float64:
-			stringVal = fmt.Sprintf("%g", value)
+			if len(enum) > 0 {
+				stringVal, err = convertEnumIdx(fmt.Sprintf("%g", valueTyped), enum, parentPath)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				stringVal = fmt.Sprintf("%g", valueTyped)
+			}
 		case bool:
 			stringVal = fmt.Sprintf("%v", value)
 		}
@@ -554,4 +545,45 @@ func replaceIndices(path string, ignoreAfter int, indices []indexValue) (string,
 	}
 
 	return fmt.Sprintf("%s%s", strings.Join(pathParts, bracketsq), ignored), nil
+}
+
+func convertEnumIdx(valueTyped string, enum map[int]string,
+	parentPath string) (string, error) {
+	var stringVal string
+	for k, v := range enum {
+		if v == valueTyped {
+			stringVal = valueTyped
+			break
+		} else if fmt.Sprintf("%d", k) == valueTyped {
+			stringVal = v
+			break
+		}
+	}
+	if stringVal == "" {
+		enumOpts := make([]string, len(enum)*2)
+		i := 0
+		for k, v := range enum {
+			enumOpts[i*2] = fmt.Sprintf("%d", k)
+			enumOpts[i*2+1] = v
+			i++
+		}
+		return "", fmt.Errorf("value %s for %s does not match any enumerated value %s",
+			valueTyped, parentPath, strings.Join(enumOpts, ";"))
+	}
+	return stringVal, nil
+}
+
+// for a path like
+// "/interfaces/interface[name=eth1]/subinterfaces/subinterface[index=120]/config/description",
+// Remove the "name=" and "index="
+func removeIndexNames(prefixPath string) string {
+	splitPath := strings.Split(prefixPath, equals)
+	for i, pathPart := range splitPath {
+		if i < len(splitPath)-1 {
+			lastBrktPos := strings.LastIndex(pathPart, bracketsq)
+			splitPath[i] = pathPart[:lastBrktPos] + "["
+		}
+	}
+
+	return strings.Join(splitPath, "")
 }
