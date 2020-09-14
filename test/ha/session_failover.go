@@ -40,7 +40,7 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 	found := gnmi.WaitForDevice(t, func(d *device.Device) bool {
 		currentTerm, _ = strconv.Atoi(d.Attributes[mastershipTermKey])
 		masterNode = d.Attributes[mastershipMasterKey]
-		return len(d.Protocols) > 0 &&
+		return currentTerm == 1 && len(d.Protocols) > 0 &&
 			d.Protocols[0].Protocol == device.Protocol_GNMI &&
 			d.Protocols[0].ConnectivityState == device.ConnectivityState_REACHABLE &&
 			d.Protocols[0].ChannelState == device.ChannelState_CONNECTED &&
@@ -52,7 +52,7 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 	// Crash master pod
 	hautils.CrashPodOrFail(t, masterPod)
 
-	// Waits for a new master to be selected, establish a connection to the device
+	// Waits for a new master to be elected (i.e. the term will be increased), it establishes a connection to the device
 	// and updates the device state
 	found = gnmi.WaitForDevice(t, func(d *device.Device) bool {
 		currentTerm, _ = strconv.Atoi(d.Attributes[mastershipTermKey])
