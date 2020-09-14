@@ -19,12 +19,14 @@ import (
 	"github.com/onosproject/helmit/pkg/test"
 	"github.com/onosproject/onos-config/test/cli"
 	"github.com/onosproject/onos-config/test/gnmi"
+	"github.com/onosproject/onos-config/test/ha"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 func main() {
 	registry.RegisterTestSuite("cli", &cli.TestSuite{})
 	registry.RegisterTestSuite("gnmi", &gnmi.TestSuite{})
+	registry.RegisterTestSuite("ha", &ha.TestSuite{})
 
 	test.Main()
 }

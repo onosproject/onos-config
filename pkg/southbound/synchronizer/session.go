@@ -41,9 +41,10 @@ import (
 )
 
 const (
-	backoffInterval   = 10 * time.Millisecond
-	maxBackoffTime    = 5 * time.Second
-	mastershipTermKey = "onos-config.mastership.term"
+	backoffInterval     = 10 * time.Millisecond
+	maxBackoffTime      = 5 * time.Second
+	mastershipTermKey   = "onos-config.mastership.term"
+	mastershipMasterKey = "onos-config.mastership.master"
 )
 
 // Session a gNMI session

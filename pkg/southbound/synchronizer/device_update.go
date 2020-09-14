@@ -83,6 +83,7 @@ func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channe
 	}
 
 	topoDevice.Attributes[mastershipTermKey] = strconv.FormatUint(uint64(s.mastershipState.Term), 10)
+	topoDevice.Attributes[mastershipMasterKey] = string(s.mastershipState.Master)
 	_, err = s.deviceStore.Update(topoDevice)
 	if err != nil {
 		log.Errorf("Device %s is not updated %s", id, err.Error())
