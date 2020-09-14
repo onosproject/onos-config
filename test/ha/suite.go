@@ -15,8 +15,6 @@
 package ha
 
 import (
-	"sync"
-
 	"github.com/onosproject/onos-test/pkg/onostest"
 
 	"github.com/onosproject/helmit/pkg/helm"
@@ -30,7 +28,6 @@ type testSuite struct {
 // TestSuite is the onos-config CLI test suite
 type TestSuite struct {
 	testSuite
-	mux sync.Mutex
 }
 
 const onosComponentName = "onos-config"

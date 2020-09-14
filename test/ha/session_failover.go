@@ -30,6 +30,8 @@ const (
 	mastershipMasterKey = "onos-config.mastership.master"
 )
 
+// TestSessionFailOver tests gnmi session failover is happening when the master node
+// is crashed
 func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 	simulator := gnmi.CreateSimulator(t)
 	assert.NotNil(t, simulator)
@@ -60,5 +62,6 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 			d.Protocols[0].ChannelState == device.ChannelState_CONNECTED &&
 			d.Protocols[0].ServiceState == device.ServiceState_AVAILABLE
 	}, 70*time.Second)
+	assert.Equal(t, true, found)
 
 }
