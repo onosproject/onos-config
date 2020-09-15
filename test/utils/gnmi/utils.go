@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/onosproject/onos-test/pkg/onostest"
 	"io"
 	"strconv"
 	"strings"
@@ -583,7 +584,7 @@ func CreateSimulator(t *testing.T) *helm.HelmRelease {
 // CreateSimulatorWithName creates a device simulator
 func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
 	simulator := helm.
-		Chart("device-simulator", "https://charts.onosproject.org").
+		Chart("device-simulator", onostest.OnosChartRepo).
 		Release(name)
 	err := simulator.Install(true)
 	assert.NoError(t, err, "could not install device simulator %v", err)
