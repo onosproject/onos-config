@@ -24,13 +24,11 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
-	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -103,47 +101,7 @@ func New(context context.Context,
 		}
 	}
 	log.Info(sync.Device.Address, " Encoding:", sync.encoding, " Capabilities ", capResponse)
-
-	log.Infof("Getting initial configuration for device %s with type %s and version %s", device.ID, device.Type, device.Version)
-	onosExistingConfig, errExtract := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(devicetype.ID(device.ID),
-		devicetype.Version(device.Version)), nil, deviceChangeStore, 0)
-	if errExtract != nil && !strings.Contains(errExtract.Error(), "no Configuration found") {
-		log.Errorf("Can't extract initial configuration for %s due to: %s", sync.Device.Address, errExtract)
-		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorParseConfig, string(device.ID), errExtract)
-	}
-
-	if len(onosExistingConfig) != 0 {
-		errSet := sync.initialSet(context, onosExistingConfig, device, target, errChan)
-		if errSet != nil {
-			log.Errorf("Can't set initial configuration for %s due to: %s", sync.Device.Address, errSet)
-			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnectInitialConfigSync,
-				string(device.ID), errSet)
-		}
-	} else {
-		log.Infof("No pre-existing configuration for %s", device.ID)
-	}
 	return sync, nil
-}
-
-func (sync Synchronizer) initialSet(context context.Context, onosExistingConfig []*devicechange.PathValue,
-	device *topodevice.Device, target southbound.TargetIf, errChan chan<- events.DeviceResponse) error {
-	setRequest, errExtract := values.PathValuesToGnmiChange(onosExistingConfig)
-	log.Infof("Setting initial configuration for device %s : %s", device.ID, setRequest)
-	if errExtract != nil {
-		return errExtract
-	}
-	setResponse, errSet := target.Set(context, setRequest)
-	if errSet != nil {
-		status, ok := status.FromError(errSet)
-		if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {
-			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect, string(sync.ID), errSet)
-		}
-		log.Errorf("Can't set initial configuration for %s due to: %s", device.Address,
-			strings.Split(status.Message(), " desc = ")[1])
-		return errSet
-	}
-	log.Info("Response for initial configuration ", setResponse)
-	return nil
 }
 
 // For use when device model has modelregistry.GetStateOpState
