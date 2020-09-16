@@ -19,6 +19,7 @@ import (
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/kubernetes"
 	"github.com/onosproject/helmit/pkg/util/random"
+	"github.com/onosproject/onos-test/pkg/onostest"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -107,13 +108,11 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	time.Sleep(60 * time.Second)
 
 	// Get one of the onos-cli pods
-	release := helm.Chart("onos-cli", "https://charts.onosproject.org").
-		Release("onos-cli")
+	release := helm.Chart("onos-umbrella", onostest.OnosChartRepo).Release("onos-umbrella")
 	client := kubernetes.NewForReleaseOrDie(release)
-	pods, err := client.
-		CoreV1().
-		Pods().
-		List()
+	dep, err := client.AppsV1().Deployments().Get("onos-cli")
+	assert.NoError(t, err)
+	pods, err := dep.Pods().List()
 	assert.NoError(t, err)
 	pod := pods[0]
 
@@ -124,16 +123,6 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	plugins := parsePluginsCommandOutput(t, output)
 
 	testCases := []pluginsTestCase{
-		{
-			pluginName:    "Stratum",
-			pluginVersion: "1.0.0",
-			pluginObject:  "stratum.so.1.0.0",
-			yangName:      "openconfig-interfaces-stratum",
-			attributes: pluginAttributes{
-				pluginVersion: "0.1.0",
-				pluginSource:  "Open Networking Foundation",
-			},
-		},
 		{
 			pluginName:    "TestDevice",
 			pluginVersion: "1.0.0",
@@ -161,26 +150,6 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 			yangName:      "openconfig-openflow",
 			attributes: pluginAttributes{
 				pluginVersion: "2017-06-01",
-				pluginSource:  "OpenConfig working group",
-			},
-		},
-		{
-			pluginName:    "Stratum",
-			pluginVersion: "1.0.0",
-			pluginObject:  "stratum.so.1.0.0",
-			yangName:      "openconfig-if-ip",
-			attributes: pluginAttributes{
-				pluginVersion: "3.0.0",
-				pluginSource:  "OpenConfig working group",
-			},
-		},
-		{
-			pluginName:    "Stratum",
-			pluginVersion: "1.0.0",
-			pluginObject:  "stratum.so.1.0.0",
-			yangName:      "openconfig-hercules-platform-node",
-			attributes: pluginAttributes{
-				pluginVersion: "0.2.0",
 				pluginSource:  "OpenConfig working group",
 			},
 		},
