@@ -62,22 +62,23 @@ func MakeContext() context.Context {
 	return ctx
 }
 
-func getService(release *helm.HelmRelease) (*v1.Service, error) {
+func getService(release *helm.HelmRelease, serviceName string) (*v1.Service, error) {
 	releaseClient := kubernetes.NewForReleaseOrDie(release)
-	services, err := releaseClient.CoreV1().Services().List()
+	service, err := releaseClient.CoreV1().Services().Get(serviceName)
 	if err != nil {
 		return nil, err
 	}
-	return services[0], nil
+
+	return service, nil
 }
 
-func connectComponent(name string) (*grpc.ClientConn, error) {
-	release := helm.Chart(name).Release(name)
-	return connectService(release)
+func connectComponent(releaseName string, deploymentName string) (*grpc.ClientConn, error) {
+	release := helm.Chart(releaseName).Release(releaseName)
+	return connectService(release, deploymentName)
 }
 
-func connectService(release *helm.HelmRelease) (*grpc.ClientConn, error) {
-	service, err := getService(release)
+func connectService(release *helm.HelmRelease, deploymentName string) (*grpc.ClientConn, error) {
+	service, err := getService(release, deploymentName)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +141,7 @@ func NewDevice(simulator *helm.HelmRelease, deviceType string, version string) (
 
 // NewDeviceServiceClient :
 func NewDeviceServiceClient() (device.DeviceServiceClient, error) {
-	conn, err := connectComponent("onos-topo")
+	conn, err := connectComponent("onos-umbrella", "onos-topo")
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +150,7 @@ func NewDeviceServiceClient() (device.DeviceServiceClient, error) {
 
 // NewChangeServiceClient :
 func NewChangeServiceClient() (diags.ChangeServiceClient, error) {
-	conn, err := connectComponent("onos-config")
+	conn, err := connectComponent("onos-umbrella", "onos-config")
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +159,7 @@ func NewChangeServiceClient() (diags.ChangeServiceClient, error) {
 
 // NewAdminServiceClient :
 func NewAdminServiceClient() (admin.ConfigAdminServiceClient, error) {
-	conn, err := connectComponent("onos-config")
+	conn, err := connectComponent("onos-umbrella", "onos-config")
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +168,7 @@ func NewAdminServiceClient() (admin.ConfigAdminServiceClient, error) {
 
 // NewOpStateDiagsClient :
 func NewOpStateDiagsClient() (diags.OpStateDiagsClient, error) {
-	conn, err := connectComponent("onos-config")
+	conn, err := connectComponent("onos-umbrella", "onos-config")
 	if err != nil {
 		return nil, err
 	}
@@ -477,16 +478,17 @@ func GetDestination() (client.Destination, error) {
 	if err != nil {
 		return client.Destination{}, err
 	}
-	configRelease := helm.Release("onos-config")
+	configRelease := helm.Release("onos-umbrella")
 	configClient := kubernetes.NewForReleaseOrDie(configRelease)
-	services, err := configClient.CoreV1().Services().List()
-	if err != nil {
-		return client.Destination{}, err
+
+	configService, err := configClient.CoreV1().Services().Get("onos-config")
+	if configService == nil {
+		return client.Destination{}, errors.New("can't find service for onos-config")
 	}
-	service := services[0]
+
 	return client.Destination{
-		Addrs:   []string{service.Ports()[0].Address(true)},
-		Target:  service.Name,
+		Addrs:   []string{configService.Ports()[0].Address(true)},
+		Target:  configService.Name,
 		TLS:     creds,
 		Timeout: 10 * time.Second,
 	}, nil
@@ -495,8 +497,8 @@ func GetDestination() (client.Destination, error) {
 // GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
 func GetGNMIClientOrFail(t *testing.T) client.Impl {
 	t.Helper()
-	release := helm.Chart("onos-config").Release("onos-config")
-	conn, err := connectService(release)
+	release := helm.Chart("onos-umbrella").Release("onos-umbrella")
+	conn, err := connectService(release, "onos-config")
 	assert.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
