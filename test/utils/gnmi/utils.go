@@ -482,7 +482,7 @@ func GetDestination() (client.Destination, error) {
 	configClient := kubernetes.NewForReleaseOrDie(configRelease)
 
 	configService, err := configClient.CoreV1().Services().Get("onos-config")
-	if configService == nil {
+	if err != nil || configService == nil {
 		return client.Destination{}, errors.New("can't find service for onos-config")
 	}
 
