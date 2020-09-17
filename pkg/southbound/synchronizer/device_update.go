@@ -27,7 +27,6 @@ import (
 
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 
-	"github.com/onosproject/gnmi/proto/gnmi_ext"
 	"github.com/onosproject/onos-config/pkg/events"
 
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -125,26 +124,27 @@ func (s *Session) updateDisconnectedDevice() error {
 
 }
 
-func (s *Session) setMasterArbitrationExt() {
-
-	term := &gnmi_ext.Uint128{
+// setMasterArbitrationExt sends an empty Set RPC with the election ID (i.e. mastership term) only
+func (s *Session) setMasterArbitrationExt() error {
+	log.Info("Sets master arbitration extension")
+	electionID := &gnmi_ext.Uint128{
 		Low:  0,
 		High: uint64(s.mastershipState.Term),
 	}
 
 	masterArbitrationExt := gnmi_ext.Extension_MasterArbitration{
 		MasterArbitration: &gnmi_ext.MasterArbitration{
-			ElectionId: term,
+			ElectionId: electionID,
 		},
 	}
 
 	extensions := []*gnmi_ext.Extension{{Ext: &masterArbitrationExt}}
 
-	masterArbitration := gpb.SetRequest{
+	masterArbitrationReq := &gpb.SetRequest{
 		Extension: extensions,
 	}
-
-	s.target.Set()
+	_, err := s.target.Set(s.ctx, masterArbitrationReq)
+	return err
 
 }
 
@@ -153,6 +153,10 @@ func (s *Session) updateDeviceState() error {
 	for event := range s.deviceResponseChan {
 		switch event.EventType() {
 		case events.EventTypeDeviceConnected:
+			err := s.setMasterArbitrationExt()
+			if err != nil {
+				return err
+			}
 			// TODO: Retry only on write conflicts
 			_ = backoff.Retry(s.updateConnectedDevice, backoff.NewExponentialBackOff())
 		case events.EventTypeErrorDeviceConnect:

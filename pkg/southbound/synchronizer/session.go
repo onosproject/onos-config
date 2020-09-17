@@ -63,6 +63,7 @@ type Session struct {
 	device                    *topodevice.Device
 	target                    southbound.TargetIf
 	cancel                    context.CancelFunc
+	ctx                       context.Context
 	closed                    bool
 	mu                        sync.RWMutex
 }
@@ -144,6 +145,7 @@ func (s *Session) synchronize() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.mu.Lock()
 	s.cancel = cancel
+	s.ctx = ctx
 	s.mu.Unlock()
 
 	s.mu.RLock()
