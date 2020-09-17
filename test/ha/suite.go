@@ -30,6 +30,7 @@ type TestSuite struct {
 
 // SetupTestSuite sets up the onos-config HA test suite
 func (s *TestSuite) SetupTestSuite() error {
-	umbrella := charts.CreateUmbrellaRelease()
+	umbrella := charts.CreateUmbrellaRelease().
+		Set("onos-config.replicaCount", "2")
 	return umbrella.Install(true)
 }
