@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	previousTime = time.Now().Add(-5 * time.Minute)
+	previousTimeDiags time.Time
 )
 
 func filterResponse(response *diags.OpStateResponse) bool {
@@ -41,6 +41,8 @@ func filterResponse(response *diags.OpStateResponse) bool {
 
 // TestSubscribeStateDiags tests a stream subscription to updates to a device using the diags API
 func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
+	previousTimeDiags = time.Now().Add(-5 * time.Minute)
+
 	// Bring up a new simulated device
 	simulator := gnmi.CreateSimulator(t)
 	deviceName := simulator.Name()
@@ -82,6 +84,6 @@ func validateDiagsStateResponse(t *testing.T, resp *diags.OpStateResponse) {
 	updatedTimeString := resp.Pathvalue.Value.ValueToString()
 	updatedTime, timeParseError := time.Parse("2006-01-02T15:04:05Z-07:00", updatedTimeString)
 	assert.NoError(t, timeParseError, "Error parsing time string from path value")
-	assert.True(t, previousTime.Before(updatedTime), "Path time value is not in the future %v", resp)
-	previousTime = updatedTime
+	assert.True(t, previousTimeDiags.Before(updatedTime), "Path time value is not in the future %v", resp)
+	previousTimeDiags = updatedTime
 }
