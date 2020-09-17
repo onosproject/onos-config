@@ -16,15 +16,12 @@ package gnmi
 
 import (
 	"context"
-	"crypto/tls"
 	"github.com/onosproject/helmit/pkg/benchmark"
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/input"
-	"github.com/onosproject/helmit/pkg/kubernetes"
 	"github.com/onosproject/helmit/pkg/util/random"
-	"github.com/onosproject/onos-lib-go/pkg/certs"
-	"github.com/onosproject/onos-test/pkg/onostest"
-	gclient "github.com/openconfig/gnmi/client"
+	"github.com/onosproject/onos-config/test/utils/charts"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/openconfig/gnmi/client/gnmi"
 	"time"
 )
@@ -37,52 +34,12 @@ type BenchmarkSuite struct {
 	value     input.Source
 }
 
-const onosComponentName = "onos-config"
-const testName = "gnmi-benchmark"
-
 // SetupSuite :: benchmark
 func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
-	// Setup the Atomix controller
-	err := helm.Chart(onostest.ControllerChartName, onostest.AtomixChartRepo).
-		Release(onostest.AtomixName(testName, onosComponentName)).
-		Set("scope", "Namespace").
-		Install(true)
-	if err != nil {
-		return err
-	}
-
-	err = helm.Chart(onostest.RaftStorageControllerChartName, onostest.AtomixChartRepo).
-		Release(onostest.RaftReleaseName(onosComponentName)).
-		Set("scope", "Namespace").
-		Install(true)
-	if err != nil {
-		return err
-	}
-
-	// Install the onos-topo chart
-	err = helm.
-		Chart("onos-topo", onostest.AtomixChartRepo).
-		Release("onos-topo").
-		Set("replicaCount", 2).
-		Set("storage.controller", onostest.AtomixController(testName, onosComponentName)).
-		Set("image.tag", "latest").
-		Install(false)
-	if err != nil {
-		return err
-	}
-
-	// Install the onos-config chart
-	err = helm.
-		Chart("onos-config", onostest.OnosChartRepo).
-		Release("onos-config").
-		Set("replicaCount", 2).
-		Set("storage.controller", onostest.AtomixController(testName, onosComponentName)).
-		Set("image.tag", "latest").
-		Install(true)
-	if err != nil {
-		return err
-	}
-	return nil
+	umbrella := charts.CreateUmbrellaRelease().
+		Set("onos-topo.replicaCount", 2).
+		Set("onos-config.replicaCount", 2)
+	return umbrella.Install(true)
 }
 
 // SetupWorker :: benchmark
@@ -110,31 +67,11 @@ func (s *BenchmarkSuite) TearDownWorker(c *benchmark.Context) error {
 
 var _ benchmark.SetupWorker = &BenchmarkSuite{}
 
-func getDestination() (gclient.Destination, error) {
-	creds, err := getClientCredentials()
-	if err != nil {
-		return gclient.Destination{}, err
-	}
-	onosConfig := helm.Release("onos-config")
-	onosConfigClient := kubernetes.NewForReleaseOrDie(onosConfig)
-	services, err := onosConfigClient.CoreV1().Services().List()
-	if err != nil {
-		return gclient.Destination{}, err
-	}
-	service := services[0]
-	return gclient.Destination{
-		Addrs:   []string{service.Ports()[0].Address(true)},
-		Target:  service.Name,
-		TLS:     creds,
-		Timeout: 10 * time.Second,
-	}, nil
-}
-
 // getGNMIClient makes a GNMI client to use for requests
 func getGNMIClient() (*client.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	dest, err := getDestination()
+	dest, err := gnmi.GetDestination()
 	if err != nil {
 		return nil, err
 	}
@@ -143,16 +80,4 @@ func getGNMIClient() (*client.Client, error) {
 		return nil, err
 	}
 	return gnmiClient.(*client.Client), nil
-}
-
-// getClientCredentials returns the credentials for a service client
-func getClientCredentials() (*tls.Config, error) {
-	cert, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
-	if err != nil {
-		return nil, err
-	}
-	return &tls.Config{
-		Certificates:       []tls.Certificate{cert},
-		InsecureSkipVerify: true,
-	}, nil
 }

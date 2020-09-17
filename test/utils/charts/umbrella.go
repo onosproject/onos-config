@@ -1,4 +1,4 @@
-// Copyright 2019-present Open Networking Foundation.
+// Copyright 2020-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,27 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gnmi
+package charts
 
 import (
-	"github.com/onosproject/onos-config/test/utils/charts"
-	"sync"
-
-	"github.com/onosproject/helmit/pkg/test"
+	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/onos-test/pkg/onostest"
 )
 
-type testSuite struct {
-	test.Suite
-}
-
-// TestSuite is the onos-config GNMI test suite
-type TestSuite struct {
-	testSuite
-	mux sync.Mutex
-}
-
-// SetupTestSuite sets up the onos-config GNMI test suite
-func (s *TestSuite) SetupTestSuite() error {
-	umbrella := charts.CreateUmbrellaRelease()
-	return umbrella.Install(true)
+// CreateUmbrellaRelease creates a helm release for an onos-umbrella instance
+func CreateUmbrellaRelease() *helm.HelmRelease {
+	return helm.Chart("onos-umbrella", onostest.OnosChartRepo).
+		Release("onos-umbrella").
+		Set("import.onos-gui.enabled", false).
+		Set("onos-cli.image.tag", "latest").
+		Set("onos-topo.image.tag", "latest").
+		Set("onos-config.image.tag", "latest")
 }

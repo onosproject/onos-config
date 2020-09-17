@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	onosComponentName = "onos-config"
+	onosComponentName = "onos-umbrella"
 )
 
 // GetPodListOrFail gets the list of pods active in the onos-config release. The test is failed if getting the list returns

@@ -15,9 +15,8 @@
 package cli
 
 import (
-	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/test"
-	"github.com/onosproject/onos-test/pkg/onostest"
+	"github.com/onosproject/onos-config/test/utils/charts"
 )
 
 type testSuite struct {
@@ -29,52 +28,8 @@ type TestSuite struct {
 	testSuite
 }
 
-const onosComponentName = "onos-config"
-const testName = "cli-test"
-
 // SetupTestSuite sets up the onos-config CLI test suite
 func (s *TestSuite) SetupTestSuite() error {
-	err := helm.Chart(onostest.ControllerChartName, onostest.AtomixChartRepo).
-		Release(onostest.AtomixName(testName, onosComponentName)).
-		Set("scope", "Namespace").
-		Install(true)
-	if err != nil {
-		return err
-	}
-
-	err = helm.Chart(onostest.RaftStorageControllerChartName, onostest.AtomixChartRepo).
-		Release(onostest.RaftReleaseName(onosComponentName)).
-		Set("scope", "Namespace").
-		Install(true)
-	if err != nil {
-		return err
-	}
-
-	err = helm.Chart("onos-topo", onostest.OnosChartRepo).
-		Release("onos-topo").
-		Set("image.tag", "latest").
-		Set("storage.controller", onostest.AtomixController(testName, onosComponentName)).
-		Install(true)
-	if err != nil {
-		return err
-	}
-
-	err = helm.Chart("onos-config", onostest.OnosChartRepo).
-		Release("onos-config").
-		Set("image.tag", "latest").
-		Set("storage.controller", onostest.AtomixController(testName, onosComponentName)).
-		Install(true)
-	if err != nil {
-		return err
-	}
-
-	err = helm.Chart("onos-cli", onostest.OnosChartRepo).
-		Release("onos-cli").
-		Set("image.tag", "latest").
-		Install(true)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	umbrella := charts.CreateUmbrellaRelease()
+	return umbrella.Install(true)
 }
