@@ -35,7 +35,7 @@ import (
 func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 	const dateTimePath = "/system/state/current-datetime"
 
-	previousTime = time.Now().Add(-5 * time.Second)
+	previousTime = time.Now().Add(-5 * time.Minute)
 
 	// Bring up a new simulated device
 	simulator := gnmi.CreateSimulator(t)
@@ -137,7 +137,7 @@ func validateGnmiStateUpdateResponse(t *testing.T, update *gpb.SubscribeResponse
 	updatedTime, timeParseError := time.Parse("2006-01-02T15:04:05Z-07:00", updatedTimeString)
 	assert.NoError(t, timeParseError)
 
-	assert.True(t, previousTime.Before(updatedTime), "Path time value is not in the future")
+	assert.True(t, previousTime.Before(updatedTime), "Path time value is not in the future %v", update)
 	previousTime = updatedTime
 }
 

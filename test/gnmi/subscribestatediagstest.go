@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	previousTime = time.Now().Add(-5 * time.Second)
+	previousTime = time.Now().Add(-5 * time.Minute)
 )
 
 func filterResponse(response *diags.OpStateResponse) bool {
@@ -82,6 +82,6 @@ func validateDiagsStateResponse(t *testing.T, resp *diags.OpStateResponse) {
 	updatedTimeString := resp.Pathvalue.Value.ValueToString()
 	updatedTime, timeParseError := time.Parse("2006-01-02T15:04:05Z-07:00", updatedTimeString)
 	assert.NoError(t, timeParseError, "Error parsing time string from path value")
-	assert.True(t, previousTime.Before(updatedTime), "Path time value is not in the future")
+	assert.True(t, previousTime.Before(updatedTime), "Path time value is not in the future %v", resp)
 	previousTime = updatedTime
 }
