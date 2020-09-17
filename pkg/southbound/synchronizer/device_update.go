@@ -18,11 +18,16 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/cenkalti/backoff"
 
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
+
+	"github.com/onosproject/gnmi/proto/gnmi_ext"
 	"github.com/onosproject/onos-config/pkg/events"
 
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -117,6 +122,29 @@ func (s *Session) updateDisconnectedDevice() error {
 	err := s.updateDevice(topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
 		topodevice.ServiceState_UNAVAILABLE)
 	return err
+
+}
+
+func (s *Session) setMasterArbitrationExt() {
+
+	term := &gnmi_ext.Uint128{
+		Low:  0,
+		High: uint64(s.mastershipState.Term),
+	}
+
+	masterArbitrationExt := gnmi_ext.Extension_MasterArbitration{
+		MasterArbitration: &gnmi_ext.MasterArbitration{
+			ElectionId: term,
+		},
+	}
+
+	extensions := []*gnmi_ext.Extension{{Ext: &masterArbitrationExt}}
+
+	masterArbitration := gpb.SetRequest{
+		Extension: extensions,
+	}
+
+	s.target.Set()
 
 }
 
