@@ -141,7 +141,7 @@ func validateGnmiStateUpdateResponse(t *testing.T, update *gpb.SubscribeResponse
 	updatedTime, timeParseError := time.Parse("2006-01-02T15:04:05Z-07:00", updatedTimeString)
 	assert.NoError(t, timeParseError)
 
-	assert.True(t, previousTimeState.Before(updatedTime), "Path time value is not in the future %v", update)
+	assert.True(t, previousTimeState.Before(updatedTime), "Path time value is not in the future. Req time %v previous time %v", updatedTime, previousTimeState)
 	previousTimeState = updatedTime
 }
 
