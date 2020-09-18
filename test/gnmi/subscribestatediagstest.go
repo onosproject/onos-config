@@ -84,6 +84,6 @@ func validateDiagsStateResponse(t *testing.T, resp *diags.OpStateResponse) {
 	updatedTimeString := resp.Pathvalue.Value.ValueToString()
 	updatedTime, timeParseError := time.Parse("2006-01-02T15:04:05Z-07:00", updatedTimeString)
 	assert.NoError(t, timeParseError, "Error parsing time string from path value")
-	assert.True(t, previousTimeDiags.Before(updatedTime), "Path time value is not in the future %v", resp)
+	assert.True(t, previousTimeDiags.Before(updatedTime), "Path time value is not in the future. Req time %v previous time %v", updatedTime, previousTimeDiags)
 	previousTimeDiags = updatedTime
 }
