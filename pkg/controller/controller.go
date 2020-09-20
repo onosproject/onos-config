@@ -18,11 +18,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff"
+
 	"github.com/onosproject/onos-config/api/types"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
 var log = logging.GetLogger("controller")
+
+const (
+	initialRetryInterval = 50 * time.Millisecond
+	maxRetryInterval     = 5 * time.Second
+)
 
 // Watcher is implemented by controllers to implement watching for specific events
 // Type identifiers that are written to the watcher channel will eventually be processed by
@@ -267,17 +274,32 @@ func (c *Controller) requeueRequest(ch chan types.ID, id types.ID) {
 
 // reconcile reconciles the given request ID until complete
 func (c *Controller) reconcile(id types.ID, reconciler Reconciler) Result {
-	iteration := 1
-	for {
-		// Reconcile the request. If an error occurs, use exponential backoff to retry in order.
-		// Otherwise, return the result.
-		result, err := reconciler.Reconcile(id)
-		if err != nil {
-			log.Errorf("An error occurred during reconciliation of %s: %v", id, err)
-			time.Sleep(time.Duration(iteration*2) * time.Millisecond)
-		} else {
-			return result
-		}
+
+	iteration := 0
+	var result Result
+	var err error
+	b := backoff.NewExponentialBackOff()
+	b.InitialInterval = initialRetryInterval
+	// MaxInterval caps the RetryInterval
+	b.MaxInterval = maxRetryInterval
+	// Never stops retrying
+	b.MaxElapsedTime = 0
+
+	notify := func(err error, t time.Duration) {
+		log.Infof("An error occurred during reconciliation of %s in iteration %v: %v", id, err, iteration)
 		iteration++
+
 	}
+
+	err = backoff.RetryNotify(func() error {
+		result, err = reconciler.Reconcile(id)
+		if err != nil {
+			return err
+		}
+
+		return nil
+
+	}, b, notify)
+
+	return result
 }
