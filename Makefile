@@ -3,6 +3,7 @@ export GO111MODULE=on
 
 .PHONY: build
 
+DOCKER_REPOSITORY ?= onosproject/
 KIND_CLUSTER_NAME ?= kind
 ONOS_CONFIG_VERSION ?= latest
 ONOS_BUILD_VERSION := v0.6.3
