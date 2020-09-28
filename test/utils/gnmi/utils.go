@@ -19,12 +19,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/onosproject/onos-test/pkg/onostest"
 	"io"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-test/pkg/onostest"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/onosproject/helmit/pkg/helm"
