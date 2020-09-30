@@ -3,7 +3,9 @@ export GO111MODULE=on
 
 .PHONY: build
 
-ONOS_CONFIG_VERSION := latest
+DOCKER_REPOSITORY ?= onosproject/
+KIND_CLUSTER_NAME ?= kind
+ONOS_CONFIG_VERSION ?= latest
 ONOS_BUILD_VERSION := v0.6.3
 ONOS_PROTOC_VERSION := v0.6.3
 
@@ -53,15 +55,18 @@ onos-config-base-docker: # @HELP build onos-config base Docker image
 onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
 		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
-		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
+		-t ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
 images: build onos-config-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
-kind: images
+kind: images kind-only
+
+kind-only: # @HELP deploy the image without rebuilding first
+kind-only:
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image onosproject/onos-config:${ONOS_CONFIG_VERSION}
+	kind load docker-image --name ${KIND_CLUSTER_NAME} ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
 
 all: build images
 
