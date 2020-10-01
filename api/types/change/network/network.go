@@ -29,7 +29,7 @@ func NewNetworkChange(networkChangeID string, changes []*devicechange.Change) (*
 	r1 := regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 	match := r1.FindString(networkChangeID)
 	if networkChangeID == "" {
-		uuid := utils.NewUuid()
+		uuid := utils.NewUUID()
 		networkChangeID = uuid.String()
 
 	} else if networkChangeID != match {

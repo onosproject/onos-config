@@ -149,8 +149,8 @@ func WithChangeID(id networkchange.ID) WatchOption {
 
 // newChangeID creates a new network change ID
 func newChangeID() networkchange.ID {
-	newUuid := utils.NewUuid()
-	return networkchange.ID(newUuid.String())
+	newUUID := utils.NewUUID()
+	return networkchange.ID(newUUID.String())
 }
 
 // atomixStore is the default implementation of the NetworkConfig store

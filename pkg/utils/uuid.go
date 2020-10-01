@@ -18,11 +18,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// NewUuid generates a new uuid
-func NewUuid() uuid.UUID {
-	newUuid, err := uuid.NewUUID()
+// NewUUID generates a new uuid
+func NewUUID() uuid.UUID {
+	newUUID, err := uuid.NewUUID()
 	if err != nil {
-		newUuid = uuid.New()
+		newUUID = uuid.New()
 	}
-	return newUuid
+	return newUUID
 }
