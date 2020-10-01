@@ -6,7 +6,7 @@ require (
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/atomix/go-client v0.2.3
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/docker/docker v1.13.1
+	github.com/docker/docker v1.13.1 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.3
