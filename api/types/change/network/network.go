@@ -16,9 +16,12 @@ package network
 
 import (
 	"fmt"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"regexp"
 	"time"
+
+	"github.com/onosproject/onos-config/pkg/utils"
+
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 )
 
 // NewNetworkChange creates a new network configuration
@@ -26,9 +29,11 @@ func NewNetworkChange(networkChangeID string, changes []*devicechange.Change) (*
 	r1 := regexp.MustCompile(`[a-zA-Z0-9\-_]+`)
 	match := r1.FindString(networkChangeID)
 	if networkChangeID == "" {
-		return nil, fmt.Errorf("Empty name not allowed")
+		uuid := utils.NewUUID()
+		networkChangeID = uuid.String()
+
 	} else if networkChangeID != match {
-		return nil, fmt.Errorf("Error in name %s", networkChangeID)
+		return nil, fmt.Errorf("error in name %s", networkChangeID)
 	}
 
 	return &NetworkChange{

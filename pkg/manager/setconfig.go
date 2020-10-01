@@ -16,13 +16,14 @@ package manager
 
 import (
 	"fmt"
+	"sort"
+
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"sort"
 )
 
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
@@ -98,13 +99,14 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 
 // SetNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
 func (m *Manager) SetNetworkConfig(targetUpdates map[string]devicechange.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info, netcfgchangename string) (*networkchange.NetworkChange, error) {
+	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info, netChangeID string) (*networkchange.NetworkChange, error) {
 	//TODO evaluate need of user and add it back if need be.
-	allDeviceChanges, errChanges := m.computeNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netcfgchangename)
+
+	allDeviceChanges, errChanges := m.computeNetworkConfig(targetUpdates, targetRemoves, deviceInfo, "")
 	if errChanges != nil {
 		return nil, errChanges
 	}
-	newNetworkConfig, errNetChange := networkchange.NewNetworkChange(netcfgchangename, allDeviceChanges)
+	newNetworkConfig, errNetChange := networkchange.NewNetworkChange(netChangeID, allDeviceChanges)
 	if errNetChange != nil {
 		return nil, errNetChange
 	}

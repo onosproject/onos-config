@@ -17,7 +17,9 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/pkg/namesgenerator"
+	"strings"
+	"time"
+
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
@@ -31,8 +33,6 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
-	"time"
 )
 
 type mapTargetUpdates map[string]devicechange.TypedValueMap
@@ -101,10 +101,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	netCfgChangeName, version, deviceType, err := extractExtensions(req)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	if netCfgChangeName == "" {
-		netCfgChangeName = namesgenerator.GetRandomName(0)
 	}
 
 	//Temporary map in order to not to modify the original removes but optimize calculations during validation
@@ -213,7 +209,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			Ext: &gnmi_ext.Extension_RegisteredExt{
 				RegisteredExt: &gnmi_ext.RegisteredExtension{
 					Id:  GnmiExtensionNetwkChangeID,
-					Msg: []byte(netCfgChangeName),
+					Msg: []byte(change.ID),
 				},
 			},
 		},

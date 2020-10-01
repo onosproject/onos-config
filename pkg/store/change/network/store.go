@@ -20,6 +20,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/onosproject/onos-config/pkg/utils"
+
 	"github.com/atomix/go-client/pkg/client/indexedmap"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
@@ -147,7 +149,8 @@ func WithChangeID(id networkchange.ID) WatchOption {
 
 // newChangeID creates a new network change ID
 func newChangeID() networkchange.ID {
-	return networkchange.ID(uuid.New().String())
+	newUUID := utils.NewUUID()
+	return networkchange.ID(newUUID.String())
 }
 
 // atomixStore is the default implementation of the NetworkConfig store
