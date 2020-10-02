@@ -16,12 +16,13 @@ package gnmi
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/onosproject/onos-config/api/admin"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -38,7 +39,7 @@ var (
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
 func (s *TestSuite) TestTransaction(t *testing.T) {
-	t.Skip()
+
 	// Get the configured devices from the environment.
 	device1 := gnmi.CreateSimulator(t)
 	device2 := gnmi.CreateSimulator(t)
