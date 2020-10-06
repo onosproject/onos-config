@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-config/test/utils/charts"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/onos-test/pkg/onostest"
 	"github.com/openconfig/gnmi/client/gnmi"
 	"time"
 )
@@ -46,7 +47,7 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 func (s *BenchmarkSuite) SetupWorker(c *benchmark.Context) error {
 	s.value = input.RandomString(8)
 	s.simulator = helm.
-		Chart("device-simulator").
+		Chart("device-simulator", onostest.OnosChartRepo).
 		Release(random.NewPetName(2))
 	if err := s.simulator.Install(true); err != nil {
 		return err
