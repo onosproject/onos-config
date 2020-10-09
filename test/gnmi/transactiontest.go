@@ -25,20 +25,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	value1 = "test-motd-banner"
-	path1  = "/system/config/motd-banner"
-	value2 = "test-login-banner"
-	path2  = "/system/config/login-banner"
-)
-
-var (
-	paths  = []string{path1, path2}
-	values = []string{value1, value2}
-)
-
 // TestTransaction tests setting multiple paths in a single request and rolling it back
 func (s *TestSuite) TestTransaction(t *testing.T) {
+
+	const (
+		value1 = "test-motd-banner"
+		path1  = "/system/config/motd-banner"
+		value2 = "test-login-banner"
+		path2  = "/system/config/login-banner"
+		initValue1 = "1"
+		initValue2 = "2"
+	)
+
+	var (
+		paths  = []string{path1, path2}
+		values = []string{value1, value2}
+		initialValues = []string{initValue1, initValue2}
+	)
 
 	// Get the configured devices from the environment.
 	device1 := gnmi.CreateSimulator(t)
@@ -53,12 +56,18 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
-
-	// Set values
-	var devicePathsForSet = gnmi.GetDevicePathsWithValues(devices, paths, values)
-	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
-
 	devicePathsForGet := gnmi.GetDevicePaths(devices, paths)
+
+	// Set initial values
+	devicePathsForInit := gnmi.GetDevicePathsWithValues(devices, paths, initialValues)
+	initialChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
+	gnmi.WaitForNetworkChangeComplete(t, initialChangeID, 10*time.Second)
+	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
+
+	// Create a change that can be rolled back
+	devicePathsForSet := gnmi.GetDevicePathsWithValues(devices, paths, values)
+	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
+	gnmi.WaitForNetworkChangeComplete(t, changeID, 10*time.Second)
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}
@@ -87,7 +96,15 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
 
-	// Check that the values were really rolled back
+	// Check that the values were really rolled back in onos-config
+	// TODO - this is actually wrong, the value we read back should be {initValue1, initValue2}
+	// Need to investigate why
 	expectedValuesAfterRollback := []string{"", ""}
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
+
+	// Check that the values were rolled back on the devices
+	gnmi.CheckDeviceValue(t, device1GnmiClient, devicePathsForGet[0:1], initValue1)
+	gnmi.CheckDeviceValue(t, device1GnmiClient, devicePathsForGet[1:2], initValue2)
+	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[2:3], initValue1)
+	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[3:4], initValue2)
 }
