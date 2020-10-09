@@ -588,7 +588,8 @@ func CreateSimulator(t *testing.T) *helm.HelmRelease {
 func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
 	simulator := helm.
 		Chart("device-simulator", onostest.OnosChartRepo).
-		Release(name)
+		Release(name).
+		Set("image.tag", "latest")
 	err := simulator.Install(true)
 	assert.NoError(t, err, "could not install device simulator %v", err)
 
