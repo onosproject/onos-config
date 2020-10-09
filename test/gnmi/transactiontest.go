@@ -29,17 +29,17 @@ import (
 func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	const (
-		value1 = "test-motd-banner"
-		path1  = "/system/config/motd-banner"
-		value2 = "test-login-banner"
-		path2  = "/system/config/login-banner"
+		value1     = "test-motd-banner"
+		path1      = "/system/config/motd-banner"
+		value2     = "test-login-banner"
+		path2      = "/system/config/login-banner"
 		initValue1 = "1"
 		initValue2 = "2"
 	)
 
 	var (
-		paths  = []string{path1, path2}
-		values = []string{value1, value2}
+		paths         = []string{path1, path2}
+		values        = []string{value1, value2}
 		initialValues = []string{initValue1, initValue2}
 	)
 
