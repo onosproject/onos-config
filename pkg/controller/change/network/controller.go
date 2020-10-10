@@ -139,6 +139,15 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 		return controller.Result{}, nil
 	}
 
+	// If any device change validation failed, fail the network change
+	if r.isDeviceChangesValidationFailed(change, deviceChanges) {
+		change.Status.State = changetypes.State_VALIDATION_FAILED
+		if err := r.networkChanges.Update(change); err != nil {
+			return controller.Result{}, err
+		}
+		return controller.Result{}, nil
+	}
+
 	// If any device change has failed, roll back all device changes
 	if r.isDeviceChangesFailed(change, deviceChanges) {
 		return r.ensureDeviceChangeRollbacks(change, deviceChanges)
@@ -316,9 +325,22 @@ func (r *Reconciler) isDeviceChangesComplete(networkChange *networkchange.Networ
 }
 
 // isDeviceChangesFailed checks whether any device change has failed for the current incarnation
+func (r *Reconciler) isDeviceChangesValidationFailed(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) bool {
+	for _, change := range changes {
+		if change.Status.Incarnation == networkChange.Status.Incarnation &&
+			(change.Status.State == changetypes.State_VALIDATION_FAILED) {
+			log.Info("10.0 device change validation failed", change.Status.State)
+			return true
+		}
+	}
+	return false
+}
+
+// isDeviceChangesFailed checks whether any device change has failed for the current incarnation
 func (r *Reconciler) isDeviceChangesFailed(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) bool {
 	for _, change := range changes {
-		if change.Status.Incarnation == networkChange.Status.Incarnation && change.Status.State == changetypes.State_FAILED {
+		if change.Status.Incarnation == networkChange.Status.Incarnation &&
+			(change.Status.State == changetypes.State_FAILED) {
 			return true
 		}
 	}
@@ -330,7 +352,8 @@ func (r *Reconciler) ensureDeviceChangeRollbacks(networkChange *networkchange.Ne
 	for _, deviceChange := range changes {
 		if deviceChange.Status.Incarnation != networkChange.Status.Incarnation ||
 			deviceChange.Status.Phase != changetypes.Phase_ROLLBACK ||
-			deviceChange.Status.State == changetypes.State_FAILED {
+			deviceChange.Status.State == changetypes.State_FAILED ||
+			deviceChange.Status.State == changetypes.State_VALIDATION_FAILED {
 			deviceChange.Status.Incarnation = networkChange.Status.Incarnation
 			deviceChange.Status.Phase = changetypes.Phase_ROLLBACK
 			deviceChange.Status.State = changetypes.State_PENDING
@@ -401,6 +424,7 @@ func (r *Reconciler) reconcilePendingRollback(change *networkchange.NetworkChang
 
 	// If any device change has failed, roll back all device changes
 	if r.isDeviceChangesFailed(change, deviceChanges) {
+		log.Info("10.0 rollback", change.Status.State)
 		return r.ensureDeviceChangeRollbacks(change, deviceChanges)
 	}
 	return controller.Result{}, nil
@@ -489,7 +513,8 @@ func (r *Reconciler) canTryRollback(change *networkchange.NetworkChange, deviceC
 		if isIntersectingChange(change, nextChange) {
 			return nextChange.Status.Phase == changetypes.Phase_ROLLBACK &&
 				(nextChange.Status.State == changetypes.State_COMPLETE ||
-					nextChange.Status.State == changetypes.State_FAILED), nil
+					nextChange.Status.State == changetypes.State_FAILED ||
+					nextChange.Status.State == changetypes.State_VALIDATION_FAILED), nil
 		}
 
 		nextChange, err = r.networkChanges.GetNext(nextChange.Index)

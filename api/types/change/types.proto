@@ -55,6 +55,9 @@ enum State {
 
     // FAILED indicates the phase failed
     FAILED = 3;
+
+    // VALIDATION_FAILED indicates validation phase is failed
+    VALIDATION_FAILED = 4;
 }
 
 // Reason is a reason for a FAILED state

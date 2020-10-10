@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/onosproject/onos-config/pkg/modelregistry"
+
 	"github.com/onosproject/onos-config/api/types"
 	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
@@ -37,7 +39,7 @@ var log = logging.GetLogger("controller", "change", "device")
 
 // NewController returns a new network controller
 func NewController(mastership mastershipstore.Store, devices devicestore.Store,
-	cache cache.Cache, changes changestore.Store) *controller.Controller {
+	cache cache.Cache, changes changestore.Store, modelReg *modelregistry.ModelRegistry) *controller.Controller {
 
 	c := controller.NewController("DeviceChange")
 	c.Filter(&controller.MastershipFilter{
@@ -50,8 +52,9 @@ func NewController(mastership mastershipstore.Store, devices devicestore.Store,
 		ChangeStore: changes,
 	})
 	c.Reconcile(&Reconciler{
-		devices: devices,
-		changes: changes,
+		devices:  devices,
+		changes:  changes,
+		modelReg: modelReg,
 	})
 	return c
 }
@@ -67,8 +70,9 @@ func (r *Resolver) Resolve(id types.ID) (topodevice.ID, error) {
 
 // Reconciler is a device change reconciler
 type Reconciler struct {
-	devices devicestore.Store
-	changes changestore.Store
+	devices  devicestore.Store
+	changes  changestore.Store
+	modelReg *modelregistry.ModelRegistry
 }
 
 // Reconcile reconciles the state of a device change
@@ -115,6 +119,20 @@ func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 
 // reconcileChange reconciles a CHANGE in the RUNNING state
 func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (controller.Result, error) {
+
+	// before applying the change, we should validate the change
+	err := r.validateDeviceChange(change)
+	if err != nil {
+		change.Status.State = changetypes.State_VALIDATION_FAILED
+		change.Status.Reason = changetypes.Reason_ERROR
+		change.Status.Message = err.Error()
+		log.Infof("Device change validation Failed %v", change)
+		if err := r.changes.Update(change); err != nil {
+			return controller.Result{}, err
+		}
+		return controller.Result{}, nil
+	}
+
 	// Attempt to apply the change to the device and update the change with the result
 	if err := r.doChange(change); err != nil {
 		change.Status.State = changetypes.State_FAILED
@@ -142,6 +160,7 @@ func (r *Reconciler) doChange(change *devicechange.DeviceChange) error {
 // reconcileRollback reconciles a ROLLBACK in the RUNNING state
 func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (controller.Result, error) {
 	// Attempt to roll back the change to the device and update the change with the result
+	log.Info("10.0 reconcile Rollback device", change.Status.State)
 	if err := r.doRollback(change); err != nil {
 		change.Status.State = changetypes.State_FAILED
 		change.Status.Reason = changetypes.Reason_ERROR
@@ -161,12 +180,12 @@ func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (contr
 
 // doRollback rolls back a change on the device
 func (r *Reconciler) doRollback(change *devicechange.DeviceChange) error {
-	log.Infof("Execucting Rollback for %v", change)
+	log.Infof("10.0 Execucting Rollback for %v", change)
 	deltaChange, err := r.computeRollback(change)
 	if err != nil {
 		return err
 	}
-	log.Infof("Rolling back %v with %v", change.Change, deltaChange)
+	log.Infof("10.0 Rolling back %v with %v", change.Change, deltaChange)
 	return r.translateAndSendChange(deltaChange)
 }
 
