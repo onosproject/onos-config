@@ -34,6 +34,7 @@ Status is the status of a NetworkChange
 | reason | [Reason](#onos.config.change.Reason) |  | &#39;reason&#39; is a failure reason |
 | message | [string](#string) |  | message is a result message |
 | incarnation | [uint64](#uint64) |  | incarnation is the status incarnation number |
+| validated | [bool](#bool) |  |  |
 
 
 
@@ -75,8 +76,8 @@ State is the state of a phase
 | ---- | ------ | ----------- |
 | PENDING | 0 | PENDING indicates the phase is pending |
 | COMPLETE | 2 | COMPLETE indicates the phase is complete |
-| FAILED | 3 | FAILED indicates the phase failed |
-| VALIDATION_FAILED | 4 | VALIDATION_FAILED indicates validation phase is failed |
+| VALIDATION_FAILED | 3 | VALIDATION_FAILED indicates validation phase is failed |
+| FAILED | 4 | FAILED indicates the phase failed |
 
 
  

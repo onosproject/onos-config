@@ -34,6 +34,8 @@ message Status {
 
     // incarnation is the status incarnation number
     uint64 incarnation = 5;
+
+    bool validated = 6;
 }
 
 // Phase is the phase of a NetworkChange
@@ -53,11 +55,13 @@ enum State {
     // COMPLETE indicates the phase is complete
     COMPLETE = 2;
 
-    // FAILED indicates the phase failed
-    FAILED = 3;
+
 
     // VALIDATION_FAILED indicates validation phase is failed
-    VALIDATION_FAILED = 4;
+    VALIDATION_FAILED = 3;
+
+    // FAILED indicates the phase failed
+    FAILED = 4;
 }
 
 // Reason is a reason for a FAILED state

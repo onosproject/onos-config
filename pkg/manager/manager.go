@@ -19,7 +19,11 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/onosproject/onos-config/pkg/store/stream"
+
+	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangectl "github.com/onosproject/onos-config/pkg/controller/change/device"
@@ -119,6 +123,23 @@ func (m *Manager) setTargetGenerator(targetGen func() southbound.TargetIf) {
 	southbound.TargetGenerator = targetGen
 }
 
+func (m *Manager) networkChangeEvents() {
+	networkChangesChan := make(chan stream.Event)
+	watchCtx, _ := mgr.NetworkChangesStore.Watch(networkChangesChan)
+	defer watchCtx.Close()
+	for changeEvent := range networkChangesChan {
+		netChange := changeEvent.Object.(*networkchange.NetworkChange)
+		if netChange.Status.Validated {
+			log.Info("12.0 validated ", netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
+		}
+
+		if netChange.Status.State == changetypes.State_VALIDATION_FAILED {
+			log.Info("12.0 failed ", netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
+		}
+
+	}
+}
+
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
@@ -169,6 +190,8 @@ func (m *Manager) Run() {
 	if err != nil {
 		log.Errorf("Error in starting session manager", err)
 	}
+
+	go m.networkChangeEvents()
 
 	log.Info("Manager Started")
 }

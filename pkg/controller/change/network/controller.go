@@ -107,11 +107,27 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 		return controller.Result{}, err
 	}
 
+	/*if r.isDeviceChangesValidationFailed(change, deviceChanges) {
+		change.Status.State = changetypes.State_VALIDATION_FAILED
+		if err := r.networkChanges.Update(change); err != nil {
+			return controller.Result{}, err
+		}
+		return controller.Result{}, nil
+	}*/
+
 	// Ensure device changes are pending for the current incarnation
 	changed, err := r.ensureDeviceChangesPending(change, deviceChanges)
 	if changed || err != nil {
 		return controller.Result{}, err
 	}
+
+	/*if !change.Status.Validated {
+		change.Status.Validated = true
+		if err := r.networkChanges.Update(change); err != nil {
+			return controller.Result{}, err
+		}
+		return controller.Result{}, nil
+	}*/
 
 	// If the network change can be applied, apply it by incrementing the incarnation number
 	apply, err := r.canTryChange(change, deviceChanges)
@@ -133,15 +149,6 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 	if r.isDeviceChangesComplete(change, deviceChanges) {
 		change.Status.State = changetypes.State_COMPLETE
 		log.Infof("Completing NetworkChange %v", change)
-		if err := r.networkChanges.Update(change); err != nil {
-			return controller.Result{}, err
-		}
-		return controller.Result{}, nil
-	}
-
-	// If any device change validation failed, fail the network change
-	if r.isDeviceChangesValidationFailed(change, deviceChanges) {
-		change.Status.State = changetypes.State_VALIDATION_FAILED
 		if err := r.networkChanges.Update(change); err != nil {
 			return controller.Result{}, err
 		}
@@ -332,6 +339,25 @@ func (r *Reconciler) isDeviceChangesValidationFailed(networkChange *networkchang
 			log.Info("10.0 device change validation failed", change.Status.State)
 			return true
 		}
+	}
+	return false
+}
+
+// isDeviceChangesValidationSucceeded checks whether any device change has failed for the current incarnation
+func (r *Reconciler) isDeviceChangesValidationSucceeded(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) bool {
+	validated := 0
+	for _, change := range changes {
+		log.Info("10.0 change ", change.Status.Validated)
+		if change.Status.Incarnation == networkChange.Status.Incarnation &&
+			(change.Status.Validated == true) {
+			log.Info("true", validated)
+
+			validated++
+		}
+	}
+	if validated == len(changes) {
+		log.Info("10.0 device change validated", validated)
+		return true
 	}
 	return false
 }

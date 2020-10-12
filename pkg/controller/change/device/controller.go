@@ -90,6 +90,15 @@ func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 		return controller.Result{}, nil
 	}
 
+	/*if !change.Status.Validated {
+		// before applying the change, we should validate the change
+		err = r.validateChange(change)
+		if err != nil {
+			return controller.Result{}, err
+		}
+		return controller.Result{}, nil
+	}*/
+
 	// Get the device from the device store
 	log.Infof("Checking Device store for %s", change.Change.DeviceID)
 	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))
@@ -117,10 +126,7 @@ func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 	return controller.Result{}, nil
 }
 
-// reconcileChange reconciles a CHANGE in the RUNNING state
-func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (controller.Result, error) {
-
-	// before applying the change, we should validate the change
+func (r *Reconciler) validateChange(change *devicechange.DeviceChange) error {
 	err := r.validateDeviceChange(change)
 	if err != nil {
 		change.Status.State = changetypes.State_VALIDATION_FAILED
@@ -128,10 +134,19 @@ func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (control
 		change.Status.Message = err.Error()
 		log.Infof("Device change validation Failed %v", change)
 		if err := r.changes.Update(change); err != nil {
-			return controller.Result{}, err
+			return err
 		}
-		return controller.Result{}, nil
+		return nil
 	}
+	change.Status.Validated = true
+	if err := r.changes.Update(change); err != nil {
+		return err
+	}
+	return nil
+}
+
+// reconcileChange reconciles a CHANGE in the RUNNING state
+func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (controller.Result, error) {
 
 	// Attempt to apply the change to the device and update the change with the result
 	if err := r.doChange(change); err != nil {
