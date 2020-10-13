@@ -20,8 +20,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/onosproject/onos-lib-go/pkg/logging"
-
 	"github.com/onosproject/onos-config/pkg/utils"
 
 	"github.com/atomix/go-client/pkg/client/indexedmap"
@@ -37,8 +35,6 @@ import (
 )
 
 const changesName = "network-changes"
-
-var log = logging.GetLogger("store", "network-changes")
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error) {

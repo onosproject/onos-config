@@ -51,13 +51,10 @@ func processValidationEvents(change *networkchange.NetworkChange) error {
 	for changeEvent := range networkChangesChan {
 		netChange := changeEvent.Object.(*networkchange.NetworkChange)
 		if netChange.Status.Validated {
-			log.Info("12.0 validated ", netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
 			return nil
 		}
 
 		if netChange.Status.State == changetypes.State_VALIDATION_FAILED {
-			log.Info("12.0 failed ", netChange.Status.Message, netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
-
 			return status.Error(codes.InvalidArgument, netChange.Status.Message)
 		}
 
@@ -185,19 +182,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-
 	chanErr := make(chan error)
 	go func(change *networkchange.NetworkChange) {
 		defer wg.Done()
 		err := processValidationEvents(change)
-
-		if err != nil {
-			chanErr <- err
-			log.Info("17.0 error", err.Error())
-		} else {
-			chanErr <- err
-			log.Info("17.0 nil")
-		}
+		chanErr <- err
 
 	}(change)
 
@@ -207,7 +196,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	err = <-chanErr
 	if err != nil {
-		log.Info("17.0 after error", err)
 		return nil, err
 	}
 
