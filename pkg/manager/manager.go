@@ -130,11 +130,11 @@ func (m *Manager) networkChangeEvents() {
 	for changeEvent := range networkChangesChan {
 		netChange := changeEvent.Object.(*networkchange.NetworkChange)
 		if netChange.Status.Validated {
-			log.Info("12.0 validated ", netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
+			log.Info("20.0 validated ", netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
 		}
 
 		if netChange.Status.State == changetypes.State_VALIDATION_FAILED {
-			log.Info("12.0 failed ", netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
+			log.Info("20.0 failed ", netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
 		}
 
 	}

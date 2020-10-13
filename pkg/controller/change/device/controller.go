@@ -83,21 +83,21 @@ func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 		return controller.Result{}, err
 	}
 
-	log.Infof("Reconciling DeviceChange %v", change)
-
-	// The device controller only needs to handle changes in the RUNNING state
-	if change == nil || change.Status.Incarnation == 0 || change.Status.State != changetypes.State_PENDING {
-		return controller.Result{}, nil
-	}
-
-	/*if !change.Status.Validated {
+	if change != nil && !change.Status.Validated && change.Status.State == changetypes.State_PENDING {
 		// before applying the change, we should validate the change
 		err = r.validateChange(change)
 		if err != nil {
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
-	}*/
+	}
+
+	log.Infof("Reconciling DeviceChange %v", change)
+
+	// The device controller only needs to handle changes in the RUNNING state
+	if change == nil || change.Status.Incarnation == 0 || change.Status.State != changetypes.State_PENDING {
+		return controller.Result{}, nil
+	}
 
 	// Get the device from the device store
 	log.Infof("Checking Device store for %s", change.Change.DeviceID)

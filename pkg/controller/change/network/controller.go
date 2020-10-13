@@ -107,27 +107,30 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 		return controller.Result{}, err
 	}
 
-	/*if r.isDeviceChangesValidationFailed(change, deviceChanges) {
-		change.Status.State = changetypes.State_VALIDATION_FAILED
-		if err := r.networkChanges.Update(change); err != nil {
-			return controller.Result{}, err
-		}
-		return controller.Result{}, nil
-	}*/
-
 	// Ensure device changes are pending for the current incarnation
 	changed, err := r.ensureDeviceChangesPending(change, deviceChanges)
 	if changed || err != nil {
 		return controller.Result{}, err
 	}
 
-	/*if !change.Status.Validated {
+	errMessage, failed := r.isDeviceChangesValidationFailed(change, deviceChanges)
+	if failed {
+		change.Status.State = changetypes.State_VALIDATION_FAILED
+		change.Status.Message = errMessage
+		change.Status.Validated = false
+		if err := r.networkChanges.Update(change); err != nil {
+			return controller.Result{}, err
+		}
+		return controller.Result{}, nil
+	}
+
+	if !change.Status.Validated {
 		change.Status.Validated = true
 		if err := r.networkChanges.Update(change); err != nil {
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
-	}*/
+	}
 
 	// If the network change can be applied, apply it by incrementing the incarnation number
 	apply, err := r.canTryChange(change, deviceChanges)
@@ -332,15 +335,15 @@ func (r *Reconciler) isDeviceChangesComplete(networkChange *networkchange.Networ
 }
 
 // isDeviceChangesFailed checks whether any device change has failed for the current incarnation
-func (r *Reconciler) isDeviceChangesValidationFailed(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) bool {
+func (r *Reconciler) isDeviceChangesValidationFailed(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) (string, bool) {
 	for _, change := range changes {
 		if change.Status.Incarnation == networkChange.Status.Incarnation &&
 			(change.Status.State == changetypes.State_VALIDATION_FAILED) {
-			log.Info("10.0 device change validation failed", change.Status.State)
-			return true
+			log.Info("10.0 device change validation failed", change.Status.State, change.Status.Message)
+			return change.Status.Message, true
 		}
 	}
-	return false
+	return "", false
 }
 
 // isDeviceChangesValidationSucceeded checks whether any device change has failed for the current incarnation

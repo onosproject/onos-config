@@ -18,9 +18,15 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
+	changetypes "github.com/onosproject/onos-config/api/types/change"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
+	"github.com/onosproject/onos-config/pkg/store/stream"
+
 	devicetype "github.com/onosproject/onos-config/api/types/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -36,6 +42,29 @@ import (
 
 type mapTargetUpdates map[string]devicechange.TypedValueMap
 type mapTargetRemoves map[string][]string
+
+func processValidationEvents(change *networkchange.NetworkChange) error {
+	mgr := manager.GetManager()
+	networkChangesChan := make(chan stream.Event)
+	watchCtx, _ := mgr.NetworkChangesStore.Watch(networkChangesChan, networkstore.WithChangeID(change.ID))
+	defer watchCtx.Close()
+	for changeEvent := range networkChangesChan {
+		netChange := changeEvent.Object.(*networkchange.NetworkChange)
+		if netChange.Status.Validated {
+			log.Info("12.0 validated ", netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
+			return nil
+		}
+
+		if netChange.Status.State == changetypes.State_VALIDATION_FAILED {
+			log.Info("12.0 failed ", netChange.Status.Message, netChange.Status.State, ":", netChange.Status.Validated, ":", netChange.ID)
+
+			return status.Error(codes.InvalidArgument, netChange.Status.Message)
+		}
+
+	}
+
+	return nil
+}
 
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
@@ -152,6 +181,34 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	if errSet != nil {
 		log.Errorf("Error while setting config in atomix %s", errSet.Error())
 		return nil, status.Error(codes.Internal, errSet.Error())
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	chanErr := make(chan error)
+	go func(change *networkchange.NetworkChange) {
+		defer wg.Done()
+		err := processValidationEvents(change)
+
+		if err != nil {
+			chanErr <- err
+			log.Info("17.0 error", err.Error())
+		} else {
+			chanErr <- err
+			log.Info("17.0 nil")
+		}
+
+	}(change)
+
+	go func() {
+		wg.Wait()
+	}()
+
+	err = <-chanErr
+	if err != nil {
+		log.Info("17.0 after error", err)
+		return nil, err
 	}
 
 	// Build the responses
