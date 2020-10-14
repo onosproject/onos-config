@@ -34,6 +34,8 @@ message Status {
 
     // incarnation is the status incarnation number
     uint64 incarnation = 5;
+
+    bool validated = 6;
 }
 
 // Phase is the phase of a NetworkChange
@@ -64,4 +66,7 @@ enum Reason {
 
     // ERROR indicates an error occurred when applying the change
     ERROR = 1;
+
+    // VALIDATION_FAILED indicates validation of the change is failed
+    VALIDATION_FAILED = 2;
 }

@@ -113,6 +113,26 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 		return controller.Result{}, err
 	}
 
+	errMessage, failed := r.isDeviceChangesValidationFailed(change, deviceChanges)
+	if failed {
+		change.Status.Reason = changetypes.Reason_VALIDATION_FAILED
+		change.Status.State = changetypes.State_FAILED
+		change.Status.Message = errMessage
+		change.Status.Validated = false
+		if err := r.networkChanges.Update(change); err != nil {
+			return controller.Result{}, err
+		}
+		return controller.Result{}, nil
+	}
+
+	if !change.Status.Validated {
+		change.Status.Validated = true
+		if err := r.networkChanges.Update(change); err != nil {
+			return controller.Result{}, err
+		}
+		return controller.Result{}, nil
+	}
+
 	// If the network change can be applied, apply it by incrementing the incarnation number
 	apply, err := r.canTryChange(change, deviceChanges)
 	if err != nil {
@@ -316,9 +336,23 @@ func (r *Reconciler) isDeviceChangesComplete(networkChange *networkchange.Networ
 }
 
 // isDeviceChangesFailed checks whether any device change has failed for the current incarnation
+func (r *Reconciler) isDeviceChangesValidationFailed(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) (string, bool) {
+	for _, change := range changes {
+		if change.Status.Incarnation == networkChange.Status.Incarnation &&
+			(change.Status.State == changetypes.State_FAILED &&
+				change.Status.Reason == changetypes.Reason_VALIDATION_FAILED) {
+			return change.Status.Message, true
+		}
+	}
+	return "", false
+}
+
+// isDeviceChangesFailed checks whether any device change has failed for the current incarnation
 func (r *Reconciler) isDeviceChangesFailed(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) bool {
 	for _, change := range changes {
-		if change.Status.Incarnation == networkChange.Status.Incarnation && change.Status.State == changetypes.State_FAILED {
+		if change.Status.Incarnation == networkChange.Status.Incarnation &&
+			(change.Status.State == changetypes.State_FAILED &&
+				change.Status.Reason != changetypes.Reason_VALIDATION_FAILED) {
 			return true
 		}
 	}
@@ -330,7 +364,8 @@ func (r *Reconciler) ensureDeviceChangeRollbacks(networkChange *networkchange.Ne
 	for _, deviceChange := range changes {
 		if deviceChange.Status.Incarnation != networkChange.Status.Incarnation ||
 			deviceChange.Status.Phase != changetypes.Phase_ROLLBACK ||
-			deviceChange.Status.State == changetypes.State_FAILED {
+			(deviceChange.Status.State == changetypes.State_FAILED &&
+				deviceChange.Status.Reason != changetypes.Reason_VALIDATION_FAILED) {
 			deviceChange.Status.Incarnation = networkChange.Status.Incarnation
 			deviceChange.Status.Phase = changetypes.Phase_ROLLBACK
 			deviceChange.Status.State = changetypes.State_PENDING
