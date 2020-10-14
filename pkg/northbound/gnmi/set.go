@@ -54,7 +54,8 @@ func processValidationEvents(change *networkchange.NetworkChange) error {
 			return nil
 		}
 
-		if netChange.Status.State == changetypes.State_VALIDATION_FAILED {
+		if netChange.Status.State == changetypes.State_FAILED &&
+			netChange.Status.Reason == changetypes.Reason_VALIDATION_FAILED {
 			return status.Error(codes.InvalidArgument, netChange.Status.Message)
 		}
 
@@ -182,7 +183,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	chanErr := make(chan error)
+	chanErr := make(chan error, 1)
 	go func(change *networkchange.NetworkChange) {
 		defer wg.Done()
 		err := processValidationEvents(change)

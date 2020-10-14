@@ -15,11 +15,12 @@
 package gnmi
 
 import (
+	"testing"
+
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/status"
-	"testing"
 )
 
 // TestModels tests GNMI operation involving unknown or illegal paths

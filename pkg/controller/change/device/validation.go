@@ -36,8 +36,6 @@ func (r *Reconciler) validateDeviceChange(change *devicechange.DeviceChange) err
 	if !ok {
 		log.Warn("No model ", modelName, " available as a plugin")
 		return fmt.Errorf("no model %s available as a plugin", modelName)
-
-		//return nil
 	}
 
 	pathValues := make(map[string]*devicechange.TypedValue)

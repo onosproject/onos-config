@@ -115,7 +115,8 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 
 	errMessage, failed := r.isDeviceChangesValidationFailed(change, deviceChanges)
 	if failed {
-		change.Status.State = changetypes.State_VALIDATION_FAILED
+		change.Status.Reason = changetypes.Reason_VALIDATION_FAILED
+		change.Status.State = changetypes.State_FAILED
 		change.Status.Message = errMessage
 		change.Status.Validated = false
 		if err := r.networkChanges.Update(change); err != nil {
@@ -338,7 +339,8 @@ func (r *Reconciler) isDeviceChangesComplete(networkChange *networkchange.Networ
 func (r *Reconciler) isDeviceChangesValidationFailed(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) (string, bool) {
 	for _, change := range changes {
 		if change.Status.Incarnation == networkChange.Status.Incarnation &&
-			(change.Status.State == changetypes.State_VALIDATION_FAILED) {
+			(change.Status.State == changetypes.State_FAILED &&
+				change.Status.Reason == changetypes.Reason_VALIDATION_FAILED) {
 			return change.Status.Message, true
 		}
 	}
@@ -349,7 +351,8 @@ func (r *Reconciler) isDeviceChangesValidationFailed(networkChange *networkchang
 func (r *Reconciler) isDeviceChangesFailed(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) bool {
 	for _, change := range changes {
 		if change.Status.Incarnation == networkChange.Status.Incarnation &&
-			(change.Status.State == changetypes.State_FAILED) {
+			(change.Status.State == changetypes.State_FAILED &&
+				change.Status.Reason != changetypes.Reason_VALIDATION_FAILED) {
 			return true
 		}
 	}
@@ -361,7 +364,8 @@ func (r *Reconciler) ensureDeviceChangeRollbacks(networkChange *networkchange.Ne
 	for _, deviceChange := range changes {
 		if deviceChange.Status.Incarnation != networkChange.Status.Incarnation ||
 			deviceChange.Status.Phase != changetypes.Phase_ROLLBACK ||
-			deviceChange.Status.State == changetypes.State_FAILED {
+			(deviceChange.Status.State == changetypes.State_FAILED &&
+				deviceChange.Status.Reason != changetypes.Reason_VALIDATION_FAILED) {
 			deviceChange.Status.Incarnation = networkChange.Status.Incarnation
 			deviceChange.Status.Phase = changetypes.Phase_ROLLBACK
 			deviceChange.Status.State = changetypes.State_PENDING

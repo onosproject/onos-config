@@ -64,6 +64,7 @@ Reason is a reason for a FAILED state
 | ---- | ------ | ----------- |
 | NONE | 0 | NONE indicates no error has occurred |
 | ERROR | 1 | ERROR indicates an error occurred when applying the change |
+| VALIDATION_FAILED | 2 | VALIDATION_FAILED indicates validation of the change is failed |
 
 
 
@@ -76,8 +77,7 @@ State is the state of a phase
 | ---- | ------ | ----------- |
 | PENDING | 0 | PENDING indicates the phase is pending |
 | COMPLETE | 2 | COMPLETE indicates the phase is complete |
-| VALIDATION_FAILED | 3 | VALIDATION_FAILED indicates validation phase is failed |
-| FAILED | 4 | FAILED indicates the phase failed |
+| FAILED | 3 | FAILED indicates the phase failed |
 
 
  

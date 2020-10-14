@@ -55,13 +55,8 @@ enum State {
     // COMPLETE indicates the phase is complete
     COMPLETE = 2;
 
-
-
-    // VALIDATION_FAILED indicates validation phase is failed
-    VALIDATION_FAILED = 3;
-
     // FAILED indicates the phase failed
-    FAILED = 4;
+    FAILED = 3;
 }
 
 // Reason is a reason for a FAILED state
@@ -71,4 +66,7 @@ enum Reason {
 
     // ERROR indicates an error occurred when applying the change
     ERROR = 1;
+
+    // VALIDATION_FAILED indicates validation of the change is failed
+    VALIDATION_FAILED = 2;
 }

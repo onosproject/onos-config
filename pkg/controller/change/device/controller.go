@@ -131,8 +131,8 @@ func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 func (r *Reconciler) validateChange(change *devicechange.DeviceChange) error {
 	err := r.validateDeviceChange(change)
 	if err != nil {
-		change.Status.State = changetypes.State_VALIDATION_FAILED
-		change.Status.Reason = changetypes.Reason_ERROR
+		change.Status.State = changetypes.State_FAILED
+		change.Status.Reason = changetypes.Reason_VALIDATION_FAILED
 		change.Status.Message = err.Error()
 		log.Infof("Device change validation Failed %v", change)
 		if err := r.changes.Update(change); err != nil {
