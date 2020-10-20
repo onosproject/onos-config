@@ -38,7 +38,7 @@ type AllMocks struct {
 	DeviceClient    *mocks.MockDeviceServiceClient
 }
 
-func setUp(t *testing.T) *AllMocks {
+func setUp(name string, t *testing.T) *AllMocks {
 
 	ctrl := gomock.NewController(t)
 	client := mocks.NewMockDeviceServiceClient(ctrl)
@@ -46,7 +46,7 @@ func setUp(t *testing.T) *AllMocks {
 	assert.NilError(t, err)
 
 	node1 := cluster.NodeID("node1")
-	mastershipStore, err := mastership.NewLocalStore("TestUpdateDevice", node1)
+	mastershipStore, err := mastership.NewLocalStore(name, node1)
 	assert.NilError(t, err)
 
 	allMocks := AllMocks{
@@ -59,7 +59,7 @@ func setUp(t *testing.T) *AllMocks {
 }
 
 func TestUpdateDisconnectedDevice(t *testing.T) {
-	allMocks := setUp(t)
+	allMocks := setUp("TestUpdateDisconnectedDevice", t)
 
 	device1Disconnected := &topodevice.Device{
 		ID:         device1,
@@ -99,7 +99,7 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 }
 
 func TestUpdateConnectedDevice(t *testing.T) {
-	allMocks := setUp(t)
+	allMocks := setUp("TestUpdateConnectedDevice", t)
 
 	device1Connected := &topodevice.Device{
 		ID:         device1,
