@@ -199,7 +199,7 @@ func (s *atomixStore) Update(snapshot *devicesnapshot.DeviceSnapshot) error {
 		return err
 	}
 
-	entry, err := s.deviceSnapshots.Put(ctx, string(snapshot.ID), bytes, _map.IfVersion(int64(snapshot.Revision)))
+	entry, err := s.deviceSnapshots.Put(ctx, string(snapshot.ID), bytes, _map.IfVersion(_map.Version(snapshot.Revision)))
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (s *atomixStore) Delete(snapshot *devicesnapshot.DeviceSnapshot) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.deviceSnapshots.Remove(ctx, string(snapshot.ID), _map.IfVersion(int64(snapshot.Revision)))
+	entry, err := s.deviceSnapshots.Remove(ctx, string(snapshot.ID), _map.IfVersion(_map.Version(snapshot.Revision)))
 	if err != nil {
 		return err
 	}
