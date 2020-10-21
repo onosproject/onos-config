@@ -56,7 +56,7 @@ func createDestination(device topodevice.Device) (*client.Destination, topodevic
 			log.Info("Insecure TLS connection to ", device.Address)
 			d.TLS = &tls.Config{InsecureSkipVerify: true}
 		} else {
-			log.Info("Insecure TLS connection to ", device.Address)
+			log.Info("Secure TLS connection to ", device.Address)
 		}
 		if device.TLS.CaCert == "" {
 			log.Info("Loading default CA onfca")
