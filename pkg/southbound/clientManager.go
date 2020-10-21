@@ -49,12 +49,15 @@ func createDestination(device topodevice.Device) (*client.Destination, topodevic
 		d.Timeout = *device.Timeout
 	}
 	if device.TLS.Plain {
-		log.Info("Plain connection connection to ", device.Address)
-	} else if device.TLS.Insecure {
-		log.Info("Insecure connection to ", device.Address)
-		d.TLS = &tls.Config{InsecureSkipVerify: true}
+		log.Info("Plain (non TLS) connection connection to ", device.Address)
 	} else {
 		d.TLS = &tls.Config{}
+		if device.TLS.Insecure {
+			log.Info("Insecure TLS connection to ", device.Address)
+			d.TLS = &tls.Config{InsecureSkipVerify: true}
+		} else {
+			log.Info("Secure TLS connection to ", device.Address)
+		}
 		if device.TLS.CaCert == "" {
 			log.Info("Loading default CA onfca")
 			d.TLS.RootCAs = getCertPoolDefault()
