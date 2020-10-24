@@ -16,7 +16,6 @@ package mastership
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -131,22 +130,18 @@ func (e *atomixDeviceMastershipElection) enter() error {
 		Term:   Term(term.ID),
 	}
 	e.mu.Unlock()
-
-	// Wait for the election event to be received before returning
-	for event := range ch {
-		if event.Term.ID == term.ID {
-			go e.watchElection(ch)
-			return nil
-		}
-	}
-
-	_ = e.election.Close(context.Background())
-	return errors.New("failed to enter election")
+	go e.watchElection(*term, ch)
+	return nil
 }
 
 // watchElection watches the election events and updates mastership info
-func (e *atomixDeviceMastershipElection) watchElection(ch <-chan *election.Event) {
+func (e *atomixDeviceMastershipElection) watchElection(term election.Term, ch <-chan *election.Event) {
 	for event := range ch {
+		// Ignore events that occurred prior to entering the election
+		if event.Term.ID < term.ID {
+			continue
+		}
+
 		var mastership *Mastership
 		e.mu.Lock()
 		if uint64(e.mastership.Term) != event.Term.ID {
