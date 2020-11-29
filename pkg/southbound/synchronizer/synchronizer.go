@@ -383,6 +383,11 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 		Origin:            "",
 	}
 
+	if len(subscribePaths) == 0 {
+		log.Info("No operational state path found for subscription")
+		return
+	}
+
 	log.Infof("Subscribing to %d paths. %s", len(subscribePaths), string(sync.key))
 	req, err := southbound.NewSubscribeRequest(options)
 	if err != nil {
