@@ -30,3 +30,13 @@ issues:
     - path: pkg/northbound/gnmi/set.go
       linters:
         - typecheck
+    - path: pkg
+      linters:
+        - staticcheck
+      text: "SA1019:"
+    - path: test
+      linters:
+          - staticcheck
+      text: "SA1019:"
+    - path: pkg/utils
+      text: "copylocks"
