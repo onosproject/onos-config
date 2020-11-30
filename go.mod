@@ -15,9 +15,9 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
-	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20200903015527-386223ad48bd
-	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20200903015527-386223ad48bd
-	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20200903015527-386223ad48bd
+	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20201130213019-492043aed0df
+	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20201130213019-492043aed0df
+	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20201130213019-492043aed0df
 	github.com/onosproject/helmit v0.6.7
 	github.com/onosproject/onos-lib-go v0.6.21
 	github.com/onosproject/onos-test v0.6.2
