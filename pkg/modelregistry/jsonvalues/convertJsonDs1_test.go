@@ -15,13 +15,14 @@
 package jsonvalues
 
 import (
+	"io/ioutil"
+	"testing"
+
 	ds1 "github.com/onosproject/config-models/modelplugin/devicesim-1.0.0/devicesim_1_0_0"
 	devicechange "github.com/onosproject/onos-config/api/types/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/goyang/pkg/yang"
 	"gotest.tools/assert"
-	"io/ioutil"
-	"testing"
 )
 
 func Test_correctJsonPathValues2(t *testing.T) {
@@ -152,7 +153,7 @@ func Test_correctJsonPathRwValuesSystemLogging(t *testing.T) {
 			"/system/logging/console/selectors/selector[facility=3][severity=4]/config/facility":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
 			strValue := (*devicechange.TypedString)(pathValue.Value)
-			assert.Equal(t, "LOCAL4", strValue.String(), "expected IdentityRef to be translated from '3' to LOCAL4")
+			assert.Equal(t, "MAIL", strValue.String(), "expected IdentityRef to be translated from '3' to LOCAL4")
 		default:
 			t.Fatal("Unexpected path", pathValue.Path)
 		}

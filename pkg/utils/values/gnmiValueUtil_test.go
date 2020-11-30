@@ -17,12 +17,14 @@
 package values
 
 import (
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	"github.com/openconfig/gnmi/proto/gnmi"
-	"gotest.tools/assert"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
+
+	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	"github.com/openconfig/gnmi/proto/gnmi"
+	"gotest.tools/assert"
 )
 
 const testString = "This is a test"
@@ -254,15 +256,16 @@ func Test_asciiList(t *testing.T) {
 	convertedValue, convertedErr := NativeTypeToGnmiTypedValue(nativeType)
 	assert.NilError(t, convertedErr)
 	s := convertedValue.String()
-	assert.Assert(t, strings.Contains(s, `element:<string_val:"abc"`), "%s", "Ascii")
-	assert.Assert(t, strings.Contains(s, `element:<string_val:"jkl"`), "%s", "Ascii")
+	assert.Assert(t, strings.Contains(s, `element:{string_val:"abc"}`), "%s", "Ascii")
+	assert.Assert(t, strings.Contains(s, `element:{string_val:"jkl"}`), "%s", "Ascii")
 }
 
 func Test_empty(t *testing.T) {
 	convertedValue, convertedErr := NativeTypeToGnmiTypedValue(devicechange.NewTypedValueEmpty())
 	assert.NilError(t, convertedErr)
 	s := convertedValue.String()
-	assert.Assert(t, strings.Contains(s, "nil"), "%s", "Ascii")
+	fmt.Println(s)
+	assert.Assert(t, strings.Contains(s, "{}"), "%s", "Ascii")
 }
 
 func Test_errors(t *testing.T) {
