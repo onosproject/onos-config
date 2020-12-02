@@ -17,8 +17,8 @@ package cli
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/api/admin"
-	"github.com/onosproject/onos-config/api/diags"
+	"github.com/onosproject/onos-api/go/onos/config/admin"
+	"github.com/onosproject/onos-api/go/onos/config/diags"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )

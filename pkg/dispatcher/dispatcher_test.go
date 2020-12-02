@@ -15,7 +15,7 @@
 package dispatcher
 
 import (
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"

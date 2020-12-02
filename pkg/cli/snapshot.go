@@ -16,8 +16,8 @@ package cli
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/api/admin"
-	device_snapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	"github.com/onosproject/onos-api/go/onos/config/admin"
+	device_snapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/spf13/cobra"
 	"io"

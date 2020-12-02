@@ -25,7 +25,7 @@ import (
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
-	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
+	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"

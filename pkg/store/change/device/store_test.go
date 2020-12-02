@@ -15,10 +15,10 @@
 package device
 
 import (
-	"github.com/onosproject/onos-config/api/types"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	"github.com/onosproject/onos-config/api/types/device"
+	types "github.com/onosproject/onos-api/go/onos/config"
+	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	"github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/stretchr/testify/assert"

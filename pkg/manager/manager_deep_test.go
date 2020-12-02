@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/device/state"

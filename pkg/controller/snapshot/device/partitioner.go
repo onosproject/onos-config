@@ -15,8 +15,8 @@
 package device
 
 import (
-	"github.com/onosproject/onos-config/api/types"
-	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	types "github.com/onosproject/onos-api/go/onos/config"
+	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 )
 

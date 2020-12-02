@@ -16,8 +16,8 @@ package manager
 
 import (
 	"fmt"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 )

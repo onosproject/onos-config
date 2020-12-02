@@ -19,7 +19,7 @@ import (
 
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 
-	"github.com/onosproject/onos-config/api/types"
+	types "github.com/onosproject/onos-api/go/onos/config"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )

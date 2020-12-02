@@ -17,9 +17,9 @@ package gnmi
 import (
 	"crypto/sha1"
 	"fmt"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	devicetype "github.com/onosproject/onos-config/api/types/device"
+	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"

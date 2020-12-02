@@ -15,7 +15,7 @@
 package controller
 
 import (
-	"github.com/onosproject/onos-config/api/types"
+	types "github.com/onosproject/onos-api/go/onos/config"
 	"regexp"
 )
 

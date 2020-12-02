@@ -17,8 +17,8 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	devicetype "github.com/onosproject/onos-config/api/types/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"

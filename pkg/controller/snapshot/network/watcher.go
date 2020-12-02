@@ -15,9 +15,9 @@
 package network
 
 import (
-	"github.com/onosproject/onos-config/api/types"
-	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
-	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
+	types "github.com/onosproject/onos-api/go/onos/config"
+	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
+	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"

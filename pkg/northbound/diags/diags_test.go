@@ -17,8 +17,8 @@ package diags
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-config/api/diags"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	"github.com/onosproject/onos-api/go/onos/config/diags"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"

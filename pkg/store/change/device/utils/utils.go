@@ -18,9 +18,9 @@ import (
 	"sort"
 	"strings"
 
-	changetypes "github.com/onosproject/onos-config/api/types/change"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	"github.com/onosproject/onos-config/api/types/device"
+	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	"github.com/onosproject/onos-api/go/onos/config/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )

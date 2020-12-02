@@ -17,11 +17,11 @@ package device
 import (
 	"strings"
 
-	"github.com/onosproject/onos-config/api/types"
-	changetype "github.com/onosproject/onos-config/api/types/change"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	snaptype "github.com/onosproject/onos-config/api/types/snapshot"
-	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	types "github.com/onosproject/onos-api/go/onos/config"
+	changetype "github.com/onosproject/onos-api/go/onos/config/change"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	snaptype "github.com/onosproject/onos-api/go/onos/config/snapshot"
+	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"

@@ -6,7 +6,7 @@ package controller
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	types "github.com/onosproject/onos-config/api/types"
+	types "github.com/onosproject/onos-api/go/onos/config"
 	reflect "reflect"
 )
 

@@ -15,8 +15,8 @@
 package network
 
 import (
-	"github.com/onosproject/onos-config/api/types/snapshot"
-	networksnapshot "github.com/onosproject/onos-config/api/types/snapshot/network"
+	"github.com/onosproject/onos-api/go/onos/config/snapshot"
+	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/stretchr/testify/assert"

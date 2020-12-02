@@ -15,9 +15,9 @@
 package device
 
 import (
-	"github.com/onosproject/onos-config/api/types/device"
-	"github.com/onosproject/onos-config/api/types/snapshot"
-	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	"github.com/onosproject/onos-api/go/onos/config/device"
+	"github.com/onosproject/onos-api/go/onos/config/snapshot"
+	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/stretchr/testify/assert"

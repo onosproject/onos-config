@@ -21,8 +21,8 @@ import (
 	"sort"
 	"strings"
 
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	devicetype "github.com/onosproject/onos-config/api/types/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"

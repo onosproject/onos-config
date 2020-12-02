@@ -17,7 +17,7 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"

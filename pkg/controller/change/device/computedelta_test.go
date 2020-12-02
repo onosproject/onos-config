@@ -16,8 +16,8 @@ package device
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/api/types"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	types "github.com/onosproject/onos-api/go/onos/config"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/stretchr/testify/assert"
 	"testing"

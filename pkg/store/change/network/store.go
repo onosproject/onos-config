@@ -20,14 +20,13 @@ import (
 	"io"
 	"time"
 
-	"github.com/onosproject/onos-config/pkg/utils"
-
 	"github.com/atomix/go-client/pkg/client/indexedmap"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	types "github.com/onosproject/onos-api/go/onos/config"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
@@ -149,7 +148,7 @@ func WithChangeID(id networkchange.ID) WatchOption {
 
 // newChangeID creates a new network change ID
 func newChangeID() networkchange.ID {
-	newUUID := utils.NewUUID()
+	newUUID := types.NewUUID()
 	return networkchange.ID(newUUID.String())
 }
 

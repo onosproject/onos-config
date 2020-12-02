@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	devicetype "github.com/onosproject/onos-config/api/types/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	dispatcherpkg "github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	modelregistrypkg "github.com/onosproject/onos-config/pkg/modelregistry"

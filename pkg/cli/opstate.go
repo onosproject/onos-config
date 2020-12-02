@@ -17,7 +17,7 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-config/api/diags"
+	"github.com/onosproject/onos-api/go/onos/config/diags"
 	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/spf13/cobra"
 	"io"

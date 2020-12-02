@@ -17,7 +17,6 @@ test: # @HELP run the unit tests and source code validation
 test: build deps linters license_check
 	CGO_ENABLED=1 go test -race github.com/onosproject/onos-config/pkg/...
 	CGO_ENABLED=1 go test -race github.com/onosproject/onos-config/cmd/...
-	CGO_ENABLED=1 go test -race github.com/onosproject/onos-config/api/...
 
 coverage: # @HELP generate unit test coverage data
 coverage: build deps linters license_check
@@ -37,12 +36,6 @@ license_check: # @HELP examine and ensure license headers exist
 
 gofmt: # @HELP run the Go format validation
 	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/ tests/)"
-
-protos: # @HELP compile the protobuf files (using protoc-go Docker)
-	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-config \
-		-w /go/src/github.com/onosproject/onos-config \
-		--entrypoint build/bin/compile-protos.sh \
-		onosproject/protoc-go:${ONOS_PROTOC_VERSION}
 
 onos-config-base-docker: # @HELP build onos-config base Docker image
 	@go mod vendor

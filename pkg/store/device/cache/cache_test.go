@@ -17,10 +17,10 @@ package cache
 
 import (
 	"github.com/golang/mock/gomock"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
-	devicebase "github.com/onosproject/onos-config/api/types/device"
-	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
+	devicebase "github.com/onosproject/onos-api/go/onos/config/device"
+	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/test/mocks/store"

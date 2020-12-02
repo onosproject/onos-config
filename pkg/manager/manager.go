@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"sync"
 
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	devicetype "github.com/onosproject/onos-config/api/types/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangectl "github.com/onosproject/onos-config/pkg/controller/change/device"
 	networkchangectl "github.com/onosproject/onos-config/pkg/controller/change/network"
