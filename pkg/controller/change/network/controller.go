@@ -19,14 +19,15 @@ import (
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/controller"
+	devicetopo "github.com/onosproject/onos-config/pkg/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	devicetopo "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -235,7 +236,7 @@ func (r *Reconciler) canTryChange(change *networkchange.NetworkChange, deviceCha
 			return false, nil
 		}
 		state := getProtocolState(device)
-		if state != devicetopo.ChannelState_CONNECTED {
+		if state != topo.ChannelState_CONNECTED {
 			log.Infof("Cannot apply NetworkChange %v: %v is offline", change.ID, deviceChange.DeviceID)
 			return false, nil
 		}
@@ -512,17 +513,17 @@ func isIntersectingChange(config *networkchange.NetworkChange, history *networkc
 	return false
 }
 
-func getProtocolState(device *devicetopo.Device) devicetopo.ChannelState {
+func getProtocolState(device *devicetopo.Device) topo.ChannelState {
 	// Find the gNMI protocol state for the device
-	var protocol *devicetopo.ProtocolState
+	var protocol *topo.ProtocolState
 	for _, p := range device.Protocols {
-		if p.Protocol == devicetopo.Protocol_GNMI {
+		if p.Protocol == topo.Protocol_GNMI {
 			protocol = p
 			break
 		}
 	}
 	if protocol == nil {
-		return devicetopo.ChannelState_UNKNOWN_CHANNEL_STATE
+		return topo.ChannelState_UNKNOWN_CHANNEL_STATE
 	}
 	return protocol.ChannelState
 }

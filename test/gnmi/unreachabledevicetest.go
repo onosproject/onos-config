@@ -17,10 +17,11 @@ package gnmi
 
 import (
 	"context"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -37,7 +38,7 @@ const (
 
 // TestUnreachableDevice tests set/query of a single GNMI path to a device that will never respond
 func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
-	deviceClient, deviceClientError := gnmi.NewDeviceServiceClient()
+	deviceClient, deviceClientError := gnmi.NewTopoClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)
 	newDevice := &device.Device{
@@ -48,14 +49,14 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 		Version:     unreachableDeviceModDeviceVersion,
 		Timeout:     nil,
 		Credentials: device.Credentials{},
-		TLS:         device.TlsConfig{},
+		TLS:         device.TLSConfig{},
 		Type:        unreachableDeviceModDeviceType,
 		Role:        "",
 		Attributes:  nil,
 		Protocols:   nil,
 	}
-	addRequest := &device.AddRequest{Device: newDevice}
-	addResponse, addResponseError := deviceClient.Add(context.Background(), addRequest)
+	addRequest := &topo.CreateRequest{Object: device.ToObject(newDevice)}
+	addResponse, addResponseError := deviceClient.Create(context.Background(), addRequest)
 	assert.NotNil(t, addResponse)
 	assert.Nil(t, addResponseError)
 

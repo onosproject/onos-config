@@ -30,7 +30,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"google.golang.org/grpc"
 )
 

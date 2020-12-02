@@ -19,13 +19,14 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-api/go/onos/config/device"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/controller"
+	devicetopo "github.com/onosproject/onos-config/pkg/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	devicetopo "github.com/onosproject/onos-topo/api/device"
 	"sync"
 )
 
@@ -151,7 +152,7 @@ func (w *DeviceWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- typ
 	// If the protocol state is not connected, close any stream that's open
 	ctx := w.streams[deviceID]
 	state := getProtocolState(topodevice)
-	if state == devicetopo.ChannelState_CONNECTED {
+	if state == topo.ChannelState_CONNECTED {
 		if ctx != nil {
 			return
 		}

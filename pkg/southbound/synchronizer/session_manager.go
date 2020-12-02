@@ -25,7 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 )
 
 // SessionManager is a gNMI session manager

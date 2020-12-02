@@ -41,7 +41,7 @@ import (
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

@@ -25,7 +25,7 @@ import (
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	devicetopo "github.com/onosproject/onos-topo/api/device"
+	devicetopo "github.com/onosproject/onos-config/pkg/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

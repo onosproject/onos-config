@@ -22,7 +22,7 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/diags"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -39,22 +39,25 @@ const (
 // TestOfflineDeviceInTopo tests set/query of a single GNMI path to a single device that is in the config but offline
 func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	t.Skip()
-	deviceClient, deviceClientError := gnmi.NewDeviceServiceClient()
-	assert.NotNil(t, deviceClient)
+	topoClient, deviceClientError := gnmi.NewTopoClient()
+	assert.NotNil(t, topoClient)
 	assert.Nil(t, deviceClientError)
 	timeout := 10 * time.Second
-	newDevice := &device.Device{
-		ID:      offlineInTopoModDeviceName,
-		Address: offlineInTopoModDeviceName + ":11161",
-		Type:    offlineInTopoModDeviceType,
-		Version: offlineInTopoModDeviceVersion,
-		Timeout: &timeout,
-		TLS: device.TlsConfig{
-			Plain: true,
-		},
+	newDevice := &topo.Object{
+		ID:   offlineInTopoModDeviceName,
+		Type: topo.Object_ENTITY,
 	}
-	addRequest := &device.AddRequest{Device: newDevice}
-	addResponse, addResponseError := deviceClient.Add(context.Background(), addRequest)
+
+	newDevice.Attributes[topo.Address] = offlineInTopoModDeviceName + ":11161"
+	newDevice.Attributes[topo.Type] = offlineInTopoModDeviceType
+	newDevice.Attributes[topo.Version] = offlineInTopoModDeviceVersion
+	newDevice.Attributes[topo.TLSPlain] = "true"
+	newDevice.Attributes[topo.Timeout] = timeout.String()
+
+	request := &topo.CreateRequest{
+		Object: newDevice,
+	}
+	addResponse, addResponseError := topoClient.Create(context.Background(), request)
 	assert.NotNil(t, addResponse)
 	assert.Nil(t, addResponseError)
 

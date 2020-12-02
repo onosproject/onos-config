@@ -17,9 +17,12 @@
 package device
 
 import (
-	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"time"
 )
+
+// ID represents device globally unique ID
+type ID topo.ID
 
 // Type represents device type
 type Type string
@@ -30,7 +33,7 @@ type Role string
 // Device structure provide a shim for topo.Object
 type Device struct {
 	// globally unique device identifier; maps to Object.ID
-	ID topoapi.ID
+	ID ID
 
 	// host:port of the device
 	Address string
@@ -51,7 +54,7 @@ type Device struct {
 	// role for the device
 	Role Role
 
-	Protocols []*topoapi.ProtocolState
+	Protocols []*topo.ProtocolState
 	// user-friendly tag
 	Displayname string
 
@@ -59,7 +62,7 @@ type Device struct {
 	Attributes map[string]string
 
 	// revision of the underlying Object
-	Revision topoapi.Revision
+	Revision topo.Revision
 }
 
 // Credentials is the device credentials
@@ -83,3 +86,62 @@ type TLSConfig struct {
 	// indicates whether to connect to the device with insecure communication
 	Insecure bool
 }
+
+
+// ListResponse carries a single device event
+type ListResponse struct {
+	// type of the event
+	Type ListResponse_Type
+	// device is the device on which the event occurred
+	Device *Device
+}
+
+// Device event type
+type ListResponse_Type int32
+
+const (
+	// NONE indicates this response does not represent a state change
+	ListResponse_NONE ListResponse_Type = 0
+	// ADDED is an event which occurs when a device is added to the topology
+	ListResponse_ADDED ListResponse_Type = 1
+	// UPDATED is an event which occurs when a device is updated
+	ListResponse_UPDATED ListResponse_Type = 2
+	// REMOVED is an event which occurs when a device is removed from the topology
+	ListResponse_REMOVED ListResponse_Type = 3
+)
+
+// ToObject converts topology object entity to local device
+func ToObject(device *Device) *topo.Object {
+	o := &topo.Object{
+		ID: topo.ID(device.ID),
+		Revision: device.Revision,
+		Attributes: device.Attributes,
+	}
+
+	if o.Attributes == nil {
+		o.Attributes = make(map[string]string)
+	}
+
+	o.Attributes[topo.Type] = string(device.Type)
+	o.Attributes[topo.Role] = string(device.Role)
+	o.Attributes[topo.Address] = device.Address
+	o.Attributes[topo.Target] = device.Target
+	o.Attributes[topo.Version] = device.Version
+	return o
+}
+
+// ToDevice converts local device structure to topology object entity
+func ToDevice(object *topo.Object) *Device {
+	d := &Device{
+		ID: ID(object.ID),
+		Revision: object.Revision,
+		Type: Type(object.Attributes[topo.Type]),
+		Role: Role(object.Attributes[topo.Role]),
+		Address: object.Attributes[topo.Address],
+		Target: object.Attributes[topo.Target],
+		Version: object.Attributes[topo.Version],
+		Attributes: object.Attributes,
+	}
+	return d
+}
+
