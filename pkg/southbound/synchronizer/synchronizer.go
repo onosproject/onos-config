@@ -32,7 +32,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"

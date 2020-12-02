@@ -21,7 +21,7 @@ import (
 
 	types "github.com/onosproject/onos-api/go/onos/config"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 )
 
 // Filter filters individual events for a node

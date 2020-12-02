@@ -26,7 +26,7 @@ import (
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"google.golang.org/grpc/codes"

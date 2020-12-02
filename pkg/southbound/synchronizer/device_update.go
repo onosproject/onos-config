@@ -25,7 +25,8 @@ import (
 
 	"github.com/onosproject/onos-config/pkg/events"
 
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-api/go/onos/topo"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 )
 
 func (s *Session) getTermPerDevice(device *topodevice.Device) (int, error) {
@@ -37,8 +38,8 @@ func (s *Session) getTermPerDevice(device *topodevice.Device) (int, error) {
 
 }
 
-func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channel topodevice.ChannelState,
-	service topodevice.ServiceState) error {
+func (s *Session) updateDevice(connectivity topo.ConnectivityState, channel topo.ChannelState,
+	service topo.ServiceState) error {
 	log.Info("Update device %s state", s.device.ID)
 
 	id := s.device.ID
@@ -58,10 +59,10 @@ func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channe
 	if protocolState != nil {
 		topoDevice.Protocols = remove(topoDevice.Protocols, index)
 	} else {
-		protocolState = new(topodevice.ProtocolState)
+		protocolState = new(topo.ProtocolState)
 	}
 
-	protocolState.Protocol = topodevice.Protocol_GNMI
+	protocolState.Protocol = topo.Protocol_GNMI
 	protocolState.ConnectivityState = connectivity
 	protocolState.ChannelState = channel
 	protocolState.ServiceState = service
@@ -93,29 +94,29 @@ func (s *Session) updateDevice(connectivity topodevice.ConnectivityState, channe
 	return nil
 }
 
-func containsGnmi(protocols []*topodevice.ProtocolState) (*topodevice.ProtocolState, int) {
+func containsGnmi(protocols []*topo.ProtocolState) (*topo.ProtocolState, int) {
 	for i, p := range protocols {
-		if p.Protocol == topodevice.Protocol_GNMI {
+		if p.Protocol == topo.Protocol_GNMI {
 			return p, i
 		}
 	}
 	return nil, -1
 }
 
-func remove(s []*topodevice.ProtocolState, i int) []*topodevice.ProtocolState {
+func remove(s []*topo.ProtocolState, i int) []*topo.ProtocolState {
 	s[i] = s[len(s)-1]
 	return s[:len(s)-1]
 }
 
 func (s *Session) updateConnectedDevice() error {
-	err := s.updateDevice(topodevice.ConnectivityState_REACHABLE, topodevice.ChannelState_CONNECTED,
-		topodevice.ServiceState_AVAILABLE)
+	err := s.updateDevice(topo.ConnectivityState_REACHABLE, topo.ChannelState_CONNECTED,
+		topo.ServiceState_AVAILABLE)
 	return err
 }
 
 func (s *Session) updateDisconnectedDevice() error {
-	err := s.updateDevice(topodevice.ConnectivityState_UNREACHABLE, topodevice.ChannelState_DISCONNECTED,
-		topodevice.ServiceState_UNAVAILABLE)
+	err := s.updateDevice(topo.ConnectivityState_UNREACHABLE, topo.ChannelState_DISCONNECTED,
+		topo.ServiceState_UNAVAILABLE)
 	return err
 
 }

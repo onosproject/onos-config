@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"

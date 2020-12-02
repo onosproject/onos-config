@@ -26,7 +26,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
-	devicetopo "github.com/onosproject/onos-topo/api/device"
+	devicetopo "github.com/onosproject/onos-config/pkg/device"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"os"

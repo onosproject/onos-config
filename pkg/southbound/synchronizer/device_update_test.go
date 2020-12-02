@@ -23,7 +23,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 
 	"github.com/golang/mock/gomock"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"gotest.tools/assert"
 )
 

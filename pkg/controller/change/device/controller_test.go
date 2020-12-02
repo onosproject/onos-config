@@ -24,6 +24,7 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-api/go/onos/config/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
@@ -34,7 +35,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	southboundmock "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -474,31 +475,31 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	devices := map[topodevice.ID]*topodevice.Device{
 		topodevice.ID(device1): {
 			ID: topodevice.ID(device1),
-			Protocols: []*topodevice.ProtocolState{
+			Protocols: []*topo.ProtocolState{
 				{
-					Protocol:          topodevice.Protocol_GNMI,
-					ConnectivityState: topodevice.ConnectivityState_REACHABLE,
-					ChannelState:      topodevice.ChannelState_CONNECTED,
+					Protocol:          topo.Protocol_GNMI,
+					ConnectivityState: topo.ConnectivityState_REACHABLE,
+					ChannelState:      topo.ChannelState_CONNECTED,
 				},
 			},
 		},
 		topodevice.ID(device2): {
 			ID: topodevice.ID(device2),
-			Protocols: []*topodevice.ProtocolState{
+			Protocols: []*topo.ProtocolState{
 				{
-					Protocol:          topodevice.Protocol_GNMI,
-					ConnectivityState: topodevice.ConnectivityState_REACHABLE,
-					ChannelState:      topodevice.ChannelState_CONNECTED,
+					Protocol:          topo.Protocol_GNMI,
+					ConnectivityState: topo.ConnectivityState_REACHABLE,
+					ChannelState:      topo.ChannelState_CONNECTED,
 				},
 			},
 		},
 		topodevice.ID(dcDevice): {
 			ID: topodevice.ID(dcDevice),
-			Protocols: []*topodevice.ProtocolState{
+			Protocols: []*topo.ProtocolState{
 				{
-					Protocol:          topodevice.Protocol_GNMI,
-					ConnectivityState: topodevice.ConnectivityState_UNREACHABLE,
-					ChannelState:      topodevice.ChannelState_DISCONNECTED,
+					Protocol:          topo.Protocol_GNMI,
+					ConnectivityState: topo.ConnectivityState_UNREACHABLE,
+					ChannelState:      topo.ChannelState_DISCONNECTED,
 				},
 			},
 		},
@@ -543,7 +544,7 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 		Version:     v1,
 		Timeout:     &timeout,
 		Credentials: topodevice.Credentials{},
-		TLS:         topodevice.TlsConfig{},
+		TLS:         topodevice.TLSConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 	}

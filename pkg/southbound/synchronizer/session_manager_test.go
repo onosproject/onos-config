@@ -28,7 +28,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"gotest.tools/assert"
 )
 

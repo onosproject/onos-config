@@ -17,7 +17,7 @@ package manager
 import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 )
 
 // GetTargetState returns a set of state values given a target and a path.

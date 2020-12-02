@@ -16,7 +16,7 @@ package device
 
 import (
 	"github.com/golang/mock/gomock"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"

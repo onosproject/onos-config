@@ -28,7 +28,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"

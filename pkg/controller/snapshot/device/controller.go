@@ -27,7 +27,7 @@ import (
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 )
 
 var log = logging.GetLogger("controller", "snapshot", "device")

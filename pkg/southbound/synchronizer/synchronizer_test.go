@@ -30,7 +30,7 @@ import (
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -23,7 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	ocgnmi "github.com/openconfig/gnmi/proto/gnmi"
