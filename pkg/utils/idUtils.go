@@ -17,7 +17,7 @@ package utils
 
 import (
 	"fmt"
-	devicetype "github.com/onosproject/onos-config/api/types/device"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 )
 
 // ToModelName simply joins together model name and version in a consistent way

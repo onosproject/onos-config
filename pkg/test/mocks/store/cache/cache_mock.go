@@ -6,7 +6,7 @@ package cache
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	device "github.com/onosproject/onos-config/api/types/device"
+	device "github.com/onosproject/onos-api/go/onos/config/device"
 	cache "github.com/onosproject/onos-config/pkg/store/device/cache"
 	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	reflect "reflect"

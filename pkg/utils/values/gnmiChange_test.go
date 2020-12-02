@@ -18,7 +18,7 @@ package values
 
 import (
 	"encoding/json"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 	"testing"

@@ -20,7 +20,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 
-	"github.com/onosproject/onos-config/api/types"
+	types "github.com/onosproject/onos-api/go/onos/config"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 

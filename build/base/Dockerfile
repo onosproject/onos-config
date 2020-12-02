@@ -6,7 +6,6 @@ ENV GO111MODULE=on
 ARG ONOS_MAKE_TARGET=build
 
 COPY Makefile go.mod go.sum /go/src/github.com/onosproject/onos-config/
-COPY api/ /go/src/github.com/onosproject/onos-config/api/
 COPY cmd/ /go/src/github.com/onosproject/onos-config/cmd/
 COPY pkg/ /go/src/github.com/onosproject/onos-config/pkg/
 COPY vendor/ /go/src/github.com/onosproject/onos-config/vendor/

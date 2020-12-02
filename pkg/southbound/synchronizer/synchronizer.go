@@ -23,7 +23,7 @@ import (
 	syncPrimitives "sync"
 
 	"github.com/golang/protobuf/proto"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"

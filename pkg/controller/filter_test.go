@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/onosproject/onos-config/api/types"
+	types "github.com/onosproject/onos-api/go/onos/config"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	topodevice "github.com/onosproject/onos-topo/api/device"

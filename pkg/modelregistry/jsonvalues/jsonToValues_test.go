@@ -16,7 +16,7 @@ package jsonvalues
 
 import (
 	ds1 "github.com/onosproject/config-models/modelplugin/devicesim-1.0.0/devicesim_1_0_0"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/goyang/pkg/yang"
 	"gotest.tools/assert"

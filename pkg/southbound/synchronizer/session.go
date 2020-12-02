@@ -26,7 +26,7 @@ import (
 
 	"github.com/onosproject/onos-config/pkg/utils"
 
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -35,7 +35,7 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 
-	devicetype "github.com/onosproject/onos-config/api/types/device"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 )

@@ -18,11 +18,11 @@ package diags
 import (
 	"fmt"
 
-	"github.com/onosproject/onos-config/api/admin"
-	"github.com/onosproject/onos-config/api/diags"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
-	devicetype "github.com/onosproject/onos-config/api/types/device"
+	"github.com/onosproject/onos-api/go/onos/config/admin"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	"github.com/onosproject/onos-api/go/onos/config/diags"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"

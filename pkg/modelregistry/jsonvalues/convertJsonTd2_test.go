@@ -17,7 +17,7 @@ package jsonvalues
 import (
 	"fmt"
 	td2 "github.com/onosproject/config-models/modelplugin/testdevice-2.0.0/testdevice_2_0_0"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"

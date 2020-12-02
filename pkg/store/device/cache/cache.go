@@ -19,9 +19,9 @@ import (
 	"io"
 	"sync"
 
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
-	"github.com/onosproject/onos-config/api/types/device"
-	devicesnapshot "github.com/onosproject/onos-config/api/types/snapshot/device"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
+	"github.com/onosproject/onos-api/go/onos/config/device"
+	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapshotstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"

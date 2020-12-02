@@ -17,9 +17,9 @@ package network
 import (
 	"context"
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/api/types"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	types "github.com/onosproject/onos-api/go/onos/config"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"

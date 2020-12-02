@@ -6,8 +6,8 @@ package store
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	device "github.com/onosproject/onos-config/api/types/device"
-	device0 "github.com/onosproject/onos-config/api/types/snapshot/device"
+	device "github.com/onosproject/onos-api/go/onos/config/device"
+	device0 "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	reflect "reflect"
 )

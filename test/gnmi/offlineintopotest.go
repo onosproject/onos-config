@@ -18,8 +18,8 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/helmit/pkg/helm"
-	"github.com/onosproject/onos-config/api/diags"
-	"github.com/onosproject/onos-config/api/types/change"
+	"github.com/onosproject/onos-api/go/onos/config/change"
+	"github.com/onosproject/onos-api/go/onos/config/diags"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-topo/api/device"

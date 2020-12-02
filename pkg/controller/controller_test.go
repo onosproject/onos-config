@@ -17,7 +17,7 @@ package controller
 import (
 	"errors"
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/api/types"
+	types "github.com/onosproject/onos-api/go/onos/config"
 	"github.com/stretchr/testify/assert"
 	"strconv"
 	"sync"

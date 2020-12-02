@@ -15,9 +15,9 @@
 package state
 
 import (
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
-	"github.com/onosproject/onos-config/api/types/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
+	"github.com/onosproject/onos-api/go/onos/config/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/stretchr/testify/assert"

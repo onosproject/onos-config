@@ -16,7 +16,7 @@ package gnmi
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/api/admin"
+	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-topo/api/device"

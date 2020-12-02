@@ -17,8 +17,8 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"github.com/onosproject/onos-config/api/diags"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	"github.com/onosproject/onos-api/go/onos/config/diags"
 	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"gotest.tools/assert"
 	"io"

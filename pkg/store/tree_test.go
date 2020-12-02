@@ -16,7 +16,7 @@ package store
 
 import (
 	"github.com/onosproject/config-models/modelplugin/testdevice-2.0.0/testdevice_2_0_0"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"gotest.tools/assert"
 	"testing"
 )

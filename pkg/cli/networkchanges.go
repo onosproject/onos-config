@@ -16,8 +16,8 @@ package cli
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/api/diags"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
+	"github.com/onosproject/onos-api/go/onos/config/diags"
 	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/spf13/cobra"
 	"io"

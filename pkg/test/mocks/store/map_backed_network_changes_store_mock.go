@@ -16,10 +16,10 @@ package store
 
 import (
 	"github.com/golang/mock/gomock"
-	"github.com/onosproject/onos-config/api/types"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
-	"github.com/onosproject/onos-config/api/types/change/device"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	types "github.com/onosproject/onos-api/go/onos/config"
+	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
+	"github.com/onosproject/onos-api/go/onos/config/change/device"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"sync"

@@ -6,9 +6,9 @@ package store
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	device "github.com/onosproject/onos-config/api/types/change/device"
-	network "github.com/onosproject/onos-config/api/types/change/network"
-	device0 "github.com/onosproject/onos-config/api/types/device"
+	device "github.com/onosproject/onos-api/go/onos/config/change/device"
+	network "github.com/onosproject/onos-api/go/onos/config/change/network"
+	device0 "github.com/onosproject/onos-api/go/onos/config/device"
 	reflect "reflect"
 )
 

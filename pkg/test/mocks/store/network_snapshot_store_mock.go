@@ -6,7 +6,7 @@ package store
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	network "github.com/onosproject/onos-config/api/types/snapshot/network"
+	network "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
 	stream "github.com/onosproject/onos-config/pkg/store/stream"
 	reflect "reflect"
 )

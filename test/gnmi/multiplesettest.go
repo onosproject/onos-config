@@ -20,7 +20,7 @@ import (
 
 	"github.com/Pallinder/go-randomdata"
 
-	"github.com/onosproject/onos-config/api/types/change/network"
+	"github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"

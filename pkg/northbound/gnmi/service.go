@@ -20,7 +20,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"io/ioutil"
 	"sync"

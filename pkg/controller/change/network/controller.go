@@ -15,10 +15,10 @@
 package network
 
 import (
-	"github.com/onosproject/onos-config/api/types"
-	changetypes "github.com/onosproject/onos-config/api/types/change"
-	devicechange "github.com/onosproject/onos-config/api/types/change/device"
-	networkchange "github.com/onosproject/onos-config/api/types/change/network"
+	types "github.com/onosproject/onos-api/go/onos/config"
+	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
