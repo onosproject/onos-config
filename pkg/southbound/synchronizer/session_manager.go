@@ -18,6 +18,7 @@ import (
 	"sync"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -25,7 +26,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
-	topodevice "github.com/onosproject/onos-config/pkg/device"
 )
 
 // SessionManager is a gNMI session manager
@@ -161,19 +161,19 @@ func (sm *SessionManager) processDeviceEvents(ch <-chan *topodevice.ListResponse
 // processDeviceEvent process a device event
 func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) error {
 	switch event.Type {
-	case topodevice.ListResponse_ADDED:
+	case topodevice.ListResponseADDED:
 		err := sm.createSession(event.Device)
 		if err != nil {
 			return err
 		}
 
-	case topodevice.ListResponse_NONE:
+	case topodevice.ListResponseNONE:
 		err := sm.createSession(event.Device)
 		if err != nil {
 			return err
 		}
 
-	case topodevice.ListResponse_UPDATED:
+	case topodevice.ListResponseUPDATED:
 		session, ok := sm.sessions[event.Device.ID]
 		if !ok {
 			log.Error("Session for the device %v does not exist", event.Device.ID)
@@ -191,7 +191,7 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 			}
 		}
 
-	case topodevice.ListResponse_REMOVED:
+	case topodevice.ListResponseREMOVED:
 		err := sm.deleteSession(event.Device)
 		if err != nil {
 			return err

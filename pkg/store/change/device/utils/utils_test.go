@@ -20,10 +20,10 @@ import (
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
@@ -249,7 +249,7 @@ func makeDevice(ID topodevice.ID) *topodevice.Device {
 		Version:     "1.0.0",
 		Timeout:     nil,
 		Credentials: topodevice.Credentials{},
-		TLS:         topodevice.TlsConfig{},
+		TLS:         topodevice.TLSConfig{},
 		Type:        "TestDevice",
 		Role:        "",
 		Attributes:  nil,

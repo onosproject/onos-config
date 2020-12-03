@@ -17,8 +17,8 @@ package southbound
 import (
 	"context"
 	"github.com/golang/protobuf/proto"
-	"github.com/onosproject/onos-config/pkg/utils"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"

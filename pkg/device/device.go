@@ -87,34 +87,33 @@ type TLSConfig struct {
 	Insecure bool
 }
 
-
 // ListResponse carries a single device event
 type ListResponse struct {
 	// type of the event
-	Type ListResponse_Type
+	Type ListResponseType
 	// device is the device on which the event occurred
 	Device *Device
 }
 
-// Device event type
-type ListResponse_Type int32
+// ListResponseType is a device event type
+type ListResponseType int32
 
 const (
-	// NONE indicates this response does not represent a state change
-	ListResponse_NONE ListResponse_Type = 0
-	// ADDED is an event which occurs when a device is added to the topology
-	ListResponse_ADDED ListResponse_Type = 1
-	// UPDATED is an event which occurs when a device is updated
-	ListResponse_UPDATED ListResponse_Type = 2
-	// REMOVED is an event which occurs when a device is removed from the topology
-	ListResponse_REMOVED ListResponse_Type = 3
+	// ListResponseNONE obviously
+	ListResponseNONE ListResponseType = 0
+	// ListResponseADDED obviously
+	ListResponseADDED ListResponseType = 1
+	// ListResponseUPDATED obviously
+	ListResponseUPDATED ListResponseType = 2
+	// ListResponseREMOVED obviously
+	ListResponseREMOVED ListResponseType = 3
 )
 
 // ToObject converts topology object entity to local device
 func ToObject(device *Device) *topo.Object {
 	o := &topo.Object{
-		ID: topo.ID(device.ID),
-		Revision: device.Revision,
+		ID:         topo.ID(device.ID),
+		Revision:   device.Revision,
 		Attributes: device.Attributes,
 	}
 
@@ -133,15 +132,14 @@ func ToObject(device *Device) *topo.Object {
 // ToDevice converts local device structure to topology object entity
 func ToDevice(object *topo.Object) *Device {
 	d := &Device{
-		ID: ID(object.ID),
-		Revision: object.Revision,
-		Type: Type(object.Attributes[topo.Type]),
-		Role: Role(object.Attributes[topo.Role]),
-		Address: object.Attributes[topo.Address],
-		Target: object.Attributes[topo.Target],
-		Version: object.Attributes[topo.Version],
+		ID:         ID(object.ID),
+		Revision:   object.Revision,
+		Type:       Type(object.Attributes[topo.Type]),
+		Role:       Role(object.Attributes[topo.Role]),
+		Address:    object.Attributes[topo.Address],
+		Target:     object.Attributes[topo.Target],
+		Version:    object.Attributes[topo.Version],
 		Attributes: object.Attributes,
 	}
 	return d
 }
-

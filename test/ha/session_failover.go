@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	hautils "github.com/onosproject/onos-config/test/utils/ha"
-	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/stretchr/testify/assert"
 )
 

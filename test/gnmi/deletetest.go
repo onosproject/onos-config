@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
-	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/stretchr/testify/assert"
 )
 

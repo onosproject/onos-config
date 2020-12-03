@@ -25,8 +25,8 @@ import (
 	"github.com/atomix/go-client/pkg/client/election"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 )
 
 // newAtomixElection returns a new persistent device mastership election

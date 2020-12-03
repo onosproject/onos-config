@@ -26,6 +26,7 @@ import (
 	networkchangectl "github.com/onosproject/onos-config/pkg/controller/change/network"
 	devicesnapshotctl "github.com/onosproject/onos-config/pkg/controller/snapshot/device"
 	networksnapshotctl "github.com/onosproject/onos-config/pkg/controller/snapshot/network"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -41,7 +42,6 @@ import (
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

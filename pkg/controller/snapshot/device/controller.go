@@ -23,11 +23,11 @@ import (
 	snaptype "github.com/onosproject/onos-api/go/onos/config/snapshot"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/controller"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	topodevice "github.com/onosproject/onos-config/pkg/device"
 )
 
 var log = logging.GetLogger("controller", "snapshot", "device")

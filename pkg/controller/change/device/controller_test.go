@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
@@ -33,9 +34,9 @@ import (
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-config/pkg/test/mocks"
 	southboundmock "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -505,18 +506,18 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 		},
 	}
 
-	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: devices[topodevice.ID(device1)]}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: devices[topodevice.ID(device2)]}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: devices[topodevice.ID(dcDevice)]}, nil)
+	stream := mocks.NewMockTopo_WatchClient(ctrl)
+	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(devices[topodevice.ID(device1)])}}, nil)
+	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(devices[topodevice.ID(device2)])}}, nil)
+	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(devices[topodevice.ID(dcDevice)])}}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
-	client := NewMockDeviceServiceClient(ctrl)
+	client := mocks.NewMockTopoClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, in *topodevice.GetRequest, opts ...grpc.CallOption) (*topodevice.GetResponse, error) {
-			return &topodevice.GetResponse{
-				Device: devices[in.ID],
+		DoAndReturn(func(ctx context.Context, in *topo.GetRequest, opts ...grpc.CallOption) (*topo.GetResponse, error) {
+			return &topo.GetResponse{
+				Object: topodevice.ToObject(devices[topodevice.ID(in.ID)]),
 			}, nil
 		}).AnyTimes()
 
