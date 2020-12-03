@@ -16,7 +16,7 @@ package device
 
 import (
 	"context"
-	"errors"
+	"github.com/atomix/go-client/pkg/client/errors"
 	"github.com/atomix/go-client/pkg/client/map"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
@@ -150,13 +150,13 @@ func (s *atomixStore) Get(id devicesnapshot.ID) (*devicesnapshot.DeviceSnapshot,
 
 func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
 	if snapshot.Revision != 0 {
-		return errors.New("not a new object")
+		return errors.NewInvalid("not a new object")
 	}
 	if snapshot.DeviceID == "" {
-		return errors.New("no device ID specified")
+		return errors.NewInvalid("no device ID specified")
 	}
 	if snapshot.DeviceVersion == "" {
-		return errors.New("no device version specified")
+		return errors.NewInvalid("no device version specified")
 	}
 
 	snapshot.ID = devicesnapshot.GetSnapshotID(snapshot.NetworkSnapshot.ID, snapshot.DeviceID, snapshot.DeviceVersion)
@@ -181,13 +181,13 @@ func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
 
 func (s *atomixStore) Update(snapshot *devicesnapshot.DeviceSnapshot) error {
 	if snapshot.Revision == 0 {
-		return errors.New("not a stored object")
+		return errors.NewInvalid("not a stored object")
 	}
 	if snapshot.DeviceID == "" {
-		return errors.New("no device ID specified")
+		return errors.NewInvalid("no device ID specified")
 	}
 	if snapshot.DeviceVersion == "" {
-		return errors.New("no device version specified")
+		return errors.NewInvalid("no device version specified")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -211,7 +211,7 @@ func (s *atomixStore) Update(snapshot *devicesnapshot.DeviceSnapshot) error {
 
 func (s *atomixStore) Delete(snapshot *devicesnapshot.DeviceSnapshot) error {
 	if snapshot.Revision == 0 {
-		return errors.New("not a stored object")
+		return errors.NewInvalid("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -290,10 +290,10 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 
 func (s *atomixStore) Store(snapshot *devicesnapshot.Snapshot) error {
 	if snapshot.DeviceID == "" {
-		return errors.New("no device ID specified")
+		return errors.NewInvalid("no device ID specified")
 	}
 	if snapshot.DeviceVersion == "" {
-		return errors.New("no device version specified")
+		return errors.NewInvalid("no device version specified")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -316,7 +316,7 @@ func (s *atomixStore) Load(deviceID device.VersionedID) (*devicesnapshot.Snapsho
 	defer cancel()
 
 	entry, err := s.snapshots.Get(ctx, string(deviceID))
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return nil, err
 	} else if entry == nil {
 		return nil, nil
