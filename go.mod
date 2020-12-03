@@ -24,7 +24,6 @@ require (
 	github.com/onosproject/onos-api/go v0.6.7
 	github.com/onosproject/onos-lib-go v0.6.25
 	github.com/onosproject/onos-test v0.6.2
-	github.com/onosproject/onos-topo v0.6.20
 	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
 	github.com/openconfig/goyang v0.2.1
 	github.com/openconfig/ygot v0.8.12
