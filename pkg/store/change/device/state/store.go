@@ -15,7 +15,7 @@
 package state
 
 import (
-	"errors"
+	"github.com/atomix/go-client/pkg/client/errors"
 	"github.com/cenkalti/backoff"
 	changetype "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -134,7 +134,7 @@ func (s *deviceChangeStoreStateStore) processNetworkChange(networkChange *networ
 				state:    make(map[string]*devicechange.TypedValue),
 			}
 			snapshot, err := s.snapshotStore.Load(deviceChange.GetVersionedDeviceID())
-			if err != nil {
+			if err != nil && !errors.IsNotFound(err) {
 				return err
 			} else if snapshot != nil {
 				for _, value := range snapshot.Values {
@@ -173,7 +173,7 @@ func (s *deviceChangeStoreStateStore) processNetworkRollback(networkChange *netw
 			state:    make(map[string]*devicechange.TypedValue),
 		}
 		snapshot, err := s.snapshotStore.Load(devChange.GetVersionedDeviceID())
-		if err != nil {
+		if err != nil && !errors.IsNotFound(err) {
 			listCtx.Close()
 			return err
 		} else if snapshot != nil {
@@ -228,7 +228,7 @@ func (s *deviceChangeStoreStateStore) Get(id devicetype.VersionedID, revision ne
 			select {
 			case <-waiter:
 			case <-time.After(15 * time.Second):
-				return nil, errors.New("get timeout")
+				return nil, errors.NewTimeout("get timeout")
 			}
 			s.mu.RLock()
 			defer s.mu.RUnlock()
