@@ -513,7 +513,7 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
 	client := mocks.NewMockTopoClient(ctrl)
-	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
+	client.EXPECT().Watch(gomock.Any(), gomock.Any()).Return(stream, nil).AnyTimes()
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, in *topo.GetRequest, opts ...grpc.CallOption) (*topo.GetResponse, error) {
 			return &topo.GetResponse{

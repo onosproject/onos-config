@@ -20,7 +20,6 @@ import (
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/test/mocks"
 	"github.com/stretchr/testify/assert"
-	"io"
 	"testing"
 	"time"
 )
@@ -47,18 +46,16 @@ func TestDeviceStore(t *testing.T) {
 		Version:  "1.0.0",
 	}
 
-	stream := mocks.NewMockTopo_WatchClient(ctrl)
-	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device1)}}, nil)
-	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device2)}}, nil)
-	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device3)}}, nil)
-	stream.EXPECT().Recv().Return(nil, io.EOF)
-
-	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device1)}}, nil)
-	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device2)}}, nil)
-	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device3)}}, nil)
+	listResp := &topo.ListResponse{
+		Objects: []topo.Object{
+			*topodevice.ToObject(device1),
+			*topodevice.ToObject(device2),
+			*topodevice.ToObject(device3),
+		},
+	}
 
 	client := mocks.NewMockTopoClient(ctrl)
-	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil)
+	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(listResp, nil)
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1)}, nil)
 
 	store := topoStore{
