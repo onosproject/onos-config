@@ -37,10 +37,10 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/change"
 	"github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-api/go/onos/config/diags"
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
@@ -140,7 +140,6 @@ func NewDevice(simulator *helm.HelmRelease, deviceType string, version string) (
 		},
 	}, nil
 }
-
 
 // NewTopoClient :
 func NewTopoClient() (topo.TopoClient, error) {

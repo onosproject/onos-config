@@ -19,10 +19,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/onosproject/onos-config/pkg/device"
 	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 )
 

@@ -20,9 +20,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/onosproject/onos-lib-go/pkg/southbound"
-	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-lib-go/pkg/southbound"
 
 	"google.golang.org/grpc"
 )
@@ -125,7 +125,7 @@ func (s *topoStore) Watch(ch chan<- *device.ListResponse) error {
 			if resp.Event.Object.Type == topo.Object_ENTITY {
 				ch <- &device.ListResponse{
 					Device: device.ToDevice(&resp.Event.Object),
-					Type: toEventType(resp.Event.Type),
+					Type:   toEventType(resp.Event.Type),
 				}
 			}
 		}
@@ -133,15 +133,15 @@ func (s *topoStore) Watch(ch chan<- *device.ListResponse) error {
 	return nil
 }
 
-func toEventType(et topo.EventType) device.ListResponse_Type {
+func toEventType(et topo.EventType) device.ListResponseType {
 	if et == topo.EventType_ADDED {
-		return device.ListResponse_ADDED
+		return device.ListResponseADDED
 	} else if et == topo.EventType_UPDATED {
-		return device.ListResponse_UPDATED
+		return device.ListResponseUPDATED
 	} else if et == topo.EventType_REMOVED {
-		return device.ListResponse_REMOVED
+		return device.ListResponseREMOVED
 	}
-	return device.ListResponse_NONE
+	return device.ListResponseNONE
 }
 
 // getTopoConn gets a gRPC connection to the topology service

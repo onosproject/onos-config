@@ -20,9 +20,9 @@ import (
 
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-config/pkg/config"
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
-	"github.com/onosproject/onos-config/pkg/device"
 )
 
 // Term is a monotonically increasing mastership term

@@ -19,9 +19,9 @@ import (
 	"time"
 
 	types "github.com/onosproject/onos-api/go/onos/config"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
-	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/stretchr/testify/assert"
 )
 

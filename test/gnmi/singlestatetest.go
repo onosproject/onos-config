@@ -15,8 +15,8 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/stretchr/testify/assert"
 	"regexp"
 	"strings"

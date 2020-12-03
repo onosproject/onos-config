@@ -22,10 +22,12 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-api/go/onos/config/device"
+	"github.com/onosproject/onos-api/go/onos/topo"
+	devicetopo "github.com/onosproject/onos-config/pkg/device"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	devicetopo "github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-config/pkg/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -315,19 +317,19 @@ func newStores(t *testing.T) (networkchanges.Store, devicechanges.Store, devices
 	deviceChanges, err := devicechanges.NewLocalStore()
 	assert.NoError(t, err)
 	ctrl := gomock.NewController(t)
-	client := NewMockDeviceServiceClient(ctrl)
-	client.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *devicetopo.GetRequest) (*devicetopo.GetResponse, error) {
-		return &devicetopo.GetResponse{
-			Device: &devicetopo.Device{
-				ID: request.ID,
-				Protocols: []*devicetopo.ProtocolState{
+	client := mocks.NewMockTopoClient(ctrl)
+	client.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *topo.GetRequest) (*topo.GetResponse, error) {
+		return &topo.GetResponse{
+			Object: devicetopo.ToObject(&devicetopo.Device{
+				ID: devicetopo.ID(request.ID),
+				Protocols: []*topo.ProtocolState{
 					{
-						Protocol:          devicetopo.Protocol_GNMI,
-						ChannelState:      devicetopo.ChannelState_CONNECTED,
-						ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+						Protocol:          topo.Protocol_GNMI,
+						ChannelState:      topo.ChannelState_CONNECTED,
+						ConnectivityState: topo.ConnectivityState_REACHABLE,
 					},
 				},
-			},
+			}),
 		}, nil
 	}).AnyTimes()
 	devices, err := devicestore.NewStore(client)

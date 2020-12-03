@@ -16,7 +16,9 @@ package device
 
 import (
 	"github.com/golang/mock/gomock"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-config/pkg/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
@@ -45,19 +47,19 @@ func TestDeviceStore(t *testing.T) {
 		Version:  "1.0.0",
 	}
 
-	stream := NewMockDeviceService_ListClient(ctrl)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device1}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device2}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device3}, nil)
+	stream := mocks.NewMockTopo_WatchClient(ctrl)
+	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device1)}}, nil)
+	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device2)}}, nil)
+	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device3)}}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device1}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device2}, nil)
-	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device3}, nil)
+	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device1)}}, nil)
+	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device2)}}, nil)
+	stream.EXPECT().Recv().Return(&topo.WatchResponse{Event: topo.Event{Object: *topodevice.ToObject(device3)}}, nil)
 
-	client := NewMockDeviceServiceClient(ctrl)
+	client := mocks.NewMockTopoClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil)
-	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topodevice.GetResponse{Device: device1}, nil)
+	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1)}, nil)
 
 	store := topoStore{
 		client: client,
@@ -96,15 +98,15 @@ func TestUpdateDevice(t *testing.T) {
 		Version:  "1.0.0",
 	}
 
-	protocolState := new(topodevice.ProtocolState)
-	protocolState.Protocol = topodevice.Protocol_GNMI
-	protocolState.ConnectivityState = topodevice.ConnectivityState_REACHABLE
-	protocolState.ChannelState = topodevice.ChannelState_CONNECTED
-	protocolState.ServiceState = topodevice.ServiceState_AVAILABLE
+	protocolState := new(topo.ProtocolState)
+	protocolState.Protocol = topo.Protocol_GNMI
+	protocolState.ConnectivityState = topo.ConnectivityState_REACHABLE
+	protocolState.ChannelState = topo.ChannelState_CONNECTED
+	protocolState.ServiceState = topo.ServiceState_AVAILABLE
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
 
-	client := NewMockDeviceServiceClient(ctrl)
-	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topodevice.GetResponse{Device: device1}, nil)
+	client := mocks.NewMockTopoClient(ctrl)
+	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1)}, nil)
 
 	store := topoStore{
 		client: client,
@@ -114,15 +116,15 @@ func TestUpdateDevice(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, device1.ID, device.ID)
 
-	client.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topodevice.UpdateResponse{Device: device1Connected}, nil)
+	client.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topo.UpdateResponse{Object: topodevice.ToObject(device1Connected)}, nil)
 
 	deviceUpdated, err := store.Update(device1Connected)
 	assert.NoError(t, err)
 	assert.Equal(t, deviceUpdated.ID, device1Connected.ID)
-	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, topodevice.Protocol_GNMI)
-	assert.Equal(t, deviceUpdated.Protocols[0].ConnectivityState, topodevice.ConnectivityState_REACHABLE)
-	assert.Equal(t, deviceUpdated.Protocols[0].ChannelState, topodevice.ChannelState_CONNECTED)
-	assert.Equal(t, deviceUpdated.Protocols[0].ServiceState, topodevice.ServiceState_AVAILABLE)
+	assert.Equal(t, deviceUpdated.Protocols[0].Protocol, topo.Protocol_GNMI)
+	assert.Equal(t, deviceUpdated.Protocols[0].ConnectivityState, topo.ConnectivityState_REACHABLE)
+	assert.Equal(t, deviceUpdated.Protocols[0].ChannelState, topo.ChannelState_CONNECTED)
+	assert.Equal(t, deviceUpdated.Protocols[0].ServiceState, topo.ServiceState_AVAILABLE)
 
 }
 

@@ -36,8 +36,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
-	"github.com/onosproject/onos-config/pkg/store/change/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
 )
 
 const (

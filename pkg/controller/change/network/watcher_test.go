@@ -20,13 +20,15 @@ import (
 	types "github.com/onosproject/onos-api/go/onos/config"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
+	"github.com/onosproject/onos-api/go/onos/topo"
+	devicetopo "github.com/onosproject/onos-config/pkg/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-config/pkg/test/mocks"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
-	devicetopo "github.com/onosproject/onos-config/pkg/device"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
@@ -154,54 +156,58 @@ func TestDeviceWatcher(t *testing.T) {
 		},
 	}
 
-	deviceClient := NewMockDeviceServiceClient(ctrl)
-	deviceClient.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *devicetopo.ListRequest) (devicetopo.DeviceService_ListClient, error) {
-		listClient := NewMockDeviceService_ListClient(ctrl)
-		listClient.EXPECT().Recv().Return(&devicetopo.ListResponse{
-			Type: devicetopo.ListResponse_NONE,
-			Device: &devicetopo.Device{
-				ID:      devicetopo.ID("device-1"),
-				Type:    "DeviceSim",
-				Version: "1.0.0",
-				Protocols: []*devicetopo.ProtocolState{
-					{
-						Protocol:          devicetopo.Protocol_GNMI,
-						ChannelState:      devicetopo.ChannelState_CONNECTED,
-						ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+	deviceClient := mocks.NewMockTopoClient(ctrl)
+	deviceClient.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *topo.WatchRequest) (topo.Topo_WatchClient, error) {
+		listClient := mocks.NewMockTopo_WatchClient(ctrl)
+		listClient.EXPECT().Recv().Return(&topo.WatchResponse{
+			Event: topo.Event{
+				Type: topo.EventType_NONE,
+				Object: *devicetopo.ToObject(&devicetopo.Device{
+					ID:      "device-1",
+					Type:    "DeviceSim",
+					Version: "1.0.0",
+					Protocols: []*topo.ProtocolState{
+						{
+							Protocol:          topo.Protocol_GNMI,
+							ChannelState:      topo.ChannelState_CONNECTED,
+							ConnectivityState: topo.ConnectivityState_REACHABLE,
+						},
 					},
-				},
+				}),
 			},
 		}, nil)
-		listClient.EXPECT().Recv().Return(&devicetopo.ListResponse{
-			Type: devicetopo.ListResponse_NONE,
-			Device: &devicetopo.Device{
-				ID:      devicetopo.ID("device-2"),
-				Type:    "DeviceSim",
-				Version: "1.0.0",
-				Protocols: []*devicetopo.ProtocolState{
-					{
-						Protocol:          devicetopo.Protocol_GNMI,
-						ChannelState:      devicetopo.ChannelState_CONNECTED,
-						ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+		listClient.EXPECT().Recv().Return(&topo.WatchResponse{
+			Event: topo.Event{
+				Type: topo.EventType_NONE,
+				Object: *devicetopo.ToObject(&devicetopo.Device{
+					ID:      "device-2",
+					Type:    "DeviceSim",
+					Version: "1.0.0",
+					Protocols: []*topo.ProtocolState{
+						{
+							Protocol:          topo.Protocol_GNMI,
+							ChannelState:      topo.ChannelState_CONNECTED,
+							ConnectivityState: topo.ConnectivityState_REACHABLE,
+						},
 					},
-				},
+				}),
 			},
 		}, nil)
 		listClient.EXPECT().Recv().Return(nil, io.EOF)
 		return listClient, nil
 	}).AnyTimes()
-	deviceClient.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *devicetopo.GetRequest) (*devicetopo.GetResponse, error) {
-		return &devicetopo.GetResponse{
-			Device: &devicetopo.Device{
-				ID: request.ID,
-				Protocols: []*devicetopo.ProtocolState{
+	deviceClient.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *topo.GetRequest) (*topo.GetResponse, error) {
+		return &topo.GetResponse{
+			Object: devicetopo.ToObject(&devicetopo.Device{
+				ID: devicetopo.ID(request.ID),
+				Protocols: []*topo.ProtocolState{
 					{
-						Protocol:          devicetopo.Protocol_GNMI,
-						ChannelState:      devicetopo.ChannelState_CONNECTED,
-						ConnectivityState: devicetopo.ConnectivityState_REACHABLE,
+						Protocol:          topo.Protocol_GNMI,
+						ChannelState:      topo.ChannelState_CONNECTED,
+						ConnectivityState: topo.ConnectivityState_REACHABLE,
 					},
 				},
-			},
+			}),
 		}, nil
 	}).AnyTimes()
 	deviceStore, err := devicestore.NewStore(deviceClient)
