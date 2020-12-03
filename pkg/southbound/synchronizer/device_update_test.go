@@ -70,14 +70,13 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 		Attributes: make(map[string]string),
 	}
 
-	allMocks.TopoClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1Disconnected)}, nil).AnyTimes()
-
 	protocolState := new(topo.ProtocolState)
 	protocolState.Protocol = topo.Protocol_GNMI
 	device1Disconnected.Protocols = append(device1Disconnected.Protocols, protocolState)
 	device1Disconnected.Attributes[mastershipTermKey] = "0"
 
 	allMocks.TopoClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topo.UpdateResponse{Object: topodevice.ToObject(device1Disconnected)}, nil).AnyTimes()
+	allMocks.TopoClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1Disconnected)}, nil).AnyTimes()
 
 	state, err := allMocks.MastershipStore.GetMastership(device1Disconnected.ID)
 	assert.NilError(t, err)
@@ -110,14 +109,13 @@ func TestUpdateConnectedDevice(t *testing.T) {
 		Attributes: make(map[string]string),
 	}
 
-	allMocks.TopoClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1Connected)}, nil).AnyTimes()
-
 	protocolState := new(topo.ProtocolState)
 	protocolState.Protocol = topo.Protocol_GNMI
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
 	device1Connected.Attributes[mastershipTermKey] = "0"
 
 	allMocks.TopoClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topo.UpdateResponse{Object: topodevice.ToObject(device1Connected)}, nil).AnyTimes()
+	allMocks.TopoClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1Connected)}, nil).AnyTimes()
 
 	state, err := allMocks.MastershipStore.GetMastership(device1Connected.ID)
 	assert.NilError(t, err)

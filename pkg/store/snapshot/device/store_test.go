@@ -141,7 +141,7 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	err = store1.Delete(snapshot2)
 	assert.NoError(t, err)
 	snapshot2, err = store2.Get("snapshot-2:device-2")
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, snapshot2)
 
 	snapshot := &devicesnapshot.DeviceSnapshot{

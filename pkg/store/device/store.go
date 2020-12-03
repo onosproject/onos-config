@@ -100,9 +100,11 @@ func (s *topoStore) List(ch chan<- *device.Device) error {
 		return err
 	}
 
-	for _, object := range resp.Objects {
-		ch <- device.ToDevice(&object)
-	}
+	go func() {
+		for _, object := range resp.Objects {
+			ch <- device.ToDevice(&object)
+		}
+	}()
 	return nil
 }
 
