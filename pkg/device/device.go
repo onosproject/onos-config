@@ -115,6 +115,7 @@ func ToObject(device *Device) *topo.Object {
 		ID:         topo.ID(device.ID),
 		Revision:   device.Revision,
 		Attributes: device.Attributes,
+		Type:       topo.Object_ENTITY,
 		Obj: &topo.Object_Entity{
 			Entity: &topo.Entity{
 				KindID:    "none",
@@ -140,9 +141,9 @@ func ToDevice(object *topo.Object) *Device {
 	d := &Device{
 		ID:         ID(object.ID),
 		Revision:   object.Revision,
+		Protocols:  object.GetEntity().Protocols,
 		Type:       Type(object.Attributes[topo.Type]),
 		Role:       Role(object.Attributes[topo.Role]),
-		Protocols:  object.GetEntity().Protocols,
 		Address:    object.Attributes[topo.Address],
 		Target:     object.Attributes[topo.Target],
 		Version:    object.Attributes[topo.Version],
