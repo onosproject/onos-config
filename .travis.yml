@@ -31,14 +31,6 @@ jobs:
       if: type == pull_request ||  fork == false
       script:
         - make coverage
-    - stage: Integration Tests
-      if: type != pull_request && fork == false
-      script:
-        - sh ../build-tools/build/travis/trigger-travis onosproject onos-test master "`git rev-parse --short HEAD`" $TRAVIS_ACCESS_TOKEN
-    - stage: CLI Build
-      if: type != pull_request && fork == false
-      script:
-        - sh ../build-tools/build/travis/trigger-travis onosproject onos-cli master "`git rev-parse --short HEAD`" $TRAVIS_ACCESS_TOKEN
     - stage: Release
       if: type != pull_request && fork == false
       script:

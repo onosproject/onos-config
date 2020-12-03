@@ -3,6 +3,7 @@ module github.com/onosproject/onos-config
 go 1.14
 
 require (
+	cloud.google.com/go v0.43.0 // indirect
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/atomix/go-client v0.3.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
@@ -10,9 +11,11 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.3
+	github.com/google/pprof v0.0.0-20190723021845-34ac40c74b70 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
+	github.com/kr/pty v1.1.8 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20201130213019-492043aed0df
@@ -33,8 +36,8 @@ require (
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.5.1
 	go.uber.org/multierr v1.4.0 // indirect
+	golang.org/x/mobile v0.0.0-20190806162312-597adff16ade // indirect
 	google.golang.org/grpc v1.33.2
-	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.17.3
