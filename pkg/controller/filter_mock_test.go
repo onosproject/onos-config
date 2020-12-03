@@ -7,7 +7,7 @@ package controller
 import (
 	gomock "github.com/golang/mock/gomock"
 	types "github.com/onosproject/onos-api/go/onos/config"
-	device "github.com/onosproject/onos-topo/api/device"
+	device "github.com/onosproject/onos-config/pkg/device"
 	reflect "reflect"
 )
 
