@@ -149,7 +149,7 @@ func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*devicechang
 		}
 		// These should match the assignments made in changevalue.go
 	} else {
-		json, err := store.BuildTree(configValues, false)
+		json, err := store.BuildTree(configValues, true)
 		if err != nil {
 			return nil, err
 		}
