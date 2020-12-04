@@ -32,6 +32,8 @@ const (
 
 // BuildTree is a function that takes an ordered array of ConfigValues and
 // produces a structured formatted JSON tree
+// For YANG the only type of float value is deicmal, which is represented as a
+// string - therefore all float value must be string in JSON
 func BuildTree(values []*devicechange.PathValue, floatAsStr bool) ([]byte, error) {
 
 	root := make(map[string]interface{})

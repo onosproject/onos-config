@@ -25,7 +25,9 @@ const testJSON1 = `{
   "cont1a": {
     "cont2a": {
       "leaf2a": 12,
+      "leaf2b": "1.141590",
       "leaf2c": "myvalue1a2c",
+      "leaf2d": "1.14159",
       "leaf2f": "YXMgYnl0ZSBhcnJheQ==",
       "leaf2g": true
     },
@@ -78,12 +80,12 @@ func setUpTree() {
 	configValues = make([]*devicechange.PathValue, 13)
 	configValues[0] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: devicechange.NewTypedValueUint64(ValueLeaf2A12)}
 	configValues[1] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: devicechange.NewTypedValueUint64(ValueLeaf2A12)}
-	//configValues[1] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2B, Value: devicechange.NewTypedValueFloat(ValueLeaf2B114)}
+	configValues[1] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2B, Value: devicechange.NewTypedValueFloat(ValueLeaf2B114)}
 
 	configValues[2] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: devicechange.NewTypedValueString(ValueLeaf2CMyValue)}
 	configValues[3] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: devicechange.NewTypedValueString(ValueLeaf2CMyValue)}
 	configValues[4] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: devicechange.NewTypedValueString(ValueLeaf2CMyValue)}
-	//configValues[3] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2D, Value: devicechange.NewTypedValueDecimal64(ValueLeaf2D114, 5)}
+	configValues[3] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2D, Value: devicechange.NewTypedValueDecimal64(ValueLeaf2D114, 5)}
 	//configValues[4] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2E, Value: devicechange.NewTypedValueInt64(ValueLeaf2A12)}
 
 	configValues[5] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2F, Value: devicechange.NewTypedValueBytes([]byte(ValueList2A2F))}
@@ -101,7 +103,7 @@ func setUpTree() {
 func Test_BuildTree(t *testing.T) {
 	setUpTree()
 
-	jsonTree, err := BuildTree(configValues, false)
+	jsonTree, err := BuildTree(configValues, true)
 
 	assert.NilError(t, err)
 	assert.Equal(t, testJSON1, string(jsonTree))
