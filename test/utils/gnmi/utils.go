@@ -138,6 +138,12 @@ func NewDevice(simulator *helm.HelmRelease, deviceType string, version string) (
 		TLS: device.TLSConfig{
 			Plain: true,
 		},
+		Protocols: []*topo.ProtocolState{{
+			Protocol:          topo.Protocol_GNMI,
+			ConnectivityState: topo.ConnectivityState_REACHABLE,
+			ChannelState:      topo.ChannelState_DISCONNECTED,
+			ServiceState:      topo.ServiceState_UNKNOWN_SERVICE_STATE,
+		}},
 	}, nil
 }
 
@@ -221,8 +227,10 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 		} else if err != nil {
 			assert.Fail(t, "device stream failed with error: %v", err)
 			return false
-		} else if predicate(device.ToDevice(&response.Event.Object)) {
-			return true
+		} else if response.Event.Object.Type == topo.Object_ENTITY {
+			if predicate(device.ToDevice(&response.Event.Object)) {
+				return true
+			}
 		}
 	}
 }
