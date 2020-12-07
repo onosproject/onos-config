@@ -136,13 +136,14 @@ func NewDevice(simulator *helm.HelmRelease, deviceType string, version string) (
 		Type:    device.Type(deviceType),
 		Version: version,
 		TLS: device.TLSConfig{
-			Plain: true,
+			Plain:    true,
+			Insecure: true,
 		},
 		Protocols: []*topo.ProtocolState{{
-			Protocol: topo.Protocol_GNMI,
-			ConnectivityState: topo.ConnectivityState_REACHABLE,
-			ChannelState: topo.ChannelState_DISCONNECTED,
-			ServiceState: topo.ServiceState_UNKNOWN_SERVICE_STATE,
+			Protocol:          topo.Protocol_GNMI,
+			ConnectivityState: topo.ConnectivityState_UNKNOWN_CONNECTIVITY_STATE,
+			ChannelState:      topo.ChannelState_UNKNOWN_CHANNEL_STATE,
+			ServiceState:      topo.ServiceState_UNKNOWN_SERVICE_STATE,
 		}},
 	}, nil
 }

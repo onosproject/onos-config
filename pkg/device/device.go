@@ -109,6 +109,19 @@ const (
 	ListResponseREMOVED ListResponseType = 3
 )
 
+func setAttribute(o *topo.Object, k string, v string) {
+	if len(v) > 0 {
+		o.Attributes[k] = v
+	}
+}
+
+func flag(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
 // ToObject converts topology object entity to local device
 func ToObject(device *Device) *topo.Object {
 	o := &topo.Object{
@@ -118,7 +131,7 @@ func ToObject(device *Device) *topo.Object {
 		Type:       topo.Object_ENTITY,
 		Obj: &topo.Object_Entity{
 			Entity: &topo.Entity{
-				KindID:    topo.ID(device.Attributes["kind"]),
+				KindID:    topo.ID(device.Type),
 				Protocols: device.Protocols,
 			},
 		},
@@ -127,28 +140,39 @@ func ToObject(device *Device) *topo.Object {
 	if o.Attributes == nil {
 		o.Attributes = make(map[string]string)
 	}
+	setAttribute(o, topo.Type, string(device.Type))
+	setAttribute(o, topo.Role, string(device.Role))
+	setAttribute(o, topo.Address, device.Address)
+	setAttribute(o, topo.Target, device.Target)
+	setAttribute(o, topo.Version, device.Version)
+	setAttribute(o, topo.TLSInsecure, flag(device.TLS.Insecure))
+	setAttribute(o, topo.TLSPlain, flag(device.TLS.Plain))
+	setAttribute(o, topo.TLSInsecure, device.TLS.Key)
+	setAttribute(o, topo.TLSInsecure, device.TLS.CaCert)
+	setAttribute(o, topo.TLSInsecure, device.TLS.Cert)
 
-	o.Attributes[topo.Type] = string(device.Type)
-	o.Attributes[topo.Role] = string(device.Role)
-	o.Attributes[topo.Address] = device.Address
-	o.Attributes[topo.Target] = device.Target
-	o.Attributes[topo.Version] = device.Version
 	return o
 }
 
 // ToDevice converts local device structure to topology object entity
 func ToDevice(object *topo.Object) *Device {
 	d := &Device{
-		ID:         ID(object.ID),
-		Revision:   object.Revision,
-		Protocols:  object.GetEntity().Protocols,
-		Type:       Type(object.Attributes[topo.Type]),
-		Role:       Role(object.Attributes[topo.Role]),
-		Address:    object.Attributes[topo.Address],
-		Target:     object.Attributes[topo.Target],
-		Version:    object.Attributes[topo.Version],
+		ID:        ID(object.ID),
+		Revision:  object.Revision,
+		Protocols: object.GetEntity().Protocols,
+		Type:      Type(object.GetEntity().KindID),
+		Role:      Role(object.Attributes[topo.Role]),
+		Address:   object.Attributes[topo.Address],
+		Target:    object.Attributes[topo.Target],
+		Version:   object.Attributes[topo.Version],
+		TLS: TLSConfig{
+			Plain:    object.Attributes[topo.TLSPlain] == "true",
+			Insecure: object.Attributes[topo.TLSInsecure] == "true",
+			Cert:     object.Attributes[topo.TLSCert],
+			CaCert:   object.Attributes[topo.TLSCaCert],
+			Key:      object.Attributes[topo.TLSKey],
+		},
 		Attributes: object.Attributes,
 	}
-	d.Attributes["kind"] = string(object.GetEntity().KindID)
 	return d
 }
