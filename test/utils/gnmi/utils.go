@@ -136,7 +136,8 @@ func NewDevice(simulator *helm.HelmRelease, deviceType string, version string) (
 		Type:    device.Type(deviceType),
 		Version: version,
 		TLS: device.TLSConfig{
-			Plain: true,
+			Plain:    true,
+			Insecure: true,
 		},
 		Protocols: []*topo.ProtocolState{{
 			Protocol:          topo.Protocol_GNMI,
