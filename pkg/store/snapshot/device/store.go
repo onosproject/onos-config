@@ -16,7 +16,6 @@ package device
 
 import (
 	"context"
-	"github.com/atomix/go-client/pkg/client/errors"
 	"github.com/atomix/go-client/pkg/client/map"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
@@ -26,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"time"
 )
