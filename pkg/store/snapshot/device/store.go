@@ -316,7 +316,7 @@ func (s *atomixStore) Load(deviceID device.VersionedID) (*devicesnapshot.Snapsho
 	defer cancel()
 
 	entry, err := s.snapshots.Get(ctx, string(deviceID))
-	if err != nil && !errors.IsNotFound(err) {
+	if err != nil && !errors.IsNotFound(errors.FromAtomix(err)) {
 		return nil, err
 	} else if entry == nil {
 		return nil, nil

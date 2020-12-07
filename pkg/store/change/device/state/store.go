@@ -15,7 +15,6 @@
 package state
 
 import (
-	"github.com/atomix/go-client/pkg/client/errors"
 	"github.com/cenkalti/backoff"
 	changetype "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -24,6 +23,7 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapshotstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"sort"
 	"strings"
 	"sync"
@@ -134,7 +134,7 @@ func (s *deviceChangeStoreStateStore) processNetworkChange(networkChange *networ
 				state:    make(map[string]*devicechange.TypedValue),
 			}
 			snapshot, err := s.snapshotStore.Load(deviceChange.GetVersionedDeviceID())
-			if err != nil && !errors.IsNotFound(err) {
+			if err != nil && !errors.IsNotFound(errors.FromAtomix(err)) {
 				return err
 			} else if snapshot != nil {
 				for _, value := range snapshot.Values {
@@ -173,7 +173,7 @@ func (s *deviceChangeStoreStateStore) processNetworkRollback(networkChange *netw
 			state:    make(map[string]*devicechange.TypedValue),
 		}
 		snapshot, err := s.snapshotStore.Load(devChange.GetVersionedDeviceID())
-		if err != nil && !errors.IsNotFound(err) {
+		if err != nil && !errors.IsNotFound(errors.FromAtomix(err)) {
 			listCtx.Close()
 			return err
 		} else if snapshot != nil {
