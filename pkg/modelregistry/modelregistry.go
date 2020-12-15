@@ -154,6 +154,21 @@ type ModelRegistry struct {
 	mu       sync.RWMutex
 }
 
+// GetPlugins gets a list of model plugins
+func (r *ModelRegistry) GetPlugins() ([]*ModelPlugin, error) {
+	if err := r.loadPlugins(); err != nil {
+		return nil, err
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	plugins := make([]*ModelPlugin, 0, len(r.plugins))
+	for _, plugin := range r.plugins {
+		plugins = append(plugins, plugin)
+	}
+	return plugins, nil
+}
+
 // GetPlugin gets a model plugin by name
 func (r *ModelRegistry) GetPlugin(name string) (*ModelPlugin, error) {
 	plugin, err := r.getPlugin(name)

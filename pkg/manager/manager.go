@@ -116,6 +116,11 @@ func (m *Manager) setTargetGenerator(targetGen func() southbound.TargetIf) {
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
 
+	// Load the model plugins
+	if _, err := m.ModelRegistry.GetPlugins(); err != nil {
+		log.Fatal(err)
+	}
+
 	// Start the NetworkChange controller
 	errNetworkCtrl := m.networkChangeController.Start()
 	if errNetworkCtrl != nil {
