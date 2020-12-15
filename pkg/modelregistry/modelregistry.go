@@ -17,7 +17,8 @@ package modelregistry
 import (
 	"fmt"
 	"github.com/onosproject/onos-config-model-go/pkg/model"
-	"github.com/onosproject/onos-config-model-go/pkg/registry"
+	"github.com/onosproject/onos-config-model-go/pkg/model/plugin"
+	"github.com/onosproject/onos-config-model-go/pkg/model/registry"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"path/filepath"
 	"regexp"
@@ -134,8 +135,8 @@ func (rw ReadWritePathMap) TypeForPath(path string) (devicechange.ValueType, err
 
 // ModelPlugin is a config model
 type ModelPlugin struct {
-	Info           model.ConfigModelInfo
-	Model          model.ConfigModel
+	Info           configmodel.ModelInfo
+	Model          configmodel.ConfigModel
 	ReadOnlyPaths  ReadOnlyPathMap
 	ReadWritePaths ReadWritePathMap
 }
@@ -143,14 +144,14 @@ type ModelPlugin struct {
 // NewModelRegistry creates a new model registry
 func NewModelRegistry() *ModelRegistry {
 	return &ModelRegistry{
-		registry: registry.NewRegistry(registry.Config{Path: registryPath}),
+		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: registryPath}),
 		plugins:  make(map[string]*ModelPlugin),
 	}
 }
 
 // ModelRegistry is a registry of config models
 type ModelRegistry struct {
-	registry *registry.ConfigModelRegistry
+	registry *modelregistry.ConfigModelRegistry
 	plugins  map[string]*ModelPlugin
 	mu       sync.RWMutex
 }
@@ -209,24 +210,23 @@ func (r *ModelRegistry) loadPlugins() error {
 	for _, modelInfo := range modelInfos {
 		modelName := utils.ToModelName(devicetype.Type(modelInfo.Name), devicetype.Version(modelInfo.Version))
 		if _, ok := r.plugins[modelName]; !ok {
-			model, err := model.Load(filepath.Join(registryPath, modelInfo.Plugin.File))
+			plugin, err := modelplugin.Load(filepath.Join(registryPath, modelInfo.Plugin.File))
 			if err != nil {
 				return err
 			}
-
+			model := plugin.Model()
 			schema, err := model.Schema()
 			if err != nil {
 				return err
 			}
 
 			readOnlyPaths, readWritePaths := ExtractPaths(schema["Device"], yang.TSUnset, "", "")
-			plugin := &ModelPlugin{
+			r.plugins[modelName] = &ModelPlugin{
 				Info:           modelInfo,
 				Model:          model,
 				ReadOnlyPaths:  readOnlyPaths,
 				ReadWritePaths: readWritePaths,
 			}
-			r.plugins[modelName] = plugin
 		}
 	}
 	return nil
