@@ -36,7 +36,6 @@ require (
 	go.uber.org/multierr v1.4.0 // indirect
 	golang.org/x/tools v0.0.0-20200522201501-cb1345f3a375 // indirect
 	google.golang.org/grpc v1.33.2
-	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.17.3
