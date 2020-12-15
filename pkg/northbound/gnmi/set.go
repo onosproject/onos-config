@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"strings"
 	"time"
 
@@ -277,9 +278,9 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 		}
 		// Iterate through configs to find match for target
 		for _, info := range infos {
-			rwPaths, ok = manager.GetManager().ModelRegistry.
-				ModelReadWritePaths[utils.ToModelName(info.Type, info.Version)]
-			if ok {
+			plugin, err := manager.GetManager().ModelRegistry.GetPlugin(utils.ToModelName(info.Type, info.Version))
+			if err == nil {
+				rwPaths = plugin.ReadWritePaths
 				break
 			}
 		}
@@ -338,35 +339,25 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 
 	modelreg := manager.GetManager().ModelRegistry
 
-	// This ignores versions - if it's RO in one version will be regarded
-	// as RO in all versions - very unlikely that modelRoPaths would change
-	// YANG items from `config false` to `config true` across versions
-	modelRoPaths, ok := modelreg.
-		ModelReadOnlyPaths[utils.ToModelName(deviceType, version)]
-	if !ok {
-		log.Warnf("Cannot check for Read Only paths for %s %s because "+
-			"Model Plugin not available - continuing", deviceType, version)
-		return nil
-	}
-
-	modelRwPaths, ok := modelreg.
-		ModelReadWritePaths[utils.ToModelName(deviceType, version)]
-	if !ok {
-		log.Warnf("Cannot check for Read Only paths for %s %s because "+
-			"Model Plugin not available - continuing", deviceType, version)
-		return nil
+	plugin, err := modelreg.GetPlugin(utils.ToModelName(deviceType, version))
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Warnf("Model Plugin not available", deviceType, version)
+			return nil
+		}
+		return err
 	}
 
 	// Now iterate through the consolidated set of targets and see if any are read-only paths
 	for path := range targetUpdates { // map - just need the key
-		if err := compareRoPaths(path, modelRoPaths, modelRwPaths); err != nil {
+		if err := compareRoPaths(path, plugin.ReadOnlyPaths, plugin.ReadWritePaths); err != nil {
 			return fmt.Errorf("update %s", err)
 		}
 	}
 
 	// Now iterate through the consolidated set of targets and see if any are read-only paths
 	for _, path := range targetRemoves { // map - just need the key
-		if err := compareRoPaths(path, modelRoPaths, modelRwPaths); err != nil {
+		if err := compareRoPaths(path, plugin.ReadOnlyPaths, plugin.ReadWritePaths); err != nil {
 			return fmt.Errorf("remove %s", err)
 		}
 	}

@@ -16,6 +16,7 @@ package manager
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"sort"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -39,13 +40,16 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 		return err
 	}
 	modelName := utils.ToModelName(deviceType, version)
-	deviceModelYgotPlugin, ok := m.ModelRegistry.ModelPlugins[modelName]
-	if !ok {
-		log.Warn("No model ", modelName, " available as a plugin")
-		if !mgr.allowUnvalidatedConfig {
-			return fmt.Errorf("no model %s available as a plugin", modelName)
+	deviceModelYgotPlugin, err := m.ModelRegistry.GetPlugin(modelName)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Warn("No model ", modelName, " available as a plugin")
+			if !mgr.allowUnvalidatedConfig {
+				return fmt.Errorf("no model %s available as a plugin", modelName)
+			}
+			return nil
 		}
-		return nil
+		return err
 	}
 
 	configValues, err := m.DeviceStateStore.Get(devicetype.NewVersionedID(deviceName, version), lastWrite)
@@ -82,12 +86,12 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 		return err
 	}
 
-	ygotModel, err := deviceModelYgotPlugin.UnmarshalConfigValues(jsonTree)
+	ygotModel, err := deviceModelYgotPlugin.Model.Unmarshaller().Unmarshal(jsonTree)
 	if err != nil {
 		log.Error("Error unmarshaling JSON tree in to YGOT model ", err, string(jsonTree))
 		return err
 	}
-	err = deviceModelYgotPlugin.Validate(ygotModel)
+	err = deviceModelYgotPlugin.Model.Validator().Validate(ygotModel)
 	if err != nil {
 		return err
 	}

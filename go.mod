@@ -20,6 +20,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20201130213019-492043aed0df
 	github.com/onosproject/helmit v0.6.8
 	github.com/onosproject/onos-api/go v0.7.0
+	github.com/onosproject/onos-config-model-go v0.1.1
 	github.com/onosproject/onos-lib-go v0.7.0
 	github.com/onosproject/onos-test v0.6.4
 	github.com/onosproject/onos-topo v0.7.0
@@ -34,7 +35,8 @@ require (
 	github.com/stretchr/testify v1.5.1
 	go.uber.org/multierr v1.4.0 // indirect
 	google.golang.org/grpc v1.33.2
-	gopkg.in/yaml.v2 v2.2.8
+	google.golang.org/protobuf v1.25.0 // indirect
+	gopkg.in/yaml.v2 v2.3.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.17.3
 )
