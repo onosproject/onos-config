@@ -532,9 +532,6 @@ github.com/onosproject/onos-api/go v0.7.2 h1:MduxbuoAYFYT5BhQZ/eqpIz4ZKJRIedog1y
 github.com/onosproject/onos-api/go v0.7.2/go.mod h1:HLfWE9aouIeOmi4soR6bxK2cZ33NbnFMvdyv9fmjaSg=
 github.com/onosproject/onos-config-model v0.1.0 h1:gfRB2/vF/QyAjzSHEPNXDSTfZMb7wjEyLqNDLiT/Huk=
 github.com/onosproject/onos-config-model v0.1.0/go.mod h1:laYWqKx328pOHB2TWMZzXrZF6OFakuIsc4TTBgjSisY=
-github.com/onosproject/onos-lib-go v0.6.25/go.mod h1:ttkK+fV2CULZFHiq6FBZ69i7/Nymi1Wow1DNy0Ik/2o=
-github.com/onosproject/onos-lib-go v0.7.0 h1:+BxQc0K4nej8qsciArvk6QC3Do6VKQevbIegpR3Kil8=
-github.com/onosproject/onos-lib-go v0.7.0/go.mod h1:ttkK+fV2CULZFHiq6FBZ69i7/Nymi1Wow1DNy0Ik/2o=
 github.com/onosproject/onos-lib-go v0.7.3 h1:Ya+PosD8MkNNCPR4fs9j/f5gGCV7Y1yFyZZ9e4aX3ig=
 github.com/onosproject/onos-lib-go v0.7.3/go.mod h1:ttkK+fV2CULZFHiq6FBZ69i7/Nymi1Wow1DNy0Ik/2o=
 github.com/onosproject/onos-test v0.6.4 h1:ocJhMv5mZ5RsojkhBUadE68Q6uSgBZpyDDjnwOPmu6g=
@@ -617,6 +614,7 @@ github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563 h1:dY6ETXrvDG7
 github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
+github.com/rogpeppe/go-internal v1.3.0 h1:RR9dF3JtopPvtkroDZuVD7qquD0bnHlKSqaQhgwt8yk=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/russross/blackfriday v1.5.2 h1:HyvC0ARfnZBqnXwABFeSZHpKvJHJJfPz81GNueLj0oo=
 github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=

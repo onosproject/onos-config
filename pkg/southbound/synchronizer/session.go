@@ -159,7 +159,7 @@ func (s *Session) synchronize() error {
 		}
 	}
 	var mReadOnlyPaths modelregistry.ReadOnlyPathMap
-	mStateGetMode := model.GetStateOpState // default
+	mStateGetMode := configmodel.GetStateOpState // default
 	if plugin != nil {
 		mReadOnlyPaths = plugin.ReadOnlyPaths
 		mStateGetMode = plugin.Model.GetStateMode()
@@ -186,10 +186,10 @@ func (s *Session) synchronize() error {
 	//spawning two go routines to propagate changes and to get operational state
 	//go sync.syncConfigEventsToDevice(target, respChan)
 	s.deviceResponseChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
-	if sync.getStateMode == model.GetStateOpState {
+	if sync.getStateMode == configmodel.GetStateOpState {
 		go sync.syncOperationalStateByPartition(ctx, s.target, s.deviceResponseChan)
-	} else if sync.getStateMode == model.GetStateExplicitRoPaths ||
-		sync.getStateMode == model.GetStateExplicitRoPathsExpandWildcards {
+	} else if sync.getStateMode == configmodel.GetStateExplicitRoPaths ||
+		sync.getStateMode == configmodel.GetStateExplicitRoPathsExpandWildcards {
 		go sync.syncOperationalStateByPaths(ctx, s.target, s.deviceResponseChan)
 	}
 	return nil

@@ -55,14 +55,14 @@ type Synchronizer struct {
 	operationalCache     devicechange.TypedValueMap
 	operationalCacheLock *syncPrimitives.RWMutex
 	encoding             gnmi.Encoding
-	getStateMode         model.GetStateMode
+	getStateMode         configmodel.GetStateMode
 }
 
 // New builds a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
 func New(context context.Context,
 	device *topodevice.Device, opStateChan chan<- events.OperationalStateEvent,
 	errChan chan<- events.DeviceResponse, opStateCache devicechange.TypedValueMap,
-	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode model.GetStateMode,
+	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode configmodel.GetStateMode,
 	opStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store) (*Synchronizer, error) {
 	sync := &Synchronizer{
 		Context:              context,
@@ -163,7 +163,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 	log.Infof("Getting state by %d ReadOnly paths for %s", len(sync.modelReadOnlyPaths), string(sync.key))
 	getPaths := make([]*gnmi.Path, 0)
 	for _, path := range sync.modelReadOnlyPaths.JustPaths() {
-		if sync.getStateMode == model.GetStateExplicitRoPathsExpandWildcards &&
+		if sync.getStateMode == configmodel.GetStateExplicitRoPathsExpandWildcards &&
 			strings.Contains(path, "*") {
 			// Don't add in wildcards here - they will be expanded later
 			continue
@@ -178,7 +178,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 		getPaths = append(getPaths, gnmiPath)
 	}
 
-	if sync.getStateMode == model.GetStateExplicitRoPathsExpandWildcards {
+	if sync.getStateMode == configmodel.GetStateExplicitRoPathsExpandWildcards {
 		ewStringPaths := make(map[string]interface{})
 		ewGetPaths := make([]*gnmi.Path, 0)
 		for roPath := range sync.modelReadOnlyPaths {
