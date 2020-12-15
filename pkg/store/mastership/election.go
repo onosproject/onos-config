@@ -17,6 +17,7 @@ package mastership
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"sync"
 	"time"
@@ -50,11 +51,11 @@ func newLocalElection(deviceID topodevice.ID, nodeID cluster.NodeID, address net
 	defer cancel()
 	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 	election, err := election.New(context.Background(), name, []*primitive.Session{session}, election.WithID(string(nodeID)))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 	return newDeviceMastershipElection(deviceID, election)
 }
@@ -110,7 +111,7 @@ func (e *atomixDeviceMastershipElection) DeviceID() topodevice.ID {
 func (e *atomixDeviceMastershipElection) enter() error {
 	ch := make(chan *election.Event)
 	if err := e.election.Watch(context.Background(), ch); err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	// Enter the election to get the current leadership term
@@ -119,7 +120,7 @@ func (e *atomixDeviceMastershipElection) enter() error {
 	cancel()
 	if err != nil {
 		_ = e.election.Close(context.Background())
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	// Set the mastership term
@@ -178,7 +179,11 @@ func (e *atomixDeviceMastershipElection) watch(ch chan<- Mastership) error {
 }
 
 func (e *atomixDeviceMastershipElection) Close() error {
-	return e.election.Close(context.Background())
+	err := e.election.Close(context.Background())
+	if err != nil {
+		return errors.FromAtomix(err)
+	}
+	return nil
 }
 
 var _ deviceMastershipElection = &atomixDeviceMastershipElection{}

@@ -15,6 +15,7 @@
 package device
 
 import (
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"strings"
 
 	types "github.com/onosproject/onos-api/go/onos/config"
@@ -71,6 +72,9 @@ func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 	// Get the snapshot from the store
 	deviceSnapshot, err := r.snapshots.Get(devicesnapshot.ID(id))
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return controller.Result{}, nil
+		}
 		return controller.Result{}, err
 	}
 
@@ -95,8 +99,10 @@ func (r *Reconciler) reconcileMark(deviceSnapshot *devicesnapshot.DeviceSnapshot
 	var prevIndex devicechange.Index
 	prevSnapshot, err := r.snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	if err != nil {
-		return controller.Result{}, err
-	} else if prevSnapshot != nil {
+		if !errors.IsNotFound(err) {
+			return controller.Result{}, err
+		}
+	} else {
 		prevIndex = prevSnapshot.ChangeIndex
 	}
 
@@ -190,8 +196,9 @@ func (r *Reconciler) reconcileDelete(deviceSnapshot *devicesnapshot.DeviceSnapsh
 	// Load the current snapshot
 	snapshot, err := r.snapshots.Load(deviceSnapshot.GetVersionedDeviceID())
 	if err != nil {
-		return controller.Result{}, err
-	} else if snapshot == nil {
+		if !errors.IsNotFound(err) {
+			return controller.Result{}, err
+		}
 		deviceSnapshot.Status.State = snaptype.State_COMPLETE
 		log.Infof("Completing DeviceSnapshot %v", deviceSnapshot)
 		if err := r.snapshots.Update(deviceSnapshot); err != nil {
