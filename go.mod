@@ -35,7 +35,6 @@ require (
 	github.com/stretchr/testify v1.5.1
 	go.uber.org/multierr v1.4.0 // indirect
 	google.golang.org/grpc v1.33.2
-	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.17.3
