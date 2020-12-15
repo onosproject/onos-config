@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"strings"
 	"time"
 
@@ -270,6 +271,25 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 		log.Infof("Processing Json Value in set from base %s: %s",
 			path, string(jsonVal))
 
+		var rwPaths modelregistry.ReadWritePathMap
+		infos := manager.GetManager().DeviceCache.GetDevicesByID(devicetype.ID(target))
+		if len(infos) == 0 {
+			return nil, fmt.Errorf("cannot process JSON payload because "+
+				"device %s is not in DeviceCache", target)
+		}
+		// Iterate through configs to find match for target
+		for _, info := range infos {
+			plugin, err := manager.GetManager().ModelRegistry.GetPlugin(utils.ToModelName(info.Type, info.Version))
+			if err == nil {
+				rwPaths = plugin.ReadWritePaths
+				break
+			}
+		}
+		if rwPaths == nil {
+			return nil, fmt.Errorf("cannot process JSON payload because "+
+				"Model Plugin not available for target %s", target)
+		}
+
 		pathValues, err := jsonvalues.DecomposeJSONWithPaths(path, jsonVal, nil, rwPaths)
 		if err != nil {
 			log.Warnf("Json value in Set could not be parsed %v", err)
@@ -313,14 +333,40 @@ func (s *Server) doDelete(prefix *gnmi.Path, u *gnmi.Path,
 	if prefixPath != "/" {
 		path = fmt.Sprintf("%s%s", prefixPath, path)
 	}
-	// Checks for read only paths
-	_, err := findPathFromModel(path, rwPaths, false)
-	if err != nil {
-		return nil, err
-	}
 	deletes = append(deletes, path)
 	return deletes, nil
+}
 
+// iterate through the updates and check that none of them include a `set` of a
+// readonly attribute - this is done by checking with the relevant model
+func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, version devicetype.Version,
+	targetUpdates devicechange.TypedValueMap, targetRemoves []string) error {
+
+	modelreg := manager.GetManager().ModelRegistry
+
+	plugin, err := modelreg.GetPlugin(utils.ToModelName(deviceType, version))
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Warnf("Model Plugin not available", deviceType, version)
+			return nil
+		}
+		return err
+	}
+
+	// Now iterate through the consolidated set of targets and see if any are read-only paths
+	for path := range targetUpdates { // map - just need the key
+		if err := compareRoPaths(path, plugin.ReadOnlyPaths, plugin.ReadWritePaths); err != nil {
+			return fmt.Errorf("update %s", err)
+		}
+	}
+
+	// Now iterate through the consolidated set of targets and see if any are read-only paths
+	for _, path := range targetRemoves { // map - just need the key
+		if err := compareRoPaths(path, plugin.ReadOnlyPaths, plugin.ReadWritePaths); err != nil {
+			return fmt.Errorf("remove %s", err)
+		}
+	}
+	return nil
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {

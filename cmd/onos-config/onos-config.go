@@ -195,16 +195,6 @@ func main() {
 		time.Sleep(time.Second)
 	}()
 
-	for _, modelPlugin := range modelPlugins {
-		if modelPlugin == "" {
-			continue
-		}
-		_, _, err := mgr.ModelRegistry.RegisterModelPlugin(modelPlugin)
-		if err != nil {
-			log.Fatal("Unable to start onos-config ", err)
-		}
-	}
-
 	mgr.Run()
 
 	err = startServer(*caPath, *keyPath, *certPath, authorization)

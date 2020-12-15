@@ -50,9 +50,13 @@ type Server struct {
 
 // Capabilities implements gNMI Capabilities
 func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) (*gnmi.CapabilityResponse, error) {
+	capabilities, err := manager.GetManager().ModelRegistry.Capabilities()
+	if err != nil {
+		return nil, err
+	}
 	v, _ := getGNMIServiceVersion()
 	return &gnmi.CapabilityResponse{
-		SupportedModels:    manager.GetManager().ModelRegistry.Capabilities(),
+		SupportedModels:    capabilities,
 		SupportedEncodings: []gnmi.Encoding{gnmi.Encoding_JSON},
 		GNMIVersion:        *v,
 	}, nil
