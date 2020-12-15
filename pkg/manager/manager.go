@@ -121,8 +121,10 @@ func (m *Manager) Run() {
 	log.Info("Starting Manager")
 
 	// Load the model plugins
-	if _, err := m.ModelRegistry.GetPlugins(); err != nil {
+	if plugins, err := m.ModelRegistry.GetPlugins(); err != nil {
 		log.Fatal(err)
+	} else {
+		log.Infof("Loaded model registry with %d plugins", len(plugins))
 	}
 
 	// Start the NetworkChange controller
