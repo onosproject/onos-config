@@ -16,6 +16,7 @@ package network
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"time"
 
 	types "github.com/onosproject/onos-api/go/onos/config"
@@ -256,8 +257,10 @@ func (r *Reconciler) completeRunningMark(snapshot *networksnapshot.NetworkSnapsh
 	for _, ref := range snapshot.Refs {
 		deviceSnapshot, err := r.deviceSnapshots.Get(ref.DeviceSnapshotID)
 		if err != nil {
-			return controller.Result{}, err
-		} else if deviceSnapshot != nil && deviceSnapshot.Status.State != snaptypes.State_COMPLETE {
+			if !errors.IsNotFound(err) {
+				return controller.Result{}, err
+			}
+		} else if deviceSnapshot.Status.State != snaptypes.State_COMPLETE {
 			return controller.Result{}, nil
 		}
 	}

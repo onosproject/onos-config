@@ -28,6 +28,7 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -102,13 +103,13 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 
 	// Verify that no device snapshots were created
 	deviceSnapshot1, err := deviceSnapshots.Get(devicesnapshot.GetSnapshotID(types.ID(networkSnapshot.ID), device1, v1))
-	assert.NoError(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceSnapshot1)
 	deviceSnapshot2, err := deviceSnapshots.Get(devicesnapshot.GetSnapshotID(types.ID(networkSnapshot.ID), device2, v1))
-	assert.NoError(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceSnapshot2)
 	deviceSnapshot3, err := deviceSnapshots.Get(devicesnapshot.GetSnapshotID(types.ID(networkSnapshot.ID), device3, v1))
-	assert.NoError(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceSnapshot3)
 
 	// Verify the network snapshot state is RUNNING

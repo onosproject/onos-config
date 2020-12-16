@@ -15,7 +15,6 @@
 package state
 
 import (
-	"errors"
 	"github.com/cenkalti/backoff"
 	changetype "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -24,6 +23,7 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapshotstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"sort"
 	"strings"
 	"sync"
@@ -135,8 +135,10 @@ func (s *deviceChangeStoreStateStore) processNetworkChange(networkChange *networ
 			}
 			snapshot, err := s.snapshotStore.Load(deviceChange.GetVersionedDeviceID())
 			if err != nil {
-				return err
-			} else if snapshot != nil {
+				if !errors.IsNotFound(err) {
+					return err
+				}
+			} else {
 				for _, value := range snapshot.Values {
 					state.update(value)
 				}
@@ -174,8 +176,10 @@ func (s *deviceChangeStoreStateStore) processNetworkRollback(networkChange *netw
 		}
 		snapshot, err := s.snapshotStore.Load(devChange.GetVersionedDeviceID())
 		if err != nil {
-			listCtx.Close()
-			return err
+			if !errors.IsNotFound(err) {
+				listCtx.Close()
+				return err
+			}
 		} else if snapshot != nil {
 			for _, value := range snapshot.Values {
 				state.update(value)
@@ -228,7 +232,7 @@ func (s *deviceChangeStoreStateStore) Get(id devicetype.VersionedID, revision ne
 			select {
 			case <-waiter:
 			case <-time.After(15 * time.Second):
-				return nil, errors.New("get timeout")
+				return nil, errors.NewTimeout("get timeout")
 			}
 			s.mu.RLock()
 			defer s.mu.RUnlock()

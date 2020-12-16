@@ -20,6 +20,7 @@ import (
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -141,7 +142,7 @@ func TestDeviceSnapshotStore(t *testing.T) {
 	err = store1.Delete(snapshot2)
 	assert.NoError(t, err)
 	snapshot2, err = store2.Get("snapshot-2:device-2")
-	assert.NoError(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, snapshot2)
 
 	snapshot := &devicesnapshot.DeviceSnapshot{

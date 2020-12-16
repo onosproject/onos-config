@@ -16,7 +16,7 @@ package leadership
 
 import (
 	"context"
-	"errors"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"sync"
 	"time"
@@ -61,12 +61,12 @@ type Leadership struct {
 func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error) {
 	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	election, err := database.GetElection(context.Background(), primitiveName, election.WithID(string(cluster.Node().ID)))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	store := &atomixStore{
@@ -102,12 +102,12 @@ func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
 	defer cancel()
 	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	election, err := election.New(context.Background(), name, []*primitive.Session{session}, election.WithID(string(nodeID)))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	store := &atomixStore{
@@ -132,7 +132,7 @@ type atomixStore struct {
 func (s *atomixStore) enter() error {
 	ch := make(chan *election.Event)
 	if err := s.election.Watch(context.Background(), ch); err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	// Enter the election to get the current leadership term
@@ -141,7 +141,7 @@ func (s *atomixStore) enter() error {
 	cancel()
 	if err != nil {
 		_ = s.election.Close(context.Background())
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	// Set the leadership term
@@ -161,7 +161,7 @@ func (s *atomixStore) enter() error {
 	}
 
 	_ = s.election.Close(context.Background())
-	return errors.New("failed to enter election")
+	return errors.NewUnavailable("failed to enter election")
 }
 
 // watchElection watches the election events and updates leadership info
@@ -209,5 +209,9 @@ func (s *atomixStore) Watch(ch chan<- Leadership) error {
 }
 
 func (s *atomixStore) Close() error {
-	return s.election.Close(context.Background())
+	err := s.election.Close(context.Background())
+	if err != nil {
+		return errors.FromAtomix(err)
+	}
+	return nil
 }

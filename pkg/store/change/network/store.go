@@ -16,7 +16,7 @@ package network
 
 import (
 	"context"
-	"errors"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"time"
 
@@ -40,12 +40,12 @@ func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error
 	uuid.SetNodeID([]byte(cluster.Node().ID))
 	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	changes, err := database.GetIndexedMap(context.Background(), changesName)
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	return &atomixStore{
@@ -69,11 +69,11 @@ func newLocalStore(address net.Address) (Store, error) {
 	defer cancel()
 	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 	changes, err := indexedmap.New(context.Background(), configsName, []*primitive.Session{session})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	return &atomixStore{
@@ -163,7 +163,7 @@ func (s *atomixStore) Get(id networkchange.ID) (*networkchange.NetworkChange, er
 
 	entry, err := s.changes.Get(ctx, string(id))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	} else if entry == nil {
 		return nil, nil
 	}
@@ -176,7 +176,7 @@ func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.Netw
 
 	entry, err := s.changes.GetIndex(ctx, indexedmap.Index(index))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	} else if entry == nil {
 		return nil, nil
 	}
@@ -189,7 +189,7 @@ func (s *atomixStore) GetPrev(index networkchange.Index) (*networkchange.Network
 
 	entry, err := s.changes.PrevEntry(ctx, indexedmap.Index(index))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	} else if entry == nil {
 		return nil, nil
 	}
@@ -202,7 +202,7 @@ func (s *atomixStore) GetNext(index networkchange.Index) (*networkchange.Network
 
 	entry, err := s.changes.NextEntry(ctx, indexedmap.Index(index))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	} else if entry == nil {
 		return nil, nil
 	}
@@ -214,12 +214,12 @@ func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
 		change.ID = newChangeID()
 	}
 	if change.Revision != 0 {
-		return errors.New("not a new object")
+		return errors.NewInvalid("not a new object")
 	}
 
 	bytes, err := proto.Marshal(change)
 	if err != nil {
-		return err
+		return errors.NewInvalid("change encoding failed: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -227,7 +227,7 @@ func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
 
 	entry, err := s.changes.Append(ctx, string(change.ID), bytes)
 	if err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	change.Index = networkchange.Index(entry.Index)
@@ -239,7 +239,7 @@ func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
 
 func (s *atomixStore) Update(change *networkchange.NetworkChange) error {
 	if change.Revision == 0 {
-		return errors.New("not a stored object")
+		return errors.NewInvalid("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -247,12 +247,12 @@ func (s *atomixStore) Update(change *networkchange.NetworkChange) error {
 
 	bytes, err := proto.Marshal(change)
 	if err != nil {
-		return err
+		return errors.NewInvalid("change encoding failed: %v", err)
 	}
 
 	entry, err := s.changes.Set(ctx, indexedmap.Index(change.Index), string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
 	if err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	change.Revision = networkchange.Revision(entry.Version)
@@ -262,7 +262,7 @@ func (s *atomixStore) Update(change *networkchange.NetworkChange) error {
 
 func (s *atomixStore) Delete(change *networkchange.NetworkChange) error {
 	if change.Revision == 0 {
-		return errors.New("not a stored object")
+		return errors.NewInvalid("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -270,7 +270,7 @@ func (s *atomixStore) Delete(change *networkchange.NetworkChange) error {
 
 	entry, err := s.changes.RemoveIndex(ctx, indexedmap.Index(change.Index), indexedmap.IfVersion(indexedmap.Version(change.Revision)))
 	if err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	change.Revision = 0
@@ -284,7 +284,7 @@ func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) (stream.Conte
 	mapCh := make(chan *indexedmap.Entry)
 	if err := s.changes.Entries(ctx, mapCh); err != nil {
 		cancel()
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	go func() {
@@ -309,7 +309,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event, opts ...WatchOption) (stream
 	mapCh := make(chan *indexedmap.Event)
 	if err := s.changes.Watch(ctx, mapCh, watchOpts...); err != nil {
 		cancel()
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	go func() {
@@ -353,7 +353,7 @@ func (s *atomixStore) Close() error {
 func decodeChange(entry *indexedmap.Entry) (*networkchange.NetworkChange, error) {
 	change := &networkchange.NetworkChange{}
 	if err := proto.Unmarshal(entry.Value, change); err != nil {
-		return nil, err
+		return nil, errors.NewInvalid("change decoding failed: %v", err)
 	}
 	change.ID = networkchange.ID(entry.Key)
 	change.Index = networkchange.Index(entry.Index)

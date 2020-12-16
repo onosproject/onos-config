@@ -16,7 +16,7 @@ package network
 
 import (
 	"context"
-	"errors"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"time"
 
@@ -39,12 +39,12 @@ func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error
 	uuid.SetNodeID([]byte(cluster.Node().ID))
 	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	snapshots, err := database.GetIndexedMap(context.Background(), snapshotsName)
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	return &atomixStore{
@@ -68,11 +68,11 @@ func newLocalStore(address net.Address) (Store, error) {
 	defer cancel()
 	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 	snapshots, err := indexedmap.New(context.Background(), snapshotsName, []*primitive.Session{session})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 	return &atomixStore{
 		snapshots: snapshots,
@@ -121,7 +121,7 @@ func (s *atomixStore) Get(id networksnapshot.ID) (*networksnapshot.NetworkSnapsh
 
 	entry, err := s.snapshots.Get(ctx, string(id))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	} else if entry == nil {
 		return nil, nil
 	}
@@ -134,7 +134,7 @@ func (s *atomixStore) GetByIndex(index networksnapshot.Index) (*networksnapshot.
 
 	entry, err := s.snapshots.GetIndex(ctx, indexedmap.Index(index))
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	} else if entry == nil {
 		return nil, nil
 	}
@@ -146,12 +146,12 @@ func (s *atomixStore) Create(snapshot *networksnapshot.NetworkSnapshot) error {
 		snapshot.ID = newSnapshotID()
 	}
 	if snapshot.Revision != 0 {
-		return errors.New("not a new object")
+		return errors.NewInvalid("not a new object")
 	}
 
 	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
-		return err
+		return errors.NewInvalid("snapshot encoding failed: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -159,7 +159,7 @@ func (s *atomixStore) Create(snapshot *networksnapshot.NetworkSnapshot) error {
 
 	entry, err := s.snapshots.Append(ctx, string(snapshot.ID), bytes)
 	if err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	snapshot.Index = networksnapshot.Index(entry.Index)
@@ -171,7 +171,7 @@ func (s *atomixStore) Create(snapshot *networksnapshot.NetworkSnapshot) error {
 
 func (s *atomixStore) Update(snapshot *networksnapshot.NetworkSnapshot) error {
 	if snapshot.Revision == 0 {
-		return errors.New("not a stored object")
+		return errors.NewInvalid("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -179,12 +179,12 @@ func (s *atomixStore) Update(snapshot *networksnapshot.NetworkSnapshot) error {
 
 	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
-		return err
+		return errors.NewInvalid("snapshot encoding failed: %v", err)
 	}
 
 	entry, err := s.snapshots.Set(ctx, indexedmap.Index(snapshot.Index), string(snapshot.ID), bytes, indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
 	if err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	snapshot.Revision = networksnapshot.Revision(entry.Version)
@@ -194,7 +194,7 @@ func (s *atomixStore) Update(snapshot *networksnapshot.NetworkSnapshot) error {
 
 func (s *atomixStore) Delete(snapshot *networksnapshot.NetworkSnapshot) error {
 	if snapshot.Revision == 0 {
-		return errors.New("not a stored object")
+		return errors.NewInvalid("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -202,7 +202,7 @@ func (s *atomixStore) Delete(snapshot *networksnapshot.NetworkSnapshot) error {
 
 	entry, err := s.snapshots.RemoveIndex(ctx, indexedmap.Index(snapshot.Index), indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
 	if err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	snapshot.Revision = 0
@@ -216,7 +216,7 @@ func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) (stream.C
 	mapCh := make(chan *indexedmap.Entry)
 	if err := s.snapshots.Entries(ctx, mapCh); err != nil {
 		cancel()
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	go func() {
@@ -236,7 +236,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 	mapCh := make(chan *indexedmap.Event)
 	if err := s.snapshots.Watch(ctx, mapCh, indexedmap.WithReplay()); err != nil {
 		cancel()
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	go func() {
@@ -272,13 +272,17 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 }
 
 func (s *atomixStore) Close() error {
-	return s.snapshots.Close(context.Background())
+	err := s.snapshots.Close(context.Background())
+	if err != nil {
+		return errors.FromAtomix(err)
+	}
+	return nil
 }
 
 func decodeSnapshot(entry *indexedmap.Entry) (*networksnapshot.NetworkSnapshot, error) {
 	snapshot := &networksnapshot.NetworkSnapshot{}
 	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
-		return nil, err
+		return nil, errors.NewInvalid("snapshot decoding failed: %v", err)
 	}
 	snapshot.ID = networksnapshot.ID(entry.Key)
 	snapshot.Index = networksnapshot.Index(entry.Index)

@@ -16,7 +16,6 @@ package device
 
 import (
 	"context"
-	"errors"
 	"github.com/atomix/go-client/pkg/client/map"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
@@ -26,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"time"
 )
@@ -72,11 +72,11 @@ func newLocalStore(address net.Address) (Store, error) {
 	defer cancel()
 	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 	deviceSnapshots, err := _map.New(context.Background(), deviceSnapshotsName, []*primitive.Session{session})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	snapshotsName := primitive.Name{
@@ -85,7 +85,7 @@ func newLocalStore(address net.Address) (Store, error) {
 	}
 	snapshots, err := _map.New(context.Background(), snapshotsName, []*primitive.Session{session})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	return &atomixStore{
@@ -141,36 +141,34 @@ func (s *atomixStore) Get(id devicesnapshot.ID) (*devicesnapshot.DeviceSnapshot,
 
 	entry, err := s.deviceSnapshots.Get(ctx, string(id))
 	if err != nil {
-		return nil, err
-	} else if entry == nil {
-		return nil, nil
+		return nil, errors.FromAtomix(err)
 	}
 	return decodeDeviceSnapshot(entry)
 }
 
 func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
 	if snapshot.Revision != 0 {
-		return errors.New("not a new object")
+		return errors.NewInvalid("not a new object")
 	}
 	if snapshot.DeviceID == "" {
-		return errors.New("no device ID specified")
+		return errors.NewInvalid("no device ID specified")
 	}
 	if snapshot.DeviceVersion == "" {
-		return errors.New("no device version specified")
+		return errors.NewInvalid("no device version specified")
 	}
 
 	snapshot.ID = devicesnapshot.GetSnapshotID(snapshot.NetworkSnapshot.ID, snapshot.DeviceID, snapshot.DeviceVersion)
 
 	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
-		return err
+		return errors.NewInvalid("snapshot encoding failed: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	entry, err := s.deviceSnapshots.Put(ctx, string(snapshot.ID), bytes, _map.IfNotSet())
 	if err != nil {
-		return nil
+		return errors.FromAtomix(err)
 	}
 
 	snapshot.Revision = devicesnapshot.Revision(entry.Version)
@@ -181,13 +179,13 @@ func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
 
 func (s *atomixStore) Update(snapshot *devicesnapshot.DeviceSnapshot) error {
 	if snapshot.Revision == 0 {
-		return errors.New("not a stored object")
+		return errors.NewInvalid("not a stored object")
 	}
 	if snapshot.DeviceID == "" {
-		return errors.New("no device ID specified")
+		return errors.NewInvalid("no device ID specified")
 	}
 	if snapshot.DeviceVersion == "" {
-		return errors.New("no device version specified")
+		return errors.NewInvalid("no device version specified")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -196,12 +194,12 @@ func (s *atomixStore) Update(snapshot *devicesnapshot.DeviceSnapshot) error {
 	snapshot.Updated = time.Now()
 	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
-		return err
+		return errors.NewInvalid("snapshot encoding failed: %v", err)
 	}
 
 	entry, err := s.deviceSnapshots.Put(ctx, string(snapshot.ID), bytes, _map.IfVersion(_map.Version(snapshot.Revision)))
 	if err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	snapshot.Revision = devicesnapshot.Revision(entry.Version)
@@ -211,7 +209,7 @@ func (s *atomixStore) Update(snapshot *devicesnapshot.DeviceSnapshot) error {
 
 func (s *atomixStore) Delete(snapshot *devicesnapshot.DeviceSnapshot) error {
 	if snapshot.Revision == 0 {
-		return errors.New("not a stored object")
+		return errors.NewInvalid("not a stored object")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -219,7 +217,7 @@ func (s *atomixStore) Delete(snapshot *devicesnapshot.DeviceSnapshot) error {
 
 	entry, err := s.deviceSnapshots.Remove(ctx, string(snapshot.ID), _map.IfVersion(_map.Version(snapshot.Revision)))
 	if err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 
 	snapshot.Revision = 0
@@ -233,7 +231,7 @@ func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) (stream.Con
 	mapCh := make(chan *_map.Entry)
 	if err := s.deviceSnapshots.Entries(ctx, mapCh); err != nil {
 		cancel()
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	go func() {
@@ -253,7 +251,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 	mapCh := make(chan *_map.Event)
 	if err := s.deviceSnapshots.Watch(ctx, mapCh, _map.WithReplay()); err != nil {
 		cancel()
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	go func() {
@@ -290,10 +288,10 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 
 func (s *atomixStore) Store(snapshot *devicesnapshot.Snapshot) error {
 	if snapshot.DeviceID == "" {
-		return errors.New("no device ID specified")
+		return errors.NewInvalid("no device ID specified")
 	}
 	if snapshot.DeviceVersion == "" {
-		return errors.New("no device version specified")
+		return errors.NewInvalid("no device version specified")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -301,12 +299,12 @@ func (s *atomixStore) Store(snapshot *devicesnapshot.Snapshot) error {
 
 	bytes, err := proto.Marshal(snapshot)
 	if err != nil {
-		return err
+		return errors.NewInvalid("snapshot encoding failed: %v", err)
 	}
 
 	_, err = s.snapshots.Put(ctx, string(snapshot.GetVersionedDeviceID()), bytes)
 	if err != nil {
-		return err
+		return errors.FromAtomix(err)
 	}
 	return nil
 }
@@ -317,9 +315,7 @@ func (s *atomixStore) Load(deviceID device.VersionedID) (*devicesnapshot.Snapsho
 
 	entry, err := s.snapshots.Get(ctx, string(deviceID))
 	if err != nil {
-		return nil, err
-	} else if entry == nil {
-		return nil, nil
+		return nil, errors.FromAtomix(err)
 	}
 	return decodeSnapshot(entry)
 }
@@ -330,7 +326,7 @@ func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Contex
 	mapCh := make(chan *_map.Entry)
 	if err := s.snapshots.Entries(ctx, mapCh); err != nil {
 		cancel()
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	go func() {
@@ -351,7 +347,7 @@ func (s *atomixStore) WatchAll(ch chan<- stream.Event) (stream.Context, error) {
 	mapCh := make(chan *_map.Event)
 	if err := s.snapshots.Watch(ctx, mapCh, _map.WithReplay()); err != nil {
 		cancel()
-		return nil, err
+		return nil, errors.FromAtomix(err)
 	}
 
 	go func() {
@@ -388,13 +384,17 @@ func (s *atomixStore) WatchAll(ch chan<- stream.Event) (stream.Context, error) {
 
 func (s *atomixStore) Close() error {
 	_ = s.deviceSnapshots.Close(context.Background())
-	return s.snapshots.Close(context.Background())
+	err := s.snapshots.Close(context.Background())
+	if err != nil {
+		return errors.FromAtomix(err)
+	}
+	return nil
 }
 
 func decodeDeviceSnapshot(entry *_map.Entry) (*devicesnapshot.DeviceSnapshot, error) {
 	snapshot := &devicesnapshot.DeviceSnapshot{}
 	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
-		return nil, err
+		return nil, errors.NewInvalid("device snapshot decoding failed: %v", err)
 	}
 	snapshot.ID = devicesnapshot.ID(entry.Key)
 	snapshot.Revision = devicesnapshot.Revision(entry.Version)
@@ -406,7 +406,7 @@ func decodeDeviceSnapshot(entry *_map.Entry) (*devicesnapshot.DeviceSnapshot, er
 func decodeSnapshot(entry *_map.Entry) (*devicesnapshot.Snapshot, error) {
 	snapshot := &devicesnapshot.Snapshot{}
 	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
-		return nil, err
+		return nil, errors.NewInvalid("snapshot decoding failed: %v", err)
 	}
 	snapshot.ID = devicesnapshot.ID(entry.Key)
 	return snapshot, nil
