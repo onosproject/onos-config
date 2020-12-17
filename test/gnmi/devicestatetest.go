@@ -15,8 +15,9 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -28,10 +29,10 @@ func (s *TestSuite) TestDeviceState(t *testing.T) {
 	assert.NotNil(t, simulator)
 	found := gnmi.WaitForDevice(t, func(d *device.Device) bool {
 		return len(d.Protocols) > 0 &&
-			d.Protocols[0].Protocol == device.Protocol_GNMI &&
-			d.Protocols[0].ConnectivityState == device.ConnectivityState_REACHABLE &&
-			d.Protocols[0].ChannelState == device.ChannelState_CONNECTED &&
-			d.Protocols[0].ServiceState == device.ServiceState_AVAILABLE
+			d.Protocols[0].Protocol == topo.Protocol_GNMI &&
+			d.Protocols[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
+			d.Protocols[0].ChannelState == topo.ChannelState_CONNECTED &&
+			d.Protocols[0].ServiceState == topo.ServiceState_AVAILABLE
 	}, 5*time.Second)
 	assert.Equal(t, true, found)
 }

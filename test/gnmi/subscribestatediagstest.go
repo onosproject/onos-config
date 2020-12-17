@@ -22,8 +22,8 @@ import (
 
 	"github.com/onosproject/onos-api/go/onos/config/diags"
 
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 )
 

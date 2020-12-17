@@ -17,9 +17,9 @@ package mastership
 import (
 	"testing"
 
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 )
 

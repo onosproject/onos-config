@@ -6,8 +6,8 @@ setrequest:
       - name: role
         key:
           roleid: aether-ops
-  delete: []
-  replace: []
+  delete: [ ]
+  replace: [ ]
   update:
     - path:
         elem:

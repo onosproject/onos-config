@@ -15,8 +15,8 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
-	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"regexp"
 	"strings"
@@ -60,7 +60,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 		success = true
 		break
 	}
-	assert.Equal(t, success, true, "state value was not found")
+	assert.Equal(t, true, success, "state value was not found")
 
 	// Shut down the device we created
 	gnmi.DeleteSimulator(t, simulator)

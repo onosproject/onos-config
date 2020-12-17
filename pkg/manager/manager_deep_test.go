@@ -17,6 +17,7 @@ package manager
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -25,6 +26,7 @@ import (
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/device/state"
@@ -39,7 +41,6 @@ import (
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 )
@@ -91,12 +92,12 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 		Version: deviceVersion1,
 		Timeout: &timeout,
 		Type:    deviceTypeTd,
-		Protocols: []*topodevice.ProtocolState{
+		Protocols: []*topo.ProtocolState{
 			{
-				Protocol:          topodevice.Protocol_GNMI,
-				ConnectivityState: topodevice.ConnectivityState_REACHABLE,
-				ChannelState:      topodevice.ChannelState_CONNECTED,
-				ServiceState:      topodevice.ServiceState_AVAILABLE,
+				Protocol:          topo.Protocol_GNMI,
+				ConnectivityState: topo.ConnectivityState_REACHABLE,
+				ChannelState:      topo.ChannelState_CONNECTED,
+				ServiceState:      topo.ServiceState_AVAILABLE,
 			},
 		},
 	}
@@ -105,7 +106,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 		func(ch chan<- *topodevice.ListResponse) error {
 			go func() {
 				ch <- &topodevice.ListResponse{
-					Type:   topodevice.ListResponse_NONE,
+					Type:   topodevice.ListResponseNONE,
 					Device: device1Topo,
 				}
 			}()
@@ -418,12 +419,12 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 		Version: deviceVersion1,
 		Timeout: &timeout,
 		Type:    deviceTypeTd,
-		Protocols: []*topodevice.ProtocolState{
+		Protocols: []*topo.ProtocolState{
 			{
-				Protocol:          topodevice.Protocol_GNMI,
-				ConnectivityState: topodevice.ConnectivityState_UNREACHABLE,
-				ChannelState:      topodevice.ChannelState_DISCONNECTED,
-				ServiceState:      topodevice.ServiceState_UNAVAILABLE,
+				Protocol:          topo.Protocol_GNMI,
+				ConnectivityState: topo.ConnectivityState_UNREACHABLE,
+				ChannelState:      topo.ChannelState_DISCONNECTED,
+				ServiceState:      topo.ServiceState_UNAVAILABLE,
 			},
 		},
 	}
@@ -431,7 +432,7 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 		func(ch chan<- *topodevice.ListResponse) error {
 			go func() {
 				ch <- &topodevice.ListResponse{
-					Type:   topodevice.ListResponse_NONE,
+					Type:   topodevice.ListResponseNONE,
 					Device: deviceDisconnTopo,
 				}
 			}()

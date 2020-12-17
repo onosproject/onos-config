@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"io"
 	"strconv"
 	"strings"
@@ -36,10 +37,10 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/change"
 	"github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-api/go/onos/config/diags"
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
@@ -92,19 +93,19 @@ func connectService(release *helm.HelmRelease, deploymentName string) (*grpc.Cli
 
 // GetDevice :
 func GetDevice(simulator *helm.HelmRelease) (*device.Device, error) {
-	client, err := NewDeviceServiceClient()
+	client, err := NewTopoClient()
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	response, err := client.Get(ctx, &device.GetRequest{
-		ID: device.ID(simulator.Name()),
+	response, err := client.Get(ctx, &topo.GetRequest{
+		ID: topo.ID(simulator.Name()),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return response.Device, nil
+	return device.ToDevice(response.Object), nil
 }
 
 // AwaitDeviceState :
@@ -134,19 +135,26 @@ func NewDevice(simulator *helm.HelmRelease, deviceType string, version string) (
 		Address: service.Ports()[0].Address(true),
 		Type:    device.Type(deviceType),
 		Version: version,
-		TLS: device.TlsConfig{
-			Plain: true,
+		TLS: device.TLSConfig{
+			Plain:    true,
+			Insecure: true,
 		},
+		Protocols: []*topo.ProtocolState{{
+			Protocol:          topo.Protocol_GNMI,
+			ConnectivityState: topo.ConnectivityState_REACHABLE,
+			ChannelState:      topo.ChannelState_DISCONNECTED,
+			ServiceState:      topo.ServiceState_UNKNOWN_SERVICE_STATE,
+		}},
 	}, nil
 }
 
-// NewDeviceServiceClient :
-func NewDeviceServiceClient() (device.DeviceServiceClient, error) {
+// NewTopoClient :
+func NewTopoClient() (topo.TopoClient, error) {
 	conn, err := connectComponent("onos-umbrella", "onos-topo")
 	if err != nil {
 		return nil, err
 	}
-	return device.NewDeviceServiceClient(conn), nil
+	return topo.NewTopoClient(conn), nil
 }
 
 // NewChangeServiceClient :
@@ -178,41 +186,39 @@ func NewOpStateDiagsClient() (diags.OpStateDiagsClient, error) {
 
 // AddDeviceToTopo :
 func AddDeviceToTopo(d *device.Device) error {
-	client, err := NewDeviceServiceClient()
+	client, err := NewTopoClient()
 	if err != nil {
 		return err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, err = client.Add(ctx, &device.AddRequest{
-		Device: d,
+	_, err = client.Create(ctx, &topo.CreateRequest{
+		Object: device.ToObject(d),
 	})
 	return err
 }
 
 // RemoveDeviceFromTopo :
 func RemoveDeviceFromTopo(d *device.Device) error {
-	client, err := NewDeviceServiceClient()
+	client, err := NewTopoClient()
 	if err != nil {
 		return err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, err = client.Remove(ctx, &device.RemoveRequest{
-		Device: d,
+	_, err = client.Delete(ctx, &topo.DeleteRequest{
+		ID: topo.ID(d.ID),
 	})
 	return err
 }
 
 // WaitForDevice waits for a device to match the given predicate
 func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout time.Duration) bool {
-	cl, err := NewDeviceServiceClient()
+	cl, err := NewTopoClient()
 	assert.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	stream, err := cl.List(ctx, &device.ListRequest{
-		Subscribe: true,
-	})
+	stream, err := cl.Watch(ctx, &topo.WatchRequest{})
 	assert.NoError(t, err)
 	for {
 		response, err := stream.Recv()
@@ -222,8 +228,10 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 		} else if err != nil {
 			assert.Fail(t, "device stream failed with error: %v", err)
 			return false
-		} else if predicate(response.Device) {
-			return true
+		} else if response.Event.Object.Type == topo.Object_ENTITY {
+			if predicate(device.ToDevice(&response.Event.Object)) {
+				return true
+			}
 		}
 	}
 }
@@ -236,7 +244,7 @@ func WaitForDeviceAvailable(t *testing.T, deviceID device.ID, timeout time.Durat
 		}
 
 		for _, protocol := range dev.Protocols {
-			if protocol.Protocol == device.Protocol_GNMI && protocol.ServiceState == device.ServiceState_AVAILABLE {
+			if protocol.Protocol == topo.Protocol_GNMI && protocol.ServiceState == topo.ServiceState_AVAILABLE {
 				return true
 			}
 		}
@@ -253,7 +261,7 @@ func WaitForDeviceUnavailable(t *testing.T, deviceID device.ID, timeout time.Dur
 		}
 
 		for _, protocol := range dev.Protocols {
-			if protocol.Protocol == device.Protocol_GNMI && protocol.ServiceState == device.ServiceState_UNAVAILABLE {
+			if protocol.Protocol == topo.Protocol_GNMI && protocol.ServiceState == topo.ServiceState_UNAVAILABLE {
 				return true
 			}
 		}

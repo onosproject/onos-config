@@ -22,13 +22,13 @@ import (
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	dispatcherpkg "github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	modelregistrypkg "github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"gotest.tools/assert"
 )
 
@@ -102,7 +102,7 @@ func TestSessionManager(t *testing.T) {
 		Attributes:  make(map[string]string),
 	}
 	topoEvent := topodevice.ListResponse{
-		Type:   topodevice.ListResponse_ADDED,
+		Type:   topodevice.ListResponseADDED,
 		Device: &device1,
 	}
 
@@ -140,7 +140,7 @@ func TestSessionManager(t *testing.T) {
 		Attributes:  make(map[string]string),
 	}
 	topoEventUpdated := topodevice.ListResponse{
-		Type:   topodevice.ListResponse_UPDATED,
+		Type:   topodevice.ListResponseUPDATED,
 		Device: &device1Update,
 	}
 	sessionManager.topoChannel <- &topoEventUpdated
@@ -153,7 +153,7 @@ func TestSessionManager(t *testing.T) {
 
 	// Device removed from topo
 	topoEventRemove := topodevice.ListResponse{
-		Type:   topodevice.ListResponse_REMOVED,
+		Type:   topodevice.ListResponseREMOVED,
 		Device: &device1,
 	}
 

@@ -16,12 +16,14 @@ package device
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"strings"
 
 	types "github.com/onosproject/onos-api/go/onos/config"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-config/pkg/controller"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
@@ -30,7 +32,6 @@ import (
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
 var log = logging.GetLogger("controller", "change", "device")
@@ -91,7 +92,7 @@ func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))
 	if err != nil {
 		return controller.Result{}, err
-	} else if getProtocolState(device) != topodevice.ChannelState_CONNECTED {
+	} else if getProtocolState(device) != topo.ChannelState_CONNECTED {
 		// If the device is not available, fail the change
 		change.Status.State = changetypes.State_FAILED
 		change.Status.Reason = changetypes.Reason_ERROR
@@ -191,17 +192,17 @@ func (r *Reconciler) translateAndSendChange(change *devicechange.Change) error {
 	return nil
 }
 
-func getProtocolState(device *topodevice.Device) topodevice.ChannelState {
+func getProtocolState(device *topodevice.Device) topo.ChannelState {
 	// Find the gNMI protocol state for the device
-	var protocol *topodevice.ProtocolState
+	var protocol *topo.ProtocolState
 	for _, p := range device.Protocols {
-		if p.Protocol == topodevice.Protocol_GNMI {
+		if p.Protocol == topo.Protocol_GNMI {
 			protocol = p
 			break
 		}
 	}
 	if protocol == nil {
-		return topodevice.ChannelState_UNKNOWN_CHANNEL_STATE
+		return topo.ChannelState_UNKNOWN_CHANNEL_STATE
 	}
 	return protocol.ChannelState
 }

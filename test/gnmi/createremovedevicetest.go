@@ -18,9 +18,10 @@ package gnmi
 import (
 	"context"
 	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -38,7 +39,7 @@ const (
 // TestCreatedRemovedDevice tests set/query of a single GNMI path to a single device that is created, removed, then created again
 func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	t.Skip()
-	deviceClient, deviceClientError := gnmi.NewDeviceServiceClient()
+	deviceClient, deviceClientError := gnmi.NewTopoClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)
 	timeout := 10 * time.Second
@@ -48,12 +49,12 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 		Type:    createRemoveDeviceModDeviceType,
 		Version: createRemoveDeviceModDeviceVersion,
 		Timeout: &timeout,
-		TLS: device.TlsConfig{
+		TLS: device.TLSConfig{
 			Plain: true,
 		},
 	}
-	addRequest := &device.AddRequest{Device: newDevice}
-	addResponse, addResponseError := deviceClient.Add(context.Background(), addRequest)
+	addRequest := &topo.CreateRequest{Object: device.ToObject(newDevice)}
+	addResponse, addResponseError := deviceClient.Create(context.Background(), addRequest)
 	assert.NotNil(t, addResponse)
 	assert.Nil(t, addResponseError)
 

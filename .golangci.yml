@@ -40,3 +40,6 @@ issues:
       text: "SA1019:"
     - path: pkg/utils
       text: "copylocks"
+    - path: pkg/store/device/store.go
+      linters:
+        - scopelint

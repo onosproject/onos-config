@@ -15,13 +15,14 @@
 package ha
 
 import (
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	hautils "github.com/onosproject/onos-config/test/utils/ha"
-	"github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,10 +42,10 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 		currentTerm, _ = strconv.Atoi(d.Attributes[mastershipTermKey])
 		masterNode = d.Attributes[mastershipMasterKey]
 		return currentTerm == 1 && len(d.Protocols) > 0 &&
-			d.Protocols[0].Protocol == device.Protocol_GNMI &&
-			d.Protocols[0].ConnectivityState == device.ConnectivityState_REACHABLE &&
-			d.Protocols[0].ChannelState == device.ChannelState_CONNECTED &&
-			d.Protocols[0].ServiceState == device.ServiceState_AVAILABLE
+			d.Protocols[0].Protocol == topo.Protocol_GNMI &&
+			d.Protocols[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
+			d.Protocols[0].ChannelState == topo.ChannelState_CONNECTED &&
+			d.Protocols[0].ServiceState == topo.ServiceState_AVAILABLE
 	}, 5*time.Second)
 	assert.Equal(t, true, found)
 	assert.Equal(t, currentTerm, 1)
@@ -57,10 +58,10 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 	found = gnmi.WaitForDevice(t, func(d *device.Device) bool {
 		currentTerm, _ = strconv.Atoi(d.Attributes[mastershipTermKey])
 		return currentTerm == 2 && len(d.Protocols) > 0 &&
-			d.Protocols[0].Protocol == device.Protocol_GNMI &&
-			d.Protocols[0].ConnectivityState == device.ConnectivityState_REACHABLE &&
-			d.Protocols[0].ChannelState == device.ChannelState_CONNECTED &&
-			d.Protocols[0].ServiceState == device.ServiceState_AVAILABLE
+			d.Protocols[0].Protocol == topo.Protocol_GNMI &&
+			d.Protocols[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
+			d.Protocols[0].ChannelState == topo.ChannelState_CONNECTED &&
+			d.Protocols[0].ServiceState == topo.ServiceState_AVAILABLE
 	}, 70*time.Second)
 	assert.Equal(t, true, found)
 

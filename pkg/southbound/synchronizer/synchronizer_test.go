@@ -21,6 +21,7 @@ import (
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -30,7 +31,6 @@ import (
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -154,7 +154,7 @@ func TestNew(t *testing.T) {
 		Version:     "1.0.0",
 		Timeout:     &timeout,
 		Credentials: topodevice.Credentials{},
-		TLS:         topodevice.TlsConfig{},
+		TLS:         topodevice.TLSConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
@@ -325,7 +325,7 @@ func synchronizerBootstrap(t *testing.T) (*southbound.MockTargetIf, *topodevice.
 		Version:     "1.0.0",
 		Timeout:     &timeout,
 		Credentials: topodevice.Credentials{},
-		TLS:         topodevice.TlsConfig{},
+		TLS:         topodevice.TLSConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
 		Attributes:  nil,
@@ -676,7 +676,7 @@ func Test_LikeStratum(t *testing.T) {
 		Version:     "1.0.0",
 		Timeout:     &timeout,
 		Credentials: topodevice.Credentials{},
-		TLS:         topodevice.TlsConfig{},
+		TLS:         topodevice.TLSConfig{},
 		Type:        "Stratum",
 		Role:        "leaf",
 		Attributes:  nil,

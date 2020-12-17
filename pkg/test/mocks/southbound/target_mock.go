@@ -8,7 +8,7 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	southbound "github.com/onosproject/onos-config/pkg/southbound"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	client "github.com/openconfig/gnmi/client"
 	gnmi "github.com/openconfig/gnmi/proto/gnmi"
 	reflect "reflect"

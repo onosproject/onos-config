@@ -20,8 +20,8 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 
 	types "github.com/onosproject/onos-api/go/onos/config"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
-	topodevice "github.com/onosproject/onos-topo/api/device"
 )
 
 // Filter filters individual events for a node
