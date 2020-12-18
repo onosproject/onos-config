@@ -64,4 +64,3 @@ provided as additional layers:
 ## Additional Resources
 ### µONOS talks at ONF Connect 2019
 * [µONOS Project Wide Videos](https://docs.onosproject.org/#additional-resources)
-* [Device Configuration in µONOS](https://vimeo.com/360886688)
