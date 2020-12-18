@@ -500,6 +500,10 @@ github.com/onosproject/onos-api/go v0.7.0 h1:BjfN78bE/TXadUODrkYbaDsb1hyiV90dNiL
 github.com/onosproject/onos-api/go v0.7.0/go.mod h1:HLfWE9aouIeOmi4soR6bxK2cZ33NbnFMvdyv9fmjaSg=
 github.com/onosproject/onos-config-model-go v0.1.1 h1:1Iix9Zs7Mez0jlHj/prLjCdcLQyL/GhsKLYZubSPZZw=
 github.com/onosproject/onos-config-model-go v0.1.1/go.mod h1:z9K7bG5MNjjLNi1ao/vn5UUuo8Q5nLugHedJg0gtIgw=
+github.com/onosproject/onos-config-model-go v0.1.2-0.20201218021712-891b6e0c7cb8 h1:JMCaYS30vu/mebkBfwxFLh5pd34bL1sJXsukqSciET8=
+github.com/onosproject/onos-config-model-go v0.1.2-0.20201218021712-891b6e0c7cb8/go.mod h1:uwhog1kflmW/VF31GQ4XRM6ykRL5cjPyowHI1tg342g=
+github.com/onosproject/onos-config-model-go v0.1.2-0.20201218022456-97c61484dc3d h1:LBhqvY1YDwxXdfIaM3NkdyaghpY4lefcxeJgVcXa14U=
+github.com/onosproject/onos-config-model-go v0.1.2-0.20201218022456-97c61484dc3d/go.mod h1:uwhog1kflmW/VF31GQ4XRM6ykRL5cjPyowHI1tg342g=
 github.com/onosproject/onos-lib-go v0.6.25/go.mod h1:ttkK+fV2CULZFHiq6FBZ69i7/Nymi1Wow1DNy0Ik/2o=
 github.com/onosproject/onos-lib-go v0.7.0 h1:+BxQc0K4nej8qsciArvk6QC3Do6VKQevbIegpR3Kil8=
 github.com/onosproject/onos-lib-go v0.7.0/go.mod h1:ttkK+fV2CULZFHiq6FBZ69i7/Nymi1Wow1DNy0Ik/2o=
@@ -582,6 +586,7 @@ github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563 h1:dY6ETXrvDG7
 github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
+github.com/rogpeppe/go-internal v1.3.0 h1:RR9dF3JtopPvtkroDZuVD7qquD0bnHlKSqaQhgwt8yk=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/russross/blackfriday v1.5.2 h1:HyvC0ARfnZBqnXwABFeSZHpKvJHJJfPz81GNueLj0oo=
 github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=

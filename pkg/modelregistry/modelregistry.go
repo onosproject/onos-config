@@ -17,10 +17,8 @@ package modelregistry
 import (
 	"fmt"
 	"github.com/onosproject/onos-config-model-go/pkg/model"
-	"github.com/onosproject/onos-config-model-go/pkg/model/plugin"
 	"github.com/onosproject/onos-config-model-go/pkg/model/registry"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -35,8 +33,6 @@ import (
 )
 
 var log = logging.GetLogger("modelregistry")
-
-const registryPath = "/etc/onos/plugins"
 
 // PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
 type PathMap interface {
@@ -144,7 +140,7 @@ type ModelPlugin struct {
 // NewModelRegistry creates a new model registry
 func NewModelRegistry() *ModelRegistry {
 	return &ModelRegistry{
-		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: registryPath}),
+		registry: modelregistry.NewConfigModelRegistryFromEnv(),
 		plugins:  make(map[string]*ModelPlugin),
 	}
 }
@@ -210,7 +206,7 @@ func (r *ModelRegistry) loadPlugins() error {
 	for _, modelInfo := range modelInfos {
 		modelName := utils.ToModelName(devicetype.Type(modelInfo.Name), devicetype.Version(modelInfo.Version))
 		if _, ok := r.plugins[modelName]; !ok {
-			plugin, err := modelplugin.Load(filepath.Join(registryPath, modelInfo.Plugin.File))
+			plugin, err := r.registry.LoadPlugin(modelInfo.Plugin.Name, modelInfo.Plugin.Version)
 			if err != nil {
 				return err
 			}
