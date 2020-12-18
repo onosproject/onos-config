@@ -53,9 +53,7 @@ They are compiled together with the `go build` command using the
 `-buildmode=plugin` option. 
 
 Many examples of Model Plugins are in the [config-models](https://github.com/onosproject/config-models)
-repo, and an example script
-[ModelGenerator.sh](https://github.com/onosproject/config-models/blob/master/modelplugin/ModelGenerator.sh) is available for creating
-new plugins.
+repo.
 
 ### ModelPlugin Interface
 The model plugin must implement the `ModelPlugin` interface. This will allow
