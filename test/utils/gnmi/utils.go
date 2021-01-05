@@ -230,7 +230,7 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 			return false
 		} else if response.Event.Object.Type == topo.Object_ENTITY {
 			topoDevice, err := device.ToDevice(&response.Event.Object)
-			assert.NotNil(t, err, err.Error())
+			assert.Nil(t, err, "error converting entity to topo Device")
 			if predicate(topoDevice) {
 				return true
 			}
