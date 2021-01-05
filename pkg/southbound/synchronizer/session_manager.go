@@ -137,12 +137,13 @@ func WithDeviceChangeStore(deviceChangeStore device.Store) func(*SessionManager)
 // Start starts session manager
 func (sm *SessionManager) Start() error {
 	log.Info("Session manager started")
+	go sm.processDeviceEvents(sm.topoChannel)
+
 	err := sm.deviceStore.Watch(sm.topoChannel)
 	if err != nil {
 		return err
 	}
 
-	go sm.processDeviceEvents(sm.topoChannel)
 	return nil
 }
 

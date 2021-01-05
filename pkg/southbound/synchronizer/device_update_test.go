@@ -31,6 +31,7 @@ import (
 const (
 	device1        = "device1"
 	deviceVersion1 = "1.0.0"
+	stratumType    = "Stratum"
 )
 
 type AllMocks struct {
@@ -67,6 +68,7 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 		Revision:   1,
 		Address:    "device1:1234",
 		Version:    deviceVersion1,
+		Type:       stratumType,
 		Attributes: make(map[string]string),
 	}
 
@@ -106,6 +108,7 @@ func TestUpdateConnectedDevice(t *testing.T) {
 		Revision:   1,
 		Address:    "device1:1234",
 		Version:    deviceVersion1,
+		Type:       stratumType,
 		Attributes: make(map[string]string),
 	}
 

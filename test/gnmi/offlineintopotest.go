@@ -46,6 +46,11 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	newDevice := &topo.Object{
 		ID:   offlineInTopoModDeviceName,
 		Type: topo.Object_ENTITY,
+		Obj: &topo.Object_Entity{
+			Entity: &topo.Entity{
+				KindID: offlineInTopoModDeviceType,
+			},
+		},
 	}
 
 	newDevice.Attributes[topo.Address] = offlineInTopoModDeviceName + ":11161"

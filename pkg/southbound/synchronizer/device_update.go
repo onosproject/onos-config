@@ -40,7 +40,7 @@ func (s *Session) getTermPerDevice(device *topodevice.Device) (int, error) {
 
 func (s *Session) updateDevice(connectivity topo.ConnectivityState, channel topo.ChannelState,
 	service topo.ServiceState) error {
-	log.Info("Update device %s state", s.device.ID)
+	log.Infof("Update device %s state", s.device.ID)
 
 	id := s.device.ID
 	topoDevice, err := s.deviceStore.Get(id)

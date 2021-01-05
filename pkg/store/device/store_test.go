@@ -24,26 +24,40 @@ import (
 	"time"
 )
 
+const (
+	device1ID   = topodevice.ID("device-1")
+	device1Addr = "device-1:1234"
+	device2ID   = topodevice.ID("device-2")
+	device2Addr = "device-2:1234"
+	device3ID   = topodevice.ID("device-3")
+	device3Addr = "device-3:1234"
+	v1          = "1.0.0"
+	stratumType = "Stratum"
+)
+
 func TestDeviceStore(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	device1 := &topodevice.Device{
-		ID:       "device-1",
+		ID:       device1ID,
 		Revision: 1,
-		Address:  "device-1:1234",
-		Version:  "1.0.0",
+		Address:  device1Addr,
+		Version:  v1,
+		Type:     stratumType,
 	}
 	device2 := &topodevice.Device{
-		ID:       "device-1",
+		ID:       device2ID,
 		Revision: 1,
-		Address:  "device-1:1234",
-		Version:  "1.0.0",
+		Address:  device2Addr,
+		Version:  v1,
+		Type:     stratumType,
 	}
 	device3 := &topodevice.Device{
-		ID:       "device-1",
+		ID:       device3ID,
 		Revision: 1,
-		Address:  "device-1:1234",
-		Version:  "1.0.0",
+		Address:  device3Addr,
+		Version:  v1,
+		Type:     stratumType,
 	}
 
 	listResp := &topo.ListResponse{
@@ -82,17 +96,19 @@ func TestUpdateDevice(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	device1 := &topodevice.Device{
-		ID:       "device-1",
+		ID:       device1ID,
 		Revision: 1,
-		Address:  "device-1:1234",
-		Version:  "1.0.0",
+		Address:  device1Addr,
+		Version:  v1,
+		Type:     stratumType,
 	}
 
 	device1Connected := &topodevice.Device{
-		ID:       "device-1",
+		ID:       device1ID,
 		Revision: 1,
-		Address:  "device-1:1234",
-		Version:  "1.0.0",
+		Address:  device1Addr,
+		Version:  v1,
+		Type:     stratumType,
 	}
 
 	protocolState := new(topo.ProtocolState)

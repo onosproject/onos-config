@@ -16,6 +16,7 @@ package network
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	types "github.com/onosproject/onos-api/go/onos/config"
 	"github.com/onosproject/onos-api/go/onos/config/change"
@@ -33,8 +34,10 @@ import (
 )
 
 const (
-	device1 = device.ID("device-1")
-	device2 = device.ID("device-2")
+	device1     = device.ID("device-1")
+	device2     = device.ID("device-2")
+	v1          = "1.0.0"
+	stratumType = "Stratum"
 )
 
 const (
@@ -321,7 +324,10 @@ func newStores(t *testing.T) (networkchanges.Store, devicechanges.Store, devices
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *topo.GetRequest) (*topo.GetResponse, error) {
 		return &topo.GetResponse{
 			Object: devicetopo.ToObject(&devicetopo.Device{
-				ID: devicetopo.ID(request.ID),
+				ID:      devicetopo.ID(request.ID),
+				Version: v1,
+				Type:    stratumType,
+				Address: fmt.Sprintf("%s:5150", request.ID),
 				Protocols: []*topo.ProtocolState{
 					{
 						Protocol:          topo.Protocol_GNMI,
