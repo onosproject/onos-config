@@ -17,6 +17,7 @@ package device
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"io"
 	"time"
 
@@ -26,6 +27,8 @@ import (
 
 	"google.golang.org/grpc"
 )
+
+var log = logging.GetLogger("store", "device")
 
 // Store is a device store
 type Store interface {
@@ -78,7 +81,7 @@ func (s *topoStore) Get(id device.ID) (*device.Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	return device.ToDevice(response.Object), nil
+	return device.ToDevice(response.Object)
 }
 
 func (s *topoStore) Update(updatedDevice *device.Device) (*device.Device, error) {
@@ -91,7 +94,7 @@ func (s *topoStore) Update(updatedDevice *device.Device) (*device.Device, error)
 	if err != nil {
 		return nil, err
 	}
-	return device.ToDevice(response.Object), nil
+	return device.ToDevice(response.Object)
 }
 
 func (s *topoStore) List(ch chan<- *device.Device) error {
@@ -102,7 +105,12 @@ func (s *topoStore) List(ch chan<- *device.Device) error {
 
 	go func() {
 		for _, object := range resp.Objects {
-			ch <- device.ToDevice(&object)
+			configDevice, err := device.ToDevice(&object)
+			if err != nil {
+				log.Warnf("Ignoring Topo object. %s", err.Error())
+				continue
+			}
+			ch <- configDevice
 		}
 	}()
 	return nil
@@ -110,7 +118,7 @@ func (s *topoStore) List(ch chan<- *device.Device) error {
 
 func (s *topoStore) Watch(ch chan<- *device.ListResponse) error {
 	stream, err := s.client.Watch(context.Background(), &topo.WatchRequest{
-		Noreplay: true,
+		Noreplay: false,
 	})
 	if err != nil {
 		return err
@@ -125,10 +133,17 @@ func (s *topoStore) Watch(ch chan<- *device.ListResponse) error {
 				break
 			}
 			if resp.Event.Object.Type == topo.Object_ENTITY {
+				configDevice, err := device.ToDevice(&resp.Event.Object)
+				if err != nil {
+					log.Warnf("Ignoring Topo event. %s +v+", err.Error(), resp.Event)
+					continue
+				}
 				ch <- &device.ListResponse{
-					Device: device.ToDevice(&resp.Event.Object),
+					Device: configDevice,
 					Type:   toEventType(resp.Event.Type),
 				}
+			} else {
+				log.Warnf("Ignoring non ENTITY Topo event %v+", resp.Event)
 			}
 		}
 	}()

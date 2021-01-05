@@ -16,6 +16,7 @@ package network
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	types "github.com/onosproject/onos-api/go/onos/config"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -58,8 +59,8 @@ func TestNetworkWatcher(t *testing.T) {
 		Changes: []*devicechange.Change{
 			{
 
-				DeviceID:      "device-1",
-				DeviceVersion: "1.0.0",
+				DeviceID:      device1,
+				DeviceVersion: v1,
 				Values: []*devicechange.ChangeValue{
 					{
 						Path: "foo",
@@ -78,8 +79,8 @@ func TestNetworkWatcher(t *testing.T) {
 				},
 			},
 			{
-				DeviceID:      "device-2",
-				DeviceVersion: "1.0.0",
+				DeviceID:      device2,
+				DeviceVersion: v1,
 				Values: []*devicechange.ChangeValue{
 					{
 						Path: "baz",
@@ -107,8 +108,8 @@ func TestNetworkWatcher(t *testing.T) {
 		ID: "change-2",
 		Changes: []*devicechange.Change{
 			{
-				DeviceID:      "device-1",
-				DeviceVersion: "1.0.0",
+				DeviceID:      device1,
+				DeviceVersion: v1,
 				Values: []*devicechange.ChangeValue{
 					{
 						Path:    "foo",
@@ -145,14 +146,14 @@ func TestDeviceWatcher(t *testing.T) {
 	t.Log("Testing")
 	cachedDevices := []*cache.Info{
 		{
-			DeviceID: "device-1",
-			Type:     "DeviceSim",
-			Version:  "1.0.0",
+			DeviceID: device1,
+			Type:     v1,
+			Version:  v1,
 		},
 		{
-			DeviceID: "device-2",
-			Type:     "DeviceSim",
-			Version:  "1.0.0",
+			DeviceID: device2,
+			Type:     v1,
+			Version:  v1,
 		},
 	}
 
@@ -163,9 +164,10 @@ func TestDeviceWatcher(t *testing.T) {
 			Event: topo.Event{
 				Type: topo.EventType_NONE,
 				Object: *devicetopo.ToObject(&devicetopo.Device{
-					ID:      "device-1",
-					Type:    "DeviceSim",
-					Version: "1.0.0",
+					ID:      devicetopo.ID(device1),
+					Type:    stratumType,
+					Version: v1,
+					Address: fmt.Sprintf("%s:1234", device1),
 					Protocols: []*topo.ProtocolState{
 						{
 							Protocol:          topo.Protocol_GNMI,
@@ -180,9 +182,10 @@ func TestDeviceWatcher(t *testing.T) {
 			Event: topo.Event{
 				Type: topo.EventType_NONE,
 				Object: *devicetopo.ToObject(&devicetopo.Device{
-					ID:      "device-2",
-					Type:    "DeviceSim",
-					Version: "1.0.0",
+					ID:      devicetopo.ID(device2),
+					Type:    stratumType,
+					Version: v1,
+					Address: fmt.Sprintf("%s:1234", device2),
 					Protocols: []*topo.ProtocolState{
 						{
 							Protocol:          topo.Protocol_GNMI,

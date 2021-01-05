@@ -17,6 +17,7 @@
 package device
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"time"
 )
@@ -155,16 +156,31 @@ func ToObject(device *Device) *topo.Object {
 }
 
 // ToDevice converts local device structure to topology object entity
-func ToDevice(object *topo.Object) *Device {
+func ToDevice(object *topo.Object) (*Device, error) {
+	if object.Type != topo.Object_ENTITY {
+		return nil, fmt.Errorf("object is not a topo entity %v+", object)
+	}
+	version, ok := object.Attributes[topo.Version]
+	if !ok {
+		return nil, fmt.Errorf("topo entity %s must have 'version' attribute to work with onos-config", object.ID)
+	}
+	address, ok := object.Attributes[topo.Address]
+	if !ok {
+		return nil, fmt.Errorf("topo entity %s must have 'address' attribute to work with onos-config", object.ID)
+	}
+	typeKindID := Type(object.GetEntity().KindID)
+	if len(typeKindID) == 0 {
+		return nil, fmt.Errorf("topo entity %s must have a 'kindid' to work with onos-config", object.ID)
+	}
 	d := &Device{
 		ID:        ID(object.ID),
 		Revision:  object.Revision,
 		Protocols: object.GetEntity().Protocols,
-		Type:      Type(object.GetEntity().KindID),
+		Type:      typeKindID,
 		Role:      Role(object.Attributes[topo.Role]),
-		Address:   object.Attributes[topo.Address],
+		Address:   address,
 		Target:    object.Attributes[topo.Target],
-		Version:   object.Attributes[topo.Version],
+		Version:   version,
 		TLS: TLSConfig{
 			Plain:    object.Attributes[topo.TLSPlain] == "true",
 			Insecure: object.Attributes[topo.TLSInsecure] == "true",
@@ -174,5 +190,5 @@ func ToDevice(object *topo.Object) *Device {
 		},
 		Attributes: object.Attributes,
 	}
-	return d
+	return d, nil
 }

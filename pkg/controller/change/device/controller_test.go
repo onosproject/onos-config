@@ -48,7 +48,9 @@ import (
 
 const (
 	device1     = device.ID("device-1")
+	device1Addr = "device-1:5150"
 	device2     = device.ID("device-2")
+	device2Addr = "device-2:5150"
 	dcDevice    = device.ID("disconnected")
 	v1          = "1.0.0"
 	stratumType = "Stratum"
@@ -475,7 +477,10 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 
 	devices := map[topodevice.ID]*topodevice.Device{
 		topodevice.ID(device1): {
-			ID: topodevice.ID(device1),
+			ID:      topodevice.ID(device1),
+			Version: v1,
+			Type:    stratumType,
+			Address: device1Addr,
 			Protocols: []*topo.ProtocolState{
 				{
 					Protocol:          topo.Protocol_GNMI,
@@ -485,7 +490,10 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 			},
 		},
 		topodevice.ID(device2): {
-			ID: topodevice.ID(device2),
+			ID:      topodevice.ID(device2),
+			Version: v1,
+			Type:    stratumType,
+			Address: device2Addr,
 			Protocols: []*topo.ProtocolState{
 				{
 					Protocol:          topo.Protocol_GNMI,
@@ -495,7 +503,10 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 			},
 		},
 		topodevice.ID(dcDevice): {
-			ID: topodevice.ID(dcDevice),
+			ID:      topodevice.ID(dcDevice),
+			Version: v1,
+			Type:    stratumType,
+			Address: "",
 			Protocols: []*topo.ProtocolState{
 				{
 					Protocol:          topo.Protocol_GNMI,

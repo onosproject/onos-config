@@ -105,7 +105,7 @@ func GetDevice(simulator *helm.HelmRelease) (*device.Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	return device.ToDevice(response.Object), nil
+	return device.ToDevice(response.Object)
 }
 
 // AwaitDeviceState :
@@ -229,7 +229,9 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 			assert.Fail(t, "device stream failed with error: %v", err)
 			return false
 		} else if response.Event.Object.Type == topo.Object_ENTITY {
-			if predicate(device.ToDevice(&response.Event.Object)) {
+			topoDevice, err := device.ToDevice(&response.Event.Object)
+			assert.NotNil(t, err, err.Error())
+			if predicate(topoDevice) {
 				return true
 			}
 		}
