@@ -283,14 +283,14 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	return mgrTest, &allMocks
 }
 
-func makeDeviceChanges(device string, updates devicechange.TypedValueMap, deletes []string) (
-	map[string]devicechange.TypedValueMap, map[string][]string, map[devicetype.ID]cache.Info) {
+func makeDeviceChanges(device devicetype.ID, updates devicechange.TypedValueMap, deletes []string) (
+	map[devicetype.ID]devicechange.TypedValueMap, map[devicetype.ID][]string, map[devicetype.ID]cache.Info) {
 	deviceInfo := make(map[devicetype.ID]cache.Info)
-	deviceInfo[devicetype.ID(device)] = cache.Info{DeviceID: devicetype.ID(device), Type: deviceTypeTd, Version: deviceVersion1}
+	deviceInfo[device] = cache.Info{DeviceID: device, Type: deviceTypeTd, Version: deviceVersion1}
 
-	updatesForDevice := make(map[string]devicechange.TypedValueMap)
+	updatesForDevice := make(map[devicetype.ID]devicechange.TypedValueMap)
 	updatesForDevice[device] = updates
-	deletesForDevice := make(map[string][]string)
+	deletesForDevice := make(map[devicetype.ID][]string)
 	deletesForDevice[device] = deletes
 	return updatesForDevice, deletesForDevice, deviceInfo
 }
@@ -319,7 +319,7 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	// Making change
 	updates := make(devicechange.TypedValueMap)
-	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint64(valueLeaf2A789)
+	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint(valueLeaf2A789, 16)
 	deletes := []string{test1Cont1ACont2ALeaf2C}
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
@@ -341,7 +341,7 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	// Asserting update to 2A
 	assert.Equal(t, updatedVals[0].Path, test1Cont1ACont2ALeaf2A)
-	assert.Equal(t, (*devicechange.TypedUint64)(updatedVals[0].GetValue()).Uint(), valueLeaf2A789)
+	assert.Equal(t, (*devicechange.TypedUint)(updatedVals[0].GetValue()).Uint(), valueLeaf2A789)
 	assert.Equal(t, updatedVals[0].Removed, false)
 
 	// Asserting deletion of 2C
@@ -359,7 +359,7 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 	const NetworkChangeAddDevice5 = "NetworkChangeAddDevice5"
 
 	updates := make(devicechange.TypedValueMap)
-	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint64(valueLeaf2A789)
+	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint(valueLeaf2A789, 16)
 	deletes := []string{test1Cont1ACont2ALeaf2C}
 
 	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(Device5, updates, deletes)

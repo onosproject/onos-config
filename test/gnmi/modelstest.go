@@ -42,7 +42,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 		expectedError string
 	}{
 		{description: "Unknown path", path: unknownPath, valueType: proto.StringVal, value: "123456", expectedError: "no-such-path"},
-		{description: "Read only path", path: ntpPath, valueType: proto.BoolVal, value: "false", expectedError: "read only"},
+		{description: "Read only path", path: ntpPath, valueType: proto.BoolVal, value: "false", expectedError: "unable to find RW model path"},
 		{description: "Wrong type", path: clockTimeZonePath, valueType: proto.IntVal, value: "11111", expectedError: "expect string"},
 		{description: "Constraint violation", path: hostNamePath, valueType: proto.StringVal, value: "not a host name", expectedError: "does not match regular expression pattern"},
 	}

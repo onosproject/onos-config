@@ -34,12 +34,13 @@ const (
 // produces a structured formatted JSON tree
 // For YANG the only type of float value is deicmal, which is represented as a
 // string - therefore all float value must be string in JSON
-func BuildTree(values []*devicechange.PathValue, floatAsStr bool) ([]byte, error) {
+// Same with int64 and uin64 as per RFC 7951
+func BuildTree(values []*devicechange.PathValue, jsonRFC7951 bool) ([]byte, error) {
 
 	root := make(map[string]interface{})
 	rootif := interface{}(root)
 	for _, cv := range values {
-		err := addPathToTree(cv.Path, cv.GetValue(), &rootif, floatAsStr)
+		err := addPathToTree(cv.Path, cv.GetValue(), &rootif, jsonRFC7951)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +58,7 @@ func BuildTree(values []*devicechange.PathValue, floatAsStr bool) ([]byte, error
 // suitable for using with json.Marshal, which in turn can be used to feed in to
 // ygot.Unmarshall
 // This follows the approach in https://blog.golang.org/json-and-go "Generic JSON with interface{}"
-func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interface{}, floatAsStr bool) error {
+func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interface{}, jsonRFC7951 bool) error {
 	pathelems := utils.SplitPath(path)
 
 	// Convert to its real type
@@ -68,7 +69,7 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 
 	if len(pathelems) == 1 && len(value.Bytes) > 0 {
 		// At the end of a line - this is the leaf
-		handleLeafValue(nodemap, value, pathelems, floatAsStr)
+		handleLeafValue(nodemap, value, pathelems, jsonRFC7951)
 
 	} else if strings.Contains(pathelems[0], equals) {
 		// To handle list index items
@@ -136,7 +137,7 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 			listItemMap = keyMap
 		}
 		listItemIf := interface{}(listItemMap)
-		err := addPathToTree(refinePath, value, &listItemIf, floatAsStr)
+		err := addPathToTree(refinePath, value, &listItemIf, jsonRFC7951)
 		if err != nil {
 			return err
 		}
@@ -156,14 +157,14 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 			elemMap = make(map[string]interface{})
 			elemIf := elemMap
 
-			err := addPathToTree(refinePath, value, &elemIf, floatAsStr)
+			err := addPathToTree(refinePath, value, &elemIf, jsonRFC7951)
 			if err != nil {
 				return err
 			}
 			(nodemap)[pathelems[0]] = elemMap
 		} else {
 			//Reuse existing elemMap
-			err := addPathToTree(refinePath, value, &elemMap, floatAsStr)
+			err := addPathToTree(refinePath, value, &elemMap, jsonRFC7951)
 			if err != nil {
 				return err
 			}
@@ -173,24 +174,32 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 	return nil
 }
 
-func handleLeafValue(nodemap map[string]interface{}, value *devicechange.TypedValue, pathelems []string, floatAsStr bool) {
+func handleLeafValue(nodemap map[string]interface{}, value *devicechange.TypedValue, pathelems []string, jsonRFC7951 bool) {
 	switch value.Type {
 	case devicechange.ValueType_EMPTY:
 		// NOOP
 	case devicechange.ValueType_STRING:
 		(nodemap)[pathelems[0]] = (*devicechange.TypedString)(value).String()
 	case devicechange.ValueType_INT:
-		(nodemap)[pathelems[0]] = (*devicechange.TypedInt64)(value).Int()
-	case devicechange.ValueType_UINT:
-		(nodemap)[pathelems[0]] = (*devicechange.TypedUint64)(value).Uint()
-	case devicechange.ValueType_DECIMAL:
-		if floatAsStr {
-			(nodemap)[pathelems[0]] = (*devicechange.TypedDecimal64)(value).String()
+		if jsonRFC7951 && len(value.TypeOpts) > 0 && value.TypeOpts[0] > int32(devicechange.WidthThirtyTwo) {
+			(nodemap)[pathelems[0]] = (*devicechange.TypedInt)(value).String()
 		} else {
-			(nodemap)[pathelems[0]] = (*devicechange.TypedDecimal64)(value).Float()
+			(nodemap)[pathelems[0]] = (*devicechange.TypedInt)(value).Int()
+		}
+	case devicechange.ValueType_UINT:
+		if jsonRFC7951 && len(value.TypeOpts) > 0 && value.TypeOpts[0] > int32(devicechange.WidthThirtyTwo) {
+			(nodemap)[pathelems[0]] = (*devicechange.TypedUint)(value).String()
+		} else {
+			(nodemap)[pathelems[0]] = (*devicechange.TypedUint)(value).Uint()
+		}
+	case devicechange.ValueType_DECIMAL:
+		if jsonRFC7951 {
+			(nodemap)[pathelems[0]] = (*devicechange.TypedDecimal)(value).String()
+		} else {
+			(nodemap)[pathelems[0]] = (*devicechange.TypedDecimal)(value).Float()
 		}
 	case devicechange.ValueType_FLOAT:
-		if floatAsStr {
+		if jsonRFC7951 {
 			(nodemap)[pathelems[0]] = (*devicechange.TypedFloat)(value).String()
 		} else {
 			(nodemap)[pathelems[0]] = (*devicechange.TypedFloat)(value).Float32()
@@ -202,9 +211,27 @@ func handleLeafValue(nodemap map[string]interface{}, value *devicechange.TypedVa
 	case devicechange.ValueType_LEAFLIST_STRING:
 		(nodemap)[pathelems[0]] = (*devicechange.TypedLeafListString)(value).List()
 	case devicechange.ValueType_LEAFLIST_INT:
-		(nodemap)[pathelems[0]] = (*devicechange.TypedLeafListInt64)(value).List()
+		leafList, width := (*devicechange.TypedLeafListInt)(value).List()
+		if jsonRFC7951 && width > devicechange.WidthThirtyTwo {
+			asStrList := make([]string, 0)
+			for _, l := range leafList {
+				asStrList = append(asStrList, fmt.Sprintf("%d", l))
+			}
+			(nodemap)[pathelems[0]] = asStrList
+		} else {
+			(nodemap)[pathelems[0]] = leafList
+		}
 	case devicechange.ValueType_LEAFLIST_UINT:
-		(nodemap)[pathelems[0]] = (*devicechange.TypedLeafListUint)(value).List()
+		leafList, width := (*devicechange.TypedLeafListUint)(value).List()
+		if jsonRFC7951 && width > devicechange.WidthThirtyTwo {
+			asStrList := make([]string, 0)
+			for _, l := range leafList {
+				asStrList = append(asStrList, fmt.Sprintf("%d", l))
+			}
+			(nodemap)[pathelems[0]] = asStrList
+		} else {
+			(nodemap)[pathelems[0]] = leafList
+		}
 	case devicechange.ValueType_LEAFLIST_BOOL:
 		(nodemap)[pathelems[0]] = (*devicechange.TypedLeafListBool)(value).List()
 	case devicechange.ValueType_LEAFLIST_DECIMAL:

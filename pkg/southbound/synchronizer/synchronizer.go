@@ -334,7 +334,8 @@ func (sync Synchronizer) opCacheUpdate(notifications []*gnmi.Notification,
 					sync.operationalCache[cv.Path] = value
 				}
 			} else if sync.encoding == gnmi.Encoding_PROTO {
-				typedVal, err := values.GnmiTypedValueToNativeType(update.Val)
+				// TODO: Look up the model path from the update.Path
+				typedVal, err := values.GnmiTypedValueToNativeType(update.Val, nil)
 				if err != nil {
 					log.Warn("Error converting gnmi value to Typed"+
 						" Value", update.Val, " for ", update.Path)
@@ -462,7 +463,8 @@ func (sync *Synchronizer) opStateSubHandler(msg proto.Message) error {
 
 			// FIXME: this is a hack to ignore bogus values in phantom notifications coming from Stratum for some reason
 			if valStr != "unsupported yet" {
-				val, err := values.GnmiTypedValueToNativeType(update.Val)
+				// TODO: Look up the model path from the update.Path
+				val, err := values.GnmiTypedValueToNativeType(update.Val, nil)
 				if err != nil {
 					return fmt.Errorf("can't translate to Typed value %s", err)
 				}

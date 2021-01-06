@@ -18,6 +18,7 @@ package values
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"reflect"
 	"strings"
 	"testing"
@@ -40,7 +41,7 @@ const (
 
 func Test_GnmiStringToNative(t *testing.T) {
 	gnmiValue := gnmi.TypedValue_StringVal{StringVal: testString}
-	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue})
+	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue}, nil)
 	assert.NilError(t, err)
 
 	nativeString := (*devicechange.TypedString)(nativeType)
@@ -48,26 +49,38 @@ func Test_GnmiStringToNative(t *testing.T) {
 }
 
 func Test_GnmiIntToNative(t *testing.T) {
+	pathElem := modelregistry.ReadWritePathElem{
+		ReadOnlyAttrib: modelregistry.ReadOnlyAttrib{
+			ValueType: devicechange.ValueType_INT,
+			TypeOpts:  []uint8{uint8(devicechange.WidthThirtyTwo)},
+		},
+	}
 	gnmiValue := gnmi.TypedValue_IntVal{IntVal: testNegativeInt}
-	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue})
+	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue}, &pathElem)
 	assert.NilError(t, err)
 
-	nativeInt64 := (*devicechange.TypedInt64)(nativeType)
+	nativeInt64 := (*devicechange.TypedInt)(nativeType)
 	assert.Equal(t, nativeInt64.Int(), testNegativeInt)
 }
 
 func Test_GnmiUintToNative(t *testing.T) {
+	pathElem := modelregistry.ReadWritePathElem{
+		ReadOnlyAttrib: modelregistry.ReadOnlyAttrib{
+			ValueType: devicechange.ValueType_UINT,
+			TypeOpts:  []uint8{uint8(devicechange.WidthSixtyFour)},
+		},
+	}
 	gnmiValue := gnmi.TypedValue_UintVal{UintVal: uint64(testMaxUint)}
-	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue})
+	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue}, &pathElem)
 	assert.NilError(t, err)
 
-	nativeUint64 := (*devicechange.TypedUint64)(nativeType)
+	nativeUint64 := (*devicechange.TypedUint)(nativeType)
 	assert.Equal(t, nativeUint64.Uint(), testMaxUint)
 }
 
 func Test_GnmiBoolToNative(t *testing.T) {
 	gnmiValue := gnmi.TypedValue_BoolVal{BoolVal: true}
-	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue})
+	nativeType, err := GnmiTypedValueToNativeType(&gnmi.TypedValue{Value: &gnmiValue}, nil)
 	assert.NilError(t, err)
 
 	nativeBool := (*devicechange.TypedBool)(nativeType)
@@ -225,7 +238,7 @@ func Test_comparables(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		nativeType, err := GnmiTypedValueToNativeType(testCase.testValue)
+		nativeType, err := GnmiTypedValueToNativeType(testCase.testValue, nil)
 		assert.NilError(t, err)
 		assert.Assert(t, nativeType != nil)
 		assert.Equal(t, nativeType.Type, testCase.expectedType)
@@ -237,7 +250,7 @@ func Test_comparables(t *testing.T) {
 }
 
 func Test_ascii(t *testing.T) {
-	nativeType, err := GnmiTypedValueToNativeType(asciiLeafTestValue)
+	nativeType, err := GnmiTypedValueToNativeType(asciiLeafTestValue, nil)
 	assert.NilError(t, err)
 	assert.Assert(t, nativeType != nil)
 	assert.Equal(t, nativeType.Type, devicechange.ValueType_STRING)
@@ -248,7 +261,7 @@ func Test_ascii(t *testing.T) {
 }
 
 func Test_asciiList(t *testing.T) {
-	nativeType, err := GnmiTypedValueToNativeType(asciiListTestValue)
+	nativeType, err := GnmiTypedValueToNativeType(asciiListTestValue, nil)
 	assert.NilError(t, err)
 	assert.Assert(t, nativeType != nil)
 	assert.Equal(t, nativeType.Type, devicechange.ValueType_LEAFLIST_STRING)
@@ -300,7 +313,7 @@ func Test_NativeStringToGnmi(t *testing.T) {
 }
 
 func Test_NativeIntToGnmi(t *testing.T) {
-	nativeInt := devicechange.NewTypedValueInt64(testPositiveInt)
+	nativeInt := devicechange.NewTypedValueInt(testPositiveInt, 64)
 	gnmiInt, err := NativeTypeToGnmiTypedValue(nativeInt)
 	assert.NilError(t, err)
 	_, ok := gnmiInt.Value.(*gnmi.TypedValue_IntVal)
@@ -310,7 +323,7 @@ func Test_NativeIntToGnmi(t *testing.T) {
 }
 
 func Test_NativeUintToGnmi(t *testing.T) {
-	nativeUint := devicechange.NewTypedValueUint64(testMaxUint)
+	nativeUint := devicechange.NewTypedValueUint(testMaxUint, 64)
 	gnmiUint, err := NativeTypeToGnmiTypedValue(nativeUint)
 	assert.NilError(t, err)
 	_, ok := gnmiUint.Value.(*gnmi.TypedValue_UintVal)

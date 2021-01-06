@@ -46,7 +46,7 @@ func BenchmarkCreateChangeValue(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		path := fmt.Sprintf("/test-%s", strconv.Itoa(b.N))
-		cv, _ := devicechange.NewChangeValue(path, devicechange.NewTypedValueUint64(uint(i)), false)
+		cv, _ := devicechange.NewChangeValue(path, devicechange.NewTypedValueUint(uint(i), 32), false)
 		err := devicechange.IsPathValid(cv.Path)
 		assert.NilError(b, err, "path not valid %s", err)
 

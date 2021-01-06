@@ -279,7 +279,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 
 	// Making change
 	updates := make(devicechange.TypedValueMap)
-	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint64(valueLeaf2A789)
+	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint(valueLeaf2A789, 16)
 	deletes := []string{test1Cont1ACont2ALeaf2C}
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
@@ -327,7 +327,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	for _, updatedVal := range updatedVals {
 		switch updatedVal.Path {
 		case test1Cont1ACont2ALeaf2A:
-			assert.Equal(t, (*devicechange.TypedUint64)(updatedVal.GetValue()).Uint(), valueLeaf2A789)
+			assert.Equal(t, (*devicechange.TypedUint)(updatedVal.GetValue()).Uint(), valueLeaf2A789)
 			assert.Equal(t, updatedVal.Removed, false)
 		case test1Cont1ACont2ALeaf2C:
 			assert.Equal(t, updatedVal.GetValue().ValueToString(), "")
@@ -348,8 +348,8 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 
 	// Making change
 	updates := make(devicechange.TypedValueMap)
-	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint64(valueLeaf2A789)
-	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueDecimal64(1590, 3)
+	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint(valueLeaf2A789, 16)
+	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueDecimal(1590, 3)
 	deletes := []string{}
 	updatesForConfigOnlyDevice, deletesForConfigOnlyDevice, deviceInfo := makeDeviceChanges(deviceConfigOnly, updates, deletes)
 
@@ -393,7 +393,7 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 	for _, updatedVal := range updatedVals {
 		switch updatedVal.Path {
 		case test1Cont1ACont2ALeaf2A:
-			assert.Equal(t, (*devicechange.TypedUint64)(updatedVal.GetValue()).Uint(), valueLeaf2A789)
+			assert.Equal(t, (*devicechange.TypedUint)(updatedVal.GetValue()).Uint(), valueLeaf2A789)
 			assert.Equal(t, updatedVal.Removed, false)
 		case test1Cont1ACont2ALeaf2B:
 			assert.Equal(t, updatedVal.GetValue().ValueToString(), "1.590")
@@ -445,8 +445,8 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 
 	// Making change
 	updates := make(devicechange.TypedValueMap)
-	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint64(valueLeaf2A789)
-	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueDecimal64(1590, 3)
+	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueUint(valueLeaf2A789, 16)
+	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueDecimal(1590, 3)
 	deletes := []string{}
 	updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo := makeDeviceChanges(deviceDisconn, updates, deletes)
 	assert.Assert(t, updatesForDisconnectedDevice != nil)

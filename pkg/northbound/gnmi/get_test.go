@@ -95,7 +95,7 @@ func Test_getNoPathElems(t *testing.T) {
 
 // Test_getAllDevices is where a wildcard is used for target - path is ignored
 func Test_getAllDevices(t *testing.T) {
-	server, _ := setUpForGetSetTests(t)
+	server, _, _ := setUpForGetSetTests(t)
 
 	allDevicesPath := gnmi.Path{Elem: make([]*gnmi.PathElem, 0), Target: "*"}
 
@@ -117,7 +117,7 @@ func Test_getAllDevices(t *testing.T) {
 
 // Test_getalldevices is where a wildcard is used for target - path is ignored
 func Test_getAllDevicesInPrefix(t *testing.T) {
-	server, _ := setUpForGetSetTests(t)
+	server, _, _ := setUpForGetSetTests(t)
 
 	request := gnmi.GetRequest{
 		Prefix: &gnmi.Path{Target: "*"},

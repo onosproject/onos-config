@@ -98,10 +98,10 @@ func Test_DecomposeJSONWithPathsTd2_config(t *testing.T) {
 		case
 			"/cont1a/cont2a/leaf2e":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_LEAFLIST_INT, pathValue.Path)
-			leaf2eLl := (*devicechange.TypedLeafListInt64)(pathValue.Value)
-			assert.Equal(t, 5, len(leaf2eLl.List()))
-			assert.Equal(t, 5, leaf2eLl.List()[0])
-			assert.Equal(t, 1, leaf2eLl.List()[4])
+			leaf2eLl, width := (*devicechange.TypedLeafListInt)(pathValue.Value).List()
+			assert.Equal(t, devicechange.WidthThirtyTwo, width)
+			assert.Equal(t, 5, len(leaf2eLl))
+			assert.DeepEqual(t, []int64{5, 4, 3, 2, 1}, leaf2eLl)
 		case
 			"/cont1a/cont2a/leaf2a",
 			"/cont1a/list2a[name=l2a1]/tx-power",
@@ -225,7 +225,7 @@ func Test_DecomposeJSONWithPathsTd2OpState(t *testing.T) {
 		case
 			"/cont1b-state/leaf2d":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_UINT, pathValue.Path)
-			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 1)
 		case
 			"/cont1b-state/cont2c/leaf3a":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_BOOL, pathValue.Path)

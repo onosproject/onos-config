@@ -154,12 +154,14 @@ func handleMap(value map[string]interface{}, parentPath string,
 			} else {
 				switch (objs[0].Value).Type {
 				case devicechange.ValueType_LEAFLIST_INT:
-					llVals := make([]int, 0)
+					llVals := make([]int64, 0)
+					var width devicechange.Width
 					for _, obj := range objs {
-						llI := (*devicechange.TypedLeafListInt64)(obj.Value)
-						llVals = append(llVals, llI.List()...)
+						var llI []int64
+						llI, width = (*devicechange.TypedLeafListInt)(obj.Value).List()
+						llVals = append(llVals, llI...)
 					}
-					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListInt64Tv(llVals)}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListIntTv(llVals, width)}
 					changes = append(changes, &newCv)
 				case devicechange.ValueType_LEAFLIST_STRING:
 					llVals := make([]string, 0)
@@ -170,12 +172,14 @@ func handleMap(value map[string]interface{}, parentPath string,
 					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListStringTv(llVals)}
 					changes = append(changes, &newCv)
 				case devicechange.ValueType_LEAFLIST_UINT:
-					llVals := make([]uint, 0)
+					llVals := make([]uint64, 0)
+					var width devicechange.Width
 					for _, obj := range objs {
-						llI := (*devicechange.TypedLeafListUint)(obj.Value)
-						llVals = append(llVals, llI.List()...)
+						var llI []uint64
+						llI, width = (*devicechange.TypedLeafListUint)(obj.Value).List()
+						llVals = append(llVals, llI...)
 					}
-					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListUint64Tv(llVals)}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListUintTv(llVals, width)}
 					changes = append(changes, &newCv)
 				case devicechange.ValueType_LEAFLIST_BOOL:
 					llVals := make([]bool, 0)
@@ -195,14 +199,13 @@ func handleMap(value map[string]interface{}, parentPath string,
 					changes = append(changes, &newCv)
 				case devicechange.ValueType_LEAFLIST_DECIMAL:
 					llDigits := make([]int64, 0)
-					var llPrecision uint32
+					var llPrecision uint8
 					for _, obj := range objs {
-						llD := (*devicechange.TypedLeafListDecimal)(obj.Value)
-						digitsList, precision := llD.List()
-						llPrecision = precision
+						var digitsList []int64
+						digitsList, llPrecision = (*devicechange.TypedLeafListDecimal)(obj.Value).List()
 						llDigits = append(llDigits, digitsList...)
 					}
-					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListDecimal64Tv(llDigits, llPrecision)}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListDecimalTv(llDigits, llPrecision)}
 					changes = append(changes, &newCv)
 				case devicechange.ValueType_LEAFLIST_FLOAT:
 					llVals := make([]float32, 0)
@@ -210,7 +213,7 @@ func handleMap(value map[string]interface{}, parentPath string,
 						llI := (*devicechange.TypedLeafListFloat)(obj.Value)
 						llVals = append(llVals, llI.List()...)
 					}
-					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListFloat32Tv(llVals)}
+					newCv := devicechange.PathValue{Path: objs[0].Path, Value: devicechange.NewLeafListFloatTv(llVals)}
 					changes = append(changes, &newCv)
 				default:
 					// Not a leaf list
@@ -231,6 +234,7 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 	var pathElem *modelregistry.ReadWritePathElem
 	var subPath *modelregistry.ReadOnlyAttrib
 	var enum map[int]string
+	var typeOpts []uint8
 	var err error
 	pathElem, modelPath, ok = findModelRwPathNoIndices(modelRWpaths, parentPath)
 	if !ok {
@@ -242,11 +246,19 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 			}
 			return nil, fmt.Errorf("unable to locate %s in model", parentPath)
 		}
-		modeltype = subPath.Datatype
+		modeltype = subPath.ValueType
 		enum = subPath.Enum
+		if subPath.TypeOpts != nil {
+			typeOpts = make([]uint8, len(subPath.TypeOpts))
+			copy(typeOpts, subPath.TypeOpts)
+		}
 	} else {
 		modeltype = pathElem.ValueType
 		enum = pathElem.Enum
+		if pathElem.TypeOpts != nil {
+			typeOpts = make([]uint8, len(pathElem.TypeOpts))
+			copy(typeOpts, pathElem.TypeOpts)
+		}
 	}
 	var typedValue *devicechange.TypedValue
 	switch modeltype {
@@ -291,10 +303,13 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		default:
 			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
 		}
-		typedValue = devicechange.NewTypedValueUint64(uintVal)
+		if len(typeOpts) == 0 {
+			return nil, fmt.Errorf("expected UINT to have a field width e.g. 8, 16, 32, 64")
+		}
+		typedValue = devicechange.NewTypedValueUint(uintVal, devicechange.Width(typeOpts[0]))
 	case devicechange.ValueType_DECIMAL:
 		var digits int64
-		var precision uint32 = 6 // TODO should get this from the model (when it is populated in it)
+		precision := typeOpts[0]
 		switch valueTyped := value.(type) {
 		case float64:
 			digits = int64(valueTyped * math.Pow(10, float64(precision)))
@@ -307,7 +322,10 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		default:
 			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
 		}
-		typedValue = devicechange.NewTypedValueDecimal64(digits, precision)
+		if len(typeOpts) == 0 {
+			return nil, fmt.Errorf("expected DECIMAL to have a precision")
+		}
+		typedValue = devicechange.NewTypedValueDecimal(digits, precision)
 	case devicechange.ValueType_BYTES:
 		var dstBytes []byte
 		switch valueTyped := value.(type) {
@@ -338,23 +356,23 @@ func handleAttributeLeafList(modeltype devicechange.ValueType,
 
 	switch modeltype {
 	case devicechange.ValueType_LEAFLIST_INT:
-		var leafvalue int
+		var leafvalue int64
 		switch valueTyped := value.(type) {
 		case float64:
-			leafvalue = int(valueTyped)
+			leafvalue = int64(valueTyped)
 		default:
 			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
 		}
-		typedValue = devicechange.NewLeafListInt64Tv([]int{leafvalue})
+		typedValue = devicechange.NewLeafListIntTv([]int64{leafvalue}, devicechange.WidthThirtyTwo) // TODO: lookup width from model
 	case devicechange.ValueType_LEAFLIST_UINT:
-		var leafvalue uint
+		var leafvalue uint64
 		switch valueTyped := value.(type) {
 		case float64:
-			leafvalue = uint(valueTyped)
+			leafvalue = uint64(valueTyped)
 		default:
 			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
 		}
-		typedValue = devicechange.NewLeafListUint64Tv([]uint{leafvalue})
+		typedValue = devicechange.NewLeafListUintTv([]uint64{leafvalue}, devicechange.WidthThirtyTwo) // TODO: lookup width from model
 	case devicechange.ValueType_LEAFLIST_FLOAT:
 		var leafvalue float32
 		switch valueTyped := value.(type) {
@@ -363,7 +381,7 @@ func handleAttributeLeafList(modeltype devicechange.ValueType,
 		default:
 			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
 		}
-		typedValue = devicechange.NewLeafListFloat32Tv([]float32{leafvalue})
+		typedValue = devicechange.NewLeafListFloatTv([]float32{leafvalue})
 	case devicechange.ValueType_LEAFLIST_STRING:
 		var leafvalue string
 		switch valueTyped := value.(type) {
@@ -538,7 +556,7 @@ func replaceIndices(path string, ignoreAfter int, indices []indexValue) (string,
 			case devicechange.ValueType_STRING:
 				actualValue = string(index.value.Bytes)
 			case devicechange.ValueType_UINT, devicechange.ValueType_INT:
-				actualValue = fmt.Sprintf("%d", (*devicechange.TypedUint64)(index.value).Uint())
+				actualValue = fmt.Sprintf("%d", (*devicechange.TypedUint)(index.value).Uint())
 			}
 			pathParts[i] = fmt.Sprintf("%s=%s%s", idxName, actualValue, pathPart[closeIdx:])
 		}

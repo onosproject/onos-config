@@ -56,7 +56,7 @@ type Server struct {
 
 // UploadRegisterModel uploads and registers a new model plugin.
 func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegisterModelServer) error {
-	response := admin.RegisterResponse{Name: "Unknown"}
+	response := admin.RegisterResponse{Name: "WidthUnknown"}
 	soFileName := ""
 
 	const TEMPFILE = "/tmp/uploaded_model_plugin.tmp"
@@ -135,7 +135,7 @@ func (s Server) ListRegisteredModels(req *admin.ListModelsRequest, stream admin.
 					for subPath, subPathType := range subpathList {
 						subPathPb := admin.ReadOnlySubPath{
 							SubPath:   subPath,
-							ValueType: subPathType.Datatype,
+							ValueType: subPathType.ValueType,
 						}
 						subPathsPb = append(subPathsPb, &subPathPb)
 					}

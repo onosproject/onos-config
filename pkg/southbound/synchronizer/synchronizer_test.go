@@ -83,12 +83,15 @@ func synchronizerSetUp(t *testing.T) (synchronizerParameters, error) {
 	// See modelplugin/yang/TestDevice-1.0.0/test1@2018-02-20.yang for paths
 	roPathMap := make(modelregistry.ReadOnlyPathMap)
 	roSubPath1 := make(modelregistry.ReadOnlySubPathMap)
-	roSubPath1["/"] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
+	roSubPath1["/"] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_STRING}
 	roPathMap[cont1aCont2aLeaf2c] = roSubPath1
 	roSubPath2 := make(modelregistry.ReadOnlySubPathMap)
-	roSubPath2[leaf2d] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
-	roSubPath2[list2bWcIndex] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
+	roSubPath2[leaf2d] = modelregistry.ReadOnlyAttrib{
+		ValueType: devicechange.ValueType_UINT,
+		TypeOpts:  []uint8{uint8(devicechange.WidthSixteen)},
+	}
+	roSubPath2[list2bWcLeaf3c] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_STRING}
+	roSubPath2[list2bWcIndex] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_STRING}
 	roPathMap[cont1bState] = roSubPath2
 
 	ctrl := gomock.NewController(t)
@@ -341,7 +344,7 @@ func setUpStatePaths(t *testing.T) (*gnmi.Path, *gnmi.TypedValue, *gnmi.Path, *g
 	assert.NilError(t, err)
 	opPath, err := utils.ParseGNMIElements(utils.SplitPath(cont1bState + leaf2d))
 	assert.NilError(t, err)
-	opValue, err := values.NativeTypeToGnmiTypedValue(devicechange.NewTypedValueUint64(10002))
+	opValue, err := values.NativeTypeToGnmiTypedValue(devicechange.NewTypedValueUint(10002, 16))
 	assert.NilError(t, err)
 	return statePath, stateValue, opPath, opValue
 }
@@ -632,27 +635,27 @@ func Test_LikeStratum(t *testing.T) {
 	// See modelplugin/yang/TestDevice-1.0.0/test1@2018-02-20.yang for paths
 	roPathMap := make(modelregistry.ReadOnlyPathMap)
 	roSubPath1 := make(modelregistry.ReadOnlySubPathMap)
-	roSubPath1[ifIndex] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[ifName] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
-	roSubPath1[adminStatus] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
-	roSubPath1[hardwarePort] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
-	roSubPath1[healthIndicator] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
-	roSubPath1[lastChange] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
-	roSubPath1[operStatus] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_STRING}
-	roSubPath1[countersInBroadcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersInDiscards] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersInErrors] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersInFcsErrors] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersInMcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersInOctets] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersInUnicastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersInUnknPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersInBcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersOutDiscards] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersOutErrs] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersOutMcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersOutOctets] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
-	roSubPath1[countersOutUcastPkts] = modelregistry.ReadOnlyAttrib{Datatype: devicechange.ValueType_UINT}
+	roSubPath1[ifIndex] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[ifName] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_STRING}
+	roSubPath1[adminStatus] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_STRING}
+	roSubPath1[hardwarePort] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_STRING}
+	roSubPath1[healthIndicator] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_STRING}
+	roSubPath1[lastChange] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_STRING}
+	roSubPath1[operStatus] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_STRING}
+	roSubPath1[countersInBroadcastPkts] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersInDiscards] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersInErrors] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersInFcsErrors] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersInMcastPkts] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersInOctets] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersInUnicastPkts] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersInUnknPkts] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersInBcastPkts] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersOutDiscards] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersOutErrs] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersOutMcastPkts] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersOutOctets] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
+	roSubPath1[countersOutUcastPkts] = modelregistry.ReadOnlyAttrib{ValueType: devicechange.ValueType_UINT}
 	roPathMap[interfacesInterfaceWcState] = roSubPath1
 
 	opstateChan := make(chan events.OperationalStateEvent)

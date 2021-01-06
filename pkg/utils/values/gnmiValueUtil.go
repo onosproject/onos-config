@@ -18,11 +18,12 @@ package values
 import (
 	"fmt"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	gnmi "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 // GnmiTypedValueToNativeType converts gnmi type based values in to native byte array devicechange
-func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue) (*devicechange.TypedValue, error) {
+func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue, modelPath *modelregistry.ReadWritePathElem) (*devicechange.TypedValue, error) {
 
 	switch v := gnmiTv.GetValue().(type) {
 	case *gnmi.TypedValue_StringVal:
@@ -30,32 +31,45 @@ func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue) (*devicechange.TypedVal
 	case *gnmi.TypedValue_AsciiVal:
 		return devicechange.NewTypedValueString(v.AsciiVal), nil
 	case *gnmi.TypedValue_IntVal:
-		return devicechange.NewTypedValueInt64(int(v.IntVal)), nil
+		var intWidth = devicechange.WidthThirtyTwo
+		if modelPath != nil && len(modelPath.TypeOpts) > 0 {
+			intWidth = devicechange.Width(modelPath.TypeOpts[0])
+		}
+		return devicechange.NewTypedValueInt(int(v.IntVal), intWidth), nil
 	case *gnmi.TypedValue_UintVal:
-		return devicechange.NewTypedValueUint64(uint(v.UintVal)), nil
+		var uintWidth = devicechange.WidthThirtyTwo
+		if modelPath != nil && len(modelPath.TypeOpts) > 0 {
+			uintWidth = devicechange.Width(modelPath.TypeOpts[0])
+		}
+		return devicechange.NewTypedValueUint(uint(v.UintVal), uintWidth), nil
 	case *gnmi.TypedValue_BoolVal:
 		return devicechange.NewTypedValueBool(v.BoolVal), nil
 	case *gnmi.TypedValue_BytesVal:
 		return devicechange.NewTypedValueBytes(v.BytesVal), nil
 	case *gnmi.TypedValue_DecimalVal:
-		return devicechange.NewTypedValueDecimal64(v.DecimalVal.Digits, v.DecimalVal.Precision), nil
+		return devicechange.NewTypedValueDecimal(v.DecimalVal.Digits, uint8(v.DecimalVal.Precision)), nil
 	case *gnmi.TypedValue_FloatVal:
-		return devicechange.NewTypedValueFloat(v.FloatVal), nil
+		return devicechange.NewTypedValueFloat(float64(v.FloatVal)), nil
 	case *gnmi.TypedValue_LeaflistVal:
-		return handleLeafList(v)
+		var typeOpt0 uint8 = 0
+		if modelPath != nil && len(modelPath.TypeOpts) > 0 {
+			typeOpt0 = modelPath.TypeOpts[0]
+		}
+		return handleLeafList(v, typeOpt0)
 	default:
 		return nil, fmt.Errorf("Not yet supported %v", v)
 	}
 }
 
-func handleLeafList(gnmiLl *gnmi.TypedValue_LeaflistVal) (*devicechange.TypedValue, error) {
+// typeOpt0 could be a width in case of int or uint OR a precision in case of Decimal
+func handleLeafList(gnmiLl *gnmi.TypedValue_LeaflistVal, typeOpt0 uint8) (*devicechange.TypedValue, error) {
 	stringList := make([]string, 0)
-	intList := make([]int, 0)
-	uintList := make([]uint, 0)
+	intList := make([]int64, 0)
+	uintList := make([]uint64, 0)
 	boolList := make([]bool, 0)
 	bytesList := make([][]byte, 0)
 	digitsList := make([]int64, 0)
-	precision := uint32(0)
+	precision := typeOpt0
 	floatList := make([]float32, 0)
 
 	// All values will be of the same type, but we don't know what that is yet
@@ -66,39 +80,44 @@ func handleLeafList(gnmiLl *gnmi.TypedValue_LeaflistVal) (*devicechange.TypedVal
 		case *gnmi.TypedValue_AsciiVal:
 			stringList = append(stringList, u.AsciiVal)
 		case *gnmi.TypedValue_IntVal:
-			intList = append(intList, int(u.IntVal))
+			intList = append(intList, u.IntVal)
 		case *gnmi.TypedValue_UintVal:
-			uintList = append(uintList, uint(u.UintVal))
+			uintList = append(uintList, u.UintVal)
 		case *gnmi.TypedValue_BoolVal:
 			boolList = append(boolList, u.BoolVal)
 		case *gnmi.TypedValue_BytesVal:
 			bytesList = append(bytesList, u.BytesVal)
 		case *gnmi.TypedValue_DecimalVal:
 			digitsList = append(digitsList, u.DecimalVal.Digits)
-			precision = u.DecimalVal.Precision
+			precision = uint8(u.DecimalVal.Precision)
 		case *gnmi.TypedValue_FloatVal:
 			floatList = append(floatList, u.FloatVal)
 		default:
-			return nil, fmt.Errorf("Leaf list type Not yet supported %v", u)
+			return nil, fmt.Errorf("leaf list type Not yet supported %v", u)
 		}
+	}
+
+	var width = devicechange.WidthThirtyTwo
+	if typeOpt0 > 0 {
+		width = devicechange.Width(typeOpt0)
 	}
 
 	if len(stringList) > 0 {
 		return devicechange.NewLeafListStringTv(stringList), nil
 	} else if len(intList) > 0 {
-		return devicechange.NewLeafListInt64Tv(intList), nil
+		return devicechange.NewLeafListIntTv(intList, width), nil // TODO Width should be driven from model
 	} else if len(uintList) > 0 {
-		return devicechange.NewLeafListUint64Tv(uintList), nil
+		return devicechange.NewLeafListUintTv(uintList, width), nil // TODO Width should be driven from model
 	} else if len(boolList) > 0 {
 		return devicechange.NewLeafListBoolTv(boolList), nil
 	} else if len(bytesList) > 0 {
 		return devicechange.NewLeafListBytesTv(bytesList), nil
 	} else if len(digitsList) > 0 {
-		return devicechange.NewLeafListDecimal64Tv(digitsList, precision), nil
+		return devicechange.NewLeafListDecimalTv(digitsList, precision), nil
 	} else if len(floatList) > 0 {
-		return devicechange.NewLeafListFloat32Tv(floatList), nil
+		return devicechange.NewLeafListFloatTv(floatList), nil
 	}
-	return nil, fmt.Errorf("Empty leaf list given")
+	return nil, fmt.Errorf("empty leaf list given")
 }
 
 // NativeTypeToGnmiTypedValue converts native byte array based values in to gnmi types
@@ -116,11 +135,11 @@ func NativeTypeToGnmiTypedValue(typedValue *devicechange.TypedValue) (*gnmi.Type
 		return &gnmi.TypedValue{Value: &gnmiValue}, nil
 
 	case devicechange.ValueType_INT:
-		gnmiValue := gnmi.TypedValue_IntVal{IntVal: int64((*devicechange.TypedInt64)(typedValue).Int())}
+		gnmiValue := gnmi.TypedValue_IntVal{IntVal: int64((*devicechange.TypedInt)(typedValue).Int())}
 		return &gnmi.TypedValue{Value: &gnmiValue}, nil
 
 	case devicechange.ValueType_UINT:
-		gnmiValue := gnmi.TypedValue_UintVal{UintVal: uint64((*devicechange.TypedUint64)(typedValue).Uint())}
+		gnmiValue := gnmi.TypedValue_UintVal{UintVal: uint64((*devicechange.TypedUint)(typedValue).Uint())}
 		return &gnmi.TypedValue{Value: &gnmiValue}, nil
 
 	case devicechange.ValueType_BOOL:
@@ -128,8 +147,8 @@ func NativeTypeToGnmiTypedValue(typedValue *devicechange.TypedValue) (*gnmi.Type
 		return &gnmi.TypedValue{Value: &gnmiValue}, nil
 
 	case devicechange.ValueType_DECIMAL:
-		digits, precision := (*devicechange.TypedDecimal64)(typedValue).Decimal64()
-		gnmiValue := gnmi.TypedValue_DecimalVal{DecimalVal: &gnmi.Decimal64{Digits: digits, Precision: precision}}
+		digits, precision := (*devicechange.TypedDecimal)(typedValue).Decimal64()
+		gnmiValue := gnmi.TypedValue_DecimalVal{DecimalVal: &gnmi.Decimal64{Digits: digits, Precision: uint32(precision)}}
 		return &gnmi.TypedValue{Value: &gnmiValue}, nil
 
 	case devicechange.ValueType_FLOAT:
@@ -151,20 +170,20 @@ func NativeTypeToGnmiTypedValue(typedValue *devicechange.TypedValue) (*gnmi.Type
 		return &gnmi.TypedValue{Value: &gnmiLeafList}, nil
 
 	case devicechange.ValueType_LEAFLIST_INT:
-		ints := (*devicechange.TypedLeafListInt64)(typedValue).List()
+		ints, _ := (*devicechange.TypedLeafListInt)(typedValue).List()
 		gnmiTypedValues := make([]*gnmi.TypedValue, 0)
 		for _, i := range ints {
-			gnmiValue := gnmi.TypedValue_IntVal{IntVal: int64(i)}
+			gnmiValue := gnmi.TypedValue_IntVal{IntVal: i}
 			gnmiTypedValues = append(gnmiTypedValues, &gnmi.TypedValue{Value: &gnmiValue})
 		}
 		gnmiLeafList := gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: gnmiTypedValues}}
 		return &gnmi.TypedValue{Value: &gnmiLeafList}, nil
 
 	case devicechange.ValueType_LEAFLIST_UINT:
-		uints := (*devicechange.TypedLeafListUint)(typedValue).List()
+		uints, _ := (*devicechange.TypedLeafListUint)(typedValue).List()
 		gnmiTypedValues := make([]*gnmi.TypedValue, 0)
 		for _, u := range uints {
-			gnmiValue := gnmi.TypedValue_UintVal{UintVal: uint64(u)}
+			gnmiValue := gnmi.TypedValue_UintVal{UintVal: u}
 			gnmiTypedValues = append(gnmiTypedValues, &gnmi.TypedValue{Value: &gnmiValue})
 		}
 		gnmiLeafList := gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: gnmiTypedValues}}
@@ -184,7 +203,7 @@ func NativeTypeToGnmiTypedValue(typedValue *devicechange.TypedValue) (*gnmi.Type
 		digits, precision := (*devicechange.TypedLeafListDecimal)(typedValue).List()
 		gnmiTypedValues := make([]*gnmi.TypedValue, 0)
 		for _, d := range digits {
-			gnmiValue := gnmi.TypedValue_DecimalVal{DecimalVal: &gnmi.Decimal64{Digits: d, Precision: precision}}
+			gnmiValue := gnmi.TypedValue_DecimalVal{DecimalVal: &gnmi.Decimal64{Digits: d, Precision: uint32(precision)}}
 			gnmiTypedValues = append(gnmiTypedValues, &gnmi.TypedValue{Value: &gnmiValue})
 		}
 		gnmiLeafList := gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: gnmiTypedValues}}

@@ -130,7 +130,7 @@ func validateGnmiStateResponse(t *testing.T, resp *gpb.SubscribeResponse, device
 		validateGnmiStateSyncResponse(t, v)
 
 	default:
-		assert.Fail(t, "Unknown GNMI state response type")
+		assert.Fail(t, "WidthUnknown GNMI state response type")
 	}
 }
 

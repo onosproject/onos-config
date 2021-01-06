@@ -72,7 +72,7 @@ func Test_correctJsonPathValues2(t *testing.T) {
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/priority",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/priority":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_UINT, pathValue.Path)
-			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 1)
 		default:
 			t.Fatal("Unexpected path", pathValue.Path)
 		}
@@ -111,7 +111,7 @@ func Test_correctJsonPathRwValuesSubInterfaces(t *testing.T) {
 			"/interfaces/interface[name=eth1]/hold-time/config/down",
 			"/interfaces/interface[name=eth1]/hold-time/config/up":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_UINT, pathValue.Path)
-			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 0)
+			assert.Equal(t, len(pathValue.GetValue().GetTypeOpts()), 1)
 		default:
 			t.Fatal("Unexpected path", pathValue.Path)
 		}
