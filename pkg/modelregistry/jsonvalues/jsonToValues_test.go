@@ -140,7 +140,7 @@ func Test_findModelRoPathNoIndices(t *testing.T) {
 	assert.Equal(t, true, ok)
 	assert.Equal(t, modelPath, fullpath)
 	assert.Assert(t, roAttr != nil, "roAttr map not expected to be nil")
-	assert.Equal(t, devicechange.ValueType_STRING, roAttr.Datatype)
+	assert.Equal(t, devicechange.ValueType_STRING, roAttr.ValueType)
 }
 
 func Test_stripNamespace(t *testing.T) {
@@ -200,8 +200,8 @@ func Test_replaceIndices(t *testing.T) {
 
 	indices := make([]indexValue, 0)
 	indices = append(indices, indexValue{"a", devicechange.NewTypedValueString("12"), 0})
-	indices = append(indices, indexValue{"b", devicechange.NewTypedValueUint64(34), 1})
-	indices = append(indices, indexValue{"c", devicechange.NewTypedValueInt64(56), 2})
+	indices = append(indices, indexValue{"b", devicechange.NewTypedValueUint(34, 8), 1})
+	indices = append(indices, indexValue{"c", devicechange.NewTypedValueInt(56, 8), 2})
 	indices = append(indices, indexValue{"d", devicechange.NewTypedValueString("78"), 3})
 	indices = append(indices, indexValue{"e", devicechange.NewTypedValueString("9"), 4})
 	indices = append(indices, indexValue{"f", devicechange.NewTypedValueString("10"), 5})

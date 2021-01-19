@@ -78,24 +78,24 @@ var (
 
 func setUpTree() {
 	configValues = make([]*devicechange.PathValue, 13)
-	configValues[0] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: devicechange.NewTypedValueUint64(ValueLeaf2A12)}
-	configValues[1] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: devicechange.NewTypedValueUint64(ValueLeaf2A12)}
+	configValues[0] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: devicechange.NewTypedValueUint(ValueLeaf2A12, 8)}
+	configValues[1] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2A, Value: devicechange.NewTypedValueUint(ValueLeaf2A12, 8)}
 	configValues[1] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2B, Value: devicechange.NewTypedValueFloat(ValueLeaf2B114)}
 
 	configValues[2] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: devicechange.NewTypedValueString(ValueLeaf2CMyValue)}
 	configValues[3] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: devicechange.NewTypedValueString(ValueLeaf2CMyValue)}
 	configValues[4] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2C, Value: devicechange.NewTypedValueString(ValueLeaf2CMyValue)}
-	configValues[3] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2D, Value: devicechange.NewTypedValueDecimal64(ValueLeaf2D114, 5)}
-	//configValues[4] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2E, Value: devicechange.NewTypedValueInt64(ValueLeaf2A12)}
+	configValues[3] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2D, Value: devicechange.NewTypedValueDecimal(ValueLeaf2D114, 5)}
+	//configValues[4] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2E, Value: devicechange.NewTypedValueInt(ValueLeaf2A12)}
 
 	configValues[5] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2F, Value: devicechange.NewTypedValueBytes([]byte(ValueList2A2F))}
 	configValues[6] = &devicechange.PathValue{Path: Test1Cont1ACont2ALeaf2G, Value: devicechange.NewTypedValueBool(ValueList2A2G)}
 	configValues[7] = &devicechange.PathValue{Path: Test1Cont1ALeaf1a, Value: devicechange.NewTypedValueString(ValueLeaf1AMyValue)}
 
-	configValues[8] = &devicechange.PathValue{Path: Test1Cont1AList2a1t, Value: devicechange.NewTypedValueUint64(ValueList2b1PwrT)}
-	configValues[9] = &devicechange.PathValue{Path: Test1Cont1AList2a1r, Value: devicechange.NewTypedValueUint64(ValueList2b1PwrR)}
-	configValues[10] = &devicechange.PathValue{Path: Test1Cont1AList2a2t, Value: devicechange.NewTypedValueUint64(ValueList2b2PwrT)}
-	configValues[11] = &devicechange.PathValue{Path: Test1Cont1AList2a2r, Value: devicechange.NewTypedValueUint64(ValueList2b2PwrR)}
+	configValues[8] = &devicechange.PathValue{Path: Test1Cont1AList2a1t, Value: devicechange.NewTypedValueUint(ValueList2b1PwrT, 16)}
+	configValues[9] = &devicechange.PathValue{Path: Test1Cont1AList2a1r, Value: devicechange.NewTypedValueUint(ValueList2b1PwrR, 16)}
+	configValues[10] = &devicechange.PathValue{Path: Test1Cont1AList2a2t, Value: devicechange.NewTypedValueUint(ValueList2b2PwrT, 16)}
+	configValues[11] = &devicechange.PathValue{Path: Test1Cont1AList2a2r, Value: devicechange.NewTypedValueUint(ValueList2b2PwrR, 16)}
 	// TODO add back in a double key list - but must be added to the YANG model first
 	configValues[12] = &devicechange.PathValue{Path: Test1Leaftoplevel, Value: devicechange.NewTypedValueString(ValueLeaftopWxy1234)}
 }

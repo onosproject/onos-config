@@ -291,7 +291,7 @@ func newSet(index networkchange.Index, device device.ID, path string, created ti
 			},
 			{
 				Path:  fmt.Sprintf("/%s/meaning", path),
-				Value: devicechange.NewTypedValueInt64(39 + len(path)),
+				Value: devicechange.NewTypedValueInt(39+len(path), 32),
 			},
 		},
 	})

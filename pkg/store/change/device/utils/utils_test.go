@@ -76,14 +76,14 @@ var Config1Paths = [11]string{
 var Config1Values = [11][]byte{
 	make([]byte, 0), // 0
 	make([]byte, 0),
-	{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
-	{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
-	{100, 101, 102},              // ValueLeaf2CDef
-	{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	{13}, // ValueLeaf2A13
+	{1, 10, 0, 0, 0, 53, 0, 0, 0, 2, 201, 15, 207, 128, 220, 51, 112, 0}, // ValueLeaf2B314 3
+	{100, 101, 102},             // ValueLeaf2CDef
+	{97, 98, 99, 100, 101, 102}, // ValueLeaf1AAbcdef 5
 	make([]byte, 0),
-	{8, 0, 0, 0, 0, 0, 0, 0},         // ValueTxout1Txpwr8
+	{8},                              // ValueTxout1Txpwr8
 	make([]byte, 0),                  // 10
-	{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16
+	{16},                             // ValueTxout3Txpwr16
 	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234
 }
 
@@ -120,16 +120,16 @@ var Config1PreviousPaths = [13]string{
 var Config1PreviousValues = [13][]byte{
 	{}, // 0
 	{},
-	{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
-	{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
-	{97, 98, 99},                 // ValueLeaf2CAbc
-	{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	{13}, // ValueLeaf2A13
+	{1, 10, 0, 0, 0, 53, 0, 0, 0, 2, 201, 15, 207, 128, 220, 51, 112, 0}, // ValueLeaf2B314 3
+	{97, 98, 99},                // ValueLeaf2CAbc
+	{97, 98, 99, 100, 101, 102}, // ValueLeaf1AAbcdef 5
 	{},
-	{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	{8}, // ValueTxout1Txpwr8
 	{},
-	{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	{10},                             // ValueTxout2Txpwr10
 	{},                               // 10
-	{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout3Txpwr16,
+	{16},                             // ValueTxout3Txpwr16,
 	{87, 88, 89, 45, 49, 50, 51, 52}, // ValueLeaftopWxy1234,
 }
 
@@ -166,14 +166,14 @@ var Config1FirstPaths = [11]string{
 var Config1FirstValues = [11][]byte{
 	{}, // 0
 	{},
-	{13, 0, 0, 0, 0, 0, 0, 0},        // ValueLeaf2A13
-	{0, 0, 0, 128, 149, 67, 249, 63}, // ValueLeaf2B159 3
-	{97, 98, 99},                     // ValueLeaf2CAbc
-	{97, 98, 99, 100, 101, 102},      // ValueLeaf1AAbcdef 5
+	{13}, // ValueLeaf2A13
+	{1, 10, 0, 0, 0, 53, 0, 0, 0, 1, 202, 28, 172, 8, 49, 38, 232, 0}, // ValueLeaf2B159 3
+	{97, 98, 99},                // ValueLeaf2CAbc
+	{97, 98, 99, 100, 101, 102}, // ValueLeaf1AAbcdef 5
 	{},
-	{8, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	{8}, // ValueTxout1Txpwr8
 	{},
-	{10, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	{10},                             // ValueTxout2Txpwr10
 	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
@@ -208,14 +208,14 @@ var Config2Paths = [11]string{
 var Config2Values = [11][]byte{
 	{}, // 0
 	{},
-	{13, 0, 0, 0, 0, 0, 0, 0},    // ValueLeaf2A13
-	{0, 0, 0, 0, 250, 33, 9, 64}, // ValueLeaf2B314 3
-	{103, 104, 105},              // ValueLeaf2CGhi
-	{97, 98, 99, 100, 101, 102},  // ValueLeaf1AAbcdef 5
+	{13}, // ValueLeaf2A13
+	{1, 10, 0, 0, 0, 53, 0, 0, 0, 2, 201, 15, 207, 128, 220, 51, 112, 0}, // ValueLeaf2B314 3
+	{103, 104, 105},             // ValueLeaf2CGhi
+	{97, 98, 99, 100, 101, 102}, // ValueLeaf1AAbcdef 5
 	{},
-	{10, 0, 0, 0, 0, 0, 0, 0}, // ValueTxout1Txpwr8
+	{10}, // ValueTxout1Txpwr8
 	{},
-	{16, 0, 0, 0, 0, 0, 0, 0},        // ValueTxout2Txpwr10
+	{16},                             // ValueTxout2Txpwr10
 	{87, 88, 89, 45, 49, 50, 51, 52}, //ValueLeaftopWxy1234, 10
 }
 
@@ -262,14 +262,14 @@ func setUp(t *testing.T) (*devicechange.DeviceChange, *devicechange.DeviceChange
 	mockChangeStore := mockstore.NewMockDeviceChangesStore(ctrl)
 	config1Value01, _ := devicechange.NewChangeValue(Test1Cont1A, devicechange.NewTypedValueEmpty(), false)
 	config1Value02, _ := devicechange.NewChangeValue(Test1Cont1ACont2A, devicechange.NewTypedValueEmpty(), false)
-	config1Value03, _ := devicechange.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechange.NewTypedValueUint64(ValueLeaf2A13), false)
+	config1Value03, _ := devicechange.NewChangeValue(Test1Cont1ACont2ALeaf2A, devicechange.NewTypedValueUint(ValueLeaf2A13, 8), false)
 	config1Value04, _ := devicechange.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechange.NewTypedValueFloat(ValueLeaf2B159), false)
 	config1Value05, _ := devicechange.NewChangeValue(Test1Cont1ACont2ALeaf2C, devicechange.NewTypedValueString(ValueLeaf2CAbc), false)
 	config1Value06, _ := devicechange.NewChangeValue(Test1Cont1ALeaf1A, devicechange.NewTypedValueString(ValueLeaf1AAbcdef), false)
 	config1Value07, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout1, devicechange.NewTypedValueEmpty(), false)
-	config1Value08, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, devicechange.NewTypedValueUint64(ValueTxout1Txpwr8), false)
+	config1Value08, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout1Txpwr, devicechange.NewTypedValueUint(ValueTxout1Txpwr8, 8), false)
 	config1Value09, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout2, devicechange.NewTypedValueEmpty(), false)
-	config1Value10, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechange.NewTypedValueUint64(ValueTxout2Txpwr10), false)
+	config1Value10, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout2Txpwr, devicechange.NewTypedValueUint(ValueTxout2Txpwr10, 8), false)
 	config1Value11, _ := devicechange.NewChangeValue(Test1Leaftoplevel, devicechange.NewTypedValueString(ValueLeaftopWxy1234), false)
 
 	device1 := makeDevice(topodevice.ID(Device1ID))
@@ -298,7 +298,7 @@ func setUp(t *testing.T) (*devicechange.DeviceChange, *devicechange.DeviceChange
 
 	config2Value01, _ := devicechange.NewChangeValue(Test1Cont1ACont2ALeaf2B, devicechange.NewTypedValueFloat(ValueLeaf2B314), false)
 	config2Value02, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout3, devicechange.NewTypedValueEmpty(), false)
-	config2Value03, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, devicechange.NewTypedValueUint64(ValueTxout3Txpwr16), false)
+	config2Value03, _ := devicechange.NewChangeValue(Test1Cont1AList2ATxout3Txpwr, devicechange.NewTypedValueUint(ValueTxout3Txpwr16, 8), false)
 
 	change2 := devicechange.Change{
 		Values: []*devicechange.ChangeValue{

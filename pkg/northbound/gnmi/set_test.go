@@ -17,32 +17,28 @@ package gnmi
 import (
 	"context"
 	"github.com/golang/mock/gomock"
-	td1 "github.com/onosproject/config-models/modelplugin/testdevice-1.0.0/testdevice_1_0_0"
-	td2 "github.com/onosproject/config-models/modelplugin/testdevice-2.0.0/testdevice_2_0_0"
-	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
-	"github.com/openconfig/goyang/pkg/yang"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
+	"regexp"
 	"strconv"
 	"testing"
 )
 
 const (
-	cont1aCont2aLeaf2a = "/cont1a/cont2a/leaf2a"
-	cont1aCont2aLeaf2b = "/cont1a/cont2a/leaf2b"
-	cont1aCont2aLeaf2c = "/cont1a/cont2a/leaf2c" // State
-	networkChange1     = "NetworkChange1"
-	device1            = "Device1"
-	deviceVersion1     = "1.0.0"
+	networkChange1 = "NetworkChange1"
+	device1        = "Device1"
+	deviceVersion1 = "1.0.0"
 )
+
+var uuidRegex = regexp.MustCompile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 func setUpLocalhostDeviceCache(mocks *AllMocks) {
 	const localhost1 = "localhost-1"
@@ -84,11 +80,12 @@ func setUpDeviceWithMultipleVersions(mocks *AllMocks, deviceName string) {
 
 // Test_doSingleSet shows how a value of 1 path can be set on a target
 func Test_doSingleSet(t *testing.T) {
-	server, _ := setUpForGetSetTests(t)
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
-	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
+	typedValue := gnmi.TypedValue_UintVal{UintVal: 11}
 	value := gnmi.TypedValue{Value: &typedValue}
 	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
@@ -140,11 +137,12 @@ func Test_doSingleSet(t *testing.T) {
 
 // Test_doSingleSet shows how a value of 1 list can be set on a target - using prefix
 func Test_doSingleSetList(t *testing.T) {
-	server, _ := setUpForGetSetTests(t)
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
-	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/list2a[name=a/b]/tx-power"))
+	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/list2a[name=aaa/bbb]/tx-power"))
 	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
 	value := gnmi.TypedValue{Value: &typedValue}
 	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
@@ -198,20 +196,21 @@ func Test_doSingleSetList(t *testing.T) {
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
 func Test_do2SetsOnSameTarget(t *testing.T) {
-	server, mocks := setUpForGetSetTests(t)
+	server, mocks, mgr := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 	setUpLocalhostDeviceCache(mocks)
 
 	pathElemsRefs1, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2b"})
-	value1Str := gnmi.TypedValue_StringVal{StringVal: "newValue2b"}
+	value1Str := gnmi.TypedValue_DecimalVal{DecimalVal: &gnmi.Decimal64{Digits: 123456, Precision: 5}}
 	value := gnmi.TypedValue{Value: &value1Str}
 
 	updatePath1 := gnmi.Path{Elem: pathElemsRefs1.Elem, Target: "localhost-1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath1, Val: &value})
 
-	pathElemsRefs2, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2c"})
-	value2Str := gnmi.TypedValue_StringVal{StringVal: "newValue2c"}
-	value2 := gnmi.TypedValue{Value: &value2Str}
+	pathElemsRefs2, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2g"})
+	value2Bool := gnmi.TypedValue_BoolVal{BoolVal: true}
+	value2 := gnmi.TypedValue{Value: &value2Bool}
 
 	updatePath2 := gnmi.Path{Elem: pathElemsRefs2.Elem, Target: "localhost-1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath2, Val: &value2})
@@ -238,18 +237,43 @@ func Test_do2SetsOnSameTarget(t *testing.T) {
 	for _, res := range setResponse.Response {
 		assert.Equal(t, res.Path.Target, "localhost-1")
 	}
+
+	assert.Equal(t, 1, len(setResponse.Extension))
+	assert.Equal(t, 100, int(setResponse.Extension[0].GetRegisteredExt().Id))
+	changeUUID := string(setResponse.Extension[0].GetRegisteredExt().GetMsg())
+	assert.Assert(t, uuidRegex.MatchString(changeUUID), "ID does not match %s", uuidRegex.String())
+
+	// Check the network change was made
+	nwChange, err := mgr.NetworkChangesStore.Get(networkchange.ID(changeUUID))
+	assert.NilError(t, err)
+	assert.Equal(t, 1, len(nwChange.Changes))
+	changes := nwChange.Changes[0]
+	assert.Equal(t, "localhost-1", string(changes.DeviceID))
+	assert.Equal(t, "TestDevice", string(changes.DeviceType))
+	assert.Equal(t, "1.0.0", string(changes.DeviceVersion))
+	assert.Equal(t, 2, len(changes.Values))
+	for _, ch := range changes.Values {
+		switch ch.String() {
+		case
+			`path:"/cont1a/cont2a/leaf2b" value:<bytes:"\001\342@" type:DECIMAL type_opts:5 type_opts:0 > `,
+			`path:"/cont1a/cont2a/leaf2g" value:<bytes:"\001" type:BOOL > `:
+		default:
+			t.Errorf("unexpected network-change value %s", ch.String())
+		}
+	}
 }
 
 // Test_do2SetsOnDiffTargets shows how paths on multiple targets can be Set at
 // same time
 func Test_do2SetsOnDiffTargets(t *testing.T) {
-	server, mocks := setUpForGetSetTests(t)
+	server, mocks, mgr := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 	setUpLocalhostDeviceCache(mocks)
 
 	// Make the same change to 2 targets
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
-	typedValue := gnmi.TypedValue_StringVal{StringVal: "2ndValue2a"}
+	typedValue := gnmi.TypedValue_UintVal{UintVal: 2}
 	value := gnmi.TypedValue{Value: &typedValue}
 
 	updatePathTgt1 := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "localhost-1"}
@@ -278,23 +302,47 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 		assert.Equal(t, result.Op.String(), gnmi.UpdateResult_UPDATE.String())
 		assert.Equal(t, result.Path.Elem[2].Name, "leaf2a")
 	}
+
+	assert.Equal(t, 1, len(setResponse.Extension))
+	assert.Equal(t, 100, int(setResponse.Extension[0].GetRegisteredExt().Id))
+	changeUUID := string(setResponse.Extension[0].GetRegisteredExt().GetMsg())
+	assert.Assert(t, uuidRegex.MatchString(changeUUID), "ID does not match %s", uuidRegex.String())
+
+	// Check the network change was made
+	nwChange, err := mgr.NetworkChangesStore.Get(networkchange.ID(changeUUID))
+	assert.NilError(t, err)
+	assert.Equal(t, 2, len(nwChange.Changes))
+	for _, ch := range nwChange.Changes {
+		assert.Equal(t, "TestDevice", string(ch.DeviceType))
+		assert.Equal(t, "1.0.0", string(ch.DeviceVersion))
+		assert.Equal(t, 1, len(ch.Values))
+		switch ch.DeviceID {
+		case "localhost-1", "localhost-2":
+			assert.Equal(t, 1, len(ch.Values))
+			assert.Equal(t, `path:"/cont1a/cont2a/leaf2a" value:<bytes:"\002" type:UINT type_opts:8 > `,
+				ch.Values[0].String())
+		default:
+			t.Errorf("unexpected DeviceID %s", ch.DeviceID)
+		}
+	}
 }
 
 // Test_do2SetsOnOneTargetOneOnDiffTarget shows how multiple paths on multiple
 // targets can be Set at same time
 func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
-	server, mocks := setUpForGetSetTests(t)
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 	setUpLocalhostDeviceCache(mocks)
 
 	// Make the same change to 2 targets
 	pathElemsRefs2a, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
-	valueStr2a := gnmi.TypedValue_StringVal{StringVal: "3rdValue2a"}
+	valueStr2a := gnmi.TypedValue_UintVal{UintVal: 3}
 
 	pathElemsRefs2b, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2b"})
-	valueStr2b := gnmi.TypedValue_StringVal{StringVal: "3rdValue2b"}
+	valueStr2b := gnmi.TypedValue_DecimalVal{DecimalVal: &gnmi.Decimal64{Digits: 123456, Precision: 5}}
 
-	pathElemsRefs2c, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2c"})
+	pathElemsRefs2g, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2g"})
 
 	// 2 changes on Target 1
 	updatedPaths = append(updatedPaths, &gnmi.Update{
@@ -312,7 +360,7 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 		Val:  &gnmi.TypedValue{Value: &valueStr2a},
 	})
 	deletePaths = append(deletePaths,
-		&gnmi.Path{Elem: pathElemsRefs2c.Elem, Target: "localhost-2"})
+		&gnmi.Path{Elem: pathElemsRefs2g.Elem, Target: "localhost-2"})
 
 	var setRequest = gnmi.SetRequest{
 		Delete:  deletePaths,
@@ -339,7 +387,8 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 
 // Test_doSingleDelete shows how a value of 1 path can be deleted on a target
 func Test_doSingleDelete(t *testing.T) {
-	server, _ := setUpForGetSetTests(t)
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
@@ -393,16 +442,17 @@ func Test_doSingleDelete(t *testing.T) {
 
 // Test_doUpdateDeleteSet shows how a request with a delete and an update can be applied on a target
 func Test_doUpdateDeleteSet(t *testing.T) {
-	server, _ := setUpForGetSetTests(t)
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
-	typedValue := gnmi.TypedValue_StringVal{StringVal: "newValue2a"}
+	typedValue := gnmi.TypedValue_UintVal{UintVal: 2}
 	value := gnmi.TypedValue{Value: &typedValue}
 	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
 
-	pathElemsDeleteRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2c"})
+	pathElemsDeleteRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2g"})
 	deletePath := &gnmi.Path{Elem: pathElemsDeleteRefs.Elem, Target: "Device1"}
 	deletePaths = append(deletePaths, deletePath)
 
@@ -453,7 +503,7 @@ func Test_doUpdateDeleteSet(t *testing.T) {
 
 	assert.Equal(t, pathDelete.Elem[0].Name, "cont1a")
 	assert.Equal(t, pathDelete.Elem[1].Name, "cont2a")
-	assert.Equal(t, pathDelete.Elem[2].Name, "leaf2c")
+	assert.Equal(t, pathDelete.Elem[2].Name, "leaf2g")
 
 	// Check that an the network change ID is given in extension 100 and that the device is currently disconnected
 	assert.Equal(t, len(setResponse.Extension), 1)
@@ -466,67 +516,42 @@ func Test_doUpdateDeleteSet(t *testing.T) {
 //TODO test with update and delete at the same time.
 
 func TestSet_checkForReadOnly(t *testing.T) {
-	server, mgr, mocks := setUp(t)
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
-	modelPluginTestDevice1 := MockModelPlugin{
-		td1.UnzipSchema,
+	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2c"})
+	typedValue := gnmi.TypedValue_StringVal{
+		StringVal: "test1",
 	}
-	modelPluginTestDevice2 := MockModelPlugin{
-		td2.UnzipSchema,
-	}
-	mgr.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = modelPluginTestDevice1
-	ds1Schema, _ := modelPluginTestDevice1.Schema()
-	readOnlyPathsTd1, _ := modelregistry.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
-	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-1.0.0"] = readOnlyPathsTd1
+	value := gnmi.TypedValue{Value: &typedValue}
+	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
 
-	mgr.ModelRegistry.ModelPlugins["TestDevice-2.0.0"] = modelPluginTestDevice2
-	td2Schema, _ := modelPluginTestDevice2.Schema()
-	readOnlyPathsTd2, _ := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
-	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-2.0.0"] = readOnlyPathsTd2
-
-	cacheInfo1v1 := cache.Info{
-		DeviceID: "device-1",
-		Type:     "TestDevice",
-		Version:  "1.0.0",
+	ext100Name := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  GnmiExtensionNetwkChangeID,
+			Msg: []byte("TestChange"),
+		},
 	}
 
-	cacheInfo1v2 := cache.Info{
-		DeviceID: "device-1",
-		Type:     "TestDevice",
-		Version:  "2.0.0",
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+		Extension: []*gnmi_ext.Extension{{
+			Ext: &ext100Name,
+		}},
 	}
 
-	cacheInfo2v1 := cache.Info{
-		DeviceID: "device-2",
-		Type:     "TestDevice",
-		Version:  "1.0.0",
-	}
-
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-1")).Return([]*cache.Info{&cacheInfo1v1, &cacheInfo1v2})
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("device-2")).Return([]*cache.Info{&cacheInfo2v1})
-
-	updateT1 := make(map[string]*devicechange.TypedValue)
-	updateT1[cont1aCont2aLeaf2a] = devicechange.NewTypedValueUint64(10)
-	updateT1[cont1aCont2aLeaf2b] = devicechange.NewTypedValueString("2b on t1")
-
-	updateT2 := make(map[string]*devicechange.TypedValue)
-	updateT2[cont1aCont2aLeaf2a] = devicechange.NewTypedValueUint64(11)
-	updateT2[cont1aCont2aLeaf2b] = devicechange.NewTypedValueString("2b on t2")
-	updateT2[cont1aCont2aLeaf2c] = devicechange.NewTypedValueString("2c on t2 - ro attribute")
-
-	targetUpdates := make(map[string]devicechange.TypedValueMap)
-	targetUpdates["device-1"] = updateT1
-	targetUpdates["device-2"] = updateT2
-
-	err := server.checkForReadOnly("device-1", "TestDevice", "1.0.0", updateT1, make([]string, 0))
-	assert.NilError(t, err, "unexpected error on T1")
-	err = server.checkForReadOnly("device-2", "TestDevice", "1.0.0", updateT2, make([]string, 0))
-	assert.NilError(t, err)
+	_, setError := server.Set(context.Background(), &setRequest)
+	assert.Error(t, setError, "unable to find RW model path /cont1a/cont2a/leaf2c")
 }
 
 // Tests giving a new device without specifying a type
 func TestSet_MissingDeviceType(t *testing.T) {
-	server, mocks := setUpForGetSetTests(t)
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	// Setting up mocks
@@ -548,13 +573,14 @@ func TestSet_MissingDeviceType(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.ErrorContains(t, setError, "Need to supply a type and version")
+	assert.ErrorContains(t, setError, "NoSuchDevice is not known")
 	assert.Assert(t, setResponse == nil)
 }
 
 // Tests giving a device with multiple versions where the request doesn't specify which one
 func TestSet_ConflictingDeviceType(t *testing.T) {
-	server, mocks := setUpForGetSetTests(t)
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	// Setting up mocks
@@ -582,7 +608,8 @@ func TestSet_ConflictingDeviceType(t *testing.T) {
 
 // Test giving a device with a type that doesn't match the type in the store
 func TestSet_BadDeviceType(t *testing.T) {
-	server, mocks := setUpForGetSetTests(t)
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	// Setting up mocks
@@ -614,6 +641,6 @@ func TestSet_BadDeviceType(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.ErrorContains(t, setError, "type given NotTheSameType does not match expected TestDevice")
+	assert.ErrorContains(t, setError, "target DeviceWithMultipleVersions type given NotTheSameType does not match expected TestDevice")
 	assert.Assert(t, setResponse == nil)
 }

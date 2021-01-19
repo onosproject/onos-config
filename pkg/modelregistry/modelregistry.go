@@ -62,7 +62,8 @@ const MatchOnIndex = `(\[.*?]).*?`
 
 // ReadOnlyAttrib is the known metadata about a Read Only leaf
 type ReadOnlyAttrib struct {
-	Datatype    devicechange.ValueType
+	ValueType   devicechange.ValueType
+	TypeOpts    []uint8
 	Description string
 	Units       string
 	Enum        map[int]string
@@ -97,11 +98,11 @@ func (ro ReadOnlyPathMap) TypeForPath(path string) (devicechange.ValueType, erro
 		for k1, sp := range subPaths {
 			if k1 == "/" {
 				if k == path {
-					return sp.Datatype, nil
+					return sp.ValueType, nil
 				}
 			} else {
 				if k+k1 == path {
-					return sp.Datatype, nil
+					return sp.ValueType, nil
 				}
 			}
 		}
@@ -111,14 +112,11 @@ func (ro ReadOnlyPathMap) TypeForPath(path string) (devicechange.ValueType, erro
 
 // ReadWritePathElem holds data about a leaf or container
 type ReadWritePathElem struct {
-	ValueType   devicechange.ValueType
-	Units       string
-	Description string
-	Mandatory   bool
-	Default     string
-	Range       []string
-	Length      []string
-	Enum        map[int]string
+	ReadOnlyAttrib
+	Mandatory bool
+	Default   string
+	Range     []string
+	Length    []string
 }
 
 // ReadWritePathMap is a map of ReadWrite paths a their metadata
@@ -267,8 +265,8 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 		itemPath := formatName(dirEntry, false, parentPath, subpathPrefix)
 		if dirEntry.IsLeaf() || dirEntry.IsLeafList() {
 			// No need to recurse
-			t, err := toValueType(dirEntry.Type, dirEntry.IsLeafList())
-			tObj := ReadOnlyAttrib{Datatype: t, Description: dirEntry.Description, Units: dirEntry.Units}
+			t, typeOpts, err := toValueType(dirEntry.Type, dirEntry.IsLeafList())
+			tObj := ReadOnlyAttrib{ValueType: t, TypeOpts: typeOpts, Description: dirEntry.Description, Units: dirEntry.Units}
 			if err != nil {
 				log.Errorf(err.Error())
 			}
@@ -298,14 +296,17 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 					lengths = append(lengths, fmt.Sprintf("%v", l))
 				}
 				rwElem := ReadWritePathElem{
-					ValueType:   t,
-					Description: dirEntry.Description,
-					Mandatory:   dirEntry.Mandatory == yang.TSTrue,
-					Units:       dirEntry.Units,
-					Default:     dirEntry.Default,
-					Range:       ranges,
-					Length:      lengths,
-					Enum:        enum,
+					ReadOnlyAttrib: ReadOnlyAttrib{
+						ValueType:   t,
+						TypeOpts:    typeOpts,
+						Description: dirEntry.Description,
+						Units:       dirEntry.Units,
+						Enum:        enum,
+					},
+					Mandatory: dirEntry.Mandatory == yang.TSTrue,
+					Default:   dirEntry.Default,
+					Range:     ranges,
+					Length:    lengths,
 				}
 				readWritePaths[itemPath] = rwElem
 			}
@@ -367,7 +368,7 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 				}
 				if roIdxName == itemPath && kIsIdxAttr {
 					roIdx := ReadOnlyAttrib{
-						Datatype:    v.ValueType,
+						ValueType:   v.ValueType,
 						Description: v.Description,
 						Units:       v.Units,
 					}
@@ -454,43 +455,60 @@ func PathsRW(rwPathMap ReadWritePathMap) []string {
 	return keys
 }
 
-func toValueType(entry *yang.YangType, isLeafList bool) (devicechange.ValueType, error) {
+func toValueType(entry *yang.YangType, isLeafList bool) (devicechange.ValueType, []uint8, error) {
 	//TODO evaluate better devicechange and error return
 	switch entry.Name {
 	case "int8", "int16", "int32", "int64":
+		width := extractIntegerWidth(entry.Name)
 		if isLeafList {
-			return devicechange.ValueType_LEAFLIST_INT, nil
+			return devicechange.ValueType_LEAFLIST_INT, []uint8{uint8(width)}, nil
 		}
-		return devicechange.ValueType_INT, nil
+		return devicechange.ValueType_INT, []uint8{uint8(width)}, nil
 	case "uint8", "uint16", "uint32", "uint64", "counter64":
+		width := extractIntegerWidth(entry.Name)
 		if isLeafList {
-			return devicechange.ValueType_LEAFLIST_UINT, nil
+			return devicechange.ValueType_LEAFLIST_UINT, []uint8{uint8(width)}, nil
 		}
-		return devicechange.ValueType_UINT, nil
+		return devicechange.ValueType_UINT, []uint8{uint8(width)}, nil
 	case "decimal64":
 		if isLeafList {
-			return devicechange.ValueType_LEAFLIST_DECIMAL, nil
+			return devicechange.ValueType_LEAFLIST_DECIMAL, []uint8{uint8(entry.FractionDigits)}, nil
 		}
-		return devicechange.ValueType_DECIMAL, nil
+		return devicechange.ValueType_DECIMAL, []uint8{uint8(entry.FractionDigits)}, nil
 	case "string", "enumeration", "leafref", "identityref", "union", "instance-identifier":
 		if isLeafList {
-			return devicechange.ValueType_LEAFLIST_STRING, nil
+			return devicechange.ValueType_LEAFLIST_STRING, nil, nil
 		}
-		return devicechange.ValueType_STRING, nil
+		return devicechange.ValueType_STRING, nil, nil
 	case "boolean":
 		if isLeafList {
-			return devicechange.ValueType_LEAFLIST_BOOL, nil
+			return devicechange.ValueType_LEAFLIST_BOOL, nil, nil
 		}
-		return devicechange.ValueType_BOOL, nil
+		return devicechange.ValueType_BOOL, nil, nil
 	case "bits", "binary":
 		if isLeafList {
-			return devicechange.ValueType_LEAFLIST_BYTES, nil
+			return devicechange.ValueType_LEAFLIST_BYTES, nil, nil
 		}
-		return devicechange.ValueType_BYTES, nil
+		return devicechange.ValueType_BYTES, nil, nil
 	case "empty":
-		return devicechange.ValueType_EMPTY, nil
+		return devicechange.ValueType_EMPTY, nil, nil
 	default:
-		return devicechange.ValueType_STRING, nil
+		return devicechange.ValueType_STRING, nil, nil
+	}
+}
+
+func extractIntegerWidth(typeName string) devicechange.Width {
+	switch typeName {
+	case "int8", "uint8":
+		return devicechange.WidthEight
+	case "int16", "uint16":
+		return devicechange.WidthSixteen
+	case "int32", "uint32":
+		return devicechange.WidthThirtyTwo
+	case "int64", "uint64", "counter64":
+		return devicechange.WidthSixtyFour
+	default:
+		return devicechange.WidthThirtyTwo
 	}
 }
 

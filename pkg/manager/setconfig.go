@@ -98,8 +98,8 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 }
 
 // SetNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
-func (m *Manager) SetNetworkConfig(targetUpdates map[string]devicechange.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info, netChangeID string) (*networkchange.NetworkChange, error) {
+func (m *Manager) SetNetworkConfig(targetUpdates map[devicetype.ID]devicechange.TypedValueMap,
+	targetRemoves map[devicetype.ID][]string, deviceInfo map[devicetype.ID]cache.Info, netChangeID string) (*networkchange.NetworkChange, error) {
 	//TODO evaluate need of user and add it back if need be.
 
 	allDeviceChanges, errChanges := m.computeNetworkConfig(targetUpdates, targetRemoves, deviceInfo, "")
@@ -119,17 +119,17 @@ func (m *Manager) SetNetworkConfig(targetUpdates map[string]devicechange.TypedVa
 }
 
 //computeNetworkConfig computes each device change
-func (m *Manager) computeNetworkConfig(targetUpdates map[string]devicechange.TypedValueMap,
-	targetRemoves map[string][]string, deviceInfo map[devicetype.ID]cache.Info,
+func (m *Manager) computeNetworkConfig(targetUpdates map[devicetype.ID]devicechange.TypedValueMap,
+	targetRemoves map[devicetype.ID][]string, deviceInfo map[devicetype.ID]cache.Info,
 	description string) ([]*devicechange.Change, error) {
 
 	deviceChanges := make([]*devicechange.Change, 0)
 	for target, updates := range targetUpdates {
 		//FIXME this is a sequential job, not parallelized
-		version := deviceInfo[devicetype.ID(target)].Version
-		deviceType := deviceInfo[devicetype.ID(target)].Type
+		version := deviceInfo[target].Version
+		deviceType := deviceInfo[target].Type
 		newChange, err := m.ComputeDeviceChange(
-			devicetype.ID(target), version, deviceType, updates, targetRemoves[target], description)
+			target, version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue
@@ -141,10 +141,10 @@ func (m *Manager) computeNetworkConfig(targetUpdates map[string]devicechange.Typ
 
 	// Some targets might only have removes
 	for target, removes := range targetRemoves {
-		version := deviceInfo[devicetype.ID(target)].Version
-		deviceType := deviceInfo[devicetype.ID(target)].Type
+		version := deviceInfo[target].Version
+		deviceType := deviceInfo[target].Type
 		newChange, err := m.ComputeDeviceChange(
-			devicetype.ID(target), version, deviceType, make(devicechange.TypedValueMap), removes, description)
+			target, version, deviceType, make(devicechange.TypedValueMap), removes, description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
 			continue

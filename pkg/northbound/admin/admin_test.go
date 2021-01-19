@@ -178,8 +178,8 @@ func generateSnapshotData(count int) []*devicesnapshot.Snapshot {
 			SnapshotID:    "test-snapshot",
 			ChangeIndex:   device2.Index(shIdx),
 			Values: []*device2.PathValue{
-				{Path: "/a/b/c", Value: device2.NewTypedValueInt64(shIdx)},
-				{Path: "/a/b/d", Value: device2.NewTypedValueInt64(10 * shIdx)},
+				{Path: "/a/b/c", Value: device2.NewTypedValueInt(shIdx, 32)},
+				{Path: "/a/b/d", Value: device2.NewTypedValueInt(10*shIdx, 32)},
 			},
 		}
 	}

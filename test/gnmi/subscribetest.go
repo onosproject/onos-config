@@ -190,7 +190,7 @@ func validateResponse(t *testing.T, resp *gpb.SubscribeResponse, device string, 
 
 	switch v := resp.Response.(type) {
 	default:
-		assert.Fail(t, "Unknown type", v)
+		assert.Fail(t, "WidthUnknown type", v)
 	case *gpb.SubscribeResponse_Error:
 		assert.Fail(t, "Error ", v)
 	case *gpb.SubscribeResponse_SyncResponse:

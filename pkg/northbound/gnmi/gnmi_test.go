@@ -15,7 +15,9 @@
 package gnmi
 
 import (
+	"fmt"
 	"github.com/golang/mock/gomock"
+	td1 "github.com/onosproject/config-models/modelplugin/testdevice-1.0.0/testdevice_1_0_0"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
@@ -23,6 +25,7 @@ import (
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -59,15 +62,28 @@ type MockModelPlugin struct {
 }
 
 func (m MockModelPlugin) ModelData() (string, string, []*gnmi.ModelData, string) {
+	//td1.M
 	panic("implement me")
 }
 
 func (m MockModelPlugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
-	return nil, nil
+	device := &td1.Device{}
+	vgs := ygot.ValidatedGoStruct(device)
+
+	if err := td1.Unmarshal(jsonTree, device); err != nil {
+		return nil, err
+	}
+
+	return &vgs, nil
 }
 
-func (m MockModelPlugin) Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error {
-	return nil
+func (m MockModelPlugin) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
+	deviceDeref := *ygotModel
+	device, ok := deviceDeref.(*td1.Device)
+	if !ok {
+		return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
+	}
+	return device.Validate()
 }
 
 func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
@@ -105,8 +121,8 @@ func setUpWatchMock(mocks *AllMocks) {
 		Deleted: false,
 	}
 
-	config1Value01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf4a", devicechange.NewTypedValueUint64(14), false)
-	config1Value02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueEmpty(), true)
+	config1Value01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueUint(11, 8), false)
+	config1Value02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2g", devicechange.NewTypedValueBool(true), true)
 
 	deviceChange := devicechange.DeviceChange{
 		ID:       "",
@@ -170,7 +186,7 @@ func setUpListMock(mocks *AllMocks) {
 }
 
 func setUpChangesMock(mocks *AllMocks) {
-	configValue01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueUint64(13), false)
+	configValue01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueUint(13, 8), false)
 
 	change1 := devicechange.Change{
 		Values: []*devicechange.ChangeValue{
@@ -256,8 +272,8 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
 	mockstore.SetUpMapBackedNetworkChangesStore(store)
 	now := time.Now()
-	config1Value01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf4a", devicechange.NewTypedValueUint64(14), false)
-	config1Value02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueEmpty(), true)
+	config1Value01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueUint(12, 8), false)
+	config1Value02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2g", devicechange.NewTypedValueBool(true), false)
 	change1 := devicechange.Change{
 		Values: []*devicechange.ChangeValue{
 			config1Value01, config1Value02},
@@ -307,14 +323,17 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *mockcache.M
 			go func() {
 				c <- &topodevice.Device{
 					ID:      "Device1 (1.0.0)",
+					Type:    "TestDevice",
 					Version: "1.0.0",
 				}
 				c <- &topodevice.Device{
 					ID:      "Device2 (2.0.0)",
+					Type:    "TestDevice",
 					Version: "2.0.0",
 				}
 				c <- &topodevice.Device{
 					ID:      "Device3",
+					Type:    "TestDevice",
 					Version: "1.0.0",
 				}
 				close(c)
@@ -324,13 +343,22 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *mockcache.M
 		}).AnyTimes()
 }
 
-func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks) {
+func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
 	server, mgr, allMocks := setUp(t)
 	allMocks.MockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
 	mgr.NetworkChangesStore = allMocks.MockStores.NetworkChangesStore
 	setUpBaseNetworkStore(allMocks.MockStores.NetworkChangesStore)
 	setUpBaseDevices(allMocks.MockStores, allMocks.MockDeviceCache)
-	return server, allMocks
+	//setUpChangesMock(allMocks)
+	modelPluginTestDevice1 := MockModelPlugin{
+		td1.UnzipSchema,
+	}
+	mgr.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = modelPluginTestDevice1
+	td1Schema, _ := modelPluginTestDevice1.Schema()
+	_, modelRwPaths := modelregistry.ExtractPaths(td1Schema["Device"], yang.TSUnset, "", "")
+	mgr.ModelRegistry.ModelReadWritePaths["TestDevice-1.0.0"] = modelRwPaths
+
+	return server, allMocks, mgr
 }
 
 func setUpPathsForGetSetTests() ([]*gnmi.Path, []*gnmi.Update, []*gnmi.Update) {
