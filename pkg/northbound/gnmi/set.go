@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"time"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -40,6 +41,10 @@ type mapTargetModels map[devicetype.ID]modelregistry.ReadWritePathMap
 
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
+	if md := metautils.ExtractIncoming(ctx); md != nil {
+		log.Infof("gNMI Set() called by '%s (%s)' with token %s",
+			md.Get("name"), md.Get("email"), md.Get("at_hash"))
+	}
 	// There is only one set of extensions in Set request, regardless of number of
 	// updates
 	var (

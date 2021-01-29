@@ -17,6 +17,7 @@ package diags
 
 import (
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -53,6 +54,13 @@ type Server struct {
 
 // GetOpState provides a stream of Operational and State data
 func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_GetOpStateServer) error {
+	if stream.Context() != nil {
+		if md := metautils.ExtractIncoming(stream.Context()); md != nil {
+			log.Infof("diags GetOpState() called by '%s (%s)' with token %s",
+				md.Get("name"), md.Get("email"), md.Get("at_hash"))
+		}
+	}
+
 	manager.GetManager().OperationalStateCacheLock.RLock()
 	deviceCache, ok := manager.GetManager().OperationalStateCache[topodevice.ID(r.DeviceId)]
 	manager.GetManager().OperationalStateCacheLock.RUnlock()
@@ -121,6 +129,12 @@ func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_Ge
 // changes first, and then hold the connection open and send on
 // further updates until the client hangs up
 func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream diags.ChangeService_ListNetworkChangesServer) error {
+	if stream.Context() != nil {
+		if md := metautils.ExtractIncoming(stream.Context()); md != nil {
+			log.Infof("diags ListNetworkChanges() called by '%s (%s)' with token %s",
+				md.Get("name"), md.Get("email"), md.Get("at_hash"))
+		}
+	}
 	log.Infof("ListNetworkChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
 
 	// There may be a wildcard given - we only want to reply with changes that match
@@ -215,6 +229,12 @@ func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream dia
 
 // ListDeviceChanges provides a stream of Device Changes
 func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags.ChangeService_ListDeviceChangesServer) error {
+	if stream.Context() != nil {
+		if md := metautils.ExtractIncoming(stream.Context()); md != nil {
+			log.Infof("diags ListDeviceChanges() called by '%s (%s)' with token %s",
+				md.Get("name"), md.Get("email"), md.Get("at_hash"))
+		}
+	}
 	log.Infof("ListDeviceChanges called with %s %s. Subscribe %v", r.DeviceID, r.DeviceVersion, r.Subscribe)
 
 	var watchOpts []device.WatchOption
