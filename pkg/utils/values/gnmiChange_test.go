@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -53,8 +53,8 @@ func Test_NativeChangeToGnmiChange(t *testing.T) {
 
 	//  Do the conversion
 	request, err := NativeChangeToGnmiChange(testChange)
-	assert.NilError(t, err)
-	assert.Assert(t, request != nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, request)
 
 	// Check that the Update portion of the GNMI request is correct
 	assert.Equal(t, len(request.Update), 1, "Update array size is incorrect")
@@ -95,7 +95,7 @@ func Test_convertChangeToGnmi(t *testing.T) {
 
 	setRequest, parseError := NativeChangeToGnmiChange(change3)
 
-	assert.NilError(t, parseError, "Parsing error for Gnmi change request")
+	assert.NoError(t, parseError, "Parsing error for Gnmi change request")
 	assert.Equal(t, len(setRequest.Update), 1)
 
 	jsonstr, _ := json.Marshal(setRequest.Update[0])

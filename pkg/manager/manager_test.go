@@ -32,7 +32,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 
 	"strings"
 	"testing"
@@ -300,7 +300,7 @@ func Test_GetNetworkConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, "/*", 0)
-	assert.NilError(t, err, "GetTargetConfig error")
+	assert.NoError(t, err, "GetTargetConfig error")
 
 	assert.Equal(t, len(result), 1, "Unexpected result element count")
 
@@ -325,14 +325,14 @@ func Test_SetNetworkConfig(t *testing.T) {
 
 	// Verify the change
 	validationError := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
-	assert.NilError(t, validationError, "ValidateTargetConfig error")
+	assert.NoError(t, validationError, "ValidateTargetConfig error")
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "Test_SetNetworkConfig"
 	_, err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, string(testNetworkChange))
-	assert.NilError(t, err, "SetTargetConfig error")
+	assert.NoError(t, err, "SetTargetConfig error")
 	testUpdate, _ := mgrTest.NetworkChangesStore.Get(testNetworkChange)
-	assert.Assert(t, testUpdate != nil)
+	assert.NotNil(t, testUpdate)
 	assert.Equal(t, testUpdate.ID, testNetworkChange, "Change Ids should correspond")
 
 	// Check that the created change is correct
@@ -365,12 +365,12 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(Device5, updates, deletes)
 
 	_, err := mgrTest.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo, NetworkChangeAddDevice5)
-	assert.NilError(t, err, "SetTargetConfig error")
+	assert.NoError(t, err, "SetTargetConfig error")
 	testUpdate, _ := mgrTest.NetworkChangesStore.Get(NetworkChangeAddDevice5)
-	assert.Assert(t, testUpdate != nil)
+	assert.NotNil(t, testUpdate)
 	assert.Equal(t, 1, len(testUpdate.Changes))
 	change1 := testUpdate.Changes[0]
-	assert.Assert(t, change1 != nil)
+	assert.NotNil(t, change1)
 
 	// Asserting update to 2A
 	value2A := change1.Values[0]
@@ -395,11 +395,13 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
 	_, err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "Testing")
+	assert.NoError(t, err)
 
 	// TODO - similar configs are currently not detected
 	t.Skip()
 
-	assert.ErrorContains(t, err, "configurations found for")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "configurations found for")
 }
 
 func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
@@ -412,7 +414,7 @@ func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
 	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
 	_, err := mgrTest.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo, "Testing")
-	assert.NilError(t, err, "Similar config not found")
+	assert.NoError(t, err, "Similar config not found")
 }
 
 func matchDeviceID(deviceID string, deviceName string) bool {
@@ -429,25 +431,26 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 	deletes := []string{test1Cont1ACont2ALeaf2C}
 	updatesForDevice2, deletesForDevice2, deviceInfo2 := makeDeviceChanges("Device2", updates, deletes)
 	_, err := mgrTest.SetNetworkConfig(updatesForDevice2, deletesForDevice2, deviceInfo2, "Device2")
-	assert.NilError(t, err, "SetTargetConfig error")
+	assert.NoError(t, err, "SetTargetConfig error")
 	updatesForDevice3, deletesForDevice3, deviceInfo3 := makeDeviceChanges("Device2", updates, deletes)
 	_, err = mgrTest.SetNetworkConfig(updatesForDevice3, deletesForDevice3, deviceInfo3, "Device3")
-	assert.NilError(t, err, "SetTargetConfig error")
+	assert.NoError(t, err, "SetTargetConfig error")
 	mocks.MockStores.DeviceStore.EXPECT().List(gomock.Any()).AnyTimes()
 	deviceIds := mgrTest.GetAllDeviceIds()
 
 	assert.Equal(t, len(*deviceIds), 3)
-	assert.Assert(t, matchDeviceID((*deviceIds)[0], device1))
-	assert.Assert(t, matchDeviceID((*deviceIds)[1], "Device2"))
-	assert.Assert(t, matchDeviceID((*deviceIds)[2], "Device3"))
+	assert.True(t, matchDeviceID((*deviceIds)[0], device1))
+	assert.True(t, matchDeviceID((*deviceIds)[1], "Device2"))
+	assert.True(t, matchDeviceID((*deviceIds)[2], "Device3"))
 }
 
 func TestManager_GetNoConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("No Such Device", deviceVersion1, "/*", 0)
-	assert.Assert(t, len(result) == 0, "Get of bad device does not return empty array")
-	assert.ErrorContains(t, err, "no Configuration found")
+	assert.Len(t, result, 0, "Get of bad device does not return empty array")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no Configuration found")
 }
 
 func networkConfigContainsPath(configs []*devicechange.PathValue, whichOne string) bool {
@@ -463,35 +466,36 @@ func TestManager_GetAllConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, "/*", 0)
-	assert.Assert(t, len(result) == 1, "Get of device all paths does not return proper array")
-	assert.NilError(t, err, "Configuration not found")
-	assert.Assert(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
+	assert.Len(t, result, 1, "Get of device all paths does not return proper array")
+	assert.NoError(t, err, "Configuration not found")
+	assert.True(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
 }
 
 func TestManager_GetOneConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, test1Cont1ACont2ALeaf2A, 0)
-	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
-	assert.NilError(t, err, "Configuration not found")
-	assert.Assert(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
+	assert.Len(t, result, 1, "Get of device one path does not return proper array")
+	assert.NoError(t, err, "Configuration not found")
+	assert.True(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
 }
 
 func TestManager_GetWildcardConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, "/*/*/leaf2a", 0)
-	assert.Assert(t, len(result) == 1, "Get of device one path does not return proper array")
-	assert.NilError(t, err, "Configuration not found")
-	assert.Assert(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
+	assert.Len(t, result, 1, "Get of device one path does not return proper array")
+	assert.NoError(t, err, "Configuration not found")
+	assert.True(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
 }
 
 func TestManager_GetConfigNoTarget(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
 	result, err := mgrTest.GetTargetConfig("", deviceVersion1, test1Cont1ACont2ALeaf2A, 0)
-	assert.Assert(t, len(result) == 0, "Get of device one path does not return proper array")
-	assert.ErrorContains(t, err, "no Configuration found")
+	assert.Error(t, err)
+	assert.Len(t, result, 0, "Get of device one path does not return proper array")
+	assert.Contains(t, err.Error(), "no Configuration found")
 }
 
 func TestManager_GetManager(t *testing.T) {
@@ -511,26 +515,26 @@ func TestManager_ComputeRollbackFailure(t *testing.T) {
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
 	err := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
-	assert.NilError(t, err, "ValidateTargetConfig error")
+	assert.NoError(t, err, "ValidateTargetConfig error")
 	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback")
-	assert.NilError(t, err, "Can't create change", err)
+	assert.NoError(t, err, "Can't create change", err)
 
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B314)
 	updates[test1Cont1ACont2ALeaf2D] = devicechange.NewTypedValueFloat(valueLeaf2D123)
 	deletes = append(deletes, test1Cont1ACont2ALeaf2A)
 
 	err = mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
-	assert.NilError(t, err, "ValidateTargetConfig error")
+	assert.NoError(t, err, "ValidateTargetConfig error")
 
 	updatesForDevice1, deletesForDevice1, deviceInfo = makeDeviceChanges(device1, updates, deletes)
 	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
-	assert.NilError(t, err, "Can't create change")
+	assert.NoError(t, err, "Can't create change")
 
 	testingRollback, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback")
-	assert.NilError(t, err, "Cant' retrieve Config")
+	assert.NoError(t, err, "Cant' retrieve Config")
 
 	testingRollback2, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback2")
-	assert.NilError(t, err, "Cant' retrieve Config")
+	assert.NoError(t, err, "Cant' retrieve Config")
 
 	mocks.MockStores.NetworkChangesStore.EXPECT().GetNext(testingRollback.Index).Return(testingRollback2, nil)
 
@@ -548,44 +552,44 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
 	err := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
-	assert.NilError(t, err, "ValidateTargetConfig error")
+	assert.NoError(t, err, "ValidateTargetConfig error")
 	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback")
-	assert.NilError(t, err, "Can't create change", err)
+	assert.NoError(t, err, "Can't create change", err)
 
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B314)
 	updates[test1Cont1ACont2ALeaf2D] = devicechange.NewTypedValueFloat(valueLeaf2D123)
 	deletes = append(deletes, test1Cont1ACont2ALeaf2A)
 
 	err = mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
-	assert.NilError(t, err, "ValidateTargetConfig error")
+	assert.NoError(t, err, "ValidateTargetConfig error")
 
 	updatesForDevice1, deletesForDevice1, deviceInfo = makeDeviceChanges(device1, updates, deletes)
 	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, "TestingRollback2")
-	assert.NilError(t, err, "Can't create change")
+	assert.NoError(t, err, "Can't create change")
 
 	testingRollback2, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback2")
-	assert.NilError(t, err, "Cant' retrieve Config")
+	assert.NoError(t, err, "Cant' retrieve Config")
 
 	mocks.MockStores.NetworkChangesStore.EXPECT().GetNext(testingRollback2.Index).Return(nil, nil)
 
 	err = mgrTest.RollbackTargetConfig("TestingRollback2")
-	assert.NilError(t, err, "Can't roll back change")
+	assert.NoError(t, err, "Can't roll back change")
 	rbChange, _ := mgrTest.NetworkChangesStore.Get("TestingRollback2")
-	assert.Assert(t, rbChange != nil)
+	assert.NotNil(t, rbChange)
 
-	assert.Assert(t, len(rbChange.Changes) == 1)
-	assert.Assert(t, strings.Contains(rbChange.Status.Message, "requested rollback"))
-	assert.Assert(t, len(rbChange.Changes[0].Values) == 3)
+	assert.Len(t, rbChange.Changes, 1)
+	assert.Contains(t, rbChange.Status.Message, "requested rollback")
+	assert.Len(t, rbChange.Changes[0].Values, 3)
 	for _, v := range rbChange.Changes[0].Values {
 		switch v.Path {
 		case test1Cont1ACont2ALeaf2A:
-			assert.Assert(t, v.Removed)
+			assert.True(t, v.Removed)
 			assert.Equal(t, "", v.Value.ValueToString())
 		case test1Cont1ACont2ALeaf2B:
-			assert.Assert(t, !v.Removed)
+			assert.True(t, !v.Removed)
 			assert.Equal(t, "3.140000", v.Value.ValueToString())
 		case test1Cont1ACont2ALeaf2D:
-			assert.Assert(t, !v.Removed)
+			assert.True(t, !v.Removed)
 			assert.Equal(t, "1.230000", v.Value.ValueToString())
 		default:
 			t.Errorf("Unexpected path %s", v.Path)
@@ -617,15 +621,15 @@ func TestManager_GetTargetState(t *testing.T) {
 
 	// Test fetching a known path from the cache
 	state1 := mgrTest.GetTargetState(device1, path1WC)
-	assert.Assert(t, state1 != nil, "Path 1 entry not found")
-	assert.Assert(t, len(state1) == 1, "Path 1 entry has incorrect length %d", len(state1))
-	assert.Assert(t, state1[0].Path == path1, "Path 1 path is incorrect")
-	assert.Assert(t, string(state1[0].GetValue().GetBytes()) == value1, "Path 1 value is incorrect")
+	assert.NotNil(t, state1, "Path 1 entry not found")
+	assert.Len(t, state1, 1, "Path 1 entry has incorrect length %d", len(state1))
+	assert.Equal(t, state1[0].Path, path1, "Path 1 path is incorrect")
+	assert.Equal(t, string(state1[0].GetValue().GetBytes()), value1, "Path 1 value is incorrect")
 
 	// Test fetching an unknown path from the cache
 	stateBad := mgrTest.GetTargetState(device1, badPath)
-	assert.Assert(t, stateBad != nil, "Bad Path Entry returns nil")
-	assert.Assert(t, len(stateBad) == 0, "Bad path entry has incorrect length %d", len(stateBad))
+	assert.NotNil(t, stateBad, "Bad Path Entry returns nil")
+	assert.Len(t, stateBad, 0, "Bad path entry has incorrect length %d", len(stateBad))
 }
 
 type MockModelPlugin struct{}
@@ -675,7 +679,7 @@ func TestManager_ValidateStores(t *testing.T) {
 	plugin := MockModelPlugin{}
 	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
 
-	//assert.NilError(t, validationError)
+	//assert.NoError(t, validationError)
 }
 
 func TestManager_CheckCacheForDevice(t *testing.T) {
@@ -732,42 +736,44 @@ func TestManager_CheckCacheForDevice(t *testing.T) {
 	 *****************************************************************/
 	// Definite - valid type and version given
 	ty, v, err := mgrTest.CheckCacheForDevice(deviceTest1, tdType, v1)
-	assert.NilError(t, err, "testing cache access")
+	assert.NoError(t, err, "testing cache access")
 	assert.Equal(t, tdType, string(ty))
 	assert.Equal(t, v1, string(v))
 
 	// Slightly ambiguous - valid version given
 	ty, v, err = mgrTest.CheckCacheForDevice(deviceTest1, "", v1)
-	assert.NilError(t, err, "testing cache access")
+	assert.NoError(t, err, "testing cache access")
 	assert.Equal(t, tdType, string(ty))
 	assert.Equal(t, v1, string(v))
 
 	// Fully ambiguous - no version or type given
 	_, _, err = mgrTest.CheckCacheForDevice(deviceTest1, "", "")
-	assert.ErrorContains(t, err, "DeviceTest1 has 2 versions. Specify 1 version with extension 102")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "DeviceTest1 has 2 versions. Specify 1 version with extension 102")
 
 	/********************************************************************
 	 * deviceTest1 v2.0.0
 	 *****************************************************************/
 	// Definite - valid type and version given
 	ty, v, err = mgrTest.CheckCacheForDevice(deviceTest1, tdType, v2)
-	assert.NilError(t, err, "testing cache access")
+	assert.NoError(t, err, "testing cache access")
 	assert.Equal(t, tdType, string(ty))
 	assert.Equal(t, v2, string(v))
 
 	// Slightly ambiguous - valid version given
 	ty, v, err = mgrTest.CheckCacheForDevice(deviceTest1, "", v2)
-	assert.NilError(t, err, "testing cache access")
+	assert.NoError(t, err, "testing cache access")
 	assert.Equal(t, tdType, string(ty))
 	assert.Equal(t, v2, string(v))
 
 	// Fully ambiguous - no version or type given
 	_, _, err = mgrTest.CheckCacheForDevice(deviceTest1, "", "")
-	assert.ErrorContains(t, err, "DeviceTest1 has 2 versions. Specify 1 version with extension 102")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "DeviceTest1 has 2 versions. Specify 1 version with extension 102")
 
 	// Wrong device type given - ignored
 	ty, v, err = mgrTest.CheckCacheForDevice(deviceTest1, dsType, v1)
-	assert.NilError(t, err, "testing wrong type")
+	assert.NoError(t, err, "testing wrong type")
 	assert.Equal(t, tdType, string(ty))
 	assert.Equal(t, v1, string(v))
 
@@ -776,32 +782,33 @@ func TestManager_CheckCacheForDevice(t *testing.T) {
 	 *****************************************************************/
 	// New version given with valid type - accepted
 	ty, v, err = mgrTest.CheckCacheForDevice(deviceTest1, tdType, v3)
-	assert.NilError(t, err, "testing new version")
+	assert.NoError(t, err, "testing new version")
 	assert.Equal(t, tdType, string(ty))
 	assert.Equal(t, v3, string(v))
 
 	// New version given but invalid type - rejected
 	_, _, err = mgrTest.CheckCacheForDevice(deviceTest1, dsType, v3)
-	assert.ErrorContains(t, err, "DeviceTest1 type given Devicesim does not match expected TestDevice")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "DeviceTest1 type given Devicesim does not match expected TestDevice")
 
 	/********************************************************************
 	 * deviceTest2 v1.0.0
 	 *****************************************************************/
 	// Definite - valid type and version given
 	ty, v, err = mgrTest.CheckCacheForDevice(deviceTest2, dsType, v1)
-	assert.NilError(t, err, "testing cache access")
+	assert.NoError(t, err, "testing cache access")
 	assert.Equal(t, dsType, string(ty))
 	assert.Equal(t, v1, string(v))
 
 	// Slightly ambiguous - valid version given
 	ty, v, err = mgrTest.CheckCacheForDevice(deviceTest2, "", v1)
-	assert.NilError(t, err, "testing cache access")
+	assert.NoError(t, err, "testing cache access")
 	assert.Equal(t, dsType, string(ty))
 	assert.Equal(t, v1, string(v))
 
 	// Fully ambiguous - no version or type given - but there's only 1 so it's OK
 	ty, v, err = mgrTest.CheckCacheForDevice(deviceTest2, "", "")
-	assert.NilError(t, err, "testing cache access")
+	assert.NoError(t, err, "testing cache access")
 	assert.Equal(t, dsType, string(ty))
 	assert.Equal(t, v1, string(v))
 
@@ -810,15 +817,17 @@ func TestManager_CheckCacheForDevice(t *testing.T) {
 	 *****************************************************************/
 	// Definite - valid type and version given
 	ty, v, err = mgrTest.CheckCacheForDevice(deviceTest3, dsType, v1)
-	assert.NilError(t, err, "testing cache access")
+	assert.NoError(t, err, "testing cache access")
 	assert.Equal(t, dsType, string(ty))
 	assert.Equal(t, v1, string(v))
 
 	// Slightly ambiguous - valid version given
 	_, _, err = mgrTest.CheckCacheForDevice(deviceTest3, "", v1)
-	assert.ErrorContains(t, err, "DeviceTest3 is not known. Need to supply a type and version through Extensions 101 and 102")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "DeviceTest3 is not known. Need to supply a type and version through Extensions 101 and 102")
 
 	// Fully ambiguous - no version or type given - but there's only 1 so it's OK
 	_, _, err = mgrTest.CheckCacheForDevice(deviceTest3, "", "")
-	assert.ErrorContains(t, err, "DeviceTest3 is not known. Need to supply a type and version through Extensions 101 and 102")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "DeviceTest3 is not known. Need to supply a type and version through Extensions 101 and 102")
 }

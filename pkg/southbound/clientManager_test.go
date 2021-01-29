@@ -21,7 +21,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 	"time"
@@ -142,10 +142,10 @@ func getDevice1Target(t *testing.T) (*Target, topodevice.ID, context.Context) {
 	target := &Target{}
 	ctx := context.Background()
 	key, err := target.ConnectTarget(ctx, device)
-	assert.NilError(t, err)
-	assert.Assert(t, target.clt != nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, target.clt)
 	assert.Equal(t, string(key), "localhost-1")
-	assert.Assert(t, target.ctx != nil)
+	assert.NotNil(t, target.ctx)
 	return target, key, ctx
 }
 
@@ -155,9 +155,9 @@ func Test_ConnectTarget(t *testing.T) {
 	target, key, _ := getDevice1Target(t)
 
 	targetFetch, fetchError := GetTarget(key)
-	assert.NilError(t, fetchError)
-	assert.DeepEqual(t, target.Destination().Addrs, targetFetch.Destination().Addrs)
-	assert.DeepEqual(t, target.Client(), targetFetch.Client())
+	assert.NoError(t, fetchError)
+	assert.Equal(t, target.Destination().Addrs, targetFetch.Destination().Addrs)
+	assert.Equal(t, target.Client(), targetFetch.Client())
 	tearDown()
 }
 
@@ -166,7 +166,8 @@ func Test_BadTarget(t *testing.T) {
 
 	key := topodevice.ID("no such target")
 	_, fetchError := GetTarget(key)
-	assert.ErrorContains(t, fetchError, "does not exist")
+	assert.Error(t, fetchError)
+	assert.Contains(t, fetchError.Error(), "does not exist")
 	tearDown()
 }
 
@@ -180,10 +181,10 @@ func Test_ConnectTargetUserPassword(t *testing.T) {
 	target, key, _ := getDevice1Target(t)
 
 	targetFetch, fetchError := GetTarget(key)
-	assert.NilError(t, fetchError)
+	assert.NoError(t, fetchError)
 	assert.Equal(t, target.Destination().Credentials.Username, "User")
 	assert.Equal(t, target.Destination().Credentials.Password, "Password")
-	assert.DeepEqual(t, target.clt, targetFetch.Client())
+	assert.Equal(t, target.clt, targetFetch.Client())
 
 	tearDown()
 }
@@ -196,9 +197,9 @@ func Test_ConnectTargetInsecurePaths(t *testing.T) {
 	target, key, _ := getDevice1Target(t)
 
 	targetFetch, fetchError := GetTarget(key)
-	assert.NilError(t, fetchError)
+	assert.NoError(t, fetchError)
 	assert.Equal(t, targetFetch.Destination().TLS.InsecureSkipVerify, false)
-	assert.DeepEqual(t, target.clt, targetFetch.Client())
+	assert.Equal(t, target.clt, targetFetch.Client())
 
 	tearDown()
 }
@@ -210,9 +211,9 @@ func Test_ConnectTargetInsecureFlag(t *testing.T) {
 	target, key, _ := getDevice1Target(t)
 
 	targetFetch, fetchError := GetTarget(key)
-	assert.NilError(t, fetchError)
+	assert.NoError(t, fetchError)
 	assert.Equal(t, targetFetch.Destination().TLS.InsecureSkipVerify, true)
-	assert.DeepEqual(t, target.clt, targetFetch.Client())
+	assert.Equal(t, target.clt, targetFetch.Client())
 
 	tearDown()
 }
@@ -226,12 +227,12 @@ func Test_ConnectTargetWithCert(t *testing.T) {
 	target, key, _ := getDevice1Target(t)
 
 	targetFetch, fetchError := GetTarget(key)
-	assert.NilError(t, fetchError)
+	assert.NoError(t, fetchError)
 	ca := getCertPool("testdata/onfca.crt")
-	assert.DeepEqual(t, targetFetch.Destination().TLS.RootCAs.Subjects()[0], ca.Subjects()[0])
+	assert.Equal(t, targetFetch.Destination().TLS.RootCAs.Subjects()[0], ca.Subjects()[0])
 	cert := setCertificate("testdata/client1.crt", "testdata/client1.key")
-	assert.DeepEqual(t, targetFetch.Destination().TLS.Certificates[0].Certificate, cert.Certificate)
-	assert.DeepEqual(t, target.clt, targetFetch.Client())
+	assert.Equal(t, targetFetch.Destination().TLS.Certificates[0].Certificate, cert.Certificate)
+	assert.Equal(t, target.clt, targetFetch.Client())
 
 	tearDown()
 }
@@ -248,8 +249,8 @@ func Test_Get(t *testing.T) {
 	}
 
 	response, err := target.Get(context.TODO(), &request)
-	assert.NilError(t, err)
-	assert.Assert(t, response != nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
 	assert.Equal(t, response.Notification[0].Update[0].Path.Target, "*", "Expected target")
 	value := utils.StrVal(response.Notification[0].Update[0].Val)
 	assert.Equal(t, value, "0", "Expected index as value")
@@ -265,8 +266,8 @@ func Test_GetWithString(t *testing.T) {
 	request := "path: <elem: <name: 'system'> elem:<name:'config'> elem: <name: 'hostname'>>"
 	getResponse, getErr := target.GetWithString(ctx, request)
 
-	assert.NilError(t, getErr)
-	assert.Assert(t, getResponse != nil)
+	assert.NoError(t, getErr)
+	assert.NotNil(t, getResponse)
 	assert.Equal(t, getResponse.Notification[0].Update[0].Path.Elem[0].Name, "system")
 	value := utils.StrVal(getResponse.Notification[0].Update[0].Val)
 	assert.Equal(t, value, "0")
@@ -281,11 +282,13 @@ func Test_GetWithBadString(t *testing.T) {
 
 	requestBadParse := "!!!path: <elem: <name: 'system'> elem:<name:'config'> elem: <name: 'hostname'>>"
 	_, getParseErr := target.GetWithString(ctx, requestBadParse)
-	assert.ErrorContains(t, getParseErr, "unable to parse")
+	assert.Error(t, getParseErr)
+	assert.Contains(t, getParseErr.Error(), "unable to parse")
 
 	requestNull := ""
 	_, getEmptyErr := target.GetWithString(ctx, requestNull)
-	assert.ErrorContains(t, getEmptyErr, "empty request")
+	assert.Error(t, getEmptyErr)
+	assert.Contains(t, getEmptyErr.Error(), "empty request")
 
 	tearDown()
 }
@@ -299,7 +302,7 @@ func Test_Subscribe(t *testing.T) {
 	ctx := context.Background()
 
 	_, connectError := target.ConnectTarget(ctx, device)
-	assert.NilError(t, connectError)
+	assert.NoError(t, connectError)
 
 	paths := make([][]string, 1)
 	paths[0] = make([]string, 3)
@@ -317,14 +320,15 @@ func Test_Subscribe(t *testing.T) {
 		Origin:            "",
 	}
 	request, requestError := NewSubscribeRequest(options)
+	assert.NotNil(t, request)
 	assert.Equal(t, request.GetSubscribe().Subscription[0].Path.Elem[0].Name, "a")
 	assert.Equal(t, request.GetSubscribe().Subscription[0].Path.Elem[1].Name, "b")
 	assert.Equal(t, request.GetSubscribe().Subscription[0].Path.Elem[2].Name, "c")
-	assert.NilError(t, requestError)
+	assert.NoError(t, requestError)
 
 	subscribeError := target.Subscribe(ctx, request, handler)
 
-	assert.NilError(t, subscribeError)
+	assert.NoError(t, subscribeError)
 
 	tearDown()
 }
@@ -348,32 +352,34 @@ func Test_NewSubscribeRequest(t *testing.T) {
 		Origin:            "",
 	}
 	request, requestError := NewSubscribeRequest(options)
-	assert.NilError(t, requestError)
+	assert.NoError(t, requestError)
 	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_STREAM)
 	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_TARGET_DEFINED)
 
 	options.Mode = "Once"
 	options.StreamMode = "on_change"
 	request, requestError = NewSubscribeRequest(options)
-	assert.NilError(t, requestError)
+	assert.NoError(t, requestError)
 	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_ONCE)
 	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_ON_CHANGE)
 
 	options.Mode = "Poll"
 	options.StreamMode = "sample"
 	request, requestError = NewSubscribeRequest(options)
-	assert.NilError(t, requestError)
+	assert.NoError(t, requestError)
 	assert.Equal(t, request.GetSubscribe().Mode, gnmi.SubscriptionList_POLL)
 	assert.Equal(t, request.GetSubscribe().GetSubscription()[0].Mode, gnmi.SubscriptionMode_SAMPLE)
 
 	options.Mode = "Test_Error"
 	_, requestError = NewSubscribeRequest(options)
-	assert.ErrorContains(t, requestError, "invalid")
+	assert.Error(t, requestError)
+	assert.Contains(t, requestError.Error(), "invalid")
 
 	options.Mode = "Poll"
 	options.StreamMode = "test_error"
 	_, requestError = NewSubscribeRequest(options)
-	assert.ErrorContains(t, requestError, "invalid")
+	assert.Error(t, requestError)
+	assert.Contains(t, requestError.Error(), "invalid")
 
 }
 
@@ -384,8 +390,8 @@ func Test_CapabilitiesWithString(t *testing.T) {
 
 	capabilityResponse, capabilityErr := target.CapabilitiesWithString(ctx, "")
 
-	assert.NilError(t, capabilityErr)
-	assert.Assert(t, capabilityResponse != nil)
+	assert.NoError(t, capabilityErr)
+	assert.NotNil(t, capabilityResponse)
 	assert.Equal(t, capabilityResponse.SupportedEncodings[0], gnmi.Encoding_ASCII)
 	assert.Equal(t, capabilityResponse.GNMIVersion, "1.0")
 	assert.Equal(t, capabilityResponse.SupportedModels[0].Organization, "ONF")
@@ -400,7 +406,8 @@ func Test_CapabilitiesWithBadString(t *testing.T) {
 
 	_, capabilityErr := target.CapabilitiesWithString(ctx, "not a valid string")
 
-	assert.ErrorContains(t, capabilityErr, "unable to parse")
+	assert.Error(t, capabilityErr)
+	assert.Contains(t, capabilityErr.Error(), "unable to parse")
 
 	tearDown()
 }
@@ -413,8 +420,8 @@ func Test_SetWithString(t *testing.T) {
 	request := "delete: <elem: <name: 'system'> elem:<name:'config'> elem: <name: 'hostname'>>"
 	setResponse, setErr := target.SetWithString(ctx, request)
 
-	assert.NilError(t, setErr)
-	assert.Assert(t, setResponse != nil)
+	assert.NoError(t, setErr)
+	assert.NotNil(t, setResponse)
 	assert.Equal(t, setResponse.Response[0].Op, gnmi.UpdateResult_DELETE)
 
 	tearDown()

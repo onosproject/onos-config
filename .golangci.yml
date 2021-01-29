@@ -43,3 +43,5 @@ issues:
     - path: pkg/store/device/store.go
       linters:
         - scopelint
+    - path: pkg/manager
+      text: "is unused"
