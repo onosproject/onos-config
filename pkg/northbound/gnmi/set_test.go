@@ -24,9 +24,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gotest.tools/assert"
 	"regexp"
 	"strconv"
 	"testing"
@@ -108,10 +108,10 @@ func Test_doSingleSet(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
 
 	// Check that Response is correct
-	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
+	assert.NotNil(t, setResponse, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 1)
 
@@ -168,10 +168,10 @@ func Test_doSingleSetList(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
 
 	// Check that Response is correct
-	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
+	assert.NotNil(t, setResponse, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 1)
 
@@ -223,10 +223,10 @@ func Test_do2SetsOnSameTarget(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
 
 	// Check that Response is correct
-	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
+	assert.NotNil(t, setResponse, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 2)
 
@@ -241,11 +241,11 @@ func Test_do2SetsOnSameTarget(t *testing.T) {
 	assert.Equal(t, 1, len(setResponse.Extension))
 	assert.Equal(t, 100, int(setResponse.Extension[0].GetRegisteredExt().Id))
 	changeUUID := string(setResponse.Extension[0].GetRegisteredExt().GetMsg())
-	assert.Assert(t, uuidRegex.MatchString(changeUUID), "ID does not match %s", uuidRegex.String())
+	assert.True(t, uuidRegex.MatchString(changeUUID), "ID does not match %s", uuidRegex.String())
 
 	// Check the network change was made
 	nwChange, err := mgr.NetworkChangesStore.Get(networkchange.ID(changeUUID))
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(nwChange.Changes))
 	changes := nwChange.Changes[0]
 	assert.Equal(t, "localhost-1", string(changes.DeviceID))
@@ -290,10 +290,10 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
 
 	// Check that Response is correct
-	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
+	assert.NotNil(t, setResponse, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 2)
 
@@ -306,11 +306,11 @@ func Test_do2SetsOnDiffTargets(t *testing.T) {
 	assert.Equal(t, 1, len(setResponse.Extension))
 	assert.Equal(t, 100, int(setResponse.Extension[0].GetRegisteredExt().Id))
 	changeUUID := string(setResponse.Extension[0].GetRegisteredExt().GetMsg())
-	assert.Assert(t, uuidRegex.MatchString(changeUUID), "ID does not match %s", uuidRegex.String())
+	assert.True(t, uuidRegex.MatchString(changeUUID), "ID does not match %s", uuidRegex.String())
 
 	// Check the network change was made
 	nwChange, err := mgr.NetworkChangesStore.Get(networkchange.ID(changeUUID))
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 2, len(nwChange.Changes))
 	for _, ch := range nwChange.Changes {
 		assert.Equal(t, "TestDevice", string(ch.DeviceType))
@@ -370,10 +370,10 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
 
 	// Check that Response is correct
-	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
+	assert.NotNil(t, setResponse, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 4)
 
@@ -413,10 +413,10 @@ func Test_doSingleDelete(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
 
 	// Check that Response is correct
-	assert.Assert(t, setResponse != nil, "Expected setResponse to exist")
+	assert.NotNil(t, setResponse, "Expected setResponse to exist")
 
 	assert.Equal(t, len(setResponse.Response), 1)
 
@@ -474,10 +474,10 @@ func Test_doUpdateDeleteSet(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.NilError(t, setError, "Unexpected error from gnmi Set")
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
 
 	// Check that Response is correct
-	assert.Assert(t, setResponse != nil, "Expected setResponse to have a value")
+	assert.NotNil(t, setResponse, "Expected setResponse to have a value")
 
 	assert.Equal(t, len(setResponse.Response), 2)
 
@@ -573,8 +573,9 @@ func TestSet_MissingDeviceType(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.ErrorContains(t, setError, "NoSuchDevice is not known")
-	assert.Assert(t, setResponse == nil)
+	assert.Error(t, setError)
+	assert.Contains(t, setError.Error(), "NoSuchDevice is not known")
+	assert.Nil(t, setResponse)
 }
 
 // Tests giving a device with multiple versions where the request doesn't specify which one
@@ -602,8 +603,9 @@ func TestSet_ConflictingDeviceType(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.ErrorContains(t, setError, "Specify 1 version with extension 102")
-	assert.Assert(t, setResponse == nil)
+	assert.Error(t, setError)
+	assert.Contains(t, setError.Error(), "Specify 1 version with extension 102")
+	assert.Nil(t, setResponse)
 }
 
 // Test giving a device with a type that doesn't match the type in the store
@@ -641,6 +643,7 @@ func TestSet_BadDeviceType(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 
-	assert.ErrorContains(t, setError, "target DeviceWithMultipleVersions type given NotTheSameType does not match expected TestDevice")
-	assert.Assert(t, setResponse == nil)
+	assert.Error(t, setError)
+	assert.Contains(t, setError.Error(), "target DeviceWithMultipleVersions type given NotTheSameType does not match expected TestDevice")
+	assert.Nil(t, setResponse)
 }
