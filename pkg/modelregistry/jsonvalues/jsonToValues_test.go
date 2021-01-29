@@ -19,7 +19,7 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/goyang/pkg/yang"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
 )
@@ -42,12 +42,12 @@ func setUpRwPaths() (modelregistry.ReadOnlyPathMap, modelregistry.ReadWritePathM
 
 func Test_DecomposeTree(t *testing.T) {
 	sampleTree, err := setUpJSONToValues("./testdata/sample-tree-from-devicesim.json")
-	assert.NilError(t, err)
-	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree", len(sampleTree))
+	assert.NoError(t, err)
+	assert.True(t, len(sampleTree) > 0, "Empty sample tree", len(sampleTree))
 
 	ds1RoPaths, _ := setUpRwPaths()
 	pathValues, err := DecomposeJSONWithPaths("", sampleTree, ds1RoPaths, nil)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, len(pathValues), 24)
 
 	for _, pathValue := range pathValues {
@@ -91,12 +91,12 @@ func Test_DecomposeTree(t *testing.T) {
 // We also test that when a RO path is given in the JSON that it is ignored
 func Test_DecomposeTreeConfigOnly(t *testing.T) {
 	sampleTree, err := setUpJSONToValues("./testdata/sample-tree-double-key.json")
-	assert.NilError(t, err)
-	assert.Assert(t, len(sampleTree) > 0, "Empty sample tree %d", len(sampleTree))
+	assert.NoError(t, err)
+	assert.True(t, len(sampleTree) > 0, "Empty sample tree %d", len(sampleTree))
 
 	_, ds1RwPaths := setUpRwPaths()
 	pathValues, err := DecomposeJSONWithPaths("/system/logging/remote-servers", sampleTree, nil, ds1RwPaths)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, len(pathValues), 6)
 
 	for _, v := range pathValues {
@@ -127,7 +127,7 @@ func Test_findModelRwPathNoIndices(t *testing.T) {
 	rwElem, fullpath, ok := findModelRwPathNoIndices(ds1RwPaths, jsonPath)
 	assert.Equal(t, true, ok)
 	assert.Equal(t, modelPath, fullpath)
-	assert.Assert(t, rwElem != nil, "rwElem map not expected to be nil")
+	assert.NotNil(t, rwElem, "rwElem map not expected to be nil")
 	assert.Equal(t, devicechange.ValueType_STRING, rwElem.ValueType)
 }
 
@@ -139,7 +139,7 @@ func Test_findModelRoPathNoIndices(t *testing.T) {
 	roAttr, fullpath, ok := findModelRoPathNoIndices(ds1RoPaths, jsonPath)
 	assert.Equal(t, true, ok)
 	assert.Equal(t, modelPath, fullpath)
-	assert.Assert(t, roAttr != nil, "roAttr map not expected to be nil")
+	assert.NotNil(t, roAttr, "roAttr map not expected to be nil")
 	assert.Equal(t, devicechange.ValueType_STRING, roAttr.ValueType)
 }
 
@@ -167,7 +167,7 @@ func Test_insertNumericalIndices(t *testing.T) {
 	const jsonPath = "/p/q/r[10]/s/t[20]/u/v[30]/w"
 	const expected = "/p/q/r[a=10]/s/t[b=20][c=20]/u/v[d=30][e=30][f=30]/w"
 	replaced, err := insertNumericalIndices(modelPath, jsonPath)
-	assert.NilError(t, err, "unexpected error replacing wildcards")
+	assert.NoError(t, err, "unexpected error replacing wildcards")
 	assert.Equal(t, expected, replaced)
 }
 
@@ -176,7 +176,7 @@ func Test_insertNumericalIndicesNoIdx(t *testing.T) {
 	const jsonPath = "/l/m/n/o"
 	const expected = "/l/m/n/o"
 	replaced, err := insertNumericalIndices(modelPath, jsonPath)
-	assert.NilError(t, err, "unexpected error replacing wildcards")
+	assert.NoError(t, err, "unexpected error replacing wildcards")
 	assert.Equal(t, expected, replaced)
 }
 
@@ -206,7 +206,7 @@ func Test_replaceIndices(t *testing.T) {
 	indices = append(indices, indexValue{"e", devicechange.NewTypedValueString("9"), 4})
 	indices = append(indices, indexValue{"f", devicechange.NewTypedValueString("10"), 5})
 	replaced, err := replaceIndices(modelPathNumericalIdx, len(modelPathNumericalIdx), indices)
-	assert.NilError(t, err, "unexpected error replacing numbers")
+	assert.NoError(t, err, "unexpected error replacing numbers")
 	assert.Equal(t, modelPathExpected, replaced, "unexpected value after replacing numbers")
 }
 
@@ -221,7 +221,7 @@ func Test_replaceIndices2(t *testing.T) {
 	indices = append(indices, indexValue{"f", devicechange.NewTypedValueString("10"), 6})
 
 	replaced, err := replaceIndices(modelPathNumericalIdx, 57, indices)
-	assert.NilError(t, err, "unexpected error replacing numbers")
+	assert.NoError(t, err, "unexpected error replacing numbers")
 	assert.Equal(t, modelPathExpected, replaced, "unexpected value after replacing numbers")
 }
 

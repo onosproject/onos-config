@@ -299,7 +299,7 @@ func WaitForNetworkChangeComplete(t *testing.T, networkChangeID network.ID, wait
 			assert.Fail(t, fmt.Sprintf("change stream failed with error: %v", networkChangeResponseErr))
 			return false
 		} else {
-			assert.True(t, networkChangeResponse != nil)
+			assert.NotNil(t, networkChangeResponse)
 			if change.State_COMPLETE == networkChangeResponse.Change.Status.State {
 				return true
 			}

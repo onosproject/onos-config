@@ -20,14 +20,14 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
-	"gotest.tools/assert"
 	"testing"
 )
 
 func TestService_getGNMIServiceVersion(t *testing.T) {
 	version, err := getGNMIServiceVersion()
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, *version, "0.7.0")
 }
 
@@ -38,8 +38,8 @@ func TestService_Capabilities(t *testing.T) {
 		ModelPlugins: make(map[string]modelregistry.ModelPlugin),
 	}
 	response, err := server.Capabilities(context.Background(), &request)
-	assert.NilError(t, err)
-	assert.Assert(t, response != nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
 	assert.Equal(t, response.GNMIVersion, "0.7.0")
 	assert.Equal(t, len(response.SupportedEncodings), 1)
 	assert.Equal(t, response.SupportedEncodings[0], gnmi.Encoding_JSON)

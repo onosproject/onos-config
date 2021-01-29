@@ -19,7 +19,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -53,20 +53,21 @@ const (
 
 func checkElement(t *testing.T, parsed *gnmi.Path, index int, elemName string, elemKeyName string, elemKeyValue string) {
 	elem := parsed.Elem[index]
-	assert.Assert(t, elem != nil, "path Element %d does not exist", index)
+	assert.NotNil(t, elem, "path Element %d does not exist", index)
 
 	name := elem.Name
-	assert.Assert(t, name == elemName, "path Element %d name is incorrect %s", index, name)
+	assert.Equal(t, name, elemName, "path Element %d name is incorrect %s", index, name)
 
 	key := elem.Key
-	assert.Assert(t, key[elemKeyName] == elemKeyValue, "key 0 is incorrect %s", key[elemKeyName])
+	assert.Equal(t, key[elemKeyName], elemKeyValue, "key 0 is incorrect %s", key[elemKeyName])
 }
 
 func Test_ParseSimple(t *testing.T) {
 	elements := SplitPath(path1)
 	parsed, err := ParseGNMIElements(elements)
 
-	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
+	assert.NoError(t, err, "path returned an error")
+	assert.NotNil(t, parsed)
 
 	checkElement(t, parsed, 0, elemName1a, elemKeyName1, elemKeyValue1)
 }
@@ -76,7 +77,8 @@ func Test_ParseSimpleSlash(t *testing.T) {
 	elements := SplitPath(pathSlashKey)
 	parsed, err := ParseGNMIElements(elements)
 
-	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
+	assert.NoError(t, err, "path returned an error")
+	assert.NotNil(t, parsed)
 
 	checkElement(t, parsed, 0, elemName1a, elemKeyNameSlash, elemKeyValue1)
 }
@@ -85,7 +87,8 @@ func Test_ParseEscape(t *testing.T) {
 	elements := SplitPath(escapedPath1)
 	parsed, err := ParseGNMIElements(elements)
 
-	assert.Assert(t, parsed != nil && err == nil, "path returned an error")
+	assert.NoError(t, err, "path returned an error")
+	assert.NotNil(t, parsed)
 
 	checkElement(t, parsed, 0, elemName1a, elemKeyName1, elemKeyValue1)
 }
@@ -95,7 +98,8 @@ func Test_ParseErrorNoClose(t *testing.T) {
 	elements[0] = pathNoClose
 	parsed, err := ParseGNMIElements(elements)
 
-	assert.Assert(t, err != nil && parsed == nil, "path with no closing bracket did not generate an error")
+	assert.Error(t, err, "path with no closing bracket did not generate an error")
+	assert.Nil(t, parsed)
 }
 
 func Test_ParseErrorNoKeyName(t *testing.T) {
@@ -103,7 +107,8 @@ func Test_ParseErrorNoKeyName(t *testing.T) {
 	elements[0] = pathNoKeyName
 	parsed, err := ParseGNMIElements(elements)
 
-	assert.Assert(t, err != nil && parsed == nil, "path with no opening bracket did not generate an error")
+	assert.Error(t, err, "path with no opening bracket did not generate an error")
+	assert.Nil(t, parsed)
 }
 
 func Test_Split(t *testing.T) {
@@ -122,8 +127,8 @@ func Test_ParseNamespace(t *testing.T) {
 	elements := SplitPath("/ns:a[x=y]/b/c")
 	parsed, err := ParseGNMIElements(elements)
 
-	assert.NilError(t, err, "Path with NS returns error")
-	assert.Assert(t, parsed != nil, "path with NS returns nil")
+	assert.NoError(t, err, "Path with NS returns error")
+	assert.NotNil(t, parsed, "path with NS returns nil")
 
 	checkElement(t, parsed, 0, "a", "x", "y")
 }
@@ -131,7 +136,7 @@ func Test_ParseNamespace(t *testing.T) {
 func Test_StrPath(t *testing.T) {
 	elements := SplitPath(path1)
 	parsed, err := ParseGNMIElements(elements)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	generatedPath := StrPath(parsed)
 	assert.Equal(t, generatedPath, path1)
@@ -140,7 +145,7 @@ func Test_StrPath(t *testing.T) {
 func Test_StrPathSlash(t *testing.T) {
 	elements := SplitPath(pathSlashKey)
 	parsed, err := ParseGNMIElements(elements)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	generatedPath := StrPath(parsed)
 	assert.Equal(t, generatedPath, pathSlashKey)
@@ -150,7 +155,7 @@ func Test_StrPathV03(t *testing.T) {
 	const path = "/a/b/c"
 	elements := SplitPath(path)
 	parsed, err := ParseGNMIElements(elements)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	//  V3 used Element
 	parsed.Element = make([]string, len(parsed.Elem))
@@ -164,7 +169,7 @@ func Test_StrPathV03(t *testing.T) {
 func Test_StrPathV04(t *testing.T) {
 	elements := SplitPath(path1)
 	parsed, err := ParseGNMIElements(elements)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	generatedPath := strPathV04(parsed)
 	assert.Equal(t, generatedPath, path1)

@@ -1,4 +1,4 @@
-export CGO_ENABLED=0
+export CGO_ENABLED=1
 export GO111MODULE=on
 
 .PHONY: build
@@ -11,12 +11,16 @@ ONOS_PROTOC_VERSION := v0.6.3
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
-	CGO_ENABLED=1 go build -o build/_output/onos-config ./cmd/onos-config
+	go build -o build/_output/onos-config ./cmd/onos-config
 
-test: # @HELP run the unit tests and source code validation
+test: # @HELP run the unit tests and source code validation producing a golang style report
 test: build deps linters license_check
-	CGO_ENABLED=1 go test -race github.com/onosproject/onos-config/pkg/...
-	CGO_ENABLED=1 go test -race github.com/onosproject/onos-config/cmd/...
+	go test -race github.com/onosproject/onos-config/...
+
+
+jenkins-test: build-tools # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
+jenkins-test: build deps license_check linters
+	TEST_PACKAGES=github.com/onosproject/onos-config/... ./../build-tools/build/jenkins/make-unit
 
 coverage: # @HELP generate unit test coverage data
 coverage: build deps linters license_check
@@ -27,10 +31,16 @@ deps: # @HELP ensure that the required dependencies are in place
 	bash -c "diff -u <(echo -n) <(git diff go.mod)"
 	bash -c "diff -u <(echo -n) <(git diff go.sum)"
 
-linters: # @HELP examines Go source code and reports coding problems
-	golangci-lint run --timeout 30m
+linters: golang-ci # @HELP examines Go source code and reports coding problems
+	golangci-lint run --timeout 5m
 
-license_check: # @HELP examine and ensure license headers exist
+build-tools: # @HELP install the ONOS build tools if needed
+	@if [ ! -d "../build-tools" ]; then cd .. && git clone https://github.com/onosproject/build-tools.git; fi
+
+golang-ci: # @HELP install golang-ci if not present
+	golangci-lint --version || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b `go env GOPATH`/bin v1.36.0
+
+license_check: build-tools # @HELP examine and ensure license headers exist
 	@if [ ! -d "../build-tools" ]; then cd .. && git clone https://github.com/onosproject/build-tools.git; fi
 	./../build-tools/licensing/boilerplate.py -v --rootdir=${CURDIR}
 

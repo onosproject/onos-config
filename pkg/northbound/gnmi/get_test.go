@@ -22,10 +22,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gotest.tools/assert"
-	"strings"
 	"testing"
 )
 
@@ -43,7 +42,8 @@ func Test_getNoTarget(t *testing.T) {
 	}
 
 	_, err := server.Get(context.TODO(), &request)
-	assert.ErrorContains(t, err, "has no target")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "has no target")
 }
 
 func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
@@ -51,14 +51,15 @@ func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	request := gnmi.GetRequest{
 		Prefix: prefixPath,
 	}
 
 	_, err = server.Get(context.TODO(), &request)
-	assert.ErrorContains(t, err, "has no target")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "has no target")
 
 }
 
@@ -84,7 +85,7 @@ func Test_getNoPathElems(t *testing.T) {
 	}
 
 	result, err := server.Get(context.TODO(), &request)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, len(result.Notification), 2)
 
@@ -104,7 +105,7 @@ func Test_getAllDevices(t *testing.T) {
 	}
 
 	result, err := server.Get(context.TODO(), &request)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
 	assert.Equal(t, len(result.Notification[0].Update), 1)
@@ -112,7 +113,7 @@ func Test_getAllDevices(t *testing.T) {
 	assert.Equal(t, result.Notification[0].Update[0].Path.Target, "*")
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
-	assert.Assert(t, strings.Contains(deviceListStr, "Device1, Device2, Device3"))
+	assert.Contains(t, deviceListStr, "Device1, Device2, Device3")
 }
 
 // Test_getalldevices is where a wildcard is used for target - path is ignored
@@ -124,14 +125,14 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 	}
 
 	result, err := server.Get(context.TODO(), &request)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
 	assert.Equal(t, len(result.Notification[0].Update), 1)
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
-	assert.Assert(t, strings.Contains(deviceListStr, "Device1, Device2, Device3"))
+	assert.Contains(t, deviceListStr, "Device1, Device2, Device3")
 }
 
 func Test_get2PathsWithPrefix(t *testing.T) {
@@ -147,14 +148,14 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	leafAPath, err := utils.ParseGNMIElements([]string{"leaf2a"})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	leafAPath.Target = "Device1"
 
 	leafBPath, err := utils.ParseGNMIElements([]string{"leaf2b"})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	leafBPath.Target = "Device1"
 
 	request := gnmi.GetRequest{
@@ -163,7 +164,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 	}
 
 	result, err := server.Get(context.TODO(), &request)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, len(result.Notification), 2)
 
@@ -192,7 +193,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	prefixPath.Target = "Device1"
 
 	request := gnmi.GetRequest{
@@ -200,7 +201,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	}
 
 	result, err := server.Get(context.TODO(), &request)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
 
@@ -229,7 +230,7 @@ func Test_targetDoesNotExist(t *testing.T) {
 	setUpListMock(mocks)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	prefixPath.Target = "Device3"
 
 	request := gnmi.GetRequest{
@@ -237,9 +238,9 @@ func Test_targetDoesNotExist(t *testing.T) {
 	}
 
 	result, err := server.Get(context.TODO(), &request)
-	assert.NilError(t, err, "get should not return an error")
-	assert.Assert(t, result != nil)
-	assert.Assert(t, result.Notification[0].Update[0].Val == nil)
+	assert.NoError(t, err, "get should not return an error")
+	assert.NotNil(t, result)
+	assert.Nil(t, result.Notification[0].Update[0].Val)
 }
 
 // Target does exist, but specified path does not
@@ -258,10 +259,10 @@ func Test_pathDoesNotExist(t *testing.T) {
 	setUpListMock(mocks)
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	prefixPath.Target = "Device1"
 	path, err := utils.ParseGNMIElements([]string{"leaf2w"})
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	request := gnmi.GetRequest{
 		Prefix: prefixPath,
@@ -269,7 +270,7 @@ func Test_pathDoesNotExist(t *testing.T) {
 	}
 
 	result, err := server.Get(context.TODO(), &request)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
 
@@ -280,5 +281,5 @@ func Test_pathDoesNotExist(t *testing.T) {
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/leaf2w")
-	assert.Assert(t, result.Notification[0].Update[0].Val == nil)
+	assert.Nil(t, result.Notification[0].Update[0].Val)
 }

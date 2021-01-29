@@ -82,9 +82,9 @@ func createSessionManager(t *testing.T) *SessionManager {
  */
 func TestSessionManager(t *testing.T) {
 	// TODO Fix this unit test or replace with a new one
-	t.Skip()
 	sessionManager := createSessionManager(t)
 	_ = sessionManager.Start()
+	t.Skip()
 
 	/*timeout := time.Millisecond * 500
 	device1NameStr := "factoryTd"
