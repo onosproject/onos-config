@@ -5,9 +5,7 @@ export GO111MODULE=on
 
 DOCKER_REPOSITORY ?= onosproject/
 KIND_CLUSTER_NAME ?= kind
-ONOS_CONFIG_VERSION ?= latest
-ONOS_BUILD_VERSION := v0.6.3
-ONOS_PROTOC_VERSION := v0.6.3
+ONOS_CONFIG_VERSION := latest
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
@@ -47,18 +45,12 @@ license_check: build-tools # @HELP examine and ensure license headers exist
 gofmt: # @HELP run the Go format validation
 	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/ tests/)"
 
-onos-config-base-docker: # @HELP build onos-config base Docker image
+onos-config-docker: # @HELP build onos-config base Docker image
 	@go mod vendor
-	docker build . -f build/base/Dockerfile \
-		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
-		--build-arg ONOS_MAKE_TARGET=build \
-		-t onosproject/onos-config-base:${ONOS_CONFIG_VERSION}
-	@rm -rf vendor
-
-onos-config-docker: onos-config-base-docker # @HELP build onos-config Docker image
 	docker build . -f build/onos-config/Dockerfile \
-		--build-arg ONOS_CONFIG_BASE_VERSION=${ONOS_CONFIG_VERSION} \
-		-t ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
+		--build-arg ONOS_MAKE_TARGET=build \
+		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
+	@rm -rf vendor
 
 images: # @HELP build all Docker images
 images: build onos-config-docker
