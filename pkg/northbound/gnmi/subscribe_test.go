@@ -23,6 +23,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
 	"strconv"
@@ -37,6 +38,7 @@ type gNMISubscribeServerFake struct {
 	Request   *gnmi.SubscribeRequest
 	Responses chan *gnmi.SubscribeResponse
 	Signal    chan struct{}
+	context   context.Context
 	grpc.ServerStream
 }
 
@@ -53,13 +55,18 @@ func (x gNMISubscribeServerFake) Recv() (*gnmi.SubscribeRequest, error) {
 	return x.Request, nil
 }
 
+func (x gNMISubscribeServerFake) Context() context.Context {
+	return x.context
+}
+
 type gNMISubscribeServerPollFake struct {
 	Request     *gnmi.SubscribeRequest
 	PollRequest *gnmi.SubscribeRequest
 	Responses   chan *gnmi.SubscribeResponse
 	Signal      chan struct{}
 	grpc.ServerStream
-	first bool
+	first   bool
+	context context.Context
 }
 
 func (x gNMISubscribeServerPollFake) Send(m *gnmi.SubscribeResponse) error {
@@ -74,6 +81,10 @@ func (x gNMISubscribeServerPollFake) Recv() (*gnmi.SubscribeRequest, error) {
 	}
 	return x.PollRequest, nil
 
+}
+
+func (x gNMISubscribeServerPollFake) Context() context.Context {
+	return x.context
 }
 
 // Test_SubscribeLeafOnce tests subscribing with mode ONCE and then immediately receiving the subscription for a specific leaf.
@@ -103,10 +114,15 @@ func Test_SubscribeLeafOnce(t *testing.T) {
 	request := buildRequest(path, gnmi.SubscriptionList_ONCE)
 
 	responsesChan := make(chan *gnmi.SubscribeResponse)
+	mdMap := make(map[string]string)
+	mdMap["name"] = "test user"
+	mdMap["email"] = "test@email"
+	mdMap["other"] = "other attribute"
 	serverFake := gNMISubscribeServerFake{
 		Request:   request,
 		Responses: responsesChan,
 		Signal:    make(chan struct{}),
+		context:   metadata.NewIncomingContext(context.Background(), metadata.New(mdMap)),
 	}
 	go func() {
 		err = server.Subscribe(serverFake)
@@ -155,6 +171,7 @@ func Test_SubscribeLeafStream(t *testing.T) {
 		Request:   request,
 		Responses: responsesChan,
 		Signal:    make(chan struct{}),
+		context:   context.Background(),
 	}
 
 	go func() {
@@ -260,6 +277,7 @@ func Test_WrongPath(t *testing.T) {
 	//	Request:   request,
 	//	Responses: responsesChan,
 	//	Signal:    make(chan struct{}),
+	//  context:   context.Background(),
 	//}
 
 	targets := make(map[string]struct{})
@@ -358,6 +376,7 @@ func Test_Poll(t *testing.T) {
 		Signal:      make(chan struct{}),
 		first:       true,
 		PollRequest: pollrequest,
+		context:     context.Background(),
 	}
 
 	go func() {
@@ -422,6 +441,7 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 		Request:   request,
 		Responses: responsesChan,
 		Signal:    make(chan struct{}),
+		context:   context.Background(),
 	}
 
 	go func() {
@@ -502,6 +522,7 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 		Request:   request,
 		Responses: responsesChan,
 		Signal:    make(chan struct{}),
+		context:   context.Background(),
 	}
 
 	go func() {

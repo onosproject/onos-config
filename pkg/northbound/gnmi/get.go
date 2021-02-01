@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/manager"
@@ -33,6 +34,10 @@ import (
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 	notifications := make([]*gnmi.Notification, 0)
 
+	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
+		log.Infof("gNMI Get() called by '%s (%s)' with token %s", md.Get("name"),
+			md.Get("email"), md.Get("at_hash"))
+	}
 	prefix := req.GetPrefix()
 
 	version, err := extractGetVersion(req)
