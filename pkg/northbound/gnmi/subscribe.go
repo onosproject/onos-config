@@ -17,6 +17,7 @@ package gnmi
 import (
 	"crypto/sha1"
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
@@ -44,6 +45,12 @@ type result struct {
 
 // Subscribe implements gNMI Subscribe
 func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
+	if stream.Context() != nil {
+		if md := metautils.ExtractIncoming(stream.Context()); md != nil && md.Get("name") != "" {
+			log.Infof("gNMI Subscribe() called by '%s (%s)' with token %s",
+				md.Get("name"), md.Get("email"), md.Get("at_hash"))
+		}
+	}
 	//updateChan := make(chan *gnmi.Update)
 	var subscribe *gnmi.SubscriptionList
 	mgr := manager.GetManager()

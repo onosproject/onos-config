@@ -24,6 +24,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"testing"
 )
@@ -237,7 +238,10 @@ func Test_targetDoesNotExist(t *testing.T) {
 		Prefix: prefixPath,
 	}
 
-	result, err := server.Get(context.TODO(), &request)
+	md := make(map[string]string) // Try passing in some metadata with context - usually done by AuthInterceptor
+	md["name"] = "test user"
+	md["email"] = "test email"
+	result, err := server.Get(metadata.NewIncomingContext(context.TODO(), metadata.New(md)), &request)
 	assert.NoError(t, err, "get should not return an error")
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Notification[0].Update[0].Val)

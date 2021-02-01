@@ -63,6 +63,9 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 )
 
+// OIDCServerURL - address of an OpenID Connect server
+const OIDCServerURL = "OIDC_SERVER_URL"
+
 type arrayFlags []string
 
 func (i *arrayFlags) String() string {
@@ -185,15 +188,28 @@ func main() {
 	}
 
 	mgr.Run()
-	err = startServer(*caPath, *keyPath, *certPath)
+	authorization := false
+	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
+		authorization = true
+		log.Infof("Authorization enabled. %s=%s", OIDCServerURL, oidcURL)
+		// OIDCServerURL is also referenced in jwt.go (from onos-lib-go)
+	} else {
+		log.Infof("Authorization not enabled %s", os.Getenv(OIDCServerURL))
+	}
+
+	err = startServer(*caPath, *keyPath, *certPath, authorization)
 	if err != nil {
 		log.Fatal("Unable to start onos-config ", err)
 	}
 }
 
 // Creates gRPC server and registers various services; then serves.
-func startServer(caPath string, keyPath string, certPath string) error {
-	s := northbound.NewServer(northbound.NewServerCfg(caPath, keyPath, certPath, 5150, true, northbound.SecurityConfig{}))
+func startServer(caPath string, keyPath string, certPath string, authorization bool) error {
+	s := northbound.NewServer(northbound.NewServerCfg(caPath, keyPath, certPath, 5150, true,
+		northbound.SecurityConfig{
+			AuthenticationEnabled: authorization,
+			AuthorizationEnabled:  authorization,
+		}))
 	s.AddService(admin.Service{})
 	s.AddService(diags.Service{})
 	s.AddService(gnmi.Service{})
