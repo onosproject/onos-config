@@ -1,7 +1,7 @@
 ARG ONOS_CONFIG_BASE_VERSION=latest
 
 # The base image contains the onos-config binaries
-FROM onosproject/onos-config-base:$ONOS_CONFIG_BASE_VERSION as base
+FROM onosproject/onos-config-base:v0.6.3 as base
 
 FROM alpine:3.11
 RUN apk add libc6-compat
