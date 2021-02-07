@@ -394,6 +394,9 @@ func Test_doSingleDelete(t *testing.T) {
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	deletePath := &gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
 	deletePaths = append(deletePaths, deletePath)
+	pathElemsRefs2, _ := utils.ParseGNMIElements([]string{"cont1a", "list2a[name=n1]"})
+	deletePath2 := &gnmi.Path{Elem: pathElemsRefs2.Elem, Target: "Device1"}
+	deletePaths = append(deletePaths, deletePath2)
 
 	ext100Name := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
@@ -418,19 +421,30 @@ func Test_doSingleDelete(t *testing.T) {
 	// Check that Response is correct
 	assert.NotNil(t, setResponse, "Expected setResponse to exist")
 
-	assert.Equal(t, len(setResponse.Response), 1)
+	assert.Equal(t, len(setResponse.Response), 2)
 
 	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_DELETE.String())
 
-	path := setResponse.Response[0].Path
+	for _, r := range setResponse.Response {
+		path := r.Path
+		assert.Equal(t, path.Target, "Device1")
 
-	assert.Equal(t, path.Target, "Device1")
+		switch len(path.Elem) {
+		case 2: // The list item
+			assert.Equal(t, path.Elem[0].Name, "cont1a")
+			assert.Equal(t, path.Elem[1].Name, "list2a")
+			list2aKey, ok := path.Elem[1].Key["name"]
+			assert.True(t, ok, "expecting Key to have index 'name'")
+			assert.Equal(t, list2aKey, "n1")
 
-	assert.Equal(t, len(path.Elem), 3, "Expected 3 path elements")
-
-	assert.Equal(t, path.Elem[0].Name, "cont1a")
-	assert.Equal(t, path.Elem[1].Name, "cont2a")
-	assert.Equal(t, path.Elem[2].Name, "leaf2a")
+		case 3: // the leaf 2a
+			assert.Equal(t, path.Elem[0].Name, "cont1a")
+			assert.Equal(t, path.Elem[1].Name, "cont2a")
+			assert.Equal(t, path.Elem[2].Name, "leaf2a")
+		default:
+			t.Errorf("unexpected response length in Single delete. %d", len(path.Elem))
+		}
+	}
 
 	// Check that an the network change ID is given in extension 100 and that the device is currently disconnected
 	assert.Equal(t, len(setResponse.Extension), 1)

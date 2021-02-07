@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"strings"
 	"time"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -381,20 +382,21 @@ func extractModelForTarget(target devicetype.ID,
 
 func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap) (*modelregistry.ReadWritePathElem, error) {
 	searchpathNoIndices := modelregistry.RemovePathIndices(path)
+	if strings.HasSuffix(path, "]") { //Ends with index
+		indices := modelregistry.ExtractIndexNames(path)
+		// Add on the last index
+		searchpathNoIndices = fmt.Sprintf("%s/%s", searchpathNoIndices, indices[len(indices)-1])
+	}
+
 	// First search through the RW paths
-	var rwPathElem modelregistry.ReadWritePathElem
-	var ok bool
 	for modelPath, modelElem := range rwPaths {
 		pathNoIndices := modelregistry.RemovePathIndices(modelPath)
 		// Find a short path
 		if pathNoIndices == searchpathNoIndices {
-			rwPathElem = modelElem
-			ok = true
-			break
+			return &modelElem, nil
 		}
 	}
-	if !ok {
-		return nil, fmt.Errorf("unable to find RW model path %s", path)
-	}
-	return &rwPathElem, nil
+
+	return nil, fmt.Errorf("unable to find RW model path %s ( without index %s). %d paths inspected",
+		path, searchpathNoIndices, len(rwPaths))
 }
