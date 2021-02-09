@@ -49,7 +49,7 @@ onos-config-docker: # @HELP build onos-config base Docker image
 	@go mod vendor
 	docker build . -f build/onos-config/Dockerfile \
 		--build-arg ONOS_MAKE_TARGET=build \
-		-t onosproject/onos-config:${ONOS_CONFIG_VERSION}
+		-t ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
 	@rm -rf vendor
 
 images: # @HELP build all Docker images
