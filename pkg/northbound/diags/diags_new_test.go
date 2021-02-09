@@ -75,7 +75,8 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, diags.Change
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl),
-		true)
+		true,
+		nil)
 
 	mgrTest.DeviceStore = mockstore.NewMockDeviceStore(ctrl)
 

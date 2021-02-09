@@ -138,7 +138,7 @@ func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream dia
 	log.Infof("ListNetworkChanges called with %s. Subscribe %v", r.ChangeID, r.Subscribe)
 
 	// There may be a wildcard given - we only want to reply with changes that match
-	matcher := utils.MatchWildcardChNameRegexp(string(r.ChangeID))
+	matcher := utils.MatchWildcardChNameRegexp(string(r.ChangeID), false)
 	var watchOpts []network.WatchOption
 	if !r.WithoutReplay {
 		watchOpts = append(watchOpts, network.WithReplay())

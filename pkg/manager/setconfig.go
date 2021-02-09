@@ -34,7 +34,7 @@ const SetConfigAlreadyApplied = "Already applied:"
 func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 	deviceType devicetype.Type, updates devicechange.TypedValueMap, deletes []string, lastWrite networkchange.Revision) error {
 
-	chg, err := m.ComputeDeviceChange(deviceName, version, deviceType, updates, deletes, "Generated for validation")
+	chg, err := computeDeviceChange(deviceName, version, deviceType, updates, deletes, "Generated for validation")
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (m *Manager) computeNetworkConfig(targetUpdates map[devicetype.ID]devicecha
 		//FIXME this is a sequential job, not parallelized
 		version := deviceInfo[target].Version
 		deviceType := deviceInfo[target].Type
-		newChange, err := m.ComputeDeviceChange(
+		newChange, err := computeDeviceChange(
 			target, version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
@@ -143,7 +143,7 @@ func (m *Manager) computeNetworkConfig(targetUpdates map[devicetype.ID]devicecha
 	for target, removes := range targetRemoves {
 		version := deviceInfo[target].Version
 		deviceType := deviceInfo[target].Type
-		newChange, err := m.ComputeDeviceChange(
+		newChange, err := computeDeviceChange(
 			target, version, deviceType, make(devicechange.TypedValueMap), removes, description)
 		if err != nil {
 			log.Error("Error in setting config: ", newChange, " for target ", err)
@@ -153,4 +153,40 @@ func (m *Manager) computeNetworkConfig(targetUpdates map[devicetype.ID]devicecha
 		deviceChanges = append(deviceChanges, newChange)
 	}
 	return deviceChanges, nil
+}
+
+// computeDeviceChange computes a given device change the given updates and deletes, according to the path
+// on the configuration for the specified target
+func computeDeviceChange(deviceName devicetype.ID, version devicetype.Version,
+	deviceType devicetype.Type, updates devicechange.TypedValueMap,
+	deletes []string, description string) (*devicechange.Change, error) {
+
+	var newChanges = make([]*devicechange.ChangeValue, 0)
+	//updates
+	for path, value := range updates {
+		updateValue, err := devicechange.NewChangeValue(path, value, false)
+		if err != nil {
+			log.Warnf("Error creating value for %s %v", path, err)
+			continue
+		}
+		newChanges = append(newChanges, updateValue)
+	}
+	//deletes
+	for _, path := range deletes {
+		deleteValue, _ := devicechange.NewChangeValue(path, devicechange.NewTypedValueEmpty(), true)
+		newChanges = append(newChanges, deleteValue)
+	}
+	//description := fmt.Sprintf("Originally created as part of %s", description)
+	//if description == "" {
+	//	description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
+	//}
+	//TODO lost description of Change
+	changeElement := &devicechange.Change{
+		DeviceID:      deviceName,
+		DeviceVersion: version,
+		DeviceType:    deviceType,
+		Values:        newChanges,
+	}
+
+	return changeElement, nil
 }

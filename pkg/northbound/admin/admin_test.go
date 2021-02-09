@@ -76,7 +76,8 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, admin.Config
 		mockstore.NewMockNetworkChangesStore(ctrl),
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl),
-		true)
+		true,
+		nil)
 
 	return mgrTest, conn, client, s
 }

@@ -138,7 +138,7 @@ func (s *Server) listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.
 			targets := make(map[string]struct{})
 			for _, sub := range subs {
 				subscriptionPathStr := utils.StrPath(sub.Path)
-				subsStr = append(subsStr, utils.MatchWildcardRegexp(subscriptionPathStr))
+				subsStr = append(subsStr, utils.MatchWildcardRegexp(subscriptionPathStr, false))
 				targets[sub.Path.Target] = struct{}{}
 			}
 			//Each subscription request spawns a go routing listening for related events for the target and the paths
