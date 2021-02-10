@@ -5,7 +5,7 @@ export GO111MODULE=on
 
 DOCKER_REPOSITORY ?= onosproject/
 KIND_CLUSTER_NAME ?= kind
-ONOS_CONFIG_VERSION := latest
+ONOS_CONFIG_VERSION ?= latest
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
