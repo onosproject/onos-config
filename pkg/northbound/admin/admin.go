@@ -229,7 +229,7 @@ func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.Config
 	log.Infof("ListSnapshots called with %s. Subscribe %v", r.ID, r.Subscribe)
 
 	// There may be a wildcard given - we only want to reply with changes that match
-	matcher := utils.MatchWildcardChNameRegexp(string(r.ID))
+	matcher := utils.MatchWildcardChNameRegexp(string(r.ID), false)
 
 	if r.Subscribe {
 		eventCh := make(chan streams.Event)

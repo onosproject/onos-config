@@ -383,7 +383,7 @@ func extractModelForTarget(target devicetype.ID,
 func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap) (*modelregistry.ReadWritePathElem, error) {
 	searchpathNoIndices := modelregistry.RemovePathIndices(path)
 	if strings.HasSuffix(path, "]") { //Ends with index
-		indices := modelregistry.ExtractIndexNames(path)
+		indices, _ := modelregistry.ExtractIndexNames(path)
 		// Add on the last index
 		searchpathNoIndices = fmt.Sprintf("%s/%s", searchpathNoIndices, indices[len(indices)-1])
 	}

@@ -359,7 +359,7 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 				// Need to copy the index of the list across to the RO list too
 				roIdxName := k[:strings.LastIndex(k, "/")]
 				roIdxSubPath := k[strings.LastIndex(k, "/"):]
-				indices := ExtractIndexNames(itemPath[strings.LastIndex(itemPath, "/"):])
+				indices, _ := ExtractIndexNames(itemPath[strings.LastIndex(itemPath, "/"):])
 				kIsIdxAttr := false
 				for _, idx := range indices {
 					if roIdxSubPath == fmt.Sprintf("/%s", idx) {
@@ -403,14 +403,17 @@ func RemovePathIndices(path string) string {
 }
 
 // ExtractIndexNames - get an ordered array of index names
-func ExtractIndexNames(path string) []string {
+func ExtractIndexNames(path string) ([]string, []string) {
 	indexNames := make([]string, 0)
+	indexValues := make([]string, 0)
 	jsonMatches := rOnIndex.FindAllStringSubmatch(path, -1)
 	for _, m := range jsonMatches {
 		idxName := m[1][1:strings.LastIndex(m[1], "=")]
 		indexNames = append(indexNames, idxName)
+		idxValue := m[1][strings.LastIndex(m[1], "=")+1 : len(m[1])-1]
+		indexValues = append(indexValues, idxValue)
 	}
-	return indexNames
+	return indexNames, indexValues
 }
 
 func formatName(dirEntry *yang.Entry, isList bool, parentPath string, subpathPrefix string) string {

@@ -34,7 +34,7 @@ func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Ver
 		return configValues, nil
 	}
 	filteredValues := make([]*devicechange.PathValue, 0)
-	pathRegexp := utils.MatchWildcardRegexp(path)
+	pathRegexp := utils.MatchWildcardRegexp(path, false)
 	for _, cv := range configValues {
 		if pathRegexp.MatchString(cv.Path) {
 			filteredValues = append(filteredValues, cv)

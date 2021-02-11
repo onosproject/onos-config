@@ -17,6 +17,7 @@ package manager
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/store/change/device/rbac"
 	"sync"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -72,6 +73,7 @@ type Manager struct {
 	Dispatcher                *dispatcher.Dispatcher
 	OperationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
 	OperationalStateCacheLock *sync.RWMutex
+	RbacCache                 rbac.Cache
 	allowUnvalidatedConfig    bool
 }
 
@@ -79,7 +81,7 @@ type Manager struct {
 func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Store, deviceChangesStore device.Store,
 	deviceStateStore state.Store, deviceStore devicestore.Store, deviceCache cache.Cache,
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
-	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool) *Manager {
+	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool, rbacCache rbac.Cache) *Manager {
 	log.Info("Creating Manager")
 
 	modelReg := &modelregistry.ModelRegistry{
@@ -110,7 +112,9 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
 		OperationalStateCacheLock: &sync.RWMutex{},
 		allowUnvalidatedConfig:    allowUnvalidatedConfig,
+		RbacCache:                 rbacCache,
 	}
+
 	return &mgr
 }
 
@@ -184,42 +188,6 @@ func (m *Manager) Close() {
 // Should be called only after NewManager and Run are done.
 func GetManager() *Manager {
 	return &mgr
-}
-
-// ComputeDeviceChange computes a given device change the given updates and deletes, according to the path
-// on the configuration for the specified target
-func (m *Manager) ComputeDeviceChange(deviceName devicetype.ID, version devicetype.Version,
-	deviceType devicetype.Type, updates devicechange.TypedValueMap,
-	deletes []string, description string) (*devicechange.Change, error) {
-
-	var newChanges = make([]*devicechange.ChangeValue, 0)
-	//updates
-	for path, value := range updates {
-		updateValue, err := devicechange.NewChangeValue(path, value, false)
-		if err != nil {
-			log.Warnf("Error creating value for %s %v", path, err)
-			continue
-		}
-		newChanges = append(newChanges, updateValue)
-	}
-	//deletes
-	for _, path := range deletes {
-		deleteValue, _ := devicechange.NewChangeValue(path, devicechange.NewTypedValueEmpty(), true)
-		newChanges = append(newChanges, deleteValue)
-	}
-	//description := fmt.Sprintf("Originally created as part of %s", description)
-	//if description == "" {
-	//	description = fmt.Sprintf("Created at %s", time.Now().Format(time.RFC3339))
-	//}
-	//TODO lost description of Change
-	changeElement := &devicechange.Change{
-		DeviceID:      deviceName,
-		DeviceVersion: version,
-		DeviceType:    deviceType,
-		Values:        newChanges,
-	}
-
-	return changeElement, nil
 }
 
 // CheckCacheForDevice checks against the device cache (of the device change store

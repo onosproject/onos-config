@@ -262,7 +262,8 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		mockNetworkChangesStore,
 		mockNetworkSnapshotStore,
 		mockDeviceSnapshotStore,
-		true)
+		true,
+		nil)
 
 	mgrTest.Run()
 

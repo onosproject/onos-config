@@ -484,7 +484,8 @@ func indicesOfPath(modelROpaths modelregistry.ReadOnlyPathMap,
 		pathNoIndices := modelregistry.RemovePathIndices(path)
 		// Find a short path
 		if pathNoIndices[:strings.LastIndex(pathNoIndices, slash)] == searchpathNoIndices {
-			return modelregistry.ExtractIndexNames(path)
+			idxNames, _ := modelregistry.ExtractIndexNames(path)
+			return idxNames
 		}
 	}
 
@@ -500,7 +501,8 @@ func indicesOfPath(modelROpaths modelregistry.ReadOnlyPathMap,
 			pathNoIndices := modelregistry.RemovePathIndices(fullpath)
 			// Find a short path
 			if pathNoIndices[:strings.LastIndex(pathNoIndices, slash)] == searchpathNoIndices {
-				return modelregistry.ExtractIndexNames(fullpath)
+				idxNames, _ := modelregistry.ExtractIndexNames(fullpath)
+				return idxNames
 			}
 		}
 	}

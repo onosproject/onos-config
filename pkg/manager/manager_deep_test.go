@@ -138,7 +138,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	assert.NilError(t, err)
 
 	mgrTest = NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStateStore,
-		mockDeviceStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true)
+		mockDeviceStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true, nil)
 
 	modelData1 := gnmi.ModelData{
 		Name:         "test1",

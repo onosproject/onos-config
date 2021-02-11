@@ -700,13 +700,21 @@ func Test_formatName2(t *testing.T) {
 }
 
 func Test_extractIndexNames(t *testing.T) {
+	// TODO: check this is how multiple indices are used in real life
 	const modelPath = "/p/q/r[a=*]/s/t[b=*][c=*]/u/v[d=*][e=*][f=*]/w"
-	indexNames := ExtractIndexNames(modelPath)
+	indexNames, indexValues := ExtractIndexNames(modelPath)
 	assert.Equal(t, 6, len(indexNames))
+	assert.Equal(t, 6, len(indexValues))
 	assert.Equal(t, "a", indexNames[0])
+	assert.Equal(t, "*", indexValues[0])
 	assert.Equal(t, "b", indexNames[1])
+	assert.Equal(t, "*", indexValues[1])
 	assert.Equal(t, "c", indexNames[2])
+	assert.Equal(t, "*", indexValues[2])
 	assert.Equal(t, "d", indexNames[3])
+	assert.Equal(t, "*", indexValues[3])
 	assert.Equal(t, "e", indexNames[4])
+	assert.Equal(t, "*", indexValues[4])
 	assert.Equal(t, "f", indexNames[5])
+	assert.Equal(t, "*", indexValues[5])
 }
