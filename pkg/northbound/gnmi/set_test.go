@@ -661,3 +661,20 @@ func TestSet_BadDeviceType(t *testing.T) {
 	assert.Contains(t, setError.Error(), "target DeviceWithMultipleVersions type given NotTheSameType does not match expected TestDevice")
 	assert.Nil(t, setResponse)
 }
+
+func Test_findPathFromModel(t *testing.T) {
+	_, _, mgr := setUpForGetSetTests(t)
+
+	rwPath, err := findPathFromModel("/cont1a", mgr.ModelRegistry.ModelReadWritePaths["TestDevice-1.0.0"], false)
+	assert.NoError(t, err)
+	assert.NotNil(t, rwPath)
+
+	rwPath2, err := findPathFromModel("/cont1a/list2a", mgr.ModelRegistry.ModelReadWritePaths["TestDevice-1.0.0"], false)
+	assert.NoError(t, err)
+	assert.NotNil(t, rwPath2)
+
+	rwPath3, err := findPathFromModel("/cont1a/list2a[name=123]/name", mgr.ModelRegistry.ModelReadWritePaths["TestDevice-1.0.0"], true)
+	assert.NoError(t, err)
+	assert.NotNil(t, rwPath3)
+	assert.Equal(t, []string{"4..8"}, rwPath3.Length)
+}

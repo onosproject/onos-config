@@ -282,7 +282,7 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 			updates[cv.Path] = cv.GetValue()
 		}
 	} else {
-		rwPathElem, err := findPathFromModel(path, rwPaths)
+		rwPathElem, err := findPathFromModel(path, rwPaths, true)
 		if err != nil {
 			return nil, err
 		}
@@ -314,7 +314,7 @@ func (s *Server) doDelete(prefix *gnmi.Path, u *gnmi.Path,
 		path = fmt.Sprintf("%s%s", prefixPath, path)
 	}
 	// Checks for read only paths
-	_, err := findPathFromModel(path, rwPaths)
+	_, err := findPathFromModel(path, rwPaths, false)
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +380,7 @@ func extractModelForTarget(target devicetype.ID,
 	return rwPaths, nil
 }
 
-func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap) (*modelregistry.ReadWritePathElem, error) {
+func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exact bool) (*modelregistry.ReadWritePathElem, error) {
 	searchpathNoIndices := modelregistry.RemovePathIndices(path)
 	if strings.HasSuffix(path, "]") { //Ends with index
 		indices, _ := modelregistry.ExtractIndexNames(path)
@@ -392,8 +392,10 @@ func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap) (*mo
 	for modelPath, modelElem := range rwPaths {
 		pathNoIndices := modelregistry.RemovePathIndices(modelPath)
 		// Find a short path
-		if pathNoIndices == searchpathNoIndices {
+		if exact && pathNoIndices == searchpathNoIndices {
 			return &modelElem, nil
+		} else if !exact && strings.HasPrefix(pathNoIndices, searchpathNoIndices) {
+			return &modelElem, nil // returns the first thing it finds that matches the prefix
 		}
 	}
 
