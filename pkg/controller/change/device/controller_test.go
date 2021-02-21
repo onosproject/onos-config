@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
+	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -598,7 +599,7 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	_, err := synchronizer.New(context.Background(), &mockDevice,
 		make(chan<- events.OperationalStateEvent), make(chan<- events.DeviceResponse),
 		opStateCache, roPathMap, mockTargetDevice,
-		modelregistry.GetStateExplicitRoPaths, &sync.RWMutex{}, deviceChangeStore)
+		configmodel.GetStateExplicitRoPaths, &sync.RWMutex{}, deviceChangeStore)
 	assert.NoError(t, err, "Unable to create new synchronizer for", mockDevice.ID)
 
 	// Finally to make it visible to tests - add it to `Targets`

@@ -369,6 +369,36 @@ func (s *Server) checkForReadOnly(target string, deviceType devicetype.Type, ver
 	return nil
 }
 
+func compareRoPaths(path string, modelRoPaths modelregistry.ReadOnlyPathMap, modelRwPaths modelregistry.ReadWritePathMap) error {
+	log.Infof("Testing %s for read only", path)
+	for ropath, subpaths := range modelRoPaths {
+		// Search through for list indices and replace with generic
+		modelPathNiIdx := modelregistry.RemovePathIndices(path)
+		ropathNoIdx := modelregistry.RemovePathIndices(ropath)
+		if strings.HasPrefix(modelPathNiIdx, ropathNoIdx) {
+			for s := range subpaths {
+				fullpath := ropathNoIdx
+				if s != "/" {
+					fullpath = fmt.Sprintf("%s%s", ropathNoIdx, s)
+				}
+				if fullpath == modelPathNiIdx {
+					// Check that this is not one of those in both config and state (e.g. index of a list)
+					for rwpath := range modelRwPaths {
+						rwpathNoIdx := modelregistry.RemovePathIndices(rwpath)
+						if rwpathNoIdx == modelPathNiIdx {
+							return nil
+						}
+					}
+					return fmt.Errorf("contains a change to a "+
+						"read only path %s. Rejected. %s, %s, %s, %s, %s",
+						path, modelPathNiIdx, ropath, ropathNoIdx, s, fullpath)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
 	path, errInPath := utils.ParseGNMIElements(utils.SplitPath(pathStr))
 	if errInPath != nil {

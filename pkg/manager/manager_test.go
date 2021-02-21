@@ -23,7 +23,6 @@ import (
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -653,34 +652,6 @@ func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
 
 func (m MockModelPlugin) GetStateMode() int {
 	panic("implement me")
-}
-
-func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
-	mgrTest, _ := setUp(t)
-
-	plugin := MockModelPlugin{}
-	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
-
-	roPathMap := make(modelregistry.ReadOnlyPathMap)
-	roSubPath1 := make(modelregistry.ReadOnlySubPathMap)
-	roPathMap[test1Cont1ACont2ALeaf2A] = roSubPath1
-
-	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-1.0.0"] = roPathMap
-
-	// TODO - Not implemented on Atomix stores yet
-	t.Skip()
-	//assert.ErrorContains(t, validationError,
-	//	"error read only path in configuration /cont1a/cont2a/leaf2a matches /cont1a/cont2a/leaf2a for TestDevice-1.0.0")
-}
-
-func TestManager_ValidateStores(t *testing.T) {
-	t.Skip("TODO re-enable when validation is done on atomix stores")
-	mgrTest, _ := setUp(t)
-
-	plugin := MockModelPlugin{}
-	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
-
-	//assert.NoError(t, validationError)
 }
 
 func TestManager_CheckCacheForDevice(t *testing.T) {

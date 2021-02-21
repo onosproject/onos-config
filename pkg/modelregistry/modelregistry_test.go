@@ -99,9 +99,8 @@ func Test_CastModelPlugin(t *testing.T) {
 
 	modelPlugin, ok := mpt.(ModelPlugin)
 	assert.Assert(t, ok, "Testing cast of model plugin")
-	name, version, _, _ := modelPlugin.ModelData()
-	assert.Equal(t, name, modelTypeTest)
-	assert.Equal(t, version, modelVersionTest)
+	assert.Equal(t, modelPlugin.Info.Name, modelTypeTest)
+	assert.Equal(t, modelPlugin.Info.Version, modelVersionTest)
 
 }
 
