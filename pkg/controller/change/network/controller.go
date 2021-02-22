@@ -142,6 +142,15 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 
 	// If any device change has failed, roll back all device changes
 	if r.isDeviceChangesFailed(change, deviceChanges) {
+		// XXX smbaker change the networkchange state to rollback.
+		// Otherwise next time the controller picks up this incomplete
+		// networkchange, it will flop all the device changes back to pending and loop
+		log.Infof("Setting networkchange %v to ROLLBACK", change.ID)
+		change.Status.Phase = changetypes.Phase_ROLLBACK
+		if err := r.networkChanges.Update(change); err != nil {
+			return controller.Result{}, err
+		}
+
 		return r.ensureDeviceChangeRollbacks(change, deviceChanges)
 	}
 	return controller.Result{}, nil
