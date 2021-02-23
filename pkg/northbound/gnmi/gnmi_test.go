@@ -15,7 +15,6 @@
 package gnmi
 
 import (
-	"fmt"
 	"github.com/golang/mock/gomock"
 	td1 "github.com/onosproject/config-models/modelplugin/testdevice-1.0.0/testdevice_1_0_0"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
@@ -34,7 +33,6 @@ import (
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
-	"github.com/openconfig/ygot/ygot"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -57,43 +55,6 @@ type AllMocks struct {
 // Also there can only be one TestMain per package
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
-}
-
-type MockModelPlugin struct {
-	schemaFn func() (map[string]*yang.Entry, error)
-}
-
-func (m MockModelPlugin) ModelData() (string, string, []*gnmi.ModelData, string) {
-	//td1.M
-	panic("implement me")
-}
-
-func (m MockModelPlugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
-	device := &td1.Device{}
-	vgs := ygot.ValidatedGoStruct(device)
-
-	if err := td1.Unmarshal(jsonTree, device); err != nil {
-		return nil, err
-	}
-
-	return &vgs, nil
-}
-
-func (m MockModelPlugin) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
-	deviceDeref := *ygotModel
-	device, ok := deviceDeref.(*td1.Device)
-	if !ok {
-		return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
-	}
-	return device.Validate()
-}
-
-func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
-	return m.schemaFn()
-}
-
-func (m MockModelPlugin) GetStateMode() int {
-	panic("implement me")
 }
 
 func setUpWatchMock(mocks *AllMocks) {

@@ -232,21 +232,23 @@ func (r *ModelRegistry) loadPlugins() error {
 			// will have to be called explicitly by their interface name without wildcard
 			/////////////////////////////////////////////////////////////////////
 			if model.Info().Name == "Stratum" && model.Info().Version == "1.0.0" {
-				readWritePaths = make(ReadWritePathMap)
+				stratumIfRwPaths := make(ReadWritePathMap)
 				const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
-				readWritePaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
-				readWritePaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
-				readWritePaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
-				readWritePaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
-				readWritePaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
-				readWritePaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
-				readWritePaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
-				readWritePaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
-				readWritePaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
+				stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
+				stratumIfRwPaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
+				stratumIfRwPaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
+				stratumIfRwPaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
+				stratumIfRwPaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
+				stratumIfRwPaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
+				stratumIfRwPaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
+				stratumIfRwPaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
+				stratumIfRwPaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
+				readWritePaths = stratumIfRwPaths
 
-				readOnlyPaths = make(ReadOnlyPathMap)
+				stratumIfPath := make(ReadOnlyPathMap)
 				const StratumIfPath = "/interfaces/interface[name=*]/state"
-				readOnlyPaths[StratumIfPath] = readOnlyPaths[StratumIfPath]
+				stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
+				readOnlyPaths = stratumIfPath
 				log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
 					"%d read only paths. %d read write paths", model.Info().Name, model.Info().Version,
 					len(readOnlyPaths), len(readWritePaths))
