@@ -16,10 +16,13 @@ package modelregistry
 
 import (
 	"fmt"
-	"plugin"
+	configmodel "github.com/onosproject/onos-config-model/pkg/model"
+	modelregistry "github.com/onosproject/onos-config-model/pkg/model/registry"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
@@ -27,7 +30,6 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
-	"github.com/openconfig/ygot/ygot"
 )
 
 var log = logging.GetLogger("modelregistry")
@@ -144,116 +146,171 @@ func (rw ReadWritePathMap) TypeForPath(path string) (devicechange.ValueType, err
 	return devicechange.ValueType_EMPTY, fmt.Errorf("path %s not found in RW paths of model", path)
 }
 
-// ModelRegistry is the object for the saving information about device models
+// ModelPlugin is a config model
+type ModelPlugin struct {
+	Info           configmodel.ModelInfo
+	Model          configmodel.ConfigModel
+	ReadOnlyPaths  ReadOnlyPathMap
+	ReadWritePaths ReadWritePathMap
+}
+
+// NewModelRegistry creates a new model registry
+func NewModelRegistry() *ModelRegistry {
+	return &ModelRegistry{
+		registry:            modelregistry.NewConfigModelRegistryFromEnv(),
+		plugins:             make(map[string]*ModelPlugin),
+		ModelReadOnlyPaths:  make(map[string]ReadOnlyPathMap),
+		ModelReadWritePaths: make(map[string]ReadWritePathMap),
+	}
+}
+
+// ModelRegistry is a registry of config models
 type ModelRegistry struct {
-	ModelPlugins        map[string]ModelPlugin
+	registry            *modelregistry.ConfigModelRegistry
+	plugins             map[string]*ModelPlugin
 	ModelReadOnlyPaths  map[string]ReadOnlyPathMap
 	ModelReadWritePaths map[string]ReadWritePathMap
-	LocationStore       map[string]string
+	mu                  sync.RWMutex
 }
 
-// ModelPlugin is a set of methods that each model plugin should implement
-type ModelPlugin interface {
-	ModelData() (string, string, []*gnmi.ModelData, string)
-	UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error)
-	Validate(*ygot.ValidatedGoStruct, ...ygot.ValidationOption) error
-	Schema() (map[string]*yang.Entry, error)
-	GetStateMode() int
+// GetPlugins gets a list of model plugins
+func (r *ModelRegistry) GetPlugins() ([]*ModelPlugin, error) {
+	if err := r.loadPlugins(); err != nil {
+		return nil, err
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	plugins := make([]*ModelPlugin, 0, len(r.plugins))
+	for _, plugin := range r.plugins {
+		plugins = append(plugins, plugin)
+	}
+	return plugins, nil
 }
 
-// RegisterModelPlugin adds an external model plugin to the model registry at startup
-// or through the 'admin' gRPC interface. Once plugins are loaded they cannot be unloaded
-func (registry *ModelRegistry) RegisterModelPlugin(moduleName string) (string, string, error) {
-	log.Info("Loading module ", moduleName)
-	modelPluginModule, err := plugin.Open(moduleName)
-	if err != nil {
-		log.Warnf("Unable to load module %s %s", moduleName, err)
-		return "", "", err
-	}
-	symbolMP, err := modelPluginModule.Lookup("ModelPlugin")
-	if err != nil {
-		log.Warn("Unable to find ModelPlugin in module ", moduleName, err)
-		return "", "", err
-	}
-	modelPlugin, ok := symbolMP.(ModelPlugin)
-	if !ok {
-		log.Warnf("Unable to use ModelPlugin in %s", moduleName)
-		return "", "", fmt.Errorf("symbol loaded from module %s is not a ModelPlugin",
-			moduleName)
-	}
-	name, version, _, _ := modelPlugin.ModelData()
-	modelName := utils.ToModelName(devicetype.Type(name), devicetype.Version(version))
-	registry.ModelPlugins[modelName] = modelPlugin
-	//Saving the model plugin name and library name in a distributed list for other instances to access it.
-	registry.LocationStore[modelName] = moduleName
-	modelschema, err := modelPlugin.Schema()
-	if err != nil {
-		log.Warn("Error loading schema from model plugin", modelName, err)
-		return "", "", err
-	}
-	readOnlyPaths, readWritePaths := ExtractPaths(modelschema["Device"], yang.TSUnset, "", "")
-
-	/////////////////////////////////////////////////////////////////////
-	// Stratum - special case
-	// It has 139 Read Only paths in its YANG but as of Aug'19 only 1 is
-	// supported by the actual device - /interfaces/interface[name=*]/state
-	// Either the YANG should be adjusted or the device should implement
-	// the paths. As a workaround just add the working path here
-	// In addition Stratum does not fully support wildcards, and so calling this
-	// path will only retrieve the ifindex and name under this branch - other paths
-	// will have to be called explicitly by their interface name without wildcard
-	/////////////////////////////////////////////////////////////////////
-	if name == "Stratum" && version == "1.0.0" {
-		stratumIfRwPaths := make(ReadWritePathMap)
-		const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
-		stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
-		stratumIfRwPaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
-		stratumIfRwPaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
-		stratumIfRwPaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
-		stratumIfRwPaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
-		stratumIfRwPaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
-		stratumIfRwPaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
-		stratumIfRwPaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
-		stratumIfRwPaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
-		registry.ModelReadWritePaths[modelName] = stratumIfRwPaths
-
-		stratumIfPath := make(ReadOnlyPathMap)
-		const StratumIfPath = "/interfaces/interface[name=*]/state"
-		stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
-		registry.ModelReadOnlyPaths[modelName] = stratumIfPath
-		log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
-			"%d read only paths. %d read write paths", name, version,
-			len(registry.ModelReadOnlyPaths[modelName]), len(registry.ModelReadWritePaths[modelName]))
-		return name, version, nil
+// GetPlugin gets a model plugin by name
+func (r *ModelRegistry) GetPlugin(name string) (*ModelPlugin, error) {
+	plugin, err := r.getPlugin(name)
+	if err == nil {
+		return plugin, nil
+	} else if !errors.IsNotFound(err) {
+		return nil, err
 	}
 
-	registry.ModelReadOnlyPaths[modelName] = readOnlyPaths
-	registry.ModelReadWritePaths[modelName] = readWritePaths
-	log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", name, version,
-		len(registry.ModelReadOnlyPaths[modelName]), len(registry.ModelReadWritePaths[modelName]))
-	return name, version, nil
+	if err := r.loadPlugins(); err != nil {
+		return nil, err
+	}
+	return r.getPlugin(name)
+}
+
+// getPlugin gets a model plugin by name
+func (r *ModelRegistry) getPlugin(name string) (*ModelPlugin, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	plugin, ok := r.plugins[name]
+	if ok {
+		return plugin, nil
+	}
+	return nil, errors.NewNotFound("Model plugin '%s' not found", name)
+}
+
+// loadPlugins loads the available model plugins from the model registry
+func (r *ModelRegistry) loadPlugins() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	modelInfos, err := r.registry.ListModels()
+	if err != nil {
+		return err
+	}
+
+	for _, modelInfo := range modelInfos {
+		modelName := utils.ToModelName(devicetype.Type(modelInfo.Name), devicetype.Version(modelInfo.Version))
+		if _, ok := r.plugins[modelName]; !ok {
+			plugin, err := r.registry.LoadPlugin(modelInfo.Plugin.Name, modelInfo.Plugin.Version)
+			if err != nil {
+				return err
+			}
+			model := plugin.Model()
+			schema, err := model.Schema()
+			if err != nil {
+				return err
+			}
+
+			readOnlyPaths, readWritePaths := ExtractPaths(schema["Device"], yang.TSUnset, "", "")
+
+			/////////////////////////////////////////////////////////////////////
+			// Stratum - special case
+			// It has 139 Read Only paths in its YANG but as of Aug'19 only 1 is
+			// supported by the actual device - /interfaces/interface[name=*]/state
+			// Either the YANG should be adjusted or the device should implement
+			// the paths. As a workaround just add the working path here
+			// In addition Stratum does not fully support wildcards, and so calling this
+			// path will only retrieve the ifindex and name under this branch - other paths
+			// will have to be called explicitly by their interface name without wildcard
+			/////////////////////////////////////////////////////////////////////
+			if model.Info().Name == "Stratum" && model.Info().Version == "1.0.0" {
+				stratumIfRwPaths := make(ReadWritePathMap)
+				const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
+				stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
+				stratumIfRwPaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
+				stratumIfRwPaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
+				stratumIfRwPaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
+				stratumIfRwPaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
+				stratumIfRwPaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
+				stratumIfRwPaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
+				stratumIfRwPaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
+				stratumIfRwPaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
+				r.ModelReadWritePaths[modelName] = stratumIfRwPaths
+
+				stratumIfPath := make(ReadOnlyPathMap)
+				const StratumIfPath = "/interfaces/interface[name=*]/state"
+				stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
+				r.ModelReadOnlyPaths[modelName] = stratumIfPath
+				log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
+					"%d read only paths. %d read write paths", model.Info().Name, model.Info().Version,
+					len(r.ModelReadOnlyPaths[modelName]), len(r.ModelReadWritePaths[modelName]))
+			} else {
+				r.ModelReadOnlyPaths[modelName] = readOnlyPaths
+				r.ModelReadWritePaths[modelName] = readWritePaths
+				log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", model.Info().Name, model.Info().Version,
+					len(r.ModelReadOnlyPaths[modelName]), len(r.ModelReadWritePaths[modelName]))
+			}
+			r.plugins[modelName] = &ModelPlugin{
+				Info:           modelInfo,
+				Model:          model,
+				ReadOnlyPaths:  readOnlyPaths,
+				ReadWritePaths: readWritePaths,
+			}
+		}
+	}
+	return nil
 }
 
 // Capabilities returns an aggregated set of modelData in gNMI capabilities format
 // with duplicates removed
-func (registry *ModelRegistry) Capabilities() []*gnmi.ModelData {
+func (r *ModelRegistry) Capabilities() ([]*gnmi.ModelData, error) {
+	if err := r.loadPlugins(); err != nil {
+		return nil, err
+	}
+
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	// Make a map - if we get duplicates overwrite them
 	modelMap := make(map[string]*gnmi.ModelData)
-	for _, model := range registry.ModelPlugins {
-		_, _, modelItem, _ := model.ModelData()
-		for _, mi := range modelItem {
-			modelName := utils.ToModelName(devicetype.Type(mi.Name), devicetype.Version(mi.Version))
-			modelMap[modelName] = mi
+	for _, plugin := range r.plugins {
+		for _, modelData := range plugin.Model.Data() {
+			modelName := utils.ToModelName(devicetype.Type(modelData.Name), devicetype.Version(modelData.Version))
+			modelMap[modelName] = modelData
 		}
 	}
 
-	outputList := make([]*gnmi.ModelData, len(modelMap))
-	i := 0
-	for _, modelItem := range modelMap {
-		outputList[i] = modelItem
-		i++
+	models := make([]*gnmi.ModelData, 0, len(modelMap))
+	for _, modelData := range modelMap {
+		models = append(models, modelData)
 	}
-	return outputList
+	return models, nil
 }
 
 // ExtractPaths is a recursive function to extract a list of read only paths from a YGOT schema

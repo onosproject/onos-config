@@ -84,13 +84,6 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool, rbacCache rbac.Cache) *Manager {
 	log.Info("Creating Manager")
 
-	modelReg := &modelregistry.ModelRegistry{
-		ModelPlugins:        make(map[string]modelregistry.ModelPlugin),
-		ModelReadOnlyPaths:  make(map[string]modelregistry.ReadOnlyPathMap),
-		ModelReadWritePaths: make(map[string]modelregistry.ReadWritePathMap),
-		LocationStore:       make(map[string]string),
-	}
-
 	mgr = Manager{
 		DeviceChangesStore:        deviceChangesStore,
 		DeviceStateStore:          deviceStateStore,
@@ -105,7 +98,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		networkSnapshotController: networksnapshotctl.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceChangesStore),
 		deviceSnapshotController:  devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
 		TopoChannel:               make(chan *topodevice.ListResponse, 10),
-		ModelRegistry:             modelReg,
+		ModelRegistry:             modelregistry.NewModelRegistry(),
 		OperationalStateChannel:   make(chan events.OperationalStateEvent),
 		SouthboundErrorChan:       make(chan events.DeviceResponse),
 		Dispatcher:                dispatcher.NewDispatcher(),
