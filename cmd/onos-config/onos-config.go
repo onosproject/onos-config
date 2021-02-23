@@ -70,17 +70,6 @@ const OIDCServerURL = "OIDC_SERVER_URL"
 // RbacVersionedID - the internal device where RBAC rules are configured
 const RbacVersionedID = "rbac:1.0.0"
 
-type arrayFlags []string
-
-func (i *arrayFlags) String() string {
-	return "my string representation"
-}
-
-func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
 var log = logging.GetLogger("main")
 
 // ClusterFactory creates the cluster
