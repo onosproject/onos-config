@@ -40,25 +40,6 @@ type PathMap interface {
 	TypeForPath(path string) (devicechange.ValueType, error)
 }
 
-// GetStateMode defines the Getstate handling
-type GetStateMode int
-
-const (
-	// GetStateNone - device type does not support Operational State at all
-	GetStateNone GetStateMode = iota
-	// GetStateOpState - device returns all its op state attributes by querying
-	// GetRequest_STATE and GetRequest_OPERATIONAL
-	GetStateOpState
-	// GetStateExplicitRoPaths - device returns all its op state attributes by querying
-	// exactly what the ReadOnly paths from YANG - wildcards are handled by device
-	GetStateExplicitRoPaths
-	// GetStateExplicitRoPathsExpandWildcards - where there are wildcards in the
-	// ReadOnly paths 2 calls have to be made - 1) to expand the wildcards in to
-	// real paths (since the device doesn't do it) and 2) to query those expanded
-	// wildcard paths - this is the Stratum 1.0.0 method
-	GetStateExplicitRoPathsExpandWildcards
-)
-
 // MatchOnIndex - regexp to find indices in paths names
 const MatchOnIndex = `(\[.*?]).*?`
 
@@ -155,22 +136,23 @@ type ModelPlugin struct {
 }
 
 // NewModelRegistry creates a new model registry
-func NewModelRegistry() *ModelRegistry {
-	return &ModelRegistry{
-		registry:            modelregistry.NewConfigModelRegistryFromEnv(),
-		plugins:             make(map[string]*ModelPlugin),
-		ModelReadOnlyPaths:  make(map[string]ReadOnlyPathMap),
-		ModelReadWritePaths: make(map[string]ReadWritePathMap),
+func NewModelRegistry(plugins ...*ModelPlugin) *ModelRegistry {
+	registry := &ModelRegistry{
+		registry: modelregistry.NewConfigModelRegistryFromEnv(),
+		plugins:  make(map[string]*ModelPlugin),
 	}
+	for _, plugin := range plugins {
+		modelName := utils.ToModelName(devicetype.Type(plugin.Model.Info().Name), devicetype.Version(plugin.Model.Info().Version))
+		registry.plugins[modelName] = plugin
+	}
+	return registry
 }
 
 // ModelRegistry is a registry of config models
 type ModelRegistry struct {
-	registry            *modelregistry.ConfigModelRegistry
-	plugins             map[string]*ModelPlugin
-	ModelReadOnlyPaths  map[string]ReadOnlyPathMap
-	ModelReadWritePaths map[string]ReadWritePathMap
-	mu                  sync.RWMutex
+	registry *modelregistry.ConfigModelRegistry
+	plugins  map[string]*ModelPlugin
+	mu       sync.RWMutex
 }
 
 // GetPlugins gets a list of model plugins
@@ -250,31 +232,27 @@ func (r *ModelRegistry) loadPlugins() error {
 			// will have to be called explicitly by their interface name without wildcard
 			/////////////////////////////////////////////////////////////////////
 			if model.Info().Name == "Stratum" && model.Info().Version == "1.0.0" {
-				stratumIfRwPaths := make(ReadWritePathMap)
+				readWritePaths = make(ReadWritePathMap)
 				const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
-				stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
-				stratumIfRwPaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
-				stratumIfRwPaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
-				stratumIfRwPaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
-				stratumIfRwPaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
-				stratumIfRwPaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
-				stratumIfRwPaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
-				stratumIfRwPaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
-				stratumIfRwPaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
-				r.ModelReadWritePaths[modelName] = stratumIfRwPaths
+				readWritePaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
+				readWritePaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
+				readWritePaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
+				readWritePaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
+				readWritePaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
+				readWritePaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
+				readWritePaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
+				readWritePaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
+				readWritePaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
 
-				stratumIfPath := make(ReadOnlyPathMap)
+				readOnlyPaths = make(ReadOnlyPathMap)
 				const StratumIfPath = "/interfaces/interface[name=*]/state"
-				stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
-				r.ModelReadOnlyPaths[modelName] = stratumIfPath
+				readOnlyPaths[StratumIfPath] = readOnlyPaths[StratumIfPath]
 				log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
 					"%d read only paths. %d read write paths", model.Info().Name, model.Info().Version,
-					len(r.ModelReadOnlyPaths[modelName]), len(r.ModelReadWritePaths[modelName]))
+					len(readOnlyPaths), len(readWritePaths))
 			} else {
-				r.ModelReadOnlyPaths[modelName] = readOnlyPaths
-				r.ModelReadWritePaths[modelName] = readWritePaths
 				log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", model.Info().Name, model.Info().Version,
-					len(r.ModelReadOnlyPaths[modelName]), len(r.ModelReadWritePaths[modelName]))
+					len(readOnlyPaths), len(readWritePaths))
 			}
 			r.plugins[modelName] = &ModelPlugin{
 				Info:           modelInfo,

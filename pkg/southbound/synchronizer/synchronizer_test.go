@@ -21,6 +21,7 @@ import (
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"
@@ -188,7 +189,7 @@ func TestNew(t *testing.T) {
 
 	s, err := New(context2.Background(), &mockDevice1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
-		modelregistry.GetStateExplicitRoPaths, params.opstateCacheLock, params.deviceChangeStore)
+		configmodel.GetStateExplicitRoPaths, params.opstateCacheLock, params.deviceChangeStore)
 	assert.NilError(t, err, "Creating s")
 	assert.Equal(t, string(s.ID), mock1NameStr)
 	assert.Equal(t, string(s.Device.ID), mock1NameStr)
@@ -463,7 +464,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 
 	s, err := New(context2.Background(), device1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
-		modelregistry.GetStateOpState, params.opstateCacheLock, params.deviceChangeStore)
+		configmodel.GetStateOpState, params.opstateCacheLock, params.deviceChangeStore)
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
 	assert.Equal(t, s.Device.ID, device1.ID)
@@ -583,7 +584,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 
 	s, err := New(context2.Background(), device1,
 		params.opstateChan, params.responseChan, params.opstateCache, params.roPathMap, mockTarget,
-		modelregistry.GetStateOpState, params.opstateCacheLock, params.deviceChangeStore)
+		configmodel.GetStateOpState, params.opstateCacheLock, params.deviceChangeStore)
 
 	assert.NilError(t, err, "Creating synchronizer")
 	assert.Equal(t, s.ID, device1.ID)
@@ -713,7 +714,7 @@ func Test_LikeStratum(t *testing.T) {
 		}).AnyTimes()
 	s, err := New(context2.Background(), &mockDevice1,
 		opstateChan, responseChan, opStateCache, roPathMap, mockTarget,
-		modelregistry.GetStateExplicitRoPathsExpandWildcards, &sync.RWMutex{}, deviceChangeStore)
+		configmodel.GetStateExplicitRoPathsExpandWildcards, &sync.RWMutex{}, deviceChangeStore)
 	assert.NilError(t, err, "Creating s")
 	assert.Equal(t, string(s.ID), mock1NameStr)
 	assert.Equal(t, string(s.Device.ID), mock1NameStr)

@@ -369,13 +369,11 @@ func extractModelForTarget(target devicetype.ID,
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	modelName := utils.ToModelName(actualType, actualVersion)
-	rwPaths, ok := manager.GetManager().ModelRegistry.ModelReadWritePaths[modelName]
-	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument,
-			"unable to find model registry for %s (for target %s)", modelName, target)
+	plugin, err := manager.GetManager().ModelRegistry.GetPlugin(modelName)
+	if err != nil {
+		return nil, err
 	}
-	targetModels[target] = rwPaths
-	return rwPaths, nil
+	return plugin.ReadWritePaths, nil
 }
 
 func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exact bool) (*modelregistry.ReadWritePathElem, error) {

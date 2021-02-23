@@ -93,18 +93,6 @@ func (m modelPluginTest) GetStateMode() int {
 	return 1 // modelregistry.GetStateOpState
 }
 
-func Test_CastModelPlugin(t *testing.T) {
-	var modelPluginTest modelPluginTest
-	mpt := interface{}(modelPluginTest)
-
-	modelPlugin, ok := mpt.(ModelPlugin)
-	assert.Assert(t, ok, "Testing cast of model plugin")
-	name, version, _, _ := modelPlugin.ModelData()
-	assert.Equal(t, name, modelTypeTest)
-	assert.Equal(t, version, modelVersionTest)
-
-}
-
 func Test_JustPaths(t *testing.T) {
 	roPaths := readOnlyPaths.JustPaths() // From Devicesim 1.0.0
 	assert.Equal(t, len(roPaths), 200)

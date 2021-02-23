@@ -22,6 +22,7 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
@@ -34,6 +35,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"os"
@@ -357,14 +359,17 @@ func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
 	setUpBaseNetworkStore(allMocks.MockStores.NetworkChangesStore)
 	setUpBaseDevices(allMocks.MockStores, allMocks.MockDeviceCache)
 	//setUpChangesMock(allMocks)
-	modelPluginTestDevice1 := MockModelPlugin{
-		td1.UnzipSchema,
+	modelSchema, err := td1.UnzipSchema()
+	assert.NoError(t, err)
+	_, modelRwPaths := modelregistry.ExtractPaths(modelSchema["Device"], yang.TSUnset, "", "")
+	modelPlugin := &modelregistry.ModelPlugin{
+		Info: configmodel.ModelInfo{
+			Name:    "TestDevice",
+			Version: "1.0.0",
+		},
+		ReadWritePaths: modelRwPaths,
 	}
-	mgr.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = modelPluginTestDevice1
-	td1Schema, _ := modelPluginTestDevice1.Schema()
-	_, modelRwPaths := modelregistry.ExtractPaths(td1Schema["Device"], yang.TSUnset, "", "")
-	mgr.ModelRegistry.ModelReadWritePaths["TestDevice-1.0.0"] = modelRwPaths
-
+	mgr.ModelRegistry = modelregistry.NewModelRegistry(modelPlugin)
 	return server, allMocks, mgr
 }
 
