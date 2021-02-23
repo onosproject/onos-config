@@ -15,6 +15,7 @@
 package gnmi
 
 import (
+	"fmt"
 	"github.com/golang/mock/gomock"
 	td1 "github.com/onosproject/config-models/modelplugin/testdevice-1.0.0/testdevice_1_0_0"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
@@ -33,6 +34,7 @@ import (
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
+	"github.com/openconfig/ygot/ygot"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -313,6 +315,56 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *mockcache.M
 		}).AnyTimes()
 }
 
+type MockModel struct {
+	schemaFn func() (map[string]*yang.Entry, error)
+}
+
+func (m MockModel) Info() configmodel.ModelInfo {
+	panic("implement me")
+}
+
+func (m MockModel) Data() []*gnmi.ModelData {
+	panic("implement me")
+}
+
+func (m MockModel) Schema() (map[string]*yang.Entry, error) {
+	return m.schemaFn()
+}
+
+func (m MockModel) GetStateMode() configmodel.GetStateMode {
+	panic("implement me")
+}
+
+func (m MockModel) Unmarshaller() configmodel.Unmarshaller {
+	return MockModelUnmarshaller{}
+}
+
+func (m MockModel) Validator() configmodel.Validator {
+	return MockModelValidator{}
+}
+
+type MockModelUnmarshaller struct{}
+
+func (m MockModelUnmarshaller) Unmarshal(bytes []byte) (*ygot.ValidatedGoStruct, error) {
+	device := &td1.Device{}
+	vgs := ygot.ValidatedGoStruct(device)
+	if err := td1.Unmarshal(bytes, device); err != nil {
+		return nil, err
+	}
+	return &vgs, nil
+}
+
+type MockModelValidator struct{}
+
+func (m MockModelValidator) Validate(model *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
+	deviceDeref := *model
+	device, ok := deviceDeref.(*td1.Device)
+	if !ok {
+		return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
+	}
+	return device.Validate()
+}
+
 func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
 	server, mgr, allMocks := setUp(t)
 	allMocks.MockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
@@ -328,6 +380,7 @@ func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
 			Name:    "TestDevice",
 			Version: "1.0.0",
 		},
+		Model:          MockModel{},
 		ReadWritePaths: modelRwPaths,
 	}
 	mgr.ModelRegistry = modelregistry.NewModelRegistry(modelPlugin)

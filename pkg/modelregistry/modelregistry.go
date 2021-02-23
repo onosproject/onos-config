@@ -19,6 +19,7 @@ import (
 	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	modelregistry "github.com/onosproject/onos-config-model/pkg/model/registry"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -33,6 +34,12 @@ import (
 )
 
 var log = logging.GetLogger("modelregistry")
+
+const (
+	modelRegistryEnv = "CONFIG_MODEL_REGISTRY"
+	targetModuleEnv  = "CONFIG_MODULE_TARGET"
+	replaceModuleEnv = "CONFIG_MODULE_REPLACE"
+)
 
 // PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
 type PathMap interface {
@@ -137,12 +144,24 @@ type ModelPlugin struct {
 
 // NewModelRegistry creates a new model registry
 func NewModelRegistry(plugins ...*ModelPlugin) *ModelRegistry {
+	path, target, replace := os.Getenv(modelRegistryEnv), os.Getenv(targetModuleEnv), os.Getenv(replaceModuleEnv)
+	if path == "" {
+		d, _ := os.Getwd()
+		path = d
+	}
+	if path == "" {
+		p, err := modelregistry.GetPath(path, target, replace)
+		if err != nil {
+			panic(err)
+		}
+		path = p
+	}
 	registry := &ModelRegistry{
-		registry: modelregistry.NewConfigModelRegistryFromEnv(),
+		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: path}),
 		plugins:  make(map[string]*ModelPlugin),
 	}
 	for _, plugin := range plugins {
-		modelName := utils.ToModelName(devicetype.Type(plugin.Model.Info().Name), devicetype.Version(plugin.Model.Info().Version))
+		modelName := utils.ToModelName(devicetype.Type(plugin.Info.Name), devicetype.Version(plugin.Info.Version))
 		registry.plugins[modelName] = plugin
 	}
 	return registry
@@ -231,7 +250,7 @@ func (r *ModelRegistry) loadPlugins() error {
 			// path will only retrieve the ifindex and name under this branch - other paths
 			// will have to be called explicitly by their interface name without wildcard
 			/////////////////////////////////////////////////////////////////////
-			if model.Info().Name == "Stratum" && model.Info().Version == "1.0.0" {
+			if modelInfo.Name == "Stratum" && modelInfo.Version == "1.0.0" {
 				stratumIfRwPaths := make(ReadWritePathMap)
 				const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
 				stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
@@ -250,10 +269,10 @@ func (r *ModelRegistry) loadPlugins() error {
 				stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
 				readOnlyPaths = stratumIfPath
 				log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
-					"%d read only paths. %d read write paths", model.Info().Name, model.Info().Version,
+					"%d read only paths. %d read write paths", modelInfo.Name, modelInfo.Version,
 					len(readOnlyPaths), len(readWritePaths))
 			} else {
-				log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", model.Info().Name, model.Info().Version,
+				log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", modelInfo.Name, modelInfo.Version,
 					len(readOnlyPaths), len(readWritePaths))
 			}
 			r.plugins[modelName] = &ModelPlugin{
