@@ -19,13 +19,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
-	"io"
-	"os"
-	"strings"
-
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
-	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/config/snapshot"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
@@ -58,149 +53,12 @@ type Server struct {
 // UploadRegisterModel uploads and registers a new model plugin.
 // Deprecated: models should only be loaded at startup
 func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegisterModelServer) error {
-	if stream.Context() != nil {
-		if md := metautils.ExtractIncoming(stream.Context()); md != nil && md.Get("name") != "" {
-			log.Infof("admin UploadRegisterModel() called by '%s (%s)' with token %s",
-				md.Get("name"), md.Get("email"), md.Get("at_hash"))
-		}
-	}
-	response := admin.RegisterResponse{Name: "WidthUnknown"}
-	soFileName := ""
-
-	const TEMPFILE = "/tmp/uploaded_model_plugin.tmp"
-	f, err := os.Create(TEMPFILE)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create temporary file %s", TEMPFILE)
-	}
-	defer f.Close()
-
-	// while there are messages coming
-	i := 0
-	for {
-		chunk, err := stream.Recv()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-
-			err = errors.Wrapf(err,
-				"failed while reading chunks from stream")
-			return err
-		}
-		_, err = f.Write(chunk.Content)
-		if err != nil {
-			return errors.Wrapf(err, "failed to write chunk %d to %s", i, TEMPFILE)
-		}
-		soFileName = chunk.SoFile
-		i++
-	}
-	f.Close()
-
-	soFileName = "/tmp/" + soFileName
-	log.Infof("File %s written from %d chunks. Renaming to %s", TEMPFILE, i, soFileName)
-	err = os.Rename(TEMPFILE, soFileName)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to rename temporary file")
-	}
-
-	name, version, err := manager.GetManager().ModelRegistry.RegisterModelPlugin(soFileName)
-	if err != nil {
-		return err
-	}
-	response.Name = name
-	response.Version = version
-
-	err = stream.SendAndClose(&response)
-	if err != nil {
-		return errors.Wrapf(err, "failed to send the close message %v", response)
-	}
-
-	return nil
+	return errors.New("not implemented")
 }
 
 // ListRegisteredModels lists the registered models..
 func (s Server) ListRegisteredModels(req *admin.ListModelsRequest, stream admin.ConfigAdminService_ListRegisteredModelsServer) error {
-	if stream.Context() != nil {
-		if md := metautils.ExtractIncoming(stream.Context()); md != nil && md.Get("name") != "" {
-			log.Infof("admin ListRegisteredModels() called by '%s (%s)' with token %s",
-				md.Get("name"), md.Get("email"), md.Get("at_hash"))
-		}
-	}
-	requestedModel := req.ModelName
-	requestedVersion := req.ModelVersion
-
-	for _, model := range manager.GetManager().ModelRegistry.ModelPlugins {
-		name, version, md, plugin := model.ModelData()
-		if requestedModel != "" && !strings.HasPrefix(name, requestedModel) {
-			continue
-		}
-		if requestedVersion != "" && !strings.HasPrefix(version, requestedVersion) {
-			continue
-		}
-
-		roPaths := make([]*admin.ReadOnlyPath, 0)
-		if req.Verbose {
-			roPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadOnlyPaths[utils.ToModelName(devicetype.Type(name), devicetype.Version(version))]
-			if !ok {
-				log.Warnf("no list of Read Only Paths found for %s %s\n", name, version)
-			} else {
-				for path, subpathList := range roPathsAndValues {
-					subPathsPb := make([]*admin.ReadOnlySubPath, 0)
-					for subPath, subPathType := range subpathList {
-						subPathPb := admin.ReadOnlySubPath{
-							SubPath:   subPath,
-							ValueType: subPathType.ValueType,
-						}
-						subPathsPb = append(subPathsPb, &subPathPb)
-					}
-					pathPb := admin.ReadOnlyPath{
-						Path:    path,
-						SubPath: subPathsPb,
-					}
-					roPaths = append(roPaths, &pathPb)
-				}
-			}
-		}
-
-		rwPaths := make([]*admin.ReadWritePath, 0)
-		if req.Verbose {
-			rwPathsAndValues, ok := manager.GetManager().ModelRegistry.ModelReadWritePaths[utils.ToModelName(devicetype.Type(name), devicetype.Version(version))]
-			if !ok {
-				log.Warnf("no list of Read Write Paths found for %s %s\n", name, version)
-			} else {
-				for path, rwObj := range rwPathsAndValues {
-					rwObjProto := admin.ReadWritePath{
-						Path:        path,
-						ValueType:   rwObj.ValueType,
-						Description: rwObj.Description,
-						Default:     rwObj.Default,
-						Units:       rwObj.Units,
-						Mandatory:   rwObj.Mandatory,
-						Range:       rwObj.Range,
-						Length:      rwObj.Length,
-					}
-					rwPaths = append(rwPaths, &rwObjProto)
-				}
-			}
-		}
-
-		// Build model message
-		msg := &admin.ModelInfo{
-			Name:          name,
-			Version:       version,
-			ModelData:     md,
-			Module:        plugin,
-			GetStateMode:  uint32(model.GetStateMode()),
-			ReadOnlyPath:  roPaths,
-			ReadWritePath: rwPaths,
-		}
-
-		err := stream.Send(msg)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return errors.New("not implemented")
 }
 
 // RollbackNetworkChange rolls back a named atomix-based network change.

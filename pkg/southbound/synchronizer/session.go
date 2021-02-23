@@ -16,6 +16,7 @@ package synchronizer
 
 import (
 	"context"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"strconv"
 	"sync"
 	"time"
@@ -154,12 +155,15 @@ func (s *Session) synchronize() error {
 			"Model Plugin not available - continuing", s.device.ID, s.device.Version)
 	}
 	mStateGetMode := modelregistry.GetStateOpState // default
-	mPlugin, ok := s.modelRegistry.ModelPlugins[modelName]
-	if !ok {
-		log.Warnf("Cannot check for StateGetMode for target %cm with %cm because "+
-			"Model Plugin not available - continuing", s.device.ID, s.device.Version)
+	plugin, err := s.modelRegistry.GetPlugin(modelName)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Warnf("Model Plugin not available for device", s.device.ID, s.device.Version)
+		} else {
+			return err
+		}
 	} else {
-		mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
+		mStateGetMode = modelregistry.GetStateMode(plugin.Model.GetStateMode())
 	}
 	valueMap := make(devicechange.TypedValueMap)
 	s.operationalStateCacheLock.Lock()
