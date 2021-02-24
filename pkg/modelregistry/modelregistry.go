@@ -145,16 +145,16 @@ type ModelPlugin struct {
 // NewModelRegistry creates a new model registry
 func NewModelRegistry(plugins ...*ModelPlugin) *ModelRegistry {
 	path, target, replace := os.Getenv(modelRegistryEnv), os.Getenv(targetModuleEnv), os.Getenv(replaceModuleEnv)
-	if path == "" {
-		d, _ := os.Getwd()
-		path = d
-	}
-	if path == "" {
+	if target != "" {
 		p, err := modelregistry.GetPath(path, target, replace)
 		if err != nil {
 			panic(err)
 		}
 		path = p
+	}
+	if path == "" {
+		d, _ := os.Getwd()
+		path = d
 	}
 	registry := &ModelRegistry{
 		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: path}),

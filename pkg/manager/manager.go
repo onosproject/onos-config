@@ -108,6 +108,13 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		RbacCache:                 rbacCache,
 	}
 
+	// Load the model plugins
+	if plugins, err := mgr.ModelRegistry.GetPlugins(); err != nil {
+		log.Fatal(err)
+	} else {
+		log.Infof("Loaded model registry with %d plugins", len(plugins))
+	}
+
 	return &mgr
 }
 
