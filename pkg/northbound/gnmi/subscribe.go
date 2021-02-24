@@ -108,6 +108,13 @@ func (s *Server) listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.
 
 		var mode gnmi.SubscriptionList_Mode
 
+		if in.GetSubscribe().GetEncoding() != gnmi.Encoding_JSON &&
+			in.GetSubscribe().GetEncoding() != gnmi.Encoding_JSON_IETF &&
+			in.GetSubscribe().GetEncoding() != gnmi.Encoding_PROTO {
+			log.Error("invalid encoding format in Subscribe request. Only JSON_IETF and PROTO accepted. %v", in.GetSubscribe().GetEncoding())
+			break
+		}
+
 		if in.GetPoll() != nil {
 			mode = gnmi.SubscriptionList_POLL
 		} else {
@@ -156,12 +163,12 @@ func (s *Server) collector(mgr *manager.Manager, version devicetype.Version, str
 			resChan <- result{success: false, err: err}
 		}
 		//We get the stated of the device, for each path we build an update and send it out.
-		update, err := s.getUpdate(version, request.Prefix, sub.Path)
+		updates, err := s.getUpdate(version, request.Prefix, sub.Path, gnmi.Encoding_PROTO)
 		if err != nil {
 			log.Error("Error while collecting data for subscribe once or poll ", err)
 			resChan <- result{success: false, err: err}
 		}
-		response, errGet := buildUpdateResponse(update)
+		response, errGet := buildUpdateResponse(updates)
 		if errGet != nil {
 			log.Error("Error Retrieving Device", err)
 			resChan <- result{success: false, err: err}
@@ -286,7 +293,9 @@ func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechange.
 			Path: pathGnmi,
 			Val:  valueGnmi,
 		}
-		response, errGet = buildUpdateResponse(update)
+		updates := make([]*gnmi.Update, 1)
+		updates[0] = update
+		response, errGet = buildUpdateResponse(updates)
 	}
 	if errGet != nil {
 		return errGet
@@ -309,14 +318,12 @@ func buildSyncResponse() *gnmi.SubscribeResponse {
 	}
 }
 
-func buildUpdateResponse(update *gnmi.Update) (*gnmi.SubscribeResponse, error) {
-	updateArray := make([]*gnmi.Update, 0)
-	updateArray = append(updateArray, update)
+func buildUpdateResponse(updates []*gnmi.Update) (*gnmi.SubscribeResponse, error) {
 	notification := &gnmi.Notification{
 		Timestamp: time.Now().Unix(),
-		Update:    updateArray,
+		Update:    updates,
 	}
-	return buildSubscribeResponse(notification, update.Path.Target)
+	return buildSubscribeResponse(notification)
 }
 
 func buildDeleteResponse(delete *gnmi.Path) (*gnmi.SubscribeResponse, error) {
@@ -325,33 +332,44 @@ func buildDeleteResponse(delete *gnmi.Path) (*gnmi.SubscribeResponse, error) {
 		Timestamp: time.Now().Unix(),
 		Delete:    deleteArray,
 	}
-	return buildSubscribeResponse(notification, delete.Target)
+	return buildSubscribeResponse(notification)
 }
 
-func buildSubscribeResponse(notification *gnmi.Notification, target string) (*gnmi.SubscribeResponse, error) {
+func buildSubscribeResponse(notification *gnmi.Notification) (*gnmi.SubscribeResponse, error) {
 	responseUpdate := &gnmi.SubscribeResponse_Update{
 		Update: notification,
 	}
 	response := &gnmi.SubscribeResponse{
 		Response: responseUpdate,
 	}
-	_, errDevice := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
-	if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
-		response.Extension = []*gnmi_ext.Extension{
-			{
-				Ext: &gnmi_ext.Extension_RegisteredExt{
-					RegisteredExt: &gnmi_ext.RegisteredExtension{
-						Id:  GnmiExtensionDevicesNotConnected,
-						Msg: []byte(target),
-					},
-				},
-			},
+	for _, u := range notification.Update {
+		ext, err := checkDevice(u.GetPath().GetTarget())
+		if err != nil {
+			return nil, err
 		}
-	} else if errDevice != nil {
-		//handling gRPC errors
-		return nil, errDevice
+		if ext != nil {
+			response.Extension = []*gnmi_ext.Extension{
+				{
+					Ext: ext,
+				},
+			}
+		}
+
 	}
 	return response, nil
+}
+
+func checkDevice(target string) (*gnmi_ext.Extension_RegisteredExt, error) {
+	_, errDevice := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
+	if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
+		return &gnmi_ext.Extension_RegisteredExt{
+			RegisteredExt: &gnmi_ext.RegisteredExtension{
+				Id:  GnmiExtensionDevicesNotConnected,
+				Msg: []byte(target),
+			},
+		}, nil
+	}
+	return nil, errDevice
 }
 
 func sendResponse(response *gnmi.SubscribeResponse, stream gnmi.GNMI_SubscribeServer) error {

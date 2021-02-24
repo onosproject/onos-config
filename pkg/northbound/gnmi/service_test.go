@@ -41,8 +41,10 @@ func TestService_Capabilities(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, response.GNMIVersion, "0.7.0")
-	assert.Equal(t, len(response.SupportedEncodings), 1)
+	assert.Equal(t, len(response.SupportedEncodings), 3)
 	assert.Equal(t, response.SupportedEncodings[0], gnmi.Encoding_JSON)
+	assert.Equal(t, response.SupportedEncodings[1], gnmi.Encoding_JSON_IETF)
+	assert.Equal(t, response.SupportedEncodings[2], gnmi.Encoding_PROTO)
 }
 
 func TestService_Register(t *testing.T) {

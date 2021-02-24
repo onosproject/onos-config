@@ -187,10 +187,12 @@ func setUpListMock(mocks *AllMocks) {
 
 func setUpChangesMock(mocks *AllMocks) {
 	configValue01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueUint(13, 8), false)
+	configValue02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2b", devicechange.NewTypedValueDecimal(14567, 4), false)
 
 	change1 := devicechange.Change{
 		Values: []*devicechange.ChangeValue{
 			configValue01,
+			configValue02,
 		},
 		DeviceID:      devicetype.ID("Device1"),
 		DeviceVersion: "1.0.0",
@@ -209,6 +211,10 @@ func setUpChangesMock(mocks *AllMocks) {
 		{
 			Path:  configValue01.Path,
 			Value: configValue01.Value,
+		},
+		{
+			Path:  configValue02.Path,
+			Value: configValue02.Value,
 		},
 	}, nil).AnyTimes()
 	mocks.MockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(

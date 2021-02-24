@@ -49,17 +49,20 @@ This allows configuration in YAML to be loaded directly in to `onos-config`
 
 ## Namespaces
 __onos-config__ follows the YGOT project in simplification by not using namespaces in paths. This can be achieved
-because the YANG models used do not have clashing device names that need to be qualified by namespaces. 
-This helps developers, avoiding un-needed complication and redundancy. 
+because the YANG models used do not have clashing device names that need to be qualified by namespaces.
+This helps developers, avoiding un-needed complication and redundancy.
 
 ## Capabilities
 For example use `gnmi_cli -capabilities` to get the capabilities from the system.
 
 ```bash
-> gnmi_cli -capabilities --address=onos-config:5150 \
+gnmi_cli -capabilities --address=onos-config:5150 \
   -timeout 5s -insecure \
   -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
+
+The Encodings supported are `JSON`, `JSON_IETF`, and `PROTO`.
+
 > This returns the aggregate of all of the model plugins and their versions
 > that have been loaded.
 >
@@ -77,7 +80,7 @@ To make a gNMI Set request, use the `gnmi_cli -set` command as in the example be
 [gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.timezone.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
-    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>>" \
+    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'system'> elem: <name: 'clock' > elem: <name: 'config'> elem: <name: 'timezone-name'>> val: <string_val: 'Europe/Paris'>> extension: <registered_ext: <id: 101, msg:'1.0.0'>> extension: <registered_ext: <id: 102, msg:'Devicesim'>>" \
     -timeout 5s -en PROTO -alsologtostderr -insecure \
     -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
@@ -105,7 +108,7 @@ timestamp: 1559122191
 extension: <
   registered_ext: <
     id: 100
-    msg: "happy_matsumoto"
+    msg: "c21a1aa5-76d6-11eb-81af-6f6e6f732d63"
   >
 >
 ```
@@ -118,6 +121,8 @@ extension: <
 SetRequest() with the 100 extension at the end of the -proto section like:
 > `, extension: <registered_ext: <id: 100, msg: 'myfirstchange'>>`
 > See [gnmi_extensions.md](./gnmi_extensions.md) for more on gNMI extensions supported.
+>
+> If a name is given a 2nd time, it wil produce an error `rpc error: code = Internal desc = write condition failed`
 
 Checking of the contents is done only when a Model Plugin is
 loaded for the device type. 2 checks are done
@@ -135,7 +140,7 @@ An example of an attribute on two targets is:
 [gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/set.multipleif.gnmi)
 ```bash
 gnmi_cli -address onos-config:5150 -set \
-    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 100, msg:'added_devicesim-1-IF'>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 100, msg:'2nd_devicesim'>> extension: <registered_ext: <id: 101, msg:'1.0.0'>> extension: <registered_ext: <id: 102, msg:'Devicesim'>>" \
+    -proto "update: <path: <target: 'devicesim-1', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 100, msg:'added_devicesim-1-IF'>> update: <path: <target: 'devicesim-2', elem: <name: 'interfaces'> elem: <name: 'interface' key:<key:'name' value:'eth1' >> elem: <name: 'config'> elem: <name: 'name'>> val: <string_val: 'eth1'>> extension: <registered_ext: <id: 101, msg:'1.0.0'>> extension: <registered_ext: <id: 102, msg:'Devicesim'>>" \
     -timeout 5s -alsologtostderr -insecure \
     -client_crt /etc/ssl/certs/client1.crt \
     -client_key /etc/ssl/certs/client1.key \
@@ -169,7 +174,7 @@ gnmi_cli -address onos-config:5150 -set \
 > to a name attribute beneath it. This means that an interface cannot be created
 > without specifying the config/name attribute at the same time (as above). Otherwise
 > error `rpc error: code = InvalidArgument desc = pointed-to value with path ../config/name from field Name value eth2 (string ptr) schema /device/interfaces/interface/name is empty set`
-> will occur. 
+> will occur.
 
 Adding attributes to existing interface
 
@@ -187,7 +192,7 @@ gnmi_cli -address onos-config:5150 -set \
 If the `target` device is not currently known to `onos-config` the system will store the configuration internally and apply
 it to the `target` device when/if it becomes available.
 
-When the `target` becomes available `onos-config` will compute the latest configuration for it based on the set of 
+When the `target` becomes available `onos-config` will compute the latest configuration for it based on the set of
 applied changes and push it to the `target` with a standard `set` operation.
 
 In the case where the `target` device is not known, a special feature of onos-config
@@ -213,7 +218,7 @@ gnmi_cli -address onos-config:5150 -set \
 > the system.
 
 After creating all of these the dashboard will show each Set operation as a row,
-and each device as a column. 
+and each device as a column.
 ![Dashboard](images/config-dashboard-after-sets.png)
 
 Drilling down specifically in to "devicesim-1", we can see the layers of
@@ -256,8 +261,8 @@ gnmi_cli -get -address onos-config:5150 \
     -client_crt /etc/ssl/certs/client1.crt -client_key /etc/ssl/certs/client1.key -ca_crt /etc/ssl/certs/onfca.crt
 ```
 
-> The value in the response can be an individual value or a tree of values depending
-> on the scope of the request.
+Here the encoding requested was `PROTO` which will returnt the values in a Lef List.
+Alternatively `JSON` could have been used, which will give a JSON payload in a JSON_Val.
 
 ### List complete configuration for a device (target)
 
@@ -289,7 +294,7 @@ Use a proto value like:
 one item of match all items respectively as defined in the gNMI
 [specification](https://github.com/openconfig/reference/blob/master/rpc/gnmi/gnmi-path-conventions.md#wildcards-in-paths).
 
-For instance to retrieve all instances of an interface use `*` as the key: 
+For instance to retrieve all instances of an interface use `*` as the key:
 
 [gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/get.interfaceswc.gnmi)
 ```bash
@@ -349,7 +354,7 @@ gnmi_cli -address onos-config:5150 -set \
 ```
 
 ## Northbound Subscribe Request for Stream Notifications via gNMI
-Similarly, to make a gNMI Subscribe request for streaming, use the `gnmi_cli` command as in the example below, 
+Similarly, to make a gNMI Subscribe request for streaming, use the `gnmi_cli` command as in the example below,
 please note the `0` as subscription mode to indicate streaming:
 
 [gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/subscribe.mode0.gnmi)
@@ -361,10 +366,10 @@ gnmi_cli -address onos-config:5150 \
 ```
 
 > This command will block until there is a change at the requested value that gets
-> propagated to the underlying stream. Also as per `gnmi_cli` behaviour the updates get printed twice. 
+> propagated to the underlying stream. Also as per `gnmi_cli` behaviour the updates get printed twice.
 
 ## Northbound Subscribe Once Request via gNMI
-Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as in the example below, 
+Similarly, to make a gNMI Subscribe Once request, use the `gnmi_cli` command as in the example below,
 please note the `1` as subscription mode to indicate to send the response once:
 
 [gnmi](https://github.com/onosproject/onos-config/tree/master/gnmi_cli/subscribe.mode1.gnmi)
@@ -378,7 +383,7 @@ gnmi_cli -address onos-config:5150 \
 > This command will fail if no value is set at that specific path. This is due to limitations of the gnmi_cli.
 
 ## Northbound Subscribe Poll Request via gNMI
-Similarly, to make a gNMI Subscribe POLL request, use the `gnmi_cli` command as in the example below, 
+Similarly, to make a gNMI Subscribe POLL request, use the `gnmi_cli` command as in the example below,
 please note the `2` as subscription mode to indicate to send the response in a polling way every `polling_interval`
 specified seconds:
 

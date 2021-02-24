@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
@@ -617,7 +618,7 @@ func assertUpdateResponse(t *testing.T, responsesChan chan *gnmi.SubscribeRespon
 		assert.Equal(t, pathResponse.Elem[0].Name, path1)
 		assert.Equal(t, pathResponse.Elem[1].Name, path2)
 		assert.Equal(t, pathResponse.Elem[2].Name, path3)
-		assert.Equal(t, response.GetUpdate().GetUpdate()[0].Val.GetUintVal(), uint64(value))
+		assert.Equal(t, utils.StrVal(response.GetUpdate().GetUpdate()[0].Val), fmt.Sprintf("%d", value))
 		if disconnected {
 			// Check that the device is currently disconnected
 			assert.Equal(t, len(response.Extension), 1)

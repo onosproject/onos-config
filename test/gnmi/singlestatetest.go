@@ -17,6 +17,7 @@ package gnmi
 import (
 	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"regexp"
 	"strings"
@@ -46,7 +47,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	for attempt := 1; attempt <= 10; attempt++ {
 		// If the device cache has not been completely initialized, we can hit a race here where the value
 		// will be returned as null. Needs further investigation.
-		valueAfter, extensions, errorAfter := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient, gnmi.GetDevicePath(simulator.Name(), stateControllersPath))
+		valueAfter, extensions, errorAfter := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient, gnmi.GetDevicePath(simulator.Name(), stateControllersPath), gpb.Encoding_PROTO)
 		assert.NoError(t, errorAfter)
 		assert.NotEqual(t, nil, valueAfter, "Query after state returned nil")
 		address := valueAfter[0].PathDataValue

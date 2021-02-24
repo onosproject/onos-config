@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
@@ -178,7 +179,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 		[]proto.DevicePath{
 			sim1Path4[0], sim1Path2[0], sim1Path3[0], sim1Path5[0],
 			sim2Path1[0], sim2Path2[0], sim2Path3[0], sim2Path4[0],
-		})
+		}, gpb.Encoding_PROTO)
 	assert.NoError(t, err)
 	for _, expectedValue := range expectedValues {
 		switch expectedValue.DeviceName + "," + expectedValue.Path {
