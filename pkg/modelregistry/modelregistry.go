@@ -34,12 +34,6 @@ import (
 
 var log = logging.GetLogger("modelregistry")
 
-const (
-	modelRegistryEnv = "CONFIG_MODEL_REGISTRY"
-	targetModuleEnv  = "CONFIG_MODULE_TARGET"
-	replaceModuleEnv = "CONFIG_MODULE_REPLACE"
-)
-
 // PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
 type PathMap interface {
 	JustPaths() []string

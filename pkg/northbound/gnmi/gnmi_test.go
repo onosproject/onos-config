@@ -335,34 +335,26 @@ func (m MockModel) GetStateMode() configmodel.GetStateMode {
 	panic("implement me")
 }
 
-func (m MockModel) Unmarshaller() configmodel.Unmarshaller {
-	return MockModelUnmarshaller{}
+func (m MockModel) Unmarshaler() configmodel.Unmarshaler {
+	return func(bytes []byte) (*ygot.ValidatedGoStruct, error) {
+		device := &td1.Device{}
+		vgs := ygot.ValidatedGoStruct(device)
+		if err := td1.Unmarshal(bytes, device); err != nil {
+			return nil, err
+		}
+		return &vgs, nil
+	}
 }
 
 func (m MockModel) Validator() configmodel.Validator {
-	return MockModelValidator{}
-}
-
-type MockModelUnmarshaller struct{}
-
-func (m MockModelUnmarshaller) Unmarshal(bytes []byte) (*ygot.ValidatedGoStruct, error) {
-	device := &td1.Device{}
-	vgs := ygot.ValidatedGoStruct(device)
-	if err := td1.Unmarshal(bytes, device); err != nil {
-		return nil, err
+	return func(model *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
+		deviceDeref := *model
+		device, ok := deviceDeref.(*td1.Device)
+		if !ok {
+			return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
+		}
+		return device.Validate()
 	}
-	return &vgs, nil
-}
-
-type MockModelValidator struct{}
-
-func (m MockModelValidator) Validate(model *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
-	deviceDeref := *model
-	device, ok := deviceDeref.(*td1.Device)
-	if !ok {
-		return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
-	}
-	return device.Validate()
 }
 
 func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
