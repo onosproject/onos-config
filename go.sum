@@ -537,8 +537,8 @@ github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-2020113
 github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20201130213019-492043aed0df/go.mod h1:awlBHj+BAaBrWsVUUHbuo3tbUqebfgI4BlY3ppiAPfs=
 github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20201130213019-492043aed0df h1:7u16PD0HnQlnACqcTEHPayKl2bZodA0fzWYRavm5h50=
 github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20201130213019-492043aed0df/go.mod h1:mV2lHVyrXfFOkDAD3w/5DLW8BeEdjPKdbSbQam8LbTI=
-github.com/onosproject/helmit v0.6.8 h1:f/DjOzQp/NFzbTClM7qn4WwQ5DgR/13OD1FWJ4VxqfE=
-github.com/onosproject/helmit v0.6.8/go.mod h1:EorNGSNGWojXGxBEuiNmPScae+R2C5WYfg/13gKEPLw=
+github.com/onosproject/helmit v0.6.10 h1:gNb94CaVhcgkE0Qp06AG2DsPLRxDP6MQr669NWgVVX8=
+github.com/onosproject/helmit v0.6.10/go.mod h1:EorNGSNGWojXGxBEuiNmPScae+R2C5WYfg/13gKEPLw=
 github.com/onosproject/onos-api/go v0.7.2 h1:MduxbuoAYFYT5BhQZ/eqpIz4ZKJRIedog1y0qbDnMgY=
 github.com/onosproject/onos-api/go v0.7.2/go.mod h1:HLfWE9aouIeOmi4soR6bxK2cZ33NbnFMvdyv9fmjaSg=
 github.com/onosproject/onos-lib-go v0.7.2 h1:uqCYVfK0ZTO/CAGZ9Di1C2EMQVHvnuD8MOqSjVOQDss=
