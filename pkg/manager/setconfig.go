@@ -86,11 +86,11 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 		return err
 	}
 
-	ygotModel, err := deviceModelYgotPlugin.Model.Unmarshaller().Unmarshal(jsonTree)
+	ygotModel, err := deviceModelYgotPlugin.Model.Unmarshaler()(jsonTree)
 	if err != nil {
 		return err
 	}
-	err = deviceModelYgotPlugin.Model.Validator().Validate(ygotModel)
+	err = deviceModelYgotPlugin.Model.Validator()(ygotModel)
 	if err != nil {
 		return err
 	}

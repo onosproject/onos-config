@@ -541,8 +541,8 @@ github.com/onosproject/helmit v0.6.10 h1:gNb94CaVhcgkE0Qp06AG2DsPLRxDP6MQr669NWg
 github.com/onosproject/helmit v0.6.10/go.mod h1:EorNGSNGWojXGxBEuiNmPScae+R2C5WYfg/13gKEPLw=
 github.com/onosproject/onos-api/go v0.7.2 h1:MduxbuoAYFYT5BhQZ/eqpIz4ZKJRIedog1y0qbDnMgY=
 github.com/onosproject/onos-api/go v0.7.2/go.mod h1:HLfWE9aouIeOmi4soR6bxK2cZ33NbnFMvdyv9fmjaSg=
-github.com/onosproject/onos-config-model v0.1.0 h1:gfRB2/vF/QyAjzSHEPNXDSTfZMb7wjEyLqNDLiT/Huk=
-github.com/onosproject/onos-config-model v0.1.0/go.mod h1:laYWqKx328pOHB2TWMZzXrZF6OFakuIsc4TTBgjSisY=
+github.com/onosproject/onos-config-model v0.1.2 h1:cOHmMGpBzc9VGyqMX+aI4HHACW8cjgv6cEMNJth1GNg=
+github.com/onosproject/onos-config-model v0.1.2/go.mod h1:laYWqKx328pOHB2TWMZzXrZF6OFakuIsc4TTBgjSisY=
 github.com/onosproject/onos-lib-go v0.7.3 h1:Ya+PosD8MkNNCPR4fs9j/f5gGCV7Y1yFyZZ9e4aX3ig=
 github.com/onosproject/onos-lib-go v0.7.3/go.mod h1:ttkK+fV2CULZFHiq6FBZ69i7/Nymi1Wow1DNy0Ik/2o=
 github.com/onosproject/onos-test v0.6.4 h1:ocJhMv5mZ5RsojkhBUadE68Q6uSgBZpyDDjnwOPmu6g=

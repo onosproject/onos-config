@@ -19,7 +19,6 @@ import (
 	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	modelregistry "github.com/onosproject/onos-config-model/pkg/model/registry"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -144,20 +143,8 @@ type ModelPlugin struct {
 
 // NewModelRegistry creates a new model registry
 func NewModelRegistry(plugins ...*ModelPlugin) *ModelRegistry {
-	path, target, replace := os.Getenv(modelRegistryEnv), os.Getenv(targetModuleEnv), os.Getenv(replaceModuleEnv)
-	if target != "" {
-		p, err := modelregistry.GetPath(path, target, replace)
-		if err != nil {
-			panic(err)
-		}
-		path = p
-	}
-	if path == "" {
-		d, _ := os.Getwd()
-		path = d
-	}
 	registry := &ModelRegistry{
-		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: path}),
+		registry: modelregistry.NewConfigModelRegistryFromEnv(),
 		plugins:  make(map[string]*ModelPlugin),
 	}
 	for _, plugin := range plugins {
