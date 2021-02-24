@@ -49,11 +49,9 @@ gofmt: # @HELP run the Go format validation
 	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/ tests/)"
 
 onos-config-docker: # @HELP build onos-config base Docker image
-	@go mod vendor
 	docker build . -f build/onos-config/Dockerfile \
 		--build-arg ONOS_MAKE_TARGET=build \
 		-t ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
-	@rm -rf vendor
 
 images: # @HELP build all Docker images
 images: build onos-config-docker
