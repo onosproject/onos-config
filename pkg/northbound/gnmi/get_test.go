@@ -64,35 +64,72 @@ func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
 
 }
 
-// Test_getNoPathElems tests for  Paths with no elements - should treat it like /
-func Test_getNoPathElems(t *testing.T) {
+// Test_getNoPathElemsProto tests for  Paths with no elements - should treat it like /
+func Test_getNoPathElemsJSON(t *testing.T) {
 	server, _, mocks := setUp(t)
-	mocks.MockDeviceCache.EXPECT().GetDevicesByID(gomock.Any()).Return([]*cache.Info{
+	setUpChangesMock(mocks)
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
+			Type:     "Devicesim",
 			Version:  "1.0.0",
-			Type:     "TestDevice",
 		},
 	}).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mocks.MockStores.DeviceStateStore.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]*devicechange.PathValue{}, nil).AnyTimes()
-	setUpListMock(mocks)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
 
 	noPath1 := gnmi.Path{Target: "Device1"}
-	noPath2 := gnmi.Path{Target: "Device2"}
 
 	request := gnmi.GetRequest{
-		Path: []*gnmi.Path{&noPath1, &noPath2},
+		Path:     []*gnmi.Path{&noPath1},
+		Encoding: gnmi.Encoding_JSON,
 	}
 
 	result, err := server.Get(context.TODO(), &request)
 	assert.NoError(t, err)
 
-	assert.Equal(t, len(result.Notification), 2)
-
+	assert.Equal(t, len(result.Notification), 1)
 	assert.Equal(t, len(result.Notification[0].Update), 1)
+	assert.Equal(t, utils.StrPathElem(result.Notification[0].Update[0].Path.Elem), "")
+	assert.Equal(t, utils.StrVal(result.Notification[0].Update[0].Val), `{
+  "cont1a": {
+    "cont2a": {
+      "leaf2a": 13,
+      "leaf2b": "1.4567"
+    }
+  }
+}`)
 
-	assert.Equal(t, len(result.Notification[1].Update), 1)
+}
+
+// Test_getNoPathElemsProto tests for  Paths with no elements - should treat it like /
+func Test_getNoPathElemsProto(t *testing.T) {
+	server, _, mocks := setUp(t)
+	setUpChangesMock(mocks)
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*cache.Info{
+		{
+			DeviceID: "Device1",
+			Type:     "Devicesim",
+			Version:  "1.0.0",
+		},
+	}).AnyTimes()
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
+
+	noPath1 := gnmi.Path{Target: "Device1"}
+
+	request := gnmi.GetRequest{
+		Path:     []*gnmi.Path{&noPath1},
+		Encoding: gnmi.Encoding_PROTO,
+	}
+
+	result, err := server.Get(context.TODO(), &request)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(result.Notification), 1)
+	assert.Equal(t, len(result.Notification[0].Update), 2)
+	assert.Equal(t, utils.StrPathElem(result.Notification[0].Update[0].Path.Elem), "/cont1a/cont2a/leaf2a")
+	assert.Equal(t, utils.StrVal(result.Notification[0].Update[0].Val), "13")
+	assert.Equal(t, utils.StrPathElem(result.Notification[0].Update[1].Path.Elem), "/cont1a/cont2a/leaf2b")
+	assert.Equal(t, utils.StrVal(result.Notification[0].Update[1].Val), "1.4567")
 }
 
 // Test_getAllDevices is where a wildcard is used for target - path is ignored
@@ -114,11 +151,17 @@ func Test_getAllDevices(t *testing.T) {
 	assert.Equal(t, result.Notification[0].Update[0].Path.Target, "*")
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
-	assert.Contains(t, deviceListStr, "Device1, Device2, Device3")
+	assert.Contains(t, deviceListStr, `{
+  "targets": [
+    "Device1",
+    "Device2",
+    "Device3"
+  ]
+}`)
 }
 
 // Test_getalldevices is where a wildcard is used for target - path is ignored
-func Test_getAllDevicesInPrefix(t *testing.T) {
+func Test_getAllDevicesInPrefixJSON(t *testing.T) {
 	server, _, _ := setUpForGetSetTests(t)
 
 	request := gnmi.GetRequest{
@@ -133,10 +176,36 @@ func Test_getAllDevicesInPrefix(t *testing.T) {
 
 	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
 
+	assert.Contains(t, deviceListStr, `{
+  "targets": [
+    "Device1",
+    "Device2",
+    "Device3"
+  ]
+}`)
+}
+
+// Test_getalldevices is where a wildcard is used for target - path is ignored
+func Test_getAllDevicesInPrefixPROTO(t *testing.T) {
+	server, _, _ := setUpForGetSetTests(t)
+
+	request := gnmi.GetRequest{
+		Prefix:   &gnmi.Path{Target: "*"},
+		Encoding: gnmi.Encoding_PROTO,
+	}
+
+	result, err := server.Get(context.TODO(), &request)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(result.Notification), 1)
+	assert.Equal(t, len(result.Notification[0].Update), 1)
+
+	deviceListStr := utils.StrVal(result.Notification[0].Update[0].Val)
+
 	assert.Contains(t, deviceListStr, "Device1, Device2, Device3")
 }
 
-func Test_get2PathsWithPrefix(t *testing.T) {
+func Test_get2PathsWithPrefixJSON(t *testing.T) {
 	server, _, mocks := setUp(t)
 	setUpChangesMock(mocks)
 	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*cache.Info{
@@ -167,7 +236,7 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 	result, err := server.Get(context.TODO(), &request)
 	assert.NoError(t, err)
 
-	assert.Equal(t, len(result.Notification), 2)
+	assert.Equal(t, len(result.Notification), 2) // TODO - since these share the same device they could be 1 notification
 
 	assert.Equal(t, len(result.Notification[0].Update), 1)
 
@@ -175,10 +244,70 @@ func Test_get2PathsWithPrefix(t *testing.T) {
 		"/cont1a/cont2a")
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/leaf2a")
-	assert.Equal(t, result.Notification[0].Update[0].GetVal().GetUintVal(), uint64(13))
+	assert.Equal(t, utils.StrVal(result.Notification[0].Update[0].GetVal()),
+		`{
+  "cont1a": {
+    "cont2a": {
+      "leaf2a": 13
+    }
+  }
+}`)
 
 	assert.Equal(t, utils.StrPath(result.Notification[1].Update[0].Path),
 		"/leaf2b")
+
+	assert.Equal(t, utils.StrVal(result.Notification[1].Update[0].GetVal()),
+		`{
+  "cont1a": {
+    "cont2a": {
+      "leaf2b": "1.4567"
+    }
+  }
+}`)
+}
+
+func Test_get2PathsWithPrefixProto(t *testing.T) {
+	server, _, mocks := setUp(t)
+	setUpChangesMock(mocks)
+	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*cache.Info{
+		{
+			DeviceID: "Device1",
+			Type:     "Devicesim",
+			Version:  "1.0.0",
+		},
+	}).AnyTimes()
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
+
+	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
+	assert.NoError(t, err)
+
+	leafAPath, err := utils.ParseGNMIElements([]string{"leaf2a"})
+	assert.NoError(t, err)
+	leafAPath.Target = "Device1"
+
+	leafBPath, err := utils.ParseGNMIElements([]string{"leaf2b"})
+	assert.NoError(t, err)
+	leafBPath.Target = "Device1"
+
+	request := gnmi.GetRequest{
+		Prefix:   prefixPath,
+		Path:     []*gnmi.Path{leafAPath, leafBPath},
+		Encoding: gnmi.Encoding_PROTO,
+	}
+
+	result, err := server.Get(context.TODO(), &request)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(result.Notification), 2) // TODO - since these share the same device they could be 1 notification
+
+	assert.Equal(t, len(result.Notification[0].Update), 1)
+
+	assert.Equal(t, utils.StrPath(result.Notification[0].Prefix),
+		"/cont1a/cont2a")
+	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path), "/leaf2a")
+	assert.Equal(t, utils.StrVal(result.Notification[0].Update[0].GetVal()), "13")
+	assert.Equal(t, utils.StrPath(result.Notification[1].Update[0].Path), "/leaf2b")
+	assert.Equal(t, utils.StrVal(result.Notification[1].Update[0].GetVal()), "1.4567")
 }
 
 func Test_getWithPrefixNoOtherPaths(t *testing.T) {
@@ -213,8 +342,34 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 
 	assert.Equal(t, utils.StrPath(result.Notification[0].Update[0].Path),
 		"/")
-	val := result.Notification[0].Update[0].GetVal().GetUintVal()
-	assert.Equal(t, val, uint64(13), "Got")
+	val := utils.StrVal(result.Notification[0].Update[0].GetVal())
+	assert.Equal(t, val, `{
+  "cont1a": {
+    "cont2a": {
+      "leaf2a": 13,
+      "leaf2b": "1.4567"
+    }
+  }
+}`, "Got JSON value")
+
+	requestProto := gnmi.GetRequest{Prefix: prefixPath, Encoding: gnmi.Encoding_PROTO}
+	resultProto, err := server.Get(context.TODO(), &requestProto)
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(resultProto.Notification), 1)
+
+	assert.Equal(t, len(resultProto.Notification[0].Update), 2)
+
+	assert.Equal(t, utils.StrPath(resultProto.Notification[0].Prefix),
+		"/cont1a/cont2a")
+
+	assert.Equal(t, utils.StrPath(resultProto.Notification[0].Update[0].Path), "/leaf2a")
+	valProto := resultProto.Notification[0].Update[0].GetVal().GetUintVal()
+	assert.Equal(t, valProto, uint64(13), "Got PROTO value")
+	assert.Equal(t, utils.StrPath(resultProto.Notification[0].Update[1].Path), "/leaf2b")
+	valProto2 := utils.StrVal(resultProto.Notification[0].Update[1].GetVal())
+	assert.Equal(t, valProto2, "1.4567", "Got PROTO value")
 }
 
 func Test_targetDoesNotExist(t *testing.T) {

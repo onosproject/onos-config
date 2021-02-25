@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	gbp "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
@@ -77,6 +78,6 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
-	_, _, err = gnmi.GetGNMIValue(gnmi.MakeContext(), device1GnmiClient, devicePathsForGet)
+	_, _, err = gnmi.GetGNMIValue(gnmi.MakeContext(), device1GnmiClient, devicePathsForGet, gbp.Encoding_PROTO)
 	assert.Error(t, err)
 }

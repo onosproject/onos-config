@@ -53,7 +53,7 @@ func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) 
 	v, _ := getGNMIServiceVersion()
 	return &gnmi.CapabilityResponse{
 		SupportedModels:    manager.GetManager().ModelRegistry.Capabilities(),
-		SupportedEncodings: []gnmi.Encoding{gnmi.Encoding_JSON},
+		SupportedEncodings: []gnmi.Encoding{gnmi.Encoding_JSON, gnmi.Encoding_JSON_IETF, gnmi.Encoding_PROTO},
 		GNMIVersion:        *v,
 	}, nil
 }

@@ -344,18 +344,17 @@ func extractSetTransactionID(response *gpb.SetResponse) string {
 }
 
 // GetGNMIValue generates a GET request on the given client for a Path on a device
-func GetGNMIValue(ctx context.Context, c client.Impl, paths []protoutils.DevicePath) ([]protoutils.DevicePath, []*gnmi_ext.Extension, error) {
+func GetGNMIValue(ctx context.Context, c client.Impl, paths []protoutils.DevicePath, encoding gpb.Encoding) ([]protoutils.DevicePath, []*gnmi_ext.Extension, error) {
 	protoString := ""
 	for _, devicePath := range paths {
 		protoString = protoString + MakeProtoPath(devicePath.DeviceName, devicePath.Path)
 	}
-
 	getTZRequest := &gpb.GetRequest{}
 	if err := proto.UnmarshalText(protoString, getTZRequest); err != nil {
 		fmt.Printf("unable to parse gnmi.GetRequest from %q : %v\n", protoString, err)
 		return nil, nil, err
 	}
-
+	getTZRequest.Encoding = encoding
 	response, err := c.(*gclient.Client).Get(ctx, getTZRequest)
 	if err != nil || response == nil {
 		return nil, nil, err
@@ -432,7 +431,7 @@ func GetDevicePathsWithValues(devices []string, paths []string, values []string)
 
 // CheckDeviceValue makes sure a value has been assigned properly to a device path by querying GNMI
 func CheckDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []protoutils.DevicePath, expectedValue string) {
-	deviceValues, extensions, deviceValuesError := GetGNMIValue(MakeContext(), deviceGnmiClient, devicePaths)
+	deviceValues, extensions, deviceValuesError := GetGNMIValue(MakeContext(), deviceGnmiClient, devicePaths, gpb.Encoding_JSON)
 	if deviceValuesError == nil {
 		assert.NoError(t, deviceValuesError, "GNMI get operation to device returned an error")
 		assert.Equal(t, expectedValue, deviceValues[0].PathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
@@ -526,7 +525,7 @@ func GetGNMIClientOrFail(t *testing.T) client.Impl {
 // CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
 func CheckGNMIValue(t *testing.T, gnmiClient client.Impl, paths []protoutils.DevicePath, expectedValue string, expectedExtensions int, failMessage string) {
 	t.Helper()
-	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths)
+	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths, gpb.Encoding_PROTO)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedExtensions, len(extensions))
 	assert.Equal(t, expectedValue, value[0].PathDataValue, "%s: %s", failMessage, value)
@@ -535,7 +534,7 @@ func CheckGNMIValue(t *testing.T, gnmiClient client.Impl, paths []protoutils.Dev
 // CheckGNMIValues makes sure a list of values has been assigned properly by querying the onos-config northbound API
 func CheckGNMIValues(t *testing.T, gnmiClient client.Impl, paths []protoutils.DevicePath, expectedValues []string, expectedExtensions int, failMessage string) {
 	t.Helper()
-	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths)
+	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths, gpb.Encoding_PROTO)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedExtensions, len(extensions))
 	for index, expectedValue := range expectedValues {

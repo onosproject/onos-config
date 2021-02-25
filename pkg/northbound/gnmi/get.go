@@ -27,6 +27,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strings"
 	"time"
 )
 
@@ -38,6 +39,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		log.Infof("gNMI Get() called by '%s (%s)' with token %s", md.Get("name"),
 			md.Get("email"), md.Get("at_hash"))
 	}
+	if req == nil || (req.GetEncoding() != gnmi.Encoding_PROTO && req.GetEncoding() != gnmi.Encoding_JSON_IETF && req.GetEncoding() != gnmi.Encoding_JSON) {
+		return nil, fmt.Errorf("invalid encoding format in Get request. Only JSON_IETF and PROTO accepted. %v", req.Encoding)
+	}
 	prefix := req.GetPrefix()
 
 	version, err := extractGetVersion(req)
@@ -46,13 +50,13 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	}
 
 	for _, path := range req.GetPath() {
-		update, err := s.getUpdate(version, prefix, path)
+		updates, err := s.getUpdate(version, prefix, path, req.GetEncoding())
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		notification := &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
-			Update:    []*gnmi.Update{update},
+			Update:    updates,
 			Prefix:    prefix,
 		}
 
@@ -60,13 +64,13 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	}
 	// Alternatively - if there's only the prefix
 	if len(req.GetPath()) == 0 {
-		update, err := s.getUpdate(version, prefix, nil)
+		updates, err := s.getUpdate(version, prefix, nil, req.GetEncoding())
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		notification := &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
-			Update:    []*gnmi.Update{update},
+			Update:    updates,
 			Prefix:    prefix,
 		}
 
@@ -80,9 +84,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 }
 
 // getUpdate utility method for getting an Update for a given path
-func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path) (*gnmi.Update, error) {
+func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path, encoding gnmi.Encoding) ([]*gnmi.Update, error) {
 	if (path == nil || path.Target == "") && (prefix == nil || prefix.Target == "") {
-		return nil, fmt.Errorf("Invalid request - Path %s has no target", utils.StrPath(path))
+		return nil, fmt.Errorf("invalid request - Path %s has no target", utils.StrPath(path))
 	}
 
 	// If a target exists on the path, use it. If not use target of Prefix
@@ -94,22 +98,38 @@ func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *
 	// of devices - note, this can be done in addition to other Paths in the same Get
 	if target == "*" {
 		log.Info("Testing subscription")
-		deviceIds := make([]*gnmi.TypedValue, 0)
+		deviceIDs := *manager.GetManager().GetAllDeviceIds()
 
-		for _, deviceID := range *manager.GetManager().GetAllDeviceIds() {
-			typedVal := gnmi.TypedValue_StringVal{StringVal: deviceID}
-			deviceIds = append(deviceIds, &gnmi.TypedValue{Value: &typedVal})
-		}
 		var allDevicesPathElem = make([]*gnmi.PathElem, 0)
 		allDevicesPathElem = append(allDevicesPathElem, &gnmi.PathElem{Name: "all-devices"})
 		allDevicesPath := gnmi.Path{Elem: allDevicesPathElem, Target: "*"}
-		typedVal := gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: deviceIds}}
-
-		update := &gnmi.Update{
-			Path: &allDevicesPath,
-			Val:  &gnmi.TypedValue{Value: &typedVal},
+		var typedVal gnmi.TypedValue
+		switch encoding {
+		case gnmi.Encoding_JSON, gnmi.Encoding_JSON_IETF:
+			typedVal = gnmi.TypedValue{
+				Value: &gnmi.TypedValue_JsonVal{
+					JsonVal: []byte(fmt.Sprintf("{\"targets\": [\"%s\"]}", strings.Join(deviceIDs, "\",\""))),
+				},
+			}
+		case gnmi.Encoding_PROTO:
+			deviceIDStrs := make([]*gnmi.TypedValue, 0)
+			for _, deviceID := range deviceIDs {
+				typedVal := gnmi.TypedValue_StringVal{StringVal: deviceID}
+				deviceIDStrs = append(deviceIDStrs, &gnmi.TypedValue{Value: &typedVal})
+			}
+			typedVal = gnmi.TypedValue{
+				Value: &gnmi.TypedValue_LeaflistVal{LeaflistVal: &gnmi.ScalarArray{Element: deviceIDStrs}}}
+		default:
+			return nil, fmt.Errorf("get targets - unhandled encoding format %v", encoding)
 		}
-		return update, nil
+		update := gnmi.Update{
+			Path: &allDevicesPath,
+			Val:  &typedVal,
+		}
+		updates := []*gnmi.Update{
+			&update,
+		}
+		return updates, nil
 	}
 
 	_, version, errTypeVersion := manager.GetManager().CheckCacheForDevice(devicetype.ID(target), "", version)
@@ -138,37 +158,67 @@ func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *
 	//Merging the two results
 	configValues = append(configValues, stateValues...)
 
-	return buildUpdate(prefix, path, configValues)
+	return buildUpdate(prefix, path, configValues, encoding)
 }
 
-func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*devicechange.PathValue) (*gnmi.Update, error) {
-	var value *gnmi.TypedValue
-	var err error
+func buildUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*devicechange.PathValue, encoding gnmi.Encoding) ([]*gnmi.Update, error) {
 	if len(configValues) == 0 {
-		value = nil
-	} else if len(configValues) == 1 {
-		value, err = values.NativeTypeToGnmiTypedValue(configValues[0].GetValue())
-		if err != nil {
-			log.Warn("Unable to convert native value to gnmi", err)
-			return nil, err
+		emptyUpdate := gnmi.Update{
+			Path: path,
+			Val:  nil,
 		}
-		// These should match the assignments made in changevalue.go
-	} else {
+		return []*gnmi.Update{
+			&emptyUpdate,
+		}, nil
+	}
+
+	switch encoding {
+	case gnmi.Encoding_JSON, gnmi.Encoding_JSON_IETF:
 		json, err := store.BuildTree(configValues, true)
 		if err != nil {
 			return nil, err
 		}
-		typedValue := &gnmi.TypedValue_JsonVal{
-			JsonVal: json,
+		update := &gnmi.Update{
+			Val: &gnmi.TypedValue{
+				Value: &gnmi.TypedValue_JsonVal{
+					JsonVal: json,
+				},
+			},
+			Path: path,
 		}
-		value = &gnmi.TypedValue{
-			Value: typedValue,
+		return []*gnmi.Update{
+			update,
+		}, nil
+	case gnmi.Encoding_PROTO:
+		updates := make([]*gnmi.Update, 0, len(configValues))
+		for _, cv := range configValues {
+			gnmiVal, err := values.NativeTypeToGnmiTypedValue(cv.Value)
+			if err != nil {
+				return nil, err
+			}
+			prefixPath := ""
+			if prefix != nil {
+				prefixPath = utils.StrPathElem(prefix.Elem)
+			}
+			pathCv, err := utils.ParseGNMIElements(strings.Split(cv.Path[len(prefixPath)+1:], "/"))
+			if err != nil {
+				return nil, err
+			}
+			if path != nil {
+				pathCv.Target = path.Target
+				pathCv.Origin = path.Origin
+			}
+			update := &gnmi.Update{
+				Path: pathCv,
+				Val:  gnmiVal,
+			}
+			updates = append(updates, update)
 		}
+		return updates, nil
+	default:
+		return nil, fmt.Errorf("unsupported encoding %v", encoding)
 	}
-	return &gnmi.Update{
-		Path: path,
-		Val:  value,
-	}, nil
+
 }
 
 func extractGetVersion(req *gnmi.GetRequest) (devicetype.Version, error) {
