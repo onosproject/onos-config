@@ -16,6 +16,8 @@ package synchronizer
 
 import (
 	"context"
+	configmodel "github.com/onosproject/onos-config-model/pkg/model"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"strconv"
 	"sync"
 	"time"
@@ -148,18 +150,19 @@ func (s *Session) synchronize() error {
 
 	s.mu.RLock()
 	modelName := utils.ToModelName(devicetype.Type(s.device.Type), devicetype.Version(s.device.Version))
-	mReadOnlyPaths, ok := s.modelRegistry.ModelReadOnlyPaths[modelName]
-	if !ok {
-		log.Warnf("Cannot check for read only paths for target %cm with %cm because "+
-			"Model Plugin not available - continuing", s.device.ID, s.device.Version)
+	plugin, err := s.modelRegistry.GetPlugin(modelName)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Warnf("Model Plugin not available for device", s.device.ID, s.device.Version)
+		} else {
+			return err
+		}
 	}
-	mStateGetMode := modelregistry.GetStateOpState // default
-	mPlugin, ok := s.modelRegistry.ModelPlugins[modelName]
-	if !ok {
-		log.Warnf("Cannot check for StateGetMode for target %cm with %cm because "+
-			"Model Plugin not available - continuing", s.device.ID, s.device.Version)
-	} else {
-		mStateGetMode = modelregistry.GetStateMode(mPlugin.GetStateMode())
+	var mReadOnlyPaths modelregistry.ReadOnlyPathMap
+	mStateGetMode := configmodel.GetStateOpState // default
+	if plugin != nil {
+		mReadOnlyPaths = plugin.ReadOnlyPaths
+		mStateGetMode = plugin.Model.GetStateMode()
 	}
 	valueMap := make(devicechange.TypedValueMap)
 	s.operationalStateCacheLock.Lock()
@@ -183,10 +186,10 @@ func (s *Session) synchronize() error {
 	//spawning two go routines to propagate changes and to get operational state
 	//go sync.syncConfigEventsToDevice(target, respChan)
 	s.deviceResponseChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
-	if sync.getStateMode == modelregistry.GetStateOpState {
+	if sync.getStateMode == configmodel.GetStateOpState {
 		go sync.syncOperationalStateByPartition(ctx, s.target, s.deviceResponseChan)
-	} else if sync.getStateMode == modelregistry.GetStateExplicitRoPaths ||
-		sync.getStateMode == modelregistry.GetStateExplicitRoPathsExpandWildcards {
+	} else if sync.getStateMode == configmodel.GetStateExplicitRoPaths ||
+		sync.getStateMode == configmodel.GetStateExplicitRoPathsExpandWildcards {
 		go sync.syncOperationalStateByPaths(ctx, s.target, s.deviceResponseChan)
 	}
 	return nil

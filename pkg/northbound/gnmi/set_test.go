@@ -662,6 +662,7 @@ func TestSet_BadDeviceType(t *testing.T) {
 	assert.Nil(t, setResponse)
 }
 
+/*
 func Test_findPathFromModel(t *testing.T) {
 	_, _, mgr := setUpForGetSetTests(t)
 
@@ -678,3 +679,4 @@ func Test_findPathFromModel(t *testing.T) {
 	assert.NotNil(t, rwPath3)
 	assert.Equal(t, []string{"4..8"}, rwPath3.Length)
 }
+*/

@@ -24,7 +24,8 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20201130213019-492043aed0df
 	github.com/onosproject/helmit v0.6.10
 	github.com/onosproject/onos-api/go v0.7.2
-	github.com/onosproject/onos-lib-go v0.7.2
+	github.com/onosproject/onos-config-model v0.1.2
+	github.com/onosproject/onos-lib-go v0.7.3
 	github.com/onosproject/onos-test v0.6.4
 	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
 	github.com/openconfig/goyang v0.2.1
@@ -39,7 +40,7 @@ require (
 	golang.org/x/mobile v0.0.0-20190806162312-597adff16ade // indirect
 	golang.org/x/tools v0.0.0-20200522201501-cb1345f3a375 // indirect
 	google.golang.org/grpc v1.33.2
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.17.3
 )

@@ -70,17 +70,6 @@ const OIDCServerURL = "OIDC_SERVER_URL"
 // RbacVersionedID - the internal device where RBAC rules are configured
 const RbacVersionedID = "rbac:1.0.0"
 
-type arrayFlags []string
-
-func (i *arrayFlags) String() string {
-	return "my string representation"
-}
-
-func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
 var log = logging.GetLogger("main")
 
 // ClusterFactory creates the cluster
@@ -94,9 +83,7 @@ var ClusterFactory = func(configuration config.Config) (cluster.Cluster, error) 
 
 // The main entry point
 func main() {
-	var modelPlugins arrayFlags
 	allowUnvalidatedConfig := flag.Bool("allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
-	flag.Var(&modelPlugins, "modelPlugin", "names of model plugins to load (repeated)")
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
@@ -194,16 +181,6 @@ func main() {
 		log.Info("Shutting down onos-config")
 		time.Sleep(time.Second)
 	}()
-
-	for _, modelPlugin := range modelPlugins {
-		if modelPlugin == "" {
-			continue
-		}
-		_, _, err := mgr.ModelRegistry.RegisterModelPlugin(modelPlugin)
-		if err != nil {
-			log.Fatal("Unable to start onos-config ", err)
-		}
-	}
 
 	mgr.Run()
 

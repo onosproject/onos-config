@@ -22,6 +22,7 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/manager"
@@ -34,6 +35,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"os"
@@ -55,43 +57,6 @@ type AllMocks struct {
 // Also there can only be one TestMain per package
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
-}
-
-type MockModelPlugin struct {
-	schemaFn func() (map[string]*yang.Entry, error)
-}
-
-func (m MockModelPlugin) ModelData() (string, string, []*gnmi.ModelData, string) {
-	//td1.M
-	panic("implement me")
-}
-
-func (m MockModelPlugin) UnmarshalConfigValues(jsonTree []byte) (*ygot.ValidatedGoStruct, error) {
-	device := &td1.Device{}
-	vgs := ygot.ValidatedGoStruct(device)
-
-	if err := td1.Unmarshal(jsonTree, device); err != nil {
-		return nil, err
-	}
-
-	return &vgs, nil
-}
-
-func (m MockModelPlugin) Validate(ygotModel *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
-	deviceDeref := *ygotModel
-	device, ok := deviceDeref.(*td1.Device)
-	if !ok {
-		return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
-	}
-	return device.Validate()
-}
-
-func (m MockModelPlugin) Schema() (map[string]*yang.Entry, error) {
-	return m.schemaFn()
-}
-
-func (m MockModelPlugin) GetStateMode() int {
-	panic("implement me")
 }
 
 func setUpWatchMock(mocks *AllMocks) {
@@ -350,6 +315,48 @@ func setUpBaseDevices(mockStores *mockstore.MockStores, deviceCache *mockcache.M
 		}).AnyTimes()
 }
 
+type MockModel struct {
+	schemaFn func() (map[string]*yang.Entry, error)
+}
+
+func (m MockModel) Info() configmodel.ModelInfo {
+	panic("implement me")
+}
+
+func (m MockModel) Data() []*gnmi.ModelData {
+	panic("implement me")
+}
+
+func (m MockModel) Schema() (map[string]*yang.Entry, error) {
+	return m.schemaFn()
+}
+
+func (m MockModel) GetStateMode() configmodel.GetStateMode {
+	panic("implement me")
+}
+
+func (m MockModel) Unmarshaler() configmodel.Unmarshaler {
+	return func(bytes []byte) (*ygot.ValidatedGoStruct, error) {
+		device := &td1.Device{}
+		vgs := ygot.ValidatedGoStruct(device)
+		if err := td1.Unmarshal(bytes, device); err != nil {
+			return nil, err
+		}
+		return &vgs, nil
+	}
+}
+
+func (m MockModel) Validator() configmodel.Validator {
+	return func(model *ygot.ValidatedGoStruct, opts ...ygot.ValidationOption) error {
+		deviceDeref := *model
+		device, ok := deviceDeref.(*td1.Device)
+		if !ok {
+			return fmt.Errorf("unable to convert model in to testdevice_1_0_0")
+		}
+		return device.Validate()
+	}
+}
+
 func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
 	server, mgr, allMocks := setUp(t)
 	allMocks.MockStores.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(gomock.NewController(t))
@@ -357,14 +364,18 @@ func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
 	setUpBaseNetworkStore(allMocks.MockStores.NetworkChangesStore)
 	setUpBaseDevices(allMocks.MockStores, allMocks.MockDeviceCache)
 	//setUpChangesMock(allMocks)
-	modelPluginTestDevice1 := MockModelPlugin{
-		td1.UnzipSchema,
+	modelSchema, err := td1.UnzipSchema()
+	assert.NoError(t, err)
+	_, modelRwPaths := modelregistry.ExtractPaths(modelSchema["Device"], yang.TSUnset, "", "")
+	modelPlugin := &modelregistry.ModelPlugin{
+		Info: configmodel.ModelInfo{
+			Name:    "TestDevice",
+			Version: "1.0.0",
+		},
+		Model:          MockModel{},
+		ReadWritePaths: modelRwPaths,
 	}
-	mgr.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = modelPluginTestDevice1
-	td1Schema, _ := modelPluginTestDevice1.Schema()
-	_, modelRwPaths := modelregistry.ExtractPaths(td1Schema["Device"], yang.TSUnset, "", "")
-	mgr.ModelRegistry.ModelReadWritePaths["TestDevice-1.0.0"] = modelRwPaths
-
+	mgr.ModelRegistry = modelregistry.NewModelRegistry(modelPlugin)
 	return server, allMocks, mgr
 }
 

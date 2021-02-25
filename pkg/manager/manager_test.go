@@ -16,6 +16,7 @@ package manager
 
 import (
 	"errors"
+	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
@@ -658,14 +659,17 @@ func (m MockModelPlugin) GetStateMode() int {
 func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	plugin := MockModelPlugin{}
-	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
-
 	roPathMap := make(modelregistry.ReadOnlyPathMap)
 	roSubPath1 := make(modelregistry.ReadOnlySubPathMap)
 	roPathMap[test1Cont1ACont2ALeaf2A] = roSubPath1
-
-	mgr.ModelRegistry.ModelReadOnlyPaths["TestDevice-1.0.0"] = roPathMap
+	plugin := &modelregistry.ModelPlugin{
+		Info: configmodel.ModelInfo{
+			Name:    "TestDevice",
+			Version: "1.0.0",
+		},
+		ReadOnlyPaths: roPathMap,
+	}
+	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(plugin)
 
 	// TODO - Not implemented on Atomix stores yet
 	t.Skip()
@@ -677,8 +681,13 @@ func TestManager_ValidateStores(t *testing.T) {
 	t.Skip("TODO re-enable when validation is done on atomix stores")
 	mgrTest, _ := setUp(t)
 
-	plugin := MockModelPlugin{}
-	mgrTest.ModelRegistry.ModelPlugins["TestDevice-1.0.0"] = plugin
+	plugin := &modelregistry.ModelPlugin{
+		Info: configmodel.ModelInfo{
+			Name:    "TestDevice",
+			Version: "1.0.0",
+		},
+	}
+	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(plugin)
 
 	//assert.NoError(t, validationError)
 }
