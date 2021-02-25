@@ -185,7 +185,7 @@ func (r *Reconciler) translateAndSendChange(change *devicechange.Change) error {
 	log.Infof("Target for device %s: %v %v", change.DeviceID, deviceTarget, deviceTarget.Context())
 	setResponse, err := deviceTarget.Set(*deviceTarget.Context(), setRequest)
 	if err != nil {
-		log.Error("Error while doing set: ", err)
+		log.Warn("Error while doing set: ", err)
 		return err
 	}
 	log.Info(change.DeviceID, " SetResponse ", setResponse)

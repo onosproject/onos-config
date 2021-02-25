@@ -347,8 +347,6 @@ func validateChange(target devicetype.ID, deviceType devicetype.Type, version de
 	errValidation := manager.GetManager().ValidateNetworkConfig(target, version, deviceType,
 		targetUpdates, targetRemoves, lastWrite)
 	if errValidation != nil {
-		log.Errorf("Error in validating config, updates %s, removes %s for target %s, err: %s", targetUpdates,
-			targetRemoves, target, errValidation)
 		return errValidation
 	}
 	log.Infof("Validating change %s:%s:%s DONE", target, deviceType, version)
