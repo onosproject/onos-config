@@ -13,7 +13,7 @@ A simple way to issue a gNMI requests is to use the `gnmi_cli` utility from
 the [OpenConfig](https://github.com/openconfig/gnmi) project.
 
 > A special version of this tool that can connect over a plain connection is available
-> on an ONF [fork](https://github.com/opennetworkinglab/gnmi). This version gives
+> with `go get github.com/onosproject/onos-cli/cmd/gnmi_cli`. This version gives
 > the extra `-encodingType` (`-en`) and `-tlsDisabled` (`-tls`) options.
 
 More instructions including all the examples below can be found in
@@ -31,7 +31,7 @@ kubectl -n micro-onos exec -it $(kubectl -n micro-onos get pods -l type=cli -o n
 ### Accessing from local machine
 An alternative is to install on your system, install as follows:
 ```bash
-go get -u github.com/opennetworkinglab/gnmi/cmd/gnmi_cli
+go get -u github.com/onosproject/onos-cli/cmd/gnmi_cli
 ```
 
 Then you can use k8s port forwarding to run gnmi_cli locally on your machine as follows:
