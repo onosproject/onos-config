@@ -72,6 +72,7 @@ publish: # @HELP publish version on github and dockerhub
 jenkins-publish: build-tools jenkins-tools # @HELP Jenkins calls this to publish artifacts
 	./build/bin/push-images
 	../build-tools/release-merge-commit
+	../build-tools/build/docs/push-docs
 
 bumponosdeps: # @HELP update "onosproject" go dependencies and push patch to git.
 	./../build-tools/bump-onos-deps ${VERSION}
