@@ -15,7 +15,9 @@
 package gnmi
 
 import (
+	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/onos-config/test/utils/charts"
+	"github.com/onosproject/onos-test/pkg/onostest"
 	"sync"
 
 	"github.com/onosproject/helmit/pkg/test"
@@ -33,6 +35,10 @@ type TestSuite struct {
 
 // SetupTestSuite sets up the onos-config GNMI test suite
 func (s *TestSuite) SetupTestSuite() error {
+	devsim := helm.Chart("config-model-devicesim", onostest.OnosChartRepo).Release("config-model-devicesim").Install(true)
+	if devsim != nil {
+		return devsim
+	}
 	umbrella := charts.CreateUmbrellaRelease()
 	return umbrella.Install(true)
 }
