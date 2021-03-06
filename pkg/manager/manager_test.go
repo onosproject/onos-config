@@ -264,6 +264,12 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		mockDeviceSnapshotStore,
 		true,
 		nil)
+	config := modelregistry.Config{
+		ModPath:      "test/data/" + t.Name() + "/mod",
+		RegistryPath: "test/data/" + t.Name() + "/registry",
+		PluginPath:   "test/data/" + t.Name() + "/plugins",
+	}
+	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(config)
 
 	mgrTest.Run()
 
