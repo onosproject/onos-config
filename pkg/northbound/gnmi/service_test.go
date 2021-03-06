@@ -34,7 +34,12 @@ func TestService_getGNMIServiceVersion(t *testing.T) {
 func TestService_Capabilities(t *testing.T) {
 	server := Server{}
 	request := gnmi.CapabilityRequest{}
-	manager.GetManager().ModelRegistry = modelregistry.NewModelRegistry()
+	config := modelregistry.Config{
+		ModPath:      "test/data/TestService_Capabilities/mod",
+		RegistryPath: "test/data/TestService_Capabilities/registry",
+		PluginPath:   "test/data/TestService_Capabilities/plugins",
+	}
+	manager.GetManager().ModelRegistry = modelregistry.NewModelRegistry(config)
 	response, err := server.Capabilities(context.Background(), &request)
 	assert.NoError(t, err)
 	assert.NotNil(t, response)

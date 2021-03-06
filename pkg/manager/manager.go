@@ -98,7 +98,7 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		networkSnapshotController: networksnapshotctl.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceChangesStore),
 		deviceSnapshotController:  devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
 		TopoChannel:               make(chan *topodevice.ListResponse, 10),
-		ModelRegistry:             modelregistry.NewModelRegistry(),
+		ModelRegistry:             modelregistry.NewModelRegistry(modelregistry.Config{}),
 		OperationalStateChannel:   make(chan events.OperationalStateEvent),
 		SouthboundErrorChan:       make(chan events.DeviceResponse),
 		Dispatcher:                dispatcher.NewDispatcher(),

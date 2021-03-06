@@ -17,6 +17,8 @@ package modelregistry
 import (
 	"fmt"
 	configmodel "github.com/onosproject/onos-config-model/pkg/model"
+	plugincache "github.com/onosproject/onos-config-model/pkg/model/plugin/cache"
+	pluginmodule "github.com/onosproject/onos-config-model/pkg/model/plugin/module"
 	modelregistry "github.com/onosproject/onos-config-model/pkg/model/registry"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"regexp"
@@ -127,6 +129,13 @@ func (rw ReadWritePathMap) TypeForPath(path string) (devicechange.ValueType, err
 	return devicechange.ValueType_EMPTY, fmt.Errorf("path %s not found in RW paths of model", path)
 }
 
+// Config is the model registry configuration
+type Config struct {
+	ModPath      string
+	RegistryPath string
+	PluginPath   string
+}
+
 // ModelPlugin is a config model
 type ModelPlugin struct {
 	Info           configmodel.ModelInfo
@@ -136,9 +145,11 @@ type ModelPlugin struct {
 }
 
 // NewModelRegistry creates a new model registry
-func NewModelRegistry(plugins ...*ModelPlugin) *ModelRegistry {
+func NewModelRegistry(config Config, plugins ...*ModelPlugin) *ModelRegistry {
+	resolver := pluginmodule.NewResolver(pluginmodule.ResolverConfig{Path: config.ModPath})
 	registry := &ModelRegistry{
-		registry: modelregistry.NewConfigModelRegistryFromEnv(),
+		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: config.RegistryPath}),
+		cache:    plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath}, resolver),
 		plugins:  make(map[string]*ModelPlugin),
 	}
 	for _, plugin := range plugins {
@@ -150,6 +161,7 @@ func NewModelRegistry(plugins ...*ModelPlugin) *ModelRegistry {
 
 // ModelRegistry is a registry of config models
 type ModelRegistry struct {
+	cache    *plugincache.PluginCache
 	registry *modelregistry.ConfigModelRegistry
 	plugins  map[string]*ModelPlugin
 	mu       sync.RWMutex
@@ -201,6 +213,15 @@ func (r *ModelRegistry) loadPlugins() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	err := r.cache.RLock()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = r.cache.RUnlock()
+	}()
+
 	modelInfos, err := r.registry.ListModels()
 	if err != nil {
 		return err
@@ -209,10 +230,11 @@ func (r *ModelRegistry) loadPlugins() error {
 	for _, modelInfo := range modelInfos {
 		modelName := utils.ToModelName(devicetype.Type(modelInfo.Name), devicetype.Version(modelInfo.Version))
 		if _, ok := r.plugins[modelName]; !ok {
-			plugin, err := r.registry.LoadPlugin(modelInfo.Plugin.Name, modelInfo.Plugin.Version)
+			plugin, err := r.cache.Load(modelInfo.Plugin.Name, modelInfo.Plugin.Version)
 			if err != nil {
 				return err
 			}
+
 			model := plugin.Model()
 			schema, err := model.Schema()
 			if err != nil {

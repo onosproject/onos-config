@@ -375,7 +375,12 @@ func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
 		Model:          MockModel{},
 		ReadWritePaths: modelRwPaths,
 	}
-	mgr.ModelRegistry = modelregistry.NewModelRegistry(modelPlugin)
+	config := modelregistry.Config{
+		ModPath:      "test/data/" + t.Name() + "/mod",
+		RegistryPath: "test/data/" + t.Name() + "/registry",
+		PluginPath:   "test/data/" + t.Name() + "/plugins",
+	}
+	mgr.ModelRegistry = modelregistry.NewModelRegistry(config, modelPlugin)
 	return server, allMocks, mgr
 }
 
