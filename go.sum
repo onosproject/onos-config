@@ -481,6 +481,8 @@ github.com/kuujo/onos-config-model v0.0.2-0.20210306221558-ffd8b3b479bf h1:wDbec
 github.com/kuujo/onos-config-model v0.0.2-0.20210306221558-ffd8b3b479bf/go.mod h1:mLOKk9Ab5acdcgYpaQ/n1/fUm080lt3dpp9BmxZERUQ=
 github.com/kuujo/onos-config-model v0.0.2-0.20210306225035-b67653b01e2b h1:iuUErOcmh71Nd/PFmawoES0fXC5/mE4Zbc7GiIioFkM=
 github.com/kuujo/onos-config-model v0.0.2-0.20210306225035-b67653b01e2b/go.mod h1:mLOKk9Ab5acdcgYpaQ/n1/fUm080lt3dpp9BmxZERUQ=
+github.com/kuujo/onos-config-model v0.0.2-0.20210306232008-1c39d657dc4e h1:OqipC/thsjIQAd9MCLOlUPiJ/1ttkedCCOu/mBJ5wvc=
+github.com/kuujo/onos-config-model v0.0.2-0.20210306232008-1c39d657dc4e/go.mod h1:mLOKk9Ab5acdcgYpaQ/n1/fUm080lt3dpp9BmxZERUQ=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de h1:9TO3cAIGXtEhnIaL+V+BEER86oLrvS+kWobKpbJuye0=
