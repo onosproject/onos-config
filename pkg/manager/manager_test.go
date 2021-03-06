@@ -16,13 +16,12 @@ package manager
 
 import (
 	"errors"
-	configmodel "github.com/onosproject/onos-config-model/pkg/model"
-
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
@@ -669,7 +668,12 @@ func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
 		},
 		ReadOnlyPaths: roPathMap,
 	}
-	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(plugin)
+	config := modelregistry.Config{
+		ModPath:      "test/data/TestManager_ValidateStoresReadOnlyFailure/mod",
+		RegistryPath: "test/data/TestManager_ValidateStoresReadOnlyFailure/registry",
+		PluginPath:   "test/data/TestManager_ValidateStoresReadOnlyFailure/plugins",
+	}
+	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(config, plugin)
 
 	// TODO - Not implemented on Atomix stores yet
 	t.Skip()
@@ -687,7 +691,12 @@ func TestManager_ValidateStores(t *testing.T) {
 			Version: "1.0.0",
 		},
 	}
-	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(plugin)
+	config := modelregistry.Config{
+		ModPath:      "test/data/TestManager_ValidateStores/mod",
+		RegistryPath: "test/data/TestManager_ValidateStores/registry",
+		PluginPath:   "test/data/TestManager_ValidateStores/plugins",
+	}
+	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(config, plugin)
 
 	//assert.NoError(t, validationError)
 }

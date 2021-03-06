@@ -129,6 +129,13 @@ func (rw ReadWritePathMap) TypeForPath(path string) (devicechange.ValueType, err
 	return devicechange.ValueType_EMPTY, fmt.Errorf("path %s not found in RW paths of model", path)
 }
 
+// Config is the model registry configuration
+type Config struct {
+	ModPath      string
+	RegistryPath string
+	PluginPath   string
+}
+
 // ModelPlugin is a config model
 type ModelPlugin struct {
 	Info           configmodel.ModelInfo
@@ -138,11 +145,11 @@ type ModelPlugin struct {
 }
 
 // NewModelRegistry creates a new model registry
-func NewModelRegistry(plugins ...*ModelPlugin) *ModelRegistry {
-	resolver := pluginmodule.NewResolver(pluginmodule.ResolverConfig{})
+func NewModelRegistry(config Config, plugins ...*ModelPlugin) *ModelRegistry {
+	resolver := pluginmodule.NewResolver(pluginmodule.ResolverConfig{Path: config.ModPath})
 	registry := &ModelRegistry{
-		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{}),
-		cache:    plugincache.NewPluginCache(plugincache.CacheConfig{}, resolver),
+		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: config.RegistryPath}),
+		cache:    plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath}, resolver),
 		plugins:  make(map[string]*ModelPlugin),
 	}
 	for _, plugin := range plugins {
