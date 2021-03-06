@@ -23,9 +23,9 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20201130213019-492043aed0df
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20201130213019-492043aed0df
 	github.com/onosproject/helmit v0.6.10
-	github.com/onosproject/onos-api/go v0.7.2
+	github.com/onosproject/onos-api/go v0.7.11
 	github.com/onosproject/onos-config-model v0.2.0
-	github.com/onosproject/onos-lib-go v0.7.3
+	github.com/onosproject/onos-lib-go v0.7.5
 	github.com/onosproject/onos-test v0.6.4
 	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
 	github.com/openconfig/goyang v0.2.1
@@ -35,7 +35,7 @@ require (
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.6.2 // indirect
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.7.0
 	go.uber.org/multierr v1.4.0 // indirect
 	golang.org/x/mobile v0.0.0-20190806162312-597adff16ade // indirect
 	golang.org/x/tools v0.0.0-20200522201501-cb1345f3a375 // indirect
@@ -46,3 +46,5 @@ require (
 )
 
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3
+
+replace github.com/onosproject/onos-config-model => github.com/kuujo/onos-config-model v0.0.2-0.20210306111732-243b9a7a0cc6
