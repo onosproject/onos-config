@@ -15,6 +15,7 @@
 package modelregistry
 
 import (
+	"context"
 	"fmt"
 	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	plugincache "github.com/onosproject/onos-config-model/pkg/model/plugin/cache"
@@ -213,13 +214,13 @@ func (r *ModelRegistry) loadPlugins() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	err := r.cache.RLock()
+	err := r.cache.RLock(context.Background())
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		_ = r.cache.RUnlock()
+		_ = r.cache.RUnlock(context.Background())
 	}()
 
 	modelInfos, err := r.registry.ListModels()
