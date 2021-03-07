@@ -21,7 +21,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20201130213019-492043aed0df
 	github.com/onosproject/helmit v0.6.10
 	github.com/onosproject/onos-api/go v0.7.11
-	github.com/onosproject/onos-config-model v0.3.0
+	github.com/onosproject/onos-config-model v0.3.1
 	github.com/onosproject/onos-lib-go v0.7.5
 	github.com/onosproject/onos-test v0.6.4
 	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
@@ -40,7 +40,5 @@ require (
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.17.3
 )
-
-replace github.com/onosproject/onos-config-model => github.com/kuujo/onos-config-model v0.0.2-0.20210307003620-6b3bac9c5d3b
 
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3
