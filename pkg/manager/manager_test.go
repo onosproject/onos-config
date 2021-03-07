@@ -268,6 +268,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		ModPath:      "test/data/" + t.Name() + "/mod",
 		RegistryPath: "test/data/" + t.Name() + "/registry",
 		PluginPath:   "test/data/" + t.Name() + "/plugins",
+		ModTarget:    "github.com/onosproject/onos-config@master",
 	}
 	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(config)
 
@@ -678,6 +679,7 @@ func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
 		ModPath:      "test/data/TestManager_ValidateStoresReadOnlyFailure/mod",
 		RegistryPath: "test/data/TestManager_ValidateStoresReadOnlyFailure/registry",
 		PluginPath:   "test/data/TestManager_ValidateStoresReadOnlyFailure/plugins",
+		ModTarget:    "github.com/onosproject/onos-config@master",
 	}
 	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(config, plugin)
 
@@ -701,6 +703,7 @@ func TestManager_ValidateStores(t *testing.T) {
 		ModPath:      "test/data/TestManager_ValidateStores/mod",
 		RegistryPath: "test/data/TestManager_ValidateStores/registry",
 		PluginPath:   "test/data/TestManager_ValidateStores/plugins",
+		ModTarget:    "github.com/onosproject/onos-config@master",
 	}
 	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(config, plugin)
 

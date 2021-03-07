@@ -11,6 +11,7 @@ coverage.txt
 modelplugin/TestDevice-1.0.0/testdevice.so.1.0.0
 modelplugin/TestDevice-2.0.0/testdevice.so.2.0.0
 modelplugin/Devicesim-1.0.0/devicesim.so.1.0.0
+**/test/data
 onit
 *report*.xml
 *coverage*.xml

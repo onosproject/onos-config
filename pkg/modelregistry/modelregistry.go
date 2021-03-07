@@ -15,6 +15,7 @@
 package modelregistry
 
 import (
+	"context"
 	"fmt"
 	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	plugincache "github.com/onosproject/onos-config-model/pkg/model/plugin/cache"
@@ -134,6 +135,7 @@ type Config struct {
 	ModPath      string
 	RegistryPath string
 	PluginPath   string
+	ModTarget    string
 }
 
 // ModelPlugin is a config model
@@ -146,7 +148,7 @@ type ModelPlugin struct {
 
 // NewModelRegistry creates a new model registry
 func NewModelRegistry(config Config, plugins ...*ModelPlugin) *ModelRegistry {
-	resolver := pluginmodule.NewResolver(pluginmodule.ResolverConfig{Path: config.ModPath})
+	resolver := pluginmodule.NewResolver(pluginmodule.ResolverConfig{Path: config.ModPath, Target: config.ModTarget})
 	registry := &ModelRegistry{
 		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: config.RegistryPath}),
 		cache:    plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath}, resolver),
@@ -213,13 +215,13 @@ func (r *ModelRegistry) loadPlugins() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	err := r.cache.RLock()
+	err := r.cache.RLock(context.Background())
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		_ = r.cache.RUnlock()
+		_ = r.cache.RUnlock(context.Background())
 	}()
 
 	modelInfos, err := r.registry.ListModels()

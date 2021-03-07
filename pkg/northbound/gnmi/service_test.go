@@ -38,6 +38,7 @@ func TestService_Capabilities(t *testing.T) {
 		ModPath:      "test/data/TestService_Capabilities/mod",
 		RegistryPath: "test/data/TestService_Capabilities/registry",
 		PluginPath:   "test/data/TestService_Capabilities/plugins",
+		ModTarget:    "github.com/onosproject/onos-config@master",
 	}
 	manager.GetManager().ModelRegistry = modelregistry.NewModelRegistry(config)
 	response, err := server.Capabilities(context.Background(), &request)
