@@ -379,6 +379,7 @@ func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
 		ModPath:      "test/data/" + t.Name() + "/mod",
 		RegistryPath: "test/data/" + t.Name() + "/registry",
 		PluginPath:   "test/data/" + t.Name() + "/plugins",
+		ModTarget:    "github.com/onosproject/onos-config@master",
 	}
 	mgr.ModelRegistry = modelregistry.NewModelRegistry(config, modelPlugin)
 	return server, allMocks, mgr
