@@ -38,6 +38,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"os"
 	"time"
 
@@ -171,9 +172,14 @@ func main() {
 		log.Infof("Authorization not enabled %s", os.Getenv(OIDCServerURL))
 	}
 
+	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{})
+	if err != nil {
+		log.Fatal("Failed to load model registry:", err)
+	}
+
 	mgr := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
 		deviceStateStore, deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
-		deviceSnapshotStore, *allowUnvalidatedConfig, rbacCache)
+		deviceSnapshotStore, *allowUnvalidatedConfig, rbacCache, modelRegistry)
 	log.Info("Manager created")
 
 	defer func() {

@@ -147,11 +147,11 @@ type ModelPlugin struct {
 }
 
 // NewModelRegistry creates a new model registry
-func NewModelRegistry(config Config, plugins ...*ModelPlugin) *ModelRegistry {
+func NewModelRegistry(config Config, plugins ...*ModelPlugin) (*ModelRegistry, error) {
 	resolver := pluginmodule.NewResolver(pluginmodule.ResolverConfig{Path: config.ModPath, Target: config.ModTarget})
 	cache, err := plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath}, resolver)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	registry := &ModelRegistry{
 		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: config.RegistryPath}),
@@ -162,7 +162,7 @@ func NewModelRegistry(config Config, plugins ...*ModelPlugin) *ModelRegistry {
 		modelName := utils.ToModelName(devicetype.Type(plugin.Info.Name), devicetype.Version(plugin.Info.Version))
 		registry.plugins[modelName] = plugin
 	}
-	return registry
+	return registry, nil
 }
 
 // ModelRegistry is a registry of config models

@@ -252,6 +252,15 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	mockDeviceStore := mockstore.NewMockDeviceStore(ctrl)
 	mockDeviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 
+	modelRegistryConfig := modelregistry.Config{
+		ModPath:      "test/data/" + t.Name() + "/mod",
+		RegistryPath: "test/data/" + t.Name() + "/registry",
+		PluginPath:   "test/data/" + t.Name() + "/plugins",
+		ModTarget:    "github.com/onosproject/onos-config@master",
+	}
+	modelRegistry, err := modelregistry.NewModelRegistry(modelRegistryConfig)
+	assert.NoError(t, err)
+
 	mgrTest = NewManager(
 		mockLeadershipStore,
 		mockMastershipStore,
@@ -263,14 +272,8 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		mockNetworkSnapshotStore,
 		mockDeviceSnapshotStore,
 		true,
-		nil)
-	config := modelregistry.Config{
-		ModPath:      "test/data/" + t.Name() + "/mod",
-		RegistryPath: "test/data/" + t.Name() + "/registry",
-		PluginPath:   "test/data/" + t.Name() + "/plugins",
-		ModTarget:    "github.com/onosproject/onos-config@master",
-	}
-	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(config)
+		nil,
+		modelRegistry)
 
 	mgrTest.Run()
 
@@ -681,7 +684,9 @@ func TestManager_ValidateStoresReadOnlyFailure(t *testing.T) {
 		PluginPath:   "test/data/TestManager_ValidateStoresReadOnlyFailure/plugins",
 		ModTarget:    "github.com/onosproject/onos-config@master",
 	}
-	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(config, plugin)
+	registry, err := modelregistry.NewModelRegistry(config, plugin)
+	assert.NoError(t, err)
+	mgrTest.ModelRegistry = registry
 
 	// TODO - Not implemented on Atomix stores yet
 	t.Skip()
@@ -705,7 +710,9 @@ func TestManager_ValidateStores(t *testing.T) {
 		PluginPath:   "test/data/TestManager_ValidateStores/plugins",
 		ModTarget:    "github.com/onosproject/onos-config@master",
 	}
-	mgrTest.ModelRegistry = modelregistry.NewModelRegistry(config, plugin)
+	registry, err := modelregistry.NewModelRegistry(config, plugin)
+	assert.NoError(t, err)
+	mgrTest.ModelRegistry = registry
 
 	//assert.NoError(t, validationError)
 }
