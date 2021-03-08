@@ -16,11 +16,12 @@ package charts
 
 import (
 	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/onos-test/pkg/onostest"
 )
 
 // CreateUmbrellaRelease creates a helm release for an onos-umbrella instance
 func CreateUmbrellaRelease() *helm.HelmRelease {
-	return helm.Chart("onos-umbrella").
+	return helm.Chart("onos-umbrella", onostest.OnosChartRepo).
 		Release("onos-umbrella").
 		Set("import.onos-gui.enabled", false).
 		Set("onos-cli.image.tag", "latest").
