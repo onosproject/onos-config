@@ -40,7 +40,9 @@ func TestService_Capabilities(t *testing.T) {
 		PluginPath:   "test/data/TestService_Capabilities/plugins",
 		ModTarget:    "github.com/onosproject/onos-config@master",
 	}
-	manager.GetManager().ModelRegistry = modelregistry.NewModelRegistry(config)
+	modelRegistry, err := modelregistry.NewModelRegistry(config)
+	assert.NoError(t, err)
+	manager.GetManager().ModelRegistry = modelRegistry
 	response, err := server.Capabilities(context.Background(), &request)
 	assert.NoError(t, err)
 	assert.NotNil(t, response)

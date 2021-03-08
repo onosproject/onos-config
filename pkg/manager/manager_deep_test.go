@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -137,8 +138,16 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	mastershipStore, err := mastership.NewLocalStore("test", cluster.NodeID("node1"))
 	assert.NilError(t, err)
 
+	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{
+		ModPath:      "test/data/" + t.Name() + "/mod",
+		RegistryPath: "test/data/" + t.Name() + "/registry",
+		PluginPath:   "test/data/" + t.Name() + "/plugins",
+		ModTarget:    "github.com/onosproject/onos-config",
+	})
+	assert.NilError(t, err)
+
 	mgrTest = NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStateStore,
-		mockDeviceStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true, nil)
+		mockDeviceStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true, nil, modelRegistry)
 
 	modelData1 := gnmi.ModelData{
 		Name:         "test1",

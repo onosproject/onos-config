@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/diags"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
@@ -64,6 +65,14 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, diags.Change
 
 	client := diags.CreateChangeServiceClient(conn)
 
+	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{
+		ModPath:      "test/data/" + t.Name() + "/mod",
+		RegistryPath: "test/data/" + t.Name() + "/registry",
+		PluginPath:   "test/data/" + t.Name() + "/plugins",
+		ModTarget:    "github.com/onosproject/onos-config",
+	})
+	assert.NilError(t, err)
+
 	ctrl := gomock.NewController(t)
 	mgrTest := manager.NewManager(
 		mockstore.NewMockLeadershipStore(ctrl),
@@ -76,7 +85,8 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, diags.Change
 		mockstore.NewMockNetworkSnapshotStore(ctrl),
 		mockstore.NewMockDeviceSnapshotStore(ctrl),
 		true,
-		nil)
+		nil,
+		modelRegistry)
 
 	mgrTest.DeviceStore = mockstore.NewMockDeviceStore(ctrl)
 

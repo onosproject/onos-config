@@ -214,6 +214,14 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 	allMocks.MockStores = mockStores
 	allMocks.MockDeviceCache = deviceCache
 
+	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{
+		ModPath:      "test/data/" + t.Name() + "/mod",
+		RegistryPath: "test/data/" + t.Name() + "/registry",
+		PluginPath:   "test/data/" + t.Name() + "/plugins",
+		ModTarget:    "github.com/onosproject/onos-config",
+	})
+	assert.NoError(t, err)
+
 	mgr := manager.NewManager(
 		mockStores.LeadershipStore,
 		mockStores.MastershipStore,
@@ -225,7 +233,8 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 		mockStores.NetworkSnapshotStore,
 		mockStores.DeviceSnapshotStore,
 		true,
-		nil)
+		nil,
+		modelRegistry)
 
 	mgr.DeviceStore = mockStores.DeviceStore
 	mgr.DeviceChangesStore = mockStores.DeviceChangesStore
@@ -381,7 +390,9 @@ func setUpForGetSetTests(t *testing.T) (*Server, *AllMocks, *manager.Manager) {
 		PluginPath:   "test/data/" + t.Name() + "/plugins",
 		ModTarget:    "github.com/onosproject/onos-config@master",
 	}
-	mgr.ModelRegistry = modelregistry.NewModelRegistry(config, modelPlugin)
+	modelRegistry, err := modelregistry.NewModelRegistry(config, modelPlugin)
+	assert.NoError(t, err)
+	mgr.ModelRegistry = modelRegistry
 	return server, allMocks, mgr
 }
 

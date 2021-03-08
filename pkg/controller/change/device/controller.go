@@ -17,6 +17,7 @@ package device
 import (
 	"fmt"
 	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"strings"
 
 	types "github.com/onosproject/onos-api/go/onos/config"
@@ -93,15 +94,7 @@ func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
 	if err != nil {
 		return controller.Result{}, err
 	} else if getProtocolState(device) != topo.ChannelState_CONNECTED {
-		// If the device is not available, fail the change
-		change.Status.State = changetypes.State_FAILED
-		change.Status.Reason = changetypes.Reason_ERROR
-		change.Status.Message = fmt.Sprintf("Device %s not connected %v", change.Change.DeviceID, getProtocolState(device))
-		log.Infof("Failing DeviceChange %v", change)
-		if err := r.changes.Update(change); err != nil {
-			return controller.Result{}, err
-		}
-		return controller.Result{}, nil
+		return controller.Result{}, errors.NewNotFound("device '%s' is not connected", change.Change.DeviceID)
 	}
 
 	// Handle the change for each phase

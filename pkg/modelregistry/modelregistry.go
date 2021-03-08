@@ -147,18 +147,22 @@ type ModelPlugin struct {
 }
 
 // NewModelRegistry creates a new model registry
-func NewModelRegistry(config Config, plugins ...*ModelPlugin) *ModelRegistry {
+func NewModelRegistry(config Config, plugins ...*ModelPlugin) (*ModelRegistry, error) {
 	resolver := pluginmodule.NewResolver(pluginmodule.ResolverConfig{Path: config.ModPath, Target: config.ModTarget})
+	cache, err := plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath}, resolver)
+	if err != nil {
+		return nil, err
+	}
 	registry := &ModelRegistry{
 		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: config.RegistryPath}),
-		cache:    plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath}, resolver),
+		cache:    cache,
 		plugins:  make(map[string]*ModelPlugin),
 	}
 	for _, plugin := range plugins {
 		modelName := utils.ToModelName(devicetype.Type(plugin.Info.Name), devicetype.Version(plugin.Info.Version))
 		registry.plugins[modelName] = plugin
 	}
-	return registry
+	return registry, nil
 }
 
 // ModelRegistry is a registry of config models
@@ -215,15 +219,6 @@ func (r *ModelRegistry) loadPlugins() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	err := r.cache.RLock(context.Background())
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		_ = r.cache.RUnlock(context.Background())
-	}()
-
 	modelInfos, err := r.registry.ListModels()
 	if err != nil {
 		return err
@@ -232,63 +227,81 @@ func (r *ModelRegistry) loadPlugins() error {
 	for _, modelInfo := range modelInfos {
 		modelName := utils.ToModelName(devicetype.Type(modelInfo.Name), devicetype.Version(modelInfo.Version))
 		if _, ok := r.plugins[modelName]; !ok {
-			plugin, err := r.cache.Load(modelInfo.Plugin.Name, modelInfo.Plugin.Version)
+			plugin, err := r.loadPlugin(modelInfo)
 			if err != nil {
 				return err
 			}
-
-			model := plugin.Model()
-			schema, err := model.Schema()
-			if err != nil {
-				return err
-			}
-
-			readOnlyPaths, readWritePaths := ExtractPaths(schema["Device"], yang.TSUnset, "", "")
-
-			/////////////////////////////////////////////////////////////////////
-			// Stratum - special case
-			// It has 139 Read Only paths in its YANG but as of Aug'19 only 1 is
-			// supported by the actual device - /interfaces/interface[name=*]/state
-			// Either the YANG should be adjusted or the device should implement
-			// the paths. As a workaround just add the working path here
-			// In addition Stratum does not fully support wildcards, and so calling this
-			// path will only retrieve the ifindex and name under this branch - other paths
-			// will have to be called explicitly by their interface name without wildcard
-			/////////////////////////////////////////////////////////////////////
-			if modelInfo.Name == "Stratum" && modelInfo.Version == "1.0.0" {
-				stratumIfRwPaths := make(ReadWritePathMap)
-				const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
-				stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
-				stratumIfRwPaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
-				stratumIfRwPaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
-				stratumIfRwPaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
-				stratumIfRwPaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
-				stratumIfRwPaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
-				stratumIfRwPaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
-				stratumIfRwPaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
-				stratumIfRwPaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
-				readWritePaths = stratumIfRwPaths
-
-				stratumIfPath := make(ReadOnlyPathMap)
-				const StratumIfPath = "/interfaces/interface[name=*]/state"
-				stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
-				readOnlyPaths = stratumIfPath
-				log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
-					"%d read only paths. %d read write paths", modelInfo.Name, modelInfo.Version,
-					len(readOnlyPaths), len(readWritePaths))
-			} else {
-				log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", modelInfo.Name, modelInfo.Version,
-					len(readOnlyPaths), len(readWritePaths))
-			}
-			r.plugins[modelName] = &ModelPlugin{
-				Info:           modelInfo,
-				Model:          model,
-				ReadOnlyPaths:  readOnlyPaths,
-				ReadWritePaths: readWritePaths,
-			}
+			r.plugins[modelName] = plugin
 		}
 	}
 	return nil
+}
+
+func (r *ModelRegistry) loadPlugin(modelInfo configmodel.ModelInfo) (*ModelPlugin, error) {
+	entry := r.cache.Entry(modelInfo.Plugin.Name, modelInfo.Plugin.Version)
+	err := entry.RLock(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = entry.RUnlock(context.Background())
+	}()
+
+	plugin, err := entry.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	model := plugin.Model()
+	schema, err := model.Schema()
+	if err != nil {
+		return nil, err
+	}
+
+	readOnlyPaths, readWritePaths := ExtractPaths(schema["Device"], yang.TSUnset, "", "")
+
+	/////////////////////////////////////////////////////////////////////
+	// Stratum - special case
+	// It has 139 Read Only paths in its YANG but as of Aug'19 only 1 is
+	// supported by the actual device - /interfaces/interface[name=*]/state
+	// Either the YANG should be adjusted or the device should implement
+	// the paths. As a workaround just add the working path here
+	// In addition Stratum does not fully support wildcards, and so calling this
+	// path will only retrieve the ifindex and name under this branch - other paths
+	// will have to be called explicitly by their interface name without wildcard
+	/////////////////////////////////////////////////////////////////////
+	if modelInfo.Name == "Stratum" && modelInfo.Version == "1.0.0" {
+		stratumIfRwPaths := make(ReadWritePathMap)
+		const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
+		stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
+		stratumIfRwPaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
+		stratumIfRwPaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
+		stratumIfRwPaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
+		stratumIfRwPaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
+		stratumIfRwPaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
+		stratumIfRwPaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
+		stratumIfRwPaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
+		stratumIfRwPaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
+		readWritePaths = stratumIfRwPaths
+
+		stratumIfPath := make(ReadOnlyPathMap)
+		const StratumIfPath = "/interfaces/interface[name=*]/state"
+		stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
+		readOnlyPaths = stratumIfPath
+		log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
+			"%d read only paths. %d read write paths", modelInfo.Name, modelInfo.Version,
+			len(readOnlyPaths), len(readWritePaths))
+	} else {
+		log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", modelInfo.Name, modelInfo.Version,
+			len(readOnlyPaths), len(readWritePaths))
+	}
+	return &ModelPlugin{
+		Info:           modelInfo,
+		Model:          model,
+		ReadOnlyPaths:  readOnlyPaths,
+		ReadWritePaths: readWritePaths,
+	}, nil
 }
 
 // Capabilities returns an aggregated set of modelData in gNMI capabilities format
