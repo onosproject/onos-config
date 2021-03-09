@@ -543,6 +543,8 @@ github.com/onosproject/onos-api/go v0.7.11 h1:P44mC9HbSVljPV+OR6rPZ6vFhJXL8WR6o3
 github.com/onosproject/onos-api/go v0.7.11/go.mod h1:xTlcjPQDGRUMiXtgWDGj9SA6+5pC9qY8B5A1ta9CoZc=
 github.com/onosproject/onos-config-model v0.4.1 h1:sbbc0XhUYvZv0lB9czElgiezSbjp0j/0/BWgMdyQ1xk=
 github.com/onosproject/onos-config-model v0.4.1/go.mod h1:IooXxvGJvwQHZsCP69IxNlaggv2IpeChYwWKOmdKfZo=
+github.com/onosproject/onos-config-model v0.4.2 h1:X9MRSc5zTcYxJ0WG0eIGYi2txBXAj1fk8t4Wl+BLXtk=
+github.com/onosproject/onos-config-model v0.4.2/go.mod h1:IooXxvGJvwQHZsCP69IxNlaggv2IpeChYwWKOmdKfZo=
 github.com/onosproject/onos-lib-go v0.7.5 h1:YsPTsVgxCh+GL2IvSkdkXy7HGFSJuOnubi9mPjnLHhk=
 github.com/onosproject/onos-lib-go v0.7.5/go.mod h1:mNFl7cjlVLLPXvFOnRXS/Lao+8p2XDREPViHdkElOPE=
 github.com/onosproject/onos-test v0.6.4 h1:ocJhMv5mZ5RsojkhBUadE68Q6uSgBZpyDDjnwOPmu6g=
