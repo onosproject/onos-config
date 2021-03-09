@@ -26,35 +26,17 @@ import (
 	"time"
 )
 
-type pluginAttributes struct {
-	pluginVersion string
-	pluginSource  string
-}
-
-type pluginsTestCase struct {
-	pluginName    string
-	pluginVersion string
-	pluginObject  string
-	yangName      string
-	attributes    pluginAttributes
-}
-
 type yangAttributes struct {
-	name string
-	file string
-	revision string
+	name         string
+	file         string
+	revision     string
 	organization string
 }
 
 type pluginMetadata struct {
-	name string
+	name    string
 	version string
-	yangs []yangAttributes
-}
-
-// makeKey : The plugin key is represented as name-version-sharedObjectName
-func makeKey(pluginName string, pluginVersion string, pluginObject string) string {
-	return pluginName + "-" + pluginVersion + "-" + pluginObject
+	yangs   []yangAttributes
 }
 
 func makeDescription(path string) string {
@@ -99,7 +81,6 @@ func parsePluginsCommandOutput(t *testing.T, output []string) []pluginMetadata {
 				}
 				newPlugin.yangs[yangIndex].organization = organization.String()
 			}
-			lineIndex += yangCount + 2
 			plugins = append(plugins, newPlugin)
 		}
 	}
@@ -163,27 +144,27 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 			version: "1.0.0",
 			yangs: []yangAttributes{
 				{
-					name: "openconfig-interfaces",
-					file: "openconfig-interfaces.yang",
-					revision: "2017-07-14",
+					name:         "openconfig-interfaces",
+					file:         "openconfig-interfaces.yang",
+					revision:     "2017-07-14",
 					organization: "OpenConfig working group",
 				},
 				{
-					name: "openconfig-openflow",
-					file: "openconfig-openflow.yang",
-					revision: "2017-06-01",
+					name:         "openconfig-openflow",
+					file:         "openconfig-openflow.yang",
+					revision:     "2017-06-01",
 					organization: "OpenConfig working group",
 				},
 				{
-					name: "openconfig-platform",
-					file: "openconfig-platform.yang",
-					revision: "2016-12-22",
+					name:         "openconfig-platform",
+					file:         "openconfig-platform.yang",
+					revision:     "2016-12-22",
 					organization: "OpenConfig working group",
 				},
 				{
-					name: "openconfig-system",
-					file: "openconfig-system.yang",
-					revision: "2017-07-06",
+					name:         "openconfig-system",
+					file:         "openconfig-system.yang",
+					revision:     "2017-07-06",
 					organization: "OpenConfig working group",
 				},
 			},
