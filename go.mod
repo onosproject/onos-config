@@ -21,7 +21,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20201130213019-492043aed0df
 	github.com/onosproject/helmit v0.6.10
 	github.com/onosproject/onos-api/go v0.7.11
-	github.com/onosproject/onos-config-model v0.4.0
+	github.com/onosproject/onos-config-model v0.4.1
 	github.com/onosproject/onos-lib-go v0.7.5
 	github.com/onosproject/onos-test v0.6.4
 	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
