@@ -15,33 +15,28 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/kubernetes"
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-test/pkg/onostest"
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 )
 
-type pluginAttributes struct {
-	pluginVersion string
-	pluginSource  string
+type yangAttributes struct {
+	name         string
+	file         string
+	revision     string
+	organization string
 }
 
-type pluginsTestCase struct {
-	pluginName    string
-	pluginVersion string
-	pluginObject  string
-	yangName      string
-	attributes    pluginAttributes
-}
-
-// makeKey : The plugin key is represented as name-version-sharedObjectName
-func makeKey(pluginName string, pluginVersion string, pluginObject string) string {
-	return pluginName + "-" + pluginVersion + "-" + pluginObject
+type pluginMetadata struct {
+	name    string
+	version string
+	yangs   []yangAttributes
 }
 
 func makeDescription(path string) string {
@@ -51,49 +46,74 @@ func makeDescription(path string) string {
 	return "..." + path[len(path)-22:]
 }
 
-func parsePluginsCommandOutput(t *testing.T, output []string) map[string]map[string]pluginAttributes {
+func parsePluginsCommandOutput(t *testing.T, output []string) []pluginMetadata {
 	t.Helper()
-	var pluginKey string
-	plugins := make(map[string]map[string]pluginAttributes)
-	for _, line := range output {
-		if strings.HasPrefix(line, "YANGS:") ||
-			len(line) == 0 {
-			//  Skip YANGS: header and separators
-			continue
-		}
+
+	plugins := make([]pluginMetadata, 0)
+
+	for lineIndex, line := range output {
 
 		if strings.Contains(line, ":") {
-			// This is a new plugin
-			pluginName := line[:strings.Index(line, ":")]
-			tokens := strings.Split(line, " ")
-			if len(tokens) < 4 {
-				//  This is not a plugin description; ignore it
-				continue
-			}
-			pluginVersion := tokens[1]
-			pluginObject := tokens[3]
-			pluginKey = makeKey(pluginName, pluginVersion, pluginObject)
-		} else {
-			// This is a YANG description
-			yangTokens := strings.Split(line, "	")
-			yangName := yangTokens[1]
-			yangVersion := yangTokens[2]
-			yangSource := yangTokens[3]
+			var newPlugin pluginMetadata
+			// extract data from the plugin header
+			newPlugin.name = strings.Fields(strings.Replace(line, ":", " ", -1))[0]
+			headerData := strings.Fields(line)
+			newPlugin.version = headerData[1]
 
-			if plugins[pluginKey] == nil {
-				plugins[pluginKey] = make(map[string]pluginAttributes)
+			yangCount, err := strconv.Atoi(headerData[2])
+			if err != nil {
+				return plugins
 			}
+			newPlugin.yangs = make([]yangAttributes, yangCount)
+			for yangIndex := 0; yangIndex < yangCount; yangIndex++ {
+				yangData := strings.Fields(output[lineIndex+2+yangIndex])
 
-			p := pluginAttributes{
-				pluginVersion: yangVersion,
-				pluginSource:  yangSource,
+				newPlugin.yangs[yangIndex].name = yangData[0]
+				newPlugin.yangs[yangIndex].file = yangData[1]
+				newPlugin.yangs[yangIndex].revision = yangData[2]
+
+				var organization strings.Builder
+				for i := 3; i < len(yangData); i++ {
+					if i != 3 {
+						organization.WriteString(" ")
+					}
+					organization.WriteString(yangData[i])
+				}
+				newPlugin.yangs[yangIndex].organization = organization.String()
 			}
-
-			plugins[pluginKey][yangName] = p
+			plugins = append(plugins, newPlugin)
 		}
 	}
 
 	return plugins
+}
+
+func findYang(t *testing.T, plugin pluginMetadata, name string) *yangAttributes {
+	var yangFound *yangAttributes = nil
+
+	for _, pluginYang := range plugin.yangs {
+		if name == pluginYang.name {
+			assert.Nil(t, yangFound, "Yang %s found more than once", name)
+			if yangFound == nil {
+				pin := pluginYang
+				yangFound = &pin
+			}
+		}
+	}
+	assert.NotNil(t, yangFound, "Yang %s not found", name)
+	return yangFound
+}
+
+func findPlugin(t *testing.T, plugins []pluginMetadata, name string, version string) *pluginMetadata {
+	var pluginFound *pluginMetadata = nil
+	for _, plugin := range plugins {
+		if plugin.name == name && plugin.version == version {
+			assert.Nil(t, pluginFound, "Plugin already found")
+			pin := plugin
+			pluginFound = &pin
+		}
+	}
+	return pluginFound
 }
 
 // TestPluginsGetCLI tests the config service's plugin CLI commands
@@ -116,60 +136,86 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	assert.NoError(t, err)
 	pod := pods[0]
 
-	output, code, err := pod.Containers()[0].Exec(fmt.Sprintf("onos config get plugins %s", device1.Name()))
+	output, code, err := pod.Containers()[0].Exec("onos modelregistry list")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
 	plugins := parsePluginsCommandOutput(t, output)
 
-	testCases := []pluginsTestCase{
+	testCases := []pluginMetadata{
 		{
-			pluginName:    "TestDevice",
-			pluginVersion: "1.0.0",
-			pluginObject:  "testdevice.so.1.0.0",
-			yangName:      "test1",
-			attributes: pluginAttributes{
-				pluginVersion: "2018-02-20",
-				pluginSource:  "Open Networking Foundation",
+			name:    "Stratum",
+			version: "1.0.0",
+			yangs: []yangAttributes{
+				{
+					name:         "openconfig-hercules-interfaces",
+					file:         "openconfig-hercules-interfaces.yang",
+					revision:     "2018-06-01",
+					organization: "OpenConfig working group",
+				},
+				{
+					name:         "openconfig-platform",
+					file:         "openconfig-platform.yang",
+					revision:     "2019-04-16",
+					organization: "OpenConfig working group",
+				},
+				{
+					name:         "openconfig-hercules-platform-port",
+					file:         "openconfig-hercules-platform-port.yang",
+					revision:     "2018-06-01",
+					organization: "OpenConfig working group",
+				},
 			},
 		},
 		{
-			pluginName:    "TestDevice",
-			pluginVersion: "2.0.0",
-			pluginObject:  "testdevice.so.2.0.0",
-			yangName:      "test1",
-			attributes: pluginAttributes{
-				pluginVersion: "2019-06-10",
-				pluginSource:  "Open Networking Foundation",
-			},
-		},
-		{
-			pluginName:    "Devicesim",
-			pluginVersion: "1.0.0",
-			pluginObject:  "devicesim.so.1.0.0",
-			yangName:      "openconfig-openflow",
-			attributes: pluginAttributes{
-				pluginVersion: "2017-06-01",
-				pluginSource:  "OpenConfig working group",
+			name:    "Devicesim",
+			version: "1.0.0",
+			yangs: []yangAttributes{
+				{
+					name:         "openconfig-interfaces",
+					file:         "openconfig-interfaces.yang",
+					revision:     "2017-07-14",
+					organization: "OpenConfig working group",
+				},
+				{
+					name:         "openconfig-openflow",
+					file:         "openconfig-openflow.yang",
+					revision:     "2017-06-01",
+					organization: "OpenConfig working group",
+				},
+				{
+					name:         "openconfig-platform",
+					file:         "openconfig-platform.yang",
+					revision:     "2016-12-22",
+					organization: "OpenConfig working group",
+				},
+				{
+					name:         "openconfig-system",
+					file:         "openconfig-system.yang",
+					revision:     "2017-07-06",
+					organization: "OpenConfig working group",
+				},
 			},
 		},
 	}
+	assert.NotNil(t, testCases)
 
 	// Run the test cases
 	for testCaseIndex := range testCases {
 		testCase := testCases[testCaseIndex]
-		description := makeDescription(testCase.yangName)
+		description := makeDescription(testCase.name)
 		t.Run(description,
 			func(t *testing.T) {
-				t.Parallel()
-				pluginName := makeKey(testCase.pluginName, testCase.pluginVersion, testCase.pluginObject)
-				expectedPluginVersion := testCase.attributes.pluginVersion
-				expectedPluginSource := testCase.attributes.pluginSource
-				assert.NotNil(t, plugins[pluginName])
-				pluginVersion := plugins[pluginName][testCase.yangName].pluginVersion
-				pluginSource := plugins[pluginName][testCase.yangName].pluginSource
-				assert.Equal(t, expectedPluginSource, pluginSource)
-				assert.Equal(t, expectedPluginVersion, pluginVersion)
+				plugin := *findPlugin(t, plugins, testCase.name, testCase.version)
+
+				for _, testCaseYang := range testCase.yangs {
+					pluginYang := findYang(t, plugin, testCaseYang.name)
+
+					assert.Equal(t, testCaseYang.organization, pluginYang.organization)
+					assert.Equal(t, testCaseYang.revision, pluginYang.revision)
+					assert.Equal(t, testCaseYang.file, pluginYang.file)
+				}
+
 			})
 	}
 }
