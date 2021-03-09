@@ -88,6 +88,21 @@ func parsePluginsCommandOutput(t *testing.T, output []string) []pluginMetadata {
 	return plugins
 }
 
+func findYang(t *testing.T, plugin pluginMetadata, name string) *yangAttributes {
+	var yangFound *yangAttributes = nil
+
+	for _, pluginYang := range plugin.yangs {
+		if name == pluginYang.name {
+			assert.Nil(t, yangFound, "Yang %s found more than once", name)
+			if yangFound == nil {
+				yangFound = &pluginYang
+			}
+		}
+	}
+	assert.NotNil(t, yangFound, "Yang %s not found", name)
+	return yangFound
+}
+
 // TestPluginsGetCLI tests the config service's plugin CLI commands
 func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	// Create a device simulator
@@ -184,17 +199,10 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 						assert.False(t, pluginFound, "Plugin already found")
 						pluginFound = true
 						for _, testCaseYang := range testCase.yangs {
-							yangFound := false
-							for _, pluginYang := range plugin.yangs {
-								if testCaseYang.name == pluginYang.name {
-									assert.False(t, yangFound, "Yang already found")
-									assert.Equal(t, testCaseYang.organization, pluginYang.organization)
-									assert.Equal(t, testCaseYang.revision, pluginYang.revision)
-									assert.Equal(t, testCaseYang.file, pluginYang.file)
-									yangFound = true
-								}
-							}
-							assert.True(t, yangFound, "Yang not found %s", testCaseYang.name)
+							pluginYang := findYang(t, plugin, testCase.name)
+							assert.Equal(t, testCaseYang.organization, pluginYang.organization)
+							assert.Equal(t, testCaseYang.revision, pluginYang.revision)
+							assert.Equal(t, testCaseYang.file, pluginYang.file)
 						}
 					}
 				}
