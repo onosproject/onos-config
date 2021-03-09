@@ -95,12 +95,25 @@ func findYang(t *testing.T, plugin pluginMetadata, name string) *yangAttributes 
 		if name == pluginYang.name {
 			assert.Nil(t, yangFound, "Yang %s found more than once", name)
 			if yangFound == nil {
-				yangFound = &pluginYang
+				pin := pluginYang
+				yangFound = &pin
 			}
 		}
 	}
 	assert.NotNil(t, yangFound, "Yang %s not found", name)
 	return yangFound
+}
+
+func findPlugin(t *testing.T, plugins []pluginMetadata, name string, version string) *pluginMetadata {
+	var pluginFound *pluginMetadata = nil
+	for _, plugin := range plugins {
+		if plugin.name == name && plugin.version == version {
+			assert.Nil(t, pluginFound, "Plugin already found")
+			pin := plugin
+			pluginFound = &pin
+		}
+	}
+	return pluginFound
 }
 
 // TestPluginsGetCLI tests the config service's plugin CLI commands
@@ -193,20 +206,16 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 		description := makeDescription(testCase.name)
 		t.Run(description,
 			func(t *testing.T) {
-				pluginFound := false
-				for _, plugin := range plugins {
-					if plugin.name == testCase.name && plugin.version == testCase.version {
-						assert.False(t, pluginFound, "Plugin already found")
-						pluginFound = true
-						for _, testCaseYang := range testCase.yangs {
-							pluginYang := findYang(t, plugin, testCase.name)
-							assert.Equal(t, testCaseYang.organization, pluginYang.organization)
-							assert.Equal(t, testCaseYang.revision, pluginYang.revision)
-							assert.Equal(t, testCaseYang.file, pluginYang.file)
-						}
-					}
+				plugin := *findPlugin(t, plugins, testCase.name, testCase.version)
+
+				for _, testCaseYang := range testCase.yangs {
+					pluginYang := findYang(t, plugin, testCaseYang.name)
+
+					assert.Equal(t, testCaseYang.organization, pluginYang.organization)
+					assert.Equal(t, testCaseYang.revision, pluginYang.revision)
+					assert.Equal(t, testCaseYang.file, pluginYang.file)
 				}
-				assert.True(t, pluginFound, "Plugin %s not found", testCase.name)
+
 			})
 	}
 }
