@@ -57,7 +57,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 
 	simulator := gnmi.CreateSimulatorWithName(t, offlineDeviceName)
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the device

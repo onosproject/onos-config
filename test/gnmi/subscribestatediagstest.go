@@ -49,7 +49,7 @@ func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
 	deviceID := device.ID(deviceName)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, deviceID, 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, deviceID, time.Minute)
 
 	// Make an opstate diags client
 	opstateClient, err := gnmi.NewOpStateDiagsClient()

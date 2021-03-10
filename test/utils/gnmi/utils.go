@@ -139,12 +139,6 @@ func NewDevice(simulator *helm.HelmRelease, deviceType string, version string) (
 			Plain:    true,
 			Insecure: true,
 		},
-		Protocols: []*topo.ProtocolState{{
-			Protocol:          topo.Protocol_GNMI,
-			ConnectivityState: topo.ConnectivityState_REACHABLE,
-			ChannelState:      topo.ChannelState_DISCONNECTED,
-			ServiceState:      topo.ServiceState_UNKNOWN_SERVICE_STATE,
-		}},
 	}, nil
 }
 
@@ -250,8 +244,7 @@ func WaitForDeviceAvailable(t *testing.T, deviceID device.ID, timeout time.Durat
 				return true
 			}
 		}
-		// TODO: Investigate why device events are not working properly
-		return true
+		return false
 	}, timeout)
 }
 

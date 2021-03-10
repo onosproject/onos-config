@@ -42,7 +42,7 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 	simulator := gnmi.CreateSimulator(t)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
 
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
@@ -88,7 +88,7 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 	simulator := gnmi.CreateSimulator(t)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
 
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
