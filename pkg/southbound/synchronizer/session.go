@@ -155,6 +155,8 @@ func (s *Session) synchronize() error {
 		if errors.IsNotFound(err) {
 			log.Warnf("Model Plugin not available for device", s.device.ID, s.device.Version)
 		} else {
+			s.mu.RUnlock()
+			log.Error(err)
 			return err
 		}
 	}
