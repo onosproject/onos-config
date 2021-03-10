@@ -164,7 +164,10 @@ func (s *Session) synchronize() error {
 	mStateGetMode := configmodel.GetStateOpState // default
 	if plugin != nil {
 		mReadOnlyPaths = plugin.ReadOnlyPaths
-		mStateGetMode = plugin.Model.GetStateMode()
+		pluginStateGetMode := plugin.Model.GetStateMode()
+		if pluginStateGetMode != configmodel.GetStateNone {
+			mStateGetMode = pluginStateGetMode
+		}
 	}
 	valueMap := make(devicechange.TypedValueMap)
 	s.operationalStateCacheLock.Lock()
