@@ -51,8 +51,8 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	devices[1] = device2.Name()
 
 	// Wait for config to connect to the devices
-	gnmi.WaitForDeviceAvailable(t, device.ID(device1.Name()), 10*time.Second)
-	gnmi.WaitForDeviceAvailable(t, device.ID(device2.Name()), 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, device.ID(device1.Name()), time.Minute)
+	gnmi.WaitForDeviceAvailable(t, device.ID(device2.Name()), time.Minute)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)

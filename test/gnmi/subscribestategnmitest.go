@@ -47,7 +47,7 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 	deviceID := device.ID(deviceName)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, deviceID, 10*time.Second)
+	gnmi.WaitForDeviceAvailable(t, deviceID, time.Minute)
 
 	// Make a GNMI client to use for subscribe
 	subC := client.BaseClient{}
