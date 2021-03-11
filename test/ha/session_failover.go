@@ -34,6 +34,8 @@ const (
 // TestSessionFailOver tests gnmi session failover is happening when the master node
 // is crashed
 func (s *TestSuite) TestSessionFailOver(t *testing.T) {
+	// See https://jira.opennetworking.org/browse/SDRAN-542 for info about why this test is skipped
+	t.Skip()
 	simulator := gnmi.CreateSimulator(t)
 	assert.NotNil(t, simulator)
 	var currentTerm int
