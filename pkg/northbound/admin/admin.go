@@ -66,6 +66,10 @@ func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRe
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
 		log.Infof("admin RollbackNetworkChange() called by '%s (%s)' with token %s", md.Get("name"),
 			md.Get("email"), md.Get("at_hash"))
+		// TODO replace the following with fine grained RBAC using OpenPolicyAgent Regos
+		if err := utils.TemporaryEvaluate(md); err != nil {
+			return nil, err
+		}
 	}
 	errRollback := manager.GetManager().RollbackTargetConfig(networkchange.ID(req.Name))
 	if errRollback != nil {
@@ -172,6 +176,10 @@ func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChange
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
 		log.Infof("admin CompactChanges() called by '%s (%s)' with token %s", md.Get("name"),
 			md.Get("email"), md.Get("at_hash"))
+		// TODO replace the following with fine grained RBAC using OpenPolicyAgent Regos
+		if err := utils.TemporaryEvaluate(md); err != nil {
+			return nil, err
+		}
 	}
 	snap := &networksnapshot.NetworkSnapshot{
 		Retention: snapshot.RetentionOptions{

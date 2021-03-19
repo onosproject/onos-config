@@ -45,6 +45,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
 		log.Infof("gNMI Set() called by '%s (%s)' with token %s",
 			md.Get("name"), md.Get("email"), md.Get("at_hash"))
+		// TODO replace the following with fine grained RBAC using OpenPolicyAgent Regos
+		if err := utils.TemporaryEvaluate(md); err != nil {
+			return nil, err
+		}
 	}
 	// There is only one set of extensions in Set request, regardless of number of
 	// updates
