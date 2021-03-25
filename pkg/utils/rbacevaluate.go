@@ -22,6 +22,8 @@ import (
 	"strings"
 )
 
+const semicolon = ";" // From grpcinterceptors.go in onos-lib-go
+
 // TemporaryEvaluate - simple evaluation of rules until OpenPolicyAgent is added
 // This is so that aether-config can be deployed to the cloud in 2021 Q1 with simple RBAC
 // It applies to Set (gnmi) and CompactChanges(admin) and RollbackNetworkChange(admin)
@@ -29,7 +31,7 @@ import (
 func TemporaryEvaluate(md metautils.NiceMD) error {
 	adminGroup := os.Getenv("ADMINGROUP")
 	var match bool
-	for _, g := range strings.Split(md.Get("groups"), ",") {
+	for _, g := range strings.Split(md.Get("groups"), semicolon) {
 		if strings.EqualFold(g, adminGroup) {
 			match = true
 			break

@@ -43,8 +43,8 @@ type mapTargetModels map[devicetype.ID]modelregistry.ReadWritePathMap
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
-		log.Infof("gNMI Set() called by '%s (%s)' with token %s",
-			md.Get("name"), md.Get("email"), md.Get("at_hash"))
+		log.Infof("gNMI Set() called by '%s (%s)'. Groups [%v]. Token %s",
+			md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
 		// TODO replace the following with fine grained RBAC using OpenPolicyAgent Regos
 		if err := utils.TemporaryEvaluate(md); err != nil {
 			return nil, err

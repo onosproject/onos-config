@@ -47,8 +47,8 @@ type result struct {
 func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	if stream.Context() != nil {
 		if md := metautils.ExtractIncoming(stream.Context()); md != nil && md.Get("name") != "" {
-			log.Infof("gNMI Subscribe() called by '%s (%s)' with token %s",
-				md.Get("name"), md.Get("email"), md.Get("at_hash"))
+			log.Infof("gNMI Subscribe() called by '%s (%s)'. Groups [%v]. Token %s",
+				md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
 		}
 	}
 	//updateChan := make(chan *gnmi.Update)
