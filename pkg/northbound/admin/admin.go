@@ -64,8 +64,8 @@ func (s Server) ListRegisteredModels(req *admin.ListModelsRequest, stream admin.
 // RollbackNetworkChange rolls back a named atomix-based network change.
 func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRequest) (*admin.RollbackResponse, error) {
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
-		log.Infof("admin RollbackNetworkChange() called by '%s (%s)' with token %s", md.Get("name"),
-			md.Get("email"), md.Get("at_hash"))
+		log.Infof("admin RollbackNetworkChange() called by '%s (%s)'. Groups [%v]. Token %s",
+			md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
 		// TODO replace the following with fine grained RBAC using OpenPolicyAgent Regos
 		if err := utils.TemporaryEvaluate(md); err != nil {
 			return nil, err
@@ -84,8 +84,8 @@ func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRe
 func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.ConfigAdminService_ListSnapshotsServer) error {
 	if stream.Context() != nil {
 		if md := metautils.ExtractIncoming(stream.Context()); md != nil && md.Get("name") != "" {
-			log.Infof("admin ListSnapshots() called by '%s (%s)' with token %s",
-				md.Get("name"), md.Get("email"), md.Get("at_hash"))
+			log.Infof("admin ListSnapshots() called by '%s (%s)'. Groups [%v]. Token %s",
+				md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
 		}
 	}
 	log.Infof("ListSnapshots called with %s. Subscribe %v", r.ID, r.Subscribe)
@@ -174,8 +174,8 @@ func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.Config
 // CompactChanges takes a snapshot of all devices
 func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChangesRequest) (*admin.CompactChangesResponse, error) {
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
-		log.Infof("admin CompactChanges() called by '%s (%s)' with token %s", md.Get("name"),
-			md.Get("email"), md.Get("at_hash"))
+		log.Infof("admin CompactChanges() called by '%s (%s)'. Groups [%v]. Token %s",
+			md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
 		// TODO replace the following with fine grained RBAC using OpenPolicyAgent Regos
 		if err := utils.TemporaryEvaluate(md); err != nil {
 			return nil, err

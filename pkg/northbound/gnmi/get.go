@@ -36,8 +36,8 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	notifications := make([]*gnmi.Notification, 0)
 
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
-		log.Infof("gNMI Get() called by '%s (%s)' with token %s", md.Get("name"),
-			md.Get("email"), md.Get("at_hash"))
+		log.Infof("gNMI Get() called by '%s (%s)'. Groups [%v]. Token %s",
+			md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
 	}
 	if req == nil || (req.GetEncoding() != gnmi.Encoding_PROTO && req.GetEncoding() != gnmi.Encoding_JSON_IETF && req.GetEncoding() != gnmi.Encoding_JSON) {
 		return nil, fmt.Errorf("invalid encoding format in Get request. Only JSON_IETF and PROTO accepted. %v", req.Encoding)
