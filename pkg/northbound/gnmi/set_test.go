@@ -194,6 +194,41 @@ func Test_doSingleSetList(t *testing.T) {
 	assert.Equal(t, string(extension.Msg), "TestChange")
 }
 
+// Test_doSingleSet shows how a value of 1 list can be set on a target - using prefix
+func Test_doSingleSetListIndexInvalid(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
+
+	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
+	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/list2a[name=aa/b]/name"))
+	typedValue := gnmi.TypedValue_StringVal{StringVal: "aa/c"}
+	value := gnmi.TypedValue{Value: &typedValue}
+	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
+	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
+
+	ext100Name := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  GnmiExtensionNetwkChangeID,
+			Msg: []byte("TestChange"),
+		},
+	}
+
+	var setRequest = gnmi.SetRequest{
+		Prefix:  prefix,
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+		Extension: []*gnmi_ext.Extension{{
+			Ext: &ext100Name,
+		}},
+	}
+
+	_, setError := server.Set(context.Background(), &setRequest)
+	assert.Error(t, setError, "expected error from gnmi Set because of invalid index")
+}
+
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
 func Test_do2SetsOnSameTarget(t *testing.T) {
 	server, mocks, mgr := setUpForGetSetTests(t)

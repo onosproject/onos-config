@@ -53,6 +53,8 @@ type ReadOnlyAttrib struct {
 	Description string
 	Units       string
 	Enum        map[int]string
+	IsAKey      bool
+	AttrName    string
 }
 
 // ReadOnlySubPathMap abstracts the read only subpath
@@ -340,7 +342,13 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 		if dirEntry.IsLeaf() || dirEntry.IsLeafList() {
 			// No need to recurse
 			t, typeOpts, err := toValueType(dirEntry.Type, dirEntry.IsLeafList())
-			tObj := ReadOnlyAttrib{ValueType: t, TypeOpts: typeOpts, Description: dirEntry.Description, Units: dirEntry.Units}
+			tObj := ReadOnlyAttrib{
+				ValueType:   t,
+				TypeOpts:    typeOpts,
+				Description: dirEntry.Description,
+				Units:       dirEntry.Units,
+				AttrName:    dirEntry.Name,
+			}
 			if err != nil {
 				log.Errorf(err.Error())
 			}
@@ -349,6 +357,18 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 				enum = handleIdentity(dirEntry.Type)
 			}
 			tObj.Enum = enum
+			// Check to see if this attribute is a key in a list
+			if dirEntry.Parent.IsList() {
+				keyNames := strings.Split(dirEntry.Parent.Key, ",")
+				itemPathParts := strings.Split(itemPath, "/")
+				attrName := itemPathParts[len(itemPathParts)-1]
+				for _, k := range keyNames {
+					if strings.EqualFold(attrName, k) {
+						tObj.IsAKey = true
+						break
+					}
+				}
+			}
 			if parentState == yang.TSFalse {
 				leafMap, ok := readOnlyPaths[parentPath]
 				if !ok {
@@ -370,17 +390,11 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 					lengths = append(lengths, fmt.Sprintf("%v", l))
 				}
 				rwElem := ReadWritePathElem{
-					ReadOnlyAttrib: ReadOnlyAttrib{
-						ValueType:   t,
-						TypeOpts:    typeOpts,
-						Description: dirEntry.Description,
-						Units:       dirEntry.Units,
-						Enum:        enum,
-					},
-					Mandatory: dirEntry.Mandatory == yang.TSTrue,
-					Default:   dirEntry.Default,
-					Range:     ranges,
-					Length:    lengths,
+					ReadOnlyAttrib: tObj,
+					Mandatory:      dirEntry.Mandatory == yang.TSTrue,
+					Default:        dirEntry.Default,
+					Range:          ranges,
+					Length:         lengths,
 				}
 				readWritePaths[itemPath] = rwElem
 			}
