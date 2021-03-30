@@ -63,10 +63,14 @@ func Test_SchemaTestDevice1(t *testing.T) {
 
 	l2bIdxVt, l2bIdxVtOk := cont1b["/list2b[index=*]/index"]
 	assert.Assert(t, l2bIdxVtOk, "expected /cont1b-state to have subpath /list2b[index[*]/index")
+	assert.Assert(t, l2bIdxVt.IsAKey)
+	assert.Equal(t, l2bIdxVt.AttrName, "index")
 	assert.Equal(t, l2bIdxVt.ValueType, devicechange.ValueType_UINT)
 
 	l2bLeaf3cVt, l2bLeaf3cVtOk := cont1b["/list2b[index=*]/leaf3c"]
 	assert.Assert(t, l2bLeaf3cVtOk, "expected /cont1b-state to have subpath /list2b[index[*]/leaf3c")
+	assert.Equal(t, l2bLeaf3cVt.AttrName, "leaf3c")
+	assert.Assert(t, !l2bLeaf3cVt.IsAKey)
 	assert.Equal(t, l2bLeaf3cVt.ValueType, devicechange.ValueType_STRING)
 
 	////////////////////////////////////////////////////

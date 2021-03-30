@@ -294,6 +294,9 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 		if err != nil {
 			return nil, err
 		}
+		if err = checkKeyValue(path, rwPathElem, update); err != nil {
+			return nil, err
+		}
 		updates[path] = update
 	}
 
@@ -401,4 +404,18 @@ func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exac
 
 	return nil, fmt.Errorf("unable to find RW model path %s ( without index %s). %d paths inspected",
 		path, searchpathNoIndices, len(rwPaths))
+}
+
+// Check that if this is a Key attribute, that the value is the same as its parent's key
+func checkKeyValue(path string, rwPath *modelregistry.ReadWritePathElem, val *devicechange.TypedValue) error {
+	if !rwPath.IsAKey {
+		return nil
+	}
+	indexNames, indexValues := modelregistry.ExtractIndexNames(path)
+	for i, idxName := range indexNames {
+		if rwPath.AttrName == idxName && indexValues[i] == val.ValueToString() {
+			return nil
+		}
+	}
+	return fmt.Errorf("index matching %s=%s not found in %s", rwPath.AttrName, val.ValueToString(), path)
 }
