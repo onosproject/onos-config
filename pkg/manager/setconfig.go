@@ -16,15 +16,16 @@ package manager
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"sort"
-
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
+	"sort"
+	"strings"
 )
 
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
@@ -35,10 +36,6 @@ const SetConfigAlreadyApplied = "Already applied:"
 func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 	deviceType devicetype.Type, updates devicechange.TypedValueMap, deletes []string, lastWrite networkchange.Revision) error {
 
-	chg, err := computeDeviceChange(deviceName, version, deviceType, updates, deletes, "Generated for validation")
-	if err != nil {
-		return err
-	}
 	modelName := utils.ToModelName(deviceType, version)
 	deviceModelYgotPlugin, err := m.ModelRegistry.GetPlugin(modelName)
 	if err != nil {
@@ -57,15 +54,35 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 		return err
 	}
 
-	pathValues := make(map[string]*devicechange.TypedValue)
+	pathValues := make(devicechange.TypedValueMap)
+	// Feed the deviceChange store contents in to map
 	for _, configValue := range configValues {
 		pathValues[configValue.Path] = configValue.Value
 	}
-	for _, changeValue := range chg.Values {
-		if changeValue.Removed {
-			delete(pathValues, changeValue.Path)
-		} else {
-			pathValues[changeValue.Path] = changeValue.Value
+	// then overlay with updates
+	for changePath, changeValue := range updates {
+		pathValues[changePath] = changeValue
+	}
+	// finally remove any deletes and children of the deleted
+	for _, deletePath := range deletes {
+		deletePathAnonIdx := modelregistry.AnonymizePathIndices(deletePath)
+		if strings.HasSuffix(deletePathAnonIdx, "]") {
+			deletePath = modelregistry.AddMissingIndexName(deletePath)[0]
+			deletePathAnonIdx = modelregistry.AnonymizePathIndices(deletePath)
+		}
+		modelEntry, ok := deviceModelYgotPlugin.ReadWritePaths[deletePathAnonIdx]
+		if !ok {
+			return fmt.Errorf("unexpected path in delete %s. Cannot in model as %s", deletePath, deletePathAnonIdx)
+		}
+		if modelEntry.IsAKey { // Then delete all children
+			deletePathRoot := deletePath[:strings.LastIndex(deletePath, "/")]
+			for path := range pathValues {
+				if strings.HasPrefix(path, deletePathRoot) {
+					delete(pathValues, path)
+				}
+			}
+		} else { // just remove itself
+			delete(pathValues, deletePath)
 		}
 	}
 

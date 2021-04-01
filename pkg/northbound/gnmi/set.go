@@ -290,14 +290,14 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 		if err != nil {
 			return nil, err
 		}
-		update, err := values.GnmiTypedValueToNativeType(u.Val, rwPathElem)
+		updateValue, err := values.GnmiTypedValueToNativeType(u.Val, rwPathElem)
 		if err != nil {
 			return nil, err
 		}
-		if err = checkKeyValue(path, rwPathElem, update); err != nil {
+		if err = checkKeyValue(path, rwPathElem, updateValue); err != nil {
 			return nil, err
 		}
-		updates[path] = update
+		updates[path] = updateValue
 	}
 
 	return updates, nil
@@ -417,5 +417,5 @@ func checkKeyValue(path string, rwPath *modelregistry.ReadWritePathElem, val *de
 			return nil
 		}
 	}
-	return fmt.Errorf("index matching %s=%s not found in %s", rwPath.AttrName, val.ValueToString(), path)
+	return fmt.Errorf("index attribute %s=%s does not match %s", rwPath.AttrName, val.ValueToString(), path)
 }

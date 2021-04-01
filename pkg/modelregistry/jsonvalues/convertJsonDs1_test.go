@@ -153,7 +153,7 @@ func Test_correctJsonPathRwValuesSystemLogging(t *testing.T) {
 			"/system/logging/console/selectors/selector[facility=3][severity=4]/config/facility":
 			assert.Equal(t, pathValue.GetValue().GetType(), devicechange.ValueType_STRING, pathValue.Path)
 			strValue := (*devicechange.TypedString)(pathValue.Value)
-			assert.Equal(t, "MAIL", strValue.String(), "expected IdentityRef to be translated from '3' to LOCAL4")
+			assert.Equal(t, "KERNEL", strValue.String(), "expected IdentityRef to be translated from '3' to KERNEL")
 		default:
 			t.Fatal("Unexpected path", pathValue.Path)
 		}

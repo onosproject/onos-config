@@ -359,7 +359,7 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 			tObj.Enum = enum
 			// Check to see if this attribute is a key in a list
 			if dirEntry.Parent.IsList() {
-				keyNames := strings.Split(dirEntry.Parent.Key, ",")
+				keyNames := strings.Split(dirEntry.Parent.Key, " ")
 				itemPathParts := strings.Split(itemPath, "/")
 				attrName := itemPathParts[len(itemPathParts)-1]
 				for _, k := range keyNames {
@@ -490,7 +490,33 @@ func RemovePathIndices(path string) string {
 	return path
 }
 
-// ExtractIndexNames - get an ordered array of index names
+// AnonymizePathIndices anonymizes index value in a path (replaces it with *)
+func AnonymizePathIndices(path string) string {
+	indices := rOnIndex.FindAllStringSubmatch(path, -1)
+	for _, i := range indices {
+		idxParts := strings.Split(i[0], "=")
+		idxParts[len(idxParts)-1] = "*]"
+		path = strings.Replace(path, i[0], strings.Join(idxParts, "="), 1)
+	}
+	return path
+}
+
+// AddMissingIndexName - a delete might just include the index at the end and not the index attribute
+// e.g. /cont1a/list5[key1=abc][key2=123] - this means that we want to delete it and all of its children
+// To match the model path though this has to include the key index name e.g.
+// /cont1a/list5[key1=abc][key2=123]/key1 OR /cont1a/list5[key1=abc][key2=123]/key2
+func AddMissingIndexName(path string) []string {
+	extendedPaths := make([]string, 0)
+	if strings.HasSuffix(path, "]") {
+		indexNames, _ := ExtractIndexNames(path)
+		for _, idxName := range indexNames {
+			extendedPaths = append(extendedPaths, fmt.Sprintf("%s/%s", path, idxName))
+		}
+	}
+	return extendedPaths
+}
+
+// ExtractIndexNames - get an ordered array of index names and index values
 func ExtractIndexNames(path string) ([]string, []string) {
 	indexNames := make([]string, 0)
 	indexValues := make([]string, 0)

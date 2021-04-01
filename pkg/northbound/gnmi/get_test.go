@@ -95,7 +95,19 @@ func Test_getNoPathElemsJSON(t *testing.T) {
     "cont2a": {
       "leaf2a": 13,
       "leaf2b": "1.4567"
-    }
+    },
+    "list2a": [
+      {
+        "name": "first",
+        "tx-power": 19
+      }
+    ],
+    "list4": [
+      {
+        "id": "first",
+        "leaf4b": "initial value"
+      }
+    ]
   }
 }`)
 
@@ -125,11 +137,25 @@ func Test_getNoPathElemsProto(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
-	assert.Equal(t, len(result.Notification[0].Update), 2)
-	assert.Equal(t, utils.StrPathElem(result.Notification[0].Update[0].Path.Elem), "/cont1a/cont2a/leaf2a")
-	assert.Equal(t, utils.StrVal(result.Notification[0].Update[0].Val), "13")
-	assert.Equal(t, utils.StrPathElem(result.Notification[0].Update[1].Path.Elem), "/cont1a/cont2a/leaf2b")
-	assert.Equal(t, utils.StrVal(result.Notification[0].Update[1].Val), "1.4567")
+	assert.Equal(t, len(result.Notification[0].Update), 6)
+	for _, upd := range result.Notification[0].Update {
+		switch utils.StrPathElem(upd.GetPath().GetElem()) {
+		case "/cont1a/cont2a/leaf2a":
+			assert.Equal(t, utils.StrVal(upd.Val), "13")
+		case "/cont1a/cont2a/leaf2b":
+			assert.Equal(t, utils.StrVal(upd.Val), "1.4567")
+		case "/cont1a/list2a[name=first]/name":
+			assert.Equal(t, utils.StrVal(upd.Val), "first")
+		case "/cont1a/list2a[name=first]/tx-power":
+			assert.Equal(t, utils.StrVal(upd.Val), "19")
+		case "/cont1a/list4[id=first]/id":
+			assert.Equal(t, utils.StrVal(upd.Val), "first")
+		case "/cont1a/list4[id=first]/leaf4b":
+			assert.Equal(t, utils.StrVal(upd.Val), "initial value")
+		default:
+			t.Errorf("unexpected elem %v", upd.GetPath().GetElem())
+		}
+	}
 }
 
 // Test_getAllDevices is where a wildcard is used for target - path is ignored

@@ -663,6 +663,20 @@ func Test_RemovePathIndices(t *testing.T) {
 
 }
 
+func Test_AnonymizePathIndices(t *testing.T) {
+	assert.Equal(t, "/cont1b-state",
+		AnonymizePathIndices("/cont1b-state"))
+
+	assert.Equal(t, "/cont1b-state/list2b[index=*]/index",
+		AnonymizePathIndices("/cont1b-state/list2b[index=test1]/index"))
+
+	assert.Equal(t, "/cont1b-state/list2b[index=*][name=*]/index",
+		AnonymizePathIndices("/cont1b-state/list2b[index=test1][name=test2]/index"))
+
+	assert.Equal(t, "/cont1b-state/list2b[index=*]/index/t3[name=*]",
+		AnonymizePathIndices("/cont1b-state/list2b[index=test1]/index/t3[name=5]"))
+}
+
 func Test_RemovePathIndices2(t *testing.T) {
 	const jsonPath = "/p/q/r[10]/s/t[20]/u/v[30]/w"
 	const jsonPathRemovedIdx = "/p/q/r/s/t/u/v/w"

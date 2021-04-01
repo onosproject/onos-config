@@ -31,14 +31,17 @@ func Test_SchemaTestDevice1(t *testing.T) {
 	/// Read only paths
 	////////////////////////////////////////////////////
 	readOnlyPathsKeys := Paths(readOnlyPathsTestDevice1)
-	assert.Equal(t, len(readOnlyPathsKeys), 3)
+	assert.Equal(t, len(readOnlyPathsKeys), 6)
 	// Can be in any order
 	for _, p := range readOnlyPathsKeys {
 		switch p {
 		case
 			"/cont1b-state",
 			"/cont1a/cont2a/leaf2c",
-			"/cont1a/list2a[name=*]":
+			"/cont1a/list2a[name=*]",
+			"/cont1a/list4[id=*]",
+			"/cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]",
+			"/cont1a/list5[key1=*][key2=*]":
 		default:
 			t.Fatal("Unexpected readOnlyPath", p)
 		}
@@ -77,7 +80,7 @@ func Test_SchemaTestDevice1(t *testing.T) {
 	/// Read write paths
 	////////////////////////////////////////////////////
 	readWritePathsKeys := PathsRW(readWritePathsTestDevice1)
-	assert.Equal(t, len(readWritePathsKeys), 10)
+	assert.Equal(t, len(readWritePathsKeys), 18)
 
 	// Can be in any order
 	for _, p := range readWritePathsKeys {
@@ -92,6 +95,14 @@ func Test_SchemaTestDevice1(t *testing.T) {
 			"/cont1a/cont2a/leaf2e",
 			"/cont1a/cont2a/leaf2f",
 			"/cont1a/cont2a/leaf2g",
+			"/cont1a/list4[id=*]/id",
+			"/cont1a/list4[id=*]/leaf4b",
+			"/cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey1",
+			"/cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey2",
+			"/cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/displayname",
+			"/cont1a/list5[key1=*][key2=*]/key1",
+			"/cont1a/list5[key1=*][key2=*]/key2",
+			"/cont1a/list5[key1=*][key2=*]/leaf5a",
 			"/leafAtTopLevel":
 
 		default:
@@ -152,4 +163,45 @@ func Test_SchemaTestDevice1(t *testing.T) {
 	leafTopLevel, leafTopLevelOk := readWritePathsTestDevice1["/leafAtTopLevel"]
 	assert.Assert(t, leafTopLevelOk, "expected to get /leafAtTopLevel")
 	assert.Equal(t, leafTopLevel.ValueType, devicechange.ValueType_STRING, "expected /leafAtTopLevel to be STRING")
+
+	list4ID, list4IDOk := readWritePathsTestDevice1["/cont1a/list4[id=*]/id"]
+	assert.Assert(t, list4IDOk, "expected to get /cont1a/list4[id=*]/id")
+	assert.Assert(t, list4ID.IsAKey)
+	assert.Equal(t, list4ID.ValueType, devicechange.ValueType_STRING, "expected //cont1a/list4[id=*]/id to be STRING")
+
+	list4Leaf4b, list4Leaf4bOk := readWritePathsTestDevice1["/cont1a/list4[id=*]/leaf4b"]
+	assert.Assert(t, list4Leaf4bOk, "expected to get /cont1a/list4[id=*]/leaf4b")
+	assert.Assert(t, !list4Leaf4b.IsAKey)
+	assert.Equal(t, list4Leaf4b.ValueType, devicechange.ValueType_STRING, "expected //cont1a/list4[id=*]/leaf4b to be STRING")
+
+	list4aFkey1, list4aFkey1Ok := readWritePathsTestDevice1["/cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey1"]
+	assert.Assert(t, list4aFkey1Ok, "expected to get /cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey1")
+	assert.Assert(t, list4aFkey1.IsAKey)
+	assert.Equal(t, list4aFkey1.ValueType, devicechange.ValueType_STRING, "expected //cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey1 to be STRING")
+
+	list4aFkey2, list4aFkey2Ok := readWritePathsTestDevice1["/cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey2"]
+	assert.Assert(t, list4aFkey2Ok, "expected to get /cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey2")
+	assert.Assert(t, list4aFkey2.IsAKey)
+	assert.Equal(t, list4aFkey2.ValueType, devicechange.ValueType_STRING, "expected //cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey2 to be STRING")
+
+	list4aDispName, list4aDispNameOk := readWritePathsTestDevice1["/cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/displayname"]
+	assert.Assert(t, list4aDispNameOk, "expected to get /cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey1")
+	assert.Assert(t, !list4aDispName.IsAKey)
+	assert.Equal(t, list4aDispName.ValueType, devicechange.ValueType_STRING, "expected //cont1a/list4[id=*]/list4a[fkey1=*][fkey2=*]/fkey1 to be STRING")
+
+	list5Key1, list5Key1Ok := readWritePathsTestDevice1["/cont1a/list5[key1=*][key2=*]/key1"]
+	assert.Assert(t, list5Key1Ok, "expected to get /cont1a/list5[key1=*][key2=*]/key1")
+	assert.Assert(t, list5Key1.IsAKey)
+	assert.Equal(t, list5Key1.ValueType, devicechange.ValueType_STRING, "expected //cont1a/list5[key1=*]/key1 to be STRING")
+
+	list5Key2, list5Key2Ok := readWritePathsTestDevice1["/cont1a/list5[key1=*][key2=*]/key2"]
+	assert.Assert(t, list5Key2Ok, "expected to get /cont1a/list5[key1=*][key2=*]/key2")
+	assert.Assert(t, list5Key2.IsAKey)
+	assert.Equal(t, list5Key2.ValueType, devicechange.ValueType_UINT, "expected //cont1a/list5[key1=*]/key1 to be UINT")
+
+	list5Leaf5a, list5Leaf5aOk := readWritePathsTestDevice1["/cont1a/list5[key1=*][key2=*]/leaf5a"]
+	assert.Assert(t, list5Leaf5aOk, "expected to get /cont1a/list5[key1=*][key2=*]/leaf5a")
+	assert.Assert(t, !list5Leaf5a.IsAKey)
+	assert.Equal(t, list5Leaf5a.ValueType, devicechange.ValueType_STRING, "expected //cont1a/list5[key1=*][key2=*]/leaf5a to be STRING")
+
 }
