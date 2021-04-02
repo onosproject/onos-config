@@ -153,11 +153,31 @@ func setUpListMock(mocks *AllMocks) {
 func setUpChangesMock(mocks *AllMocks) {
 	configValue01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueUint(13, 8), false)
 	configValue02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2b", devicechange.NewTypedValueDecimal(14567, 4), false)
+	configValue03, _ := devicechange.NewChangeValue("/cont1a/list2a[name=first]/name", devicechange.NewTypedValueString("first"), false)
+	configValue04, _ := devicechange.NewChangeValue("/cont1a/list2a[name=first]/tx-power", devicechange.NewTypedValueUint(19, 16), false)
+	configValue05, _ := devicechange.NewChangeValue("/cont1a/list4[id=first]/id", devicechange.NewTypedValueString("first"), false)
+	configValue06, _ := devicechange.NewChangeValue("/cont1a/list4[id=first]/leaf4b", devicechange.NewTypedValueString("initial value"), false)
+	configValue07, _ := devicechange.NewChangeValue("/cont1a/list5[key1=abc][key2=8]/key1", devicechange.NewTypedValueString("abc"), false)
+	configValue08, _ := devicechange.NewChangeValue("/cont1a/list5[key1=abc][key2=8]/key2", devicechange.NewTypedValueUint(8, 16), false)
+	configValue09, _ := devicechange.NewChangeValue("/cont1a/list5[key1=abc][key2=8]/leaf5a", devicechange.NewTypedValueString("Leaf 5a"), false)
+	configValue10, _ := devicechange.NewChangeValue("/cont1a/list4[id=first]/list4a[fkey1=abc][fkey2=8]/fkey1", devicechange.NewTypedValueString("abc"), false)
+	configValue11, _ := devicechange.NewChangeValue("/cont1a/list4[id=first]/list4a[fkey1=abc][fkey2=8]/fkey2", devicechange.NewTypedValueUint(8, 16), false)
+	configValue12, _ := devicechange.NewChangeValue("/cont1a/list4[id=first]/list4a[fkey1=abc][fkey2=8]/displayname", devicechange.NewTypedValueString("this is a list"), false)
 
 	change1 := devicechange.Change{
 		Values: []*devicechange.ChangeValue{
 			configValue01,
 			configValue02,
+			configValue03,
+			configValue04,
+			configValue05,
+			configValue06,
+			configValue07,
+			configValue08,
+			configValue09,
+			configValue10,
+			configValue11,
+			configValue12,
 		},
 		DeviceID:      devicetype.ID("Device1"),
 		DeviceVersion: "1.0.0",
@@ -173,14 +193,18 @@ func setUpChangesMock(mocks *AllMocks) {
 		},
 	}
 	mocks.MockStores.DeviceStateStore.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]*devicechange.PathValue{
-		{
-			Path:  configValue01.Path,
-			Value: configValue01.Value,
-		},
-		{
-			Path:  configValue02.Path,
-			Value: configValue02.Value,
-		},
+		{Path: configValue01.Path, Value: configValue01.Value},
+		{Path: configValue02.Path, Value: configValue02.Value},
+		{Path: configValue03.Path, Value: configValue03.Value},
+		{Path: configValue04.Path, Value: configValue04.Value},
+		{Path: configValue05.Path, Value: configValue05.Value},
+		{Path: configValue06.Path, Value: configValue06.Value},
+		{Path: configValue07.Path, Value: configValue07.Value},
+		{Path: configValue08.Path, Value: configValue08.Value},
+		{Path: configValue09.Path, Value: configValue09.Value},
+		{Path: configValue10.Path, Value: configValue10.Value},
+		{Path: configValue11.Path, Value: configValue11.Value},
+		{Path: configValue12.Path, Value: configValue12.Value},
 	}, nil).AnyTimes()
 	mocks.MockStores.DeviceChangesStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(device devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {

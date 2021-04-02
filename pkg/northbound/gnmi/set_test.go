@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/status"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -135,63 +136,58 @@ func Test_doSingleSet(t *testing.T) {
 	assert.Equal(t, string(extensionChgID.Msg), "TestChange")
 }
 
-// Test_doSingleSet shows how a value of 1 list can be set on a target - using prefix
+// Test_doSingleSet shows list within a list with leafref keys and double key
 func Test_doSingleSetList(t *testing.T) {
 	server, mocks, _ := setUpForGetSetTests(t)
 	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
-	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/list2a[name=aaa/bbb]/tx-power"))
-	typedValue := gnmi.TypedValue_UintVal{UintVal: 16}
-	value := gnmi.TypedValue{Value: &typedValue}
 	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
-	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
-	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
 
-	ext100Name := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  GnmiExtensionNetwkChangeID,
-			Msg: []byte("TestChange"),
-		},
-	}
+	list5K1Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list5[key1=5][key2=2]/key1"))
+	// Should be able to use a number as string index.
+	list5K1Value := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "5"}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list5K1Path.Elem}, Val: &list5K1Value})
+
+	// Can use a numeric key in an index. When this is done we have to explicitly specify the key
+	// otherwise it will be assumed as string
+	list5K2Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list5[key1=5][key2=2]/key2"))
+	list5K2Value := gnmi.TypedValue{Value: &gnmi.TypedValue_UintVal{UintVal: 2}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list5K2Path.Elem}, Val: &list5K2Value})
+	list4list4aKey1Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=first]/list4a[fkey1=5][fkey2=2]/fkey1"))
+	list4list4aKey1Value := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "5"}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list4list4aKey1Path.Elem}, Val: &list4list4aKey1Value})
+	list4list4aKey2Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=first]/list4a[fkey1=5][fkey2=2]/fkey2"))
+	list4list4aKey2Value := gnmi.TypedValue{Value: &gnmi.TypedValue_UintVal{UintVal: 2}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list4list4aKey2Path.Elem}, Val: &list4list4aKey2Value})
+	list4list4aDispnamePath, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=first]/list4a[fkey1=5][fkey2=2]/displayname"))
+	list4list4aDispnameValue := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "no longer than 20"}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list4list4aDispnamePath.Elem}, Val: &list4list4aDispnameValue})
 
 	var setRequest = gnmi.SetRequest{
 		Prefix:  prefix,
 		Delete:  deletePaths,
 		Replace: replacedPaths,
 		Update:  updatedPaths,
-		Extension: []*gnmi_ext.Extension{{
-			Ext: &ext100Name,
-		}},
 	}
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
-
-	assert.NoError(t, setError, "Unexpected error from gnmi Set")
-
-	// Check that Response is correct
-	assert.NotNil(t, setResponse, "Expected setResponse to have a value")
-
-	assert.Equal(t, len(setResponse.Response), 1)
-
-	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_UPDATE.String())
-
-	path := setResponse.Response[0].Path
-
-	assert.Equal(t, path.Target, "Device1")
-	assert.Equal(t, len(path.Elem), 3, "Expected 3 path elements")
-
-	assert.Equal(t, path.Elem[0].Name, "cont1a")
-	assert.Equal(t, path.Elem[1].Name, "list2a")
-	assert.Equal(t, path.Elem[2].Name, "tx-power")
-
-	// Check that an the network change ID is given in extension 100 and that the device is currently disconnected
-	assert.Equal(t, len(setResponse.Extension), 1)
-
-	extension := setResponse.Extension[0].GetRegisteredExt()
-	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
-	assert.Equal(t, string(extension.Msg), "TestChange")
+	assert.NoError(t, setError)
+	assert.Equal(t, 5, len(setResponse.Response))
+	for _, resp := range setResponse.Response {
+		switch path := strings.ReplaceAll(resp.Path.String(), "  ", " "); path {
+		case
+			`elem:{name:"cont1a"} elem:{name:"list5" key:{key:"key1" value:"5"} key:{key:"key2" value:"2"}} elem:{name:"key1"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list5" key:{key:"key1" value:"5"} key:{key:"key2" value:"2"}} elem:{name:"key2"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"5"} key:{key:"fkey2" value:"2"}} elem:{name:"displayname"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"5"} key:{key:"fkey2" value:"2"}} elem:{name:"fkey1"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"5"} key:{key:"fkey2" value:"2"}} elem:{name:"fkey2"} target:"Device1"`:
+			assert.Equal(t, resp.GetOp().String(), gnmi.UpdateResult_UPDATE.String())
+		default:
+			t.Errorf("unexpected path %s", path)
+		}
+	}
 }
 
 // Test_doSingleSet shows how a value of 1 list can be set on a target - using prefix
@@ -201,32 +197,21 @@ func Test_doSingleSetListIndexInvalid(t *testing.T) {
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
 	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
-	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/list2a[name=aa/b]/name"))
-	typedValue := gnmi.TypedValue_StringVal{StringVal: "aa/c"}
-	value := gnmi.TypedValue{Value: &typedValue}
 	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
+	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/list5[key1=abc][key2=7]/key2"))
 	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
-	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
-
-	ext100Name := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  GnmiExtensionNetwkChangeID,
-			Msg: []byte("TestChange"),
-		},
-	}
+	typedValue := gnmi.TypedValue{Value: &gnmi.TypedValue_UintVal{UintVal: 6}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &typedValue})
 
 	var setRequest = gnmi.SetRequest{
 		Prefix:  prefix,
 		Delete:  deletePaths,
 		Replace: replacedPaths,
 		Update:  updatedPaths,
-		Extension: []*gnmi_ext.Extension{{
-			Ext: &ext100Name,
-		}},
 	}
 
 	_, setError := server.Set(context.Background(), &setRequest)
-	assert.Error(t, setError, "expected error from gnmi Set because of invalid index")
+	assert.EqualError(t, setError, "index attribute key2=6 does not match /cont1a/list5[key1=abc][key2=7]/key2")
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
@@ -420,8 +405,8 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 	}
 }
 
-// Test_doSingleDelete shows how a value of 1 path can be deleted on a target
-func Test_doSingleDelete(t *testing.T) {
+// Test_doDoubleDelete shows how a value of 2 paths can be deleted on a target
+func Test_doDoubleDelete(t *testing.T) {
 	server, mocks, _ := setUpForGetSetTests(t)
 	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
@@ -429,7 +414,7 @@ func Test_doSingleDelete(t *testing.T) {
 	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
 	deletePath := &gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
 	deletePaths = append(deletePaths, deletePath)
-	pathElemsRefs2, _ := utils.ParseGNMIElements([]string{"cont1a", "list2a[name=n1]"})
+	pathElemsRefs2, _ := utils.ParseGNMIElements([]string{"cont1a", "list2a[name=first]", "tx-power"})
 	deletePath2 := &gnmi.Path{Elem: pathElemsRefs2.Elem, Target: "Device1"}
 	deletePaths = append(deletePaths, deletePath2)
 
@@ -464,20 +449,11 @@ func Test_doSingleDelete(t *testing.T) {
 		path := r.Path
 		assert.Equal(t, path.Target, "Device1")
 
-		switch len(path.Elem) {
-		case 2: // The list item
-			assert.Equal(t, path.Elem[0].Name, "cont1a")
-			assert.Equal(t, path.Elem[1].Name, "list2a")
-			list2aKey, ok := path.Elem[1].Key["name"]
-			assert.True(t, ok, "expecting Key to have index 'name'")
-			assert.Equal(t, list2aKey, "n1")
-
-		case 3: // the leaf 2a
-			assert.Equal(t, path.Elem[0].Name, "cont1a")
-			assert.Equal(t, path.Elem[1].Name, "cont2a")
-			assert.Equal(t, path.Elem[2].Name, "leaf2a")
+		switch strings.ReplaceAll(path.String(), "  ", " ") {
+		case `elem:{name:"cont1a"} elem:{name:"cont2a"} elem:{name:"leaf2a"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list2a" key:{key:"name" value:"first"}} elem:{name:"tx-power"} target:"Device1"`:
 		default:
-			t.Errorf("unexpected response length in Single delete. %d", len(path.Elem))
+			t.Errorf("unexpected response in delete. %s", path.String())
 		}
 	}
 
@@ -487,6 +463,37 @@ func Test_doSingleDelete(t *testing.T) {
 	extension := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extension.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extension.Msg), "TestChange")
+}
+
+// Test_doDeleteByIndex shows how a delete can be on just the index
+func Test_doDeleteByIndex(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
+
+	list4aFirstPath, _ := utils.ParseGNMIElements([]string{"cont1a", "list4[id=first]", "list4a[fkey1=abc][fkey2=8]"})
+	list4aFirstValue := &gnmi.Path{Elem: list4aFirstPath.Elem, Target: "Device1"}
+	deletePaths = append(deletePaths, list4aFirstValue)
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
+	assert.NotNil(t, setResponse, "Expected setResponse to exist")
+	for _, r := range setResponse.Response {
+		path := r.Path
+		assert.Equal(t, path.Target, "Device1")
+		switch strings.ReplaceAll(path.String(), "  ", " ") {
+		case `elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"abc"} key:{key:"fkey2" value:"8"}} target:"Device1"`:
+			assert.Equal(t, r.Op.String(), gnmi.UpdateResult_DELETE.String())
+		default:
+			t.Errorf("unexpected response in delete. %s", path.String())
+		}
+	}
 }
 
 // Test_doUpdateDeleteSet shows how a request with a delete and an update can be applied on a target
@@ -697,21 +704,140 @@ func TestSet_BadDeviceType(t *testing.T) {
 	assert.Nil(t, setResponse)
 }
 
-/*
-func Test_findPathFromModel(t *testing.T) {
-	_, _, mgr := setUpForGetSetTests(t)
+// Test_doSingleSetListLeafRef make a list entry whose key is a leaf ref to another list. Adding that reference entry at same time
+func Test_doSingleSetListLeafRef(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
-	rwPath, err := findPathFromModel("/cont1a", mgr.ModelRegistry.ModelReadWritePaths["TestDevice-1.0.0"], false)
-	assert.NoError(t, err)
-	assert.NotNil(t, rwPath)
+	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
+	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
 
-	rwPath2, err := findPathFromModel("/cont1a/list2a", mgr.ModelRegistry.ModelReadWritePaths["TestDevice-1.0.0"], false)
-	assert.NoError(t, err)
-	assert.NotNil(t, rwPath2)
+	// The value we are referring to
+	list2aSecondPath, _ := utils.ParseGNMIElements(utils.SplitPath("/list2a[name=second]/name")) // Is the index
+	list2aSecondValue := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "second"}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list2aSecondPath.Elem}, Val: &list2aSecondValue})
 
-	rwPath3, err := findPathFromModel("/cont1a/list2a[name=123]/name", mgr.ModelRegistry.ModelReadWritePaths["TestDevice-1.0.0"], true)
-	assert.NoError(t, err)
-	assert.NotNil(t, rwPath3)
-	assert.Equal(t, []string{"4..8"}, rwPath3.Length)
+	// The path includes a reference 'first' to an existing index
+	list4FirstLeaf4bPath, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=first]/leaf4b"))
+	list4FirstLeaf4bValue := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "changed value"}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list4FirstLeaf4bPath.Elem}, Val: &list4FirstLeaf4bValue})
+
+	// The path includes a reference 'second' to the newly created index above
+	list4SecondLeaf4bPath, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=second]/leaf4b"))
+	list4SecondLeaf4bValue := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "4b second value"}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list4SecondLeaf4bPath.Elem}, Val: &list4SecondLeaf4bValue})
+
+	var setRequest = gnmi.SetRequest{
+		Prefix:  prefix,
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+	assert.NoError(t, setError)
+	assert.NotNil(t, setResponse)
+	assert.Equal(t, len(setResponse.Response), 3)
+	for _, resp := range setResponse.Response {
+		switch path := strings.ReplaceAll(resp.Path.String(), "  ", " "); path {
+		case
+			`elem:{name:"cont1a"} elem:{name:"list2a" key:{key:"name" value:"second"}} elem:{name:"name"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"leaf4b"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"second"}} elem:{name:"leaf4b"} target:"Device1"`:
+			assert.Equal(t, resp.GetOp().String(), gnmi.UpdateResult_UPDATE.String())
+		default:
+			t.Errorf("unexpected response path %v", path)
+		}
+	}
 }
-*/
+
+// Test_doSingleSetListInvalidLeafRef make a list entry whose key is a leaf ref to another list, but that ref does not exist
+func Test_doSingleSetListInvalidLeafRef(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
+
+	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
+	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
+
+	// The path includes a reference 'second' to the newly created index above
+	list4SecondLeaf4bPath, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=second]/leaf4b"))
+	list4SecondLeaf4bValue := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "4b second value"}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list4SecondLeaf4bPath.Elem}, Val: &list4SecondLeaf4bValue})
+
+	var setRequest = gnmi.SetRequest{
+		Prefix:  prefix,
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+	assert.Contains(t, setError.Error(), `rpc error: code = InvalidArgument desc = validation error field name Id value second (string ptr) schema path /device/cont1a/list4/id has leafref path /cont1a/list2a/name not equal to any target nodes`)
+	assert.Nil(t, setResponse)
+}
+
+// Test_doDeleteOfReferencedEntryFromList try to remove a list entry and its reference in another list
+func Test_doDeleteOfReferencedEntryFromList(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
+
+	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
+	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
+
+	// The path "first" is already referenced by list4
+	list2aNamePath, _ := utils.ParseGNMIElements(utils.SplitPath("/list2a[name=first]/name"))
+	deletePaths = append(deletePaths, list2aNamePath)
+	// The path "first" is to be deleted in list4
+	list4IdPath, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=first]/id"))
+	deletePaths = append(deletePaths, list4IdPath)
+
+	var setRequest = gnmi.SetRequest{
+		Prefix:  prefix,
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+	assert.NoError(t, setError)
+	assert.NotNil(t, setResponse)
+	assert.Equal(t, 2, len(setResponse.Response))
+	for _, resp := range setResponse.Response {
+		switch path := strings.ReplaceAll(resp.Path.String(), "  ", " "); path {
+		case
+			`elem:{name:"cont1a"} elem:{name:"list2a" key:{key:"name" value:"first"}} elem:{name:"name"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"id"} target:"Device1"`:
+			assert.Equal(t, resp.GetOp().String(), gnmi.UpdateResult_DELETE.String())
+		default:
+			t.Errorf("unexpected response path %v", path)
+		}
+	}
+}
+
+// Test_doDeleteOfReferencedEntryFromListInvalid try to remove a list entry when it is already referenced by another list
+func Test_doDeleteOfReferencedEntryFromListInvalid(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
+
+	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
+	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
+
+	// The path "first" is already referenced by list4 - delete should not be allowed
+	list2aNamePath, _ := utils.ParseGNMIElements(utils.SplitPath("/list2a[name=first]/name"))
+	deletePaths = append(deletePaths, list2aNamePath)
+
+	var setRequest = gnmi.SetRequest{
+		Prefix:  prefix,
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+	assert.Contains(t, setError.Error(), "rpc error: code = InvalidArgument desc = validation error pointed-to value with path /cont1a/list2a/name from field Id value first (string ptr) schema /device/cont1a/list4/id is empty set")
+	assert.Nil(t, setResponse)
+}

@@ -16,17 +16,17 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
-	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20201130213019-492043aed0df
-	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20201130213019-492043aed0df
-	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20201130213019-492043aed0df
+	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.0.0-20210331170524-a89dad0afe06
+	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20210331170524-a89dad0afe06
+	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20210331170524-a89dad0afe06
 	github.com/onosproject/helmit v0.6.10
 	github.com/onosproject/onos-api/go v0.7.21
 	github.com/onosproject/onos-config-model v0.4.3
 	github.com/onosproject/onos-lib-go v0.7.7
 	github.com/onosproject/onos-test v0.6.5
 	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
-	github.com/openconfig/goyang v0.2.1
-	github.com/openconfig/ygot v0.8.12
+	github.com/openconfig/goyang v0.2.2
+	github.com/openconfig/ygot v0.10.3
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/smartystreets/assertions v1.0.0 // indirect
