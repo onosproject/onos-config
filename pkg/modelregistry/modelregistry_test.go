@@ -21,7 +21,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
@@ -103,15 +103,15 @@ func Test_JustPaths(t *testing.T) {
 
 func Test_TypeForPath(t *testing.T) {
 	modelType1, err := readOnlyPaths.TypeForPath("/system/clock/state/timezone-name")
-	assert.NilError(t, err, "Unexpected error on TypeForPath RO")
+	assert.NoError(t, err, "Unexpected error on TypeForPath RO")
 	assert.Equal(t, modelType1, devicechange.ValueType_STRING)
 
 	modelType2, err := readWritePaths.TypeForPath("/system/clock/config/timezone-name")
-	assert.NilError(t, err, "Unexpected error on TypeForPath RW")
+	assert.NoError(t, err, "Unexpected error on TypeForPath RW")
 	assert.Equal(t, modelType2, devicechange.ValueType_STRING)
 
 	modelType3, err := readWritePaths.TypeForPath("/system/clock/config/timezone-name1")
-	assert.ErrorContains(t, err, "not found in RW paths of model")
+	assert.Contains(t, err.Error(), "not found in RW paths of model")
 	assert.Equal(t, modelType3, devicechange.ValueType_EMPTY)
 }
 
@@ -682,6 +682,33 @@ func Test_RemovePathIndices2(t *testing.T) {
 	const jsonPathRemovedIdx = "/p/q/r/s/t/u/v/w"
 	noIndices := RemovePathIndices(jsonPath)
 	assert.Equal(t, jsonPathRemovedIdx, noIndices)
+}
+
+func Test_AddMissingIndexName(t *testing.T) {
+	path1 := "/p/q/r[w=10]/s/t[x=20]/u/v[y=30][z=40]"
+	names1 := AddMissingIndexName(path1)
+	assert.Equal(t, 2, len(names1))
+	assert.Equal(t, fmt.Sprintf("%s/y", path1), names1[0])
+	assert.Equal(t, fmt.Sprintf("%s/z", path1), names1[1])
+
+	path2 := "/p/q/r[w=10]/s/t[x=20][y=20]/u/v[z=30]"
+	names2 := AddMissingIndexName(path2)
+	assert.Equal(t, 1, len(names2))
+	assert.Equal(t, fmt.Sprintf("%s/z", path2), names2[0])
+
+	path3 := "/p/q/r[w=10]/s/t[x=20][y=20]/u/v[z=30]/a"
+	names3 := AddMissingIndexName(path3)
+	assert.Equal(t, 0, len(names3))
+}
+
+func Test_CheckIndex(t *testing.T) {
+	assert.NoError(t, CheckPathIndexIsValid("abc"))
+
+	assert.EqualError(t, CheckPathIndexIsValid("a/bc"), `index value 'a/bc' does not match pattern '^([a-zA-Z0-9\[=\*\]])+$'`)
+
+	assert.EqualError(t, CheckPathIndexIsValid("a bc"), `index value 'a bc' does not match pattern '^([a-zA-Z0-9\[=\*\]])+$'`)
+
+	assert.NoError(t, CheckPathIndexIsValid("a*bc"))
 }
 
 func Test_formatName1(t *testing.T) {

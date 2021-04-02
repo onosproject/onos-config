@@ -19,7 +19,7 @@ import (
 	"fmt"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"strconv"
+	"reflect"
 	"strings"
 )
 
@@ -92,15 +92,7 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 
 			keyName := keyString[brktIdx+1 : eqIdx]
 			keyVal := keyString[eqIdx+1 : brktIdx2]
-			keyValNum, keyValNumErr := strconv.Atoi(keyVal)
-
-			// TODO: Bug here, see AETHER-506. 'ueid' and 'subscriber-ueid' are
-			// strings composed of digits, and get converted to integers.
-			if keyValNumErr == nil {
-				keyMap[keyName] = keyValNum
-			} else {
-				keyMap[keyName] = keyVal
-			}
+			keyMap[keyName] = keyVal
 
 			// position to look at next potential key string
 			keyString = keyString[brktIdx2+1:]
@@ -126,7 +118,10 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 			}
 			for k, v := range keyMap {
 				if l, ok := lsMap[k]; ok {
-					if l == v {
+					// compare as strings
+					lStr := convertBasicType(l)
+					vStr := convertBasicType(v)
+					if lStr == vStr {
 						foundkeys++
 						listItemMap = lsMap
 					}
@@ -172,6 +167,22 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 	}
 
 	return nil
+}
+
+func convertBasicType(v interface{}) string {
+	vv := reflect.ValueOf(v)
+	switch vv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return fmt.Sprintf("%d", vv.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return fmt.Sprintf("%d", vv.Uint())
+	case reflect.Bool:
+		if vv.Bool() {
+			return "true"
+		}
+		return "false"
+	}
+	return vv.String()
 }
 
 func handleLeafValue(nodemap map[string]interface{}, value *devicechange.TypedValue, pathelems []string, jsonRFC7951 bool) {

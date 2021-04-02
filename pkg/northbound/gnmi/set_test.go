@@ -144,13 +144,24 @@ func Test_doSingleSetList(t *testing.T) {
 
 	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
 	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
-	list5K1Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list5[key1=k1][key2=2]/key1"))
-	list5K1Value := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "k1"}}
+
+	list5K1Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list5[key1=5][key2=2]/key1"))
+	// Should be able to use a number as string index.
+	list5K1Value := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "5"}}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list5K1Path.Elem}, Val: &list5K1Value})
-	list5K2Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list5[key1=k1][key2=2]/key2"))
+
+	// Can use a numeric key in an index. When this is done we have to explicitly specify the key
+	// otherwise it will be assumed as string
+	list5K2Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list5[key1=5][key2=2]/key2"))
 	list5K2Value := gnmi.TypedValue{Value: &gnmi.TypedValue_UintVal{UintVal: 2}}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list5K2Path.Elem}, Val: &list5K2Value})
-	list4list4aDispnamePath, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=first]/list4a[fkey1=k1][fkey2=2]/displayname"))
+	list4list4aKey1Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=first]/list4a[fkey1=5][fkey2=2]/fkey1"))
+	list4list4aKey1Value := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "5"}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list4list4aKey1Path.Elem}, Val: &list4list4aKey1Value})
+	list4list4aKey2Path, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=first]/list4a[fkey1=5][fkey2=2]/fkey2"))
+	list4list4aKey2Value := gnmi.TypedValue{Value: &gnmi.TypedValue_UintVal{UintVal: 2}}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list4list4aKey2Path.Elem}, Val: &list4list4aKey2Value})
+	list4list4aDispnamePath, _ := utils.ParseGNMIElements(utils.SplitPath("/list4[id=first]/list4a[fkey1=5][fkey2=2]/displayname"))
 	list4list4aDispnameValue := gnmi.TypedValue{Value: &gnmi.TypedValue_StringVal{StringVal: "no longer than 20"}}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &gnmi.Path{Elem: list4list4aDispnamePath.Elem}, Val: &list4list4aDispnameValue})
 
@@ -163,13 +174,15 @@ func Test_doSingleSetList(t *testing.T) {
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 	assert.NoError(t, setError)
-	assert.Equal(t, 3, len(setResponse.Response))
+	assert.Equal(t, 5, len(setResponse.Response))
 	for _, resp := range setResponse.Response {
 		switch path := strings.ReplaceAll(resp.Path.String(), "  ", " "); path {
 		case
-			`elem:{name:"cont1a"} elem:{name:"list5" key:{key:"key1" value:"k1"} key:{key:"key2" value:"2"}} elem:{name:"key1"} target:"Device1"`,
-			`elem:{name:"cont1a"} elem:{name:"list5" key:{key:"key1" value:"k1"} key:{key:"key2" value:"2"}} elem:{name:"key2"} target:"Device1"`,
-			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"k1"} key:{key:"fkey2" value:"2"}} elem:{name:"displayname"} target:"Device1"`:
+			`elem:{name:"cont1a"} elem:{name:"list5" key:{key:"key1" value:"5"} key:{key:"key2" value:"2"}} elem:{name:"key1"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list5" key:{key:"key1" value:"5"} key:{key:"key2" value:"2"}} elem:{name:"key2"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"5"} key:{key:"fkey2" value:"2"}} elem:{name:"displayname"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"5"} key:{key:"fkey2" value:"2"}} elem:{name:"fkey1"} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"5"} key:{key:"fkey2" value:"2"}} elem:{name:"fkey2"} target:"Device1"`:
 			assert.Equal(t, resp.GetOp().String(), gnmi.UpdateResult_UPDATE.String())
 		default:
 			t.Errorf("unexpected path %s", path)
@@ -185,7 +198,7 @@ func Test_doSingleSetListIndexInvalid(t *testing.T) {
 
 	prefixElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a"))
 	prefix := &gnmi.Path{Elem: prefixElemsRefs.Elem, Target: "Device1"}
-	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/list5[key1=a/c][key2=7]/key2"))
+	pathElemsRefs, _ := utils.ParseGNMIElements(utils.SplitPath("/list5[key1=abc][key2=7]/key2"))
 	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
 	typedValue := gnmi.TypedValue{Value: &gnmi.TypedValue_UintVal{UintVal: 6}}
 	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &typedValue})
@@ -198,7 +211,7 @@ func Test_doSingleSetListIndexInvalid(t *testing.T) {
 	}
 
 	_, setError := server.Set(context.Background(), &setRequest)
-	assert.EqualError(t, setError, "index attribute key2=6 does not match /cont1a/list5[key1=a/c][key2=7]/key2")
+	assert.EqualError(t, setError, "index attribute key2=6 does not match /cont1a/list5[key1=abc][key2=7]/key2")
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
@@ -458,7 +471,7 @@ func Test_doDeleteByIndex(t *testing.T) {
 	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
-	list4aFirstPath, _ := utils.ParseGNMIElements([]string{"cont1a", "list4[id=first]"})
+	list4aFirstPath, _ := utils.ParseGNMIElements([]string{"cont1a", "list4[id=first]", "list4a[fkey1=abc][fkey2=8]"})
 	list4aFirstValue := &gnmi.Path{Elem: list4aFirstPath.Elem, Target: "Device1"}
 	deletePaths = append(deletePaths, list4aFirstValue)
 
@@ -475,7 +488,7 @@ func Test_doDeleteByIndex(t *testing.T) {
 		path := r.Path
 		assert.Equal(t, path.Target, "Device1")
 		switch strings.ReplaceAll(path.String(), "  ", " ") {
-		case `elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} target:"Device1"`:
+		case `elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"abc"} key:{key:"fkey2" value:"8"}} target:"Device1"`:
 			assert.Equal(t, r.Op.String(), gnmi.UpdateResult_DELETE.String())
 		default:
 			t.Errorf("unexpected response in delete. %s", path.String())
@@ -761,7 +774,7 @@ func Test_doSingleSetListInvalidLeafRef(t *testing.T) {
 	}
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
-	assert.EqualError(t, setError, "rpc error: code = InvalidArgument desc = field name Id value second (string ptr) schema path /device/cont1a/list4/id has leafref path /cont1a/list2a/name not equal to any target nodes")
+	assert.Contains(t, setError.Error(), `rpc error: code = InvalidArgument desc = validation error field name Id value second (string ptr) schema path /device/cont1a/list4/id has leafref path /cont1a/list2a/name not equal to any target nodes`)
 	assert.Nil(t, setResponse)
 }
 
@@ -825,6 +838,6 @@ func Test_doDeleteOfReferencedEntryFromListInvalid(t *testing.T) {
 	}
 
 	setResponse, setError := server.Set(context.Background(), &setRequest)
-	assert.EqualError(t, setError, "rpc error: code = InvalidArgument desc = pointed-to value with path /cont1a/list2a/name from field Id value first (string ptr) schema /device/cont1a/list4/id is empty set")
+	assert.Contains(t, setError.Error(), "rpc error: code = InvalidArgument desc = validation error pointed-to value with path /cont1a/list2a/name from field Id value first (string ptr) schema /device/cont1a/list4/id is empty set")
 	assert.Nil(t, setResponse)
 }

@@ -72,7 +72,7 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 		}
 		modelEntry, ok := deviceModelYgotPlugin.ReadWritePaths[deletePathAnonIdx]
 		if !ok {
-			return fmt.Errorf("unexpected path in delete %s. Cannot in model as %s", deletePath, deletePathAnonIdx)
+			return fmt.Errorf("unexpected path in delete %s. Cannot find in model as %s", deletePath, deletePathAnonIdx)
 		}
 		if modelEntry.IsAKey { // Then delete all children
 			deletePathRoot := deletePath[:strings.LastIndex(deletePath, "/")]
@@ -105,11 +105,12 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 
 	ygotModel, err := deviceModelYgotPlugin.Model.Unmarshaler()(jsonTree)
 	if err != nil {
-		return err
+		log.Infof("Unmarshalling during validation failed. JSON tree %v", jsonTree)
+		return fmt.Errorf("unmarshaller error: %v", err)
 	}
 	err = deviceModelYgotPlugin.Model.Validator()(ygotModel)
 	if err != nil {
-		return err
+		return fmt.Errorf("validation error %s", err.Error())
 	}
 	log.Infof("New Configuration for %s, with version %s and type %s, is Valid according to model %s",
 		deviceName, version, deviceType, modelName)
@@ -187,6 +188,7 @@ func computeDeviceChange(deviceName devicetype.ID, version devicetype.Version,
 		updateValue, err := devicechange.NewChangeValue(path, value, false)
 		if err != nil {
 			log.Warnf("Error creating value for %s %v", path, err)
+			// TODO: this should return an error
 			continue
 		}
 		newChanges = append(newChanges, updateValue)

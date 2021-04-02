@@ -408,12 +408,15 @@ func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exac
 
 // Check that if this is a Key attribute, that the value is the same as its parent's key
 func checkKeyValue(path string, rwPath *modelregistry.ReadWritePathElem, val *devicechange.TypedValue) error {
-	if !rwPath.IsAKey {
+	indexNames, indexValues := modelregistry.ExtractIndexNames(path)
+	if len(indexNames) == 0 {
 		return nil
 	}
-	indexNames, indexValues := modelregistry.ExtractIndexNames(path)
 	for i, idxName := range indexNames {
-		if rwPath.AttrName == idxName && indexValues[i] == val.ValueToString() {
+		if err := modelregistry.CheckPathIndexIsValid(indexValues[i]); err != nil {
+			return err
+		}
+		if !rwPath.IsAKey || rwPath.AttrName == idxName && indexValues[i] == val.ValueToString() {
 			return nil
 		}
 	}
