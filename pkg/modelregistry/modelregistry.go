@@ -47,7 +47,7 @@ type PathMap interface {
 const MatchOnIndex = `(\[.*?]).*?`
 
 // IndexAllowedChars - regexp to restrict characters in index names
-const IndexAllowedChars = `^([a-zA-Z0-9\[=\*\]])+$`
+const IndexAllowedChars = `^([a-zA-Z0-9\*\-\._])+$`
 
 // ReadOnlyAttrib is the known metadata about a Read Only leaf
 type ReadOnlyAttrib struct {

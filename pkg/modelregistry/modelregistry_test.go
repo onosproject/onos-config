@@ -704,11 +704,15 @@ func Test_AddMissingIndexName(t *testing.T) {
 func Test_CheckIndex(t *testing.T) {
 	assert.NoError(t, CheckPathIndexIsValid("abc"))
 
-	assert.EqualError(t, CheckPathIndexIsValid("a/bc"), `index value 'a/bc' does not match pattern '^([a-zA-Z0-9\[=\*\]])+$'`)
+	assert.EqualError(t, CheckPathIndexIsValid("a/bc"), `index value 'a/bc' does not match pattern '^([a-zA-Z0-9\*\-\._])+$'`)
 
-	assert.EqualError(t, CheckPathIndexIsValid("a bc"), `index value 'a bc' does not match pattern '^([a-zA-Z0-9\[=\*\]])+$'`)
+	assert.EqualError(t, CheckPathIndexIsValid("a bc"), `index value 'a bc' does not match pattern '^([a-zA-Z0-9\*\-\._])+$'`)
+
+	assert.EqualError(t, CheckPathIndexIsValid("a=bc"), `index value 'a=bc' does not match pattern '^([a-zA-Z0-9\*\-\._])+$'`)
 
 	assert.NoError(t, CheckPathIndexIsValid("a*bc"))
+
+	assert.NoError(t, CheckPathIndexIsValid("a_b-C.56*7"))
 }
 
 func Test_formatName1(t *testing.T) {
