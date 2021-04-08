@@ -70,6 +70,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	log.Infof("gNMI Set Request %v", req)
 	prefixTarget := devicetype.ID(req.GetPrefix().GetTarget())
 
+	if len(req.GetUpdate())+len(req.GetReplace())+len(req.GetDelete()) < 1 {
+		return nil, status.Errorf(codes.InvalidArgument,
+			"no updates, replace or deletes in SetRequest - invalid")
+	}
+
 	//Update - extract targets and their models
 	for _, u := range req.GetUpdate() {
 		target := devicetype.ID(u.Path.GetTarget())
@@ -277,7 +282,7 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 		pathValues, err := jsonvalues.DecomposeJSONWithPaths(path, jsonVal, nil, rwPaths)
 		if err != nil {
 			log.Warnf("Json value in Set could not be parsed %v", err)
-			return nil, err
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if len(pathValues) == 0 {
 			log.Warnf("no pathValues found for %s in %v", path, string(jsonVal))
@@ -334,7 +339,7 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 	path, errInPath := utils.ParseGNMIElements(utils.SplitPath(pathStr))
 	if errInPath != nil {
 		log.Error("ERROR: Unable to parse path ", pathStr)
-		return nil, errInPath
+		return nil, status.Error(codes.InvalidArgument, errInPath.Error())
 	}
 	path.Target = target
 	updateResult := &gnmi.UpdateResult{
@@ -348,13 +353,13 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 func validateChange(target devicetype.ID, deviceType devicetype.Type, version devicetype.Version,
 	targetUpdates devicechange.TypedValueMap, targetRemoves []string, lastWrite networkchange.Revision) error {
 	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
-		return fmt.Errorf("no updates found in change on %s - invalid", target)
+		return status.Errorf(codes.InvalidArgument, "no updates found in change on %s - invalid", target)
 	}
 	log.Infof("Validating change %s:%s:%s", target, deviceType, version)
 	errValidation := manager.GetManager().ValidateNetworkConfig(target, version, deviceType,
 		targetUpdates, targetRemoves, lastWrite)
 	if errValidation != nil {
-		return errValidation
+		return status.Error(codes.InvalidArgument, errValidation.Error())
 	}
 	log.Infof("Validating change %s:%s:%s DONE", target, deviceType, version)
 	return nil
@@ -378,7 +383,7 @@ func extractModelForTarget(target devicetype.ID,
 	modelName := utils.ToModelName(actualType, actualVersion)
 	plugin, err := manager.GetManager().ModelRegistry.GetPlugin(modelName)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return plugin.ReadWritePaths, nil
 }
@@ -402,7 +407,7 @@ func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exac
 		}
 	}
 
-	return nil, fmt.Errorf("unable to find RW model path %s ( without index %s). %d paths inspected",
+	return nil, status.Errorf(codes.InvalidArgument, "unable to find RW model path %s ( without index %s). %d paths inspected",
 		path, searchpathNoIndices, len(rwPaths))
 }
 
@@ -414,11 +419,11 @@ func checkKeyValue(path string, rwPath *modelregistry.ReadWritePathElem, val *de
 	}
 	for i, idxName := range indexNames {
 		if err := modelregistry.CheckPathIndexIsValid(indexValues[i]); err != nil {
-			return err
+			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !rwPath.IsAKey || rwPath.AttrName == idxName && indexValues[i] == val.ValueToString() {
 			return nil
 		}
 	}
-	return fmt.Errorf("index attribute %s=%s does not match %s", rwPath.AttrName, val.ValueToString(), path)
+	return status.Errorf(codes.InvalidArgument, "index attribute %s=%s does not match %s", rwPath.AttrName, val.ValueToString(), path)
 }

@@ -211,7 +211,7 @@ func Test_doSingleSetListIndexInvalid(t *testing.T) {
 	}
 
 	_, setError := server.Set(context.Background(), &setRequest)
-	assert.EqualError(t, setError, "index attribute key2=6 does not match /cont1a/list5[key1=abc][key2=7]/key2")
+	assert.EqualError(t, setError, "rpc error: code = InvalidArgument desc = index attribute key2=6 does not match /cont1a/list5[key1=abc][key2=7]/key2")
 }
 
 // Test_do2SetsOnSameTarget shows how 2 paths can be changed on a target
