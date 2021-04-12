@@ -406,15 +406,19 @@ func Test_do2SetsOnOneTargetOneOnDiffTarget(t *testing.T) {
 }
 
 // Test_doDoubleDelete shows how a value of 2 paths can be deleted on a target
+// One of them is a list item with a non-index key (tx-power) - if an index key is specified
+// then the whole list entry should be deleted
 func Test_doDoubleDelete(t *testing.T) {
 	server, mocks, _ := setUpForGetSetTests(t)
 	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
-	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
+	pathElemsRefs, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a", "leaf2a"})
+	assert.NoError(t, err)
 	deletePath := &gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
 	deletePaths = append(deletePaths, deletePath)
-	pathElemsRefs2, _ := utils.ParseGNMIElements([]string{"cont1a", "list2a[name=first]", "tx-power"})
+	pathElemsRefs2, err := utils.ParseGNMIElements([]string{"cont1a", "list2a[name=first]", "tx-power"})
+	assert.NoError(t, err)
 	deletePath2 := &gnmi.Path{Elem: pathElemsRefs2.Elem, Target: "Device1"}
 	deletePaths = append(deletePaths, deletePath2)
 
@@ -466,12 +470,48 @@ func Test_doDoubleDelete(t *testing.T) {
 }
 
 // Test_doDeleteByIndex shows how a delete can be on just the index
-func Test_doDeleteByIndex(t *testing.T) {
+// There are 3 ways to delete an item in a list
+// 1) Like this test - just the list item element is given (not a child attribute)
+// 2) Like above - an non-index attribute is given - in this case the list entry stays, only the non-idx attr is removed
+// 3) Like next below - an index attrib is given for delete - the result should be the same as 1)
+func Test_doDeleteByIndexNoAttr(t *testing.T) {
 	server, mocks, _ := setUpForGetSetTests(t)
 	setUpChangesMock(mocks)
 	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
 
-	list4aFirstPath, _ := utils.ParseGNMIElements([]string{"cont1a", "list4[id=first]", "list4a[fkey1=abc][fkey2=8]"})
+	list4aFirstPath, err := utils.ParseGNMIElements([]string{"cont1a", "list4[id=first]", "list4a[fkey1=abc][fkey2=8]"})
+	assert.NoError(t, err)
+	list4aFirstValue := &gnmi.Path{Elem: list4aFirstPath.Elem, Target: "Device1"}
+	deletePaths = append(deletePaths, list4aFirstValue)
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
+	assert.NotNil(t, setResponse, "Expected setResponse to exist")
+	for _, r := range setResponse.Response {
+		path := r.Path
+		assert.Equal(t, path.Target, "Device1")
+		switch strings.ReplaceAll(path.String(), "  ", " ") {
+		case `elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"list4a" key:{key:"fkey1" value:"abc"} key:{key:"fkey2" value:"8"}} target:"Device1"`:
+			assert.Equal(t, r.Op.String(), gnmi.UpdateResult_DELETE.String())
+		default:
+			t.Errorf("unexpected response in delete. %s", path.String())
+		}
+	}
+}
+
+func Test_doDeleteByIndexWithIndexAttr(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
+
+	list4aFirstPath, err := utils.ParseGNMIElements([]string{"cont1a", "list4[id=first]", "list4a[fkey1=abc][fkey2=8]", "fkey1"})
+	assert.NoError(t, err)
 	list4aFirstValue := &gnmi.Path{Elem: list4aFirstPath.Elem, Target: "Device1"}
 	deletePaths = append(deletePaths, list4aFirstValue)
 
@@ -808,8 +848,8 @@ func Test_doDeleteOfReferencedEntryFromList(t *testing.T) {
 	for _, resp := range setResponse.Response {
 		switch path := strings.ReplaceAll(resp.Path.String(), "  ", " "); path {
 		case
-			`elem:{name:"cont1a"} elem:{name:"list2a" key:{key:"name" value:"first"}} elem:{name:"name"} target:"Device1"`,
-			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} elem:{name:"id"} target:"Device1"`:
+			`elem:{name:"cont1a"} elem:{name:"list2a" key:{key:"name" value:"first"}} target:"Device1"`,
+			`elem:{name:"cont1a"} elem:{name:"list4" key:{key:"id" value:"first"}} target:"Device1"`:
 			assert.Equal(t, resp.GetOp().String(), gnmi.UpdateResult_DELETE.String())
 		default:
 			t.Errorf("unexpected response path %v", path)

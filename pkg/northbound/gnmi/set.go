@@ -291,7 +291,7 @@ func (s *Server) formatUpdateOrReplace(prefix *gnmi.Path, u *gnmi.Update,
 			updates[cv.Path] = cv.GetValue()
 		}
 	} else {
-		rwPathElem, err := findPathFromModel(path, rwPaths, true)
+		_, rwPathElem, err := findPathFromModel(path, rwPaths, true)
 		if err != nil {
 			return nil, err
 		}
@@ -326,13 +326,15 @@ func (s *Server) doDelete(prefix *gnmi.Path, u *gnmi.Path,
 		path = fmt.Sprintf("%s%s", prefixPath, path)
 	}
 	// Checks for read only paths
-	_, err := findPathFromModel(path, rwPaths, false)
+	noEndAttr, rwPath, err := findPathFromModel(path, rwPaths, false)
 	if err != nil {
 		return nil, err
 	}
+	if rwPath.IsAKey && !noEndAttr { // In case an index attribute is given - take it off
+		path = path[:strings.LastIndex(path, "/")]
+	}
 	deletes = append(deletes, path)
 	return deletes, nil
-
 }
 
 func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
@@ -388,12 +390,14 @@ func extractModelForTarget(target devicetype.ID,
 	return plugin.ReadWritePaths, nil
 }
 
-func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exact bool) (*modelregistry.ReadWritePathElem, error) {
+func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exact bool) (bool, *modelregistry.ReadWritePathElem, error) {
 	searchpathNoIndices := modelregistry.RemovePathIndices(path)
+	endsWithIndex := false
 	if strings.HasSuffix(path, "]") { //Ends with index
 		indices, _ := modelregistry.ExtractIndexNames(path)
 		// Add on the last index
 		searchpathNoIndices = fmt.Sprintf("%s/%s", searchpathNoIndices, indices[len(indices)-1])
+		endsWithIndex = true
 	}
 
 	// First search through the RW paths
@@ -401,14 +405,15 @@ func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exac
 		pathNoIndices := modelregistry.RemovePathIndices(modelPath)
 		// Find a short path
 		if exact && pathNoIndices == searchpathNoIndices {
-			return &modelElem, nil
+			return endsWithIndex, &modelElem, nil
 		} else if !exact && strings.HasPrefix(pathNoIndices, searchpathNoIndices) {
-			return &modelElem, nil // returns the first thing it finds that matches the prefix
+			return endsWithIndex, &modelElem, nil // returns the first thing it finds that matches the prefix
 		}
 	}
 
-	return nil, status.Errorf(codes.InvalidArgument, "unable to find RW model path %s ( without index %s). %d paths inspected",
-		path, searchpathNoIndices, len(rwPaths))
+	return endsWithIndex, nil,
+		status.Errorf(codes.InvalidArgument, "unable to find RW model path %s ( without index %s). %d paths inspected",
+			path, searchpathNoIndices, len(rwPaths))
 }
 
 // Check that if this is a Key attribute, that the value is the same as its parent's key
