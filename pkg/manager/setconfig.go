@@ -71,10 +71,7 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 			deletePathAnonIdx = modelregistry.AnonymizePathIndices(deletePath)
 		}
 		modelEntry, ok := deviceModelYgotPlugin.ReadWritePaths[deletePathAnonIdx]
-		if !ok {
-			return fmt.Errorf("unexpected path in delete %s. Cannot find in model as %s", deletePath, deletePathAnonIdx)
-		}
-		if modelEntry.IsAKey { // Then delete all children
+		if ok && modelEntry.IsAKey { // Then delete all children
 			deletePathRoot := deletePath[:strings.LastIndex(deletePath, "/")]
 			for path := range pathValues {
 				if strings.HasPrefix(path, deletePathRoot) {

@@ -326,11 +326,11 @@ func (s *Server) doDelete(prefix *gnmi.Path, u *gnmi.Path,
 		path = fmt.Sprintf("%s%s", prefixPath, path)
 	}
 	// Checks for read only paths
-	noEndAttr, rwPath, err := findPathFromModel(path, rwPaths, false)
+	isExactMatch, rwPath, err := findPathFromModel(path, rwPaths, false)
 	if err != nil {
 		return nil, err
 	}
-	if rwPath.IsAKey && !noEndAttr { // In case an index attribute is given - take it off
+	if isExactMatch && rwPath.IsAKey && !strings.HasSuffix(path, "]") { // In case an index attribute is given - take it off
 		path = path[:strings.LastIndex(path, "/")]
 	}
 	deletes = append(deletes, path)
@@ -392,12 +392,20 @@ func extractModelForTarget(target devicetype.ID,
 
 func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exact bool) (bool, *modelregistry.ReadWritePathElem, error) {
 	searchpathNoIndices := modelregistry.RemovePathIndices(path)
-	endsWithIndex := false
+
+	// try exact match first
+	if rwPath, isExactMatch := rwPaths[modelregistry.AnonymizePathIndices(path)]; isExactMatch {
+		return true, &rwPath, nil
+	} else if exact {
+		return false, nil,
+			status.Errorf(codes.InvalidArgument, "unable to find exact match for RW model path %s. %d paths inspected",
+				path, len(rwPaths))
+	}
+
 	if strings.HasSuffix(path, "]") { //Ends with index
 		indices, _ := modelregistry.ExtractIndexNames(path)
 		// Add on the last index
 		searchpathNoIndices = fmt.Sprintf("%s/%s", searchpathNoIndices, indices[len(indices)-1])
-		endsWithIndex = true
 	}
 
 	// First search through the RW paths
@@ -405,13 +413,13 @@ func findPathFromModel(path string, rwPaths modelregistry.ReadWritePathMap, exac
 		pathNoIndices := modelregistry.RemovePathIndices(modelPath)
 		// Find a short path
 		if exact && pathNoIndices == searchpathNoIndices {
-			return endsWithIndex, &modelElem, nil
+			return false, &modelElem, nil
 		} else if !exact && strings.HasPrefix(pathNoIndices, searchpathNoIndices) {
-			return endsWithIndex, &modelElem, nil // returns the first thing it finds that matches the prefix
+			return false, &modelElem, nil // returns the first thing it finds that matches the prefix
 		}
 	}
 
-	return endsWithIndex, nil,
+	return false, nil,
 		status.Errorf(codes.InvalidArgument, "unable to find RW model path %s ( without index %s). %d paths inspected",
 			path, searchpathNoIndices, len(rwPaths))
 }
