@@ -536,6 +536,37 @@ func Test_doDeleteByIndexWithIndexAttr(t *testing.T) {
 	}
 }
 
+func Test_doDeleteTopLevelObject(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
+
+	cont1aPath, err := utils.ParseGNMIElements([]string{"cont1a"})
+	assert.NoError(t, err)
+	cont1aTarget := &gnmi.Path{Elem: cont1aPath.Elem, Target: "Device1"}
+	deletePaths = append(deletePaths, cont1aTarget)
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
+	assert.NotNil(t, setResponse, "Expected setResponse to exist")
+	for _, r := range setResponse.Response {
+		path := r.Path
+		assert.Equal(t, path.Target, "Device1")
+		switch strings.ReplaceAll(path.String(), "  ", " ") {
+		case `elem:{name:"cont1a"} target:"Device1"`:
+			assert.Equal(t, r.Op.String(), gnmi.UpdateResult_DELETE.String())
+		default:
+			t.Errorf("unexpected response in delete. %s", path.String())
+		}
+	}
+}
+
 // Test_doUpdateDeleteSet shows how a request with a delete and an update can be applied on a target
 func Test_doUpdateDeleteSet(t *testing.T) {
 	server, mocks, _ := setUpForGetSetTests(t)
@@ -880,4 +911,75 @@ func Test_doDeleteOfReferencedEntryFromListInvalid(t *testing.T) {
 	setResponse, setError := server.Set(context.Background(), &setRequest)
 	assert.Contains(t, setError.Error(), "rpc error: code = InvalidArgument desc = validation error pointed-to value with path /cont1a/list2a/name from field Id value first (string ptr) schema /device/cont1a/list4/id is empty set")
 	assert.Nil(t, setResponse)
+}
+
+func Test_findPathFromModel(t *testing.T) {
+	_, _, mgr := setUpForGetSetTests(t)
+	td1Mp, err := mgr.ModelRegistry.GetPlugin("TestDevice-1.0.0")
+	assert.NoError(t, err)
+
+	// Regular leaf
+	isExactMatch, rwPath, err := findPathFromModel("/cont1a/leaf1a", td1Mp.ReadWritePaths, true)
+	assert.NoError(t, err)
+	assert.True(t, isExactMatch)
+	assert.Equal(t, "leaf1a", rwPath.AttrName)
+
+	// Container
+	isExactMatch, rwPath, err = findPathFromModel("/cont1a", td1Mp.ReadWritePaths, false)
+	assert.NoError(t, err)
+	assert.False(t, isExactMatch)
+	assert.True(t, len(rwPath.AttrName) > 0)
+
+	_, _, err = findPathFromModel("/cont1a", td1Mp.ReadWritePaths, true)
+	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find exact match for RW model path /cont1a. 18 paths inspected")
+
+	// Another leaf
+	isExactMatch, rwPath, err = findPathFromModel("/cont1a/cont2a/leaf2a", td1Mp.ReadWritePaths, false)
+	assert.NoError(t, err)
+	assert.True(t, isExactMatch)
+	assert.Equal(t, "leaf2a", rwPath.AttrName)
+
+	// List Anon Index entry
+	isExactMatch, rwPath, err = findPathFromModel("/cont1a/list2a[name=test]", td1Mp.ReadWritePaths, false)
+	assert.NoError(t, err)
+	assert.False(t, isExactMatch)
+	assert.Equal(t, "name", rwPath.AttrName)
+
+	// List key exact
+	isExactMatch, rwPath, err = findPathFromModel("/cont1a/list2a[name=test]/name", td1Mp.ReadWritePaths, false)
+	assert.NoError(t, err)
+	assert.True(t, isExactMatch)
+	assert.Equal(t, "name", rwPath.AttrName)
+
+	// List non key
+	isExactMatch, rwPath, err = findPathFromModel("/cont1a/list2a[name=test]/tx-power", td1Mp.ReadWritePaths, false)
+	assert.NoError(t, err)
+	assert.True(t, isExactMatch)
+	assert.Equal(t, "tx-power", rwPath.AttrName)
+
+	// Double keyed List key attr
+	isExactMatch, rwPath, err = findPathFromModel("/cont1a/list5[key1=test][key2=10]/key1", td1Mp.ReadWritePaths, false)
+	assert.NoError(t, err)
+	assert.True(t, isExactMatch)
+	assert.Equal(t, "key1", rwPath.AttrName)
+
+	// Double keyed List - just list
+	isExactMatch, rwPath, err = findPathFromModel("/cont1a/list5[key1=test][key2=10]", td1Mp.ReadWritePaths, false)
+	assert.NoError(t, err)
+	assert.False(t, isExactMatch)
+	switch rwPath.AttrName {
+	case "key1", "key2":
+	default:
+		t.Errorf("unexpected attr name %s", rwPath.AttrName)
+	}
+
+	// Double keyed List non-key attr
+	isExactMatch, rwPath, err = findPathFromModel("/cont1a/list5[key1=test][key2=10]/leaf5a", td1Mp.ReadWritePaths, false)
+	assert.NoError(t, err)
+	assert.True(t, isExactMatch)
+	assert.Equal(t, "leaf5a", rwPath.AttrName)
+
+	// Double keyed List invalid attr
+	_, _, err = findPathFromModel("/cont1a/list5[key1=test][key2=10]/invalid", td1Mp.ReadWritePaths, false)
+	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find RW model path /cont1a/list5[key1=test][key2=10]/invalid ( without index /cont1a/list5/invalid). 18 paths inspected")
 }
