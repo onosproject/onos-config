@@ -220,7 +220,7 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 			assert.Fail(t, "device stream closed prematurely")
 			return false
 		} else if err != nil {
-			assert.Fail(t, "device stream failed with error: %v", err)
+			assert.Fail(t, "device stream failed with error", err)
 			return false
 		} else if response.Event.Object.Type == topo.Object_ENTITY {
 			topoDevice, err := device.ToDevice(&response.Event.Object)
