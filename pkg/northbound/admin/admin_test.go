@@ -115,7 +115,7 @@ func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 
 	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("change is not specified"))
 	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: ""})
-	assert.ErrorContains(t, err, "is not")
+	assert.ErrorContains(t, err, "is empty")
 }
 
 func Test_ListSnapshots(t *testing.T) {
