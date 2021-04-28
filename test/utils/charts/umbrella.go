@@ -24,7 +24,7 @@ func CreateUmbrellaRelease() *helm.HelmRelease {
 	return helm.Chart("onos-umbrella", onostest.OnosChartRepo).
 		Release("onos-umbrella").
 		Set("import.onos-gui.enabled", false).
-		Set("onos-cli.image.tag", "latest").
+		Set("import.onos-cli.enabled", false). // not needed - can enabled be through Helm for investigations
 		Set("onos-topo.image.tag", "latest").
 		Set("onos-config.image.tag", "latest")
 }

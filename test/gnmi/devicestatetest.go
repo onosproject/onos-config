@@ -26,8 +26,10 @@ import (
 // TestDeviceState tests that a device is connected and available.
 func (s *TestSuite) TestDeviceState(t *testing.T) {
 	simulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator)
+
 	assert.NotNil(t, simulator)
-	found := gnmi.WaitForDevice(t, func(d *device.Device) bool {
+	found := gnmi.WaitForDevice(t, func(d *device.Device, eventType topo.EventType) bool {
 		return len(d.Protocols) > 0 &&
 			d.Protocols[0].Protocol == topo.Protocol_GNMI &&
 			d.Protocols[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&

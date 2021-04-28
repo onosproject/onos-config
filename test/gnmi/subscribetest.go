@@ -31,7 +31,6 @@ import (
 )
 
 const (
-	timeOut            = 10
 	expectedNumUpdates = 2
 	expectedNumSyncs   = 2
 )
@@ -40,6 +39,7 @@ const (
 func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 	// Create a simulated device
 	simulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
@@ -79,13 +79,13 @@ func (s *TestSuite) TestSubscribeOnce(t *testing.T) {
 	err = subC.Subscribe(gnmi.MakeContext(), *q, "gnmi")
 	defer subC.Close()
 	assert.NoError(t, err)
-	gnmi.DeleteSimulator(t, simulator)
 }
 
 // TestSubscribe tests a stream subscription to updates to a device
 func (s *TestSuite) TestSubscribe(t *testing.T) {
 	// Create a simulated device
 	simulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
@@ -174,14 +174,6 @@ func (s *TestSuite) TestSubscribe(t *testing.T) {
 
 	//  Make sure it got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
-
-	select {
-	case <-done:
-		gnmi.DeleteSimulator(t, simulator)
-	case <-time.After(timeOut * time.Second):
-		assert.FailNow(t, "timed out; the request should be processed under %d:", timeOut)
-	}
-
 }
 
 func validateResponse(t *testing.T, resp *gpb.SubscribeResponse, device string, delete bool) {

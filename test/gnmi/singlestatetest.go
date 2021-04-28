@@ -34,6 +34,7 @@ const (
 func (s *TestSuite) TestSingleState(t *testing.T) {
 	// Create a simulated device
 	simulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
@@ -62,7 +63,4 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 		break
 	}
 	assert.Equal(t, true, success, "state value was not found")
-
-	// Shut down the device we created
-	gnmi.DeleteSimulator(t, simulator)
 }

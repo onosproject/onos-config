@@ -18,6 +18,7 @@ package device
 
 import (
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"time"
 )
@@ -109,6 +110,19 @@ const (
 	// ListResponseREMOVED obviously
 	ListResponseREMOVED ListResponseType = 3
 )
+
+// ListresponsetypeName - map of enumerations
+var ListresponsetypeName = map[int32]string{
+	0: "NONE",
+	1: "ADDED",
+	2: "UPDATED",
+	3: "REMOVED",
+}
+
+// String - convert to string
+func (x ListResponseType) String() string {
+	return proto.EnumName(ListresponsetypeName, int32(x))
+}
 
 func setAttribute(o *topo.Object, k string, v string) {
 	if len(v) > 0 {

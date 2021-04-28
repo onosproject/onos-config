@@ -57,6 +57,8 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	// Create 2 simulators
 	simulator1 := gnmi.CreateSimulator(t)
 	simulator2 := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator1)
+	defer gnmi.DeleteSimulator(t, simulator2)
 
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator1.Name()), 2*time.Minute)
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator2.Name()), 2*time.Minute)

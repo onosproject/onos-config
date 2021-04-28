@@ -45,6 +45,8 @@ func (s *TestSuite) TestSubscribeStateDiags(t *testing.T) {
 
 	// Bring up a new simulated device
 	simulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator)
+
 	deviceName := simulator.Name()
 	deviceID := device.ID(deviceName)
 

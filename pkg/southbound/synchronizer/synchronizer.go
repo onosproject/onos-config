@@ -64,6 +64,7 @@ func New(context context.Context,
 	errChan chan<- events.DeviceResponse, opStateCache devicechange.TypedValueMap,
 	mReadOnlyPaths modelregistry.ReadOnlyPathMap, target southbound.TargetIf, getStateMode configmodel.GetStateMode,
 	opStateCacheLock *syncPrimitives.RWMutex, deviceChangeStore device.Store) (*Synchronizer, error) {
+
 	sync := &Synchronizer{
 		Context:              context,
 		Device:               device,
@@ -397,10 +398,11 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 			string(sync.key), err)
 		return
 	}
-
-	subErr := target.Subscribe(sync.Context, req, sync.opStateSubHandler)
+	subscriptionContext, cancel := context.WithCancel(context.Background())
+	subErr := target.Subscribe(subscriptionContext, req, sync.opStateSubHandler) // Blocks here until error in handler
+	cancel()
 	if subErr != nil {
-		log.Warn("Error in subscribe", subErr)
+		log.Warn("Error in subscribe ", subErr)
 		stat, ok := status.FromError(subErr)
 		if !ok && (stat.Code() == codes.Unknown || stat.Code() == codes.Unavailable) {
 			errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorDeviceConnect, string(sync.ID), err)

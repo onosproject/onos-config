@@ -45,14 +45,20 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Get the configured devices from the environment.
 	device1 := gnmi.CreateSimulator(t)
-	device2 := gnmi.CreateSimulator(t)
-	devices := make([]string, 2)
-	devices[0] = device1.Name()
-	devices[1] = device2.Name()
+	defer gnmi.DeleteSimulator(t, device1)
 
 	// Wait for config to connect to the devices
 	gnmi.WaitForDeviceAvailable(t, device.ID(device1.Name()), time.Minute)
+
+	device2 := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, device2)
+
+	// Wait for config to connect to the devices
 	gnmi.WaitForDeviceAvailable(t, device.ID(device2.Name()), time.Minute)
+
+	devices := make([]string, 2)
+	devices[0] = device1.Name()
+	devices[1] = device2.Name()
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
@@ -61,7 +67,8 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	// Set initial values
 	devicePathsForInit := gnmi.GetDevicePathsWithValues(devices, paths, initialValues)
 	initialChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
-	gnmi.WaitForNetworkChangeComplete(t, initialChangeID, 10*time.Second)
+	complete := gnmi.WaitForNetworkChangeComplete(t, initialChangeID, 10*time.Second)
+	assert.True(t, complete, "Set never completed")
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
 
 	// Create a change that can be rolled back
@@ -74,7 +81,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
-	complete := gnmi.WaitForNetworkChangeComplete(t, changeID, 10*time.Second)
+	complete = gnmi.WaitForNetworkChangeComplete(t, changeID, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices

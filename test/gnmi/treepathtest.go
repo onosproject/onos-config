@@ -33,6 +33,7 @@ const (
 func (s *TestSuite) TestTreePath(t *testing.T) {
 	// Make a simulated device
 	simulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
@@ -66,7 +67,4 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 
 	//  Make sure new root got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, getPath, "", 0, "New root was not removed")
-
-	// Shut down the device we created
-	gnmi.DeleteSimulator(t, simulator)
 }

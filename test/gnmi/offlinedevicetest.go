@@ -55,7 +55,10 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	devicePath := gnmi.GetDevicePathWithValue(offlineDeviceName, modPath, modValue, proto.StringVal)
 	networkChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
 
+	// Bring device online
 	simulator := gnmi.CreateSimulatorWithName(t, offlineDeviceName)
+	defer gnmi.DeleteSimulator(t, simulator)
+
 	// Wait for config to connect to the device
 	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
@@ -64,6 +67,4 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
 	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulator)
 	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, modValue)
-
-	gnmi.DeleteSimulator(t, simulator)
 }

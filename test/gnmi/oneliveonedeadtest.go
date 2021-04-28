@@ -44,6 +44,7 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 
 	// Create an online device
 	onlineSimulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, onlineSimulator)
 
 	// Set a value to the online device
 	onlineDevicePath := gnmi.GetDevicePathWithValue(onlineSimulator.Name(), modPath, modValue, proto.StringVal)
