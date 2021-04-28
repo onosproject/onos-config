@@ -118,7 +118,7 @@ func (s *Session) open() error {
 
 // connect connects to a device using a gNMI session
 func (s *Session) connect() error {
-	log.Info("Connecting to device:", s.device)
+	log.Infof("Connecting to device: %s at %s", s.device.ID, s.device.Address)
 	count := 0
 	b := backoff.NewExponentialBackOff()
 	b.InitialInterval = backoffInterval

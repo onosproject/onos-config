@@ -32,6 +32,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 	)
 
 	simulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Data to run the test cases
 	testCases := []struct {
@@ -61,7 +62,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 				value := thisTestCase.value
 				valueType := thisTestCase.valueType
 				expectedError := thisTestCase.expectedError
-				t.Parallel()
+				// t.Parallel() -- would delete simulator before tests
 
 				t.Logf("testing %q", description)
 

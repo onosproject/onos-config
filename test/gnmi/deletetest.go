@@ -40,6 +40,7 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 
 	// Get the configured devices from the environment.
 	device1 := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, device1)
 	devices := make([]string, 1)
 	devices[0] = device1.Name()
 

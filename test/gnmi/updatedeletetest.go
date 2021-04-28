@@ -33,6 +33,7 @@ const (
 func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	// Get the first configured device from the environment.
 	device := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, device)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)

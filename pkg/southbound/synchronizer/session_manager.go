@@ -150,7 +150,7 @@ func (sm *SessionManager) Start() error {
 // processDeviceEvents process incoming device events
 func (sm *SessionManager) processDeviceEvents(ch <-chan *topodevice.ListResponse) {
 	for event := range ch {
-		log.Infof("Received event type %v for device %v", event.Type, event.Device)
+		log.Infof("Received event type %s for device %v", event.Type, event.Device)
 		err := sm.processDeviceEvent(event)
 		if err != nil {
 			log.Errorf("Error updating session %v", event.Device.ID, err)

@@ -43,6 +43,8 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 
 	// Bring up a new simulated device
 	simulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator)
+
 	deviceName := simulator.Name()
 	deviceID := device.ID(deviceName)
 
@@ -109,14 +111,6 @@ func (s *TestSuite) TestSubscribeStateGnmi(t *testing.T) {
 		defer subC.Close()
 
 	}()
-
-	select {
-	case <-done:
-		gnmi.DeleteSimulator(t, simulator)
-	case <-time.After(timeOut * time.Second):
-		assert.FailNow(t, "timed out; the request should be processed under %d:", timeOut)
-	}
-
 }
 
 func validateGnmiStateResponse(t *testing.T, resp *gpb.SubscribeResponse, device string) {

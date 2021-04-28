@@ -207,7 +207,7 @@ func RemoveDeviceFromTopo(d *device.Device) error {
 }
 
 // WaitForDevice waits for a device to match the given predicate
-func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout time.Duration) bool {
+func WaitForDevice(t *testing.T, predicate func(*device.Device, topo.EventType) bool, timeout time.Duration) bool {
 	cl, err := NewTopoClient()
 	assert.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -215,7 +215,7 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 	stream, err := cl.Watch(ctx, &topo.WatchRequest{})
 	assert.NoError(t, err)
 	for {
-		response, err := stream.Recv()
+		response, err := stream.Recv() // Wait here for topo events
 		if err == io.EOF {
 			assert.Fail(t, "device stream closed prematurely")
 			return false
@@ -225,33 +225,37 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device) bool, timeout ti
 		} else if response.Event.Object.Type == topo.Object_ENTITY {
 			topoDevice, err := device.ToDevice(&response.Event.Object)
 			assert.Nil(t, err, "error converting entity to topo Device")
-			if predicate(topoDevice) {
+			if predicate(topoDevice, response.Event.GetType()) {
 				return true
-			}
+			} // Otherwise loop and wait for the next topo event
 		}
 	}
 }
 
 // WaitForDeviceAvailable waits for a device to become available
 func WaitForDeviceAvailable(t *testing.T, deviceID device.ID, timeout time.Duration) bool {
-	return WaitForDevice(t, func(dev *device.Device) bool {
+	return WaitForDevice(t, func(dev *device.Device, eventType topo.EventType) bool {
 		if dev.ID != deviceID {
+			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, dev.ID, deviceID)
 			return false
 		}
 
 		for _, protocol := range dev.Protocols {
 			if protocol.Protocol == topo.Protocol_GNMI && protocol.ServiceState == topo.ServiceState_AVAILABLE {
+				//fmt.Printf("Topo %s on %s is AVAILABLE. Has: %v\n", eventType, dev.ID, protocol)
 				return true
 			}
 		}
+		//fmt.Printf("Topo %s on %s not AVAILABLE. Protocols: %v\n", eventType, dev.ID, dev.Protocols)
 		return false
 	}, timeout)
 }
 
 // WaitForDeviceUnavailable waits for a device to become available
 func WaitForDeviceUnavailable(t *testing.T, deviceID device.ID, timeout time.Duration) bool {
-	return WaitForDevice(t, func(dev *device.Device) bool {
+	return WaitForDevice(t, func(dev *device.Device, eventType topo.EventType) bool {
 		if dev.ID != deviceID {
+			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, dev.ID, deviceID)
 			return false
 		}
 

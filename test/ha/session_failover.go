@@ -40,7 +40,7 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 	assert.NotNil(t, simulator)
 	var currentTerm int
 	var masterNode string
-	found := gnmi.WaitForDevice(t, func(d *device.Device) bool {
+	found := gnmi.WaitForDevice(t, func(d *device.Device, eventType topo.EventType) bool {
 		currentTerm, _ = strconv.Atoi(d.Attributes[mastershipTermKey])
 		masterNode = d.Attributes[mastershipMasterKey]
 		return currentTerm == 1 && len(d.Protocols) > 0 &&
@@ -57,7 +57,7 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 
 	// Waits for a new master to be elected (i.e. the term will be increased), it establishes a connection to the device
 	// and updates the device state
-	found = gnmi.WaitForDevice(t, func(d *device.Device) bool {
+	found = gnmi.WaitForDevice(t, func(d *device.Device, t topo.EventType) bool {
 		currentTerm, _ = strconv.Atoi(d.Attributes[mastershipTermKey])
 		return currentTerm == 2 && len(d.Protocols) > 0 &&
 			d.Protocols[0].Protocol == topo.Protocol_GNMI &&

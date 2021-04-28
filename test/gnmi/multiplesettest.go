@@ -37,6 +37,7 @@ func generateTimezoneName() string {
 func (s *TestSuite) TestMultipleSet(t *testing.T) {
 	// Create a simulated device
 	simulator := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
@@ -70,6 +71,4 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 		complete := gnmi.WaitForNetworkChangeComplete(t, changeID, 5*time.Second)
 		assert.True(t, complete, "Set never completed")
 	}
-	// Shut down the device we created
-	gnmi.DeleteSimulator(t, simulator)
 }
