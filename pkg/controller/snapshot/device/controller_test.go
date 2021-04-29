@@ -25,6 +25,7 @@ import (
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -75,7 +76,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the snapshot
-	_, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the snapshot was not changed
@@ -90,7 +91,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the snapshot
-	_, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the snapshot was set to COMPLETE
@@ -126,7 +127,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the snapshot
-	_, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify changes have not been deleted again
@@ -140,7 +141,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the snapshot
-	_, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify changes have been deleted
@@ -196,7 +197,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the snapshot
-	_, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the snapshot was not changed
@@ -211,7 +212,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the snapshot
-	_, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the snapshot was set to COMPLETE
@@ -237,7 +238,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the snapshot
-	_, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify changes have not been deleted again
@@ -251,7 +252,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the snapshot
-	_, err = reconciler.Reconcile(types.ID(deviceSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify changes have been deleted

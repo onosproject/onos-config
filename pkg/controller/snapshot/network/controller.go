@@ -27,12 +27,14 @@ import (
 	snaptypes "github.com/onosproject/onos-api/go/onos/config/snapshot"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
-	"github.com/onosproject/onos-config/pkg/controller"
+	configcontroller "github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
+
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
@@ -44,7 +46,7 @@ func NewController(leadership leadershipstore.Store, networkChanges networkchang
 	deviceChanges devicechangestore.Store) *controller.Controller {
 
 	c := controller.NewController("NetworkSnapshot")
-	c.Activate(&controller.LeadershipActivator{
+	c.Activate(&configcontroller.LeadershipActivator{
 		Store: leadership,
 	})
 	c.Watch(&Watcher{
@@ -71,8 +73,8 @@ type Reconciler struct {
 }
 
 // Reconcile reconciles the state of a network configuration
-func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
-	snapshot, err := r.networkSnapshots.Get(networksnapshot.ID(id))
+func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
+	snapshot, err := r.networkSnapshots.Get(networksnapshot.ID(id.String()))
 	if err != nil {
 		return controller.Result{}, err
 	}
@@ -109,7 +111,7 @@ func (r *Reconciler) reconcilePendingMark(snapshot *networksnapshot.NetworkSnaps
 	if err != nil {
 		return controller.Result{}, err
 	} else if !canApply {
-		return controller.Result{Requeue: types.ID(snapshot.ID)}, nil
+		return controller.Result{Requeue: controller.NewID(string(snapshot.ID))}, nil
 	}
 
 	// If the snapshot can be applied, update the snapshot state to RUNNING

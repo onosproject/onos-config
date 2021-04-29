@@ -15,13 +15,12 @@
 package network
 
 import (
-	types "github.com/onosproject/onos-api/go/onos/config"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
-	"github.com/onosproject/onos-config/pkg/controller"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"sync"
 )
 
@@ -35,7 +34,7 @@ type Watcher struct {
 }
 
 // Start starts the network snapshot watcher
-func (w *Watcher) Start(ch chan<- types.ID) error {
+func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.ctx != nil {
@@ -51,7 +50,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for request := range snapshotCh {
-			ch <- types.ID(request.Object.(*networksnapshot.NetworkSnapshot).ID)
+			ch <- controller.NewID(string(request.Object.(*networksnapshot.NetworkSnapshot).ID))
 		}
 		close(ch)
 	}()
@@ -77,7 +76,7 @@ type DeviceWatcher struct {
 }
 
 // Start starts the device snapshot watcher
-func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
+func (w *DeviceWatcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.ctx != nil {
@@ -93,7 +92,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for event := range snapshotCh {
-			ch <- event.Object.(*devicesnapshot.DeviceSnapshot).NetworkSnapshot.ID
+			ch <- controller.NewID(string(event.Object.(*devicesnapshot.DeviceSnapshot).NetworkSnapshot.ID))
 		}
 		close(ch)
 	}()

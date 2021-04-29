@@ -16,38 +16,9 @@ package controller
 
 import (
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"sync"
 )
-
-// Activator is an interface for controlling the activation of a controller
-// Once the Activator is Started, it may activate or deactivate processing of Watcher events on the
-// node at any time by writing true or false to the activator channel respectively.
-type Activator interface {
-	// Start starts the activator
-	Start(ch chan<- bool) error
-
-	// Stop stops the activator
-	Stop()
-}
-
-// UnconditionalActivator activates controllers on all nodes at all times
-type UnconditionalActivator struct {
-}
-
-// Start starts the activator
-func (a *UnconditionalActivator) Start(ch chan<- bool) error {
-	go func() {
-		ch <- true
-	}()
-	return nil
-}
-
-// Stop stops the activator
-func (a *UnconditionalActivator) Stop() {
-
-}
-
-var _ Activator = &UnconditionalActivator{}
 
 // LeadershipActivator is an Activator for activating a controller on leadership
 // The LeadershipActivator listens for leadership changes in the leadership store. When the local node
@@ -94,4 +65,4 @@ func (a *LeadershipActivator) Stop() {
 	a.mu.Unlock()
 }
 
-var _ Activator = &LeadershipActivator{}
+var _ controller.Activator = &LeadershipActivator{}

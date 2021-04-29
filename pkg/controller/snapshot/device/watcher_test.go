@@ -15,10 +15,10 @@
 package device
 
 import (
-	types "github.com/onosproject/onos-api/go/onos/config"
 	"github.com/onosproject/onos-api/go/onos/config/snapshot"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -33,7 +33,7 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 		Store: store,
 	}
 
-	ch := make(chan types.ID)
+	ch := make(chan controller.ID)
 	err = watcher.Start(ch)
 	assert.NoError(t, err)
 
@@ -52,7 +52,7 @@ func TestDeviceSnapshotWatcher(t *testing.T) {
 
 	select {
 	case id := <-ch:
-		assert.Equal(t, change1.ID, devicesnapshot.ID(id))
+		assert.Equal(t, string(change1.ID), id.String())
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}

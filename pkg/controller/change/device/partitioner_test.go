@@ -15,16 +15,15 @@
 package device
 
 import (
-	types "github.com/onosproject/onos-api/go/onos/config"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
-	"github.com/onosproject/onos-config/pkg/controller"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestDevicePartitioner(t *testing.T) {
 	partitioner := &Partitioner{}
-	key, err := partitioner.Partition(types.ID(devicechange.NewID("change-1", "device-1", "1.0.0")))
+	key, err := partitioner.Partition(controller.NewID(string(devicechange.NewID("change-1", "device-1", "1.0.0"))))
 	assert.NoError(t, err)
 	assert.Equal(t, controller.PartitionKey("device-1"), key)
 }

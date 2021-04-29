@@ -15,11 +15,10 @@
 package device
 
 import (
-	types "github.com/onosproject/onos-api/go/onos/config"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
-	"github.com/onosproject/onos-config/pkg/controller"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"sync"
 )
 
@@ -33,7 +32,7 @@ type Watcher struct {
 }
 
 // Start starts the device snapshot watcher
-func (w *Watcher) Start(ch chan<- types.ID) error {
+func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.ctx != nil {
@@ -50,7 +49,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for request := range snapshotCh {
-			ch <- types.ID(request.Object.(*devicesnapshot.DeviceSnapshot).ID)
+			ch <- controller.NewID(string(request.Object.(*devicesnapshot.DeviceSnapshot).ID))
 		}
 		close(ch)
 	}()

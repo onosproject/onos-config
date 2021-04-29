@@ -38,6 +38,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/test/mocks"
 	southboundmock "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -102,11 +103,11 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change 1 to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange1.ID)))
 	assert.NoError(t, err)
 
 	// Apply change 2 to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// No changes should have been made
@@ -129,10 +130,10 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply the changes to the reconciler again
-	_, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange1.ID)))
 	assert.NoError(t, err)
 
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Both change should be applied successfully
@@ -167,11 +168,11 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change 1 to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange1.ID)))
 	assert.NoError(t, err)
 
 	// Apply change 2 to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// No changes should have been made
@@ -194,10 +195,10 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply the changes to the reconciler again
-	_, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange1.ID)))
 	assert.NoError(t, err)
 
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Both change should be applied successfully
@@ -227,7 +228,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange1.ID)))
 	assert.NoError(t, err)
 
 	// No changes should have been made
@@ -241,7 +242,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange1.ID)))
 	assert.NoError(t, err)
 
 	// Should be complete by now
@@ -257,7 +258,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Increment the incarnation number for device-1 change 2
@@ -266,7 +267,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Should be complete by now
@@ -306,7 +307,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Increment the incarnation number for device-1 change 2
@@ -317,7 +318,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Should be complete by now
@@ -363,7 +364,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange1.ID)))
 	assert.NoError(t, err)
 
 	// Increment the incarnation number for device-1 change 1
@@ -372,7 +373,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange1.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange1.ID)))
 	assert.NoError(t, err)
 
 	// Should be complete by now
@@ -404,7 +405,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	err = deviceChanges.Create(deviceChange2)
 	assert.NoError(t, err)
 
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Increment the incarnation number for device-1 change 2
@@ -413,7 +414,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Should be complete by now
@@ -435,7 +436,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Increment the incarnation number for device-1 change 2
@@ -446,7 +447,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Apply change to the reconciler
-	_, err = reconciler.Reconcile(types.ID(deviceChange2.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChange2.ID)))
 	assert.NoError(t, err)
 
 	// Should be complete by now

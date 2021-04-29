@@ -20,10 +20,9 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"strings"
 
-	types "github.com/onosproject/onos-api/go/onos/config"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
-	"github.com/onosproject/onos-config/pkg/controller"
+	configcontroller "github.com/onosproject/onos-config/pkg/controller"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/southbound"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
@@ -32,6 +31,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/utils/values"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
@@ -42,7 +42,7 @@ func NewController(mastership mastershipstore.Store, devices devicestore.Store,
 	cache cache.Cache, changes changestore.Store) *controller.Controller {
 
 	c := controller.NewController("DeviceChange")
-	c.Filter(&controller.MastershipFilter{
+	c.Filter(&configcontroller.MastershipFilter{
 		Store:    mastership,
 		Resolver: &Resolver{},
 	})
@@ -63,8 +63,8 @@ type Resolver struct {
 }
 
 // Resolve resolves a device ID from a device change ID
-func (r *Resolver) Resolve(id types.ID) (topodevice.ID, error) {
-	return topodevice.ID(devicechange.ID(id).GetDeviceID()), nil
+func (r *Resolver) Resolve(id controller.ID) (topodevice.ID, error) {
+	return topodevice.ID(devicechange.ID(id.String()).GetDeviceID()), nil
 }
 
 // Reconciler is a device change reconciler
@@ -74,9 +74,9 @@ type Reconciler struct {
 }
 
 // Reconcile reconciles the state of a device change
-func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
+func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	// Get the change from the store
-	change, err := r.changes.Get(devicechange.ID(id))
+	change, err := r.changes.Get(devicechange.ID(id.String()))
 	if err != nil {
 		return controller.Result{}, err
 	}

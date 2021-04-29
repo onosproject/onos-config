@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
-	types "github.com/onosproject/onos-api/go/onos/config"
 	"github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
@@ -29,6 +28,7 @@ import (
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/test/mocks"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -62,7 +62,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network change
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify that device changes were created
@@ -76,7 +76,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
 
 	// Reconcile the network change again
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// The reconciler should have changed its state to RUNNING
@@ -96,7 +96,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
 
 	// Reconcile the network change again
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify that device change states were changed to RUNNING
@@ -115,7 +115,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network change again
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify the network change was not completed
@@ -130,7 +130,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network change one more time
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify the network change is complete
@@ -146,7 +146,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the rollback
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify that the rollback is running
@@ -166,7 +166,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
 
 	// Reconcile the rollback again
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify that the rollback is running
@@ -176,7 +176,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, networkChange.Status.State)
 
 	// Reconcile the rollback again
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify that device change states were changed to RUNNING
@@ -208,7 +208,7 @@ func TestReconcilerError(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network change
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify that device changes were created
@@ -222,7 +222,7 @@ func TestReconcilerError(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
 
 	// Reconcile the network change again
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// The reconciler should have changed its state to RUNNING
@@ -242,7 +242,7 @@ func TestReconcilerError(t *testing.T) {
 	assert.Equal(t, change.State_PENDING, deviceChange2.Status.State)
 
 	// Reconcile the network change again
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify that device change states were changed to RUNNING
@@ -261,7 +261,7 @@ func TestReconcilerError(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network change again
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify the network change was not completed
@@ -279,7 +279,7 @@ func TestReconcilerError(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network change again
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify the network change is still PENDING
@@ -304,7 +304,7 @@ func TestReconcilerError(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network change
-	_, err = reconciler.Reconcile(types.ID(networkChange.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
 	assert.NoError(t, err)
 
 	// Verify that the network change returned to PENDING
