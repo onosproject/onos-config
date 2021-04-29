@@ -15,10 +15,10 @@
 package network
 
 import (
-	types "github.com/onosproject/onos-api/go/onos/config"
 	"github.com/onosproject/onos-api/go/onos/config/snapshot"
 	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -33,7 +33,7 @@ func TestNetworkSnapshotWatcher(t *testing.T) {
 		Store: store,
 	}
 
-	ch := make(chan types.ID)
+	ch := make(chan controller.ID)
 	err = watcher.Start(ch)
 	assert.NoError(t, err)
 
@@ -44,7 +44,7 @@ func TestNetworkSnapshotWatcher(t *testing.T) {
 
 	select {
 	case id := <-ch:
-		assert.Equal(t, snapshot1.ID, networksnapshot.ID(id))
+		assert.Equal(t, string(snapshot1.ID), id.String())
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}

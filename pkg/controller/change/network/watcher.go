@@ -15,18 +15,17 @@
 package network
 
 import (
-	types "github.com/onosproject/onos-api/go/onos/config"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-config/pkg/controller"
 	devicetopo "github.com/onosproject/onos-config/pkg/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"sync"
 )
 
@@ -40,7 +39,7 @@ type Watcher struct {
 }
 
 // Start starts the network change watcher
-func (w *Watcher) Start(ch chan<- types.ID) error {
+func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.ctx != nil {
@@ -56,7 +55,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 
 	go func() {
 		for request := range configCh {
-			ch <- types.ID(request.Object.(*networkchange.NetworkChange).ID)
+			ch <- controller.NewID(string(request.Object.(*networkchange.NetworkChange).ID))
 		}
 		close(ch)
 	}()
@@ -79,7 +78,7 @@ type DeviceWatcher struct {
 	DeviceCache cache.Cache
 	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
-	ch          chan<- types.ID
+	ch          chan<- controller.ID
 	streams     map[device.VersionedID]stream.Context
 	cacheStream stream.Context
 	mu          sync.Mutex
@@ -87,7 +86,7 @@ type DeviceWatcher struct {
 }
 
 // Start starts the device change watcher
-func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
+func (w *DeviceWatcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	if w.ch != nil {
 		w.mu.Unlock()
@@ -141,7 +140,7 @@ func (w *DeviceWatcher) Start(ch chan<- types.ID) error {
 }
 
 // updateWatch watches changes for the given device
-func (w *DeviceWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- types.ID) {
+func (w *DeviceWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- controller.ID) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -179,7 +178,7 @@ func (w *DeviceWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- typ
 	w.wg.Add(1)
 	go func() {
 		for event := range deviceCh {
-			ch <- event.Object.(*devicechange.DeviceChange).NetworkChange.ID
+			ch <- controller.NewID(string(event.Object.(*devicechange.DeviceChange).NetworkChange.ID))
 		}
 		w.wg.Done()
 	}()

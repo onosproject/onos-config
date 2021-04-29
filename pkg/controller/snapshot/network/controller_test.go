@@ -28,6 +28,7 @@ import (
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -98,7 +99,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network snapshot
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify that no device snapshots were created
@@ -118,7 +119,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshot.State_RUNNING, networkSnapshot.Status.State)
 
 	// Reconcile the network snapshot again
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify network changes were marked for deletion
@@ -153,7 +154,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Len(t, networkSnapshot.Refs, 3)
 
 	// Reconcile the network snapshot again
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the network snapshot state is still RUNNING
@@ -167,7 +168,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network snapshot again
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the network snapshot state is still RUNNING
@@ -184,7 +185,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network snapshot again
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the network snapshot state is PENDING in the DELETE phase
@@ -194,7 +195,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshot.State_PENDING, networkSnapshot.Status.State)
 
 	// Reconcile the network snapshot again
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the device snapshots are PENDING in the DELETE phase
@@ -218,7 +219,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshot.State_PENDING, networkSnapshot.Status.State)
 
 	// Reconcile the network snapshot again
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the device snapshots are RUNNING in the DELETE phase
@@ -242,7 +243,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshot.State_RUNNING, networkSnapshot.Status.State)
 
 	// Reconcile the network snapshot again
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the device snapshots are RUNNING in the DELETE phase
@@ -271,7 +272,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reconcile the network snapshot again
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the network snapshot state is still RUNNING
@@ -293,7 +294,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, devicesim, deviceSnapshot3.DeviceType)
 
 	// Reconcile the network snapshot again
-	_, err = reconciler.Reconcile(types.ID(networkSnapshot.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(networkSnapshot.ID)))
 	assert.NoError(t, err)
 
 	// Verify the network snapshot is COMPLETE

@@ -20,13 +20,14 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-config/pkg/controller"
+	configcontroller "github.com/onosproject/onos-config/pkg/controller"
 	devicetopo "github.com/onosproject/onos-config/pkg/device"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -37,7 +38,7 @@ var log = logging.GetLogger("controller", "change", "network")
 // NewController returns a new config controller
 func NewController(leadership leadershipstore.Store, deviceCache cache.Cache, devices devicestore.Store, networkChanges networkchangestore.Store, deviceChanges devicechangestore.Store) *controller.Controller {
 	c := controller.NewController("NetworkChange")
-	c.Activate(&controller.LeadershipActivator{
+	c.Activate(&configcontroller.LeadershipActivator{
 		Store: leadership,
 	})
 	c.Watch(&Watcher{
@@ -64,8 +65,8 @@ type Reconciler struct {
 }
 
 // Reconcile reconciles the state of a network configuration
-func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
-	change, err := r.networkChanges.Get(networkchange.ID(id))
+func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
+	change, err := r.networkChanges.Get(networkchange.ID(id.String()))
 	if err != nil {
 		log.Warnf("Could not get NetworkChange %s", id)
 		return controller.Result{}, err
@@ -157,7 +158,7 @@ func (r *Reconciler) reconcileCompleteChange(change *networkchange.NetworkChange
 	for nextChange != nil {
 		if isIntersectingChange(change, nextChange) {
 			if nextChange.Status.State == changetypes.State_PENDING {
-				return controller.Result{Requeue: types.ID(nextChange.ID)}, nil
+				return controller.Result{Requeue: controller.NewID(string(nextChange.ID))}, nil
 			}
 			return controller.Result{}, nil
 		}
@@ -183,7 +184,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 	if err != nil {
 		return controller.Result{}, err
 	} else if prevChange != nil && !hasDeviceChanges(prevChange) {
-		return controller.Result{Requeue: types.ID(networkChange.ID)}, nil
+		return controller.Result{Requeue: controller.NewID(string(networkChange.ID))}, nil
 	}
 
 	// Loop through changes and create device changes
@@ -211,7 +212,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 	if err := r.networkChanges.Update(networkChange); err != nil {
 		return controller.Result{}, err
 	}
-	return controller.Result{Requeue: types.ID(networkChange.ID)}, nil
+	return controller.Result{Requeue: controller.NewID(string(networkChange.ID))}, nil
 }
 
 // canTryChange returns a bool indicating whether the change can be attempted
@@ -417,7 +418,7 @@ func (r *Reconciler) reconcileCompleteRollback(change *networkchange.NetworkChan
 	for prevChange != nil {
 		if isIntersectingChange(change, prevChange) {
 			if prevChange.Status.State == changetypes.State_PENDING {
-				return controller.Result{Requeue: types.ID(prevChange.ID)}, nil
+				return controller.Result{Requeue: controller.NewID(string(prevChange.ID))}, nil
 			}
 			return controller.Result{}, nil
 		}

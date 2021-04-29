@@ -17,20 +17,11 @@ package controller
 import (
 	"regexp"
 
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
-
-	types "github.com/onosproject/onos-api/go/onos/config"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
+	libcontroller "github.com/onosproject/onos-lib-go/pkg/controller"
 )
-
-// Filter filters individual events for a node
-// Each time an event is received from a watcher, the filter has the option to discard the request by
-// returning false.
-type Filter interface {
-	// Accept indicates whether to accept the given object
-	Accept(id types.ID) bool
-}
 
 // MastershipFilter activates a controller on acquiring mastership
 // The MastershipFilter requires a DeviceResolver to extract a device ID from each request. Given a device
@@ -51,7 +42,7 @@ func (f *MastershipFilter) getNodeID(mastershipstore mastershipstore.Store) clus
 }
 
 // Accept accepts the given ID if the local node is the master
-func (f *MastershipFilter) Accept(id types.ID) bool {
+func (f *MastershipFilter) Accept(id libcontroller.ID) bool {
 	device, err := f.Resolver.Resolve(id)
 	if err != nil {
 		return false
@@ -69,12 +60,12 @@ func (f *MastershipFilter) Accept(id types.ID) bool {
 	return true
 }
 
-var _ Filter = &MastershipFilter{}
+var _ libcontroller.Filter = &MastershipFilter{}
 
 // DeviceResolver resolves a device from a type ID
 type DeviceResolver interface {
 	// Resolve resolves a device
-	Resolve(id types.ID) (topodevice.ID, error)
+	Resolve(id libcontroller.ID) (topodevice.ID, error)
 }
 
 // RegexpDeviceResolver is a DeviceResolver that reads a device ID from a regexp
@@ -83,8 +74,8 @@ type RegexpDeviceResolver struct {
 }
 
 // Resolve resolves a device ID from the configured regexp
-func (r *RegexpDeviceResolver) Resolve(id types.ID) (topodevice.ID, error) {
-	return topodevice.ID(r.Regexp.FindString(string(id))), nil
+func (r *RegexpDeviceResolver) Resolve(id libcontroller.ID) (topodevice.ID, error) {
+	return topodevice.ID(r.Regexp.FindString(id.String())), nil
 }
 
 var _ DeviceResolver = &RegexpDeviceResolver{}

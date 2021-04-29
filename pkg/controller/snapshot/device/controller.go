@@ -18,16 +18,16 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"strings"
 
-	types "github.com/onosproject/onos-api/go/onos/config"
 	changetype "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	snaptype "github.com/onosproject/onos-api/go/onos/config/snapshot"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
-	"github.com/onosproject/onos-config/pkg/controller"
+	configcontroller "github.com/onosproject/onos-config/pkg/controller"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	snapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
@@ -36,7 +36,7 @@ var log = logging.GetLogger("controller", "snapshot", "device")
 // NewController returns a new device snapshot controller
 func NewController(mastership mastershipstore.Store, changes changestore.Store, snapshots snapstore.Store) *controller.Controller {
 	c := controller.NewController("DeviceSnapshot")
-	c.Filter(&controller.MastershipFilter{
+	c.Filter(&configcontroller.MastershipFilter{
 		Store:    mastership,
 		Resolver: &Resolver{snapshots: snapshots},
 	})
@@ -57,8 +57,8 @@ type Resolver struct {
 }
 
 // Resolve resolves a device ID from a device snapshot ID
-func (r *Resolver) Resolve(id types.ID) (topodevice.ID, error) {
-	return topodevice.ID(devicesnapshot.ID(id).GetDeviceID()), nil
+func (r *Resolver) Resolve(id controller.ID) (topodevice.ID, error) {
+	return topodevice.ID(devicesnapshot.ID(id.String()).GetDeviceID()), nil
 }
 
 // Reconciler is a device snapshot reconciler
@@ -68,9 +68,9 @@ type Reconciler struct {
 }
 
 // Reconcile reconciles the state of a device snapshot
-func (r *Reconciler) Reconcile(id types.ID) (controller.Result, error) {
+func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	// Get the snapshot from the store
-	deviceSnapshot, err := r.snapshots.Get(devicesnapshot.ID(id))
+	deviceSnapshot, err := r.snapshots.Get(devicesnapshot.ID(id.String()))
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return controller.Result{}, nil

@@ -56,6 +56,7 @@ type Synchronizer struct {
 	operationalCacheLock *syncPrimitives.RWMutex
 	encoding             gnmi.Encoding
 	getStateMode         configmodel.GetStateMode
+	target               southbound.TargetIf
 }
 
 // New builds a new Synchronizer given the parameters, starts the connection with the device and polls the capabilities
@@ -73,6 +74,7 @@ func New(context context.Context,
 		operationalCacheLock: opStateCacheLock,
 		modelReadOnlyPaths:   mReadOnlyPaths,
 		getStateMode:         getStateMode,
+		target:               target,
 	}
 	log.Info("Connecting to ", sync.Device.Address, " over gNMI for ", sync.Device.ID)
 
@@ -107,12 +109,12 @@ func New(context context.Context,
 }
 
 // For use when device model has modelregistry.GetStateOpState
-func (sync Synchronizer) syncOperationalStateByPartition(ctx context.Context, target southbound.TargetIf,
+func (sync Synchronizer) syncOperationalStateByPartition(ctx context.Context,
 	errChan chan<- events.DeviceResponse) {
 
 	log.Infof("Syncing Op & State of %s started. Mode %v", string(sync.key), sync.getStateMode)
 	notifications := make([]*gnmi.Notification, 0)
-	stateNotif, errState := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_STATE, errChan)
+	stateNotif, errState := sync.getOpStatePathsByType(ctx, gnmi.GetRequest_STATE, errChan)
 	if errState != nil {
 		status, ok := status.FromError(errState)
 		if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {
@@ -123,7 +125,7 @@ func (sync Synchronizer) syncOperationalStateByPartition(ctx context.Context, ta
 		notifications = append(notifications, stateNotif...)
 	}
 
-	operNotif, errOp := sync.getOpStatePathsByType(ctx, target, gnmi.GetRequest_OPERATIONAL, errChan)
+	operNotif, errOp := sync.getOpStatePathsByType(ctx, gnmi.GetRequest_OPERATIONAL, errChan)
 	if errOp != nil {
 		status, ok := status.FromError(errOp)
 		if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {
@@ -138,13 +140,13 @@ func (sync Synchronizer) syncOperationalStateByPartition(ctx context.Context, ta
 
 	// Now try the subscribe with the read only paths and the expanded wildcard
 	// paths (if any) from above
-	sync.subscribeOpState(target, errChan)
+	sync.subscribeOpState(errChan)
 }
 
 // For use when device model has
 // * modelregistry.GetStateExplicitRoPathsExpandWildcards (like Stratum) or
 // * modelregistry.GetStateExplicitRoPaths
-func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target southbound.TargetIf,
+func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context,
 	errChan chan<- events.DeviceResponse) {
 
 	log.Infof("Syncing Op & State of %s started. Mode %v", string(sync.key), sync.getStateMode)
@@ -206,7 +208,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 
 		log.Infof("Calling Get again for %s with expanded %d wildcard read-only paths", sync.key, len(ewGetPaths))
 		if len(ewGetPaths) > 0 {
-			responseEwRoPaths, errRoPaths := target.Get(ctx, requestEwRoPaths)
+			responseEwRoPaths, errRoPaths := sync.target.Get(ctx, requestEwRoPaths)
 			if errRoPaths != nil {
 				log.Warn("Error on request for expanded wildcard read-only paths", sync.key, errRoPaths)
 				errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
@@ -266,7 +268,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 		Path:     getPaths,
 	}
 
-	responseRoPaths, errRoPaths := target.Get(ctx, requestRoPaths)
+	responseRoPaths, errRoPaths := sync.target.Get(ctx, requestRoPaths)
 	if errRoPaths != nil {
 		log.Warn("Error on request for read-only paths", sync.key, errRoPaths)
 		errChan <- events.NewErrorEventNoChangeID(events.EventTypeErrorGetWithRoPaths,
@@ -281,7 +283,7 @@ func (sync Synchronizer) syncOperationalStateByPaths(ctx context.Context, target
 
 	// Now try the subscribe with the read only paths and the expanded wildcard
 	// paths (if any) from above
-	sync.subscribeOpState(target, errChan)
+	sync.subscribeOpState(errChan)
 }
 
 /**
@@ -367,7 +369,7 @@ func (sync Synchronizer) getValuesFromJSON(update *gnmi.Update) ([]*devicechange
  *  This can be found from the OpStateCache
  *  At this stage the wildcards will have been expanded and the ReadOnly paths traversed
  */
-func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan chan<- events.DeviceResponse) {
+func (sync *Synchronizer) subscribeOpState(errChan chan<- events.DeviceResponse) {
 	subscribePaths := make([][]string, 0)
 	sync.operationalCacheLock.RLock()
 	for p := range sync.operationalCache {
@@ -399,7 +401,7 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 		return
 	}
 	subscriptionContext, cancel := context.WithCancel(context.Background())
-	subErr := target.Subscribe(subscriptionContext, req, sync.opStateSubHandler) // Blocks here until error in handler
+	subErr := sync.target.Subscribe(subscriptionContext, req, sync.opStateSubHandler) // Blocks here until error in handler
 	cancel()
 	if subErr != nil {
 		log.Warn("Error in subscribe ", subErr)
@@ -415,7 +417,6 @@ func (sync *Synchronizer) subscribeOpState(target southbound.TargetIf, errChan c
 }
 
 func (sync *Synchronizer) getOpStatePathsByType(ctx context.Context,
-	target southbound.TargetIf,
 	reqtype gnmi.GetRequest_DataType,
 	errChan chan<- events.DeviceResponse) ([]*gnmi.Notification, error) {
 
@@ -425,7 +426,7 @@ func (sync *Synchronizer) getOpStatePathsByType(ctx context.Context,
 		Encoding: sync.encoding,
 	}
 
-	responseState, err := target.Get(ctx, requestState)
+	responseState, err := sync.target.Get(ctx, requestState)
 	if err != nil {
 		status, ok := status.FromError(err)
 		if !ok && (status.Code() == codes.Unknown || status.Code() == codes.Unavailable) {

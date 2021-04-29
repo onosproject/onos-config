@@ -15,13 +15,12 @@
 package device
 
 import (
-	types "github.com/onosproject/onos-api/go/onos/config"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
-	"github.com/onosproject/onos-config/pkg/controller"
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"sync"
 )
 
@@ -31,7 +30,7 @@ const queueSize = 100
 type Watcher struct {
 	DeviceCache cache.Cache
 	ChangeStore devicechangestore.Store
-	ch          chan<- types.ID
+	ch          chan<- controller.ID
 	streams     map[devicetype.VersionedID]stream.Context
 	cacheStream stream.Context
 	mu          sync.Mutex
@@ -39,7 +38,7 @@ type Watcher struct {
 }
 
 // Start starts the device change watcher
-func (w *Watcher) Start(ch chan<- types.ID) error {
+func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	if w.ch != nil {
 		w.mu.Unlock()
@@ -77,7 +76,7 @@ func (w *Watcher) Start(ch chan<- types.ID) error {
 }
 
 // watchDevice watches changes for the given device
-func (w *Watcher) watchDevice(deviceID devicetype.VersionedID, ch chan<- types.ID) {
+func (w *Watcher) watchDevice(deviceID devicetype.VersionedID, ch chan<- controller.ID) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -98,7 +97,7 @@ func (w *Watcher) watchDevice(deviceID devicetype.VersionedID, ch chan<- types.I
 	w.wg.Add(1)
 	go func() {
 		for event := range deviceChangeCh {
-			ch <- types.ID(event.Object.(*devicechange.DeviceChange).ID)
+			ch <- controller.NewID(string(event.Object.(*devicechange.DeviceChange).ID))
 		}
 		w.wg.Done()
 	}()

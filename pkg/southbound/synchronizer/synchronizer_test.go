@@ -244,7 +244,7 @@ func TestNew(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		s.syncOperationalStateByPaths(context2.Background(), mockTarget, params.responseChan)
+		s.syncOperationalStateByPaths(context2.Background(), params.responseChan)
 		wg.Done()
 	}()
 
@@ -487,7 +487,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	}()
 
 	// Called asynchronously as after building up the opStateCache it subscribes and waits
-	go s.syncOperationalStateByPartition(context2.Background(), mockTarget, params.responseChan)
+	go s.syncOperationalStateByPartition(context2.Background(), params.responseChan)
 	subscribeResp1 := gnmi.SubscribeResponse_Update{
 		Update: &gnmi.Notification{
 			Timestamp: time.Now().Unix(),
@@ -826,7 +826,7 @@ func Test_LikeStratum(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		s.syncOperationalStateByPaths(context2.Background(), mockTarget, responseChan)
+		s.syncOperationalStateByPaths(context2.Background(), responseChan)
 		wg.Done()
 	}()
 	wg.Wait()

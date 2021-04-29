@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
-	types "github.com/onosproject/onos-api/go/onos/config"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-api/go/onos/topo"
@@ -30,6 +29,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/test/mocks"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
@@ -50,7 +50,7 @@ func TestNetworkWatcher(t *testing.T) {
 		Store: store,
 	}
 
-	ch := make(chan types.ID)
+	ch := make(chan controller.ID)
 	err = watcher.Start(ch)
 	assert.NoError(t, err)
 
@@ -99,7 +99,7 @@ func TestNetworkWatcher(t *testing.T) {
 
 	select {
 	case id := <-ch:
-		assert.Equal(t, change1.ID, networkchange.ID(id))
+		assert.Equal(t, string(change1.ID), id.String())
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
@@ -242,7 +242,7 @@ func TestDeviceWatcher(t *testing.T) {
 		ChangeStore: changeStore,
 	}
 
-	ch := make(chan types.ID)
+	ch := make(chan controller.ID)
 	err = watcher.Start(ch)
 	assert.NoError(t, err)
 
@@ -280,7 +280,7 @@ func TestDeviceWatcher(t *testing.T) {
 
 	select {
 	case id := <-ch:
-		assert.Equal(t, change1.NetworkChange.ID, id)
+		assert.Equal(t, string(change1.NetworkChange.ID), id.String())
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}

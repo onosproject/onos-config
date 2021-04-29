@@ -192,10 +192,10 @@ func (s *Session) synchronize() error {
 	//go sync.syncConfigEventsToDevice(target, respChan)
 	s.deviceResponseChan <- events.NewDeviceConnectedEvent(events.EventTypeDeviceConnected, string(s.device.ID))
 	if sync.getStateMode == configmodel.GetStateOpState {
-		go sync.syncOperationalStateByPartition(ctx, s.target, s.deviceResponseChan)
+		go sync.syncOperationalStateByPartition(ctx, s.deviceResponseChan)
 	} else if sync.getStateMode == configmodel.GetStateExplicitRoPaths ||
 		sync.getStateMode == configmodel.GetStateExplicitRoPathsExpandWildcards {
-		go sync.syncOperationalStateByPaths(ctx, s.target, s.deviceResponseChan)
+		go sync.syncOperationalStateByPaths(ctx, s.deviceResponseChan)
 	}
 	return nil
 }

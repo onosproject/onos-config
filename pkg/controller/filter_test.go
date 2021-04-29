@@ -15,10 +15,10 @@
 package controller
 
 import (
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"testing"
 	"time"
 
-	types "github.com/onosproject/onos-api/go/onos/config"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
@@ -28,8 +28,8 @@ import (
 type testDeviceResolver struct {
 }
 
-func (r testDeviceResolver) Resolve(id types.ID) (topodevice.ID, error) {
-	return topodevice.ID(id), nil
+func (r testDeviceResolver) Resolve(id controller.ID) (topodevice.ID, error) {
+	return topodevice.ID(id.String()), nil
 }
 
 func TestMastershipFilter(t *testing.T) {
@@ -68,10 +68,10 @@ func TestMastershipFilter(t *testing.T) {
 	assert.NotNil(t, master)
 	assert.NotEqual(t, master.Master, node1)
 
-	assert.True(t, filter1.Accept(types.ID(device1)))
-	assert.False(t, filter2.Accept(types.ID(device1)))
-	assert.True(t, filter2.Accept(types.ID(device2)))
-	assert.False(t, filter1.Accept(types.ID(device2)))
+	assert.True(t, filter1.Accept(controller.NewID(string(device1))))
+	assert.False(t, filter2.Accept(controller.NewID(string(device1))))
+	assert.True(t, filter2.Accept(controller.NewID(string(device2))))
+	assert.False(t, filter1.Accept(controller.NewID(string(device2))))
 
 	ch := make(chan mastership.Mastership)
 	err = store2.Watch(device1, ch)
@@ -86,6 +86,6 @@ func TestMastershipFilter(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.True(t, filter2.Accept(types.ID(device1)))
-	assert.True(t, filter2.Accept(types.ID(device2)))
+	assert.True(t, filter2.Accept(controller.NewID(string(device1))))
+	assert.True(t, filter2.Accept(controller.NewID(string(device2))))
 }

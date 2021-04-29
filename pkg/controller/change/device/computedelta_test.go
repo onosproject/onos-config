@@ -19,6 +19,7 @@ import (
 	types "github.com/onosproject/onos-api/go/onos/config"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -241,7 +242,7 @@ func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.
 		return err
 	}
 
-	_, err = reconciler.Reconcile(types.ID(deviceChangeIf.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChangeIf.ID)))
 	if err != nil {
 		return err
 	}
@@ -250,7 +251,7 @@ func setUpComputeDelta(reconciler *Reconciler, deviceChangesStore devicechanges.
 	if err != nil {
 		return err
 	}
-	_, err = reconciler.Reconcile(types.ID(deviceChangeIf.ID))
+	_, err = reconciler.Reconcile(controller.NewID(string(deviceChangeIf.ID)))
 	if err != nil {
 		return err
 	}
