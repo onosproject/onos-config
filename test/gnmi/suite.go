@@ -15,6 +15,7 @@
 package gnmi
 
 import (
+	"github.com/onosproject/helmit/pkg/input"
 	"github.com/onosproject/onos-config/test/utils/charts"
 	"sync"
 
@@ -32,7 +33,11 @@ type TestSuite struct {
 }
 
 // SetupTestSuite sets up the onos-config GNMI test suite
-func (s *TestSuite) SetupTestSuite() error {
+func (s *TestSuite) SetupTestSuite(c *input.Context) error {
+	registry := c.GetArg("registry").String("")
 	umbrella := charts.CreateUmbrellaRelease()
-	return umbrella.Install(true)
+	return umbrella.
+		Set("global.image.registry", registry).
+		Set("import.onos-cli.enabled", false). // not needed - can enabled be through Helm for investigations
+		Install(true)
 }
