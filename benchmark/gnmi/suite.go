@@ -36,7 +36,7 @@ type BenchmarkSuite struct {
 }
 
 // SetupSuite :: benchmark
-func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
+func (s *BenchmarkSuite) SetupSuite(c *input.Context) error {
 	umbrella := charts.CreateUmbrellaRelease().
 		Set("onos-topo.replicaCount", 2).
 		Set("onos-config.replicaCount", 2)
@@ -44,7 +44,7 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 }
 
 // SetupWorker :: benchmark
-func (s *BenchmarkSuite) SetupWorker(c *benchmark.Context) error {
+func (s *BenchmarkSuite) SetupWorker(c *input.Context) error {
 	s.value = input.RandomString(8)
 	s.simulator = helm.
 		Chart("device-simulator", onostest.OnosChartRepo).
@@ -61,7 +61,7 @@ func (s *BenchmarkSuite) SetupWorker(c *benchmark.Context) error {
 }
 
 // TearDownWorker :: benchmark
-func (s *BenchmarkSuite) TearDownWorker(c *benchmark.Context) error {
+func (s *BenchmarkSuite) TearDownWorker(c *input.Context) error {
 	s.client.Close()
 	return s.simulator.Uninstall()
 }

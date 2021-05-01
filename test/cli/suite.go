@@ -15,6 +15,7 @@
 package cli
 
 import (
+	"github.com/onosproject/helmit/pkg/input"
 	"github.com/onosproject/helmit/pkg/test"
 	"github.com/onosproject/onos-config/test/utils/charts"
 )
@@ -29,7 +30,11 @@ type TestSuite struct {
 }
 
 // SetupTestSuite sets up the onos-config CLI test suite
-func (s *TestSuite) SetupTestSuite() error {
+func (s *TestSuite) SetupTestSuite(c *input.Context) error {
+	registry := c.GetArg("registry").String("")
 	umbrella := charts.CreateUmbrellaRelease()
-	return umbrella.Install(true)
+	return umbrella.
+		Set("global.image.registry", registry).
+		Set("import.onos-cli.enabled", true).
+		Install(true)
 }
