@@ -195,7 +195,7 @@ func (s *deviceChangeStoreStateStore) processNetworkRollback(networkChange *netw
 		}
 		if netChange.Status.Phase == changetype.Phase_CHANGE {
 			for _, devChange := range netChange.Changes {
-				state, ok := s.devices[devChange.GetVersionedDeviceID()]
+				state, ok := states[devChange.GetVersionedDeviceID()]
 				if ok {
 					for _, value := range devChange.Values {
 						if value.Removed {

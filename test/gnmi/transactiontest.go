@@ -104,9 +104,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
 
 	// Check that the values were really rolled back in onos-config
-	// TODO - this is actually wrong, the value we read back should be {initValue1, initValue2}
-	// Need to investigate why
-	expectedValuesAfterRollback := []string{"", ""}
+	expectedValuesAfterRollback := []string{initValue1, initValue2}
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
 
 	// Check that the values were rolled back on the devices

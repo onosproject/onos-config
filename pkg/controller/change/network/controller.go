@@ -28,6 +28,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -76,6 +77,10 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 	// Handle the change for each phase
 	if change != nil {
+		if change.Status.Reason == changetypes.Reason_ERROR {
+			return controller.Result{}, errors.NewInternal(change.Status.GetMessage())
+		}
+
 		switch change.Status.Phase {
 		case changetypes.Phase_CHANGE:
 			return r.reconcileChange(change)
@@ -126,6 +131,7 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 		change.Status.Message = ""
 		log.Infof("Applying NetworkChange %v", change)
 		if err := r.networkChanges.Update(change); err != nil {
+			log.Warnf("error updating network change %s %v", err.Error(), change)
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
@@ -136,6 +142,7 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 		change.Status.State = changetypes.State_COMPLETE
 		log.Infof("Completing NetworkChange %v", change)
 		if err := r.networkChanges.Update(change); err != nil {
+			log.Warnf("error updating network change %s %v", err.Error(), change)
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
@@ -143,7 +150,19 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 
 	// If any device change has failed, roll back all device changes
 	if r.isDeviceChangesFailed(change, deviceChanges) {
-		return r.ensureDeviceChangeRollbacks(change, deviceChanges)
+		_, err := r.ensureDeviceChangeRollbacks(change, deviceChanges)
+		if err != nil {
+			return controller.Result{}, err
+		}
+		change.Status.Reason = changetypes.Reason_ERROR
+		change.Status.Message = "change rejected by device"
+		if err := r.networkChanges.Update(change); err != nil {
+			log.Warnf("error updating network change %s %v", err.Error(), change)
+			return controller.Result{}, err
+		}
+		// Return an error because this is as far as we can go until something changes
+		// This will cause exponential backoff of retries
+		return controller.Result{}, errors.NewInternal("Network change failed on 1 device and rolled back on all devices")
 	}
 	return controller.Result{}, nil
 }
@@ -200,7 +219,8 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 		}
 		log.Infof("Creating DeviceChange %v for %v", deviceChange, networkChange.ID)
 		if err := r.deviceChanges.Create(deviceChange); err != nil {
-			return controller.Result{}, err
+			return controller.Result{}, errors.NewInternal("error creating device change %s. %s",
+				deviceChange.ID, err.Error())
 		}
 		refs[i] = &networkchange.DeviceChangeRef{
 			DeviceChangeID: deviceChange.ID,
@@ -210,6 +230,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 	// If references have been updated, store the refs and succeed the reconciliation
 	networkChange.Refs = refs
 	if err := r.networkChanges.Update(networkChange); err != nil {
+		log.Warnf("error updating network change %s %v", err.Error(), networkChange)
 		return controller.Result{}, err
 	}
 	return controller.Result{Requeue: controller.NewID(string(networkChange.ID))}, nil
@@ -284,6 +305,7 @@ func (r *Reconciler) ensureDeviceChangesPending(networkChange *networkchange.Net
 			deviceChange.Status.Reason = changetypes.Reason_NONE
 			log.Infof("Running DeviceChange %v", deviceChange)
 			if err := r.deviceChanges.Update(deviceChange); err != nil {
+				log.Warnf("error updating device change %s %v", err.Error(), deviceChange)
 				return false, err
 			}
 			updated = true
@@ -338,6 +360,27 @@ func (r *Reconciler) ensureDeviceChangeRollbacks(networkChange *networkchange.Ne
 			deviceChange.Status.State = changetypes.State_PENDING
 			log.Infof("Rolling back DeviceChange %v", deviceChange)
 			if err := r.deviceChanges.Update(deviceChange); err != nil {
+				log.Warnf("error updating device change %s %v", err.Error(), deviceChange)
+				return controller.Result{}, err
+			}
+
+		}
+	}
+	return controller.Result{}, nil
+}
+
+// ensureDeviceChangeRollbackUndo ensures device changes rolled back are undone
+func (r *Reconciler) ensureDeviceChangeRollbackUndo(networkChange *networkchange.NetworkChange, changes []*devicechange.DeviceChange) (controller.Result, error) {
+	for _, deviceChange := range changes {
+		if deviceChange.Status.Incarnation != networkChange.Status.Incarnation ||
+			deviceChange.Status.Phase != changetypes.Phase_ROLLBACK ||
+			deviceChange.Status.State == changetypes.State_FAILED {
+			deviceChange.Status.Incarnation = networkChange.Status.Incarnation
+			deviceChange.Status.Phase = changetypes.Phase_CHANGE
+			deviceChange.Status.State = changetypes.State_PENDING
+			log.Infof("Undoing Rollback DeviceChange %v", deviceChange)
+			if err := r.deviceChanges.Update(deviceChange); err != nil {
+				log.Warnf("error updating device change %s %v", err.Error(), deviceChange)
 				return controller.Result{}, err
 			}
 		}
@@ -386,6 +429,7 @@ func (r *Reconciler) reconcilePendingRollback(change *networkchange.NetworkChang
 		change.Status.Message = ""
 		log.Infof("Rolling back NetworkChange %v", change)
 		if err := r.networkChanges.Update(change); err != nil {
+			log.Warnf("error updating device change %s %v", err.Error(), change)
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
@@ -396,14 +440,29 @@ func (r *Reconciler) reconcilePendingRollback(change *networkchange.NetworkChang
 		change.Status.State = changetypes.State_COMPLETE
 		log.Infof("Completing NetworkChange %v", change)
 		if err := r.networkChanges.Update(change); err != nil {
+			log.Warnf("error updating device change %s %v", err.Error(), change)
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
 	}
 
-	// If any device change has failed, roll back all device changes
+	// If any device rollback has failed, undo rollback for all device changes
+	//
+	// TODO: think again if this makes sense in the so called real world
 	if r.isDeviceChangesFailed(change, deviceChanges) {
-		return r.ensureDeviceChangeRollbacks(change, deviceChanges)
+		_, err := r.ensureDeviceChangeRollbackUndo(change, deviceChanges)
+		if err != nil {
+			return controller.Result{}, err
+		}
+		change.Status.Reason = changetypes.Reason_ERROR
+		change.Status.Message = "rollback rejected by device"
+		if err := r.networkChanges.Update(change); err != nil {
+			log.Warnf("error updating device change %s %v", err.Error(), change)
+			return controller.Result{}, err
+		}
+		// Return an error because this is as far as we can go until something changes
+		// This will cause exponential backoff of retries
+		return controller.Result{}, errors.NewInternal("Network change rollback failed on 1 device and has been undone on all devices")
 	}
 	return controller.Result{}, nil
 }
@@ -448,6 +507,7 @@ func (r *Reconciler) ensureDeviceRollbacks(networkChange *networkchange.NetworkC
 			deviceChange.Status.State = changetypes.State_PENDING
 			log.Infof("Rolling back DeviceChange %v", deviceChange)
 			if err := r.deviceChanges.Update(deviceChange); err != nil {
+				log.Warnf("error updating device change %s %v", err.Error(), deviceChange)
 				return false, err
 			}
 			updated = true
@@ -478,6 +538,15 @@ func (r *Reconciler) canTryRollback(change *networkchange.NetworkChange, deviceC
 				deviceChange.Status.State != changetypes.State_FAILED {
 				return false, nil
 			}
+		}
+	}
+
+	if len(deviceChanges) == 1 {
+		deviceChange0 := deviceChanges[0]
+		if deviceChange0.Status.Incarnation != change.Status.Incarnation ||
+			(deviceChange0.Status.Phase == changetypes.Phase_ROLLBACK &&
+				deviceChange0.Status.State == changetypes.State_FAILED) {
+			return false, nil
 		}
 	}
 

@@ -122,6 +122,7 @@ func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (control
 
 	// Update the change status in the store
 	if err := r.changes.Update(change); err != nil {
+		log.Warnf("error updating device change %s %v", err.Error(), change)
 		return controller.Result{}, err
 	}
 	return controller.Result{}, nil
@@ -148,6 +149,7 @@ func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (contr
 
 	// Update the change status in the store
 	if err := r.changes.Update(change); err != nil {
+		log.Warnf("error updating device change %s %v", err.Error(), change)
 		return controller.Result{}, err
 	}
 	return controller.Result{}, nil
