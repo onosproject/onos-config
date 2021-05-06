@@ -248,6 +248,10 @@ func Test_NewControllerDoRollbackWhichFails(t *testing.T) {
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
+	time.Sleep(10 * time.Millisecond) // Wait for stores to start
+	assert.Equal(t, "node-1", string(leadershipStore.NodeID()))
+	assert.Equal(t, "node-1", string(mastershipStore.NodeID()))
+
 	networkChangeController := NewController(leadershipStore, deviceCache, devices, networkChanges, deviceChanges)
 	assert.NotNil(t, networkChangeController)
 
@@ -276,8 +280,6 @@ func Test_NewControllerDoRollbackWhichFails(t *testing.T) {
 			return nil, status.Errorf(codes.Internal, "simulated error on rollback in device-2 %s", request)
 		}).Times(1)
 	// Third time will be a roll forward but here too SET returns error
-	//mockTargetDevice2.EXPECT().Set(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-
 	mockTargetDevice2.EXPECT().Set(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, request *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 			return nil, status.Errorf(codes.Internal, "simulated error on undoing rollback in device-2 %s", request)

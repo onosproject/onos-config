@@ -81,10 +81,15 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		return controller.Result{}, err
 	}
 
-	log.Infof("Reconciling DeviceChange %v", change)
+	if change == nil {
+		log.Debugf("device change is nil when reconciling %s", id)
+		return controller.Result{}, nil
+	}
+	log.Infof("Reconciling DeviceChange %s", change.ID)
+	log.Debug(change)
 
 	// The device controller only needs to handle changes in the RUNNING state
-	if change == nil || change.Status.Incarnation == 0 || change.Status.State != changetypes.State_PENDING {
+	if change.Status.Incarnation == 0 || change.Status.State != changetypes.State_PENDING {
 		return controller.Result{}, nil
 	}
 
@@ -117,7 +122,8 @@ func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (control
 		log.Infof("Failing DeviceChange %v", change)
 	} else {
 		change.Status.State = changetypes.State_COMPLETE
-		log.Infof("Completing DeviceChange %v", change)
+		log.Infof("Completing DeviceChange %s", change.ID)
+		log.Debug(change)
 	}
 
 	// Update the change status in the store
@@ -144,7 +150,8 @@ func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (contr
 		log.Infof("Failing DeviceChange %v", change)
 	} else {
 		change.Status.State = changetypes.State_COMPLETE
-		log.Infof("Completing DeviceChange %v", change)
+		log.Infof("Completing DeviceChange %v", change.ID)
+		log.Debug(change)
 	}
 
 	// Update the change status in the store
@@ -157,7 +164,8 @@ func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (contr
 
 // doRollback rolls back a change on the device
 func (r *Reconciler) doRollback(change *devicechange.DeviceChange) error {
-	log.Infof("Execucting Rollback for %v", change)
+	log.Infof("Executing Rollback for %s", change.ID)
+	log.Debug(change)
 	deltaChange, err := r.computeRollback(change)
 	if err != nil {
 		return err
