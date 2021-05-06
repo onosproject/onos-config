@@ -25,10 +25,7 @@ import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	"github.com/onosproject/onos-config/pkg/store/device/cache"
-	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/test/mocks"
-	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -39,6 +36,34 @@ import (
 
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
+}
+
+var deviceChange1 = devicechange.Change{
+	DeviceID:      device1,
+	DeviceType:    stratumType,
+	DeviceVersion: v1,
+	Values: []*devicechange.ChangeValue{
+		{
+			Path:  "foo",
+			Value: devicechange.NewTypedValueString("Hello world!"),
+		},
+		{
+			Path:  "bar",
+			Value: devicechange.NewTypedValueString("Hello world again!"),
+		},
+	},
+}
+
+var deviceChange2 = devicechange.Change{
+	DeviceID:      device2,
+	DeviceType:    stratumType,
+	DeviceVersion: v1,
+	Values: []*devicechange.ChangeValue{
+		{
+			Path:  "baz",
+			Value: devicechange.NewTypedValueString("Goodbye world!"),
+		},
+	},
 }
 
 func TestNetworkWatcher(t *testing.T) {
@@ -57,40 +82,8 @@ func TestNetworkWatcher(t *testing.T) {
 	change1 := &networkchange.NetworkChange{
 		ID: "change-1",
 		Changes: []*devicechange.Change{
-			{
-
-				DeviceID:      device1,
-				DeviceVersion: v1,
-				Values: []*devicechange.ChangeValue{
-					{
-						Path: "foo",
-						Value: &devicechange.TypedValue{
-							Bytes: []byte("Hello world!"),
-							Type:  devicechange.ValueType_STRING,
-						},
-					},
-					{
-						Path: "bar",
-						Value: &devicechange.TypedValue{
-							Bytes: []byte("Hello world again!"),
-							Type:  devicechange.ValueType_STRING,
-						},
-					},
-				},
-			},
-			{
-				DeviceID:      device2,
-				DeviceVersion: v1,
-				Values: []*devicechange.ChangeValue{
-					{
-						Path: "baz",
-						Value: &devicechange.TypedValue{
-							Bytes: []byte("Goodbye world!"),
-							Type:  devicechange.ValueType_STRING,
-						},
-					},
-				},
-			},
+			&deviceChange1,
+			&deviceChange2,
 		},
 	}
 
@@ -124,7 +117,8 @@ func TestNetworkWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	select {
-	case <-ch:
+	case id := <-ch:
+		assert.Equal(t, string(change2.ID), id.String())
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
@@ -134,7 +128,8 @@ func TestNetworkWatcher(t *testing.T) {
 	assert.NoError(t, err)
 
 	select {
-	case <-ch:
+	case id := <-ch:
+		assert.Equal(t, string(change1.ID), id.String())
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
@@ -142,20 +137,8 @@ func TestNetworkWatcher(t *testing.T) {
 
 func TestDeviceWatcher(t *testing.T) {
 	ctrl := gomock.NewController(t)
-
-	t.Log("Testing")
-	cachedDevices := []*cache.Info{
-		{
-			DeviceID: device1,
-			Type:     v1,
-			Version:  v1,
-		},
-		{
-			DeviceID: device2,
-			Type:     v1,
-			Version:  v1,
-		},
-	}
+	deviceCache := newDeviceCache(ctrl)
+	defer deviceCache.Close()
 
 	deviceClient := mocks.NewMockTopoClient(ctrl)
 	deviceClient.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *topo.WatchRequest) (topo.Topo_WatchClient, error) {
@@ -216,22 +199,6 @@ func TestDeviceWatcher(t *testing.T) {
 	deviceStore, err := devicestore.NewStore(deviceClient)
 	assert.NoError(t, err)
 
-	deviceCache := mockcache.NewMockCache(ctrl)
-	deviceCache.EXPECT().Watch(gomock.Any(), true).DoAndReturn(
-		func(ch chan<- stream.Event, replay bool) (stream.Context, error) {
-			go func() {
-				for _, di := range cachedDevices {
-					event := stream.Event{
-						Type:   stream.Created,
-						Object: di,
-					}
-					ch <- event
-				}
-				close(ch)
-			}()
-			return stream.NewContext(func() {}), nil
-		})
-
 	changeStore, err := devicechangestore.NewLocalStore()
 	assert.NoError(t, err)
 	defer changeStore.Close()
@@ -252,27 +219,7 @@ func TestDeviceWatcher(t *testing.T) {
 			ID:    "network-change-1",
 			Index: 1,
 		},
-		Change: &devicechange.Change{
-			DeviceID:      "device-1",
-			DeviceVersion: "1.0.0",
-			DeviceType:    "Stratum",
-			Values: []*devicechange.ChangeValue{
-				{
-					Path: "foo",
-					Value: &devicechange.TypedValue{
-						Bytes: []byte("Hello world!"),
-						Type:  devicechange.ValueType_STRING,
-					},
-				},
-				{
-					Path: "bar",
-					Value: &devicechange.TypedValue{
-						Bytes: []byte("Hello world again!"),
-						Type:  devicechange.ValueType_STRING,
-					},
-				},
-			},
-		},
+		Change: &deviceChange1,
 	}
 
 	err = changeStore.Create(change1)
@@ -280,7 +227,7 @@ func TestDeviceWatcher(t *testing.T) {
 
 	select {
 	case id := <-ch:
-		assert.Equal(t, string(change1.NetworkChange.ID), id.String())
+		assert.Equal(t, string(change1.NetworkChange.GetID()), id.String())
 	case <-time.After(5 * time.Second):
 		t.FailNow()
 	}
@@ -292,16 +239,13 @@ func TestDeviceWatcher(t *testing.T) {
 			Index: 2,
 		},
 		Change: &devicechange.Change{
-			DeviceID:      "device-2",
-			DeviceVersion: "1.0.0",
-			DeviceType:    "Stratum",
+			DeviceID:      device2,
+			DeviceVersion: v1,
+			DeviceType:    stratumType,
 			Values: []*devicechange.ChangeValue{
 				{
-					Path: "baz",
-					Value: &devicechange.TypedValue{
-						Bytes: []byte("Goodbye world!"),
-						Type:  devicechange.ValueType_STRING,
-					},
+					Path:  "baz",
+					Value: devicechange.NewTypedValueString("Goodbye world!"),
 				},
 			},
 		},

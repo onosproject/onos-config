@@ -1,4 +1,4 @@
-FROM onosproject/config-model-build:v0.4.2 AS build
+FROM onosproject/config-model-build:v0.4.5 AS build
 
 ENV GO111MODULE=on
 ARG ONOS_MAKE_TARGET=build
@@ -12,7 +12,7 @@ COPY pkg/ /build/pkg/
 
 RUN make ${ONOS_MAKE_TARGET}
 
-FROM alpine:3.11
+FROM alpine:3.13
 RUN apk add libc6-compat
 
 USER nobody
