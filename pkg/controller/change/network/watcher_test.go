@@ -27,6 +27,7 @@ import (
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/test/mocks"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
@@ -35,6 +36,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	log := logging.GetLogger("controller")
+	log.SetLevel(logging.DebugLevel)
 	os.Exit(m.Run())
 }
 
