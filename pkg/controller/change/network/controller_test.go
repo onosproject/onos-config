@@ -20,21 +20,28 @@ import (
 	types "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
+	"github.com/onosproject/onos-api/go/onos/config/device"
 	devicechangecontroller "github.com/onosproject/onos-config/pkg/controller/change/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/southbound"
+	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
+	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	leadershipstore "github.com/onosproject/onos-config/pkg/store/leadership"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
+	"github.com/onosproject/onos-config/pkg/store/stream"
 	southboundtest "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
 
+// Make a Network change and it propagates down to 2 Device changes
+// They get reconciled successfully
 func Test_NewController2Devices(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -100,7 +107,43 @@ func Test_NewController2Devices(t *testing.T) {
 	// Watcher should pass it to the Reconciler (if not filtered)
 	// Reconciler should process it
 	// Verify that device changes were created
-	time.Sleep(300 * time.Millisecond)
+
+	networkChangeChan := make(chan stream.Event)
+	ctx, err := networkChanges.Watch(networkChangeChan, networkchangestore.WithReplay())
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+
+	var wg sync.WaitGroup
+	wg.Add(4) // It takes 4 turns of the reconciler to get it right
+
+	for i := 0; i < 4; i++ {
+		select {
+		case event := <-networkChangeChan:
+			change := event.Object.(*networkchange.NetworkChange)
+			t.Logf("%s event. %v", change.ID, change.Status)
+			assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+			assert.Equal(t, types.Reason_NONE, change.Status.Reason)
+			switch i {
+			case 0, 1:
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, uint64(0), change.Status.Incarnation)
+			case 2:
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			case 3:
+				assert.Equal(t, types.State_COMPLETE, change.Status.State)
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			default:
+				t.Errorf("unexpected event on change-1 %v", change)
+			}
+			wg.Done()
+		case <-time.After(500 * time.Millisecond):
+			t.FailNow()
+		}
+	}
+	wg.Wait()
+	ctx.Close()
+
 	networkChange1, err = networkChanges.Get(networkChange1.GetID())
 	assert.NoError(t, err)
 	assert.Equal(t, types.Phase_CHANGE, networkChange1.Status.Phase)
@@ -195,11 +238,66 @@ func Test_NewController1FailsGnmiSet(t *testing.T) {
 	err = networkChanges.Create(networkChange1)
 	assert.NoError(t, err)
 
+	device2ChangeChan := make(chan stream.Event)
+	ctx, err := deviceChanges.Watch(device.NewVersionedID(device2, v1), device2ChangeChan, devicechangestore.WithReplay())
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+
+	var wg sync.WaitGroup
+	wg.Add(5) // It takes 5 turns of the reconciler to get it right
+	for i := 0; i < 5; i++ {
+		select {
+		case event := <-device2ChangeChan:
+			change := event.Object.(*devicechange.DeviceChange)
+			t.Logf("%s event. %v", change.ID, change.Status)
+			switch i {
+			case 0:
+				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, types.Reason_NONE, change.Status.Reason)
+				assert.Equal(t, uint64(0), change.Status.Incarnation)
+			case 1:
+				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, types.Reason_NONE, change.Status.Reason)
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			case 2:
+				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+				assert.Equal(t, types.State_FAILED, change.Status.State)
+				assert.Equal(t, types.Reason_ERROR, change.Status.Reason)
+				assert.Equal(t, `rpc error: code = Internal desc = simulated error in device-2 update:{path:{elem:{name:"baz"}} val:{string_val:"Goodbye world!"}}`,
+					strings.ReplaceAll(change.Status.Message, "  ", " "))
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			case 3:
+				assert.Equal(t, types.Phase_ROLLBACK, change.Status.Phase)
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, types.Reason_ERROR, change.Status.Reason)
+				assert.Equal(t, `rpc error: code = Internal desc = simulated error in device-2 update:{path:{elem:{name:"baz"}} val:{string_val:"Goodbye world!"}}`,
+					strings.ReplaceAll(change.Status.Message, "  ", " "))
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			case 4:
+				assert.Equal(t, types.Phase_ROLLBACK, change.Status.Phase)
+				assert.Equal(t, types.State_COMPLETE, change.Status.State)
+				assert.Equal(t, types.Reason_ERROR, change.Status.Reason)
+				assert.Equal(t, `rpc error: code = Internal desc = simulated error in device-2 update:{path:{elem:{name:"baz"}} val:{string_val:"Goodbye world!"}}`,
+					strings.ReplaceAll(change.Status.Message, "  ", " "))
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			default:
+				t.Errorf("unexpected event on device-1 %v", change)
+			}
+			wg.Done()
+		case <-time.After(500 * time.Millisecond):
+			t.FailNow()
+		}
+	}
+
+	wg.Wait()
+	ctx.Close()
+
 	// Should cause an event to be sent to the Watcher
 	// Watcher should pass it to the Reconciler (if not filtered)
 	// Reconciler should process it
 	// Verify that device changes were created
-	time.Sleep(500 * time.Millisecond) // Should give 5 attempts 20+40+80+160+320 ms
 	networkChange1, err = networkChanges.Get(networkChange1.GetID())
 	assert.NoError(t, err)
 	assert.Equal(t, types.Phase_CHANGE, networkChange1.Status.Phase)
@@ -225,10 +323,14 @@ func Test_NewController1FailsGnmiSet(t *testing.T) {
 	assert.Equal(t, `rpc error: code = Internal desc = simulated error in device-2 update:{path:{elem:{name:"baz"}} val:{string_val:"Goodbye world!"}}`,
 		strings.ReplaceAll(deviceChange2.Status.Message, "  ", " "))
 	assert.Equal(t, uint64(1), deviceChange2.Status.Incarnation)
+
+	// Should give 5 attempts 20+40+80 ms
+	// Can't verify in a test though as different platforms will run at different speeds
+	time.Sleep(100 * time.Millisecond)
 }
 
 // a NetworkChange is made to 2 devices, which succeeds
-// Then rollback the network change
+// Then rollback the network change, but one of the devices does not accept the rollback
 // The Network and Device changes sit there in COMPLETED state in the ROLLBACK phase.
 func Test_NewControllerDoRollbackWhichFails(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -248,7 +350,6 @@ func Test_NewControllerDoRollbackWhichFails(t *testing.T) {
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
-	time.Sleep(10 * time.Millisecond) // Wait for stores to start
 	assert.Equal(t, "node-1", string(leadershipStore.NodeID()))
 	assert.Equal(t, "node-1", string(mastershipStore.NodeID()))
 
@@ -304,11 +405,49 @@ func Test_NewControllerDoRollbackWhichFails(t *testing.T) {
 	err = networkChanges.Create(networkChange1)
 	assert.NoError(t, err)
 
+	deviceChangeChan := make(chan stream.Event)
+	ctx, err := deviceChanges.Watch(device.NewVersionedID(device2, v1), deviceChangeChan, devicechangestore.WithReplay())
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+
+	var wg sync.WaitGroup
+	wg.Add(3) // It takes 5 turns of the reconciler to get it right
+	for i := 0; i < 3; i++ {
+		select {
+		case event := <-deviceChangeChan:
+			change := event.Object.(*devicechange.DeviceChange)
+			t.Logf("%s event. %v", change.ID, change.Status)
+			switch i {
+			case 0:
+				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, types.Reason_NONE, change.Status.Reason)
+				assert.Equal(t, uint64(0), change.Status.Incarnation)
+			case 1:
+				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, types.Reason_NONE, change.Status.Reason)
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			case 2:
+				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+				assert.Equal(t, types.State_COMPLETE, change.Status.State)
+				assert.Equal(t, types.Reason_NONE, change.Status.Reason)
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			default:
+				t.Errorf("unexpected event on device-1 %v", change)
+				t.FailNow()
+			}
+			wg.Done()
+		case <-time.After(500 * time.Millisecond):
+			t.FailNow()
+		}
+	}
+	wg.Wait()
+
 	// Should cause an event to be sent to the Watcher
 	// Watcher should pass it to the Reconciler (if not filtered)
 	// Reconciler should process it
 	// Verify that device changes were created
-	time.Sleep(50 * time.Millisecond)
 
 	// Now try a rollback
 	changeRollback, errGet := networkChanges.Get(change1)
@@ -321,7 +460,51 @@ func Test_NewControllerDoRollbackWhichFails(t *testing.T) {
 	changeRollback.Status.Message = "Administratively requested rollback"
 	err = networkChanges.Update(changeRollback)
 	assert.NoError(t, err)
-	time.Sleep(500 * time.Millisecond) // Should give 5 attempts 20+40+80+160+320 ms
+
+	wg.Add(4) // It takes 5 turns of the reconciler to get it right
+	for i := 0; i < 4; i++ {
+		select {
+		case event := <-deviceChangeChan:
+			change := event.Object.(*devicechange.DeviceChange)
+			t.Logf("%s event. %v", change.ID, change.Status)
+			switch i {
+			case 0:
+				assert.Equal(t, types.Phase_ROLLBACK, change.Status.Phase)
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, types.Reason_NONE, change.Status.Reason)
+				assert.Equal(t, uint64(2), change.Status.Incarnation)
+			case 1:
+				assert.Equal(t, types.Phase_ROLLBACK, change.Status.Phase)
+				assert.Equal(t, types.State_FAILED, change.Status.State)
+				assert.Equal(t, types.Reason_ERROR, change.Status.Reason)
+				assert.Equal(t, `rpc error: code = Internal desc = simulated error on rollback in device-2 delete:{elem:{name:"baz"}}`,
+					strings.ReplaceAll(change.Status.Message, "  ", " "))
+				assert.Equal(t, uint64(2), change.Status.Incarnation)
+			case 2:
+				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, types.Reason_ERROR, change.Status.Reason)
+				assert.Equal(t, `rpc error: code = Internal desc = simulated error on rollback in device-2 delete:{elem:{name:"baz"}}`,
+					strings.ReplaceAll(change.Status.Message, "  ", " "))
+				assert.Equal(t, uint64(2), change.Status.Incarnation)
+			case 3:
+				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+				assert.Equal(t, types.State_FAILED, change.Status.State)
+				assert.Equal(t, types.Reason_ERROR, change.Status.Reason)
+				assert.Equal(t, `rpc error: code = Internal desc = simulated error on undoing rollback in device-2 update:{path:{elem:{name:"baz"}} val:{string_val:"Goodbye world!"}}`,
+					strings.ReplaceAll(change.Status.Message, "  ", " "))
+				assert.Equal(t, uint64(2), change.Status.Incarnation)
+			default:
+				t.Errorf("unexpected event on device-1 %v", change)
+				t.FailNow()
+			}
+			wg.Done()
+		case <-time.After(500 * time.Millisecond):
+			t.FailNow()
+		}
+	}
+	wg.Wait()
+	ctx.Close()
 
 	networkChange1, err = networkChanges.Get(networkChange1.GetID())
 	assert.NoError(t, err)
@@ -348,4 +531,8 @@ func Test_NewControllerDoRollbackWhichFails(t *testing.T) {
 	assert.Equal(t, `rpc error: code = Internal desc = simulated error on undoing rollback in device-2 update:{path:{elem:{name:"baz"}} val:{string_val:"Goodbye world!"}}`,
 		strings.ReplaceAll(deviceChange2.Status.Message, "  ", " "))
 	assert.Equal(t, uint64(2), deviceChange2.Status.Incarnation)
+
+	// Should give 5 attempts 20+40+80 ms
+	// Can't verify in a test though as different platforms will run at different speeds
+	time.Sleep(100 * time.Millisecond)
 }
