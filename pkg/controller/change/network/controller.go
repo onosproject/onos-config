@@ -546,21 +546,24 @@ func (r *Reconciler) isDeviceRollbacksComplete(networkChange *networkchange.Netw
 func (r *Reconciler) canTryRollback(change *networkchange.NetworkChange, deviceChanges []*devicechange.DeviceChange) (bool, error) {
 	// Verify all device changes are being rolled back
 	if change.Status.Incarnation > 0 {
-		for _, deviceChange := range deviceChanges {
+		for i, deviceChange := range deviceChanges {
+			if deviceChange == nil {
+				return false, errors.NewInternal("device change %d is nil for network change %s", i, change.ID)
+			}
 			if deviceChange.Status.Incarnation != change.Status.Incarnation ||
 				deviceChange.Status.Phase != changetypes.Phase_ROLLBACK ||
 				deviceChange.Status.State != changetypes.State_FAILED {
 				return false, nil
 			}
 		}
-	}
 
-	if len(deviceChanges) == 1 {
-		deviceChange0 := deviceChanges[0]
-		if deviceChange0.Status.Incarnation != change.Status.Incarnation ||
-			(deviceChange0.Status.Phase == changetypes.Phase_ROLLBACK &&
-				deviceChange0.Status.State == changetypes.State_FAILED) {
-			return false, nil
+		if len(deviceChanges) == 1 {
+			deviceChange0 := deviceChanges[0]
+			if deviceChange0.Status.Incarnation != change.Status.Incarnation ||
+				(deviceChange0.Status.Phase == changetypes.Phase_ROLLBACK &&
+					deviceChange0.Status.State == changetypes.State_FAILED) {
+				return false, nil
+			}
 		}
 	}
 
