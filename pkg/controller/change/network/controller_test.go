@@ -449,16 +449,31 @@ func Test_NewControllerDoRollbackWhichFails(t *testing.T) {
 	// Reconciler should process it
 	// Verify that device changes were created
 
-	// Now try a rollback
-	changeRollback, errGet := networkChanges.Get(change1)
-	assert.NoError(t, errGet)
-	assert.NotNil(t, changeRollback)
-	changeRollback.Status.Incarnation++
-	changeRollback.Status.Phase = types.Phase_ROLLBACK
-	changeRollback.Status.State = types.State_PENDING
-	changeRollback.Status.Reason = types.Reason_NONE
-	changeRollback.Status.Message = "Administratively requested rollback"
-	err = networkChanges.Update(changeRollback)
+	retryUpdate := 0
+	for { // It can happen that the controller will make another update after the GET
+		t.Logf("Trying to do a Rollback %d", retryUpdate)
+		changeRollback, errGet := networkChanges.Get(change1)
+		assert.NoError(t, errGet)
+		if errGet != nil {
+			t.FailNow()
+		}
+		assert.NotNil(t, changeRollback)
+		changeRollback.Status.Incarnation++
+		changeRollback.Status.Phase = types.Phase_ROLLBACK
+		changeRollback.Status.State = types.State_PENDING
+		changeRollback.Status.Reason = types.Reason_NONE
+		changeRollback.Status.Message = "Administratively requested rollback"
+
+		err = networkChanges.Update(changeRollback)
+		// It might fail with "write condition failed" - retry up to 10 times
+		if err != nil && err.Error() == "write condition failed" && retryUpdate < 10 {
+			time.Sleep(10 * time.Millisecond)
+			t.Logf("Retrying update (#%d) after '%s'", retryUpdate, err.Error())
+			retryUpdate++
+			continue
+		}
+		break
+	}
 	assert.NoError(t, err)
 
 	wg.Add(4) // It takes 5 turns of the reconciler to get it right
