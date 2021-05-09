@@ -127,7 +127,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 
 	// Reconcile the network change again
 	requeue, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "waiting for device change(s) to complete change-1")
 	assert.Nil(t, requeue.Requeue.Value)
 
 	// Verify the network change was not completed
@@ -181,7 +181,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 
 	// Reconcile the rollback again
 	requeue, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "waiting for device change(s) to complete change-1")
 	assert.Nil(t, requeue.Requeue.Value)
 
 	// Verify that the rollback is running
@@ -192,7 +192,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 
 	// Reconcile the rollback again
 	requeue, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "waiting for device change(s) to complete change-1")
 	assert.Nil(t, requeue.Requeue.Value)
 
 	// Verify that device change states were changed to PENDING
@@ -284,7 +284,7 @@ func TestReconcilerError(t *testing.T) {
 
 	// Reconcile the network change again
 	requeue, err = reconciler.Reconcile(controller.NewID(string(networkChange.ID)))
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "waiting for device change(s) to complete change-1")
 	assert.Nil(t, requeue.Requeue.Value)
 
 	// Verify the network change was not completed
@@ -410,18 +410,14 @@ func newStores(t *testing.T, ctrl *gomock.Controller) (networkchanges.Store, dev
 	return networkChanges, deviceChanges, devices
 }
 
-func newDeviceCache(ctrl *gomock.Controller) *mockcache.MockCache {
-	cachedDevices := []*cache.Info{
-		{
-			DeviceID: device1,
+func newDeviceCache(ctrl *gomock.Controller, ids ...device.ID) *mockcache.MockCache {
+	cachedDevices := make([]*cache.Info, 0, len(ids))
+	for _, id := range ids {
+		cachedDevices = append(cachedDevices, &cache.Info{
+			DeviceID: id,
 			Type:     stratumType,
 			Version:  v1,
-		},
-		{
-			DeviceID: device2,
-			Type:     stratumType,
-			Version:  v1,
-		},
+		})
 	}
 
 	deviceCache := mockcache.NewMockCache(ctrl)

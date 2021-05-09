@@ -183,7 +183,7 @@ func (r *Reconciler) translateAndSendChange(change *devicechange.Change) error {
 	deviceTarget, err := southbound.GetTarget(topodevice.ID(change.DeviceID))
 	if err != nil {
 		log.Infof("Device %s is not connected, accepting change", change.DeviceID)
-		return fmt.Errorf("Device not connected %s, error %s", change.DeviceID, err.Error())
+		return fmt.Errorf("device not connected %s, error %s", change.DeviceID, err.Error())
 	}
 	log.Infof("Target for device %s: %v %v", change.DeviceID, deviceTarget, deviceTarget.Context())
 	setResponse, err := deviceTarget.Set(*deviceTarget.Context(), setRequest)
