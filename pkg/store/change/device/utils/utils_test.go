@@ -252,7 +252,6 @@ func makeDevice(ID topodevice.ID) *topodevice.Device {
 		TLS:         topodevice.TLSConfig{},
 		Type:        "TestDevice",
 		Role:        "",
-		Attributes:  nil,
 		Protocols:   nil,
 	}
 }

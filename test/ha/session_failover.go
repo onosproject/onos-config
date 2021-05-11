@@ -16,7 +16,6 @@ package ha
 
 import (
 	"github.com/onosproject/onos-api/go/onos/topo"
-	"strconv"
 	"testing"
 	"time"
 
@@ -26,11 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	mastershipTermKey   = "onos-config.mastership.term"
-	mastershipMasterKey = "onos-config.mastership.master"
-)
-
 // TestSessionFailOver tests gnmi session failover is happening when the master node
 // is crashed
 func (s *TestSuite) TestSessionFailOver(t *testing.T) {
@@ -38,11 +32,11 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 	t.Skip()
 	simulator := gnmi.CreateSimulator(t)
 	assert.NotNil(t, simulator)
-	var currentTerm int
+	var currentTerm uint64
 	var masterNode string
 	found := gnmi.WaitForDevice(t, func(d *device.Device, eventType topo.EventType) bool {
-		currentTerm, _ = strconv.Atoi(d.Attributes[mastershipTermKey])
-		masterNode = d.Attributes[mastershipMasterKey]
+		currentTerm = d.MastershipTerm
+		masterNode = d.MasterKey
 		return currentTerm == 1 && len(d.Protocols) > 0 &&
 			d.Protocols[0].Protocol == topo.Protocol_GNMI &&
 			d.Protocols[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
@@ -58,7 +52,7 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 	// Waits for a new master to be elected (i.e. the term will be increased), it establishes a connection to the device
 	// and updates the device state
 	found = gnmi.WaitForDevice(t, func(d *device.Device, t topo.EventType) bool {
-		currentTerm, _ = strconv.Atoi(d.Attributes[mastershipTermKey])
+		currentTerm = d.MastershipTerm
 		return currentTerm == 2 && len(d.Protocols) > 0 &&
 			d.Protocols[0].Protocol == topo.Protocol_GNMI &&
 			d.Protocols[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&

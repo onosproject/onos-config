@@ -161,7 +161,6 @@ func TestNew(t *testing.T) {
 		TLS:         topodevice.TLSConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
-		Attributes:  nil,
 	}
 
 	mockTarget.EXPECT().ConnectTarget(
@@ -332,7 +331,6 @@ func synchronizerBootstrap(t *testing.T) (*southbound.MockTargetIf, *topodevice.
 		TLS:         topodevice.TLSConfig{},
 		Type:        "TestDevice",
 		Role:        "leaf",
-		Attributes:  nil,
 	}
 
 	return mockTarget, &device1, &capabilitiesResp
@@ -683,7 +681,6 @@ func Test_LikeStratum(t *testing.T) {
 		TLS:         topodevice.TLSConfig{},
 		Type:        "Stratum",
 		Role:        "leaf",
-		Attributes:  nil,
 	}
 
 	mockTarget.EXPECT().ConnectTarget(

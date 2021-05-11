@@ -64,18 +64,17 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 	allMocks := setUp("TestUpdateDisconnectedDevice", t)
 
 	device1Disconnected := &topodevice.Device{
-		ID:         device1,
-		Revision:   1,
-		Address:    "device1:1234",
-		Version:    deviceVersion1,
-		Type:       stratumType,
-		Attributes: make(map[string]string),
+		ID:             device1,
+		Revision:       1,
+		Address:        "device1:1234",
+		Version:        deviceVersion1,
+		Type:           stratumType,
+		MastershipTerm: 0,
 	}
 
 	protocolState := new(topo.ProtocolState)
 	protocolState.Protocol = topo.Protocol_GNMI
 	device1Disconnected.Protocols = append(device1Disconnected.Protocols, protocolState)
-	device1Disconnected.Attributes[mastershipTermKey] = "0"
 
 	allMocks.TopoClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topo.UpdateResponse{Object: topodevice.ToObject(device1Disconnected)}, nil).AnyTimes()
 	allMocks.TopoClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1Disconnected)}, nil).AnyTimes()
@@ -93,8 +92,7 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 	assert.NilError(t, err)
 	updatedDevice, err := session1.deviceStore.Get(device1)
 	assert.NilError(t, err)
-	newDeviceTerm := updatedDevice.Attributes[mastershipTermKey]
-	assert.Equal(t, newDeviceTerm, "1")
+	assert.Equal(t, updatedDevice.MastershipTerm, uint64(1))
 	assert.Equal(t, updatedDevice.Protocols[0].ConnectivityState, topo.ConnectivityState_UNREACHABLE)
 	assert.Equal(t, updatedDevice.Protocols[0].ChannelState, topo.ChannelState_DISCONNECTED)
 	assert.Equal(t, updatedDevice.Protocols[0].ServiceState, topo.ServiceState_UNAVAILABLE)
@@ -104,18 +102,17 @@ func TestUpdateConnectedDevice(t *testing.T) {
 	allMocks := setUp("TestUpdateConnectedDevice", t)
 
 	device1Connected := &topodevice.Device{
-		ID:         device1,
-		Revision:   1,
-		Address:    "device1:1234",
-		Version:    deviceVersion1,
-		Type:       stratumType,
-		Attributes: make(map[string]string),
+		ID:       device1,
+		Revision: 1,
+		Address:  "device1:1234",
+		Version:  deviceVersion1,
+		Type:     stratumType,
 	}
 
 	protocolState := new(topo.ProtocolState)
 	protocolState.Protocol = topo.Protocol_GNMI
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
-	device1Connected.Attributes[mastershipTermKey] = "0"
+	device1Connected.MastershipTerm = 0
 
 	allMocks.TopoClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topo.UpdateResponse{Object: topodevice.ToObject(device1Connected)}, nil).AnyTimes()
 	allMocks.TopoClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1Connected)}, nil).AnyTimes()
@@ -133,8 +130,8 @@ func TestUpdateConnectedDevice(t *testing.T) {
 	assert.NilError(t, err)
 	updatedDevice, err := session1.deviceStore.Get(device1)
 	assert.NilError(t, err)
-	newDeviceTerm := updatedDevice.Attributes[mastershipTermKey]
-	assert.Equal(t, newDeviceTerm, "1")
+	newDeviceTerm := updatedDevice.MastershipTerm
+	assert.Equal(t, newDeviceTerm, uint64(1))
 	assert.Equal(t, updatedDevice.Protocols[0].ConnectivityState, topo.ConnectivityState_REACHABLE)
 	assert.Equal(t, updatedDevice.Protocols[0].ChannelState, topo.ChannelState_CONNECTED)
 	assert.Equal(t, updatedDevice.Protocols[0].ServiceState, topo.ServiceState_AVAILABLE)

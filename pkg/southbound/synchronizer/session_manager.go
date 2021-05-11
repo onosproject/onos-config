@@ -217,7 +217,7 @@ func (sm *SessionManager) handleMastershipEvents(session *Session) {
 			if err != nil {
 				log.Error(err)
 			}
-			if state.Master == sm.mastershipStore.NodeID() && !session.connected && uint64(state.Term) >= uint64(currentTerm) {
+			if state.Master == sm.mastershipStore.NodeID() && !session.connected && uint64(state.Term) >= currentTerm {
 				err := sm.createSession(session.device)
 				if err != nil {
 					log.Error(err)
@@ -266,9 +266,6 @@ func (sm *SessionManager) createSession(device *topodevice.Device) error {
 		deviceStore:               sm.deviceStore,
 		mastershipState:           state,
 		nodeID:                    sm.mastershipStore.NodeID(),
-	}
-	if session.device.Attributes == nil {
-		session.device.Attributes = make(map[string]string)
 	}
 
 	err = session.open()

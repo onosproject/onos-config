@@ -16,8 +16,6 @@ package synchronizer
 
 import (
 	"errors"
-	"strconv"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -26,17 +24,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 
 	"github.com/onosproject/onos-api/go/onos/topo"
-	topodevice "github.com/onosproject/onos-config/pkg/device"
 )
-
-func (s *Session) getTermPerDevice(device *topodevice.Device) (int, error) {
-	term := device.Attributes[mastershipTermKey]
-	if term == "" {
-		return 0, nil
-	}
-	return strconv.Atoi(term)
-
-}
 
 func (s *Session) updateDevice(connectivity topo.ConnectivityState, channel topo.ChannelState,
 	service topo.ServiceState) error {
@@ -69,22 +57,15 @@ func (s *Session) updateDevice(connectivity topo.ConnectivityState, channel topo
 	topoDevice.Protocols = append(topoDevice.Protocols, protocolState)
 
 	// Read the current term for the given device
-	currentTerm, err := s.getTermPerDevice(topoDevice)
-	if err != nil {
-		return err
-	}
+	currentTerm := topoDevice.MastershipTerm
 
 	// Do not update the state of a device if the node encounters a mastership term greater than its own
-	if uint64(s.mastershipState.Term) < uint64(currentTerm) {
+	if uint64(s.mastershipState.Term) < currentTerm {
 		return backoff.Permanent(errors.New("device mastership term is greater than node mastership term"))
 	}
 
-	if topoDevice.Attributes == nil {
-		topoDevice.Attributes = make(map[string]string)
-	}
-
-	topoDevice.Attributes[mastershipTermKey] = strconv.FormatUint(uint64(s.mastershipState.Term), 10)
-	topoDevice.Attributes[mastershipMasterKey] = string(s.mastershipState.Master)
+	topoDevice.MastershipTerm = uint64(s.mastershipState.Term)
+	topoDevice.MasterKey = string(s.mastershipState.Master)
 	_, err = s.deviceStore.Update(topoDevice)
 	if err != nil {
 		log.Errorf("Device %s is not updated %s", id, err.Error())
