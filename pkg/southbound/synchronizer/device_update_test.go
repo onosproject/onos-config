@@ -76,6 +76,7 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 	protocolState.Protocol = topo.Protocol_GNMI
 	device1Disconnected.Protocols = append(device1Disconnected.Protocols, protocolState)
 
+	// FIXME: This simple mock does not work; update happens, but is not apparent on the subsequent Get.
 	allMocks.TopoClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topo.UpdateResponse{Object: topodevice.ToObject(device1Disconnected)}, nil).AnyTimes()
 	allMocks.TopoClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1Disconnected)}, nil).AnyTimes()
 
@@ -114,6 +115,7 @@ func TestUpdateConnectedDevice(t *testing.T) {
 	protocolState.Protocol = topo.Protocol_GNMI
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
 
+	// FIXME: This simple mock does not work; update happens, but is not apparent on the subsequent Get.
 	allMocks.TopoClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topo.UpdateResponse{Object: topodevice.ToObject(device1Connected)}, nil).AnyTimes()
 	allMocks.TopoClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1Connected)}, nil).AnyTimes()
 
