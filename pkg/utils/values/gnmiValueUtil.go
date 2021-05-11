@@ -57,7 +57,7 @@ func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue, modelPath *modelregistr
 		}
 		return handleLeafList(v, typeOpt0)
 	default:
-		return nil, fmt.Errorf("Not yet supported %v", v)
+		return nil, fmt.Errorf("not yet supported %v", v)
 	}
 }
 
@@ -122,9 +122,6 @@ func handleLeafList(gnmiLl *gnmi.TypedValue_LeaflistVal, typeOpt0 uint8) (*devic
 
 // NativeTypeToGnmiTypedValue converts native byte array based values in to gnmi types
 func NativeTypeToGnmiTypedValue(typedValue *devicechange.TypedValue) (*gnmi.TypedValue, error) {
-	if len(typedValue.Bytes) == 0 && typedValue.Type != devicechange.ValueType_EMPTY {
-		return nil, fmt.Errorf("invalid TypedValue Length 0")
-	}
 	switch typedValue.Type {
 	case devicechange.ValueType_EMPTY:
 		gnmiValue := &gnmi.TypedValue_AnyVal{AnyVal: nil}

@@ -22,6 +22,7 @@ import (
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
@@ -134,6 +135,54 @@ func Test_doSingleSet(t *testing.T) {
 	extensionChgID := setResponse.Extension[0].GetRegisteredExt()
 	assert.Equal(t, extensionChgID.Id.String(), strconv.Itoa(GnmiExtensionNetwkChangeID))
 	assert.Equal(t, string(extensionChgID.Msg), "TestChange")
+}
+
+// Test_doSingleSetEmptyString deals with setting an empty value on a string
+func Test_doSingleSetEmptyString(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+	deletePaths, replacedPaths, updatedPaths := setUpPathsForGetSetTests()
+
+	pathElemsRefs, _ := utils.ParseGNMIElements([]string{"cont1a", "leaf1a"})
+	typedValue := gnmi.TypedValue_StringVal{StringVal: ""}
+	value := gnmi.TypedValue{Value: &typedValue}
+	updatePath := gnmi.Path{Elem: pathElemsRefs.Elem, Target: "Device1"}
+	updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: &value})
+
+	ext100Name := gnmi_ext.Extension_RegisteredExt{
+		RegisteredExt: &gnmi_ext.RegisteredExtension{
+			Id:  GnmiExtensionNetwkChangeID,
+			Msg: []byte("TestChange"),
+		},
+	}
+
+	var setRequest = gnmi.SetRequest{
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+		Extension: []*gnmi_ext.Extension{{
+			Ext: &ext100Name,
+		}},
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+	assert.NoError(t, setError, "Unexpected error from gnmi Set")
+	assert.NotNil(t, setResponse, "Expected setResponse to have a value")
+	assert.Equal(t, len(setResponse.Response), 1)
+	assert.Equal(t, setResponse.Response[0].Op.String(), gnmi.UpdateResult_UPDATE.String())
+
+	testChange, err := mocks.MockStores.NetworkChangesStore.Get("TestChange")
+	assert.NoError(t, err)
+	assert.NotNil(t, testChange)
+	assert.Equal(t, 1, len(testChange.Changes))
+	device1ChangeValues := testChange.Changes[0].GetValues()
+	assert.Equal(t, 1, len(device1ChangeValues))
+	assert.Equal(t, `path:"/cont1a/leaf1a" value:<type:STRING > `, device1ChangeValues[0].String())
+
+	asGnmi, err := values.NativeTypeToGnmiTypedValue(device1ChangeValues[0].Value)
+	assert.NoError(t, err)
+	assert.NotNil(t, asGnmi)
+	assert.Equal(t, `string_val:""`, asGnmi.String())
 }
 
 // Test_doSingleSet shows list within a list with leafref keys and double key

@@ -96,6 +96,7 @@ func Test_getNoPathElemsJSON(t *testing.T) {
       "leaf2a": 13,
       "leaf2b": "1.4567"
     },
+    "leaf1a": "test val",
     "list2a": [
       {
         "name": "first",
@@ -151,7 +152,7 @@ func Test_getNoPathElemsProto(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
-	assert.Equal(t, len(result.Notification[0].Update), 12)
+	assert.Equal(t, len(result.Notification[0].Update), 13)
 	for _, upd := range result.Notification[0].Update {
 		switch path := utils.StrPathElem(upd.GetPath().GetElem()); path {
 		case "/cont1a/cont2a/leaf2a":
@@ -178,6 +179,8 @@ func Test_getNoPathElemsProto(t *testing.T) {
 			assert.Equal(t, utils.StrVal(upd.Val), "8")
 		case "/cont1a/list4[id=first]/list4a[fkey1=abc][fkey2=8]/displayname":
 			assert.Equal(t, utils.StrVal(upd.Val), "this is a list")
+		case "/cont1a/leaf1a":
+			assert.Equal(t, utils.StrVal(upd.Val), "test val")
 		default:
 			t.Errorf("unexpected elem %s", path)
 		}
