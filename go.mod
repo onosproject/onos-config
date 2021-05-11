@@ -20,7 +20,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.0.0-20210429130601-db7b54d13b83
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.0.0-20210429130601-db7b54d13b83
 	github.com/onosproject/helmit v0.6.12
-	github.com/onosproject/onos-api/go v0.7.25
+	github.com/onosproject/onos-api/go v0.7.34
 	github.com/onosproject/onos-config-model v0.4.3
 	github.com/onosproject/onos-lib-go v0.7.10
 	github.com/onosproject/onos-test v0.6.5
@@ -46,5 +46,3 @@ require (
 )
 
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3
-
-replace github.com/onosproject/onos-api/go => /Users/tom/src/github.com/onosproject/onos-api/go
