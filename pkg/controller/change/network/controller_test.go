@@ -189,7 +189,7 @@ func Test_NewController2Devices(t *testing.T) {
 // and so the NetworkChange is rolled back, rolling back the devicechange on both devices,
 // in the end leaving both devices unchanged.
 // The Network and Device changes sit there in COMPLETED state in the ROLLBACK phase.
-func Test_NewController1FailsGnmiSet(t *testing.T) {
+func Test_Controller1FailsGnmiSet(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	networkChanges, deviceChanges, devices := newStores(t, ctrl)
@@ -253,6 +253,11 @@ func Test_NewController1FailsGnmiSet(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
+	device1Chan := make(chan stream.Event)
+	ctx, err = deviceChanges.Watch(device.NewVersionedID(device1, v1), device1Chan, devicechangestore.WithReplay())
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+
 	device2Chan := make(chan stream.Event)
 	ctx, err = deviceChanges.Watch(device.NewVersionedID(device2, v1), device2Chan, devicechangestore.WithReplay())
 	assert.NoError(t, err)
@@ -260,10 +265,11 @@ func Test_NewController1FailsGnmiSet(t *testing.T) {
 
 	var wg sync.WaitGroup
 	eventsExpectedChange1 := 4
+	eventsExpectedDevice1 := 4
 	eventsExpectedDevice2 := 5
-	wg.Add(eventsExpectedChange1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
-	var j, k int
-	for i := 0; i < eventsExpectedChange1+eventsExpectedDevice2; i++ {
+	wg.Add(eventsExpectedChange1 + eventsExpectedDevice1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
+	var j, k, l int
+	for i := 0; i < eventsExpectedChange1+eventsExpectedDevice1+eventsExpectedDevice2; i++ {
 		select {
 		case event := <-change1Chan:
 			change := event.Object.(*networkchange.NetworkChange)
@@ -287,19 +293,24 @@ func Test_NewController1FailsGnmiSet(t *testing.T) {
 			}
 			j++
 			wg.Done()
-		case event := <-device2Chan:
+		case event := <-device1Chan:
 			change := event.Object.(*devicechange.DeviceChange)
 			t.Logf("%s event %d. %v", change.ID, k, change.Status)
 			k++
 			wg.Done()
+		case event := <-device2Chan:
+			change := event.Object.(*devicechange.DeviceChange)
+			t.Logf("%s event %d. %v", change.ID, l, change.Status)
+			l++
+			wg.Done()
 		case <-time.After(500 * time.Millisecond):
-			t.Logf("timed out waiting for event from change-1")
+			t.Logf("timed out waiting for event")
 			t.FailNow()
 		}
 	}
 
 	wg.Wait()
-	t.Logf("Done waiting for %d change-1 and %d device-2 events", eventsExpectedChange1, eventsExpectedDevice2)
+	t.Logf("Done waiting for %d change-1, %d device-1 and %d device-2 events", eventsExpectedChange1, eventsExpectedDevice1, eventsExpectedDevice2)
 	ctx.Close()
 
 	networkChange1, err = networkChanges.Get(networkChange1.GetID())

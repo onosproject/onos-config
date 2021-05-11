@@ -283,12 +283,6 @@ func Test_empty(t *testing.T) {
 func Test_errors(t *testing.T) {
 	//  Bad length on typed value
 	badTypedValue := devicechange.NewTypedValueEmpty()
-	badTypedValue.Type = devicechange.ValueType_BYTES
-	badTypedValue.Bytes = make([]byte, 0)
-	invalidTypedLength, invalidTypedLengthErr := NativeTypeToGnmiTypedValue(badTypedValue)
-	assert.Error(t, invalidTypedLengthErr)
-	assert.Contains(t, invalidTypedLengthErr.Error(), "invalid TypedValue Length 0")
-	assert.Nil(t, invalidTypedLength)
 
 	//  Bad type
 	badTypedValue.Type = 99
