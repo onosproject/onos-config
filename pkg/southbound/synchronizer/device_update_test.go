@@ -69,7 +69,7 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 		Address:        "device1:1234",
 		Version:        deviceVersion1,
 		Type:           stratumType,
-		MastershipTerm: 0,
+		MastershipTerm: 1,
 	}
 
 	protocolState := new(topo.ProtocolState)
@@ -102,17 +102,17 @@ func TestUpdateConnectedDevice(t *testing.T) {
 	allMocks := setUp("TestUpdateConnectedDevice", t)
 
 	device1Connected := &topodevice.Device{
-		ID:       device1,
-		Revision: 1,
-		Address:  "device1:1234",
-		Version:  deviceVersion1,
-		Type:     stratumType,
+		ID:             device1,
+		Revision:       1,
+		Address:        "device1:1234",
+		Version:        deviceVersion1,
+		Type:           stratumType,
+		MastershipTerm: 1,
 	}
 
 	protocolState := new(topo.ProtocolState)
 	protocolState.Protocol = topo.Protocol_GNMI
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
-	device1Connected.MastershipTerm = 0
 
 	allMocks.TopoClient.EXPECT().Update(gomock.Any(), gomock.Any()).Return(&topo.UpdateResponse{Object: topodevice.ToObject(device1Connected)}, nil).AnyTimes()
 	allMocks.TopoClient.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topo.GetResponse{Object: topodevice.ToObject(device1Connected)}, nil).AnyTimes()
