@@ -52,20 +52,14 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 		},
 	}
 
-	configurable := &topo.Configurable{
+	_ = newDevice.SetAspect(&topo.Configurable{
 		Type:    offlineInTopoModDeviceType,
 		Address: offlineInTopoModDeviceName + ":11161",
 		Version: offlineInTopoModDeviceVersion,
 		Timeout: uint64((10 * time.Second).Milliseconds()),
-	}
-	_ = topo.SetAttribute(newDevice, "configurable", configurable)
+	})
 
-	tlsInfo := &topo.TLSOptions{
-		Plain: true,
-	}
-	_ = topo.SetAttribute(newDevice, "tls-info", tlsInfo)
-
-	//newDevice.Attributes[topo.Timeout] = timeout.String()
+	_ = newDevice.SetAspect(&topo.TLSOptions{Plain: true})
 
 	request := &topo.CreateRequest{
 		Object: newDevice,
