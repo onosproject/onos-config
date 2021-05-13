@@ -52,7 +52,6 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 		TLS:         device.TLSConfig{},
 		Type:        unreachableDeviceModDeviceType,
 		Role:        "",
-		Attributes:  nil,
 		Protocols:   nil,
 	}
 	addRequest := &topo.CreateRequest{Object: device.ToObject(newDevice)}

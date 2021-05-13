@@ -60,11 +60,15 @@ type Device struct {
 	// user-friendly tag
 	Displayname string
 
-	// arbitrary mapping of attribute keys/values
-	Attributes map[string]string
+	// Mastership state
+	MastershipTerm uint64
+	MasterKey      string
 
 	// revision of the underlying Object
 	Revision topo.Revision
+
+	// Backing entity
+	Object *topo.Object
 }
 
 // Credentials is the device credentials
@@ -124,85 +128,110 @@ func (x ListResponseType) String() string {
 	return proto.EnumName(ListresponsetypeName, int32(x))
 }
 
-func setAttribute(o *topo.Object, k string, v string) {
-	if len(v) > 0 {
-		o.Attributes[k] = v
-	}
-}
-
-func flag(b bool) string {
-	if b {
-		return "true"
-	}
-	return "false"
-}
-
-// ToObject converts topology object entity to local device
+// ToObject converts local device to a topology object entity.
 func ToObject(device *Device) *topo.Object {
-	o := &topo.Object{
-		ID:         topo.ID(device.ID),
-		Revision:   device.Revision,
-		Attributes: device.Attributes,
-		Type:       topo.Object_ENTITY,
-		Obj: &topo.Object_Entity{
-			Entity: &topo.Entity{
-				KindID:    topo.ID(device.Type),
-				Protocols: device.Protocols,
+	o := device.Object
+	if o == nil {
+		o = &topo.Object{
+			ID:       topo.ID(device.ID),
+			Revision: device.Revision,
+			Type:     topo.Object_ENTITY,
+			Obj: &topo.Object_Entity{
+				Entity: &topo.Entity{
+					KindID:    topo.ID(device.Type),
+					Protocols: device.Protocols,
+				},
 			},
-		},
+		}
 	}
 
-	if o.Attributes == nil {
-		o.Attributes = make(map[string]string)
+	var timeout uint64
+	if device.Timeout != nil {
+		timeout = uint64(device.Timeout.Milliseconds())
 	}
-	setAttribute(o, topo.Type, string(device.Type))
-	setAttribute(o, topo.Role, string(device.Role))
-	setAttribute(o, topo.Address, device.Address)
-	setAttribute(o, topo.Target, device.Target)
-	setAttribute(o, topo.Version, device.Version)
-	setAttribute(o, topo.TLSInsecure, flag(device.TLS.Insecure))
-	setAttribute(o, topo.TLSPlain, flag(device.TLS.Plain))
-	setAttribute(o, topo.TLSInsecure, device.TLS.Key)
-	setAttribute(o, topo.TLSInsecure, device.TLS.CaCert)
-	setAttribute(o, topo.TLSInsecure, device.TLS.Cert)
 
+	// FIXME: preserve other aspect values; presently this transformation is lossy
+	_ = o.SetAspect(&topo.Asset{
+		Name: device.Displayname,
+		Role: string(device.Role),
+	})
+
+	_ = o.SetAspect(&topo.Configurable{
+		Type:    string(device.Type),
+		Address: device.Address,
+		Target:  device.Target,
+		Version: device.Version,
+		Timeout: timeout,
+	})
+
+	_ = o.SetAspect(&topo.TLSOptions{
+		Insecure: device.TLS.Insecure,
+		Plain:    device.TLS.Plain,
+		Key:      device.TLS.Key,
+		CaCert:   device.TLS.CaCert,
+		Cert:     device.TLS.Cert,
+	})
+
+	_ = o.SetAspect(&topo.MastershipState{
+		Term:   device.MastershipTerm,
+		NodeId: device.MasterKey,
+	})
 	return o
 }
 
-// ToDevice converts local device structure to topology object entity
+// ToDevice converts topology object entity to a local device object
 func ToDevice(object *topo.Object) (*Device, error) {
 	if object.Type != topo.Object_ENTITY {
 		return nil, fmt.Errorf("object is not a topo entity %v+", object)
 	}
-	version, ok := object.Attributes[topo.Version]
-	if !ok {
-		return nil, fmt.Errorf("topo entity %s must have 'version' attribute to work with onos-config", object.ID)
-	}
-	address, ok := object.Attributes[topo.Address]
-	if !ok {
-		return nil, fmt.Errorf("topo entity %s must have 'address' attribute to work with onos-config", object.ID)
-	}
+
 	typeKindID := Type(object.GetEntity().KindID)
 	if len(typeKindID) == 0 {
 		return nil, fmt.Errorf("topo entity %s must have a 'kindid' to work with onos-config", object.ID)
 	}
+
+	asset := object.GetAspect(&topo.Asset{}).(*topo.Asset)
+	if asset == nil {
+		return nil, fmt.Errorf("topo entity %s must have 'asset' attribute to work with onos-config", object.ID)
+	}
+	configurable := object.GetAspect(&topo.Configurable{}).(*topo.Configurable)
+	if configurable == nil {
+		return nil, fmt.Errorf("topo entity %s must have 'configurable' attribute to work with onos-config", object.ID)
+	}
+
+	mastership := object.GetAspect(&topo.MastershipState{}).(*topo.MastershipState)
+	if mastership == nil {
+		return nil, fmt.Errorf("topo entity %s must have 'mastership' attribute to work with onos-config", object.ID)
+	}
+
+	tlsInfo := object.GetAspect(&topo.TLSOptions{}).(*topo.TLSOptions)
+	if tlsInfo == nil {
+		return nil, fmt.Errorf("topo entity %s must have 'tls-info' attribute to work with onos-config", object.ID)
+	}
+
+	timeout := time.Millisecond * time.Duration(configurable.Timeout)
+
 	d := &Device{
-		ID:        ID(object.ID),
-		Revision:  object.Revision,
-		Protocols: object.GetEntity().Protocols,
-		Type:      typeKindID,
-		Role:      Role(object.Attributes[topo.Role]),
-		Address:   address,
-		Target:    object.Attributes[topo.Target],
-		Version:   version,
+		ID:          ID(object.ID),
+		Revision:    object.Revision,
+		Protocols:   object.GetEntity().Protocols,
+		Type:        typeKindID,
+		Role:        Role(asset.Role),
+		Displayname: asset.Name,
+		Address:     configurable.Address,
+		Target:      configurable.Target,
+		Version:     configurable.Version,
+		Timeout:     &timeout,
 		TLS: TLSConfig{
-			Plain:    object.Attributes[topo.TLSPlain] == "true",
-			Insecure: object.Attributes[topo.TLSInsecure] == "true",
-			Cert:     object.Attributes[topo.TLSCert],
-			CaCert:   object.Attributes[topo.TLSCaCert],
-			Key:      object.Attributes[topo.TLSKey],
+			Plain:    tlsInfo.Plain,
+			Insecure: tlsInfo.Insecure,
+			Cert:     tlsInfo.Cert,
+			CaCert:   tlsInfo.CaCert,
+			Key:      tlsInfo.Key,
 		},
-		Attributes: object.Attributes,
+		MastershipTerm: mastership.Term,
+		MasterKey:      mastership.NodeId,
+		Object:         object,
 	}
 	return d, nil
 }

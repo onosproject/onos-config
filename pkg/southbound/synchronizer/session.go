@@ -18,7 +18,6 @@ import (
 	"context"
 	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"strconv"
 	"sync"
 	"time"
 
@@ -43,10 +42,8 @@ import (
 )
 
 const (
-	backoffInterval     = 10 * time.Millisecond
-	maxBackoffTime      = 5 * time.Second
-	mastershipTermKey   = "onos-config.mastership.term"
-	mastershipMasterKey = "onos-config.mastership.master"
+	backoffInterval = 10 * time.Millisecond
+	maxBackoffTime  = 5 * time.Second
 )
 
 // Session a gNMI session
@@ -69,17 +66,13 @@ type Session struct {
 	mu                        sync.RWMutex
 }
 
-func (s *Session) getCurrentTerm() (int, error) {
-	device, err := s.deviceStore.Get(s.device.ID)
+func (s *Session) getCurrentTerm() (uint64, error) {
+	d, err := s.deviceStore.Get(s.device.ID)
 	if err != nil {
 		return 0, err
 	}
 
-	term := device.Attributes[mastershipTermKey]
-	if term == "" {
-		return 0, nil
-	}
-	return strconv.Atoi(term)
+	return d.MastershipTerm, nil
 }
 
 // open open a new gNMI session
@@ -100,7 +93,7 @@ func (s *Session) open() error {
 			log.Error(err)
 		}
 
-		if s.mastershipState.Master == s.nodeID && uint64(s.mastershipState.Term) >= uint64(currentTerm) {
+		if s.mastershipState.Master == s.nodeID && uint64(s.mastershipState.Term) >= currentTerm {
 			err := s.connect()
 			if err != nil {
 				log.Error(err)
