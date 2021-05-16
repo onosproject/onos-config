@@ -114,7 +114,6 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 // reconcileChange reconciles a CHANGE in the RUNNING state
 func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (controller.Result, error) {
 	// Attempt to apply the change to the device and update the change with the result
-<<<<<<< HEAD
 	if err := r.doChange(change); err != nil {
 		change.Status.State = changetypes.State_FAILED
 		change.Status.Reason = changetypes.Reason_ERROR
@@ -124,13 +123,6 @@ func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (control
 		change.Status.State = changetypes.State_COMPLETE
 		log.Infof("Completing DeviceChange %s", change.ID)
 		log.Debug(change)
-=======
-	err := r.doChange(change)
-
-	// If the device returned an error, retry (the controller framework will apply exponential backoff)
-	if err != nil {
-		return controller.Result{}, err
->>>>>>> 9c943a7 (Update Atomix client)
 	}
 
 	change.Status.State = changetypes.State_COMPLETE
@@ -153,7 +145,6 @@ func (r *Reconciler) doChange(change *devicechange.DeviceChange) error {
 
 // reconcileRollback reconciles a ROLLBACK in the RUNNING state
 func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (controller.Result, error) {
-<<<<<<< HEAD
 	// Attempt to roll back the change to the device and update the change with the result
 	if err := r.doRollback(change); err != nil {
 		change.Status.State = changetypes.State_FAILED
@@ -164,14 +155,6 @@ func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (contr
 		change.Status.State = changetypes.State_COMPLETE
 		log.Infof("Completing DeviceChange %v", change.ID)
 		log.Debug(change)
-=======
-	// Attempt to roll back the change to the device
-	err := r.doRollback(change)
-
-	// If the device returned an error, retry (the controller framework will apply exponential backoff)
-	if err != nil {
-		return controller.Result{}, err
->>>>>>> 9c943a7 (Update Atomix client)
 	}
 
 	change.Status.State = changetypes.State_COMPLETE
@@ -187,12 +170,8 @@ func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (contr
 
 // doRollback rolls back a change on the device
 func (r *Reconciler) doRollback(change *devicechange.DeviceChange) error {
-<<<<<<< HEAD
 	log.Infof("Executing Rollback for %s", change.ID)
 	log.Debug(change)
-=======
-	log.Infof("Executing Rollback for %v", change)
->>>>>>> 9c943a7 (Update Atomix client)
 	deltaChange, err := r.computeRollback(change)
 	if err != nil {
 		return err
