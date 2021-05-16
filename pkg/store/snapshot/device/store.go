@@ -16,78 +16,31 @@ package device
 
 import (
 	"context"
-	"github.com/atomix/go-client/pkg/client/map"
-	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/util/net"
+	"fmt"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/map"
+	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-api/go/onos/config/device"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
-	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
+	"os"
 	"time"
 )
 
-const deviceSnapshotsName = "device-snapshots"
-const snapshotsName = "snapshots"
-
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore(config config.Config) (Store, error) {
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
-	if err != nil {
-		return nil, err
-	}
-
-	deviceSnapshots, err := database.GetMap(context.Background(), deviceSnapshotsName)
-	if err != nil {
-		return nil, err
-	}
-
-	snapshots, err := database.GetMap(context.Background(), snapshotsName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &atomixStore{
-		deviceSnapshots: deviceSnapshots,
-		snapshots:       snapshots,
-	}, nil
-}
-
-// NewLocalStore returns a new local device snapshot store
-func NewLocalStore() (Store, error) {
-	_, address := atomix.StartLocalNode()
-	return newLocalStore(address)
-}
-
-// newLocalStore creates a new local device snapshot store
-func newLocalStore(address net.Address) (Store, error) {
-	deviceSnapshotsName := primitive.Name{
-		Namespace: "local",
-		Name:      deviceSnapshotsName,
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
+func NewAtomixStore() (Store, error) {
+	client := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
+	deviceSnapshots, err := client.GetMap(context.Background(), fmt.Sprintf("%s-device-snapshots", os.Getenv("SERVICE_NAME")))
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	deviceSnapshots, err := _map.New(context.Background(), deviceSnapshotsName, []*primitive.Session{session})
+	snapshots, err := client.GetMap(context.Background(), fmt.Sprintf("%s-snapshots", os.Getenv("SERVICE_NAME")))
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-
-	snapshotsName := primitive.Name{
-		Namespace: "local",
-		Name:      snapshotsName,
-	}
-	snapshots, err := _map.New(context.Background(), snapshotsName, []*primitive.Session{session})
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-
 	return &atomixStore{
 		deviceSnapshots: deviceSnapshots,
 		snapshots:       snapshots,
@@ -171,9 +124,7 @@ func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
 		return errors.FromAtomix(err)
 	}
 
-	snapshot.Revision = devicesnapshot.Revision(entry.Version)
-	snapshot.Created = entry.Created
-	snapshot.Updated = entry.Updated
+	snapshot.Revision = devicesnapshot.Revision(entry.Revision)
 	return nil
 }
 
@@ -197,13 +148,12 @@ func (s *atomixStore) Update(snapshot *devicesnapshot.DeviceSnapshot) error {
 		return errors.NewInvalid("snapshot encoding failed: %v", err)
 	}
 
-	entry, err := s.deviceSnapshots.Put(ctx, string(snapshot.ID), bytes, _map.IfVersion(_map.Version(snapshot.Revision)))
+	entry, err := s.deviceSnapshots.Put(ctx, string(snapshot.ID), bytes, _map.IfMatch(meta.NewRevision(meta.Revision(snapshot.Revision))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
-	snapshot.Revision = devicesnapshot.Revision(entry.Version)
-	snapshot.Updated = entry.Updated
+	snapshot.Revision = devicesnapshot.Revision(entry.Revision)
 	return nil
 }
 
@@ -215,20 +165,19 @@ func (s *atomixStore) Delete(snapshot *devicesnapshot.DeviceSnapshot) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.deviceSnapshots.Remove(ctx, string(snapshot.ID), _map.IfVersion(_map.Version(snapshot.Revision)))
+	_, err := s.deviceSnapshots.Remove(ctx, string(snapshot.ID), _map.IfMatch(meta.NewRevision(meta.Revision(snapshot.Revision))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
 	snapshot.Revision = 0
-	snapshot.Updated = entry.Updated
 	return nil
 }
 
 func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) (stream.Context, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mapCh := make(chan *_map.Entry)
+	mapCh := make(chan _map.Entry)
 	if err := s.deviceSnapshots.Entries(ctx, mapCh); err != nil {
 		cancel()
 		return nil, errors.FromAtomix(err)
@@ -237,7 +186,7 @@ func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) (stream.Con
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if snapshot, err := decodeDeviceSnapshot(entry); err == nil {
+			if snapshot, err := decodeDeviceSnapshot(&entry); err == nil {
 				ch <- snapshot
 			}
 		}
@@ -248,7 +197,7 @@ func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) (stream.Con
 func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mapCh := make(chan *_map.Event)
+	mapCh := make(chan _map.Event)
 	if err := s.deviceSnapshots.Watch(ctx, mapCh, _map.WithReplay()); err != nil {
 		cancel()
 		return nil, errors.FromAtomix(err)
@@ -257,24 +206,24 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if snapshot, err := decodeDeviceSnapshot(event.Entry); err == nil {
+			if snapshot, err := decodeDeviceSnapshot(&event.Entry); err == nil {
 				switch event.Type {
-				case _map.EventNone:
+				case _map.EventReplay:
 					ch <- stream.Event{
 						Type:   stream.None,
 						Object: snapshot,
 					}
-				case _map.EventInserted:
+				case _map.EventInsert:
 					ch <- stream.Event{
 						Type:   stream.Created,
 						Object: snapshot,
 					}
-				case _map.EventUpdated:
+				case _map.EventUpdate:
 					ch <- stream.Event{
 						Type:   stream.Updated,
 						Object: snapshot,
 					}
-				case _map.EventRemoved:
+				case _map.EventRemove:
 					ch <- stream.Event{
 						Type:   stream.Deleted,
 						Object: snapshot,
@@ -323,7 +272,7 @@ func (s *atomixStore) Load(deviceID device.VersionedID) (*devicesnapshot.Snapsho
 func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Context, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mapCh := make(chan *_map.Entry)
+	mapCh := make(chan _map.Entry)
 	if err := s.snapshots.Entries(ctx, mapCh); err != nil {
 		cancel()
 		return nil, errors.FromAtomix(err)
@@ -332,7 +281,7 @@ func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Contex
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if snapshot, err := decodeSnapshot(entry); err == nil {
+			if snapshot, err := decodeSnapshot(&entry); err == nil {
 				ch <- snapshot
 			}
 		}
@@ -344,7 +293,7 @@ func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Contex
 func (s *atomixStore) WatchAll(ch chan<- stream.Event) (stream.Context, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mapCh := make(chan *_map.Event)
+	mapCh := make(chan _map.Event)
 	if err := s.snapshots.Watch(ctx, mapCh, _map.WithReplay()); err != nil {
 		cancel()
 		return nil, errors.FromAtomix(err)
@@ -353,24 +302,24 @@ func (s *atomixStore) WatchAll(ch chan<- stream.Event) (stream.Context, error) {
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if snapshot, err := decodeSnapshot(event.Entry); err == nil {
+			if snapshot, err := decodeSnapshot(&event.Entry); err == nil {
 				switch event.Type {
-				case _map.EventNone:
+				case _map.EventReplay:
 					ch <- stream.Event{
 						Type:   stream.None,
 						Object: snapshot,
 					}
-				case _map.EventInserted:
+				case _map.EventInsert:
 					ch <- stream.Event{
 						Type:   stream.Created,
 						Object: snapshot,
 					}
-				case _map.EventUpdated:
+				case _map.EventUpdate:
 					ch <- stream.Event{
 						Type:   stream.Updated,
 						Object: snapshot,
 					}
-				case _map.EventRemoved:
+				case _map.EventRemove:
 					ch <- stream.Event{
 						Type:   stream.Deleted,
 						Object: snapshot,
@@ -397,9 +346,7 @@ func decodeDeviceSnapshot(entry *_map.Entry) (*devicesnapshot.DeviceSnapshot, er
 		return nil, errors.NewInvalid("device snapshot decoding failed: %v", err)
 	}
 	snapshot.ID = devicesnapshot.ID(entry.Key)
-	snapshot.Revision = devicesnapshot.Revision(entry.Version)
-	snapshot.Created = entry.Created
-	snapshot.Updated = entry.Updated
+	snapshot.Revision = devicesnapshot.Revision(entry.Revision)
 	return snapshot, nil
 }
 

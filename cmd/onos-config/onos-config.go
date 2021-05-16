@@ -37,7 +37,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"os"
 	"time"
@@ -100,43 +99,32 @@ func main() {
 		log.Fatal(err)
 	}
 
-	configuration, err := config.GetConfig()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	cluster, err := ClusterFactory(configuration)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	leadershipStore, err := leadership.NewAtomixStore(cluster, configuration)
+	leadershipStore, err := leadership.NewAtomixStore()
 	if err != nil {
 		log.Fatal("Cannot load leadership atomix store ", err)
 	}
 
-	mastershipStore, err := mastership.NewAtomixStore(cluster, configuration)
+	mastershipStore, err := mastership.NewAtomixStore()
 	if err != nil {
 		log.Fatal("Cannot load mastership atomix store ", err)
 	}
 
-	deviceChangesStore, err := device.NewAtomixStore(configuration)
+	deviceChangesStore, err := device.NewAtomixStore()
 	if err != nil {
 		log.Fatal("Cannot load device atomix store ", err)
 	}
 
-	networkChangesStore, err := network.NewAtomixStore(cluster, configuration)
+	networkChangesStore, err := network.NewAtomixStore()
 	if err != nil {
 		log.Fatal("Cannot load network atomix store ", err)
 	}
 
-	networkSnapshotStore, err := networksnap.NewAtomixStore(cluster, configuration)
+	networkSnapshotStore, err := networksnap.NewAtomixStore()
 	if err != nil {
 		log.Fatal("Cannot load network snapshot atomix store ", err)
 	}
 
-	deviceSnapshotStore, err := devicesnap.NewAtomixStore(configuration)
+	deviceSnapshotStore, err := devicesnap.NewAtomixStore()
 	if err != nil {
 		log.Fatal("Cannot load network atomix store ", err)
 	}
