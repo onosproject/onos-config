@@ -295,7 +295,7 @@ func (s *atomixStore) List(deviceID device.VersionedID, ch chan<- *devicechange.
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if config, err := decodeChange(&entry); err == nil {
+			if config, err := decodeChange(&entry); err == nil && config.ID.GetDeviceVersionedID() == deviceID {
 				ch <- config
 			}
 		}
@@ -324,7 +324,7 @@ func (s *atomixStore) Watch(deviceID device.VersionedID, ch chan<- stream.Event,
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if change, err := decodeChange(&event.Entry); err == nil {
+			if change, err := decodeChange(&event.Entry); err == nil && change.ID.GetDeviceVersionedID() == deviceID {
 				switch event.Type {
 				case indexedmap.EventInsert:
 					ch <- stream.Event{

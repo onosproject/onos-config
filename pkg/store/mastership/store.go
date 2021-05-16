@@ -65,7 +65,7 @@ func NewAtomixStore() (Store, error) {
 		newElection: func(id device.ID) (deviceMastershipElection, error) {
 			election, err := client.GetElection(
 				context.Background(),
-				fmt.Sprintf("%s-device-changes", os.Getenv("SERVICE_NAME")),
+				fmt.Sprintf("%s-masterships", os.Getenv("SERVICE_NAME")),
 				primitive.WithClusterKey(string(id)))
 			if err != nil {
 				return nil, err
