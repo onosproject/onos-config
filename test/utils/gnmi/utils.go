@@ -92,7 +92,7 @@ func connectService(release *helm.HelmRelease, deploymentName string) (*grpc.Cli
 }
 
 // GetDevice :
-func GetDevice(simulator *helm.HelmRelease) (*device.Device, error) {
+func GetDevice(simulator *helm.HelmRelease) (*topo.Object, error) {
 	client, err := NewTopoClient()
 	if err != nil {
 		return nil, err
@@ -105,11 +105,11 @@ func GetDevice(simulator *helm.HelmRelease) (*device.Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	return device.ToDevice(response.Object)
+	return response.Object, nil
 }
 
 // AwaitDeviceState :
-func AwaitDeviceState(simulator *helm.HelmRelease, predicate func(*device.Device) bool) error {
+func AwaitDeviceState(simulator *helm.HelmRelease, predicate func(object *topo.Object) bool) error {
 	for i := 0; i < 10; i++ {
 		device, err := GetDevice(simulator)
 		if err != nil {
@@ -122,24 +122,55 @@ func AwaitDeviceState(simulator *helm.HelmRelease, predicate func(*device.Device
 	return errors.New("device wait timed out")
 }
 
-// NewDevice :
-func NewDevice(simulator *helm.HelmRelease, deviceType string, version string) (*device.Device, error) {
+// NewDeviceEntity :
+func NewDeviceEntity(simulator *helm.HelmRelease, deviceType string, version string) (*topo.Object, error) {
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
 	services, err := simulatorClient.CoreV1().Services().List()
 	if err != nil {
 		return nil, err
 	}
 	service := services[0]
-	return &device.Device{
-		ID:      device.ID(simulator.Name()),
-		Address: service.Ports()[0].Address(true),
-		Type:    device.Type(deviceType),
-		Version: version,
-		TLS: device.TLSConfig{
-			Plain:    true,
-			Insecure: true,
+
+	o := topo.Object{
+		ID:   topo.ID(simulator.Name()),
+		Type: topo.Object_ENTITY,
+		Obj: &topo.Object_Entity{
+			Entity: &topo.Entity{
+				KindID: topo.ID(deviceType),
+			},
 		},
-	}, nil
+	}
+
+	err = o.SetAspect(&topo.TLSOptions{
+		Insecure: true,
+		Plain:    true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = o.SetAspect(&topo.Asset{
+		Name: simulator.Name(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := o.SetAspect(&topo.MastershipState{}); err != nil {
+		return nil, err
+	}
+
+	err = o.SetAspect(&topo.Configurable{
+		Type:    deviceType,
+		Address: service.Ports()[0].Address(true),
+		Version: version,
+		Timeout: uint64(time.Second.Milliseconds() * 5),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &o, nil
 }
 
 // NewTopoClient :
@@ -179,7 +210,7 @@ func NewOpStateDiagsClient() (diags.OpStateDiagsClient, error) {
 }
 
 // AddDeviceToTopo :
-func AddDeviceToTopo(d *device.Device) error {
+func AddDeviceToTopo(deviceEntity *topo.Object) error {
 	client, err := NewTopoClient()
 	if err != nil {
 		return err
@@ -187,13 +218,13 @@ func AddDeviceToTopo(d *device.Device) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	_, err = client.Create(ctx, &topo.CreateRequest{
-		Object: device.ToObject(d),
+		Object: deviceEntity,
 	})
 	return err
 }
 
 // RemoveDeviceFromTopo :
-func RemoveDeviceFromTopo(d *device.Device) error {
+func RemoveDeviceFromTopo(d *topo.Object) error {
 	client, err := NewTopoClient()
 	if err != nil {
 		return err
@@ -201,7 +232,7 @@ func RemoveDeviceFromTopo(d *device.Device) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	_, err = client.Delete(ctx, &topo.DeleteRequest{
-		ID: topo.ID(d.ID),
+		ID: d.ID,
 	})
 	return err
 }
@@ -220,7 +251,7 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device, topo.EventType) 
 			assert.Fail(t, "device stream closed prematurely")
 			return false
 		} else if err != nil {
-			assert.Fail(t, "device stream failed with error", err)
+			assert.Fail(t, fmt.Sprintf("device stream failed with error %s", err.Error()))
 			return false
 		} else if response.Event.Object.Type == topo.Object_ENTITY {
 			topoDevice, err := device.ToDevice(&response.Event.Object)
@@ -601,7 +632,7 @@ func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
 
 	time.Sleep(2 * time.Second)
 
-	simulatorDevice, err := NewDevice(simulator, SimulatorDeviceType, SimulatorDeviceVersion)
+	simulatorDevice, err := NewDeviceEntity(simulator, SimulatorDeviceType, SimulatorDeviceVersion)
 	assert.NoError(t, err, "could not make device for simulator %v", err)
 
 	err = AddDeviceToTopo(simulatorDevice)
