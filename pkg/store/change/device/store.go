@@ -20,7 +20,6 @@ import (
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
-	"os"
 	"sync"
 	"time"
 
@@ -42,15 +41,10 @@ func getDeviceChangesName(deviceID device.VersionedID) string {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
+func NewAtomixStore(client atomix.Client) (Store, error) {
 	changesFactory := func(deviceID device.VersionedID) (indexedmap.IndexedMap, error) {
-		return client.GetIndexedMap(
-			context.Background(),
-			fmt.Sprintf("%s-device-changes", os.Getenv("SERVICE_NAME")),
-			primitive.WithClusterKey(getDeviceChangesName(deviceID)))
+		return client.GetIndexedMap(context.Background(), "onos-config-device-changes", primitive.WithClusterKey(getDeviceChangesName(deviceID)))
 	}
-
 	return &atomixStore{
 		changesFactory: changesFactory,
 		deviceChanges:  make(map[device.VersionedID]indexedmap.IndexedMap),
@@ -202,7 +196,7 @@ func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
 	}
 
 	change.Index = devicechange.Index(entry.Index)
-	change.Revision = devicechange.Revision(entry.Version)
+	change.Revision = devicechange.Revision(entry.Revision)
 	log.Infof("Created new device change %s", change.ID)
 
 	return nil
@@ -246,7 +240,7 @@ func (s *atomixStore) Update(change *devicechange.DeviceChange) error {
 		return errors.FromAtomix(err)
 	}
 
-	change.Revision = devicechange.Revision(entry.Version)
+	change.Revision = devicechange.Revision(entry.Revision)
 	return nil
 }
 
@@ -370,6 +364,6 @@ func decodeChange(entry *indexedmap.Entry) (*devicechange.DeviceChange, error) {
 	}
 	change.ID = devicechange.ID(entry.Key)
 	change.Index = devicechange.Index(entry.Index)
-	change.Revision = devicechange.Revision(entry.Version)
+	change.Revision = devicechange.Revision(entry.Revision)
 	return change, nil
 }

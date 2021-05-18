@@ -17,6 +17,7 @@ package device
 import (
 	"context"
 	"fmt"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/golang/mock/gomock"
 	types "github.com/onosproject/onos-api/go/onos/config"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
@@ -83,7 +84,14 @@ const (
 )
 
 func TestReconcilerChangeSuccess(t *testing.T) {
-	devices, deviceChanges := newStores(t)
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	devices, deviceChanges := newStores(t, test)
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
@@ -146,7 +154,14 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 }
 
 func TestReconcilerRollbackSuccess(t *testing.T) {
-	devices, deviceChanges := newStores(t)
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	devices, deviceChanges := newStores(t, test)
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
@@ -213,7 +228,14 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 }
 
 func TestReconcilerChangeThenRollback(t *testing.T) {
-	devices, deviceChanges := newStores(t)
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	devices, deviceChanges := newStores(t, test)
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
@@ -347,7 +369,14 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 // interface is removed (at root). Then this delete is rolled back and the 2
 // attributes become visible again
 func TestReconcilerRemoveThenRollback(t *testing.T) {
-	devices, deviceChanges := newStores(t)
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	devices, deviceChanges := newStores(t, test)
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
@@ -473,7 +502,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 
 }
 
-func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
+func newStores(t *testing.T, test *test.Test) (devicestore.Store, devicechanges.Store) {
 	ctrl := gomock.NewController(t)
 
 	devices := map[topodevice.ID]*topodevice.Device{
@@ -535,7 +564,11 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 
 	deviceStore, err := devicestore.NewStore(client)
 	assert.NoError(t, err)
-	deviceChanges, err := devicechanges.NewLocalStore()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
+	deviceChanges, err := devicechanges.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 
 	mockTargetDevice(t, device1, ctrl)

@@ -16,7 +16,6 @@ package device
 
 import (
 	"context"
-	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/atomix/atomix-go-client/pkg/atomix/map"
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
@@ -26,18 +25,16 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
-	"os"
 	"time"
 )
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
-	deviceSnapshots, err := client.GetMap(context.Background(), fmt.Sprintf("%s-device-snapshots", os.Getenv("SERVICE_NAME")))
+func NewAtomixStore(client atomix.Client) (Store, error) {
+	deviceSnapshots, err := client.GetMap(context.Background(), "onos-config-device-snapshots")
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	snapshots, err := client.GetMap(context.Background(), fmt.Sprintf("%s-snapshots", os.Getenv("SERVICE_NAME")))
+	snapshots, err := client.GetMap(context.Background(), "onos-config-snapshots")
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}

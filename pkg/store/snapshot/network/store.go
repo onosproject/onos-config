@@ -16,11 +16,9 @@ package network
 
 import (
 	"context"
-	"fmt"
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
-	"os"
 	"time"
 
 	"github.com/atomix/atomix-go-client/pkg/atomix"
@@ -32,9 +30,8 @@ import (
 )
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
-	snapshots, err := client.GetIndexedMap(context.Background(), fmt.Sprintf("%s-network-snapshots", os.Getenv("SERVICE_NAME")))
+func NewAtomixStore(client atomix.Client) (Store, error) {
+	snapshots, err := client.GetIndexedMap(context.Background(), "onos-config-network-snapshots")
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
@@ -127,7 +124,7 @@ func (s *atomixStore) Create(snapshot *networksnapshot.NetworkSnapshot) error {
 	}
 
 	snapshot.Index = networksnapshot.Index(entry.Index)
-	snapshot.Revision = networksnapshot.Revision(entry.Version)
+	snapshot.Revision = networksnapshot.Revision(entry.Revision)
 	return nil
 }
 
@@ -149,7 +146,7 @@ func (s *atomixStore) Update(snapshot *networksnapshot.NetworkSnapshot) error {
 		return errors.FromAtomix(err)
 	}
 
-	snapshot.Revision = networksnapshot.Revision(entry.Version)
+	snapshot.Revision = networksnapshot.Revision(entry.Revision)
 	return nil
 }
 
@@ -246,6 +243,6 @@ func decodeSnapshot(entry *indexedmap.Entry) (*networksnapshot.NetworkSnapshot, 
 	}
 	snapshot.ID = networksnapshot.ID(entry.Key)
 	snapshot.Index = networksnapshot.Index(entry.Index)
-	snapshot.Revision = networksnapshot.Revision(entry.Version)
+	snapshot.Revision = networksnapshot.Revision(entry.Revision)
 	return snapshot, nil
 }

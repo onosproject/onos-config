@@ -15,27 +15,41 @@
 package leadership
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"testing"
 
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLeadershipStore(t *testing.T) {
-	_, address := atomix.StartLocalNode()
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
 
-	store1, err := newLocalStore("a", address)
+	client1, err := test.NewClient("node-1")
 	assert.NoError(t, err)
 
-	store2, err := newLocalStore("b", address)
+	client2, err := test.NewClient("node-2")
+	assert.NoError(t, err)
+
+	store1, err := NewAtomixStore(client1)
+	assert.NoError(t, err)
+
+	store2, err := NewAtomixStore(client2)
 	assert.NoError(t, err)
 
 	store2Ch := make(chan Leadership)
 	err = store2.Watch(store2Ch)
 	assert.NoError(t, err)
 
-	store3, err := newLocalStore("c", address)
+	client3, err := test.NewClient("node-3")
+	assert.NoError(t, err)
+
+	store3, err := NewAtomixStore(client3)
 	assert.NoError(t, err)
 
 	store3Ch := make(chan Leadership)

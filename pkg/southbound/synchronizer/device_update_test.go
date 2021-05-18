@@ -15,16 +15,17 @@
 package synchronizer
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/onosproject/onos-api/go/onos/topo"
+	testify "github.com/stretchr/testify/assert"
 	"testing"
-
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	"github.com/onosproject/onos-config/pkg/store/mastership"
-	"github.com/onosproject/onos-config/pkg/test/mocks"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 
 	"github.com/golang/mock/gomock"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/mastership"
+	"github.com/onosproject/onos-config/pkg/test/mocks"
 	"gotest.tools/assert"
 )
 
@@ -40,15 +41,13 @@ type AllMocks struct {
 	TopoClient      *mocks.MockTopoClient
 }
 
-func setUp(name string, t *testing.T) *AllMocks {
-
+func setUp(name string, t *testing.T, atomixClient atomix.Client) *AllMocks {
 	ctrl := gomock.NewController(t)
 	client := mocks.NewMockTopoClient(ctrl)
 	deviceStore, err := devicestore.NewStore(client)
 	assert.NilError(t, err)
 
-	node1 := cluster.NodeID("node1")
-	mastershipStore, err := mastership.NewLocalStore(name, node1)
+	mastershipStore, err := mastership.NewAtomixStore(atomixClient)
 	assert.NilError(t, err)
 
 	allMocks := AllMocks{
@@ -61,7 +60,14 @@ func setUp(name string, t *testing.T) *AllMocks {
 }
 
 func TestUpdateDisconnectedDevice(t *testing.T) {
-	allMocks := setUp("TestUpdateDisconnectedDevice", t)
+	test := test.NewTest()
+	testify.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	testify.NoError(t, err)
+
+	allMocks := setUp("TestUpdateDisconnectedDevice", t, atomixClient)
 
 	device1Disconnected := &topodevice.Device{
 		ID:             device1,
@@ -100,7 +106,14 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 }
 
 func TestUpdateConnectedDevice(t *testing.T) {
-	allMocks := setUp("TestUpdateConnectedDevice", t)
+	test := test.NewTest()
+	testify.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	testify.NoError(t, err)
+
+	allMocks := setUp("TestUpdateConnectedDevice", t, atomixClient)
 
 	device1Connected := &topodevice.Device{
 		ID:             device1,

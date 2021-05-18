@@ -16,11 +16,9 @@ package network
 
 import (
 	"context"
-	"fmt"
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
-	"os"
 	"time"
 
 	"github.com/atomix/atomix-go-client/pkg/atomix"
@@ -32,9 +30,8 @@ import (
 )
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
-	changes, err := client.GetIndexedMap(context.Background(), fmt.Sprintf("%s-network-changes", os.Getenv("SERVICE_NAME")))
+func NewAtomixStore(client atomix.Client) (Store, error) {
+	changes, err := client.GetIndexedMap(context.Background(), "onos-config-network-changes")
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
@@ -126,8 +123,6 @@ func (s *atomixStore) Get(id networkchange.ID) (*networkchange.NetworkChange, er
 	entry, err := s.changes.Get(ctx, string(id))
 	if err != nil {
 		return nil, errors.FromAtomix(err)
-	} else if entry == nil {
-		return nil, nil
 	}
 	return decodeChange(entry)
 }
@@ -139,8 +134,6 @@ func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.Netw
 	entry, err := s.changes.GetIndex(ctx, indexedmap.Index(index))
 	if err != nil {
 		return nil, errors.FromAtomix(err)
-	} else if entry == nil {
-		return nil, nil
 	}
 	return decodeChange(entry)
 }
@@ -152,8 +145,6 @@ func (s *atomixStore) GetPrev(index networkchange.Index) (*networkchange.Network
 	entry, err := s.changes.PrevEntry(ctx, indexedmap.Index(index))
 	if err != nil {
 		return nil, errors.FromAtomix(err)
-	} else if entry == nil {
-		return nil, nil
 	}
 	return decodeChange(entry)
 }
@@ -165,8 +156,6 @@ func (s *atomixStore) GetNext(index networkchange.Index) (*networkchange.Network
 	entry, err := s.changes.NextEntry(ctx, indexedmap.Index(index))
 	if err != nil {
 		return nil, errors.FromAtomix(err)
-	} else if entry == nil {
-		return nil, nil
 	}
 	return decodeChange(entry)
 }
@@ -193,7 +182,7 @@ func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
 	}
 
 	change.Index = networkchange.Index(entry.Index)
-	change.Revision = networkchange.Revision(entry.Version)
+	change.Revision = networkchange.Revision(entry.Revision)
 	return nil
 }
 
@@ -215,7 +204,7 @@ func (s *atomixStore) Update(change *networkchange.NetworkChange) error {
 		return errors.FromAtomix(err)
 	}
 
-	change.Revision = networkchange.Revision(entry.Version)
+	change.Revision = networkchange.Revision(entry.Revision)
 	return nil
 }
 
@@ -315,6 +304,6 @@ func decodeChange(entry *indexedmap.Entry) (*networkchange.NetworkChange, error)
 	}
 	change.ID = networkchange.ID(entry.Key)
 	change.Index = networkchange.Index(entry.Index)
-	change.Revision = networkchange.Revision(entry.Version)
+	change.Revision = networkchange.Revision(entry.Revision)
 	return change, nil
 }

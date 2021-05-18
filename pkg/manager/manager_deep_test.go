@@ -18,8 +18,11 @@ import (
 	"context"
 	"fmt"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	testify "github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -42,7 +45,6 @@ import (
 	southboundmocks "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/utils"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"gotest.tools/assert"
 )
@@ -58,7 +60,7 @@ const (
 // reconcilers, filters and their interaction with the synchronizer to become
 // part of the test. With this only the DeviceStore (a proxy for onos-topo) and
 // the 'target' (the gnmi client to the device) are mocked.
-func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
+func setUpDeepTest(t *testing.T, client atomix.Client) (*Manager, *AllMocks) {
 	var (
 		mgrTest *Manager
 		err     error
@@ -120,13 +122,13 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 		return updated, nil
 	})
 
-	networkChangesStore, err := networkstore.NewLocalStore()
+	networkChangesStore, err := networkstore.NewAtomixStore(client)
 	assert.NilError(t, err)
-	deviceChangesStore, err := devicechanges.NewLocalStore()
+	deviceChangesStore, err := devicechanges.NewAtomixStore(client)
 	assert.NilError(t, err)
-	networkSnapshotStore, err := networksnapstore.NewLocalStore()
+	networkSnapshotStore, err := networksnapstore.NewAtomixStore(client)
 	assert.NilError(t, err)
-	deviceSnapshotStore, err := devicesnapstore.NewLocalStore()
+	deviceSnapshotStore, err := devicesnapstore.NewAtomixStore(client)
 	assert.NilError(t, err)
 	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
 	assert.NilError(t, err)
@@ -134,9 +136,9 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
 	assert.NilError(t, err)
 
-	leadershipStore, err := leadership.NewLocalStore("test", cluster.NodeID("node1"))
+	leadershipStore, err := leadership.NewAtomixStore(client)
 	assert.NilError(t, err)
-	mastershipStore, err := mastership.NewLocalStore("test", cluster.NodeID("node1"))
+	mastershipStore, err := mastership.NewAtomixStore(client)
 	assert.NilError(t, err)
 
 	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{
@@ -264,7 +266,17 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 func Test_GetNetworkConfig_Deep(t *testing.T) {
 	t.Skip() // Were causing intermittent errors on travis TODO Find root cause
 
-	mgrTest, _ := setUpDeepTest(t)
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	testify.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	testify.NoError(t, err)
+
+	mgrTest, _ := setUpDeepTest(t, atomixClient)
 
 	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, "/*", 0)
 	assert.NilError(t, err, "GetTargetConfig error")
@@ -278,7 +290,17 @@ func Test_GetNetworkConfig_Deep(t *testing.T) {
 func Test_SetNetworkConfig_Deep(t *testing.T) {
 	t.Skip() // Were causing intermittent errors on travis TODO Find root cause
 
-	mgrTest, _ := setUpDeepTest(t)
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	testify.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	testify.NoError(t, err)
+
+	mgrTest, _ := setUpDeepTest(t, atomixClient)
 
 	// First verify the value beforehand
 	originalChange, _ := mgrTest.NetworkChangesStore.Get(networkChange1)
@@ -299,7 +321,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "Test_SetNetworkConfig"
-	_, err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, string(testNetworkChange))
+	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "SetTargetConfig error")
 
 	nwChangeUpdates := make(chan stream.Event)
@@ -352,7 +374,17 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 	t.Skip() // Were causing intermittent errors on travis TODO Find root cause
 
-	mgrTest, allMocks := setUpDeepTest(t)
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	testify.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	testify.NoError(t, err)
+
+	mgrTest, allMocks := setUpDeepTest(t, atomixClient)
 
 	allMocks.MockStores.DeviceStore.EXPECT().Get(topodevice.ID("device-config-only")).Return(nil, nil).AnyTimes()
 
@@ -365,7 +397,7 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "ConfigOnly_SetNetworkConfig"
-	_, err := mgrTest.SetNetworkConfig(updatesForConfigOnlyDevice, deletesForConfigOnlyDevice, deviceInfo, string(testNetworkChange))
+	_, err = mgrTest.SetNetworkConfig(updatesForConfigOnlyDevice, deletesForConfigOnlyDevice, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "ConfigOnly_SetNetworkConfig error")
 
 	nwChangeUpdates := make(chan stream.Event)
@@ -418,7 +450,17 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 	t.Skip() // Were causing intermittent errors on travis TODO Find root cause
 
-	mgrTest, allMocks := setUpDeepTest(t)
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	testify.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	testify.NoError(t, err)
+
+	mgrTest, allMocks := setUpDeepTest(t, atomixClient)
 	const deviceDisconn = "device-disconn"
 
 	// Mock Device Store
@@ -465,7 +507,7 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "Disconnected_SetNetworkConfig"
-	_, err := mgrTest.SetNetworkConfig(updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo, string(testNetworkChange))
+	_, err = mgrTest.SetNetworkConfig(updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo, string(testNetworkChange))
 	assert.NilError(t, err, "Disconnected_SetNetworkConfig error")
 
 	nwChangeUpdates := make(chan stream.Event)

@@ -41,10 +41,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
-
-	"github.com/onosproject/onos-config/pkg/config"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
@@ -72,15 +69,6 @@ const RbacVersionedID = "rbac:1.0.0"
 
 var log = logging.GetLogger("main")
 
-// ClusterFactory creates the cluster
-var ClusterFactory = func(configuration config.Config) (cluster.Cluster, error) {
-	client, err := atomix.GetClient(configuration.Atomix)
-	if err != nil {
-		return nil, err
-	}
-	return cluster.New(client)
-}
-
 // The main entry point
 func main() {
 	allowUnvalidatedConfig := flag.Bool("allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
@@ -99,32 +87,34 @@ func main() {
 		log.Fatal(err)
 	}
 
-	leadershipStore, err := leadership.NewAtomixStore()
+	atomixClient := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
+
+	leadershipStore, err := leadership.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load leadership atomix store ", err)
 	}
 
-	mastershipStore, err := mastership.NewAtomixStore()
+	mastershipStore, err := mastership.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load mastership atomix store ", err)
 	}
 
-	deviceChangesStore, err := device.NewAtomixStore()
+	deviceChangesStore, err := device.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load device atomix store ", err)
 	}
 
-	networkChangesStore, err := network.NewAtomixStore()
+	networkChangesStore, err := network.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load network atomix store ", err)
 	}
 
-	networkSnapshotStore, err := networksnap.NewAtomixStore()
+	networkSnapshotStore, err := networksnap.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load network snapshot atomix store ", err)
 	}
 
-	deviceSnapshotStore, err := devicesnap.NewAtomixStore()
+	deviceSnapshotStore, err := devicesnap.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load network atomix store ", err)
 	}

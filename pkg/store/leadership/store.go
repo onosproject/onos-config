@@ -16,10 +16,8 @@ package leadership
 
 import (
 	"context"
-	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
-	"os"
 	"sync"
 	"time"
 
@@ -55,9 +53,8 @@ type Leadership struct {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore() (Store, error) {
-	client := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
-	election, err := client.GetElection(context.Background(), fmt.Sprintf("%s-leaderships", os.Getenv("SERVICE_NAME")))
+func NewAtomixStore(client atomix.Client) (Store, error) {
+	election, err := client.GetElection(context.Background(), "onos-config-leaderships")
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}

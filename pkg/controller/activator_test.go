@@ -15,22 +15,32 @@
 package controller
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"testing"
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/store/leadership"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLeadershipActivator(t *testing.T) {
-	node1 := cluster.NodeID("node1")
-	node2 := cluster.NodeID("node2")
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
 
-	store1, err := leadership.NewLocalStore("TestLeadershipActivator", node1)
+	client1, err := test.NewClient("node-1")
 	assert.NoError(t, err)
 
-	store2, err := leadership.NewLocalStore("TestLeadershipActivator", node2)
+	client2, err := test.NewClient("node-1")
+	assert.NoError(t, err)
+
+	store1, err := leadership.NewAtomixStore(client1)
+	assert.NoError(t, err)
+
+	store2, err := leadership.NewAtomixStore(client2)
 	assert.NoError(t, err)
 
 	activator1 := &LeadershipActivator{

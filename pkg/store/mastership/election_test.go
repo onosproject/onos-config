@@ -15,32 +15,51 @@
 package mastership
 
 import (
+	"context"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"testing"
 
-	topodevice "github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMastershipElection(t *testing.T) {
-	_, address := atomix.StartLocalNode()
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
 
-	nodeA := cluster.NodeID("a")
-	nodeB := cluster.NodeID("b")
-	nodeC := cluster.NodeID("c")
-
-	store1, err := newLocalElection(topodevice.ID("test"), "a", address)
+	client1, err := test.NewClient("node-1")
 	assert.NoError(t, err)
 
-	store2, err := newLocalElection(topodevice.ID("test"), "b", address)
+	election1, err := client1.GetElection(context.TODO(), "masterships")
+	assert.NoError(t, err)
+
+	store1, err := newDeviceMastershipElection("test", election1)
+	assert.NoError(t, err)
+
+	client2, err := test.NewClient("node-2")
+	assert.NoError(t, err)
+
+	election2, err := client2.GetElection(context.TODO(), "masterships")
+	assert.NoError(t, err)
+
+	store2, err := newDeviceMastershipElection("test", election2)
 	assert.NoError(t, err)
 
 	store2Ch := make(chan Mastership)
 	err = store2.watch(store2Ch)
 	assert.NoError(t, err)
 
-	store3, err := newLocalElection(topodevice.ID("test"), "c", address)
+	client3, err := test.NewClient("node-3")
+	assert.NoError(t, err)
+
+	election3, err := client3.GetElection(context.TODO(), "masterships")
+	assert.NoError(t, err)
+
+	store3, err := newDeviceMastershipElection("test", election3)
 	assert.NoError(t, err)
 
 	store3Ch := make(chan Mastership)
@@ -50,15 +69,15 @@ func TestMastershipElection(t *testing.T) {
 	master := store1.getMastership()
 	assert.NotNil(t, master)
 
-	assert.Equal(t, master.Master, nodeA)
+	assert.Equal(t, master.Master, "node-1")
 
 	master = store2.getMastership()
 	assert.NotNil(t, master)
-	assert.NotEqual(t, master.Master, nodeB)
+	assert.NotEqual(t, master.Master, "node-2")
 
 	master = store3.getMastership()
 	assert.NotNil(t, master)
-	assert.NotEqual(t, master.Master, nodeC)
+	assert.NotEqual(t, master.Master, "node-3")
 
 	err = store1.Close()
 	assert.NoError(t, err)
@@ -68,14 +87,14 @@ func TestMastershipElection(t *testing.T) {
 
 	master = store2.getMastership()
 	assert.NotNil(t, master)
-	assert.Equal(t, master.Master, nodeB)
+	assert.Equal(t, master.Master, "node-2")
 
 	mastership = <-store3Ch
 	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
 
 	master = store3.getMastership()
 	assert.NotNil(t, master)
-	assert.NotEqual(t, master.Master, nodeC)
+	assert.NotEqual(t, master.Master, "node-3")
 
 	err = store2.Close()
 	assert.NoError(t, err)
@@ -86,7 +105,7 @@ func TestMastershipElection(t *testing.T) {
 	master = store3.getMastership()
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
-	assert.Equal(t, master.Master, nodeC)
+	assert.Equal(t, master.Master, "node-3")
 
 	_ = store3.Close()
 }

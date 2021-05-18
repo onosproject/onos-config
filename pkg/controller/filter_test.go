@@ -15,6 +15,7 @@
 package controller
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"testing"
 	"time"
@@ -33,13 +34,26 @@ func (r testDeviceResolver) Resolve(id controller.ID) (topodevice.ID, error) {
 }
 
 func TestMastershipFilter(t *testing.T) {
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
 	node1 := cluster.NodeID("node1")
 	node2 := cluster.NodeID("node2")
 
-	store1, err := mastership.NewLocalStore("TestMastershipFilter", node1)
+	atomixClient1, err := test.NewClient(string(node1))
 	assert.NoError(t, err)
 
-	store2, err := mastership.NewLocalStore("TestMastershipFilter", node2)
+	atomixClient2, err := test.NewClient(string(node2))
+	assert.NoError(t, err)
+
+	store1, err := mastership.NewAtomixStore(atomixClient1)
+	assert.NoError(t, err)
+
+	store2, err := mastership.NewAtomixStore(atomixClient2)
 	assert.NoError(t, err)
 
 	filter1 := MastershipFilter{store1, testDeviceResolver{}, node1}

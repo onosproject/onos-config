@@ -15,25 +15,34 @@
 package network
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/onosproject/onos-api/go/onos/config/snapshot"
 	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
 func TestNetworkSnapshotStore(t *testing.T) {
-	_, address := atomix.StartLocalNode()
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
 
-	store1, err := newLocalStore(address)
+	client1, err := test.NewClient("node-1")
 	assert.NoError(t, err)
-	defer store1.Close()
 
-	store2, err := newLocalStore(address)
+	client2, err := test.NewClient("node-2")
 	assert.NoError(t, err)
-	defer store2.Close()
+
+	store1, err := NewAtomixStore(client1)
+	assert.NoError(t, err)
+
+	store2, err := NewAtomixStore(client2)
+	assert.NoError(t, err)
 
 	ch := make(chan stream.Event)
 	_, err = store2.Watch(ch)

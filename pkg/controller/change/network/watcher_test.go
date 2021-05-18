@@ -17,6 +17,7 @@ package network
 import (
 	"context"
 	"fmt"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
@@ -70,7 +71,17 @@ var deviceChange2 = devicechange.Change{
 }
 
 func TestNetworkWatcher(t *testing.T) {
-	store, err := networkchangestore.NewLocalStore()
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
+	store, err := networkchangestore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer store.Close()
 
@@ -139,6 +150,16 @@ func TestNetworkWatcher(t *testing.T) {
 }
 
 func TestDeviceWatcher(t *testing.T) {
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	deviceCache := newDeviceCache(ctrl)
 	defer deviceCache.Close()
@@ -202,7 +223,7 @@ func TestDeviceWatcher(t *testing.T) {
 	deviceStore, err := devicestore.NewStore(deviceClient)
 	assert.NoError(t, err)
 
-	changeStore, err := devicechangestore.NewLocalStore()
+	changeStore, err := devicechangestore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer changeStore.Close()
 

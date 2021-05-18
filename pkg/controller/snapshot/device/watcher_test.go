@@ -15,6 +15,7 @@
 package device
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/onosproject/onos-api/go/onos/config/snapshot"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
@@ -25,7 +26,17 @@ import (
 )
 
 func TestDeviceSnapshotWatcher(t *testing.T) {
-	store, err := devicesnapstore.NewLocalStore()
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
+	store, err := devicesnapstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer store.Close()
 
