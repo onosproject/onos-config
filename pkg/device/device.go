@@ -139,12 +139,12 @@ func ToObject(device *Device) *topo.Object {
 			Type:     topo.Object_ENTITY,
 			Obj: &topo.Object_Entity{
 				Entity: &topo.Entity{
-					KindID:    topo.ID(device.Type),
-					Protocols: device.Protocols,
+					KindID: topo.ID(device.Type),
 				},
 			},
 		}
 	}
+	o.GetEntity().Protocols = device.Protocols
 
 	var timeout uint64
 	if device.Timeout != nil {
