@@ -139,7 +139,7 @@ func ToObject(device *Device) *topo.Object {
 			Type:     topo.Object_ENTITY,
 			Obj: &topo.Object_Entity{
 				Entity: &topo.Entity{
-					KindID:    topo.ID(device.Type),
+					KindID: topo.ID(device.Type),
 				},
 			},
 		}
