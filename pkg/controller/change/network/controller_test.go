@@ -152,7 +152,7 @@ func Test_NewController2Devices(t *testing.T) {
 				t.Errorf("unexpected event on change-1 %v", change)
 			}
 			wg.Done()
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(5 * time.Second):
 			t.Logf("timed out waiting for event from change-1")
 			t.FailNow()
 		}
@@ -265,7 +265,7 @@ func Test_Controller1FailsGnmiSet(t *testing.T) {
 
 	var wg sync.WaitGroup
 	eventsExpectedChange1 := 4
-	eventsExpectedDevice1 := 4
+	eventsExpectedDevice1 := 5
 	eventsExpectedDevice2 := 5
 	wg.Add(eventsExpectedChange1 + eventsExpectedDevice1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
 	var j, k, l int
@@ -303,7 +303,7 @@ func Test_Controller1FailsGnmiSet(t *testing.T) {
 			t.Logf("%s event %d. %v", change.ID, l, change.Status)
 			l++
 			wg.Done()
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(5 * time.Second):
 			t.Logf("timed out waiting for event")
 			t.FailNow()
 		}
@@ -406,47 +406,84 @@ func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 	err = networkChanges.Create(networkChange1)
 	assert.NoError(t, err)
 
+	change1Chan := make(chan stream.Event)
+	ctx, err := networkChanges.Watch(change1Chan, networkchangestore.WithReplay())
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+
+	device1Chan := make(chan stream.Event)
+	ctx, err = deviceChanges.Watch(device.NewVersionedID(device1, v1), device1Chan, devicechangestore.WithReplay())
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+
 	device2Chan := make(chan stream.Event)
-	ctx, err := deviceChanges.Watch(device.NewVersionedID(device2, v1), device2Chan, devicechangestore.WithReplay())
+	ctx, err = deviceChanges.Watch(device.NewVersionedID(device2, v1), device2Chan, devicechangestore.WithReplay())
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
 	var wg sync.WaitGroup
-	eventsExpected := 3
-	wg.Add(eventsExpected) // It can take several turns of the reconciler to complete the change
-	for i := 0; i < eventsExpected; i++ {
+	eventsExpectedChange1 := 4
+	eventsExpectedDevice1 := 3
+	eventsExpectedDevice2 := 3
+	wg.Add(eventsExpectedChange1 + eventsExpectedDevice1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
+	var j, k, l int
+	for i := 0; i < eventsExpectedChange1+eventsExpectedDevice1+eventsExpectedDevice2; i++ {
 		select {
-		case event := <-device2Chan:
+		case event := <-change1Chan:
+			change := event.Object.(*networkchange.NetworkChange)
+			t.Logf("%s event %d. %v", change.ID, j, change.Status)
+			assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+			j++
+			wg.Done()
+		case event := <-device1Chan:
 			change := event.Object.(*devicechange.DeviceChange)
-			t.Logf("%s event %d. %v", change.ID, i, change.Status)
-			switch i {
+			t.Logf("%s event %d. %v", change.ID, k, change.Status)
+			assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+			assert.Equal(t, types.Reason_NONE, change.Status.Reason)
+			switch k {
 			case 0:
-				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
 				assert.Equal(t, types.State_PENDING, change.Status.State)
-				assert.Equal(t, types.Reason_NONE, change.Status.Reason)
 				assert.Equal(t, uint64(0), change.Status.Incarnation)
 			case 1:
-				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
 				assert.Equal(t, types.State_PENDING, change.Status.State)
-				assert.Equal(t, types.Reason_NONE, change.Status.Reason)
 				assert.Equal(t, uint64(1), change.Status.Incarnation)
 			case 2:
-				assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
 				assert.Equal(t, types.State_COMPLETE, change.Status.State)
-				assert.Equal(t, types.Reason_NONE, change.Status.Reason)
 				assert.Equal(t, uint64(1), change.Status.Incarnation)
 			default:
 				t.Errorf("unexpected event on device-2 %v", change)
 				t.FailNow()
 			}
+			k++
 			wg.Done()
-		case <-time.After(500 * time.Millisecond):
+		case event := <-device2Chan:
+			change := event.Object.(*devicechange.DeviceChange)
+			t.Logf("%s event %d. %v", change.ID, l, change.Status)
+			assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
+			assert.Equal(t, types.Reason_NONE, change.Status.Reason)
+			switch l {
+			case 0:
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, uint64(0), change.Status.Incarnation)
+			case 1:
+				assert.Equal(t, types.State_PENDING, change.Status.State)
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			case 2:
+				assert.Equal(t, types.State_COMPLETE, change.Status.State)
+				assert.Equal(t, uint64(1), change.Status.Incarnation)
+			default:
+				t.Errorf("unexpected event on device-2 %v", change)
+				t.FailNow()
+			}
+			l++
+			wg.Done()
+		case <-time.After(5 * time.Second):
 			t.Logf("timed out waiting for event from device-2")
 			t.FailNow()
 		}
 	}
 	wg.Wait()
-	t.Logf("Done waiting for %d device-2 events", eventsExpected)
+	t.Logf("Done waiting for %d change-1,  %d device-1 and %d device-2 events", eventsExpectedChange1, eventsExpectedChange1, eventsExpectedDevice2)
 
 	retryUpdate := 0
 	for { // It can happen that the controller will make another update after the GET
@@ -475,16 +512,14 @@ func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 	}
 	assert.NoError(t, err)
 
-	change1Chan := make(chan stream.Event)
-	ctx, err = networkChanges.Watch(change1Chan, networkchangestore.WithReplay())
-	assert.NoError(t, err)
-	assert.NotNil(t, ctx)
-
-	eventsExpectedChange1 := 2
-	eventsExpectedDevice2 := 4
-	wg.Add(eventsExpectedChange1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
-	var j, k int
-	for i := 0; i < eventsExpectedChange1+eventsExpectedDevice2; i++ {
+	eventsExpectedChange1 = 2
+	eventsExpectedDevice1 = 2
+	eventsExpectedDevice2 = 4
+	wg.Add(eventsExpectedChange1 + eventsExpectedDevice1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
+	j = 0
+	k = 0
+	l = 0
+	for i := 0; i < eventsExpectedChange1+eventsExpectedDevice1+eventsExpectedDevice2; i++ {
 		select {
 		case event := <-change1Chan:
 			change := event.Object.(*networkchange.NetworkChange)
@@ -505,10 +540,15 @@ func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 			}
 			j++
 			wg.Done()
-		case event := <-device2Chan:
+		case event := <-device1Chan:
 			change := event.Object.(*devicechange.DeviceChange)
 			t.Logf("%s event %d. %v", change.ID, k, change.Status)
-			switch k {
+			k++
+			wg.Done()
+		case event := <-device2Chan:
+			change := event.Object.(*devicechange.DeviceChange)
+			t.Logf("%s event %d. %v", change.ID, l, change.Status)
+			switch l {
 			case 0:
 				assert.Equal(t, types.Phase_ROLLBACK, change.Status.Phase)
 				assert.Equal(t, types.State_PENDING, change.Status.State)
@@ -539,9 +579,9 @@ func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 				t.Errorf("unexpected event on device-2 %v", change)
 				t.FailNow()
 			}
-			k++
+			l++
 			wg.Done()
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(5 * time.Second):
 			t.Logf("timed out waiting for event from device-2")
 			t.FailNow()
 		}
@@ -632,6 +672,11 @@ func Test_ControllerRollbackOnPending(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
+	device1Chan := make(chan stream.Event)
+	ctx, err = deviceChanges.Watch(device.NewVersionedID(device1, v1), device1Chan, devicechangestore.WithReplay())
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+
 	device2Chan := make(chan stream.Event)
 	ctx, err = deviceChanges.Watch(device.NewVersionedID(device2, v1), device2Chan, devicechangestore.WithReplay())
 	assert.NoError(t, err)
@@ -639,10 +684,11 @@ func Test_ControllerRollbackOnPending(t *testing.T) {
 
 	var wg sync.WaitGroup
 	eventsExpectedChange1 := 3
+	eventsExpectedDevice1 := 2
 	eventsExpectedDevice2 := 2
-	wg.Add(eventsExpectedChange1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
-	var j, k int
-	for i := 0; i < eventsExpectedChange1+eventsExpectedDevice2; i++ {
+	wg.Add(eventsExpectedChange1 + eventsExpectedDevice1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
+	var j, k, l int
+	for i := 0; i < eventsExpectedChange1+eventsExpectedDevice1+eventsExpectedDevice2; i++ {
 		select {
 		case event := <-change1Chan:
 			change := event.Object.(*networkchange.NetworkChange)
@@ -660,13 +706,18 @@ func Test_ControllerRollbackOnPending(t *testing.T) {
 			}
 			j++
 			wg.Done()
-		case event := <-device2Chan:
+		case event := <-device1Chan:
 			change := event.Object.(*devicechange.DeviceChange)
 			t.Logf("%s event %d. %v", change.ID, k, change.Status)
+			k++
+			wg.Done()
+		case event := <-device2Chan:
+			change := event.Object.(*devicechange.DeviceChange)
+			t.Logf("%s event %d. %v", change.ID, l, change.Status)
 			assert.Equal(t, types.Phase_CHANGE, change.Status.Phase)
 			assert.Equal(t, types.State_PENDING, change.Status.State)
 			assert.Equal(t, types.Reason_NONE, change.Status.Reason)
-			switch k {
+			switch l {
 			case 0:
 				assert.Equal(t, uint64(0), change.Status.Incarnation)
 			case 1:
@@ -675,16 +726,16 @@ func Test_ControllerRollbackOnPending(t *testing.T) {
 				t.Errorf("unexpected event on device-2 %v", change)
 				t.FailNow()
 			}
-			k++
+			l++
 			wg.Done()
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(5 * time.Second):
 			t.Logf("timed out waiting for event from change-1 and device-2")
 			t.FailNow()
 		}
 	}
 
 	wg.Wait()
-	t.Logf("Done waiting for %d change-1 and %d device-2 events", eventsExpectedChange1, eventsExpectedDevice2)
+	t.Logf("Done waiting for %d change-1, %d device-1 and %d device-2 events", eventsExpectedChange1, eventsExpectedDevice1, eventsExpectedDevice2)
 
 	// Now try to do a rollback of these changes after a moment
 	// Should cause an event to be sent to the Watcher
@@ -719,11 +770,13 @@ func Test_ControllerRollbackOnPending(t *testing.T) {
 	assert.NoError(t, err)
 
 	eventsExpectedChange1 = 2
+	eventsExpectedDevice1 = 1
 	eventsExpectedDevice2 = 1
-	wg.Add(eventsExpectedChange1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
+	wg.Add(eventsExpectedChange1 + eventsExpectedDevice1 + eventsExpectedDevice2) // It can take several turns of the reconciler to complete the change
 	j = 0
 	k = 0
-	for i := 0; i < eventsExpectedChange1+eventsExpectedDevice2; i++ {
+	l = 0
+	for i := 0; i < eventsExpectedChange1+eventsExpectedDevice1+eventsExpectedDevice2; i++ {
 		select {
 		case event := <-change1Chan:
 			change := event.Object.(*networkchange.NetworkChange)
@@ -742,10 +795,15 @@ func Test_ControllerRollbackOnPending(t *testing.T) {
 			}
 			j++
 			wg.Done()
-		case event := <-device2Chan:
+		case event := <-device1Chan:
 			change := event.Object.(*devicechange.DeviceChange)
 			t.Logf("%s event %d. %v", change.ID, k, change.Status)
-			switch k {
+			k++
+			wg.Done()
+		case event := <-device2Chan:
+			change := event.Object.(*devicechange.DeviceChange)
+			t.Logf("%s event %d. %v", change.ID, l, change.Status)
+			switch l {
 			case 0:
 				assert.Equal(t, types.Phase_ROLLBACK, change.Status.Phase)
 				assert.Equal(t, types.State_COMPLETE, change.Status.State)
@@ -755,16 +813,16 @@ func Test_ControllerRollbackOnPending(t *testing.T) {
 				t.Errorf("unexpected event on device-2 %v", change)
 				t.FailNow()
 			}
-			k++
+			l++
 			wg.Done()
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(5 * time.Second):
 			t.Logf("timed out waiting for event from change-1 after rollback")
 			t.FailNow()
 		}
 	}
 
 	wg.Wait()
-	t.Logf("Done waiting for %d change-1 and %d events", eventsExpectedChange1, eventsExpectedDevice2)
+	t.Logf("Done waiting for %d change-1 and %d device-1 and %d device-2 events", eventsExpectedChange1, eventsExpectedDevice1, eventsExpectedDevice2)
 	ctx.Close()
 
 	// Verify that device changes were created
