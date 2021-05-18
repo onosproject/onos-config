@@ -166,7 +166,7 @@ func TestNew(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice1,
-	).Return(topodevice.ID(mock1NameStr), nil)
+	).Return(devicetype.NewVersionedID(devicetype.ID(mockDevice1.ID), devicetype.Version(mockDevice1.Version)), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -365,7 +365,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(device1.ID, nil)
+	).Return(devicetype.NewVersionedID(devicetype.ID(device1.ID), devicetype.Version(device1.Version)), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -562,7 +562,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(device1.ID, nil)
+	).Return(devicetype.NewVersionedID(devicetype.ID(device1.ID), devicetype.Version(device1.Version)), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -686,7 +686,7 @@ func Test_LikeStratum(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice1,
-	).Return(topodevice.ID(mock1NameStr), nil)
+	).Return(devicetype.NewVersionedID(devicetype.ID(mockDevice1.ID), devicetype.Version(mockDevice1.Version)), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),

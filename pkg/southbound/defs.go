@@ -16,6 +16,7 @@ package southbound
 
 import (
 	"context"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
@@ -28,7 +29,7 @@ var TargetGenerator func() TargetIf = NewTarget
 
 // TargetIf defines the API for Target
 type TargetIf interface {
-	ConnectTarget(ctx context.Context, device topodevice.Device) (topodevice.ID, error)
+	ConnectTarget(ctx context.Context, device topodevice.Device) (devicetype.VersionedID, error)
 	//Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error)
 	CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error)
 	Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error)

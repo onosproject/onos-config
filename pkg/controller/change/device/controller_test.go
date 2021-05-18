@@ -22,7 +22,6 @@ import (
 	types "github.com/onosproject/onos-api/go/onos/config"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
-	"github.com/onosproject/onos-api/go/onos/config/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	configmodel "github.com/onosproject/onos-config-model/pkg/model"
@@ -49,11 +48,11 @@ import (
 )
 
 const (
-	device1     = device.ID("device-1")
+	device1     = devicetype.ID("device-1")
 	device1Addr = "device-1:5150"
-	device2     = device.ID("device-2")
+	device2     = devicetype.ID("device-2")
 	device2Addr = "device-2:5150"
-	dcDevice    = device.ID("disconnected")
+	dcDevice    = devicetype.ID("disconnected")
 	v1          = "1.0.0"
 	stratumType = "Stratum"
 )
@@ -276,7 +275,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
 	assert.Equal(t, changetypes.Phase_CHANGE, deviceChange2.Status.Phase)
 
-	paths, err := devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
+	paths, err := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 6, len(paths))
 	for _, p := range paths {
@@ -327,7 +326,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
 	assert.Equal(t, changetypes.Phase_ROLLBACK, deviceChange2.Status.Phase)
 
-	paths, err = devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
+	paths, err = devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 3, len(paths))
 	for _, p := range paths {
@@ -382,7 +381,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.Equal(t, changetypes.State_COMPLETE, deviceChange1.Status.State)
 	assert.Equal(t, changetypes.Phase_CHANGE, deviceChange1.Status.Phase)
 
-	paths, err := devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
+	paths, err := devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 3, len(paths))
 	for _, p := range paths {
@@ -423,7 +422,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
 	assert.Equal(t, changetypes.Phase_CHANGE, deviceChange2.Status.Phase)
 
-	paths, err = devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
+	paths, err = devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 0, len(paths))
 
@@ -456,7 +455,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.Equal(t, changetypes.State_COMPLETE, deviceChange2.Status.State)
 	assert.Equal(t, changetypes.Phase_ROLLBACK, deviceChange2.Status.Phase)
 
-	paths, err = devicechangeutils.ExtractFullConfig(device.NewVersionedID(device1, v1), nil, deviceChanges, 0)
+	paths, err = devicechangeutils.ExtractFullConfig(devicetype.NewVersionedID(device1, v1), nil, deviceChanges, 0)
 	assert.NoError(t, err, "problem extracting full config")
 	assert.Equal(t, 3, len(paths))
 	for _, p := range paths {
@@ -545,7 +544,7 @@ func newStores(t *testing.T) (devicestore.Store, devicechanges.Store) {
 	return deviceStore, deviceChanges
 }
 
-func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
+func mockTargetDevice(t *testing.T, name devicetype.ID, ctrl *gomock.Controller) {
 	modelData := gnmi.ModelData{
 		Name:         "test1",
 		Organization: "Open Networking Foundation",
@@ -569,7 +568,7 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	mockTargetDevice.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice,
-	).Return(topodevice.ID(name), nil)
+	).Return(devicetype.NewVersionedID(name, v1), nil)
 
 	mockTargetDevice.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -604,10 +603,10 @@ func mockTargetDevice(t *testing.T, name device.ID, ctrl *gomock.Controller) {
 	assert.NoError(t, err, "Unable to create new synchronizer for", mockDevice.ID)
 
 	// Finally to make it visible to tests - add it to `Targets`
-	southbound.Targets[topodevice.ID(name)] = mockTargetDevice
+	southbound.Targets[devicetype.NewVersionedID(name, v1)] = mockTargetDevice
 }
 
-func newChange(index devicechange.Index, device device.ID, version device.Version) *devicechange.DeviceChange {
+func newChange(index devicechange.Index, device devicetype.ID, version devicetype.Version) *devicechange.DeviceChange {
 	return &devicechange.DeviceChange{
 		Index: index,
 		NetworkChange: devicechange.NetworkChangeRef{
@@ -629,7 +628,7 @@ func newChange(index devicechange.Index, device device.ID, version device.Versio
 }
 
 // newChangeInterface creates a new interface eth<n> in the OpenConfig model style
-func newChangeInterface(index devicechange.Index, device device.ID, version device.Version, iface int) *devicechange.DeviceChange {
+func newChangeInterface(index devicechange.Index, device devicetype.ID, version devicetype.Version, iface int) *devicechange.DeviceChange {
 	ifaceID := fmt.Sprintf("%s%d", ethPrefix, iface)
 	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
 	healthValue := healthUp
@@ -669,7 +668,7 @@ func newChangeInterface(index devicechange.Index, device device.ID, version devi
 }
 
 // newChangeInterfaceRemove removes an interface eth<n> of the OpenConfig model style
-func newChangeInterfaceRemove(index devicechange.Index, device device.ID, version device.Version, iface int) *devicechange.DeviceChange {
+func newChangeInterfaceRemove(index devicechange.Index, device devicetype.ID, version devicetype.Version, iface int) *devicechange.DeviceChange {
 	ifacePath := fmt.Sprintf(ifConfigNameFmt, iface)
 
 	return &devicechange.DeviceChange{

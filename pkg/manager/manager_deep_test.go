@@ -17,6 +17,7 @@ package manager
 import (
 	"context"
 	"fmt"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"io/ioutil"
@@ -165,7 +166,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 
 	mockTargetCreationfn := func() southbound.TargetIf {
 		mockTarget := southboundmocks.NewMockTargetIf(ctrl)
-		southbound.Targets[topodevice.ID(device1)] = mockTarget
+		southbound.Targets[devicetype.NewVersionedID(device1, deviceVersion1)] = mockTarget
 
 		mockTarget.EXPECT().CapabilitiesWithString(
 			gomock.Any(),

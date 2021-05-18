@@ -17,6 +17,7 @@ package southbound
 import (
 	"context"
 	"github.com/golang/protobuf/proto"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/client"
@@ -138,13 +139,13 @@ func tearDown() {
 	GnmiBaseClientFactory = saveGnmiBaseClientFactory
 }
 
-func getDevice1Target(t *testing.T) (*Target, topodevice.ID, context.Context) {
+func getDevice1Target(t *testing.T) (*Target, devicetype.VersionedID, context.Context) {
 	target := &Target{}
 	ctx := context.Background()
 	key, err := target.ConnectTarget(ctx, device)
 	assert.NoError(t, err)
 	assert.NotNil(t, target.clt)
-	assert.Equal(t, string(key), "localhost-1")
+	assert.Equal(t, "localhost-1", string(key.GetID()))
 	assert.NotNil(t, target.ctx)
 	return target, key, ctx
 }
@@ -164,7 +165,7 @@ func Test_ConnectTarget(t *testing.T) {
 func Test_BadTarget(t *testing.T) {
 	setUp(t)
 
-	key := topodevice.ID("no such target")
+	key := devicetype.NewVersionedID("no such target", "0.0.0")
 	_, fetchError := GetTarget(key)
 	assert.Error(t, fetchError)
 	assert.Contains(t, fetchError.Error(), "does not exist")

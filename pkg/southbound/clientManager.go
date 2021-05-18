@@ -19,8 +19,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io/ioutil"
 	"strings"
 	"sync"
@@ -38,10 +39,10 @@ import (
 var log = logging.GetLogger("southbound")
 
 // Targets is a global cache of connected targets
-var Targets = make(map[topodevice.ID]TargetIf)
+var Targets = make(map[devicetype.VersionedID]TargetIf)
 var targetMu = &sync.RWMutex{}
 
-func createDestination(device topodevice.Device) (*client.Destination, topodevice.ID) {
+func createDestination(device topodevice.Device) (*client.Destination, devicetype.VersionedID) {
 	d := &client.Destination{}
 	d.Addrs = []string{device.Address}
 	d.Target = device.Target
@@ -86,24 +87,28 @@ func createDestination(device topodevice.Device) (*client.Destination, topodevic
 			d.TLS = &tls.Config{InsecureSkipVerify: true}
 		}
 	}
-	return d, device.ID
+	return d, devicetype.NewVersionedID(devicetype.ID(device.ID), devicetype.Version(device.Version))
 }
 
 // GetTarget attempts to get a specific target from the targets cache
-func GetTarget(key topodevice.ID) (TargetIf, error) {
+func GetTarget(key devicetype.VersionedID) (TargetIf, error) {
 	targetMu.RLock()
 	t, ok := Targets[key].(TargetIf)
 	targetMu.RUnlock()
 	if ok {
 		return t, nil
 	}
-	return nil, fmt.Errorf("client for %v does not exist, create first %v", key, Targets)
+	targetNames := make([]devicetype.VersionedID, 0, len(Targets))
+	for t := range Targets {
+		targetNames = append(targetNames, t)
+	}
+	return nil, fmt.Errorf("gNMI client for %v does not exist. Known clients: %v", key, targetNames)
 }
 
 // ConnectTarget connects to a given Device according to the passed information establishing a channel to it.
 //TODO make asyc
 //TODO lock channel to allow one request to device at each time
-func (target *Target) ConnectTarget(ctx context.Context, device topodevice.Device) (topodevice.ID, error) {
+func (target *Target) ConnectTarget(ctx context.Context, device topodevice.Device) (devicetype.VersionedID, error) {
 	dest, key := createDestination(device)
 	c, err := GnmiClientFactory(ctx, *dest)
 
@@ -179,7 +184,7 @@ func (target *Target) Capabilities(ctx context.Context, request *gpb.CapabilityR
 // GetWithString can make a get request according by a string - can be empty
 func (target *Target) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
 	if request == "" {
-		return nil, errors.New("cannot get and empty request")
+		return nil, errors.NewInvalid("cannot get an empty request")
 	}
 	r := &gpb.GetRequest{}
 	reqProto := &request
@@ -201,7 +206,7 @@ func (target *Target) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.Ge
 // SetWithString can make a set request according by a string
 func (target *Target) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
 	if request == "" {
-		return nil, errors.New("cannot get and empty request")
+		return nil, errors.NewInvalid("cannot set an empty request")
 	}
 	r := &gpb.SetRequest{}
 	reqProto := &request

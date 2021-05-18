@@ -173,7 +173,7 @@ func (w *DeviceWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- con
 	}
 	w.streams[deviceID] = ctx
 
-	log.Infof("Watching device %v", deviceID)
+	log.Infof("Watching device %v (%s)", deviceID, topodevice.Type)
 
 	w.wg.Add(1)
 	go func() {

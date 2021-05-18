@@ -16,12 +16,9 @@ package device
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"strings"
-
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	configcontroller "github.com/onosproject/onos-config/pkg/controller"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/southbound"
@@ -32,7 +29,9 @@ import (
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"strings"
 )
 
 var log = logging.GetLogger("controller", "change", "device")
@@ -136,7 +135,8 @@ func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (control
 
 // doChange pushes the given change to the device
 func (r *Reconciler) doChange(change *devicechange.DeviceChange) error {
-	log.Infof("Applying change %v ", change.Change)
+	log.Infof("Applying change %v ", change.ID)
+	log.Debugf("%v ", change.Change)
 	return r.translateAndSendChange(change.Change)
 }
 
@@ -170,7 +170,8 @@ func (r *Reconciler) doRollback(change *devicechange.DeviceChange) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Rolling back %v with %v", change.Change, deltaChange)
+	log.Infof("Rolling back %s with %v", change.ID, deltaChange)
+	log.Debugf("%v", change)
 	return r.translateAndSendChange(deltaChange)
 }
 
@@ -179,13 +180,14 @@ func (r *Reconciler) translateAndSendChange(change *devicechange.Change) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Reconciler set request for %s: %v", change.DeviceID, setRequest)
-	deviceTarget, err := southbound.GetTarget(topodevice.ID(change.DeviceID))
+	log.Infof("Reconciler set request for %s:%s, %v", change.DeviceID, change.DeviceVersion, setRequest)
+	deviceTarget, err := southbound.GetTarget(change.GetVersionedDeviceID())
 	if err != nil {
-		log.Infof("Device %s is not connected, accepting change", change.DeviceID)
-		return fmt.Errorf("device not connected %s, error %s", change.DeviceID, err.Error())
+		log.Infof("Device %s:%s (%s) is not connected, accepting change",
+			change.DeviceID, change.DeviceVersion, change.DeviceType)
+		return fmt.Errorf("device not connected %s:%s, error %s", change.DeviceID, change.DeviceVersion, err.Error())
 	}
-	log.Infof("Target for device %s: %v %v", change.DeviceID, deviceTarget, deviceTarget.Context())
+	log.Infof("Target for device %s:%s %v %v", change.DeviceID, change.DeviceVersion, deviceTarget, deviceTarget.Context())
 	setResponse, err := deviceTarget.Set(*deviceTarget.Context(), setRequest)
 	if err != nil {
 		log.Warn("Error while doing set: ", err)
