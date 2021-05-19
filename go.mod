@@ -28,7 +28,6 @@ require (
 	github.com/openconfig/goyang v0.2.2
 	github.com/openconfig/ygot v0.10.5
 	github.com/pelletier/go-toml v1.4.0 // indirect
-	github.com/pkg/errors v0.9.1
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.6.2 // indirect

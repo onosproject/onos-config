@@ -111,7 +111,7 @@ func (s *Session) open() error {
 
 // connect connects to a device using a gNMI session
 func (s *Session) connect() error {
-	log.Infof("Connecting to device: %s at %s", s.device.ID, s.device.Address)
+	log.Infof("Connecting to device: %s:%s at %s", s.device.ID, s.device.Version, s.device.Address)
 	count := 0
 	b := backoff.NewExponentialBackOff()
 	b.InitialInterval = backoffInterval
@@ -122,7 +122,8 @@ func (s *Session) connect() error {
 
 	notify := func(err error, t time.Duration) {
 		count++
-		log.Infof("Failed to connect to %s. Retry after %v Attempt %d", s.device.ID, b.GetElapsedTime(), count)
+		log.Infof("Failed to connect to %s:%s. Retry after %v Attempt %d",
+			s.device.ID, s.device.Version, b.GetElapsedTime(), count)
 	}
 
 	err := backoff.RetryNotify(s.synchronize, b, notify)
@@ -146,7 +147,7 @@ func (s *Session) synchronize() error {
 	plugin, err := s.modelRegistry.GetPlugin(modelName)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			log.Warnf("Model Plugin not available for device", s.device.ID, s.device.Version)
+			log.Warnf("Model Plugin not available for device %s:%s", s.device.ID, s.device.Version)
 		} else {
 			s.mu.RUnlock()
 			log.Error(err)

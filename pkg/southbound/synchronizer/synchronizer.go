@@ -18,6 +18,7 @@ package synchronizer
 import (
 	"context"
 	"fmt"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	"regexp"
 	"strings"
@@ -49,7 +50,7 @@ type Synchronizer struct {
 	context.Context
 	*topodevice.Device
 	operationalStateChan chan<- events.OperationalStateEvent
-	key                  topodevice.ID
+	key                  devicetype.VersionedID
 	query                client.Query
 	modelReadOnlyPaths   modelregistry.ReadOnlyPathMap
 	operationalCache     devicechange.TypedValueMap

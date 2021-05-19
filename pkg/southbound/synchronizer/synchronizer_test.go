@@ -16,7 +16,6 @@ package synchronizer
 
 import (
 	context2 "context"
-	"errors"
 	"fmt"
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -32,6 +31,7 @@ import (
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -100,7 +100,7 @@ func synchronizerSetUp(t *testing.T) (synchronizerParameters, error) {
 	deviceChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(deviceID devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
 			ctx := stream.NewContext(func() {})
-			return ctx, errors.New("no Configuration found")
+			return ctx, errors.NewNotFound("no Configuration found")
 		}).AnyTimes()
 
 	return synchronizerParameters{
@@ -166,7 +166,7 @@ func TestNew(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice1,
-	).Return(topodevice.ID(mock1NameStr), nil)
+	).Return(devicetype.NewVersionedID(devicetype.ID(mockDevice1.ID), devicetype.Version(mockDevice1.Version)), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -365,7 +365,7 @@ func TestNewWithExistingConfig(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(device1.ID, nil)
+	).Return(devicetype.NewVersionedID(devicetype.ID(device1.ID), devicetype.Version(device1.Version)), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -562,7 +562,7 @@ func TestNewWithExistingConfigError(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		*device1,
-	).Return(device1.ID, nil)
+	).Return(devicetype.NewVersionedID(devicetype.ID(device1.ID), devicetype.Version(device1.Version)), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -686,7 +686,7 @@ func Test_LikeStratum(t *testing.T) {
 	mockTarget.EXPECT().ConnectTarget(
 		gomock.Any(),
 		mockDevice1,
-	).Return(topodevice.ID(mock1NameStr), nil)
+	).Return(devicetype.NewVersionedID(devicetype.ID(mockDevice1.ID), devicetype.Version(mockDevice1.Version)), nil)
 
 	mockTarget.EXPECT().CapabilitiesWithString(
 		gomock.Any(),
@@ -707,7 +707,7 @@ func Test_LikeStratum(t *testing.T) {
 	deviceChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(deviceID devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
 			ctx := stream.NewContext(func() {})
-			return ctx, errors.New("no Configuration found")
+			return ctx, errors.NewNotFound("no Configuration found")
 		}).AnyTimes()
 	s, err := New(context2.Background(), &mockDevice1,
 		opstateChan, responseChan, opStateCache, roPathMap, mockTarget,

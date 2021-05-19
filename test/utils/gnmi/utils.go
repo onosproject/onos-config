@@ -17,9 +17,9 @@ package gnmi
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"strconv"
 	"strings"
@@ -119,7 +119,7 @@ func AwaitDeviceState(simulator *helm.HelmRelease, predicate func(object *topo.O
 		}
 		time.Sleep(time.Second)
 	}
-	return errors.New("device wait timed out")
+	return errors.NewTimeout("device wait timed out")
 }
 
 // NewDeviceEntity :
@@ -521,7 +521,7 @@ func GetDestination() (client.Destination, error) {
 
 	configService, err := configClient.CoreV1().Services().Get("onos-config")
 	if err != nil || configService == nil {
-		return client.Destination{}, errors.New("can't find service for onos-config")
+		return client.Destination{}, errors.NewNotFound("can't find service for onos-config")
 	}
 
 	return client.Destination{
