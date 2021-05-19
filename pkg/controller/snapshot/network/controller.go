@@ -76,17 +76,18 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	snapshot, err := r.networkSnapshots.Get(networksnapshot.ID(id.String()))
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return controller.Result{}, nil
+		}
 		return controller.Result{}, err
 	}
 
 	// Handle the snapshot for each phase
-	if snapshot != nil {
-		switch snapshot.Status.Phase {
-		case snaptypes.Phase_MARK:
-			return r.reconcileMark(snapshot)
-		case snaptypes.Phase_DELETE:
-			return r.reconcileDelete(snapshot)
-		}
+	switch snapshot.Status.Phase {
+	case snaptypes.Phase_MARK:
+		return r.reconcileMark(snapshot)
+	case snaptypes.Phase_DELETE:
+		return r.reconcileDelete(snapshot)
 	}
 	return controller.Result{}, nil
 }
@@ -126,9 +127,9 @@ func (r *Reconciler) reconcilePendingMark(snapshot *networksnapshot.NetworkSnaps
 // canApplySnapshot returns a bool indicating whether the snapshot can be taken
 func (r *Reconciler) canApplySnapshot(snapshot *networksnapshot.NetworkSnapshot) (bool, error) {
 	prevSnapshot, err := r.networkSnapshots.GetByIndex(snapshot.Index - 1)
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return false, err
-	} else if prevSnapshot != nil && (prevSnapshot.Status.Phase != snaptypes.Phase_DELETE || prevSnapshot.Status.State != snaptypes.State_COMPLETE) {
+	} else if err == nil && (prevSnapshot.Status.Phase != snaptypes.Phase_DELETE || prevSnapshot.Status.State != snaptypes.State_COMPLETE) {
 		return false, nil
 	}
 	return true, nil

@@ -28,6 +28,7 @@ import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -158,13 +159,16 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 
 	// Verify changes have been deleted
 	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange1)
 	deviceChange2, err = changes.Get(deviceChange2.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange2)
 	deviceChange3, err = changes.Get(deviceChange3.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange3)
 
 	// Verify the snapshot state is COMPLETE
@@ -279,13 +283,16 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 
 	// Verify changes have been deleted
 	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange1)
 	deviceChange2, err = changes.Get(deviceChange2.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange2)
 	deviceChange3, err = changes.Get(deviceChange3.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange3)
 
 	// Verify the snapshot state is COMPLETE

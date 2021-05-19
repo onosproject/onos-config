@@ -44,13 +44,13 @@ func TestMastershipStore(t *testing.T) {
 	client3, err := test.NewClient(string(node3))
 	assert.NoError(t, err)
 
-	store1, err := NewAtomixStore(client1)
+	store1, err := NewAtomixStore(client1, node1)
 	assert.NoError(t, err)
 
-	store2, err := NewAtomixStore(client2)
+	store2, err := NewAtomixStore(client2, node2)
 	assert.NoError(t, err)
 
-	store3, err := NewAtomixStore(client3)
+	store3, err := NewAtomixStore(client3, node3)
 	assert.NoError(t, err)
 
 	device1 := topodevice.ID("device1")

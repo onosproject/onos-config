@@ -317,7 +317,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 
 	// Verify network changes were deleted
 	networkChange1, err = networkChanges.Get(networkChange1.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, networkChange1)
 	networkChange2, err = networkChanges.Get(networkChange2.ID)
 	assert.NoError(t, err)
@@ -326,7 +327,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, networkChange3)
 	networkChange4, err = networkChanges.Get(networkChange4.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, networkChange4)
 }
 

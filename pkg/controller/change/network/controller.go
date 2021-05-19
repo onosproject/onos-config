@@ -69,12 +69,10 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	change, err := r.networkChanges.Get(networkchange.ID(id.String()))
 	if err != nil {
-		log.Warnf("Could not get NetworkChange %s", id)
+		if errors.IsNotFound(err) {
+			return controller.Result{}, nil
+		}
 		return controller.Result{}, err
-	}
-	if change == nil {
-		log.Debugf("network change is nil when reconciling %s", id)
-		return controller.Result{}, nil
 	}
 
 	log.Infof("Reconciling NetworkChange %s", change.ID)
@@ -167,32 +165,26 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 			log.Warnf("error updating network change %s %v", err.Error(), change)
 			return controller.Result{}, err
 		}
-		// Return an error because this is as far as we can go until something changes
-		// This will cause exponential backoff of retries
-		return controller.Result{}, errors.NewInternal("Network change failed on 1 device and rolled back on all devices")
+		return controller.Result{}, nil
 	}
-	return controller.Result{}, errors.NewInternal("waiting for device change(s) to complete %s", change.ID)
+	return controller.Result{}, nil
 }
 
 // reconcileCompleteChange reconciles a change in the COMPLETE state during the CHANGE phase
 func (r *Reconciler) reconcileCompleteChange(change *networkchange.NetworkChange) (controller.Result, error) {
 	nextChange, err := r.networkChanges.GetNext(change.Index)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return controller.Result{}, nil
+		}
 		return controller.Result{}, err
 	}
 
-	for nextChange != nil {
-		if isIntersectingChange(change, nextChange) {
-			if nextChange.Status.State == changetypes.State_PENDING {
-				return controller.Result{Requeue: controller.NewID(string(nextChange.ID))}, nil
-			}
-			return controller.Result{}, nil
+	if isIntersectingChange(change, nextChange) {
+		if nextChange.Status.State == changetypes.State_PENDING {
+			return controller.Result{Requeue: controller.NewID(string(nextChange.ID))}, nil
 		}
-
-		nextChange, err = r.networkChanges.GetNext(nextChange.Index)
-		if err != nil {
-			return controller.Result{}, err
-		}
+		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil
 }
@@ -207,9 +199,9 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 	// If the previous network change has not created device changes, requeue to wait for changes to be propagated
 	// TODO devices changes should be written to stores by index to avoid having to manage index order
 	prevChange, err := r.networkChanges.GetByIndex(networkChange.Index - 1)
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return controller.Result{}, err
-	} else if prevChange != nil && !hasDeviceChanges(prevChange) {
+	} else if err == nil && !hasDeviceChanges(prevChange) {
 		return controller.Result{Requeue: controller.NewID(string(networkChange.ID))}, nil
 	}
 
@@ -225,8 +217,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 			Change: change,
 		}
 		if err := r.deviceChanges.Create(deviceChange); err != nil {
-			return controller.Result{}, errors.NewInternal("error creating device change %s. %s",
-				deviceChange.ID, err.Error())
+			return controller.Result{}, err
 		}
 		log.Infof("Created DeviceChange %s for %s", deviceChange.ID, networkChange.ID)
 		log.Debug(deviceChange)
@@ -276,27 +267,23 @@ func (r *Reconciler) canTryChange(change *networkchange.NetworkChange, deviceCha
 	// If the devices are available, ensure the change does not intersect prior changes
 	prevChange, err := r.networkChanges.GetPrev(change.Index)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
 		return false, err
 	}
 
-	for prevChange != nil {
-		// If the change intersects this change, verify it's complete
-		if isIntersectingChange(change, prevChange) {
-			// If the change is in the CHANGE phase, verify it's complete
-			// If the change is in the ROLLBACK phase, verify it's complete but continue iterating
-			// back to the last CHANGE phase change
-			if prevChange.Status.Phase == changetypes.Phase_CHANGE {
-				return prevChange.Status.State != changetypes.State_PENDING, nil
-			} else if prevChange.Status.Phase == changetypes.Phase_ROLLBACK {
-				if prevChange.Status.State == changetypes.State_PENDING {
-					return false, nil
-				}
+	// If the change intersects this change, verify it's complete
+	if isIntersectingChange(change, prevChange) {
+		// If the change is in the CHANGE phase, verify it's complete
+		// If the change is in the ROLLBACK phase, verify it's complete but continue iterating
+		// back to the last CHANGE phase change
+		if prevChange.Status.Phase == changetypes.Phase_CHANGE {
+			return prevChange.Status.State != changetypes.State_PENDING, nil
+		} else if prevChange.Status.Phase == changetypes.Phase_ROLLBACK {
+			if prevChange.Status.State == changetypes.State_PENDING {
+				return false, nil
 			}
-		}
-
-		prevChange, err = r.networkChanges.GetPrev(prevChange.Index)
-		if err != nil {
-			return false, err
 		}
 	}
 	return true, nil
@@ -374,7 +361,6 @@ func (r *Reconciler) ensureDeviceChangeRollbacks(networkChange *networkchange.Ne
 				log.Warnf("error updating device change %s %v", err.Error(), deviceChange)
 				return controller.Result{}, err
 			}
-
 		}
 	}
 	return controller.Result{}, nil
@@ -474,32 +460,26 @@ func (r *Reconciler) reconcilePendingRollback(change *networkchange.NetworkChang
 			log.Warnf("error updating device change %s %v", err.Error(), change)
 			return controller.Result{}, err
 		}
-		// Return an error because this is as far as we can go until something changes
-		// This will cause exponential backoff of retries
-		return controller.Result{}, errors.NewInternal("Network change rollback failed on 1 device and has been undone on all devices")
+		return controller.Result{}, nil
 	}
-	return controller.Result{}, errors.NewInternal("waiting for device change(s) to complete %s", change.ID)
+	return controller.Result{}, nil
 }
 
 // reconcileCompleteRollback reconciles a change in the COMPLETE state during the CHANGE phase
 func (r *Reconciler) reconcileCompleteRollback(change *networkchange.NetworkChange) (controller.Result, error) {
 	prevChange, err := r.networkChanges.GetPrev(change.Index)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return controller.Result{}, nil
+		}
 		return controller.Result{}, err
 	}
 
-	for prevChange != nil {
-		if isIntersectingChange(change, prevChange) {
-			if prevChange.Status.State == changetypes.State_PENDING {
-				return controller.Result{Requeue: controller.NewID(string(prevChange.ID))}, nil
-			}
-			return controller.Result{}, nil
+	if isIntersectingChange(change, prevChange) {
+		if prevChange.Status.State == changetypes.State_PENDING {
+			return controller.Result{Requeue: controller.NewID(string(prevChange.ID))}, nil
 		}
-
-		prevChange, err = r.networkChanges.GetPrev(prevChange.Index)
-		if err != nil {
-			return controller.Result{}, err
-		}
+		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil
 }
@@ -574,21 +554,17 @@ func (r *Reconciler) canTryRollback(change *networkchange.NetworkChange, deviceC
 
 	nextChange, err := r.networkChanges.GetNext(change.Index)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
 		return false, err
 	}
 
-	for nextChange != nil {
-		// If the change intersects this change, verify it has been rolled back
-		if isIntersectingChange(change, nextChange) {
-			return nextChange.Status.Phase == changetypes.Phase_ROLLBACK &&
-				(nextChange.Status.State == changetypes.State_COMPLETE ||
-					nextChange.Status.State == changetypes.State_FAILED), nil
-		}
-
-		nextChange, err = r.networkChanges.GetNext(nextChange.Index)
-		if err != nil {
-			return false, err
-		}
+	// If the change intersects this change, verify it has been rolled back
+	if isIntersectingChange(change, nextChange) {
+		return nextChange.Status.Phase == changetypes.Phase_ROLLBACK &&
+			(nextChange.Status.State == changetypes.State_COMPLETE ||
+				nextChange.Status.State == changetypes.State_FAILED), nil
 	}
 	return true, nil
 }

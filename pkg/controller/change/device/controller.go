@@ -77,13 +77,12 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	// Get the change from the store
 	change, err := r.changes.Get(devicechange.ID(id.String()))
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return controller.Result{}, nil
+		}
 		return controller.Result{}, err
 	}
 
-	if change == nil {
-		log.Debugf("device change is nil when reconciling %s", id)
-		return controller.Result{}, nil
-	}
 	log.Infof("Reconciling DeviceChange %s", change.ID)
 	log.Debug(change)
 
@@ -96,6 +95,9 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	log.Infof("Checking Device store for %s", change.Change.DeviceID)
 	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return controller.Result{}, nil
+		}
 		return controller.Result{}, err
 	} else if getProtocolState(device) != topo.ChannelState_CONNECTED {
 		return controller.Result{}, errors.NewNotFound("device '%s' is not connected", change.Change.DeviceID)
@@ -125,9 +127,6 @@ func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (control
 		log.Debug(change)
 	}
 
-	change.Status.State = changetypes.State_COMPLETE
-	log.Infof("Completing DeviceChange %v", change)
-
 	// Update the change status in the store
 	if err := r.changes.Update(change); err != nil {
 		log.Warnf("error updating device change %s %v", err.Error(), change)
@@ -156,9 +155,6 @@ func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (contr
 		log.Infof("Completing DeviceChange %v", change.ID)
 		log.Debug(change)
 	}
-
-	change.Status.State = changetypes.State_COMPLETE
-	log.Infof("Completing DeviceChange %v", change)
 
 	// Update the change status in the store
 	if err := r.changes.Update(change); err != nil {

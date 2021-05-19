@@ -93,7 +93,7 @@ func Test_NewController2Devices(t *testing.T) {
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient)
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
@@ -360,8 +360,7 @@ func Test_Controller2Devices1NotReady(t *testing.T) {
 func Test_Controller2Devices1FailsGnmiSet(t *testing.T) {
 	test := test.NewTest(
 		test.WithReplicas(1),
-		test.WithPartitions(1),
-		test.WithDebugLogs())
+		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -381,7 +380,7 @@ func Test_Controller2Devices1FailsGnmiSet(t *testing.T) {
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient)
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
@@ -722,7 +721,7 @@ func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient)
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
@@ -1011,7 +1010,7 @@ func Test_ControllerRollbackOnPending(t *testing.T) {
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient)
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
