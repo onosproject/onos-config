@@ -144,7 +144,7 @@ func ToObject(device *Device) *topo.Object {
 			},
 		}
 	}
-	o.GetEntity().Protocols = device.Protocols
+	_ = o.SetAspect(&topo.Protocols{State: device.Protocols})
 
 	var timeout uint64
 	if device.Timeout != nil {
@@ -227,12 +227,21 @@ func ToDevice(object *topo.Object) (*Device, error) {
 		return nil, errors.NewInternal("invalid TLSOptions object aspect %s", object.ID)
 	}
 
+	protocolsMsg := object.GetAspect(&topo.Protocols{})
+	protocols, ok := protocolsMsg.(*topo.Protocols)
+	var protocolStates []*topo.ProtocolState
+	if !ok || protocols == nil {
+		protocolStates = nil
+	} else {
+		protocolStates = protocols.State
+	}
+
 	timeout := time.Millisecond * time.Duration(configurable.Timeout)
 
 	d := &Device{
 		ID:          ID(object.ID),
 		Revision:    object.Revision,
-		Protocols:   object.GetEntity().Protocols,
+		Protocols:   protocolStates,
 		Type:        typeKindID,
 		Role:        Role(asset.Role),
 		Displayname: asset.Name,

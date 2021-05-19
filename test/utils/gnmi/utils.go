@@ -170,6 +170,18 @@ func NewDeviceEntity(simulator *helm.HelmRelease, deviceType string, version str
 		return nil, err
 	}
 
+	protocolState := &topo.ProtocolState{
+		Protocol:          topo.Protocol_GNMI,
+		ConnectivityState: topo.ConnectivityState_REACHABLE,
+		ChannelState:      topo.ChannelState_CONNECTED,
+		ServiceState:      topo.ServiceState_AVAILABLE,
+	}
+	protocolStates := []*topo.ProtocolState{protocolState}
+	err = o.SetAspect(&topo.Protocols{State: protocolStates})
+	if err != nil {
+		return nil, err
+	}
+
 	return &o, nil
 }
 

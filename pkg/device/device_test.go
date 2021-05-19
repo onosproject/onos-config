@@ -62,6 +62,9 @@ func Test_ObjectToDevice(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
+	err = deviceAsObject.SetAspect(&topo.Protocols{})
+	assert.NoError(t, err)
+
 	device, err := ToDevice(&deviceAsObject)
 	assert.NoError(t, err)
 	assert.NotNil(t, device)
