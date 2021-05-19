@@ -16,7 +16,6 @@ package device
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/golang/mock/gomock"
 	types "github.com/onosproject/onos-api/go/onos/config"
@@ -38,6 +37,7 @@ import (
 	southboundmock "github.com/onosproject/onos-config/pkg/test/mocks/southbound"
 	storemock "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -594,7 +594,7 @@ func mockTargetDevice(t *testing.T, name devicetype.ID, ctrl *gomock.Controller)
 	deviceChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(deviceID devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
 			ctx := stream.NewContext(func() {})
-			return ctx, errors.New("no Configuration found")
+			return ctx, errors.NewNotFound("no Configuration found")
 		}).AnyTimes()
 	_, err := synchronizer.New(context.Background(), &mockDevice,
 		make(chan<- events.OperationalStateEvent), make(chan<- events.DeviceResponse),

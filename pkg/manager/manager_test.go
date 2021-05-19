@@ -15,7 +15,6 @@
 package manager
 
 import (
-	"errors"
 	"github.com/golang/mock/gomock"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -29,6 +28,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -222,7 +222,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 			if len(changes) != 0 {
 				return ctx, nil
 			}
-			return ctx, errors.New("no Configuration found")
+			return ctx, errors.NewNotFound("no Configuration found")
 		}).AnyTimes()
 	_ = mockDeviceChangesStore.Create(deviceChange1)
 
@@ -245,7 +245,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 				},
 			}, nil
 		}
-		return nil, errors.New("no Configuration found")
+		return nil, errors.NewNotFound("no Configuration found")
 	}).AnyTimes()
 
 	// Mock Device Store

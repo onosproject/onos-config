@@ -15,7 +15,7 @@
 package synchronizer
 
 import (
-	"errors"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"sync"
 	"testing"
 
@@ -45,7 +45,7 @@ func createSessionManager(t *testing.T) *SessionManager {
 	deviceChangeStore.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(deviceID devicetype.VersionedID, c chan<- *devicechange.DeviceChange) (stream.Context, error) {
 			ctx := stream.NewContext(func() {})
-			return ctx, errors.New("no Configuration found")
+			return ctx, errors.NewNotFound("no Configuration found")
 		}).AnyTimes()
 
 	deviceStore.EXPECT().Watch(gomock.Any()).AnyTimes()

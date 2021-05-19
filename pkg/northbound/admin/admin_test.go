@@ -16,7 +16,6 @@ package admin
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
@@ -28,6 +27,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	"github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"gotest.tools/assert"
@@ -100,7 +100,7 @@ func Test_RollbackNetworkChange_BadName(t *testing.T) {
 	mockNwChStore, ok := mgrTest.NetworkChangesStore.(*mockstore.MockNetworkChangesStore)
 	assert.Assert(t, ok, "casting mock store")
 
-	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("Rollback aborted. Network change BAD CHANGE not found"))
+	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.NewNotFound("Rollback aborted. Network change BAD CHANGE not found"))
 	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: "BAD CHANGE"})
 	assert.ErrorContains(t, err, "Rollback aborted. Network change BAD CHANGE not found")
 }
@@ -113,7 +113,7 @@ func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 	mockNwChStore, ok := mgrTest.NetworkChangesStore.(*mockstore.MockNetworkChangesStore)
 	assert.Assert(t, ok, "casting mock store")
 
-	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.New("change is not specified"))
+	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.NewNotFound("change is not specified"))
 	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: ""})
 	assert.ErrorContains(t, err, "is empty")
 }

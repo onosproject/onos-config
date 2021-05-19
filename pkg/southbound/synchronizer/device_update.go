@@ -15,7 +15,7 @@
 package synchronizer
 
 import (
-	"errors"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -61,7 +61,7 @@ func (s *Session) updateDevice(connectivity topo.ConnectivityState, channel topo
 
 	// Do not update the state of a device if the node encounters a mastership term greater than its own
 	if uint64(s.mastershipState.Term) < currentTerm {
-		return backoff.Permanent(errors.New("device mastership term is greater than node mastership term"))
+		return backoff.Permanent(errors.NewInvalid("device mastership term is greater than node mastership term"))
 	}
 
 	topoDevice.MastershipTerm = uint64(s.mastershipState.Term)

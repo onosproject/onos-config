@@ -27,9 +27,9 @@ import (
 	"github.com/onosproject/onos-config/pkg/manager"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
 
@@ -53,12 +53,12 @@ type Server struct {
 // UploadRegisterModel uploads and registers a new model plugin.
 // Deprecated: models should only be loaded at startup
 func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegisterModelServer) error {
-	return errors.New("not implemented")
+	return errors.NewNotSupported("not implemented")
 }
 
 // ListRegisteredModels lists the registered models..
 func (s Server) ListRegisteredModels(req *admin.ListModelsRequest, stream admin.ConfigAdminService_ListRegisteredModelsServer) error {
-	return errors.New("not implemented")
+	return errors.NewNotSupported("not implemented")
 }
 
 // RollbackNetworkChange rolls back a named atomix-based network change.
@@ -203,5 +203,5 @@ func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChange
 			return &admin.CompactChangesResponse{}, nil
 		}
 	}
-	return nil, errors.New("snapshot state unknown")
+	return nil, errors.NewInvalid("snapshot state unknown")
 }
