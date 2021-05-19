@@ -38,9 +38,14 @@ import (
 
 var log = logging.GetLogger("southbound")
 
-// Targets is a global cache of connected targets
-var Targets = make(map[devicetype.VersionedID]TargetIf)
+// targets is a global cache of connected targets
+var targets = make(map[devicetype.VersionedID]TargetIf)
 var targetMu = &sync.RWMutex{}
+
+// NewTargetItem - add to the target map
+func NewTargetItem(deviceID devicetype.VersionedID, target TargetIf) {
+	targets[deviceID] = target
+}
 
 func createDestination(device topodevice.Device) (*client.Destination, devicetype.VersionedID) {
 	d := &client.Destination{}
@@ -93,13 +98,13 @@ func createDestination(device topodevice.Device) (*client.Destination, devicetyp
 // GetTarget attempts to get a specific target from the targets cache
 func GetTarget(key devicetype.VersionedID) (TargetIf, error) {
 	targetMu.RLock()
-	t, ok := Targets[key].(TargetIf)
+	t, ok := targets[key].(TargetIf)
 	targetMu.RUnlock()
 	if ok {
 		return t, nil
 	}
-	targetNames := make([]devicetype.VersionedID, 0, len(Targets))
-	for t := range Targets {
+	targetNames := make([]devicetype.VersionedID, 0, len(targets))
+	for t := range targets {
 		targetNames = append(targetNames, t)
 	}
 	return nil, fmt.Errorf("gNMI client for %v does not exist. Known clients: %v", key, targetNames)
@@ -129,7 +134,7 @@ func (target *Target) ConnectTarget(ctx context.Context, device topodevice.Devic
 	target.mu.Unlock()
 
 	targetMu.Lock()
-	Targets[key] = target
+	targets[key] = target
 	targetMu.Unlock()
 	return key, err
 }
