@@ -602,8 +602,8 @@ func mockTargetDevice(t *testing.T, name devicetype.ID, ctrl *gomock.Controller)
 		configmodel.GetStateExplicitRoPaths, &sync.RWMutex{}, deviceChangeStore)
 	assert.NoError(t, err, "Unable to create new synchronizer for", mockDevice.ID)
 
-	// Finally to make it visible to tests - add it to `Targets`
-	southbound.Targets[devicetype.NewVersionedID(name, v1)] = mockTargetDevice
+	// Finally to make it visible to tests - add it to `targets`
+	southbound.NewTargetItem(devicetype.NewVersionedID(name, v1), mockTargetDevice)
 }
 
 func newChange(index devicechange.Index, device devicetype.ID, version devicetype.Version) *devicechange.DeviceChange {

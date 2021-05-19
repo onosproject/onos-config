@@ -132,11 +132,18 @@ func setUp(t *testing.T) {
 		},
 		Timeout: &timeout,
 	}
+
+	targets[devicetype.NewVersionedID("dummyDevice1", "1.0.0")] = NewTarget()
+	targets[devicetype.NewVersionedID("dummyDevice1", "2.0.0")] = NewTarget()
+	targets[devicetype.NewVersionedID("dummyDevice2", "1.0.0")] = NewTarget()
 }
 
 func tearDown() {
 	GnmiClientFactory = saveGnmiClientFactory
 	GnmiBaseClientFactory = saveGnmiBaseClientFactory
+	for t := range targets {
+		delete(targets, t)
+	}
 }
 
 func getDevice1Target(t *testing.T) (*Target, devicetype.VersionedID, context.Context) {
@@ -165,10 +172,24 @@ func Test_ConnectTarget(t *testing.T) {
 func Test_BadTarget(t *testing.T) {
 	setUp(t)
 
-	key := devicetype.NewVersionedID("no such target", "0.0.0")
-	_, fetchError := GetTarget(key)
+	key := devicetype.NewVersionedID("dummyDevice1", "1.0.1")
+	_, fetchError := GetTarget(key) // Should discriminate on different version
+	t.Log(fetchError)
 	assert.Error(t, fetchError)
-	assert.Contains(t, fetchError.Error(), "does not exist")
+	assert.Contains(t, fetchError.Error(), "gNMI client for dummyDevice1:1.0.1 does not exist")
+	assert.Contains(t, fetchError.Error(), "dummyDevice1:1.0.0")
+	assert.Contains(t, fetchError.Error(), "dummyDevice1:2.0.0")
+	assert.Contains(t, fetchError.Error(), "dummyDevice2:1.0.0")
+
+	key = devicetype.NewVersionedID("dummyDevice3", "1.0.0")
+	_, fetchError = GetTarget(key) // Should discriminate on different name
+	t.Log(fetchError)
+	assert.Error(t, fetchError)
+	assert.Contains(t, fetchError.Error(), "gNMI client for dummyDevice3:1.0.0 does not exist")
+	assert.Contains(t, fetchError.Error(), "dummyDevice1:1.0.0")
+	assert.Contains(t, fetchError.Error(), "dummyDevice1:2.0.0")
+	assert.Contains(t, fetchError.Error(), "dummyDevice2:1.0.0")
+
 	tearDown()
 }
 

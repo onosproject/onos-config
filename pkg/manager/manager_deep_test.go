@@ -166,7 +166,7 @@ func setUpDeepTest(t *testing.T) (*Manager, *AllMocks) {
 
 	mockTargetCreationfn := func() southbound.TargetIf {
 		mockTarget := southboundmocks.NewMockTargetIf(ctrl)
-		southbound.Targets[devicetype.NewVersionedID(device1, deviceVersion1)] = mockTarget
+		southbound.NewTargetItem(devicetype.NewVersionedID(device1, deviceVersion1), mockTarget)
 
 		mockTarget.EXPECT().CapabilitiesWithString(
 			gomock.Any(),

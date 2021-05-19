@@ -60,7 +60,7 @@ func setupControllers(t *testing.T, networkChanges networkchangestore.Store,
 func newMockTarget(t *testing.T, ctrl *gomock.Controller, id devicetype.VersionedID) (*southboundtest.MockTargetIf, context.CancelFunc) {
 	mockTargetDevice := southboundtest.NewMockTargetIf(ctrl)
 	assert.NotNil(t, mockTargetDevice)
-	southbound.Targets[id] = mockTargetDevice
+	southbound.NewTargetItem(id, mockTargetDevice)
 	deviceContext, cancel := context.WithCancel(context.Background())
 	mockTargetDevice.EXPECT().Context().Return(&deviceContext).AnyTimes()
 	return mockTargetDevice, cancel
