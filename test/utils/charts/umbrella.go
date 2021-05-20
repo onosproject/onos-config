@@ -25,5 +25,6 @@ func CreateUmbrellaRelease() *helm.HelmRelease {
 		Release("onos-umbrella").
 		Set("import.onos-gui.enabled", false).
 		Set("onos-topo.image.tag", "latest").
-		Set("onos-config.image.tag", "latest")
+		Set("onos-config.image.tag", "latest").
+		Set("onos-config.plugin.compiler.target", "github.com/onosproject/onos-config@master")
 }
