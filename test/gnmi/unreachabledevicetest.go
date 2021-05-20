@@ -17,6 +17,7 @@ package gnmi
 
 import (
 	"context"
+	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/device"
 	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
@@ -80,8 +81,19 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	devicePath := gnmi.GetDevicePathWithValue(unreachableDeviceModDeviceName, unreachableDeviceModPath, unreachableDeviceModValue, proto.StringVal)
 
 	// Set the value - should return a pending change
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
+	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
 
 	// Check that the value was set correctly in the cache
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, unreachableDeviceModValue, 0, "Query after set returned the wrong value")
+
+	adminClient, err := gnmi.NewAdminServiceClient()
+	assert.NoError(t, err)
+
+	// Rollback the set - should be possible even if device is unreachable
+	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
+		context.Background(), &admin.RollbackRequest{Name: string(changeID)})
+	assert.NoError(t, rollbackError, "Rollback returned an error")
+	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
+	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
+
 }
