@@ -205,20 +205,30 @@ func Test_NewController2Devices(t *testing.T) {
 // TODO Figure out if this behaviour is OK. Should we push to device-1 at all
 //  if we know in advance that device-2 is not contactable
 func Test_Controller2Devices1NotReady(t *testing.T) {
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	deviceCache := newDeviceCache(ctrl, device1)
 	defer deviceCache.Close()
 
-	leadershipStore, err := leadershipstore.NewLocalStore("cluster-1", "node-1")
+	leadershipStore, err := leadershipstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewLocalStore("cluster-1", "node-1")
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
@@ -531,20 +541,30 @@ func Test_Controller2Devices1FailsGnmiSet(t *testing.T) {
 //  retrying until the device is fixed
 //  See https://jira.opennetworking.org/browse/AETHER-1815
 func Test_ControllerSingleDeviceFailsGnmiSet(t *testing.T) {
+	test := test.NewTest(
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	deviceCache := newDeviceCache(ctrl, device1, device2)
 	defer deviceCache.Close()
 
-	leadershipStore, err := leadershipstore.NewLocalStore("cluster-1", "node-1")
+	leadershipStore, err := leadershipstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewLocalStore("cluster-1", "node-1")
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 

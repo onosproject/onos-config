@@ -17,9 +17,9 @@ package manager
 import (
 	"context"
 	"fmt"
-	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	testify "github.com/stretchr/testify/assert"
@@ -138,7 +138,7 @@ func setUpDeepTest(t *testing.T, client atomix.Client) (*Manager, *AllMocks) {
 
 	leadershipStore, err := leadership.NewAtomixStore(client)
 	assert.NilError(t, err)
-	mastershipStore, err := mastership.NewAtomixStore(client)
+	mastershipStore, err := mastership.NewAtomixStore(client, "test")
 	assert.NilError(t, err)
 
 	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{
