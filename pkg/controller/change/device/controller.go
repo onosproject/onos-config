@@ -95,9 +95,6 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	log.Infof("Checking Device store for %s", change.Change.DeviceID)
 	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return controller.Result{}, nil
-		}
 		return controller.Result{}, err
 	} else if getProtocolState(device) != topo.ChannelState_CONNECTED {
 		return controller.Result{}, errors.NewNotFound("device '%s' is not connected", change.Change.DeviceID)

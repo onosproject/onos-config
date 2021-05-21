@@ -72,6 +72,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		if errors.IsNotFound(err) {
 			return controller.Result{}, nil
 		}
+		log.Warnf("Could not get NetworkChange %s", id)
 		return controller.Result{}, err
 	}
 
@@ -165,9 +166,11 @@ func (r *Reconciler) reconcilePendingChange(change *networkchange.NetworkChange)
 			log.Warnf("error updating network change %s %v", err.Error(), change)
 			return controller.Result{}, err
 		}
-		return controller.Result{}, nil
+		// Return an error because this is as far as we can go until something changes
+		// This will cause exponential backoff of retries
+		return controller.Result{}, errors.NewInternal("Network change failed on 1 device and rolled back on all devices")
 	}
-	return controller.Result{}, nil
+	return controller.Result{}, errors.NewInternal("waiting for device change(s) to complete %s", change.ID)
 }
 
 // reconcileCompleteChange reconciles a change in the COMPLETE state during the CHANGE phase
@@ -201,7 +204,7 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 	prevChange, err := r.networkChanges.GetByIndex(networkChange.Index - 1)
 	if err != nil && !errors.IsNotFound(err) {
 		return controller.Result{}, err
-	} else if err == nil && !hasDeviceChanges(prevChange) {
+	} else if prevChange != nil && !hasDeviceChanges(prevChange) {
 		return controller.Result{Requeue: controller.NewID(string(networkChange.ID))}, nil
 	}
 
@@ -217,7 +220,8 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 			Change: change,
 		}
 		if err := r.deviceChanges.Create(deviceChange); err != nil {
-			return controller.Result{}, err
+			return controller.Result{}, errors.NewInternal("error creating device change %s. %s",
+				deviceChange.ID, err.Error())
 		}
 		log.Infof("Created DeviceChange %s for %s", deviceChange.ID, networkChange.ID)
 		log.Debug(deviceChange)
@@ -361,6 +365,7 @@ func (r *Reconciler) ensureDeviceChangeRollbacks(networkChange *networkchange.Ne
 				log.Warnf("error updating device change %s %v", err.Error(), deviceChange)
 				return controller.Result{}, err
 			}
+
 		}
 	}
 	return controller.Result{}, nil
@@ -460,9 +465,11 @@ func (r *Reconciler) reconcilePendingRollback(change *networkchange.NetworkChang
 			log.Warnf("error updating device change %s %v", err.Error(), change)
 			return controller.Result{}, err
 		}
-		return controller.Result{}, nil
+		// Return an error because this is as far as we can go until something changes
+		// This will cause exponential backoff of retries
+		return controller.Result{}, errors.NewInternal("Network change rollback failed on 1 device and has been undone on all devices")
 	}
-	return controller.Result{}, nil
+	return controller.Result{}, errors.NewInternal("waiting for device change(s) to complete %s", change.ID)
 }
 
 // reconcileCompleteRollback reconciles a change in the COMPLETE state during the CHANGE phase
