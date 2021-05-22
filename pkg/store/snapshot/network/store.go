@@ -86,7 +86,7 @@ func (s *atomixStore) Get(id networksnapshot.ID) (*networksnapshot.NetworkSnapsh
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeSnapshot(entry)
+	return decodeSnapshot(*entry)
 }
 
 func (s *atomixStore) GetByIndex(index networksnapshot.Index) (*networksnapshot.NetworkSnapshot, error) {
@@ -99,7 +99,7 @@ func (s *atomixStore) GetByIndex(index networksnapshot.Index) (*networksnapshot.
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeSnapshot(entry)
+	return decodeSnapshot(*entry)
 }
 
 func (s *atomixStore) Create(snapshot *networksnapshot.NetworkSnapshot) error {
@@ -179,7 +179,7 @@ func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) (stream.C
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if snapshot, err := decodeSnapshot(&entry); err == nil {
+			if snapshot, err := decodeSnapshot(entry); err == nil {
 				ch <- snapshot
 			}
 		}
@@ -199,7 +199,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if snapshot, err := decodeSnapshot(&event.Entry); err == nil {
+			if snapshot, err := decodeSnapshot(event.Entry); err == nil {
 				switch event.Type {
 				case indexedmap.EventReplay:
 					ch <- stream.Event{
@@ -236,7 +236,7 @@ func (s *atomixStore) Close() error {
 	return nil
 }
 
-func decodeSnapshot(entry *indexedmap.Entry) (*networksnapshot.NetworkSnapshot, error) {
+func decodeSnapshot(entry indexedmap.Entry) (*networksnapshot.NetworkSnapshot, error) {
 	snapshot := &networksnapshot.NetworkSnapshot{}
 	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
 		return nil, errors.NewInvalid("snapshot decoding failed: %v", err)

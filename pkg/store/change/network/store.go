@@ -124,7 +124,7 @@ func (s *atomixStore) Get(id networkchange.ID) (*networkchange.NetworkChange, er
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return decodeChange(entry)
+	return decodeChange(*entry)
 }
 
 func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.NetworkChange, error) {
@@ -135,7 +135,7 @@ func (s *atomixStore) GetByIndex(index networkchange.Index) (*networkchange.Netw
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return decodeChange(entry)
+	return decodeChange(*entry)
 }
 
 func (s *atomixStore) GetPrev(index networkchange.Index) (*networkchange.NetworkChange, error) {
@@ -146,7 +146,7 @@ func (s *atomixStore) GetPrev(index networkchange.Index) (*networkchange.Network
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return decodeChange(entry)
+	return decodeChange(*entry)
 }
 
 func (s *atomixStore) GetNext(index networkchange.Index) (*networkchange.NetworkChange, error) {
@@ -157,7 +157,7 @@ func (s *atomixStore) GetNext(index networkchange.Index) (*networkchange.Network
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return decodeChange(entry)
+	return decodeChange(*entry)
 }
 
 func (s *atomixStore) Create(change *networkchange.NetworkChange) error {
@@ -237,7 +237,7 @@ func (s *atomixStore) List(ch chan<- *networkchange.NetworkChange) (stream.Conte
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if config, err := decodeChange(&entry); err == nil {
+			if config, err := decodeChange(entry); err == nil {
 				ch <- config
 			}
 		}
@@ -262,7 +262,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event, opts ...WatchOption) (stream
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if change, err := decodeChange(&event.Entry); err == nil {
+			if change, err := decodeChange(event.Entry); err == nil {
 				switch event.Type {
 				case indexedmap.EventReplay:
 					ch <- stream.Event{
@@ -297,7 +297,7 @@ func (s *atomixStore) Close() error {
 	return s.changes.Close(context.Background())
 }
 
-func decodeChange(entry *indexedmap.Entry) (*networkchange.NetworkChange, error) {
+func decodeChange(entry indexedmap.Entry) (*networkchange.NetworkChange, error) {
 	change := &networkchange.NetworkChange{}
 	if err := proto.Unmarshal(entry.Value, change); err != nil {
 		return nil, errors.NewInvalid("change decoding failed: %v", err)

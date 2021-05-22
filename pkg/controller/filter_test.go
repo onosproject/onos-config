@@ -36,8 +36,7 @@ func (r testDeviceResolver) Resolve(id controller.ID) (topodevice.ID, error) {
 func TestMastershipFilter(t *testing.T) {
 	test := test.NewTest(
 		test.WithReplicas(1),
-		test.WithPartitions(1),
-		test.WithDebugLogs())
+		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -50,10 +49,10 @@ func TestMastershipFilter(t *testing.T) {
 	atomixClient2, err := test.NewClient(string(node2))
 	assert.NoError(t, err)
 
-	store1, err := mastership.NewAtomixStore(atomixClient1)
+	store1, err := mastership.NewAtomixStore(atomixClient1, node1)
 	assert.NoError(t, err)
 
-	store2, err := mastership.NewAtomixStore(atomixClient2)
+	store2, err := mastership.NewAtomixStore(atomixClient2, node2)
 	assert.NoError(t, err)
 
 	filter1 := MastershipFilter{store1, testDeviceResolver{}, node1}

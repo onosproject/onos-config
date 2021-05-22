@@ -47,7 +47,7 @@ func setUp(name string, t *testing.T, atomixClient atomix.Client) *AllMocks {
 	deviceStore, err := devicestore.NewStore(client)
 	assert.NilError(t, err)
 
-	mastershipStore, err := mastership.NewAtomixStore(atomixClient)
+	mastershipStore, err := mastership.NewAtomixStore(atomixClient, "test")
 	assert.NilError(t, err)
 
 	allMocks := AllMocks{

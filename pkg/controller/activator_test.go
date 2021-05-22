@@ -26,8 +26,7 @@ import (
 func TestLeadershipActivator(t *testing.T) {
 	test := test.NewTest(
 		test.WithReplicas(1),
-		test.WithPartitions(1),
-		test.WithDebugLogs())
+		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 

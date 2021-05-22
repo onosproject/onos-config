@@ -93,7 +93,7 @@ func (s *atomixStore) Get(id devicesnapshot.ID) (*devicesnapshot.DeviceSnapshot,
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return decodeDeviceSnapshot(entry)
+	return decodeDeviceSnapshot(*entry)
 }
 
 func (s *atomixStore) Create(snapshot *devicesnapshot.DeviceSnapshot) error {
@@ -183,7 +183,7 @@ func (s *atomixStore) List(ch chan<- *devicesnapshot.DeviceSnapshot) (stream.Con
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if snapshot, err := decodeDeviceSnapshot(&entry); err == nil {
+			if snapshot, err := decodeDeviceSnapshot(entry); err == nil {
 				ch <- snapshot
 			}
 		}
@@ -203,7 +203,7 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if snapshot, err := decodeDeviceSnapshot(&event.Entry); err == nil {
+			if snapshot, err := decodeDeviceSnapshot(event.Entry); err == nil {
 				switch event.Type {
 				case _map.EventReplay:
 					ch <- stream.Event{
@@ -263,7 +263,7 @@ func (s *atomixStore) Load(deviceID device.VersionedID) (*devicesnapshot.Snapsho
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-	return decodeSnapshot(entry)
+	return decodeSnapshot(*entry)
 }
 
 func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Context, error) {
@@ -278,7 +278,7 @@ func (s *atomixStore) LoadAll(ch chan<- *devicesnapshot.Snapshot) (stream.Contex
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if snapshot, err := decodeSnapshot(&entry); err == nil {
+			if snapshot, err := decodeSnapshot(entry); err == nil {
 				ch <- snapshot
 			}
 		}
@@ -299,7 +299,7 @@ func (s *atomixStore) WatchAll(ch chan<- stream.Event) (stream.Context, error) {
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if snapshot, err := decodeSnapshot(&event.Entry); err == nil {
+			if snapshot, err := decodeSnapshot(event.Entry); err == nil {
 				switch event.Type {
 				case _map.EventReplay:
 					ch <- stream.Event{
@@ -337,7 +337,7 @@ func (s *atomixStore) Close() error {
 	return nil
 }
 
-func decodeDeviceSnapshot(entry *_map.Entry) (*devicesnapshot.DeviceSnapshot, error) {
+func decodeDeviceSnapshot(entry _map.Entry) (*devicesnapshot.DeviceSnapshot, error) {
 	snapshot := &devicesnapshot.DeviceSnapshot{}
 	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
 		return nil, errors.NewInvalid("device snapshot decoding failed: %v", err)
@@ -347,7 +347,7 @@ func decodeDeviceSnapshot(entry *_map.Entry) (*devicesnapshot.DeviceSnapshot, er
 	return snapshot, nil
 }
 
-func decodeSnapshot(entry *_map.Entry) (*devicesnapshot.Snapshot, error) {
+func decodeSnapshot(entry _map.Entry) (*devicesnapshot.Snapshot, error) {
 	snapshot := &devicesnapshot.Snapshot{}
 	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
 		return nil, errors.NewInvalid("snapshot decoding failed: %v", err)
