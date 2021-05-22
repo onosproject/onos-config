@@ -21,6 +21,7 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	assert2 "gotest.tools/assert"
 	"testing"
@@ -272,8 +273,9 @@ func TestDeviceStore(t *testing.T) {
 	err = store1.Delete(change2)
 	assert.NoError(t, err)
 	change, err := store2.Get("network-change-2:device-1:1.0.0")
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, change)
+	assert.True(t, errors.IsNotFound(err))
 
 	event = (<-changeCh).Object.(*devicechange.DeviceChange)
 	assert.Equal(t, change2.ID, event.ID)

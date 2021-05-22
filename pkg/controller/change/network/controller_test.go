@@ -72,8 +72,7 @@ func newMockTarget(t *testing.T, ctrl *gomock.Controller, id devicetype.Versione
 func Test_NewController2Devices(t *testing.T) {
 	test := test.NewTest(
 		test.WithReplicas(1),
-		test.WithPartitions(1),
-		test.WithDebugLogs())
+		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -207,8 +206,7 @@ func Test_NewController2Devices(t *testing.T) {
 func Test_Controller2Devices1NotReady(t *testing.T) {
 	test := test.NewTest(
 		test.WithReplicas(1),
-		test.WithPartitions(1),
-		test.WithDebugLogs())
+		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -543,8 +541,7 @@ func Test_Controller2Devices1FailsGnmiSet(t *testing.T) {
 func Test_ControllerSingleDeviceFailsGnmiSet(t *testing.T) {
 	test := test.NewTest(
 		test.WithReplicas(1),
-		test.WithPartitions(1),
-		test.WithDebugLogs())
+		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -720,8 +717,7 @@ func Test_ControllerSingleDeviceFailsGnmiSet(t *testing.T) {
 func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 	test := test.NewTest(
 		test.WithReplicas(1),
-		test.WithPartitions(1),
-		test.WithDebugLogs())
+		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -1009,8 +1005,7 @@ func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 func Test_ControllerRollbackOnPending(t *testing.T) {
 	test := test.NewTest(
 		test.WithReplicas(1),
-		test.WithPartitions(1),
-		test.WithDebugLogs())
+		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 

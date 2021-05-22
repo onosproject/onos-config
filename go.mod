@@ -4,8 +4,8 @@ go 1.14
 
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
-	github.com/atomix/atomix-go-client v0.5.10-0.20210518214422-ca39e7437a35
-	github.com/atomix/atomix-go-framework v0.6.7
+	github.com/atomix/atomix-go-client v0.5.10
+	github.com/atomix/atomix-go-framework v0.6.8
 	github.com/atomix/go-client v0.4.1
 	github.com/bshuster-repo/logrus-logstash-hook v1.0.0 // indirect
 	github.com/bugsnag/bugsnag-go v2.1.1+incompatible // indirect
