@@ -72,14 +72,14 @@ func TestLeadershipStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	leadership := <-store2Ch
-	assert.Equal(t, cluster.NodeID("b"), leadership.Leader)
+	assert.Equal(t, cluster.NodeID("node-2"), leadership.Leader)
 
 	leader, err = store2.IsLeader()
 	assert.NoError(t, err)
 	assert.True(t, leader)
 
 	leadership = <-store3Ch
-	assert.Equal(t, cluster.NodeID("b"), leadership.Leader)
+	assert.Equal(t, cluster.NodeID("node-2"), leadership.Leader)
 
 	leader, err = store3.IsLeader()
 	assert.NoError(t, err)
@@ -89,7 +89,7 @@ func TestLeadershipStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	leadership = <-store3Ch
-	assert.Equal(t, cluster.NodeID("c"), leadership.Leader)
+	assert.Equal(t, cluster.NodeID("node-3"), leadership.Leader)
 
 	leader, err = store3.IsLeader()
 	assert.NoError(t, err)

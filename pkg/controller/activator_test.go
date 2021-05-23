@@ -33,7 +33,7 @@ func TestLeadershipActivator(t *testing.T) {
 	client1, err := test.NewClient("node-1")
 	assert.NoError(t, err)
 
-	client2, err := test.NewClient("node-1")
+	client2, err := test.NewClient("node-2")
 	assert.NoError(t, err)
 
 	store1, err := leadership.NewAtomixStore(client1)

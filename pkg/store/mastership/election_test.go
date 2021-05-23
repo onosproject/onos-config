@@ -69,43 +69,43 @@ func TestMastershipElection(t *testing.T) {
 	master := store1.getMastership()
 	assert.NotNil(t, master)
 
-	assert.Equal(t, master.Master, "node-1")
+	assert.Equal(t, master.Master, cluster.NodeID("node-1"))
 
 	master = store2.getMastership()
 	assert.NotNil(t, master)
-	assert.NotEqual(t, master.Master, "node-2")
+	assert.NotEqual(t, master.Master, cluster.NodeID("node-2"))
 
 	master = store3.getMastership()
 	assert.NotNil(t, master)
-	assert.NotEqual(t, master.Master, "node-3")
+	assert.NotEqual(t, master.Master, cluster.NodeID("node-3"))
 
 	err = store1.Close()
 	assert.NoError(t, err)
 
 	mastership := <-store2Ch
-	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
+	assert.Equal(t, cluster.NodeID("node-2"), mastership.Master)
 
 	master = store2.getMastership()
 	assert.NotNil(t, master)
-	assert.Equal(t, master.Master, "node-2")
+	assert.Equal(t, master.Master, cluster.NodeID("node-2"))
 
 	mastership = <-store3Ch
-	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
+	assert.Equal(t, cluster.NodeID("node-2"), mastership.Master)
 
 	master = store3.getMastership()
 	assert.NotNil(t, master)
-	assert.NotEqual(t, master.Master, "node-3")
+	assert.NotEqual(t, master.Master, cluster.NodeID("node-3"))
 
 	err = store2.Close()
 	assert.NoError(t, err)
 
 	mastership = <-store3Ch
-	assert.Equal(t, cluster.NodeID("c"), mastership.Master)
+	assert.Equal(t, cluster.NodeID("node-3"), mastership.Master)
 
 	master = store3.getMastership()
 	assert.NoError(t, err)
 	assert.NotNil(t, master)
-	assert.Equal(t, master.Master, "node-3")
+	assert.Equal(t, master.Master, cluster.NodeID("node-3"))
 
 	_ = store3.Close()
 }
