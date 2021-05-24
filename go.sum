@@ -100,8 +100,8 @@ github.com/atomix/atomix-go-client v0.5.12/go.mod h1:8XCsMVuRRz7FxhQ4EYBrXXGz7Ri
 github.com/atomix/atomix-go-framework v0.6.5/go.mod h1:EkESsxBGOTVYPghrcJSLa36a8Zq1Dnu8Mq56xcjXX/k=
 github.com/atomix/atomix-go-framework v0.6.10 h1:5N6GolXOl8LUIU7ov+p9nkZS7qaHb8vkCn26cK3YdO4=
 github.com/atomix/atomix-go-framework v0.6.10/go.mod h1:EkESsxBGOTVYPghrcJSLa36a8Zq1Dnu8Mq56xcjXX/k=
-github.com/atomix/atomix-go-framework v0.6.11-0.20210524002123-d008d0feedd6 h1:PJ8CZCDIWXTx/5jPjrxqNsPmDtR4Q2on6V8XgTkdWfM=
-github.com/atomix/atomix-go-framework v0.6.11-0.20210524002123-d008d0feedd6/go.mod h1:EkESsxBGOTVYPghrcJSLa36a8Zq1Dnu8Mq56xcjXX/k=
+github.com/atomix/atomix-go-framework v0.6.11-0.20210524004239-9007109ff181 h1:EkK9K3ANdUyCTM9druXXwUObcdbdRYu0+jQxZjufJn4=
+github.com/atomix/atomix-go-framework v0.6.11-0.20210524004239-9007109ff181/go.mod h1:EkESsxBGOTVYPghrcJSLa36a8Zq1Dnu8Mq56xcjXX/k=
 github.com/atomix/atomix-go-local v0.0.0-20190827233944-938e35b06834/go.mod h1:qLBTOiVKoEqzYOjgxIgWFa+Hfa3SR+VexA6jGBcv0HA=
 github.com/atomix/atomix-go-local v0.0.0-20190828183508-3db728c0fc3b/go.mod h1:VnwyXJvHzUHuVzzTmPhZ6/ktbBnz3CZk3aKMX7VlTmY=
 github.com/atomix/atomix-go-local v0.0.0-20190830183800-73f964b0f75a/go.mod h1:lt/qUsFF29yT2ofmxOXfFzIz0poN22/Qa5SPdalgTKw=
