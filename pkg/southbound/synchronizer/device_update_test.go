@@ -17,6 +17,7 @@ package synchronizer
 import (
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	testify "github.com/stretchr/testify/assert"
 	"testing"
@@ -60,7 +61,7 @@ func setUp(name string, t *testing.T, atomixClient atomix.Client) *AllMocks {
 }
 
 func TestUpdateDisconnectedDevice(t *testing.T) {
-	test := test.NewTest()
+	test := test.NewTest(rsm.NewProtocol())
 	testify.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -106,7 +107,7 @@ func TestUpdateDisconnectedDevice(t *testing.T) {
 }
 
 func TestUpdateConnectedDevice(t *testing.T) {
-	test := test.NewTest()
+	test := test.NewTest(rsm.NewProtocol())
 	testify.NoError(t, test.Start())
 	defer test.Stop()
 

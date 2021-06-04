@@ -16,6 +16,7 @@ package leadership
 
 import (
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"testing"
 
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
@@ -24,6 +25,7 @@ import (
 
 func TestLeadershipStore(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())

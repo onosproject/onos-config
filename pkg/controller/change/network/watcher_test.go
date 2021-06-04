@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
@@ -72,6 +73,7 @@ var deviceChange2 = devicechange.Change{
 
 func TestNetworkWatcher(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())
@@ -151,6 +153,7 @@ func TestNetworkWatcher(t *testing.T) {
 
 func TestDeviceWatcher(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())

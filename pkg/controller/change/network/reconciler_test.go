@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -53,6 +54,7 @@ const (
 // TestReconcilerChangeRollback tests applying and then rolling back a change
 func TestReconcilerChangeRollback(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())
@@ -221,6 +223,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 // TestReconcilerError tests an error reverting a change to PENDING
 func TestReconcilerError(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())

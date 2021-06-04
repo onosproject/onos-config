@@ -17,6 +17,7 @@ package network
 import (
 	"context"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
 	types "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -71,6 +72,7 @@ func newMockTarget(t *testing.T, ctrl *gomock.Controller, id devicetype.Versione
 // They get reconciled successfully
 func Test_NewController2Devices(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
@@ -205,6 +207,7 @@ func Test_NewController2Devices(t *testing.T) {
 //  if we know in advance that device-2 is not contactable
 func Test_Controller2Devices1NotReady(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
@@ -367,6 +370,7 @@ func Test_Controller2Devices1NotReady(t *testing.T) {
 //  See https://jira.opennetworking.org/browse/AETHER-1815
 func Test_Controller2Devices1FailsGnmiSet(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
@@ -540,6 +544,7 @@ func Test_Controller2Devices1FailsGnmiSet(t *testing.T) {
 //  See https://jira.opennetworking.org/browse/AETHER-1815
 func Test_ControllerSingleDeviceFailsGnmiSet(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
@@ -716,6 +721,7 @@ func Test_ControllerSingleDeviceFailsGnmiSet(t *testing.T) {
 // The Network and Device changes sit there in COMPLETED state in the ROLLBACK phase.
 func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
@@ -1004,6 +1010,7 @@ func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 // The Network and Device changes sit there in COMPLETED state in the ROLLBACK phase.
 func Test_ControllerRollbackOnPending(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1))
 	assert.NoError(t, test.Start())

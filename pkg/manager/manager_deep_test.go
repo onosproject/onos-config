@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
@@ -267,6 +268,7 @@ func Test_GetNetworkConfig_Deep(t *testing.T) {
 	t.Skip() // Were causing intermittent errors on travis TODO Find root cause
 
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())
@@ -291,6 +293,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	t.Skip() // Were causing intermittent errors on travis TODO Find root cause
 
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())
@@ -375,6 +378,7 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 	t.Skip() // Were causing intermittent errors on travis TODO Find root cause
 
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())
@@ -451,6 +455,7 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 	t.Skip() // Were causing intermittent errors on travis TODO Find root cause
 
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())

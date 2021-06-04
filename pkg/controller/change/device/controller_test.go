@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
 	types "github.com/onosproject/onos-api/go/onos/config"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
@@ -85,6 +86,7 @@ const (
 
 func TestReconcilerChangeSuccess(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())
@@ -155,6 +157,7 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 
 func TestReconcilerRollbackSuccess(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())
@@ -229,6 +232,7 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 
 func TestReconcilerChangeThenRollback(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())
@@ -370,6 +374,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 // attributes become visible again
 func TestReconcilerRemoveThenRollback(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())

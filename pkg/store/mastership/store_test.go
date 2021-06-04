@@ -16,6 +16,7 @@ package mastership
 
 import (
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"testing"
 
@@ -25,6 +26,7 @@ import (
 
 func TestMastershipStore(t *testing.T) {
 	test := test.NewTest(
+		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
 		test.WithDebugLogs())
