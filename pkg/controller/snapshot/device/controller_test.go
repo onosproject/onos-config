@@ -16,6 +16,9 @@ package device
 
 import (
 	"fmt"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	types "github.com/onosproject/onos-api/go/onos/config"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -26,6 +29,7 @@ import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicesnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -36,7 +40,18 @@ const (
 )
 
 func TestReconcileDeviceSnapshotIndex(t *testing.T) {
-	changes, snapshots := newStores(t)
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
+	changes, snapshots := newStores(t, atomixClient)
 	defer changes.Close()
 	defer snapshots.Close()
 
@@ -47,7 +62,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 
 	// Create a device-1 change 1
 	deviceChange1 := newSet(1, device1, "foo", time.Now(), changetypes.Phase_CHANGE, changetypes.State_COMPLETE)
-	err := changes.Create(deviceChange1)
+	err = changes.Create(deviceChange1)
 	assert.NoError(t, err)
 
 	// Create a device-1 change 2
@@ -146,13 +161,16 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 
 	// Verify changes have been deleted
 	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange1)
 	deviceChange2, err = changes.Get(deviceChange2.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange2)
 	deviceChange3, err = changes.Get(deviceChange3.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange3)
 
 	// Verify the snapshot state is COMPLETE
@@ -162,7 +180,18 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 }
 
 func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
-	changes, snapshots := newStores(t)
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
+	changes, snapshots := newStores(t, atomixClient)
 	defer changes.Close()
 	defer snapshots.Close()
 
@@ -173,7 +202,7 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 
 	// Create a device-1 change 1
 	deviceChange1 := newSet(1, device1, "foo", time.Now(), changetypes.Phase_CHANGE, changetypes.State_COMPLETE)
-	err := changes.Create(deviceChange1)
+	err = changes.Create(deviceChange1)
 	assert.NoError(t, err)
 
 	// Create a device-1 change 2
@@ -257,13 +286,16 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 
 	// Verify changes have been deleted
 	deviceChange1, err = changes.Get(deviceChange1.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange1)
 	deviceChange2, err = changes.Get(deviceChange2.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange2)
 	deviceChange3, err = changes.Get(deviceChange3.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, deviceChange3)
 
 	// Verify the snapshot state is COMPLETE
@@ -272,10 +304,10 @@ func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
 	assert.Equal(t, snapshottype.State_COMPLETE, deviceSnapshot.Status.State)
 }
 
-func newStores(t *testing.T) (devicechangestore.Store, devicesnapstore.Store) {
-	changes, err := devicechangestore.NewLocalStore()
+func newStores(t *testing.T, client atomix.Client) (devicechangestore.Store, devicesnapstore.Store) {
+	changes, err := devicechangestore.NewAtomixStore(client)
 	assert.NoError(t, err)
-	snapshots, err := devicesnapstore.NewLocalStore()
+	snapshots, err := devicesnapstore.NewAtomixStore(client)
 	assert.NoError(t, err)
 	return changes, snapshots
 }

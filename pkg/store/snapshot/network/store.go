@@ -16,61 +16,22 @@ package network
 
 import (
 	"context"
+	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"time"
 
-	"github.com/atomix/go-client/pkg/client/indexedmap"
-	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/util/net"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/indexedmap"
 	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
 	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
-	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 )
 
-const snapshotsName = "network-snapshots"
-
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error) {
-	uuid.SetNodeID([]byte(cluster.Node().ID))
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-
-	snapshots, err := database.GetIndexedMap(context.Background(), snapshotsName)
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-
-	return &atomixStore{
-		snapshots: snapshots,
-	}, nil
-}
-
-// NewLocalStore returns a new local network snapshot store
-func NewLocalStore() (Store, error) {
-	_, address := atomix.StartLocalNode()
-	return newLocalStore(address)
-}
-
-// newLocalStore creates a new local network snapshot store
-func newLocalStore(address net.Address) (Store, error) {
-	snapshotsName := primitive.Name{
-		Namespace: "local",
-		Name:      snapshotsName,
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-	snapshots, err := indexedmap.New(context.Background(), snapshotsName, []*primitive.Session{session})
+func NewAtomixStore(client atomix.Client) (Store, error) {
+	snapshots, err := client.GetIndexedMap(context.Background(), "onos-config-network-snapshots")
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
@@ -125,7 +86,7 @@ func (s *atomixStore) Get(id networksnapshot.ID) (*networksnapshot.NetworkSnapsh
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeSnapshot(entry)
+	return decodeSnapshot(*entry)
 }
 
 func (s *atomixStore) GetByIndex(index networksnapshot.Index) (*networksnapshot.NetworkSnapshot, error) {
@@ -138,7 +99,7 @@ func (s *atomixStore) GetByIndex(index networksnapshot.Index) (*networksnapshot.
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeSnapshot(entry)
+	return decodeSnapshot(*entry)
 }
 
 func (s *atomixStore) Create(snapshot *networksnapshot.NetworkSnapshot) error {
@@ -163,9 +124,7 @@ func (s *atomixStore) Create(snapshot *networksnapshot.NetworkSnapshot) error {
 	}
 
 	snapshot.Index = networksnapshot.Index(entry.Index)
-	snapshot.Revision = networksnapshot.Revision(entry.Version)
-	snapshot.Created = entry.Created
-	snapshot.Updated = entry.Updated
+	snapshot.Revision = networksnapshot.Revision(entry.Revision)
 	return nil
 }
 
@@ -182,13 +141,12 @@ func (s *atomixStore) Update(snapshot *networksnapshot.NetworkSnapshot) error {
 		return errors.NewInvalid("snapshot encoding failed: %v", err)
 	}
 
-	entry, err := s.snapshots.Set(ctx, indexedmap.Index(snapshot.Index), string(snapshot.ID), bytes, indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
+	entry, err := s.snapshots.Set(ctx, indexedmap.Index(snapshot.Index), string(snapshot.ID), bytes, indexedmap.IfMatch(meta.NewRevision(meta.Revision(snapshot.Revision))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
-	snapshot.Revision = networksnapshot.Revision(entry.Version)
-	snapshot.Updated = entry.Updated
+	snapshot.Revision = networksnapshot.Revision(entry.Revision)
 	return nil
 }
 
@@ -200,20 +158,19 @@ func (s *atomixStore) Delete(snapshot *networksnapshot.NetworkSnapshot) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := s.snapshots.RemoveIndex(ctx, indexedmap.Index(snapshot.Index), indexedmap.IfVersion(indexedmap.Version(snapshot.Revision)))
+	_, err := s.snapshots.RemoveIndex(ctx, indexedmap.Index(snapshot.Index), indexedmap.IfMatch(meta.NewRevision(meta.Revision(snapshot.Revision))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
 	snapshot.Revision = 0
-	snapshot.Updated = entry.Updated
 	return nil
 }
 
 func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) (stream.Context, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mapCh := make(chan *indexedmap.Entry)
+	mapCh := make(chan indexedmap.Entry)
 	if err := s.snapshots.Entries(ctx, mapCh); err != nil {
 		cancel()
 		return nil, errors.FromAtomix(err)
@@ -233,7 +190,7 @@ func (s *atomixStore) List(ch chan<- *networksnapshot.NetworkSnapshot) (stream.C
 func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mapCh := make(chan *indexedmap.Event)
+	mapCh := make(chan indexedmap.Event)
 	if err := s.snapshots.Watch(ctx, mapCh, indexedmap.WithReplay()); err != nil {
 		cancel()
 		return nil, errors.FromAtomix(err)
@@ -244,22 +201,22 @@ func (s *atomixStore) Watch(ch chan<- stream.Event) (stream.Context, error) {
 		for event := range mapCh {
 			if snapshot, err := decodeSnapshot(event.Entry); err == nil {
 				switch event.Type {
-				case indexedmap.EventNone:
+				case indexedmap.EventReplay:
 					ch <- stream.Event{
 						Type:   stream.None,
 						Object: snapshot,
 					}
-				case indexedmap.EventInserted:
+				case indexedmap.EventInsert:
 					ch <- stream.Event{
 						Type:   stream.Created,
 						Object: snapshot,
 					}
-				case indexedmap.EventUpdated:
+				case indexedmap.EventUpdate:
 					ch <- stream.Event{
 						Type:   stream.Updated,
 						Object: snapshot,
 					}
-				case indexedmap.EventRemoved:
+				case indexedmap.EventRemove:
 					ch <- stream.Event{
 						Type:   stream.Deleted,
 						Object: snapshot,
@@ -279,15 +236,13 @@ func (s *atomixStore) Close() error {
 	return nil
 }
 
-func decodeSnapshot(entry *indexedmap.Entry) (*networksnapshot.NetworkSnapshot, error) {
+func decodeSnapshot(entry indexedmap.Entry) (*networksnapshot.NetworkSnapshot, error) {
 	snapshot := &networksnapshot.NetworkSnapshot{}
 	if err := proto.Unmarshal(entry.Value, snapshot); err != nil {
 		return nil, errors.NewInvalid("snapshot decoding failed: %v", err)
 	}
 	snapshot.ID = networksnapshot.ID(entry.Key)
 	snapshot.Index = networksnapshot.Index(entry.Index)
-	snapshot.Revision = networksnapshot.Revision(entry.Version)
-	snapshot.Created = entry.Created
-	snapshot.Updated = entry.Updated
+	snapshot.Revision = networksnapshot.Revision(entry.Revision)
 	return snapshot, nil
 }

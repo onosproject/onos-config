@@ -15,27 +15,43 @@
 package leadership
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"testing"
 
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLeadershipStore(t *testing.T) {
-	_, address := atomix.StartLocalNode()
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
 
-	store1, err := newLocalStore("a", address)
+	client1, err := test.NewClient("node-1")
 	assert.NoError(t, err)
 
-	store2, err := newLocalStore("b", address)
+	client2, err := test.NewClient("node-2")
+	assert.NoError(t, err)
+
+	store1, err := NewAtomixStore(client1)
+	assert.NoError(t, err)
+
+	store2, err := NewAtomixStore(client2)
 	assert.NoError(t, err)
 
 	store2Ch := make(chan Leadership)
 	err = store2.Watch(store2Ch)
 	assert.NoError(t, err)
 
-	store3, err := newLocalStore("c", address)
+	client3, err := test.NewClient("node-3")
+	assert.NoError(t, err)
+
+	store3, err := NewAtomixStore(client3)
 	assert.NoError(t, err)
 
 	store3Ch := make(chan Leadership)
@@ -58,14 +74,14 @@ func TestLeadershipStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	leadership := <-store2Ch
-	assert.Equal(t, cluster.NodeID("b"), leadership.Leader)
+	assert.Equal(t, cluster.NodeID("node-2"), leadership.Leader)
 
 	leader, err = store2.IsLeader()
 	assert.NoError(t, err)
 	assert.True(t, leader)
 
 	leadership = <-store3Ch
-	assert.Equal(t, cluster.NodeID("b"), leadership.Leader)
+	assert.Equal(t, cluster.NodeID("node-2"), leadership.Leader)
 
 	leader, err = store3.IsLeader()
 	assert.NoError(t, err)
@@ -75,7 +91,7 @@ func TestLeadershipStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	leadership = <-store3Ch
-	assert.Equal(t, cluster.NodeID("c"), leadership.Leader)
+	assert.Equal(t, cluster.NodeID("node-3"), leadership.Leader)
 
 	leader, err = store3.IsLeader()
 	assert.NoError(t, err)

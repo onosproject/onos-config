@@ -17,20 +17,19 @@ package device
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/config"
+	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"sync"
 	"time"
 
-	"github.com/atomix/go-client/pkg/client/indexedmap"
-	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/util/net"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/indexedmap"
+	"github.com/atomix/atomix-go-client/pkg/atomix/primitive"
 	"github.com/gogo/protobuf/proto"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
@@ -42,44 +41,10 @@ func getDeviceChangesName(deviceID device.VersionedID) string {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore(config config.Config) (Store, error) {
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-
+func NewAtomixStore(client atomix.Client) (Store, error) {
 	changesFactory := func(deviceID device.VersionedID) (indexedmap.IndexedMap, error) {
-		return database.GetIndexedMap(context.Background(), getDeviceChangesName(deviceID))
+		return client.GetIndexedMap(context.Background(), "onos-config-device-changes", primitive.WithClusterKey(getDeviceChangesName(deviceID)))
 	}
-
-	return &atomixStore{
-		changesFactory: changesFactory,
-		deviceChanges:  make(map[device.VersionedID]indexedmap.IndexedMap),
-	}, nil
-}
-
-// NewLocalStore returns a new local device store
-func NewLocalStore() (Store, error) {
-	_, address := atomix.StartLocalNode()
-	return newLocalStore(address)
-}
-
-// newLocalStore creates a new local device change store
-func newLocalStore(address net.Address) (Store, error) {
-	changesFactory := func(deviceID device.VersionedID) (indexedmap.IndexedMap, error) {
-		counterName := primitive.Name{
-			Namespace: "local",
-			Name:      getDeviceChangesName(deviceID),
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
-		if err != nil {
-			return nil, errors.FromAtomix(err)
-		}
-		return indexedmap.New(context.Background(), counterName, []*primitive.Session{session})
-	}
-
 	return &atomixStore{
 		changesFactory: changesFactory,
 		deviceChanges:  make(map[device.VersionedID]indexedmap.IndexedMap),
@@ -184,7 +149,7 @@ func (s *atomixStore) Get(id devicechange.ID) (*devicechange.DeviceChange, error
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decodeChange(entry)
+	return decodeChange(*entry)
 }
 
 func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
@@ -231,9 +196,7 @@ func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
 	}
 
 	change.Index = devicechange.Index(entry.Index)
-	change.Revision = devicechange.Revision(entry.Version)
-	change.Created = entry.Created
-	change.Updated = entry.Updated
+	change.Revision = devicechange.Revision(entry.Revision)
 	log.Infof("Created new device change %s", change.ID)
 
 	return nil
@@ -272,16 +235,12 @@ func (s *atomixStore) Update(change *devicechange.DeviceChange) error {
 		return errors.NewInvalid("change encoding failed: %v", err)
 	}
 
-	entry, err := changes.Set(ctx, indexedmap.Index(change.Index), string(change.ID), bytes, indexedmap.IfVersion(indexedmap.Version(change.Revision)))
+	entry, err := changes.Set(ctx, indexedmap.Index(change.Index), string(change.ID), bytes, indexedmap.IfMatch(meta.NewRevision(meta.Revision(change.Revision))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
-	change.Revision = devicechange.Revision(entry.Version)
-	if change.Created.IsZero() {
-		change.Created = entry.Created
-	}
-	change.Updated = entry.Updated
+	change.Revision = devicechange.Revision(entry.Revision)
 	return nil
 }
 
@@ -304,13 +263,12 @@ func (s *atomixStore) Delete(change *devicechange.DeviceChange) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	entry, err := changes.RemoveIndex(ctx, indexedmap.Index(change.Index), indexedmap.IfVersion(indexedmap.Version(change.Revision)))
+	_, err = changes.RemoveIndex(ctx, indexedmap.Index(change.Index), indexedmap.IfMatch(meta.NewRevision(meta.Revision(change.Revision))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
 	change.Revision = 0
-	change.Updated = entry.Updated
 	return nil
 }
 
@@ -322,7 +280,7 @@ func (s *atomixStore) List(deviceID device.VersionedID, ch chan<- *devicechange.
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mapCh := make(chan *indexedmap.Entry)
+	mapCh := make(chan indexedmap.Entry)
 	if err := changes.Entries(ctx, mapCh); err != nil {
 		cancel()
 		return nil, errors.FromAtomix(err)
@@ -331,7 +289,7 @@ func (s *atomixStore) List(deviceID device.VersionedID, ch chan<- *devicechange.
 	go func() {
 		defer close(ch)
 		for entry := range mapCh {
-			if config, err := decodeChange(entry); err == nil {
+			if config, err := decodeChange(entry); err == nil && config.ID.GetDeviceVersionedID() == deviceID {
 				ch <- config
 			}
 		}
@@ -351,7 +309,7 @@ func (s *atomixStore) Watch(deviceID device.VersionedID, ch chan<- stream.Event,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	mapCh := make(chan *indexedmap.Event)
+	mapCh := make(chan indexedmap.Event)
 	if err := changes.Watch(ctx, mapCh, watchOpts...); err != nil {
 		cancel()
 		return nil, errors.FromAtomix(err)
@@ -360,26 +318,26 @@ func (s *atomixStore) Watch(deviceID device.VersionedID, ch chan<- stream.Event,
 	go func() {
 		defer close(ch)
 		for event := range mapCh {
-			if change, err := decodeChange(event.Entry); err == nil {
+			if change, err := decodeChange(event.Entry); err == nil && change.ID.GetDeviceVersionedID() == deviceID {
 				switch event.Type {
-				case indexedmap.EventNone:
-					ch <- stream.Event{
-						Type:   stream.None,
-						Object: change,
-					}
-				case indexedmap.EventInserted:
+				case indexedmap.EventInsert:
 					ch <- stream.Event{
 						Type:   stream.Created,
 						Object: change,
 					}
-				case indexedmap.EventUpdated:
+				case indexedmap.EventUpdate:
 					ch <- stream.Event{
 						Type:   stream.Updated,
 						Object: change,
 					}
-				case indexedmap.EventRemoved:
+				case indexedmap.EventRemove:
 					ch <- stream.Event{
 						Type:   stream.Deleted,
+						Object: change,
+					}
+				case indexedmap.EventReplay:
+					ch <- stream.Event{
+						Type:   stream.None,
 						Object: change,
 					}
 				}
@@ -399,15 +357,13 @@ func (s *atomixStore) Close() error {
 	return returnErr
 }
 
-func decodeChange(entry *indexedmap.Entry) (*devicechange.DeviceChange, error) {
+func decodeChange(entry indexedmap.Entry) (*devicechange.DeviceChange, error) {
 	change := &devicechange.DeviceChange{}
 	if err := proto.Unmarshal(entry.Value, change); err != nil {
 		return nil, errors.NewInvalid("change decoding failed: %v", err)
 	}
 	change.ID = devicechange.ID(entry.Key)
 	change.Index = devicechange.Index(entry.Index)
-	change.Revision = devicechange.Revision(entry.Version)
-	change.Created = entry.Created
-	change.Updated = entry.Updated
+	change.Revision = devicechange.Revision(entry.Revision)
 	return change, nil
 }

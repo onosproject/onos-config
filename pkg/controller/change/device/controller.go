@@ -77,13 +77,12 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	// Get the change from the store
 	change, err := r.changes.Get(devicechange.ID(id.String()))
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return controller.Result{}, nil
+		}
 		return controller.Result{}, err
 	}
 
-	if change == nil {
-		log.Debugf("device change is nil when reconciling %s", id)
-		return controller.Result{}, nil
-	}
 	log.Infof("Reconciling DeviceChange %s", change.ID)
 	log.Debug(change)
 

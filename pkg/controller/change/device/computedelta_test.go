@@ -16,6 +16,8 @@ package device
 
 import (
 	"fmt"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	types "github.com/onosproject/onos-api/go/onos/config"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicechanges "github.com/onosproject/onos-config/pkg/store/change/device"
@@ -25,7 +27,15 @@ import (
 )
 
 func TestReconciler_computeRollback_singleUpdate(t *testing.T) {
-	devices, deviceChangesStore := newStores(t)
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	devices, deviceChangesStore := newStores(t, test)
 	reconciler := &Reconciler{
 		devices: devices,
 		changes: deviceChangesStore,
@@ -64,7 +74,15 @@ func TestReconciler_computeRollback_singleUpdate(t *testing.T) {
 }
 
 func TestReconciler_computeRollback_mixedUpdate(t *testing.T) {
-	devices, deviceChangesStore := newStores(t)
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	devices, deviceChangesStore := newStores(t, test)
 	reconciler := &Reconciler{
 		devices: devices,
 		changes: deviceChangesStore,
@@ -125,7 +143,15 @@ func TestReconciler_computeRollback_mixedUpdate(t *testing.T) {
 }
 
 func TestReconciler_computeRollback_addInterface(t *testing.T) {
-	devices, deviceChangesStore := newStores(t)
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	devices, deviceChangesStore := newStores(t, test)
 	defer deviceChangesStore.Close()
 	reconciler := &Reconciler{
 		devices: devices,
@@ -183,7 +209,15 @@ func TestReconciler_computeRollback_addInterface(t *testing.T) {
 }
 
 func TestReconciler_computeRollback_removeInterface(t *testing.T) {
-	devices, deviceChangesStore := newStores(t)
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	devices, deviceChangesStore := newStores(t, test)
 	defer deviceChangesStore.Close()
 	reconciler := &Reconciler{
 		devices: devices,

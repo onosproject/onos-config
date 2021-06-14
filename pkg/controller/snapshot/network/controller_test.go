@@ -16,6 +16,9 @@ package network
 
 import (
 	"fmt"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	types "github.com/onosproject/onos-api/go/onos/config"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -43,7 +46,18 @@ const (
 )
 
 func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
-	networkChanges, networkSnapshots, deviceSnapshots, deviceChanges := newStores(t)
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
+	networkChanges, networkSnapshots, deviceSnapshots, deviceChanges := newStores(t, atomixClient)
 	defer networkChanges.Close()
 	defer networkSnapshots.Close()
 	defer deviceSnapshots.Close()
@@ -58,7 +72,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 
 	// Create network and device changes in the completed state
 	networkChange1 := newNetworkChange("change-1", changetypes.Phase_CHANGE, changetypes.State_COMPLETE, device1)
-	err := networkChanges.Create(networkChange1)
+	err = networkChanges.Create(networkChange1)
 	assert.NoError(t, err)
 
 	networkChange2 := newNetworkChange("change-2", changetypes.Phase_CHANGE, changetypes.State_PENDING, device1, device2)
@@ -305,7 +319,8 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 
 	// Verify network changes were deleted
 	networkChange1, err = networkChanges.Get(networkChange1.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, networkChange1)
 	networkChange2, err = networkChanges.Get(networkChange2.ID)
 	assert.NoError(t, err)
@@ -314,18 +329,19 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, networkChange3)
 	networkChange4, err = networkChanges.Get(networkChange4.ID)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, networkChange4)
 }
 
-func newStores(t *testing.T) (networkchangestore.Store, networksnapstore.Store, devicesnapstore.Store, devicechangestore.Store) {
-	networkChanges, err := networkchangestore.NewLocalStore()
+func newStores(t *testing.T, client atomix.Client) (networkchangestore.Store, networksnapstore.Store, devicesnapstore.Store, devicechangestore.Store) {
+	networkChanges, err := networkchangestore.NewAtomixStore(client)
 	assert.NoError(t, err)
-	networkSnapshots, err := networksnapstore.NewLocalStore()
+	networkSnapshots, err := networksnapstore.NewAtomixStore(client)
 	assert.NoError(t, err)
-	deviceSnapshots, err := devicesnapstore.NewLocalStore()
+	deviceSnapshots, err := devicesnapstore.NewAtomixStore(client)
 	assert.NoError(t, err)
-	deviceChanges, err := devicechangestore.NewLocalStore()
+	deviceChanges, err := devicechangestore.NewAtomixStore(client)
 	assert.NoError(t, err)
 	return networkChanges, networkSnapshots, deviceSnapshots, deviceChanges
 }

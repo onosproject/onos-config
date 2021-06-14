@@ -16,49 +16,15 @@ package mastership
 
 import (
 	"context"
-	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"sync"
 	"time"
 
-	"github.com/atomix/go-client/pkg/client"
-	"github.com/atomix/go-client/pkg/client/election"
-	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/util/net"
+	"github.com/atomix/atomix-go-client/pkg/atomix/election"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 )
-
-// newAtomixElection returns a new persistent device mastership election
-func newAtomixElection(cluster cluster.Cluster, deviceID topodevice.ID, database *client.Database) (deviceMastershipElection, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%s", deviceID), election.WithID(string(cluster.Node().ID)))
-	cancel()
-	if err != nil {
-		return nil, err
-	}
-	return newDeviceMastershipElection(deviceID, election)
-}
-
-// newLocalElection returns a new local device mastership election
-func newLocalElection(deviceID topodevice.ID, nodeID cluster.NodeID, address net.Address) (deviceMastershipElection, error) {
-	name := primitive.Name{
-		Namespace: "local",
-		Name:      fmt.Sprintf("mastership-%s", deviceID),
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-	election, err := election.New(context.Background(), name, []*primitive.Session{session}, election.WithID(string(nodeID)))
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-	return newDeviceMastershipElection(deviceID, election)
-}
 
 // newDeviceMastershipElection creates and enters a new device mastership election
 func newDeviceMastershipElection(deviceID topodevice.ID, election election.Election) (deviceMastershipElection, error) {
@@ -109,7 +75,7 @@ func (e *atomixDeviceMastershipElection) DeviceID() topodevice.ID {
 
 // enter enters the election
 func (e *atomixDeviceMastershipElection) enter() error {
-	ch := make(chan *election.Event)
+	ch := make(chan election.Event)
 	if err := e.election.Watch(context.Background(), ch); err != nil {
 		return errors.FromAtomix(err)
 	}
@@ -128,7 +94,7 @@ func (e *atomixDeviceMastershipElection) enter() error {
 	e.mastership = &Mastership{
 		Device: e.deviceID,
 		Master: cluster.NodeID(term.Leader),
-		Term:   Term(term.ID),
+		Term:   Term(term.Revision),
 	}
 	e.mu.Unlock()
 	go e.watchElection(*term, ch)
@@ -136,19 +102,19 @@ func (e *atomixDeviceMastershipElection) enter() error {
 }
 
 // watchElection watches the election events and updates mastership info
-func (e *atomixDeviceMastershipElection) watchElection(term election.Term, ch <-chan *election.Event) {
+func (e *atomixDeviceMastershipElection) watchElection(term election.Term, ch <-chan election.Event) {
 	for event := range ch {
 		// Ignore events that occurred prior to entering the election
-		if event.Term.ID < term.ID {
+		if event.Term.Revision < term.Revision {
 			continue
 		}
 
 		var mastership *Mastership
 		e.mu.Lock()
-		if uint64(e.mastership.Term) != event.Term.ID {
+		if e.mastership.Term != Term(event.Term.Revision) {
 			mastership = &Mastership{
 				Device: e.deviceID,
-				Term:   Term(event.Term.ID),
+				Term:   Term(event.Term.Revision),
 				Master: cluster.NodeID(event.Term.Leader),
 			}
 			e.mastership = mastership

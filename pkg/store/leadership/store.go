@@ -21,15 +21,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/atomix/go-client/pkg/client/election"
-	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/onosproject/onos-config/pkg/config"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/election"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 )
-
-const primitiveName = "leaderships"
 
 // Term is a monotonically increasing leadership term
 type Term uint64
@@ -58,58 +53,11 @@ type Leadership struct {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error) {
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
+func NewAtomixStore(client atomix.Client) (Store, error) {
+	election, err := client.GetElection(context.Background(), "onos-config-leaderships")
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}
-
-	election, err := database.GetElection(context.Background(), primitiveName, election.WithID(string(cluster.Node().ID)))
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-
-	store := &atomixStore{
-		election: election,
-		watchers: make([]chan<- Leadership, 0, 1),
-	}
-	if err := store.enter(); err != nil {
-		return nil, err
-	}
-	return store, nil
-}
-
-var localAddresses = make(map[string]net.Address)
-
-// NewLocalStore returns a new local election store
-func NewLocalStore(clusterID string, nodeID cluster.NodeID) (Store, error) {
-	address, ok := localAddresses[clusterID]
-	if !ok {
-		_, address = atomix.StartLocalNode()
-		localAddresses[clusterID] = address
-	}
-	return newLocalStore(nodeID, address)
-}
-
-// newLocalStore returns a new local election store
-func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
-	name := primitive.Name{
-		Namespace: "local",
-		Name:      primitiveName,
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-
-	election, err := election.New(context.Background(), name, []*primitive.Session{session}, election.WithID(string(nodeID)))
-	if err != nil {
-		return nil, errors.FromAtomix(err)
-	}
-
 	store := &atomixStore{
 		election: election,
 		watchers: make([]chan<- Leadership, 0, 1),
@@ -130,7 +78,7 @@ type atomixStore struct {
 
 // enter enters the election
 func (s *atomixStore) enter() error {
-	ch := make(chan *election.Event)
+	ch := make(chan election.Event)
 	if err := s.election.Watch(context.Background(), ch); err != nil {
 		return errors.FromAtomix(err)
 	}
@@ -147,14 +95,14 @@ func (s *atomixStore) enter() error {
 	// Set the leadership term
 	s.mu.Lock()
 	s.leadership = &Leadership{
-		Term:   Term(term.ID),
+		Term:   Term(term.Revision),
 		Leader: cluster.NodeID(term.Leader),
 	}
 	s.mu.Unlock()
 
 	// Wait for the election event to be received before returning
 	for event := range ch {
-		if event.Term.ID == term.ID {
+		if event.Term.Revision == term.Revision {
 			go s.watchElection(ch)
 			return nil
 		}
@@ -165,13 +113,13 @@ func (s *atomixStore) enter() error {
 }
 
 // watchElection watches the election events and updates leadership info
-func (s *atomixStore) watchElection(ch <-chan *election.Event) {
+func (s *atomixStore) watchElection(ch <-chan election.Event) {
 	for event := range ch {
 		var leadership *Leadership
 		s.mu.Lock()
-		if uint64(s.leadership.Term) != event.Term.ID {
+		if s.leadership.Term != Term(event.Term.Revision) {
 			leadership = &Leadership{
-				Term:   Term(event.Term.ID),
+				Term:   Term(event.Term.Revision),
 				Leader: cluster.NodeID(event.Term.Leader),
 			}
 			s.leadership = leadership

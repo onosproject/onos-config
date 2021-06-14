@@ -17,6 +17,9 @@ package network
 import (
 	"context"
 	"fmt"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -50,9 +53,20 @@ const (
 
 // TestReconcilerChangeRollback tests applying and then rolling back a change
 func TestReconcilerChangeRollback(t *testing.T) {
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
@@ -66,7 +80,7 @@ func TestReconcilerChangeRollback(t *testing.T) {
 
 	// Create a network change
 	networkChange := newChange(change1, device1, device2)
-	err := networkChanges.Create(networkChange)
+	err = networkChanges.Create(networkChange)
 	assert.NoError(t, err)
 
 	// Reconcile the network change
@@ -208,9 +222,20 @@ func TestReconcilerChangeRollback(t *testing.T) {
 
 // TestReconcilerError tests an error reverting a change to PENDING
 func TestReconcilerError(t *testing.T) {
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
@@ -223,7 +248,7 @@ func TestReconcilerError(t *testing.T) {
 
 	// Create a network change
 	networkChange := newChange(change1, device1, device2)
-	err := networkChanges.Create(networkChange)
+	err = networkChanges.Create(networkChange)
 	assert.NoError(t, err)
 
 	// Reconcile the network change
@@ -340,10 +365,10 @@ func TestReconcilerError(t *testing.T) {
 	assert.Equal(t, "change rejected by device", networkChange.Status.Message)
 }
 
-func newStores(t *testing.T, ctrl *gomock.Controller) (networkchanges.Store, devicechanges.Store, devicestore.Store) {
-	networkChanges, err := networkchanges.NewLocalStore()
+func newStores(t *testing.T, ctrl *gomock.Controller, atomixClient atomix.Client) (networkchanges.Store, devicechanges.Store, devicestore.Store) {
+	networkChanges, err := networkchanges.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
-	deviceChanges, err := devicechanges.NewLocalStore()
+	deviceChanges, err := devicechanges.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	client := mocks.NewMockTopoClient(ctrl)
 	client.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, request *topo.WatchRequest) (topo.Topo_WatchClient, error) {

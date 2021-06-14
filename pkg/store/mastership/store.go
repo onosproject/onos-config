@@ -15,13 +15,13 @@
 package mastership
 
 import (
+	"context"
+	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/atomix/atomix-go-client/pkg/atomix/primitive"
 	"io"
 	"sync"
 
-	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/onosproject/onos-config/pkg/config"
 	"github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 )
 
@@ -55,39 +55,19 @@ type Mastership struct {
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore(cluster cluster.Cluster, config config.Config) (Store, error) {
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
-	if err != nil {
-		return nil, err
-	}
-
-	return &atomixStore{
-		nodeID: cluster.Node().ID,
-		newElection: func(id device.ID) (deviceMastershipElection, error) {
-			return newAtomixElection(cluster, id, database)
-		},
-		elections: make(map[device.ID]deviceMastershipElection),
-	}, nil
-}
-
-var localAddresses = make(map[string]net.Address)
-
-// NewLocalStore returns a new local election store
-func NewLocalStore(clusterID string, nodeID cluster.NodeID) (Store, error) {
-	address, ok := localAddresses[clusterID]
-	if !ok {
-		_, address = atomix.StartLocalNode()
-		localAddresses[clusterID] = address
-	}
-	return newLocalStore(nodeID, address)
-}
-
-// newLocalStore returns a new local device store
-func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
+func NewAtomixStore(client atomix.Client, nodeID cluster.NodeID) (Store, error) {
 	return &atomixStore{
 		nodeID: nodeID,
 		newElection: func(id device.ID) (deviceMastershipElection, error) {
-			return newLocalElection(id, nodeID, address)
+			election, err := client.GetElection(
+				context.Background(),
+				"onos-config-masterships",
+				primitive.WithSessionID(string(nodeID)),
+				primitive.WithClusterKey(string(id)))
+			if err != nil {
+				return nil, err
+			}
+			return newDeviceMastershipElection(id, election)
 		},
 		elections: make(map[device.ID]deviceMastershipElection),
 	}, nil

@@ -15,6 +15,8 @@
 package network
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/onosproject/onos-api/go/onos/config/snapshot"
 	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
 	networksnapstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
@@ -25,7 +27,18 @@ import (
 )
 
 func TestNetworkSnapshotWatcher(t *testing.T) {
-	store, err := networksnapstore.NewLocalStore()
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
+	store, err := networksnapstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer store.Close()
 

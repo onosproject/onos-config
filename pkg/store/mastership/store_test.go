@@ -15,33 +15,48 @@
 package mastership
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"testing"
 
 	topodevice "github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMastershipStore(t *testing.T) {
-	_, address := atomix.StartLocalNode()
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1),
+		test.WithDebugLogs())
+	assert.NoError(t, test.Start())
+	defer test.Stop()
 
 	node1 := cluster.NodeID("node1")
 	node2 := cluster.NodeID("node2")
 	node3 := cluster.NodeID("node3")
 
+	client1, err := test.NewClient(string(node1))
+	assert.NoError(t, err)
+
+	client2, err := test.NewClient(string(node2))
+	assert.NoError(t, err)
+
+	client3, err := test.NewClient(string(node3))
+	assert.NoError(t, err)
+
+	store1, err := NewAtomixStore(client1, node1)
+	assert.NoError(t, err)
+
+	store2, err := NewAtomixStore(client2, node2)
+	assert.NoError(t, err)
+
+	store3, err := NewAtomixStore(client3, node3)
+	assert.NoError(t, err)
+
 	device1 := topodevice.ID("device1")
 	device2 := topodevice.ID("device2")
-
-	// Create three stores for three different nodes
-	store1, err := newLocalStore(node1, address)
-	assert.NoError(t, err)
-
-	store2, err := newLocalStore(node2, address)
-	assert.NoError(t, err)
-
-	store3, err := newLocalStore(node3, address)
-	assert.NoError(t, err)
 
 	// Verify that the first node that checks mastership for a device wins the election
 	// and no other node believes itself to be the master

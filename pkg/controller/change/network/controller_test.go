@@ -16,6 +16,8 @@ package network
 
 import (
 	"context"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
 	types "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -69,20 +71,30 @@ func newMockTarget(t *testing.T, ctrl *gomock.Controller, id devicetype.Versione
 // Make a Network change and it propagates down to 2 Device changes
 // They get reconciled successfully
 func Test_NewController2Devices(t *testing.T) {
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1))
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	deviceCache := newDeviceCache(ctrl, device1, device2)
 	defer deviceCache.Close()
 
-	leadershipStore, err := leadershipstore.NewLocalStore("cluster-1", "node-1")
+	leadershipStore, err := leadershipstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewLocalStore("cluster-1", "node-1")
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
@@ -194,20 +206,30 @@ func Test_NewController2Devices(t *testing.T) {
 // TODO Figure out if this behaviour is OK. Should we push to device-1 at all
 //  if we know in advance that device-2 is not contactable
 func Test_Controller2Devices1NotReady(t *testing.T) {
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1))
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	deviceCache := newDeviceCache(ctrl, device1)
 	defer deviceCache.Close()
 
-	leadershipStore, err := leadershipstore.NewLocalStore("cluster-1", "node-1")
+	leadershipStore, err := leadershipstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewLocalStore("cluster-1", "node-1")
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
@@ -347,20 +369,30 @@ func Test_Controller2Devices1NotReady(t *testing.T) {
 //  device should keep retrying, and if it eventually succeeds then the other one can be replayed
 //  See https://jira.opennetworking.org/browse/AETHER-1815
 func Test_Controller2Devices1FailsGnmiSet(t *testing.T) {
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1))
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	deviceCache := newDeviceCache(ctrl, device1, device2)
 	defer deviceCache.Close()
 
-	leadershipStore, err := leadershipstore.NewLocalStore("cluster-1", "node-1")
+	leadershipStore, err := leadershipstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewLocalStore("cluster-1", "node-1")
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
@@ -511,20 +543,30 @@ func Test_Controller2Devices1FailsGnmiSet(t *testing.T) {
 //  retrying until the device is fixed
 //  See https://jira.opennetworking.org/browse/AETHER-1815
 func Test_ControllerSingleDeviceFailsGnmiSet(t *testing.T) {
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1))
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	deviceCache := newDeviceCache(ctrl, device1, device2)
 	defer deviceCache.Close()
 
-	leadershipStore, err := leadershipstore.NewLocalStore("cluster-1", "node-1")
+	leadershipStore, err := leadershipstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewLocalStore("cluster-1", "node-1")
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
@@ -678,20 +720,30 @@ func Test_ControllerSingleDeviceFailsGnmiSet(t *testing.T) {
 // Then rollback the network change, but one of the devices does not accept the rollback
 // The Network and Device changes sit there in COMPLETED state in the ROLLBACK phase.
 func Test_ControllerDoRollbackWhichFails(t *testing.T) {
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1))
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	deviceCache := newDeviceCache(ctrl, device1, device2)
 	defer deviceCache.Close()
 
-	leadershipStore, err := leadershipstore.NewLocalStore("cluster-1", "node-1")
+	leadershipStore, err := leadershipstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewLocalStore("cluster-1", "node-1")
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
@@ -957,20 +1009,30 @@ func Test_ControllerDoRollbackWhichFails(t *testing.T) {
 // in the end leaving both devices unchanged.
 // The Network and Device changes sit there in COMPLETED state in the ROLLBACK phase.
 func Test_ControllerRollbackOnPending(t *testing.T) {
+	test := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1))
+	assert.NoError(t, test.Start())
+	defer test.Stop()
+
+	atomixClient, err := test.NewClient("test")
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	networkChanges, deviceChanges, devices := newStores(t, ctrl)
+	networkChanges, deviceChanges, devices := newStores(t, ctrl, atomixClient)
 	defer networkChanges.Close()
 	defer deviceChanges.Close()
 
 	deviceCache := newDeviceCache(ctrl)
 	defer deviceCache.Close()
 
-	leadershipStore, err := leadershipstore.NewLocalStore("cluster-1", "node-1")
+	leadershipStore, err := leadershipstore.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 	defer leadershipStore.Close()
 
-	mastershipStore, err := mastershipstore.NewLocalStore("cluster-1", "node-1")
+	mastershipStore, err := mastershipstore.NewAtomixStore(atomixClient, "test")
 	assert.NoError(t, err)
 	defer mastershipStore.Close()
 
