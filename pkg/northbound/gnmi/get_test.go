@@ -130,12 +130,12 @@ func Test_getNoPathElemsJSON(t *testing.T) {
 
 // Test_getNoPathElemsProto tests for  Paths with no elements - should treat it like /
 func Test_getNoPathElemsProto(t *testing.T) {
-	server, _, mocks := setUp(t)
+	server, mocks, _ := setUpForGetSetTests(t)
 	setUpChangesMock(mocks)
 	mocks.MockDeviceCache.EXPECT().GetDevicesByID(devicetype.ID("Device1")).Return([]*cache.Info{
 		{
 			DeviceID: "Device1",
-			Type:     "Devicesim",
+			Type:     "Testdevice",
 			Version:  "1.0.0",
 		},
 	}).AnyTimes()

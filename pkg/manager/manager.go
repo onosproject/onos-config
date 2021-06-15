@@ -17,7 +17,6 @@ package manager
 
 import (
 	"fmt"
-	"github.com/onosproject/onos-config/pkg/store/change/device/rbac"
 	"sync"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -73,7 +72,6 @@ type Manager struct {
 	Dispatcher                *dispatcher.Dispatcher
 	OperationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
 	OperationalStateCacheLock *sync.RWMutex
-	RbacCache                 rbac.Cache
 	allowUnvalidatedConfig    bool
 }
 
@@ -81,7 +79,7 @@ type Manager struct {
 func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Store, deviceChangesStore device.Store,
 	deviceStateStore state.Store, deviceStore devicestore.Store, deviceCache cache.Cache,
 	networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
-	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool, rbacCache rbac.Cache, modelRegistry *modelregistry.ModelRegistry) *Manager {
+	deviceSnapshotStore devicesnap.Store, allowUnvalidatedConfig bool, modelRegistry *modelregistry.ModelRegistry) *Manager {
 	log.Info("Creating Manager")
 
 	mgr = Manager{
@@ -105,7 +103,6 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
 		OperationalStateCacheLock: &sync.RWMutex{},
 		allowUnvalidatedConfig:    allowUnvalidatedConfig,
-		RbacCache:                 rbacCache,
 	}
 	return &mgr
 }

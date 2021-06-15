@@ -123,7 +123,7 @@ func (s *Session) connect() error {
 	notify := func(err error, t time.Duration) {
 		count++
 		log.Infof("Failed to connect to %s:%s. Retry after %v Attempt %d",
-			s.device.ID, s.device.Version, b.GetElapsedTime(), count)
+			s.device.ID, s.device.Version, b.NextBackOff(), count)
 	}
 
 	err := backoff.RetryNotify(s.synchronize, b, notify)
