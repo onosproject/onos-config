@@ -586,16 +586,15 @@ func PathsRW(rwPathMap ReadWritePathMap) []string {
 }
 
 func toValueType(entry *yang.YangType, isLeafList bool) (devicechange.ValueType, []uint8, error) {
-	//TODO evaluate better devicechange and error return
-	switch entry.Name {
+	switch entry.Kind.String() {
 	case "int8", "int16", "int32", "int64":
-		width := extractIntegerWidth(entry.Name)
+		width := extractIntegerWidth(entry.Kind.String())
 		if isLeafList {
 			return devicechange.ValueType_LEAFLIST_INT, []uint8{uint8(width)}, nil
 		}
 		return devicechange.ValueType_INT, []uint8{uint8(width)}, nil
-	case "uint8", "uint16", "uint32", "uint64", "counter64":
-		width := extractIntegerWidth(entry.Name)
+	case "uint8", "uint16", "uint32", "uint64":
+		width := extractIntegerWidth(entry.Kind.String())
 		if isLeafList {
 			return devicechange.ValueType_LEAFLIST_UINT, []uint8{uint8(width)}, nil
 		}
@@ -623,7 +622,9 @@ func toValueType(entry *yang.YangType, isLeafList bool) (devicechange.ValueType,
 	case "empty":
 		return devicechange.ValueType_EMPTY, nil, nil
 	default:
-		return devicechange.ValueType_STRING, nil, nil
+		return devicechange.ValueType_EMPTY, nil,
+			errors.NewInvalid("unhandled type in ModelPlugin %s %s %s",
+				entry.Name, entry.Kind.String(), entry.Type)
 	}
 }
 

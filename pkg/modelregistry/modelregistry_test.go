@@ -624,12 +624,14 @@ func Test_NtpServer(t *testing.T) {
 	k := "/system/ntp/servers/server[address=*]/state"
 	for p, v := range readOnlyPaths[k] {
 		switch p {
-		case "/address", "/association-type", "/port":
-			assert.Equal(t, int(v.ValueType), 1, "Unexpected type %i for %s", v, p)
+		case "/address", "/association-type":
+			assert.Equal(t, 1, int(v.ValueType), "Unexpected type %v for %s", v, p)
+		case "/port":
+			assert.Equal(t, 3, int(v.ValueType), "Unexpected type %v for %s", v, p)
 		case "/iburst", "/prefer":
-			assert.Equal(t, int(v.ValueType), 4, "Unexpected type %i for %s", v, p)
+			assert.Equal(t, 4, int(v.ValueType), "Unexpected type %v for %s", v, p)
 		case "/offset", "/poll-interval", "/root-delay", "/root-dispersion", "/stratum", "/version":
-			assert.Equal(t, int(v.ValueType), 3, "Unexpected type %i for %s", v, p)
+			assert.Equal(t, 3, int(v.ValueType), "Unexpected type %v for %s", v, p)
 		default:
 			t.Fatalf("Unexpected readOnlyPath sub path %s for %s. %v", p, k, v)
 		}
