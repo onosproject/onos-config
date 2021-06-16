@@ -34,10 +34,11 @@ import (
 // Get implements gNMI Get
 func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 	notifications := make([]*gnmi.Notification, 0)
-
+	groups := make([]string, 0)
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
-		log.Infof("gNMI Get() called by '%s (%s)'. Groups [%v]. Token %s",
-			md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
+		groups = append(groups, strings.Split(md.Get("groups"), ";")...)
+		log.Infof("gNMI Get() called by '%s (%s)'. Groups %v. Token %s",
+			md.Get("name"), md.Get("email"), groups, md.Get("at_hash"))
 	}
 	if req == nil || (req.GetEncoding() != gnmi.Encoding_PROTO && req.GetEncoding() != gnmi.Encoding_JSON_IETF && req.GetEncoding() != gnmi.Encoding_JSON) {
 		return nil, fmt.Errorf("invalid encoding format in Get request. Only JSON_IETF and PROTO accepted. %v", req.Encoding)
@@ -50,7 +51,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	}
 
 	for _, path := range req.GetPath() {
-		updates, err := s.getUpdate(version, prefix, path, req.GetEncoding())
+		updates, err := s.getUpdate(version, prefix, path, req.GetEncoding(), groups)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -64,7 +65,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	}
 	// Alternatively - if there's only the prefix
 	if len(req.GetPath()) == 0 {
-		updates, err := s.getUpdate(version, prefix, nil, req.GetEncoding())
+		updates, err := s.getUpdate(version, prefix, nil, req.GetEncoding(), groups)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -84,7 +85,8 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 }
 
 // getUpdate utility method for getting an Update for a given path
-func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path, encoding gnmi.Encoding) ([]*gnmi.Update, error) {
+func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path,
+	encoding gnmi.Encoding, userGroups []string) ([]*gnmi.Update, error) {
 	if (path == nil || path.Target == "") && (prefix == nil || prefix.Target == "") {
 		return nil, fmt.Errorf("invalid request - Path %s has no target", utils.StrPath(path))
 	}
@@ -132,7 +134,7 @@ func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *
 		return updates, nil
 	}
 
-	_, version, errTypeVersion := manager.GetManager().CheckCacheForDevice(devicetype.ID(target), "", version)
+	deviceType, version, errTypeVersion := manager.GetManager().CheckCacheForDevice(devicetype.ID(target), "", version)
 	if errTypeVersion != nil {
 		log.Errorf("Error while extracting type and version for target %s with err %v", target, errTypeVersion)
 		return nil, status.Error(codes.InvalidArgument, errTypeVersion.Error())
@@ -148,7 +150,7 @@ func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *
 	s.mu.RUnlock()
 
 	configValues, errGetTargetCfg := manager.GetManager().GetTargetConfig(
-		devicetype.ID(target), version, pathAsString, revision)
+		devicetype.ID(target), version, deviceType, pathAsString, revision, userGroups)
 	if errGetTargetCfg != nil {
 		log.Error("Error while extracting config", errGetTargetCfg)
 		return nil, errGetTargetCfg

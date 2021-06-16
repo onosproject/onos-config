@@ -151,7 +151,7 @@ func setUpDeepTest(t *testing.T, client atomix.Client) (*Manager, *AllMocks) {
 	assert.NilError(t, err)
 
 	mgrTest = NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStateStore,
-		mockDeviceStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true, nil, modelRegistry)
+		mockDeviceStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true, modelRegistry)
 
 	modelData1 := gnmi.ModelData{
 		Name:         "test1",
@@ -280,7 +280,7 @@ func Test_GetNetworkConfig_Deep(t *testing.T) {
 
 	mgrTest, _ := setUpDeepTest(t, atomixClient)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, "/*", 0)
+	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*", 0, nil)
 	assert.NilError(t, err, "GetTargetConfig error")
 
 	assert.Equal(t, len(result), 1, "Unexpected result element count")

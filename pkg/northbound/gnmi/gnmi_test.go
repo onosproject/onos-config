@@ -259,8 +259,7 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 		mockStores.NetworkChangesStore,
 		mockStores.NetworkSnapshotStore,
 		mockStores.DeviceSnapshotStore,
-		true,
-		nil,
+		false,
 		modelRegistry)
 
 	mgr.DeviceStore = mockStores.DeviceStore

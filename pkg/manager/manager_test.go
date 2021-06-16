@@ -272,7 +272,6 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		mockNetworkSnapshotStore,
 		mockDeviceSnapshotStore,
 		true,
-		nil,
 		modelRegistry)
 
 	mgrTest.Run()
@@ -310,7 +309,7 @@ func Test_GetNetworkConfig(t *testing.T) {
 
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, "/*", 0)
+	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*", 0, nil)
 	assert.NoError(t, err, "GetTargetConfig error")
 
 	assert.Equal(t, len(result), 1, "Unexpected result element count")
@@ -458,7 +457,7 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 func TestManager_GetNoConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("No Such Device", deviceVersion1, "/*", 0)
+	result, err := mgrTest.GetTargetConfig("No Such Device", deviceVersion1, deviceTypeTd, "/*", 0, nil)
 	assert.Len(t, result, 0, "Get of bad device does not return empty array")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no Configuration found")
@@ -476,7 +475,7 @@ func networkConfigContainsPath(configs []*devicechange.PathValue, whichOne strin
 func TestManager_GetAllConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, "/*", 0)
+	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*", 0, nil)
 	assert.Len(t, result, 1, "Get of device all paths does not return proper array")
 	assert.NoError(t, err, "Configuration not found")
 	assert.True(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
@@ -485,7 +484,7 @@ func TestManager_GetAllConfig(t *testing.T) {
 func TestManager_GetOneConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, test1Cont1ACont2ALeaf2A, 0)
+	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, test1Cont1ACont2ALeaf2A, 0, nil)
 	assert.Len(t, result, 1, "Get of device one path does not return proper array")
 	assert.NoError(t, err, "Configuration not found")
 	assert.True(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
@@ -494,7 +493,7 @@ func TestManager_GetOneConfig(t *testing.T) {
 func TestManager_GetWildcardConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, "/*/*/leaf2a", 0)
+	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*/*/leaf2a", 0, nil)
 	assert.Len(t, result, 1, "Get of device one path does not return proper array")
 	assert.NoError(t, err, "Configuration not found")
 	assert.True(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
@@ -503,7 +502,7 @@ func TestManager_GetWildcardConfig(t *testing.T) {
 func TestManager_GetConfigNoTarget(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("", deviceVersion1, test1Cont1ACont2ALeaf2A, 0)
+	result, err := mgrTest.GetTargetConfig("", deviceVersion1, deviceTypeTd, test1Cont1ACont2ALeaf2A, 0, nil)
 	assert.Error(t, err)
 	assert.Len(t, result, 0, "Get of device one path does not return proper array")
 	assert.Contains(t, err.Error(), "no Configuration found")

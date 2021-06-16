@@ -48,7 +48,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
-	"github.com/onosproject/onos-config/pkg/store/change/device/rbac"
 	"github.com/onosproject/onos-config/pkg/store/change/device/state"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
@@ -64,9 +63,6 @@ import (
 
 // OIDCServerURL - address of an OpenID Connect server
 const OIDCServerURL = "OIDC_SERVER_URL"
-
-// RbacVersionedID - the internal device where RBAC rules are configured
-const RbacVersionedID = "rbac:1.0.0"
 
 var log = logging.GetLogger("main")
 
@@ -138,15 +134,11 @@ func main() {
 	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
 
 	authorization := false
-	var rbacCache rbac.Cache
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
 		authorization = true
-		rbacCache, err = rbac.NewRbacCache(deviceChangesStore, deviceSnapshotStore, RbacVersionedID)
-		if err != nil {
-			log.Fatal("Cannot create RBAC cache %v", err)
-		}
 		log.Infof("Authorization enabled. %s=%s", OIDCServerURL, oidcURL)
 		// OIDCServerURL is also referenced in jwt.go (from onos-lib-go)
+		// and in gNMI Get() where it drives OPA lookup
 	} else {
 		log.Infof("Authorization not enabled %s", os.Getenv(OIDCServerURL))
 	}
@@ -158,7 +150,7 @@ func main() {
 
 	mgr := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
 		deviceStateStore, deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
-		deviceSnapshotStore, *allowUnvalidatedConfig, rbacCache, modelRegistry)
+		deviceSnapshotStore, *allowUnvalidatedConfig, modelRegistry)
 	log.Info("Manager created")
 
 	defer func() {

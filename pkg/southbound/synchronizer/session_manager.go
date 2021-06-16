@@ -177,7 +177,7 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 	case topodevice.ListResponseUPDATED:
 		session, ok := sm.sessions[event.Device.ID]
 		if !ok {
-			log.Error("Session for the device %v does not exist", event.Device.ID)
+			log.Errorf("Session for the device %s does not exist", event.Device.ID)
 			return nil
 		}
 		// If the address is changed, delete the current session and creates  new one

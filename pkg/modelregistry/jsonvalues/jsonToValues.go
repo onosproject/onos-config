@@ -49,6 +49,13 @@ func DecomposeJSONWithPaths(prefixPath string, genericJSON []byte, ropaths model
 	if err != nil {
 		return nil, err
 	}
+	if fAsMap, ok := f.(map[string]interface{}); ok {
+		if fResult, isResult := fAsMap["result"]; isResult {
+			if fResultAsMap, ok := fResult.([]interface{}); ok {
+				f = fResultAsMap[0]
+			}
+		}
+	}
 	values, err := extractValuesWithPaths(f, removeIndexNames(prefixPath), ropaths, rwpaths)
 	if err != nil {
 		return nil, fmt.Errorf("error decomposing JSON %v", err)

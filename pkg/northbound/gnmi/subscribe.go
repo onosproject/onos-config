@@ -163,7 +163,7 @@ func (s *Server) collector(mgr *manager.Manager, version devicetype.Version, str
 			resChan <- result{success: false, err: err}
 		}
 		//We get the stated of the device, for each path we build an update and send it out.
-		updates, err := s.getUpdate(version, request.Prefix, sub.Path, gnmi.Encoding_PROTO)
+		updates, err := s.getUpdate(version, request.Prefix, sub.Path, gnmi.Encoding_PROTO, nil)
 		if err != nil {
 			log.Error("Error while collecting data for subscribe once or poll ", err)
 			resChan <- result{success: false, err: err}
