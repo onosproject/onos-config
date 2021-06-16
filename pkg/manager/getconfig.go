@@ -85,6 +85,7 @@ func (m *Manager) GetAllDeviceIds() *[]string {
 // those items allowed for an enterprise
 func (m *Manager) checkOpaAllowed(version devicetype.Version, deviceType devicetype.Type,
 	configValues []*devicechange.PathValue, groups []string) ([]*devicechange.PathValue, error) {
+	log.Infof("Querying OPA sidecar for allowed configuration for %s:%s", deviceType, version)
 
 	jsonTree, err := store.BuildTree(configValues, true)
 	if err != nil {

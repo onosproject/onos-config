@@ -48,7 +48,7 @@ func Test_DecomposeTree(t *testing.T) {
 	ds1RoPaths, _ := setUpRwPaths()
 	pathValues, err := DecomposeJSONWithPaths("", sampleTree, ds1RoPaths, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, len(pathValues), 24)
+	assert.Equal(t, len(pathValues), 25)
 
 	for _, pathValue := range pathValues {
 		//t.Logf("%v", pathValue)
@@ -79,7 +79,8 @@ func Test_DecomposeTree(t *testing.T) {
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=10]/state/priority",
 			"/system/openflow/controllers/controller[name=main]/connections/connection[aux-id=11]/state/priority",
 			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=10]/state/priority",
-			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/priority":
+			"/system/openflow/controllers/controller[name=second]/connections/connection[aux-id=11]/state/priority",
+			"/system/memory/state/physical":
 			assert.Equal(t, devicechange.ValueType_UINT, pathValue.GetValue().GetType(), pathValue.Path)
 		default:
 			t.Fatal("Unexpected jsonPath", pathValue.Path)
