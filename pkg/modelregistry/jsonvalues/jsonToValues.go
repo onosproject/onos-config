@@ -123,7 +123,8 @@ func extractValuesWithPaths(f interface{}, parentPath string,
 	default:
 		attr, err := handleAttribute(value, parentPath, modelROpaths, modelRWpaths)
 		if err != nil {
-			return nil, fmt.Errorf("error handling json attribute value %v", err)
+			return nil, fmt.Errorf("error handling json attribute value %v. Parent %s. #RO:%d #RW:%d %s",
+				value, parentPath, len(modelROpaths), len(modelRWpaths), err.Error())
 		}
 		if attr != nil {
 			changes = append(changes, attr)
@@ -300,7 +301,7 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		var uintVal uint
 		switch valueTyped := value.(type) {
 		case string:
-			intVal, err := strconv.ParseInt(valueTyped, 10, 8)
+			intVal, err := strconv.ParseInt(valueTyped, 10, int(typeOpts[0]))
 			if err != nil {
 				return nil, fmt.Errorf("error converting to %v %s", modeltype, valueTyped)
 			}
