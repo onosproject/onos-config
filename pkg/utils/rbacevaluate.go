@@ -29,16 +29,16 @@ const semicolon = ";" // From grpcinterceptors.go in onos-lib-go
 // It applies to Set (gnmi) and CompactChanges(admin) and RollbackNetworkChange(admin)
 // TODO replace the following with fine grained RBAC using OpenPolicyAgent Rego in 2021 Q2
 func TemporaryEvaluate(md metautils.NiceMD) error {
-	adminGroup := os.Getenv("ADMINGROUP")
+	adminGroups := os.Getenv("ADMINGROUPS")
 	var match bool
 	for _, g := range strings.Split(md.Get("groups"), semicolon) {
-		if strings.EqualFold(g, adminGroup) {
+		if strings.Contains(adminGroups, g) {
 			match = true
 			break
 		}
 	}
 	if !match {
-		return status.Errorf(codes.Unauthenticated, "Set allowed only for %s", adminGroup)
+		return status.Errorf(codes.Unauthenticated, "Set allowed only for %s", adminGroups)
 	}
 	return nil
 }
