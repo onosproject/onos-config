@@ -15,6 +15,7 @@
 package device
 
 import (
+	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	types "github.com/onosproject/onos-api/go/onos/config"
@@ -315,9 +316,10 @@ func nextEvent(t *testing.T, ch chan stream.Event) *devicechange.DeviceChange {
 
 func Test_badpath(t *testing.T) {
 	badpath := "does_not_have_any_slash"
+	expected := fmt.Sprintf("invalid path %s. Must match %s", badpath, devicechange.PathRegexp)
 	conf1, err1 := devicechange.NewChangeValue(badpath, devicechange.NewTypedValueString("123"), false)
 
-	assert2.Error(t, err1, badpath, "Expected error on ", badpath)
+	assert2.Error(t, err1, expected, "Expected error on ", badpath)
 
 	assert2.Assert(t, conf1 == nil, "Expected config to be empty on error")
 
