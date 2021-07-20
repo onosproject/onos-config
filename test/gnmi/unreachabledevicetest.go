@@ -39,6 +39,7 @@ const (
 
 // TestUnreachableDevice tests set/query of a single GNMI path to a device that will never respond
 func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
+	t.Skip()
 	deviceClient, deviceClientError := gnmi.NewTopoClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)

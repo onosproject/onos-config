@@ -27,7 +27,7 @@ import (
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
 func (s *TestSuite) TestTransaction(t *testing.T) {
-
+	t.Skip()
 	const (
 		value1     = "test-motd-banner"
 		path1      = "/system/config/motd-banner"
