@@ -28,6 +28,7 @@ import (
 
 // TestDelete :
 func (s *TestSuite) TestDelete(t *testing.T) {
+	t.Skip()
 	const (
 		newValue = "new-value"
 		newPath  = "/system/config/login-banner"
