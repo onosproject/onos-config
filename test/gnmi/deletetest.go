@@ -30,7 +30,6 @@ import (
 func (s *TestSuite) TestDelete(t *testing.T) {
 	t.Skip()
 	const (
-		oldValue = "old-value"
 		newValue = "new-value"
 		newPath  = "/system/config/login-banner"
 	)
@@ -38,7 +37,6 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 	var (
 		newPaths  = []string{newPath}
 		newValues = []string{newValue}
-		oldValues = []string{oldValue}
 	)
 
 	// Get the configured devices from the environment.
