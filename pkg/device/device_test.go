@@ -92,7 +92,7 @@ func Test_ObjectToDevice_error(t *testing.T) {
 	}
 
 	_, err := ToDevice(&deviceAsObject)
-	assert.EqualError(t, err, "topo entity device-1 must have 'asset' attribute to work with onos-config")
+	assert.EqualError(t, err, "topo entity device-1 must have 'onos.topo.Asset' aspect to work with onos-config")
 }
 
 func Test_DeviceToObject(t *testing.T) {
@@ -114,9 +114,21 @@ func Test_DeviceToObject(t *testing.T) {
 	assert.NotNil(t, deviceObject)
 
 	assert.Equal(t, deviceName, string(deviceObject.ID))
-	assert.Equal(t, deviceDisplay, deviceObject.GetAspect(&topo.Asset{}).(*topo.Asset).Name)
-	assert.Equal(t, deviceVersion, deviceObject.GetAspect(&topo.Configurable{}).(*topo.Configurable).Version)
-	assert.Equal(t, deviceAddress, deviceObject.GetAspect(&topo.Configurable{}).(*topo.Configurable).Address)
-	assert.True(t, deviceObject.GetAspect(&topo.TLSOptions{}).(*topo.TLSOptions).Plain)
-	assert.True(t, deviceObject.GetAspect(&topo.TLSOptions{}).(*topo.TLSOptions).Insecure)
+
+	asset := &topo.Asset{}
+	err := deviceObject.GetAspect(asset)
+	assert.NoError(t, err)
+	assert.Equal(t, deviceDisplay, asset.Name)
+
+	configurable := &topo.Configurable{}
+	err = deviceObject.GetAspect(configurable)
+	assert.NoError(t, err)
+	assert.Equal(t, deviceVersion, configurable.Version)
+	assert.Equal(t, deviceAddress, configurable.Address)
+
+	tlsOptions := &topo.TLSOptions{}
+	err = deviceObject.GetAspect(tlsOptions)
+	assert.NoError(t, err)
+	assert.True(t, tlsOptions.Plain)
+	assert.True(t, tlsOptions.Insecure)
 }

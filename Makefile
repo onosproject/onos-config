@@ -12,7 +12,7 @@ build:
 	go build -o build/_output/onos-config ./cmd/onos-config
 
 test: # @HELP run the unit tests and source code validation producing a golang style report
-test: build deps linters license_check
+test: build deps license_check linters
 	go test -race github.com/onosproject/onos-config/...
 
 
