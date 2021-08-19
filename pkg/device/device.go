@@ -191,46 +191,34 @@ func ToDevice(object *topo.Object) (*Device, error) {
 		return nil, fmt.Errorf("topo entity %s must have a 'kindid' to work with onos-config", object.ID)
 	}
 
-	assetMsg := object.GetAspect(&topo.Asset{})
-	if assetMsg == nil {
-		return nil, errors.NewInvalid("topo entity %s must have 'asset' attribute to work with onos-config", object.ID)
-	}
-	asset, ok := assetMsg.(*topo.Asset)
-	if !ok || asset == nil {
-		return nil, errors.NewInternal("invalid asset object aspect %s", object.ID)
+	asset := &topo.Asset{}
+	err := object.GetAspect(asset)
+	if err != nil {
+		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.Asset' aspect to work with onos-config", object.ID)
 	}
 
-	configurableMsg := object.GetAspect(&topo.Configurable{})
-	if configurableMsg == nil {
-		return nil, errors.NewInvalid("topo entity %s must have 'configurable' attribute to work with onos-config", object.ID)
-	}
-	configurable, ok := configurableMsg.(*topo.Configurable)
-	if !ok || configurable == nil {
-		return nil, errors.NewInternal("invalid configurable object aspect %s", object.ID)
+	configurable := &topo.Configurable{}
+	err = object.GetAspect(configurable)
+	if err != nil {
+		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.Configurable' aspect to work with onos-config", object.ID)
 	}
 
-	mastershipMsg := object.GetAspect(&topo.MastershipState{})
-	if mastershipMsg == nil {
-		return nil, errors.NewInvalid("topo entity %s must have 'mastershipState' attribute to work with onos-config", object.ID)
-	}
-	mastership, ok := mastershipMsg.(*topo.MastershipState)
-	if !ok || mastership == nil {
-		return nil, errors.NewInternal("invalid mastershipState object aspect %s", object.ID)
+	mastership := &topo.MastershipState{}
+	err = object.GetAspect(mastership)
+	if err != nil {
+		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.MastershipState' aspect to work with onos-config", object.ID)
 	}
 
-	tlsOptionsMsg := object.GetAspect(&topo.TLSOptions{})
-	if tlsOptionsMsg == nil {
-		return nil, errors.NewInvalid("topo entity %s must have 'TLSOptions' attribute to work with onos-config", object.ID)
-	}
-	tlsInfo, ok := tlsOptionsMsg.(*topo.TLSOptions)
-	if !ok || tlsInfo == nil {
-		return nil, errors.NewInternal("invalid TLSOptions object aspect %s", object.ID)
+	tlsOptions := &topo.TLSOptions{}
+	err = object.GetAspect(tlsOptions)
+	if err != nil {
+		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.TLSOptions' aspect to work with onos-config", object.ID)
 	}
 
-	protocolsMsg := object.GetAspect(&topo.Protocols{})
-	protocols, ok := protocolsMsg.(*topo.Protocols)
+	protocols := &topo.Protocols{}
+	err = object.GetAspect(protocols)
 	var protocolStates []*topo.ProtocolState
-	if !ok || protocols == nil {
+	if err != nil {
 		protocolStates = nil
 	} else {
 		protocolStates = protocols.State
@@ -250,11 +238,11 @@ func ToDevice(object *topo.Object) (*Device, error) {
 		Version:     configurable.Version,
 		Timeout:     &timeout,
 		TLS: TLSConfig{
-			Plain:    tlsInfo.Plain,
-			Insecure: tlsInfo.Insecure,
-			Cert:     tlsInfo.Cert,
-			CaCert:   tlsInfo.CaCert,
-			Key:      tlsInfo.Key,
+			Plain:    tlsOptions.Plain,
+			Insecure: tlsOptions.Insecure,
+			Cert:     tlsOptions.Cert,
+			CaCert:   tlsOptions.CaCert,
+			Key:      tlsOptions.Key,
 		},
 		MastershipTerm: mastership.Term,
 		MasterKey:      mastership.NodeId,
