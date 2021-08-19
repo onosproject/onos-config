@@ -218,7 +218,7 @@ func ToDevice(object *topo.Object) (*Device, error) {
 	protocols := &topo.Protocols{}
 	err = object.GetAspect(protocols)
 	var protocolStates []*topo.ProtocolState
-	if err != nil || protocols == nil {
+	if err != nil {
 		protocolStates = nil
 	} else {
 		protocolStates = protocols.State
