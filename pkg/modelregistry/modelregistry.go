@@ -452,13 +452,13 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 				roIdxName := k[:strings.LastIndex(k, "/")]
 				roIdxSubPath := k[strings.LastIndex(k, "/"):]
 				indices, _ := ExtractIndexNames(itemPath[strings.LastIndex(itemPath, "/"):])
-				kIsIdxAttr := false
+				isIdxAttr := false
 				for _, idx := range indices {
 					if roIdxSubPath == fmt.Sprintf("/%s", idx) {
-						kIsIdxAttr = true
+						isIdxAttr = true
 					}
 				}
-				if roIdxName == itemPath && kIsIdxAttr {
+				if roIdxName == itemPath && isIdxAttr {
 					roIdx := ReadOnlyAttrib{
 						ValueType:   v.ValueType,
 						Description: v.Description,

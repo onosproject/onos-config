@@ -89,7 +89,7 @@ func parsePluginsCommandOutput(t *testing.T, output []string) []pluginMetadata {
 }
 
 func findYang(t *testing.T, plugin pluginMetadata, name string) *yangAttributes {
-	var yangFound *yangAttributes = nil
+	var yangFound *yangAttributes
 
 	for _, pluginYang := range plugin.yangs {
 		if name == pluginYang.name {
@@ -105,7 +105,7 @@ func findYang(t *testing.T, plugin pluginMetadata, name string) *yangAttributes 
 }
 
 func findPlugin(t *testing.T, plugins []pluginMetadata, name string, version string) *pluginMetadata {
-	var pluginFound *pluginMetadata = nil
+	var pluginFound *pluginMetadata
 	for _, plugin := range plugins {
 		if plugin.name == name && plugin.version == version {
 			assert.Nil(t, pluginFound, "Plugin already found")

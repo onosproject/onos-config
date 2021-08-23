@@ -9,15 +9,14 @@ run:
 linters:
   enable:
     - gofmt
-#    - gocyclo
-    - golint
+    - revive
     - misspell
     - typecheck
     - errcheck
     - dogsled
     - unconvert
     - nakedret
-    - scopelint
+    - exportloopref
 
 issues:
   exclude-use-default: false

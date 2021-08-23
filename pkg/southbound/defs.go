@@ -25,7 +25,7 @@ import (
 
 // TargetGenerator is a function for generating gnmi southbound Targets
 // Default target generator is the NewTarget func below - can be overridden for tests
-var TargetGenerator func() TargetIf = NewTarget
+var TargetGenerator = NewTarget
 
 // TargetIf defines the API for Target
 type TargetIf interface {
