@@ -51,7 +51,7 @@ func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue, modelPath *modelregistr
 	case *gnmi.TypedValue_FloatVal:
 		return devicechange.NewTypedValueFloat(float64(v.FloatVal)), nil
 	case *gnmi.TypedValue_LeaflistVal:
-		var typeOpt0 uint8 = 0
+		var typeOpt0 uint8
 		if modelPath != nil && len(modelPath.TypeOpts) > 0 {
 			typeOpt0 = modelPath.TypeOpts[0]
 		}

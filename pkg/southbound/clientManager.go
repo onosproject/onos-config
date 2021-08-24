@@ -98,7 +98,7 @@ func createDestination(device topodevice.Device) (*client.Destination, devicetyp
 // GetTarget attempts to get a specific target from the targets cache
 func GetTarget(key devicetype.VersionedID) (TargetIf, error) {
 	targetMu.RLock()
-	t, ok := targets[key].(TargetIf)
+	t, ok := targets[key]
 	targetMu.RUnlock()
 	if ok {
 		return t, nil
