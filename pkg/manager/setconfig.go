@@ -78,8 +78,14 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 					delete(pathValues, path)
 				}
 			}
-		} else { // just remove itself
+		} else if _, exactPathValue := pathValues[deletePathAnonIdx]; exactPathValue {
 			delete(pathValues, deletePath)
+		} else { // else delete anything matching prefix
+			for pathValue := range pathValues {
+				if strings.HasPrefix(pathValue, deletePathAnonIdx) {
+					delete(pathValues, pathValue)
+				}
+			}
 		}
 	}
 

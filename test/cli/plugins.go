@@ -15,6 +15,7 @@
 package cli
 
 import (
+	"context"
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/helmit/pkg/kubernetes"
 	"github.com/onosproject/helmit/pkg/util/random"
@@ -130,9 +131,9 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 	// Get one of the onos-cli pods
 	release := helm.Chart("onos-umbrella", onostest.OnosChartRepo).Release("onos-umbrella")
 	client := kubernetes.NewForReleaseOrDie(release)
-	dep, err := client.AppsV1().Deployments().Get("onos-cli")
+	dep, err := client.AppsV1().Deployments().Get(context.Background(), "onos-cli")
 	assert.NoError(t, err)
-	pods, err := dep.Pods().List()
+	pods, err := dep.Pods().List(context.Background())
 	assert.NoError(t, err)
 	pod := pods[0]
 

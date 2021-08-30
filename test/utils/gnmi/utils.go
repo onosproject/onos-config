@@ -66,7 +66,7 @@ func MakeContext() context.Context {
 
 func getService(release *helm.HelmRelease, serviceName string) (*v1.Service, error) {
 	releaseClient := kubernetes.NewForReleaseOrDie(release)
-	service, err := releaseClient.CoreV1().Services().Get(serviceName)
+	service, err := releaseClient.CoreV1().Services().Get(context.Background(), serviceName)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func AwaitDeviceState(simulator *helm.HelmRelease, predicate func(object *topo.O
 // NewDeviceEntity :
 func NewDeviceEntity(simulator *helm.HelmRelease, deviceType string, version string) (*topo.Object, error) {
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List()
+	services, err := simulatorClient.CoreV1().Services().List(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -489,7 +489,7 @@ func GetDeviceDestination(simulator *helm.HelmRelease) (client.Destination, erro
 		return client.Destination{}, err
 	}
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List()
+	services, err := simulatorClient.CoreV1().Services().List(context.Background())
 	if err != nil {
 		return client.Destination{}, err
 	}
@@ -506,7 +506,7 @@ func GetDeviceDestination(simulator *helm.HelmRelease) (client.Destination, erro
 func GetDeviceGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) client.Impl {
 	t.Helper()
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List()
+	services, err := simulatorClient.CoreV1().Services().List(context.Background())
 	assert.NoError(t, err)
 	service := services[0]
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -531,7 +531,7 @@ func GetDestination() (client.Destination, error) {
 	configRelease := helm.Release("onos-umbrella")
 	configClient := kubernetes.NewForReleaseOrDie(configRelease)
 
-	configService, err := configClient.CoreV1().Services().Get("onos-config")
+	configService, err := configClient.CoreV1().Services().Get(context.Background(), "onos-config")
 	if err != nil || configService == nil {
 		return client.Destination{}, errors.NewNotFound("can't find service for onos-config")
 	}

@@ -23,7 +23,7 @@ import (
 
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-lib-go/pkg/southbound"
+	"github.com/onosproject/onos-lib-go/pkg/grpc/retry"
 
 	"google.golang.org/grpc"
 )
@@ -50,7 +50,7 @@ func NewTopoStore(topoEndpoint string, opts ...grpc.DialOption) (Store, error) {
 	if len(opts) == 0 {
 		return nil, fmt.Errorf("no opts given when creating topo store")
 	}
-	opts = append(opts, grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(100*time.Millisecond)))
+	opts = append(opts, grpc.WithStreamInterceptor(retry.RetryingStreamClientInterceptor(retry.WithInterval(100*time.Millisecond))))
 	conn, err := getTopoConn(topoEndpoint, opts...)
 	if err != nil {
 		return nil, err

@@ -53,7 +53,7 @@ func Test_SchemaTestDevice1(t *testing.T) {
 	leaf2cVt, leaf2cVtOk := leaf2c["/"]
 	assert.Assert(t, leaf2cVtOk, "expected /cont1a/cont2a/leaf2c to have subpath /")
 	assert.Equal(t, leaf2cVt.ValueType, devicechange.ValueType_STRING)
-	assert.Equal(t, leaf2cVt.Description, "") // TODO: When YGOT is updated to extract description then update this
+	assert.Equal(t, leaf2cVt.Description, "Read only leaf inside Container 2a")
 	assert.Equal(t, leaf2cVt.Units, "")
 
 	cont1b, cont1bOk := readOnlyPathsTestDevice1["/cont1b-state"]
@@ -80,7 +80,7 @@ func Test_SchemaTestDevice1(t *testing.T) {
 	/// Read write paths
 	////////////////////////////////////////////////////
 	readWritePathsKeys := PathsRW(readWritePathsTestDevice1)
-	assert.Equal(t, len(readWritePathsKeys), 18)
+	assert.Equal(t, len(readWritePathsKeys), 19)
 
 	// Can be in any order
 	for _, p := range readWritePathsKeys {
@@ -89,6 +89,7 @@ func Test_SchemaTestDevice1(t *testing.T) {
 			"/cont1a/leaf1a",
 			"/cont1a/list2a[name=*]/name",
 			"/cont1a/list2a[name=*]/tx-power",
+			"/cont1a/list2a[name=*]/ref2d",
 			"/cont1a/cont2a/leaf2a",
 			"/cont1a/cont2a/leaf2b",
 			"/cont1a/cont2a/leaf2d",
@@ -130,7 +131,7 @@ func Test_SchemaTestDevice1(t *testing.T) {
 	assert.Assert(t, leaf2aOk, "expected to get /cont1a/cont2a/leaf2a")
 	assert.Equal(t, leaf2a.ValueType, devicechange.ValueType_UINT, "expected /cont1a/cont2a/leaf2a to be UINT")
 	assert.Equal(t, leaf2a.Default, "2", "expected default 2")
-	assert.Equal(t, leaf2a.Description, "", "expected description to be blank - boo for YGOT - hopefully should get description sometime")
+	assert.Equal(t, leaf2a.Description, "Numeric leaf inside Container 2a")
 	assert.Equal(t, leaf2a.Units, "", "expected units to be blank - boo for YGOT - hopefully should get units sometime")
 	assert.Equal(t, len(leaf2a.Range), 2, "expected 2 range terms")
 	assert.Equal(t, leaf2a.Range[0], "1..3", "expected range 0 to be 1..3")

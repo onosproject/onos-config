@@ -94,12 +94,14 @@ func Test_getNoPathElemsJSON(t *testing.T) {
   "cont1a": {
     "cont2a": {
       "leaf2a": 13,
-      "leaf2b": "1.4567"
+      "leaf2b": "1.4567",
+      "leaf2d": "1.1"
     },
     "leaf1a": "test val",
     "list2a": [
       {
         "name": "first",
+        "ref2d": "1.1",
         "tx-power": 19
       }
     ],
@@ -152,17 +154,21 @@ func Test_getNoPathElemsProto(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(result.Notification), 1)
-	assert.Equal(t, len(result.Notification[0].Update), 13)
+	assert.Equal(t, len(result.Notification[0].Update), 15)
 	for _, upd := range result.Notification[0].Update {
 		switch path := utils.StrPathElem(upd.GetPath().GetElem()); path {
 		case "/cont1a/cont2a/leaf2a":
 			assert.Equal(t, utils.StrVal(upd.Val), "13")
 		case "/cont1a/cont2a/leaf2b":
 			assert.Equal(t, utils.StrVal(upd.Val), "1.4567")
+		case "/cont1a/cont2a/leaf2d":
+			assert.Equal(t, utils.StrVal(upd.Val), "1.1")
 		case "/cont1a/list2a[name=first]/name":
 			assert.Equal(t, utils.StrVal(upd.Val), "first")
 		case "/cont1a/list2a[name=first]/tx-power":
 			assert.Equal(t, utils.StrVal(upd.Val), "19")
+		case "/cont1a/list2a[name=first]/ref2d":
+			assert.Equal(t, utils.StrVal(upd.Val), "1.1")
 		case "/cont1a/list4[id=first]/id":
 			assert.Equal(t, utils.StrVal(upd.Val), "first")
 		case "/cont1a/list4[id=first]/leaf4b":
@@ -402,7 +408,8 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
   "cont1a": {
     "cont2a": {
       "leaf2a": 13,
-      "leaf2b": "1.4567"
+      "leaf2b": "1.4567",
+      "leaf2d": "1.1"
     }
   }
 }`, "Got JSON value")
@@ -414,7 +421,7 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 
 	assert.Equal(t, len(resultProto.Notification), 1)
 
-	assert.Equal(t, len(resultProto.Notification[0].Update), 2)
+	assert.Equal(t, len(resultProto.Notification[0].Update), 3)
 
 	assert.Equal(t, utils.StrPath(resultProto.Notification[0].Prefix),
 		"/cont1a/cont2a")
@@ -425,6 +432,9 @@ func Test_getWithPrefixNoOtherPaths(t *testing.T) {
 	assert.Equal(t, utils.StrPath(resultProto.Notification[0].Update[1].Path), "/leaf2b")
 	valProto2 := utils.StrVal(resultProto.Notification[0].Update[1].GetVal())
 	assert.Equal(t, valProto2, "1.4567", "Got PROTO value")
+	assert.Equal(t, utils.StrPath(resultProto.Notification[0].Update[2].Path), "/leaf2d")
+	valProto3 := utils.StrVal(resultProto.Notification[0].Update[2].GetVal())
+	assert.Equal(t, valProto3, "1.1", "Got PROTO value")
 }
 
 func Test_targetDoesNotExist(t *testing.T) {
