@@ -229,7 +229,7 @@ func extractGetVersion(req *gnmi.GetRequest) (devicetype.Version, error) {
 		if ext.GetRegisteredExt().GetId() == GnmiExtensionVersion {
 			version = devicetype.Version(ext.GetRegisteredExt().GetMsg())
 		} else {
-			return "", status.Error(codes.InvalidArgument, fmt.Errorf("unexpected extension %d = '%s' in Set()",
+			return "", status.Error(codes.InvalidArgument, fmt.Errorf("unexpected extension %d = '%s' in Get()",
 				ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg()).Error())
 		}
 	}

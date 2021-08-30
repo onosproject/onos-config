@@ -980,7 +980,7 @@ func Test_findPathFromModel(t *testing.T) {
 	assert.True(t, len(rwPath.AttrName) > 0)
 
 	_, _, err = findPathFromModel("/cont1a", td1Mp.ReadWritePaths, true)
-	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find exact match for RW model path /cont1a. 18 paths inspected")
+	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find exact match for RW model path /cont1a. 19 paths inspected")
 
 	// Another leaf
 	isExactMatch, rwPath, err = findPathFromModel("/cont1a/cont2a/leaf2a", td1Mp.ReadWritePaths, false)
@@ -1030,5 +1030,33 @@ func Test_findPathFromModel(t *testing.T) {
 
 	// Double keyed List invalid attr
 	_, _, err = findPathFromModel("/cont1a/list5[key1=test][key2=10]/invalid", td1Mp.ReadWritePaths, false)
-	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find RW model path /cont1a/list5[key1=test][key2=10]/invalid ( without index /cont1a/list5/invalid). 18 paths inspected")
+	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find RW model path /cont1a/list5[key1=test][key2=10]/invalid ( without index /cont1a/list5/invalid). 19 paths inspected")
+}
+
+func Test_deleteReferencedContainerList(t *testing.T) {
+	server, mocks, _ := setUpForGetSetTests(t)
+	setUpChangesMock(mocks)
+
+	setUpPathsForGetSetTests()
+
+	// First add 2 instances of cont10/list10
+	prefix := &gnmi.Path{Target: "Device1"}
+
+	// Now delete cont10 - should not be possible because item is referenced by /cont20/list20[list20id=11]
+	var updatedPaths []*gnmi.Update
+	var replacedPaths []*gnmi.Update
+	var deletePaths []*gnmi.Path
+	cont10DeletePath, _ := utils.ParseGNMIElements(utils.SplitPath("/cont1a/cont2"))
+	deletePaths = append(deletePaths, &gnmi.Path{Elem: cont10DeletePath.Elem})
+
+	var setRequest = gnmi.SetRequest{
+		Prefix:  prefix,
+		Delete:  deletePaths,
+		Replace: replacedPaths,
+		Update:  updatedPaths,
+	}
+
+	setResponse, setError := server.Set(context.Background(), &setRequest)
+	assert.Errorf(t, setError, "Expecting error as /cont1a/cont2 is used as a leafref")
+	assert.Nil(t, setResponse)
 }
