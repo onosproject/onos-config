@@ -24,7 +24,8 @@ import (
 const (
 	deviceName    = "device-1"
 	deviceDisplay = "Device 1"
-	deviceType    = "devicesim"
+	deviceKind    = "devicesim" // Kind can only be lowercase
+	deviceType    = "Devicesim" // Type must be Titlecase to match Model Plugin
 	deviceAddress = "devicesim-1:10161"
 	deviceVersion = "1.0.0"
 )
@@ -35,7 +36,7 @@ func Test_ObjectToDevice(t *testing.T) {
 		Type: topo.Object_ENTITY,
 		Obj: &topo.Object_Entity{
 			Entity: &topo.Entity{
-				KindID: topo.ID(deviceType),
+				KindID: topo.ID(deviceKind),
 			},
 		},
 	}
@@ -86,7 +87,7 @@ func Test_ObjectToDevice_error(t *testing.T) {
 		Type: topo.Object_ENTITY,
 		Obj: &topo.Object_Entity{
 			Entity: &topo.Entity{
-				KindID: topo.ID(deviceType),
+				KindID: topo.ID(deviceKind),
 			},
 		},
 	}
