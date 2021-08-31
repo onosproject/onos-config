@@ -230,7 +230,7 @@ func ToDevice(object *topo.Object) (*Device, error) {
 		ID:          ID(object.ID),
 		Revision:    object.Revision,
 		Protocols:   protocolStates,
-		Type:        typeKindID,
+		Type:        Type(configurable.Type),
 		Role:        Role(asset.Role),
 		Displayname: asset.Name,
 		Address:     configurable.Address,
@@ -247,6 +247,9 @@ func ToDevice(object *topo.Object) (*Device, error) {
 		MastershipTerm: mastership.Term,
 		MasterKey:      mastership.NodeId,
 		Object:         object,
+	}
+	if configurable.Type == "" {
+		d.Type = typeKindID
 	}
 	return d, nil
 }
