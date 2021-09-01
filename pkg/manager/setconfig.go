@@ -61,6 +61,11 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 	}
 	// then overlay with updates
 	for changePath, changeValue := range updates {
+		if len(changeValue.GetBytes()) == 0 &&
+			(changeValue.GetType() == devicechange.ValueType_STRING ||
+				changeValue.GetType() == devicechange.ValueType_BYTES) {
+			return errors.NewInvalid("Empty string not allowed. Delete attribute instead. %s", changePath)
+		}
 		pathValues[changePath] = changeValue
 	}
 	// finally remove any deletes and children of the deleted
