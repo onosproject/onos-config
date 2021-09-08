@@ -36,7 +36,7 @@ const (
 func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	// Currently not working
 	t.Skip()
-	
+
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
