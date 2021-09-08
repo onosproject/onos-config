@@ -172,7 +172,7 @@ func (s *Session) synchronize() error {
 	sync, err := New(ctx, s.device, s.opStateChan, s.deviceResponseChan,
 		valueMap, mReadOnlyPaths, s.target, mStateGetMode, s.operationalStateCacheLock, s.deviceChangeStore)
 	if err != nil {
-		log.Errorf("Error connecting to device %v: %v", s.device, err)
+		log.Warnf("Error connecting to device %v: %v", s.device, err)
 		//unregistering the listener for changes to the device
 		//unregistering the listener for changes to the device
 		s.dispatcher.UnregisterOperationalState(string(s.device.ID))
