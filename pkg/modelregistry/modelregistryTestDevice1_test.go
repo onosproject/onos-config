@@ -80,7 +80,7 @@ func Test_SchemaTestDevice1(t *testing.T) {
 	/// Read write paths
 	////////////////////////////////////////////////////
 	readWritePathsKeys := PathsRW(readWritePathsTestDevice1)
-	assert.Equal(t, len(readWritePathsKeys), 19)
+	assert.Equal(t, len(readWritePathsKeys), 21)
 
 	// Can be in any order
 	for _, p := range readWritePathsKeys {
@@ -90,6 +90,8 @@ func Test_SchemaTestDevice1(t *testing.T) {
 			"/cont1a/list2a[name=*]/name",
 			"/cont1a/list2a[name=*]/tx-power",
 			"/cont1a/list2a[name=*]/ref2d",
+			"/cont1a/list2a[name=*]/range-min",
+			"/cont1a/list2a[name=*]/range-max",
 			"/cont1a/cont2a/leaf2a",
 			"/cont1a/cont2a/leaf2b",
 			"/cont1a/cont2a/leaf2d",

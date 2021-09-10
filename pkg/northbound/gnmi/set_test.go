@@ -964,7 +964,7 @@ func Test_findPathFromModel(t *testing.T) {
 	assert.True(t, len(rwPath.AttrName) > 0)
 
 	_, _, err = findPathFromModel("/cont1a", td1Mp.ReadWritePaths, true)
-	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find exact match for RW model path /cont1a. 19 paths inspected")
+	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find exact match for RW model path /cont1a. 21 paths inspected")
 
 	// Another leaf
 	isExactMatch, rwPath, err = findPathFromModel("/cont1a/cont2a/leaf2a", td1Mp.ReadWritePaths, false)
@@ -1014,7 +1014,7 @@ func Test_findPathFromModel(t *testing.T) {
 
 	// Double keyed List invalid attr
 	_, _, err = findPathFromModel("/cont1a/list5[key1=test][key2=10]/invalid", td1Mp.ReadWritePaths, false)
-	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find RW model path /cont1a/list5[key1=test][key2=10]/invalid ( without index /cont1a/list5/invalid). 19 paths inspected")
+	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = unable to find RW model path /cont1a/list5[key1=test][key2=10]/invalid ( without index /cont1a/list5/invalid). 21 paths inspected")
 }
 
 func Test_deleteReferencedContainerList(t *testing.T) {
