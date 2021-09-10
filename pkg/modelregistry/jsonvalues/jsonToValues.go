@@ -297,6 +297,24 @@ func handleAttribute(value interface{}, parentPath string, modelROpaths modelreg
 		typedValue = devicechange.NewTypedValueString(stringVal)
 	case devicechange.ValueType_BOOL:
 		typedValue = devicechange.NewTypedValueBool(value.(bool))
+	case devicechange.ValueType_INT:
+		var intVal int
+		switch valueTyped := value.(type) {
+		case string:
+			intVal64, err := strconv.ParseInt(valueTyped, 10, int(typeOpts[0]))
+			if err != nil {
+				return nil, fmt.Errorf("error converting to %v %s", modeltype, valueTyped)
+			}
+			intVal = int(intVal64)
+		case float64:
+			intVal = int(valueTyped)
+		default:
+			return nil, fmt.Errorf("unhandled conversion to %v %s", modeltype, valueTyped)
+		}
+		if len(typeOpts) == 0 {
+			return nil, fmt.Errorf("expected INT to have a field width e.g. 8, 16, 32, 64")
+		}
+		typedValue = devicechange.NewTypedValueInt(intVal, devicechange.Width(typeOpts[0]))
 	case devicechange.ValueType_UINT:
 		var uintVal uint
 		switch valueTyped := value.(type) {
