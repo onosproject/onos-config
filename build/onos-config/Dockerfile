@@ -1,4 +1,4 @@
-FROM onosproject/config-model-build:v0.4.5 AS build
+FROM onosproject/config-model-build:v1.0 AS build
 
 ENV GO111MODULE=on
 ARG ONOS_MAKE_TARGET=build
