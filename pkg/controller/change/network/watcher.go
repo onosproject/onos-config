@@ -23,7 +23,6 @@ import (
 	devicechangestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"sync"
@@ -46,16 +45,16 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 		return nil
 	}
 
-	configCh := make(chan stream.Event, queueSize)
-	ctx, err := w.Store.Watch(configCh, networkchangestore.WithReplay())
+	networkChangeCh := make(chan stream.Event, queueSize)
+	ctx, err := w.Store.Watch(networkChangeCh, networkchangestore.WithReplay())
 	if err != nil {
 		return err
 	}
 	w.ctx = ctx
 
 	go func() {
-		for request := range configCh {
-			ch <- controller.NewID(string(request.Object.(*networkchange.NetworkChange).ID))
+		for networkChangeEvent := range networkChangeCh {
+			ch <- controller.NewID(string(networkChangeEvent.Object.(*networkchange.NetworkChange).ID))
 		}
 		close(ch)
 	}()
@@ -73,20 +72,77 @@ func (w *Watcher) Stop() {
 
 var _ controller.Watcher = &Watcher{}
 
-// DeviceWatcher is a device change watcher
+// DeviceWatcher is a device watcher
 type DeviceWatcher struct {
-	DeviceCache cache.Cache
+	DeviceStore devicestore.Store
+	ChangeStore networkchangestore.Store
+	ch          chan<- controller.ID
+	cacheStream stream.Context
+	mu          sync.Mutex
+}
+
+// Start starts the device change watcher
+func (w *DeviceWatcher) Start(ch chan<- controller.ID) error {
+	w.mu.Lock()
+	if w.ch != nil {
+		w.mu.Unlock()
+		return nil
+	}
+
+	w.ch = ch
+	w.mu.Unlock()
+
+	deviceCh := make(chan *devicetopo.ListResponse)
+	if err := w.DeviceStore.Watch(deviceCh); err != nil {
+		return err
+	}
+
+	go func() {
+		for response := range deviceCh {
+			log.Infof("Received device event for device %v %v", response.Device.ID, response.Device.Version)
+			deviceID := device.NewVersionedID(device.ID(response.Device.ID), device.Version(response.Device.Version))
+			networkChangeCh := make(chan *networkchange.NetworkChange)
+			ctx, err := w.ChangeStore.List(networkChangeCh)
+			if err != nil {
+				log.Errorf(err.Error())
+			} else {
+				for networkChange := range networkChangeCh {
+					for _, deviceChange := range networkChange.Changes {
+						if device.NewVersionedID(deviceChange.DeviceID, deviceChange.DeviceVersion) == deviceID {
+							ch <- controller.NewID(networkChange.ID)
+						}
+					}
+				}
+			}
+			ctx.Close()
+		}
+	}()
+	return nil
+}
+
+// Stop stops the device change watcher
+func (w *DeviceWatcher) Stop() {
+	w.mu.Lock()
+	if w.ch != nil {
+		close(w.ch)
+	}
+	w.mu.Unlock()
+}
+
+var _ controller.Watcher = &DeviceChangeWatcher{}
+
+// DeviceChangeWatcher is a device change watcher
+type DeviceChangeWatcher struct {
 	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
 	ch          chan<- controller.ID
 	streams     map[device.VersionedID]stream.Context
-	cacheStream stream.Context
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }
 
 // Start starts the device change watcher
-func (w *DeviceWatcher) Start(ch chan<- controller.ID) error {
+func (w *DeviceChangeWatcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	if w.ch != nil {
 		w.mu.Unlock()
@@ -107,40 +163,11 @@ func (w *DeviceWatcher) Start(ch chan<- controller.ID) error {
 			w.updateWatch(response.Device, ch)
 		}
 	}()
-
-	deviceCacheCh := make(chan stream.Event)
-	go func() {
-		for eventObj := range deviceCacheCh {
-			event := eventObj.Object.(*cache.Info)
-			log.Infof("Received device event for device %v %v", event.DeviceID, event.Version)
-			device, err := w.DeviceStore.Get(devicetopo.ID(event.DeviceID))
-			if err != nil {
-				log.Warnf("Could not find device %v", event.DeviceID)
-				continue
-			}
-			if device.Version == string(event.Version) {
-				w.updateWatch(device, ch)
-			}
-		}
-		w.mu.Lock()
-		w.cacheStream.Close()
-		w.mu.Unlock()
-	}()
-
-	var err error
-	w.mu.Lock()
-	w.cacheStream, err = w.DeviceCache.Watch(deviceCacheCh, true)
-	w.mu.Unlock()
-	if err != nil {
-		return err
-	}
-	log.Infof("Network DeviceWatcher - watching cache started %v", deviceCacheCh)
-
 	return nil
 }
 
 // updateWatch watches changes for the given device
-func (w *DeviceWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- controller.ID) {
+func (w *DeviceChangeWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- controller.ID) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -185,7 +212,7 @@ func (w *DeviceWatcher) updateWatch(topodevice *devicetopo.Device, ch chan<- con
 }
 
 // Stop stops the device change watcher
-func (w *DeviceWatcher) Stop() {
+func (w *DeviceChangeWatcher) Stop() {
 	w.mu.Lock()
 	for _, ctx := range w.streams {
 		ctx.Close()
@@ -199,4 +226,4 @@ func (w *DeviceWatcher) Stop() {
 	w.mu.Unlock()
 }
 
-var _ controller.Watcher = &DeviceWatcher{}
+var _ controller.Watcher = &DeviceChangeWatcher{}
