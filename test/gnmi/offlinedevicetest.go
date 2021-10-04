@@ -34,9 +34,6 @@ const (
 
 // TestOfflineDevice tests set/query of a single GNMI path to a single device that is initially not in the config
 func (s *TestSuite) TestOfflineDevice(t *testing.T) {
-	// Currently not working
-	t.Skip()
-
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
