@@ -32,7 +32,6 @@ type Watcher struct {
 	DeviceStore devicestore.Store
 	ChangeStore devicechangestore.Store
 	ch          chan<- controller.ID
-	cacheStream stream.Context
 	mu          sync.Mutex
 }
 
@@ -88,7 +87,6 @@ type ChangeWatcher struct {
 	ChangeStore devicechangestore.Store
 	ch          chan<- controller.ID
 	streams     map[devicetype.VersionedID]stream.Context
-	cacheStream stream.Context
 	mu          sync.Mutex
 	wg          sync.WaitGroup
 }

@@ -232,7 +232,6 @@ func TestDeviceWatcher(t *testing.T) {
 
 	watcher := &DeviceChangeWatcher{
 		DeviceStore: deviceStore,
-		DeviceCache: deviceCache,
 		ChangeStore: changeStore,
 	}
 
