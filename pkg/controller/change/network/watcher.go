@@ -109,7 +109,7 @@ func (w *DeviceWatcher) Start(ch chan<- controller.ID) error {
 				for networkChange := range networkChangeCh {
 					for _, deviceChange := range networkChange.Changes {
 						if device.NewVersionedID(deviceChange.DeviceID, deviceChange.DeviceVersion) == deviceID {
-							ch <- controller.NewID(networkChange.ID)
+							ch <- controller.NewID(string(networkChange.ID))
 						}
 					}
 				}

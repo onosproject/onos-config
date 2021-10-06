@@ -216,9 +216,8 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 		if !errors.IsNotFound(err) {
 			return controller.Result{}, err
 		}
-		if !hasDeviceChanges(prevChange) {
-			return controller.Result{Requeue: controller.NewID(string(networkChange.ID))}, nil
-		}
+	} else if !hasDeviceChanges(prevChange) {
+		return controller.Result{Requeue: controller.NewID(string(networkChange.ID))}, nil
 	}
 
 	// Loop through changes and create device changes

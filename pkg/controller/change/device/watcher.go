@@ -62,7 +62,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 				log.Errorf(err.Error())
 			} else {
 				for deviceChange := range deviceChangeCh {
-					ch <- controller.NewID(deviceChange.ID)
+					ch <- controller.NewID(string(deviceChange.ID))
 				}
 			}
 			ctx.Close()
