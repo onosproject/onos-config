@@ -77,7 +77,6 @@ type DeviceWatcher struct {
 	DeviceStore devicestore.Store
 	ChangeStore networkchangestore.Store
 	ch          chan<- controller.ID
-	cacheStream stream.Context
 	mu          sync.Mutex
 }
 
