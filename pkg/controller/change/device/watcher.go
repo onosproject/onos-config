@@ -125,7 +125,6 @@ func (w *ChangeWatcher) watchDevice(deviceID devicetype.VersionedID, ch chan<- c
 
 	ctx := w.streams[deviceID]
 	if ctx != nil {
-		log.Errorf("ChangeWatcher stream for %s is not nil", deviceID)
 		return
 	}
 
