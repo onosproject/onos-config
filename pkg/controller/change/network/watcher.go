@@ -15,6 +15,7 @@
 package network
 
 import (
+	"github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	"github.com/onosproject/onos-api/go/onos/config/device"
@@ -54,7 +55,25 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 
 	go func() {
 		for networkChangeEvent := range networkChangeCh {
-			ch <- controller.NewID(string(networkChangeEvent.Object.(*networkchange.NetworkChange).ID))
+			networkChange := networkChangeEvent.Object.(*networkchange.NetworkChange)
+			ch <- controller.NewID(string(networkChange.ID))
+
+			// If a CHANGE is COMPLETE, reconcile all dependents which depend on this change
+			// If a ROLLBACK is COMPLETE, reconcile its dependency for rollback chaining
+			if networkChange.Status.State == change.State_COMPLETE {
+				switch networkChange.Status.Phase {
+				case change.Phase_CHANGE:
+					for _, dependent := range networkChange.Dependents {
+						if networkChangeID, ok := dependent.Id.(*networkchange.NetworkChangeRef_NetworkChangeID); ok {
+							ch <- controller.NewID(string(networkChangeID.NetworkChangeID))
+						}
+					}
+				case change.Phase_ROLLBACK:
+					if networkChangeID, ok := networkChange.Dependency.Id.(*networkchange.NetworkChangeRef_NetworkChangeID); ok {
+						ch <- controller.NewID(string(networkChangeID.NetworkChangeID))
+					}
+				}
+			}
 		}
 		close(ch)
 	}()
