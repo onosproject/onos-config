@@ -70,39 +70,40 @@ type Reconciler struct {
 // Reconcile reconciles the state of a network configuration
 func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	log.Infof("Reconciling NetworkChange '%s'", id.String())
-	change, err := r.networkChanges.Get(networkchange.ID(id.String()))
+	networkChange, err := r.networkChanges.Get(networkchange.ID(id.String()))
 	if err != nil {
 		if errors.IsNotFound(err) {
+			log.Debugf("NetworkChange '%s' not found", id.String())
 			return controller.Result{}, nil
 		}
 		log.Errorf("Error fetching NetworkChange '%s'", id.String(), err)
 		return controller.Result{}, err
 	}
 
-	log.Debug(change)
+	log.Debug(networkChange)
 
 	// If the change is not in the PENDING state it must be either COMPLETE or FAILED
 	// It does not need to be reconciled.
-	if change.Status.State != changetypes.State_PENDING {
-		log.Debugf("Skipping reconciliation for NetworkChange '%s': Change is already %s", change.ID, change.Status.State)
+	if networkChange.Status.State != changetypes.State_PENDING {
+		log.Debugf("Skipping reconciliation for NetworkChange '%s': Change is already %s", networkChange.ID, networkChange.Status.State)
 		return controller.Result{}, nil
 	}
 
 	// Ensure a bi-directional link between the change and its dependency (if any)
-	if linked, err := r.linkDependencies(change); err != nil {
+	if linked, err := r.linkDependencies(networkChange); err != nil {
 		return controller.Result{}, err
 	} else if linked {
 		return controller.Result{}, nil
 	}
 
 	// Reconcile the change based on whether it's a CHANGE or ROLLBACK
-	switch change.Status.Phase {
+	switch networkChange.Status.Phase {
 	case changetypes.Phase_CHANGE:
-		return r.reconcileChange(change)
+		return r.reconcileChange(networkChange)
 	case changetypes.Phase_ROLLBACK:
-		return r.reconcileRollback(change)
+		return r.reconcileRollback(networkChange)
 	default:
-		log.Errorf("Unexpected phase '%s' for NetworkChange '%s'", change.Status.Phase, change.ID)
+		log.Errorf("Unexpected phase '%s' for NetworkChange '%s'", networkChange.Status.Phase, networkChange.ID)
 	}
 	return controller.Result{}, nil
 }
