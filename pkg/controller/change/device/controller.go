@@ -134,7 +134,7 @@ func (r *Reconciler) reconcileChange(deviceChange *devicechange.DeviceChange) (c
 
 	// Update the change status in the store
 	log.Debug(deviceChange)
-	if err := r.changes.Update(deviceChange); err != nil && !errors.IsNotFound(err) {
+	if err := r.changes.Update(deviceChange); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
 		log.Errorf("Error updating DeviceChange '%s'", deviceChange.ID, err)
 		return controller.Result{}, err
 	}
@@ -165,7 +165,7 @@ func (r *Reconciler) reconcileRollback(deviceChange *devicechange.DeviceChange) 
 
 	// Update the change status in the store
 	log.Debug(deviceChange)
-	if err := r.changes.Update(deviceChange); err != nil && !errors.IsNotFound(err) {
+	if err := r.changes.Update(deviceChange); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
 		log.Errorf("Error updating DeviceChange '%s'", deviceChange.ID, err)
 		return controller.Result{}, err
 	}

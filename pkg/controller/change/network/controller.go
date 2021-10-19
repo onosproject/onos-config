@@ -136,10 +136,7 @@ func (r *Reconciler) reconcileChange(networkChange *networkchange.NetworkChange)
 		log.Infof("Completing NetworkChange '%s'", networkChange.ID)
 		networkChange.Status.State = changetypes.State_COMPLETE
 		log.Debug(networkChange)
-		if err := r.networkChanges.Update(networkChange); err != nil {
-			if errors.IsNotFound(err) {
-				return controller.Result{}, nil
-			}
+		if err := r.networkChanges.Update(networkChange); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Errorf("Error updating NetworkChange '%s'", networkChange.ID, err)
 			return controller.Result{}, err
 		}
@@ -153,10 +150,7 @@ func (r *Reconciler) reconcileChange(networkChange *networkchange.NetworkChange)
 		networkChange.Status.Reason = changetypes.Reason_ERROR
 		networkChange.Status.Message = msg
 		log.Debug(networkChange)
-		if err := r.networkChanges.Update(networkChange); err != nil {
-			if errors.IsNotFound(err) {
-				return controller.Result{}, nil
-			}
+		if err := r.networkChanges.Update(networkChange); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Errorf("Error updating NetworkChange '%s'", networkChange.ID, err)
 			return controller.Result{}, err
 		}
@@ -199,7 +193,6 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 	}
 
 	log.Infof("Applying NetworkChange '%s'", networkChange.ID)
-	updated := false
 	refs := make([]*networkchange.DeviceChangeRef, len(networkChange.Changes))
 	for i, change := range networkChange.Changes {
 		deviceChange := &devicechange.DeviceChange{
@@ -219,30 +212,19 @@ func (r *Reconciler) createDeviceChanges(networkChange *networkchange.NetworkCha
 		// Create the device change if it doesn't exist
 		log.Infof("Creating DeviceChange '%s'", deviceChange.ID)
 		log.Debug(deviceChange)
-		if err := r.deviceChanges.Create(deviceChange); err != nil {
-			if !errors.IsAlreadyExists(err) {
-				log.Errorf("Error creating DeviceChange %+v", deviceChange, err)
-				return false, err
-			}
-		} else {
-			updated = true
+		if err := r.deviceChanges.Create(deviceChange); err != nil && !errors.IsAlreadyExists(err) {
+			log.Errorf("Error creating DeviceChange %+v", deviceChange, err)
+			return false, err
 		}
 		refs[i] = &networkchange.DeviceChangeRef{
 			DeviceChangeID: deviceChange.ID,
 		}
 	}
 
-	if !updated {
-		return false, nil
-	}
-
 	log.Infof("Binding %d device changes to NetworkChange '%s'", len(refs), networkChange.ID)
 	networkChange.Refs = refs
 	log.Debug(networkChange)
-	if err := r.networkChanges.Update(networkChange); err != nil {
-		if errors.IsNotFound(err) {
-			return true, nil
-		}
+	if err := r.networkChanges.Update(networkChange); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
 		log.Errorf("Error updating NetworkChange %+v", networkChange, err)
 		return false, err
 	}
@@ -301,10 +283,7 @@ func (r *Reconciler) reconcileRollback(networkChange *networkchange.NetworkChang
 		log.Infof("Completing NetworkChange '%s'", networkChange.ID)
 		networkChange.Status.State = changetypes.State_COMPLETE
 		log.Debug(networkChange)
-		if err := r.networkChanges.Update(networkChange); err != nil {
-			if errors.IsNotFound(err) {
-				return controller.Result{}, nil
-			}
+		if err := r.networkChanges.Update(networkChange); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Warnf("Error updating NetworkChange '%s'", networkChange.ID, err)
 			return controller.Result{}, err
 		}
@@ -318,10 +297,7 @@ func (r *Reconciler) reconcileRollback(networkChange *networkchange.NetworkChang
 		networkChange.Status.Reason = changetypes.Reason_ERROR
 		networkChange.Status.Message = msg
 		log.Debug(networkChange)
-		if err := r.networkChanges.Update(networkChange); err != nil {
-			if errors.IsNotFound(err) {
-				return controller.Result{}, nil
-			}
+		if err := r.networkChanges.Update(networkChange); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Warnf("Error updating NetworkChange '%s'", networkChange.ID, err)
 			return controller.Result{}, err
 		}
@@ -362,6 +338,9 @@ func (r *Reconciler) rollbackDeviceChanges(deviceChanges []*devicechange.DeviceC
 			deviceChange.Status.State = changetypes.State_PENDING
 			log.Debug(deviceChange)
 			if err := r.deviceChanges.Update(deviceChange); err != nil {
+				if errors.IsConflict(err) {
+					return true, nil
+				}
 				if !errors.IsNotFound(err) {
 					log.Errorf("Error updating DeviceChange %+v", deviceChange, err)
 					return false, err
@@ -435,7 +414,13 @@ func (r *Reconciler) linkDependencies(change *networkchange.NetworkChange) (bool
 					},
 				})
 				log.Debug(prevChange)
-				if err := r.networkChanges.Update(prevChange); err != nil && !errors.IsNotFound(err) {
+				if err := r.networkChanges.Update(prevChange); err != nil {
+					if errors.IsNotFound(err) {
+						break
+					}
+					if errors.IsConflict(err) {
+						return true, nil
+					}
 					log.Errorf("Error updating NetworkChange '%s'", prevChange.ID, err)
 					return false, err
 				}
@@ -450,7 +435,7 @@ func (r *Reconciler) linkDependencies(change *networkchange.NetworkChange) (bool
 				},
 			}
 			log.Debug(change)
-			if err := r.networkChanges.Update(change); err != nil && !errors.IsNotFound(err) {
+			if err := r.networkChanges.Update(change); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
 				log.Errorf("Error updating NetworkChange '%s'", change.ID, err)
 				return false, err
 			}
@@ -466,7 +451,7 @@ func (r *Reconciler) linkDependencies(change *networkchange.NetworkChange) (bool
 		},
 	}
 	log.Debug(change)
-	if err := r.networkChanges.Update(change); err != nil && !errors.IsNotFound(err) {
+	if err := r.networkChanges.Update(change); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
 		log.Errorf("Error updating NetworkChange '%s'", change.ID, err)
 		return false, err
 	}
