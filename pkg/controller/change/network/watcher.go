@@ -56,6 +56,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 	go func() {
 		for networkChangeEvent := range networkChangeCh {
 			networkChange := networkChangeEvent.Object.(*networkchange.NetworkChange)
+			log.Debugf("Received NetworkChange event '%s'", networkChange.ID)
 			ch <- controller.NewID(string(networkChange.ID))
 
 			// If a CHANGE is COMPLETE, reconcile all dependents which depend on this change
@@ -117,7 +118,7 @@ func (w *DeviceWatcher) Start(ch chan<- controller.ID) error {
 
 	go func() {
 		for response := range deviceCh {
-			log.Infof("Received device event for device %v %v", response.Device.ID, response.Device.Version)
+			log.Debugf("Received Device event %s:%s", response.Device.ID, response.Device.Version)
 			deviceID := device.NewVersionedID(device.ID(response.Device.ID), device.Version(response.Device.Version))
 			networkChangeCh := make(chan *networkchange.NetworkChange)
 			ctx, err := w.ChangeStore.List(networkChangeCh)
@@ -210,8 +211,8 @@ func (w *DeviceChangeWatcher) updateWatch(topodevice *devicetopo.Device, ch chan
 	}
 
 	// Open a new device event stream
-	deviceCh := make(chan stream.Event, queueSize)
-	ctx, err := w.ChangeStore.Watch(deviceID, deviceCh, devicechangestore.WithReplay())
+	deviceChangeCh := make(chan stream.Event, queueSize)
+	ctx, err := w.ChangeStore.Watch(deviceID, deviceChangeCh, devicechangestore.WithReplay())
 	if err != nil {
 		log.Errorf("Failed to watch device %v: %v", deviceID, err)
 		return
@@ -222,8 +223,10 @@ func (w *DeviceChangeWatcher) updateWatch(topodevice *devicetopo.Device, ch chan
 
 	w.wg.Add(1)
 	go func() {
-		for event := range deviceCh {
-			ch <- controller.NewID(string(event.Object.(*devicechange.DeviceChange).NetworkChange.ID))
+		for event := range deviceChangeCh {
+			deviceChange := event.Object.(*devicechange.DeviceChange)
+			log.Debugf("Received DeviceChange event '%s'", deviceChange.ID)
+			ch <- controller.NewID(string(deviceChange.NetworkChange.ID))
 		}
 		w.wg.Done()
 	}()

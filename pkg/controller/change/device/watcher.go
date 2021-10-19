@@ -53,7 +53,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 
 	go func() {
 		for response := range deviceCh {
-			log.Infof("Received device event for device %v %v", response.Device.ID, response.Device.Version)
+			log.Debugf("Received Device event %s:%s", response.Device.ID, response.Device.Version)
 			deviceID := devicetype.NewVersionedID(devicetype.ID(response.Device.ID), devicetype.Version(response.Device.Version))
 			deviceChangeCh := make(chan *devicechange.DeviceChange)
 			ctx, err := w.ChangeStore.List(deviceID, deviceChangeCh)
@@ -110,7 +110,7 @@ func (w *ChangeWatcher) Start(ch chan<- controller.ID) error {
 
 	go func() {
 		for response := range deviceCh {
-			log.Infof("Received device event for device %v %v", response.Device.ID, response.Device.Version)
+			log.Debugf("Received Device event %s:%s", response.Device.ID, response.Device.Version)
 			deviceID := devicetype.NewVersionedID(devicetype.ID(response.Device.ID), devicetype.Version(response.Device.Version))
 			w.watchDevice(deviceID, ch)
 		}
@@ -139,7 +139,9 @@ func (w *ChangeWatcher) watchDevice(deviceID devicetype.VersionedID, ch chan<- c
 	w.wg.Add(1)
 	go func() {
 		for event := range deviceChangeCh {
-			ch <- controller.NewID(string(event.Object.(*devicechange.DeviceChange).ID))
+			deviceChange := event.Object.(*devicechange.DeviceChange)
+			log.Debugf("Received DeviceChange event '%s'", deviceChange.ID)
+			ch <- controller.NewID(string(deviceChange.ID))
 		}
 		w.wg.Done()
 	}()
