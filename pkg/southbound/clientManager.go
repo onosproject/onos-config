@@ -107,7 +107,7 @@ func GetTarget(key devicetype.VersionedID) (TargetIf, error) {
 	for t := range targets {
 		targetNames = append(targetNames, t)
 	}
-	return nil, fmt.Errorf("gNMI client for %v does not exist. Known clients: %v", key, targetNames)
+	return nil, errors.NewNotFound("gNMI client for %v does not exist. Known clients: %v", key, targetNames)
 }
 
 // ConnectTarget connects to a given Device according to the passed information establishing a channel to it.

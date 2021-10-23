@@ -15,6 +15,7 @@
 package device
 
 import (
+	"context"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
@@ -29,6 +30,8 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strings"
 )
 
@@ -191,14 +194,31 @@ func (r *Reconciler) translateAndSendChange(change *devicechange.Change) (bool, 
 	}
 	deviceTarget, err := southbound.GetTarget(change.GetVersionedDeviceID())
 	if err != nil {
-		log.Warnf("Device %s:%s (%s) is not connected", change.DeviceID, change.DeviceVersion, change.DeviceType)
-		return false, err
+		if errors.IsNotFound(err) {
+			log.Warnf("Device %s:%s (%s) is not connected", change.DeviceID, change.DeviceVersion, change.DeviceType)
+			return false, err
+		}
+		log.Error(err)
+		return true, err
 	}
 	log.Debugf("Sending gNMI SetRequest %+v to Device %s:%s", setRequest, change.DeviceID, change.DeviceVersion)
 	setResponse, err := deviceTarget.Set(*deviceTarget.Context(), setRequest)
 	if err != nil {
+		if err == context.Canceled || err == context.DeadlineExceeded {
+			return false, err
+		}
+		code := status.Code(err)
+		if code == codes.Unavailable ||
+			code == codes.Canceled ||
+			code == codes.DeadlineExceeded ||
+			code == codes.Aborted ||
+			code == codes.Unauthenticated ||
+			code == codes.PermissionDenied {
+			log.Warnf("Error in SetRequest %+v to Device %s:%s", setRequest, change.DeviceID, change.DeviceVersion, err)
+			return false, err
+		}
 		log.Errorf("Error in SetRequest %+v to Device %s:%s", setRequest, change.DeviceID, change.DeviceVersion, err)
-		return false, err
+		return true, err
 	}
 	log.Debugf("Received gNMI SetResponse %+v from Device %s:%s", setResponse, change.DeviceID, change.DeviceVersion)
 	return true, nil
