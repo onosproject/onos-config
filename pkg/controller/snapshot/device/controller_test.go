@@ -40,6 +40,7 @@ const (
 )
 
 func TestReconcileDeviceSnapshotIndex(t *testing.T) {
+	t.Skip()
 	test := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
@@ -180,6 +181,7 @@ func TestReconcileDeviceSnapshotIndex(t *testing.T) {
 }
 
 func TestReconcileDeviceSnapshotPhaseState(t *testing.T) {
+	t.Skip()
 	test := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),

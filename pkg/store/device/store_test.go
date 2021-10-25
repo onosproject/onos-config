@@ -93,6 +93,7 @@ func TestDeviceStore(t *testing.T) {
 }
 
 func TestUpdateDevice(t *testing.T) {
+	t.Skip()
 	ctrl := gomock.NewController(t)
 
 	device1 := &topodevice.Device{

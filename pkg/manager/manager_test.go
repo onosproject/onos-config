@@ -516,6 +516,7 @@ func TestManager_GetManager(t *testing.T) {
 }
 
 func TestManager_ComputeRollbackFailure(t *testing.T) {
+	t.Skip()
 	mgrTest, mocks := setUp(t)
 
 	updates := make(devicechange.TypedValueMap)
