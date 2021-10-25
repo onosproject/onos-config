@@ -205,11 +205,13 @@ github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+Ce
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
+github.com/bitly/go-simplejson v0.5.0 h1:6IH+V8/tVMab511d5bn4M7EwGXZf9Hj6i2xSwkNEM+Y=
 github.com/bitly/go-simplejson v0.5.0/go.mod h1:cXHtHw4XUPsvGaxgjIAn8PhEWG9NfngEKAMDJEczWVA=
 github.com/bketelsen/crypt v0.0.3-0.20200106085610-5cbc8cc4026c/go.mod h1:MKsuJmJgSg28kpZDP6UIiPt0e0Oz0kqKNGyRaWEPv84=
 github.com/blang/semver v3.1.0+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/blang/semver v3.5.0+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
+github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 h1:DDGfHa7BWjL4YnC6+E63dPcxHo2sUxDIu8g3QgEJdRY=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
 github.com/bshuster-repo/logrus-logstash-hook v0.4.1/go.mod h1:zsTqEiSzDgAa/8GZR7E1qaXrhYNDKBYy5/dWPTIflbk=
 github.com/bshuster-repo/logrus-logstash-hook v1.0.0 h1:e+C0SB5R1pu//O4MQ3f9cFuPGoOVeF2fE4Og9otCc70=
@@ -781,8 +783,8 @@ github.com/onosproject/helmit v0.6.8/go.mod h1:EorNGSNGWojXGxBEuiNmPScae+R2C5WYf
 github.com/onosproject/helmit v0.6.15 h1:K+JcNPv79PqtBWUABJpyJS0QNSoyWcwKaadZvdWmjfU=
 github.com/onosproject/helmit v0.6.15/go.mod h1:wdfAbTUnL2lBvr8PObslX5Hf3ZZnm1d5kBVy1hMJzYo=
 github.com/onosproject/onos-api/go v0.7.75/go.mod h1:0qXWs8DbOSW/jSSX2mr0yGhuPzREpM0H679rXtCfvmQ=
-github.com/onosproject/onos-api/go v0.7.89 h1:RPxA4kttdSW50gCr5Hq063yHai5iILuUGQfLei9DvQk=
-github.com/onosproject/onos-api/go v0.7.89/go.mod h1:dUChRuNCBGrF6sVdaAZl5T2ZeyEC6ybsAdEBu0YwlMw=
+github.com/onosproject/onos-api/go v0.7.107 h1:vchQQl7TE6DUqc1WbghnTOjZ3mao+9/C+QtYMu80+v0=
+github.com/onosproject/onos-api/go v0.7.107/go.mod h1:CaFf0659DTSP/8LAwuKv9p9/xFPcx7fmcxC/dlSi8qo=
 github.com/onosproject/onos-config-model v0.4.8 h1:IgOBisoG52ictAN9HPSMP7YFeaIdR+cOKZZrB+vpsbs=
 github.com/onosproject/onos-config-model v0.4.8/go.mod h1:sIiLtUIUd8WP43H5IeHv5olZL3jYJwQhUbKjAWuOesQ=
 github.com/onosproject/onos-lib-go v0.7.13/go.mod h1:yEu+qDh+z1G6b9clPAjDLQNnBll8TMl8o2sFDBzk/fI=

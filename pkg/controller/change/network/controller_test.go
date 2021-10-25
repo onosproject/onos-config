@@ -50,10 +50,10 @@ func setupControllers(t *testing.T, networkChanges networkchangestore.Store,
 	leadershipStore leadershipstore.Store, mastershipStore mastershipstore.Store) (
 	*controller.Controller, *controller.Controller) {
 
-	networkChangeController := NewController(leadershipStore, deviceCache, devices, networkChanges, deviceChanges)
+	networkChangeController := NewController(leadershipStore, devices, networkChanges, deviceChanges)
 	assert.NotNil(t, networkChangeController)
 
-	deviceChangeController := devicechangecontroller.NewController(mastershipStore, devices, deviceCache, deviceChanges)
+	deviceChangeController := devicechangecontroller.NewController(mastershipStore, devices, deviceChanges)
 	assert.NotNil(t, deviceChangeController)
 
 	return networkChangeController, deviceChangeController

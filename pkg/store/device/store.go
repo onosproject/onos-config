@@ -17,6 +17,7 @@ package device
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"io"
 	"time"
@@ -79,7 +80,7 @@ func (s *topoStore) Get(id device.ID) (*device.Device, error) {
 		ID: topo.ID(id),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.FromGRPC(err)
 	}
 	return device.ToDevice(response.Object)
 }
@@ -92,7 +93,7 @@ func (s *topoStore) Update(updatedDevice *device.Device) (*device.Device, error)
 	}
 	response, err := s.client.Update(ctx, updateReq)
 	if err != nil {
-		return nil, err
+		return nil, errors.FromGRPC(err)
 	}
 	return device.ToDevice(response.Object)
 }
@@ -100,7 +101,7 @@ func (s *topoStore) Update(updatedDevice *device.Device) (*device.Device, error)
 func (s *topoStore) List(ch chan<- *device.Device) error {
 	resp, err := s.client.List(context.Background(), &topo.ListRequest{})
 	if err != nil {
-		return err
+		return errors.FromGRPC(err)
 	}
 
 	go func() {
@@ -121,7 +122,7 @@ func (s *topoStore) Watch(ch chan<- *device.ListResponse) error {
 		Noreplay: false,
 	})
 	if err != nil {
-		return err
+		return errors.FromGRPC(err)
 	}
 	go func() {
 		for {

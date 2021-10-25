@@ -153,6 +153,9 @@ func (s *atomixStore) Get(id devicechange.ID) (*devicechange.DeviceChange, error
 }
 
 func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
+	if change.ID == "" {
+		return errors.NewInvalid("no change identifier specified")
+	}
 	if change.Index == 0 {
 		return errors.NewInvalid("no change index specified")
 	}
@@ -174,8 +177,6 @@ func (s *atomixStore) Create(change *devicechange.DeviceChange) error {
 	if change.Change.DeviceType == "" {
 		return errors.NewInvalid("no device type specified")
 	}
-
-	change.ID = devicechange.NewID(change.NetworkChange.ID, change.Change.DeviceID, change.Change.DeviceVersion)
 
 	changes, err := s.getDeviceChanges(change.Change.GetVersionedDeviceID())
 	if err != nil {

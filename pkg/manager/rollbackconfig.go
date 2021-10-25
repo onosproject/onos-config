@@ -26,31 +26,13 @@ import (
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target, by setting phase to
 // rollback and state to pending.
 func (m *Manager) RollbackTargetConfig(networkChangeID networkchange.ID) error {
-
 	if networkChangeID == "" {
 		return errors.NewInvalid("error on rollback. networkChangeID is empty")
 	}
 
-	changeRollback, errGet := m.NetworkChangesStore.Get(networkChangeID)
-	if errGet != nil {
-		return errors.NewInternal("error on get change '%s' for rollback: %v", networkChangeID, errGet)
-	}
-
-	if changeRollback == nil {
-		return errors.NewInternal("error on rollback. No change found for networkChangeID '%s'", networkChangeID)
-	}
-
-	//Making sure that the change is the last one
-	next, errGetNext := m.NetworkChangesStore.GetNext(changeRollback.Index)
-	if errGetNext != nil {
-		return errors.NewInternal("Error on get next change during rollback %v", errGetNext)
-	}
-	// if the error is nil and the change is nil the requested one is the last one thus we proceed.
-	// if there is a next change but the phase is different from ROLLBACK and the status is different from COMPLETE we
-	// fail the operation because there is a need to rollback the previous one.
-	if next != nil && (next.Status.Phase != changetypes.Phase_ROLLBACK ||
-		(next.Status.Phase == changetypes.Phase_ROLLBACK && next.Status.State != changetypes.State_COMPLETE)) {
-		return errors.NewInternal("change %s is not the last active on the stack of changes", networkChangeID)
+	changeRollback, err := m.NetworkChangesStore.Get(networkChangeID)
+	if err != nil {
+		return err
 	}
 
 	changeRollback.Status.Incarnation++
@@ -59,9 +41,8 @@ func (m *Manager) RollbackTargetConfig(networkChangeID networkchange.ID) error {
 	changeRollback.Status.Reason = changetypes.Reason_NONE
 	changeRollback.Status.Message = "Administratively requested rollback"
 
-	errUpdate := m.NetworkChangesStore.Update(changeRollback)
-	if errUpdate != nil {
-		return errors.NewInternal("Error on setting change %s rollback: %s", networkChangeID, errUpdate)
+	if err := m.NetworkChangesStore.Update(changeRollback); err != nil {
+		return err
 	}
 	return listenForChangeNotification(m, networkChangeID)
 }

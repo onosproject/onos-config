@@ -150,12 +150,11 @@ func (sm *SessionManager) Start() error {
 // processDeviceEvents process incoming device events
 func (sm *SessionManager) processDeviceEvents(ch <-chan *topodevice.ListResponse) {
 	for event := range ch {
-		log.Infof("Received event type %s for device %v", event.Type, event.Device)
+		log.Infof("Received event type %s for device %s:%s", event.Type, event.Device.ID, event.Device.Version)
 		err := sm.processDeviceEvent(event)
 		if err != nil {
-			log.Errorf("Error updating session %v", event.Device.ID, err)
+			log.Errorf("Error updating session %s:%s", event.Device.ID, event.Device.Version, err)
 		}
-
 	}
 }
 
@@ -177,7 +176,7 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 	case topodevice.ListResponseUPDATED:
 		session, ok := sm.sessions[event.Device.ID]
 		if !ok {
-			log.Errorf("Session for the device %s does not exist", event.Device.ID)
+			log.Errorf("Session for the device %s:%s does not exist", event.Device.ID, event.Device.Version)
 			return nil
 		}
 		// If the address is changed, delete the current session and creates  new one
@@ -197,10 +196,8 @@ func (sm *SessionManager) processDeviceEvent(event *topodevice.ListResponse) err
 		if err != nil {
 			return err
 		}
-
 	}
 	return nil
-
 }
 
 func (sm *SessionManager) handleMastershipEvents(session *Session) {
@@ -234,20 +231,17 @@ func (sm *SessionManager) handleMastershipEvents(session *Session) {
 					sm.mu.Lock()
 					session.connected = false
 					sm.mu.Unlock()
-
 				}
 			}
 		case <-sm.closeCh:
 			return
 		}
 	}
-
 }
 
 // createSession creates a new gNMI session
 func (sm *SessionManager) createSession(device *topodevice.Device) error {
-
-	log.Info("Creating session for device:", device.ID)
+	log.Infof("Creating session for device %s:%s", device.ID, device.Version)
 
 	state, err := sm.mastershipStore.GetMastership(device.ID)
 	if err != nil {
@@ -289,7 +283,7 @@ func (sm *SessionManager) createSession(device *topodevice.Device) error {
 
 // deleteSession deletes a new session
 func (sm *SessionManager) deleteSession(device *topodevice.Device) error {
-	log.Info("Deleting session for device:", device.ID)
+	log.Infof("Deleting session for device %s:%s", device.ID, device.Version)
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	session, ok := sm.sessions[device.ID]

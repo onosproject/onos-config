@@ -230,9 +230,8 @@ func TestDeviceWatcher(t *testing.T) {
 	assert.NoError(t, err)
 	defer changeStore.Close()
 
-	watcher := &DeviceWatcher{
+	watcher := &DeviceChangeWatcher{
 		DeviceStore: deviceStore,
-		DeviceCache: deviceCache,
 		ChangeStore: changeStore,
 	}
 

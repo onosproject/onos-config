@@ -172,7 +172,7 @@ func (s *Session) synchronize() error {
 	sync, err := New(ctx, s.device, s.opStateChan, s.deviceResponseChan,
 		valueMap, mReadOnlyPaths, s.target, mStateGetMode, s.operationalStateCacheLock, s.deviceChangeStore)
 	if err != nil {
-		log.Warnf("Error connecting to device %v: %v", s.device, err)
+		log.Warnf("Error connecting to device %s:%s", s.device.ID, s.device.Version)
 		//unregistering the listener for changes to the device
 		//unregistering the listener for changes to the device
 		s.dispatcher.UnregisterOperationalState(string(s.device.ID))
@@ -196,7 +196,7 @@ func (s *Session) synchronize() error {
 
 // disconnects the gNMI session from the device
 func (s *Session) disconnect() error {
-	log.Info("Disconnecting device:", s.device)
+	log.Infof("Disconnecting device %s:%s", s.device.ID, s.device.Version)
 	s.mu.Lock()
 	s.closed = true
 	if s.cancel != nil {
@@ -212,10 +212,9 @@ func (s *Session) disconnect() error {
 
 // Close close a gNMI session
 func (s *Session) Close() {
-	log.Info("Close session for device:", s.device)
+	log.Infof("Close session for device %s:%s", s.device.ID, s.device.Version)
 	err := s.disconnect()
 	if err != nil {
 		log.Error(err)
 	}
-
 }

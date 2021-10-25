@@ -15,7 +15,7 @@
 package device
 
 import (
-	"fmt"
+	"context"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
@@ -25,21 +25,20 @@ import (
 	changestore "github.com/onosproject/onos-config/pkg/store/change/device"
 	devicechangeutils "github.com/onosproject/onos-config/pkg/store/change/device/utils"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
 	"github.com/onosproject/onos-config/pkg/utils/values"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strings"
 )
 
 var log = logging.GetLogger("controller", "change", "device")
 
 // NewController returns a new network controller
-func NewController(mastership mastershipstore.Store, devices devicestore.Store,
-	cache cache.Cache, changes changestore.Store) *controller.Controller {
-
+func NewController(mastership mastershipstore.Store, devices devicestore.Store, changes changestore.Store) *controller.Controller {
 	c := controller.NewController("DeviceChange")
 	c.Filter(&configcontroller.MastershipFilter{
 		Store:    mastership,
@@ -47,7 +46,11 @@ func NewController(mastership mastershipstore.Store, devices devicestore.Store,
 	})
 	c.Partition(&Partitioner{})
 	c.Watch(&Watcher{
-		DeviceCache: cache,
+		DeviceStore: devices,
+		ChangeStore: changes,
+	})
+	c.Watch(&ChangeWatcher{
+		DeviceStore: devices,
 		ChangeStore: changes,
 	})
 	c.Reconcile(&Reconciler{
@@ -58,8 +61,7 @@ func NewController(mastership mastershipstore.Store, devices devicestore.Store,
 }
 
 // Resolver is a DeviceResolver that resolves device IDs from device change IDs
-type Resolver struct {
-}
+type Resolver struct{}
 
 // Resolve resolves a device ID from a device change ID
 func (r *Resolver) Resolve(id controller.ID) (topodevice.ID, error) {
@@ -74,141 +76,152 @@ type Reconciler struct {
 
 // Reconcile reconciles the state of a device change
 func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
-	// Get the change from the store
-	change, err := r.changes.Get(devicechange.ID(id.String()))
+	log.Infof("Reconciling DeviceChange '%s'", id.String())
+	deviceChange, err := r.changes.Get(devicechange.ID(id.String()))
 	if err != nil {
 		if errors.IsNotFound(err) {
+			log.Debugf("DeviceChange '%s' not found", id.String())
 			return controller.Result{}, nil
 		}
+		log.Errorf("Error fetching DeviceChange '%s'", id.String(), err)
 		return controller.Result{}, err
 	}
 
-	log.Infof("Reconciling DeviceChange %s", change.ID)
-	log.Debug(change)
+	log.Debug(deviceChange)
 
-	// The device controller only needs to handle changes in the RUNNING state
-	if change.Status.Incarnation == 0 || change.Status.State != changetypes.State_PENDING {
+	// If the change is not PENDING, skip reconciliation
+	if deviceChange.Status.State != changetypes.State_PENDING {
+		log.Debugf("Skipping reconciliation for DeviceChange '%s': Change is already %s", deviceChange.ID, deviceChange.Status.State)
 		return controller.Result{}, nil
 	}
 
 	// Get the device from the device store
-	log.Infof("Checking Device store for %s", change.Change.DeviceID)
-	device, err := r.devices.Get(topodevice.ID(change.Change.DeviceID))
+	device, err := r.devices.Get(topodevice.ID(deviceChange.Change.DeviceID))
 	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Warnf("Waiting for Device '%s' to connect", deviceChange.Change.DeviceID)
+			return controller.Result{}, nil
+		}
+		log.Errorf("Error fetching Device '%s'", deviceChange.Change.DeviceID, err)
 		return controller.Result{}, err
 	} else if getProtocolState(device) != topo.ChannelState_CONNECTED {
-		return controller.Result{}, errors.NewNotFound("device '%s' is not connected", change.Change.DeviceID)
+		log.Warnf("Waiting for Device '%s' to connect", deviceChange.Change.DeviceID)
+		return controller.Result{}, nil
 	}
 
 	// Handle the change for each phase
-	switch change.Status.Phase {
+	switch deviceChange.Status.Phase {
 	case changetypes.Phase_CHANGE:
-		return r.reconcileChange(change)
+		return r.reconcileChange(deviceChange)
 	case changetypes.Phase_ROLLBACK:
-		return r.reconcileRollback(change)
+		return r.reconcileRollback(deviceChange)
 	}
 	return controller.Result{}, nil
 }
 
 // reconcileChange reconciles a CHANGE in the RUNNING state
-func (r *Reconciler) reconcileChange(change *devicechange.DeviceChange) (controller.Result, error) {
+func (r *Reconciler) reconcileChange(deviceChange *devicechange.DeviceChange) (controller.Result, error) {
 	// Attempt to apply the change to the device and update the change with the result
-	if err := r.doChange(change); err != nil {
-		change.Status.State = changetypes.State_FAILED
-		change.Status.Reason = changetypes.Reason_ERROR
-		change.Status.Message = err.Error()
-		log.Infof("Failing DeviceChange %v", change)
-	} else {
-		change.Status.State = changetypes.State_COMPLETE
-		log.Infof("Completing DeviceChange %s", change.ID)
-		log.Debug(change)
+	if complete, err := r.doChange(deviceChange); complete && err != nil {
+		deviceChange.Status.State = changetypes.State_FAILED
+		deviceChange.Status.Reason = changetypes.Reason_ERROR
+		deviceChange.Status.Message = err.Error()
+		log.Infof("Failing DeviceChange '%s': '%s'", deviceChange.ID, err.Error())
+	} else if err != nil {
+		log.Warnf("Applying DeviceChange '%s' failed. Retrying...", deviceChange.ID)
+		return controller.Result{}, err
+	} else if complete {
+		deviceChange.Status.State = changetypes.State_COMPLETE
+		log.Infof("Completing DeviceChange '%s'", deviceChange.ID)
 	}
 
 	// Update the change status in the store
-	if err := r.changes.Update(change); err != nil {
-		log.Warnf("error updating device change %s %v", err.Error(), change)
+	log.Debug(deviceChange)
+	if err := r.changes.Update(deviceChange); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
+		log.Errorf("Error updating DeviceChange '%s'", deviceChange.ID, err)
 		return controller.Result{}, err
 	}
 	return controller.Result{}, nil
 }
 
 // doChange pushes the given change to the device
-func (r *Reconciler) doChange(change *devicechange.DeviceChange) error {
-	log.Infof("Applying change %v ", change.ID)
-	log.Debugf("%v ", change.Change)
-	return r.translateAndSendChange(change.Change)
+func (r *Reconciler) doChange(deviceChange *devicechange.DeviceChange) (bool, error) {
+	log.Infof("Applying DeviceChange '%s' on Device '%s'", deviceChange.ID, deviceChange.Change.DeviceID)
+	return r.translateAndSendChange(deviceChange.Change)
 }
 
 // reconcileRollback reconciles a ROLLBACK in the RUNNING state
-func (r *Reconciler) reconcileRollback(change *devicechange.DeviceChange) (controller.Result, error) {
+func (r *Reconciler) reconcileRollback(deviceChange *devicechange.DeviceChange) (controller.Result, error) {
 	// Attempt to roll back the change to the device and update the change with the result
-	if err := r.doRollback(change); err != nil {
-		change.Status.State = changetypes.State_FAILED
-		change.Status.Reason = changetypes.Reason_ERROR
-		change.Status.Message = err.Error()
-		log.Infof("Failing DeviceChange %v", change)
-	} else {
-		change.Status.State = changetypes.State_COMPLETE
-		log.Infof("Completing DeviceChange %v", change.ID)
-		log.Debug(change)
+	if complete, err := r.doRollback(deviceChange); complete && err != nil {
+		deviceChange.Status.State = changetypes.State_FAILED
+		deviceChange.Status.Reason = changetypes.Reason_ERROR
+		deviceChange.Status.Message = err.Error()
+		log.Infof("Failing DeviceChange '%s': '%s'", deviceChange.ID, err.Error())
+	} else if err != nil {
+		log.Warnf("Rolling back DeviceChange '%s' failed. Retrying...", deviceChange.ID)
+		return controller.Result{}, err
+	} else if complete {
+		deviceChange.Status.State = changetypes.State_COMPLETE
+		log.Infof("Completing DeviceChange '%s'", deviceChange.ID)
 	}
 
 	// Update the change status in the store
-	if err := r.changes.Update(change); err != nil {
-		log.Warnf("error updating device change %s %v", err.Error(), change)
+	log.Debug(deviceChange)
+	if err := r.changes.Update(deviceChange); err != nil && !errors.IsNotFound(err) && !errors.IsConflict(err) {
+		log.Errorf("Error updating DeviceChange '%s'", deviceChange.ID, err)
 		return controller.Result{}, err
 	}
 	return controller.Result{}, nil
 }
 
 // doRollback rolls back a change on the device
-func (r *Reconciler) doRollback(change *devicechange.DeviceChange) error {
-	log.Infof("Executing Rollback for %s", change.ID)
-	log.Debug(change)
-	deltaChange, err := r.computeRollback(change)
+func (r *Reconciler) doRollback(deviceChange *devicechange.DeviceChange) (bool, error) {
+	log.Infof("Rolling back DeviceChange '%s' on Device '%s'", deviceChange.ID, deviceChange.Change.DeviceID)
+	deltaChange, err := r.computeRollback(deviceChange)
 	if err != nil {
-		return err
+		log.Errorf("Error computing rollback for DeviceChange '%s'", deviceChange.ID, err)
+		return false, err
 	}
-	log.Infof("Rolling back %s with %v", change.ID, deltaChange)
-	log.Debugf("%v", change)
 	return r.translateAndSendChange(deltaChange)
 }
 
-func (r *Reconciler) translateAndSendChange(change *devicechange.Change) error {
+func (r *Reconciler) translateAndSendChange(change *devicechange.Change) (bool, error) {
 	setRequest, err := values.NativeChangeToGnmiChange(change)
 	if err != nil {
-		return err
+		log.Errorf("Conversion of %+v to gNMI change failed", change, err)
+		return true, err
 	}
-	log.Infof("Reconciler set request for %s:%s, %v", change.DeviceID, change.DeviceVersion, setRequest)
 	deviceTarget, err := southbound.GetTarget(change.GetVersionedDeviceID())
 	if err != nil {
-		log.Infof("Device %s:%s (%s) is not connected, accepting change",
-			change.DeviceID, change.DeviceVersion, change.DeviceType)
-		return fmt.Errorf("device not connected %s:%s, error %s", change.DeviceID, change.DeviceVersion, err.Error())
+		if errors.IsNotFound(err) {
+			log.Warnf("Device %s:%s (%s) is not connected", change.DeviceID, change.DeviceVersion, change.DeviceType)
+			return false, err
+		}
+		log.Error(err)
+		return true, err
 	}
-	log.Infof("Target for device %s:%s %v %v", change.DeviceID, change.DeviceVersion, deviceTarget, deviceTarget.Context())
+	log.Debugf("Sending gNMI SetRequest %+v to Device %s:%s", setRequest, change.DeviceID, change.DeviceVersion)
 	setResponse, err := deviceTarget.Set(*deviceTarget.Context(), setRequest)
 	if err != nil {
-		log.Warn("Error while doing set: ", err)
-		return err
-	}
-	log.Info(change.DeviceID, " SetResponse ", setResponse)
-	return nil
-}
-
-func getProtocolState(device *topodevice.Device) topo.ChannelState {
-	// Find the gNMI protocol state for the device
-	var protocol *topo.ProtocolState
-	for _, p := range device.Protocols {
-		if p.Protocol == topo.Protocol_GNMI {
-			protocol = p
-			break
+		if err == context.Canceled || err == context.DeadlineExceeded {
+			return false, err
 		}
+		code := status.Code(err)
+		if code == codes.Unavailable ||
+			code == codes.Canceled ||
+			code == codes.DeadlineExceeded ||
+			code == codes.Aborted ||
+			code == codes.Unauthenticated ||
+			code == codes.PermissionDenied {
+			log.Warnf("Error in SetRequest %+v to Device %s:%s", setRequest, change.DeviceID, change.DeviceVersion, err)
+			return false, err
+		}
+		log.Errorf("Error in SetRequest %+v to Device %s:%s", setRequest, change.DeviceID, change.DeviceVersion, err)
+		return true, err
 	}
-	if protocol == nil {
-		return topo.ChannelState_UNKNOWN_CHANNEL_STATE
-	}
-	return protocol.ChannelState
+	log.Debugf("Received gNMI SetResponse %+v from Device %s:%s", setResponse, change.DeviceID, change.DeviceVersion)
+	return true, nil
 }
 
 // computeRollback returns a change containing the previous value for each path of the rollbackChange
@@ -218,8 +231,7 @@ func (r *Reconciler) computeRollback(deviceChange *devicechange.DeviceChange) (*
 	previousValues := make([]*devicechange.ChangeValue, 0)
 	prevValues, err := devicechangeutils.ExtractFullConfig(deviceChange.Change.GetVersionedDeviceID(), nil, r.changes, 0)
 	if err != nil {
-		return nil, fmt.Errorf("can't get last config on network config %s for target %s, %s",
-			string(deviceChange.ID), deviceChange.Change.DeviceID, err)
+		return nil, err
 	}
 	rollbackChange := deviceChange.Change
 	alreadyUpdated := make(map[string]struct{})
@@ -247,6 +259,21 @@ func (r *Reconciler) computeRollback(deviceChange *devicechange.DeviceChange) (*
 		Values:        previousValues,
 	}
 	return deltaChange, nil
+}
+
+func getProtocolState(device *topodevice.Device) topo.ChannelState {
+	// Find the gNMI protocol state for the device
+	var protocol *topo.ProtocolState
+	for _, p := range device.Protocols {
+		if p.Protocol == topo.Protocol_GNMI {
+			protocol = p
+			break
+		}
+	}
+	if protocol == nil {
+		return topo.ChannelState_UNKNOWN_CHANNEL_STATE
+	}
+	return protocol.ChannelState
 }
 
 var _ controller.Reconciler = &Reconciler{}
