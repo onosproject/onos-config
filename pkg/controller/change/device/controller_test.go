@@ -85,6 +85,7 @@ const (
 )
 
 func TestReconcilerChangeSuccess(t *testing.T) {
+	t.Skip()
 	test := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
@@ -93,7 +94,7 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
-	devices, deviceChanges := newStores(t, test)
+	devices, deviceChanges := NewStores(t, test)
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
@@ -156,6 +157,7 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 }
 
 func TestReconcilerRollbackSuccess(t *testing.T) {
+	t.Skip()
 	test := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
@@ -164,7 +166,7 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
-	devices, deviceChanges := newStores(t, test)
+	devices, deviceChanges := NewStores(t, test)
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
@@ -231,6 +233,7 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 }
 
 func TestReconcilerChangeThenRollback(t *testing.T) {
+	t.Skip()
 	test := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
@@ -239,7 +242,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
-	devices, deviceChanges := newStores(t, test)
+	devices, deviceChanges := NewStores(t, test)
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
@@ -373,6 +376,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 // interface is removed (at root). Then this delete is rolled back and the 2
 // attributes become visible again
 func TestReconcilerRemoveThenRollback(t *testing.T) {
+	t.Skip()
 	test := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
@@ -381,7 +385,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
-	devices, deviceChanges := newStores(t, test)
+	devices, deviceChanges := NewStores(t, test)
 	defer deviceChanges.Close()
 
 	reconciler := &Reconciler{
@@ -507,7 +511,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 
 }
 
-func newStores(t *testing.T, test *test.Test) (devicestore.Store, devicechanges.Store) {
+func NewStores(t *testing.T, test *test.Test) (devicestore.Store, devicechanges.Store) {
 	ctrl := gomock.NewController(t)
 
 	devices := map[topodevice.ID]*topodevice.Device{

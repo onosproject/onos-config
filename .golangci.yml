@@ -44,5 +44,7 @@ issues:
         - scopelint
     - path: pkg/manager
       text: "is unused"
+    - path: pkg
+      text: "is unused"
     - path: pkg/northbound/gnmi/subscribe_test.go
       text: "is unused"

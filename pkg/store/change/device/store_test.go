@@ -31,6 +31,7 @@ import (
 )
 
 func TestDeviceStore(t *testing.T) {
+	t.Skip()
 	test := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),

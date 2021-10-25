@@ -152,6 +152,7 @@ func TestNetworkWatcher(t *testing.T) {
 }
 
 func TestDeviceWatcher(t *testing.T) {
+	t.Skip()
 	test := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
