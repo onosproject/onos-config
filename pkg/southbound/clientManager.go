@@ -203,7 +203,7 @@ func (target *Target) GetWithString(ctx context.Context, request string) (*gpb.G
 func (target *Target) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error) {
 	response, err := target.Client().Get(ctx, request)
 	if err != nil {
-		return nil, fmt.Errorf("target returned RPC error for Get(%q) : %v", request.String(), err)
+		return nil, err
 	}
 	return response, nil
 }
@@ -216,7 +216,7 @@ func (target *Target) SetWithString(ctx context.Context, request string) (*gpb.S
 	r := &gpb.SetRequest{}
 	reqProto := &request
 	if err := proto.UnmarshalText(*reqProto, r); err != nil {
-		return nil, fmt.Errorf("unable to parse gnmi.SetRequest from %q : %v", *reqProto, err)
+		return nil, err
 	}
 	return target.Set(ctx, r)
 }
@@ -225,7 +225,7 @@ func (target *Target) SetWithString(ctx context.Context, request string) (*gpb.S
 func (target *Target) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.SetResponse, error) {
 	response, err := target.Client().Set(ctx, request)
 	if err != nil {
-		return nil, fmt.Errorf("target returned RPC error for Set(%q) : %v", request.String(), err)
+		return nil, err
 	}
 	return response, nil
 }
@@ -248,9 +248,6 @@ func (target *Target) Subscribe(ctx context.Context, request *gpb.SubscribeReque
 	q.ProtoHandler = handler
 	c := GnmiBaseClientFactory()
 	err = c.Subscribe(ctx, q, "gnmi")
-	if err != nil {
-		return fmt.Errorf("could not create a gNMI for subscription: %v", err)
-	}
 	return err
 }
 

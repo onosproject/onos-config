@@ -232,7 +232,7 @@ func listenForDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manag
 					log.Infof("Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
 					err = buildAndSendUpdate(pathGnmi, string(target), value.Value, value.Removed, stream)
 					if err != nil {
-						log.Error("Error in sending update path ", err)
+						log.Warn("Error in sending device update path ", err)
 						resChan <- result{success: false, err: err}
 					}
 				}
@@ -258,7 +258,7 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 
 			err = buildAndSendUpdate(pathGnmi, target, opStateChange.Value(), len(opStateChange.Value().Bytes) == 0, stream)
 			if err != nil {
-				log.Error("Error in sending update path ", err)
+				log.Warn("Error in sending state update path ", err)
 				resChan <- result{success: false, err: err}
 			}
 		}
