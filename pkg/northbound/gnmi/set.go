@@ -186,7 +186,12 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		log.Errorf("Error while setting config %s", errSet.Error())
 		return nil, status.Error(codes.Internal, errSet.Error())
 	}
-	change.WithUsername(userName)
+	if userName != "" {
+		change.WithUsername(userName)
+		if err = mgr.NetworkChangesStore.Update(change); err != nil {
+			return nil, status.Error(codes.Internal, errSet.Error())
+		}
+	}
 
 	// Store the highest known change index
 	s.mu.Lock()

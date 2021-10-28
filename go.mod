@@ -26,9 +26,9 @@ require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
-	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.8.7
-	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.8.7
-	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.8.7
+	github.com/onosproject/config-models/modelplugin/devicesim-1.0.0 v0.8.8
+	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.8.8
+	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.8.8
 	github.com/onosproject/helmit v0.6.18
 	github.com/onosproject/onos-api/go v0.7.110
 	github.com/onosproject/onos-config-model v1.0.1
