@@ -42,9 +42,11 @@ type mapTargetModels map[devicetype.ID]modelregistry.ReadWritePathMap
 
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
+	var userName string
 	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
 		log.Infof("gNMI Set() called by '%s (%s)'. Groups [%v]. Token %s",
 			md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
+		userName = md.Get("name")
 		// TODO replace the following with fine grained RBAC using OpenPolicyAgent Regos
 		if err := utils.TemporaryEvaluate(md); err != nil {
 			return nil, err
@@ -181,9 +183,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	// Creating and setting the config on the atomix Store
 	change, errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
 	if errSet != nil {
-		log.Errorf("Error while setting config in atomix %s", errSet.Error())
+		log.Errorf("Error while setting config %s", errSet.Error())
 		return nil, status.Error(codes.Internal, errSet.Error())
 	}
+	change.WithUsername(userName)
 
 	// Store the highest known change index
 	s.mu.Lock()
