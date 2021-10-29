@@ -34,7 +34,7 @@ require (
 	github.com/onosproject/onos-config-model v1.0.1
 	github.com/onosproject/onos-lib-go v0.7.22
 	github.com/onosproject/onos-test v0.6.5
-	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
+	github.com/openconfig/gnmi v0.0.0-20210914185457-51254b657b7d
 	github.com/openconfig/goyang v0.3.1
 	github.com/openconfig/ygot v0.12.4
 	github.com/pelletier/go-toml v1.4.0 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/yvasiyarov/go-metrics v0.0.0-20150112132944-c25f46c4b940 // indirect
 	github.com/yvasiyarov/gorelic v0.0.7 // indirect
 	github.com/yvasiyarov/newrelic_platform_go v0.0.0-20160601141957-9c099fbc30e9 // indirect
-	google.golang.org/grpc v1.37.0
+	google.golang.org/grpc v1.38.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.21.0
