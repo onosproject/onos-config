@@ -21,7 +21,7 @@ require (
 	github.com/onosproject/onos-config-model v1.0.1
 	github.com/onosproject/onos-lib-go v0.7.22
 	github.com/onosproject/onos-test v0.6.5
-	github.com/openconfig/gnmi v0.0.0-20210914185457-51254b657b7d
+	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
 	github.com/openconfig/goyang v0.3.1
 	github.com/openconfig/ygot v0.12.4
 	github.com/stretchr/testify v1.7.0
