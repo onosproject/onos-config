@@ -56,8 +56,12 @@ onos-config-docker: # @HELP build onos-config base Docker image
 		--build-arg ONOS_MAKE_TARGET=build \
 		-t ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
 
+config-model-registry-docker: # @HELP build config-model-registry Docker image
+	docker build . -f build/config-model-registry/Dockerfile \
+		-t onosproject/config-model-registry:${ONOS_CONFIG_VERSION}
+
 images: # @HELP build all Docker images
-images: build onos-config-docker
+images: build onos-config-docker config-model-registry-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images kind-only

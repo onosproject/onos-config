@@ -16,7 +16,7 @@ package synchronizer
 
 import (
 	"context"
-	configmodel "github.com/onosproject/onos-config-model/pkg/model"
+	configmodel "github.com/onosproject/onos-config/model"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"sync"
 	"time"

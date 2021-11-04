@@ -20,7 +20,7 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
-	configmodel "github.com/onosproject/onos-config-model/pkg/model"
+	configmodel "github.com/onosproject/onos-config/model"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"

@@ -1,0 +1,39 @@
+module test {
+  namespace "http://opennetworking.org/oran/test";
+  prefix t1;
+
+  organization
+    "Open Networking Foundation.";
+  contact
+    "Adib Rastegarnia";
+  description
+    "To generate JSON from this use command
+     pyang -f jtoxx test1.yang | python3 -m json.tool > test1.json
+     Copied from YangUIComponents project";
+
+  revision 2020-11-18 {
+    description
+      "Extended with new attributes on leaf2d, list2b";
+    reference
+      "RFC 6087";
+  }
+
+  container cont1a {
+    description
+      "The top level container";
+    leaf leaf1a {
+      type string {
+        length "1..80";
+      }
+      description
+        "display name to use in GUI or CLI";
+    }
+    leaf leaf2a {
+      type string {
+        length "1..255";
+      }
+      description
+        "user plane name";
+    }
+  }
+}

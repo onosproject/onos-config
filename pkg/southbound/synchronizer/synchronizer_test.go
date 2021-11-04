@@ -20,7 +20,7 @@ import (
 	"github.com/golang/mock/gomock"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
-	configmodel "github.com/onosproject/onos-config-model/pkg/model"
+	configmodel "github.com/onosproject/onos-config/model"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/events"

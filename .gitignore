@@ -16,3 +16,4 @@ onit
 *report*.xml
 *coverage*.xml
 *-output.out
+test/model/cache

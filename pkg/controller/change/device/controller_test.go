@@ -25,7 +25,7 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
-	configmodel "github.com/onosproject/onos-config-model/pkg/model"
+	configmodel "github.com/onosproject/onos-config/model"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"

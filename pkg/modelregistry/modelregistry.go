@@ -17,10 +17,9 @@ package modelregistry
 import (
 	"context"
 	"fmt"
-	configmodel "github.com/onosproject/onos-config-model/pkg/model"
-	plugincache "github.com/onosproject/onos-config-model/pkg/model/plugin/cache"
-	pluginmodule "github.com/onosproject/onos-config-model/pkg/model/plugin/module"
-	modelregistry "github.com/onosproject/onos-config-model/pkg/model/registry"
+	configmodel "github.com/onosproject/onos-config/model"
+	plugincache "github.com/onosproject/onos-config/model/plugin/cache"
+	modelregistry "github.com/onosproject/onos-config/model/registry"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"regexp"
 	"sort"
@@ -154,8 +153,7 @@ type ModelPlugin struct {
 
 // NewModelRegistry creates a new model registry
 func NewModelRegistry(config Config, plugins ...*ModelPlugin) (*ModelRegistry, error) {
-	resolver := pluginmodule.NewResolver(pluginmodule.ResolverConfig{Path: config.ModPath, Target: config.ModTarget})
-	cache, err := plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath}, resolver)
+	cache, err := plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath})
 	if err != nil {
 		return nil, err
 	}

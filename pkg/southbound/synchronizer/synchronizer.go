@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
-	configmodel "github.com/onosproject/onos-config-model/pkg/model"
+	configmodel "github.com/onosproject/onos-config/model"
 	"regexp"
 	"strings"
 	syncPrimitives "sync"
