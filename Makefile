@@ -51,17 +51,23 @@ helmit-gnmi: # @HELP run helmit tests locally
 gofmt: # @HELP run the Go format validation
 	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/ tests/)"
 
+onos-config-base-docker: # @HELP build onos-config base Docker image
+	docker build . -f build/onos-config-base/Dockerfile \
+		-t ${DOCKER_REPOSITORY}onos-config-base:${ONOS_CONFIG_VERSION}
+
 onos-config-docker: # @HELP build onos-config base Docker image
 	docker build . -f build/onos-config/Dockerfile \
 		--build-arg ONOS_MAKE_TARGET=build \
+		--build-arg ONOS_CONFIG_VERSION=${ONOS_CONFIG_VERSION} \
 		-t ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
 
 config-model-registry-docker: # @HELP build config-model-registry Docker image
 	docker build . -f build/config-model-registry/Dockerfile \
+		--build-arg ONOS_CONFIG_VERSION=${ONOS_CONFIG_VERSION} \
 		-t onosproject/config-model-registry:${ONOS_CONFIG_VERSION}
 
 images: # @HELP build all Docker images
-images: build onos-config-docker config-model-registry-docker
+images: build onos-config-base-docker onos-config-docker config-model-registry-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images kind-only
@@ -70,6 +76,7 @@ kind-only: # @HELP deploy the image without rebuilding first
 kind-only:
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
 	kind load docker-image --name ${KIND_CLUSTER_NAME} ${DOCKER_REPOSITORY}onos-config:${ONOS_CONFIG_VERSION}
+	kind load docker-image --name ${KIND_CLUSTER_NAME} ${DOCKER_REPOSITORY}config-model-registry:${ONOS_CONFIG_VERSION}
 
 all: build images
 

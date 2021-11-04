@@ -23,6 +23,7 @@ import (
 	"github.com/onosproject/onos-config/model"
 	plugincache "github.com/onosproject/onos-config/model/plugin/cache"
 	"github.com/onosproject/onos-config/model/plugin/compiler"
+	configmodule "github.com/onosproject/onos-config/model/plugin/module"
 	"github.com/onosproject/onos-config/model/registry"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -34,17 +35,22 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 )
 
-var log = logging.GetLogger("config-model-registry")
+var log = logging.GetLogger("config-model")
 
 const (
 	defaultCachePath    = "/etc/onos/plugins"
 	defaultRegistryPath = "/etc/onos/registry"
 	defaultModPath      = "/etc/onos/mod"
-	defaultBuildPath    = "/etc/onos/build"
+)
+
+var (
+	_, mainFile, _, _ = runtime.Caller(0)
+	modRoot           = filepath.Dir(filepath.Dir(filepath.Dir(mainFile)))
 )
 
 func main() {
@@ -56,7 +62,31 @@ func main() {
 
 func getCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "config-model-registry",
+		Use: "config-model",
+	}
+	cmd.AddCommand(getRegistryCmd())
+	cmd.AddCommand(getInitCmd())
+	return cmd
+}
+
+func getInitCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:          "init",
+		Short:        "Initializes the target module info",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			module := configmodule.NewModule(configmodule.Config{Path: modRoot})
+			if err := module.Init(); err != nil {
+				return err
+			}
+			return nil
+		},
+	}
+}
+
+func getRegistryCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "registry",
 	}
 	cmd.AddCommand(getRegistryServeCmd())
 	cmd.AddCommand(getRegistryGetCmd())
@@ -75,11 +105,10 @@ func getRegistryServeCmd() *cobra.Command {
 			caCert, _ := cmd.Flags().GetString("ca-cert")
 			cert, _ := cmd.Flags().GetString("cert")
 			key, _ := cmd.Flags().GetString("key")
+			modPath, _ := cmd.Flags().GetString("mod-path")
 			registryPath, _ := cmd.Flags().GetString("registry-path")
 			cachePath, _ := cmd.Flags().GetString("cache-path")
-			buildPath, _ := cmd.Flags().GetString("build-path")
 			port, _ := cmd.Flags().GetInt16("port")
-			skipCleanup, _ := cmd.Flags().GetBool("skipcleanup")
 
 			server := northbound.NewServer(&northbound.ServerConfig{
 				CaPath:      &caCert,
@@ -90,19 +119,25 @@ func getRegistryServeCmd() *cobra.Command {
 				SecurityCfg: &northbound.SecurityConfig{},
 			})
 
-			cacheConfig := plugincache.CacheConfig{
-				Path: cachePath,
+			moduleConfig := configmodule.Config{
+				Path: modPath,
 			}
-			cache, err := plugincache.NewPluginCache(cacheConfig)
+			module := configmodule.NewModule(moduleConfig)
+			err := module.Init()
 			if err != nil {
 				return err
 			}
 
-			compilerConfig := plugincompiler.CompilerConfig{
-				BuildPath:   buildPath,
-				SkipCleanUp: skipCleanup,
+			cacheConfig := plugincache.Config{
+				Path: cachePath,
 			}
-			compiler := plugincompiler.NewPluginCompiler(compilerConfig)
+			cache, err := plugincache.NewPluginCache(module, cacheConfig)
+			if err != nil {
+				return err
+			}
+
+			compilerConfig := plugincompiler.CompilerConfig{}
+			compiler := plugincompiler.NewPluginCompiler(module, compilerConfig)
 
 			registryConfig := modelregistry.Config{
 				Path: registryPath,
@@ -131,9 +166,9 @@ func getRegistryServeCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().Int16P("port", "p", 5151, "the registry service port")
+	cmd.Flags().String("mod-path", defaultModPath, "the path to the onos-config module for which to build plugins")
 	cmd.Flags().String("registry-path", defaultRegistryPath, "the path in which to store the registry models")
 	cmd.Flags().String("cache-path", defaultCachePath, "the path in which to store the plugins")
-	cmd.Flags().String("build-path", defaultBuildPath, "the path in which to store temporary build artifacts")
 	cmd.Flags().String("ca-cert", "", "the CA certificate")
 	cmd.Flags().String("cert", "", "the certificate")
 	cmd.Flags().String("key", "", "the key")

@@ -18,6 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/model"
 	plugincache "github.com/onosproject/onos-config/model/plugin/cache"
+	configmodule "github.com/onosproject/onos-config/model/plugin/module"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"path/filepath"
@@ -31,14 +32,17 @@ var (
 )
 
 func TestCompiler(t *testing.T) {
-	cache, err := plugincache.NewPluginCache(plugincache.CacheConfig{
+	module := configmodule.NewModule(configmodule.Config{Path: moduleRoot})
+	err := module.Init()
+	assert.NoError(t, err)
+
+	cache, err := plugincache.NewPluginCache(module, plugincache.Config{
 		Path: filepath.Join(moduleRoot, "test", "model", "cache"),
 	})
 	assert.NoError(t, err)
 
 	config := CompilerConfig{
 		TemplatePath: filepath.Join(moduleRoot, "model", "plugin", "compiler", "templates"),
-		BuildPath:    moduleRoot,
 	}
 
 	bytes, err := ioutil.ReadFile(filepath.Join(moduleRoot, "test", "model", "test@2020-11-18.yang"))
@@ -72,7 +76,7 @@ func TestCompiler(t *testing.T) {
 	err = entry.Lock(context.TODO())
 	assert.NoError(t, err)
 
-	compiler := NewPluginCompiler(config)
+	compiler := NewPluginCompiler(module, config)
 	err = compiler.CompilePlugin(modelInfo, entry.Path)
 	assert.NoError(t, err)
 

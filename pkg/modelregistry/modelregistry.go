@@ -19,6 +19,7 @@ import (
 	"fmt"
 	configmodel "github.com/onosproject/onos-config/model"
 	plugincache "github.com/onosproject/onos-config/model/plugin/cache"
+	configmodule "github.com/onosproject/onos-config/model/plugin/module"
 	modelregistry "github.com/onosproject/onos-config/model/registry"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"regexp"
@@ -137,10 +138,9 @@ func (rw ReadWritePathMap) TypeForPath(path string) (devicechange.ValueType, err
 
 // Config is the model registry configuration
 type Config struct {
-	ModPath      string
+	ModulePath   string
 	RegistryPath string
 	PluginPath   string
-	ModTarget    string
 }
 
 // ModelPlugin is a config model
@@ -153,7 +153,8 @@ type ModelPlugin struct {
 
 // NewModelRegistry creates a new model registry
 func NewModelRegistry(config Config, plugins ...*ModelPlugin) (*ModelRegistry, error) {
-	cache, err := plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath})
+	module := configmodule.NewModule(configmodule.Config{Path: config.ModulePath})
+	cache, err := plugincache.NewPluginCache(module, plugincache.Config{Path: config.PluginPath})
 	if err != nil {
 		return nil, err
 	}

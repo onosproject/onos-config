@@ -17,6 +17,7 @@ package plugincompiler
 import (
 	"fmt"
 	"github.com/onosproject/onos-config/model"
+	configmodule "github.com/onosproject/onos-config/model/plugin/module"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	_ "github.com/openconfig/gnmi/proto/gnmi" // gnmi
 	_ "github.com/openconfig/goyang/pkg/yang" // yang
@@ -55,7 +56,6 @@ const (
 )
 
 const (
-	defaultBuildPath    = "/build"
 	defaultTemplatePath = "model/plugin/compiler/templates"
 )
 
@@ -67,26 +67,24 @@ type TemplateInfo struct {
 // CompilerConfig is a plugin compiler configuration
 type CompilerConfig struct {
 	TemplatePath string
-	BuildPath    string
 	SkipCleanUp  bool
 }
 
 // NewPluginCompiler creates a new model plugin compiler
-func NewPluginCompiler(config CompilerConfig) *PluginCompiler {
-	if config.BuildPath == "" {
-		config.BuildPath = defaultBuildPath
-	}
+func NewPluginCompiler(module *configmodule.Module, config CompilerConfig) *PluginCompiler {
 	if config.TemplatePath == "" {
 		config.TemplatePath = defaultTemplatePath
 	}
 	return &PluginCompiler{
 		Config: config,
+		module: module,
 	}
 }
 
 // PluginCompiler is a model plugin compiler
 type PluginCompiler struct {
 	Config CompilerConfig
+	module *configmodule.Module
 }
 
 // CompilePlugin compiles a model plugin to the given path
@@ -94,7 +92,7 @@ func (c *PluginCompiler) CompilePlugin(model configmodel.ModelInfo, path string)
 	log.Infof("Compiling ConfigModel '%s/%s' to '%s'", model.Name, model.Version, path)
 
 	// Ensure the build directory exists
-	c.createDir(c.Config.BuildPath)
+	c.createDir(c.module.Path)
 
 	// Create the module files
 	c.createDir(c.getPluginDir(model))
@@ -153,7 +151,7 @@ func (c *PluginCompiler) getPluginMod(model configmodel.ModelInfo) string {
 func (c *PluginCompiler) compilePlugin(model configmodel.ModelInfo, path string) error {
 	log.Infof("Compiling plugin '%s'", path)
 	log.Infof("go build -o %s -buildmode=plugin %s", path, c.getPluginMod(model))
-	_, err := c.exec(c.Config.BuildPath, "go", "build", "-o", path, "-buildmode=plugin", c.getPluginMod(model))
+	_, err := c.exec(c.module.Path, "go", "build", "-o", path, "-buildmode=plugin", c.getPluginMod(model))
 	if err != nil {
 		log.Errorf("Compiling plugin '%s' failed: %s", path, err)
 		return err
@@ -268,7 +266,7 @@ func (c *PluginCompiler) generateConfigModel(model configmodel.ModelInfo) error 
 }
 
 func (c *PluginCompiler) getPluginDir(model configmodel.ModelInfo) string {
-	return filepath.Join(c.Config.BuildPath, "models", c.getSafeQualifiedName(model))
+	return filepath.Join(c.module.Path, "models", c.getSafeQualifiedName(model))
 }
 
 func (c *PluginCompiler) getPluginPath(model configmodel.ModelInfo, name string) string {

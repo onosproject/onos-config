@@ -15,13 +15,11 @@
 package plugincache
 
 import (
-	"crypto/md5"
 	"encoding/base64"
 	"fmt"
 	configmodel "github.com/onosproject/onos-config/model"
+	configmodule "github.com/onosproject/onos-config/model/plugin/module"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"github.com/rogpeppe/go-internal/modfile"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -41,35 +39,23 @@ var (
 	moduleRoot = filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(b))))
 )
 
-// CacheConfig is a plugin cache configuration
-type CacheConfig struct {
+// Config is a plugin cache configuration
+type Config struct {
 	Path string `yaml:"path" json:"path"`
 }
 
 // NewPluginCache creates a new plugin cache
-func NewPluginCache(config CacheConfig) (*PluginCache, error) {
+func NewPluginCache(module *configmodule.Module, config Config) (*PluginCache, error) {
 	if config.Path == "" {
 		config.Path = defaultPath
 	}
 
-	modPath := filepath.Join(moduleRoot, "go.mod")
-	modBytes, err := ioutil.ReadFile(modPath)
+	modHash, err := module.GetHash()
 	if err != nil {
 		return nil, err
 	}
 
-	mod, err := modfile.Parse(modPath, modBytes, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	modBytes, err = mod.Format()
-	if err != nil {
-		return nil, err
-	}
-	modHash := md5.Sum(modBytes)
-
-	config.Path = filepath.Join(config.Path, base64.RawURLEncoding.EncodeToString(modHash[:]))
+	config.Path = filepath.Join(config.Path, base64.RawURLEncoding.EncodeToString(modHash))
 	if _, err := os.Stat(config.Path); os.IsNotExist(err) {
 		if err := os.MkdirAll(config.Path, os.ModePerm); err != nil {
 			return nil, err
@@ -83,7 +69,7 @@ func NewPluginCache(config CacheConfig) (*PluginCache, error) {
 
 // PluginCache is a model plugin cache
 type PluginCache struct {
-	Config  CacheConfig
+	Config
 	entries map[string]*PluginEntry
 	mu      sync.RWMutex
 }
@@ -106,7 +92,7 @@ func (c *PluginCache) Entry(name configmodel.Name, version configmodel.Version) 
 		return entry
 	}
 
-	entry = newPluginEntry(c.Config.Path, name, version)
+	entry = newPluginEntry(c.Path, name, version)
 	c.entries[path] = entry
 	return entry
 }

@@ -1,18 +1,5 @@
-FROM golang:1.16-alpine3.13 AS build
+ARG ONOS_CONFIG_VERSION=latest
 
-RUN apk upgrade --update --no-cache && apk add --update make gcc musl-dev git
+FROM onosproject/onos-config-base:${ONOS_CONFIG_VERSION}
 
-RUN mkdir -p /build
-
-COPY go.mod go.sum /build/
-
-WORKDIR /build
-
-RUN go mod download -x
-
-ENV GO111MODULE=on
-
-COPY cmd/ /build/cmd/
-COPY model/ /build/model/
-
-ENTRYPOINT ["go", "run", "github.com/onosproject/onos-config/cmd/config-model-registry", "serve"]
+ENTRYPOINT ["go", "run", "github.com/onosproject/onos-config/cmd/config-model", "registry", "serve"]
