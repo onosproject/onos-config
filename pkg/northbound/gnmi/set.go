@@ -187,8 +187,13 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, status.Error(codes.Internal, errSet.Error())
 	}
 	if userName != "" {
-		change.WithUsername(userName)
-		if err = mgr.NetworkChangesStore.Update(change); err != nil {
+		ch, err := mgr.NetworkChangesStore.Get(change.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, errSet.Error())
+		}
+		ch.WithUsername(userName)
+		ch.Status.Incarnation++
+		if err = mgr.NetworkChangesStore.Update(ch); err != nil {
 			return nil, status.Error(codes.Internal, errSet.Error())
 		}
 	}

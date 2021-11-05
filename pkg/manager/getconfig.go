@@ -38,7 +38,6 @@ const OIDCServerURL = "OIDC_SERVER_URL"
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest (Atomix based)
 func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Version, deviceType devicetype.Type,
 	path string, revision networkchange.Revision, groups []string) ([]*devicechange.PathValue, error) {
-	log.Infof("Getting config for %s at %s", deviceID, path)
 	configValues, errGetTargetCfg := m.DeviceStateStore.Get(devicetype.NewVersionedID(deviceID, version), revision)
 	if errGetTargetCfg != nil {
 		log.Error("Error while extracting config", errGetTargetCfg)
