@@ -23,10 +23,13 @@ import (
 
 const defaultPath = "/etc/onos/mod"
 
+// Config is the onos-config module configuration
 type Config struct {
+	// Path is the path to the onos-config module root
 	Path string `json:"path"`
 }
 
+// NewModule creates a new plugin module
 func NewModule(config Config) *Module {
 	if config.Path == "" {
 		config.Path = defaultPath
@@ -36,12 +39,15 @@ func NewModule(config Config) *Module {
 	}
 }
 
+// Hash is a module hash
 type Hash []byte
 
+// Module provides information about the onos-config module
 type Module struct {
 	Config
 }
 
+// Init initializes the Config module info
 func (m *Module) Init() error {
 	modHashPath := filepath.Join(m.Path, "mod.hash")
 	_, err := ioutil.ReadFile(modHashPath)
@@ -74,6 +80,7 @@ func (m *Module) Init() error {
 	return nil
 }
 
+// GetHash gets the Config module hash
 func (m *Module) GetHash() (Hash, error) {
 	modHashPath := filepath.Join(m.Path, "mod.hash")
 	modHash, err := ioutil.ReadFile(modHashPath)

@@ -136,7 +136,7 @@ func getRegistryServeCmd() *cobra.Command {
 				return err
 			}
 
-			compilerConfig := plugincompiler.CompilerConfig{}
+			compilerConfig := plugincompiler.Config{}
 			compiler := plugincompiler.NewPluginCompiler(module, compilerConfig)
 
 			registryConfig := modelregistry.Config{

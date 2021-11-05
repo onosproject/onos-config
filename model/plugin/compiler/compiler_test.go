@@ -41,7 +41,7 @@ func TestCompiler(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	config := CompilerConfig{
+	config := Config{
 		TemplatePath: filepath.Join(moduleRoot, "model", "plugin", "compiler", "templates"),
 	}
 

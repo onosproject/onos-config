@@ -22,7 +22,6 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"time"
 )
@@ -32,11 +31,6 @@ var log = logging.GetLogger("config-model", "plugin", "cache")
 const (
 	defaultPath      = "/etc/onos/plugins"
 	lockAttemptDelay = 5 * time.Second
-)
-
-var (
-	_, b, _, _ = runtime.Caller(0)
-	moduleRoot = filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(b))))
 )
 
 // Config is a plugin cache configuration

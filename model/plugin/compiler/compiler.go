@@ -36,8 +36,6 @@ import (
 
 var log = logging.GetLogger("config-model", "compiler")
 
-const versionFile = "VERSION"
-
 const (
 	modelDir = "model"
 	yangDir  = "yang"
@@ -64,14 +62,13 @@ type TemplateInfo struct {
 	Model configmodel.ModelInfo
 }
 
-// CompilerConfig is a plugin compiler configuration
-type CompilerConfig struct {
+// Config is a plugin compiler configuration
+type Config struct {
 	TemplatePath string
-	SkipCleanUp  bool
 }
 
 // NewPluginCompiler creates a new model plugin compiler
-func NewPluginCompiler(module *configmodule.Module, config CompilerConfig) *PluginCompiler {
+func NewPluginCompiler(module *configmodule.Module, config Config) *PluginCompiler {
 	if config.TemplatePath == "" {
 		config.TemplatePath = defaultTemplatePath
 	}
@@ -83,7 +80,7 @@ func NewPluginCompiler(module *configmodule.Module, config CompilerConfig) *Plug
 
 // PluginCompiler is a model plugin compiler
 type PluginCompiler struct {
-	Config CompilerConfig
+	Config Config
 	module *configmodule.Module
 }
 
@@ -172,9 +169,6 @@ func (c *PluginCompiler) exec(dir string, name string, args ...string) (string, 
 }
 
 func (c *PluginCompiler) cleanBuild(model configmodel.ModelInfo) error {
-	if c.Config.SkipCleanUp {
-		return nil
-	}
 	if _, err := os.Stat(c.getPluginDir(model)); err == nil {
 		return os.RemoveAll(c.getPluginDir(model))
 	}
@@ -298,18 +292,6 @@ func (c *PluginCompiler) createDir(dir string) {
 		log.Debugf("Creating '%s'", dir)
 		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 			log.Errorf("Creating '%s' failed: %s", dir, err)
-		}
-	}
-}
-
-func (c *PluginCompiler) removeDir(dir string) {
-	if c.Config.SkipCleanUp {
-		return
-	}
-	if _, err := os.Stat(dir); err == nil {
-		log.Debugf("Removing '%s'", dir)
-		if err := os.RemoveAll(dir); err != nil {
-			log.Errorf("Removing '%s' failed: %s", dir, err)
 		}
 	}
 }
