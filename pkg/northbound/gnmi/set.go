@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"strings"
 	"time"
 
@@ -187,15 +188,19 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, status.Error(codes.Internal, errSet.Error())
 	}
 	if userName != "" {
+		s.mu.Lock()
 		ch, err := mgr.NetworkChangesStore.Get(change.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, errSet.Error())
+			s.mu.Unlock()
+			return nil, errors.NewInternal("Error getting NetworkChange %s: %s", change.ID, err.Error())
 		}
 		ch.WithUsername(userName)
 		ch.Status.Incarnation++
 		if err = mgr.NetworkChangesStore.Update(ch); err != nil {
-			return nil, status.Error(codes.Internal, errSet.Error())
+			s.mu.Unlock()
+			return nil, errors.NewInternal("Error updating %s with username. %s", change.ID, err.Error())
 		}
+		s.mu.Unlock()
 	}
 
 	// Store the highest known change index
