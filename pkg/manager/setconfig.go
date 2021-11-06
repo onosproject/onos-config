@@ -128,7 +128,8 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 
 // SetNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
 func (m *Manager) SetNetworkConfig(targetUpdates map[devicetype.ID]devicechange.TypedValueMap,
-	targetRemoves map[devicetype.ID][]string, deviceInfo map[devicetype.ID]cache.Info, netChangeID string) (*networkchange.NetworkChange, error) {
+	targetRemoves map[devicetype.ID][]string, deviceInfo map[devicetype.ID]cache.Info,
+	netChangeID string, username string) (*networkchange.NetworkChange, error) {
 	//TODO evaluate need of user and add it back if need be.
 
 	allDeviceChanges, errChanges := m.computeNetworkConfig(targetUpdates, targetRemoves, deviceInfo, "")
@@ -139,6 +140,7 @@ func (m *Manager) SetNetworkConfig(targetUpdates map[devicetype.ID]devicechange.
 	if errNetChange != nil {
 		return nil, errNetChange
 	}
+	newNetworkConfig.WithUsername(username)
 	//Writing to the atomix backed store too
 	errStoreChange := m.NetworkChangesStore.Create(newNetworkConfig)
 	if errStoreChange != nil {

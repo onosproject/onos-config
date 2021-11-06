@@ -43,10 +43,13 @@ type mapTargetModels map[devicetype.ID]modelregistry.ReadWritePathMap
 // Set implements gNMI Set
 func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	var userName string
-	if md := metautils.ExtractIncoming(ctx); md != nil && md.Get("name") != "" {
-		log.Infof("gNMI Set() called by '%s (%s)'. Groups [%v]. Token %s",
-			md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
-		userName = md.Get("name")
+	if md := metautils.ExtractIncoming(ctx); md != nil {
+		log.Infof("gNMI Set() called by '%s (%s) (%s)'. Groups [%v]",
+			md.Get("preferred_username"), md.Get("name"), md.Get("email"), md.Get("groups"))
+		userName = md.Get("preferred_username")
+		if userName == "" {
+			userName = md.Get("name")
+		}
 		// TODO replace the following with fine grained RBAC using OpenPolicyAgent Regos
 		if err := utils.TemporaryEvaluate(md); err != nil {
 			return nil, err
@@ -181,21 +184,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	// Creating and setting the config on the atomix Store
-	change, errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo, netCfgChangeName)
+	change, errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo,
+		netCfgChangeName, userName)
 	if errSet != nil {
 		log.Errorf("Error while setting config %s", errSet.Error())
 		return nil, status.Error(codes.Internal, errSet.Error())
-	}
-	if userName != "" {
-		ch, err := mgr.NetworkChangesStore.Get(change.ID)
-		if err != nil {
-			return nil, status.Error(codes.Internal, errSet.Error())
-		}
-		ch.WithUsername(userName)
-		ch.Status.Incarnation++
-		if err = mgr.NetworkChangesStore.Update(ch); err != nil {
-			return nil, status.Error(codes.Internal, errSet.Error())
-		}
 	}
 
 	// Store the highest known change index
