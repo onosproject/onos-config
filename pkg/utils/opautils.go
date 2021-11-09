@@ -31,9 +31,10 @@ func FormatInput(json []byte, groups []string) string {
 		}
 		groupsStr = fmt.Sprintf("%s\t\t\t\"%s\"%s\n", groupsStr, g, comma)
 	}
+	groupsStrReplace := strings.ReplaceAll(strings.ReplaceAll(groupsStr, "_", "^"), "-", "_")
 	jsonTreeReplace := strings.ReplaceAll(strings.ReplaceAll(string(json[2:]), "_", "^"), "-", "_")
 	return fmt.Sprintf("{\n\t\"input\": {\n\t\t\"groups\":[\n%s\t\t],\n%s\n}",
-		groupsStr, jsonTreeReplace)
+		groupsStrReplace, jsonTreeReplace)
 }
 
 // FormatOutput replace the '-' back in where they were
