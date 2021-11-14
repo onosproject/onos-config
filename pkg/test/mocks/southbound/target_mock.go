@@ -7,9 +7,9 @@ package southbound
 import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
-	southbound "github.com/onosproject/onos-config/pkg/southbound"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
+	southbound "github.com/onosproject/onos-config/pkg/southbound"
 	client "github.com/openconfig/gnmi/client"
 	gnmi "github.com/openconfig/gnmi/proto/gnmi"
 	reflect "reflect"

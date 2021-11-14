@@ -93,7 +93,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 			}()
 			return stream.NewContext(func() {}), nil
 		},
-	)
+	).AnyTimes()
 	// Data for default configuration
 
 	change1 := devicechange.Change{
@@ -591,7 +591,7 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 	testingRollback2, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback2")
 	assert.NoError(t, err, "Cant' retrieve Config")
 
-	mocks.MockStores.NetworkChangesStore.EXPECT().GetNext(testingRollback2.Index).Return(nil, nil)
+	mocks.MockStores.NetworkChangesStore.EXPECT().GetNext(testingRollback2.Index).Return(nil, nil).AnyTimes()
 
 	err = mgrTest.RollbackTargetConfig("TestingRollback2")
 	assert.NoError(t, err, "Can't roll back change")

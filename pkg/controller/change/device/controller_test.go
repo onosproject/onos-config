@@ -90,7 +90,7 @@ func TestReconcilerChangeSuccess(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -162,7 +162,7 @@ func TestReconcilerRollbackSuccess(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -238,7 +238,7 @@ func TestReconcilerChangeThenRollback(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -381,7 +381,7 @@ func TestReconcilerRemoveThenRollback(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 

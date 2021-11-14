@@ -27,8 +27,7 @@ func TestLeadershipStore(t *testing.T) {
 	test := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
-		test.WithPartitions(1),
-		test.WithDebugLogs())
+		test.WithPartitions(1))
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 

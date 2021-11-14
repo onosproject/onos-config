@@ -4,12 +4,12 @@ go 1.16
 
 require (
 	github.com/Pallinder/go-randomdata v1.2.0
-	github.com/atomix/atomix-go-client v0.5.20
-	github.com/atomix/atomix-go-framework v0.7.0
+	github.com/atomix/atomix-go-client v0.6.2
+	github.com/atomix/atomix-go-framework v0.10.1
 	github.com/atomix/go-client v0.4.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang/mock v1.4.4
+	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
@@ -25,7 +25,7 @@ require (
 	github.com/openconfig/goyang v0.3.1
 	github.com/openconfig/ygot v0.12.4
 	github.com/stretchr/testify v1.7.0
-	google.golang.org/grpc v1.38.0
+	google.golang.org/grpc v1.42.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/client-go v0.21.0
