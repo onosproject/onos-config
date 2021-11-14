@@ -16,3 +16,5 @@ onit
 *report*.xml
 *coverage*.xml
 *-output.out
+build/build-tools
+
