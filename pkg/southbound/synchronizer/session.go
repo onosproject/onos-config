@@ -21,8 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
-
 	"github.com/cenkalti/backoff"
 
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -50,7 +48,7 @@ const (
 type Session struct {
 	deviceStore               devicestore.Store
 	mastershipState           *mastership.Mastership
-	nodeID                    cluster.NodeID
+	nodeID                    string
 	connected                 bool
 	opStateChan               chan<- events.OperationalStateEvent
 	deviceResponseChan        chan events.DeviceResponse

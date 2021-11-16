@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 )
 
 // Term is a monotonically increasing mastership term
@@ -33,7 +32,7 @@ type Store interface {
 	io.Closer
 
 	// NodeID returns the local node identifier used in mastership elections
-	NodeID() cluster.NodeID
+	NodeID() string
 
 	// GetMastership returns the mastership for a given device
 	GetMastership(id device.ID) (*Mastership, error)
@@ -51,18 +50,18 @@ type Mastership struct {
 	Term Term
 
 	// Master is the NodeID of the master for the device
-	Master cluster.NodeID
+	Master string
 }
 
 // NewAtomixStore returns a new persistent Store
-func NewAtomixStore(client atomix.Client, nodeID cluster.NodeID) (Store, error) {
+func NewAtomixStore(client atomix.Client, nodeID string) (Store, error) {
 	return &atomixStore{
 		nodeID: nodeID,
 		newElection: func(id device.ID) (deviceMastershipElection, error) {
 			election, err := client.GetElection(
 				context.Background(),
 				"onos-config-masterships",
-				primitive.WithSessionID(string(nodeID)),
+				primitive.WithSessionID(nodeID),
 				primitive.WithClusterKey(string(id)))
 			if err != nil {
 				return nil, err
@@ -75,7 +74,7 @@ func NewAtomixStore(client atomix.Client, nodeID cluster.NodeID) (Store, error) 
 
 // atomixStore is the default implementation of the NetworkConfig store
 type atomixStore struct {
-	nodeID      cluster.NodeID
+	nodeID      string
 	newElection func(device.ID) (deviceMastershipElection, error)
 	elections   map[device.ID]deviceMastershipElection
 	mu          sync.RWMutex
@@ -103,7 +102,7 @@ func (s *atomixStore) getElection(deviceID device.ID) (deviceMastershipElection,
 	return election, nil
 }
 
-func (s *atomixStore) NodeID() cluster.NodeID {
+func (s *atomixStore) NodeID() string {
 	return s.nodeID
 }
 

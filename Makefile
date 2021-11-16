@@ -45,8 +45,13 @@ license_check: build-tools # @HELP examine and ensure license headers exist
 	@if [ ! -d "../build-tools" ]; then cd .. && git clone https://github.com/onosproject/build-tools.git; fi
 	./../build-tools/licensing/boilerplate.py -v --rootdir=${CURDIR}
 
-helmit-gnmi: # @HELP run helmit tests locally
-	(kubectl delete ns test || exit 0) && kubectl create ns test && helmit test -n test ./cmd/onos-config-tests -c ../onos-helm-charts --suite gnmi
+helmit-gnmi: # @HELP run helmit gnmi tests locally
+	(kubectl delete ns test || exit 0) && kubectl create ns test && helmit test -n test ./cmd/onos-config-tests --suite gnmi
+
+helmit-cli: # @HELP run helmit cli tests locally
+	(kubectl delete ns test || exit 0) && kubectl create ns test && helmit test -n test ./cmd/onos-config-tests --suite cli
+
+integration-tests: helmit-gnmi helmit-cli # @HELP run helmit integration tests locally
 
 gofmt: # @HELP run the Go format validation
 	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/ tests/)"

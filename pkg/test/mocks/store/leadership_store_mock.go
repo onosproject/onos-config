@@ -7,7 +7,6 @@ package store
 import (
 	gomock "github.com/golang/mock/gomock"
 	leadership "github.com/onosproject/onos-config/pkg/store/leadership"
-	cluster "github.com/onosproject/onos-lib-go/pkg/cluster"
 	reflect "reflect"
 )
 
@@ -49,10 +48,10 @@ func (mr *MockLeadershipStoreMockRecorder) Close() *gomock.Call {
 }
 
 // NodeID mocks base method
-func (m *MockLeadershipStore) NodeID() cluster.NodeID {
+func (m *MockLeadershipStore) NodeID() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeID")
-	ret0, _ := ret[0].(cluster.NodeID)
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
