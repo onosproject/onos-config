@@ -32,7 +32,7 @@ func TestReconciler_computeRollback_singleUpdate(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -80,7 +80,7 @@ func TestReconciler_computeRollback_mixedUpdate(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -150,7 +150,7 @@ func TestReconciler_computeRollback_addInterface(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -217,7 +217,7 @@ func TestReconciler_computeRollback_removeInterface(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 

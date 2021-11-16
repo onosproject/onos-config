@@ -50,7 +50,7 @@ func TestReconcileNetworkSnapshotPhaseState(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	assert.NoError(t, test.Start())
 	defer test.Stop()
 

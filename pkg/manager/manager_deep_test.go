@@ -271,7 +271,7 @@ func Test_GetNetworkConfig_Deep(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	testify.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -296,7 +296,7 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	testify.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -382,7 +382,7 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	testify.NoError(t, test.Start())
 	defer test.Stop()
 
@@ -460,7 +460,7 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1),
-		test.WithDebugLogs())
+	)
 	testify.NoError(t, test.Start())
 	defer test.Stop()
 

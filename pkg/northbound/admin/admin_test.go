@@ -112,7 +112,7 @@ func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 	mockNwChStore, ok := mgrTest.NetworkChangesStore.(*mockstore.MockNetworkChangesStore)
 	assert.Assert(t, ok, "casting mock store")
 
-	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.NewNotFound("change is not specified"))
+	mockNwChStore.EXPECT().Get(gomock.Any()).Return(nil, errors.NewNotFound("change is not specified")).AnyTimes()
 	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: ""})
 	assert.ErrorContains(t, err, "is empty")
 }

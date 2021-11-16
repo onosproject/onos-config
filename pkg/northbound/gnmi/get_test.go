@@ -33,7 +33,7 @@ import (
 // is in the Prefix
 func Test_getNoTarget(t *testing.T) {
 	server, _, mocks := setUp(t)
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	noTargetPath1 := gnmi.Path{Elem: make([]*gnmi.PathElem, 0)}
 	noTargetPath2 := gnmi.Path{Elem: make([]*gnmi.PathElem, 0)}
@@ -49,7 +49,7 @@ func Test_getNoTarget(t *testing.T) {
 
 func Test_getWithPrefixNoOtherPathsNoTarget(t *testing.T) {
 	server, _, mocks := setUp(t)
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found"))
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NoError(t, err)
@@ -75,7 +75,7 @@ func Test_getNoPathElemsJSON(t *testing.T) {
 			Version:  "1.0.0",
 		},
 	}).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	noPath1 := gnmi.Path{Target: "Device1"}
 
@@ -141,7 +141,7 @@ func Test_getNoPathElemsProto(t *testing.T) {
 			Version:  "1.0.0",
 		},
 	}).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	noPath1 := gnmi.Path{Target: "Device1"}
 
@@ -276,7 +276,7 @@ func Test_get2PathsWithPrefixJSON(t *testing.T) {
 			Version:  "1.0.0",
 		},
 	}).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NoError(t, err)
@@ -337,7 +337,7 @@ func Test_get2PathsWithPrefixProto(t *testing.T) {
 			Version:  "1.0.0",
 		},
 	}).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(4)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 
 	prefixPath, err := utils.ParseGNMIElements([]string{"cont1a", "cont2a"})
 	assert.NoError(t, err)
@@ -478,7 +478,7 @@ func Test_pathDoesNotExist(t *testing.T) {
 			Version:  "1.0.0",
 		},
 	}).AnyTimes()
-	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).Times(2)
+	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
 	mocks.MockStores.DeviceStateStore.EXPECT().Get(gomock.Any(), gomock.Any()).Return([]*devicechange.PathValue{}, nil).AnyTimes()
 	setUpListMock(mocks)
 
