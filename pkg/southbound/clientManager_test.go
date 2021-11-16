@@ -16,6 +16,10 @@ package southbound
 
 import (
 	"context"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
@@ -23,9 +27,6 @@ import (
 	"github.com/openconfig/gnmi/client"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
-	"strconv"
-	"testing"
-	"time"
 )
 
 var (
