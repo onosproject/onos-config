@@ -38,7 +38,6 @@ package main
 import (
 	"flag"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"os"
 	"time"
 
@@ -91,7 +90,7 @@ func main() {
 		log.Fatal("Cannot load leadership atomix store ", err)
 	}
 
-	mastershipStore, err := mastership.NewAtomixStore(atomixClient, cluster.NodeID(os.Getenv("POD_NAME")))
+	mastershipStore, err := mastership.NewAtomixStore(atomixClient, os.Getenv("POD_NAME"))
 	if err != nil {
 		log.Fatal("Cannot load mastership atomix store ", err)
 	}

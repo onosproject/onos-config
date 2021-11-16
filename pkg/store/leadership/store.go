@@ -23,7 +23,6 @@ import (
 
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/atomix/atomix-go-client/pkg/atomix/election"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 )
 
 // Term is a monotonically increasing leadership term
@@ -34,7 +33,7 @@ type Store interface {
 	io.Closer
 
 	// NodeID returns the local node identifier used in the election
-	NodeID() cluster.NodeID
+	NodeID() string
 
 	// IsLeader returns a boolean indicating whether the local node is the leader
 	IsLeader() (bool, error)
@@ -49,7 +48,7 @@ type Leadership struct {
 	Term Term
 
 	// Leader is the NodeID of the leader
-	Leader cluster.NodeID
+	Leader string
 }
 
 // NewAtomixStore returns a new persistent Store
@@ -96,7 +95,7 @@ func (s *atomixStore) enter() error {
 	s.mu.Lock()
 	s.leadership = &Leadership{
 		Term:   Term(term.Revision),
-		Leader: cluster.NodeID(term.Leader),
+		Leader: term.Leader,
 	}
 	s.mu.Unlock()
 
@@ -120,7 +119,7 @@ func (s *atomixStore) watchElection(ch <-chan election.Event) {
 		if s.leadership.Term != Term(event.Term.Revision) {
 			leadership = &Leadership{
 				Term:   Term(event.Term.Revision),
-				Leader: cluster.NodeID(event.Term.Leader),
+				Leader: event.Term.Leader,
 			}
 			s.leadership = leadership
 		}
@@ -136,14 +135,14 @@ func (s *atomixStore) watchElection(ch <-chan election.Event) {
 	}
 }
 
-func (s *atomixStore) NodeID() cluster.NodeID {
-	return cluster.NodeID(s.election.ID())
+func (s *atomixStore) NodeID() string {
+	return s.election.ID()
 }
 
 func (s *atomixStore) IsLeader() (bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if s.leadership == nil || string(s.leadership.Leader) != s.election.ID() {
+	if s.leadership == nil || s.leadership.Leader != s.election.ID() {
 		return false, nil
 	}
 	return true, nil

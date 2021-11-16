@@ -9,7 +9,7 @@ require (
 	github.com/atomix/go-client v0.4.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang/mock v1.5.0
+	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
@@ -19,7 +19,7 @@ require (
 	github.com/onosproject/helmit v0.6.18
 	github.com/onosproject/onos-api/go v0.7.110
 	github.com/onosproject/onos-config-model v1.0.1
-	github.com/onosproject/onos-lib-go v0.8.0
+	github.com/onosproject/onos-lib-go v0.8.1
 	github.com/onosproject/onos-test v0.6.5
 	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
 	github.com/openconfig/goyang v0.3.1

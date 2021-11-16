@@ -8,7 +8,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-config/pkg/device"
 	mastership "github.com/onosproject/onos-config/pkg/store/mastership"
-	cluster "github.com/onosproject/onos-lib-go/pkg/cluster"
 	reflect "reflect"
 )
 
@@ -50,10 +49,10 @@ func (mr *MockMastershipStoreMockRecorder) Close() *gomock.Call {
 }
 
 // NodeID mocks base method
-func (m *MockMastershipStore) NodeID() cluster.NodeID {
+func (m *MockMastershipStore) NodeID() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NodeID")
-	ret0, _ := ret[0].(cluster.NodeID)
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 

@@ -23,7 +23,6 @@ import (
 
 	"github.com/atomix/atomix-go-client/pkg/atomix/election"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 )
 
 // newDeviceMastershipElection creates and enters a new device mastership election
@@ -44,7 +43,7 @@ type deviceMastershipElection interface {
 	io.Closer
 
 	// NodeID returns the local node identifier used in the election
-	NodeID() cluster.NodeID
+	NodeID() string
 
 	// DeviceID returns the device for which this election provides mastership
 	DeviceID() topodevice.ID
@@ -65,8 +64,8 @@ type atomixDeviceMastershipElection struct {
 	mu         sync.RWMutex
 }
 
-func (e *atomixDeviceMastershipElection) NodeID() cluster.NodeID {
-	return cluster.NodeID(e.election.ID())
+func (e *atomixDeviceMastershipElection) NodeID() string {
+	return e.election.ID()
 }
 
 func (e *atomixDeviceMastershipElection) DeviceID() topodevice.ID {
@@ -93,7 +92,7 @@ func (e *atomixDeviceMastershipElection) enter() error {
 	e.mu.Lock()
 	e.mastership = &Mastership{
 		Device: e.deviceID,
-		Master: cluster.NodeID(term.Leader),
+		Master: term.Leader,
 		Term:   Term(term.Revision),
 	}
 	e.mu.Unlock()
@@ -115,7 +114,7 @@ func (e *atomixDeviceMastershipElection) watchElection(term election.Term, ch <-
 			mastership = &Mastership{
 				Device: e.deviceID,
 				Term:   Term(event.Term.Revision),
-				Master: cluster.NodeID(event.Term.Leader),
+				Master: event.Term.Leader,
 			}
 			e.mastership = mastership
 		}

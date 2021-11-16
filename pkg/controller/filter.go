@@ -19,7 +19,6 @@ import (
 
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	mastershipstore "github.com/onosproject/onos-config/pkg/store/mastership"
-	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	libcontroller "github.com/onosproject/onos-lib-go/pkg/controller"
 )
 
@@ -29,11 +28,11 @@ import (
 type MastershipFilter struct {
 	Store    mastershipstore.Store
 	Resolver DeviceResolver
-	nodeID   cluster.NodeID
+	nodeID   string
 }
 
 // GetNodeID returns node id
-func (f *MastershipFilter) getNodeID(mastershipstore mastershipstore.Store) cluster.NodeID {
+func (f *MastershipFilter) getNodeID(mastershipstore mastershipstore.Store) string {
 	if f.nodeID != "" {
 		return f.nodeID
 	}
@@ -53,7 +52,7 @@ func (f *MastershipFilter) Accept(id libcontroller.ID) bool {
 	}
 
 	// checks whether the local node is the master
-	if master == nil || string(master.Master) != string(f.getNodeID(f.Store)) {
+	if master == nil || master.Master != f.getNodeID(f.Store) {
 		return false
 	}
 
