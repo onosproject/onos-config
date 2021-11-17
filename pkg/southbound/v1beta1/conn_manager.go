@@ -26,7 +26,7 @@ type GNMIConnManager interface {
 	Get(ctx context.Context, id ConnID) (*GNMIConn, error)
 	List(ctx context.Context) ([]*GNMIConn, error)
 	Watch(ctx context.Context, ch chan<- *GNMIConn) error
-	open(conn *GNMIConn)
+	Open(conn *GNMIConn)
 }
 
 // NewGNMIConnManager creates a new gNMI connection manager
@@ -111,7 +111,7 @@ func (m *gnmiConnManager) Watch(ctx context.Context, ch chan<- *GNMIConn) error 
 	return nil
 }
 
-func (m *gnmiConnManager) open(conn *GNMIConn) {
+func (m *gnmiConnManager) Open(conn *GNMIConn) {
 	log.Infof("Opened gNMI connection %s", conn.ID)
 	m.connsMu.Lock()
 	m.conns[conn.ID] = conn

@@ -320,12 +320,12 @@ func TestGnmiConnManager_List(t *testing.T) {
 	conn1, err := NewGNMIConnection(target1)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn1)
-	mgr.open(conn1)
+	mgr.Open(conn1)
 
 	conn2, err := NewGNMIConnection(target2)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn2)
-	mgr.open(conn2)
+	mgr.Open(conn2)
 
 	connections, err := mgr.List(ctx)
 	assert.NoError(t, err)
@@ -355,10 +355,10 @@ func TestGnmiConnManager_Watch(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn2)
 
-	mgr.open(conn1)
+	mgr.Open(conn1)
 	event := <-ch
 	assert.Equal(t, event.ID, conn1.ID)
-	mgr.open(conn2)
+	mgr.Open(conn2)
 	event = <-ch
 	assert.Equal(t, event.ID, conn2.ID)
 	s.Stop()
