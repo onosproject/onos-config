@@ -4,11 +4,11 @@ ENV GO111MODULE=on
 ARG ONOS_MAKE_TARGET=build
 
 COPY Makefile go.mod go.sum /build/
-RUN go mod download -x
 
 COPY Makefile /build/
 COPY cmd/ /build/cmd/
 COPY pkg/ /build/pkg/
+COPY vendor/ /build/vendor/
 
 RUN make ${ONOS_MAKE_TARGET}
 
