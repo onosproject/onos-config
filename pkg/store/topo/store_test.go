@@ -42,12 +42,20 @@ func writeFile(file string, s string) {
 	}
 }
 
-func createTopoServer(t *testing.T) (Store, *topomgr.Manager, *atomix.Test, error) {
+var store Store
+
+func TestMain(m *testing.M) {
 	test := atomix.NewTest(rsm.NewProtocol(), atomix.WithReplicas(1), atomix.WithPartitions(1))
-	assert.NoError(t, test.Start())
+	err := test.Start()
+	if err != nil {
+		os.Exit(1)
+	}
+	defer test.Stop()
 
 	atomixClient, err := test.NewClient("test")
-	assert.NoError(t, err)
+	if err != nil {
+		os.Exit(1)
+	}
 
 	writeFile(caCrtFile, certs.OnfCaCrt)
 	writeFile(crtFile, certs.DefaultOnosConfigCrt)
@@ -56,22 +64,24 @@ func createTopoServer(t *testing.T) (Store, *topomgr.Manager, *atomix.Test, erro
 	config := topomgr.Config{CAPath: caCrtFile, CertPath: crtFile, KeyPath: keyFile, GRPCPort: 5150, AtomixClient: atomixClient}
 	mgr := topomgr.NewManager(config)
 	go mgr.Run()
+	defer mgr.Close()
 
 	opts, err := certs.HandleCertPaths(config.CAPath, config.KeyPath, config.CertPath, true)
-	assert.NoError(t, err)
+	if err != nil {
+		os.Exit(1)
+	}
 
-	store, err := NewStore("localhost:5150", opts...)
-	assert.NoError(t, err)
-	assert.NotNil(t, store)
+	store, err = NewStore("localhost:5150", opts...)
+	if err != nil {
+		os.Exit(1)
+	}
 
-	return store, mgr, test, err
+	code := m.Run()
+	os.Exit(code)
 }
 
 func Test_Basics(t *testing.T) {
-	store, mgr, test, err := createTopoServer(t)
-	defer test.Stop()
-	defer mgr.Close()
-
+	// Add one object to start
 	o1 := &topoapi.Object{
 		ID: "foo", Type: topoapi.Object_ENTITY, Obj: &topoapi.Object_Entity{
 			Entity: &topoapi.Entity{
@@ -79,17 +89,7 @@ func Test_Basics(t *testing.T) {
 			},
 		},
 	}
-
-	o2 := &topoapi.Object{
-		ID: "bar", Type: topoapi.Object_ENTITY, Obj: &topoapi.Object_Entity{
-			Entity: &topoapi.Entity{
-				KindID: "test",
-			},
-		},
-	}
-
-	// Add one object to start
-	err = store.Create(context.TODO(), o1)
+	err := store.Create(context.TODO(), o1)
 	assert.NoError(t, err)
 
 	// Setup a watch for topo events
@@ -103,6 +103,13 @@ func Test_Basics(t *testing.T) {
 	assert.Equal(t, e.Object.ID, topoapi.ID("foo"))
 
 	// Create another object
+	o2 := &topoapi.Object{
+		ID: "bar", Type: topoapi.Object_ENTITY, Obj: &topoapi.Object_Entity{
+			Entity: &topoapi.Entity{
+				KindID: "test",
+			},
+		},
+	}
 	err = store.Create(context.TODO(), o2)
 	assert.NoError(t, err)
 
@@ -119,6 +126,8 @@ func Test_Basics(t *testing.T) {
 
 	// Get an object
 	o3, err := store.Get(context.TODO(), topoapi.ID("bar"))
+	assert.NoError(t, err)
+	assert.Equal(t, o3.ID, topoapi.ID("bar"))
 
 	// Update an object with a new aspect
 	err = o3.SetAspect(&topoapi.Configurable{
@@ -145,4 +154,30 @@ func Test_Basics(t *testing.T) {
 	e = <-ch
 	assert.Equal(t, e.Type, topoapi.EventType_REMOVED)
 	assert.Equal(t, e.Object.ID, topoapi.ID("bar"))
+}
+
+func Test_BadAdd(t *testing.T) {
+	o := &topoapi.Object{ID: "bad", Type: topoapi.Object_ENTITY, Obj: &topoapi.Object_Entity{Entity: &topoapi.Entity{}}}
+	err := store.Create(context.TODO(), o)
+	assert.NoError(t, err)
+	err = store.Create(context.TODO(), o)
+	assert.Error(t, err)
+}
+
+func Test_BadUpdate(t *testing.T) {
+	o := &topoapi.Object{ID: "nothing", Type: topoapi.Object_ENTITY, Obj: &topoapi.Object_Entity{Entity: &topoapi.Entity{}}}
+	err := store.Update(context.TODO(), o)
+	assert.Error(t, err)
+}
+
+func Test_BadDelete(t *testing.T) {
+	o := &topoapi.Object{ID: "nothing", Type: topoapi.Object_ENTITY, Obj: &topoapi.Object_Entity{Entity: &topoapi.Entity{}}}
+	err := store.Delete(context.TODO(), o)
+	assert.Error(t, err)
+}
+
+func Test_BadGet(t *testing.T) {
+	o, err := store.Get(context.TODO(), topoapi.ID("nothing"))
+	assert.Error(t, err)
+	assert.Nil(t, o)
 }
