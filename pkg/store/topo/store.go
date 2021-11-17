@@ -128,6 +128,7 @@ func (s *targetStore) List(ctx context.Context, filters *topoapi.Filters) ([]top
 
 // Delete deletes topology object using the given ID
 func (s *targetStore) Delete(ctx context.Context, object *topoapi.Object) error {
+	log.Debugf("Deleting topology object with ID: %v", object.ID)
 	_, err := s.client.Delete(ctx, &topoapi.DeleteRequest{
 		ID:       object.GetID(),
 		Revision: object.GetRevision(),

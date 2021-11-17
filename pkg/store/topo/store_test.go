@@ -29,9 +29,9 @@ import (
 )
 
 const (
-	caCrtFile = "/tmp/onos-proxy.cacrt"
-	crtFile   = "/tmp/onos-proxy.crt"
-	keyFile   = "/tmp/onos-proxy.key"
+	caCrtFile = "/tmp/onos-topo.cacrt"
+	crtFile   = "/tmp/onos-topo.crt"
+	keyFile   = "/tmp/onos-topo.key"
 )
 
 func writeFile(file string, s string) {
