@@ -24,7 +24,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	gnmipb "github.com/openconfig/gnmi/proto/gnmi"
+	gpb "github.com/openconfig/gnmi/proto/gnmi"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
@@ -52,21 +52,21 @@ type testServer struct {
 	northbound.Service
 }
 
-func (s testServer) Capabilities(ctx context.Context, request *gnmipb.CapabilityRequest) (*gnmipb.CapabilityResponse, error) {
+func (s testServer) Capabilities(ctx context.Context, request *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
 	log.Infof("Capabilities request is received: %+v", request)
-	model1 := gnmipb.ModelData{
+	model1 := gpb.ModelData{
 		Name:         "model 1",
 		Organization: "ONF",
 		Version:      "1.1",
 	}
-	models := make([]*gnmipb.ModelData, 1)
+	models := make([]*gpb.ModelData, 1)
 	models[0] = &model1
 
-	encodings := make([]gnmipb.Encoding, 1)
-	var encoding1 = gnmipb.Encoding_ASCII
+	encodings := make([]gpb.Encoding, 1)
+	var encoding1 = gpb.Encoding_ASCII
 	encodings[0] = encoding1
 
-	response := gnmipb.CapabilityResponse{
+	response := gpb.CapabilityResponse{
 		SupportedModels:    models,
 		GNMIVersion:        "1.0",
 		SupportedEncodings: encodings,
@@ -74,40 +74,40 @@ func (s testServer) Capabilities(ctx context.Context, request *gnmipb.Capability
 	return &response, nil
 }
 
-func (s testServer) Get(ctx context.Context, request *gnmipb.GetRequest) (*gnmipb.GetResponse, error) {
+func (s testServer) Get(ctx context.Context, request *gpb.GetRequest) (*gpb.GetResponse, error) {
 	log.Infof("Get request is received: %+v", request)
-	response := gnmipb.GetResponse{}
-	response.Notification = make([]*gnmipb.Notification, len(request.Path))
+	response := gpb.GetResponse{}
+	response.Notification = make([]*gpb.Notification, len(request.Path))
 
 	for notificationIndex := range response.Notification {
-		response.Notification[notificationIndex] = &gnmipb.Notification{}
-		response.Notification[notificationIndex].Update = make([]*gnmipb.Update, 1)
-		update := &gnmipb.Update{}
+		response.Notification[notificationIndex] = &gpb.Notification{}
+		response.Notification[notificationIndex].Update = make([]*gpb.Update, 1)
+		update := &gpb.Update{}
 		update.Path = request.Path[notificationIndex]
-		update.Val = &gnmipb.TypedValue{}
-		update.Val.Value = &gnmipb.TypedValue_StringVal{StringVal: strconv.Itoa(notificationIndex)}
+		update.Val = &gpb.TypedValue{}
+		update.Val.Value = &gpb.TypedValue_StringVal{StringVal: strconv.Itoa(notificationIndex)}
 		response.Notification[notificationIndex].Update[notificationIndex] = update
 	}
 
 	return &response, nil
 }
 
-func (s testServer) Set(ctx context.Context, request *gnmipb.SetRequest) (*gnmipb.SetResponse, error) {
+func (s testServer) Set(ctx context.Context, request *gpb.SetRequest) (*gpb.SetResponse, error) {
 	log.Infof("Set request is received: %+v", request)
-	setUpdateResult := make([]*gnmipb.UpdateResult, 1)
-	setUpdateResult[0] = &gnmipb.UpdateResult{Op: gnmipb.UpdateResult_DELETE}
-	setResponse := gnmipb.SetResponse{Response: setUpdateResult}
+	setUpdateResult := make([]*gpb.UpdateResult, 1)
+	setUpdateResult[0] = &gpb.UpdateResult{Op: gpb.UpdateResult_DELETE}
+	setResponse := gpb.SetResponse{Response: setUpdateResult}
 	return &setResponse, nil
 }
 
-func (s testServer) Subscribe(server gnmipb.GNMI_SubscribeServer) error {
+func (s testServer) Subscribe(server gpb.GNMI_SubscribeServer) error {
 	return nil
 }
 
 // Register registers the Service with the gRPC server.
 func (s testServer) Register(r *grpc.Server) {
 	testServer := &testServer{}
-	gnmipb.RegisterGNMIServer(r, testServer)
+	gpb.RegisterGNMIServer(r, testServer)
 
 }
 
@@ -206,7 +206,7 @@ func TestGNMIConn_CapabilitiesWithString(t *testing.T) {
 
 	assert.NoError(t, capabilityErr)
 	assert.NotNil(t, capabilityResponse)
-	assert.Equal(t, capabilityResponse.SupportedEncodings[0], gnmipb.Encoding_ASCII)
+	assert.Equal(t, capabilityResponse.SupportedEncodings[0], gpb.Encoding_ASCII)
 	assert.Equal(t, capabilityResponse.GNMIVersion, "1.0")
 	assert.Equal(t, capabilityResponse.SupportedModels[0].Organization, "ONF")
 	s.Stop()
@@ -242,10 +242,10 @@ func TestGNMIConn_Get(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
-	allDevicesPath := gnmipb.Path{Elem: make([]*gnmipb.PathElem, 0), Target: "*"}
+	allDevicesPath := gpb.Path{Elem: make([]*gpb.PathElem, 0), Target: "*"}
 
-	request := gnmipb.GetRequest{
-		Path: []*gnmipb.Path{&allDevicesPath},
+	request := gpb.GetRequest{
+		Path: []*gpb.Path{&allDevicesPath},
 	}
 
 	resp, err := conn.Get(ctx, &request)
@@ -270,7 +270,7 @@ func TestGNMIConn_SetWithString(t *testing.T) {
 
 	assert.NoError(t, setErr)
 	assert.NotNil(t, setResponse)
-	assert.Equal(t, setResponse.Response[0].Op, gnmipb.UpdateResult_DELETE)
+	assert.Equal(t, setResponse.Response[0].Op, gpb.UpdateResult_DELETE)
 	s.Stop()
 }
 
@@ -284,7 +284,7 @@ func TestGNMIConn_Set(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
-	request := &gnmipb.SetRequest{}
+	request := &gpb.SetRequest{}
 
 	setResponse, err := conn.Set(ctx, request)
 	assert.NoError(t, err)
@@ -303,7 +303,7 @@ func TestGNMIConn_Capabilities(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
-	capResponse, err := conn.Capabilities(ctx, &gnmipb.CapabilityRequest{})
+	capResponse, err := conn.Capabilities(ctx, &gpb.CapabilityRequest{})
 	assert.NoError(t, err)
 	assert.Equal(t, capResponse.GNMIVersion, "1.0")
 	s.Stop()
@@ -397,7 +397,7 @@ func TestGNMIConn_NonTLS(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
-	capResponse, err := conn.Capabilities(ctx, &gnmipb.CapabilityRequest{})
+	capResponse, err := conn.Capabilities(ctx, &gpb.CapabilityRequest{})
 	assert.NoError(t, err)
 	assert.Equal(t, capResponse.GNMIVersion, "1.0")
 	s.Stop()
