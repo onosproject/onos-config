@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1beta1
+package v070
 
 import (
 	"context"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	"github.com/onosproject/onos-config/pkg/utils"
 
@@ -68,7 +70,7 @@ func (s testServer) Capabilities(ctx context.Context, request *gpb.CapabilityReq
 
 	response := gpb.CapabilityResponse{
 		SupportedModels:    models,
-		GNMIVersion:        "1.0",
+		GNMIVersion:        "0.7.0",
 		SupportedEncodings: encodings,
 	}
 	return &response, nil
@@ -207,7 +209,7 @@ func TestGNMIConn_CapabilitiesWithString(t *testing.T) {
 	assert.NoError(t, capabilityErr)
 	assert.NotNil(t, capabilityResponse)
 	assert.Equal(t, capabilityResponse.SupportedEncodings[0], gpb.Encoding_ASCII)
-	assert.Equal(t, capabilityResponse.GNMIVersion, "1.0")
+	assert.Equal(t, capabilityResponse.GNMIVersion, "0.7.0")
 	assert.Equal(t, capabilityResponse.SupportedModels[0].Organization, "ONF")
 	s.Stop()
 }
@@ -305,7 +307,7 @@ func TestGNMIConn_Capabilities(t *testing.T) {
 	assert.NoError(t, err)
 	capResponse, err := conn.Capabilities(ctx, &gpb.CapabilityRequest{})
 	assert.NoError(t, err)
-	assert.Equal(t, capResponse.GNMIVersion, "1.0")
+	assert.Equal(t, capResponse.GNMIVersion, "0.7.0")
 	s.Stop()
 }
 
@@ -320,12 +322,14 @@ func TestGnmiConnManager_List(t *testing.T) {
 	conn1, err := NewGNMIConnection(target1)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn1)
-	mgr.Open(conn1)
+	err = mgr.Add(conn1)
+	assert.NoError(t, err)
 
 	conn2, err := NewGNMIConnection(target2)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn2)
-	mgr.Open(conn2)
+	err = mgr.Add(conn2)
+	assert.NoError(t, err)
 
 	connections, err := mgr.List(ctx)
 	assert.NoError(t, err)
@@ -355,13 +359,61 @@ func TestGnmiConnManager_Watch(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn2)
 
-	mgr.Open(conn1)
+	err = mgr.Add(conn1)
+	assert.NoError(t, err)
 	event := <-ch
 	assert.Equal(t, event.ID, conn1.ID)
-	mgr.Open(conn2)
+
+	err = mgr.Add(conn1)
+	assert.Equal(t, true, errors.IsAlreadyExists(err))
+
+	err = mgr.Add(conn2)
+	assert.NoError(t, err)
 	event = <-ch
 	assert.Equal(t, event.ID, conn2.ID)
+	err = mgr.Remove(conn1.ID)
+	assert.NoError(t, err)
+	err = mgr.Remove(conn2.ID)
+	assert.NoError(t, err)
+
+	err = mgr.Remove(conn2.ID)
+	assert.Equal(t, true, errors.IsNotFound(err))
 	s.Stop()
+}
+
+func TestNewGNMIConnManager_AddAndRemove(t *testing.T) {
+	s := setup(t, getTLSServerConfig(t))
+	mgr := NewGNMIConnManager()
+
+	target1 := createTestTarget(t, target1, true)
+
+	conn1, err := NewGNMIConnection(target1)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn1)
+
+	target2 := createTestTarget(t, target2, true)
+	assert.NoError(t, err)
+	conn2, err := NewGNMIConnection(target2)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn2)
+
+	err = mgr.Add(conn1)
+	assert.NoError(t, err)
+
+	err = mgr.Add(conn1)
+	assert.Equal(t, true, errors.IsAlreadyExists(err))
+
+	err = mgr.Add(conn2)
+	assert.NoError(t, err)
+	err = mgr.Remove(conn1.ID)
+	assert.NoError(t, err)
+	err = mgr.Remove(conn2.ID)
+	assert.NoError(t, err)
+
+	err = mgr.Remove(conn2.ID)
+	assert.Equal(t, true, errors.IsNotFound(err))
+	s.Stop()
+
 }
 
 func TestGNMICon_GetBadRequest(t *testing.T) {
@@ -399,6 +451,6 @@ func TestGNMIConn_NonTLS(t *testing.T) {
 	assert.NoError(t, err)
 	capResponse, err := conn.Capabilities(ctx, &gpb.CapabilityRequest{})
 	assert.NoError(t, err)
-	assert.Equal(t, capResponse.GNMIVersion, "1.0")
+	assert.Equal(t, capResponse.GNMIVersion, "0.7.0")
 	s.Stop()
 }

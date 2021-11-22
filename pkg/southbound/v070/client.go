@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1beta1
+package v070
 
 import (
 	"context"
@@ -45,7 +45,8 @@ type GNMIClient struct {
 
 // Subscribe calls gNMI subscription based on a given query
 func (c *GNMIClient) Subscribe(ctx context.Context, q client.Query) error {
-	return c.client.Subscribe(ctx, q)
+	err := c.client.Subscribe(ctx, q)
+	return errors.FromGRPC(err)
 }
 
 // newGNMIClient creates a new gnmi client
@@ -65,17 +66,20 @@ func newGNMIClient(ctx context.Context, destination client.Destination) (*GNMICl
 
 // Capabilities returns the capabilities of the target
 func (c *GNMIClient) Capabilities(ctx context.Context, req *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
-	return c.client.Capabilities(ctx, req)
+	capResponse, err := c.client.Capabilities(ctx, req)
+	return capResponse, errors.FromGRPC(err)
 }
 
 // Get calls gnmi Get RPC
 func (c *GNMIClient) Get(ctx context.Context, req *gpb.GetRequest) (*gpb.GetResponse, error) {
-	return c.client.Get(ctx, req)
+	getResponse, err := c.client.Get(ctx, req)
+	return getResponse, errors.FromGRPC(err)
 }
 
 // Set calls gnmi Set RPC
 func (c *GNMIClient) Set(ctx context.Context, req *gpb.SetRequest) (*gpb.SetResponse, error) {
-	return c.client.Set(ctx, req)
+	setResponse, err := c.client.Set(ctx, req)
+	return setResponse, errors.FromGRPC(err)
 }
 
 // CapabilitiesWithString allows a request for the capabilities by a string - can be empty
@@ -85,7 +89,8 @@ func (c *GNMIClient) CapabilitiesWithString(ctx context.Context, request string)
 	if err := proto.UnmarshalText(*reqProto, r); err != nil {
 		return nil, errors.NewInvalid("unable to unmarshal gnmi.CapabilityRequest from %v : %v", *reqProto, err)
 	}
-	return c.client.Capabilities(ctx, r)
+	capResponse, err := c.client.Capabilities(ctx, r)
+	return capResponse, errors.FromGRPC(err)
 }
 
 // GetWithString can make a get request based on a given a string request - can be empty
@@ -98,7 +103,8 @@ func (c *GNMIClient) GetWithString(ctx context.Context, request string) (*gpb.Ge
 	if err := proto.UnmarshalText(*reqProto, r); err != nil {
 		return nil, errors.NewInvalid("unable to unmarshal gnmi getRequest from %v : %v", *reqProto, err)
 	}
-	return c.client.Get(ctx, r)
+	getResponse, err := c.client.Get(ctx, r)
+	return getResponse, errors.FromGRPC(err)
 }
 
 // SetWithString can make a set request based on a given string request
@@ -111,7 +117,8 @@ func (c *GNMIClient) SetWithString(ctx context.Context, request string) (*gpb.Se
 	if err := proto.UnmarshalText(*reqProto, r); err != nil {
 		return nil, errors.NewInvalid("unable to unmarshal gnmi set request from %v: %v", *reqProto, err)
 	}
-	return c.client.Set(ctx, r)
+	setResponse, err := c.client.Set(ctx, r)
+	return setResponse, errors.FromGRPC(err)
 }
 
 // Close closes the gnmi client

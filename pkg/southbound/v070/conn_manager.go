@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1beta1
+package v070
 
 import (
 	"context"
@@ -26,7 +26,8 @@ type GNMIConnManager interface {
 	Get(ctx context.Context, id ConnID) (*GNMIConn, error)
 	List(ctx context.Context) ([]*GNMIConn, error)
 	Watch(ctx context.Context, ch chan<- *GNMIConn) error
-	Open(conn *GNMIConn)
+	Add(conn *GNMIConn) error
+	Remove(connID ConnID) error
 }
 
 // NewGNMIConnManager creates a new gNMI connection manager
@@ -45,6 +46,42 @@ type gnmiConnManager struct {
 	watchers   []chan<- *GNMIConn
 	watchersMu sync.RWMutex
 	eventCh    chan *GNMIConn
+}
+
+// Add adding a new gNMI connection
+func (m *gnmiConnManager) Add(conn *GNMIConn) error {
+	log.Infof("Adding gNMI connection %s", conn.ID)
+	m.connsMu.Lock()
+	_, ok := m.conns[conn.ID]
+	if ok {
+		m.connsMu.Unlock()
+		return errors.NewAlreadyExists("gNMI connection %s already exists", conn.ID)
+	}
+	m.conns[conn.ID] = conn
+	m.connsMu.Unlock()
+	m.eventCh <- conn
+	go func() {
+		<-conn.Context().Done()
+		log.Infof("Context is cancelled, removing gNMI connection %s", conn.ID)
+		m.connsMu.Lock()
+		delete(m.conns, conn.ID)
+		m.connsMu.Unlock()
+		m.eventCh <- conn
+	}()
+	return nil
+}
+
+// Remove removing a gNMI connection
+func (m *gnmiConnManager) Remove(connID ConnID) error {
+	log.Infof("Removing gNMI connection %s", connID)
+	m.connsMu.Lock()
+	defer m.connsMu.Unlock()
+	_, ok := m.conns[connID]
+	if !ok {
+		return errors.NewNotFound("gNMI connection %s not found", connID)
+	}
+	delete(m.conns, connID)
+	return nil
 }
 
 func (m *gnmiConnManager) processEvents() {
@@ -109,23 +146,6 @@ func (m *gnmiConnManager) Watch(ctx context.Context, ch chan<- *GNMIConn) error 
 		m.watchersMu.Unlock()
 	}()
 	return nil
-}
-
-func (m *gnmiConnManager) Open(conn *GNMIConn) {
-	log.Infof("Opened gNMI connection %s", conn.ID)
-	m.connsMu.Lock()
-	m.conns[conn.ID] = conn
-	m.connsMu.Unlock()
-	m.eventCh <- conn
-	go func() {
-		<-conn.Context().Done()
-		log.Infof("Closing gNMI connection %s", conn.ID)
-		m.connsMu.Lock()
-		delete(m.conns, conn.ID)
-		m.connsMu.Unlock()
-		m.eventCh <- conn
-	}()
-
 }
 
 var _ GNMIConnManager = &gnmiConnManager{}
