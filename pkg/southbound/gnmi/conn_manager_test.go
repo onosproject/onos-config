@@ -345,7 +345,7 @@ func TestConnManager_Watch(t *testing.T) {
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	ch := make(chan *conn)
+	ch := make(chan Conn)
 
 	err := mgr.Watch(ctx, ch)
 	assert.NoError(t, err)

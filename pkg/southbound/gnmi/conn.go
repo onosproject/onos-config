@@ -134,7 +134,7 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 }
 
 // NewGNMIConnection creates a new gNMI connection
-func NewGNMIConnection(target *topoapi.Object) (*conn, error) {
+func NewGNMIConnection(target *topoapi.Object) (Conn, error) {
 	connID := ConnID(uri.NewURI(
 		uri.WithScheme("gnmi"),
 		uri.WithOpaque(string(target.ID))).String())
