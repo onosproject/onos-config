@@ -21,35 +21,35 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 )
 
-// GNMIConnManager gNMI connection manager
-type GNMIConnManager interface {
-	Get(ctx context.Context, id ConnID) (*GNMIConn, error)
-	List(ctx context.Context) ([]*GNMIConn, error)
-	Watch(ctx context.Context, ch chan<- *GNMIConn) error
-	Add(conn *GNMIConn) error
+// ConnManager gNMI connection manager
+type ConnManager interface {
+	Get(ctx context.Context, id ConnID) (*Conn, error)
+	List(ctx context.Context) ([]*Conn, error)
+	Watch(ctx context.Context, ch chan<- *Conn) error
+	Add(conn *Conn) error
 	Remove(connID ConnID) error
 }
 
-// NewGNMIConnManager creates a new gNMI connection manager
-func NewGNMIConnManager() GNMIConnManager {
-	mgr := &gnmiConnManager{
-		conns:   make(map[ConnID]*GNMIConn),
-		eventCh: make(chan *GNMIConn),
+// NewConnManager creates a new gNMI connection manager
+func NewConnManager() ConnManager {
+	mgr := &connManager{
+		conns:   make(map[ConnID]*Conn),
+		eventCh: make(chan *Conn),
 	}
 	go mgr.processEvents()
 	return mgr
 }
 
-type gnmiConnManager struct {
-	conns      map[ConnID]*GNMIConn
+type connManager struct {
+	conns      map[ConnID]*Conn
 	connsMu    sync.RWMutex
-	watchers   []chan<- *GNMIConn
+	watchers   []chan<- *Conn
 	watchersMu sync.RWMutex
-	eventCh    chan *GNMIConn
+	eventCh    chan *Conn
 }
 
 // Add adding a new gNMI connection
-func (m *gnmiConnManager) Add(conn *GNMIConn) error {
+func (m *connManager) Add(conn *Conn) error {
 	log.Infof("Adding gNMI connection %s", conn.ID)
 	m.connsMu.Lock()
 	_, ok := m.conns[conn.ID]
@@ -72,7 +72,7 @@ func (m *gnmiConnManager) Add(conn *GNMIConn) error {
 }
 
 // Remove removing a gNMI connection
-func (m *gnmiConnManager) Remove(connID ConnID) error {
+func (m *connManager) Remove(connID ConnID) error {
 	log.Infof("Removing gNMI connection %s", connID)
 	m.connsMu.Lock()
 	defer m.connsMu.Unlock()
@@ -84,13 +84,13 @@ func (m *gnmiConnManager) Remove(connID ConnID) error {
 	return nil
 }
 
-func (m *gnmiConnManager) processEvents() {
+func (m *connManager) processEvents() {
 	for conn := range m.eventCh {
 		m.processEvent(conn)
 	}
 }
 
-func (m *gnmiConnManager) processEvent(conn *GNMIConn) {
+func (m *connManager) processEvent(conn *Conn) {
 	log.Infof("Notifying gNMI connection: %s", conn.ID)
 	m.watchersMu.RLock()
 	for _, watcher := range m.watchers {
@@ -100,7 +100,7 @@ func (m *gnmiConnManager) processEvent(conn *GNMIConn) {
 }
 
 // Get returns a gNMI connection based on a given connection ID
-func (m *gnmiConnManager) Get(ctx context.Context, connID ConnID) (*GNMIConn, error) {
+func (m *connManager) Get(ctx context.Context, connID ConnID) (*Conn, error) {
 	m.connsMu.RLock()
 	defer m.connsMu.RUnlock()
 	conn, ok := m.conns[connID]
@@ -111,10 +111,10 @@ func (m *gnmiConnManager) Get(ctx context.Context, connID ConnID) (*GNMIConn, er
 }
 
 // List lists all  gNMI connections
-func (m *gnmiConnManager) List(ctx context.Context) ([]*GNMIConn, error) {
+func (m *connManager) List(ctx context.Context) ([]*Conn, error) {
 	m.connsMu.RLock()
 	defer m.connsMu.RUnlock()
-	conns := make([]*GNMIConn, 0, len(m.conns))
+	conns := make([]*Conn, 0, len(m.conns))
 	for _, conn := range m.conns {
 		conns = append(conns, conn)
 	}
@@ -122,7 +122,7 @@ func (m *gnmiConnManager) List(ctx context.Context) ([]*GNMIConn, error) {
 }
 
 // Watch watches gNMI connection changes
-func (m *gnmiConnManager) Watch(ctx context.Context, ch chan<- *GNMIConn) error {
+func (m *connManager) Watch(ctx context.Context, ch chan<- *Conn) error {
 	m.watchersMu.Lock()
 	m.connsMu.Lock()
 	m.watchers = append(m.watchers, ch)
@@ -136,7 +136,7 @@ func (m *gnmiConnManager) Watch(ctx context.Context, ch chan<- *GNMIConn) error 
 
 		<-ctx.Done()
 		m.watchersMu.Lock()
-		watchers := make([]chan<- *GNMIConn, 0, len(m.watchers)-1)
+		watchers := make([]chan<- *Conn, 0, len(m.watchers)-1)
 		for _, watcher := range watchers {
 			if watcher != ch {
 				watchers = append(watchers, watcher)
@@ -148,4 +148,4 @@ func (m *gnmiConnManager) Watch(ctx context.Context, ch chan<- *GNMIConn) error 
 	return nil
 }
 
-var _ GNMIConnManager = &gnmiConnManager{}
+var _ ConnManager = &connManager{}

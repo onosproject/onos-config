@@ -20,7 +20,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
-	"github.com/openconfig/gnmi/client"
+	baseClient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
@@ -34,30 +34,30 @@ type Client interface {
 	GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error)
 	Set(ctx context.Context, r *gpb.SetRequest) (*gpb.SetResponse, error)
 	SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error)
-	Subscribe(ctx context.Context, q client.Query) error
+	Subscribe(ctx context.Context, q baseClient.Query) error
 	Close() error
 }
 
-// GNMIClient gnmi client
-type GNMIClient struct {
+// client gnmi client
+type client struct {
 	client *gclient.Client
 }
 
 // Subscribe calls gNMI subscription based on a given query
-func (c *GNMIClient) Subscribe(ctx context.Context, q client.Query) error {
+func (c *client) Subscribe(ctx context.Context, q baseClient.Query) error {
 	err := c.client.Subscribe(ctx, q)
 	return errors.FromGRPC(err)
 }
 
 // newGNMIClient creates a new gnmi client
-func newGNMIClient(ctx context.Context, destination client.Destination) (*GNMIClient, error) {
-	client, err := gclient.New(ctx, destination)
+func newGNMIClient(ctx context.Context, destination baseClient.Destination) (*client, error) {
+	cl, err := gclient.New(ctx, destination)
 	if err != nil {
 		return nil, err
 	}
 
-	gnmiClient := &GNMIClient{
-		client: client.(*gclient.Client),
+	gnmiClient := &client{
+		client: cl.(*gclient.Client),
 	}
 
 	return gnmiClient, nil
@@ -65,25 +65,25 @@ func newGNMIClient(ctx context.Context, destination client.Destination) (*GNMICl
 }
 
 // Capabilities returns the capabilities of the target
-func (c *GNMIClient) Capabilities(ctx context.Context, req *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
+func (c *client) Capabilities(ctx context.Context, req *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
 	capResponse, err := c.client.Capabilities(ctx, req)
 	return capResponse, errors.FromGRPC(err)
 }
 
 // Get calls gnmi Get RPC
-func (c *GNMIClient) Get(ctx context.Context, req *gpb.GetRequest) (*gpb.GetResponse, error) {
+func (c *client) Get(ctx context.Context, req *gpb.GetRequest) (*gpb.GetResponse, error) {
 	getResponse, err := c.client.Get(ctx, req)
 	return getResponse, errors.FromGRPC(err)
 }
 
 // Set calls gnmi Set RPC
-func (c *GNMIClient) Set(ctx context.Context, req *gpb.SetRequest) (*gpb.SetResponse, error) {
+func (c *client) Set(ctx context.Context, req *gpb.SetRequest) (*gpb.SetResponse, error) {
 	setResponse, err := c.client.Set(ctx, req)
 	return setResponse, errors.FromGRPC(err)
 }
 
 // CapabilitiesWithString allows a request for the capabilities by a string - can be empty
-func (c *GNMIClient) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
+func (c *client) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
 	r := &gpb.CapabilityRequest{}
 	reqProto := &request
 	if err := proto.UnmarshalText(*reqProto, r); err != nil {
@@ -94,7 +94,7 @@ func (c *GNMIClient) CapabilitiesWithString(ctx context.Context, request string)
 }
 
 // GetWithString can make a get request based on a given a string request - can be empty
-func (c *GNMIClient) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
+func (c *client) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
 	if request == "" {
 		return nil, errors.NewInvalid("cannot get an empty request")
 	}
@@ -108,7 +108,7 @@ func (c *GNMIClient) GetWithString(ctx context.Context, request string) (*gpb.Ge
 }
 
 // SetWithString can make a set request based on a given string request
-func (c *GNMIClient) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
+func (c *client) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
 	if request == "" {
 		return nil, errors.NewInvalid("cannot set an empty request")
 	}
@@ -122,8 +122,8 @@ func (c *GNMIClient) SetWithString(ctx context.Context, request string) (*gpb.Se
 }
 
 // Close closes the gnmi client
-func (c *GNMIClient) Close() error {
+func (c *client) Close() error {
 	return c.client.Close()
 }
 
-var _ Client = &GNMIClient{}
+var _ Client = &client{}

@@ -28,7 +28,7 @@ import (
 	"crypto/tls"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"github.com/openconfig/gnmi/client"
+	baseClient "github.com/openconfig/gnmi/client"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
@@ -37,21 +37,21 @@ var log = logging.GetLogger("southbound", "connection", "manager")
 // ConnID connection ID
 type ConnID string
 
-// Conn gNMI connection interface
-type Conn interface {
+// Connection gNMI connection interface
+type Connection interface {
 	Client
 	Context() context.Context
 }
 
-// GNMIConn gNMI Connection
-type GNMIConn struct {
-	client *GNMIClient
+// Conn gNMI Connection
+type Conn struct {
+	client *client
 	ID     ConnID
 	ctx    context.Context
 	cancel context.CancelFunc
 }
 
-func newDestination(target *topoapi.Object) (*client.Destination, error) {
+func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 	asset := &topoapi.Asset{}
 	err := target.GetAspect(asset)
 	if err != nil {
@@ -76,7 +76,7 @@ func newDestination(target *topoapi.Object) (*client.Destination, error) {
 		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.TLSOptions' aspect to work with onos-config", target.ID)
 	}
 
-	destination := &client.Destination{
+	destination := &baseClient.Destination{
 		Addrs:   []string{configurable.Address},
 		Target:  string(target.ID),
 		Timeout: time.Duration(configurable.Timeout),
@@ -133,7 +133,7 @@ func newDestination(target *topoapi.Object) (*client.Destination, error) {
 }
 
 // NewGNMIConnection creates a new gNMI connection
-func NewGNMIConnection(target *topoapi.Object) (*GNMIConn, error) {
+func NewGNMIConnection(target *topoapi.Object) (*Conn, error) {
 	connID := ConnID(uri.NewURI(
 		uri.WithScheme("gnmi"),
 		uri.WithOpaque(string(target.ID))).String())
@@ -162,7 +162,7 @@ func NewGNMIConnection(target *topoapi.Object) (*GNMIConn, error) {
 		return nil, err
 	}
 
-	return &GNMIConn{
+	return &Conn{
 		client: gnmiClient,
 		ID:     connID,
 		ctx:    ctx,
@@ -171,48 +171,48 @@ func NewGNMIConnection(target *topoapi.Object) (*GNMIConn, error) {
 }
 
 // CapabilitiesWithString calls gNMI Capabilities based on a given string request
-func (c *GNMIConn) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
+func (c *Conn) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
 	return c.client.CapabilitiesWithString(ctx, request)
 }
 
 // GetWithString calls gNMI Get based on a given string request
-func (c *GNMIConn) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
+func (c *Conn) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
 	return c.client.GetWithString(ctx, request)
 }
 
 // SetWithString calls gNMI Set based on a given string request
-func (c *GNMIConn) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
+func (c *Conn) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
 	return c.client.SetWithString(ctx, request)
 }
 
 // Capabilities calls gNMI Capabilities RPC
-func (c *GNMIConn) Capabilities(ctx context.Context, req *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
+func (c *Conn) Capabilities(ctx context.Context, req *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
 	return c.client.Capabilities(ctx, req)
 }
 
 // Get calls gNMI Get RPC
-func (c *GNMIConn) Get(ctx context.Context, req *gpb.GetRequest) (*gpb.GetResponse, error) {
+func (c *Conn) Get(ctx context.Context, req *gpb.GetRequest) (*gpb.GetResponse, error) {
 	return c.client.Get(ctx, req)
 }
 
 // Set calls gNMI Set RPC
-func (c *GNMIConn) Set(ctx context.Context, req *gpb.SetRequest) (*gpb.SetResponse, error) {
+func (c *Conn) Set(ctx context.Context, req *gpb.SetRequest) (*gpb.SetResponse, error) {
 	return c.client.Set(ctx, req)
 }
 
 // Subscribe calls gNMI Subscribe RPC
-func (c *GNMIConn) Subscribe(ctx context.Context, q client.Query) error {
+func (c *Conn) Subscribe(ctx context.Context, q baseClient.Query) error {
 	return c.client.Subscribe(ctx, q)
 }
 
 // Close closes a gNMI connection
-func (c *GNMIConn) Close() error {
+func (c *Conn) Close() error {
 	return c.client.Close()
 }
 
 // Context returns context
-func (c *GNMIConn) Context() context.Context {
+func (c *Conn) Context() context.Context {
 	return c.ctx
 }
 
-var _ Conn = &GNMIConn{}
+var _ Connection = &Conn{}

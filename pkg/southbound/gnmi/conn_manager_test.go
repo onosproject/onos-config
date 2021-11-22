@@ -311,9 +311,9 @@ func TestGNMIConn_Capabilities(t *testing.T) {
 	s.Stop()
 }
 
-func TestGnmiConnManager_List(t *testing.T) {
+func TestConnManager_List(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewGNMIConnManager()
+	mgr := NewConnManager()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
@@ -338,14 +338,14 @@ func TestGnmiConnManager_List(t *testing.T) {
 
 }
 
-func TestGnmiConnManager_Watch(t *testing.T) {
+func TestConnManager_Watch(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewGNMIConnManager()
+	mgr := NewConnManager()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	ch := make(chan *GNMIConn)
+	ch := make(chan *Conn)
 
 	err := mgr.Watch(ctx, ch)
 	assert.NoError(t, err)
@@ -381,9 +381,9 @@ func TestGnmiConnManager_Watch(t *testing.T) {
 	s.Stop()
 }
 
-func TestNewGNMIConnManager_AddAndRemove(t *testing.T) {
+func TestNewConnManager_AddAndRemove(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewGNMIConnManager()
+	mgr := NewConnManager()
 
 	target1 := createTestTarget(t, target1, true)
 
