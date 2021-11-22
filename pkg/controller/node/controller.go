@@ -77,7 +77,7 @@ func (r *Reconciler) createOnosConfigEntity(ctx context.Context, onosConfigID to
 		Expiration: &expiration,
 	}
 
-	err = object.SetAspect(leaseAspect)
+	err := object.SetAspect(leaseAspect)
 	if err != nil {
 		return err
 	}
