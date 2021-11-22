@@ -23,48 +23,48 @@ import (
 
 // ConnManager gNMI connection manager
 type ConnManager interface {
-	Get(ctx context.Context, id ConnID) (*Conn, error)
-	List(ctx context.Context) ([]*Conn, error)
-	Watch(ctx context.Context, ch chan<- *Conn) error
-	Add(conn *Conn) error
+	Get(ctx context.Context, id ConnID) (*conn, error)
+	List(ctx context.Context) ([]*conn, error)
+	Watch(ctx context.Context, ch chan<- *conn) error
+	Add(conn *conn) error
 	Remove(connID ConnID) error
 }
 
 // NewConnManager creates a new gNMI connection manager
 func NewConnManager() ConnManager {
 	mgr := &connManager{
-		conns:   make(map[ConnID]*Conn),
-		eventCh: make(chan *Conn),
+		conns:   make(map[ConnID]*conn),
+		eventCh: make(chan *conn),
 	}
 	go mgr.processEvents()
 	return mgr
 }
 
 type connManager struct {
-	conns      map[ConnID]*Conn
+	conns      map[ConnID]*conn
 	connsMu    sync.RWMutex
-	watchers   []chan<- *Conn
+	watchers   []chan<- *conn
 	watchersMu sync.RWMutex
-	eventCh    chan *Conn
+	eventCh    chan *conn
 }
 
 // Add adding a new gNMI connection
-func (m *connManager) Add(conn *Conn) error {
-	log.Infof("Adding gNMI connection %s", conn.ID)
+func (m *connManager) Add(conn *conn) error {
+	log.Infof("Adding gNMI connection %s", conn.ID())
 	m.connsMu.Lock()
-	_, ok := m.conns[conn.ID]
+	_, ok := m.conns[conn.ID()]
 	if ok {
 		m.connsMu.Unlock()
 		return errors.NewAlreadyExists("gNMI connection %s already exists", conn.ID)
 	}
-	m.conns[conn.ID] = conn
+	m.conns[conn.ID()] = conn
 	m.connsMu.Unlock()
 	m.eventCh <- conn
 	go func() {
 		<-conn.Context().Done()
 		log.Infof("Context is cancelled, removing gNMI connection %s", conn.ID)
 		m.connsMu.Lock()
-		delete(m.conns, conn.ID)
+		delete(m.conns, conn.ID())
 		m.connsMu.Unlock()
 		m.eventCh <- conn
 	}()
@@ -85,7 +85,7 @@ func (m *connManager) Remove(connID ConnID) error {
 }
 
 // Get returns a gNMI connection based on a given connection ID
-func (m *connManager) Get(ctx context.Context, connID ConnID) (*Conn, error) {
+func (m *connManager) Get(ctx context.Context, connID ConnID) (*conn, error) {
 	m.connsMu.RLock()
 	defer m.connsMu.RUnlock()
 	conn, ok := m.conns[connID]
@@ -96,10 +96,10 @@ func (m *connManager) Get(ctx context.Context, connID ConnID) (*Conn, error) {
 }
 
 // List lists all  gNMI connections
-func (m *connManager) List(ctx context.Context) ([]*Conn, error) {
+func (m *connManager) List(ctx context.Context) ([]*conn, error) {
 	m.connsMu.RLock()
 	defer m.connsMu.RUnlock()
-	conns := make([]*Conn, 0, len(m.conns))
+	conns := make([]*conn, 0, len(m.conns))
 	for _, conn := range m.conns {
 		conns = append(conns, conn)
 	}
@@ -107,7 +107,7 @@ func (m *connManager) List(ctx context.Context) ([]*Conn, error) {
 }
 
 // Watch watches gNMI connection changes
-func (m *connManager) Watch(ctx context.Context, ch chan<- *Conn) error {
+func (m *connManager) Watch(ctx context.Context, ch chan<- *conn) error {
 	m.watchersMu.Lock()
 	m.connsMu.Lock()
 	m.watchers = append(m.watchers, ch)
@@ -121,7 +121,7 @@ func (m *connManager) Watch(ctx context.Context, ch chan<- *Conn) error {
 
 		<-ctx.Done()
 		m.watchersMu.Lock()
-		watchers := make([]chan<- *Conn, 0, len(m.watchers)-1)
+		watchers := make([]chan<- *conn, 0, len(m.watchers)-1)
 		for _, watcher := range watchers {
 			if watcher != ch {
 				watchers = append(watchers, watcher)
@@ -139,8 +139,8 @@ func (m *connManager) processEvents() {
 	}
 }
 
-func (m *connManager) processEvent(conn *Conn) {
-	log.Infof("Notifying gNMI connection: %s", conn.ID)
+func (m *connManager) processEvent(conn *conn) {
+	log.Infof("Notifying gNMI connection: %s", conn.ID())
 	m.watchersMu.RLock()
 	for _, watcher := range m.watchers {
 		watcher <- conn

@@ -37,16 +37,17 @@ var log = logging.GetLogger("southbound", "gnmi")
 // ConnID connection ID
 type ConnID string
 
-// Connection gNMI connection interface
-type Connection interface {
+// Conn gNMI connection interface
+type Conn interface {
 	Client
 	Context() context.Context
+	ID() ConnID
 }
 
-// Conn gNMI Connection
-type Conn struct {
+// conn gNMI Connection
+type conn struct {
 	client *client
-	ID     ConnID
+	id     ConnID
 	ctx    context.Context
 	cancel context.CancelFunc
 }
@@ -133,7 +134,7 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 }
 
 // NewGNMIConnection creates a new gNMI connection
-func NewGNMIConnection(target *topoapi.Object) (*Conn, error) {
+func NewGNMIConnection(target *topoapi.Object) (*conn, error) {
 	connID := ConnID(uri.NewURI(
 		uri.WithScheme("gnmi"),
 		uri.WithOpaque(string(target.ID))).String())
@@ -162,57 +163,62 @@ func NewGNMIConnection(target *topoapi.Object) (*Conn, error) {
 		return nil, err
 	}
 
-	return &Conn{
+	return &conn{
 		client: gnmiClient,
-		ID:     connID,
+		id:     connID,
 		ctx:    ctx,
 		cancel: cancel,
 	}, nil
 }
 
 // CapabilitiesWithString calls gNMI Capabilities based on a given string request
-func (c *Conn) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
+func (c *conn) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
 	return c.client.CapabilitiesWithString(ctx, request)
 }
 
 // GetWithString calls gNMI Get based on a given string request
-func (c *Conn) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
+func (c *conn) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
 	return c.client.GetWithString(ctx, request)
 }
 
 // SetWithString calls gNMI Set based on a given string request
-func (c *Conn) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
+func (c *conn) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
 	return c.client.SetWithString(ctx, request)
 }
 
 // Capabilities calls gNMI Capabilities RPC
-func (c *Conn) Capabilities(ctx context.Context, req *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
+func (c *conn) Capabilities(ctx context.Context, req *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
 	return c.client.Capabilities(ctx, req)
 }
 
 // Get calls gNMI Get RPC
-func (c *Conn) Get(ctx context.Context, req *gpb.GetRequest) (*gpb.GetResponse, error) {
+func (c *conn) Get(ctx context.Context, req *gpb.GetRequest) (*gpb.GetResponse, error) {
 	return c.client.Get(ctx, req)
 }
 
 // Set calls gNMI Set RPC
-func (c *Conn) Set(ctx context.Context, req *gpb.SetRequest) (*gpb.SetResponse, error) {
+func (c *conn) Set(ctx context.Context, req *gpb.SetRequest) (*gpb.SetResponse, error) {
 	return c.client.Set(ctx, req)
 }
 
 // Subscribe calls gNMI Subscribe RPC
-func (c *Conn) Subscribe(ctx context.Context, q baseClient.Query) error {
+func (c *conn) Subscribe(ctx context.Context, q baseClient.Query) error {
 	return c.client.Subscribe(ctx, q)
 }
 
 // Close closes a gNMI connection
-func (c *Conn) Close() error {
+func (c *conn) Close() error {
 	return c.client.Close()
 }
 
 // Context returns context
-func (c *Conn) Context() context.Context {
+func (c *conn) Context() context.Context {
 	return c.ctx
 }
 
-var _ Connection = &Conn{}
+// ID returns the gNMI connection ID
+func (c *conn) ID() ConnID {
+	return c.id
+}
+
+var _ Conn = &conn{}

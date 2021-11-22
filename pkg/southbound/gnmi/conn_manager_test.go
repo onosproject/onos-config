@@ -345,7 +345,7 @@ func TestConnManager_Watch(t *testing.T) {
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	ch := make(chan *Conn)
+	ch := make(chan *conn)
 
 	err := mgr.Watch(ctx, ch)
 	assert.NoError(t, err)
@@ -362,7 +362,7 @@ func TestConnManager_Watch(t *testing.T) {
 	err = mgr.Add(conn1)
 	assert.NoError(t, err)
 	event := <-ch
-	assert.Equal(t, event.ID, conn1.ID)
+	assert.Equal(t, event.ID(), conn1.ID())
 
 	err = mgr.Add(conn1)
 	assert.Equal(t, true, errors.IsAlreadyExists(err))
@@ -370,13 +370,13 @@ func TestConnManager_Watch(t *testing.T) {
 	err = mgr.Add(conn2)
 	assert.NoError(t, err)
 	event = <-ch
-	assert.Equal(t, event.ID, conn2.ID)
-	err = mgr.Remove(conn1.ID)
+	assert.Equal(t, event.ID(), conn2.ID())
+	err = mgr.Remove(conn1.ID())
 	assert.NoError(t, err)
-	err = mgr.Remove(conn2.ID)
+	err = mgr.Remove(conn2.ID())
 	assert.NoError(t, err)
 
-	err = mgr.Remove(conn2.ID)
+	err = mgr.Remove(conn2.ID())
 	assert.Equal(t, true, errors.IsNotFound(err))
 	s.Stop()
 }
@@ -405,12 +405,12 @@ func TestNewConnManager_AddAndRemove(t *testing.T) {
 
 	err = mgr.Add(conn2)
 	assert.NoError(t, err)
-	err = mgr.Remove(conn1.ID)
+	err = mgr.Remove(conn1.ID())
 	assert.NoError(t, err)
-	err = mgr.Remove(conn2.ID)
+	err = mgr.Remove(conn2.ID())
 	assert.NoError(t, err)
 
-	err = mgr.Remove(conn2.ID)
+	err = mgr.Remove(conn2.ID())
 	assert.Equal(t, true, errors.IsNotFound(err))
 	s.Stop()
 
