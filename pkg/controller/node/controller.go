@@ -19,7 +19,6 @@ import (
 	"time"
 
 	gogotypes "github.com/gogo/protobuf/types"
-	"github.com/onosproject/onos-lib-go/pkg/env"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
@@ -72,31 +71,10 @@ func (r *Reconciler) createOnosConfigEntity(ctx context.Context, onosConfigID to
 		Aspects: make(map[string]*gogotypes.Any),
 		Labels:  map[string]string{},
 	}
-	interfaces := make([]*topoapi.Interface, 2)
-	interfaces[0] = &topoapi.Interface{
-		IP:   env.GetPodIP(),
-		Port: defaultGRPCPort,
-		Type: topoapi.Interface_INTERFACE_ONOS_CONFIG,
-	}
-
-	interfaces[1] = &topoapi.Interface{
-		IP:   env.GetPodIP(),
-		Port: defaultGNMIPort,
-		Type: topoapi.Interface_INTERFACE_GNMI,
-	}
-
-	onosConfigInfo := &topoapi.OnosConfigInfo{
-		Interfaces: interfaces,
-	}
 
 	expiration := time.Now().Add(defaultExpirationDuration)
 	leaseAspect := &topoapi.Lease{
 		Expiration: &expiration,
-	}
-
-	err := object.SetAspect(onosConfigInfo)
-	if err != nil {
-		return err
 	}
 
 	err = object.SetAspect(leaseAspect)
