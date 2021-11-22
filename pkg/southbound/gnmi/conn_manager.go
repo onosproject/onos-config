@@ -84,21 +84,6 @@ func (m *connManager) Remove(connID ConnID) error {
 	return nil
 }
 
-func (m *connManager) processEvents() {
-	for conn := range m.eventCh {
-		m.processEvent(conn)
-	}
-}
-
-func (m *connManager) processEvent(conn *Conn) {
-	log.Infof("Notifying gNMI connection: %s", conn.ID)
-	m.watchersMu.RLock()
-	for _, watcher := range m.watchers {
-		watcher <- conn
-	}
-	m.watchersMu.RUnlock()
-}
-
 // Get returns a gNMI connection based on a given connection ID
 func (m *connManager) Get(ctx context.Context, connID ConnID) (*Conn, error) {
 	m.connsMu.RLock()
@@ -146,6 +131,21 @@ func (m *connManager) Watch(ctx context.Context, ch chan<- *Conn) error {
 		m.watchersMu.Unlock()
 	}()
 	return nil
+}
+
+func (m *connManager) processEvents() {
+	for conn := range m.eventCh {
+		m.processEvent(conn)
+	}
+}
+
+func (m *connManager) processEvent(conn *Conn) {
+	log.Infof("Notifying gNMI connection: %s", conn.ID)
+	m.watchersMu.RLock()
+	for _, watcher := range m.watchers {
+		watcher <- conn
+	}
+	m.watchersMu.RUnlock()
 }
 
 var _ ConnManager = &connManager{}
