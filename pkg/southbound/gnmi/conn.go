@@ -32,7 +32,7 @@ import (
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-var log = logging.GetLogger("southbound", "connection", "manager")
+var log = logging.GetLogger("southbound", "gnmi")
 
 // ConnID connection ID
 type ConnID string
