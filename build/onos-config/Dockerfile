@@ -9,6 +9,7 @@ RUN go mod download -x
 COPY Makefile /build/
 COPY cmd/ /build/cmd/
 COPY pkg/ /build/pkg/
+COPY build/build-tools /build/build/build-tools/
 
 RUN make ${ONOS_MAKE_TARGET}
 
