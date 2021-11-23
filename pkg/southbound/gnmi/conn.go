@@ -29,7 +29,6 @@ import (
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	baseClient "github.com/openconfig/gnmi/client"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
 var log = logging.GetLogger("southbound", "gnmi")
@@ -40,15 +39,13 @@ type ConnID string
 // Conn gNMI connection interface
 type Conn interface {
 	Client
-	Context() context.Context
 	ID() ConnID
 }
 
 // conn gNMI Connection
 type conn struct {
-	client *client
+	*client
 	id     ConnID
-	ctx    context.Context
 	cancel context.CancelFunc
 }
 
@@ -133,8 +130,8 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 	return destination, nil
 }
 
-// NewGNMIConnection creates a new gNMI connection
-func NewGNMIConnection(target *topoapi.Object) (Conn, error) {
+// newGNMIConnection creates a new gNMI connection
+func newGNMIConnection(target *topoapi.Object) (Conn, error) {
 	connID := ConnID(uri.NewURI(
 		uri.WithScheme("gnmi"),
 		uri.WithOpaque(string(target.ID))).String())
@@ -166,54 +163,8 @@ func NewGNMIConnection(target *topoapi.Object) (Conn, error) {
 	return &conn{
 		client: gnmiClient,
 		id:     connID,
-		ctx:    ctx,
 		cancel: cancel,
 	}, nil
-}
-
-// CapabilitiesWithString calls gNMI Capabilities based on a given string request
-func (c *conn) CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error) {
-	return c.client.CapabilitiesWithString(ctx, request)
-}
-
-// GetWithString calls gNMI Get based on a given string request
-func (c *conn) GetWithString(ctx context.Context, request string) (*gpb.GetResponse, error) {
-	return c.client.GetWithString(ctx, request)
-}
-
-// SetWithString calls gNMI Set based on a given string request
-func (c *conn) SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error) {
-	return c.client.SetWithString(ctx, request)
-}
-
-// Capabilities calls gNMI Capabilities RPC
-func (c *conn) Capabilities(ctx context.Context, req *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error) {
-	return c.client.Capabilities(ctx, req)
-}
-
-// Get calls gNMI Get RPC
-func (c *conn) Get(ctx context.Context, req *gpb.GetRequest) (*gpb.GetResponse, error) {
-	return c.client.Get(ctx, req)
-}
-
-// Set calls gNMI Set RPC
-func (c *conn) Set(ctx context.Context, req *gpb.SetRequest) (*gpb.SetResponse, error) {
-	return c.client.Set(ctx, req)
-}
-
-// Subscribe calls gNMI Subscribe RPC
-func (c *conn) Subscribe(ctx context.Context, q baseClient.Query) error {
-	return c.client.Subscribe(ctx, q)
-}
-
-// Close closes a gNMI connection
-func (c *conn) Close() error {
-	return c.client.Close()
-}
-
-// Context returns context
-func (c *conn) Context() context.Context {
-	return c.ctx
 }
 
 // ID returns the gNMI connection ID

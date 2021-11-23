@@ -23,16 +23,6 @@ import (
 	gnmipb "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-// NewSubscription creates a new subscription
-func NewSubscription(options ...func(subscription *Subscription)) *Subscription {
-	subscription := &Subscription{}
-	for _, option := range options {
-		option(subscription)
-	}
-
-	return subscription
-}
-
 // Subscription subscription request information
 type Subscription struct {
 	updatesOnly       bool
@@ -43,62 +33,6 @@ type Subscription struct {
 	heartbeatInterval uint64
 	paths             [][]string
 	origin            string
-}
-
-// WithUpdatesOnly sets updatesOnly field
-func WithUpdatesOnly(updatesOnly bool) func(subscription *Subscription) {
-	return func(subscription *Subscription) {
-		subscription.updatesOnly = updatesOnly
-	}
-}
-
-// WithPrefix sets subscription prefix field
-func WithPrefix(prefix string) func(subscription *Subscription) {
-	return func(subscription *Subscription) {
-		subscription.prefix = prefix
-	}
-}
-
-// WithMode sets subscription mode field
-func WithMode(mode string) func(subscription *Subscription) {
-	return func(subscription *Subscription) {
-		subscription.mode = mode
-	}
-}
-
-// WithStreamMode sets subscription stream mode
-func WithStreamMode(streamMode string) func(subscription *Subscription) {
-	return func(subscription *Subscription) {
-		subscription.streamMode = streamMode
-	}
-}
-
-// WithSampleInterval sets subscription sample interval
-func WithSampleInterval(sampleInterval uint64) func(subscription *Subscription) {
-	return func(subscription *Subscription) {
-		subscription.sampleInterval = sampleInterval
-	}
-}
-
-// WithHeartbeatInterval sets heartbeat interval
-func WithHeartbeatInterval(heartbeatInterval uint64) func(subscription *Subscription) {
-	return func(subscription *Subscription) {
-		subscription.heartbeatInterval = heartbeatInterval
-	}
-}
-
-// WithPaths sets subscription paths
-func WithPaths(paths [][]string) func(subscription *Subscription) {
-	return func(subscription *Subscription) {
-		subscription.paths = paths
-	}
-}
-
-// WithOrigin sets origin
-func WithOrigin(origin string) func(subscription *Subscription) {
-	return func(subscription *Subscription) {
-		subscription.origin = origin
-	}
 }
 
 // Build builds a gNMI subscription request

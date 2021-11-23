@@ -18,6 +18,8 @@ import (
 	"context"
 	"sync"
 
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 )
 
@@ -26,7 +28,7 @@ type ConnManager interface {
 	Get(ctx context.Context, id ConnID) (Conn, error)
 	List(ctx context.Context) ([]Conn, error)
 	Watch(ctx context.Context, ch chan<- Conn) error
-	Add(conn Conn) error
+	Connect(target *topoapi.Object) (Conn, error)
 	Remove(connID ConnID) error
 }
 
@@ -48,27 +50,26 @@ type connManager struct {
 	eventCh    chan Conn
 }
 
-// Add adding a new gNMI connection
-func (m *connManager) Add(conn Conn) error {
-	log.Infof("Adding gNMI connection %s", conn.ID())
+// Connect connecting to a gNMI target and adding a new gNMI connection
+func (m *connManager) Connect(target *topoapi.Object) (Conn, error) {
+	log.Infof("Connecting to the gNMI target: %s", target.ID)
+	conn, err := newGNMIConnection(target)
+	if err != nil {
+		log.Errorf("Failed to connect to the gNMI target: %s", target.ID)
+		return nil, err
+	}
+
+	log.Infof("Adding gNMI connection %s for the target %s", conn.ID(), target.ID)
 	m.connsMu.Lock()
 	_, ok := m.conns[conn.ID()]
 	if ok {
 		m.connsMu.Unlock()
-		return errors.NewAlreadyExists("gNMI connection %s already exists", conn.ID)
+		return nil, errors.NewAlreadyExists("gNMI connection %s already exists", conn.ID)
 	}
 	m.conns[conn.ID()] = conn
 	m.connsMu.Unlock()
 	m.eventCh <- conn
-	go func() {
-		<-conn.Context().Done()
-		log.Infof("Context is cancelled, removing gNMI connection %s", conn.ID)
-		m.connsMu.Lock()
-		delete(m.conns, conn.ID())
-		m.connsMu.Unlock()
-		m.eventCh <- conn
-	}()
-	return nil
+	return conn, nil
 }
 
 // Remove removing a gNMI connection

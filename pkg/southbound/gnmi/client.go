@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"io"
 
 	"github.com/golang/protobuf/proto"
 
@@ -28,6 +29,7 @@ import (
 
 // Client gNMI client interface
 type Client interface {
+	io.Closer
 	Capabilities(ctx context.Context, r *gpb.CapabilityRequest) (*gpb.CapabilityResponse, error)
 	CapabilitiesWithString(ctx context.Context, request string) (*gpb.CapabilityResponse, error)
 	Get(ctx context.Context, r *gpb.GetRequest) (*gpb.GetResponse, error)
@@ -35,7 +37,6 @@ type Client interface {
 	Set(ctx context.Context, r *gpb.SetRequest) (*gpb.SetResponse, error)
 	SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error)
 	Subscribe(ctx context.Context, q baseClient.Query) error
-	Close() error
 }
 
 // client gnmi client
