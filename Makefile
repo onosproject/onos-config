@@ -18,17 +18,17 @@ test: build deps license_check linters
 
 jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
 jenkins-test: build deps license_check linters
-	TEST_PACKAGES=github.com/onosproject/onos-config/... ./../build-tools/build/jenkins/make-unit
+	TEST_PACKAGES=github.com/onosproject/onos-config/... ./build/build-tools/build/jenkins/make-unit
 
 coverage: # @HELP generate unit test coverage data
 coverage: build deps linters license_check
-	./../build-tools/build/coveralls/coveralls-coverage onos-config
+	./build/build-tools/build/coveralls/coveralls-coverage onos-config
 
-helmit-gnmi: # @HELP run helmit gnmi tests locally
-	(kubectl delete ns test || exit 0) && kubectl create ns test && helmit test -n test ./cmd/onos-config-tests --suite gnmi
+helmit-gnmi: integration-test-namespace # @HELP run helmit gnmi tests locally
+	helmit test -n test ./cmd/onos-config-tests --suite gnmi
 
-helmit-cli: # @HELP run helmit cli tests locally
-	(kubectl delete ns test || exit 0) && kubectl create ns test && helmit test -n test ./cmd/onos-config-tests --suite cli
+helmit-cli: integration-test-namespace # @HELP run helmit cli tests locally
+	helmit test -n test ./cmd/onos-config-tests --suite cli
 
 integration-tests: helmit-gnmi helmit-cli # @HELP run helmit integration tests locally
 
@@ -51,12 +51,12 @@ kind-only:
 all: build images
 
 publish: # @HELP publish version on github and dockerhub
-	./../build-tools/publish-version ${VERSION} onosproject/onos-config
+	./build/build-tools/publish-version ${VERSION} onosproject/onos-config
 
 jenkins-publish: jenkins-tools # @HELP Jenkins calls this to publish artifacts
 	./build/bin/push-images
-	../build-tools/release-merge-commit
-	../build-tools/build/docs/push-docs
+	./build/build-tools/release-merge-commit
+	./build/build-tools/build/docs/push-docs
 
 clean:: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-config/onos-config ./cmd/onos/onos
