@@ -41,7 +41,7 @@ const (
 	targetType    = "Devicesim"
 	targetAddress = targetHost + ":" + targetPort
 	targetHost    = "localhost"
-	targetPort    = "10161"
+	targetPort    = "9339"
 	targetVersion = "1.0.0"
 	timeout       = 5 * time.Second
 )
@@ -372,42 +372,10 @@ func TestConnManager_Watch(t *testing.T) {
 	assert.Equal(t, true, errors.IsAlreadyExists(err))
 	event = <-ch
 	assert.Equal(t, event.ID(), conn2.ID())
-	err = mgr.remove(conn1.ID())
-	assert.NoError(t, err)
-	err = mgr.remove(conn2.ID())
-	assert.NoError(t, err)
-
-	err = mgr.remove(conn2.ID())
-	assert.Equal(t, true, errors.IsNotFound(err))
 	s.Stop()
 }
 
-func TestNewConnManager_ServerFailure(t *testing.T) {
-	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	target1 := createTestTarget(t, target1, true)
-
-	conn1, err := mgr.Connect(ctx, target1)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn1)
-
-	_, err = mgr.Connect(ctx, target1)
-	assert.Equal(t, true, errors.IsAlreadyExists(err))
-	s.Stop()
-
-	time.Sleep(2 * time.Second)
-
-	connections, err := mgr.List(context.Background())
-	assert.NoError(t, err)
-	assert.Equal(t, len(connections), 0)
-	s.Stop()
-
-}
-
-func TestNewConnManager_ConnectAndRemove(t *testing.T) {
+func TestNewConnManager_Connect(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
 	mgr := NewConnManager()
 
@@ -430,13 +398,6 @@ func TestNewConnManager_ConnectAndRemove(t *testing.T) {
 
 	_, err = mgr.Connect(ctx, target2)
 	assert.Equal(t, true, errors.IsAlreadyExists(err))
-	err = mgr.remove(conn1.ID())
-	assert.NoError(t, err)
-	err = mgr.remove(conn2.ID())
-	assert.NoError(t, err)
-
-	err = mgr.remove(conn2.ID())
-	assert.Equal(t, true, errors.IsNotFound(err))
 	s.Stop()
 
 }

@@ -15,18 +15,13 @@
 package gnmi
 
 import (
-	"context"
-	"math"
 	"time"
-
-	"google.golang.org/grpc"
 
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-lib-go/pkg/uri"
 
 	"crypto/tls"
 
@@ -48,8 +43,7 @@ type Conn interface {
 // conn gNMI Connection
 type conn struct {
 	*client
-	id     ConnID
-	cancel context.CancelFunc
+	id ConnID
 }
 
 func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
@@ -131,52 +125,6 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 	}
 
 	return destination, nil
-}
-
-func newConn(target *topoapi.Object) *conn {
-	connID := ConnID(uri.NewURI(
-		uri.WithScheme("gnmi"),
-		uri.WithOpaque(string(target.ID))).String())
-	return &conn{
-		id: connID,
-	}
-}
-
-// newGNMIConnection creates a new gNMI connection
-func connect(target *topoapi.Object) (Conn, error) {
-	conn := newConn(target)
-
-	if target.Type != topoapi.Object_ENTITY {
-		return nil, errors.NewInvalid("object is not a topo entity %v+", target)
-	}
-
-	typeKindID := string(target.GetEntity().KindID)
-	if len(typeKindID) == 0 {
-		return nil, errors.NewInvalid("target entity %s must have a 'kindID' to work with onos-config", target.ID)
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	destination, err := newDestination(target)
-	if err != nil {
-		log.Warnf("Failed to create a new target %s", err)
-		cancel()
-		return nil, err
-	}
-	log.Infof("Connecting to gNMI target: %+v", destination)
-	opts := []grpc.DialOption{
-		grpc.WithBlock(),
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)),
-	}
-	gnmiClient, err := newGNMIClient(ctx, *destination, opts)
-	if err != nil {
-		log.Warnf("Failed to connect to the gNMI target %s: %s", destination.Target, err)
-		cancel()
-		return nil, err
-	}
-	conn.client = gnmiClient
-	conn.cancel = cancel
-
-	return conn, nil
 }
 
 // ID returns the gNMI connection ID

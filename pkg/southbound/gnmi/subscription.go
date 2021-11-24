@@ -25,20 +25,20 @@ import (
 
 // Subscription subscription request information
 type Subscription struct {
-	updatesOnly       bool
-	prefix            string
-	mode              string
-	streamMode        string
-	sampleInterval    uint64
-	heartbeatInterval uint64
-	paths             [][]string
-	origin            string
+	UpdatesOnly       bool
+	Prefix            string
+	Mode              string
+	StreamMode        string
+	SampleInterval    uint64
+	HeartbeatInterval uint64
+	Paths             [][]string
+	Origin            string
 }
 
 // Build builds a gNMI subscription request
 func (s *Subscription) Build() (*gnmipb.SubscribeRequest, error) {
 	var mode gnmipb.SubscriptionList_Mode
-	switch strings.ToUpper(s.mode) {
+	switch strings.ToUpper(s.Mode) {
 	case gnmipb.SubscriptionList_ONCE.String():
 		mode = gnmipb.SubscriptionList_ONCE
 	case gnmipb.SubscriptionList_POLL.String():
@@ -48,11 +48,11 @@ func (s *Subscription) Build() (*gnmipb.SubscribeRequest, error) {
 	case gnmipb.SubscriptionList_STREAM.String():
 		mode = gnmipb.SubscriptionList_STREAM
 	default:
-		return nil, errors.NewInvalid("subscribe mode (%s) invalid", s.mode)
+		return nil, errors.NewInvalid("subscribe mode (%s) invalid", s.Mode)
 	}
 
 	var streamMode gnmipb.SubscriptionMode
-	switch strings.ToUpper(s.streamMode) {
+	switch strings.ToUpper(s.StreamMode) {
 	case gnmipb.SubscriptionMode_ON_CHANGE.String():
 		streamMode = gnmipb.SubscriptionMode_ON_CHANGE
 	case gnmipb.SubscriptionMode_SAMPLE.String():
@@ -62,30 +62,30 @@ func (s *Subscription) Build() (*gnmipb.SubscribeRequest, error) {
 	case gnmipb.SubscriptionMode_TARGET_DEFINED.String():
 		streamMode = gnmipb.SubscriptionMode_TARGET_DEFINED
 	default:
-		return nil, errors.NewInvalid("subscribe stream mode (%s) invalid", s.streamMode)
+		return nil, errors.NewInvalid("subscribe stream mode (%s) invalid", s.StreamMode)
 	}
 
-	prefixPath, err := utils.ParseGNMIElements(utils.SplitPath(s.prefix))
+	prefixPath, err := utils.ParseGNMIElements(utils.SplitPath(s.Prefix))
 	if err != nil {
 		return nil, err
 	}
 	subList := &gnmipb.SubscriptionList{
-		Subscription: make([]*gnmipb.Subscription, len(s.paths)),
+		Subscription: make([]*gnmipb.Subscription, len(s.Paths)),
 		Mode:         mode,
-		UpdatesOnly:  s.updatesOnly,
+		UpdatesOnly:  s.UpdatesOnly,
 		Prefix:       prefixPath,
 	}
-	for i, p := range s.paths {
+	for i, p := range s.Paths {
 		gnmiPath, err := utils.ParseGNMIElements(p)
 		if err != nil {
 			return nil, err
 		}
-		gnmiPath.Origin = s.origin
+		gnmiPath.Origin = s.Origin
 		subList.Subscription[i] = &gnmipb.Subscription{
 			Path:              gnmiPath,
 			Mode:              streamMode,
-			SampleInterval:    s.sampleInterval,
-			HeartbeatInterval: s.heartbeatInterval,
+			SampleInterval:    s.SampleInterval,
+			HeartbeatInterval: s.HeartbeatInterval,
 		}
 	}
 	return &gnmipb.SubscribeRequest{Request: &gnmipb.SubscribeRequest_Subscribe{

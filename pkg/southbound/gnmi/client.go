@@ -40,12 +40,10 @@ type Client interface {
 	Set(ctx context.Context, r *gpb.SetRequest) (*gpb.SetResponse, error)
 	SetWithString(ctx context.Context, request string) (*gpb.SetResponse, error)
 	Subscribe(ctx context.Context, q baseClient.Query) error
-	clientConn() *grpc.ClientConn
 }
 
 // client gnmi client
 type client struct {
-	conn   *grpc.ClientConn
 	client *gclient.Client
 }
 
@@ -56,7 +54,7 @@ func (c *client) Subscribe(ctx context.Context, q baseClient.Query) error {
 }
 
 // newGNMIClient creates a new gnmi client
-func newGNMIClient(ctx context.Context, d baseClient.Destination, opts []grpc.DialOption) (*client, error) {
+func newGNMIClient(ctx context.Context, d baseClient.Destination, opts []grpc.DialOption) (*client, *grpc.ClientConn, error) {
 	switch d.TLS {
 	case nil:
 		opts = append(opts, grpc.WithInsecure())
@@ -82,20 +80,19 @@ func newGNMIClient(ctx context.Context, d baseClient.Destination, opts []grpc.Di
 	}
 	conn, err := grpc.DialContext(gCtx, addr, opts...)
 	if err != nil {
-		return nil, errors.NewInternal("Dialer(%s, %v): %v", addr, d.Timeout, err)
+		return nil, nil, errors.NewInternal("Dialer(%s, %v): %v", addr, d.Timeout, err)
 	}
 
 	cl, err := gclient.NewFromConn(gCtx, conn, d)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	gnmiClient := &client{
-		conn:   conn,
 		client: cl,
 	}
 
-	return gnmiClient, nil
+	return gnmiClient, conn, nil
 
 }
 
@@ -159,10 +156,6 @@ func (c *client) SetWithString(ctx context.Context, request string) (*gpb.SetRes
 // Close closes the gnmi client
 func (c *client) Close() error {
 	return c.client.Close()
-}
-
-func (c *client) clientConn() *grpc.ClientConn {
-	return c.conn
 }
 
 var _ Client = &client{}
