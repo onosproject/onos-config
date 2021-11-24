@@ -16,7 +16,10 @@ package gnmi
 
 import (
 	"context"
+	"math"
 	"time"
+
+	"google.golang.org/grpc"
 
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 
@@ -130,11 +133,18 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 	return destination, nil
 }
 
-// newGNMIConnection creates a new gNMI connection
-func newGNMIConnection(target *topoapi.Object) (Conn, error) {
+func newConn(target *topoapi.Object) *conn {
 	connID := ConnID(uri.NewURI(
 		uri.WithScheme("gnmi"),
 		uri.WithOpaque(string(target.ID))).String())
+	return &conn{
+		id: connID,
+	}
+}
+
+// newGNMIConnection creates a new gNMI connection
+func connect(target *topoapi.Object) (Conn, error) {
+	conn := newConn(target)
 
 	if target.Type != topoapi.Object_ENTITY {
 		return nil, errors.NewInvalid("object is not a topo entity %v+", target)
@@ -153,18 +163,20 @@ func newGNMIConnection(target *topoapi.Object) (Conn, error) {
 		return nil, err
 	}
 	log.Infof("Connecting to gNMI target: %+v", destination)
-	gnmiClient, err := newGNMIClient(ctx, *destination)
+	opts := []grpc.DialOption{
+		grpc.WithBlock(),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)),
+	}
+	gnmiClient, err := newGNMIClient(ctx, *destination, opts)
 	if err != nil {
 		log.Warnf("Failed to connect to the gNMI target %s: %s", destination.Target, err)
 		cancel()
 		return nil, err
 	}
+	conn.client = gnmiClient
+	conn.cancel = cancel
 
-	return &conn{
-		client: gnmiClient,
-		id:     connID,
-		cancel: cancel,
-	}, nil
+	return conn, nil
 }
 
 // ID returns the gNMI connection ID

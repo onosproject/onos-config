@@ -18,6 +18,10 @@ import (
 	"context"
 	"sync"
 
+	"google.golang.org/grpc"
+
+	"google.golang.org/grpc/connectivity"
+
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -28,32 +32,34 @@ type ConnManager interface {
 	Get(ctx context.Context, id ConnID) (Conn, error)
 	List(ctx context.Context) ([]Conn, error)
 	Watch(ctx context.Context, ch chan<- Conn) error
-	Connect(target *topoapi.Object) (Conn, error)
-	Remove(connID ConnID) error
+	Connect(ctx context.Context, target *topoapi.Object) (Conn, error)
+	remove(connID ConnID) error
 }
 
 // NewConnManager creates a new gNMI connection manager
 func NewConnManager() ConnManager {
 	mgr := &connManager{
-		conns:   make(map[ConnID]Conn),
-		eventCh: make(chan Conn),
+		conns:       make(map[ConnID]Conn),
+		clientConns: make(map[topoapi.ID]*grpc.ClientConn),
+		eventCh:     make(chan Conn),
 	}
 	go mgr.processEvents()
 	return mgr
 }
 
 type connManager struct {
-	conns      map[ConnID]Conn
-	connsMu    sync.RWMutex
-	watchers   []chan<- Conn
-	watchersMu sync.RWMutex
-	eventCh    chan Conn
+	conns       map[ConnID]Conn
+	clientConns map[topoapi.ID]*grpc.ClientConn
+	connsMu     sync.RWMutex
+	watchers    []chan<- Conn
+	watchersMu  sync.RWMutex
+	eventCh     chan Conn
 }
 
 // Connect connecting to a gNMI target and adding a new gNMI connection
-func (m *connManager) Connect(target *topoapi.Object) (Conn, error) {
+func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) (Conn, error) {
 	log.Infof("Connecting to the gNMI target: %s", target.ID)
-	conn, err := newGNMIConnection(target)
+	conn, err := connect(target)
 	if err != nil {
 		log.Errorf("Failed to connect to the gNMI target: %s", target.ID)
 		return nil, err
@@ -64,16 +70,49 @@ func (m *connManager) Connect(target *topoapi.Object) (Conn, error) {
 	_, ok := m.conns[conn.ID()]
 	if ok {
 		m.connsMu.Unlock()
-		return nil, errors.NewAlreadyExists("gNMI connection %s already exists", conn.ID)
+		return nil, errors.NewAlreadyExists("gNMI connection %s already exists", conn.ID())
 	}
+
 	m.conns[conn.ID()] = conn
+	m.clientConns[target.ID] = conn.clientConn()
 	m.connsMu.Unlock()
 	m.eventCh <- conn
+
+	go func() {
+		clientConn := conn.clientConn()
+		state := clientConn.GetState()
+		for state != connectivity.Shutdown && clientConn.WaitForStateChange(ctx, state) {
+			state := clientConn.GetState()
+			log.Infof("Current state of the gNMI connection %s: is %s", conn.ID(), state.String())
+			if state == connectivity.TransientFailure {
+				log.Infof("Closing the gNMI connection for target %s:%s", conn.ID(), target.ID)
+				m.connsMu.Lock()
+				if conn, ok := m.conns[conn.ID()]; ok {
+					delete(m.conns, conn.ID())
+					m.eventCh <- conn
+				}
+				m.connsMu.Unlock()
+				break
+			}
+			if state == connectivity.Ready {
+				m.connsMu.Lock()
+				if _, ok := m.conns[conn.ID()]; !ok {
+					conn := newConn(target)
+					log.Infof("Connection %s for target %s is established", conn.ID(), target.ID)
+					m.conns[conn.ID()] = conn
+					m.eventCh <- conn
+				}
+				m.connsMu.Unlock()
+			}
+		}
+
+	}()
+
 	return conn, nil
 }
 
 // Remove removing a gNMI connection
-func (m *connManager) Remove(connID ConnID) error {
+func (m *connManager) remove(connID ConnID) error {
 	log.Infof("Removing gNMI connection %s", connID)
 	m.connsMu.Lock()
 	defer m.connsMu.Unlock()
