@@ -375,6 +375,62 @@ func TestConnManager_Watch(t *testing.T) {
 	s.Stop()
 }
 
+func TestNewConnManager_ServerFailure(t *testing.T) {
+	s := setup(t, getTLSServerConfig(t))
+	mgr := NewConnManager()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	target1 := createTestTarget(t, target1, true)
+
+	ch := make(chan Conn)
+
+	err := mgr.Watch(ctx, ch)
+	assert.NoError(t, err)
+	// creates a new connection
+	conn1, err := mgr.Connect(ctx, target1)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn1)
+
+	event := <-ch
+	assert.Equal(t, event.ID(), conn1.ID())
+
+	// connection already exists
+	_, err = mgr.Connect(ctx, target1)
+	assert.Equal(t, true, errors.IsAlreadyExists(err))
+	s.Stop()
+	t.Log("Stopping the gNMI target server")
+	_, _ = conn1.Capabilities(ctx, &gpb.CapabilityRequest{})
+	// Since the server is stopped we should get an event whe
+	//n the connection is removed
+	event = <-ch
+	assert.Equal(t, event.ID(), conn1.ID())
+
+	// list of connections should be empty since the connection is removed from the list of connections
+	connections, err := mgr.List(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, len(connections), 0)
+
+	// start the server again
+	s = setup(t, getTLSServerConfig(t))
+	conn1, err = mgr.Connect(ctx, target1)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn1)
+
+	// a new event should be generated since the connection will get established
+	event = <-ch
+	conn, err := mgr.Get(ctx, target1.GetID())
+	assert.NoError(t, err)
+	assert.Equal(t, conn.ID(), event.ID())
+
+	// list of connections should have one entry in it
+	connections, err = mgr.List(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, len(connections), 1)
+	s.Stop()
+
+}
+
 func TestNewConnManager_Connect(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
 	mgr := NewConnManager()
