@@ -67,7 +67,7 @@ func addPathToTree(path string, value *devicechange.TypedValue, nodeif *interfac
 		return fmt.Errorf("could not convert nodeif %v for %s", *nodeif, path)
 	}
 
-	if len(pathelems) == 1 && len(value.Bytes) > 0 {
+	if len(pathelems) == 1 {
 		// At the end of a line - this is the leaf
 		handleLeafValue(nodemap, value, pathelems, jsonRFC7951)
 
