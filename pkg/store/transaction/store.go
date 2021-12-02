@@ -15,9 +15,6 @@
 package transaction
 
 import (
-	"io"
-	"time"
-
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
@@ -37,8 +34,6 @@ var log = logging.GetLogger("store", "transaction")
 
 // Store transaction store interface
 type Store interface {
-	io.Closer
-
 	// Get gets a transaction
 	Get(ctx context.Context, id configapi.TransactionID) (*configapi.Transaction, error)
 
@@ -65,6 +60,9 @@ type Store interface {
 
 	// Watch watches the network configuration store for changes
 	Watch(ctx context.Context, ch chan<- configapi.TransactionEvent, opts ...WatchOption) error
+
+	// Close closes the transaction store
+	Close(ctx context.Context) error
 }
 
 // NewAtomixStore returns a new persistent Store
@@ -259,10 +257,12 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 }
 
 // Close closes the store
-func (s *transactionStore) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return s.transactions.Close(ctx)
+func (s *transactionStore) Close(ctx context.Context) error {
+	err := s.transactions.Close(ctx)
+	if err != nil {
+		return errors.FromAtomix(err)
+	}
+	return nil
 }
 
 func decodeTransaction(entry indexedmap.Entry) (*configapi.Transaction, error) {
