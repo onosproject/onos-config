@@ -26,6 +26,7 @@ require (
 	github.com/openconfig/goyang v0.3.1
 	github.com/openconfig/ygot v0.12.4
 	github.com/stretchr/testify v1.7.0
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	google.golang.org/grpc v1.41.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
@@ -33,3 +34,5 @@ require (
 )
 
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3
+
+replace github.com/onosproject/onos-api/go => ../onos-api/go
