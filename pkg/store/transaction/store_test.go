@@ -58,22 +58,22 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction1 := &configapi.Transaction{
 		ID: "transaction-1",
-		Changes: []*configapi.Change{
+		Changes: []configapi.Change{
 			{
 
 				TargetID:      target1,
 				TargetVersion: "1.0.0",
-				Values: []*configapi.ChangeValue{
+				Values: []configapi.ChangeValue{
 					{
 						Path: "foo",
-						Value: &configapi.TypedValue{
+						Value: configapi.TypedValue{
 							Bytes: []byte("Hello world!"),
 							Type:  configapi.ValueType_STRING,
 						},
 					},
 					{
 						Path: "bar",
-						Value: &configapi.TypedValue{
+						Value: configapi.TypedValue{
 							Bytes: []byte("Hello world again!"),
 							Type:  configapi.ValueType_STRING,
 						},
@@ -82,10 +82,10 @@ func TestTransactionStore(t *testing.T) {
 			},
 			{
 				TargetID: target2,
-				Values: []*configapi.ChangeValue{
+				Values: []configapi.ChangeValue{
 					{
 						Path: "baz",
-						Value: &configapi.TypedValue{
+						Value: configapi.TypedValue{
 							Bytes: []byte("Goodbye world!"),
 							Type:  configapi.ValueType_STRING,
 						},
@@ -97,10 +97,10 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction2 := &configapi.Transaction{
 		ID: "transaction-2",
-		Changes: []*configapi.Change{
+		Changes: []configapi.Change{
 			{
 				TargetID: target1,
-				Values: []*configapi.ChangeValue{
+				Values: []configapi.ChangeValue{
 					{
 						Path:    "foo",
 						Removed: true,
@@ -225,13 +225,13 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction = &configapi.Transaction{
 		ID: "transaction-3",
-		Changes: []*configapi.Change{
+		Changes: []configapi.Change{
 			{
 				TargetID: target1,
-				Values: []*configapi.ChangeValue{
+				Values: []configapi.ChangeValue{
 					{
 						Path: "foo",
-						Value: &configapi.TypedValue{
+						Value: configapi.TypedValue{
 							Bytes: []byte("Hello world!"),
 							Type:  configapi.ValueType_STRING,
 						},
@@ -246,13 +246,13 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction = &configapi.Transaction{
 		ID: "transaction-4",
-		Changes: []*configapi.Change{
+		Changes: []configapi.Change{
 			{
 				TargetID: target2,
-				Values: []*configapi.ChangeValue{
+				Values: []configapi.ChangeValue{
 					{
 						Path: "bar",
-						Value: &configapi.TypedValue{
+						Value: configapi.TypedValue{
 							Bytes: []byte("Hello world!"),
 							Type:  configapi.ValueType_STRING,
 						},
