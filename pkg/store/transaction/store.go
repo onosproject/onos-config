@@ -58,7 +58,7 @@ type Store interface {
 	// List lists transactions
 	List(ctx context.Context) ([]*configapi.Transaction, error)
 
-	// Watch watches the network configuration store for changes
+	// Watch watches the transaction store  for changes
 	Watch(ctx context.Context, ch chan<- configapi.TransactionEvent, opts ...WatchOption) error
 
 	// Close closes the transaction store
@@ -122,6 +122,7 @@ func (s *transactionStore) Get(ctx context.Context, id configapi.TransactionID) 
 	return decodeTransaction(*entry)
 }
 
+// GetByIndex gets a transaction by index
 func (s *transactionStore) GetByIndex(ctx context.Context, index configapi.Index) (*configapi.Transaction, error) {
 	entry, err := s.transactions.GetIndex(ctx, indexedmap.Index(index))
 	if err != nil {
@@ -130,6 +131,7 @@ func (s *transactionStore) GetByIndex(ctx context.Context, index configapi.Index
 	return decodeTransaction(*entry)
 }
 
+// GetPrev gets the previous network change by index
 func (s *transactionStore) GetPrev(ctx context.Context, index configapi.Index) (*configapi.Transaction, error) {
 	entry, err := s.transactions.PrevEntry(ctx, indexedmap.Index(index))
 	if err != nil {
@@ -138,6 +140,7 @@ func (s *transactionStore) GetPrev(ctx context.Context, index configapi.Index) (
 	return decodeTransaction(*entry)
 }
 
+// GetNext gets the next transaction by index
 func (s *transactionStore) GetNext(ctx context.Context, index configapi.Index) (*configapi.Transaction, error) {
 	entry, err := s.transactions.NextEntry(ctx, indexedmap.Index(index))
 	if err != nil {
@@ -146,6 +149,7 @@ func (s *transactionStore) GetNext(ctx context.Context, index configapi.Index) (
 	return decodeTransaction(*entry)
 }
 
+// Create creates a new transaction
 func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Transaction) error {
 	if transaction.ID == "" {
 		transaction.ID = newTransactionID()
@@ -169,6 +173,7 @@ func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Tr
 	return nil
 }
 
+// Update updates an existing transaction
 func (s *transactionStore) Update(ctx context.Context, transaction *configapi.Transaction) error {
 	if transaction.Revision == 0 {
 		return errors.NewInvalid("not a stored object")
@@ -188,6 +193,7 @@ func (s *transactionStore) Update(ctx context.Context, transaction *configapi.Tr
 	return nil
 }
 
+// Delete deletes a transaction
 func (s *transactionStore) Delete(ctx context.Context, transaction *configapi.Transaction) error {
 	if transaction.Revision == 0 {
 		return errors.NewInvalid("not a stored object")
@@ -202,6 +208,7 @@ func (s *transactionStore) Delete(ctx context.Context, transaction *configapi.Tr
 	return nil
 }
 
+// List lists transactions
 func (s *transactionStore) List(ctx context.Context) ([]*configapi.Transaction, error) {
 	indexMapCh := make(chan indexedmap.Entry)
 	if err := s.transactions.Entries(ctx, indexMapCh); err != nil {
@@ -218,6 +225,7 @@ func (s *transactionStore) List(ctx context.Context) ([]*configapi.Transaction, 
 	return transactions, nil
 }
 
+// Watch watches the transaction store  for changes
 func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.TransactionEvent, opts ...WatchOption) error {
 	watchOpts := make([]indexedmap.WatchOption, 0)
 	for _, opt := range opts {
