@@ -17,7 +17,7 @@ require (
 	github.com/onosproject/config-models/modelplugin/testdevice-1.0.0 v0.8.8
 	github.com/onosproject/config-models/modelplugin/testdevice-2.0.0 v0.8.8
 	github.com/onosproject/helmit v0.6.19
-	github.com/onosproject/onos-api/go v0.8.3
+	github.com/onosproject/onos-api/go v0.8.7
 	github.com/onosproject/onos-config-model v1.0.1
 	github.com/onosproject/onos-lib-go v0.8.1
 	github.com/onosproject/onos-test v0.6.5
@@ -26,6 +26,7 @@ require (
 	github.com/openconfig/goyang v0.3.1
 	github.com/openconfig/ygot v0.12.4
 	github.com/stretchr/testify v1.7.0
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	google.golang.org/grpc v1.41.0
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
