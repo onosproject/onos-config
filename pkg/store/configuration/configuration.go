@@ -32,6 +32,7 @@ import (
 
 var log = logging.GetLogger("store", "configuration")
 
+// Store configuration store interface
 type Store interface {
 	// Get gets a configuration based on a given configuration ID
 	Get(ctx context.Context, id configapi.ConfigurationID) (*configapi.Configuration, error)
