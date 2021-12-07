@@ -274,6 +274,17 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 		true,
 		modelRegistry)
 
+	mgrTest.LeadershipStore = mockLeadershipStore
+	mgrTest.MastershipStore = mockMastershipStore
+	mgrTest.DeviceChangesStore = mockDeviceChangesStore
+	mgrTest.DeviceStateStore = mockDeviceStateStore
+	mgrTest.DeviceStore = mockDeviceStore
+	mgrTest.DeviceCache = mockDeviceCache
+	mgrTest.NetworkChangesStore = mockNetworkChangesStore
+	mgrTest.NetworkSnapshotStore = mockNetworkSnapshotStore
+	mgrTest.DeviceSnapshotStore = mockDeviceSnapshotStore
+	mgrTest.ModelRegistry = modelRegistry
+
 	mgrTest.Run()
 
 	mockStores := &mockstore.MockStores{

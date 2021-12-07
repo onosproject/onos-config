@@ -268,15 +268,26 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 		false,
 		modelRegistry)
 
-	mgr.DeviceStore = mockStores.DeviceStore
+	mgr.LeadershipStore = mockStores.LeadershipStore
+	mgr.MastershipStore = mockStores.MastershipStore
 	mgr.DeviceChangesStore = mockStores.DeviceChangesStore
+	mgr.DeviceStateStore = mockStores.DeviceStateStore
+	mgr.DeviceStore = mockStores.DeviceStore
+	mgr.DeviceCache = deviceCache
 	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
+	mgr.NetworkSnapshotStore = mockStores.NetworkSnapshotStore
+	mgr.DeviceSnapshotStore = mockStores.DeviceSnapshotStore
+	mgr.ModelRegistry = modelRegistry
+	mgr.OperationalStateCacheLock = &sync.RWMutex{}
 
 	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)
 	//go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	setUpWatchMock(&allMocks)
+
+	mgr.Dispatcher = dispatcher.NewDispatcher()
+
 	log.Info("Finished setUp()")
 
 	return server, mgr, &allMocks

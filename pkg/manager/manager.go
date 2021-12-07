@@ -17,6 +17,7 @@ package manager
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"sync"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -30,7 +31,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/events"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/southbound"
-	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/device/state"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
@@ -83,26 +83,8 @@ func NewManager(leadershipStore leadership.Store, mastershipStore mastership.Sto
 	log.Info("Creating Manager")
 
 	mgr = Manager{
-		DeviceChangesStore:        deviceChangesStore,
-		DeviceStateStore:          deviceStateStore,
-		DeviceStore:               deviceStore,
-		DeviceCache:               deviceCache,
-		MastershipStore:           mastershipStore,
-		NetworkChangesStore:       networkChangesStore,
-		NetworkSnapshotStore:      networkSnapshotStore,
-		DeviceSnapshotStore:       deviceSnapshotStore,
-		networkChangeController:   networkchangectl.NewController(leadershipStore, deviceStore, networkChangesStore, deviceChangesStore),
-		deviceChangeController:    devicechangectl.NewController(mastershipStore, deviceStore, deviceChangesStore),
-		networkSnapshotController: networksnapshotctl.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceChangesStore),
-		deviceSnapshotController:  devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore),
-		TopoChannel:               make(chan *topodevice.ListResponse, 10),
-		ModelRegistry:             modelRegistry,
-		OperationalStateChannel:   make(chan events.OperationalStateEvent),
-		SouthboundErrorChan:       make(chan events.DeviceResponse),
-		Dispatcher:                dispatcher.NewDispatcher(),
-		OperationalStateCache:     make(map[topodevice.ID]devicechange.TypedValueMap),
-		OperationalStateCacheLock: &sync.RWMutex{},
-		allowUnvalidatedConfig:    allowUnvalidatedConfig,
+		ModelRegistry:          modelRegistry,
+		allowUnvalidatedConfig: allowUnvalidatedConfig,
 	}
 	return &mgr
 }
@@ -115,6 +97,27 @@ func (m *Manager) setTargetGenerator(targetGen func() southbound.TargetIf) {
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
+
+	if err := m.Start(); err != nil {
+		log.Fatal("Unable to run Manager", err)
+	}
+
+	log.Info("Manager Started")
+}
+
+// Start starts the manager
+func (m *Manager) Start() error {
+
+	m.networkChangeController = networkchangectl.NewController(m.LeadershipStore, m.DeviceStore, m.NetworkChangesStore, m.DeviceChangesStore)
+	m.deviceChangeController = devicechangectl.NewController(m.MastershipStore, m.DeviceStore, m.DeviceChangesStore)
+	m.networkSnapshotController = networksnapshotctl.NewController(m.LeadershipStore, m.NetworkChangesStore, m.NetworkSnapshotStore, m.DeviceSnapshotStore, m.DeviceChangesStore)
+	m.deviceSnapshotController = devicesnapshotctl.NewController(m.MastershipStore, m.DeviceChangesStore, m.DeviceSnapshotStore)
+	m.TopoChannel = make(chan *topodevice.ListResponse, 10)
+	m.OperationalStateChannel = make(chan events.OperationalStateEvent)
+	m.SouthboundErrorChan = make(chan events.DeviceResponse)
+	m.Dispatcher = dispatcher.NewDispatcher()
+	m.OperationalStateCache = make(map[topodevice.ID]devicechange.TypedValueMap)
+	m.OperationalStateCacheLock = &sync.RWMutex{}
 
 	// Start the NetworkChange controller
 	errNetworkCtrl := m.networkChangeController.Start()
@@ -155,15 +158,15 @@ func (m *Manager) Run() {
 	)
 
 	if err != nil {
-		log.Error("Error in creating session manager", err)
+		return err
 	}
 
 	err = sessionManager.Start()
 	if err != nil {
-		log.Errorf("Error in starting session manager", err)
+		return err
 	}
 
-	log.Info("Manager Started")
+	return nil
 }
 
 //Close kills the channels and manager related objects

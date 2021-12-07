@@ -34,6 +34,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -87,6 +88,18 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, admin.Config
 		mockstore.NewMockDeviceSnapshotStore(ctrl),
 		true,
 		registry)
+
+	mgrTest.LeadershipStore = mockstore.NewMockLeadershipStore(ctrl)
+	mgrTest.MastershipStore = mockstore.NewMockMastershipStore(ctrl)
+	mgrTest.DeviceChangesStore = mockstore.NewMockDeviceChangesStore(ctrl)
+	mgrTest.DeviceStateStore = mockstore.NewMockDeviceStateStore(ctrl)
+	mgrTest.DeviceStore = mockstore.NewMockDeviceStore(ctrl)
+	mgrTest.DeviceCache = cache.NewMockCache(ctrl)
+	mgrTest.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(ctrl)
+	mgrTest.NetworkSnapshotStore = mockstore.NewMockNetworkSnapshotStore(ctrl)
+	mgrTest.DeviceSnapshotStore = mockstore.NewMockDeviceSnapshotStore(ctrl)
+	mgrTest.ModelRegistry = registry
+	mgrTest.OperationalStateCacheLock = &sync.RWMutex{}
 
 	return mgrTest, conn, client, s
 }
