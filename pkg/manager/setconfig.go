@@ -41,7 +41,7 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Warn("No model ", modelName, " available as a plugin")
-			if !mgr.allowUnvalidatedConfig {
+			if !mgr.Config.AllowUnvalidatedConfig {
 				return fmt.Errorf("no model %s available as a plugin", modelName)
 			}
 			return nil

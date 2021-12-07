@@ -255,18 +255,12 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 	})
 	assert.NoError(t, err)
 
-	mgr := manager.NewManager(
-		mockStores.LeadershipStore,
-		mockStores.MastershipStore,
-		mockStores.DeviceChangesStore,
-		mockStores.DeviceStateStore,
-		mockStores.DeviceStore,
-		deviceCache,
-		mockStores.NetworkChangesStore,
-		mockStores.NetworkSnapshotStore,
-		mockStores.DeviceSnapshotStore,
-		false,
-		modelRegistry)
+	cfg := manager.Config{
+		GRPCPort:               5150,
+		AllowUnvalidatedConfig: true,
+	}
+
+	mgr := manager.NewManager(cfg)
 
 	mgr.LeadershipStore = mockStores.LeadershipStore
 	mgr.MastershipStore = mockStores.MastershipStore

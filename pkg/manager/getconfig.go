@@ -124,7 +124,7 @@ func (m *Manager) checkOpaAllowed(version devicetype.Version, deviceType devicet
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Warn("No model ", modelName, " available as a plugin")
-			if !mgr.allowUnvalidatedConfig {
+			if !mgr.Config.AllowUnvalidatedConfig {
 				return nil, errors.NewNotFound("no model %s available as a plugin", modelName)
 			}
 			return nil, errors.NewNotSupported("allowUnvalidatedConfig is not supported")

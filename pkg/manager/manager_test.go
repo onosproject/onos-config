@@ -261,18 +261,13 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	modelRegistry, err := modelregistry.NewModelRegistry(modelRegistryConfig)
 	assert.NoError(t, err)
 
-	mgrTest = NewManager(
-		mockLeadershipStore,
-		mockMastershipStore,
-		mockDeviceChangesStore,
-		mockDeviceStateStore,
-		mockDeviceStore,
-		mockDeviceCache,
-		mockNetworkChangesStore,
-		mockNetworkSnapshotStore,
-		mockDeviceSnapshotStore,
-		true,
-		modelRegistry)
+	cfg := Config{
+		GRPCPort:               5150,
+		AllowUnvalidatedConfig: true,
+		ModelRegistry:          modelRegistry,
+	}
+
+	mgrTest = NewManager(cfg)
 
 	mgrTest.LeadershipStore = mockLeadershipStore
 	mgrTest.MastershipStore = mockMastershipStore
@@ -285,7 +280,7 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	mgrTest.DeviceSnapshotStore = mockDeviceSnapshotStore
 	mgrTest.ModelRegistry = modelRegistry
 
-	mgrTest.Run()
+	assert.NoError(t, mgrTest.Start())
 
 	mockStores := &mockstore.MockStores{
 		DeviceStore:          mockDeviceStore,
