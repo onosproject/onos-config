@@ -180,6 +180,12 @@ func TestConfigurationStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(configurationList))
 
+	err = store1.Close(context.TODO())
+	assert.NoError(t, err)
+
+	err = store2.Close(context.TODO())
+	assert.NoError(t, err)
+
 }
 
 func nextEvent(t *testing.T, ch chan configapi.ConfigurationEvent) *configapi.Configuration {

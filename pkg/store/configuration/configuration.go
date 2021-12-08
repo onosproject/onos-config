@@ -51,6 +51,8 @@ type Store interface {
 
 	// Watch watches configuration changes
 	Watch(ctx context.Context, ch chan<- configapi.ConfigurationEvent, opts ...WatchOption) error
+
+	Close(ctx context.Context) error
 }
 
 // NewAtomixStore returns a new persistent Store
@@ -233,6 +235,14 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 			}
 		}
 	}()
+	return nil
+}
+
+func (s *configurationStore) Close(ctx context.Context) error {
+	err := s.configurations.Close(ctx)
+	if err != nil {
+		return errors.FromAtomix(err)
+	}
 	return nil
 }
 
