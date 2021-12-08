@@ -37,7 +37,6 @@ package main
 
 import (
 	"flag"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"os"
 	"time"
 
@@ -67,11 +66,6 @@ func main() {
 
 	log.Info("Starting onos-config")
 
-	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{})
-	if err != nil {
-		log.Fatal("Failed to load model registry:", err)
-	}
-
 	cfg := manager.Config{
 		CAPath:                 *caPath,
 		KeyPath:                *keyPath,
@@ -79,7 +73,6 @@ func main() {
 		GRPCPort:               5150,
 		TopoAddress:            *topoEndpoint,
 		AllowUnvalidatedConfig: *allowUnvalidatedConfig,
-		ModelRegistry:          modelRegistry,
 	}
 
 	mgr := manager.NewManager(cfg)
@@ -103,7 +96,7 @@ func main() {
 		log.Infof("Authorization not enabled %s", os.Getenv(OIDCServerURL))
 	}
 
-	err = startServer(*caPath, *keyPath, *certPath, authorization)
+	err := startServer(*caPath, *keyPath, *certPath, authorization)
 	if err != nil {
 		log.Fatal("Unable to start onos-config ", err)
 	}

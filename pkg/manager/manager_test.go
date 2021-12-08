@@ -264,7 +264,6 @@ func setUp(t *testing.T) (*Manager, *AllMocks) {
 	cfg := Config{
 		GRPCPort:               5150,
 		AllowUnvalidatedConfig: true,
-		ModelRegistry:          modelRegistry,
 	}
 
 	mgrTest = NewManager(cfg)

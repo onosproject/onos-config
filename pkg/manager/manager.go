@@ -62,7 +62,6 @@ type Config struct {
 	GRPCPort               int
 	TopoAddress            string
 	AllowUnvalidatedConfig bool
-	ModelRegistry          *modelregistry.ModelRegistry
 }
 
 // Manager single point of entry for the config system.
@@ -160,6 +159,11 @@ func (m *Manager) initializeStores() {
 	}
 	log.Infof("Topology service connected with endpoint %s", m.Config.TopoAddress)
 
+	m.ModelRegistry, err = modelregistry.NewModelRegistry(modelregistry.Config{})
+	if err != nil {
+		log.Fatal("Failed to load model registry:", err)
+	}
+
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
@@ -187,7 +191,6 @@ func (m *Manager) Start() error {
 	m.Dispatcher = dispatcher.NewDispatcher()
 	m.OperationalStateCache = make(map[topodevice.ID]devicechange.TypedValueMap)
 	m.OperationalStateCacheLock = &sync.RWMutex{}
-	m.ModelRegistry = m.Config.ModelRegistry
 
 	// Start the NetworkChange controller
 	errNetworkCtrl := m.networkChangeController.Start()
