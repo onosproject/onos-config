@@ -12,23 +12,71 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package node
+package connection
 
 import (
 	"context"
 	"sync"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-config/pkg/controller/utils"
+
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+
+	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
 )
 
 const queueSize = 100
 
+// ConnWatcher is a gnmi connection watcher
+type ConnWatcher struct {
+	conns  gnmi.ConnManager
+	cancel context.CancelFunc
+	mu     sync.Mutex
+	connCh chan gnmi.Conn
+}
+
+// Start starts the connection watcher
+func (c *ConnWatcher) Start(ch chan<- controller.ID) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.cancel != nil {
+		return nil
+	}
+
+	c.connCh = make(chan gnmi.Conn, queueSize)
+	ctx, cancel := context.WithCancel(context.Background())
+	err := c.conns.Watch(ctx, c.connCh)
+	if err != nil {
+		cancel()
+		return err
+	}
+	c.cancel = cancel
+
+	go func() {
+		for conn := range c.connCh {
+			log.Debugf("Received gNMI Connection event for connection '%s'", conn.ID())
+			ch <- controller.NewID(conn.ID())
+		}
+		close(ch)
+	}()
+	return nil
+}
+
+// Stop stops the connection watcher
+func (c *ConnWatcher) Stop() {
+	c.mu.Lock()
+	if c.cancel != nil {
+		c.cancel()
+		c.cancel = nil
+	}
+	c.mu.Unlock()
+}
+
 // TopoWatcher is a topology watcher
 type TopoWatcher struct {
 	topo   topo.Store
+	conns  gnmi.ConnManager
 	cancel context.CancelFunc
 	mu     sync.Mutex
 }
@@ -50,18 +98,28 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 		return err
 	}
 	w.cancel = cancel
-
 	go func() {
-		ch <- controller.NewID(utils.GetOnosConfigID())
+
 		for event := range eventCh {
-			log.Debugf("Received topo event '%s'", event.Object.ID)
-			if entity, ok := event.Object.Obj.(*topoapi.Object_Entity); ok &&
-				entity.Entity.KindID == topoapi.ONOS_CONFIG {
-				ch <- controller.NewID(event.Object.ID)
+			conns, err := w.conns.List(ctx)
+			if err != nil {
+				log.Warnf("cannot retrieve the list conns %s", err)
+				continue
 			}
+			if relation, ok := event.Object.Obj.(*topoapi.Object_Relation); ok {
+				if relation.Relation.KindID == topoapi.CONTROLS {
+					log.Debugf("Received control relation event: %+v", event.Object.ID)
+					for _, conn := range conns {
+						if conn.ID() == gnmi.ConnID(event.Object.ID) {
+							ch <- controller.NewID(conn.ID)
+						}
+					}
+				}
+			}
+
 		}
-		close(ch)
 	}()
+
 	return nil
 }
 
