@@ -34,6 +34,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -75,18 +76,23 @@ func setUpServer(t *testing.T) (*manager.Manager, *grpc.ClientConn, admin.Config
 	assert.NilError(t, err)
 
 	ctrl := gomock.NewController(t)
-	mgrTest := manager.NewManager(
-		mockstore.NewMockLeadershipStore(ctrl),
-		mockstore.NewMockMastershipStore(ctrl),
-		mockstore.NewMockDeviceChangesStore(ctrl),
-		mockstore.NewMockDeviceStateStore(ctrl),
-		mockstore.NewMockDeviceStore(ctrl),
-		cache.NewMockCache(ctrl),
-		mockstore.NewMockNetworkChangesStore(ctrl),
-		mockstore.NewMockNetworkSnapshotStore(ctrl),
-		mockstore.NewMockDeviceSnapshotStore(ctrl),
-		true,
-		registry)
+	cfg := manager.Config{
+		GRPCPort:               5150,
+		AllowUnvalidatedConfig: true,
+	}
+	mgrTest := manager.NewManager(cfg)
+
+	mgrTest.LeadershipStore = mockstore.NewMockLeadershipStore(ctrl)
+	mgrTest.MastershipStore = mockstore.NewMockMastershipStore(ctrl)
+	mgrTest.DeviceChangesStore = mockstore.NewMockDeviceChangesStore(ctrl)
+	mgrTest.DeviceStateStore = mockstore.NewMockDeviceStateStore(ctrl)
+	mgrTest.DeviceStore = mockstore.NewMockDeviceStore(ctrl)
+	mgrTest.DeviceCache = cache.NewMockCache(ctrl)
+	mgrTest.NetworkChangesStore = mockstore.NewMockNetworkChangesStore(ctrl)
+	mgrTest.NetworkSnapshotStore = mockstore.NewMockNetworkSnapshotStore(ctrl)
+	mgrTest.DeviceSnapshotStore = mockstore.NewMockDeviceSnapshotStore(ctrl)
+	mgrTest.ModelRegistry = registry
+	mgrTest.OperationalStateCacheLock = &sync.RWMutex{}
 
 	return mgrTest, conn, client, s
 }

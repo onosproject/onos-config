@@ -255,28 +255,33 @@ func setUp(t *testing.T) (*Server, *manager.Manager, *AllMocks) {
 	})
 	assert.NoError(t, err)
 
-	mgr := manager.NewManager(
-		mockStores.LeadershipStore,
-		mockStores.MastershipStore,
-		mockStores.DeviceChangesStore,
-		mockStores.DeviceStateStore,
-		mockStores.DeviceStore,
-		deviceCache,
-		mockStores.NetworkChangesStore,
-		mockStores.NetworkSnapshotStore,
-		mockStores.DeviceSnapshotStore,
-		false,
-		modelRegistry)
+	cfg := manager.Config{
+		GRPCPort:               5150,
+		AllowUnvalidatedConfig: true,
+	}
 
-	mgr.DeviceStore = mockStores.DeviceStore
+	mgr := manager.NewManager(cfg)
+
+	mgr.LeadershipStore = mockStores.LeadershipStore
+	mgr.MastershipStore = mockStores.MastershipStore
 	mgr.DeviceChangesStore = mockStores.DeviceChangesStore
+	mgr.DeviceStateStore = mockStores.DeviceStateStore
+	mgr.DeviceStore = mockStores.DeviceStore
+	mgr.DeviceCache = deviceCache
 	mgr.NetworkChangesStore = mockStores.NetworkChangesStore
+	mgr.NetworkSnapshotStore = mockStores.NetworkSnapshotStore
+	mgr.DeviceSnapshotStore = mockStores.DeviceSnapshotStore
+	mgr.ModelRegistry = modelRegistry
+	mgr.OperationalStateCacheLock = &sync.RWMutex{}
 
 	log.Infof("Dispatcher pointer %p", &mgr.Dispatcher)
 	go listenToTopoLoading(mgr.TopoChannel)
 	//go mgr.Dispatcher.Listen(mgr.ChangesChannel)
 
 	setUpWatchMock(&allMocks)
+
+	mgr.Dispatcher = dispatcher.NewDispatcher()
+
 	log.Info("Finished setUp()")
 
 	return server, mgr, &allMocks

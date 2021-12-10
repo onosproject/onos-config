@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	testify "github.com/stretchr/testify/assert"
 	"io/ioutil"
+	"sync"
 	"testing"
 	"time"
 
@@ -150,8 +151,24 @@ func setUpDeepTest(t *testing.T, client atomix.Client) (*Manager, *AllMocks) {
 	})
 	assert.NilError(t, err)
 
-	mgrTest = NewManager(leadershipStore, mastershipStore, deviceChangesStore, deviceStateStore,
-		mockDeviceStore, deviceCache, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, true, modelRegistry)
+	cfg := Config{
+		GRPCPort:               5150,
+		AllowUnvalidatedConfig: true,
+	}
+
+	mgrTest = NewManager(cfg)
+
+	mgrTest.LeadershipStore = leadershipStore
+	mgrTest.MastershipStore = mastershipStore
+	mgrTest.DeviceChangesStore = deviceChangesStore
+	mgrTest.DeviceStateStore = deviceStateStore
+	mgrTest.DeviceStore = mockDeviceStore
+	mgrTest.DeviceCache = deviceCache
+	mgrTest.NetworkChangesStore = networkChangesStore
+	mgrTest.NetworkSnapshotStore = networkSnapshotStore
+	mgrTest.DeviceSnapshotStore = deviceSnapshotStore
+	mgrTest.ModelRegistry = modelRegistry
+	mgrTest.OperationalStateCacheLock = &sync.RWMutex{}
 
 	modelData1 := gnmi.ModelData{
 		Name:         "test1",

@@ -37,25 +37,13 @@ package main
 
 import (
 	"flag"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"os"
 	"time"
 
-	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
-	"github.com/onosproject/onos-config/pkg/store/change/device"
-	"github.com/onosproject/onos-config/pkg/store/change/device/state"
-	"github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	"github.com/onosproject/onos-config/pkg/store/device/cache"
-	"github.com/onosproject/onos-config/pkg/store/leadership"
-	"github.com/onosproject/onos-config/pkg/store/mastership"
-	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
-	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 )
@@ -78,59 +66,24 @@ func main() {
 
 	log.Info("Starting onos-config")
 
-	opts, err := certs.HandleCertPaths(*caPath, *keyPath, *certPath, true)
-	if err != nil {
-		log.Fatal(err)
+	cfg := manager.Config{
+		CAPath:                 *caPath,
+		KeyPath:                *keyPath,
+		CertPath:               *certPath,
+		GRPCPort:               5150,
+		TopoAddress:            *topoEndpoint,
+		AllowUnvalidatedConfig: *allowUnvalidatedConfig,
 	}
 
-	atomixClient := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
+	mgr := manager.NewManager(cfg)
 
-	leadershipStore, err := leadership.NewAtomixStore(atomixClient)
-	if err != nil {
-		log.Fatal("Cannot load leadership atomix store ", err)
-	}
+	defer func() {
+		close(mgr.TopoChannel)
+		log.Info("Shutting down onos-config")
+		time.Sleep(time.Second)
+	}()
 
-	mastershipStore, err := mastership.NewAtomixStore(atomixClient, os.Getenv("POD_NAME"))
-	if err != nil {
-		log.Fatal("Cannot load mastership atomix store ", err)
-	}
-
-	deviceChangesStore, err := device.NewAtomixStore(atomixClient)
-	if err != nil {
-		log.Fatal("Cannot load device atomix store ", err)
-	}
-
-	networkChangesStore, err := network.NewAtomixStore(atomixClient)
-	if err != nil {
-		log.Fatal("Cannot load network atomix store ", err)
-	}
-
-	networkSnapshotStore, err := networksnap.NewAtomixStore(atomixClient)
-	if err != nil {
-		log.Fatal("Cannot load network snapshot atomix store ", err)
-	}
-
-	deviceSnapshotStore, err := devicesnap.NewAtomixStore(atomixClient)
-	if err != nil {
-		log.Fatal("Cannot load network atomix store ", err)
-	}
-
-	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
-	if err != nil {
-		log.Fatal("Cannot load device store with address %s:", *topoEndpoint, err)
-	}
-	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
-
-	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
-	if err != nil {
-		log.Fatal("Cannot load device cache", err)
-	}
-
-	deviceStore, err := devicestore.NewTopoStore(*topoEndpoint, opts...)
-	if err != nil {
-		log.Fatal("Cannot load device store with address %s:", *topoEndpoint, err)
-	}
-	log.Infof("Topology service connected with endpoint %s", *topoEndpoint)
+	mgr.Run()
 
 	authorization := false
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
@@ -142,25 +95,7 @@ func main() {
 		log.Infof("Authorization not enabled %s", os.Getenv(OIDCServerURL))
 	}
 
-	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{})
-	if err != nil {
-		log.Fatal("Failed to load model registry:", err)
-	}
-
-	mgr := manager.NewManager(leadershipStore, mastershipStore, deviceChangesStore,
-		deviceStateStore, deviceStore, deviceCache, networkChangesStore, networkSnapshotStore,
-		deviceSnapshotStore, *allowUnvalidatedConfig, modelRegistry)
-	log.Info("Manager created")
-
-	defer func() {
-		close(mgr.TopoChannel)
-		log.Info("Shutting down onos-config")
-		time.Sleep(time.Second)
-	}()
-
-	mgr.Run()
-
-	err = startServer(*caPath, *keyPath, *certPath, authorization)
+	err := startServer(*caPath, *keyPath, *certPath, authorization)
 	if err != nil {
 		log.Fatal("Unable to start onos-config ", err)
 	}
