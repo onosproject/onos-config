@@ -114,6 +114,7 @@ func startServer(caPath string, keyPath string, certPath string, authorization b
 
 	mgr := manager.GetManager()
 	gnmiService := gnmi.NewService(mgr.ModelRegistry,
+		mgr.DeviceChangesStore,
 		mgr.DeviceCache,
 		mgr.NetworkChangesStore,
 		mgr.Dispatcher,

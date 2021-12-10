@@ -25,6 +25,7 @@ import (
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/device/state"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
@@ -42,6 +43,7 @@ import (
 // Service implements Service for GNMI
 type Service struct {
 	northbound.Service
+	deviceChangesStore        device.Store
 	modelRegistry             *modelregistry.ModelRegistry
 	deviceCache               cache.Cache
 	networkChangesStore       network.Store
@@ -55,6 +57,7 @@ type Service struct {
 
 // NewService allocates a Service struct with the given parameters
 func NewService(modelRegistry *modelregistry.ModelRegistry,
+	deviceChangesStore device.Store,
 	deviceCache cache.Cache,
 	networkChangesStore network.Store,
 	dispatcher *dispatcher.Dispatcher,
@@ -64,6 +67,7 @@ func NewService(modelRegistry *modelregistry.ModelRegistry,
 	operationalStateCacheLock *sync.RWMutex,
 	allowUnvalidatedConfig bool) Service {
 	return Service{
+		deviceChangesStore:        deviceChangesStore,
 		modelRegistry:             modelRegistry,
 		deviceCache:               deviceCache,
 		networkChangesStore:       networkChangesStore,
@@ -80,6 +84,7 @@ func NewService(modelRegistry *modelregistry.ModelRegistry,
 func (s Service) Register(r *grpc.Server) {
 	gnmi.RegisterGNMIServer(r,
 		&Server{
+			deviceChangesStore:        s.deviceChangesStore,
 			modelRegistry:             s.modelRegistry,
 			deviceCache:               s.deviceCache,
 			networkChangesStore:       s.networkChangesStore,
@@ -96,6 +101,7 @@ func (s Service) Register(r *grpc.Server) {
 type Server struct {
 	mu                        sync.RWMutex
 	lastWrite                 networkchange.Revision
+	deviceChangesStore        device.Store
 	modelRegistry             *modelregistry.ModelRegistry
 	deviceCache               cache.Cache
 	networkChangesStore       network.Store
