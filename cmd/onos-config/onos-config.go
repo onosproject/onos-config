@@ -37,13 +37,13 @@ package main
 
 import (
 	"flag"
+	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"os"
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 )
@@ -110,8 +110,18 @@ func startServer(caPath string, keyPath string, certPath string, authorization b
 		}))
 	s.AddService(admin.Service{})
 	s.AddService(diags.Service{})
-	s.AddService(gnmi.Service{})
 	s.AddService(logging.Service{})
+
+	mgr := manager.GetManager()
+	gnmiService := gnmi.NewService(mgr.ModelRegistry,
+		mgr.DeviceCache,
+		mgr.Dispatcher,
+		mgr.DeviceStore,
+		mgr.DeviceStateStore,
+		&mgr.OperationalStateCache,
+		mgr.OperationalStateCacheLock,
+		mgr.Config.AllowUnvalidatedConfig)
+	s.AddService(gnmiService)
 
 	return s.Serve(func(started string) {
 		log.Info("Started NBI on ", started)

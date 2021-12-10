@@ -20,8 +20,14 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
-	"github.com/onosproject/onos-config/pkg/manager"
+	topodevice "github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-config/pkg/dispatcher"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/store/change/device/state"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"io/ioutil"
 	"sync"
 
@@ -35,22 +41,69 @@ import (
 // Service implements Service for GNMI
 type Service struct {
 	northbound.Service
+	modelRegistry             *modelregistry.ModelRegistry
+	deviceCache               cache.Cache
+	dispatcher                *dispatcher.Dispatcher
+	deviceStore               devicestore.Store
+	deviceStateStore          state.Store
+	operationalStateCache     *map[topodevice.ID]devicechange.TypedValueMap
+	operationalStateCacheLock *sync.RWMutex
+	allowUnvalidatedConfig    bool
+}
+
+// NewService allocates a Service struct with the given parameters
+func NewService(modelRegistry *modelregistry.ModelRegistry,
+	deviceCache cache.Cache,
+	dispatcher *dispatcher.Dispatcher,
+	deviceStore devicestore.Store,
+	deviceStateStore state.Store,
+	operationalStateCache *map[topodevice.ID]devicechange.TypedValueMap,
+	operationalStateCacheLock *sync.RWMutex,
+	allowUnvalidatedConfig bool) Service {
+	return Service{
+		modelRegistry:             modelRegistry,
+		deviceCache:               deviceCache,
+		dispatcher:                dispatcher,
+		deviceStore:               deviceStore,
+		deviceStateStore:          deviceStateStore,
+		operationalStateCache:     operationalStateCache,
+		operationalStateCacheLock: operationalStateCacheLock,
+		allowUnvalidatedConfig:    allowUnvalidatedConfig,
+	}
 }
 
 // Register registers the GNMI server with grpc
 func (s Service) Register(r *grpc.Server) {
-	gnmi.RegisterGNMIServer(r, &Server{})
+	gnmi.RegisterGNMIServer(r,
+		&Server{
+			modelRegistry:             s.modelRegistry,
+			deviceCache:               s.deviceCache,
+			dispatcher:                s.dispatcher,
+			deviceStore:               s.deviceStore,
+			deviceStateStore:          s.deviceStateStore,
+			operationalStateCache:     s.operationalStateCache,
+			operationalStateCacheLock: s.operationalStateCacheLock,
+			allowUnvalidatedConfig:    s.allowUnvalidatedConfig,
+		})
 }
 
 // Server implements the grpc GNMI service
 type Server struct {
-	mu        sync.RWMutex
-	lastWrite networkchange.Revision
+	mu                        sync.RWMutex
+	lastWrite                 networkchange.Revision
+	modelRegistry             *modelregistry.ModelRegistry
+	deviceCache               cache.Cache
+	deviceStore               devicestore.Store
+	dispatcher                *dispatcher.Dispatcher
+	deviceStateStore          state.Store
+	operationalStateCache     *map[topodevice.ID]devicechange.TypedValueMap
+	operationalStateCacheLock *sync.RWMutex
+	allowUnvalidatedConfig    bool
 }
 
 // Capabilities implements gNMI Capabilities
 func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) (*gnmi.CapabilityResponse, error) {
-	capabilities, err := manager.GetManager().ModelRegistry.Capabilities()
+	capabilities, err := s.modelRegistry.Capabilities()
 	if err != nil {
 		return nil, err
 	}

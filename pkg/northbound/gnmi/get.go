@@ -20,7 +20,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
-	"github.com/onosproject/onos-config/pkg/manager"
+	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-config/pkg/utils/values"
@@ -84,6 +84,17 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	return &response, nil
 }
 
+// GetAllDeviceIds returns a list of just DeviceIDs from the device cache
+func getAllDeviceIds(s *Server) []string {
+
+	var deviceIds = make([]string, 0)
+	for _, dev := range s.deviceCache.GetDevices() {
+		deviceIds = append(deviceIds, string(dev.DeviceID))
+	}
+
+	return deviceIds
+}
+
 // getUpdate utility method for getting an Update for a given path
 func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *gnmi.Path,
 	encoding gnmi.Encoding, userGroups []string) ([]*gnmi.Update, error) {
@@ -100,7 +111,7 @@ func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *
 	// of devices - note, this can be done in addition to other Paths in the same Get
 	if target == "*" {
 		log.Info("Testing subscription")
-		deviceIDs := *manager.GetManager().GetAllDeviceIds()
+		deviceIDs := getAllDeviceIds(s)
 
 		var allDevicesPathElem = make([]*gnmi.PathElem, 0)
 		allDevicesPathElem = append(allDevicesPathElem, &gnmi.PathElem{Name: "all-devices"})
@@ -134,7 +145,7 @@ func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *
 		return updates, nil
 	}
 
-	deviceType, version, errTypeVersion := manager.GetManager().CheckCacheForDevice(devicetype.ID(target), "", version)
+	deviceType, version, errTypeVersion := nbutils.CheckCacheForDevice(devicetype.ID(target), "", version, s.deviceCache, s.deviceStore)
 	if errTypeVersion != nil {
 		log.Errorf("Error while extracting type and version for target %s with err %v", target, errTypeVersion)
 		return nil, status.Error(codes.InvalidArgument, errTypeVersion.Error())
@@ -149,14 +160,14 @@ func (s *Server) getUpdate(version devicetype.Version, prefix *gnmi.Path, path *
 	revision := s.lastWrite
 	s.mu.RUnlock()
 
-	configValues, errGetTargetCfg := manager.GetManager().GetTargetConfig(
-		devicetype.ID(target), version, deviceType, pathAsString, revision, userGroups)
+	configValues, errGetTargetCfg := nbutils.GetTargetConfig(
+		devicetype.ID(target), version, deviceType, pathAsString, revision, userGroups, s.deviceStateStore, s.modelRegistry, s.allowUnvalidatedConfig)
 	if errGetTargetCfg != nil {
 		log.Error("Error while extracting config", errGetTargetCfg)
 		return nil, errGetTargetCfg
 	}
 
-	stateValues := manager.GetManager().GetTargetState(target, pathAsString)
+	stateValues := nbutils.GetTargetState(target, pathAsString, *s.operationalStateCache, s.operationalStateCacheLock)
 	//Merging the two results
 	configValues = append(configValues, stateValues...)
 
