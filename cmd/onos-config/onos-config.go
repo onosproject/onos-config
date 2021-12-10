@@ -76,7 +76,6 @@ func main() {
 	}
 
 	mgr := manager.NewManager(cfg)
-	log.Info("Manager created")
 
 	defer func() {
 		close(mgr.TopoChannel)
