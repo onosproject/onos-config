@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/onosproject/onos-config/pkg/manager"
+	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
 	"strings"
 	"time"
 
@@ -139,11 +140,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	lastWrite := s.lastWrite
 	s.mu.RUnlock()
 
-	mgr := manager.GetManager()
 	deviceInfo := make(map[devicetype.ID]cache.Info)
 	//Checking for wrong configuration against the device models for updates
 	for target, updates := range targetUpdates {
-		deviceType, version, err = mgr.CheckCacheForDevice(target, deviceType, version)
+		deviceType, version, err = nbutils.CheckCacheForDevice(target, deviceType, version, s.deviceCache, s.deviceStore)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -164,7 +164,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 	//Checking for wrong configuration against the device models for deletes
 	for target, removes := range targetRemovesTmp {
-		deviceType, version, err = mgr.CheckCacheForDevice(target, deviceType, version)
+		deviceType, version, err = nbutils.CheckCacheForDevice(target, deviceType, version, s.deviceCache, s.deviceStore)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -184,8 +184,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	// Creating and setting the config on the atomix Store
-	change, errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo,
-		netCfgChangeName, userName)
+	change, errSet := nbutils.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo,
+		netCfgChangeName, userName, s.networkChangesStore)
 	if errSet != nil {
 		log.Errorf("Error while setting config %s", errSet.Error())
 		return nil, status.Error(codes.Internal, errSet.Error())

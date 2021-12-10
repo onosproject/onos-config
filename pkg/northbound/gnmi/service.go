@@ -26,6 +26,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store/change/device/state"
+	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicestore "github.com/onosproject/onos-config/pkg/store/device"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"io/ioutil"
@@ -43,6 +44,7 @@ type Service struct {
 	northbound.Service
 	modelRegistry             *modelregistry.ModelRegistry
 	deviceCache               cache.Cache
+	networkChangesStore       network.Store
 	dispatcher                *dispatcher.Dispatcher
 	deviceStore               devicestore.Store
 	deviceStateStore          state.Store
@@ -54,6 +56,7 @@ type Service struct {
 // NewService allocates a Service struct with the given parameters
 func NewService(modelRegistry *modelregistry.ModelRegistry,
 	deviceCache cache.Cache,
+	networkChangesStore network.Store,
 	dispatcher *dispatcher.Dispatcher,
 	deviceStore devicestore.Store,
 	deviceStateStore state.Store,
@@ -63,6 +66,7 @@ func NewService(modelRegistry *modelregistry.ModelRegistry,
 	return Service{
 		modelRegistry:             modelRegistry,
 		deviceCache:               deviceCache,
+		networkChangesStore:       networkChangesStore,
 		dispatcher:                dispatcher,
 		deviceStore:               deviceStore,
 		deviceStateStore:          deviceStateStore,
@@ -78,6 +82,7 @@ func (s Service) Register(r *grpc.Server) {
 		&Server{
 			modelRegistry:             s.modelRegistry,
 			deviceCache:               s.deviceCache,
+			networkChangesStore:       s.networkChangesStore,
 			dispatcher:                s.dispatcher,
 			deviceStore:               s.deviceStore,
 			deviceStateStore:          s.deviceStateStore,
@@ -93,6 +98,7 @@ type Server struct {
 	lastWrite                 networkchange.Revision
 	modelRegistry             *modelregistry.ModelRegistry
 	deviceCache               cache.Cache
+	networkChangesStore       network.Store
 	deviceStore               devicestore.Store
 	dispatcher                *dispatcher.Dispatcher
 	deviceStateStore          state.Store
