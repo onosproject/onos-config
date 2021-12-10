@@ -23,6 +23,7 @@ import (
 	configmodel "github.com/onosproject/onos-config-model/pkg/model"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
 	networkstore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -314,7 +315,7 @@ func Test_GetNetworkConfig(t *testing.T) {
 
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*", 0, nil)
+	result, err := nbutils.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*", 0, nil, mgrTest.DeviceStateStore, mgrTest.ModelRegistry, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.NoError(t, err, "GetTargetConfig error")
 
 	assert.Equal(t, len(result), 1, "Unexpected result element count")
@@ -339,13 +340,13 @@ func Test_SetNetworkConfig(t *testing.T) {
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
 	// Verify the change
-	validationError := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
+	validationError := nbutils.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0, mgrTest.ModelRegistry, mgrTest.DeviceStateStore, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.NoError(t, validationError, "ValidateTargetConfig error")
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "Test_SetNetworkConfig"
-	_, err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
-		string(testNetworkChange), "testuser")
+	_, err := nbutils.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
+		string(testNetworkChange), "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "SetTargetConfig error")
 	testUpdate, _ := mgrTest.NetworkChangesStore.Get(testNetworkChange)
 	assert.NotNil(t, testUpdate)
@@ -380,8 +381,8 @@ func Test_SetNetworkConfig_NewConfig(t *testing.T) {
 
 	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(Device5, updates, deletes)
 
-	_, err := mgrTest.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo,
-		NetworkChangeAddDevice5, "testuser")
+	_, err := nbutils.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo,
+		NetworkChangeAddDevice5, "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "SetTargetConfig error")
 	testUpdate, _ := mgrTest.NetworkChangesStore.Get(NetworkChangeAddDevice5)
 	assert.NotNil(t, testUpdate)
@@ -411,8 +412,8 @@ func Test_SetMultipleSimilarNetworkConfig(t *testing.T) {
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B159)
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
-	_, err := mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
-		"Testing", "testuser")
+	_, err := nbutils.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
+		"Testing", "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err)
 
 	// TODO - similar configs are currently not detected
@@ -431,8 +432,8 @@ func Test_SetSingleSimilarNetworkConfig(t *testing.T) {
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B159)
 	updatesForDevice, deletesForDevice, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
-	_, err := mgrTest.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo,
-		"Testing", "testuser")
+	_, err := nbutils.SetNetworkConfig(updatesForDevice, deletesForDevice, deviceInfo,
+		"Testing", "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "Similar config not found")
 }
 
@@ -449,15 +450,15 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 	updates[test1Cont1ACont2ALeaf2A] = devicechange.NewTypedValueFloat(valueLeaf2B314)
 	deletes := []string{test1Cont1ACont2ALeaf2C}
 	updatesForDevice2, deletesForDevice2, deviceInfo2 := makeDeviceChanges("Device2", updates, deletes)
-	_, err := mgrTest.SetNetworkConfig(updatesForDevice2, deletesForDevice2, deviceInfo2,
-		"Device2", "testuser")
+	_, err := nbutils.SetNetworkConfig(updatesForDevice2, deletesForDevice2, deviceInfo2,
+		"Device2", "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "SetTargetConfig error")
 	updatesForDevice3, deletesForDevice3, deviceInfo3 := makeDeviceChanges("Device2", updates, deletes)
-	_, err = mgrTest.SetNetworkConfig(updatesForDevice3, deletesForDevice3, deviceInfo3,
-		"Device3", "testuser")
+	_, err = nbutils.SetNetworkConfig(updatesForDevice3, deletesForDevice3, deviceInfo3,
+		"Device3", "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "SetTargetConfig error")
 	mocks.MockStores.DeviceStore.EXPECT().List(gomock.Any()).AnyTimes()
-	deviceIds := mgrTest.GetAllDeviceIds()
+	deviceIds := nbutils.GetAllDeviceIds(mgrTest.DeviceCache)
 
 	assert.Equal(t, len(*deviceIds), 3)
 	assert.True(t, matchDeviceID((*deviceIds)[0], device1))
@@ -468,7 +469,7 @@ func TestManager_GetAllDeviceIds(t *testing.T) {
 func TestManager_GetNoConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("No Such Device", deviceVersion1, deviceTypeTd, "/*", 0, nil)
+	result, err := nbutils.GetTargetConfig("No Such Device", deviceVersion1, deviceTypeTd, "/*", 0, nil, mgrTest.DeviceStateStore, mgrTest.ModelRegistry, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.Len(t, result, 0, "Get of bad device does not return empty array")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no Configuration found")
@@ -486,7 +487,7 @@ func networkConfigContainsPath(configs []*devicechange.PathValue, whichOne strin
 func TestManager_GetAllConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*", 0, nil)
+	result, err := nbutils.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*", 0, nil, mgrTest.DeviceStateStore, mgrTest.ModelRegistry, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.Len(t, result, 1, "Get of device all paths does not return proper array")
 	assert.NoError(t, err, "Configuration not found")
 	assert.True(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
@@ -495,7 +496,7 @@ func TestManager_GetAllConfig(t *testing.T) {
 func TestManager_GetOneConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, test1Cont1ACont2ALeaf2A, 0, nil)
+	result, err := nbutils.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, test1Cont1ACont2ALeaf2A, 0, nil, mgrTest.DeviceStateStore, mgrTest.ModelRegistry, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.Len(t, result, 1, "Get of device one path does not return proper array")
 	assert.NoError(t, err, "Configuration not found")
 	assert.True(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
@@ -504,7 +505,7 @@ func TestManager_GetOneConfig(t *testing.T) {
 func TestManager_GetWildcardConfig(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*/*/leaf2a", 0, nil)
+	result, err := nbutils.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*/*/leaf2a", 0, nil, mgrTest.DeviceStateStore, mgrTest.ModelRegistry, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.Len(t, result, 1, "Get of device one path does not return proper array")
 	assert.NoError(t, err, "Configuration not found")
 	assert.True(t, networkConfigContainsPath(result, test1Cont1ACont2ALeaf2A), test1Cont1ACont2ALeaf2A+" not found")
@@ -513,7 +514,7 @@ func TestManager_GetWildcardConfig(t *testing.T) {
 func TestManager_GetConfigNoTarget(t *testing.T) {
 	mgrTest, _ := setUp(t)
 
-	result, err := mgrTest.GetTargetConfig("", deviceVersion1, deviceTypeTd, test1Cont1ACont2ALeaf2A, 0, nil)
+	result, err := nbutils.GetTargetConfig("", deviceVersion1, deviceTypeTd, test1Cont1ACont2ALeaf2A, 0, nil, mgrTest.DeviceStateStore, mgrTest.ModelRegistry, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.Error(t, err)
 	assert.Len(t, result, 0, "Get of device one path does not return proper array")
 	assert.Contains(t, err.Error(), "no Configuration found")
@@ -536,22 +537,22 @@ func TestManager_ComputeRollbackFailure(t *testing.T) {
 
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
-	err := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
+	err := nbutils.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0, mgrTest.ModelRegistry, mgrTest.DeviceStateStore, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.NoError(t, err, "ValidateTargetConfig error")
-	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
-		"TestingRollback", "testuser")
+	_, err = nbutils.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
+		"TestingRollback", "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "Can't create change", err)
 
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B314)
 	updates[test1Cont1ACont2ALeaf2D] = devicechange.NewTypedValueFloat(valueLeaf2D123)
 	deletes = append(deletes, test1Cont1ACont2ALeaf2A)
 
-	err = mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
+	err = nbutils.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0, mgrTest.ModelRegistry, mgrTest.DeviceStateStore, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.NoError(t, err, "ValidateTargetConfig error")
 
 	updatesForDevice1, deletesForDevice1, deviceInfo = makeDeviceChanges(device1, updates, deletes)
-	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
-		"TestingRollback2", "testuser")
+	_, err = nbutils.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
+		"TestingRollback2", "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "Can't create change")
 
 	testingRollback, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback")
@@ -575,22 +576,22 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
-	err := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
+	err := nbutils.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0, mgrTest.ModelRegistry, mgrTest.DeviceStateStore, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.NoError(t, err, "ValidateTargetConfig error")
-	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
-		"TestingRollback", "testuser")
+	_, err = nbutils.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
+		"TestingRollback", "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "Can't create change", err)
 
 	updates[test1Cont1ACont2ALeaf2B] = devicechange.NewTypedValueFloat(valueLeaf2B314)
 	updates[test1Cont1ACont2ALeaf2D] = devicechange.NewTypedValueFloat(valueLeaf2D123)
 	deletes = append(deletes, test1Cont1ACont2ALeaf2A)
 
-	err = mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
+	err = nbutils.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0, mgrTest.ModelRegistry, mgrTest.DeviceStateStore, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.NoError(t, err, "ValidateTargetConfig error")
 
 	updatesForDevice1, deletesForDevice1, deviceInfo = makeDeviceChanges(device1, updates, deletes)
-	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
-		"TestingRollback2", "testuser")
+	_, err = nbutils.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
+		"TestingRollback2", "testuser", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "Can't create change")
 
 	testingRollback2, err := mocks.MockStores.NetworkChangesStore.Get("TestingRollback2")
@@ -646,14 +647,14 @@ func TestManager_GetTargetState(t *testing.T) {
 	mgrTest.OperationalStateCacheLock.RUnlock()
 
 	// Test fetching a known path from the cache
-	state1 := mgrTest.GetTargetState(device1, path1WC)
+	state1 := nbutils.GetTargetState(device1, path1WC, mgrTest.OperationalStateCache, mgrTest.OperationalStateCacheLock)
 	assert.NotNil(t, state1, "Path 1 entry not found")
 	assert.Len(t, state1, 1, "Path 1 entry has incorrect length %d", len(state1))
 	assert.Equal(t, state1[0].Path, path1, "Path 1 path is incorrect")
 	assert.Equal(t, string(state1[0].GetValue().GetBytes()), value1, "Path 1 value is incorrect")
 
 	// Test fetching an unknown path from the cache
-	stateBad := mgrTest.GetTargetState(device1, badPath)
+	stateBad := nbutils.GetTargetState(device1, badPath, mgrTest.OperationalStateCache, mgrTest.OperationalStateCacheLock)
 	assert.NotNil(t, stateBad, "Bad Path Entry returns nil")
 	assert.Len(t, stateBad, 0, "Bad path entry has incorrect length %d", len(stateBad))
 }
