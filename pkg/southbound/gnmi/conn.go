@@ -15,7 +15,13 @@
 package gnmi
 
 import (
+	"context"
+	"sync"
 	"time"
+
+	"google.golang.org/grpc/connectivity"
+
+	"google.golang.org/grpc"
 
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 
@@ -38,12 +44,20 @@ type ConnID string
 type Conn interface {
 	Client
 	ID() ConnID
+	TargetID() topoapi.ID
+	GetClientConn() *grpc.ClientConn
+	WatchConnState(ctx context.Context, ch chan<- connectivity.State) error
 }
 
 // conn gNMI Connection
 type conn struct {
 	*client
-	id ConnID
+	clientConn          *grpc.ClientConn
+	id                  ConnID
+	targetID            topoapi.ID
+	connStateWatchers   []chan<- connectivity.State
+	connStateWatchersMu sync.RWMutex
+	connStateEventCh    chan connectivity.State
 }
 
 func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
@@ -130,6 +144,63 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 // ID returns the gNMI connection ID
 func (c *conn) ID() ConnID {
 	return c.id
+}
+
+// TargetID returns target ID associated with this connection
+func (c *conn) TargetID() topoapi.ID {
+	return c.targetID
+}
+
+// GetClientConn gets client connection
+func (c *conn) GetClientConn() *grpc.ClientConn {
+	return c.clientConn
+}
+
+func (c *conn) WatchConnState(ctx context.Context, ch chan<- connectivity.State) error {
+	c.connStateWatchersMu.Lock()
+	c.connStateWatchers = append(c.connStateWatchers, ch)
+	c.connStateWatchersMu.Unlock()
+
+	go func() {
+		<-ctx.Done()
+		c.connStateWatchersMu.Lock()
+		connStateWatchers := make([]chan<- connectivity.State, 0, len(c.connStateWatchers)-1)
+		for _, connStateWatcher := range connStateWatchers {
+			if connStateWatcher != ch {
+				connStateWatchers = append(connStateWatchers, connStateWatcher)
+			}
+		}
+		c.connStateWatchers = connStateWatchers
+		c.connStateWatchersMu.Unlock()
+	}()
+	return nil
+
+}
+
+func (c *conn) processConnStateEvents() {
+	log.Infof("Starting processing of connection state events for connection: %s", c.id)
+	go func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		state := c.clientConn.GetState()
+		log.Infof("Initial connection state for connection %s is %s", c.id, state.String())
+		c.processConnStateEvent(state)
+		for c.clientConn.WaitForStateChange(ctx, state) {
+			state = c.clientConn.GetState()
+			log.Infof("Connection state is changed for connection: %s, current state: %s", c.id, state.String())
+			c.processConnStateEvent(state)
+		}
+	}()
+
+}
+
+func (c *conn) processConnStateEvent(state connectivity.State) {
+	log.Infof("Notifying connection state for connection: %s", c.id)
+	c.connStateWatchersMu.RLock()
+	for _, connStateWatcher := range c.connStateWatchers {
+		connStateWatcher <- state
+	}
+	c.connStateWatchersMu.RUnlock()
 }
 
 var _ Conn = &conn{}

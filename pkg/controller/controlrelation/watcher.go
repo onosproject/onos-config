@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connection
+package controlrelation
 
 import (
 	"context"
 	"sync"
 
+	"google.golang.org/grpc/connectivity"
+
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/pkg/controller/utils"
 
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
@@ -55,8 +58,22 @@ func (c *ConnWatcher) Start(ch chan<- controller.ID) error {
 
 	go func() {
 		for connEvent := range c.connCh {
-			log.Debugf("Received gNMI Connection event for connection '%s'", connEvent.Conn.ID())
-			ch <- controller.NewID(connEvent.Conn.TargetID())
+			conn := connEvent.Conn
+			log.Infof("Received gNMI Connection event for connection '%s'", connEvent.EventType)
+			switch connEvent.EventType {
+			case gnmi.Connected:
+				log.Infof("Test here 0")
+				ch <- controller.NewID(connEvent.Conn.TargetID())
+				connStateCh := make(chan connectivity.State)
+				err = conn.WatchConnState(ctx, connStateCh)
+				go func() {
+					for connState := range connStateCh {
+						log.Debugf("Received gNMI Connection state event for connection '%s'", connState.String())
+						ch <- controller.NewID(connEvent.Conn.TargetID())
+					}
+				}()
+			}
+
 		}
 		close(ch)
 	}()
@@ -99,14 +116,40 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 	}
 	w.cancel = cancel
 	go func() {
-
 		for event := range eventCh {
-			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
-				// If the entity object has configurable aspect then the controller
-				// can make a connection to it
-				err = event.Object.GetAspect(&topoapi.Configurable{})
-				if err == nil {
-					ch <- controller.NewID(event.Object.ID)
+			conns, err := w.conns.List(ctx)
+			if err != nil {
+				log.Warnf("cannot retrieve the list conns %s", err)
+				continue
+			}
+			if relation, ok := event.Object.Obj.(*topoapi.Object_Relation); ok {
+				if relation.Relation.KindID == topoapi.CONTROLS {
+					log.Debugf("Received control relation event: %+v", event.Object.ID)
+					for _, conn := range conns {
+						if conn.ID() == gnmi.ConnID(event.Object.ID) {
+							ch <- controller.NewID(conn.TargetID())
+						}
+					}
+				}
+			}
+			if entity, ok := event.Object.Obj.(*topoapi.Object_Entity); ok &&
+				entity.Entity.KindID == topoapi.ONOS_CONFIG && event.Type == topoapi.EventType_REMOVED {
+				log.Debugf("Received onos-config topo event '%s'", event.Object.ID)
+				controlRelationSrcIDFilter := &topoapi.Filters{
+					RelationFilter: &topoapi.RelationFilter{
+						RelationKind: topoapi.CONTROLS,
+						SrcId:        string(utils.GetOnosConfigID()),
+					},
+				}
+
+				relations, err := w.topo.List(ctx, controlRelationSrcIDFilter)
+				if err != nil {
+					log.Warn(err)
+					continue
+				}
+
+				for _, relation := range relations {
+					ch <- controller.NewID(relation.GetRelation().GetTgtEntityID())
 				}
 			}
 
