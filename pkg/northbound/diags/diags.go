@@ -18,6 +18,11 @@ package diags
 import (
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/onosproject/onos-config/pkg/dispatcher"
+	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
+	devicestore "github.com/onosproject/onos-config/pkg/store/device"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
+	"sync"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
@@ -25,7 +30,6 @@ import (
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/config/diags"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
@@ -40,16 +44,58 @@ var log = logging.GetLogger("northbound", "diags")
 // Service is a Service implementation for administration.
 type Service struct {
 	northbound.Service
-}
-
-// Register registers the Service with the gRPC server.
-func (s Service) Register(r *grpc.Server) {
-	diags.RegisterOpStateDiagsServer(r, Server{})
-	diags.RegisterChangeServiceServer(r, Server{})
+	deviceChangesStore        device.Store
+	deviceCache               cache.Cache
+	networkChangesStore       network.Store
+	dispatcher                *dispatcher.Dispatcher
+	deviceStore               devicestore.Store
+	operationalStateCache     *map[topodevice.ID]devicechange.TypedValueMap
+	operationalStateCacheLock *sync.RWMutex
 }
 
 // Server implements the gRPC service for diagnostic facilities.
 type Server struct {
+	deviceChangesStore        device.Store
+	networkChangesStore       network.Store
+	deviceCache               cache.Cache
+	dispatcher                *dispatcher.Dispatcher
+	deviceStore               devicestore.Store
+	operationalStateCache     *map[topodevice.ID]devicechange.TypedValueMap
+	operationalStateCacheLock *sync.RWMutex
+}
+
+// NewService allocates a Service struct with the given parameters
+func NewService(deviceChangesStore device.Store,
+	deviceCache cache.Cache,
+	networkChangesStore network.Store,
+	dispatcher *dispatcher.Dispatcher,
+	deviceStore devicestore.Store,
+	operationalStateCache *map[topodevice.ID]devicechange.TypedValueMap,
+	operationalStateCacheLock *sync.RWMutex) Service {
+	return Service{
+		deviceChangesStore:        deviceChangesStore,
+		deviceCache:               deviceCache,
+		networkChangesStore:       networkChangesStore,
+		dispatcher:                dispatcher,
+		deviceStore:               deviceStore,
+		operationalStateCache:     operationalStateCache,
+		operationalStateCacheLock: operationalStateCacheLock,
+	}
+}
+
+// Register registers the Service with the gRPC server.
+func (s Service) Register(r *grpc.Server) {
+	server := &Server{
+		deviceChangesStore:        s.deviceChangesStore,
+		deviceCache:               s.deviceCache,
+		networkChangesStore:       s.networkChangesStore,
+		dispatcher:                s.dispatcher,
+		deviceStore:               s.deviceStore,
+		operationalStateCache:     s.operationalStateCache,
+		operationalStateCacheLock: s.operationalStateCacheLock,
+	}
+	diags.RegisterOpStateDiagsServer(r, server)
+	diags.RegisterChangeServiceServer(r, server)
 }
 
 // GetOpState provides a stream of Operational and State data
@@ -61,9 +107,9 @@ func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_Ge
 		}
 	}
 
-	manager.GetManager().OperationalStateCacheLock.RLock()
-	deviceCache, ok := manager.GetManager().OperationalStateCache[topodevice.ID(r.DeviceId)]
-	manager.GetManager().OperationalStateCacheLock.RUnlock()
+	s.operationalStateCacheLock.RLock()
+	deviceCache, ok := (*s.operationalStateCache)[topodevice.ID(r.DeviceId)]
+	s.operationalStateCacheLock.RUnlock()
 	if !ok {
 		return fmt.Errorf("no Operational State cache available for %s", r.DeviceId)
 	}
@@ -83,8 +129,8 @@ func (s Server) GetOpState(r *diags.OpStateRequest, stream diags.OpStateDiags_Ge
 
 	if r.Subscribe {
 		streamID := fmt.Sprintf("diags-%p", stream)
-		listener, err := manager.GetManager().Dispatcher.RegisterOpState(streamID)
-		defer manager.GetManager().Dispatcher.UnregisterOperationalState(streamID)
+		listener, err := s.dispatcher.RegisterOpState(streamID)
+		defer s.dispatcher.UnregisterOperationalState(streamID)
 		if err != nil {
 			log.Warnf("Failed setting up a listener for OpState events on %s", r.DeviceId)
 			return err
@@ -146,7 +192,7 @@ func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream dia
 
 	if r.Subscribe {
 		eventCh := make(chan streams.Event)
-		ctx, err := manager.GetManager().NetworkChangesStore.Watch(eventCh, watchOpts...)
+		ctx, err := s.networkChangesStore.Watch(eventCh, watchOpts...)
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
@@ -186,7 +232,7 @@ func (s Server) ListNetworkChanges(r *diags.ListNetworkChangeRequest, stream dia
 		}
 	} else {
 		changeCh := make(chan *networkchange.NetworkChange)
-		ctx, err := manager.GetManager().NetworkChangesStore.List(changeCh)
+		ctx, err := s.networkChangesStore.List(changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err
@@ -243,7 +289,7 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 	}
 
 	// Look in the deviceCache for a version
-	_, version, err := manager.GetManager().CheckCacheForDevice(r.DeviceID, "", r.DeviceVersion)
+	_, version, err := nbutils.CheckCacheForDevice(r.DeviceID, "", r.DeviceVersion, s.deviceCache, s.deviceStore)
 	if err != nil {
 		log.Errorf(err.Error())
 		return err
@@ -251,7 +297,7 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 
 	if r.Subscribe {
 		eventCh := make(chan streams.Event)
-		ctx, err := manager.GetManager().DeviceChangesStore.Watch(devicetype.NewVersionedID(r.DeviceID, version), eventCh, watchOpts...)
+		ctx, err := s.deviceChangesStore.Watch(devicetype.NewVersionedID(r.DeviceID, version), eventCh, watchOpts...)
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
@@ -288,7 +334,7 @@ func (s Server) ListDeviceChanges(r *diags.ListDeviceChangeRequest, stream diags
 		}
 	} else {
 		changeCh := make(chan *devicechange.DeviceChange)
-		ctx, err := manager.GetManager().DeviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, version), changeCh)
+		ctx, err := s.deviceChangesStore.List(devicetype.NewVersionedID(r.DeviceID, version), changeCh)
 		if err != nil {
 			log.Errorf("Error listing Network Changes %s", err)
 			return err

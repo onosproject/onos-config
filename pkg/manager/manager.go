@@ -18,8 +18,12 @@ package manager
 import (
 	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	"github.com/onosproject/onos-config/pkg/northbound/diags"
+	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
+	"github.com/onosproject/onos-lib-go/pkg/northbound"
 
 	"os"
 	"sync"
@@ -49,6 +53,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// OIDCServerURL - address of an OpenID Connect server
+const OIDCServerURL = "OIDC_SERVER_URL"
 
 var mgr Manager
 
@@ -166,17 +173,79 @@ func (m *Manager) initializeStores() {
 
 }
 
+// Creates gRPC server and registers various services; then serves.
+func (m *Manager) startNBServers() error {
+	authorization := false
+	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
+		authorization = true
+		log.Infof("Authorization enabled. %s=%s", OIDCServerURL, oidcURL)
+		// OIDCServerURL is also referenced in jwt.go (from onos-lib-go)
+		// and in gNMI Get() where it drives OPA lookup
+	} else {
+		log.Infof("Authorization not enabled %s", os.Getenv(OIDCServerURL))
+	}
+
+	s := northbound.NewServer(northbound.NewServerCfg(mgr.Config.CAPath, mgr.Config.KeyPath, mgr.Config.CertPath,
+		int16(mgr.Config.GRPCPort), authorization,
+		northbound.SecurityConfig{
+			AuthenticationEnabled: authorization,
+			AuthorizationEnabled:  authorization,
+		}))
+
+	s.AddService(logging.Service{})
+
+	adminService := admin.NewService(mgr.NetworkChangesStore, mgr.NetworkSnapshotStore, mgr.DeviceSnapshotStore)
+	s.AddService(adminService)
+
+	diagService := diags.NewService(mgr.DeviceChangesStore,
+		mgr.DeviceCache,
+		mgr.NetworkChangesStore,
+		mgr.Dispatcher,
+		mgr.DeviceStore,
+		&mgr.OperationalStateCache,
+		mgr.OperationalStateCacheLock)
+	s.AddService(diagService)
+
+	gnmiService := gnmi.NewService(mgr.ModelRegistry,
+		mgr.DeviceChangesStore,
+		mgr.DeviceCache,
+		mgr.NetworkChangesStore,
+		mgr.Dispatcher,
+		mgr.DeviceStore,
+		mgr.DeviceStateStore,
+		&mgr.OperationalStateCache,
+		mgr.OperationalStateCacheLock,
+		mgr.Config.AllowUnvalidatedConfig)
+	s.AddService(gnmiService)
+
+	doneCh := make(chan error)
+	go func() {
+		err := s.Serve(func(started string) {
+			log.Info("Started NBI on ", started)
+			close(doneCh)
+		})
+		if err != nil {
+			doneCh <- err
+		}
+	}()
+	return <-doneCh
+}
+
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
 
 	m.initializeStores()
 	log.Info("Stores initialized")
+
 	if err := m.Start(); err != nil {
 		log.Fatal("Unable to run Manager", err)
 	}
 
-	log.Info("Manager Started")
+	if err := m.startNBServers(); err != nil {
+		log.Fatal("Unable to run NB servers", err)
+	}
+
 }
 
 // Start starts the manager

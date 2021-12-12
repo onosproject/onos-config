@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package manager
+package utils
 
 import (
 	"fmt"
@@ -25,12 +25,12 @@ import (
 
 // RollbackTargetConfig rollbacks the last change for a given configuration on the target, by setting phase to
 // rollback and state to pending.
-func (m *Manager) RollbackTargetConfig(networkChangeID networkchange.ID) error {
+func RollbackTargetConfig(networkChangeID networkchange.ID, networkChangesStore networkchangestore.Store) error {
 	if networkChangeID == "" {
 		return errors.NewInvalid("error on rollback. networkChangeID is empty")
 	}
 
-	changeRollback, err := m.NetworkChangesStore.Get(networkChangeID)
+	changeRollback, err := networkChangesStore.Get(networkChangeID)
 	if err != nil {
 		return err
 	}
@@ -41,15 +41,15 @@ func (m *Manager) RollbackTargetConfig(networkChangeID networkchange.ID) error {
 	changeRollback.Status.Reason = changetypes.Reason_NONE
 	changeRollback.Status.Message = "Administratively requested rollback"
 
-	if err := m.NetworkChangesStore.Update(changeRollback); err != nil {
+	if err := networkChangesStore.Update(changeRollback); err != nil {
 		return err
 	}
-	return listenForChangeNotification(m, networkChangeID)
+	return listenForChangeNotification(networkChangesStore, networkChangeID)
 }
 
-func listenForChangeNotification(mgr *Manager, changeID networkchange.ID) error {
+func listenForChangeNotification(networkChangesStore networkchangestore.Store, changeID networkchange.ID) error {
 	networkChan := make(chan stream.Event)
-	ctx, errWatch := mgr.NetworkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
+	ctx, errWatch := networkChangesStore.Watch(networkChan, networkchangestore.WithChangeID(changeID))
 	if errWatch != nil {
 		return fmt.Errorf("can't complete rollback operation on target due to %s", errWatch)
 	}

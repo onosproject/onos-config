@@ -563,7 +563,7 @@ func TestManager_ComputeRollbackFailure(t *testing.T) {
 
 	mocks.MockStores.NetworkChangesStore.EXPECT().GetNext(testingRollback.Index).Return(testingRollback2, nil)
 
-	err = mgrTest.RollbackTargetConfig("TestingRollback")
+	err = nbutils.RollbackTargetConfig("TestingRollback", mgrTest.NetworkChangesStore)
 	assert.Error(t, err, "change TestingRollback is not the last active on the stack of changes")
 }
 
@@ -599,7 +599,7 @@ func TestManager_ComputeRollbackDelete(t *testing.T) {
 
 	mocks.MockStores.NetworkChangesStore.EXPECT().GetNext(testingRollback2.Index).Return(nil, nil).AnyTimes()
 
-	err = mgrTest.RollbackTargetConfig("TestingRollback2")
+	err = nbutils.RollbackTargetConfig("TestingRollback2", mgrTest.NetworkChangesStore)
 	assert.NoError(t, err, "Can't roll back change")
 	rbChange, _ := mgrTest.NetworkChangesStore.Get("TestingRollback2")
 	assert.NotNil(t, rbChange)

@@ -24,7 +24,10 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/snapshot"
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
-	"github.com/onosproject/onos-config/pkg/manager"
+	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
+	"github.com/onosproject/onos-config/pkg/store/change/network"
+	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -38,16 +41,36 @@ var log = logging.GetLogger("northbound", "admin")
 // Service is a Service implementation for administration.
 type Service struct {
 	northbound.Service
+	networkChangesStore  network.Store
+	networkSnapshotStore networksnap.Store
+	deviceSnapshotStore  devicesnap.Store
+}
+
+// NewService allocates a Service struct with the given parameters
+func NewService(networkChangesStore network.Store,
+	networkSnapshotStore networksnap.Store,
+	deviceSnapshotStore devicesnap.Store) Service {
+	return Service{
+		networkChangesStore:  networkChangesStore,
+		networkSnapshotStore: networkSnapshotStore,
+		deviceSnapshotStore:  deviceSnapshotStore,
+	}
 }
 
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
-	server := Server{}
+	server := Server{
+		networkChangesStore:  s.networkChangesStore,
+		networkSnapshotStore: s.networkSnapshotStore,
+		deviceSnapshotStore:  s.deviceSnapshotStore}
 	admin.RegisterConfigAdminServiceServer(r, server)
 }
 
 // Server implements the gRPC service for administrative facilities.
 type Server struct {
+	networkChangesStore  network.Store
+	networkSnapshotStore networksnap.Store
+	deviceSnapshotStore  devicesnap.Store
 }
 
 // UploadRegisterModel uploads and registers a new model plugin.
@@ -71,7 +94,7 @@ func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRe
 			return nil, err
 		}
 	}
-	errRollback := manager.GetManager().RollbackTargetConfig(networkchange.ID(req.Name))
+	errRollback := nbutils.RollbackTargetConfig(networkchange.ID(req.Name), s.networkChangesStore)
 	if errRollback != nil {
 		return nil, errRollback
 	}
@@ -95,7 +118,7 @@ func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.Config
 
 	if r.Subscribe {
 		eventCh := make(chan streams.Event)
-		ctx, err := manager.GetManager().DeviceSnapshotStore.WatchAll(eventCh)
+		ctx, err := s.deviceSnapshotStore.WatchAll(eventCh)
 		if err != nil {
 			log.Errorf("Error watching Network Changes %s", err)
 			return err
@@ -132,7 +155,7 @@ func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.Config
 		}
 	} else {
 		changeCh := make(chan *devicesnapshot.Snapshot)
-		ctx, err := manager.GetManager().DeviceSnapshotStore.LoadAll(changeCh)
+		ctx, err := s.deviceSnapshotStore.LoadAll(changeCh)
 		if err != nil {
 			log.Errorf("Error ListSnapshots %s", err)
 			return err
@@ -188,12 +211,12 @@ func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChange
 	}
 
 	ch := make(chan streams.Event)
-	stream, err := manager.GetManager().NetworkSnapshotStore.Watch(ch)
+	stream, err := s.networkSnapshotStore.Watch(ch)
 	if err != nil {
 		return nil, err
 	}
 	defer stream.Close()
-	if err := manager.GetManager().NetworkSnapshotStore.Create(snap); err != nil {
+	if err := s.networkSnapshotStore.Create(snap); err != nil {
 		return nil, err
 	}
 
