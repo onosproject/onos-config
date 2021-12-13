@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package manager
+package utils
 
 import (
 	"fmt"
@@ -21,6 +21,8 @@ import (
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change/device/state"
+	"github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -33,15 +35,18 @@ const SetConfigAlreadyApplied = "Already applied:"
 
 // ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target (Atomix Based)
-func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
-	deviceType devicetype.Type, updates devicechange.TypedValueMap, deletes []string, lastWrite networkchange.Revision) error {
+func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
+	deviceType devicetype.Type, updates devicechange.TypedValueMap,
+	deletes []string, lastWrite networkchange.Revision,
+	modelRegistry *modelregistry.ModelRegistry,
+	deviceStateStore state.Store, allowUnvalidatedConfig bool) error {
 
 	modelName := utils.ToModelName(deviceType, version)
-	deviceModelYgotPlugin, err := m.ModelRegistry.GetPlugin(modelName)
+	deviceModelYgotPlugin, err := modelRegistry.GetPlugin(modelName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Warn("No model ", modelName, " available as a plugin")
-			if !mgr.Config.AllowUnvalidatedConfig {
+			if !allowUnvalidatedConfig {
 				return fmt.Errorf("no model %s available as a plugin", modelName)
 			}
 			return nil
@@ -49,7 +54,7 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 		return err
 	}
 
-	configValues, err := m.DeviceStateStore.Get(devicetype.NewVersionedID(deviceName, version), lastWrite)
+	configValues, err := deviceStateStore.Get(devicetype.NewVersionedID(deviceName, version), lastWrite)
 	if err != nil {
 		return err
 	}
@@ -127,12 +132,13 @@ func (m *Manager) ValidateNetworkConfig(deviceName devicetype.ID, version device
 }
 
 // SetNetworkConfig creates and stores a new netork config for the given updates and deletes and targets
-func (m *Manager) SetNetworkConfig(targetUpdates map[devicetype.ID]devicechange.TypedValueMap,
+func SetNetworkConfig(targetUpdates map[devicetype.ID]devicechange.TypedValueMap,
 	targetRemoves map[devicetype.ID][]string, deviceInfo map[devicetype.ID]cache.Info,
-	netChangeID string, username string) (*networkchange.NetworkChange, error) {
+	netChangeID string, username string,
+	networkChangesStore network.Store) (*networkchange.NetworkChange, error) {
 	//TODO evaluate need of user and add it back if need be.
 
-	allDeviceChanges, errChanges := m.computeNetworkConfig(targetUpdates, targetRemoves, deviceInfo, "")
+	allDeviceChanges, errChanges := computeNetworkConfig(targetUpdates, targetRemoves, deviceInfo, "")
 	if errChanges != nil {
 		return nil, errChanges
 	}
@@ -142,7 +148,7 @@ func (m *Manager) SetNetworkConfig(targetUpdates map[devicetype.ID]devicechange.
 	}
 	newNetworkConfig.WithUsername(username)
 	//Writing to the atomix backed store too
-	errStoreChange := m.NetworkChangesStore.Create(newNetworkConfig)
+	errStoreChange := networkChangesStore.Create(newNetworkConfig)
 	if errStoreChange != nil {
 		return nil, errStoreChange
 	}
@@ -150,7 +156,7 @@ func (m *Manager) SetNetworkConfig(targetUpdates map[devicetype.ID]devicechange.
 }
 
 //computeNetworkConfig computes each device change
-func (m *Manager) computeNetworkConfig(targetUpdates map[devicetype.ID]devicechange.TypedValueMap,
+func computeNetworkConfig(targetUpdates map[devicetype.ID]devicechange.TypedValueMap,
 	targetRemoves map[devicetype.ID][]string, deviceInfo map[devicetype.ID]cache.Info,
 	description string) ([]*devicechange.Change, error) {
 

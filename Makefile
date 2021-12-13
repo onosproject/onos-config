@@ -30,7 +30,13 @@ helmit-gnmi: integration-test-namespace # @HELP run helmit gnmi tests locally
 helmit-cli: integration-test-namespace # @HELP run helmit cli tests locally
 	helmit test -n test ./cmd/onos-config-tests --suite cli
 
-integration-tests: helmit-gnmi helmit-cli # @HELP run helmit integration tests locally
+preload-helmit-images:
+	    docker pull onosproject/config-model-init:v1.0.1
+        kind load docker-image onosproject/config-model-init:v1.0.1
+        docker pull onosproject/config-model-registry:v1.0.1
+        kind load docker-image onosproject/config-model-registry:v1.0.1
+
+integration-tests: preload-helmit-images helmit-gnmi helmit-cli # @HELP run helmit integration tests locally
 
 onos-config-docker: # @HELP build onos-config base Docker image
 	docker build . -f build/onos-config/Dockerfile \

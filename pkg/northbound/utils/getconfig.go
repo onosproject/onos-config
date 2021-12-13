@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package manager
+package utils
 
 import (
 	"bytes"
@@ -20,8 +20,11 @@ import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store"
+	"github.com/onosproject/onos-config/pkg/store/change/device/state"
+	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io/ioutil"
@@ -36,9 +39,9 @@ const OIDCServerURL = "OIDC_SERVER_URL"
 
 // GetTargetConfig returns a set of change values given a target, a configuration name, a path and a layer.
 // The layer is the numbers of config changes we want to go back in time for. 0 is the latest (Atomix based)
-func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Version, deviceType devicetype.Type,
-	path string, revision networkchange.Revision, groups []string) ([]*devicechange.PathValue, error) {
-	configValues, errGetTargetCfg := m.DeviceStateStore.Get(devicetype.NewVersionedID(deviceID, version), revision)
+func GetTargetConfig(deviceID devicetype.ID, version devicetype.Version, deviceType devicetype.Type,
+	path string, revision networkchange.Revision, groups []string, deviceStateStore state.Store, modelRegistry *modelregistry.ModelRegistry, allowUnvalidatedConfig bool) ([]*devicechange.PathValue, error) {
+	configValues, errGetTargetCfg := deviceStateStore.Get(devicetype.NewVersionedID(deviceID, version), revision)
 	if errGetTargetCfg != nil {
 		log.Error("Error while extracting config", errGetTargetCfg)
 		return nil, errGetTargetCfg
@@ -49,7 +52,7 @@ func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Ver
 	var configValuesAllowed []*devicechange.PathValue
 	var err error
 	if len(os.Getenv(OIDCServerURL)) > 0 {
-		configValuesAllowed, err = m.checkOpaAllowed(version, deviceType, configValues, groups)
+		configValuesAllowed, err = checkOpaAllowed(version, deviceType, configValues, groups, modelRegistry, allowUnvalidatedConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -70,10 +73,10 @@ func (m *Manager) GetTargetConfig(deviceID devicetype.ID, version devicetype.Ver
 }
 
 // GetAllDeviceIds returns a list of just DeviceIDs from the device cache
-func (m *Manager) GetAllDeviceIds() *[]string {
+func GetAllDeviceIds(deviceCache cache.Cache) *[]string {
 
 	var deviceIds = make([]string, 0)
-	for _, dev := range m.DeviceCache.GetDevices() {
+	for _, dev := range deviceCache.GetDevices() {
 		deviceIds = append(deviceIds, string(dev.DeviceID))
 	}
 
@@ -82,8 +85,8 @@ func (m *Manager) GetAllDeviceIds() *[]string {
 
 // checkOpaAllowed - call the OPA sidecar with the configuration to filter only
 // those items allowed for an enterprise
-func (m *Manager) checkOpaAllowed(version devicetype.Version, deviceType devicetype.Type,
-	configValues []*devicechange.PathValue, groups []string) ([]*devicechange.PathValue, error) {
+func checkOpaAllowed(version devicetype.Version, deviceType devicetype.Type,
+	configValues []*devicechange.PathValue, groups []string, modelRegistry *modelregistry.ModelRegistry, allowUnvalidatedConfig bool) ([]*devicechange.PathValue, error) {
 	log.Infof("Querying OPA sidecar for allowed configuration for %s:%s", deviceType, version)
 
 	jsonTree, err := store.BuildTree(configValues, true)
@@ -120,11 +123,11 @@ func (m *Manager) checkOpaAllowed(version devicetype.Version, deviceType devicet
 
 	// Have to have the model plugin to determine the types of each attribute when unmarshalling JSON
 	modelName := utils.ToModelName(deviceType, version)
-	deviceModelYgotPlugin, err := m.ModelRegistry.GetPlugin(modelName)
+	deviceModelYgotPlugin, err := modelRegistry.GetPlugin(modelName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Warn("No model ", modelName, " available as a plugin")
-			if !mgr.Config.AllowUnvalidatedConfig {
+			if !allowUnvalidatedConfig {
 				return nil, errors.NewNotFound("no model %s available as a plugin", modelName)
 			}
 			return nil, errors.NewNotSupported("allowUnvalidatedConfig is not supported")

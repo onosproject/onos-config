@@ -37,19 +37,12 @@ package main
 
 import (
 	"flag"
-	"os"
-	"time"
-
 	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"github.com/onosproject/onos-lib-go/pkg/northbound"
+	"os"
+	"os/signal"
+	"syscall"
 )
-
-// OIDCServerURL - address of an OpenID Connect server
-const OIDCServerURL = "OIDC_SERVER_URL"
 
 var log = logging.GetLogger("main")
 
@@ -77,43 +70,11 @@ func main() {
 
 	mgr := manager.NewManager(cfg)
 
-	defer func() {
-		close(mgr.TopoChannel)
-		log.Info("Shutting down onos-config")
-		time.Sleep(time.Second)
-	}()
-
 	mgr.Run()
 
-	authorization := false
-	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
-		authorization = true
-		log.Infof("Authorization enabled. %s=%s", OIDCServerURL, oidcURL)
-		// OIDCServerURL is also referenced in jwt.go (from onos-lib-go)
-		// and in gNMI Get() where it drives OPA lookup
-	} else {
-		log.Infof("Authorization not enabled %s", os.Getenv(OIDCServerURL))
-	}
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	<-sigCh
 
-	err := startServer(*caPath, *keyPath, *certPath, authorization)
-	if err != nil {
-		log.Fatal("Unable to start onos-config ", err)
-	}
-}
-
-// Creates gRPC server and registers various services; then serves.
-func startServer(caPath string, keyPath string, certPath string, authorization bool) error {
-	s := northbound.NewServer(northbound.NewServerCfg(caPath, keyPath, certPath, 5150, true,
-		northbound.SecurityConfig{
-			AuthenticationEnabled: authorization,
-			AuthorizationEnabled:  authorization,
-		}))
-	s.AddService(admin.Service{})
-	s.AddService(diags.Service{})
-	s.AddService(gnmi.Service{})
-	s.AddService(logging.Service{})
-
-	return s.Serve(func(started string) {
-		log.Info("Started NBI on ", started)
-	})
+	mgr.Close()
 }

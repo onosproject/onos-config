@@ -23,7 +23,7 @@ import (
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/manager"
+	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
 	"github.com/onosproject/onos-config/pkg/store"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -53,7 +53,6 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	}
 	//updateChan := make(chan *gnmi.Update)
 	var subscribe *gnmi.SubscriptionList
-	mgr := manager.GetManager()
 	//hashing the stream to obtain a unique identifier of the client
 	h := sha1.New()
 	_, err1 := io.WriteString(h, fmt.Sprintf("%v", stream))
@@ -62,14 +61,14 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	}
 	hash := store.B64(h.Sum(nil))
 	//Registering one listener for opStateChan
-	opStateChan, err := mgr.Dispatcher.RegisterOpState(hash)
+	opStateChan, err := s.dispatcher.RegisterOpState(hash)
 	if err != nil {
 		log.Warn("Subscription present: ", err)
 		return status.Error(codes.AlreadyExists, err.Error())
 	}
 	resChan := make(chan result)
 	//Handles each subscribe request coming into the server, blocks until a new request or an error comes in
-	go s.listenOnChannel(stream, mgr, hash, resChan, subscribe, opStateChan)
+	go s.listenOnChannel(stream, hash, resChan, subscribe, opStateChan)
 
 	res := <-resChan
 
@@ -79,14 +78,14 @@ func (s *Server) Subscribe(stream gnmi.GNMI_SubscribeServer) error {
 	return nil
 }
 
-func (s *Server) listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager, hash string,
+func (s *Server) listenOnChannel(stream gnmi.GNMI_SubscribeServer, hash string,
 	resChan chan result, subscribe *gnmi.SubscriptionList, opStateChan chan events.OperationalStateEvent) {
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
 			log.Info("Subscription Terminated EOF")
 			//Ignoring Errors during removal
-			mgr.Dispatcher.UnregisterOperationalState(hash)
+			s.dispatcher.UnregisterOperationalState(hash)
 			resChan <- result{success: true, err: nil}
 			break
 		}
@@ -95,12 +94,12 @@ func (s *Server) listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.
 			code, ok := status.FromError(err)
 			if ok && code.Code() == codes.Canceled {
 				log.Info("Subscription Terminated, Canceled")
-				mgr.Dispatcher.UnregisterOperationalState(hash)
+				s.dispatcher.UnregisterOperationalState(hash)
 				resChan <- result{success: true, err: nil}
 			} else {
 				log.Error("Error in subscription ", err)
 				//Ignoring Errors during removal
-				mgr.Dispatcher.UnregisterOperationalState(hash)
+				s.dispatcher.UnregisterOperationalState(hash)
 				resChan <- result{success: false, err: err}
 			}
 			break
@@ -135,7 +134,7 @@ func (s *Server) listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.
 			if err != nil {
 				resChan <- result{success: false, err: err}
 			} else {
-				go s.collector(mgr, version, stream, subscribe, resChan, mode)
+				go s.collector(version, stream, subscribe, resChan, mode)
 			}
 		} else {
 
@@ -149,15 +148,15 @@ func (s *Server) listenOnChannel(stream gnmi.GNMI_SubscribeServer, mgr *manager.
 				targets[sub.Path.Target] = struct{}{}
 			}
 			//Each subscription request spawns a go routing listening for related events for the target and the paths
-			go listenForUpdates(stream, mgr, targets, version, subsStr, resChan)
-			go listenForOpStateUpdates(opStateChan, stream, targets, subsStr, resChan)
+			go s.listenForUpdates(stream, targets, version, subsStr, resChan)
+			go s.listenForOpStateUpdates(opStateChan, stream, targets, subsStr, resChan)
 		}
 	}
 }
 
-func (s *Server) collector(mgr *manager.Manager, version devicetype.Version, stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result, mode gnmi.SubscriptionList_Mode) {
+func (s *Server) collector(version devicetype.Version, stream gnmi.GNMI_SubscribeServer, request *gnmi.SubscriptionList, resChan chan result, mode gnmi.SubscriptionList_Mode) {
 	for _, sub := range request.Subscription {
-		_, version, err := mgr.CheckCacheForDevice(devicetype.ID(sub.GetPath().GetTarget()), devicetype.Type(""), version)
+		_, version, err := nbutils.CheckCacheForDevice(devicetype.ID(sub.GetPath().GetTarget()), devicetype.Type(""), version, s.deviceCache, s.deviceStore)
 		if err != nil {
 			log.Error("Error while collecting data from device cache ", err)
 			resChan <- result{success: false, err: err}
@@ -168,7 +167,7 @@ func (s *Server) collector(mgr *manager.Manager, version devicetype.Version, str
 			log.Error("Error while collecting data for subscribe once or poll ", err)
 			resChan <- result{success: false, err: err}
 		}
-		response, errGet := buildUpdateResponse(updates)
+		response, errGet := s.buildUpdateResponse(updates)
 		if errGet != nil {
 			log.Error("Error Retrieving Device", err)
 			resChan <- result{success: false, err: err}
@@ -192,23 +191,23 @@ func (s *Server) collector(mgr *manager.Manager, version devicetype.Version, str
 }
 
 //For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
-func listenForUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
+func (s *Server) listenForUpdates(stream gnmi.GNMI_SubscribeServer,
 	targets map[string]struct{}, version devicetype.Version, subs []*regexp.Regexp, resChan chan result) {
 	for target := range targets {
-		_, version, err := mgr.CheckCacheForDevice(devicetype.ID(target), devicetype.Type(""), version)
+		_, version, err := nbutils.CheckCacheForDevice(devicetype.ID(target), devicetype.Type(""), version, s.deviceCache, s.deviceStore)
 		if err != nil {
 			log.Errorf("unable to get version from cache %s", err)
 			return
 		}
-		go listenForDeviceUpdates(stream, mgr, devicetype.ID(target), version, subs, resChan)
+		go s.listenForDeviceUpdates(stream, devicetype.ID(target), version, subs, resChan)
 	}
 }
 
 //For each update coming from the change channel we check if it's for a valid target and path then, if so, we send it NB
-func listenForDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manager,
+func (s *Server) listenForDeviceUpdates(stream gnmi.GNMI_SubscribeServer,
 	target devicetype.ID, version devicetype.Version, subs []*regexp.Regexp, resChan chan result) {
 	eventCh := make(chan streams.Event)
-	ctx, errWatch := mgr.DeviceChangesStore.Watch(devicetype.NewVersionedID(target, version), eventCh)
+	ctx, errWatch := s.deviceChangesStore.Watch(devicetype.NewVersionedID(target, version), eventCh)
 	if errWatch != nil {
 		log.Errorf("Cant watch for changes on device %s. error %s", target, errWatch.Error())
 		resChan <- result{success: false, err: errWatch}
@@ -230,7 +229,7 @@ func listenForDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manag
 						continue
 					}
 					log.Infof("Subscribe notification for %s on %s with value %s", pathGnmi, target, value.Value)
-					err = buildAndSendUpdate(pathGnmi, string(target), value.Value, value.Removed, stream)
+					err = s.buildAndSendUpdate(pathGnmi, string(target), value.Value, value.Removed, stream)
 					if err != nil {
 						log.Warn("Error in sending device update path ", err)
 						resChan <- result{success: false, err: err}
@@ -242,7 +241,7 @@ func listenForDeviceUpdates(stream gnmi.GNMI_SubscribeServer, mgr *manager.Manag
 }
 
 //For each update coming from the state channel we check if it's for a valid target and path then, if so, we send it NB
-func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stream gnmi.GNMI_SubscribeServer,
+func (s *Server) listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stream gnmi.GNMI_SubscribeServer,
 	targets map[string]struct{}, subs []*regexp.Regexp, resChan chan result) {
 	for opStateChange := range opStateChan {
 		target := opStateChange.Subject()
@@ -256,7 +255,7 @@ func listenForOpStateUpdates(opStateChan chan events.OperationalStateEvent, stre
 				continue
 			}
 
-			err = buildAndSendUpdate(pathGnmi, target, opStateChange.Value(), len(opStateChange.Value().Bytes) == 0, stream)
+			err = s.buildAndSendUpdate(pathGnmi, target, opStateChange.Value(), len(opStateChange.Value().Bytes) == 0, stream)
 			if err != nil {
 				log.Warn("Error in sending state update path ", err)
 				resChan <- result{success: false, err: err}
@@ -274,14 +273,14 @@ func matchRegex(path string, subs []*regexp.Regexp) bool {
 	return false
 }
 
-func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechange.TypedValue, removed bool,
+func (s *Server) buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechange.TypedValue, removed bool,
 	stream gnmi.GNMI_SubscribeServer) error {
 	pathGnmi.Target = target
 	var response *gnmi.SubscribeResponse
 	var errGet error
 	//if removed we issue a delete notification
 	if removed {
-		response, errGet = buildDeleteResponse(pathGnmi)
+		response, errGet = s.buildDeleteResponse(pathGnmi)
 	} else {
 		valueGnmi, err := values.NativeTypeToGnmiTypedValue(value)
 		if err != nil {
@@ -295,7 +294,7 @@ func buildAndSendUpdate(pathGnmi *gnmi.Path, target string, value *devicechange.
 		}
 		updates := make([]*gnmi.Update, 1)
 		updates[0] = update
-		response, errGet = buildUpdateResponse(updates)
+		response, errGet = s.buildUpdateResponse(updates)
 	}
 	if errGet != nil {
 		return errGet
@@ -318,24 +317,24 @@ func buildSyncResponse() *gnmi.SubscribeResponse {
 	}
 }
 
-func buildUpdateResponse(updates []*gnmi.Update) (*gnmi.SubscribeResponse, error) {
+func (s *Server) buildUpdateResponse(updates []*gnmi.Update) (*gnmi.SubscribeResponse, error) {
 	notification := &gnmi.Notification{
 		Timestamp: time.Now().Unix(),
 		Update:    updates,
 	}
-	return buildSubscribeResponse(notification)
+	return s.buildSubscribeResponse(notification)
 }
 
-func buildDeleteResponse(delete *gnmi.Path) (*gnmi.SubscribeResponse, error) {
+func (s *Server) buildDeleteResponse(delete *gnmi.Path) (*gnmi.SubscribeResponse, error) {
 	deleteArray := []*gnmi.Path{delete}
 	notification := &gnmi.Notification{
 		Timestamp: time.Now().Unix(),
 		Delete:    deleteArray,
 	}
-	return buildSubscribeResponse(notification)
+	return s.buildSubscribeResponse(notification)
 }
 
-func buildSubscribeResponse(notification *gnmi.Notification) (*gnmi.SubscribeResponse, error) {
+func (s *Server) buildSubscribeResponse(notification *gnmi.Notification) (*gnmi.SubscribeResponse, error) {
 	responseUpdate := &gnmi.SubscribeResponse_Update{
 		Update: notification,
 	}
@@ -343,7 +342,7 @@ func buildSubscribeResponse(notification *gnmi.Notification) (*gnmi.SubscribeRes
 		Response: responseUpdate,
 	}
 	for _, u := range notification.Update {
-		ext, err := checkDevice(u.GetPath().GetTarget())
+		ext, err := s.checkDevice(u.GetPath().GetTarget())
 		if err != nil {
 			return nil, err
 		}
@@ -359,8 +358,8 @@ func buildSubscribeResponse(notification *gnmi.Notification) (*gnmi.SubscribeRes
 	return response, nil
 }
 
-func checkDevice(target string) (*gnmi_ext.Extension_RegisteredExt, error) {
-	_, errDevice := manager.GetManager().DeviceStore.Get(topodevice.ID(target))
+func (s *Server) checkDevice(target string) (*gnmi_ext.Extension_RegisteredExt, error) {
+	_, errDevice := s.deviceStore.Get(topodevice.ID(target))
 	if errDevice != nil && status.Convert(errDevice).Code() == codes.NotFound {
 		return &gnmi_ext.Extension_RegisteredExt{
 			RegisteredExt: &gnmi_ext.RegisteredExtension{

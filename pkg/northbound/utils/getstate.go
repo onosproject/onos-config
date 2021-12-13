@@ -12,22 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package manager
+package utils
 
 import (
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/utils"
+	"sync"
 )
 
 // GetTargetState returns a set of state values given a target and a path.
-func (m *Manager) GetTargetState(target string, path string) []*devicechange.PathValue {
+func GetTargetState(target string, path string, operationalStateCache map[topodevice.ID]devicechange.TypedValueMap,
+	operationalStateCacheLock *sync.RWMutex) []*devicechange.PathValue {
 	log.Info("Getting State for ", target, path)
 	configValues := make([]*devicechange.PathValue, 0)
 	//First check the cache, if it's not empty for this path we read that and return,
 	pathRegexp := utils.MatchWildcardRegexp(path, false)
-	m.OperationalStateCacheLock.RLock()
-	for pathCache, value := range m.OperationalStateCache[topodevice.ID(target)] {
+	operationalStateCacheLock.RLock()
+	for pathCache, value := range operationalStateCache[topodevice.ID(target)] {
 		if pathRegexp.MatchString(pathCache) {
 			configValues = append(configValues, &devicechange.PathValue{
 				Path:  pathCache,
@@ -35,7 +37,7 @@ func (m *Manager) GetTargetState(target string, path string) []*devicechange.Pat
 			})
 		}
 	}
-	m.OperationalStateCacheLock.RUnlock()
+	operationalStateCacheLock.RUnlock()
 	if len(configValues) == 0 {
 		log.Warnf("Path %s is not in the operational state cache of device %s", path, target)
 	}

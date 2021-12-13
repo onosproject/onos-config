@@ -23,6 +23,7 @@ import (
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
 	testify "github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"sync"
@@ -297,7 +298,7 @@ func Test_GetNetworkConfig_Deep(t *testing.T) {
 
 	mgrTest, _ := setUpDeepTest(t, atomixClient)
 
-	result, err := mgrTest.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*", 0, nil)
+	result, err := nbutils.GetTargetConfig(device1, deviceVersion1, deviceTypeTd, "/*", 0, nil, mgrTest.DeviceStateStore, mgr.ModelRegistry, mgr.Config.AllowUnvalidatedConfig)
 	assert.NilError(t, err, "GetTargetConfig error")
 
 	assert.Equal(t, len(result), 1, "Unexpected result element count")
@@ -336,13 +337,13 @@ func Test_SetNetworkConfig_Deep(t *testing.T) {
 	updatesForDevice1, deletesForDevice1, deviceInfo := makeDeviceChanges(device1, updates, deletes)
 
 	// Verify the change
-	validationError := mgrTest.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0)
+	validationError := nbutils.ValidateNetworkConfig(device1, deviceVersion1, deviceTypeTd, updates, deletes, 0, mgrTest.ModelRegistry, mgrTest.DeviceStateStore, mgrTest.Config.AllowUnvalidatedConfig)
 	assert.NilError(t, validationError, "ValidateTargetConfig error")
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "Test_SetNetworkConfig"
-	_, err = mgrTest.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
-		string(testNetworkChange), "testuser")
+	_, err = nbutils.SetNetworkConfig(updatesForDevice1, deletesForDevice1, deviceInfo,
+		string(testNetworkChange), "testuser", mgrTest.NetworkChangesStore)
 	assert.NilError(t, err, "SetTargetConfig error")
 
 	nwChangeUpdates := make(chan stream.Event)
@@ -419,8 +420,8 @@ func Test_SetNetworkConfig_ConfigOnly_Deep(t *testing.T) {
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "ConfigOnly_SetNetworkConfig"
-	_, err = mgrTest.SetNetworkConfig(updatesForConfigOnlyDevice, deletesForConfigOnlyDevice, deviceInfo,
-		string(testNetworkChange), "testuser")
+	_, err = nbutils.SetNetworkConfig(updatesForConfigOnlyDevice, deletesForConfigOnlyDevice, deviceInfo,
+		string(testNetworkChange), "testuser", mgrTest.NetworkChangesStore)
 	assert.NilError(t, err, "ConfigOnly_SetNetworkConfig error")
 
 	nwChangeUpdates := make(chan stream.Event)
@@ -531,8 +532,8 @@ func Test_SetNetworkConfig_Disconnected_Device(t *testing.T) {
 
 	// Set the new change
 	const testNetworkChange networkchange.ID = "Disconnected_SetNetworkConfig"
-	_, err = mgrTest.SetNetworkConfig(updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo,
-		string(testNetworkChange), "testuser")
+	_, err = nbutils.SetNetworkConfig(updatesForDisconnectedDevice, deletesForDisconnectedDevice, deviceInfo,
+		string(testNetworkChange), "testuser", mgrTest.NetworkChangesStore)
 	assert.NilError(t, err, "Disconnected_SetNetworkConfig error")
 
 	nwChangeUpdates := make(chan stream.Event)

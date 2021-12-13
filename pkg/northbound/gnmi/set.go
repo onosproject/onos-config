@@ -18,13 +18,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
 	"strings"
 	"time"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
-	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
@@ -86,7 +86,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		if target == "" { //Try the prefix
 			target = prefixTarget
 		}
-		rwPaths, err := extractModelForTarget(target, version, deviceType, targetModels)
+		rwPaths, err := extractModelForTarget(target, version, deviceType, targetModels, s)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		if target == "" { //Try the prefix
 			target = prefixTarget
 		}
-		rwPaths, err := extractModelForTarget(target, version, deviceType, targetModels)
+		rwPaths, err := extractModelForTarget(target, version, deviceType, targetModels, s)
 		if err != nil {
 			return nil, err
 		}
@@ -119,7 +119,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		if target == "" { //Try the prefix
 			target = prefixTarget
 		}
-		rwPaths, err := extractModelForTarget(target, version, deviceType, targetModels)
+		rwPaths, err := extractModelForTarget(target, version, deviceType, targetModels, s)
 		if err != nil {
 			return nil, err
 		}
@@ -139,11 +139,10 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	lastWrite := s.lastWrite
 	s.mu.RUnlock()
 
-	mgr := manager.GetManager()
 	deviceInfo := make(map[devicetype.ID]cache.Info)
 	//Checking for wrong configuration against the device models for updates
 	for target, updates := range targetUpdates {
-		deviceType, version, err = mgr.CheckCacheForDevice(target, deviceType, version)
+		deviceType, version, err = nbutils.CheckCacheForDevice(target, deviceType, version, s.deviceCache, s.deviceStore)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -156,7 +155,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		// TODO: Since the change has not been stored yet, we cannot guarantee the change will be validated against
 		//       the same state as will be pushed to the device. Changes must be validated after they're stored
 		//       to achieve this level of consistency.
-		err := validateChange(target, deviceType, version, updates, targetRemoves[target], lastWrite)
+		err := validateChange(target, deviceType, version, updates, targetRemoves[target], lastWrite, s)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -164,7 +163,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 	//Checking for wrong configuration against the device models for deletes
 	for target, removes := range targetRemovesTmp {
-		deviceType, version, err = mgr.CheckCacheForDevice(target, deviceType, version)
+		deviceType, version, err = nbutils.CheckCacheForDevice(target, deviceType, version, s.deviceCache, s.deviceStore)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -177,15 +176,15 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		// TODO: Since the change has not been stored yet, we cannot guarantee the change will be validated against
 		//       the same state as will be pushed to the device. Changes must be validated after they're stored
 		//       to achieve this level of consistency.
-		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes, lastWrite)
+		err := validateChange(target, deviceType, version, make(devicechange.TypedValueMap), removes, lastWrite, s)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
 	// Creating and setting the config on the atomix Store
-	change, errSet := mgr.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo,
-		netCfgChangeName, userName)
+	change, errSet := nbutils.SetNetworkConfig(targetUpdates, targetRemoves, deviceInfo,
+		netCfgChangeName, userName, s.networkChangesStore)
 	if errSet != nil {
 		log.Errorf("Error while setting config %s", errSet.Error())
 		return nil, status.Error(codes.Internal, errSet.Error())
@@ -359,13 +358,13 @@ func buildUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Opera
 }
 
 func validateChange(target devicetype.ID, deviceType devicetype.Type, version devicetype.Version,
-	targetUpdates devicechange.TypedValueMap, targetRemoves []string, lastWrite networkchange.Revision) error {
+	targetUpdates devicechange.TypedValueMap, targetRemoves []string, lastWrite networkchange.Revision, s *Server) error {
 	if len(targetUpdates) == 0 && len(targetRemoves) == 0 {
 		return status.Errorf(codes.InvalidArgument, "no updates found in change on %s - invalid", target)
 	}
 	log.Infof("Validating change %s:%s:%s", target, deviceType, version)
-	errValidation := manager.GetManager().ValidateNetworkConfig(target, version, deviceType,
-		targetUpdates, targetRemoves, lastWrite)
+	errValidation := nbutils.ValidateNetworkConfig(target, version, deviceType,
+		targetUpdates, targetRemoves, lastWrite, s.modelRegistry, s.deviceStateStore, s.allowUnvalidatedConfig)
 	if errValidation != nil {
 		return status.Error(codes.InvalidArgument, errValidation.Error())
 	}
@@ -375,7 +374,7 @@ func validateChange(target devicetype.ID, deviceType devicetype.Type, version de
 
 func extractModelForTarget(target devicetype.ID,
 	ext101Version devicetype.Version, ext102Type devicetype.Type,
-	targetModels mapTargetModels) (modelregistry.ReadWritePathMap, error) {
+	targetModels mapTargetModels, s *Server) (modelregistry.ReadWritePathMap, error) {
 
 	if target == "" {
 		return nil, status.Error(codes.InvalidArgument, "no target given")
@@ -384,12 +383,12 @@ func extractModelForTarget(target devicetype.ID,
 		return rwPaths, nil
 	}
 
-	actualType, actualVersion, err := manager.GetManager().CheckCacheForDevice(target, ext102Type, ext101Version)
+	actualType, actualVersion, err := nbutils.CheckCacheForDevice(target, ext102Type, ext101Version, s.deviceCache, s.deviceStore)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	modelName := utils.ToModelName(actualType, actualVersion)
-	plugin, err := manager.GetManager().ModelRegistry.GetPlugin(modelName)
+	plugin, err := s.modelRegistry.GetPlugin(modelName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
