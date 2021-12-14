@@ -17,10 +17,15 @@ package manager
 
 import (
 	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"github.com/onosproject/onos-config/pkg/controller/connection"
+	"github.com/onosproject/onos-config/pkg/controller/controlrelation"
+	"github.com/onosproject/onos-config/pkg/controller/node"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
+	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 
@@ -183,6 +188,24 @@ func (m *Manager) startDeviceSnapshotController(mastershipStore mastership.Store
 	return deviceSnapshotController.Start()
 }
 
+// startNodeController starts node controller
+func (m *Manager) startNodeController(topo topo.Store) error {
+	nodeController := node.NewController(topo)
+	return nodeController.Start()
+}
+
+// startConnController starts connection controller
+func (m *Manager) startConnController(topo topo.Store, conns sb.ConnManager) error {
+	connController := connection.NewController(topo, conns)
+	return connController.Start()
+}
+
+// startControlRelationController starts control relation controller
+func (m *Manager) startControlRelationController(topo topo.Store, conns sb.ConnManager) error {
+	controlRelationController := controlrelation.NewController(topo, conns)
+	return controlRelationController.Start()
+}
+
 // Start the main dispatcher system
 func (m *Manager) startDispatcherSystem(
 	dispatcherInstance *dispatcher.Dispatcher,
@@ -226,6 +249,27 @@ func (m *Manager) Start() error {
 	}
 
 	atomixClient := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
+
+	topoStore, err := topo.NewStore(m.Config.TopoAddress, opts...)
+	if err != nil {
+		return err
+	}
+
+	conns := sb.NewConnManager()
+	err = m.startNodeController(topoStore)
+	if err != nil {
+		return err
+	}
+
+	err = m.startConnController(topoStore, conns)
+	if err != nil {
+		return err
+	}
+
+	err = m.startControlRelationController(topoStore, conns)
+	if err != nil {
+		return err
+	}
 
 	leadershipStore, err := leadership.NewAtomixStore(atomixClient)
 	if err != nil {
