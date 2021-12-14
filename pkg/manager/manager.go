@@ -68,7 +68,6 @@ type Config struct {
 
 // Manager single point of entry for the config system.
 type Manager struct {
-	SouthboundErrorChan     chan events.DeviceResponse
 	TopoChannel             chan *topodevice.ListResponse
 	OperationalStateChannel chan events.OperationalStateEvent
 	Config                  Config
@@ -165,7 +164,6 @@ func (m *Manager) Start() error {
 	deviceSnapshotController := devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore)
 	m.TopoChannel = make(chan *topodevice.ListResponse, 10)
 	m.OperationalStateChannel = make(chan events.OperationalStateEvent)
-	m.SouthboundErrorChan = make(chan events.DeviceResponse)
 	dsp := dispatcher.NewDispatcher()
 	operationalStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
 	operationalStateCacheLock := &sync.RWMutex{}
