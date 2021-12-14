@@ -58,11 +58,10 @@ func (c *ConnWatcher) Start(ch chan<- controller.ID) error {
 
 	go func() {
 		for connEvent := range c.connCh {
-			conn := connEvent.Conn
 			log.Infof("Received gNMI Connection event for connection '%s'", connEvent.EventType)
 			switch connEvent.EventType {
 			case gnmi.Connected:
-				log.Infof("Test here 0")
+				conn := connEvent.Conn
 				ch <- controller.NewID(connEvent.Conn.TargetID())
 				connStateCh := make(chan connectivity.State)
 				err = conn.WatchConnState(ctx, connStateCh)

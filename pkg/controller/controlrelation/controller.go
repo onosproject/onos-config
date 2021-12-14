@@ -95,6 +95,9 @@ func (r *Reconciler) reconcileControlRelation(ctx context.Context, targetID topo
 			log.Warnf("Failed to reconcile control relation for target %s, %v", targetID, err)
 			return false, err
 		}
+		if len(controlRelations) == 0 {
+			return false, nil
+		}
 
 		return r.reconcileDeleteE2ControlRelation(ctx, &controlRelations[0])
 
