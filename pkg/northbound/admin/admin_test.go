@@ -16,41 +16,45 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
-	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
+	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
+	"github.com/onosproject/onos-api/go/onos/config/device"
+	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
-	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
+	devicesnapshotstore "github.com/onosproject/onos-config/pkg/store/snapshot/device"
+	networksnapshotstore "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
+	"io"
 	"net"
 	"testing"
 )
 
-func setUpServer(t *testing.T) (*grpc.ClientConn, admin.ConfigAdminServiceClient, *grpc.Server, networkchanges.Store, *mockstore.MockNetworkSnapshotStore, *mockstore.MockDeviceSnapshotStore) {
+func setUpServer(ctx context.Context, t *testing.T) (*grpc.ClientConn, admin.ConfigAdminServiceClient, *grpc.Server, devicesnapshotstore.Store) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 
-	ctrl := gomock.NewController(t)
-
-	test := test.NewTest(
+	atomixTest := test.NewTest(
 		rsm.NewProtocol(),
 		test.WithReplicas(1),
 		test.WithPartitions(1))
-	assert.NoError(t, test.Start())
-	defer test.Stop()
+	assert.NoError(t, atomixTest.Start())
 
-	atomixClient, err := test.NewClient("node")
+	atomixClient, err := atomixTest.NewClient("node")
 	assert.NoError(t, err)
 
 	networkChangesStore, err := networkchanges.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
 
-	//networkChangesStore := mockstore.NewMockNetworkChangesStore(ctrl)
-	networkSnapshotStore := mockstore.NewMockNetworkSnapshotStore(ctrl)
-	deviceSnapshotStore := mockstore.NewMockDeviceSnapshotStore(ctrl)
+	networkSnapshotStore, err := networksnapshotstore.NewAtomixStore(atomixClient)
+	assert.NoError(t, err)
+
+	deviceSnapshotStore, err := devicesnapshotstore.NewAtomixStore(atomixClient)
+	assert.NoError(t, err)
 
 	admin.RegisterConfigAdminServiceServer(s, &Server{
 		networkChangesStore:  networkChangesStore,
@@ -74,52 +78,56 @@ func setUpServer(t *testing.T) (*grpc.ClientConn, admin.ConfigAdminServiceClient
 	}
 
 	client := admin.CreateConfigAdminServiceClient(conn)
-
 	assert.NoError(t, err)
 
-	return conn, client, s, networkChangesStore, networkSnapshotStore, deviceSnapshotStore
+	go func() {
+		<-ctx.Done()
+		_ = atomixTest.Stop()
+		s.Stop()
+		conn.Close()
+	}()
+
+	return conn, client, s, deviceSnapshotStore
 }
 
 func Test_RollbackNetworkChange_BadName(t *testing.T) {
-	conn, client, server, _, _, _ := setUpServer(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	conn, client, server, _ := setUpServer(ctx, t)
 	defer server.Stop()
 	defer conn.Close()
 
-	//networkChangesStore.EXPECT().Get(gomock.Any()).Return(nil, errors.NewNotFound("Rollback aborted. Network change BAD CHANGE not found"))
 	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: "BAD CHANGE"})
-	assert.Contains(t, err.Error(), "Rollback aborted. Network change BAD CHANGE not found")
+	assert.Contains(t, err.Error(), "no entry found at key BAD CHANGE")
 }
 
 func Test_RollbackNetworkChange_NoChange(t *testing.T) {
-	conn, client, server, _, _, _ := setUpServer(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	conn, client, server, _ := setUpServer(ctx, t)
 	defer server.Stop()
 	defer conn.Close()
+	defer cancel()
 
-	//networkChangesStore.EXPECT().Get(gomock.Any()).Return(nil, errors.NewNotFound("change is not specified")).AnyTimes()
 	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: ""})
 	assert.Contains(t, err.Error(), "is empty")
 }
 
-/*
 func Test_ListSnapshots(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	const numSnapshots = 2
-	conn, client, server, _, _, deviceSnapshotStore := setUpServer(t)
+	conn, client, server, deviceSnapshotStore := setUpServer(ctx, t)
 	defer server.Stop()
 	defer conn.Close()
 
 	snapshots := generateSnapshotData(numSnapshots)
 
-	deviceSnapshotStore.EXPECT().LoadAll(gomock.Any()).DoAndReturn(
-		func(ch chan<- *devicesnapshot.Snapshot) (stream.Context, error) {
-			go func() {
-				for _, snapshot := range snapshots {
-					ch <- snapshot
-				}
-				close(ch)
-			}()
-			return stream.NewContext(func() {
-			}), nil
-		})
+	for _, snapshot := range snapshots {
+		assert.NoError(t, deviceSnapshotStore.Store(snapshot))
+	}
 
 	listSnapshots, err := client.ListSnapshots(context.Background(), &admin.ListSnapshotsRequest{
 		ID:        "device-*",
@@ -127,33 +135,29 @@ func Test_ListSnapshots(t *testing.T) {
 	})
 	assert.NoError(t, err, "Not expecting error on ListSnapshots")
 
-	go func() {
-		count := 0
-		for {
-			snapshot, err := listSnapshots.Recv()
-			if err == io.EOF || snapshot == nil {
-				break
-			}
-			assert.NoError(t, err, "unable to receive message")
-
-			assert.Equal(t, "test-snapshot", string(snapshot.SnapshotID))
-			assert.Equal(t, "1.0.0", string(snapshot.DeviceVersion))
-			assert.Equal(t, "TestDevice", string(snapshot.DeviceType))
-			assert.Equal(t, 2, len(snapshot.GetValues()))
-			switch string(snapshot.ID) {
-			case "device-0:1.0.0":
-				assert.Equal(t, "device-0", string(snapshot.DeviceID))
-			case "device-1:1.0.0":
-				assert.Equal(t, "device-1", string(snapshot.DeviceID))
-			default:
-				assert.Failf(t, "Unhandled case %s", string(snapshot.ID))
-			}
-			count++
+	count := 0
+	for {
+		snapshot, err := listSnapshots.Recv()
+		if err == io.EOF || snapshot == nil {
+			break
 		}
-		assert.Equal(t, numSnapshots, count)
-	}()
+		assert.NoError(t, err, "unable to receive message")
 
-	time.Sleep(time.Millisecond * numSnapshots * 2)
+		assert.Equal(t, "test-snapshot", string(snapshot.SnapshotID))
+		assert.Equal(t, "1.0.0", string(snapshot.DeviceVersion))
+		assert.Equal(t, "TestDevice", string(snapshot.DeviceType))
+		assert.Equal(t, 2, len(snapshot.GetValues()))
+		switch string(snapshot.ID) {
+		case "device-0:1.0.0":
+			assert.Equal(t, "device-0", string(snapshot.DeviceID))
+		case "device-1:1.0.0":
+			assert.Equal(t, "device-1", string(snapshot.DeviceID))
+		default:
+			assert.Failf(t, "Unhandled case %s", string(snapshot.ID))
+		}
+		count++
+	}
+	assert.Equal(t, numSnapshots, count)
 }
 
 func generateSnapshotData(count int) []*devicesnapshot.Snapshot {
@@ -167,13 +171,12 @@ func generateSnapshotData(count int) []*devicesnapshot.Snapshot {
 			DeviceVersion: "1.0.0",
 			DeviceType:    "TestDevice",
 			SnapshotID:    "test-snapshot",
-			ChangeIndex:   device2.Index(shIdx),
-			Values: []*device2.PathValue{
-				{Path: "/a/b/c", Value: device2.NewTypedValueInt(shIdx, 32)},
-				{Path: "/a/b/d", Value: device2.NewTypedValueInt(10*shIdx, 32)},
+			ChangeIndex:   devicechange.Index(shIdx),
+			Values: []*devicechange.PathValue{
+				{Path: "/a/b/c", Value: devicechange.NewTypedValueInt(shIdx, 32)},
+				{Path: "/a/b/d", Value: devicechange.NewTypedValueInt(10*shIdx, 32)},
 			},
 		}
 	}
 	return snapshots
 }
-*/
