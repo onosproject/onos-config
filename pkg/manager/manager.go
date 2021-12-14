@@ -16,7 +16,6 @@
 package manager
 
 import (
-	"fmt"
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
@@ -29,7 +28,6 @@ import (
 	"sync"
 
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
-	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	devicechangectl "github.com/onosproject/onos-config/pkg/controller/change/device"
 	networkchangectl "github.com/onosproject/onos-config/pkg/controller/change/network"
 	devicesnapshotctl "github.com/onosproject/onos-config/pkg/controller/snapshot/device"
@@ -48,10 +46,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/mastership"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
-	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // OIDCServerURL - address of an OpenID Connect server
@@ -73,27 +68,10 @@ type Config struct {
 
 // Manager single point of entry for the config system.
 type Manager struct {
-	Config                    Config
-	LeadershipStore           leadership.Store
-	MastershipStore           mastership.Store
-	DeviceChangesStore        device.Store
-	DeviceStateStore          state.Store
-	DeviceStore               devicestore.Store
-	DeviceCache               cache.Cache
-	NetworkChangesStore       network.Store
-	NetworkSnapshotStore      networksnap.Store
-	DeviceSnapshotStore       devicesnap.Store
-	networkChangeController   *controller.Controller
-	deviceChangeController    *controller.Controller
-	networkSnapshotController *controller.Controller
-	deviceSnapshotController  *controller.Controller
-	ModelRegistry             *modelregistry.ModelRegistry
-	TopoChannel               chan *topodevice.ListResponse
-	OperationalStateChannel   chan events.OperationalStateEvent
-	SouthboundErrorChan       chan events.DeviceResponse
-	Dispatcher                *dispatcher.Dispatcher
-	OperationalStateCache     map[topodevice.ID]devicechange.TypedValueMap
-	OperationalStateCacheLock *sync.RWMutex
+	SouthboundErrorChan     chan events.DeviceResponse
+	TopoChannel             chan *topodevice.ListResponse
+	OperationalStateChannel chan events.OperationalStateEvent
+	Config                  Config
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -111,7 +89,17 @@ func (m *Manager) setTargetGenerator(targetGen func() southbound.TargetIf) {
 	southbound.TargetGenerator = targetGen
 }
 
-func (m *Manager) initializeStores() {
+// Run starts a synchronizer based on the devices and the northbound services.
+func (m *Manager) Run() {
+	log.Info("Starting Manager")
+
+	if err := m.Start(); err != nil {
+		log.Fatal("Unable to run Manager", err)
+	}
+}
+
+// Start starts the manager
+func (m *Manager) Start() error {
 	opts, err := certs.HandleCertPaths(m.Config.CAPath, m.Config.KeyPath, m.Config.CertPath, true)
 	if err != nil {
 		log.Fatal(err)
@@ -119,62 +107,117 @@ func (m *Manager) initializeStores() {
 
 	atomixClient := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
 
-	m.LeadershipStore, err = leadership.NewAtomixStore(atomixClient)
+	leadershipStore, err := leadership.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load leadership atomix store ", err)
 	}
 
-	m.MastershipStore, err = mastership.NewAtomixStore(atomixClient, os.Getenv("POD_NAME"))
+	mastershipStore, err := mastership.NewAtomixStore(atomixClient, os.Getenv("POD_NAME"))
 	if err != nil {
 		log.Fatal("Cannot load mastership atomix store ", err)
 	}
 
-	m.DeviceChangesStore, err = device.NewAtomixStore(atomixClient)
+	deviceChangesStore, err := device.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load device atomix store ", err)
 	}
 
-	m.NetworkChangesStore, err = network.NewAtomixStore(atomixClient)
+	networkChangesStore, err := network.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load network atomix store ", err)
 	}
 
-	m.NetworkSnapshotStore, err = networksnap.NewAtomixStore(atomixClient)
+	networkSnapshotStore, err := networksnap.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load network snapshot atomix store ", err)
 	}
 
-	m.DeviceSnapshotStore, err = devicesnap.NewAtomixStore(atomixClient)
+	deviceSnapshotStore, err := devicesnap.NewAtomixStore(atomixClient)
 	if err != nil {
 		log.Fatal("Cannot load network atomix store ", err)
 	}
 
-	m.DeviceStateStore, err = state.NewStore(m.NetworkChangesStore, m.DeviceSnapshotStore)
+	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
 	if err != nil {
 		log.Fatal("Cannot load device store with address %s:", m.Config.TopoAddress, err)
 	}
 	log.Infof("Topology service connected with endpoint %s", m.Config.TopoAddress)
 
-	m.DeviceCache, err = cache.NewCache(m.NetworkChangesStore, m.DeviceSnapshotStore)
+	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
 	if err != nil {
 		log.Fatal("Cannot load device cache", err)
 	}
 
-	m.DeviceStore, err = devicestore.NewTopoStore(m.Config.TopoAddress, opts...)
+	deviceStore, err := devicestore.NewTopoStore(m.Config.TopoAddress, opts...)
 	if err != nil {
 		log.Fatal("Cannot load device store with address %s:", m.Config.TopoAddress, err)
 	}
 	log.Infof("Topology service connected with endpoint %s", m.Config.TopoAddress)
 
-	m.ModelRegistry, err = modelregistry.NewModelRegistry(modelregistry.Config{})
+	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{})
 	if err != nil {
 		log.Fatal("Failed to load model registry:", err)
 	}
 
-}
+	networkChangeController := networkchangectl.NewController(leadershipStore, deviceStore, networkChangesStore, deviceChangesStore)
+	deviceChangeController := devicechangectl.NewController(mastershipStore, deviceStore, deviceChangesStore)
+	networkSnapshotController := networksnapshotctl.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceChangesStore)
+	deviceSnapshotController := devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore)
+	m.TopoChannel = make(chan *topodevice.ListResponse, 10)
+	m.OperationalStateChannel = make(chan events.OperationalStateEvent)
+	m.SouthboundErrorChan = make(chan events.DeviceResponse)
+	dsp := dispatcher.NewDispatcher()
+	operationalStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
+	operationalStateCacheLock := &sync.RWMutex{}
 
-// Creates gRPC server and registers various services; then serves.
-func (m *Manager) startNBServers() error {
+	// Start the NetworkChange controller
+	errNetworkCtrl := networkChangeController.Start()
+	if errNetworkCtrl != nil {
+		log.Error("Can't start controller ", errNetworkCtrl)
+	}
+	// Start the DeviceChange controller
+	errDeviceChangeCtrl := deviceChangeController.Start()
+	if errDeviceChangeCtrl != nil {
+		log.Error("Can't start controller ", errDeviceChangeCtrl)
+	}
+	// Start the NetworkSnapshot controller
+	errNetworkSnapshotCtrl := networkSnapshotController.Start()
+	if errNetworkSnapshotCtrl != nil {
+		log.Error("Can't start controller ", errNetworkSnapshotCtrl)
+	}
+	// Start the DeviceSnapshot controller
+	errDeviceSnapshotCtrl := deviceSnapshotController.Start()
+	if errDeviceSnapshotCtrl != nil {
+		log.Error("Can't start controller ", errDeviceSnapshotCtrl)
+	}
+
+	// Start the main dispatcher system
+	go dsp.ListenOperationalState(m.OperationalStateChannel)
+
+	sessionManager, err := synchronizer.NewSessionManager(
+		synchronizer.WithTopoChannel(m.TopoChannel),
+		synchronizer.WithOpStateChannel(m.OperationalStateChannel),
+		synchronizer.WithDispatcher(dsp),
+		synchronizer.WithModelRegistry(modelRegistry),
+		synchronizer.WithOperationalStateCache(operationalStateCache),
+		synchronizer.WithNewTargetFn(southbound.TargetGenerator),
+		synchronizer.WithOperationalStateCacheLock(operationalStateCacheLock),
+		synchronizer.WithDeviceChangeStore(deviceChangesStore),
+		synchronizer.WithMastershipStore(mastershipStore),
+		synchronizer.WithDeviceStore(deviceStore),
+		synchronizer.WithSessions(make(map[topodevice.ID]*synchronizer.Session)),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = sessionManager.Start()
+	if err != nil {
+		return err
+	}
+
+	// Creates gRPC server and registers various services; then serves.
 	authorization := false
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
 		authorization = true
@@ -194,27 +237,27 @@ func (m *Manager) startNBServers() error {
 
 	s.AddService(logging.Service{})
 
-	adminService := admin.NewService(mgr.NetworkChangesStore, mgr.NetworkSnapshotStore, mgr.DeviceSnapshotStore)
+	adminService := admin.NewService(networkChangesStore, networkSnapshotStore, deviceSnapshotStore)
 	s.AddService(adminService)
 
-	diagService := diags.NewService(mgr.DeviceChangesStore,
-		mgr.DeviceCache,
-		mgr.NetworkChangesStore,
-		mgr.Dispatcher,
-		mgr.DeviceStore,
-		&mgr.OperationalStateCache,
-		mgr.OperationalStateCacheLock)
+	diagService := diags.NewService(deviceChangesStore,
+		deviceCache,
+		networkChangesStore,
+		dsp,
+		deviceStore,
+		&operationalStateCache,
+		operationalStateCacheLock)
 	s.AddService(diagService)
 
-	gnmiService := gnmi.NewService(mgr.ModelRegistry,
-		mgr.DeviceChangesStore,
-		mgr.DeviceCache,
-		mgr.NetworkChangesStore,
-		mgr.Dispatcher,
-		mgr.DeviceStore,
-		mgr.DeviceStateStore,
-		&mgr.OperationalStateCache,
-		mgr.OperationalStateCacheLock,
+	gnmiService := gnmi.NewService(modelRegistry,
+		deviceChangesStore,
+		deviceCache,
+		networkChangesStore,
+		dsp,
+		deviceStore,
+		deviceStateStore,
+		&operationalStateCache,
+		operationalStateCacheLock,
 		mgr.Config.AllowUnvalidatedConfig)
 	s.AddService(gnmiService)
 
@@ -231,86 +274,6 @@ func (m *Manager) startNBServers() error {
 	return <-doneCh
 }
 
-// Run starts a synchronizer based on the devices and the northbound services.
-func (m *Manager) Run() {
-	log.Info("Starting Manager")
-
-	m.initializeStores()
-	log.Info("Stores initialized")
-
-	if err := m.Start(); err != nil {
-		log.Fatal("Unable to run Manager", err)
-	}
-
-	if err := m.startNBServers(); err != nil {
-		log.Fatal("Unable to run NB servers", err)
-	}
-
-}
-
-// Start starts the manager
-func (m *Manager) Start() error {
-	m.networkChangeController = networkchangectl.NewController(m.LeadershipStore, m.DeviceStore, m.NetworkChangesStore, m.DeviceChangesStore)
-	m.deviceChangeController = devicechangectl.NewController(m.MastershipStore, m.DeviceStore, m.DeviceChangesStore)
-	m.networkSnapshotController = networksnapshotctl.NewController(m.LeadershipStore, m.NetworkChangesStore, m.NetworkSnapshotStore, m.DeviceSnapshotStore, m.DeviceChangesStore)
-	m.deviceSnapshotController = devicesnapshotctl.NewController(m.MastershipStore, m.DeviceChangesStore, m.DeviceSnapshotStore)
-	m.TopoChannel = make(chan *topodevice.ListResponse, 10)
-	m.OperationalStateChannel = make(chan events.OperationalStateEvent)
-	m.SouthboundErrorChan = make(chan events.DeviceResponse)
-	m.Dispatcher = dispatcher.NewDispatcher()
-	m.OperationalStateCache = make(map[topodevice.ID]devicechange.TypedValueMap)
-	m.OperationalStateCacheLock = &sync.RWMutex{}
-
-	// Start the NetworkChange controller
-	errNetworkCtrl := m.networkChangeController.Start()
-	if errNetworkCtrl != nil {
-		log.Error("Can't start controller ", errNetworkCtrl)
-	}
-	// Start the DeviceChange controller
-	errDeviceChangeCtrl := m.deviceChangeController.Start()
-	if errDeviceChangeCtrl != nil {
-		log.Error("Can't start controller ", errDeviceChangeCtrl)
-	}
-	// Start the NetworkSnapshot controller
-	errNetworkSnapshotCtrl := m.networkSnapshotController.Start()
-	if errNetworkSnapshotCtrl != nil {
-		log.Error("Can't start controller ", errNetworkSnapshotCtrl)
-	}
-	// Start the DeviceSnapshot controller
-	errDeviceSnapshotCtrl := m.deviceSnapshotController.Start()
-	if errDeviceSnapshotCtrl != nil {
-		log.Error("Can't start controller ", errDeviceSnapshotCtrl)
-	}
-
-	// Start the main dispatcher system
-	go m.Dispatcher.ListenOperationalState(m.OperationalStateChannel)
-
-	sessionManager, err := synchronizer.NewSessionManager(
-		synchronizer.WithTopoChannel(m.TopoChannel),
-		synchronizer.WithOpStateChannel(m.OperationalStateChannel),
-		synchronizer.WithDispatcher(m.Dispatcher),
-		synchronizer.WithModelRegistry(m.ModelRegistry),
-		synchronizer.WithOperationalStateCache(m.OperationalStateCache),
-		synchronizer.WithNewTargetFn(southbound.TargetGenerator),
-		synchronizer.WithOperationalStateCacheLock(m.OperationalStateCacheLock),
-		synchronizer.WithDeviceChangeStore(m.DeviceChangesStore),
-		synchronizer.WithMastershipStore(m.MastershipStore),
-		synchronizer.WithDeviceStore(m.DeviceStore),
-		synchronizer.WithSessions(make(map[topodevice.ID]*synchronizer.Session)),
-	)
-
-	if err != nil {
-		return err
-	}
-
-	err = sessionManager.Start()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 //Close kills the channels and manager related objects
 func (m *Manager) Close() {
 	log.Info("Closing Manager")
@@ -322,56 +285,4 @@ func (m *Manager) Close() {
 // Should be called only after NewManager and Run are done.
 func GetManager() *Manager {
 	return &mgr
-}
-
-// CheckCacheForDevice checks against the device cache (of the device change store
-// to see if a device of that name is already present)
-func (m *Manager) CheckCacheForDevice(target devicetype.ID, deviceType devicetype.Type,
-	version devicetype.Version) (devicetype.Type, devicetype.Version, error) {
-
-	deviceInfos := mgr.DeviceCache.GetDevicesByID(target)
-	topoDevice, errTopoDevice := mgr.DeviceStore.Get(topodevice.ID(target))
-	if errTopoDevice != nil {
-		log.Infof("Device %s not found in topo store", target)
-	}
-
-	if len(deviceInfos) == 0 {
-		// New device - need type and version
-		if deviceType == "" || version == "" {
-			if errTopoDevice == nil && topoDevice != nil {
-				return devicetype.Type(topoDevice.Type), devicetype.Version(topoDevice.Version), nil
-			}
-			return "", "", status.Error(codes.Internal,
-				fmt.Sprintf("target %s is not known. Need to supply a type and version through Extensions 101 and 102", target))
-		}
-		return deviceType, version, nil
-	} else if len(deviceInfos) == 1 {
-		log.Infof("Handling target %s as %s:%s", target, deviceType, version)
-		if deviceInfos[0].Version != version {
-			log.Infof("Ignoring device type %s and version %s from extension for %s. Using %s and %s",
-				deviceType, version, target, deviceInfos[0].Type, deviceInfos[0].Version)
-		}
-		return deviceInfos[0].Type, deviceInfos[0].Version, nil
-	} else {
-		// n devices of that name already exist - have to choose 1 or exit
-		for _, di := range deviceInfos {
-			if di.Version == version {
-				log.Infof("Handling target %s as %s:%s", target, deviceType, version)
-				return di.Type, di.Version, nil
-			}
-		}
-		// Else allow it as a new version
-		if deviceType == deviceInfos[0].Type && version != "" {
-			log.Infof("Handling target %s as %s:%s", target, deviceType, version)
-			return deviceType, version, nil
-		} else if deviceType != "" && deviceType != deviceInfos[0].Type {
-			return "", "", status.Error(codes.Internal,
-				fmt.Sprintf("target %s type given %s does not match expected %s",
-					target, deviceType, deviceInfos[0].Type))
-		}
-
-		return "", "", status.Error(codes.Internal,
-			fmt.Sprintf("target %s has %d versions. Specify 1 version with extension 102",
-				target, len(deviceInfos)))
-	}
 }
