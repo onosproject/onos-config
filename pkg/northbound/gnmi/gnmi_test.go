@@ -31,6 +31,7 @@ import (
 	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
+	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	"github.com/onosproject/onos-config/pkg/store/stream"
 	mockstore "github.com/onosproject/onos-config/pkg/test/mocks/store"
 	mockcache "github.com/onosproject/onos-config/pkg/test/mocks/store/cache"
@@ -226,6 +227,10 @@ func setUp(t *testing.T) (*Server, *AllMocks) {
 
 	networkChangesStore, err := networkchanges.NewAtomixStore(atomixClient)
 	assert.NoError(t, err)
+
+	deviceSnapshotStore, err := devicesnap.NewAtomixStore(atomixClient)
+	assert.NoError(t, err)
+
 	ctrl := gomock.NewController(t)
 	mockStores := &mockstore.MockStores{
 		DeviceStore:          mockstore.NewMockDeviceStore(ctrl),
@@ -233,7 +238,7 @@ func setUp(t *testing.T) (*Server, *AllMocks) {
 		NetworkChangesStore:  networkChangesStore,
 		DeviceChangesStore:   mockstore.NewMockDeviceChangesStore(ctrl),
 		NetworkSnapshotStore: mockstore.NewMockNetworkSnapshotStore(ctrl),
-		DeviceSnapshotStore:  mockstore.NewMockDeviceSnapshotStore(ctrl),
+		DeviceSnapshotStore:  deviceSnapshotStore,
 	}
 	deviceCache := mockcache.NewMockCache(ctrl)
 	allMocks.MockStores = mockStores
