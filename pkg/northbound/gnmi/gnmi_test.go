@@ -256,8 +256,6 @@ func setUp(t *testing.T) (*Server, *AllMocks) {
 		DeviceChangesStore:   mockstore.NewMockDeviceChangesStore(ctrl),
 		NetworkSnapshotStore: mockstore.NewMockNetworkSnapshotStore(ctrl),
 		DeviceSnapshotStore:  mockstore.NewMockDeviceSnapshotStore(ctrl),
-		LeadershipStore:      mockstore.NewMockLeadershipStore(ctrl),
-		MastershipStore:      mockstore.NewMockMastershipStore(ctrl),
 	}
 	deviceCache := mockcache.NewMockCache(ctrl)
 	allMocks.MockStores = mockStores

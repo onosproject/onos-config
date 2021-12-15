@@ -22,6 +22,4 @@ type MockStores struct {
 	DeviceStateStore     *MockDeviceStateStore
 	NetworkSnapshotStore *MockNetworkSnapshotStore
 	DeviceSnapshotStore  *MockDeviceSnapshotStore
-	LeadershipStore      *MockLeadershipStore
-	MastershipStore      *MockMastershipStore
 }
