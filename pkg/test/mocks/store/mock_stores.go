@@ -14,10 +14,12 @@
 
 package store
 
+import networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
+
 // MockStores is a struct to hold all of the mocked stores for a test
 type MockStores struct {
 	DeviceStore          *MockDeviceStore
-	NetworkChangesStore  *MockNetworkChangesStore
+	NetworkChangesStore  networkchanges.Store
 	DeviceChangesStore   *MockDeviceChangesStore
 	DeviceStateStore     *MockDeviceStateStore
 	NetworkSnapshotStore *MockNetworkSnapshotStore

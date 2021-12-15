@@ -154,7 +154,6 @@ func Test_SubscribeLeafStream(t *testing.T) {
 		},
 	}).AnyTimes()
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mocks.MockStores.NetworkChangesStore.EXPECT().Create(gomock.Any()).AnyTimes()
 
 	var wg sync.WaitGroup
 	defer tearDown(&wg)
@@ -423,7 +422,6 @@ func Test_SubscribeLeafStreamDelete(t *testing.T) {
 		},
 	}).AnyTimes()
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(nil, status.Error(codes.NotFound, "device not found")).AnyTimes()
-	mocks.MockStores.NetworkChangesStore.EXPECT().Create(gomock.Any())
 	setUpChangesMock(mocks)
 
 	var wg sync.WaitGroup
@@ -505,7 +503,6 @@ func Test_SubscribeLeafStreamWithDeviceLoaded(t *testing.T) {
 		},
 	}).AnyTimes()
 	mocks.MockStores.DeviceStore.EXPECT().Get(gomock.Any()).Return(presentDevice, nil).AnyTimes()
-	mocks.MockStores.NetworkChangesStore.EXPECT().Create(gomock.Any()).AnyTimes()
 	setUpChangesMock(mocks)
 
 	//configChan, respChan, err := mgr.Dispatcher.RegisterDevice(target)

@@ -16,6 +16,8 @@ package gnmi
 
 import (
 	"fmt"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test"
+	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
 	td1 "github.com/onosproject/config-models/modelplugin/testdevice-1.0.0/testdevice_1_0_0"
 	changetypes "github.com/onosproject/onos-api/go/onos/config/change"
@@ -26,6 +28,7 @@ import (
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	networkchanges "github.com/onosproject/onos-config/pkg/store/change/network"
 	networkchangestore "github.com/onosproject/onos-config/pkg/store/change/network"
 	"github.com/onosproject/onos-config/pkg/store/device/cache"
 	"github.com/onosproject/onos-config/pkg/store/stream"
@@ -58,30 +61,6 @@ const (
 
 func setUpWatchMock(mocks *AllMocks) {
 	now := time.Now()
-	watchChange := networkchange.NetworkChange{
-		ID:       "",
-		Index:    0,
-		Revision: 0,
-		Created:  now,
-		Updated:  now,
-		Changes:  nil,
-		Refs:     nil,
-		Deleted:  false,
-	}
-	watchUpdate := networkchange.NetworkChange{
-		ID:       "",
-		Index:    0,
-		Revision: 0,
-		Created:  now,
-		Updated:  now,
-		Changes:  nil,
-		Refs: []*networkchange.DeviceChangeRef{
-			{
-				DeviceChangeID: "network-change-1:device-change-1",
-			},
-		},
-		Deleted: false,
-	}
 
 	config1Value01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueUint(11, 8), false)
 	config1Value02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2g", devicechange.NewTypedValueBool(true), true)
@@ -110,18 +89,6 @@ func setUpWatchMock(mocks *AllMocks) {
 			},
 		},
 	}
-
-	mocks.MockStores.NetworkChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
-			go func() {
-				c <- stream.Event{Object: &watchChange}
-				c <- stream.Event{Object: &watchUpdate}
-				close(c)
-			}()
-			return stream.NewContext(func() {
-
-			}), nil
-		}).AnyTimes()
 
 	mocks.MockStores.DeviceChangesStore.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(deviceId devicetype.VersionedID, c chan<- stream.Event, opts ...networkchangestore.WatchOption) (stream.Context, error) {
@@ -248,11 +215,22 @@ func setUpServer(allMocks AllMocks) *Server {
 func setUp(t *testing.T) (*Server, *AllMocks) {
 	var allMocks AllMocks
 
+	atomixTest := test.NewTest(
+		rsm.NewProtocol(),
+		test.WithReplicas(1),
+		test.WithPartitions(1))
+	assert.NoError(t, atomixTest.Start())
+
+	atomixClient, err := atomixTest.NewClient("node")
+	assert.NoError(t, err)
+
+	networkChangesStore, err := networkchanges.NewAtomixStore(atomixClient)
+	assert.NoError(t, err)
 	ctrl := gomock.NewController(t)
 	mockStores := &mockstore.MockStores{
 		DeviceStore:          mockstore.NewMockDeviceStore(ctrl),
 		DeviceStateStore:     mockstore.NewMockDeviceStateStore(ctrl),
-		NetworkChangesStore:  mockstore.NewMockNetworkChangesStore(ctrl),
+		NetworkChangesStore:  networkChangesStore,
 		DeviceChangesStore:   mockstore.NewMockDeviceChangesStore(ctrl),
 		NetworkSnapshotStore: mockstore.NewMockNetworkSnapshotStore(ctrl),
 		DeviceSnapshotStore:  mockstore.NewMockDeviceSnapshotStore(ctrl),
@@ -277,8 +255,7 @@ func setUp(t *testing.T) (*Server, *AllMocks) {
 	return server, &allMocks
 }
 
-func setUpBaseNetworkStore(store *mockstore.MockNetworkChangesStore) {
-	mockstore.SetUpMapBackedNetworkChangesStore(store)
+func setUpBaseNetworkStore(store networkchanges.Store) {
 	now := time.Now()
 	config1Value01, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2a", devicechange.NewTypedValueUint(12, 8), false)
 	config1Value02, _ := devicechange.NewChangeValue("/cont1a/cont2a/leaf2g", devicechange.NewTypedValueBool(true), false)
