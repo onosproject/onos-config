@@ -34,7 +34,7 @@ import (
 	"testing"
 )
 
-func setUpServer(ctx context.Context, t *testing.T) (*grpc.ClientConn, admin.ConfigAdminServiceClient, *grpc.Server, devicesnapshotstore.Store) {
+func setUpServer(ctx context.Context, t *testing.T) (admin.ConfigAdminServiceClient, devicesnapshotstore.Store) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 
@@ -84,19 +84,17 @@ func setUpServer(ctx context.Context, t *testing.T) (*grpc.ClientConn, admin.Con
 		<-ctx.Done()
 		_ = atomixTest.Stop()
 		s.Stop()
-		conn.Close()
+		_ = conn.Close()
 	}()
 
-	return conn, client, s, deviceSnapshotStore
+	return client, deviceSnapshotStore
 }
 
 func Test_RollbackNetworkChange_BadName(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	conn, client, server, _ := setUpServer(ctx, t)
-	defer server.Stop()
-	defer conn.Close()
+	client, _ := setUpServer(ctx, t)
 
 	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: "BAD CHANGE"})
 	assert.Contains(t, err.Error(), "no entry found at key BAD CHANGE")
@@ -106,10 +104,7 @@ func Test_RollbackNetworkChange_NoChange(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	conn, client, server, _ := setUpServer(ctx, t)
-	defer server.Stop()
-	defer conn.Close()
-	defer cancel()
+	client, _ := setUpServer(ctx, t)
 
 	_, err := client.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Name: ""})
 	assert.Contains(t, err.Error(), "is empty")
@@ -119,9 +114,7 @@ func Test_ListSnapshots(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	const numSnapshots = 2
-	conn, client, server, deviceSnapshotStore := setUpServer(ctx, t)
-	defer server.Stop()
-	defer conn.Close()
+	client, deviceSnapshotStore := setUpServer(ctx, t)
 
 	snapshots := generateSnapshotData(numSnapshots)
 
