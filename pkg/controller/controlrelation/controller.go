@@ -99,11 +99,11 @@ func (r *Reconciler) reconcileControlRelation(ctx context.Context, targetID topo
 			return false, nil
 		}
 
-		return r.reconcileDeleteE2ControlRelation(ctx, &controlRelations[0])
+		return r.reconcileDeleteControlRelation(ctx, &controlRelations[0])
 
 	}
 
-	currentState := conn.GetClientConn().GetState()
+	currentState := conn.State()
 	if currentState == connectivity.Ready {
 		log.Infof("Creating control relation for connection %s", conn.ID())
 		// creates a control relation
@@ -135,16 +135,18 @@ func (r *Reconciler) reconcileControlRelation(ctx context.Context, targetID topo
 			}
 			return false, nil
 		}
-		return r.reconcileDeleteE2ControlRelation(ctx, controlRelation)
+		return r.reconcileDeleteControlRelation(ctx, controlRelation)
 	} else if currentState == connectivity.Idle {
-		conn.GetClientConn().Connect()
+		log.Debugf("Reconnecting to target:", conn.TargetID())
+		conn.Connect()
 		return false, nil
 	}
 
 	return true, nil
 }
 
-func (r *Reconciler) reconcileDeleteE2ControlRelation(ctx context.Context, object *topoapi.Object) (bool, error) {
+func (r *Reconciler) reconcileDeleteControlRelation(ctx context.Context, object *topoapi.Object) (bool, error) {
+	log.Debugf("Deleting control relation with ID:", object.ID)
 	err := r.topo.Delete(ctx, object)
 	if err != nil {
 		if !errors.IsNotFound(err) {

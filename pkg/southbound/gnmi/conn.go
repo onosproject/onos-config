@@ -45,8 +45,9 @@ type Conn interface {
 	Client
 	ID() ConnID
 	TargetID() topoapi.ID
-	GetClientConn() *grpc.ClientConn
-	WatchConnState(ctx context.Context, ch chan<- connectivity.State) error
+	State() connectivity.State
+	Connect()
+	WatchState(ctx context.Context, ch chan<- connectivity.State) error
 }
 
 // conn gNMI Connection
@@ -151,12 +152,17 @@ func (c *conn) TargetID() topoapi.ID {
 	return c.targetID
 }
 
-// GetClientConn gets client connection
-func (c *conn) GetClientConn() *grpc.ClientConn {
-	return c.clientConn
+// Connect connects to the target
+func (c *conn) Connect() {
+	c.clientConn.Connect()
 }
 
-func (c *conn) WatchConnState(ctx context.Context, ch chan<- connectivity.State) error {
+// State returns connection state
+func (c *conn) State() connectivity.State {
+	return c.clientConn.GetState()
+}
+
+func (c *conn) WatchState(ctx context.Context, ch chan<- connectivity.State) error {
 	c.connStateWatchersMu.Lock()
 	c.connStateWatchers = append(c.connStateWatchers, ch)
 	c.connStateWatchersMu.Unlock()
