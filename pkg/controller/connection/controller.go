@@ -95,8 +95,8 @@ func (r *Reconciler) reconcileConnection(ctx context.Context, targetID topoapi.I
 			}
 			return false, nil
 		}
-		// Removes connection
-		err = r.conns.Remove(ctx, targetID)
+		// Close the connection associated with a target
+		err = r.conns.Close(ctx, targetID)
 		if err != nil {
 			log.Warnf("Failed to reconcile connection for target '%s': %v", targetID, err)
 			return false, err

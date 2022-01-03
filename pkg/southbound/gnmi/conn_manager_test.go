@@ -390,7 +390,7 @@ func TestNewConnManager_Connect(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn1)
 	// Starts watching connectivity state for conn1
-	err = conn1.WatchConnState(ctx, stateCh1)
+	err = conn1.WatchState(ctx, stateCh1)
 	assert.NoError(t, err)
 	connState := <-stateCh1
 	assert.Equal(t, connectivity.Ready, connState)
@@ -402,7 +402,7 @@ func TestNewConnManager_Connect(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, conn2)
 	// Starts watching connectivity state for conn2
-	err = conn2.WatchConnState(ctx, stateCh2)
+	err = conn2.WatchState(ctx, stateCh2)
 	assert.NoError(t, err)
 	connState = <-stateCh2
 	assert.Equal(t, connectivity.Ready, connState)

@@ -95,12 +95,11 @@ func (r *Reconciler) reconcileControlRelation(ctx context.Context, targetID topo
 			log.Warnf("Failed to reconcile control relation for target %s, %v", targetID, err)
 			return false, err
 		}
-		if len(controlRelations) == 0 {
-			return false, nil
+
+		for _, controlRelation := range controlRelations {
+			return r.reconcileDeleteControlRelation(ctx, &controlRelation)
 		}
-
-		return r.reconcileDeleteControlRelation(ctx, &controlRelations[0])
-
+		return false, nil
 	}
 
 	currentState := conn.State()
@@ -136,10 +135,6 @@ func (r *Reconciler) reconcileControlRelation(ctx context.Context, targetID topo
 			return false, nil
 		}
 		return r.reconcileDeleteControlRelation(ctx, controlRelation)
-	} else if currentState == connectivity.Idle {
-		log.Debugf("Reconnecting to target:", conn.TargetID())
-		conn.Connect()
-		return false, nil
 	}
 
 	return true, nil

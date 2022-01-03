@@ -19,12 +19,6 @@ import (
 	"math"
 	"sync"
 
-	"google.golang.org/grpc/connectivity"
-
-	"github.com/google/uuid"
-
-	"github.com/onosproject/onos-lib-go/pkg/uri"
-
 	"google.golang.org/grpc"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -38,7 +32,7 @@ type ConnManager interface {
 	List(ctx context.Context) ([]Conn, error)
 	Watch(ctx context.Context, ch chan<- ConnEvent) error
 	Connect(ctx context.Context, target *topoapi.Object) (Conn, error)
-	Remove(ctx context.Context, targetID topoapi.ID) error
+	Close(ctx context.Context, targetID topoapi.ID) error
 }
 
 // NewConnManager creates a new gNMI connection manager
@@ -57,13 +51,6 @@ type connManager struct {
 	watchers   []chan<- ConnEvent
 	watchersMu sync.RWMutex
 	eventCh    chan ConnEvent
-}
-
-func newConnID() ConnID {
-	connID := ConnID(uri.NewURI(
-		uri.WithScheme("uuid"),
-		uri.WithOpaque(uuid.New().String())).String())
-	return connID
 }
 
 // newConn creates a new gNMI connection
@@ -100,15 +87,13 @@ func (m *connManager) connect(ctx context.Context, target *topoapi.Object) (Conn
 		return nil, err
 	}
 
-	connID := newConnID()
-	log.Infof("Adding gNMI connection %s for the target %s", connID, target.ID)
-	conn := &conn{
-		id:               connID,
-		client:           gnmiClient,
-		clientConn:       clientConn,
-		targetID:         target.ID,
-		connStateEventCh: make(chan connectivity.State),
-	}
+	conn := newConn(
+		WithClientConn(clientConn),
+		WithClient(gnmiClient),
+		WithTargetID(target.ID))
+
+	log.Infof("Adding a gNMI connection %s for the target %s", conn.ID(), target.ID)
+
 	m.connsMu.Lock()
 	m.conns[target.ID] = conn
 	m.connsMu.Unlock()
@@ -116,8 +101,6 @@ func (m *connManager) connect(ctx context.Context, target *topoapi.Object) (Conn
 		Conn:      conn,
 		EventType: Connected,
 	}
-
-	go conn.processConnStateEvents()
 	return conn, nil
 }
 
@@ -152,7 +135,7 @@ func (m *connManager) List(ctx context.Context) ([]Conn, error) {
 	return conns, nil
 }
 
-func (m *connManager) Remove(ctx context.Context, targetID topoapi.ID) error {
+func (m *connManager) Close(ctx context.Context, targetID topoapi.ID) error {
 	m.connsMu.Lock()
 	defer m.connsMu.Unlock()
 	if conn, ok := m.conns[targetID]; ok {
