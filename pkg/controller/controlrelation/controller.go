@@ -97,7 +97,11 @@ func (r *Reconciler) reconcileControlRelation(ctx context.Context, targetID topo
 		}
 
 		for _, controlRelation := range controlRelations {
-			return r.reconcileDeleteControlRelation(ctx, &controlRelation)
+			if ok, err := r.reconcileDeleteControlRelation(ctx, &controlRelation); err != nil {
+				return false, err
+			} else if ok {
+				return true, nil
+			}
 		}
 		return false, nil
 	}
@@ -105,7 +109,6 @@ func (r *Reconciler) reconcileControlRelation(ctx context.Context, targetID topo
 	currentState := conn.State()
 	if currentState == connectivity.Ready {
 		log.Infof("Creating control relation for connection %s", conn.ID())
-		// creates a control relation
 		object := &topoapi.Object{
 			ID:   topoapi.ID(conn.ID()),
 			Type: topoapi.Object_RELATION,
@@ -125,6 +128,7 @@ func (r *Reconciler) reconcileControlRelation(ctx context.Context, targetID topo
 			}
 			return false, nil
 		}
+		return true, nil
 	} else if currentState == connectivity.TransientFailure || currentState == connectivity.Shutdown {
 		controlRelation, err := r.topo.Get(ctx, topoapi.ID(conn.ID()))
 		if err != nil {
@@ -137,7 +141,7 @@ func (r *Reconciler) reconcileControlRelation(ctx context.Context, targetID topo
 		return r.reconcileDeleteControlRelation(ctx, controlRelation)
 	}
 
-	return true, nil
+	return false, nil
 }
 
 func (r *Reconciler) reconcileDeleteControlRelation(ctx context.Context, object *topoapi.Object) (bool, error) {
