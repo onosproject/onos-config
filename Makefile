@@ -5,12 +5,12 @@ export GO111MODULE=on
 
 ONOS_CONFIG_VERSION ?= latest
 
+build-tools:=$(shell if [ ! -d "./build/build-tools" ]; then cd build && git clone https://github.com/onosproject/build-tools.git; fi)
+include ./build/build-tools/make/onf-common.mk
+
 build: # @HELP build the Go binaries and run all validations (default)
 build:
 	go build -o build/_output/onos-config ./cmd/onos-config
-
-build-tools:=$(shell if [ ! -d "./build/build-tools" ]; then cd build && git clone https://github.com/onosproject/build-tools.git; fi)
-include ./build/build-tools/make/onf-common.mk
 
 test: # @HELP run the unit tests and source code validation producing a golang style report
 test: build deps license_check linters
@@ -19,10 +19,6 @@ test: build deps license_check linters
 jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
 jenkins-test: build deps license_check linters
 	TEST_PACKAGES=github.com/onosproject/onos-config/... ./build/build-tools/build/jenkins/make-unit
-
-coverage: # @HELP generate unit test coverage data
-coverage: build deps linters license_check
-	./build/build-tools/build/coveralls/coveralls-coverage onos-config
 
 helmit-gnmi: integration-test-namespace # @HELP run helmit gnmi tests locally
 	helmit test -n test ./cmd/onos-config-tests --suite gnmi
