@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/grpc/connectivity"
+
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	"github.com/onosproject/onos-config/pkg/utils"
@@ -351,7 +353,7 @@ func TestConnManager_Watch(t *testing.T) {
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	ch := make(chan Conn)
+	ch := make(chan ConnEvent)
 
 	err := mgr.Watch(ctx, ch)
 	assert.NoError(t, err)
@@ -360,7 +362,7 @@ func TestConnManager_Watch(t *testing.T) {
 	assert.NotNil(t, conn1)
 
 	event := <-ch
-	assert.Equal(t, event.ID(), conn1.ID())
+	assert.Equal(t, event.Conn.ID(), conn1.ID())
 
 	target2 := createTestTarget(t, target2, true)
 	assert.NoError(t, err)
@@ -371,65 +373,8 @@ func TestConnManager_Watch(t *testing.T) {
 	_, err = mgr.Connect(ctx, target1)
 	assert.Equal(t, true, errors.IsAlreadyExists(err))
 	event = <-ch
-	assert.Equal(t, event.ID(), conn2.ID())
+	assert.Equal(t, event.Conn.ID(), conn2.ID())
 	s.Stop()
-}
-
-func TestNewConnManager_ServerFailure(t *testing.T) {
-	t.Skip()
-	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	target1 := createTestTarget(t, target1, true)
-
-	ch := make(chan Conn)
-
-	err := mgr.Watch(ctx, ch)
-	assert.NoError(t, err)
-	// creates a new connection
-	conn1, err := mgr.Connect(ctx, target1)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn1)
-
-	event := <-ch
-	assert.Equal(t, event.ID(), conn1.ID())
-
-	// connection already exists
-	_, err = mgr.Connect(ctx, target1)
-	assert.Equal(t, true, errors.IsAlreadyExists(err))
-	s.Stop()
-	t.Log("Stopping the gNMI target server")
-	_, _ = conn1.Capabilities(ctx, &gpb.CapabilityRequest{})
-	// Since the server is stopped we should get an event whe
-	//n the connection is removed
-	event = <-ch
-	assert.Equal(t, event.ID(), conn1.ID())
-
-	// list of connections should be empty since the connection is removed from the list of connections
-	connections, err := mgr.List(context.Background())
-	assert.NoError(t, err)
-	assert.Equal(t, len(connections), 0)
-
-	// start the server again
-	s = setup(t, getTLSServerConfig(t))
-	conn1, err = mgr.Connect(ctx, target1)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn1)
-
-	// a new event should be generated since the connection will get established
-	event = <-ch
-	conn, err := mgr.Get(ctx, target1.GetID())
-	assert.NoError(t, err)
-	assert.Equal(t, conn.ID(), event.ID())
-
-	// list of connections should have one entry in it
-	connections, err = mgr.List(context.Background())
-	assert.NoError(t, err)
-	assert.Equal(t, len(connections), 1)
-	s.Stop()
-
 }
 
 func TestNewConnManager_Connect(t *testing.T) {
@@ -440,21 +385,43 @@ func TestNewConnManager_Connect(t *testing.T) {
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
+	stateCh1 := make(chan connectivity.State)
 	conn1, err := mgr.Connect(ctx, target1)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn1)
+	// Starts watching connectivity state for conn1
+	err = conn1.WatchState(ctx, stateCh1)
+	assert.NoError(t, err)
+	connState := <-stateCh1
+	assert.Equal(t, connectivity.Ready, connState)
 
+	stateCh2 := make(chan connectivity.State)
 	target2 := createTestTarget(t, target2, true)
 	assert.NoError(t, err)
 	conn2, err := mgr.Connect(ctx, target2)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn2)
+	// Starts watching connectivity state for conn2
+	err = conn2.WatchState(ctx, stateCh2)
+	assert.NoError(t, err)
+	connState = <-stateCh2
+	assert.Equal(t, connectivity.Ready, connState)
 
 	_, err = mgr.Connect(ctx, target1)
 	assert.Equal(t, true, errors.IsAlreadyExists(err))
 
 	_, err = mgr.Connect(ctx, target2)
 	assert.Equal(t, true, errors.IsAlreadyExists(err))
+	// Closing conn1
+	err = conn1.Close()
+	assert.NoError(t, err)
+	connState = <-stateCh1
+	assert.Equal(t, connectivity.Shutdown, connState)
+
+	err = conn2.Close()
+	assert.NoError(t, err)
+	connState = <-stateCh2
+	assert.Equal(t, connectivity.Shutdown, connState)
 	s.Stop()
 
 }

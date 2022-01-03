@@ -42,7 +42,7 @@ var log = logging.GetLogger("controller", "node")
 // NewController returns a new node controller
 func NewController(topo topo.Store) *controller.Controller {
 	c := controller.NewController("node")
-	c.Watch(&Watcher{
+	c.Watch(&TopoWatcher{
 		topo: topo,
 	})
 

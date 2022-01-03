@@ -18,13 +18,14 @@ package gnmi
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"io"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	"github.com/onosproject/onos-test/pkg/onostest"
 
@@ -164,7 +165,7 @@ func NewDeviceEntity(simulator *helm.HelmRelease, deviceType string, version str
 		Type:    deviceType,
 		Address: service.Ports()[0].Address(true),
 		Version: version,
-		Timeout: uint64(time.Second.Milliseconds() * 5),
+		Timeout: uint64(time.Second * 30),
 	})
 	if err != nil {
 		return nil, err
@@ -266,11 +267,14 @@ func WaitForDevice(t *testing.T, predicate func(*device.Device, topo.EventType) 
 			assert.Fail(t, fmt.Sprintf("device stream failed with error %s", err.Error()))
 			return false
 		} else if response.Event.Object.Type == topo.Object_ENTITY {
-			topoDevice, err := device.ToDevice(&response.Event.Object)
-			assert.Nil(t, err, "error converting entity to topo Device")
-			if predicate(topoDevice, response.Event.GetType()) {
-				return true
-			} // Otherwise loop and wait for the next topo event
+			err = response.Event.Object.GetAspect(&topo.Configurable{})
+			if err == nil {
+				topoDevice, err := device.ToDevice(&response.Event.Object)
+				assert.Nil(t, err, "error converting entity to topo Device")
+				if predicate(topoDevice, response.Event.GetType()) {
+					return true
+				} // Otherwise loop and wait for the next topo event
+			}
 		}
 	}
 }

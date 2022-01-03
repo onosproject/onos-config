@@ -12,23 +12,71 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package node
+package connection
 
 import (
 	"context"
 	"sync"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-config/pkg/controller/utils"
+
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+
+	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
 )
 
 const queueSize = 100
 
+// ConnWatcher is a gnmi connection watcher
+type ConnWatcher struct {
+	conns  gnmi.ConnManager
+	cancel context.CancelFunc
+	mu     sync.Mutex
+	connCh chan gnmi.ConnEvent
+}
+
+// Start starts the connection watcher
+func (c *ConnWatcher) Start(ch chan<- controller.ID) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.cancel != nil {
+		return nil
+	}
+
+	c.connCh = make(chan gnmi.ConnEvent, queueSize)
+	ctx, cancel := context.WithCancel(context.Background())
+	err := c.conns.Watch(ctx, c.connCh)
+	if err != nil {
+		cancel()
+		return err
+	}
+	c.cancel = cancel
+
+	go func() {
+		for connEvent := range c.connCh {
+			log.Debugf("Received gNMI Connection event for connection '%s'", connEvent.Conn.ID())
+			ch <- controller.NewID(connEvent.Conn.TargetID())
+		}
+		close(ch)
+	}()
+	return nil
+}
+
+// Stop stops the connection watcher
+func (c *ConnWatcher) Stop() {
+	c.mu.Lock()
+	if c.cancel != nil {
+		c.cancel()
+		c.cancel = nil
+	}
+	c.mu.Unlock()
+}
+
 // TopoWatcher is a topology watcher
 type TopoWatcher struct {
 	topo   topo.Store
+	conns  gnmi.ConnManager
 	cancel context.CancelFunc
 	mu     sync.Mutex
 }
@@ -50,18 +98,21 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 		return err
 	}
 	w.cancel = cancel
-
 	go func() {
-		ch <- controller.NewID(utils.GetOnosConfigID())
+
 		for event := range eventCh {
-			log.Debugf("Received topo event '%s'", event.Object.ID)
-			if entity, ok := event.Object.Obj.(*topoapi.Object_Entity); ok &&
-				entity.Entity.KindID == topoapi.ONOS_CONFIG {
-				ch <- controller.NewID(event.Object.ID)
+			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
+				// If the entity object has configurable aspect then the controller
+				// can make a connection to it
+				err = event.Object.GetAspect(&topoapi.Configurable{})
+				if err == nil {
+					ch <- controller.NewID(event.Object.ID)
+				}
 			}
+
 		}
-		close(ch)
 	}()
+
 	return nil
 }
 
