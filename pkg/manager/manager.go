@@ -18,6 +18,8 @@ package manager
 import (
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/onosproject/onos-config/pkg/controller/connection"
+	mastershipController "github.com/onosproject/onos-config/pkg/controller/mastership"
+
 	"github.com/onosproject/onos-config/pkg/controller/controlrelation"
 	"github.com/onosproject/onos-config/pkg/controller/node"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
@@ -206,6 +208,12 @@ func (m *Manager) startControlRelationController(topo topo.Store, conns sb.ConnM
 	return controlRelationController.Start()
 }
 
+// startMastershipController starts mastership controller
+func (m *Manager) startMastershipController(topo topo.Store) error {
+	mastershipController := mastershipController.NewController(topo)
+	return mastershipController.Start()
+}
+
 // Start the main dispatcher system
 func (m *Manager) startDispatcherSystem(
 	dispatcherInstance *dispatcher.Dispatcher,
@@ -267,6 +275,11 @@ func (m *Manager) Start() error {
 	}
 
 	err = m.startControlRelationController(topoStore, conns)
+	if err != nil {
+		return err
+	}
+
+	err = m.startMastershipController(topoStore)
 	if err != nil {
 		return err
 	}
