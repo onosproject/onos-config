@@ -50,6 +50,7 @@ type Reconciler struct {
 	topo topo.Store
 }
 
+// Reconcile reconciles the mastership state for a gnmi target
 func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
