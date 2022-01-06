@@ -1,0 +1,20 @@
+{
+  "cont1a": {
+    "cont2a": {
+      "leaf2c": "Mock leaf2c value"
+    }
+  },
+  "cont1b-state": {
+    "list2b": [
+      {
+        "index": 100,
+        "leaf3c": "mock Value in JSON"
+      },
+      {
+        "index": 101,
+        "leaf3c": "Second mock Value"
+      }
+    ],
+    "leaf2d": 10001
+  }
+}
