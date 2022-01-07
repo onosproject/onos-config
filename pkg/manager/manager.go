@@ -28,6 +28,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
+	"github.com/onosproject/onos-config/pkg/pluginregistry"
 
 	"os"
 	"sync"
@@ -67,6 +68,7 @@ type Config struct {
 	GRPCPort               int
 	TopoAddress            string
 	AllowUnvalidatedConfig bool
+	PluginPorts			   []uint
 }
 
 // Manager single point of entry for the config system.
@@ -321,6 +323,8 @@ func (m *Manager) Start() error {
 	if err != nil {
 		return err
 	}
+
+	_ = pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
 
 	dispatcherInstance := dispatcher.NewDispatcher()
 	operationalStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)

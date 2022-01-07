@@ -36,9 +36,9 @@ See ../../docs/run.md for how to run the application.
 package main
 
 import (
-	"flag"
 	"github.com/onosproject/onos-config/pkg/manager"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"syscall"
@@ -48,24 +48,46 @@ var log = logging.GetLogger("main")
 
 // The main entry point
 func main() {
-	allowUnvalidatedConfig := flag.Bool("allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
-	caPath := flag.String("caPath", "", "path to CA certificate")
-	keyPath := flag.String("keyPath", "", "path to client private key")
-	certPath := flag.String("certPath", "", "path to client certificate")
-	topoEndpoint := flag.String("topoEndpoint", "onos-topo:5150", "topology service endpoint")
-	//This flag is used in logging.init()
-	flag.Bool("debug", false, "enable debug logging")
-	flag.Parse()
+	if err := getRootCommand().Execute(); err != nil {
+		println(err)
+		os.Exit(1)
+	}
+}
+
+func getRootCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:           "onos-config",
+		Short:         "ONOS configuration subsystem",
+		RunE:          runRootCommand,
+	}
+	cmd.Flags().Int("port", 5150, "gRPC port")
+	cmd.Flags().Bool("allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
+	cmd.Flags().String("caPath", "", "path to CA certificate")
+	cmd.Flags().String("keyPath", "", "path to client private key")
+	cmd.Flags().String("certPath", "", "ppath to client certificate")
+	cmd.Flags().String("topoEndpoint", "onos-topo:5150", "topology service endpoint")
+	cmd.Flags().UintSlice("plugin-port", []uint{}, "configuration model plugin ports")
+	return cmd
+}
+
+func runRootCommand(cmd *cobra.Command, args []string) error {
+	allowUnvalidatedConfig, _ := cmd.Flags().GetBool("allowUnvalidatedConfig")
+	caPath, _ := cmd.Flags().GetString("caPath")
+	keyPath, _ := cmd.Flags().GetString("keyPath")
+	certPath, _ := cmd.Flags().GetString("certPath")
+	topoEndpoint, _ := cmd.Flags().GetString("topo-endpoint")
+	pluginPorts, _ := cmd.Flags().GetUintSlice("plugin-port")
 
 	log.Info("Starting onos-config")
 
 	cfg := manager.Config{
-		CAPath:                 *caPath,
-		KeyPath:                *keyPath,
-		CertPath:               *certPath,
+		CAPath:                 caPath,
+		KeyPath:                keyPath,
+		CertPath:               certPath,
 		GRPCPort:               5150,
-		TopoAddress:            *topoEndpoint,
-		AllowUnvalidatedConfig: *allowUnvalidatedConfig,
+		TopoAddress:            topoEndpoint,
+		AllowUnvalidatedConfig: allowUnvalidatedConfig,
+		PluginPorts:            pluginPorts,
 	}
 
 	mgr := manager.NewManager(cfg)
@@ -77,4 +99,5 @@ func main() {
 	<-sigCh
 
 	mgr.Close()
+	return nil
 }

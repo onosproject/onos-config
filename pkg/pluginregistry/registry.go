@@ -30,20 +30,20 @@ var log = logging.GetLogger("registry")
 // ModelPlugin is a record of information compiled from the configuration model plugin
 type ModelPlugin struct {
 	ID     string
-	Port   uint16
+	Port   uint
 	Info   api.ModelInfo
 	Client api.ModelPluginServiceClient
 }
 
 // PluginRegistry is a set of available configuration model plugins
 type PluginRegistry struct {
-	ports   []uint16
+	ports   []uint
 	plugins map[string]*ModelPlugin
 	lock    sync.RWMutex
 }
 
 // NewPluginRegistry creates a plugin registry that will search the specified gRPC ports to look for model plugins
-func NewPluginRegistry(ports ...uint16) *PluginRegistry {
+func NewPluginRegistry(ports ...uint) *PluginRegistry {
 	registry := &PluginRegistry{
 		ports:   ports,
 		plugins: make(map[string]*ModelPlugin),
@@ -59,7 +59,7 @@ func (r *PluginRegistry) discoverPlugins() {
 	}
 }
 
-func (r *PluginRegistry) discoverPlugin(port uint16) {
+func (r *PluginRegistry) discoverPlugin(port uint) {
 	client, err := newClient(port)
 	if err != nil {
 		log.Error("Unable to create model plugin client: %+v", err)
@@ -86,7 +86,7 @@ func (r *PluginRegistry) discoverPlugin(port uint16) {
 
 const localhost = "localhost"
 
-func newClient(port uint16) (api.ModelPluginServiceClient, error) {
+func newClient(port uint) (api.ModelPluginServiceClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()),
 		grpc.WithStreamInterceptor(retry.RetryingStreamClientInterceptor()),
