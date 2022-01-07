@@ -69,7 +69,7 @@ func (r *PluginRegistry) discoverPlugin(port uint) {
 		log.Error("Unable to create model plugin client: %+v", err)
 		return
 	}
-	log.Infof("Getting model info for model plugin on port %d", port)
+
 	resp, err := client.GetModelInfo(context.Background(), &api.ModelInfoRequest{})
 	if err != nil {
 		log.Error("Unable to create model plugin client: %+v", err)
@@ -82,12 +82,12 @@ func (r *PluginRegistry) discoverPlugin(port uint) {
 		Info:   *resp.ModelInfo,
 		Client: client,
 	}
-	log.Infof("Got model info: %+v", plugin)
+	log.Debugf("Got model info for plugin: %+v", plugin)
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	r.plugins[plugin.ID] = plugin
-	log.Infof("Configuration model plugin discovered: %+v", plugin)
+	log.Infof("Configuration model plugin %s discovered on port %d", plugin.ID, port)
 }
 
 const localhost = "localhost"
