@@ -20,8 +20,22 @@ import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
 	"github.com/onosproject/onos-config/pkg/utils"
+	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
+
+// NewChangeValue decodes a path and value in to a ChangeValue
+func NewChangeValue(path string, value configapi.TypedValue, delete bool) (*configapi.ChangeValue, error) {
+	cv := configapi.ChangeValue{
+		Path:   path,
+		Value:  value,
+		Delete: delete,
+	}
+	if err := pathutils.IsPathValid(cv.GetPath()); err != nil {
+		return nil, err
+	}
+	return &cv, nil
+}
 
 // NativeChangeToGnmiChange converts a Protobuf defined Change object to gNMI format
 func NativeChangeToGnmiChange(c *configapi.Change) (*gnmi.SetRequest, error) {
