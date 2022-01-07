@@ -23,12 +23,12 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
-	"github.com/onosproject/onos-config/pkg/pluginregistry"
 
 	"os"
 	"sync"
@@ -252,10 +252,14 @@ func (m *Manager) Start() error {
 
 	atomixClient := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
 
+	// Create new topo store
 	topoStore, err := topo.NewStore(m.Config.TopoAddress, opts...)
 	if err != nil {
 		return err
 	}
+
+	// Create new plugin registry
+	_ = pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
 
 	conns := sb.NewConnManager()
 	err = m.startNodeController(topoStore)
@@ -313,19 +317,17 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	// TODO: deprecate the old device store
 	deviceStore, err := devicestore.NewTopoStore(m.Config.TopoAddress, opts...)
 	if err != nil {
 		return err
 	}
-	log.Infof("Topology service connected with endpoint %s", m.Config.TopoAddress)
 
+	// TODO: deprecate the old model registry
 	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{})
 	if err != nil {
 		return err
 	}
-
-	_ = pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
-	log.Infof("Created config plugin registry with ports: %+v", m.Config.PluginPorts)
 
 	dispatcherInstance := dispatcher.NewDispatcher()
 	operationalStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
@@ -355,8 +357,6 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	log.Info("Starting NB")
-
 	// Start the main dispatcher system
 	err = m.startDispatcherSystem(
 		dispatcherInstance,
@@ -369,8 +369,6 @@ func (m *Manager) Start() error {
 	if err != nil {
 		return err
 	}
-
-	log.Info("Started NB")
 
 	// Start the northbound server
 	err = m.startNorthboundServer(deviceChangesStore, modelRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,

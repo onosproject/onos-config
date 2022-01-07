@@ -51,6 +51,7 @@ func NewPluginRegistry(ports ...uint) *PluginRegistry {
 		ports:   ports,
 		plugins: make(map[string]*ModelPlugin),
 	}
+	log.Infof("Created configuration plugin registry with ports: %+v", ports)
 	go registry.discoverPlugins()
 	return registry
 }

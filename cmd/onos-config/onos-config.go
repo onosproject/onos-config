@@ -75,7 +75,7 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 	caPath, _ := cmd.Flags().GetString("caPath")
 	keyPath, _ := cmd.Flags().GetString("keyPath")
 	certPath, _ := cmd.Flags().GetString("certPath")
-	topoEndpoint, _ := cmd.Flags().GetString("topo-endpoint")
+	topoEndpoint, _ := cmd.Flags().GetString("topoEndpoint")
 	pluginPorts, _ := cmd.Flags().GetUintSlice("plugin-port")
 
 	log.Info("Starting onos-config")
