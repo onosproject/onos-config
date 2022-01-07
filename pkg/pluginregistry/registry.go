@@ -16,12 +16,15 @@ package pluginregistry
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	api "github.com/onosproject/onos-api/go/onos/config/admin"
+	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/grpc/retry"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"sync"
 )
 
@@ -60,12 +63,13 @@ func (r *PluginRegistry) discoverPlugins() {
 }
 
 func (r *PluginRegistry) discoverPlugin(port uint) {
+	log.Infof("Attempting to contact model plugin on port %d", port)
 	client, err := newClient(port)
 	if err != nil {
 		log.Error("Unable to create model plugin client: %+v", err)
 		return
 	}
-
+	log.Infof("Getting model info for model plugin on port %d", port)
 	resp, err := client.GetModelInfo(context.Background(), &api.ModelInfoRequest{})
 	if err != nil {
 		log.Error("Unable to create model plugin client: %+v", err)
@@ -78,19 +82,22 @@ func (r *PluginRegistry) discoverPlugin(port uint) {
 		Info:   *resp.ModelInfo,
 		Client: client,
 	}
+	log.Infof("Got model info: %+v", plugin)
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	r.plugins[plugin.ID] = plugin
+	log.Infof("Configuration model plugin discovered: %+v", plugin)
 }
 
 const localhost = "localhost"
 
 func newClient(port uint) (api.ModelPluginServiceClient, error) {
+	clientCreds, _ := getClientCredentials()
 	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(credentials.NewTLS(clientCreds)),
 		grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()),
 		grpc.WithStreamInterceptor(retry.RetryingStreamClientInterceptor()),
-		grpc.WithInsecure(),
 	}
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", localhost, port), opts...)
 	if err != nil {
@@ -128,4 +135,16 @@ func (p *ModelPlugin) Validate(ctx context.Context, jsonData []byte) error {
 		return errors.NewInvalid("configuration is not valid")
 	}
 	return nil
+}
+
+// GetClientCredentials :
+func getClientCredentials() (*tls.Config, error) {
+	cert, err := tls.X509KeyPair([]byte(certs.DefaultClientCrt), []byte(certs.DefaultClientKey))
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		Certificates:       []tls.Certificate{cert},
+		InsecureSkipVerify: true,
+	}, nil
 }

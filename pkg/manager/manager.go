@@ -325,6 +325,7 @@ func (m *Manager) Start() error {
 	}
 
 	_ = pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
+	log.Infof("Created config plugin registry with ports: %+v", m.Config.PluginPorts)
 
 	dispatcherInstance := dispatcher.NewDispatcher()
 	operationalStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
@@ -354,6 +355,8 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	log.Info("Starting NB")
+
 	// Start the main dispatcher system
 	err = m.startDispatcherSystem(
 		dispatcherInstance,
@@ -367,6 +370,8 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	log.Info("Started NB")
+
 	// Start the northbound server
 	err = m.startNorthboundServer(deviceChangesStore, modelRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,
 		deviceStateStore, &operationalStateCache, operationalStateCacheLock, networkSnapshotStore, deviceSnapshotStore)
@@ -374,6 +379,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	log.Info("Manager started")
 	return nil
 }
 
