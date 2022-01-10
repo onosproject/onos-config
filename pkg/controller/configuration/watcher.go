@@ -47,7 +47,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 	eventCh := make(chan configapi.ConfigurationEvent, queueSize)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	err := w.configurations.Watch(ctx, eventCh, nil)
+	err := w.configurations.Watch(ctx, eventCh, configuration.WithReplay())
 	if err != nil {
 		cancel()
 		return err

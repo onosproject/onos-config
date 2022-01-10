@@ -18,6 +18,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/onosproject/onos-config/pkg/utils/path"
+
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -50,7 +52,8 @@ func NewController(topo topo.Store, conns gnmi.ConnManager, configurations confi
 	})
 
 	c.Watch(&TopoWatcher{
-		topo: topo,
+		topo:           topo,
+		configurations: configurations,
 	})
 
 	c.Reconcile(&Reconciler{
@@ -84,12 +87,11 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		log.Debugf("Configuration %s not found", configurationID)
 		return controller.Result{}, nil
 	}
-	log.Infof("Reconciling configuration %v", config)
 	if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
-		log.Debugf("Skipping Reconciliation of configuration %s, configuration state is: %s", configurationID, config.Status.GetState())
+		log.Debugf("Skipping Reconciliation of configuration '%s', its configuration state is: %s", configurationID, config.Status.GetState())
 		return controller.Result{}, nil
 	}
-
+	log.Infof("Reconciling configuration %v", config)
 	if ok, err := r.reconcileConfiguration(ctx, config); err != nil {
 		log.Warnf("Failed to reconcile configuration: %s, %s", configurationID, err)
 		return controller.Result{}, err
@@ -127,13 +129,17 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	var currentConfigValues []*configapi.PathValue
 	for _, notification := range root.Notification {
 		for _, update := range notification.Update {
-			configValues, err := jsonvalues.DecomposeJSONWithPaths("", update.GetVal().GetJsonVal(), nil, nil)
+			log.Debugf("Notification update in json format: %+v", update.GetVal().GetJsonVal())
+			configValues, err := jsonvalues.DecomposeJSONWithPaths("", update.GetVal().GetJsonVal(), path.ReadOnlyPathMap{}, path.ReadWritePathMap{})
+			log.Debugf("Extracted config values from the root of config tree: %v", configValues)
 			if err != nil {
+				log.Warnf("Failed to parse json values")
 				return false, err
 			}
 			currentConfigValues = append(currentConfigValues, configValues...)
 		}
 	}
+	log.Debugf("Current config values: %v", currentConfigValues)
 
 	desiredConfigValues := config.Values
 	var setRequestChanges []*configapi.PathValue
@@ -144,10 +150,12 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			}
 		}
 	}
+	log.Debugf("Set request changes: %v", setRequestChanges)
 	setRequest, err := utilsv2.PathValuesToGnmiChange(setRequestChanges)
 	if err != nil {
 		return false, err
 	}
+	log.Debugf("Set request is created for configuration %s: %v", config.ID, setRequest)
 	setResponse, err := conn.Set(ctx, setRequest)
 	if err != nil {
 		return false, err
