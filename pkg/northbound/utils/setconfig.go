@@ -35,6 +35,7 @@ import (
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
 const SetConfigAlreadyApplied = "Already applied:"
 
+// FIXME: temporary flag to enable new plugin validation - setting to true will presently break unit tests
 var testNewPlugin = false
 
 // ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
@@ -48,10 +49,12 @@ func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 
 	modelName := utils.ToModelName(deviceType, version)
 
+	// TODO: permanently enable the new config plugin lookup when ready
 	var configPlugin *pluginregistry.ModelPlugin
 	if testNewPlugin {
 		var ok bool
-		if configPlugin, ok = pluginRegistry.GetPlugin(modelName); !ok {
+		pluginName := strings.ToLower(modelName) // New config model plugins names are all lowercase
+		if configPlugin, ok = pluginRegistry.GetPlugin(pluginName); !ok {
 			log.Warn("No config model ", modelName, " available as a plugin")
 			if !allowUnvalidatedConfig {
 				return fmt.Errorf("no config model %s available as a plugin", modelName)
@@ -60,6 +63,7 @@ func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 		}
 	}
 
+	// TODO: deprecate the old plugin lookup
 	deviceModelYgotPlugin, err := modelRegistry.GetPlugin(modelName)
 	if err != nil {
 		if errors.IsNotFound(err) {
