@@ -76,7 +76,6 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	defer cancel()
 
 	configurationID := id.Value.(configapi.ConfigurationID)
-
 	config, err := r.configurations.Get(ctx, configurationID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
@@ -138,17 +137,17 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	}
 
 	desiredConfigValues := config.Values
-	var setRequestValues []*configapi.PathValue
+	var setRequestChanges []*configapi.PathValue
 	for _, desiredConfigValue := range desiredConfigValues {
 		for _, currentConfigValue := range currentConfigValues {
 			if desiredConfigValue.Path == currentConfigValue.Path &&
 				!bytes.Equal(desiredConfigValue.Value.GetBytes(), currentConfigValue.Value.GetBytes()) {
-				setRequestValues = append(setRequestValues, currentConfigValue)
+				setRequestChanges = append(setRequestChanges, currentConfigValue)
 
 			}
 		}
 	}
-	setRequest, err := utilsv2.PathValuesToGnmiChange(setRequestValues)
+	setRequest, err := utilsv2.PathValuesToGnmiChange(setRequestChanges)
 	if err != nil {
 		return false, err
 	}

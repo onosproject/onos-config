@@ -29,12 +29,6 @@ import (
 
 var log = logging.GetLogger("utils", "path")
 
-// PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
-type PathMap interface {
-	JustPaths() []string
-	TypeForPath(path string) (configapi.ValueType, error)
-}
-
 // MatchOnIndex - regexp to find indices in paths names
 const MatchOnIndex = `(\[.*?]).*?`
 

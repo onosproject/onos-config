@@ -18,7 +18,7 @@ package values
 import (
 	"fmt"
 
-	modelregistryv2 "github.com/onosproject/onos-config/pkg/modelregistry/v2"
+	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
@@ -26,7 +26,7 @@ import (
 )
 
 // GnmiTypedValueToNativeType converts gnmi type based values in to native byte array changes
-func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue, modelPath *modelregistryv2.ReadWritePathElem) (*configapi.TypedValue, error) {
+func GnmiTypedValueToNativeType(gnmiTv *gnmi.TypedValue, modelPath *pathutils.ReadWritePathElem) (*configapi.TypedValue, error) {
 
 	switch v := gnmiTv.GetValue().(type) {
 	case *gnmi.TypedValue_StringVal:

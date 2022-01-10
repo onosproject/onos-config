@@ -21,8 +21,9 @@ import (
 	"reflect"
 	"testing"
 
+	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
+
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	modelregistryv2 "github.com/onosproject/onos-config/pkg/modelregistry/v2"
 
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -49,8 +50,8 @@ func Test_GnmiStringToNative(t *testing.T) {
 }
 
 func Test_GnmiIntToNative(t *testing.T) {
-	pathElem := modelregistryv2.ReadWritePathElem{
-		ReadOnlyAttrib: modelregistryv2.ReadOnlyAttrib{
+	pathElem := pathutils.ReadWritePathElem{
+		ReadOnlyAttrib: pathutils.ReadOnlyAttrib{
 			ValueType: configapi.ValueType_INT,
 			TypeOpts:  []uint8{uint8(configapi.WidthThirtyTwo)},
 		},
@@ -64,8 +65,8 @@ func Test_GnmiIntToNative(t *testing.T) {
 }
 
 func Test_GnmiUintToNative(t *testing.T) {
-	pathElem := modelregistryv2.ReadWritePathElem{
-		ReadOnlyAttrib: modelregistryv2.ReadOnlyAttrib{
+	pathElem := pathutils.ReadWritePathElem{
+		ReadOnlyAttrib: pathutils.ReadOnlyAttrib{
 			ValueType: configapi.ValueType_UINT,
 			TypeOpts:  []uint8{uint8(configapi.WidthSixtyFour)},
 		},
