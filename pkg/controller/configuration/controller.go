@@ -15,7 +15,6 @@
 package configuration
 
 import (
-	"bytes"
 	"context"
 	"time"
 
@@ -140,10 +139,8 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	var setRequestChanges []*configapi.PathValue
 	for _, desiredConfigValue := range desiredConfigValues {
 		for _, currentConfigValue := range currentConfigValues {
-			if desiredConfigValue.Path == currentConfigValue.Path &&
-				!bytes.Equal(desiredConfigValue.Value.GetBytes(), currentConfigValue.Value.GetBytes()) {
-				setRequestChanges = append(setRequestChanges, currentConfigValue)
-
+			if desiredConfigValue.Path == currentConfigValue.Path {
+				setRequestChanges = append(setRequestChanges, desiredConfigValue)
 			}
 		}
 	}
@@ -155,7 +152,16 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	if err != nil {
 		return false, err
 	}
+	log.Debugf("Reconciling configuration %s: set response is received %v", config.ID, setResponse)
 
-	log.Debugf("Reconciling configuration, Set response '%v' is received for configuration: %s", setResponse, config.ID)
-	return false, nil
+	config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
+	err = r.configurations.Update(ctx, config)
+	if err != nil {
+		if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+			return false, err
+		}
+		return false, nil
+	}
+	log.Infof("Reconciling configuration %s is complete", config.ID)
+	return true, nil
 }

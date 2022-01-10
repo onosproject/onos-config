@@ -72,12 +72,16 @@ func PathValuesToGnmiChange(values []*configapi.PathValue) (*gnmi.SetRequest, er
 			return nil, parseError
 		}
 
-		gnmiValue, err := NativeTypeToGnmiTypedValue(&pathValue.Value)
-		if err != nil {
-			return nil, errors.NewInvalid("error converting %s: %s", pathValue.Path, err)
+		if pathValue.Removed {
+			deletePaths = append(deletePaths, &gnmi.Path{Elem: pathElemsRefs.Elem})
+		} else {
+			gnmiValue, err := NativeTypeToGnmiTypedValue(&pathValue.Value)
+			if err != nil {
+				return nil, errors.NewInvalid("error converting %s: %s", pathValue.Path, err)
+			}
+			updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
+			updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: gnmiValue})
 		}
-		updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
-		updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: gnmiValue})
 	}
 
 	var setRequest = gnmi.SetRequest{
