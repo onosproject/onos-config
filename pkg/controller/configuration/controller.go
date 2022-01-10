@@ -29,10 +29,10 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 
-	jsonvaluesv2 "github.com/onosproject/onos-config/pkg/modelregistry/jsonvalues/v2"
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/topo"
+	"github.com/onosproject/onos-config/pkg/utils/jsonvalues"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
@@ -129,7 +129,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	var currentConfigValues []*configapi.PathValue
 	for _, notification := range root.Notification {
 		for _, update := range notification.Update {
-			configValues, err := jsonvaluesv2.DecomposeJSONWithPaths("", update.GetVal().GetJsonVal(), nil, nil)
+			configValues, err := jsonvalues.DecomposeJSONWithPaths("", update.GetVal().GetJsonVal(), nil, nil)
 			if err != nil {
 				return false, err
 			}

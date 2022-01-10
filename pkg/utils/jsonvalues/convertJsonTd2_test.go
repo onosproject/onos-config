@@ -19,12 +19,11 @@ import (
 	"io/ioutil"
 	"testing"
 
+	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
+
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
-	modelregistryv2 "github.com/onosproject/onos-config/pkg/modelregistry/v2"
-
 	td2 "github.com/onosproject/config-models/modelplugin/testdevice-2.0.0/testdevice_2_0_0"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 	"github.com/openconfig/ygot/ygot"
@@ -82,7 +81,7 @@ func Test_DecomposeJSONWithPathsTd2_config(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, 8, len(td2Schema))
 
-	readOnlyPaths, readWritePaths := modelregistryv2.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, readWritePaths := pathutils.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
 	assert.Equal(t, 15, len(readWritePaths))
 
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-config.json")
@@ -143,7 +142,7 @@ func Test_DecomposeJSONWithPathsTd2Choice(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(td2Schema), 8)
 
-	readOnlyPaths, readWritePaths := modelregistryv2.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, readWritePaths := pathutils.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
 
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-choice.json")
 	assert.NilError(t, err)
@@ -179,7 +178,7 @@ func Test_ValidateTd2Wrong(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(td2Schema), 8)
 
-	_, readWritePaths := modelregistry.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
+	_, readWritePaths := pathutils.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
 	assert.Equal(t, len(readWritePaths), 15)
 
 	// All values are taken from testdata/sample-testdevice2-choice.json and defined
@@ -201,7 +200,7 @@ func Test_DecomposeJSONWithPathsTd2OpState(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(td2Schema), 8)
 
-	readOnlyPaths, _ := modelregistryv2.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, _ := pathutils.ExtractPaths(td2Schema["Device"], yang.TSUnset, "", "")
 	assert.Equal(t, len(readOnlyPaths), 3)
 
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-testdevice2-opstate.json")

@@ -1,4 +1,4 @@
-// Copyright 2019-present Open Networking Foundation.
+// Copyright 2021-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,31 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package modelregistry
+package path
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 
-	configmodel "github.com/onosproject/onos-config-model/pkg/model"
-	plugincache "github.com/onosproject/onos-config-model/pkg/model/plugin/cache"
-	pluginmodule "github.com/onosproject/onos-config-model/pkg/model/plugin/module"
-	modelregistry "github.com/onosproject/onos-config-model/pkg/model/registry"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-
-	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/goyang/pkg/yang"
 )
 
-var log = logging.GetLogger("modelregistry")
+var log = logging.GetLogger("utils", "path")
 
 // PathMap is an interface that is implemented by ReadOnly- and ReadWrite- PathMaps
 type PathMap interface {
@@ -112,7 +103,7 @@ type ReadWritePathElem struct {
 	Length    []string
 }
 
-// ReadWritePathMap is a map of ReadWrite paths a their metadata
+// ReadWritePathMap is a map of ReadWrite paths their metadata
 type ReadWritePathMap map[string]ReadWritePathElem
 
 // JustPaths extracts keys from a read write path map
@@ -135,206 +126,6 @@ func (rw ReadWritePathMap) TypeForPath(path string) (configapi.ValueType, error)
 		}
 	}
 	return configapi.ValueType_EMPTY, fmt.Errorf("path %s not found in RW paths of model", path)
-}
-
-// Config is the model registry configuration
-type Config struct {
-	ModPath      string
-	RegistryPath string
-	PluginPath   string
-	ModTarget    string
-}
-
-// ModelPlugin is a config model
-type ModelPlugin struct {
-	Info           configmodel.ModelInfo
-	Model          configmodel.ConfigModel
-	ReadOnlyPaths  ReadOnlyPathMap
-	ReadWritePaths ReadWritePathMap
-}
-
-// NewModelRegistry creates a new model registry
-func NewModelRegistry(config Config, plugins ...*ModelPlugin) (*ModelRegistry, error) {
-	resolver := pluginmodule.NewResolver(pluginmodule.ResolverConfig{Path: config.ModPath, Target: config.ModTarget})
-	cache, err := plugincache.NewPluginCache(plugincache.CacheConfig{Path: config.PluginPath}, resolver)
-	if err != nil {
-		return nil, err
-	}
-	registry := &ModelRegistry{
-		registry: modelregistry.NewConfigModelRegistry(modelregistry.Config{Path: config.RegistryPath}),
-		cache:    cache,
-		plugins:  make(map[string]*ModelPlugin),
-	}
-	for _, plugin := range plugins {
-		modelName := utils.ToModelNameV2(configapi.TargetType(plugin.Info.Name), configapi.TargetVersion(plugin.Info.Version))
-		registry.plugins[modelName] = plugin
-	}
-	return registry, nil
-}
-
-// ModelRegistry is a registry of config models
-type ModelRegistry struct {
-	cache    *plugincache.PluginCache
-	registry *modelregistry.ConfigModelRegistry
-	plugins  map[string]*ModelPlugin
-	mu       sync.RWMutex
-}
-
-// GetPlugins gets a list of model plugins
-func (r *ModelRegistry) GetPlugins() ([]*ModelPlugin, error) {
-	if err := r.loadPlugins(); err != nil {
-		return nil, err
-	}
-
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	plugins := make([]*ModelPlugin, 0, len(r.plugins))
-	for _, plugin := range r.plugins {
-		plugins = append(plugins, plugin)
-	}
-	return plugins, nil
-}
-
-// GetPlugin gets a model plugin by name
-func (r *ModelRegistry) GetPlugin(name string) (*ModelPlugin, error) {
-	plugin, err := r.getPlugin(name)
-	if err == nil {
-		return plugin, nil
-	} else if !errors.IsNotFound(err) {
-		return nil, err
-	}
-
-	if err := r.loadPlugins(); err != nil {
-		return nil, err
-	}
-	return r.getPlugin(name)
-}
-
-// getPlugin gets a model plugin by name
-func (r *ModelRegistry) getPlugin(name string) (*ModelPlugin, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	plugin, ok := r.plugins[name]
-	if ok {
-		return plugin, nil
-	}
-	return nil, errors.NewNotFound("Model plugin '%s' not found", name)
-}
-
-// loadPlugins loads the available model plugins from the model registry
-func (r *ModelRegistry) loadPlugins() error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	modelInfos, err := r.registry.ListModels()
-	if err != nil {
-		return err
-	}
-
-	for _, modelInfo := range modelInfos {
-		modelName := utils.ToModelNameV2(configapi.TargetType(modelInfo.Name), configapi.TargetVersion(modelInfo.Version))
-		if _, ok := r.plugins[modelName]; !ok {
-			plugin, err := r.loadPlugin(modelInfo)
-			if err != nil {
-				return err
-			}
-			r.plugins[modelName] = plugin
-		}
-	}
-	return nil
-}
-
-func (r *ModelRegistry) loadPlugin(modelInfo configmodel.ModelInfo) (*ModelPlugin, error) {
-	entry := r.cache.Entry(modelInfo.Plugin.Name, modelInfo.Plugin.Version)
-	err := entry.RLock(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		_ = entry.RUnlock(context.Background())
-	}()
-
-	plugin, err := entry.Load()
-	if err != nil {
-		return nil, err
-	}
-
-	model := plugin.Model()
-	schema, err := model.Schema()
-	if err != nil {
-		return nil, err
-	}
-
-	readOnlyPaths, readWritePaths := ExtractPaths(schema["Device"], yang.TSUnset, "", "")
-
-	/////////////////////////////////////////////////////////////////////
-	// Stratum - special case
-	// It has 139 Read Only paths in its YANG but as of Aug'19 only 1 is
-	// supported by the actual device - /interfaces/interface[name=*]/state
-	// Either the YANG should be adjusted or the device should implement
-	// the paths. As a workaround just add the working path here
-	// In addition Stratum does not fully support wildcards, and so calling this
-	// path will only retrieve the ifindex and name under this branch - other paths
-	// will have to be called explicitly by their interface name without wildcard
-	/////////////////////////////////////////////////////////////////////
-	if modelInfo.Name == "Stratum" && modelInfo.Version == "1.0.0" {
-		stratumIfRwPaths := make(ReadWritePathMap)
-		const StratumIfRwPaths = "/interfaces/interface[name=*]/config"
-		stratumIfRwPaths[StratumIfRwPaths+"/loopback-mode"] = readWritePaths[StratumIfRwPaths+"/loopback-mode"]
-		stratumIfRwPaths[StratumIfRwPaths+"/name"] = readWritePaths[StratumIfRwPaths+"/name"]
-		stratumIfRwPaths[StratumIfRwPaths+"/id"] = readWritePaths[StratumIfRwPaths+"/id"]
-		stratumIfRwPaths[StratumIfRwPaths+"/health-indicator"] = readWritePaths[StratumIfRwPaths+"/health-indicator"]
-		stratumIfRwPaths[StratumIfRwPaths+"/mtu"] = readWritePaths[StratumIfRwPaths+"/mtu"]
-		stratumIfRwPaths[StratumIfRwPaths+"/description"] = readWritePaths[StratumIfRwPaths+"/description"]
-		stratumIfRwPaths[StratumIfRwPaths+"/type"] = readWritePaths[StratumIfRwPaths+"/type"]
-		stratumIfRwPaths[StratumIfRwPaths+"/tpid"] = readWritePaths[StratumIfRwPaths+"/tpid"]
-		stratumIfRwPaths[StratumIfRwPaths+"/enabled"] = readWritePaths[StratumIfRwPaths+"/enabled"]
-		readWritePaths = stratumIfRwPaths
-
-		stratumIfPath := make(ReadOnlyPathMap)
-		const StratumIfPath = "/interfaces/interface[name=*]/state"
-		stratumIfPath[StratumIfPath] = readOnlyPaths[StratumIfPath]
-		readOnlyPaths = stratumIfPath
-		log.Infof("Model %s %s loaded. HARDCODED to 1 readonly path."+
-			"%d read only paths. %d read write paths", modelInfo.Name, modelInfo.Version,
-			len(readOnlyPaths), len(readWritePaths))
-	} else {
-		log.Infof("Model %s %s loaded. %d read only paths. %d read write paths", modelInfo.Name, modelInfo.Version,
-			len(readOnlyPaths), len(readWritePaths))
-	}
-	return &ModelPlugin{
-		Info:           modelInfo,
-		Model:          model,
-		ReadOnlyPaths:  readOnlyPaths,
-		ReadWritePaths: readWritePaths,
-	}, nil
-}
-
-// Capabilities returns an aggregated set of modelData in gNMI capabilities format
-// with duplicates removed
-func (r *ModelRegistry) Capabilities() ([]*gnmi.ModelData, error) {
-	if err := r.loadPlugins(); err != nil {
-		return nil, err
-	}
-
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	// Make a map - if we get duplicates overwrite them
-	modelMap := make(map[string]*gnmi.ModelData)
-	for _, plugin := range r.plugins {
-		for _, modelData := range plugin.Model.Data() {
-			modelName := utils.ToModelNameV2(configapi.TargetType(modelData.Name), configapi.TargetVersion(modelData.Version))
-			modelMap[modelName] = modelData
-		}
-	}
-
-	models := make([]*gnmi.ModelData, 0, len(modelMap))
-	for _, modelData := range modelMap {
-		models = append(models, modelData)
-	}
-	return models, nil
 }
 
 // ExtractPaths is a recursive function to extract a list of read only paths from a YGOT schema

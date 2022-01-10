@@ -18,7 +18,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	modelregistryv2 "github.com/onosproject/onos-config/pkg/modelregistry/v2"
+	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
@@ -35,10 +35,10 @@ func setUpJSONToValues(filename string) ([]byte, error) {
 	return sampleTree, nil
 }
 
-func setUpRwPaths() (modelregistryv2.ReadOnlyPathMap, modelregistryv2.ReadWritePathMap) {
+func setUpRwPaths() (pathutils.ReadOnlyPathMap, pathutils.ReadWritePathMap) {
 	ds1Schema, _ := ds1.UnzipSchema()
 	readOnlyPathsDeviceSim1, readWritePathsDeviceSim1 :=
-		modelregistryv2.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+		pathutils.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 
 	return readOnlyPathsDeviceSim1, readWritePathsDeviceSim1
 }

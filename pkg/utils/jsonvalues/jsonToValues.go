@@ -25,7 +25,7 @@ import (
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
-	modelregistryv2 "github.com/onosproject/onos-config/pkg/modelregistry/v2"
+	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
 )
 
 const (
@@ -43,8 +43,8 @@ type indexValue struct {
 }
 
 // DecomposeJSONWithPaths - handling the decomposition and correction in one go
-func DecomposeJSONWithPaths(prefixPath string, genericJSON []byte, ropaths modelregistryv2.ReadOnlyPathMap,
-	rwpaths modelregistryv2.ReadWritePathMap) ([]*configapi.PathValue, error) {
+func DecomposeJSONWithPaths(prefixPath string, genericJSON []byte, ropaths pathutils.ReadOnlyPathMap,
+	rwpaths pathutils.ReadWritePathMap) ([]*configapi.PathValue, error) {
 
 	var f interface{}
 	err := json.Unmarshal(genericJSON, &f)
@@ -68,8 +68,8 @@ func DecomposeJSONWithPaths(prefixPath string, genericJSON []byte, ropaths model
 // extractValuesIntermediate recursively walks a JSON tree to create a flat set
 // of paths and values.
 func extractValuesWithPaths(f interface{}, parentPath string,
-	modelROpaths modelregistryv2.ReadOnlyPathMap,
-	modelRWpaths modelregistryv2.ReadWritePathMap) ([]*configapi.PathValue, error) {
+	modelROpaths pathutils.ReadOnlyPathMap,
+	modelRWpaths pathutils.ReadWritePathMap) ([]*configapi.PathValue, error) {
 
 	changes := make([]*configapi.PathValue, 0)
 
@@ -95,7 +95,7 @@ func extractValuesWithPaths(f interface{}, parentPath string,
 			for _, obj := range objs {
 				isIndex := false
 				for i, idxName := range indexNames {
-					if modelregistryv2.RemovePathIndices(obj.Path) == fmt.Sprintf("%s/%s", modelregistryv2.RemovePathIndices(parentPath), idxName) {
+					if pathutils.RemovePathIndices(obj.Path) == fmt.Sprintf("%s/%s", pathutils.RemovePathIndices(parentPath), idxName) {
 						indices = append(indices, indexValue{name: idxName, value: &obj.Value, order: i})
 						isIndex = true
 						break
@@ -137,8 +137,8 @@ func extractValuesWithPaths(f interface{}, parentPath string,
 }
 
 func handleMap(value map[string]interface{}, parentPath string,
-	modelROpaths modelregistryv2.ReadOnlyPathMap,
-	modelRWpaths modelregistryv2.ReadWritePathMap) ([]*configapi.PathValue, error) {
+	modelROpaths pathutils.ReadOnlyPathMap,
+	modelRWpaths pathutils.ReadWritePathMap) ([]*configapi.PathValue, error) {
 
 	changes := make([]*configapi.PathValue, 0)
 
@@ -235,14 +235,14 @@ func handleMap(value map[string]interface{}, parentPath string,
 	return changes, nil
 }
 
-func handleAttribute(value interface{}, parentPath string, modelROpaths modelregistryv2.ReadOnlyPathMap,
-	modelRWpaths modelregistryv2.ReadWritePathMap) (*configapi.PathValue, error) {
+func handleAttribute(value interface{}, parentPath string, modelROpaths pathutils.ReadOnlyPathMap,
+	modelRWpaths pathutils.ReadWritePathMap) (*configapi.PathValue, error) {
 
 	var modeltype configapi.ValueType
 	var modelPath string
 	var ok bool
-	var pathElem *modelregistryv2.ReadWritePathElem
-	var subPath *modelregistryv2.ReadOnlyAttrib
+	var pathElem *pathutils.ReadWritePathElem
+	var subPath *pathutils.ReadOnlyAttrib
 	var enum map[int]string
 	var typeOpts []uint8
 	var err error
@@ -448,12 +448,12 @@ func handleAttributeLeafList(modeltype configapi.ValueType,
 	return typedValue, nil
 }
 
-func findModelRwPathNoIndices(modelRWpaths modelregistryv2.ReadWritePathMap,
-	searchpath string) (*modelregistryv2.ReadWritePathElem, string, bool) {
+func findModelRwPathNoIndices(modelRWpaths pathutils.ReadWritePathMap,
+	searchpath string) (*pathutils.ReadWritePathElem, string, bool) {
 
-	searchpathNoIndices := modelregistryv2.RemovePathIndices(searchpath)
+	searchpathNoIndices := pathutils.RemovePathIndices(searchpath)
 	for path, value := range modelRWpaths {
-		if modelregistryv2.RemovePathIndices(path) == searchpathNoIndices {
+		if pathutils.RemovePathIndices(path) == searchpathNoIndices {
 			pathWithNumericalIdx, err := insertNumericalIndices(path, searchpath)
 			if err != nil {
 				return nil, fmt.Sprintf("could not replace wildcards in model path with numerical ids %v", err), false
@@ -464,10 +464,10 @@ func findModelRwPathNoIndices(modelRWpaths modelregistryv2.ReadWritePathMap,
 	return nil, "", false
 }
 
-func findModelRoPathNoIndices(modelROpaths modelregistryv2.ReadOnlyPathMap,
-	searchpath string) (*modelregistryv2.ReadOnlyAttrib, string, bool) {
+func findModelRoPathNoIndices(modelROpaths pathutils.ReadOnlyPathMap,
+	searchpath string) (*pathutils.ReadOnlyAttrib, string, bool) {
 
-	searchpathNoIndices := modelregistryv2.RemovePathIndices(searchpath)
+	searchpathNoIndices := pathutils.RemovePathIndices(searchpath)
 	for path, value := range modelROpaths {
 		for subpath, subpathValue := range value {
 			var fullpath string
@@ -476,7 +476,7 @@ func findModelRoPathNoIndices(modelROpaths modelregistryv2.ReadOnlyPathMap,
 			} else {
 				fullpath = fmt.Sprintf("%s%s", path, subpath)
 			}
-			if modelregistryv2.RemovePathIndices(fullpath) == searchpathNoIndices {
+			if pathutils.RemovePathIndices(fullpath) == searchpathNoIndices {
 				pathWithNumericalIdx, err := insertNumericalIndices(fullpath, searchpath)
 				if err != nil {
 					return nil, fmt.Sprintf("could not replace wildcards in model path with numerical ids %v", err), false
@@ -503,16 +503,16 @@ func stripNamespace(path string) string {
 }
 
 // For RW paths
-func indicesOfPath(modelROpaths modelregistryv2.ReadOnlyPathMap,
-	modelRWpaths modelregistryv2.ReadWritePathMap, searchpath string) []string {
+func indicesOfPath(modelROpaths pathutils.ReadOnlyPathMap,
+	modelRWpaths pathutils.ReadWritePathMap, searchpath string) []string {
 
-	searchpathNoIndices := modelregistryv2.RemovePathIndices(searchpath)
+	searchpathNoIndices := pathutils.RemovePathIndices(searchpath)
 	// First search through the RW paths
 	for path := range modelRWpaths {
-		pathNoIndices := modelregistryv2.RemovePathIndices(path)
+		pathNoIndices := pathutils.RemovePathIndices(path)
 		// Find a short path
 		if pathNoIndices[:strings.LastIndex(pathNoIndices, slash)] == searchpathNoIndices {
-			idxNames, _ := modelregistryv2.ExtractIndexNames(path)
+			idxNames, _ := pathutils.ExtractIndexNames(path)
 			return idxNames
 		}
 	}
@@ -526,10 +526,10 @@ func indicesOfPath(modelROpaths modelregistryv2.ReadOnlyPathMap,
 			} else {
 				fullpath = fmt.Sprintf("%s%s", path, subpath)
 			}
-			pathNoIndices := modelregistryv2.RemovePathIndices(fullpath)
+			pathNoIndices := pathutils.RemovePathIndices(fullpath)
 			// Find a short path
 			if pathNoIndices[:strings.LastIndex(pathNoIndices, slash)] == searchpathNoIndices {
-				idxNames, _ := modelregistryv2.ExtractIndexNames(fullpath)
+				idxNames, _ := pathutils.ExtractIndexNames(fullpath)
 				return idxNames
 			}
 		}

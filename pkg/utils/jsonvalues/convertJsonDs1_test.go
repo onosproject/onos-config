@@ -18,8 +18,9 @@ import (
 	"io/ioutil"
 	"testing"
 
+	pathutils "github.com/onosproject/onos-config/pkg/utils/path"
+
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	modelregistryv2 "github.com/onosproject/onos-config/pkg/modelregistry/v2"
 
 	ds1 "github.com/onosproject/config-models/modelplugin/devicesim-1.0.0/devicesim_1_0_0"
 	"github.com/openconfig/goyang/pkg/yang"
@@ -32,7 +33,7 @@ func Test_correctJsonPathValues2(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(ds1Schema), 137)
 
-	readOnlyPaths, readWritePaths := modelregistryv2.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, readWritePaths := pathutils.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-openconfig2.json")
 	assert.NilError(t, err)
@@ -84,7 +85,7 @@ func Test_correctJsonPathRwValuesSubInterfaces(t *testing.T) {
 
 	ds1Schema, err := ds1.UnzipSchema()
 	assert.NilError(t, err)
-	readOnlyPaths, readWritePaths := modelregistryv2.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, readWritePaths := pathutils.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 
 	sampleTree, err := ioutil.ReadFile("./testdata/sample-openconfig-configuration.json")
 	assert.NilError(t, err)
@@ -124,7 +125,7 @@ func Test_correctJsonPathRwValuesSystemLogging(t *testing.T) {
 	ds1Schema, err := ds1.UnzipSchema()
 	assert.NilError(t, err)
 
-	readOnlyPaths, readWritePaths := modelregistryv2.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
+	readOnlyPaths, readWritePaths := pathutils.ExtractPaths(ds1Schema["Device"], yang.TSUnset, "", "")
 
 	// All values are taken from testdata/sample-double-index.json and defined
 	// here in the intermediate jsonToValues format
