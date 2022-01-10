@@ -48,13 +48,16 @@ func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 
 	modelName := utils.ToModelName(deviceType, version)
 
-	configPlugin, ok := pluginRegistry.GetPlugin(modelName)
-	if testNewPlugin && !ok {
-		log.Warn("No config model ", modelName, " available as a plugin")
-		if !allowUnvalidatedConfig {
-			return fmt.Errorf("no config model %s available as a plugin", modelName)
+	var configPlugin *pluginregistry.ModelPlugin
+	if testNewPlugin {
+		var ok bool
+		if configPlugin, ok = pluginRegistry.GetPlugin(modelName); !ok {
+			log.Warn("No config model ", modelName, " available as a plugin")
+			if !allowUnvalidatedConfig {
+				return fmt.Errorf("no config model %s available as a plugin", modelName)
+			}
+			return nil
 		}
-		return nil
 	}
 
 	deviceModelYgotPlugin, err := modelRegistry.GetPlugin(modelName)

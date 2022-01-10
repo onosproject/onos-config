@@ -50,6 +50,7 @@ func NewPluginRegistry(ports ...uint) *PluginRegistry {
 	registry := &PluginRegistry{
 		ports:   ports,
 		plugins: make(map[string]*ModelPlugin),
+		lock:    sync.RWMutex{},
 	}
 	log.Infof("Created configuration plugin registry with ports: %+v", ports)
 	return registry
