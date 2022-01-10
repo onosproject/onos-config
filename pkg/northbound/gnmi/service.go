@@ -25,6 +25,7 @@ import (
 	topodevice "github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/dispatcher"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/store/change/device"
 	"github.com/onosproject/onos-config/pkg/store/change/device/state"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
@@ -45,6 +46,7 @@ type Service struct {
 	northbound.Service
 	deviceChangesStore        device.Store
 	modelRegistry             *modelregistry.ModelRegistry
+	pluginRegistry            *pluginregistry.PluginRegistry
 	deviceCache               cache.Cache
 	networkChangesStore       network.Store
 	dispatcher                *dispatcher.Dispatcher
@@ -57,6 +59,7 @@ type Service struct {
 
 // NewService allocates a Service struct with the given parameters
 func NewService(modelRegistry *modelregistry.ModelRegistry,
+	pluginRegistry *pluginregistry.PluginRegistry,
 	deviceChangesStore device.Store,
 	deviceCache cache.Cache,
 	networkChangesStore network.Store,
@@ -69,6 +72,7 @@ func NewService(modelRegistry *modelregistry.ModelRegistry,
 	return Service{
 		deviceChangesStore:        deviceChangesStore,
 		modelRegistry:             modelRegistry,
+		pluginRegistry:            pluginRegistry,
 		deviceCache:               deviceCache,
 		networkChangesStore:       networkChangesStore,
 		dispatcher:                dispatcher,
@@ -86,6 +90,7 @@ func (s Service) Register(r *grpc.Server) {
 		&Server{
 			deviceChangesStore:        s.deviceChangesStore,
 			modelRegistry:             s.modelRegistry,
+			pluginRegistry:            s.pluginRegistry,
 			deviceCache:               s.deviceCache,
 			networkChangesStore:       s.networkChangesStore,
 			dispatcher:                s.dispatcher,
@@ -103,6 +108,7 @@ type Server struct {
 	lastWrite                 networkchange.Revision
 	deviceChangesStore        device.Store
 	modelRegistry             *modelregistry.ModelRegistry
+	pluginRegistry            *pluginregistry.PluginRegistry
 	deviceCache               cache.Cache
 	networkChangesStore       network.Store
 	deviceStore               devicestore.Store

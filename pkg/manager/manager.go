@@ -68,12 +68,13 @@ type Config struct {
 	GRPCPort               int
 	TopoAddress            string
 	AllowUnvalidatedConfig bool
-	PluginPorts			   []uint
+	PluginPorts            []uint
 }
 
 // Manager single point of entry for the config system.
 type Manager struct {
-	Config Config
+	Config         Config
+	pluginRegistry *pluginregistry.PluginRegistry
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -140,6 +141,7 @@ func (m *Manager) startNorthboundServer(
 
 	gnmiService := gnmi.NewService(
 		modelRegistry,
+		m.pluginRegistry,
 		deviceChangesStore,
 		deviceCache,
 		networkChangesStore,
@@ -259,7 +261,8 @@ func (m *Manager) Start() error {
 	}
 
 	// Create new plugin registry
-	_ = pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
+	m.pluginRegistry = pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
+	m.pluginRegistry.Start()
 
 	conns := sb.NewConnManager()
 	err = m.startNodeController(topoStore)
@@ -384,4 +387,5 @@ func (m *Manager) Start() error {
 // Close kills the manager
 func (m *Manager) Close() {
 	log.Info("Closing Manager")
+	m.pluginRegistry.Stop()
 }

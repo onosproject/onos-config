@@ -56,9 +56,9 @@ func main() {
 
 func getRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "onos-config",
-		Short:         "ONOS configuration subsystem",
-		RunE:          runRootCommand,
+		Use:   "onos-config",
+		Short: "ONOS configuration subsystem",
+		RunE:  runRootCommand,
 	}
 	cmd.Flags().Int("port", 5150, "gRPC port")
 	cmd.Flags().Bool("allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
