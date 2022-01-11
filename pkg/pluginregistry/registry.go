@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	api "github.com/onosproject/onos-api/go/onos/config/admin"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/grpc/retry"
@@ -146,6 +147,15 @@ func (p *ModelPlugin) Validate(ctx context.Context, jsonData []byte) error {
 		return errors.NewInvalid("configuration is not valid")
 	}
 	return nil
+}
+
+// GetPathValues extracts typed path values from the specified configuration change JSON
+func (p *ModelPlugin) GetPathValues(ctx context.Context, pathPrefix string, jsonData []byte) ([]*configapi.PathValue, error) {
+	resp, err := p.Client.GetPathValues(ctx, &api.PathValuesRequest{PathPrefix: pathPrefix, Json: jsonData})
+	if err != nil {
+		return nil, err
+	}
+	return resp.PathValues, nil
 }
 
 // GetClientCredentials :
