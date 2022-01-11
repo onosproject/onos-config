@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -42,7 +43,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/openconfig/gnmi/client"
+	gnmiclient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
@@ -107,20 +108,6 @@ func GetDevice(simulator *helm.HelmRelease) (*topo.Object, error) {
 		return nil, err
 	}
 	return response.Object, nil
-}
-
-// AwaitDeviceState :
-func AwaitDeviceState(simulator *helm.HelmRelease, predicate func(object *topo.Object) bool) error {
-	for i := 0; i < 10; i++ {
-		device, err := GetDevice(simulator)
-		if err != nil {
-			return err
-		} else if predicate(device) {
-			return nil
-		}
-		time.Sleep(time.Second)
-	}
-	return errors.NewTimeout("device wait timed out")
 }
 
 // NewDeviceEntity :
@@ -388,7 +375,7 @@ func extractSetTransactionID(response *gpb.SetResponse) string {
 }
 
 // GetGNMIValue generates a GET request on the given client for a Path on a device
-func GetGNMIValue(ctx context.Context, c client.Impl, paths []protoutils.DevicePath, encoding gpb.Encoding) ([]protoutils.DevicePath, []*gnmi_ext.Extension, error) {
+func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.DevicePath, encoding gpb.Encoding) ([]protoutils.DevicePath, []*gnmi_ext.Extension, error) {
 	protoString := ""
 	for _, devicePath := range paths {
 		protoString = protoString + MakeProtoPath(devicePath.DeviceName, devicePath.Path)
@@ -407,7 +394,7 @@ func GetGNMIValue(ctx context.Context, c client.Impl, paths []protoutils.DeviceP
 }
 
 // SetGNMIValue generates a SET request on the given client for update and delete paths on a device
-func SetGNMIValue(ctx context.Context, c client.Impl, updatePaths []protoutils.DevicePath, deletePaths []protoutils.DevicePath, extensions []*gnmi_ext.Extension) (string, []*gnmi_ext.Extension, error) {
+func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protoutils.DevicePath, deletePaths []protoutils.DevicePath, extensions []*gnmi_ext.Extension) (string, []*gnmi_ext.Extension, error) {
 	var protoBuilder strings.Builder
 	for _, updatePath := range updatePaths {
 		protoBuilder.WriteString(protoutils.MakeProtoUpdatePath(updatePath))
@@ -474,7 +461,7 @@ func GetDevicePathsWithValues(devices []string, paths []string, values []string)
 }
 
 // CheckDeviceValue makes sure a value has been assigned properly to a device path by querying GNMI
-func CheckDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []protoutils.DevicePath, expectedValue string) {
+func CheckDeviceValue(t *testing.T, deviceGnmiClient gnmiclient.Impl, devicePaths []protoutils.DevicePath, expectedValue string) {
 	deviceValues, extensions, deviceValuesError := GetGNMIValue(MakeContext(), deviceGnmiClient, devicePaths, gpb.Encoding_JSON)
 	if deviceValuesError == nil {
 		assert.NoError(t, deviceValuesError, "GNMI get operation to device returned an error")
@@ -487,18 +474,18 @@ func CheckDeviceValue(t *testing.T, deviceGnmiClient client.Impl, devicePaths []
 }
 
 // GetDeviceDestination :
-func GetDeviceDestination(simulator *helm.HelmRelease) (client.Destination, error) {
+func GetDeviceDestination(simulator *helm.HelmRelease) (gnmiclient.Destination, error) {
 	creds, err := getClientCredentials()
 	if err != nil {
-		return client.Destination{}, err
+		return gnmiclient.Destination{}, err
 	}
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
 	services, err := simulatorClient.CoreV1().Services().List(context.Background())
 	if err != nil {
-		return client.Destination{}, err
+		return gnmiclient.Destination{}, err
 	}
 	service := services[0]
-	return client.Destination{
+	return gnmiclient.Destination{
 		Addrs:   []string{service.Ports()[0].Address(true)},
 		Target:  service.Name,
 		TLS:     creds,
@@ -507,7 +494,7 @@ func GetDeviceDestination(simulator *helm.HelmRelease) (client.Destination, erro
 }
 
 // GetDeviceGNMIClientOrFail creates a GNMI client to a device. If there is an error, the test is failed
-func GetDeviceGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) client.Impl {
+func GetDeviceGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) gnmiclient.Impl {
 	t.Helper()
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
 	services, err := simulatorClient.CoreV1().Services().List(context.Background())
@@ -515,7 +502,7 @@ func GetDeviceGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) client
 	service := services[0]
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	dest := client.Destination{
+	dest := gnmiclient.Destination{
 		Addrs:   []string{service.Ports()[0].Address(true)},
 		Target:  service.Name,
 		Timeout: 10 * time.Second,
@@ -527,20 +514,20 @@ func GetDeviceGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) client
 }
 
 // GetDestination :
-func GetDestination() (client.Destination, error) {
+func GetDestination() (gnmiclient.Destination, error) {
 	creds, err := getClientCredentials()
 	if err != nil {
-		return client.Destination{}, err
+		return gnmiclient.Destination{}, err
 	}
 	configRelease := helm.Release("onos-umbrella")
 	configClient := kubernetes.NewForReleaseOrDie(configRelease)
 
 	configService, err := configClient.CoreV1().Services().Get(context.Background(), "onos-config")
 	if err != nil || configService == nil {
-		return client.Destination{}, errors.NewNotFound("can't find service for onos-config")
+		return gnmiclient.Destination{}, errors.NewNotFound("can't find service for onos-config")
 	}
 
-	return client.Destination{
+	return gnmiclient.Destination{
 		Addrs:   []string{configService.Ports()[0].Address(true)},
 		Target:  configService.Name,
 		TLS:     creds,
@@ -548,26 +535,33 @@ func GetDestination() (client.Destination, error) {
 	}, nil
 }
 
-// GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
-func GetGNMIClientOrFail(t *testing.T) client.Impl {
+// GetGNMIClientWithContextOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
+func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T) gnmiclient.Impl {
 	t.Helper()
-	release := helm.Chart("onos-umbrella").Release("onos-umbrella")
-	conn, err := connectService(release, "onos-config")
-	assert.NoError(t, err)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	//release := helm.Chart("onos-umbrella").Release("onos-umbrella")
+	//conn, err := connectService(release, "onos-config")
+	//assert.NoError(t, err)
+	//ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	//defer cancel()
 	dest, err := GetDestination()
 	if !assert.NoError(t, err) {
 		t.Fail()
 	}
-	client, err := gclient.NewFromConn(ctx, conn, dest)
+	client, err := gclient.New(ctx, dest)
+	fmt.Fprintf(os.Stderr, "client: %v\n", client)
 	assert.NoError(t, err)
 	assert.True(t, client != nil, "Fetching device client returned nil")
 	return client
 }
 
+// GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
+func GetGNMIClientOrFail(t *testing.T) gnmiclient.Impl {
+	t.Helper()
+	return GetGNMIClientWithContextOrFail(context.Background(), t)
+}
+
 // CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValue(t *testing.T, gnmiClient client.Impl, paths []protoutils.DevicePath, expectedValue string, expectedExtensions int, failMessage string) {
+func CheckGNMIValue(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.DevicePath, expectedValue string, expectedExtensions int, failMessage string) {
 	t.Helper()
 	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths, gpb.Encoding_PROTO)
 	assert.NoError(t, err)
@@ -576,7 +570,7 @@ func CheckGNMIValue(t *testing.T, gnmiClient client.Impl, paths []protoutils.Dev
 }
 
 // CheckGNMIValues makes sure a list of values has been assigned properly by querying the onos-config northbound API
-func CheckGNMIValues(t *testing.T, gnmiClient client.Impl, paths []protoutils.DevicePath, expectedValues []string, expectedExtensions int, failMessage string) {
+func CheckGNMIValues(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.DevicePath, expectedValues []string, expectedExtensions int, failMessage string) {
 	t.Helper()
 	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths, gpb.Encoding_PROTO)
 	assert.NoError(t, err)
@@ -587,7 +581,7 @@ func CheckGNMIValues(t *testing.T, gnmiClient client.Impl, paths []protoutils.De
 }
 
 // SetGNMIValueOrFail does a GNMI set operation to the given client, and fails the test if there is an error
-func SetGNMIValueOrFail(t *testing.T, gnmiClient client.Impl,
+func SetGNMIValueOrFail(t *testing.T, gnmiClient gnmiclient.Impl,
 	updatePaths []protoutils.DevicePath, deletePaths []protoutils.DevicePath,
 	extensions []*gnmi_ext.Extension) network.ID {
 	t.Helper()

@@ -1,4 +1,4 @@
-// Copyright 2019-present Open Networking Foundation.
+// Copyright 2020-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,23 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package rbac
 
 import (
-	"github.com/onosproject/helmit/pkg/registry"
+	"github.com/onosproject/helmit/pkg/input"
 	"github.com/onosproject/helmit/pkg/test"
-	"github.com/onosproject/onos-config/test/cli"
-	"github.com/onosproject/onos-config/test/gnmi"
-	"github.com/onosproject/onos-config/test/ha"
-	"github.com/onosproject/onos-config/test/rbac"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"github.com/onosproject/onos-config/test/utils/charts"
 )
 
-func main() {
-	registry.RegisterTestSuite("cli", &cli.TestSuite{})
-	registry.RegisterTestSuite("gnmi", &gnmi.TestSuite{})
-	registry.RegisterTestSuite("ha", &ha.TestSuite{})
-	registry.RegisterTestSuite("rbac", &rbac.TestSuite{})
+type testSuite struct {
+	test.Suite
+}
 
-	test.Main()
+// TestSuite is the onos-config HA test suite
+type TestSuite struct {
+	testSuite
+}
+
+// SetupTestSuite sets up the onos-config HA test suite
+func (s *TestSuite) SetupTestSuite(c *input.Context) error {
+	umbrella := charts.CreateUmbrellaRelease().
+		Set("onos-config.openidc.issuer", "https://keycloak-dev.onlab.us/auth/realms/master")
+	return umbrella.Install(true)
 }
