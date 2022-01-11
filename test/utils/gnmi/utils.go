@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -473,26 +472,6 @@ func CheckDeviceValue(t *testing.T, deviceGnmiClient gnmiclient.Impl, devicePath
 
 }
 
-// GetDeviceDestination :
-func GetDeviceDestination(simulator *helm.HelmRelease) (gnmiclient.Destination, error) {
-	creds, err := getClientCredentials()
-	if err != nil {
-		return gnmiclient.Destination{}, err
-	}
-	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List(context.Background())
-	if err != nil {
-		return gnmiclient.Destination{}, err
-	}
-	service := services[0]
-	return gnmiclient.Destination{
-		Addrs:   []string{service.Ports()[0].Address(true)},
-		Target:  service.Name,
-		TLS:     creds,
-		Timeout: 10 * time.Second,
-	}, nil
-}
-
 // GetDeviceGNMIClientOrFail creates a GNMI client to a device. If there is an error, the test is failed
 func GetDeviceGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) gnmiclient.Impl {
 	t.Helper()
@@ -538,17 +517,13 @@ func GetDestination() (gnmiclient.Destination, error) {
 // GetGNMIClientWithContextOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
 func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T) gnmiclient.Impl {
 	t.Helper()
-	//release := helm.Chart("onos-umbrella").Release("onos-umbrella")
-	//conn, err := connectService(release, "onos-config")
-	//assert.NoError(t, err)
-	//ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	//defer cancel()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 	dest, err := GetDestination()
 	if !assert.NoError(t, err) {
 		t.Fail()
 	}
 	client, err := gclient.New(ctx, dest)
-	fmt.Fprintf(os.Stderr, "client: %v\n", client)
 	assert.NoError(t, err)
 	assert.True(t, client != nil, "Fetching device client returned nil")
 	return client

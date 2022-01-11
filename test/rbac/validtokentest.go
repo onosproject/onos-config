@@ -17,7 +17,6 @@ package rbac
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/prometheus/common/log"
@@ -26,7 +25,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 
@@ -34,7 +32,7 @@ import (
 	"github.com/onosproject/onos-config/test/utils/proto"
 )
 
-//fetchATokenViaKeyCloak Get the token via keycloak using curl
+// fetchATokenViaKeyCloak Get the token via keycloak using curl
 func fetchATokenViaKeyCloak(openIDIssuer string, user string, passwd string) (string, error) {
 
 	data := url.Values{}
@@ -80,7 +78,6 @@ func getContext(ctx context.Context, token string) context.Context {
 	md := make(metadata.MD)
 	md.Set(authorization, token)
 	ctx = metadata.NewOutgoingContext(ctx, md)
-	fmt.Fprintf(os.Stderr, "[INFO] Added Bearer Token to context %v\n", ctx)
 	return ctx
 }
 
