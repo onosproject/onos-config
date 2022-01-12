@@ -112,6 +112,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		if !errors.IsNotFound(err) {
 			return false, err
 		}
+		log.Warnf("Reconciling configuration: connection not found for target %s", config.TargetID, err)
 		return false, nil
 	}
 
@@ -146,15 +147,22 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	}
 	log.Debugf("Current target %s config values: %v", config.TargetID, currentConfigValues)
 
+	currentConfigValuesMap := make(map[string]*configapi.PathValue, len(currentConfigValues))
+
+	for _, configValue := range currentConfigValues {
+		currentConfigValuesMap[configValue.Path] = configValue
+	}
+
 	desiredConfigValues := config.Values
 	var setRequestChanges []*configapi.PathValue
 	for _, desiredConfigValue := range desiredConfigValues {
-		for _, currentConfigValue := range currentConfigValues {
+		if currentConfigValue, ok := currentConfigValuesMap[desiredConfigValue.Path]; ok {
 			if desiredConfigValue.Path == currentConfigValue.Path {
 				setRequestChanges = append(setRequestChanges, desiredConfigValue)
 			}
 		}
 	}
+
 	setRequest, err := utilsv2.PathValuesToGnmiChange(setRequestChanges)
 	if err != nil {
 		return false, err
