@@ -55,32 +55,33 @@ func TestConfigurationStore(t *testing.T) {
 	err = store2.Watch(context.Background(), ch)
 	assert.NoError(t, err)
 
-	target1Config := &configapi.Configuration{
-		TargetID:      target1,
-		TargetVersion: "1.0.0",
-		Values: []*configapi.PathValue{
-			{
-				Path: "/foo",
-				Value: configapi.TypedValue{
-					Bytes: []byte("Hello world!"),
-					Type:  configapi.ValueType_STRING,
-				},
-			},
+	target1ConfigValues := make(map[string]*configapi.PathValue)
+	target1ConfigValues["/foo"] = &configapi.PathValue{
+		Path: "/foo",
+		Value: configapi.TypedValue{
+			Bytes: []byte("Hello world!"),
+			Type:  configapi.ValueType_STRING,
 		},
 	}
 
+	target1Config := &configapi.Configuration{
+		TargetID:      target1,
+		TargetVersion: "1.0.0",
+		Values:        target1ConfigValues,
+	}
+
+	target2ConfigValues := make(map[string]*configapi.PathValue)
+	target2ConfigValues["/foo"] = &configapi.PathValue{
+		Path: "bar",
+		Value: configapi.TypedValue{
+			Bytes: []byte("Hello world again!"),
+			Type:  configapi.ValueType_STRING,
+		},
+	}
 	target2Config := &configapi.Configuration{
 		TargetID:      target2,
 		TargetVersion: "1.0.0",
-		Values: []*configapi.PathValue{
-			{
-				Path: "/bar",
-				Value: configapi.TypedValue{
-					Bytes: []byte("Hello world again!"),
-					Type:  configapi.ValueType_STRING,
-				},
-			},
-		},
+		Values:        target2ConfigValues,
 	}
 
 	err = store1.Create(context.TODO(), target1Config)
