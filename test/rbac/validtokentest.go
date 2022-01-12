@@ -91,7 +91,7 @@ func (s *TestSuite) TestValidToken(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	// get an access token
-	token, err := fetchATokenViaKeyCloak("https://keycloak-dev.onlab.us/auth/realms/master", "alicea", "KDVMw3xvk2mu")
+	token, err := fetchATokenViaKeyCloak("https://keycloak-dev.onlab.us/auth/realms/master", "alicea", s.keycloakPassword)
 	assert.NoError(t, err)
 	assert.NotNil(t, token)
 
