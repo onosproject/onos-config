@@ -1,4 +1,4 @@
-// Copyright 2019-present Open Networking Foundation.
+// Copyright 2022-present Open Networking Foundation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,7 +62,6 @@ func fetchATokenViaKeyCloak(openIDIssuer string, user string, passwd string) (st
 		if err != nil {
 			return "", err
 		}
-		log.Infof("Token info : Type : %v , Access Token : %v , Expiry %v : ", target.TokenType, target.AccessToken, target.Expiry)
 		return target.AccessToken, nil
 	}
 
