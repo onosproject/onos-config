@@ -141,8 +141,6 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			if err != nil {
 				return false, err
 			}
-
-			log.Debugf("Notification update in json format: %+v", update.GetVal().GetJsonVal())
 			currentConfigValues = append(currentConfigValues, configValues...)
 		}
 	}
