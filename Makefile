@@ -27,7 +27,7 @@ helmit-cli: integration-test-namespace # @HELP run helmit cli tests locally
 	helmit test -n test ./cmd/onos-config-tests --suite cli
 
 helmit-rbac: integration-test-namespace # @HELP run helmit gnmi tests locally
-	helmit test -n test ./cmd/onos-config-tests --suite rbac
+	helmit test -n test ./cmd/onos-config-tests --suite rbac --secret keycloak-password=${keycloak_password}
 
 preload-helmit-images:
 	docker pull onosproject/config-model-init:v1.0.1 ; \
