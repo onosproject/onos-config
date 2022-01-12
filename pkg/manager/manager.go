@@ -23,6 +23,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/store/topo"
@@ -67,11 +68,13 @@ type Config struct {
 	GRPCPort               int
 	TopoAddress            string
 	AllowUnvalidatedConfig bool
+	PluginPorts            []uint
 }
 
 // Manager single point of entry for the config system.
 type Manager struct {
-	Config Config
+	Config         Config
+	pluginRegistry *pluginregistry.PluginRegistry
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -138,6 +141,7 @@ func (m *Manager) startNorthboundServer(
 
 	gnmiService := gnmi.NewService(
 		modelRegistry,
+		m.pluginRegistry,
 		deviceChangesStore,
 		deviceCache,
 		networkChangesStore,
@@ -250,10 +254,15 @@ func (m *Manager) Start() error {
 
 	atomixClient := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
 
+	// Create new topo store
 	topoStore, err := topo.NewStore(m.Config.TopoAddress, opts...)
 	if err != nil {
 		return err
 	}
+
+	// Create new plugin registry
+	m.pluginRegistry = pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
+	m.pluginRegistry.Start()
 
 	conns := sb.NewConnManager()
 	err = m.startNodeController(topoStore)
@@ -311,12 +320,13 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	// TODO: deprecate the old device store
 	deviceStore, err := devicestore.NewTopoStore(m.Config.TopoAddress, opts...)
 	if err != nil {
 		return err
 	}
-	log.Infof("Topology service connected with endpoint %s", m.Config.TopoAddress)
 
+	// TODO: deprecate the old model registry
 	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{})
 	if err != nil {
 		return err
@@ -370,10 +380,12 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	log.Info("Manager started")
 	return nil
 }
 
 // Close kills the manager
 func (m *Manager) Close() {
 	log.Info("Closing Manager")
+	m.pluginRegistry.Stop()
 }

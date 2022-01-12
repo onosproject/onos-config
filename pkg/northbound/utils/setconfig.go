@@ -15,11 +15,13 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
 	networkchange "github.com/onosproject/onos-api/go/onos/config/change/network"
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
 	"github.com/onosproject/onos-config/pkg/modelregistry"
+	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/store"
 	"github.com/onosproject/onos-config/pkg/store/change/device/state"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
@@ -33,15 +35,35 @@ import (
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
 const SetConfigAlreadyApplied = "Already applied:"
 
+// FIXME: temporary flag to enable new plugin validation - setting to true will presently break unit tests
+var testNewPlugin = false
+
 // ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target (Atomix Based)
 func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 	deviceType devicetype.Type, updates devicechange.TypedValueMap,
 	deletes []string, lastWrite networkchange.Revision,
 	modelRegistry *modelregistry.ModelRegistry,
+	pluginRegistry *pluginregistry.PluginRegistry,
 	deviceStateStore state.Store, allowUnvalidatedConfig bool) error {
 
 	modelName := utils.ToModelName(deviceType, version)
+
+	// TODO: permanently enable the new config plugin lookup when ready
+	var configPlugin *pluginregistry.ModelPlugin
+	if testNewPlugin {
+		var ok bool
+		pluginName := strings.ToLower(modelName) // New config model plugins names are all lowercase
+		if configPlugin, ok = pluginRegistry.GetPlugin(pluginName); !ok {
+			log.Warn("No config model ", modelName, " available as a plugin")
+			if !allowUnvalidatedConfig {
+				return fmt.Errorf("no config model %s available as a plugin", modelName)
+			}
+			return nil
+		}
+	}
+
+	// TODO: deprecate the old plugin lookup
 	deviceModelYgotPlugin, err := modelRegistry.GetPlugin(modelName)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -116,6 +138,17 @@ func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 		return err
 	}
 
+	// TODO: implement the new plugin validation
+	if testNewPlugin {
+		err = configPlugin.Validate(context.Background(), jsonTree)
+		if err != nil {
+			return fmt.Errorf("validation error %s", err.Error())
+		}
+		log.Infof("New configuration for %s, with version %s and type %s, is valid according to model %s",
+			deviceName, version, deviceType, modelName)
+	}
+
+	// TODO: deprecate the old plugin validation
 	ygotModel, err := deviceModelYgotPlugin.Model.Unmarshaler()(jsonTree)
 	if err != nil {
 		log.Infof("Unmarshalling during validation failed. JSON tree %v", jsonTree)

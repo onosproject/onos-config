@@ -364,7 +364,7 @@ func validateChange(target devicetype.ID, deviceType devicetype.Type, version de
 	}
 	log.Infof("Validating change %s:%s:%s", target, deviceType, version)
 	errValidation := nbutils.ValidateNetworkConfig(target, version, deviceType,
-		targetUpdates, targetRemoves, lastWrite, s.modelRegistry, s.deviceStateStore, s.allowUnvalidatedConfig)
+		targetUpdates, targetRemoves, lastWrite, s.modelRegistry, s.pluginRegistry, s.deviceStateStore, s.allowUnvalidatedConfig)
 	if errValidation != nil {
 		return status.Error(codes.InvalidArgument, errValidation.Error())
 	}
