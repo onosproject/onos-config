@@ -18,7 +18,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/onosproject/onos-config/pkg/utils/path"
+	"github.com/onosproject/onos-config/pkg/utils"
+
+	"github.com/onosproject/onos-config/pkg/pluginregistry"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 
@@ -33,7 +35,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/topo"
-	"github.com/onosproject/onos-config/pkg/utils/jsonvalues"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
@@ -44,7 +45,7 @@ const (
 )
 
 // NewController returns a configuration controller
-func NewController(topo topo.Store, conns gnmi.ConnManager, configurations configuration.Store) *controller.Controller {
+func NewController(topo topo.Store, conns gnmi.ConnManager, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) *controller.Controller {
 	c := controller.NewController("configuration")
 
 	c.Watch(&Watcher{
@@ -60,6 +61,7 @@ func NewController(topo topo.Store, conns gnmi.ConnManager, configurations confi
 		conns:          conns,
 		topo:           topo,
 		configurations: configurations,
+		pluginRegistry: pluginRegistry,
 	})
 
 	return c
@@ -70,6 +72,7 @@ type Reconciler struct {
 	conns          gnmi.ConnManager
 	topo           topo.Store
 	configurations configuration.Store
+	pluginRegistry *pluginregistry.PluginRegistry
 }
 
 // Reconcile reconciles configurations
@@ -129,13 +132,17 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	var currentConfigValues []*configapi.PathValue
 	for _, notification := range root.Notification {
 		for _, update := range notification.Update {
-			log.Debugf("Notification update in json format: %+v", update.GetVal().GetJsonVal())
-			configValues, err := jsonvalues.DecomposeJSONWithPaths("", update.GetVal().GetJsonVal(), path.ReadOnlyPathMap{}, path.ReadWritePathMap{})
-			log.Debugf("Extracted config values from the root of config tree: %v", configValues)
-			if err != nil {
-				log.Warnf("Failed to parse json values")
+			modelName := utils.ToModelNameV2(config.TargetType, config.TargetVersion)
+			modelPlugin, ok := r.pluginRegistry.GetPlugin(modelName)
+			if !ok {
 				return false, err
 			}
+			configValues, err := modelPlugin.GetPathValues(ctx, "", update.GetVal().GetJsonVal())
+			if err != nil {
+				return false, err
+			}
+
+			log.Debugf("Notification update in json format: %+v", update.GetVal().GetJsonVal())
 			currentConfigValues = append(currentConfigValues, configValues...)
 		}
 	}
