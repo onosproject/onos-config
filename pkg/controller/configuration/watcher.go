@@ -101,7 +101,7 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
 				err = event.Object.GetAspect(&topoapi.Configurable{})
 				if err == nil {
-					ch <- controller.NewID(event.Object.GetID())
+					ch <- controller.NewID(configapi.TargetID(event.Object.GetID()))
 
 				}
 			}
