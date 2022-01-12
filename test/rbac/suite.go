@@ -47,7 +47,7 @@ func getKeycloakPassword() (string, error) {
 	return keycloakPassword, nil
 }
 
-// SetupTestSuite sets up the onos-config HA test suite
+// SetupTestSuite sets up the onos-config RBAC test suite
 func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	password, err := getKeycloakPassword()
 	if err != nil {
