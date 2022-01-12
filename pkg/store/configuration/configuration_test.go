@@ -56,7 +56,6 @@ func TestConfigurationStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	target1Config := &configapi.Configuration{
-		ID:            "configuration-1",
 		TargetID:      target1,
 		TargetVersion: "1.0.0",
 		Values: []*configapi.PathValue{
@@ -71,7 +70,6 @@ func TestConfigurationStore(t *testing.T) {
 	}
 
 	target2Config := &configapi.Configuration{
-		ID:            "configuration-2",
 		TargetID:      target2,
 		TargetVersion: "1.0.0",
 		Values: []*configapi.PathValue{
@@ -87,26 +85,26 @@ func TestConfigurationStore(t *testing.T) {
 
 	err = store1.Create(context.TODO(), target1Config)
 	assert.NoError(t, err)
-	assert.Equal(t, configapi.ConfigurationID("configuration-1"), target1Config.ID)
+	assert.Equal(t, configapi.ConfigurationID(target1), target1Config.ID)
 	assert.NotEqual(t, configapi.Revision(0), target1Config.Revision)
 
 	err = store2.Create(context.TODO(), target2Config)
 	assert.NoError(t, err)
-	assert.Equal(t, configapi.ConfigurationID("configuration-2"), target2Config.ID)
+	assert.Equal(t, configapi.ConfigurationID(target2), target2Config.ID)
 	assert.NotEqual(t, configapi.Revision(0), target2Config.Revision)
 
 	// Get the configuration
-	target1Config, err = store2.Get(context.TODO(), "configuration-1")
+	target1Config, err = store2.Get(context.TODO(), target1)
 	assert.NoError(t, err)
 	assert.NotNil(t, target1Config)
-	assert.Equal(t, configapi.ConfigurationID("configuration-1"), target1Config.ID)
+	assert.Equal(t, configapi.ConfigurationID(target1), target1Config.ID)
 	assert.NotEqual(t, configapi.Revision(0), target1Config.Revision)
 
 	// Verify events were received for the configurations
 	configurationEvent := nextEvent(t, ch)
-	assert.Equal(t, configapi.ConfigurationID("configuration-1"), configurationEvent.ID)
+	assert.Equal(t, configapi.ConfigurationID(target1), configurationEvent.ID)
 	configurationEvent = nextEvent(t, ch)
-	assert.Equal(t, configapi.ConfigurationID("configuration-2"), configurationEvent.ID)
+	assert.Equal(t, configapi.ConfigurationID(target2), configurationEvent.ID)
 
 	// Watch events for a specific configuration
 	configurationCh := make(chan configapi.ConfigurationEvent)
@@ -129,7 +127,7 @@ func TestConfigurationStore(t *testing.T) {
 	assert.Equal(t, 2, len(configurationList))
 
 	// Read and then update the configuration
-	target2Config, err = store2.Get(context.TODO(), "configuration-2")
+	target2Config, err = store2.Get(context.TODO(), target2)
 	assert.NoError(t, err)
 	assert.NotNil(t, target2Config)
 	target2Config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
@@ -143,9 +141,9 @@ func TestConfigurationStore(t *testing.T) {
 	assert.Equal(t, target2Config.Revision, event.Configuration.Revision)
 
 	// Verify that concurrent updates fail
-	target1Config11, err := store1.Get(context.TODO(), "configuration-1")
+	target1Config11, err := store1.Get(context.TODO(), target1)
 	assert.NoError(t, err)
-	target1Config12, err := store2.Get(context.TODO(), "configuration-1")
+	target1Config12, err := store2.Get(context.TODO(), target1)
 	assert.NoError(t, err)
 
 	target1Config11.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
@@ -158,16 +156,16 @@ func TestConfigurationStore(t *testing.T) {
 
 	// Verify events were received again
 	configurationEvent = nextEvent(t, ch)
-	assert.Equal(t, configapi.ConfigurationID("configuration-2"), configurationEvent.ID)
+	assert.Equal(t, configapi.ConfigurationID(target2), configurationEvent.ID)
 	configurationEvent = nextEvent(t, ch)
-	assert.Equal(t, configapi.ConfigurationID("configuration-2"), configurationEvent.ID)
+	assert.Equal(t, configapi.ConfigurationID(target2), configurationEvent.ID)
 	configurationEvent = nextEvent(t, ch)
-	assert.Equal(t, configapi.ConfigurationID("configuration-1"), configurationEvent.ID)
+	assert.Equal(t, configapi.ConfigurationID(target1), configurationEvent.ID)
 
 	// Delete a configuration
 	err = store1.Delete(context.TODO(), target2Config)
 	assert.NoError(t, err)
-	configuration, err := store2.Get(context.TODO(), "configuration-2")
+	configuration, err := store2.Get(context.TODO(), target2)
 	assert.Error(t, err)
 	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, configuration)

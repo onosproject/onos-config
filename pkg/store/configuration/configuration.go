@@ -35,7 +35,7 @@ var log = logging.GetLogger("store", "configuration")
 // Store configuration store interface
 type Store interface {
 	// Get gets a configuration based on a given configuration ID
-	Get(ctx context.Context, id configapi.ConfigurationID) (*configapi.Configuration, error)
+	Get(ctx context.Context, id configapi.TargetID) (*configapi.Configuration, error)
 
 	// Create creates a configuration
 	Create(ctx context.Context, configuration *configapi.Configuration) error
@@ -103,7 +103,7 @@ func WithConfigurationID(id configapi.ConfigurationID) WatchOption {
 	return watchIDOption{id: id}
 }
 
-func (s *configurationStore) Get(ctx context.Context, id configapi.ConfigurationID) (*configapi.Configuration, error) {
+func (s *configurationStore) Get(ctx context.Context, id configapi.TargetID) (*configapi.Configuration, error) {
 	log.Debugf("Getting configuration %s", id)
 	entry, err := s.configurations.Get(ctx, string(id))
 	if err != nil {
@@ -113,14 +113,15 @@ func (s *configurationStore) Get(ctx context.Context, id configapi.Configuration
 }
 
 func (s *configurationStore) Create(ctx context.Context, configuration *configapi.Configuration) error {
-	if configuration.ID == "" {
-		return errors.NewInvalid("no configuration ID specified")
+	if configuration.ID != "" {
+		return errors.NewInvalid("configuration ID is assigned internally")
 	}
 
 	if configuration.TargetID == "" {
 		return errors.NewInvalid("no target ID specified")
 	}
 
+	configuration.ID = configapi.ConfigurationID(configuration.TargetID)
 	if configuration.TargetVersion == "" {
 		return errors.NewInvalid("no target version specified")
 	}

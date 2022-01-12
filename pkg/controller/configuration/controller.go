@@ -80,23 +80,23 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	configurationID := id.Value.(configapi.ConfigurationID)
-	config, err := r.configurations.Get(ctx, configurationID)
+	targetID := id.Value.(configapi.TargetID)
+	config, err := r.configurations.Get(ctx, targetID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Warnf("Failed to reconcile configuration %s, %s", configurationID, err)
+			log.Warnf("Failed to reconcile configuration %s, %s", targetID, err)
 			return controller.Result{}, err
 		}
-		log.Debugf("Configuration %s not found", configurationID)
+		log.Debugf("Configuration %s not found", targetID)
 		return controller.Result{}, nil
 	}
 	if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
-		log.Debugf("Skipping Reconciliation of configuration '%s', its configuration state is: %s", configurationID, config.Status.GetState())
+		log.Debugf("Skipping Reconciliation of configuration '%s', its configuration state is: %s", targetID, config.Status.GetState())
 		return controller.Result{}, nil
 	}
 	log.Infof("Reconciling configuration %v", config)
 	if ok, err := r.reconcileConfiguration(ctx, config); err != nil {
-		log.Warnf("Failed to reconcile configuration: %s, %s", configurationID, err)
+		log.Warnf("Failed to reconcile configuration: %s, %s", targetID, err)
 		return controller.Result{}, err
 	} else if ok {
 		return controller.Result{}, nil

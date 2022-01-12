@@ -55,7 +55,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			ch <- controller.NewID(event.Configuration.ID)
+			ch <- controller.NewID(configapi.TargetID(event.Configuration.ID))
 		}
 	}()
 	return nil
@@ -101,17 +101,7 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
 				err = event.Object.GetAspect(&topoapi.Configurable{})
 				if err == nil {
-					configurations, err := w.configurations.List(ctx)
-					if err != nil {
-						log.Warn(err)
-						continue
-					}
-					for _, config := range configurations {
-						if topoapi.ID(config.TargetID) == event.Object.GetID() {
-							ch <- controller.NewID(config.ID)
-
-						}
-					}
+					ch <- controller.NewID(event.Object.GetID())
 
 				}
 			}
