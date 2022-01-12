@@ -118,7 +118,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	rootPath := &gpb.Path{Elem: make([]*gpb.PathElem, 0)}
 	getRootReq := &gpb.GetRequest{
 		Path:     []*gpb.Path{rootPath},
-		Encoding: gpb.Encoding_JSON,
+		Encoding: gpb.Encoding_JSON_IETF,
 	}
 	root, err := conn.Get(ctx, getRootReq)
 	if err != nil {
@@ -137,14 +137,14 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			if !ok {
 				return false, err
 			}
-			configValues, err := modelPlugin.GetPathValues(ctx, "", update.GetVal().GetJsonVal())
+			configValues, err := modelPlugin.GetPathValues(ctx, "", update.GetVal().GetJsonIetfVal())
 			if err != nil {
 				return false, err
 			}
 			currentConfigValues = append(currentConfigValues, configValues...)
 		}
 	}
-	log.Debugf("Current config values: %v", currentConfigValues)
+	log.Debugf("Current target %s config values: %v", config.TargetID, currentConfigValues)
 
 	desiredConfigValues := config.Values
 	var setRequestChanges []*configapi.PathValue
@@ -155,18 +155,16 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			}
 		}
 	}
-	log.Debugf("Set request changes: %v", setRequestChanges)
 	setRequest, err := utilsv2.PathValuesToGnmiChange(setRequestChanges)
 	if err != nil {
 		return false, err
 	}
-	log.Debugf("Set request is created for configuration %s: %v", config.ID, setRequest)
+	log.Debugf("Reconciling configuration; Set request is created for configuration %s: %v", config.ID, setRequest)
 	setResponse, err := conn.Set(ctx, setRequest)
 	if err != nil {
 		return false, err
 	}
 	log.Debugf("Reconciling configuration %s: set response is received %v", config.ID, setResponse)
-
 	config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
 	err = r.configurations.Update(ctx, config)
 	if err != nil {
