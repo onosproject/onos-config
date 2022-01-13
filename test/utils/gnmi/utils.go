@@ -535,38 +535,69 @@ func GetGNMIClientOrFail(t *testing.T) gnmiclient.Impl {
 	return GetGNMIClientWithContextOrFail(context.Background(), t)
 }
 
+// CheckGNMIValueWithContext makes sure a value has been assigned properly by querying the onos-config northbound API
+func CheckGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.DevicePath, expectedValue string, expectedExtensions int, failMessage string) {
+	t.Helper()
+	value, extensions, err := GetGNMIValue(ctx, gnmiClient, paths, gpb.Encoding_PROTO)
+	assert.NoError(t, err, "Get operation returned an unexpected error")
+	assert.Equal(t, expectedExtensions, len(extensions))
+	assert.Equal(t, expectedValue, value[0].PathDataValue, "%s: %s", failMessage, value)
+}
+
 // CheckGNMIValue makes sure a value has been assigned properly by querying the onos-config northbound API
 func CheckGNMIValue(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.DevicePath, expectedValue string, expectedExtensions int, failMessage string) {
 	t.Helper()
-	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths, gpb.Encoding_PROTO)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedExtensions, len(extensions))
-	assert.Equal(t, expectedValue, value[0].PathDataValue, "%s: %s", failMessage, value)
+	CheckGNMIValueWithContext(MakeContext(), t, gnmiClient, paths, expectedValue, expectedExtensions, failMessage)
 }
 
 // CheckGNMIValues makes sure a list of values has been assigned properly by querying the onos-config northbound API
 func CheckGNMIValues(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutils.DevicePath, expectedValues []string, expectedExtensions int, failMessage string) {
 	t.Helper()
 	value, extensions, err := GetGNMIValue(MakeContext(), gnmiClient, paths, gpb.Encoding_PROTO)
-	assert.NoError(t, err)
+	assert.NoError(t, err, "Get operation returned unexpected error")
 	assert.Equal(t, expectedExtensions, len(extensions))
 	for index, expectedValue := range expectedValues {
 		assert.Equal(t, expectedValue, value[index].PathDataValue, "%s: %s", failMessage, value)
 	}
 }
 
+// SetGNMIValueWithContextOrFail does a GNMI set operation to the given client, and fails the test if there is an error
+func SetGNMIValueWithContextOrFail(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
+	updatePaths []protoutils.DevicePath, deletePaths []protoutils.DevicePath,
+	extensions []*gnmi_ext.Extension) network.ID {
+	t.Helper()
+	networkChangeID, errorSet := SetGNMIValueWithContext(ctx, t, gnmiClient, updatePaths, deletePaths, extensions)
+	assert.NoError(t, errorSet, "Set operation returned unexpected error")
+
+	return networkChangeID
+}
+
+// SetGNMIValueWithContext does a GNMI set operation to the given client, and fails the test if there is an error
+func SetGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
+	updatePaths []protoutils.DevicePath, deletePaths []protoutils.DevicePath,
+	extensions []*gnmi_ext.Extension) (network.ID, error) {
+	t.Helper()
+	_, extensionsSet, errorSet := SetGNMIValue(ctx, gnmiClient, updatePaths, deletePaths, extensions)
+	if errorSet != nil {
+		return "", errorSet
+	}
+	if len(extensionsSet) != 1 {
+		return "", errors.NewNotFound("extension set not found")
+	}
+	extensionBefore := extensionsSet[0].GetRegisteredExt()
+	if extensionBefore.Id.String() != strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID) {
+		return "", errors.NewNotFound("network change ID extension not found")
+	}
+
+	networkChangeID := network.ID(extensionBefore.Msg)
+	return networkChangeID, errorSet
+}
+
 // SetGNMIValueOrFail does a GNMI set operation to the given client, and fails the test if there is an error
 func SetGNMIValueOrFail(t *testing.T, gnmiClient gnmiclient.Impl,
 	updatePaths []protoutils.DevicePath, deletePaths []protoutils.DevicePath,
 	extensions []*gnmi_ext.Extension) network.ID {
-	t.Helper()
-	_, extensionsSet, errorSet := SetGNMIValue(MakeContext(), gnmiClient, updatePaths, deletePaths, extensions)
-	assert.NoError(t, errorSet)
-	assert.Equal(t, 1, len(extensionsSet))
-	extensionBefore := extensionsSet[0].GetRegisteredExt()
-	assert.Equal(t, extensionBefore.Id.String(), strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID))
-	networkChangeID := network.ID(extensionBefore.Msg)
-	return networkChangeID
+	return SetGNMIValueWithContextOrFail(MakeContext(), t, gnmiClient, updatePaths, deletePaths, extensions)
 }
 
 // GetSimulatorExtensions creates the default set of extensions for a simulated device

@@ -55,6 +55,8 @@ func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	}
 	s.keycloakPassword = password
 	umbrella := charts.CreateUmbrellaRelease().
-		Set("onos-config.openidc.issuer", "https://keycloak-dev.onlab.us/auth/realms/master")
+		Set("onos-config.openidc.issuer", "https://keycloak-dev.onlab.us/auth/realms/master").
+		Set("onos-config.openpolicyagent.regoConfigMap", "onos-umbrella-opa-rbac").
+		Set("onos-config.openpolicyagent.enabled", true)
 	return umbrella.Install(true)
 }
