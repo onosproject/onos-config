@@ -62,6 +62,7 @@ func getRootCommand() *cobra.Command {
 	}
 	cmd.Flags().Int("port", 5150, "gRPC port")
 	cmd.Flags().Bool("allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
+	cmd.Flags().Bool("usePluginRegistry", false, "enable model plugin lookup and validation in the new registry")
 	cmd.Flags().String("caPath", "", "path to CA certificate")
 	cmd.Flags().String("keyPath", "", "path to client private key")
 	cmd.Flags().String("certPath", "", "ppath to client certificate")
@@ -72,13 +73,23 @@ func getRootCommand() *cobra.Command {
 
 func runRootCommand(cmd *cobra.Command, args []string) error {
 	allowUnvalidatedConfig, _ := cmd.Flags().GetBool("allowUnvalidatedConfig")
+	usePluginRegistry, _ := cmd.Flags().GetBool("usePluginRegistry")
 	caPath, _ := cmd.Flags().GetString("caPath")
 	keyPath, _ := cmd.Flags().GetString("keyPath")
 	certPath, _ := cmd.Flags().GetString("certPath")
 	topoEndpoint, _ := cmd.Flags().GetString("topoEndpoint")
 	pluginPorts, _ := cmd.Flags().GetUintSlice("plugin-port")
 
-	log.Info("Starting onos-config")
+	log.Infow("Starting onos-config",
+		"CAPath", caPath,
+		"KeyPath", keyPath,
+		"CertPath", certPath,
+		"GRPCPort", 5150,
+		"TopoAddress", topoEndpoint,
+		"AllowUnvalidatedConfig", allowUnvalidatedConfig,
+		"UsePluginRegistry", usePluginRegistry,
+		"PluginPorts", pluginPorts,
+	)
 
 	cfg := manager.Config{
 		CAPath:                 caPath,
@@ -87,6 +98,7 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 		GRPCPort:               5150,
 		TopoAddress:            topoEndpoint,
 		AllowUnvalidatedConfig: allowUnvalidatedConfig,
+		UsePluginRegistry:      usePluginRegistry,
 		PluginPorts:            pluginPorts,
 	}
 

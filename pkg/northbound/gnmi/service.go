@@ -55,6 +55,7 @@ type Service struct {
 	operationalStateCache     *map[topodevice.ID]devicechange.TypedValueMap
 	operationalStateCacheLock *sync.RWMutex
 	allowUnvalidatedConfig    bool
+	usePluginRegistry         bool
 }
 
 // NewService allocates a Service struct with the given parameters
@@ -68,7 +69,8 @@ func NewService(modelRegistry *modelregistry.ModelRegistry,
 	deviceStateStore state.Store,
 	operationalStateCache *map[topodevice.ID]devicechange.TypedValueMap,
 	operationalStateCacheLock *sync.RWMutex,
-	allowUnvalidatedConfig bool) Service {
+	allowUnvalidatedConfig bool,
+	usePluginRegistry bool) Service {
 	return Service{
 		deviceChangesStore:        deviceChangesStore,
 		modelRegistry:             modelRegistry,
@@ -81,6 +83,7 @@ func NewService(modelRegistry *modelregistry.ModelRegistry,
 		operationalStateCache:     operationalStateCache,
 		operationalStateCacheLock: operationalStateCacheLock,
 		allowUnvalidatedConfig:    allowUnvalidatedConfig,
+		usePluginRegistry:         usePluginRegistry,
 	}
 }
 
@@ -99,6 +102,7 @@ func (s Service) Register(r *grpc.Server) {
 			operationalStateCache:     s.operationalStateCache,
 			operationalStateCacheLock: s.operationalStateCacheLock,
 			allowUnvalidatedConfig:    s.allowUnvalidatedConfig,
+			usePluginRegistry:         s.usePluginRegistry,
 		})
 }
 
@@ -117,6 +121,7 @@ type Server struct {
 	operationalStateCache     *map[topodevice.ID]devicechange.TypedValueMap
 	operationalStateCacheLock *sync.RWMutex
 	allowUnvalidatedConfig    bool
+	usePluginRegistry         bool
 }
 
 // Capabilities implements gNMI Capabilities
