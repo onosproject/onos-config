@@ -70,6 +70,7 @@ type Config struct {
 	GRPCPort               int
 	TopoAddress            string
 	AllowUnvalidatedConfig bool
+	UsePluginRegistry      bool
 	PluginPorts            []uint
 }
 
@@ -153,6 +154,7 @@ func (m *Manager) startNorthboundServer(
 		operationalStateCache,
 		operationalStateCacheLock,
 		m.Config.AllowUnvalidatedConfig,
+		m.Config.UsePluginRegistry,
 	)
 	s.AddService(gnmiService)
 

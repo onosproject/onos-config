@@ -35,9 +35,6 @@ import (
 // SetConfigAlreadyApplied is a string constant for "Already applied:"
 const SetConfigAlreadyApplied = "Already applied:"
 
-// FIXME: temporary flag to enable new plugin validation - setting to true will presently break unit tests
-var testNewPlugin = false
-
 // ValidateNetworkConfig validates the given updates and deletes, according to the path on the configuration
 // for the specified target (Atomix Based)
 func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
@@ -45,13 +42,13 @@ func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 	deletes []string, lastWrite networkchange.Revision,
 	modelRegistry *modelregistry.ModelRegistry,
 	pluginRegistry *pluginregistry.PluginRegistry,
-	deviceStateStore state.Store, allowUnvalidatedConfig bool) error {
+	deviceStateStore state.Store, allowUnvalidatedConfig bool, usePluginRegistry bool) error {
 
 	modelName := utils.ToModelName(deviceType, version)
 
 	// TODO: permanently enable the new config plugin lookup when ready
 	var configPlugin *pluginregistry.ModelPlugin
-	if testNewPlugin {
+	if usePluginRegistry {
 		var ok bool
 		pluginName := strings.ToLower(modelName) // New config model plugins names are all lowercase
 		if configPlugin, ok = pluginRegistry.GetPlugin(pluginName); !ok {
@@ -139,12 +136,12 @@ func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 	}
 
 	// TODO: implement the new plugin validation
-	if testNewPlugin {
+	if usePluginRegistry {
 		err = configPlugin.Validate(context.Background(), jsonTree)
 		if err != nil {
-			return fmt.Errorf("validation error %s", err.Error())
+			return fmt.Errorf("[PluginRegistry] validation error %s", err.Error())
 		}
-		log.Infof("New configuration for %s, with version %s and type %s, is valid according to model %s",
+		log.Infof("[PluginRegistry] New configuration for %s, with version %s and type %s, is valid according to model %s",
 			deviceName, version, deviceType, modelName)
 	}
 
