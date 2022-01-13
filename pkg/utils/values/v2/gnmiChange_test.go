@@ -37,13 +37,13 @@ func Test_NativeChangeToGnmiChange(t *testing.T) {
 	// Some test data. One update, one remove
 	testValues := []configapi.ChangeValue{
 		{
-			Path:    "/path1/path2/path3",
-			Value:   *configapi.NewTypedValueString("value"),
-			Removed: false,
+			Path:   "/path1/path2/path3",
+			Value:  *configapi.NewTypedValueString("value"),
+			Delete: false,
 		},
 		{
-			Path:    "/rpath1/rpath2/rpath3",
-			Removed: true,
+			Path:   "/rpath1/rpath2/rpath3",
+			Delete: true,
 		},
 	}
 	testChange := &configapi.Change{
@@ -80,13 +80,13 @@ func Test_convertChangeToGnmi(t *testing.T) {
 	// Some test data. One update, one remove
 	testValues := []configapi.ChangeValue{
 		{
-			Path:    Test1Cont1ACont2ALeaf2C,
-			Value:   *configapi.NewTypedValueString(ValueLeaf2CDef),
-			Removed: false,
+			Path:   Test1Cont1ACont2ALeaf2C,
+			Value:  *configapi.NewTypedValueString(ValueLeaf2CDef),
+			Delete: false,
 		},
 		{
-			Path:    Test1Cont1AList2ATxout2,
-			Removed: true,
+			Path:   Test1Cont1AList2ATxout2,
+			Delete: true,
 		},
 	}
 	change3 := &configapi.Change{

@@ -106,7 +106,6 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 }
 
 func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configapi.Configuration) (bool, error) {
-
 	if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
 		log.Debugf("Skipping Reconciliation of configuration '%s', its configuration state is: %s", config.TargetID, config.Status.GetState())
 		return false, nil
@@ -158,7 +157,6 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	// If the configuration's mastership term is less than the current mastership term,
 	// assume the target may have restarted/reconnected and perform a full reconciliation
 	// of the target configuration from the root path.
-
 	var setRequestChanges []*configapi.PathValue
 	if config.Status.MastershipState.Term < targetMastershipTerm {
 		rootPath := &gpb.Path{Elem: make([]*gpb.PathElem, 0)}
@@ -198,7 +196,6 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		}
 
 		desiredConfigValues := config.Values
-		var setRequestChanges []*configapi.PathValue
 		for _, desiredConfigValue := range desiredConfigValues {
 			if currentConfigValue, ok := currentConfigValuesMap[desiredConfigValue.Path]; ok {
 				if desiredConfigValue.Path == currentConfigValue.Path {
@@ -206,17 +203,18 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 				}
 			}
 		}
-		//If the Configuration's transaction index is greater than the target index,
-		// reconcile the configuration with the target.
-	} else if config.Status.TransactionIndex > config.Status.TargetIndex {
+
+	}
+	//If the Configuration's transaction index is greater than the target index,
+	// reconcile the configuration with the target.
+	if config.Status.TransactionIndex > config.Status.TargetIndex {
 		desiredConfigValues := config.Values
 		for _, desiredConfigValue := range desiredConfigValues {
+			// Perform partial reconciliation of target configuration (update only paths that have changed)
 			if desiredConfigValue.Index > config.Status.TargetIndex {
 				setRequestChanges = append(setRequestChanges, desiredConfigValue)
 			}
-
 		}
-
 	}
 
 	setRequest, err := utilsv2.PathValuesToGnmiChange(setRequestChanges)
