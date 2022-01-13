@@ -37,7 +37,7 @@ func NativeChangeToGnmiChange(c *configapi.Change) (*gnmi.SetRequest, error) {
 			return nil, parseError
 		}
 
-		if changeValue.Removed {
+		if changeValue.Delete {
 			deletePaths = append(deletePaths, &gnmi.Path{Elem: pathElemsRefs.Elem})
 		} else {
 			gnmiValue, err := NativeTypeToGnmiTypedValue(&changeValue.Value)
@@ -72,7 +72,7 @@ func PathValuesToGnmiChange(values []*configapi.PathValue) (*gnmi.SetRequest, er
 			return nil, parseError
 		}
 
-		if pathValue.Removed {
+		if pathValue.Deleted {
 			deletePaths = append(deletePaths, &gnmi.Path{Elem: pathElemsRefs.Elem})
 		} else {
 			gnmiValue, err := NativeTypeToGnmiTypedValue(&pathValue.Value)
