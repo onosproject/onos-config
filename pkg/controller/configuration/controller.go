@@ -134,6 +134,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	}
 
 	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_PENDING {
+		log.Debugf("Reconcile configuration %s in %s state", config.ID, config.Status.State.String())
 		// If the configuration is marked CONFIGURATION_PENDING and mastership
 		//has changed (indicated by an increased mastership term), mark the
 		//  configuration CONFIGURATION_INITIALIZING to force full re-synchronization.
@@ -197,6 +198,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	// of the target configuration from the root path.
 	var setRequestChanges []*configapi.PathValue
 	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_INITIALIZING {
+		log.Debugf("Reconcile configuration %s in %s state", config.ID, config.Status.State.String())
 		rootPath := &gpb.Path{Elem: make([]*gpb.PathElem, 0)}
 		getRootReq := &gpb.GetRequest{
 			Path:     []*gpb.Path{rootPath},
@@ -247,6 +249,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		//  synchronization are identified by comparing the index of each path-value
 		//  to the last synchronization index, `syncIndex`.
 	} else if config.Status.State == configapi.ConfigurationState_CONFIGURATION_UPDATING {
+		log.Debugf("Reconcile configuration %s in %s state", config.ID, config.Status.State.String())
 		desiredConfigValues := config.Values
 		for _, desiredConfigValue := range desiredConfigValues {
 			// Perform partial reconciliation of target configuration (update only paths that have changed)
@@ -279,7 +282,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		}
 		return false, nil
 	}
-	log.Infof("Reconciling configuration %s is complete", config.ID)
+	log.Infof("Reconciling configuration %s is in %s state", config.ID, config.Status.State)
 
 	return true, nil
 }
