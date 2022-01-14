@@ -102,8 +102,8 @@ func TestTransactionStore(t *testing.T) {
 				TargetID: target1,
 				Values: []configapi.ChangeValue{
 					{
-						Path:    "foo",
-						Removed: true,
+						Path:   "foo",
+						Delete: true,
 					},
 				},
 			},

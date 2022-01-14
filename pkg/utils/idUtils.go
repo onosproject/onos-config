@@ -17,8 +17,15 @@ package utils
 
 import (
 	"fmt"
+
 	devicetype "github.com/onosproject/onos-api/go/onos/config/device"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 )
+
+// ToModelNameV2 simply joins together model name and version in a consistent way
+func ToModelNameV2(name configapi.TargetType, version configapi.TargetVersion) string {
+	return fmt.Sprintf("%s-%s", name, version)
+}
 
 // ToModelName simply joins together model name and version in a consistent way
 func ToModelName(name devicetype.Type, version devicetype.Version) string {

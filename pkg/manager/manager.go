@@ -17,6 +17,7 @@ package manager
 
 import (
 	"github.com/atomix/atomix-go-client/pkg/atomix"
+	configuration_controller "github.com/onosproject/onos-config/pkg/controller/configuration"
 	"github.com/onosproject/onos-config/pkg/controller/connection"
 	mastershipController "github.com/onosproject/onos-config/pkg/controller/mastership"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
+	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
@@ -219,6 +221,11 @@ func (m *Manager) startMastershipController(topo topo.Store) error {
 	mastershipController := mastershipController.NewController(topo)
 	return mastershipController.Start()
 }
+func (m *Manager) startConfigurationController(topo topo.Store, conns sb.ConnManager, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) error {
+	configurationController := configuration_controller.NewController(topo, conns, configurations, pluginRegistry)
+	return configurationController.Start()
+
+}
 
 // Start the main dispatcher system
 func (m *Manager) startDispatcherSystem(
@@ -270,8 +277,14 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	configurations, err := configuration.NewAtomixStore(atomixClient)
+	if err != nil {
+		return err
+	}
+
 	// Create new plugin registry
-	m.pluginRegistry = pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
+	pluginRegistry := pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
+	m.pluginRegistry = pluginRegistry
 	m.pluginRegistry.Start()
 
 	conns := sb.NewConnManager()
@@ -286,6 +299,10 @@ func (m *Manager) Start() error {
 	}
 
 	err = m.startControlRelationController(topoStore, conns)
+	if err != nil {
+		return err
+	}
+	err = m.startConfigurationController(topoStore, conns, configurations, pluginRegistry)
 	if err != nil {
 		return err
 	}
