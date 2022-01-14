@@ -106,10 +106,6 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 }
 
 func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configapi.Configuration) (bool, error) {
-	if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
-		log.Debugf("Skipping Reconciliation of configuration '%s', its configuration state is: %s", config.TargetID, config.Status.GetState())
-		return false, nil
-	}
 
 	target, err := r.topo.Get(ctx, topoapi.ID(config.TargetID))
 	if err != nil {
@@ -154,6 +150,25 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		log.Warnf("Reconciling configuration '%s': connection not found for target %s", config.ID, config.TargetID, err)
 		return false, nil
 	}
+
+	if config.Status.MastershipState.Term < targetMastershipTerm &&
+		config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
+		config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
+		err = r.configurations.Update(ctx, config)
+		if err != nil {
+			if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	}
+
+	if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
+		log.Debugf("Skipping Reconciliation of configuration '%s', its configuration state is: %s", config.TargetID, config.Status.GetState())
+		return false, nil
+	}
+
 	// If the configuration's mastership term is less than the current mastership term,
 	// assume the target may have restarted/reconnected and perform a full reconciliation
 	// of the target configuration from the root path.
@@ -203,15 +218,14 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 				}
 			}
 		}
-
-	}
-	//If the Configuration's transaction index is greater than the target index,
-	// reconcile the configuration with the target.
-	if config.Status.TransactionIndex > config.Status.TargetIndex {
+		//If the Configuration's transaction index is greater than the target index,
+		// reconcile the configuration with the target.
+	} else if config.Status.TransactionIndex > config.Status.SyncIndex &&
+		targetMastershipTerm == config.Status.MastershipState.Term {
 		desiredConfigValues := config.Values
 		for _, desiredConfigValue := range desiredConfigValues {
 			// Perform partial reconciliation of target configuration (update only paths that have changed)
-			if desiredConfigValue.Index > config.Status.TargetIndex {
+			if desiredConfigValue.Index > config.Status.SyncIndex {
 				setRequestChanges = append(setRequestChanges, desiredConfigValue)
 			}
 		}
@@ -231,7 +245,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	log.Debugf("Reconciling configuration %s: set response is received %v", config.ID, setResponse)
 	config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
 	config.Status.MastershipState.Term = targetMastershipTerm
-	config.Status.TargetIndex = config.Status.TransactionIndex
+	config.Status.SyncIndex = config.Status.TransactionIndex
 
 	err = r.configurations.Update(ctx, config)
 	if err != nil {
