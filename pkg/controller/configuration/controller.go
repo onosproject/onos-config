@@ -106,7 +106,6 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 }
 
 func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configapi.Configuration) (bool, error) {
-
 	target, err := r.topo.Get(ctx, topoapi.ID(config.TargetID))
 	if err != nil {
 		if !errors.IsNotFound(err) {
@@ -119,10 +118,53 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	_ = target.GetAspect(&mastership)
 	targetMastershipTerm := configapi.MastershipTerm(mastership.Term)
 
-	// If no master is found, skip reconciliation
-	if targetMastershipTerm == 0 {
-		log.Warnf("Mastership state not found for target '%s'", config.TargetID)
-		return false, nil
+	// If the configuration is not already ConfigurationPending and mastership
+	// has been lost revert it. This can occur when the connection to the
+	// target has been lost and the mastership is no longer valid.
+	if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING && targetMastershipTerm == 0 {
+		config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
+		err = r.configurations.Update(ctx, config)
+		if err != nil {
+			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	}
+
+	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_PENDING {
+		// If the configuration is marked CONFIGURATION_PENDING and mastership
+		//has changed (indicated by an increased mastership term), mark the
+		//  configuration CONFIGURATION_INITIALIZING to force full re-synchronization.
+		if config.Status.MastershipState.Term < targetMastershipTerm {
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_INITIALIZING
+			config.Status.MastershipState.Term = targetMastershipTerm
+			err = r.configurations.Update(ctx, config)
+			if err != nil {
+				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+					return false, err
+				}
+				return false, nil
+			}
+			return true, nil
+		}
+		// If the configuration is marked CONFIGURATION_PENDING and the values have
+		// changed (determined by comparing the transaction index to the last sync
+		// index), mark the configuration CONFIGURATION_UPDATING to push the changes
+		// to the target.
+		if config.Status.SyncIndex < config.Status.TransactionIndex {
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_UPDATING
+			err = r.configurations.Update(ctx, config)
+			if err != nil {
+				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+					return false, err
+				}
+				return false, nil
+			}
+
+			return true, nil
+		}
 	}
 
 	targetMasterRelation, err := r.topo.Get(ctx, topoapi.ID(mastership.NodeId))
@@ -151,29 +193,10 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return false, nil
 	}
 
-	if config.Status.MastershipState.Term < targetMastershipTerm &&
-		config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
-		config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
-		err = r.configurations.Update(ctx, config)
-		if err != nil {
-			if !errors.IsConflict(err) && !errors.IsNotFound(err) {
-				return false, err
-			}
-			return false, nil
-		}
-		return true, nil
-	}
-
-	if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
-		log.Debugf("Skipping Reconciliation of configuration '%s', its configuration state is: %s", config.TargetID, config.Status.GetState())
-		return false, nil
-	}
-
-	// If the configuration's mastership term is less than the current mastership term,
-	// assume the target may have restarted/reconnected and perform a full reconciliation
+	// If the configuration is marked as CONFIGURATION_INITIALIZING, perform full re-synchronization.
 	// of the target configuration from the root path.
 	var setRequestChanges []*configapi.PathValue
-	if config.Status.MastershipState.Term < targetMastershipTerm {
+	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_INITIALIZING {
 		rootPath := &gpb.Path{Elem: make([]*gpb.PathElem, 0)}
 		getRootReq := &gpb.GetRequest{
 			Path:     []*gpb.Path{rootPath},
@@ -218,10 +241,12 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 				}
 			}
 		}
-		//If the Configuration's transaction index is greater than the target index,
-		// reconcile the configuration with the target.
-	} else if config.Status.TransactionIndex > config.Status.SyncIndex &&
-		targetMastershipTerm == config.Status.MastershipState.Term {
+		// If the Configuration is marked as CONFIGURATION_UPDATING, we only need to
+		//  push paths that have changed since the target was initialized or last
+		//  updated by the controller. The set of changes made since the last
+		//  synchronization are identified by comparing the index of each path-value
+		//  to the last synchronization index, `syncIndex`.
+	} else if config.Status.State == configapi.ConfigurationState_CONFIGURATION_UPDATING {
 		desiredConfigValues := config.Values
 		for _, desiredConfigValue := range desiredConfigValues {
 			// Perform partial reconciliation of target configuration (update only paths that have changed)
