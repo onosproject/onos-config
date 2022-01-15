@@ -18,6 +18,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/onosproject/onos-config/pkg/utils/tree"
+
 	"github.com/onosproject/onos-config/pkg/utils"
 
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
@@ -136,9 +138,23 @@ func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *conf
 				return false, errors.NewNotFound("model plugin not found")
 			}
 
+			pathValues := make([]*configapi.PathValue, len(change.Values))
+
+			for _, changeValue := range change.Values {
+				pathValue := &configapi.PathValue{
+					Path:  changeValue.Path,
+					Value: changeValue.Value,
+				}
+				pathValues = append(pathValues, pathValue)
+			}
+
+			jsonTree, err := tree.BuildTree(pathValues, true)
+			if err != nil {
+				return false, err
+			}
 			// If validation fails any target, mark the transaction Failed.
 			// If validation is successful, proceed to Applying.
-			err := modelPlugin.Validate(ctx, nil)
+			err = modelPlugin.Validate(ctx, jsonTree)
 			if err != nil {
 				transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
 				err = r.transactions.Update(ctx, transaction)
