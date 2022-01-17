@@ -97,124 +97,141 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 }
 
 func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *configapi.Transaction) (bool, error) {
-
 	log.Debugf("Reconciling transaction %s in %s state", transaction.ID, transaction.Status.State)
-	// If the transaction is Pending, begin validation if the prior transaction
-	// has already been applied. This simplifies concurrency control in the controller
-	// and guarantees transactions are applied to the configurations in sequential order.
-	if transaction.Status.State == configapi.TransactionState_TRANSACTION_PENDING {
-		if transaction.Index > 1 {
-			prevTransaction, err := r.transactions.GetByIndex(ctx, transaction.Index-1)
+	switch transaction.Status.State {
+	case configapi.TransactionState_TRANSACTION_PENDING:
+		// If the transaction is Pending, begin validation if the prior transaction
+		// has already been applied. This simplifies concurrency control in the controller
+		// and guarantees transactions are applied to the configurations in sequential order.
+		return r.reconcileTransactionPending(ctx, transaction)
+		// if the transaction is in the Validating state, Validate the changes in a transaction and
+		// change the state to Applying if validation passed otherwise fail the transaction
+	case configapi.TransactionState_TRANSACTION_VALIDATING:
+		return r.reconcileTransactionValidating(ctx, transaction)
+		// If the transaction is in the Applying state, update the Configuration for each
+		// target and Complete the transaction.
+	case configapi.TransactionState_TRANSACTION_APPLYING:
+		return r.reconcileTransactionApplying(ctx, transaction)
+
+	}
+	return true, nil
+}
+
+func (r *Reconciler) reconcileTransactionPending(ctx context.Context, transaction *configapi.Transaction) (bool, error) {
+	if transaction.Index > 1 {
+		prevTransaction, err := r.transactions.GetByIndex(ctx, transaction.Index-1)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		if prevTransaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE ||
+			prevTransaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
+			transaction.Status.State = configapi.TransactionState_TRANSACTION_VALIDATING
+			err = r.transactions.Update(ctx, transaction)
+			if err != nil {
+				if !errors.IsConflict(err) || !errors.IsNotFound(err) {
+					return false, err
+				}
+				return false, nil
+			}
+			return true, nil
+		}
+		return false, nil
+	}
+
+	transaction.Status.State = configapi.TransactionState_TRANSACTION_VALIDATING
+	err := r.transactions.Update(ctx, transaction)
+	if err != nil {
+		if !errors.IsConflict(err) || !errors.IsNotFound(err) {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+
+}
+
+func (r *Reconciler) reconcileTransactionValidating(ctx context.Context, transaction *configapi.Transaction) (bool, error) {
+	for _, change := range transaction.Changes {
+		modelName := utils.ToModelNameV2(change.TargetType, change.TargetVersion)
+		modelPlugin, ok := r.pluginRegistry.GetPlugin(modelName)
+		if !ok {
+			return false, errors.NewNotFound("model plugin not found")
+		}
+
+		pathValues := make([]*configapi.PathValue, len(change.Values))
+
+		for _, changeValue := range change.Values {
+			pathValue := &configapi.PathValue{
+				Path:  changeValue.Path,
+				Value: changeValue.Value,
+			}
+			pathValues = append(pathValues, pathValue)
+		}
+
+		jsonTree, err := tree.BuildTree(pathValues, true)
+		if err != nil {
+			return false, err
+		}
+		// If validation fails any target, mark the transaction Failed.
+		// If validation is successful, proceed to Applying.
+		err = modelPlugin.Validate(ctx, jsonTree)
+		if err != nil {
+			transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
+			err = r.transactions.Update(ctx, transaction)
+			if err != nil {
+				if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+					return false, err
+				}
+				return false, nil
+			}
+			return true, nil
+		}
+
+	}
+	transaction.Status.State = configapi.TransactionState_TRANSACTION_APPLYING
+	err := r.transactions.Update(ctx, transaction)
+	if err != nil {
+		if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+
+}
+
+func (r *Reconciler) reconcileTransactionApplying(ctx context.Context, transaction *configapi.Transaction) (bool, error) {
+	if transaction.Atomic {
+		// TODO: Apply atomic transactions here
+	} else {
+		for _, transactionChange := range transaction.Changes {
+			config, err := r.configurations.Get(ctx, transactionChange.TargetID)
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					return false, err
 				}
 				return false, nil
 			}
-			if prevTransaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE ||
-				prevTransaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
-				transaction.Status.State = configapi.TransactionState_TRANSACTION_VALIDATING
-				err = r.transactions.Update(ctx, transaction)
-				if err != nil {
-					if !errors.IsConflict(err) || !errors.IsNotFound(err) {
-						return false, err
-					}
-					return false, nil
-				}
-
-				return true, nil
+			updatedConfigValues := make(map[string]*configapi.PathValue)
+			for targetID, pathValue := range config.Values {
+				pathValue.Index = transaction.Index
+				updatedConfigValues[targetID] = pathValue
 			}
-		}
-
-	}
-
-	//  If the transaction is in the Validating state, compute and validate the
-	//  Configuration for each target.
-	if transaction.Status.State == configapi.TransactionState_TRANSACTION_VALIDATING {
-		for _, change := range transaction.Changes {
-			modelName := utils.ToModelNameV2(change.TargetType, change.TargetVersion)
-			modelPlugin, ok := r.pluginRegistry.GetPlugin(modelName)
-			if !ok {
-				return false, errors.NewNotFound("model plugin not found")
-			}
-
-			pathValues := make([]*configapi.PathValue, len(change.Values))
-
-			for _, changeValue := range change.Values {
-				pathValue := &configapi.PathValue{
-					Path:  changeValue.Path,
-					Value: changeValue.Value,
-				}
-				pathValues = append(pathValues, pathValue)
-			}
-
-			jsonTree, err := tree.BuildTree(pathValues, true)
+			config.Values = updatedConfigValues
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
+			config.Status.TransactionIndex = transaction.Index
+			err = r.configurations.Update(ctx, config)
 			if err != nil {
-				return false, err
-			}
-			// If validation fails any target, mark the transaction Failed.
-			// If validation is successful, proceed to Applying.
-			err = modelPlugin.Validate(ctx, jsonTree)
-			if err != nil {
-				transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
-				err = r.transactions.Update(ctx, transaction)
-				if err != nil {
-					if !errors.IsConflict(err) && !errors.IsNotFound(err) {
-						return false, err
-					}
-					return false, nil
+				if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+					return false, err
 				}
-
-				return true, nil
+				return false, nil
 			}
-
 		}
-		transaction.Status.State = configapi.TransactionState_TRANSACTION_APPLYING
-		err := r.transactions.Update(ctx, transaction)
-		if err != nil {
-			if !errors.IsConflict(err) && !errors.IsNotFound(err) {
-				return false, err
-			}
-			return false, nil
-		}
-		return true, nil
 
-	}
-
-	// If the transaction is in the Applying state, update the Configuration for each
-	// target and Complete the transaction.
-	if transaction.Status.State == configapi.TransactionState_TRANSACTION_APPLYING {
-		if transaction.Atomic {
-			// TODO: Apply atomic transactions here
-		} else {
-			for _, transactionChange := range transaction.Changes {
-				config, err := r.configurations.Get(ctx, transactionChange.TargetID)
-				if err != nil {
-					if !errors.IsNotFound(err) {
-						return false, err
-					}
-					return false, nil
-				}
-				if config.Index < transaction.Index {
-					updatedConfigValues := make(map[string]*configapi.PathValue)
-					for targetID, pathValue := range config.Values {
-						pathValue.Index = transaction.Index
-						updatedConfigValues[targetID] = pathValue
-					}
-					config.Values = updatedConfigValues
-				}
-				config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
-				config.Status.TransactionIndex = transaction.Index
-				err = r.configurations.Update(ctx, config)
-				if err != nil {
-					if !errors.IsConflict(err) && !errors.IsNotFound(err) {
-						return false, err
-					}
-					return false, nil
-				}
-			}
-
-		}
 	}
 	transaction.Status.State = configapi.TransactionState_TRANSACTION_COMPLETE
 	err := r.transactions.Update(ctx, transaction)
@@ -225,4 +242,5 @@ func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *conf
 		return false, nil
 	}
 	return true, nil
+
 }
