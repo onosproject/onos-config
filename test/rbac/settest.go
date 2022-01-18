@@ -72,7 +72,7 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 				gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
 				assert.NotNil(t, gnmiClient)
 
-				// Get path for he test value
+				// Get path for the test value
 				targetPath := gnmi.GetDevicePathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 				assert.NotNil(t, targetPath)
 
