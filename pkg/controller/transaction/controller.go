@@ -118,38 +118,24 @@ func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *conf
 }
 
 func (r *Reconciler) reconcileTransactionPending(ctx context.Context, transaction *configapi.Transaction) (bool, error) {
-	if transaction.Index > 1 {
-		prevTransaction, err := r.transactions.GetByIndex(ctx, transaction.Index-1)
+	prevTransaction, err := r.transactions.GetByIndex(ctx, transaction.Index-1)
+
+	if err != nil && !errors.IsNotFound(err) {
+		return false, err
+	}
+	if errors.IsNotFound(err) || prevTransaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE ||
+		prevTransaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
+		transaction.Status.State = configapi.TransactionState_TRANSACTION_VALIDATING
+		err = r.transactions.Update(ctx, transaction)
 		if err != nil {
-			if !errors.IsNotFound(err) {
+			if !errors.IsConflict(err) || !errors.IsNotFound(err) {
 				return false, err
 			}
 			return false, nil
 		}
-		if prevTransaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE ||
-			prevTransaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
-			transaction.Status.State = configapi.TransactionState_TRANSACTION_VALIDATING
-			err = r.transactions.Update(ctx, transaction)
-			if err != nil {
-				if !errors.IsConflict(err) || !errors.IsNotFound(err) {
-					return false, err
-				}
-				return false, nil
-			}
-			return true, nil
-		}
-		return false, nil
+		return true, nil
 	}
-
-	transaction.Status.State = configapi.TransactionState_TRANSACTION_VALIDATING
-	err := r.transactions.Update(ctx, transaction)
-	if err != nil {
-		if !errors.IsConflict(err) || !errors.IsNotFound(err) {
-			return false, err
-		}
-		return false, nil
-	}
-	return true, nil
+	return false, nil
 
 }
 
