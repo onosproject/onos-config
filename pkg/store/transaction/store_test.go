@@ -58,36 +58,40 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction1 := &configapi.Transaction{
 		ID: "transaction-1",
-		Changes: []configapi.Change{
-			{
+		Transaction: &configapi.Transaction_Change{
+			Change: &configapi.TransactionChange{
+				Changes: []configapi.Change{
+					{
 
-				TargetID:      target1,
-				TargetVersion: "1.0.0",
-				Values: []configapi.ChangeValue{
-					{
-						Path: "foo",
-						Value: configapi.TypedValue{
-							Bytes: []byte("Hello world!"),
-							Type:  configapi.ValueType_STRING,
+						TargetID:      target1,
+						TargetVersion: "1.0.0",
+						Values: []configapi.ChangeValue{
+							{
+								Path: "foo",
+								Value: configapi.TypedValue{
+									Bytes: []byte("Hello world!"),
+									Type:  configapi.ValueType_STRING,
+								},
+							},
+							{
+								Path: "bar",
+								Value: configapi.TypedValue{
+									Bytes: []byte("Hello world again!"),
+									Type:  configapi.ValueType_STRING,
+								},
+							},
 						},
 					},
 					{
-						Path: "bar",
-						Value: configapi.TypedValue{
-							Bytes: []byte("Hello world again!"),
-							Type:  configapi.ValueType_STRING,
-						},
-					},
-				},
-			},
-			{
-				TargetID: target2,
-				Values: []configapi.ChangeValue{
-					{
-						Path: "baz",
-						Value: configapi.TypedValue{
-							Bytes: []byte("Goodbye world!"),
-							Type:  configapi.ValueType_STRING,
+						TargetID: target2,
+						Values: []configapi.ChangeValue{
+							{
+								Path: "baz",
+								Value: configapi.TypedValue{
+									Bytes: []byte("Goodbye world!"),
+									Type:  configapi.ValueType_STRING,
+								},
+							},
 						},
 					},
 				},
@@ -97,13 +101,17 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction2 := &configapi.Transaction{
 		ID: "transaction-2",
-		Changes: []configapi.Change{
-			{
-				TargetID: target1,
-				Values: []configapi.ChangeValue{
+		Transaction: &configapi.Transaction_Change{
+			Change: &configapi.TransactionChange{
+				Changes: []configapi.Change{
 					{
-						Path:   "foo",
-						Delete: true,
+						TargetID: target1,
+						Values: []configapi.ChangeValue{
+							{
+								Path:   "foo",
+								Delete: true,
+							},
+						},
 					},
 				},
 			},
@@ -225,15 +233,19 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction = &configapi.Transaction{
 		ID: "transaction-3",
-		Changes: []configapi.Change{
-			{
-				TargetID: target1,
-				Values: []configapi.ChangeValue{
+		Transaction: &configapi.Transaction_Change{
+			Change: &configapi.TransactionChange{
+				Changes: []configapi.Change{
 					{
-						Path: "foo",
-						Value: configapi.TypedValue{
-							Bytes: []byte("Hello world!"),
-							Type:  configapi.ValueType_STRING,
+						TargetID: target1,
+						Values: []configapi.ChangeValue{
+							{
+								Path: "foo",
+								Value: configapi.TypedValue{
+									Bytes: []byte("Hello world!"),
+									Type:  configapi.ValueType_STRING,
+								},
+							},
 						},
 					},
 				},
@@ -246,15 +258,19 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction = &configapi.Transaction{
 		ID: "transaction-4",
-		Changes: []configapi.Change{
-			{
-				TargetID: target2,
-				Values: []configapi.ChangeValue{
+		Transaction: &configapi.Transaction_Change{
+			Change: &configapi.TransactionChange{
+				Changes: []configapi.Change{
 					{
-						Path: "bar",
-						Value: configapi.TypedValue{
-							Bytes: []byte("Hello world!"),
-							Type:  configapi.ValueType_STRING,
+						TargetID: target2,
+						Values: []configapi.ChangeValue{
+							{
+								Path: "bar",
+								Value: configapi.TypedValue{
+									Bytes: []byte("Hello world!"),
+									Type:  configapi.ValueType_STRING,
+								},
+							},
 						},
 					},
 				},
