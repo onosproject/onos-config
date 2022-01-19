@@ -133,10 +133,10 @@ func getRWPathMap(resp *api.ModelInfoResponse) path.ReadWritePathMap {
 				IsAKey:      pe.IsAKey,
 				AttrName:    pe.AttrName,
 			},
-			Mandatory:      pe.Mandatory,
-			Default:        pe.Default,
-			Range:          pe.Range,
-			Length:         pe.Length,
+			Mandatory: pe.Mandatory,
+			Default:   pe.Default,
+			Range:     pe.Range,
+			Length:    pe.Length,
 		}
 	}
 	return pm
