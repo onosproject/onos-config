@@ -17,8 +17,9 @@ package gnmi
 import (
 	"testing"
 
-	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+
+	"github.com/onosproject/onos-config/test/utils/gnmi"
 )
 
 const (

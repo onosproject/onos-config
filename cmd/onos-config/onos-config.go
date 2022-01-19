@@ -36,12 +36,13 @@ See ../../docs/run.md for how to run the application.
 package main
 
 import (
-	"github.com/onosproject/onos-config/pkg/manager"
-	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/onosproject/onos-config/pkg/manager"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/spf13/cobra"
 )
 
 var log = logging.GetLogger("main")
@@ -73,7 +74,6 @@ func getRootCommand() *cobra.Command {
 
 func runRootCommand(cmd *cobra.Command, args []string) error {
 	allowUnvalidatedConfig, _ := cmd.Flags().GetBool("allowUnvalidatedConfig")
-	usePluginRegistry, _ := cmd.Flags().GetBool("usePluginRegistry")
 	caPath, _ := cmd.Flags().GetString("caPath")
 	keyPath, _ := cmd.Flags().GetString("keyPath")
 	certPath, _ := cmd.Flags().GetString("certPath")
@@ -87,7 +87,6 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 		"GRPCPort", 5150,
 		"TopoAddress", topoEndpoint,
 		"AllowUnvalidatedConfig", allowUnvalidatedConfig,
-		"UsePluginRegistry", usePluginRegistry,
 		"PluginPorts", pluginPorts,
 	)
 
@@ -98,7 +97,6 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 		GRPCPort:               5150,
 		TopoAddress:            topoEndpoint,
 		AllowUnvalidatedConfig: allowUnvalidatedConfig,
-		UsePluginRegistry:      usePluginRegistry,
 		PluginPorts:            pluginPorts,
 	}
 
