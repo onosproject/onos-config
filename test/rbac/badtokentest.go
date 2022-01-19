@@ -22,6 +22,7 @@ import (
 
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	"github.com/onosproject/onos-config/test/utils/rbac"
 )
 
 // TestBadTokens tests access to a protected API with no access token supplied
@@ -99,7 +100,7 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 		t.Run(testCase.name,
 			func(t *testing.T) {
 
-				token, err := fetchATokenViaKeyCloak(openIDIssuer, testCase.username, testCase.password)
+				token, err := rbac.FetchATokenViaKeyCloak(openIDIssuer, testCase.username, testCase.password)
 				if testCase.expectedClientError != "" {
 					assert.Contains(t, err.Error(), testCase.expectedClientError)
 					return
@@ -108,7 +109,7 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 				assert.NotNil(t, token)
 
 				// Make a GNMI client to use for requests
-				ctx := getContext(context.Background(), testCase.token)
+				ctx := rbac.GetBearerContext(context.Background(), testCase.token)
 				gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
 
 				// Try to fetch a value from the GNMI client

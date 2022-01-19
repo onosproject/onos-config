@@ -16,6 +16,7 @@ package rbac
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/test/utils/rbac"
 	"github.com/stretchr/testify/assert"
 	"testing"
 
@@ -63,16 +64,16 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 		t.Run(testCase.name,
 			func(t *testing.T) {
 				// get an access token
-				token, err := fetchATokenViaKeyCloak("https://keycloak-dev.onlab.us/auth/realms/master", testCase.username, s.keycloakPassword)
+				token, err := rbac.FetchATokenViaKeyCloak("https://keycloak-dev.onlab.us/auth/realms/master", testCase.username, s.keycloakPassword)
 				assert.NoError(t, err)
 				assert.NotNil(t, token)
 
 				// Make a GNMI client to use for requests
-				ctx := getContext(context.Background(), token)
+				ctx := rbac.GetBearerContext(context.Background(), token)
 				gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
 				assert.NotNil(t, gnmiClient)
 
-				// Get path for he test value
+				// Get path for the test value
 				targetPath := gnmi.GetDevicePathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 				assert.NotNil(t, targetPath)
 
