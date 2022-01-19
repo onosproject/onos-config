@@ -17,7 +17,11 @@ package gnmi
 
 import (
 	"context"
-	"github.com/onosproject/onos-api/go/onos/config/admin"
+	"github.com/onosproject/onos-api/go/onos/config/change"
+	"github.com/onosproject/onos-api/go/onos/config/diags"
+	"io"
+
+	//"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/device"
 	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
@@ -39,7 +43,6 @@ const (
 
 // TestUnreachableDevice tests set/query of a single GNMI path to a device that will never respond
 func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
-	t.Skip()
 	deviceClient, deviceClientError := gnmi.NewTopoClient()
 	assert.NotNil(t, deviceClient)
 	assert.Nil(t, deviceClientError)
@@ -87,14 +90,34 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	// Check that the value was set correctly in the cache
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, unreachableDeviceModValue, 0, "Query after set returned the wrong value")
 
-	adminClient, err := gnmi.NewAdminServiceClient()
+	// Validate that the network change is listed and shows as pending.
+	changeClient, err := gnmi.NewChangeServiceClient()
+	assert.NoError(t, err)
+	stream, err := changeClient.ListNetworkChanges(context.Background(), &diags.ListNetworkChangeRequest{ChangeID: changeID})
 	assert.NoError(t, err)
 
-	// Rollback the set - should be possible even if device is unreachable
-	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
-		context.Background(), &admin.RollbackRequest{Name: string(changeID)})
-	assert.NoError(t, rollbackError, "Rollback returned an error")
-	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
-	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
+	found := false
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		assert.NoError(t, err)
+		if resp.Change.ID == changeID && resp.Change.Status.State == change.State_PENDING {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found)
 
+	// FIXME: Rollback won't be supported initially with the onos-config rewrite.
+	//adminClient, err := gnmi.NewAdminServiceClient()
+	//assert.NoError(t, err)
+
+	// Rollback the set - should be possible even if device is unreachable
+	//rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
+	//	context.Background(), &admin.RollbackRequest{Name: string(changeID)})
+	//assert.NoError(t, rollbackError, "Rollback returned an error")
+	//assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
+	//assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
 }
