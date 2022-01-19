@@ -20,10 +20,12 @@ import (
 	"fmt"
 	api "github.com/onosproject/onos-api/go/onos/config/admin"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-config/pkg/utils/path"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/grpc/retry"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"sync"
@@ -33,10 +35,12 @@ var log = logging.GetLogger("registry")
 
 // ModelPlugin is a record of information compiled from the configuration model plugin
 type ModelPlugin struct {
-	ID     string
-	Port   uint
-	Info   api.ModelInfo
-	Client api.ModelPluginServiceClient
+	ID             string
+	Port           uint
+	Info           api.ModelInfo
+	Client         api.ModelPluginServiceClient
+	ReadOnlyPaths  path.ReadOnlyPathMap
+	ReadWritePaths path.ReadWritePathMap
 }
 
 // PluginRegistry is a set of available configuration model plugins
@@ -88,11 +92,17 @@ func (r *PluginRegistry) discoverPlugin(port uint) {
 		return
 	}
 
+	// Reconstitute the r/o and r/w path map variables from the model data.
+	roPaths := getRoPathMap(resp)
+	rwPaths := getRWPathMap(resp)
+
 	plugin := &ModelPlugin{
-		ID:     fmt.Sprintf("%s-%s", resp.ModelInfo.Name, resp.ModelInfo.Version),
-		Port:   port,
-		Info:   *resp.ModelInfo,
-		Client: client,
+		ID:             fmt.Sprintf("%s-%s", resp.ModelInfo.Name, resp.ModelInfo.Version),
+		Port:           port,
+		Info:           *resp.ModelInfo,
+		Client:         client,
+		ReadOnlyPaths:  roPaths,
+		ReadWritePaths: rwPaths,
 	}
 	log.Debugf("Got model info for plugin: %+v", plugin)
 
@@ -100,6 +110,44 @@ func (r *PluginRegistry) discoverPlugin(port uint) {
 	defer r.lock.Unlock()
 	r.plugins[plugin.ID] = plugin
 	log.Infof("Configuration model plugin %s discovered on port %d", plugin.ID, port)
+}
+
+func getRoPathMap(resp *api.ModelInfoResponse) path.ReadOnlyPathMap {
+	pm := make(map[string]path.ReadOnlySubPathMap)
+	for _, pe := range resp.ModelInfo.ReadOnlyPath {
+		// TODO: Implement conversion
+		pm[pe.Path] = path.ReadOnlySubPathMap{}
+	}
+	return pm
+}
+
+func getRWPathMap(resp *api.ModelInfoResponse) path.ReadWritePathMap {
+	pm := make(map[string]path.ReadWritePathElem)
+	for _, pe := range resp.ModelInfo.ReadWritePath {
+		pm[pe.Path] = path.ReadWritePathElem{
+			ReadOnlyAttrib: path.ReadOnlyAttrib{
+				ValueType:   pe.ValueType,
+				TypeOpts:    getTypeOpts(pe.TypeOpts),
+				Description: pe.Description,
+				Units:       pe.Units,
+				IsAKey:      pe.IsAKey,
+				AttrName:    pe.AttrName,
+			},
+			Mandatory: pe.Mandatory,
+			Default:   pe.Default,
+			Range:     pe.Range,
+			Length:    pe.Length,
+		}
+	}
+	return pm
+}
+
+func getTypeOpts(typeOpts []uint64) []uint8 {
+	tos := make([]uint8, 0, len(typeOpts))
+	for _, to := range typeOpts {
+		tos = append(tos, uint8(to))
+	}
+	return tos
 }
 
 const localhost = "localhost"
@@ -135,6 +183,16 @@ func (r *PluginRegistry) GetPlugins() []*ModelPlugin {
 		plugins = append(plugins, p)
 	}
 	return plugins
+}
+
+// Capabilities returns the model plugin gNMI capabilities response
+func (p *ModelPlugin) Capabilities(ctx context.Context, jsonData []byte) *gnmi.CapabilityResponse {
+	return &gnmi.CapabilityResponse{
+		SupportedModels:    p.Info.ModelData,
+		SupportedEncodings: p.Info.SupportedEncodings,
+		GNMIVersion:        "0.7.0",
+		Extension:          nil,
+	}
 }
 
 // Validate validates the specified JSON configuration against the plugin's schema
