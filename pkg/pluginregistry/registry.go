@@ -124,10 +124,30 @@ func getRoPathMap(resp *api.ModelInfoResponse) path.ReadOnlyPathMap {
 func getRWPathMap(resp *api.ModelInfoResponse) path.ReadWritePathMap {
 	pm := make(map[string]path.ReadWritePathElem)
 	for _, pe := range resp.ModelInfo.ReadWritePath {
-		// TODO: Implement conversion
-		pm[pe.Path] = path.ReadWritePathElem{}
+		pm[pe.Path] = path.ReadWritePathElem{
+			ReadOnlyAttrib: path.ReadOnlyAttrib{
+				ValueType:   pe.ValueType,
+				TypeOpts:    getTypeOpts(pe.TypeOpts),
+				Description: pe.Description,
+				Units:       pe.Units,
+				IsAKey:      pe.IsAKey,
+				AttrName:    pe.AttrName,
+			},
+			Mandatory:      pe.Mandatory,
+			Default:        pe.Default,
+			Range:          pe.Range,
+			Length:         pe.Length,
+		}
 	}
 	return pm
+}
+
+func getTypeOpts(typeOpts []uint64) []uint8 {
+	tos := make([]uint8, 0, len(typeOpts))
+	for _, to := range typeOpts {
+		tos = append(tos, uint8(to))
+	}
+	return tos
 }
 
 const localhost = "localhost"
