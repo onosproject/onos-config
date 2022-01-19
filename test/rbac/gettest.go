@@ -18,6 +18,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
+	"github.com/onosproject/onos-config/test/utils/rbac"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -41,12 +42,12 @@ func getLeafPath(interfaceName string, leafName string) string {
 
 func setUpInterfaces(t *testing.T, target string, password string) {
 	// get an access token
-	token, err := fetchATokenViaKeyCloak(keycloakURL, "alicea", password)
+	token, err := rbac.FetchATokenViaKeyCloak(keycloakURL, "alicea", password)
 	assert.NoError(t, err)
 	assert.NotNil(t, token)
 
 	// Make a GNMI client to use for requests
-	ctx := getContext(context.Background(), token)
+	ctx := rbac.GetBearerContext(context.Background(), token)
 	gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
 
 	var interfaceNames = [...]string{starbucksInterface, acmeInterface, otherInterface}
@@ -207,12 +208,12 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name,
 			func(t *testing.T) {
-				token, err := fetchATokenViaKeyCloak(keycloakURL, testCase.userName, s.keycloakPassword)
+				token, err := rbac.FetchATokenViaKeyCloak(keycloakURL, testCase.userName, s.keycloakPassword)
 				assert.NoError(t, err)
 				assert.NotNil(t, token)
 
 				// Make a GNMI client to use for requests
-				ctx := getContext(context.Background(), token)
+				ctx := rbac.GetBearerContext(context.Background(), token)
 				gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
 				assert.NotNil(t, gnmiClient)
 

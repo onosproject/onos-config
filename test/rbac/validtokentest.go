@@ -16,69 +16,14 @@ package rbac
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/onosproject/onos-lib-go/pkg/errors"
+	"github.com/onosproject/onos-config/test/utils/rbac"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/prometheus/common/log"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/oauth2"
-	"google.golang.org/grpc/metadata"
-	"net/http"
-	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 )
-
-// fetchATokenViaKeyCloak Get the token via keycloak using curl
-func fetchATokenViaKeyCloak(openIDIssuer string, user string, passwd string) (string, error) {
-
-	data := url.Values{}
-	data.Set("username", user)
-	data.Set("password", passwd)
-	data.Set("grant_type", "password")
-	data.Set("client_id", "onos-config-test")
-	data.Set("scope", "openid profile email groups")
-
-	req, err := http.NewRequest("POST", openIDIssuer+"/protocol/openid-connect/token", strings.NewReader(data.Encode()))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	log.Debug("Response Code : ", resp.StatusCode)
-
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
-		target := new(oauth2.Token)
-		err = json.NewDecoder(resp.Body).Decode(target)
-		if err != nil {
-			return "", err
-		}
-		return target.AccessToken, nil
-	}
-
-	return "", errors.NewInvalid("Error HTTP response code : ", resp.StatusCode)
-
-}
-
-func getContext(ctx context.Context, token string) context.Context {
-	const (
-		authorization = "Authorization"
-	)
-	token = "Bearer " + token
-	md := make(metadata.MD)
-	md.Set(authorization, token)
-	ctx = metadata.NewOutgoingContext(ctx, md)
-	return ctx
-}
 
 // TestValidToken tests access to a protected API with a valid token supplied
 func (s *TestSuite) TestValidToken(t *testing.T) {
@@ -91,12 +36,12 @@ func (s *TestSuite) TestValidToken(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	// get an access token
-	token, err := fetchATokenViaKeyCloak("https://keycloak-dev.onlab.us/auth/realms/master", "alicea", s.keycloakPassword)
+	token, err := rbac.FetchATokenViaKeyCloak("https://keycloak-dev.onlab.us/auth/realms/master", "alicea", s.keycloakPassword)
 	assert.NoError(t, err)
 	assert.NotNil(t, token)
 
 	// Make a GNMI client to use for requests
-	ctx := getContext(context.Background(), token)
+	ctx := rbac.GetBearerContext(context.Background(), token)
 	gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
 
 	// Try to fetch a value from the GNMI client
