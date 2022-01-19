@@ -24,7 +24,6 @@ import (
 
 // TestOneLiveOneDeadDevice tests GNMI operations to an offline device followed by operations to a connected device
 func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
-	t.Skip()
 	const (
 		modPath  = "/system/clock/config/timezone-name"
 		modValue = "Europe/Rome"
