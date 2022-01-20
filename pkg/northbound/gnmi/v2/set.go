@@ -31,6 +31,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
+	transactionstore "github.com/onosproject/onos-config/pkg/store/transaction"
 	"github.com/onosproject/onos-config/pkg/utils"
 	valueutils "github.com/onosproject/onos-config/pkg/utils/values/v2"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -65,8 +66,6 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		log.Warn(err)
 		return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
 	}
-	targetInfo.targetType = extensions.targetType
-	targetInfo.targetVersion = extensions.targetVersion
 
 	if len(req.GetUpdate())+len(req.GetReplace())+len(req.GetDelete()) < 1 {
 		err = errors.NewInvalid("no updates, replace or deletes in SetRequest")
@@ -141,6 +140,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	transaction, err := newTransaction(targetInfo, extensions, targetUpdates, targetRemoves, userName)
 	if err != nil {
+		log.Warn(err)
 		return nil, errors.Status(err).Err()
 	}
 
@@ -149,48 +149,64 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
 	}
+	ch := make(chan configapi.TransactionEvent)
+	err = s.transactions.Watch(ctx, ch, transactionstore.WithReplay())
+	if err != nil {
+		return nil, errors.Status(err).Err()
+	}
 
-	// Build the responses
-	updateResults := make([]*gnmi.UpdateResult, 0)
-	for _, change := range transaction.GetChange().Changes {
-		targetID := change.TargetID
-		for _, valueUpdate := range change.Values {
-			var updateResult *gnmi.UpdateResult
-			if valueUpdate.Delete {
-				updateResult, err = newUpdateResult(valueUpdate.Path,
-					string(targetID), gnmi.UpdateResult_DELETE)
-				if err != nil {
-					log.Warn(err)
-					return nil, err
+	for transactionEvent := range ch {
+		if transactionEvent.Transaction.ID == transaction.ID {
+			if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE {
+				// Build the responses
+				updateResults := make([]*gnmi.UpdateResult, 0)
+				for _, change := range transaction.GetChange().Changes {
+					targetID := change.TargetID
+					for _, valueUpdate := range change.Values {
+						var updateResult *gnmi.UpdateResult
+						if valueUpdate.Delete {
+							updateResult, err = newUpdateResult(valueUpdate.Path,
+								string(targetID), gnmi.UpdateResult_DELETE)
+							if err != nil {
+								log.Warn(err)
+								return nil, err
+							}
+						} else {
+							updateResult, err = newUpdateResult(valueUpdate.Path,
+								string(targetID), gnmi.UpdateResult_UPDATE)
+							if err != nil {
+								log.Warn(err)
+								return nil, err
+							}
+						}
+						updateResults = append(updateResults, updateResult)
+					}
 				}
-			} else {
-				updateResult, err = newUpdateResult(valueUpdate.Path,
-					string(targetID), gnmi.UpdateResult_UPDATE)
-				if err != nil {
-					log.Warn(err)
-					return nil, err
+
+				setResponse := &gnmi.SetResponse{
+					Response:  updateResults,
+					Timestamp: time.Now().Unix(),
+					Extension: []*gnmi_ext.Extension{
+						{
+							Ext: &gnmi_ext.Extension_RegisteredExt{
+								RegisteredExt: &gnmi_ext.RegisteredExtension{
+									Id:  ExtensionTransactionID,
+									Msg: []byte(transaction.ID),
+								},
+							},
+						},
+					},
 				}
+
+				return setResponse, nil
+
+			} else if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
+				return nil, errors.NewInternal("transaction %s failed", transaction.ID)
+
 			}
-			updateResults = append(updateResults, updateResult)
 		}
 	}
-
-	setResponse := &gnmi.SetResponse{
-		Response:  updateResults,
-		Timestamp: time.Now().Unix(),
-		Extension: []*gnmi_ext.Extension{
-			{
-				Ext: &gnmi_ext.Extension_RegisteredExt{
-					RegisteredExt: &gnmi_ext.RegisteredExtension{
-						Id:  ExtensionTransactionID,
-						Msg: []byte(transaction.ID),
-					},
-				},
-			},
-		},
-	}
-
-	return setResponse, nil
+	return nil, nil
 }
 
 func (s *Server) getModelPlugin(ctx context.Context, targetID topoapi.ID) (*pluginregistry.ModelPlugin, error) {

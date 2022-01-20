@@ -15,9 +15,16 @@
 package gnmi
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/onosproject/onos-config/pkg/utils/tree"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
@@ -85,7 +92,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 // getUpdate utility method for getting an Update for a given path
 func (s *Server) getUpdate(ctx context.Context, targetInfo targetInfo, prefix *gnmi.Path, path *gnmi.Path,
-	encoding gnmi.Encoding, userGroups []string) ([]*gnmi.Update, error) {
+	encoding gnmi.Encoding, groups []string) ([]*gnmi.Update, error) {
 	if (path == nil || path.Target == "") && (prefix == nil || prefix.Target == "") {
 		return nil, errors.NewInvalid("invalid request - Path %s has no target", utils.StrPath(path))
 	}
@@ -115,7 +122,58 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo targetInfo, prefix *g
 		}
 	}
 
+	var configValuesAllowed []*configapi.PathValue
 	// Filter config values using open policy agent
+	if len(os.Getenv(OIDCServerURL)) > 0 {
+		configValuesAllowed, err = s.checkOpaAllowed(ctx, targetInfo, configValues, groups)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		configValuesAllowed = make([]*configapi.PathValue, len(configValues))
+		copy(configValuesAllowed, configValues)
+	}
 
-	return createUpdate(prefix, path, configValues, encoding)
+	return createUpdate(prefix, path, configValuesAllowed, encoding)
+}
+
+func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo targetInfo, configValues []*configapi.PathValue, groups []string) ([]*configapi.PathValue, error) {
+	jsonTree, err := tree.BuildTree(configValues, true)
+	if err != nil {
+		return nil, err
+	}
+	// add 'input' and `groups` objects to the JSON
+	jsonTreeInput := utils.FormatInput(jsonTree, groups)
+	log.Debugf("OPA Input:\n%s", jsonTreeInput)
+	client := &http.Client{}
+	// POST to OPA sidecar
+	opaURL := fmt.Sprintf("http://localhost:%d/v1/data/%s_%s/allowed?pretty=%v&metrics=%v", 8181,
+		strings.ToLower(string(targetInfo.targetType)), strings.ReplaceAll(string(targetInfo.targetVersion), ".", "_"), false, true)
+	resp, err := client.Post(opaURL, "application/json", bytes.NewBuffer([]byte(jsonTreeInput)))
+	if err != nil {
+		log.Warnf("Error sending request to OPA sidecar %s %s", opaURL, err.Error())
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	bodyText, err := utils.FormatOutput(body)
+	if err != nil {
+		return nil, err
+	}
+	if bodyText == "" {
+		return nil, nil
+	}
+
+	modelName := utils.ToModelNameV2(targetInfo.targetType, targetInfo.targetVersion)
+	modelPlugin, ok := s.pluginRegistry.GetPlugin(modelName)
+	if !ok {
+		return nil, errors.NewNotFound("model plugin %s not found", modelPlugin.ID)
+	}
+
+	return modelPlugin.GetPathValues(ctx, "", []byte(bodyText))
+
 }

@@ -28,28 +28,17 @@ const (
 	// ExtensionTransactionID transaction ID extension
 	ExtensionTransactionID = 100
 
-	// ExtensionVersion is used in Set, Get and Subscribe
-	ExtensionVersion = 101
-
-	// ExtensionTargetType is used in Set only when creating a device the first time
-	// It can be used as a discriminator on Get when wildcard target is given
-	ExtensionTargetType = 102
-
 	// ExtensionTransactionIndex transaction index extension
 	ExtensionTransactionIndex = 102
 )
 
 // Extensions list of gNMI extensions
 type Extensions struct {
-	targetVersion configapi.TargetVersion
-	targetType    configapi.TargetType
 	transactionID configapi.TransactionID
 }
 
 func extractExtensions(req interface{}) (Extensions, error) {
 	var transactionID configapi.TransactionID
-	var targetVersion configapi.TargetVersion
-	var targetType configapi.TargetType
 	switch v := req.(type) {
 	case *gnmi.SetRequest:
 		for _, ext := range v.GetExtension() {
@@ -57,8 +46,6 @@ func extractExtensions(req interface{}) (Extensions, error) {
 			extMsg := ext.GetRegisteredExt().GetMsg()
 			if extID == ExtensionTransactionID {
 				transactionID = configapi.TransactionID(extMsg)
-			} else if extID == ExtensionVersion {
-				targetVersion = configapi.TargetVersion(extMsg)
 			} else {
 				return Extensions{}, errors.NewInvalid("unexpected extension %d = '%s' in Set()", ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg())
 			}
@@ -68,8 +55,6 @@ func extractExtensions(req interface{}) (Extensions, error) {
 
 	extensions := Extensions{
 		transactionID: transactionID,
-		targetVersion: targetVersion,
-		targetType:    targetType,
 	}
 
 	return extensions, nil

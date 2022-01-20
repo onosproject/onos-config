@@ -444,6 +444,7 @@ func handleIdentity(yangType *yang.YangType) map[int]string {
 	return identityMap
 }
 
+// FindPathFromModel ...
 func FindPathFromModel(path string, rwPaths ReadWritePathMap, exact bool) (bool, *ReadWritePathElem, error) {
 	searchPathNoIndices := RemovePathIndices(path)
 

@@ -84,6 +84,7 @@ func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) 
 	if err != nil {
 		return nil, err
 	}*/
+
 	v, _ := getGNMIServiceVersion()
 	return &gnmi.CapabilityResponse{
 		SupportedModels:    nil,
