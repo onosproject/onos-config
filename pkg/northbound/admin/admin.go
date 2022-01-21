@@ -25,6 +25,7 @@ import (
 	devicesnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/device"
 	networksnapshot "github.com/onosproject/onos-api/go/onos/config/snapshot/network"
 	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
+	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
@@ -44,16 +45,19 @@ type Service struct {
 	networkChangesStore  network.Store
 	networkSnapshotStore networksnap.Store
 	deviceSnapshotStore  devicesnap.Store
+	pluginRegistry       *pluginregistry.PluginRegistry
 }
 
 // NewService allocates a Service struct with the given parameters
 func NewService(networkChangesStore network.Store,
 	networkSnapshotStore networksnap.Store,
-	deviceSnapshotStore devicesnap.Store) Service {
+	deviceSnapshotStore devicesnap.Store,
+	pluginRegistry *pluginregistry.PluginRegistry) Service {
 	return Service{
 		networkChangesStore:  networkChangesStore,
 		networkSnapshotStore: networkSnapshotStore,
 		deviceSnapshotStore:  deviceSnapshotStore,
+		pluginRegistry:       pluginRegistry,
 	}
 }
 
@@ -62,7 +66,8 @@ func (s Service) Register(r *grpc.Server) {
 	server := Server{
 		networkChangesStore:  s.networkChangesStore,
 		networkSnapshotStore: s.networkSnapshotStore,
-		deviceSnapshotStore:  s.deviceSnapshotStore}
+		deviceSnapshotStore:  s.deviceSnapshotStore,
+		pluginRegistry:       s.pluginRegistry}
 	admin.RegisterConfigAdminServiceServer(r, server)
 }
 
@@ -71,6 +76,7 @@ type Server struct {
 	networkChangesStore  network.Store
 	networkSnapshotStore networksnap.Store
 	deviceSnapshotStore  devicesnap.Store
+	pluginRegistry       *pluginregistry.PluginRegistry
 }
 
 // UploadRegisterModel uploads and registers a new model plugin.
@@ -80,8 +86,41 @@ func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegist
 }
 
 // ListRegisteredModels lists the registered models..
-func (s Server) ListRegisteredModels(req *admin.ListModelsRequest, stream admin.ConfigAdminService_ListRegisteredModelsServer) error {
-	return errors.NewNotSupported("not implemented")
+func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.ConfigAdminService_ListRegisteredModelsServer) error {
+	if stream.Context() != nil {
+		if md := metautils.ExtractIncoming(stream.Context()); md != nil && md.Get("name") != "" {
+			log.Infof("admin ListSnapshots() called by '%s (%s)'. Groups [%v]. Token %s",
+				md.Get("name"), md.Get("email"), md.Get("groups"), md.Get("at_hash"))
+		}
+	}
+	log.Infow("ListRegisteredModels called with:",
+		"ModelName", r.ModelName,
+		"ModelVersion", r.ModelVersion,
+		"Verbose", r.Verbose)
+
+	// TODO support filters
+
+	plugins := s.pluginRegistry.GetPlugins()
+	for _, p := range plugins {
+		log.Infow("Found plugin",
+			"ID", p.ID,
+			"Name", p.Info.Name,
+			"Version", p.Info.Version,
+		)
+		msg := &admin.ModelPlugin{
+			Id:     p.ID,
+			Port:   uint32(p.Port),
+			Info:   &p.Info,
+			Status: p.Status.String(),
+			Error:  p.Error,
+		}
+		err := stream.Send(msg)
+		if err != nil {
+			log.Errorf("error sending ModelInfor from plugin %v: %v", p.ID, err)
+			return err
+		}
+	}
+	return nil
 }
 
 // RollbackNetworkChange rolls back a named atomix-based network change.
@@ -120,7 +159,7 @@ func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.Config
 		eventCh := make(chan streams.Event)
 		ctx, err := s.deviceSnapshotStore.WatchAll(eventCh)
 		if err != nil {
-			log.Errorf("Error watching Network Changes %s", err)
+			log.Errorf("error watching Network Changes %s", err)
 			return err
 		}
 		defer ctx.Close()
@@ -141,7 +180,7 @@ func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.Config
 					log.Infof("Sending matching change %v", change.ID)
 					err := stream.Send(msg)
 					if err != nil {
-						log.Errorf("Error sending Snapshot %v %v", change.ID, err)
+						log.Errorf("error sending Snapshot %v %v", change.ID, err)
 						return err
 					}
 				}
@@ -157,7 +196,7 @@ func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.Config
 		changeCh := make(chan *devicesnapshot.Snapshot)
 		ctx, err := s.deviceSnapshotStore.LoadAll(changeCh)
 		if err != nil {
-			log.Errorf("Error ListSnapshots %s", err)
+			log.Errorf("error ListSnapshots %s", err)
 			return err
 		}
 		defer ctx.Close()
@@ -176,7 +215,7 @@ func (s Server) ListSnapshots(r *admin.ListSnapshotsRequest, stream admin.Config
 					log.Infof("Sending matching change %v", change.ID)
 					err := stream.Send(msg)
 					if err != nil {
-						log.Errorf("Error sending Snapshot %v %v", change.ID, err)
+						log.Errorf("error sending Snapshot %v %v", change.ID, err)
 						return err
 					}
 				}

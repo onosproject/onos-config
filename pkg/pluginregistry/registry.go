@@ -28,10 +28,27 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"strconv"
+	"strings"
 	"sync"
 )
 
 var log = logging.GetLogger("registry")
+
+type modelPluginStatus int
+
+func (m modelPluginStatus) String() string {
+	names := [...]string{
+		"Loaded",
+		"Error",
+	}
+	return names[m]
+}
+
+const (
+	loaded modelPluginStatus = iota
+	loadingError
+)
 
 // ModelPlugin is a record of information compiled from the configuration model plugin
 type ModelPlugin struct {
@@ -41,23 +58,25 @@ type ModelPlugin struct {
 	Client         api.ModelPluginServiceClient
 	ReadOnlyPaths  path.ReadOnlyPathMap
 	ReadWritePaths path.ReadWritePathMap
+	Status         modelPluginStatus
+	Error          string
 }
 
 // PluginRegistry is a set of available configuration model plugins
 type PluginRegistry struct {
-	ports   []uint
-	plugins map[string]*ModelPlugin
-	lock    sync.RWMutex
+	endpoints []string
+	plugins   map[string]*ModelPlugin
+	lock      sync.RWMutex
 }
 
 // NewPluginRegistry creates a plugin registry that will search the specified gRPC ports to look for model plugins
-func NewPluginRegistry(ports ...uint) *PluginRegistry {
+func NewPluginRegistry(endpoints ...string) *PluginRegistry {
 	registry := &PluginRegistry{
-		ports:   ports,
-		plugins: make(map[string]*ModelPlugin),
-		lock:    sync.RWMutex{},
+		endpoints: endpoints,
+		plugins:   make(map[string]*ModelPlugin),
+		lock:      sync.RWMutex{},
 	}
-	log.Infof("Created configuration plugin registry with ports: %+v", ports)
+	log.Infof("Created configuration plugin registry with ports: %+v", endpoints)
 	return registry
 }
 
@@ -73,42 +92,60 @@ func (r *PluginRegistry) Stop() {
 
 func (r *PluginRegistry) discoverPlugins() {
 	// TODO: Is it sufficient to do a one-time discovery? For now yes.
-	for _, port := range r.ports {
-		r.discoverPlugin(port)
+	for _, endpoint := range r.endpoints {
+		r.discoverPlugin(endpoint)
 	}
 }
 
-func (r *PluginRegistry) discoverPlugin(port uint) {
-	log.Infof("Attempting to contact model plugin on port %d", port)
-	client, err := newClient(port)
-	if err != nil {
-		log.Error("Unable to create model plugin client: %+v", err)
+func (r *PluginRegistry) discoverPlugin(endpoint string) {
+
+	log.Infof("Attempting to contact model plugin at: %s", endpoint)
+	pieces := strings.Split(endpoint, ":")
+	name := pieces[0]
+
+	plugin := &ModelPlugin{
+		ID: name,
+	}
+	r.lock.Lock()
+	r.plugins[plugin.ID] = plugin
+	r.lock.Unlock()
+
+	port, e := strconv.ParseUint(pieces[1], 10, 32)
+	if e != nil {
+		plugin.Status = loadingError
+		plugin.Error = fmt.Sprintf("Cannot parse port %s for plugin %s", pieces[1], name)
+		log.Errorw(plugin.Error, "pluginId", plugin.ID)
 		return
 	}
+	plugin.Port = uint(port)
+
+	client, err := newClient(plugin.Port)
+	if err != nil {
+		plugin.Status = loadingError
+		plugin.Error = fmt.Sprintf("Unable to create model plugin client: %+v", err)
+		log.Errorw(plugin.Error, "pluginId", plugin.ID)
+		return
+	}
+	plugin.Client = client
 
 	resp, err := client.GetModelInfo(context.Background(), &api.ModelInfoRequest{})
 	if err != nil {
-		log.Error("Unable to create model plugin client: %+v", err)
+		// NOTE we'll never get here only the error has code: Canceled or DeadlineExceeded
+		// in all the other cases the RetryingUnaryClientInterceptor will keep retry
+		plugin.Status = loadingError
+		plugin.Error = fmt.Sprintf("Unable to load model info: %+v", err)
+		log.Errorw(plugin.Error, "pluginId", plugin.ID)
 		return
 	}
+	plugin.Status = loaded
+	plugin.Info = *resp.ModelInfo
 
 	// Reconstitute the r/o and r/w path map variables from the model data.
-	roPaths := getRoPathMap(resp)
-	rwPaths := getRWPathMap(resp)
+	plugin.ReadOnlyPaths = getRoPathMap(resp)
+	plugin.ReadWritePaths = getRWPathMap(resp)
 
-	plugin := &ModelPlugin{
-		ID:             fmt.Sprintf("%s-%s", resp.ModelInfo.Name, resp.ModelInfo.Version),
-		Port:           port,
-		Info:           *resp.ModelInfo,
-		Client:         client,
-		ReadOnlyPaths:  roPaths,
-		ReadWritePaths: rwPaths,
-	}
 	log.Debugf("Got model info for plugin: %+v", plugin)
 
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.plugins[plugin.ID] = plugin
 	log.Infof("Configuration model plugin %s discovered on port %d", plugin.ID, port)
 }
 

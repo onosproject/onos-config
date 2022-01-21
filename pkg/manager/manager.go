@@ -73,7 +73,7 @@ type Config struct {
 	TopoAddress            string
 	AllowUnvalidatedConfig bool
 	UsePluginRegistry      bool
-	PluginPorts            []uint
+	Plugins                []string
 }
 
 // Manager single point of entry for the config system.
@@ -105,6 +105,7 @@ func (m *Manager) Run() {
 func (m *Manager) startNorthboundServer(
 	deviceChangesStore device.Store,
 	modelRegistry *modelregistry.ModelRegistry,
+	pluginRegistry *pluginregistry.PluginRegistry,
 	deviceCache cache.Cache,
 	networkChangesStore network.Store,
 	deviceStore devicestore.Store,
@@ -132,7 +133,7 @@ func (m *Manager) startNorthboundServer(
 
 	s.AddService(logging.Service{})
 
-	adminService := admin.NewService(networkChangesStore, networkSnapshotStore, deviceSnapshotStore)
+	adminService := admin.NewService(networkChangesStore, networkSnapshotStore, deviceSnapshotStore, pluginRegistry)
 	s.AddService(adminService)
 
 	diagService := diags.NewService(deviceChangesStore,
@@ -283,8 +284,7 @@ func (m *Manager) Start() error {
 	}
 
 	// Create new plugin registry
-	pluginRegistry := pluginregistry.NewPluginRegistry(m.Config.PluginPorts...)
-	m.pluginRegistry = pluginRegistry
+	m.pluginRegistry = pluginregistry.NewPluginRegistry(m.Config.Plugins...)
 	m.pluginRegistry.Start()
 
 	conns := sb.NewConnManager()
@@ -302,7 +302,7 @@ func (m *Manager) Start() error {
 	if err != nil {
 		return err
 	}
-	err = m.startConfigurationController(topoStore, conns, configurations, pluginRegistry)
+	err = m.startConfigurationController(topoStore, conns, configurations, m.pluginRegistry)
 	if err != nil {
 		return err
 	}
@@ -406,7 +406,7 @@ func (m *Manager) Start() error {
 	}
 
 	// Start the northbound server
-	err = m.startNorthboundServer(deviceChangesStore, modelRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,
+	err = m.startNorthboundServer(deviceChangesStore, modelRegistry, m.pluginRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,
 		deviceStateStore, &operationalStateCache, operationalStateCacheLock, networkSnapshotStore, deviceSnapshotStore)
 	if err != nil {
 		return err

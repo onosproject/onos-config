@@ -67,7 +67,7 @@ func getRootCommand() *cobra.Command {
 	cmd.Flags().String("keyPath", "", "path to client private key")
 	cmd.Flags().String("certPath", "", "ppath to client certificate")
 	cmd.Flags().String("topoEndpoint", "onos-topo:5150", "topology service endpoint")
-	cmd.Flags().UintSlice("plugin-port", []uint{}, "configuration model plugin ports")
+	cmd.Flags().StringSlice("plugin", []string{}, "configuration model plugin (name:port)")
 	return cmd
 }
 
@@ -78,7 +78,7 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 	keyPath, _ := cmd.Flags().GetString("keyPath")
 	certPath, _ := cmd.Flags().GetString("certPath")
 	topoEndpoint, _ := cmd.Flags().GetString("topoEndpoint")
-	pluginPorts, _ := cmd.Flags().GetUintSlice("plugin-port")
+	plugins, _ := cmd.Flags().GetStringSlice("plugin")
 
 	log.Infow("Starting onos-config",
 		"CAPath", caPath,
@@ -88,7 +88,7 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 		"TopoAddress", topoEndpoint,
 		"AllowUnvalidatedConfig", allowUnvalidatedConfig,
 		"UsePluginRegistry", usePluginRegistry,
-		"PluginPorts", pluginPorts,
+		"Plugins", plugins,
 	)
 
 	cfg := manager.Config{
@@ -99,7 +99,7 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 		TopoAddress:            topoEndpoint,
 		AllowUnvalidatedConfig: allowUnvalidatedConfig,
 		UsePluginRegistry:      usePluginRegistry,
-		PluginPorts:            pluginPorts,
+		Plugins:                plugins,
 	}
 
 	mgr := manager.NewManager(cfg)

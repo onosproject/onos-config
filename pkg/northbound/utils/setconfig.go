@@ -131,7 +131,7 @@ func ValidateNetworkConfig(deviceName devicetype.ID, version devicetype.Version,
 
 	jsonTree, err := store.BuildTree(configValues, true)
 	if err != nil {
-		log.Error("Error building JSON tree from Config Values ", err, jsonTree)
+		log.Error("error building JSON tree from Config Values ", err, jsonTree)
 		return err
 	}
 
@@ -198,7 +198,7 @@ func computeNetworkConfig(targetUpdates map[devicetype.ID]devicechange.TypedValu
 		newChange, err := computeDeviceChange(
 			target, version, deviceType, updates, targetRemoves[target], description)
 		if err != nil {
-			log.Error("Error in setting config: ", newChange, " for target ", err)
+			log.Error("error in setting config: ", newChange, " for target ", err)
 			continue
 		}
 		log.Infof("Appending device change %v", newChange)
@@ -213,7 +213,7 @@ func computeNetworkConfig(targetUpdates map[devicetype.ID]devicechange.TypedValu
 		newChange, err := computeDeviceChange(
 			target, version, deviceType, make(devicechange.TypedValueMap), removes, description)
 		if err != nil {
-			log.Error("Error in setting config: ", newChange, " for target ", err)
+			log.Error("error in setting config: ", newChange, " for target ", err)
 			continue
 		}
 		log.Infof("Appending device change %v", newChange)
@@ -233,7 +233,7 @@ func computeDeviceChange(deviceName devicetype.ID, version devicetype.Version,
 	for path, value := range updates {
 		updateValue, err := devicechange.NewChangeValue(path, value, false)
 		if err != nil {
-			log.Warnf("Error creating value for %s %v", path, err)
+			log.Warnf("error creating value for %s %v", path, err)
 			// TODO: this should return an error
 			continue
 		}
