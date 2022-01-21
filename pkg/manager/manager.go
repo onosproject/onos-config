@@ -31,6 +31,7 @@ import (
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/topo"
+	"github.com/onosproject/onos-config/pkg/store/transaction"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 
@@ -102,10 +103,11 @@ func (m *Manager) Run() {
 }
 
 // Creates gRPC server and registers various services; then serves.
-func (m *Manager) startNorthboundServer(
+func (m *Manager) startNorthboundServer(transactionsStore transaction.Store,
+	configurationsStore configuration.Store,
+	pluginRegistry *pluginregistry.PluginRegistry,
 	deviceChangesStore device.Store,
 	modelRegistry *modelregistry.ModelRegistry,
-	pluginRegistry *pluginregistry.PluginRegistry,
 	deviceCache cache.Cache,
 	networkChangesStore network.Store,
 	deviceStore devicestore.Store,
@@ -113,7 +115,8 @@ func (m *Manager) startNorthboundServer(
 	deviceStateStore state.Store,
 	operationalStateCache *map[topodevice.ID]devicechange.TypedValueMap,
 	operationalStateCacheLock *sync.RWMutex,
-	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store) error {
+	networkSnapshotStore networksnap.Store,
+	deviceSnapshotStore devicesnap.Store) error {
 	authorization := false
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
 		authorization = true
@@ -133,7 +136,7 @@ func (m *Manager) startNorthboundServer(
 
 	s.AddService(logging.Service{})
 
-	adminService := admin.NewService(networkChangesStore, networkSnapshotStore, deviceSnapshotStore, pluginRegistry)
+	adminService := admin.NewService(transactionsStore, configurationsStore, pluginRegistry, networkChangesStore, networkSnapshotStore, deviceSnapshotStore)
 	s.AddService(adminService)
 
 	diagService := diags.NewService(deviceChangesStore,
@@ -278,6 +281,9 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	// TODO: placeholder for creation of the transactions store
+	var transactions transaction.Store
+
 	configurations, err := configuration.NewAtomixStore(atomixClient)
 	if err != nil {
 		return err
@@ -406,7 +412,8 @@ func (m *Manager) Start() error {
 	}
 
 	// Start the northbound server
-	err = m.startNorthboundServer(deviceChangesStore, modelRegistry, m.pluginRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,
+	err = m.startNorthboundServer(transactions, configurations, m.pluginRegistry,
+		deviceChangesStore, modelRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,
 		deviceStateStore, &operationalStateCache, operationalStateCacheLock, networkSnapshotStore, deviceSnapshotStore)
 	if err != nil {
 		return err

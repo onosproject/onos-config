@@ -27,9 +27,11 @@ import (
 	nbutils "github.com/onosproject/onos-config/pkg/northbound/utils"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/store/change/network"
+	"github.com/onosproject/onos-config/pkg/store/configuration"
 	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
 	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
 	streams "github.com/onosproject/onos-config/pkg/store/stream"
+	"github.com/onosproject/onos-config/pkg/store/transaction"
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -42,6 +44,8 @@ var log = logging.GetLogger("northbound", "admin")
 // Service is a Service implementation for administration.
 type Service struct {
 	northbound.Service
+	transactionsStore    transaction.Store
+	configurationsStore  configuration.Store
 	networkChangesStore  network.Store
 	networkSnapshotStore networksnap.Store
 	deviceSnapshotStore  devicesnap.Store
@@ -49,11 +53,11 @@ type Service struct {
 }
 
 // NewService allocates a Service struct with the given parameters
-func NewService(networkChangesStore network.Store,
-	networkSnapshotStore networksnap.Store,
-	deviceSnapshotStore devicesnap.Store,
-	pluginRegistry *pluginregistry.PluginRegistry) Service {
+func NewService(transactionsStore transaction.Store, configurationsStore configuration.Store, pluginRegistry *pluginregistry.PluginRegistry,
+	networkChangesStore network.Store, networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store) Service {
 	return Service{
+		transactionsStore:    transactionsStore,
+		configurationsStore:  configurationsStore,
 		networkChangesStore:  networkChangesStore,
 		networkSnapshotStore: networkSnapshotStore,
 		deviceSnapshotStore:  deviceSnapshotStore,
@@ -64,15 +68,21 @@ func NewService(networkChangesStore network.Store,
 // Register registers the Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	server := Server{
+		transactionsStore:    s.transactionsStore,
+		configurationsStore:  s.configurationsStore,
 		networkChangesStore:  s.networkChangesStore,
 		networkSnapshotStore: s.networkSnapshotStore,
 		deviceSnapshotStore:  s.deviceSnapshotStore,
 		pluginRegistry:       s.pluginRegistry}
 	admin.RegisterConfigAdminServiceServer(r, server)
+	admin.RegisterConfigurationServiceServer(r, server)
+	admin.RegisterTransactionServiceServer(r, server)
 }
 
 // Server implements the gRPC service for administrative facilities.
 type Server struct {
+	transactionsStore    transaction.Store
+	configurationsStore  configuration.Store
 	networkChangesStore  network.Store
 	networkSnapshotStore networksnap.Store
 	deviceSnapshotStore  devicesnap.Store
