@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"strings"
 	"time"
@@ -183,6 +184,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 					}
 				}
 
+				transactionIndex := make([]byte, 8)
+				binary.BigEndian.PutUint64(transactionIndex, uint64(transaction.Index))
 				setResponse := &gnmi.SetResponse{
 					Response:  updateResults,
 					Timestamp: time.Now().Unix(),
@@ -195,13 +198,22 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 								},
 							},
 						},
+						{
+
+							Ext: &gnmi_ext.Extension_RegisteredExt{
+								RegisteredExt: &gnmi_ext.RegisteredExtension{
+									Id:  ExtensionTransactionIndex,
+									Msg: transactionIndex,
+								},
+							},
+						},
 					},
 				}
 
 				return setResponse, nil
 
 			} else if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
-				return nil, errors.NewInternal("transaction %s failed", transaction.ID)
+				return nil, errors.NewInvalid("transaction %s failed", transaction.ID)
 
 			}
 		}
