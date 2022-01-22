@@ -34,7 +34,7 @@ var log = logging.GetLogger("store", "configuration")
 
 // Store configuration store interface
 type Store interface {
-	// Get gets a configuration based on a given configuration ID
+	// Get gets the configuration intended for a given target ID
 	Get(ctx context.Context, id configapi.TargetID) (*configapi.Configuration, error)
 
 	// Create creates a configuration

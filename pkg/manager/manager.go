@@ -24,13 +24,13 @@ import (
 	"github.com/onosproject/onos-config/pkg/controller/controlrelation"
 	"github.com/onosproject/onos-config/pkg/controller/node"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/topo"
+	"github.com/onosproject/onos-config/pkg/store/transaction"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 
@@ -102,18 +102,18 @@ func (m *Manager) Run() {
 }
 
 // Creates gRPC server and registers various services; then serves.
-func (m *Manager) startNorthboundServer(
+func (m *Manager) startNorthboundServer(transactionsStore transaction.Store,
+	configurationsStore configuration.Store,
+	pluginRegistry *pluginregistry.PluginRegistry,
 	deviceChangesStore device.Store,
 	modelRegistry *modelregistry.ModelRegistry,
-	pluginRegistry *pluginregistry.PluginRegistry,
 	deviceCache cache.Cache,
 	networkChangesStore network.Store,
 	deviceStore devicestore.Store,
 	dispatcherInstance *dispatcher.Dispatcher,
 	deviceStateStore state.Store,
 	operationalStateCache *map[topodevice.ID]devicechange.TypedValueMap,
-	operationalStateCacheLock *sync.RWMutex,
-	networkSnapshotStore networksnap.Store, deviceSnapshotStore devicesnap.Store) error {
+	operationalStateCacheLock *sync.RWMutex) error {
 	authorization := false
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
 		authorization = true
@@ -133,17 +133,8 @@ func (m *Manager) startNorthboundServer(
 
 	s.AddService(logging.Service{})
 
-	adminService := admin.NewService(networkChangesStore, networkSnapshotStore, deviceSnapshotStore, pluginRegistry)
+	adminService := admin.NewService(transactionsStore, configurationsStore, pluginRegistry)
 	s.AddService(adminService)
-
-	diagService := diags.NewService(deviceChangesStore,
-		deviceCache,
-		networkChangesStore,
-		dispatcherInstance,
-		deviceStore,
-		operationalStateCache,
-		operationalStateCacheLock)
-	s.AddService(diagService)
 
 	gnmiService := gnmi.NewService(
 		modelRegistry,
@@ -278,6 +269,13 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	// Create the transactions store
+	transactions, err := transaction.NewAtomixStore(atomixClient)
+	if err != nil {
+		return err
+	}
+
+	// Create the configurations store
 	configurations, err := configuration.NewAtomixStore(atomixClient)
 	if err != nil {
 		return err
@@ -312,6 +310,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	// FIXME: Remove all old architecture stores and controllers
 	leadershipStore, err := leadership.NewAtomixStore(atomixClient)
 	if err != nil {
 		return err
@@ -368,6 +367,7 @@ func (m *Manager) Start() error {
 	operationalStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
 	operationalStateCacheLock := &sync.RWMutex{}
 
+	// FIXME: Remove all old architecture controllers
 	// Start the NetworkChange controller
 	err = m.startNetworkChangeController(leadershipStore, deviceStore, networkChangesStore, deviceChangesStore)
 	if err != nil {
@@ -406,8 +406,9 @@ func (m *Manager) Start() error {
 	}
 
 	// Start the northbound server
-	err = m.startNorthboundServer(deviceChangesStore, modelRegistry, m.pluginRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,
-		deviceStateStore, &operationalStateCache, operationalStateCacheLock, networkSnapshotStore, deviceSnapshotStore)
+	err = m.startNorthboundServer(transactions, configurations, m.pluginRegistry,
+		deviceChangesStore, modelRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,
+		deviceStateStore, &operationalStateCache, operationalStateCacheLock)
 	if err != nil {
 		return err
 	}
