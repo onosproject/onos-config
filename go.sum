@@ -998,6 +998,7 @@ github.com/onosproject/helmit v0.6.19 h1:2Il7qhJhUjYFdweDaOzgPanUArDNGRs8SaLV3tx
 github.com/onosproject/helmit v0.6.19/go.mod h1:4LUwMtLcV0njiCEcAoVdzoiRfit+04z4Yn7z8lXSuMk=
 github.com/onosproject/onos-api/go v0.7.89/go.mod h1:dUChRuNCBGrF6sVdaAZl5T2ZeyEC6ybsAdEBu0YwlMw=
 github.com/onosproject/onos-api/go v0.8.0/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
+github.com/onosproject/onos-api/go v0.8.10/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
 github.com/onosproject/onos-api/go v0.8.25 h1:Dumjbh4CosS6icpRWfQVJulcXXK8t0Dd3TyLkzm6hWU=
 github.com/onosproject/onos-api/go v0.8.25/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
 github.com/onosproject/onos-config-model v1.0.1 h1:yL92c0+pgXA8CKJWHTDNaTlheGnGFM23cRzYl4MopMU=
@@ -1005,8 +1006,12 @@ github.com/onosproject/onos-config-model v1.0.1/go.mod h1:w2eSwwKdq/mA0mdXEqfrcZ
 github.com/onosproject/onos-lib-go v0.7.18/go.mod h1:yEu+qDh+z1G6b9clPAjDLQNnBll8TMl8o2sFDBzk/fI=
 github.com/onosproject/onos-lib-go v0.8.1 h1:debi/WjARXRmYNRtnMPVj3q1MuTl9kPFmrbRf0NGCQU=
 github.com/onosproject/onos-lib-go v0.8.1/go.mod h1:1klcUPfLoXPVu4fzM/sYi1V3Pggm2NRbY2fTzG2W1HY=
-github.com/onosproject/onos-test v0.6.5 h1:Agj90+x8Qclg92iDN7OUvof1qzr6YCHqHXGVxxAiyaQ=
+github.com/onosproject/onos-proxy v0.1.0/go.mod h1:Julz7LLRkjnwIvioNEI1CjpujpxoA33vOdWSs0/wY9I=
+github.com/onosproject/onos-ric-sdk-go v0.8.2 h1:BfsGbbaj7vg8TBrj7NAyOnCjNwtd2o3hkSAqewXqE5I=
+github.com/onosproject/onos-ric-sdk-go v0.8.2/go.mod h1:FBjEFZjQqc7+3Lu80yaH3lQFOmGU857MZi4Lnt5EohU=
 github.com/onosproject/onos-test v0.6.5/go.mod h1:xucBzO2j77G6U/HgQApqMlv7YbDWj69guwDRQyB7bUc=
+github.com/onosproject/onos-test v0.6.6 h1:KguLCDkhN3+/8YE8VjkuTW5g6GTq5fTRb5rIjpgWNiE=
+github.com/onosproject/onos-test v0.6.6/go.mod h1:rC8K2TvTewH2EAh1rYZV38Qwwtpziw4p7wkLubPw7hI=
 github.com/onosproject/onos-topo v0.9.1 h1:FC6GhcRkTZs1ihoCAwrCBi8YPytO6nyTCeesXnMgkxw=
 github.com/onosproject/onos-topo v0.9.1/go.mod h1:oBYdHgKCxc1qG6ZQ5N4g7qak8qUOnje0HAstuPdaw5o=
 github.com/onsi/ginkgo v0.0.0-20151202141238-7f8ab55aaf3b/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
