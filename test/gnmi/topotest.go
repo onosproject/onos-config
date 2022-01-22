@@ -59,16 +59,10 @@ func getDevicesimEntityOrDie(ctx context.Context, t *testing.T, c toposdk.Client
 func getRelationOrDie(ctx context.Context, t *testing.T, configID topo.ID, targetID topo.ID, c toposdk.Client) topo.Object {
 	filter := &topo.Filters{
 		RelationFilter: &topo.RelationFilter{
-			SrcId:    string(configID),
-			TargetId: string(targetID),
-			Scope:    topo.RelationFilterScope_ALL,
-		},
-		KindFilter: &topo.Filter{
-			Filter: &topo.Filter_Equal_{
-				Equal_: &topo.EqualFilter{
-					Value: topo.CONTROLS,
-				},
-			},
+			SrcId:        string(configID),
+			TargetId:     string(targetID),
+			Scope:        topo.RelationFilterScope_ALL,
+			RelationKind: topo.CONTROLS,
 		},
 	}
 
