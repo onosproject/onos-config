@@ -55,7 +55,7 @@ func (s Server) ListConfigurations(req *admin.ListConfigurationsRequest, stream 
 func (s Server) WatchConfigurations(req *admin.WatchConfigurationsRequest, stream admin.ConfigurationService_WatchConfigurationsServer) error {
 	log.Infof("Received WatchConfigurations request: %+v", req)
 	var watchOpts []configuration.WatchOption
-	if true { // TODO: add field to API !req.Noreplay {
+	if !req.Noreplay {
 		watchOpts = append(watchOpts, configuration.WithReplay())
 	}
 
@@ -68,7 +68,7 @@ func (s Server) WatchConfigurations(req *admin.WatchConfigurationsRequest, strea
 	return s.streamConfigurations(stream, ch)
 }
 
-func (s *Server) streamConfigurations(server admin.ConfigurationService_WatchConfigurationsServer, ch chan configapi.ConfigurationEvent) error {
+func (s Server) streamConfigurations(server admin.ConfigurationService_WatchConfigurationsServer, ch chan configapi.ConfigurationEvent) error {
 	for event := range ch {
 		res := &admin.WatchConfigurationsResponse{
 			Event: event,

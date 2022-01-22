@@ -24,7 +24,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/controller/controlrelation"
 	"github.com/onosproject/onos-config/pkg/controller/node"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-config/pkg/northbound/diags"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
@@ -114,9 +113,7 @@ func (m *Manager) startNorthboundServer(transactionsStore transaction.Store,
 	dispatcherInstance *dispatcher.Dispatcher,
 	deviceStateStore state.Store,
 	operationalStateCache *map[topodevice.ID]devicechange.TypedValueMap,
-	operationalStateCacheLock *sync.RWMutex,
-	networkSnapshotStore networksnap.Store,
-	deviceSnapshotStore devicesnap.Store) error {
+	operationalStateCacheLock *sync.RWMutex) error {
 	authorization := false
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
 		authorization = true
@@ -136,17 +133,8 @@ func (m *Manager) startNorthboundServer(transactionsStore transaction.Store,
 
 	s.AddService(logging.Service{})
 
-	adminService := admin.NewService(transactionsStore, configurationsStore, pluginRegistry, networkChangesStore, networkSnapshotStore, deviceSnapshotStore)
+	adminService := admin.NewService(transactionsStore, configurationsStore, pluginRegistry)
 	s.AddService(adminService)
-
-	diagService := diags.NewService(deviceChangesStore,
-		deviceCache,
-		networkChangesStore,
-		dispatcherInstance,
-		deviceStore,
-		operationalStateCache,
-		operationalStateCacheLock)
-	s.AddService(diagService)
 
 	gnmiService := gnmi.NewService(
 		modelRegistry,
@@ -281,9 +269,13 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	// TODO: placeholder for creation of the transactions store
-	var transactions transaction.Store
+	// Create the transactions store
+	transactions, err := transaction.NewAtomixStore(atomixClient)
+	if err != nil {
+		return err
+	}
 
+	// Create the configurations store
 	configurations, err := configuration.NewAtomixStore(atomixClient)
 	if err != nil {
 		return err
@@ -318,6 +310,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	// FIXME: Remove all old architecture stores and controllers
 	leadershipStore, err := leadership.NewAtomixStore(atomixClient)
 	if err != nil {
 		return err
@@ -374,6 +367,7 @@ func (m *Manager) Start() error {
 	operationalStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
 	operationalStateCacheLock := &sync.RWMutex{}
 
+	// FIXME: Remove all old architecture controllers
 	// Start the NetworkChange controller
 	err = m.startNetworkChangeController(leadershipStore, deviceStore, networkChangesStore, deviceChangesStore)
 	if err != nil {
@@ -414,7 +408,7 @@ func (m *Manager) Start() error {
 	// Start the northbound server
 	err = m.startNorthboundServer(transactions, configurations, m.pluginRegistry,
 		deviceChangesStore, modelRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,
-		deviceStateStore, &operationalStateCache, operationalStateCacheLock, networkSnapshotStore, deviceSnapshotStore)
+		deviceStateStore, &operationalStateCache, operationalStateCacheLock)
 	if err != nil {
 		return err
 	}
