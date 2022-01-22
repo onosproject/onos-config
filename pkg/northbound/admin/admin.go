@@ -88,11 +88,11 @@ func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.Co
 			"Version", p.Info.Version,
 		)
 		msg := &admin.ModelPlugin{
-			Id:     p.ID,
-			Port:   uint32(p.Port),
-			Info:   &p.Info,
-			Status: p.Status.String(),
-			Error:  p.Error,
+			Id:       p.ID,
+			Endpoint: p.Endpoint,
+			Info:     &p.Info,
+			Status:   p.Status.String(),
+			Error:    p.Error,
 		}
 		err := stream.Send(msg)
 		if err != nil {

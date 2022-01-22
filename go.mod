@@ -38,3 +38,5 @@ require (
 )
 
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3
+
+replace github.com/onosproject/onos-api/go => github.com/teone/onos-api/go v0.8.25-0.20220124185457-96c4beb083d6
