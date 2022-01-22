@@ -65,7 +65,10 @@ func (s Server) WatchTransactions(req *admin.WatchTransactionsRequest, stream ad
 		return errors.Status(err).Err()
 	}
 
-	return s.streamTransactions(stream, ch)
+	if err := s.streamTransactions(stream, ch); err != nil {
+		return errors.Status(err).Err()
+	}
+	return nil
 }
 
 func (s Server) streamTransactions(server admin.TransactionService_WatchTransactionsServer, ch chan configapi.TransactionEvent) error {

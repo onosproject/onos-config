@@ -65,7 +65,10 @@ func (s Server) WatchConfigurations(req *admin.WatchConfigurationsRequest, strea
 		return errors.Status(err).Err()
 	}
 
-	return s.streamConfigurations(stream, ch)
+	if err := s.streamConfigurations(stream, ch); err != nil {
+		return errors.Status(err).Err()
+	}
+	return nil
 }
 
 func (s Server) streamConfigurations(server admin.ConfigurationService_WatchConfigurationsServer, ch chan configapi.ConfigurationEvent) error {
