@@ -20,6 +20,9 @@ import (
 	"sort"
 	"strings"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
@@ -31,6 +34,9 @@ var log = logging.GetLogger("utils", "path")
 
 // MatchOnIndex - regexp to find indices in paths names
 const MatchOnIndex = `(\[.*?]).*?`
+
+// validPathRegexp - permissible values in paths
+const validPathRegexp = `(/[a-zA-Z0-9:=\-\._[\]]+)+`
 
 // IndexAllowedChars - regexp to restrict characters in index names
 const IndexAllowedChars = `^([a-zA-Z0-9\*\-\._])+$`
@@ -265,7 +271,7 @@ func ExtractPaths(deviceEntry *yang.Entry, parentState yang.TriState, parentPath
 				readWritePaths[k] = v
 			}
 		} else {
-			log.Errorf("Unexpected type of leaf for %s %v", itemPath, dirEntry)
+			log.Warnf("Unexpected type of leaf for %s %v", itemPath, dirEntry)
 		}
 	}
 	return readOnlyPaths, readWritePaths
@@ -294,7 +300,7 @@ func AnonymizePathIndices(path string) string {
 // CheckPathIndexIsValid - check that index values have only the specified chars
 func CheckPathIndexIsValid(index string) error {
 	if !rIndexAllowedChars.MatchString(index) {
-		return fmt.Errorf("index value '%s' does not match pattern '%s'", index, IndexAllowedChars)
+		return errors.NewInvalid("index value '%s' does not match pattern '%s'", index, IndexAllowedChars)
 	}
 	return nil
 }
@@ -436,4 +442,71 @@ func handleIdentity(yangType *yang.YangType) map[int]string {
 		identityMap[i+1] = val.Name
 	}
 	return identityMap
+}
+
+// FindPathFromModel ...
+func FindPathFromModel(path string, rwPaths ReadWritePathMap, exact bool) (bool, *ReadWritePathElem, error) {
+	searchPathNoIndices := RemovePathIndices(path)
+
+	// try exact match first
+	if rwPath, isExactMatch := rwPaths[AnonymizePathIndices(path)]; isExactMatch {
+		return true, &rwPath, nil
+	} else if exact {
+		return false, nil,
+			status.Errorf(codes.InvalidArgument, "unable to find exact match for RW model path %s. %d paths inspected",
+				path, len(rwPaths))
+	}
+
+	if strings.HasSuffix(path, "]") { //Ends with index
+		indices, _ := ExtractIndexNames(path)
+		// Add on the last index
+		searchPathNoIndices = fmt.Sprintf("%s/%s", searchPathNoIndices, indices[len(indices)-1])
+	}
+
+	// First search through the RW paths
+	for modelPath, modelElem := range rwPaths {
+		pathNoIndices := RemovePathIndices(modelPath)
+		// Find a short path
+		if exact && pathNoIndices == searchPathNoIndices {
+			return false, &modelElem, nil
+		} else if !exact && strings.HasPrefix(pathNoIndices, searchPathNoIndices) {
+			return false, &modelElem, nil // returns the first thing it finds that matches the prefix
+		}
+	}
+
+	return false, nil,
+		errors.NewInvalid("unable to find RW model path %s ( without index %s). %d paths inspected", path, searchPathNoIndices, len(rwPaths))
+}
+
+// CheckKeyValue checks that if this is a Key attribute, that the value is the same as its parent's key
+func CheckKeyValue(path string, rwPath *ReadWritePathElem, val *configapi.TypedValue) error {
+	indexNames, indexValues := ExtractIndexNames(path)
+	if len(indexNames) == 0 {
+		return nil
+	}
+	for i, idxName := range indexNames {
+		if err := CheckPathIndexIsValid(indexValues[i]); err != nil {
+			return err
+		}
+		if !rwPath.IsAKey || rwPath.AttrName == idxName && indexValues[i] == val.ValueToString() {
+			return nil
+		}
+	}
+	return errors.NewInvalid("index attribute %s=%s does not match %s", rwPath.AttrName, val.ValueToString(), path)
+}
+
+// IsPathValid tests for valid paths. Path is valid if it
+// 1) starts with a slash
+// 2) is followed by at least one of alphanumeric or any of : = - _ [ ]
+// 3) and any further combinations of 1+2
+// Two contiguous slashes are not allowed
+// Paths not starting with slash are not allowed
+func IsPathValid(path string) error {
+	r1 := regexp.MustCompile(validPathRegexp)
+
+	match := r1.FindString(path)
+	if path != match {
+		return errors.NewInvalid("invalid path %s. Must match %s", path, validPathRegexp)
+	}
+	return nil
 }
