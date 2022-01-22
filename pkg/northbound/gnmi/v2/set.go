@@ -151,73 +151,72 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, errors.Status(err).Err()
 	}
 	ch := make(chan configapi.TransactionEvent)
-	err = s.transactions.Watch(ctx, ch, transactionstore.WithReplay())
+	err = s.transactions.Watch(ctx, ch, transactionstore.WithReplay(), transactionstore.WithTransactionID(transaction.ID))
 	if err != nil {
 		return nil, errors.Status(err).Err()
 	}
 
 	for transactionEvent := range ch {
-		if transactionEvent.Transaction.ID == transaction.ID {
-			if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE {
-				// Build the responses
-				updateResults := make([]*gnmi.UpdateResult, 0)
-				for _, change := range transaction.GetChange().Changes {
-					targetID := change.TargetID
-					for _, valueUpdate := range change.Values {
-						var updateResult *gnmi.UpdateResult
-						if valueUpdate.Delete {
-							updateResult, err = newUpdateResult(valueUpdate.Path,
-								string(targetID), gnmi.UpdateResult_DELETE)
-							if err != nil {
-								log.Warn(err)
-								return nil, err
-							}
-						} else {
-							updateResult, err = newUpdateResult(valueUpdate.Path,
-								string(targetID), gnmi.UpdateResult_UPDATE)
-							if err != nil {
-								log.Warn(err)
-								return nil, err
-							}
+		if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE {
+			// Build the responses
+			updateResults := make([]*gnmi.UpdateResult, 0)
+			for _, change := range transaction.GetChange().Changes {
+				targetID := change.TargetID
+				for _, valueUpdate := range change.Values {
+					var updateResult *gnmi.UpdateResult
+					if valueUpdate.Delete {
+						updateResult, err = newUpdateResult(valueUpdate.Path,
+							string(targetID), gnmi.UpdateResult_DELETE)
+						if err != nil {
+							log.Warn(err)
+							return nil, err
 						}
-						updateResults = append(updateResults, updateResult)
+					} else {
+						updateResult, err = newUpdateResult(valueUpdate.Path,
+							string(targetID), gnmi.UpdateResult_UPDATE)
+						if err != nil {
+							log.Warn(err)
+							return nil, err
+						}
 					}
+					updateResults = append(updateResults, updateResult)
 				}
+			}
 
-				transactionIndex := make([]byte, 8)
-				binary.BigEndian.PutUint64(transactionIndex, uint64(transaction.Index))
-				setResponse := &gnmi.SetResponse{
-					Response:  updateResults,
-					Timestamp: time.Now().Unix(),
-					Extension: []*gnmi_ext.Extension{
-						{
-							Ext: &gnmi_ext.Extension_RegisteredExt{
-								RegisteredExt: &gnmi_ext.RegisteredExtension{
-									Id:  ExtensionTransactionID,
-									Msg: []byte(transaction.ID),
-								},
-							},
-						},
-						{
-
-							Ext: &gnmi_ext.Extension_RegisteredExt{
-								RegisteredExt: &gnmi_ext.RegisteredExtension{
-									Id:  ExtensionTransactionIndex,
-									Msg: transactionIndex,
-								},
+			transactionIndex := make([]byte, 8)
+			binary.BigEndian.PutUint64(transactionIndex, uint64(transaction.Index))
+			setResponse := &gnmi.SetResponse{
+				Response:  updateResults,
+				Timestamp: time.Now().Unix(),
+				Extension: []*gnmi_ext.Extension{
+					{
+						Ext: &gnmi_ext.Extension_RegisteredExt{
+							RegisteredExt: &gnmi_ext.RegisteredExtension{
+								Id:  ExtensionTransactionID,
+								Msg: []byte(transaction.ID),
 							},
 						},
 					},
-				}
+					{
 
-				return setResponse, nil
-
-			} else if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
-				return nil, errors.NewInvalid("transaction %s failed", transaction.ID)
-
+						Ext: &gnmi_ext.Extension_RegisteredExt{
+							RegisteredExt: &gnmi_ext.RegisteredExtension{
+								Id:  ExtensionTransactionIndex,
+								Msg: transactionIndex,
+							},
+						},
+					},
+				},
 			}
+
+			return setResponse, nil
+
+		} else if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
+			return nil, errors.NewInvalid("transaction %s failed", transaction.ID)
+
 		}
 	}
+
 	return nil, nil
 }
 
