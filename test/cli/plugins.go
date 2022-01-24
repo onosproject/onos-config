@@ -169,7 +169,7 @@ func (s *TestSuite) TestPluginsGetCLI(t *testing.T) {
 			},
 		},
 		{
-			name:    "Devicesim",
+			name:    "devicesim-1.0.x",
 			version: "1.0.0",
 			yangs: []yangAttributes{
 				{

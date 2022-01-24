@@ -56,7 +56,7 @@ const (
 	SimulatorTargetVersion = "1.0.0"
 
 	// SimulatorTargetType type for simulated device
-	SimulatorTargetType = "Devicesim"
+	SimulatorTargetType = "devicesim-1.0.x"
 )
 
 // MakeContext returns a new context for use in GNMI requests
@@ -604,7 +604,7 @@ func SetGNMIValueOrFail(t *testing.T, gnmiClient gnmiclient.Impl,
 func GetSimulatorExtensions() []*gnmi_ext.Extension {
 	const (
 		deviceVersion = "1.0.0"
-		deviceType    = "Devicesim"
+		deviceType    = "devicesim-1.0.x"
 	)
 
 	extDeviceType := gnmi_ext.Extension_RegisteredExt{

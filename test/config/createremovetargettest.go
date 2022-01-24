@@ -33,7 +33,7 @@ const (
 	createRemoveTargetModValue2        = "Europe/London"
 	createRemoveTargetModDeviceName    = "offline-sim-crd"
 	createRemoveTargetModDeviceVersion = "1.0.0"
-	createRemoveTargetModDeviceType    = "Devicesim"
+	createRemoveTargetModDeviceType    = "devicesim-1.0.x"
 )
 
 // TestCreatedRemovedDevice tests set/query of a single GNMI path to a single device that is created, removed, then created again
