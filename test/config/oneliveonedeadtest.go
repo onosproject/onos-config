@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package gnmi
+package config
 
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
@@ -33,7 +33,7 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the offline device
-	offlineDevicePath := gnmi.GetDevicePathWithValue("offline-device", modPath, modValue, proto.StringVal)
+	offlineDevicePath := gnmi.GetTargetPathWithValue("offline-device", modPath, modValue, proto.StringVal)
 
 	// Set the value - should return a pending change
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, offlineDevicePath, gnmi.NoPaths, gnmi.GetSimulatorExtensions())
@@ -46,14 +46,14 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, onlineSimulator)
 
 	// Set a value to the online device
-	onlineDevicePath := gnmi.GetDevicePathWithValue(onlineSimulator.Name(), modPath, modValue, proto.StringVal)
+	onlineDevicePath := gnmi.GetTargetPathWithValue(onlineSimulator.Name(), modPath, modValue, proto.StringVal)
 	nid := gnmi.SetGNMIValueOrFail(t, gnmiClient, onlineDevicePath, gnmi.NoPaths, gnmi.NoExtensions)
-	gnmi.WaitForNetworkChangeComplete(t, nid, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, nid, 10*time.Second)
 
 	// Check that the value was set correctly in the cache
 	gnmi.CheckGNMIValue(t, gnmiClient, onlineDevicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set correctly on the device
-	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, onlineSimulator)
-	gnmi.CheckDeviceValue(t, deviceGnmiClient, onlineDevicePath, modValue)
+	deviceGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, onlineSimulator)
+	gnmi.CheckTargetValue(t, deviceGnmiClient, onlineDevicePath, modValue)
 }

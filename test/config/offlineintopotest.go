@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package gnmi
+package config
 
 import (
 	"context"
@@ -72,7 +72,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client to the offline device
-	devicePath := gnmi.GetDevicePathWithValue(offlineInTopoModDeviceName, offlineInTopoModPath, offlineInTopoModValue, proto.StringVal)
+	devicePath := gnmi.GetTargetPathWithValue(offlineInTopoModDeviceName, offlineInTopoModPath, offlineInTopoModValue, proto.StringVal)
 	networkChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Check that the value was set correctly
@@ -101,20 +101,20 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 		Release(offlineInTopoModDeviceName)
 	err := simulator.Install(true)
 	assert.NoError(t, err)
-	device, err := gnmi.GetDevice(simulator)
+	device, err := gnmi.GetSimulatorTarget(simulator)
 	assert.NoError(t, err)
-	err = gnmi.AddDeviceToTopo(device)
+	err = gnmi.AddTargetToTopo(device)
 	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
+	gnmi.WaitForTargetAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, networkChangeID, 10*time.Second)
 
 	// Interrogate the device to check that the value was set properly
-	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulator)
-	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, offlineInTopoModValue)
+	deviceGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
+	gnmi.CheckTargetValue(t, deviceGnmiClient, devicePath, offlineInTopoModValue)
 
 	gnmi.DeleteSimulator(t, simulator)
 }

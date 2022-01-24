@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gnmi
+package config
 
 import (
 	"github.com/onosproject/helmit/pkg/input"
-	"github.com/onosproject/onos-config/test/utils/charts"
-	"sync"
-
 	"github.com/onosproject/helmit/pkg/test"
+	"github.com/onosproject/onos-config/test/utils/charts"
 )
 
 type testSuite struct {
@@ -29,7 +27,6 @@ type testSuite struct {
 // TestSuite is the onos-config GNMI test suite
 type TestSuite struct {
 	testSuite
-	mux sync.Mutex
 }
 
 // SetupTestSuite sets up the onos-config GNMI test suite
@@ -38,6 +35,6 @@ func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	umbrella := charts.CreateUmbrellaRelease()
 	return umbrella.
 		Set("global.image.registry", registry).
-		Set("import.onos-cli.enabled", false). // not needed - can enabled be through Helm for investigations
+		Set("import.onos-cli.enabled", false). // not needed - can be enabled by adding '--set onos-umbrella.import.onos-cli.enabled=true' to helmit args for investigations
 		Install(true)
 }

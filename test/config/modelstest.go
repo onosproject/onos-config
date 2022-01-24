@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gnmi
+package config
 
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
@@ -66,7 +66,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 
 				t.Logf("testing %q", description)
 
-				setResult := gnmi.GetDevicePathWithValue(simulator.Name(), path, value, valueType)
+				setResult := gnmi.GetTargetPathWithValue(simulator.Name(), path, value, valueType)
 				msg, _, errorSet := gnmi.SetGNMIValue(gnmi.MakeContext(), gnmiClient, setResult, gnmi.NoPaths, gnmi.NoExtensions)
 				assert.NotNil(t, errorSet, "Set operation for %s does not generate an error", description)
 				assert.Contains(t, status.Convert(errorSet).Message(), expectedError,

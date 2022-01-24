@@ -58,15 +58,15 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 		descriptionPath := getLeafPath(interfaceName, descriptionLeafName)
 
 		// Create interface tree using gNMI client
-		setNamePath := []proto.DevicePath{
-			{DeviceName: target, Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
+		setNamePath := []proto.TargetPath{
+			{TargetName: target, Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 		}
 		gnmi.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 		// Set initial values for Enabled and Description using gNMI client
-		setInitialValuesPath := []proto.DevicePath{
-			{DeviceName: target, Path: enabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
-			{DeviceName: target, Path: descriptionPath, PathDataValue: descriptionLeafValue, PathDataType: proto.StringVal},
+		setInitialValuesPath := []proto.TargetPath{
+			{TargetName: target, Path: enabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
+			{TargetName: target, Path: descriptionPath, PathDataValue: descriptionLeafValue, PathDataType: proto.StringVal},
 		}
 		gnmi.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setInitialValuesPath, gnmi.NoPaths, gnmi.NoExtensions)
 	}
@@ -220,8 +220,8 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 				descriptionPath := getLeafPath(testCase.interfaceName, descriptionLeafName)
 
 				// Get path for the test value
-				targetPath := []proto.DevicePath{
-					{DeviceName: simulator.Name(), Path: descriptionPath, PathDataValue: testCase.interfaceName, PathDataType: proto.StringVal},
+				targetPath := []proto.TargetPath{
+					{TargetName: simulator.Name(), Path: descriptionPath, PathDataValue: testCase.interfaceName, PathDataType: proto.StringVal},
 				}
 
 				// Check that the value can be read via get

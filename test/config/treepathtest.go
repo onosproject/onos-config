@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gnmi
+package config
 
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
@@ -38,18 +38,18 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
-	getPath := gnmi.GetDevicePath(simulator.Name(), newRootEnabledPath)
+	getPath := gnmi.GetTargetPath(simulator.Name(), newRootEnabledPath)
 
 	// Set name of new root using gNMI client
-	setNamePath := []proto.DevicePath{
-		{DeviceName: simulator.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
+	setNamePath := []proto.TargetPath{
+		{TargetName: simulator.Name(), Path: newRootConfigNamePath, PathDataValue: newRootName, PathDataType: proto.StringVal},
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Set values using gNMI client
-	setPath := []proto.DevicePath{
-		{DeviceName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
-		{DeviceName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
+	setPath := []proto.TargetPath{
+		{TargetName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
+		{TargetName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setPath, gnmi.NoPaths, gnmi.NoExtensions)
 

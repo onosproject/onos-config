@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package gnmi
+package config
 
 import (
 	"context"
@@ -82,7 +82,7 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
 
-	devicePath := gnmi.GetDevicePathWithValue(unreachableDeviceModDeviceName, unreachableDeviceModPath, unreachableDeviceModValue, proto.StringVal)
+	devicePath := gnmi.GetTargetPathWithValue(unreachableDeviceModDeviceName, unreachableDeviceModPath, unreachableDeviceModValue, proto.StringVal)
 
 	// Set the value - should return a pending change
 	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)

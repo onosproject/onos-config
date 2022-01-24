@@ -38,7 +38,7 @@ func (s *TestSuite) TestNoToken(t *testing.T) {
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Try to fetch a value from the GNMI client
-	devicePath := gnmi.GetDevicePathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	devicePath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 	_, _, err := gnmi.GetGNMIValue(context.Background(), gnmiClient, devicePath, gpb.Encoding_PROTO)
 
 	// An error indicating an unauthenticated request is expected

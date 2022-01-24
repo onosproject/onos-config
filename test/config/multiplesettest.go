@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gnmi
+package config
 
 import (
 	"testing"
@@ -44,33 +44,32 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
-	var changeIDs []network.ID
+	var transactionIDs []network.ID
 
 	for i := 0; i < 10; i++ {
 
 		msValue := generateTimezoneName()
 
-		devicePath := gnmi.GetDevicePathWithValue(simulator.Name(), tzPath, msValue, proto.StringVal)
 		// Set a value using gNMI client
-		changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
+		targetPath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, msValue, proto.StringVal)
+		transactionID := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
 
-		// Append the changeID to list of changeIDs
-		changeIDs = append(changeIDs, changeID)
+		// Append the transactionID to list of transactionIDs
+		transactionIDs = append(transactionIDs, transactionID)
 
 		// Check that the value was set correctly
-		gnmi.CheckGNMIValue(t, gnmiClient, devicePath, msValue, 0, "Query after set returned the wrong value")
+		gnmi.CheckGNMIValue(t, gnmiClient, targetPath, msValue, 0, "Query after set returned the wrong value")
 
 		// Remove the path we added
-		gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, devicePath, gnmi.NoExtensions)
+		gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, targetPath, gnmi.NoExtensions)
 
 		//  Make sure it got removed
-		gnmi.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
-
+		gnmi.CheckGNMIValue(t, gnmiClient, targetPath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 	}
 
 	// Make sure all of the changes have been completed
-	for _, changeID := range changeIDs {
-		complete := gnmi.WaitForNetworkChangeComplete(t, changeID, 5*time.Second)
+	for _, changeID := range transactionIDs {
+		complete := gnmi.WaitForTransactionComplete(t, changeID, 5*time.Second)
 		assert.True(t, complete, "Set never completed")
 	}
 }

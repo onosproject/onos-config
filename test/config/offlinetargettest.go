@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package gnmi
+package config
 
 import (
 	"testing"
@@ -29,7 +29,7 @@ import (
 const (
 	modPath           = "/system/clock/config/timezone-name"
 	modValue          = "Europe/Rome"
-	offlineDeviceName = "test-offline-device-1"
+	offlineTargetName = "test-offline-device-1"
 )
 
 // TestOfflineDevice tests set/query of a single GNMI path to a single device that is initially not in the config
@@ -51,19 +51,19 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 		},
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
-	devicePath := gnmi.GetDevicePathWithValue(offlineDeviceName, modPath, modValue, proto.StringVal)
+	devicePath := gnmi.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
 	networkChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
 
 	// Bring device online
-	simulator := gnmi.CreateSimulatorWithName(t, offlineDeviceName)
+	simulator := gnmi.CreateSimulatorWithName(t, offlineTargetName)
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
+	gnmi.WaitForTargetAvailable(t, device.ID(simulator.Name()), time.Minute)
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the device
-	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
-	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulator)
-	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, modValue)
+	gnmi.WaitForTransactionComplete(t, networkChangeID, 10*time.Second)
+	deviceGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
+	gnmi.CheckTargetValue(t, deviceGnmiClient, devicePath, modValue)
 }

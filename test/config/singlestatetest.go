@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gnmi
+package config
 
 import (
 	"github.com/onosproject/onos-config/pkg/device"
@@ -37,7 +37,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
+	gnmi.WaitForTargetAvailable(t, device.ID(simulator.Name()), time.Minute)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
@@ -48,7 +48,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	for attempt := 1; attempt <= 10; attempt++ {
 		// If the device cache has not been completely initialized, we can hit a race here where the value
 		// will be returned as null. Needs further investigation.
-		valueAfter, extensions, errorAfter := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient, gnmi.GetDevicePath(simulator.Name(), stateControllersPath), gpb.Encoding_PROTO)
+		valueAfter, extensions, errorAfter := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient, gnmi.GetTargetPath(simulator.Name(), stateControllersPath), gpb.Encoding_PROTO)
 		assert.NoError(t, errorAfter)
 		assert.NotEqual(t, nil, valueAfter, "Query after state returned nil")
 		address := valueAfter[0].PathDataValue

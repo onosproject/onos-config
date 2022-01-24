@@ -74,7 +74,7 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 				assert.NotNil(t, gnmiClient)
 
 				// Get path for the test value
-				targetPath := gnmi.GetDevicePathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+				targetPath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 				assert.NotNil(t, targetPath)
 
 				// Set a value using gNMI client

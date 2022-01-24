@@ -30,10 +30,10 @@ const (
 	BoolVal = "bool_val"
 )
 
-// DevicePath describes the results of a get operation for a single Path
-// It specifies the device, Path, and value
-type DevicePath struct {
-	DeviceName    string
+// TargetPath describes the results of a get operation for a single Path
+// It specifies the target, Path, and value
+type TargetPath struct {
+	TargetName    string
 	Path          string
 	PathDataType  string
 	PathDataValue string
@@ -88,12 +88,12 @@ func makeProtoValue(value string, valueType string) string {
 }
 
 // MakeProtoUpdatePath returns an update: element for a target, path, and new value
-func MakeProtoUpdatePath(devicePath DevicePath) string {
+func MakeProtoUpdatePath(targetPath TargetPath) string {
 	var protoBuilder strings.Builder
 
 	protoBuilder.WriteString("update: <")
-	protoBuilder.WriteString(MakeProtoPath(devicePath.DeviceName, devicePath.Path))
-	protoBuilder.WriteString(makeProtoValue(devicePath.PathDataValue, devicePath.PathDataType))
+	protoBuilder.WriteString(MakeProtoPath(targetPath.TargetName, targetPath.Path))
+	protoBuilder.WriteString(makeProtoValue(targetPath.PathDataValue, targetPath.PathDataType))
 	protoBuilder.WriteString(">")
 	return protoBuilder.String()
 }
