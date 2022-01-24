@@ -20,8 +20,8 @@ jenkins-test: # @HELP run the unit tests and source code validation producing a 
 jenkins-test: build deps license_check linters
 	TEST_PACKAGES=github.com/onosproject/onos-config/... ./build/build-tools/build/jenkins/make-unit
 
-helmit-gnmi: integration-test-namespace # @HELP run helmit gnmi tests locally
-	helmit test -n test ./cmd/onos-config-tests --suite gnmi
+helmit-config: integration-test-namespace # @HELP run helmit gnmi tests locally
+	helmit test -n test ./cmd/onos-config-tests --suite config
 
 helmit-cli: integration-test-namespace # @HELP run helmit cli tests locally
 	helmit test -n test ./cmd/onos-config-tests --suite cli
@@ -35,7 +35,7 @@ preload-helmit-images:
 	docker pull onosproject/config-model-registry:v1.0.1 ; \
     kind load docker-image onosproject/config-model-registry:v1.0.1
 
-integration-tests: preload-helmit-images helmit-gnmi helmit-cli helmit-rbac # @HELP run helmit integration tests locally
+integration-tests: preload-helmit-images helmit-config helmit-cli helmit-rbac # @HELP run helmit integration tests locally
 
 onos-config-docker: # @HELP build onos-config base Docker image
 	docker build . -f build/onos-config/Dockerfile \

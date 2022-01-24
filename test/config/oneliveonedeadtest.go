@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package gnmi
+package config
 
 import (
 	"github.com/onosproject/onos-config/test/utils/gnmi"
