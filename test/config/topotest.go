@@ -50,7 +50,7 @@ func getOnosConfigEntityOrDie(ctx context.Context, t *testing.T, c toposdk.Clien
 // getDevicesimEntityOrDie queries a single device simulator instance and fails if it isn't found
 func getDevicesimEntityOrDie(ctx context.Context, t *testing.T, c toposdk.Client) topo.Object {
 	const (
-		devicesimKind = "Devicesim"
+		devicesimKind = "devicesim-1.0.x"
 	)
 	return getEntityOrDie(ctx, t, c, devicesimKind)
 }

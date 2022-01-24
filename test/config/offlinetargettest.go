@@ -41,7 +41,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
 			Id:  gnb.GnmiExtensionDeviceType,
-			Msg: []byte("Devicesim"),
+			Msg: []byte("devicesim-1.0.x"),
 		},
 	}
 	extNameDeviceVersion := gnmi_ext.Extension_RegisteredExt{

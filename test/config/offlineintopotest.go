@@ -33,7 +33,7 @@ const (
 	offlineInTopoModValue         = "Europe/Rome"
 	offlineInTopoModDeviceName    = "offline-dev-1"
 	offlineInTopoModDeviceVersion = "1.0.0"
-	offlineInTopoModDeviceType    = "Devicesim"
+	offlineInTopoModDeviceType    = "devicesim-1.0.x"
 )
 
 // TestOfflineDeviceInTopo tests set/query of a single GNMI path to a single device that is in the config but offline

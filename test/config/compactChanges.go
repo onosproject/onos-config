@@ -43,7 +43,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	t.Skip()
 
 	const version = "1.0.0"
-	const deviceType = "Devicesim"
+	const deviceType = "devicesim-1.0.x"
 	const motdPath = "/system/config/motd-banner"
 	const motdValue1 = "Sim1 Motd"
 	const motdValue2 = "Sim2 Motd"

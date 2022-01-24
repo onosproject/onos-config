@@ -37,7 +37,7 @@ const (
 	unreachableDeviceModValue         = "Europe/Rome"
 	unreachableDeviceModDeviceName    = "unreachable-dev-1"
 	unreachableDeviceModDeviceVersion = "1.0.0"
-	unreachableDeviceModDeviceType    = "Devicesim"
+	unreachableDeviceModDeviceType    = "devicesim-1.0.x"
 	unreachableDeviceAddress          = "198.18.0.1:4"
 )
 
