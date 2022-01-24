@@ -118,6 +118,10 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	_ = target.GetAspect(&mastership)
 	targetMastershipTerm := configapi.MastershipTerm(mastership.Term)
 
+	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_COMPLETE {
+		return false, nil
+	}
+
 	// If the configuration is not already ConfigurationPending and mastership
 	// has been lost revert it. This can occur when the connection to the
 	// target has been lost and the mastership is no longer valid.
