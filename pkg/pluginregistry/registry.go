@@ -63,7 +63,7 @@ type ModelPlugin struct {
 	Client         api.ModelPluginServiceClient
 	ReadOnlyPaths  path.ReadOnlyPathMap
 	ReadWritePaths path.ReadWritePathMap
-	// Status indicates wheter a plugin was correctly loaded
+	// Status indicates whether a plugin was correctly loaded
 	Status modelPluginStatus
 	// Error is an optional field populated only if the plugin failed to be correctly discovered
 	Error string
@@ -110,7 +110,7 @@ func (r *PluginRegistry) discoverPlugin(endpoint string) {
 
 	plugin := &ModelPlugin{
 		Endpoint: endpoint,
-		ID: endpoint, // we assign the ID as Endpoint as we don't know the Model Name and Version yet.
+		ID:       endpoint, // we assign the ID as Endpoint as we don't know the Model Name and Version yet.
 	}
 
 	client, err := newClient(plugin.Endpoint)
@@ -156,7 +156,7 @@ func (r *PluginRegistry) loadPluginInfo(client api.ModelPluginServiceClient, plu
 
 	log.Debugf("Got model info for plugin: %+v", plugin)
 
-	log.Infof("Configuration model plugin %s discovered on port %d", plugin.ID, plugin.Endpoint)
+	log.Infof("Configuration model plugin %s discovered on %s", plugin.ID, plugin.Endpoint)
 }
 
 func getRoPathMap(resp *api.ModelInfoResponse) path.ReadOnlyPathMap {
@@ -218,12 +218,12 @@ func newClient(endpoint string) (api.ModelPluginServiceClient, error) {
 func (r *PluginRegistry) GetPlugin(id string) (*ModelPlugin, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
-	for _, p := range r.plugins {
-		if p.ID == id {
-			return p, true
-		}
+	p, ok := r.plugins[id]
+	if !ok {
+		log.Warnw("Cannot find plugin", "id", id)
+		return nil, false
 	}
-	return nil, false
+	return p, true
 }
 
 // GetPlugins returns list of all registered plugins

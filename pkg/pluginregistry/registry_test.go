@@ -1,3 +1,17 @@
+// Copyright 2021-present Open Networking Foundation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package pluginregistry
 
 import (
@@ -12,6 +26,7 @@ import (
 
 const testEndpoint1 = "testmodel1:5152"
 const testEndpoint2 = "testmodel2:5153"
+
 var pr = NewPluginRegistry(testEndpoint1, testEndpoint2)
 
 type MockModelPluginServiceClient struct {
@@ -30,17 +45,15 @@ func (MockModelPluginServiceClient) GetPathValues(ctx context.Context, in *admin
 	return nil, nil
 }
 
-
 func TestLoadPluginInfo(t *testing.T) {
 
 	assert.Equal(t, 0, len(pr.plugins), "Plugins list is not empty at the beginning of the test")
 
 	plugin := &ModelPlugin{
-		Name: "testmodel1",
-		Port: 5152,
+		Endpoint: "localhost:5152",
 	}
 
-	modelInfo :=  &admin.ModelInfo{Name: "Testmodel", Version: "1.0.0"}
+	modelInfo := &admin.ModelInfo{Name: "Testmodel", Version: "1.0.0"}
 	mockClient := MockModelPluginServiceClient{
 		getModelInfoResponse: &admin.ModelInfoResponse{
 			ModelInfo: modelInfo,
@@ -54,22 +67,24 @@ func TestLoadPluginInfo(t *testing.T) {
 
 func TestGetPlugin(t *testing.T) {
 
-	testId := "testmodel-1.0.0"
+	testID := "testmodel-1.0.0"
 	p1 := &ModelPlugin{
-		Name: "testmodel1",
-		Port: 5152,
-		ID: testId,
+		Endpoint: "localhost:5152",
+		ID:       testID,
 	}
 	p2 := &ModelPlugin{
-		Name: "testmodel2",
-		Port: 5153,
-		ID: "someID",
+		Endpoint: "localhost:5153",
+		ID:       "someID",
 	}
 
-	pr.plugins[p1.Name] = p1
-	pr.plugins[p2.Name] = p2
+	pr.plugins[p1.ID] = p1
+	pr.plugins[p2.ID] = p2
 
-	plugin, found := pr.GetPlugin(testId)
+	plugin, found := pr.GetPlugin(testID)
 	assert.True(t, found, "Plugin not found")
 	assert.NotNil(t, plugin, "Plugin not found")
+
+	n, notFound := pr.GetPlugin("non-existing")
+	assert.False(t, notFound, "Plugin should not have been found")
+	assert.Nil(t, n)
 }
