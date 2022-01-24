@@ -45,28 +45,28 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 	devices[0] = device1.Name()
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, device.ID(device1.Name()), 10*time.Second)
+	gnmi.WaitForTargetAvailable(t, device.ID(device1.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set values
-	var devicePathsForSet = gnmi.GetDevicePathsWithValues(devices, newPaths, newValues)
+	var devicePathsForSet = gnmi.GetTargetPathsWithValues(devices, newPaths, newValues)
 	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
 
-	devicePathsForGet := gnmi.GetDevicePaths(devices, newPaths)
+	devicePathsForGet := gnmi.GetTargetPaths(devices, newPaths)
 
 	// Check that the values were set correctly
 	expectedValues := []string{newValue}
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
-	complete := gnmi.WaitForNetworkChangeComplete(t, changeID, 10*time.Second)
+	complete := gnmi.WaitForTransactionComplete(t, changeID, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices
-	device1GnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, device1)
-	gnmi.CheckDeviceValue(t, device1GnmiClient, devicePathsForGet[0:1], newValue)
+	device1GnmiClient := gnmi.GetTargetGNMIClientOrFail(t, device1)
+	gnmi.CheckTargetValue(t, device1GnmiClient, devicePathsForGet[0:1], newValue)
 
 	// Now rollback the change
 	adminClient, err := gnmi.NewAdminServiceClient()

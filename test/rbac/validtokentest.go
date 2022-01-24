@@ -45,7 +45,7 @@ func (s *TestSuite) TestValidToken(t *testing.T) {
 	gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
 
 	// Try to fetch a value from the GNMI client
-	devicePath := gnmi.GetDevicePathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	devicePath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 	_, _, err = gnmi.GetGNMIValue(ctx, gnmiClient, devicePath, gpb.Encoding_PROTO)
 
 	assert.NoError(t, err)

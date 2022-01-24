@@ -63,39 +63,39 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator1)
 	defer gnmi.DeleteSimulator(t, simulator2)
 
-	gnmi.WaitForDeviceAvailable(t, device.ID(simulator1.Name()), 2*time.Minute)
-	gnmi.WaitForDeviceAvailable(t, device.ID(simulator2.Name()), 2*time.Minute)
+	gnmi.WaitForTargetAvailable(t, device.ID(simulator1.Name()), 2*time.Minute)
+	gnmi.WaitForTargetAvailable(t, device.ID(simulator2.Name()), 2*time.Minute)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client
-	sim1Path1 := gnmi.GetDevicePathWithValue(simulator1.Name(), tzPath, tzValue, proto.StringVal)
+	sim1Path1 := gnmi.GetTargetPathWithValue(simulator1.Name(), tzPath, tzValue, proto.StringVal)
 	sim1nwChangeID1 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path1, gnmi.NoPaths, gnmi.NoExtensions)
-	complete := gnmi.WaitForNetworkChangeComplete(t, sim1nwChangeID1, wait)
+	complete := gnmi.WaitForTransactionComplete(t, sim1nwChangeID1, wait)
 	assert.True(t, complete)
 
-	sim1Path2 := gnmi.GetDevicePathWithValue(simulator1.Name(), motdPath, motdValue1, proto.StringVal)
+	sim1Path2 := gnmi.GetTargetPathWithValue(simulator1.Name(), motdPath, motdValue1, proto.StringVal)
 	sim1nwChangeID2 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path2, gnmi.NoPaths, gnmi.NoExtensions)
-	complete = gnmi.WaitForNetworkChangeComplete(t, sim1nwChangeID2, wait)
+	complete = gnmi.WaitForTransactionComplete(t, sim1nwChangeID2, wait)
 	assert.True(t, complete)
 
 	// Make a triple path change to Sim2
-	sim2Path1 := gnmi.GetDevicePathWithValue(simulator2.Name(), tzPath, tzParis, proto.StringVal)
-	sim2Path2 := gnmi.GetDevicePathWithValue(simulator2.Name(), motdPath, motdValue2, proto.StringVal)
-	sim2Path3 := gnmi.GetDevicePathWithValue(simulator2.Name(), domainNamePath, domainNameSim2, proto.StringVal)
+	sim2Path1 := gnmi.GetTargetPathWithValue(simulator2.Name(), tzPath, tzParis, proto.StringVal)
+	sim2Path2 := gnmi.GetTargetPathWithValue(simulator2.Name(), motdPath, motdValue2, proto.StringVal)
+	sim2Path3 := gnmi.GetTargetPathWithValue(simulator2.Name(), domainNamePath, domainNameSim2, proto.StringVal)
 
-	sim2nwChangeID1 := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.DevicePath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, gnmi.NoPaths, gnmi.NoExtensions)
-	complete = gnmi.WaitForNetworkChangeComplete(t, sim2nwChangeID1, wait)
+	sim2nwChangeID1 := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	complete = gnmi.WaitForTransactionComplete(t, sim2nwChangeID1, wait)
 	assert.True(t, complete)
 
 	// Finally make a change to both devices
-	sim1Path3 := gnmi.GetDevicePathWithValue(simulator1.Name(), loginBnrPath, loginBnr1, proto.StringVal)
-	sim2Path4 := gnmi.GetDevicePathWithValue(simulator2.Name(), loginBnrPath, loginBnr2, proto.StringVal)
-	bothSimNwChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.DevicePath{sim1Path3[0], sim2Path4[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	sim1Path3 := gnmi.GetTargetPathWithValue(simulator1.Name(), loginBnrPath, loginBnr1, proto.StringVal)
+	sim2Path4 := gnmi.GetTargetPathWithValue(simulator2.Name(), loginBnrPath, loginBnr2, proto.StringVal)
+	bothSimNwChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path3[0], sim2Path4[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Wait for the change to transition to complete
-	complete = gnmi.WaitForNetworkChangeComplete(t, bothSimNwChangeID, wait)
+	complete = gnmi.WaitForTransactionComplete(t, bothSimNwChangeID, wait)
 	assert.True(t, complete)
 
 	t.Logf("Testing CompactChanges - nw changes %s, %s on %s AND %s on %s AND %s on both",
@@ -171,23 +171,23 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	}
 
 	// Set a value using gNMI client
-	sim1Path4 := gnmi.GetDevicePathWithValue(simulator1.Name(), tzPath, tzMilan, proto.StringVal)
-	sim1Path5 := gnmi.GetDevicePathWithValue(simulator1.Name(), domainNamePath, domainNameSim1, proto.StringVal)
-	afterSnapshotChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.DevicePath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	sim1Path4 := gnmi.GetTargetPathWithValue(simulator1.Name(), tzPath, tzMilan, proto.StringVal)
+	sim1Path5 := gnmi.GetTargetPathWithValue(simulator1.Name(), domainNamePath, domainNameSim1, proto.StringVal)
+	afterSnapshotChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Wait for the change to transition to complete
-	complete = gnmi.WaitForNetworkChangeComplete(t, afterSnapshotChangeID, wait)
+	complete = gnmi.WaitForTransactionComplete(t, afterSnapshotChangeID, wait)
 	assert.True(t, complete)
 
 	// Now check every value for both sim1 and sim2
 	expectedValues, _, err := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient,
-		[]proto.DevicePath{
+		[]proto.TargetPath{
 			sim1Path4[0], sim1Path2[0], sim1Path3[0], sim1Path5[0],
 			sim2Path1[0], sim2Path2[0], sim2Path3[0], sim2Path4[0],
 		}, gpb.Encoding_PROTO)
 	assert.NoError(t, err)
 	for _, expectedValue := range expectedValues {
-		switch expectedValue.DeviceName + "," + expectedValue.Path {
+		switch expectedValue.TargetName + "," + expectedValue.Path {
 		case simulator1.Name() + "," + tzPath:
 			assert.Equal(t, tzMilan, expectedValue.PathDataValue, "Unexpected value for TZ on sim1")
 		case simulator2.Name() + "," + tzPath:
@@ -211,7 +211,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 			// Commented out because of issue https://github.com/onosproject/onos-config/issues/1031
 			//assert.Equal(t, domainNameSim1, expectedValue.pathDataValue, "Unexpected value for DN on sim2")
 		default:
-			assert.Failf(t, "Unhandled value %s,%s", expectedValue.DeviceName, expectedValue.Path)
+			assert.Failf(t, "Unhandled value %s,%s", expectedValue.TargetName, expectedValue.Path)
 		}
 	}
 }

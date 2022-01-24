@@ -50,7 +50,7 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 
 		msValue := generateTimezoneName()
 
-		devicePath := gnmi.GetDevicePathWithValue(simulator.Name(), tzPath, msValue, proto.StringVal)
+		devicePath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, msValue, proto.StringVal)
 		// Set a value using gNMI client
 		changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 
@@ -70,7 +70,7 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 
 	// Make sure all of the changes have been completed
 	for _, changeID := range changeIDs {
-		complete := gnmi.WaitForNetworkChangeComplete(t, changeID, 5*time.Second)
+		complete := gnmi.WaitForTransactionComplete(t, changeID, 5*time.Second)
 		assert.True(t, complete, "Set never completed")
 	}
 }

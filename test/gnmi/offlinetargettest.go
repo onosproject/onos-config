@@ -51,7 +51,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 		},
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
-	devicePath := gnmi.GetDevicePathWithValue(offlineDeviceName, modPath, modValue, proto.StringVal)
+	devicePath := gnmi.GetTargetPathWithValue(offlineDeviceName, modPath, modValue, proto.StringVal)
 	networkChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
 
 	// Bring device online
@@ -59,11 +59,11 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, device.ID(simulator.Name()), time.Minute)
+	gnmi.WaitForTargetAvailable(t, device.ID(simulator.Name()), time.Minute)
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the device
-	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
-	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulator)
-	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, modValue)
+	gnmi.WaitForTransactionComplete(t, networkChangeID, 10*time.Second)
+	deviceGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
+	gnmi.CheckTargetValue(t, deviceGnmiClient, devicePath, modValue)
 }

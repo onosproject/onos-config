@@ -39,24 +39,24 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Create interface tree using gNMI client
-	setNamePath := []proto.DevicePath{
-		{DeviceName: device.Name(), Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
+	setNamePath := []proto.TargetPath{
+		{TargetName: device.Name(), Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Set initial values for Enabled and Description using gNMI client
-	setInitialValuesPath := []proto.DevicePath{
-		{DeviceName: device.Name(), Path: udtestEnabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
-		{DeviceName: device.Name(), Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
+	setInitialValuesPath := []proto.TargetPath{
+		{TargetName: device.Name(), Path: udtestEnabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
+		{TargetName: device.Name(), Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Update Enabled, delete Description using gNMI client
-	updateEnabledPath := []proto.DevicePath{
-		{DeviceName: device.Name(), Path: udtestEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
+	updateEnabledPath := []proto.TargetPath{
+		{TargetName: device.Name(), Path: udtestEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
-	deleteDescriptionPath := []proto.DevicePath{
-		{DeviceName: device.Name(), Path: udtestDescriptionPath},
+	deleteDescriptionPath := []proto.TargetPath{
+		{TargetName: device.Name(), Path: udtestDescriptionPath},
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, gnmi.NoExtensions)
 
@@ -64,5 +64,5 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	gnmi.CheckGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
 
 	//  Make sure Description got removed
-	gnmi.CheckGNMIValue(t, gnmiClient, gnmi.GetDevicePath(device.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
+	gnmi.CheckGNMIValue(t, gnmiClient, gnmi.GetTargetPath(device.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
 }

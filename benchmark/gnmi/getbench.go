@@ -24,7 +24,7 @@ import (
 
 // BenchmarkGet tests get of GNMI paths
 func (s *BenchmarkSuite) BenchmarkGet(b *benchmark.Benchmark) error {
-	devicePath := gnmi.GetDevicePath(s.simulator.Name(), "/system/config/motd-banner")
+	devicePath := gnmi.GetTargetPath(s.simulator.Name(), "/system/config/motd-banner")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	_, _, err := gnmi.GetGNMIValue(ctx, s.client, devicePath, gbp.Encoding_PROTO)

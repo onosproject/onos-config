@@ -66,12 +66,12 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
+	gnmi.WaitForTargetAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
 
 	// Make a GNMI client to use for requests
 	c := gnmi.GetGNMIClientOrFail(t)
 
-	devicePath := gnmi.GetDevicePathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue1, proto.StringVal)
+	devicePath := gnmi.GetTargetPathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue1, proto.StringVal)
 
 	// Set a value using gNMI client - device is up
 	networkChangeID := gnmi.SetGNMIValueOrFail(t, c, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
@@ -81,21 +81,21 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	gnmi.CheckGNMIValue(t, c, devicePath, createRemoveDeviceModValue1, 0, "Query after set returned the wrong value")
 
 	// Wait for config to reconnect to the device
-	gnmi.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
+	gnmi.WaitForTargetAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	gnmi.WaitForNetworkChangeComplete(t, networkChangeID, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, networkChangeID, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
-	deviceGnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, simulator)
-	gnmi.CheckDeviceValue(t, deviceGnmiClient, devicePath, createRemoveDeviceModValue1)
+	deviceGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
+	gnmi.CheckTargetValue(t, deviceGnmiClient, devicePath, createRemoveDeviceModValue1)
 
 	//  Shut down the simulator
 	gnmi.DeleteSimulator(t, simulator)
-	gnmi.WaitForDeviceUnavailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
+	gnmi.WaitForTargetUnavailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
 
 	// Set a value using gNMI client - device is down
-	setPath2 := gnmi.GetDevicePathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue2, proto.StringVal)
+	setPath2 := gnmi.GetTargetPathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue2, proto.StringVal)
 	networkChangeID2 := gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
 	assert.True(t, networkChangeID2 != "")
 
@@ -104,17 +104,17 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForDeviceAvailable(t, createRemoveDeviceModDeviceName, 2*time.Minute)
+	gnmi.WaitForTargetAvailable(t, createRemoveDeviceModDeviceName, 2*time.Minute)
 
 	// Check that the value was set correctly
 	gnmi.CheckGNMIValue(t, c, devicePath, createRemoveDeviceModValue2, 0, "Query after set 2 returns wrong value")
 
 	// Check that the network change has completed
-	gnmi.WaitForNetworkChangeComplete(t, networkChangeID2, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, networkChangeID2, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
-	deviceGnmiClient2 := gnmi.GetDeviceGNMIClientOrFail(t, simulator)
-	gnmi.CheckDeviceValue(t, deviceGnmiClient2, devicePath, createRemoveDeviceModValue2)
+	deviceGnmiClient2 := gnmi.GetTargetGNMIClientOrFail(t, simulator)
+	gnmi.CheckTargetValue(t, deviceGnmiClient2, devicePath, createRemoveDeviceModValue2)
 
 	// Clean up the simulator
 	gnmi.DeleteSimulator(t, simulator)

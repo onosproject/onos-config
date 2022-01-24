@@ -48,13 +48,13 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, device1)
 
 	// Wait for config to connect to the devices
-	gnmi.WaitForDeviceAvailable(t, device.ID(device1.Name()), time.Minute)
+	gnmi.WaitForTargetAvailable(t, device.ID(device1.Name()), time.Minute)
 
 	device2 := gnmi.CreateSimulator(t)
 	defer gnmi.DeleteSimulator(t, device2)
 
 	// Wait for config to connect to the devices
-	gnmi.WaitForDeviceAvailable(t, device.ID(device2.Name()), time.Minute)
+	gnmi.WaitForTargetAvailable(t, device.ID(device2.Name()), time.Minute)
 
 	devices := make([]string, 2)
 	devices[0] = device1.Name()
@@ -62,36 +62,36 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
-	devicePathsForGet := gnmi.GetDevicePaths(devices, paths)
+	devicePathsForGet := gnmi.GetTargetPaths(devices, paths)
 
 	// Set initial values
-	devicePathsForInit := gnmi.GetDevicePathsWithValues(devices, paths, initialValues)
+	devicePathsForInit := gnmi.GetTargetPathsWithValues(devices, paths, initialValues)
 	initialChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
-	complete := gnmi.WaitForNetworkChangeComplete(t, initialChangeID, 10*time.Second)
+	complete := gnmi.WaitForTransactionComplete(t, initialChangeID, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
 
 	// Create a change that can be rolled back
-	devicePathsForSet := gnmi.GetDevicePathsWithValues(devices, paths, values)
+	devicePathsForSet := gnmi.GetTargetPathsWithValues(devices, paths, values)
 	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
-	gnmi.WaitForNetworkChangeComplete(t, changeID, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, changeID, 10*time.Second)
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
-	complete = gnmi.WaitForNetworkChangeComplete(t, changeID, 10*time.Second)
+	complete = gnmi.WaitForTransactionComplete(t, changeID, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices
-	device1GnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, device1)
-	device2GnmiClient := gnmi.GetDeviceGNMIClientOrFail(t, device2)
+	device1GnmiClient := gnmi.GetTargetGNMIClientOrFail(t, device1)
+	device2GnmiClient := gnmi.GetTargetGNMIClientOrFail(t, device2)
 
-	gnmi.CheckDeviceValue(t, device1GnmiClient, devicePathsForGet[0:1], value1)
-	gnmi.CheckDeviceValue(t, device1GnmiClient, devicePathsForGet[1:2], value2)
-	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[2:3], value1)
-	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[3:4], value2)
+	gnmi.CheckTargetValue(t, device1GnmiClient, devicePathsForGet[0:1], value1)
+	gnmi.CheckTargetValue(t, device1GnmiClient, devicePathsForGet[1:2], value2)
+	gnmi.CheckTargetValue(t, device2GnmiClient, devicePathsForGet[2:3], value1)
+	gnmi.CheckTargetValue(t, device2GnmiClient, devicePathsForGet[3:4], value2)
 
 	// Now rollback the change
 	adminClient, err := gnmi.NewAdminServiceClient()
@@ -108,8 +108,8 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
 
 	// Check that the values were rolled back on the devices
-	gnmi.CheckDeviceValue(t, device1GnmiClient, devicePathsForGet[0:1], initValue1)
-	gnmi.CheckDeviceValue(t, device1GnmiClient, devicePathsForGet[1:2], initValue2)
-	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[2:3], initValue1)
-	gnmi.CheckDeviceValue(t, device2GnmiClient, devicePathsForGet[3:4], initValue2)
+	gnmi.CheckTargetValue(t, device1GnmiClient, devicePathsForGet[0:1], initValue1)
+	gnmi.CheckTargetValue(t, device1GnmiClient, devicePathsForGet[1:2], initValue2)
+	gnmi.CheckTargetValue(t, device2GnmiClient, devicePathsForGet[2:3], initValue1)
+	gnmi.CheckTargetValue(t, device2GnmiClient, devicePathsForGet[3:4], initValue2)
 }

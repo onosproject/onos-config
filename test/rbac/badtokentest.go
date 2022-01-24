@@ -92,7 +92,7 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 	simulator := gnmi.CreateSimulator(t)
 	defer gnmi.DeleteSimulator(t, simulator)
 
-	devicePath := gnmi.GetDevicePathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	devicePath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 
 	// Run the test cases
 	for testCaseIndex := range testCases {
