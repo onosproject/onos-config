@@ -103,7 +103,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 	eventCh := make(chan configapi.TransactionEvent, queueSize)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	err := w.transactions.Watch(ctx, eventCh, nil)
+	err := w.transactions.Watch(ctx, eventCh, transaction.WithReplay())
 	if err != nil {
 		cancel()
 		return err
