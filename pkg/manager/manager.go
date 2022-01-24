@@ -19,11 +19,12 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration"
 	"github.com/onosproject/onos-config/pkg/controller/connection"
-	mastershipController "github.com/onosproject/onos-config/pkg/controller/mastership"
+	mastershipcontroller "github.com/onosproject/onos-config/pkg/controller/mastership"
 
 	"github.com/onosproject/onos-config/pkg/controller/controlrelation"
 	"github.com/onosproject/onos-config/pkg/controller/node"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
+	gnminb "github.com/onosproject/onos-config/pkg/northbound/gnmi/v2"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
@@ -79,7 +80,7 @@ func (m *Manager) Run() {
 }
 
 // Creates gRPC server and registers various services; then serves.
-func (m *Manager) startNorthboundServer(transactionsStore transaction.Store,
+func (m *Manager) startNorthboundServer(topo topo.Store, transactionsStore transaction.Store,
 	configurationsStore configuration.Store,
 	pluginRegistry *pluginregistry.PluginRegistry) error {
 	authorization := false
@@ -102,7 +103,9 @@ func (m *Manager) startNorthboundServer(transactionsStore transaction.Store,
 	s.AddService(logging.Service{})
 
 	adminService := admin.NewService(transactionsStore, configurationsStore, pluginRegistry)
+	gnmi := gnminb.NewService(topo, transactionsStore, configurationsStore, pluginRegistry)
 	s.AddService(adminService)
+	s.AddService(gnmi)
 
 	doneCh := make(chan error)
 	go func() {
@@ -137,7 +140,7 @@ func (m *Manager) startControlRelationController(topo topo.Store, conns sb.ConnM
 
 // startMastershipController starts mastership controller
 func (m *Manager) startMastershipController(topo topo.Store) error {
-	mastershipController := mastershipController.NewController(topo)
+	mastershipController := mastershipcontroller.NewController(topo)
 	return mastershipController.Start()
 }
 func (m *Manager) startConfigurationController(topo topo.Store, conns sb.ConnManager, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) error {
@@ -212,7 +215,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	err = m.startNorthboundServer(transactions, configurations, m.pluginRegistry)
+	err = m.startNorthboundServer(topoStore, transactions, configurations, m.pluginRegistry)
 	if err != nil {
 		return err
 	}

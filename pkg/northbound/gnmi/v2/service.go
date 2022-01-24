@@ -47,8 +47,8 @@ type Service struct {
 }
 
 // NewService allocates a Service struct with the given parameters
-func NewService(pluginRegistry *pluginregistry.PluginRegistry, topo topo.Store,
-	transactions transaction.Store, configurations configuration.Store) Service {
+func NewService(topo topo.Store,
+	transactions transaction.Store, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) Service {
 	return Service{
 		pluginRegistry: pluginRegistry,
 		topo:           topo,
