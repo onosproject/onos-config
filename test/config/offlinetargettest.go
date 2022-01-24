@@ -29,7 +29,7 @@ import (
 const (
 	modPath           = "/system/clock/config/timezone-name"
 	modValue          = "Europe/Rome"
-	offlineDeviceName = "test-offline-device-1"
+	offlineTargetName = "test-offline-device-1"
 )
 
 // TestOfflineDevice tests set/query of a single GNMI path to a single device that is initially not in the config
@@ -51,11 +51,11 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 		},
 	}
 	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
-	devicePath := gnmi.GetTargetPathWithValue(offlineDeviceName, modPath, modValue, proto.StringVal)
+	devicePath := gnmi.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
 	networkChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
 
 	// Bring device online
-	simulator := gnmi.CreateSimulatorWithName(t, offlineDeviceName)
+	simulator := gnmi.CreateSimulatorWithName(t, offlineTargetName)
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the device

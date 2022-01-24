@@ -28,93 +28,93 @@ import (
 )
 
 const (
-	createRemoveDeviceModPath          = "/system/clock/config/timezone-name"
-	createRemoveDeviceModValue1        = "Europe/Paris"
-	createRemoveDeviceModValue2        = "Europe/London"
-	createRemoveDeviceModDeviceName    = "offline-sim-crd"
-	createRemoveDeviceModDeviceVersion = "1.0.0"
-	createRemoveDeviceModDeviceType    = "Devicesim"
+	createRemoveTargetModPath          = "/system/clock/config/timezone-name"
+	createRemoveTargetModValue1        = "Europe/Paris"
+	createRemoveTargetModValue2        = "Europe/London"
+	createRemoveTargetModDeviceName    = "offline-sim-crd"
+	createRemoveTargetModDeviceVersion = "1.0.0"
+	createRemoveTargetModDeviceType    = "Devicesim"
 )
 
 // TestCreatedRemovedDevice tests set/query of a single GNMI path to a single device that is created, removed, then created again
 func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	t.Skip()
-	deviceClient, deviceClientError := gnmi.NewTopoClient()
-	assert.NotNil(t, deviceClient)
-	assert.Nil(t, deviceClientError)
+	targetClient, err := gnmi.NewTopoClient()
+	assert.NotNil(t, targetClient)
+	assert.Nil(t, err)
 	timeout := 10 * time.Second
-	newDevice := &device.Device{
-		ID:      createRemoveDeviceModDeviceName,
-		Address: createRemoveDeviceModDeviceName + ":11161",
-		Type:    createRemoveDeviceModDeviceType,
-		Version: createRemoveDeviceModDeviceVersion,
+	newTarget := &device.Device{
+		ID:      createRemoveTargetModDeviceName,
+		Address: createRemoveTargetModDeviceName + ":11161",
+		Type:    createRemoveTargetModDeviceType,
+		Version: createRemoveTargetModDeviceVersion,
 		Timeout: &timeout,
 		TLS: device.TLSConfig{
 			Plain: true,
 		},
 	}
-	addRequest := &topo.CreateRequest{Object: device.ToObject(newDevice)}
-	addResponse, addResponseError := deviceClient.Create(context.Background(), addRequest)
+	addRequest := &topo.CreateRequest{Object: device.ToObject(newTarget)}
+	addResponse, err := targetClient.Create(context.Background(), addRequest)
 	assert.NotNil(t, addResponse)
-	assert.Nil(t, addResponseError)
+	assert.Nil(t, err)
 
 	//  Start a new simulated device
 	simulator := helm.
 		Chart("device-simulator").
-		Release(offlineDeviceName)
-	err := simulator.Install(true)
+		Release(offlineTargetName)
+	err = simulator.Install(true)
 	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForTargetAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
+	gnmi.WaitForTargetAvailable(t, createRemoveTargetModDeviceName, 1*time.Minute)
 
 	// Make a GNMI client to use for requests
 	c := gnmi.GetGNMIClientOrFail(t)
 
-	devicePath := gnmi.GetTargetPathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue1, proto.StringVal)
+	targetPath := gnmi.GetTargetPathWithValue(createRemoveTargetModDeviceName, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
 
 	// Set a value using gNMI client - device is up
-	networkChangeID := gnmi.SetGNMIValueOrFail(t, c, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
-	assert.True(t, networkChangeID != "")
+	transactionID := gnmi.SetGNMIValueOrFail(t, c, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
+	assert.True(t, transactionID != "")
 
 	// Check that the value was set correctly
-	gnmi.CheckGNMIValue(t, c, devicePath, createRemoveDeviceModValue1, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue1, 0, "Query after set returned the wrong value")
 
 	// Wait for config to reconnect to the device
-	gnmi.WaitForTargetAvailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
+	gnmi.WaitForTargetAvailable(t, createRemoveTargetModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	gnmi.WaitForTransactionComplete(t, networkChangeID, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, transactionID, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
-	deviceGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
-	gnmi.CheckTargetValue(t, deviceGnmiClient, devicePath, createRemoveDeviceModValue1)
+	targetGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
+	gnmi.CheckTargetValue(t, targetGnmiClient, targetPath, createRemoveTargetModValue1)
 
 	//  Shut down the simulator
 	gnmi.DeleteSimulator(t, simulator)
-	gnmi.WaitForTargetUnavailable(t, createRemoveDeviceModDeviceName, 1*time.Minute)
+	gnmi.WaitForTargetUnavailable(t, createRemoveTargetModDeviceName, 1*time.Minute)
 
 	// Set a value using gNMI client - device is down
-	setPath2 := gnmi.GetTargetPathWithValue(createRemoveDeviceModDeviceName, createRemoveDeviceModPath, createRemoveDeviceModValue2, proto.StringVal)
-	networkChangeID2 := gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
-	assert.True(t, networkChangeID2 != "")
+	setPath2 := gnmi.GetTargetPathWithValue(createRemoveTargetModDeviceName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
+	transactionID2 := gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
+	assert.True(t, transactionID2 != "")
 
 	//  Restart simulated device
 	err = simulator.Install(true)
 	assert.NoError(t, err)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForTargetAvailable(t, createRemoveDeviceModDeviceName, 2*time.Minute)
+	gnmi.WaitForTargetAvailable(t, createRemoveTargetModDeviceName, 2*time.Minute)
 
 	// Check that the value was set correctly
-	gnmi.CheckGNMIValue(t, c, devicePath, createRemoveDeviceModValue2, 0, "Query after set 2 returns wrong value")
+	gnmi.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
 
 	// Check that the network change has completed
-	gnmi.WaitForTransactionComplete(t, networkChangeID2, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, transactionID2, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
 	deviceGnmiClient2 := gnmi.GetTargetGNMIClientOrFail(t, simulator)
-	gnmi.CheckTargetValue(t, deviceGnmiClient2, devicePath, createRemoveDeviceModValue2)
+	gnmi.CheckTargetValue(t, deviceGnmiClient2, targetPath, createRemoveTargetModValue2)
 
 	// Clean up the simulator
 	gnmi.DeleteSimulator(t, simulator)
