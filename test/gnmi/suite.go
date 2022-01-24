@@ -16,10 +16,8 @@ package gnmi
 
 import (
 	"github.com/onosproject/helmit/pkg/input"
-	"github.com/onosproject/onos-config/test/utils/charts"
-	"sync"
-
 	"github.com/onosproject/helmit/pkg/test"
+	"github.com/onosproject/onos-config/test/utils/charts"
 )
 
 type testSuite struct {
@@ -29,7 +27,6 @@ type testSuite struct {
 // TestSuite is the onos-config GNMI test suite
 type TestSuite struct {
 	testSuite
-	mux sync.Mutex
 }
 
 // SetupTestSuite sets up the onos-config GNMI test suite
