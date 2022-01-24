@@ -17,17 +17,16 @@ package manager
 
 import (
 	"github.com/atomix/atomix-go-client/pkg/atomix"
-	configuration_controller "github.com/onosproject/onos-config/pkg/controller/configuration"
+	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration"
 	"github.com/onosproject/onos-config/pkg/controller/connection"
-	mastershipController "github.com/onosproject/onos-config/pkg/controller/mastership"
+	mastershipcontroller "github.com/onosproject/onos-config/pkg/controller/mastership"
 
 	"github.com/onosproject/onos-config/pkg/controller/controlrelation"
 	"github.com/onosproject/onos-config/pkg/controller/node"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	gnminb "github.com/onosproject/onos-config/pkg/northbound/gnmi/v2"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
-	"github.com/onosproject/onos-config/pkg/southbound/synchronizer"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
@@ -35,27 +34,8 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 
 	"os"
-	"sync"
 
-	devicechange "github.com/onosproject/onos-api/go/onos/config/change/device"
-	devicechangectl "github.com/onosproject/onos-config/pkg/controller/change/device"
-	networkchangectl "github.com/onosproject/onos-config/pkg/controller/change/network"
-	devicesnapshotctl "github.com/onosproject/onos-config/pkg/controller/snapshot/device"
-	networksnapshotctl "github.com/onosproject/onos-config/pkg/controller/snapshot/network"
-	topodevice "github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-config/pkg/dispatcher"
-	"github.com/onosproject/onos-config/pkg/events"
-	"github.com/onosproject/onos-config/pkg/modelregistry"
-	"github.com/onosproject/onos-config/pkg/southbound"
-	"github.com/onosproject/onos-config/pkg/store/change/device"
-	"github.com/onosproject/onos-config/pkg/store/change/device/state"
-	"github.com/onosproject/onos-config/pkg/store/change/network"
-	devicestore "github.com/onosproject/onos-config/pkg/store/device"
-	"github.com/onosproject/onos-config/pkg/store/device/cache"
-	"github.com/onosproject/onos-config/pkg/store/leadership"
-	"github.com/onosproject/onos-config/pkg/store/mastership"
-	devicesnap "github.com/onosproject/onos-config/pkg/store/snapshot/device"
-	networksnap "github.com/onosproject/onos-config/pkg/store/snapshot/network"
+	transactioncontroller "github.com/onosproject/onos-config/pkg/controller/transaction"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
@@ -66,14 +46,12 @@ var log = logging.GetLogger("manager")
 
 // Config is a manager configuration
 type Config struct {
-	CAPath                 string
-	KeyPath                string
-	CertPath               string
-	GRPCPort               int
-	TopoAddress            string
-	AllowUnvalidatedConfig bool
-	UsePluginRegistry      bool
-	Plugins                []string
+	CAPath      string
+	KeyPath     string
+	CertPath    string
+	GRPCPort    int
+	TopoAddress string
+	Plugins     []string
 }
 
 // Manager single point of entry for the config system.
@@ -102,18 +80,9 @@ func (m *Manager) Run() {
 }
 
 // Creates gRPC server and registers various services; then serves.
-func (m *Manager) startNorthboundServer(transactionsStore transaction.Store,
+func (m *Manager) startNorthboundServer(topo topo.Store, transactionsStore transaction.Store,
 	configurationsStore configuration.Store,
-	pluginRegistry *pluginregistry.PluginRegistry,
-	deviceChangesStore device.Store,
-	modelRegistry *modelregistry.ModelRegistry,
-	deviceCache cache.Cache,
-	networkChangesStore network.Store,
-	deviceStore devicestore.Store,
-	dispatcherInstance *dispatcher.Dispatcher,
-	deviceStateStore state.Store,
-	operationalStateCache *map[topodevice.ID]devicechange.TypedValueMap,
-	operationalStateCacheLock *sync.RWMutex) error {
+	pluginRegistry *pluginregistry.PluginRegistry) error {
 	authorization := false
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
 		authorization = true
@@ -134,23 +103,9 @@ func (m *Manager) startNorthboundServer(transactionsStore transaction.Store,
 	s.AddService(logging.Service{})
 
 	adminService := admin.NewService(transactionsStore, configurationsStore, pluginRegistry)
+	gnmi := gnminb.NewService(topo, transactionsStore, configurationsStore, pluginRegistry)
 	s.AddService(adminService)
-
-	gnmiService := gnmi.NewService(
-		modelRegistry,
-		m.pluginRegistry,
-		deviceChangesStore,
-		deviceCache,
-		networkChangesStore,
-		dispatcherInstance,
-		deviceStore,
-		deviceStateStore,
-		operationalStateCache,
-		operationalStateCacheLock,
-		m.Config.AllowUnvalidatedConfig,
-		m.Config.UsePluginRegistry,
-	)
-	s.AddService(gnmiService)
+	s.AddService(gnmi)
 
 	doneCh := make(chan error)
 	go func() {
@@ -163,31 +118,6 @@ func (m *Manager) startNorthboundServer(transactionsStore transaction.Store,
 		}
 	}()
 	return <-doneCh
-}
-
-// Start the NetworkChange controller
-func (m *Manager) startNetworkChangeController(leadershipStore leadership.Store, deviceStore devicestore.Store, networkChangesStore network.Store, deviceChangesStore device.Store) error {
-	networkChangeController := networkchangectl.NewController(leadershipStore, deviceStore, networkChangesStore, deviceChangesStore)
-	return networkChangeController.Start()
-}
-
-// Start the DeviceChange controller
-func (m *Manager) startDeviceChangeController(mastershipStore mastership.Store, deviceStore devicestore.Store, deviceChangesStore device.Store) error {
-	deviceChangeController := devicechangectl.NewController(mastershipStore, deviceStore, deviceChangesStore)
-	return deviceChangeController.Start()
-}
-
-// Start the NetworkSnapshot controller
-func (m *Manager) startNetworkSnapshotController(leadershipStore leadership.Store, networkChangesStore network.Store, networkSnapshotStore networksnap.Store,
-	deviceSnapshotStore devicesnap.Store, deviceChangesStore device.Store) error {
-	networkSnapshotController := networksnapshotctl.NewController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceChangesStore)
-	return networkSnapshotController.Start()
-}
-
-// Start the DeviceSnapshot controller
-func (m *Manager) startDeviceSnapshotController(mastershipStore mastership.Store, deviceChangesStore device.Store, deviceSnapshotStore devicesnap.Store) error {
-	deviceSnapshotController := devicesnapshotctl.NewController(mastershipStore, deviceChangesStore, deviceSnapshotStore)
-	return deviceSnapshotController.Start()
 }
 
 // startNodeController starts node controller
@@ -210,48 +140,18 @@ func (m *Manager) startControlRelationController(topo topo.Store, conns sb.ConnM
 
 // startMastershipController starts mastership controller
 func (m *Manager) startMastershipController(topo topo.Store) error {
-	mastershipController := mastershipController.NewController(topo)
+	mastershipController := mastershipcontroller.NewController(topo)
 	return mastershipController.Start()
 }
 func (m *Manager) startConfigurationController(topo topo.Store, conns sb.ConnManager, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) error {
-	configurationController := configuration_controller.NewController(topo, conns, configurations, pluginRegistry)
+	configurationController := configurationcontroller.NewController(topo, conns, configurations, pluginRegistry)
 	return configurationController.Start()
-
 }
 
-// Start the main dispatcher system
-func (m *Manager) startDispatcherSystem(
-	dispatcherInstance *dispatcher.Dispatcher,
-	deviceChangesStore device.Store,
-	modelRegistry *modelregistry.ModelRegistry,
-	deviceStore devicestore.Store,
-	operationalStateCache map[topodevice.ID]devicechange.TypedValueMap,
-	operationalStateCacheLock *sync.RWMutex,
-	mastershipStore mastership.Store) error {
+func (m *Manager) startTransactionController(topo topo.Store, configurations configuration.Store, transactions transaction.Store, pluginRegistry *pluginregistry.PluginRegistry) error {
+	transactionController := transactioncontroller.NewController(topo, transactions, configurations, pluginRegistry)
+	return transactionController.Start()
 
-	topoChannel := make(chan *topodevice.ListResponse, 10)
-	operationalStateChannel := make(chan events.OperationalStateEvent)
-
-	go dispatcherInstance.ListenOperationalState(operationalStateChannel)
-
-	sessionManager, err := synchronizer.NewSessionManager(
-		synchronizer.WithTopoChannel(topoChannel),
-		synchronizer.WithOpStateChannel(operationalStateChannel),
-		synchronizer.WithDispatcher(dispatcherInstance),
-		synchronizer.WithModelRegistry(modelRegistry),
-		synchronizer.WithOperationalStateCache(operationalStateCache),
-		synchronizer.WithNewTargetFn(southbound.TargetGenerator),
-		synchronizer.WithOperationalStateCacheLock(operationalStateCacheLock),
-		synchronizer.WithDeviceChangeStore(deviceChangesStore),
-		synchronizer.WithMastershipStore(mastershipStore),
-		synchronizer.WithDeviceStore(deviceStore),
-		synchronizer.WithSessions(make(map[topodevice.ID]*synchronizer.Session)),
-	)
-	if err != nil {
-		return err
-	}
-
-	return sessionManager.Start()
 }
 
 // Start starts the manager
@@ -305,110 +205,17 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	err = m.startTransactionController(topoStore, configurations, transactions, m.pluginRegistry)
+	if err != nil {
+		return err
+	}
+
 	err = m.startMastershipController(topoStore)
 	if err != nil {
 		return err
 	}
 
-	// FIXME: Remove all old architecture stores and controllers
-	leadershipStore, err := leadership.NewAtomixStore(atomixClient)
-	if err != nil {
-		return err
-	}
-
-	mastershipStore, err := mastership.NewAtomixStore(atomixClient, os.Getenv("POD_NAME"))
-	if err != nil {
-		return err
-	}
-
-	deviceChangesStore, err := device.NewAtomixStore(atomixClient)
-	if err != nil {
-		return err
-	}
-
-	networkChangesStore, err := network.NewAtomixStore(atomixClient)
-	if err != nil {
-		return err
-	}
-
-	networkSnapshotStore, err := networksnap.NewAtomixStore(atomixClient)
-	if err != nil {
-		return err
-	}
-
-	deviceSnapshotStore, err := devicesnap.NewAtomixStore(atomixClient)
-	if err != nil {
-		return err
-	}
-
-	deviceStateStore, err := state.NewStore(networkChangesStore, deviceSnapshotStore)
-	if err != nil {
-		return err
-	}
-
-	deviceCache, err := cache.NewCache(networkChangesStore, deviceSnapshotStore)
-	if err != nil {
-		return err
-	}
-
-	// TODO: deprecate the old device store
-	deviceStore, err := devicestore.NewTopoStore(m.Config.TopoAddress, opts...)
-	if err != nil {
-		return err
-	}
-
-	// TODO: deprecate the old model registry
-	modelRegistry, err := modelregistry.NewModelRegistry(modelregistry.Config{})
-	if err != nil {
-		return err
-	}
-
-	dispatcherInstance := dispatcher.NewDispatcher()
-	operationalStateCache := make(map[topodevice.ID]devicechange.TypedValueMap)
-	operationalStateCacheLock := &sync.RWMutex{}
-
-	// FIXME: Remove all old architecture controllers
-	// Start the NetworkChange controller
-	err = m.startNetworkChangeController(leadershipStore, deviceStore, networkChangesStore, deviceChangesStore)
-	if err != nil {
-		return err
-	}
-
-	// Start the DeviceChange controller
-	err = m.startDeviceChangeController(mastershipStore, deviceStore, deviceChangesStore)
-	if err != nil {
-		return err
-	}
-
-	// Start the NetworkSnapshot controller
-	err = m.startNetworkSnapshotController(leadershipStore, networkChangesStore, networkSnapshotStore, deviceSnapshotStore, deviceChangesStore)
-	if err != nil {
-		return err
-	}
-
-	// Start the DeviceSnapshot controller
-	err = m.startDeviceSnapshotController(mastershipStore, deviceChangesStore, deviceSnapshotStore)
-	if err != nil {
-		return err
-	}
-
-	// Start the main dispatcher system
-	err = m.startDispatcherSystem(
-		dispatcherInstance,
-		deviceChangesStore,
-		modelRegistry,
-		deviceStore,
-		operationalStateCache,
-		operationalStateCacheLock,
-		mastershipStore)
-	if err != nil {
-		return err
-	}
-
-	// Start the northbound server
-	err = m.startNorthboundServer(transactions, configurations, m.pluginRegistry,
-		deviceChangesStore, modelRegistry, deviceCache, networkChangesStore, deviceStore, dispatcherInstance,
-		deviceStateStore, &operationalStateCache, operationalStateCacheLock)
+	err = m.startNorthboundServer(topoStore, transactions, configurations, m.pluginRegistry)
 	if err != nil {
 		return err
 	}
