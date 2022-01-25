@@ -211,7 +211,7 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 	target := &targetInfo{
 		targetID:      targetID,
 		targetVersion: configapi.TargetVersion(modelPlugin.Info.Version),
-		targetType:    configapi.TargetType(modelPlugin.ID),
+		targetType:    configapi.TargetType(modelPlugin.Info.Name),
 		plugin:        modelPlugin,
 		updates:       make(configapi.TypedValueMap),
 		removes:       make([]string, 0),
