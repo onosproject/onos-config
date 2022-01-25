@@ -111,7 +111,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			ch <- controller.NewID(string(event.Transaction.ID))
+			ch <- controller.NewID(event.Transaction.ID)
 		}
 	}()
 

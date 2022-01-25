@@ -170,13 +170,13 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		}
 
 		pathValues := make([]*configapi.PathValue, len(change.Values))
-
-		for _, changeValue := range change.Values {
+		for i, changeValue := range change.Values {
 			pathValue := &configapi.PathValue{
-				Path:  changeValue.Path,
-				Value: changeValue.Value,
+				Path:    changeValue.Path,
+				Value:   changeValue.Value,
+				Deleted: changeValue.Delete,
 			}
-			pathValues = append(pathValues, pathValue)
+			pathValues[i] = pathValue
 		}
 
 		jsonTree, err := tree.BuildTree(pathValues, true)
@@ -222,7 +222,6 @@ func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, tra
 			return false, nil
 		}
 		configs[config.TargetID] = config
-
 		source := &configapi.Source{
 			Values: make(map[string]configapi.Index),
 		}
@@ -249,6 +248,9 @@ func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, tra
 	for _, change := range change.Changes {
 		config := configs[change.TargetID]
 		for _, changeValue := range change.Values {
+			if config.Values == nil {
+				config.Values = make(map[string]*configapi.PathValue)
+			}
 			config.Values[changeValue.Path] = &configapi.PathValue{
 				Path:    changeValue.Path,
 				Value:   changeValue.Value,

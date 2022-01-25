@@ -118,6 +118,10 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	_ = target.GetAspect(&mastership)
 	targetMastershipTerm := configapi.MastershipTerm(mastership.Term)
 
+	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_COMPLETE || config.Status.State == configapi.ConfigurationState_CONFIGURATION_FAILED {
+		return false, nil
+	}
+
 	// If the configuration is not already ConfigurationPending and mastership
 	// has been lost revert it. This can occur when the connection to the
 	// target has been lost and the mastership is no longer valid.
@@ -236,6 +240,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		}
 
 		desiredConfigValues := config.Values
+		log.Debugf("Desired config values to reconcile: %v", desiredConfigValues)
 		for _, desiredConfigValue := range desiredConfigValues {
 			if currentConfigValue, ok := currentConfigValuesMap[desiredConfigValue.Path]; ok {
 				if desiredConfigValue.Path == currentConfigValue.Path {
@@ -243,6 +248,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 				}
 			}
 		}
+		log.Debugf("Set request changes:", setRequestChanges)
 		// If the Configuration is marked as CONFIGURATION_UPDATING, we only need to
 		//  push paths that have changed since the target was initialized or last
 		//  updated by the controller. The set of changes made since the last
@@ -259,6 +265,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		}
 	}
 
+	log.Debugf("Set request changes before creating Set request:", setRequestChanges)
 	setRequest, err := utilsv2.PathValuesToGnmiChange(setRequestChanges)
 	if err != nil {
 		return false, err
