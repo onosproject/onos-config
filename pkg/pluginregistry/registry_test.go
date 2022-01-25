@@ -87,4 +87,8 @@ func TestGetPlugin(t *testing.T) {
 	n, notFound := pr.GetPlugin("non-existing")
 	assert.False(t, notFound, "Plugin should not have been found")
 	assert.Nil(t, n)
+
+	plugin, found = pr.GetPlugin("Testmodel-1.0.0")
+	assert.True(t, found, "Plugin not found")
+	assert.NotNil(t, plugin, "Plugin not found")
 }
