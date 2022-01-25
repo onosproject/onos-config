@@ -56,11 +56,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			return nil, errors.Status(errors.NewUnauthorized(err.Error())).Err()
 		}
 	}
-	targetUpdates := make(mapTargetUpdates)
-	targetRemoves := make(mapTargetRemoves)
 
 	prefixTargetID := configapi.TargetID(req.GetPrefix().GetTarget())
-	targetInfo := targetInfo{}
+	targets := make(map[configapi.TargetID]*targetInfo)
 
 	extensions, err := extractExtensions(req)
 	if err != nil {
@@ -76,21 +74,12 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	// Update - extract targets and their models
 	for _, u := range req.GetUpdate() {
-		targetID := configapi.TargetID(u.Path.GetTarget())
-		if targetID == "" { //Try the prefix
-			targetInfo.targetID = prefixTargetID
-		} else {
-			targetInfo.targetID = targetID
-		}
-
-		modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetInfo.targetID))
+		target, err := s.getTargetInfo(ctx, targets, u.Path.GetTarget(), prefixTargetID)
 		if err != nil {
-			log.Warn(err)
 			return nil, errors.Status(err).Err()
 		}
 
-		targetUpdates[targetInfo.targetID], err = s.doUpdateOrReplace(ctx, req.GetPrefix(), u, targetUpdates, modelPlugin)
-		if err != nil {
+		if err := s.doUpdateOrReplace(ctx, req.GetPrefix(), u, target); err != nil {
 			log.Warn(err)
 			return nil, errors.Status(err).Err()
 		}
@@ -98,21 +87,12 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	// Replace
 	for _, u := range req.GetReplace() {
-		targetID := configapi.TargetID(u.Path.GetTarget())
-		if targetID == "" { //Try the prefix
-			targetInfo.targetID = prefixTargetID
-		} else {
-			targetInfo.targetID = targetID
-		}
-
-		modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetInfo.targetID))
+		target, err := s.getTargetInfo(ctx, targets, u.Path.GetTarget(), prefixTargetID)
 		if err != nil {
-			log.Warn(err)
 			return nil, errors.Status(err).Err()
 		}
 
-		targetUpdates[targetInfo.targetID], err = s.doUpdateOrReplace(ctx, req.GetPrefix(), u, targetUpdates, modelPlugin)
-		if err != nil {
+		if err := s.doUpdateOrReplace(ctx, req.GetPrefix(), u, target); err != nil {
 			log.Warn(err)
 			return nil, errors.Status(err).Err()
 		}
@@ -120,26 +100,18 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 
 	//Delete
 	for _, u := range req.GetDelete() {
-		targetID := configapi.TargetID(u.GetTarget())
-		if targetID == "" { //Try the prefix
-			targetInfo.targetID = prefixTargetID
-		} else {
-			targetInfo.targetID = targetID
-		}
-		modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetInfo.targetID))
+		target, err := s.getTargetInfo(ctx, targets, u.GetTarget(), prefixTargetID)
 		if err != nil {
-			log.Warn(err)
 			return nil, errors.Status(err).Err()
 		}
 
-		targetRemoves[targetInfo.targetID], err = s.doDelete(req.GetPrefix(), u, targetRemoves, modelPlugin)
-		if err != nil {
+		if err := s.doDelete(req.GetPrefix(), u, target); err != nil {
 			log.Warn(err)
 			return nil, errors.Status(err).Err()
 		}
 	}
 
-	transaction, err := newTransaction(targetInfo, extensions, targetUpdates, targetRemoves, userName)
+	transaction, err := newTransaction(targets, extensions, userName)
 	if err != nil {
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
@@ -220,6 +192,35 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	return nil, nil
 }
 
+func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.TargetID]*targetInfo, idPrefix string, id configapi.TargetID) (*targetInfo, error) {
+	targetID := configapi.TargetID(idPrefix)
+	if len(id) > 0 {
+		targetID = id
+	}
+
+	if target, found := targets[targetID]; found {
+		return target, nil
+	}
+
+	modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
+	if err != nil {
+		log.Warn(err)
+		return nil, err
+	}
+
+	target := &targetInfo{
+		targetID:      targetID,
+		targetVersion: configapi.TargetVersion(modelPlugin.Info.Version),
+		targetType:    configapi.TargetType(modelPlugin.ID),
+		plugin:        modelPlugin,
+		updates:       make(configapi.TypedValueMap),
+		removes:       make([]string, 0),
+	}
+	targets[targetID] = target
+
+	return target, nil
+}
+
 func (s *Server) getModelPlugin(ctx context.Context, targetID topoapi.ID) (*pluginregistry.ModelPlugin, error) {
 	target, err := s.topo.Get(ctx, targetID)
 	if err != nil {
@@ -246,29 +247,19 @@ func (s *Server) getModelPlugin(ctx context.Context, targetID topoapi.ID) (*plug
 
 // This deals with either a path and a value (simple case) or a path with
 // a JSON body which implies multiple paths and values.
-func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gnmi.Update,
-	targetUpdates mapTargetUpdates, modelPlugin *pluginregistry.ModelPlugin) (configapi.TypedValueMap, error) {
-	targetID := configapi.TargetID(u.Path.GetTarget())
-	if targetID == "" {
-		targetID = configapi.TargetID(prefix.GetTarget())
-	}
+func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gnmi.Update, target *targetInfo) error {
 	prefixPath := utils.StrPath(prefix)
 	path := utils.StrPath(u.Path)
 	if prefixPath != "/" {
 		path = fmt.Sprintf("%s%s", prefixPath, path)
 	}
 
-	updates, ok := targetUpdates[targetID]
-	if !ok {
-		updates = make(configapi.TypedValueMap)
-	}
-
 	jsonVal := u.GetVal().GetJsonVal()
 	if jsonVal != nil {
 		log.Debugf("Processing Json Value in set from base %s: %s", path, string(jsonVal))
-		pathValues, err := modelPlugin.GetPathValues(ctx, prefixPath, jsonVal)
+		pathValues, err := target.plugin.GetPathValues(ctx, prefixPath, jsonVal)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if len(pathValues) == 0 {
@@ -276,50 +267,40 @@ func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gn
 		}
 
 		for _, cv := range pathValues {
-			updates[cv.Path] = &cv.Value
+			target.updates[cv.Path] = &cv.Value
 		}
 	} else {
-		_, rwPathElem, err := pathutils.FindPathFromModel(path, modelPlugin.ReadWritePaths, true)
+		_, rwPathElem, err := pathutils.FindPathFromModel(path, target.plugin.ReadWritePaths, true)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		updateValue, err := valueutils.GnmiTypedValueToNativeType(u.Val, rwPathElem)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if err = pathutils.CheckKeyValue(path, rwPathElem, updateValue); err != nil {
-			return nil, err
+			return err
 		}
-		updates[path] = updateValue
+		target.updates[path] = updateValue
 	}
 
-	return updates, nil
-
+	return nil
 }
 
-func (s *Server) doDelete(prefix *gnmi.Path, u *gnmi.Path,
-	targetRemoves mapTargetRemoves, modelPlugin *pluginregistry.ModelPlugin) ([]string, error) {
-	target := configapi.TargetID(u.GetTarget())
-	if target == "" {
-		target = configapi.TargetID(prefix.GetTarget())
-	}
-	deletes, ok := targetRemoves[target]
-	if !ok {
-		deletes = make([]string, 0)
-	}
+func (s *Server) doDelete(prefix *gnmi.Path, gnmiPath *gnmi.Path, target *targetInfo) error {
 	prefixPath := utils.StrPath(prefix)
-	path := utils.StrPath(u)
+	path := utils.StrPath(gnmiPath)
 	if prefixPath != "/" {
 		path = fmt.Sprintf("%s%s", prefixPath, path)
 	}
 	// Checks for read only paths
-	isExactMatch, rwPath, err := pathutils.FindPathFromModel(path, modelPlugin.ReadWritePaths, false)
+	isExactMatch, rwPath, err := pathutils.FindPathFromModel(path, target.plugin.ReadWritePaths, false)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if isExactMatch && rwPath.IsAKey && !strings.HasSuffix(path, "]") { // In case an index attribute is given - take it off
 		path = path[:strings.LastIndex(path, "/")]
 	}
-	deletes = append(deletes, path)
-	return deletes, nil
+	target.removes = append(target.removes, path)
+	return nil
 }
