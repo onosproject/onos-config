@@ -22,14 +22,14 @@ import (
 )
 
 const (
-	tzValue = "Europe/Dublin"
+	tzValue = "Europe/France"
 	tzPath  = "/system/clock/config/timezone-name"
 )
 
 // TestSinglePath tests query/set/delete of a single GNMI path to a single device
 func (s *TestSuite) TestSinglePath(t *testing.T) {
 	// Create a simulated device
-	simulator := gnmi.CreateSimulator(t)
+	simulator := gnmi.CreateSimulatorWithName(t, "device-simulator")
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests

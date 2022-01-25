@@ -89,6 +89,38 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			log.Warnf("Failed to reconcile configuration %s, %s", configurationID, err)
 			return controller.Result{}, err
 		}
+
+		target, err := r.topo.Get(ctx, topoapi.ID(configurationID))
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		}
+
+		configurableAspect := &topoapi.Configurable{}
+		err = target.GetAspect(configurableAspect)
+		if err != nil {
+			return controller.Result{}, err
+		}
+
+		initConfig := &configapi.Configuration{
+			TargetID:      configapi.TargetID(target.ID),
+			TargetType:    configapi.TargetType(configurableAspect.Type),
+			TargetVersion: configapi.TargetVersion(configurableAspect.Version),
+			Status: configapi.ConfigurationStatus{
+				State: configapi.ConfigurationState_CONFIGURATION_INITIALIZING,
+			},
+			Values: make(map[string]*configapi.PathValue),
+		}
+		err = r.configurations.Create(ctx, initConfig)
+		if err != nil {
+			if !errors.IsAlreadyExists(err) {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
+		}
+
 		log.Debugf("Configuration %s not found", configurationID)
 		return controller.Result{}, nil
 	}
@@ -158,7 +190,9 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		// changed (determined by comparing the transaction index to the last sync
 		// index), mark the configuration CONFIGURATION_UPDATING to push the changes
 		// to the target.
+		log.Debug("Test", config.Status.SyncIndex, config.Status.TransactionIndex)
 		if config.Status.SyncIndex < config.Status.TransactionIndex {
+			log.Debugf("Test Updating config status")
 			config.Status.State = configapi.ConfigurationState_CONFIGURATION_UPDATING
 			err = r.configurations.Update(ctx, config)
 			if err != nil {
@@ -240,6 +274,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		}
 
 		desiredConfigValues := config.Values
+		log.Debugf("Desired config values to reconcile: %v", desiredConfigValues)
 		for _, desiredConfigValue := range desiredConfigValues {
 			if currentConfigValue, ok := currentConfigValuesMap[desiredConfigValue.Path]; ok {
 				if desiredConfigValue.Path == currentConfigValue.Path {
@@ -247,6 +282,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 				}
 			}
 		}
+		log.Debugf("Set request changes:", setRequestChanges)
 		// If the Configuration is marked as CONFIGURATION_UPDATING, we only need to
 		//  push paths that have changed since the target was initialized or last
 		//  updated by the controller. The set of changes made since the last
@@ -263,6 +299,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		}
 	}
 
+	log.Debugf("Set request changes before creating Set request:", setRequestChanges)
 	setRequest, err := utilsv2.PathValuesToGnmiChange(setRequestChanges)
 	if err != nil {
 		return false, err
