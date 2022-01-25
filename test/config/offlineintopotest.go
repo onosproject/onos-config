@@ -18,8 +18,6 @@ package config
 import (
 	"context"
 	"github.com/onosproject/helmit/pkg/helm"
-	"github.com/onosproject/onos-api/go/onos/config/change"
-	"github.com/onosproject/onos-api/go/onos/config/diags"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -73,27 +71,27 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 
 	// Set a value using gNMI client to the offline device
 	devicePath := gnmi.GetTargetPathWithValue(offlineInTopoModDeviceName, offlineInTopoModPath, offlineInTopoModValue, proto.StringVal)
-	networkChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
+	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Check that the value was set correctly
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, offlineInTopoModValue, 0, "Query after set returned the wrong value")
 
 	// Check for pending state on the network change
-	changeServiceClient, changeServiceClientErr := gnmi.NewChangeServiceClient()
-	assert.Nil(t, changeServiceClientErr)
-	assert.True(t, changeServiceClient != nil)
-	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
-		Subscribe:     true,
-		ChangeID:      networkChangeID,
-		WithoutReplay: false,
-	}
-	listNetworkChangesClient, listNetworkChangesClientErr := changeServiceClient.ListNetworkChanges(context.Background(), listNetworkChangeRequest)
-	assert.Nil(t, listNetworkChangesClientErr)
-	assert.True(t, listNetworkChangesClient != nil)
-	networkChangeResponse, networkChangeResponseErr := listNetworkChangesClient.Recv()
-	assert.Nil(t, networkChangeResponseErr)
-	assert.True(t, networkChangeResponse != nil)
-	assert.Equal(t, change.State_PENDING, networkChangeResponse.Change.Status.State)
+	//changeServiceClient, changeServiceClientErr := gnmi.NewChangeServiceClient()
+	//assert.Nil(t, changeServiceClientErr)
+	//assert.True(t, changeServiceClient != nil)
+	//listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
+	//	Subscribe: true,
+	//ChangeID:      networkChangeID,
+	//	WithoutReplay: false,
+	//}
+	//listNetworkChangesClient, listNetworkChangesClientErr := changeServiceClient.ListNetworkChanges(context.Background(), listNetworkChangeRequest)
+	//assert.Nil(t, listNetworkChangesClientErr)
+	//assert.True(t, listNetworkChangesClient != nil)
+	//networkChangeResponse, networkChangeResponseErr := listNetworkChangesClient.Recv()
+	//assert.Nil(t, networkChangeResponseErr)
+	//assert.True(t, networkChangeResponse != nil)
+	//assert.Equal(t, change.State_PENDING, networkChangeResponse.Change.Status.State)
 
 	// Start the device simulator
 	simulator := helm.
@@ -110,7 +108,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	gnmi.WaitForTargetAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	gnmi.WaitForTransactionComplete(t, networkChangeID, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
 
 	// Interrogate the device to check that the value was set properly
 	deviceGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)

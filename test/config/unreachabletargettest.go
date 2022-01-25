@@ -17,10 +17,6 @@ package config
 
 import (
 	"context"
-	"github.com/onosproject/onos-api/go/onos/config/change"
-	"github.com/onosproject/onos-api/go/onos/config/diags"
-	"io"
-
 	//"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/pkg/device"
@@ -85,30 +81,31 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	devicePath := gnmi.GetTargetPathWithValue(unreachableDeviceModDeviceName, unreachableDeviceModPath, unreachableDeviceModValue, proto.StringVal)
 
 	// Set the value - should return a pending change
-	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
+	transactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
+	assert.NotNil(t, transactionID)
 
 	// Check that the value was set correctly in the cache
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, unreachableDeviceModValue, 0, "Query after set returned the wrong value")
 
 	// Validate that the network change is listed and shows as pending.
-	changeClient, err := gnmi.NewChangeServiceClient()
-	assert.NoError(t, err)
-	stream, err := changeClient.ListNetworkChanges(context.Background(), &diags.ListNetworkChangeRequest{ChangeID: changeID})
-	assert.NoError(t, err)
+	//changeClient, err := gnmi.NewChangeServiceClient()
+	//assert.NoError(t, err)
+	//stream, err := changeClient.ListNetworkChanges(context.Background(), &diags.ListNetworkChangeRequest{ChangeID: changeID})
+	//assert.NoError(t, err)
 
-	found := false
-	for {
-		resp, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		assert.NoError(t, err)
-		if resp.Change.ID == changeID && resp.Change.Status.State == change.State_PENDING {
-			found = true
-			break
-		}
-	}
-	assert.True(t, found)
+	//found := false
+	//for {
+	//	resp, err := stream.Recv()
+	//	if err == io.EOF {
+	//		break
+	//	}
+	//	assert.NoError(t, err)
+	//	if resp.Change.ID == changeID && resp.Change.Status.State == change.State_PENDING {
+	//		found = true
+	//		break
+	//	}
+	//}
+	//assert.True(t, found)
 
 	// FIXME: Rollback won't be supported initially with the onos-config rewrite.
 	//adminClient, err := gnmi.NewAdminServiceClient()

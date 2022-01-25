@@ -71,13 +71,13 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 
 	// Set a value using gNMI client
 	sim1Path1 := gnmi.GetTargetPathWithValue(simulator1.Name(), tzPath, tzValue, proto.StringVal)
-	sim1nwChangeID1 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path1, gnmi.NoPaths, gnmi.NoExtensions)
-	complete := gnmi.WaitForTransactionComplete(t, sim1nwChangeID1, wait)
+	sim1nwTransactionID1, sim1nwTransactionIndex1 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path1, gnmi.NoPaths, gnmi.NoExtensions)
+	complete := gnmi.WaitForTransactionComplete(t, sim1nwTransactionID1, sim1nwTransactionIndex1, wait)
 	assert.True(t, complete)
 
 	sim1Path2 := gnmi.GetTargetPathWithValue(simulator1.Name(), motdPath, motdValue1, proto.StringVal)
-	sim1nwChangeID2 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path2, gnmi.NoPaths, gnmi.NoExtensions)
-	complete = gnmi.WaitForTransactionComplete(t, sim1nwChangeID2, wait)
+	sim1nwTransactionID2, sim1nwTransactionIndex2 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path2, gnmi.NoPaths, gnmi.NoExtensions)
+	complete = gnmi.WaitForTransactionComplete(t, sim1nwTransactionID2, sim1nwTransactionIndex2, wait)
 	assert.True(t, complete)
 
 	// Make a triple path change to Sim2
@@ -85,21 +85,21 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	sim2Path2 := gnmi.GetTargetPathWithValue(simulator2.Name(), motdPath, motdValue2, proto.StringVal)
 	sim2Path3 := gnmi.GetTargetPathWithValue(simulator2.Name(), domainNamePath, domainNameSim2, proto.StringVal)
 
-	sim2nwChangeID1 := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, gnmi.NoPaths, gnmi.NoExtensions)
-	complete = gnmi.WaitForTransactionComplete(t, sim2nwChangeID1, wait)
+	sim2nwTransactionID2, sim2nwTransactionIndex2 := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	complete = gnmi.WaitForTransactionComplete(t, sim2nwTransactionID2, sim2nwTransactionIndex2, wait)
 	assert.True(t, complete)
 
 	// Finally make a change to both devices
 	sim1Path3 := gnmi.GetTargetPathWithValue(simulator1.Name(), loginBnrPath, loginBnr1, proto.StringVal)
 	sim2Path4 := gnmi.GetTargetPathWithValue(simulator2.Name(), loginBnrPath, loginBnr2, proto.StringVal)
-	bothSimNwChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path3[0], sim2Path4[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	bothSimNwTransactionID, bothSimNwTransactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path3[0], sim2Path4[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Wait for the change to transition to complete
-	complete = gnmi.WaitForTransactionComplete(t, bothSimNwChangeID, wait)
+	complete = gnmi.WaitForTransactionComplete(t, bothSimNwTransactionID, bothSimNwTransactionIndex, wait)
 	assert.True(t, complete)
 
 	t.Logf("Testing CompactChanges - nw changes %s, %s on %s AND %s on %s AND %s on both",
-		sim1nwChangeID1, sim1nwChangeID2, simulator1.Name(), sim2nwChangeID1, simulator2.Name(), bothSimNwChangeID)
+		sim1nwTransactionID1, sim1nwTransactionID2, simulator1.Name(), sim2nwTransactionID2, simulator2.Name(), bothSimNwTransactionID)
 
 	adminClient, err := gnmi.NewAdminServiceClient()
 	assert.NoError(t, err)
@@ -173,10 +173,10 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	// Set a value using gNMI client
 	sim1Path4 := gnmi.GetTargetPathWithValue(simulator1.Name(), tzPath, tzMilan, proto.StringVal)
 	sim1Path5 := gnmi.GetTargetPathWithValue(simulator1.Name(), domainNamePath, domainNameSim1, proto.StringVal)
-	afterSnapshotChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	afterSnapshotTransactionID, afterSnapshotTransactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Wait for the change to transition to complete
-	complete = gnmi.WaitForTransactionComplete(t, afterSnapshotChangeID, wait)
+	complete = gnmi.WaitForTransactionComplete(t, afterSnapshotTransactionID, afterSnapshotTransactionIndex, wait)
 	assert.True(t, complete)
 
 	// Now check every value for both sim1 and sim2
