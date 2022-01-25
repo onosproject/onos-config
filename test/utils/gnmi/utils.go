@@ -17,7 +17,9 @@ package gnmi
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"io"
 	"strconv"
 	"strings"
@@ -35,11 +37,9 @@ import (
 	v1 "github.com/onosproject/helmit/pkg/kubernetes/core/v1"
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
-	"github.com/onosproject/onos-api/go/onos/config/change"
-	"github.com/onosproject/onos-api/go/onos/config/change/network"
-	"github.com/onosproject/onos-api/go/onos/config/diags"
+	"github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/device"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi"
+	"github.com/onosproject/onos-config/pkg/northbound/gnmi/v2"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
 	gnmiclient "github.com/openconfig/gnmi/client"
@@ -181,15 +181,6 @@ func NewTopoClient() (topo.TopoClient, error) {
 	return topo.NewTopoClient(conn), nil
 }
 
-// NewChangeServiceClient :
-func NewChangeServiceClient() (diags.ChangeServiceClient, error) {
-	conn, err := connectComponent("onos-umbrella", "onos-config")
-	if err != nil {
-		return nil, err
-	}
-	return diags.NewChangeServiceClient(conn), nil
-}
-
 // NewAdminServiceClient :
 func NewAdminServiceClient() (admin.ConfigAdminServiceClient, error) {
 	conn, err := connectComponent("onos-umbrella", "onos-config")
@@ -199,13 +190,13 @@ func NewAdminServiceClient() (admin.ConfigAdminServiceClient, error) {
 	return admin.NewConfigAdminServiceClient(conn), nil
 }
 
-// NewOpStateDiagsClient :
-func NewOpStateDiagsClient() (diags.OpStateDiagsClient, error) {
+// NewTransactionServiceClient :
+func NewTransactionServiceClient() (admin.TransactionServiceClient, error) {
 	conn, err := connectComponent("onos-umbrella", "onos-config")
 	if err != nil {
 		return nil, err
 	}
-	return diags.NewOpStateDiagsClient(conn), nil
+	return admin.NewTransactionServiceClient(conn), nil
 }
 
 // AddTargetToTopo adds a new target to topo
@@ -301,39 +292,29 @@ func WaitForTargetUnavailable(t *testing.T, deviceID device.ID, timeout time.Dur
 	}, timeout)
 }
 
-// WaitForTransactionComplete waits for a COMPLETED status on the given change
-func WaitForTransactionComplete(t *testing.T, networkChangeID network.ID, wait time.Duration) bool {
-	listNetworkChangeRequest := &diags.ListNetworkChangeRequest{
-		Subscribe:     true,
-		ChangeID:      networkChangeID,
-		WithoutReplay: false,
+// WaitForTransactionComplete waits for a COMPLETED status on the given transaction
+func WaitForTransactionComplete(t *testing.T, transactionID configapi.TransactionID, transactionIndex v2.Index, wait time.Duration) bool {
+	getTransactionRequest := &admin.GetTransactionRequest{
+		ID:    transactionID,
+		Index: transactionIndex,
 	}
 
-	client, err := NewChangeServiceClient()
+	client, err := NewTransactionServiceClient()
 	assert.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 
-	listNetworkChangesClient, listNetworkChangesClientErr := client.ListNetworkChanges(ctx, listNetworkChangeRequest)
-	assert.Nil(t, listNetworkChangesClientErr)
-	assert.True(t, listNetworkChangesClient != nil)
-
 	for {
-		// Check if the network change has completed
-		networkChangeResponse, networkChangeResponseErr := listNetworkChangesClient.Recv()
-		if networkChangeResponseErr == io.EOF {
-			assert.Fail(t, "change stream closed prematurely")
-			return false
-		} else if networkChangeResponseErr != nil {
-			assert.Fail(t, fmt.Sprintf("change stream failed with error: %v", networkChangeResponseErr))
-			return false
-		} else {
-			assert.NotNil(t, networkChangeResponse)
-			if change.State_COMPLETE == networkChangeResponse.Change.Status.State {
-				return true
-			}
+		response, err := client.GetTransaction(ctx, getTransactionRequest)
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+
+		// Check if the transaction has completed
+		if response.Transaction.Status.State == v2.TransactionState_TRANSACTION_COMPLETE {
+			return true
 		}
+		time.Sleep(wait)
 	}
 }
 
@@ -409,9 +390,9 @@ func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protouti
 	}
 
 	setTZRequest.Extension = extensions
-	setResult, setError := c.(*gclient.Client).Set(ctx, setTZRequest)
-	if setError != nil {
-		return "", nil, setError
+	setResult, err := c.(*gclient.Client).Set(ctx, setTZRequest)
+	if err != nil {
+		return "", nil, err
 	}
 	return extractSetTransactionID(setResult), setResult.Extension, nil
 }
@@ -564,62 +545,64 @@ func CheckGNMIValues(t *testing.T, gnmiClient gnmiclient.Impl, paths []protoutil
 // SetGNMIValueWithContextOrFail does a GNMI set operation to the given client, and fails the test if there is an error
 func SetGNMIValueWithContextOrFail(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
 	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
-	extensions []*gnmi_ext.Extension) network.ID {
+	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index) {
 	t.Helper()
-	networkChangeID, errorSet := SetGNMIValueWithContext(ctx, t, gnmiClient, updatePaths, deletePaths, extensions)
-	assert.NoError(t, errorSet, "Set operation returned unexpected error")
+	transactionID, transactionIndex, err := SetGNMIValueWithContext(ctx, t, gnmiClient, updatePaths, deletePaths, extensions)
+	assert.NoError(t, err, "Set operation returned unexpected error")
 
-	return networkChangeID
+	return transactionID, transactionIndex
 }
 
 // SetGNMIValueWithContext does a GNMI set operation to the given client, and fails the test if there is an error
 func SetGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmiclient.Impl,
 	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
-	extensions []*gnmi_ext.Extension) (network.ID, error) {
+	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index, error) {
 	t.Helper()
-	_, extensionsSet, errorSet := SetGNMIValue(ctx, gnmiClient, updatePaths, deletePaths, extensions)
-	if errorSet != nil {
-		return "", errorSet
-	}
-	if len(extensionsSet) != 1 {
-		return "", errors.NewNotFound("extension set not found")
-	}
-	extensionBefore := extensionsSet[0].GetRegisteredExt()
-	if extensionBefore.Id.String() != strconv.Itoa(gnmi.GnmiExtensionNetwkChangeID) {
-		return "", errors.NewNotFound("network change ID extension not found")
+	_, extensionsSet, err := SetGNMIValue(ctx, gnmiClient, updatePaths, deletePaths, extensions)
+	if err != nil {
+		return "", 0, err
 	}
 
-	networkChangeID := network.ID(extensionBefore.Msg)
-	return networkChangeID, errorSet
+	var transactionID configapi.TransactionID
+	var transactionIndex v2.Index
+	for _, extension := range extensionsSet {
+		registeredExt := extension.GetRegisteredExt()
+		if registeredExt.Id.String() == strconv.Itoa(gnmi.ExtensionTransactionID) {
+			transactionID = configapi.TransactionID(registeredExt.Msg)
+		}
+		if registeredExt.Id.String() == strconv.Itoa(gnmi.ExtensionTransactionIndex) {
+			i := binary.BigEndian.Uint64(registeredExt.Msg)
+			transactionIndex = v2.Index(i)
+		}
+	}
+
+	if transactionID == "" {
+		return "", 0, errors.NewNotFound("transaction ID extension not found")
+	}
+
+	return transactionID, transactionIndex, err
 }
 
 // SetGNMIValueOrFail does a GNMI set operation to the given client, and fails the test if there is an error
 func SetGNMIValueOrFail(t *testing.T, gnmiClient gnmiclient.Impl,
 	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
-	extensions []*gnmi_ext.Extension) network.ID {
+	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index) {
 	return SetGNMIValueWithContextOrFail(MakeContext(), t, gnmiClient, updatePaths, deletePaths, extensions)
 }
 
 // GetSimulatorExtensions creates the default set of extensions for a simulated device
 func GetSimulatorExtensions() []*gnmi_ext.Extension {
 	const (
-		deviceVersion = "1.0.0"
-		deviceType    = "devicesim-1.0.x"
+		deviceType = "devicesim-1.0.x"
 	)
 
 	extDeviceType := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnmi.GnmiExtensionDeviceType,
+			Id:  gnmi.ExtensionTransactionID,
 			Msg: []byte(deviceType),
 		},
 	}
-	extDeviceVersion := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnmi.GnmiExtensionVersion,
-			Msg: []byte(deviceVersion),
-		},
-	}
-	return []*gnmi_ext.Extension{{Ext: &extDeviceType}, {Ext: &extDeviceVersion}}
+	return []*gnmi_ext.Extension{{Ext: &extDeviceType}}
 }
 
 // MakeProtoPath returns a Path: element for a given target and Path

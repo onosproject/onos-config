@@ -66,22 +66,22 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Set initial values
 	devicePathsForInit := gnmi.GetTargetPathsWithValues(devices, paths, initialValues)
-	initialChangeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
-	complete := gnmi.WaitForTransactionComplete(t, initialChangeID, 10*time.Second)
+	initialTransactionID, initialTransactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
+	complete := gnmi.WaitForTransactionComplete(t, initialTransactionID, initialTransactionIndex, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
 
 	// Create a change that can be rolled back
 	devicePathsForSet := gnmi.GetTargetPathsWithValues(devices, paths, values)
-	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
-	gnmi.WaitForTransactionComplete(t, changeID, 10*time.Second)
+	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
+	gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
-	complete = gnmi.WaitForTransactionComplete(t, changeID, 10*time.Second)
+	complete = gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices
@@ -97,11 +97,11 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	adminClient, err := gnmi.NewAdminServiceClient()
 	assert.NoError(t, err)
 	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
-		context.Background(), &admin.RollbackRequest{Name: string(changeID)})
+		context.Background(), &admin.RollbackRequest{Name: string(transactionID)})
 
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
-	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
+	assert.Contains(t, rollbackResponse.Message, transactionID, "rollbackResponse message does not contain change ID")
 
 	// Check that the values were really rolled back in onos-config
 	expectedValuesAfterRollback := []string{initValue1, initValue2}

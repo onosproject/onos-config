@@ -78,7 +78,7 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 				assert.NotNil(t, targetPath)
 
 				// Set a value using gNMI client
-				_, err = gnmi.SetGNMIValueWithContext(ctx, t, gnmiClient, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
+				_, _, err = gnmi.SetGNMIValueWithContext(ctx, t, gnmiClient, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
 				if testCase.expectedError != "" {
 					assert.Contains(t, err.Error(), testCase.expectedError)
 					return

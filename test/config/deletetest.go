@@ -52,7 +52,7 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 
 	// Set values
 	var devicePathsForSet = gnmi.GetTargetPathsWithValues(devices, newPaths, newValues)
-	changeID := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
+	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
 
 	devicePathsForGet := gnmi.GetTargetPaths(devices, newPaths)
 
@@ -61,7 +61,7 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
-	complete := gnmi.WaitForTransactionComplete(t, changeID, 10*time.Second)
+	complete := gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the devices
@@ -72,11 +72,11 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 	adminClient, err := gnmi.NewAdminServiceClient()
 	assert.NoError(t, err)
 	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
-		context.Background(), &admin.RollbackRequest{Name: string(changeID)})
+		context.Background(), &admin.RollbackRequest{Name: string(transactionID)})
 
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
-	assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
+	assert.Contains(t, rollbackResponse.Message, transactionID, "rollbackResponse message does not contain change ID")
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
 	_, _, err = gnmi.GetGNMIValue(gnmi.MakeContext(), device1GnmiClient, devicePathsForGet, gbp.Encoding_PROTO)

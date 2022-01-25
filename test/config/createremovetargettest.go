@@ -74,7 +74,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	targetPath := gnmi.GetTargetPathWithValue(createRemoveTargetModDeviceName, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
 
 	// Set a value using gNMI client - device is up
-	transactionID := gnmi.SetGNMIValueOrFail(t, c, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
+	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, c, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
 	assert.True(t, transactionID != "")
 
 	// Check that the value was set correctly
@@ -84,7 +84,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	gnmi.WaitForTargetAvailable(t, createRemoveTargetModDeviceName, 1*time.Minute)
 
 	// Check that the network change has completed
-	gnmi.WaitForTransactionComplete(t, transactionID, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
 	targetGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
@@ -96,7 +96,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 
 	// Set a value using gNMI client - device is down
 	setPath2 := gnmi.GetTargetPathWithValue(createRemoveTargetModDeviceName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
-	transactionID2 := gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
+	transactionID2, transactionIndex2 := gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
 	assert.True(t, transactionID2 != "")
 
 	//  Restart simulated device
@@ -110,7 +110,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	gnmi.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
 
 	// Check that the network change has completed
-	gnmi.WaitForTransactionComplete(t, transactionID2, 10*time.Second)
+	gnmi.WaitForTransactionComplete(t, transactionID2, transactionIndex2, 10*time.Second)
 
 	// interrogate the device to check that the value was set properly
 	deviceGnmiClient2 := gnmi.GetTargetGNMIClientOrFail(t, simulator)
