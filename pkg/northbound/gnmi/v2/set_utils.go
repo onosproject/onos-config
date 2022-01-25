@@ -17,6 +17,7 @@ package gnmi
 import (
 	"github.com/google/uuid"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/utils"
 	valueutils "github.com/onosproject/onos-config/pkg/utils/values/v2"
 	"github.com/onosproject/onos-lib-go/pkg/uri"
@@ -30,6 +31,9 @@ type targetInfo struct {
 	targetID      configapi.TargetID
 	targetVersion configapi.TargetVersion
 	targetType    configapi.TargetType
+	plugin        *pluginregistry.ModelPlugin
+	updates       configapi.TypedValueMap
+	removes       []string
 }
 
 func newUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
@@ -46,36 +50,24 @@ func newUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operati
 
 }
 
-func computeChanges(targetInfo targetInfo, targetUpdates mapTargetUpdates,
-	targetRemoves mapTargetRemoves) ([]configapi.Change, error) {
-
-	targetChanges := make([]configapi.Change, 0)
-	for target, updates := range targetUpdates {
-		newChange, err := computeChange(targetInfo, updates, targetRemoves[target])
+func computeChanges(targets map[configapi.TargetID]*targetInfo) ([]configapi.Change, error) {
+	allChanges := make([]configapi.Change, 0)
+	for _, target := range targets {
+		change, err := computeChange(target)
 		if err != nil {
 			return nil, err
 		}
-		targetChanges = append(targetChanges, newChange)
-		delete(targetRemoves, target)
+		allChanges = append(allChanges, change)
 	}
-
-	// Some targets might only have removes
-	for _, removes := range targetRemoves {
-		newChange, err := computeChange(targetInfo, make(configapi.TypedValueMap), removes)
-		if err != nil {
-			return nil, err
-		}
-		targetChanges = append(targetChanges, newChange)
-	}
-	return targetChanges, nil
+	return allChanges, nil
 }
 
-// computeChange computes a given target change the given updates and deletes, according to the path
+// computeChange computes a given target change the given its updates and deletes, according to the path
 // on the configuration for the specified target
-func computeChange(targetInfo targetInfo, updates configapi.TypedValueMap, deletes []string) (configapi.Change, error) {
+func computeChange(target *targetInfo) (configapi.Change, error) {
 	var newChanges = make([]configapi.ChangeValue, 0)
 	//updates
-	for path, value := range updates {
+	for path, value := range target.updates {
 		updateValue, err := valueutils.NewChangeValue(path, *value, false)
 		if err != nil {
 			return configapi.Change{}, err
@@ -83,25 +75,23 @@ func computeChange(targetInfo targetInfo, updates configapi.TypedValueMap, delet
 		newChanges = append(newChanges, *updateValue)
 	}
 	//deletes
-	for _, path := range deletes {
+	for _, path := range target.removes {
 		deleteValue, _ := valueutils.NewChangeValue(path, *configapi.NewTypedValueEmpty(), true)
 		newChanges = append(newChanges, *deleteValue)
 	}
 
 	changeElement := configapi.Change{
-		TargetID:      targetInfo.targetID,
-		TargetVersion: targetInfo.targetVersion,
-		TargetType:    targetInfo.targetType,
+		TargetID:      target.targetID,
+		TargetVersion: target.targetVersion,
+		TargetType:    target.targetType,
 		Values:        newChanges,
 	}
 
 	return changeElement, nil
 }
 
-func newTransaction(targetInfo targetInfo, extensions Extensions, targetUpdates mapTargetUpdates,
-	targetRemoves mapTargetRemoves, username string) (*configapi.Transaction, error) {
-
-	changes, err := computeChanges(targetInfo, targetUpdates, targetRemoves)
+func newTransaction(targets map[configapi.TargetID]*targetInfo, extensions Extensions, username string) (*configapi.Transaction, error) {
+	changes, err := computeChanges(targets)
 	if err != nil {
 		return nil, err
 	}
