@@ -40,7 +40,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	topoClient, deviceClientError := gnmi.NewTopoClient()
 	assert.NotNil(t, topoClient)
 	assert.Nil(t, deviceClientError)
-	newDevice := &topo.Object{
+	newTarget := &topo.Object{
 		ID:   offlineInTopoModDeviceName,
 		Type: topo.Object_ENTITY,
 		Obj: &topo.Object_Entity{
@@ -50,17 +50,17 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 		},
 	}
 
-	_ = newDevice.SetAspect(&topo.Configurable{
+	_ = newTarget.SetAspect(&topo.Configurable{
 		Type:    offlineInTopoModDeviceType,
 		Address: offlineInTopoModDeviceName + ":11161",
 		Version: offlineInTopoModDeviceVersion,
 		Timeout: uint64((10 * time.Second).Milliseconds()),
 	})
 
-	_ = newDevice.SetAspect(&topo.TLSOptions{Plain: true})
+	_ = newTarget.SetAspect(&topo.TLSOptions{Plain: true})
 
 	request := &topo.CreateRequest{
-		Object: newDevice,
+		Object: newTarget,
 	}
 	addResponse, addResponseError := topoClient.Create(context.Background(), request)
 	assert.NotNil(t, addResponse)

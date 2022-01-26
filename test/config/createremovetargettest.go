@@ -42,7 +42,7 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 	assert.NotNil(t, topoClient)
 	assert.Nil(t, err)
 
-	newDevice := &topo.Object{
+	newTarget := &topo.Object{
 		ID:   createRemoveTargetModDeviceName,
 		Type: topo.Object_ENTITY,
 		Obj: &topo.Object_Entity{
@@ -52,17 +52,17 @@ func (s *TestSuite) TestCreatedRemovedDevice(t *testing.T) {
 		},
 	}
 
-	_ = newDevice.SetAspect(&topo.Configurable{
+	_ = newTarget.SetAspect(&topo.Configurable{
 		Type:    createRemoveTargetModDeviceType,
 		Address: createRemoveTargetModDeviceName + ":11161",
 		Version: createRemoveTargetModDeviceVersion,
 		Timeout: uint64((10 * time.Second).Milliseconds()),
 	})
 
-	_ = newDevice.SetAspect(&topo.TLSOptions{Plain: true})
+	_ = newTarget.SetAspect(&topo.TLSOptions{Plain: true})
 
 	request := &topo.CreateRequest{
-		Object: newDevice,
+		Object: newTarget,
 	}
 	addResponse, err := topoClient.Create(context.Background(), request)
 	assert.NotNil(t, addResponse)
