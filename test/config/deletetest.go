@@ -16,12 +16,12 @@ package config
 
 import (
 	"context"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	gbp "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
-	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,7 +45,7 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 	devices[0] = device1.Name()
 
 	// Wait for config to connect to the device
-	gnmi.WaitForTargetAvailable(t, device.ID(device1.Name()), 10*time.Second)
+	gnmi.WaitForTargetAvailable(t, topo.ID(device1.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)

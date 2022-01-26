@@ -38,7 +38,6 @@ import (
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/config/v2"
-	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/pkg/northbound/gnmi/v2"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
@@ -52,9 +51,9 @@ import (
 )
 
 const (
-	// SimulatorTargetVersion default version for simulated device
+	// SimulatorTargetVersion default version for simulated target
 	SimulatorTargetVersion = "1.0.0"
-	// SimulatorTargetType type for simulated device
+	// SimulatorTargetType type for simulated target
 	SimulatorTargetType = "devicesim-1.0.x"
 )
 
@@ -227,7 +226,7 @@ func RemoveTargetFromTopo(d *topo.Object) error {
 }
 
 // WaitForTarget waits for a target to match the given predicate
-func WaitForTarget(t *testing.T, predicate func(*device.Device, topo.EventType) bool, timeout time.Duration) bool {
+func WaitForTarget(t *testing.T, predicate func(*topo.Object, topo.EventType) bool, timeout time.Duration) bool {
 	cl, err := NewTopoClient()
 	assert.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -245,25 +244,33 @@ func WaitForTarget(t *testing.T, predicate func(*device.Device, topo.EventType) 
 		} else if response.Event.Object.Type == topo.Object_ENTITY {
 			err = response.Event.Object.GetAspect(&topo.Configurable{})
 			if err == nil {
-				topoDevice, err := device.ToDevice(&response.Event.Object)
-				assert.Nil(t, err, "error converting entity to topo Device")
-				if predicate(topoDevice, response.Event.GetType()) {
+				topoTarget := &response.Event.Object
+				if predicate(topoTarget, response.Event.GetType()) {
 					return true
-				} // Otherwise loop and wait for the next topo event
+				} // Otherwise, loop and wait for the next topo event
 			}
 		}
 	}
 }
 
 // WaitForTargetAvailable waits for a target to become available
-func WaitForTargetAvailable(t *testing.T, deviceID device.ID, timeout time.Duration) bool {
-	return WaitForTarget(t, func(dev *device.Device, eventType topo.EventType) bool {
-		if dev.ID != deviceID {
-			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, dev.ID, deviceID)
+func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
+	return WaitForTarget(t, func(object *topo.Object, eventType topo.EventType) bool {
+		if object.ID != objectID {
+			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, object.ID, objectID)
 			return false
 		}
 
-		for _, protocol := range dev.Protocols {
+		protocols := &topo.Protocols{}
+		err := object.GetAspect(protocols)
+		var protocolStates []*topo.ProtocolState
+		if err != nil {
+			protocolStates = nil
+		} else {
+			protocolStates = protocols.State
+		}
+
+		for _, protocol := range protocolStates {
 			if protocol.Protocol == topo.Protocol_GNMI && protocol.ServiceState == topo.ServiceState_AVAILABLE {
 				//fmt.Printf("Topo %s on %s is AVAILABLE. Has: %v\n", eventType, dev.ID, protocol)
 				return true
@@ -275,14 +282,23 @@ func WaitForTargetAvailable(t *testing.T, deviceID device.ID, timeout time.Durat
 }
 
 // WaitForTargetUnavailable waits for a target to become available
-func WaitForTargetUnavailable(t *testing.T, deviceID device.ID, timeout time.Duration) bool {
-	return WaitForTarget(t, func(dev *device.Device, eventType topo.EventType) bool {
-		if dev.ID != deviceID {
-			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, dev.ID, deviceID)
+func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
+	return WaitForTarget(t, func(object *topo.Object, eventType topo.EventType) bool {
+		if object.ID != objectID {
+			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, object.ID, objectID)
 			return false
 		}
 
-		for _, protocol := range dev.Protocols {
+		protocols := &topo.Protocols{}
+		err := object.GetAspect(protocols)
+		var protocolStates []*topo.ProtocolState
+		if err != nil {
+			protocolStates = nil
+		} else {
+			protocolStates = protocols.State
+		}
+
+		for _, protocol := range protocolStates {
 			if protocol.Protocol == topo.Protocol_GNMI && protocol.ServiceState == topo.ServiceState_UNAVAILABLE {
 				return true
 			}
@@ -353,11 +369,11 @@ func extractSetTransactionID(response *gpb.SetResponse) string {
 	return string(response.Extension[0].GetRegisteredExt().Msg)
 }
 
-// GetGNMIValue generates a GET request on the given client for a Path on a device
+// GetGNMIValue generates a GET request on the given client for a Path on a target
 func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.TargetPath, encoding gpb.Encoding) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
 	protoString := ""
-	for _, devicePath := range paths {
-		protoString = protoString + MakeProtoPath(devicePath.TargetName, devicePath.Path)
+	for _, targetPath := range paths {
+		protoString = protoString + MakeProtoPath(targetPath.TargetName, targetPath.Path)
 	}
 	getTZRequest := &gpb.GetRequest{}
 	if err := proto.UnmarshalText(protoString, getTZRequest); err != nil {
@@ -372,7 +388,7 @@ func GetGNMIValue(ctx context.Context, c gnmiclient.Impl, paths []protoutils.Tar
 	return convertGetResults(response)
 }
 
-// SetGNMIValue generates a SET request on the given client for update and delete paths on a device
+// SetGNMIValue generates a SET request on the given client for update and delete paths on a target
 func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath, extensions []*gnmi_ext.Extension) (string, []*gnmi_ext.Extension, error) {
 	var protoBuilder strings.Builder
 	for _, updatePath := range updatePaths {
@@ -396,12 +412,12 @@ func SetGNMIValue(ctx context.Context, c gnmiclient.Impl, updatePaths []protouti
 	return extractSetTransactionID(setResult), setResult.Extension, nil
 }
 
-// GetTargetPath creates a device path
+// GetTargetPath creates a target path
 func GetTargetPath(target string, path string) []protoutils.TargetPath {
 	return GetTargetPathWithValue(target, path, "", "")
 }
 
-// GetTargetPathWithValue creates a device path with a value to set
+// GetTargetPathWithValue creates a target path with a value to set
 func GetTargetPathWithValue(target string, path string, value string, valueType string) []protoutils.TargetPath {
 	targetPath := make([]protoutils.TargetPath, 1)
 	targetPath[0].TargetName = target
@@ -411,25 +427,25 @@ func GetTargetPathWithValue(target string, path string, value string, valueType 
 	return targetPath
 }
 
-// GetTargetPaths creates multiple device paths
-func GetTargetPaths(devices []string, paths []string) []protoutils.TargetPath {
-	var devicePaths = make([]protoutils.TargetPath, len(paths)*len(devices))
+// GetTargetPaths creates multiple target paths
+func GetTargetPaths(targets []string, paths []string) []protoutils.TargetPath {
+	var targetPaths = make([]protoutils.TargetPath, len(paths)*len(targets))
 	pathIndex := 0
-	for _, dev := range devices {
+	for _, dev := range targets {
 		for _, path := range paths {
-			devicePaths[pathIndex].TargetName = dev
-			devicePaths[pathIndex].Path = path
+			targetPaths[pathIndex].TargetName = dev
+			targetPaths[pathIndex].Path = path
 			pathIndex++
 		}
 	}
-	return devicePaths
+	return targetPaths
 }
 
-// GetTargetPathsWithValues creates multiple device paths with values to set
-func GetTargetPathsWithValues(devices []string, paths []string, values []string) []protoutils.TargetPath {
-	var targetPaths = GetTargetPaths(devices, paths)
+// GetTargetPathsWithValues creates multiple target paths with values to set
+func GetTargetPathsWithValues(targets []string, paths []string, values []string) []protoutils.TargetPath {
+	var targetPaths = GetTargetPaths(targets, paths)
 	valueIndex := 0
-	for range devices {
+	for range targets {
 		for _, value := range values {
 			targetPaths[valueIndex].PathDataValue = value
 			targetPaths[valueIndex].PathDataType = protoutils.StringVal
@@ -439,20 +455,20 @@ func GetTargetPathsWithValues(devices []string, paths []string, values []string)
 	return targetPaths
 }
 
-// CheckTargetValue makes sure a value has been assigned properly to a device path by querying GNMI
+// CheckTargetValue makes sure a value has been assigned properly to a target path by querying GNMI
 func CheckTargetValue(t *testing.T, targetGnmiClient gnmiclient.Impl, targetPaths []protoutils.TargetPath, expectedValue string) {
 	targetValues, extensions, err := GetGNMIValue(MakeContext(), targetGnmiClient, targetPaths, gpb.Encoding_JSON)
 	if err == nil {
-		assert.NoError(t, err, "GNMI get operation to device returned an error")
+		assert.NoError(t, err, "GNMI get operation to target returned an error")
 		assert.Equal(t, expectedValue, targetValues[0].PathDataValue, "Query after set returned the wrong value: %s\n", expectedValue)
 		assert.Equal(t, 0, len(extensions))
 	} else {
-		assert.Fail(t, "Failed to query device: %v", err)
+		assert.Fail(t, "Failed to query target: %v", err)
 	}
 
 }
 
-// GetTargetGNMIClientOrFail creates a GNMI client to a device. If there is an error, the test is failed
+// GetTargetGNMIClientOrFail creates a GNMI client to a target. If there is an error, the test is failed
 func GetTargetGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) gnmiclient.Impl {
 	t.Helper()
 	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
@@ -468,7 +484,7 @@ func GetTargetGNMIClientOrFail(t *testing.T, simulator *helm.HelmRelease) gnmicl
 	}
 	client, err := gclient.New(ctx, dest)
 	assert.NoError(t, err)
-	assert.True(t, client != nil, "Fetching device client returned nil")
+	assert.True(t, client != nil, "Fetching target client returned nil")
 	return client
 }
 
@@ -505,7 +521,7 @@ func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T) gnmiclien
 	}
 	client, err := gclient.New(ctx, dest)
 	assert.NoError(t, err)
-	assert.True(t, client != nil, "Fetching device client returned nil")
+	assert.True(t, client != nil, "Fetching target client returned nil")
 	return client
 }
 
@@ -589,19 +605,19 @@ func SetGNMIValueOrFail(t *testing.T, gnmiClient gnmiclient.Impl,
 	return SetGNMIValueWithContextOrFail(MakeContext(), t, gnmiClient, updatePaths, deletePaths, extensions)
 }
 
-// GetSimulatorExtensions creates the default set of extensions for a simulated device
+// GetSimulatorExtensions creates the default set of extensions for a simulated target
 func GetSimulatorExtensions() []*gnmi_ext.Extension {
 	const (
-		deviceType = "devicesim-1.0.x"
+		targetType = "devicesim-1.0.x"
 	)
 
-	extDeviceType := gnmi_ext.Extension_RegisteredExt{
+	extTargetType := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
 			Id:  gnmi.ExtensionTransactionID,
-			Msg: []byte(deviceType),
+			Msg: []byte(targetType),
 		},
 	}
-	return []*gnmi_ext.Extension{{Ext: &extDeviceType}}
+	return []*gnmi_ext.Extension{{Ext: &extTargetType}}
 }
 
 // MakeProtoPath returns a Path: element for a given target and Path
@@ -630,21 +646,21 @@ func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
 
 	time.Sleep(2 * time.Second)
 
-	simulatorDevice, err := NewSimulatorTargetEntity(simulator, SimulatorTargetType, SimulatorTargetVersion)
-	assert.NoError(t, err, "could not make device for simulator %v", err)
+	simulatorTarget, err := NewSimulatorTargetEntity(simulator, SimulatorTargetType, SimulatorTargetVersion)
+	assert.NoError(t, err, "could not make target for simulator %v", err)
 
-	err = AddTargetToTopo(simulatorDevice)
-	assert.NoError(t, err, "could not add device to topo for simulator %v", err)
+	err = AddTargetToTopo(simulatorTarget)
+	assert.NoError(t, err, "could not add target to topo for simulator %v", err)
 
 	return simulator
 }
 
-// DeleteSimulator shuts down the simulator pod and removes the device from topology
+// DeleteSimulator shuts down the simulator pod and removes the target from topology
 func DeleteSimulator(t *testing.T, simulator *helm.HelmRelease) {
-	simulatorDevice, err := GetSimulatorTarget(simulator)
+	simulatorTarget, err := GetSimulatorTarget(simulator)
 	assert.NoError(t, err)
 	err = simulator.Uninstall()
 	assert.NoError(t, err)
-	err = RemoveTargetFromTopo(simulatorDevice)
+	err = RemoveTargetFromTopo(simulatorTarget)
 	assert.NoError(t, err)
 }

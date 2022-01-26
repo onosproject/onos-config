@@ -15,7 +15,7 @@
 package config
 
 import (
-	"github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +37,7 @@ func (s *TestSuite) TestSingleState(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForTargetAvailable(t, device.ID(simulator.Name()), time.Minute)
+	gnmi.WaitForTargetAvailable(t, topo.ID(simulator.Name()), time.Minute)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)

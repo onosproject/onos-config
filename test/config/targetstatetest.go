@@ -16,7 +16,6 @@ package config
 
 import (
 	"github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -29,12 +28,21 @@ func (s *TestSuite) TestDeviceState(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	assert.NotNil(t, simulator)
-	found := gnmi.WaitForTarget(t, func(d *device.Device, eventType topo.EventType) bool {
-		return len(d.Protocols) > 0 &&
-			d.Protocols[0].Protocol == topo.Protocol_GNMI &&
-			d.Protocols[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
-			d.Protocols[0].ChannelState == topo.ChannelState_CONNECTED &&
-			d.Protocols[0].ServiceState == topo.ServiceState_AVAILABLE
+	found := gnmi.WaitForTarget(t, func(d *topo.Object, eventType topo.EventType) bool {
+		protocols := &topo.Protocols{}
+		err := d.GetAspect(protocols)
+		assert.NoError(t, err)
+		var protocolStates []*topo.ProtocolState
+		if err != nil {
+			protocolStates = nil
+		} else {
+			protocolStates = protocols.State
+		}
+		return len(protocolStates) > 0 &&
+			protocolStates[0].Protocol == topo.Protocol_GNMI &&
+			protocolStates[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
+			protocolStates[0].ChannelState == topo.ChannelState_CONNECTED &&
+			protocolStates[0].ServiceState == topo.ServiceState_AVAILABLE
 	}, 5*time.Second)
 	assert.Equal(t, true, found)
 }

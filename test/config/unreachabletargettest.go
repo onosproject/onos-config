@@ -17,9 +17,10 @@ package config
 
 import (
 	"context"
+	"time"
+
 	//"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-config/pkg/device"
 	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -39,26 +40,35 @@ const (
 
 // TestUnreachableDevice tests set/query of a single GNMI path to a device that will never respond
 func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
-	deviceClient, deviceClientError := gnmi.NewTopoClient()
-	assert.NotNil(t, deviceClient)
-	assert.Nil(t, deviceClientError)
-	newDevice := &device.Device{
-		ID:          unreachableDeviceModDeviceName,
-		Revision:    0,
-		Address:     unreachableDeviceAddress,
-		Target:      "",
-		Version:     unreachableDeviceModDeviceVersion,
-		Timeout:     nil,
-		Credentials: device.Credentials{},
-		TLS:         device.TLSConfig{},
-		Type:        unreachableDeviceModDeviceType,
-		Role:        "",
-		Protocols:   nil,
+	topoClient, err := gnmi.NewTopoClient()
+	assert.NotNil(t, topoClient)
+	assert.Nil(t, err)
+
+	newTarget := &topo.Object{
+		ID:   unreachableDeviceModDeviceName,
+		Type: topo.Object_ENTITY,
+		Obj: &topo.Object_Entity{
+			Entity: &topo.Entity{
+				KindID: unreachableDeviceModDeviceType,
+			},
+		},
 	}
-	addRequest := &topo.CreateRequest{Object: device.ToObject(newDevice)}
-	addResponse, addResponseError := deviceClient.Create(context.Background(), addRequest)
+
+	_ = newTarget.SetAspect(&topo.Configurable{
+		Type:    unreachableDeviceModDeviceType,
+		Address: unreachableDeviceAddress,
+		Version: unreachableDeviceModDeviceVersion,
+		Timeout: uint64((10 * time.Second).Milliseconds()),
+	})
+
+	_ = newTarget.SetAspect(&topo.TLSOptions{Plain: true})
+
+	request := &topo.CreateRequest{
+		Object: newTarget,
+	}
+	addResponse, err := topoClient.Create(context.Background(), request)
 	assert.NotNil(t, addResponse)
-	assert.Nil(t, addResponseError)
+	assert.Nil(t, err)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)

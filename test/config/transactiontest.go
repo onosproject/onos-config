@@ -16,11 +16,11 @@ package config
 
 import (
 	"context"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"testing"
 	"time"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
-	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/stretchr/testify/assert"
 )
@@ -48,13 +48,13 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, device1)
 
 	// Wait for config to connect to the devices
-	gnmi.WaitForTargetAvailable(t, device.ID(device1.Name()), time.Minute)
+	gnmi.WaitForTargetAvailable(t, topo.ID(device1.Name()), time.Minute)
 
 	device2 := gnmi.CreateSimulator(t)
 	defer gnmi.DeleteSimulator(t, device2)
 
 	// Wait for config to connect to the devices
-	gnmi.WaitForTargetAvailable(t, device.ID(device2.Name()), time.Minute)
+	gnmi.WaitForTargetAvailable(t, topo.ID(device2.Name()), time.Minute)
 
 	devices := make([]string, 2)
 	devices[0] = device1.Name()

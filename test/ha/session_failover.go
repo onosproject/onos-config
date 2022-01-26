@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/onosproject/onos-config/pkg/device"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	hautils "github.com/onosproject/onos-config/test/utils/ha"
 	"github.com/stretchr/testify/assert"
@@ -34,14 +33,27 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 	assert.NotNil(t, simulator)
 	var currentTerm uint64
 	var masterNode string
-	found := gnmi.WaitForTarget(t, func(d *device.Device, eventType topo.EventType) bool {
-		currentTerm = d.MastershipTerm
-		masterNode = d.MasterKey
-		return currentTerm == 1 && len(d.Protocols) > 0 &&
-			d.Protocols[0].Protocol == topo.Protocol_GNMI &&
-			d.Protocols[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
-			d.Protocols[0].ChannelState == topo.ChannelState_CONNECTED &&
-			d.Protocols[0].ServiceState == topo.ServiceState_AVAILABLE
+	found := gnmi.WaitForTarget(t, func(d *topo.Object, eventType topo.EventType) bool {
+		mastership := &topo.MastershipState{}
+		err := d.GetAspect(mastership)
+		assert.NoError(t, err)
+		currentTerm = mastership.Term
+		masterNode = mastership.NodeId
+
+		protocols := &topo.Protocols{}
+		err = d.GetAspect(protocols)
+		assert.NoError(t, err)
+		var protocolStates []*topo.ProtocolState
+		if err != nil {
+			protocolStates = nil
+		} else {
+			protocolStates = protocols.State
+		}
+		return currentTerm == 1 && len(protocolStates) > 0 &&
+			protocolStates[0].Protocol == topo.Protocol_GNMI &&
+			protocolStates[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
+			protocolStates[0].ChannelState == topo.ChannelState_CONNECTED &&
+			protocolStates[0].ServiceState == topo.ServiceState_AVAILABLE
 	}, 5*time.Second)
 	assert.Equal(t, true, found)
 	assert.Equal(t, currentTerm, 1)
@@ -51,13 +63,28 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 
 	// Waits for a new master to be elected (i.e. the term will be increased), it establishes a connection to the device
 	// and updates the device state
-	found = gnmi.WaitForTarget(t, func(d *device.Device, t topo.EventType) bool {
-		currentTerm = d.MastershipTerm
-		return currentTerm == 2 && len(d.Protocols) > 0 &&
-			d.Protocols[0].Protocol == topo.Protocol_GNMI &&
-			d.Protocols[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
-			d.Protocols[0].ChannelState == topo.ChannelState_CONNECTED &&
-			d.Protocols[0].ServiceState == topo.ServiceState_AVAILABLE
+	found = gnmi.WaitForTarget(t, func(d *topo.Object, eventType topo.EventType) bool {
+		mastership := &topo.MastershipState{}
+		err := d.GetAspect(mastership)
+		assert.NoError(t, err)
+		currentTerm = mastership.Term
+		masterNode = mastership.NodeId
+
+		protocols := &topo.Protocols{}
+		err = d.GetAspect(protocols)
+		assert.NoError(t, err)
+		var protocolStates []*topo.ProtocolState
+		if err != nil {
+			protocolStates = nil
+		} else {
+			protocolStates = protocols.State
+		}
+		currentTerm = mastership.Term
+		return currentTerm == 2 && len(protocolStates) > 0 &&
+			protocolStates[0].Protocol == topo.Protocol_GNMI &&
+			protocolStates[0].ConnectivityState == topo.ConnectivityState_REACHABLE &&
+			protocolStates[0].ChannelState == topo.ChannelState_CONNECTED &&
+			protocolStates[0].ServiceState == topo.ServiceState_AVAILABLE
 	}, 70*time.Second)
 	assert.Equal(t, true, found)
 
