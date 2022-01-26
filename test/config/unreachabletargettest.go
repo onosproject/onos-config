@@ -19,9 +19,7 @@ import (
 	"context"
 	"time"
 
-	//"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/topo"
-	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
@@ -40,54 +38,15 @@ const (
 
 // TestUnreachableTarget tests set/query of a single GNMI path to a target that will never respond
 func (s *TestSuite) TestUnreachableTarget(t *testing.T) {
-	topoClient, err := gnmi.NewTopoClient()
-	assert.NotNil(t, topoClient)
-	assert.Nil(t, err)
-
-	newTarget := &topo.Object{
-		ID:   unreachableTargetModTargetName,
-		Type: topo.Object_ENTITY,
-		Obj: &topo.Object_Entity{
-			Entity: &topo.Entity{
-				KindID: unreachableTargetModTargetType,
-			},
-		},
-	}
-
-	_ = newTarget.SetAspect(&topo.Configurable{
-		Type:    unreachableTargetModTargetType,
-		Address: unreachableTargetAddress,
-		Version: unreachableTargetModTargetVersion,
-		Timeout: uint64((10 * time.Second).Milliseconds()),
-	})
-
-	_ = newTarget.SetAspect(&topo.TLSOptions{Plain: true})
-
-	err = topoClient.Create(context.Background(), newTarget)
-	assert.NoError(t, err)
+	createOfflineTarget(t, unreachableTargetModTargetName, unreachableTargetModTargetType, unreachableTargetModTargetVersion, unreachableTargetAddress)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
-	// Set a value using gNMI client to the target
-	extNameTargetType := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnb.GnmiExtensionDeviceType,
-			Msg: []byte(unreachableTargetModTargetType),
-		},
-	}
-	extNameTargetVersion := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnb.GnmiExtensionVersion,
-			Msg: []byte(unreachableTargetModTargetVersion),
-		},
-	}
-	extensions := []*gnmi_ext.Extension{{Ext: &extNameTargetType}, {Ext: &extNameTargetVersion}}
-
 	targetPath := gnmi.GetTargetPathWithValue(unreachableTargetModTargetName, unreachableTargetModPath, unreachableTargetModValue, proto.StringVal)
 
 	// Set the value - should return a pending change
-	transactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmi.NoPaths, extensions)
+	transactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmi.NoPaths, []*gnmi_ext.Extension{})
 	assert.NotNil(t, transactionID)
 
 	// Check that the value was set correctly in the cache
@@ -123,4 +82,32 @@ func (s *TestSuite) TestUnreachableTarget(t *testing.T) {
 	//assert.NoError(t, rollbackError, "Rollback returned an error")
 	//assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 	//assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
+}
+
+func createOfflineTarget(t *testing.T, targetID topo.ID, targetType string, targetVersion string, targetAddress string) {
+	topoClient, err := gnmi.NewTopoClient()
+	assert.NotNil(t, topoClient)
+	assert.Nil(t, err)
+
+	newTarget := &topo.Object{
+		ID:   targetID,
+		Type: topo.Object_ENTITY,
+		Obj: &topo.Object_Entity{
+			Entity: &topo.Entity{
+				KindID: topo.ID(targetType),
+			},
+		},
+	}
+
+	_ = newTarget.SetAspect(&topo.Configurable{
+		Type:    targetType,
+		Address: targetAddress,
+		Version: targetVersion,
+		Timeout: uint64((10 * time.Second).Milliseconds()),
+	})
+
+	_ = newTarget.SetAspect(&topo.TLSOptions{Plain: true})
+
+	err = topoClient.Create(context.Background(), newTarget)
+	assert.NoError(t, err)
 }
