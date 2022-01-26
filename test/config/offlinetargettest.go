@@ -16,9 +16,10 @@
 package config
 
 import (
-	"github.com/onosproject/onos-api/go/onos/topo"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-api/go/onos/topo"
 
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -31,26 +32,25 @@ const (
 	offlineTargetName = "test-offline-device-1"
 )
 
-// TestOfflineDevice tests set/query of a single GNMI path to a single device that is initially not in the config
-func (s *TestSuite) TestOfflineDevice(t *testing.T) {
+// TestOfflineTarget tests set/query of a single GNMI path to a single target that is initially not in the config
+func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	createOfflineTarget(t, offlineTargetName, "devicesim-1.0.x", "1.0.0", "")
 
 	devicePath := gnmi.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
-	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, []*gnmi_ext.Extension{})
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, []*gnmi_ext.Extension{})
 
-	// Bring device online
+	// Bring the target online
 	simulator := gnmi.CreateSimulatorWithName(t, offlineTargetName)
 	defer gnmi.DeleteSimulator(t, simulator)
 
-	// Wait for config to connect to the device
+	// Wait for config to connect to the target
 	gnmi.WaitForTargetAvailable(t, topo.ID(simulator.Name()), time.Minute)
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
-	// Check that the value was set properly on the device
-	gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
-	deviceGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
-	gnmi.CheckTargetValue(t, deviceGnmiClient, devicePath, modValue)
+	// Check that the value was set properly on the target, wait for configuration gets completed
+	targetGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
+	gnmi.CheckTargetValue(t, targetGnmiClient, devicePath, modValue)
 }

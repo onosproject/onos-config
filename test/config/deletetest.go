@@ -16,10 +16,11 @@ package config
 
 import (
 	"context"
-	"github.com/onosproject/onos-api/go/onos/topo"
-	gbp "github.com/openconfig/gnmi/proto/gnmi"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-api/go/onos/topo"
+	gbp "github.com/openconfig/gnmi/proto/gnmi"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
@@ -52,17 +53,13 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 
 	// Set values
 	var targetPathsForSet = gnmi.GetTargetPathsWithValues(targets, newPaths, newValues)
-	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
+	transactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
 
 	targetPathsForGet := gnmi.GetTargetPaths(targets, newPaths)
 
 	// Check that the values were set correctly
 	expectedValues := []string{newValue}
 	gnmi.CheckGNMIValues(t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
-
-	// Wait for the network change to complete
-	complete := gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
-	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the targets
 	target1GnmiClient := gnmi.GetTargetGNMIClientOrFail(t, target1)
