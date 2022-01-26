@@ -167,6 +167,7 @@ func (r *Reconciler) reconcileTransactionPending(ctx context.Context, transactio
 
 func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (bool, error) {
 	// Look through the change targets and validate changes for each target
+	transaction.Status.Sources = make(map[configapi.TargetID]configapi.Source)
 	for targetID, change := range change.Changes {
 		modelName := utils.ToModelNameV2(change.TargetType, change.TargetVersion)
 		modelPlugin, ok := r.pluginRegistry.GetPlugin(modelName)
