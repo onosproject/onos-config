@@ -28,7 +28,6 @@ import (
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
-	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -39,7 +38,7 @@ const defaultTimeout = 30 * time.Second
 var log = logging.GetLogger("controller", "transaction")
 
 // NewController returns a new control relation  controller
-func NewController(topo topo.Store, transactions transaction.Store, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) *controller.Controller {
+func NewController(transactions transaction.Store, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) *controller.Controller {
 	c := controller.NewController("transaction")
 
 	c.Watch(&Watcher{
@@ -53,7 +52,6 @@ func NewController(topo topo.Store, transactions transaction.Store, configuratio
 
 	c.Reconcile(&Reconciler{
 		transactions:   transactions,
-		topo:           topo,
 		configurations: configurations,
 		pluginRegistry: pluginRegistry,
 	})
@@ -63,7 +61,6 @@ func NewController(topo topo.Store, transactions transaction.Store, configuratio
 
 // Reconciler reconciles transactions
 type Reconciler struct {
-	topo           topo.Store
 	transactions   transaction.Store
 	configurations configuration.Store
 	pluginRegistry *pluginregistry.PluginRegistry

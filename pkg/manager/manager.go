@@ -148,8 +148,8 @@ func (m *Manager) startConfigurationController(topo topo.Store, conns sb.ConnMan
 	return configurationController.Start()
 }
 
-func (m *Manager) startTransactionController(topo topo.Store, configurations configuration.Store, transactions transaction.Store, pluginRegistry *pluginregistry.PluginRegistry) error {
-	transactionController := transactioncontroller.NewController(topo, transactions, configurations, pluginRegistry)
+func (m *Manager) startTransactionController(configurations configuration.Store, transactions transaction.Store, pluginRegistry *pluginregistry.PluginRegistry) error {
+	transactionController := transactioncontroller.NewController(transactions, configurations, pluginRegistry)
 	return transactionController.Start()
 
 }
@@ -205,7 +205,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	err = m.startTransactionController(topoStore, configurations, transactions, m.pluginRegistry)
+	err = m.startTransactionController(configurations, transactions, m.pluginRegistry)
 	if err != nil {
 		return err
 	}
