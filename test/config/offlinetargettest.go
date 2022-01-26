@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
@@ -37,22 +36,10 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
-	// Set a value using gNMI client to the offline device
-	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnb.GnmiExtensionDeviceType,
-			Msg: []byte("devicesim-1.0.x"),
-		},
-	}
-	extNameDeviceVersion := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnb.GnmiExtensionVersion,
-			Msg: []byte("1.0.0"),
-		},
-	}
-	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
+	createOfflineTarget(t, offlineTargetName, "devicesim-1.0.x", "1.0.0", "")
+
 	devicePath := gnmi.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
-	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
+	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, []*gnmi_ext.Extension{})
 
 	// Bring device online
 	simulator := gnmi.CreateSimulatorWithName(t, offlineTargetName)
