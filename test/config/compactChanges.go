@@ -17,7 +17,7 @@ package config
 import (
 	"context"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
-	"github.com/onosproject/onos-config/pkg/device"
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
@@ -63,8 +63,8 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator1)
 	defer gnmi.DeleteSimulator(t, simulator2)
 
-	gnmi.WaitForTargetAvailable(t, device.ID(simulator1.Name()), 2*time.Minute)
-	gnmi.WaitForTargetAvailable(t, device.ID(simulator2.Name()), 2*time.Minute)
+	gnmi.WaitForTargetAvailable(t, topo.ID(simulator1.Name()), 2*time.Minute)
+	gnmi.WaitForTargetAvailable(t, topo.ID(simulator2.Name()), 2*time.Minute)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)

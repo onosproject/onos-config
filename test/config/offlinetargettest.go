@@ -16,10 +16,10 @@
 package config
 
 import (
+	"github.com/onosproject/onos-api/go/onos/topo"
 	"testing"
 	"time"
 
-	"github.com/onosproject/onos-config/pkg/device"
 	gnb "github.com/onosproject/onos-config/pkg/northbound/gnmi"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -59,7 +59,7 @@ func (s *TestSuite) TestOfflineDevice(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the device
-	gnmi.WaitForTargetAvailable(t, device.ID(simulator.Name()), time.Minute)
+	gnmi.WaitForTargetAvailable(t, topo.ID(simulator.Name()), time.Minute)
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the device
