@@ -20,8 +20,6 @@ import (
 
 	controllerutils "github.com/onosproject/onos-config/pkg/controller/utils"
 
-	"github.com/onosproject/onos-config/pkg/utils"
-
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -31,12 +29,10 @@ import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	utilsv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
 
-	"github.com/onosproject/onos-lib-go/pkg/controller"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
-
 	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/topo"
+	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
@@ -100,34 +96,16 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	} else if ok {
 		return controller.Result{}, nil
 	}
-
 	return controller.Result{}, nil
-
 }
 
 func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configapi.Configuration) (bool, error) {
-	target, err := r.topo.Get(ctx, topoapi.ID(config.TargetID))
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			return false, err
-		}
-		return false, nil
-	}
-
-	mastership := topoapi.MastershipState{}
-	_ = target.GetAspect(&mastership)
-	targetMastershipTerm := configapi.MastershipTerm(mastership.Term)
-
-	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_COMPLETE || config.Status.State == configapi.ConfigurationState_CONFIGURATION_FAILED {
-		return false, nil
-	}
-
-	// If the configuration is not already ConfigurationPending and mastership
-	// has been lost revert it. This can occur when the connection to the
-	// target has been lost and the mastership is no longer valid.
-	if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING && targetMastershipTerm == 0 {
+	// If the configuration revision has changed, set the configuration to PENDING
+	// to reconcile changes to the configuration.
+	if config.Revision > config.Status.Revision {
 		config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
-		err = r.configurations.Update(ctx, config)
+		config.Status.Revision = config.Revision
+		err := r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
 			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 				return false, err
@@ -137,58 +115,94 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return true, nil
 	}
 
-	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_PENDING {
-		log.Debugf("Reconcile configuration %s in %s state", config.ID, config.Status.State.String())
-		// If the configuration is marked CONFIGURATION_PENDING and mastership
-		//has changed (indicated by an increased mastership term), mark the
-		//  configuration CONFIGURATION_INITIALIZING to force full re-synchronization.
-		if config.Status.MastershipState.Term < targetMastershipTerm {
-			config.Status.State = configapi.ConfigurationState_CONFIGURATION_INITIALIZING
-			config.Status.MastershipState.Term = targetMastershipTerm
-			err = r.configurations.Update(ctx, config)
-			if err != nil {
-				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-					return false, err
-				}
-				return false, nil
-			}
-			return true, nil
+	// Get the target entity from topo
+	target, err := r.topo.Get(ctx, topoapi.ID(config.TargetID))
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return false, err
 		}
-		// If the configuration is marked CONFIGURATION_PENDING and the values have
-		// changed (determined by comparing the transaction index to the last sync
-		// index), mark the configuration CONFIGURATION_UPDATING to push the changes
-		// to the target.
-		if config.Status.SyncIndex < config.Status.TransactionIndex {
-			config.Status.State = configapi.ConfigurationState_CONFIGURATION_UPDATING
-			err = r.configurations.Update(ctx, config)
-			if err != nil {
-				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-					return false, err
-				}
-				return false, nil
-			}
 
+		// If the target entity is not found, set the configuration to PENDING
+		if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
+			config.Status.MastershipState.Term = 0
+			config.Status.Paths = nil
+			err := r.configurations.UpdateStatus(ctx, config)
+			if err != nil {
+				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+					return false, err
+				}
+				return false, nil
+			}
 			return true, nil
 		}
+		return false, nil
 	}
 
-	targetMasterRelation, err := r.topo.Get(ctx, topoapi.ID(mastership.NodeId))
+	// Get the target mastership state
+	mastership := topoapi.MastershipState{}
+	_ = target.GetAspect(&mastership)
+
+	// If the mastership has changed, set the configuration state to PENDING and
+	// force reconciliation of all paths.
+	if (mastership.NodeId == "" && config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING) ||
+		configapi.MastershipTerm(mastership.Term) > config.Status.MastershipState.Term {
+		config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
+		config.Status.MastershipState.Term = configapi.MastershipTerm(mastership.Term)
+		config.Status.Paths = nil
+		err := r.configurations.UpdateStatus(ctx, config)
+		if err != nil {
+			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	}
+
+	// If the configuration is PENDING and a master exists, set changed paths to
+	// PENDING and set the configuration to SYNCHRONIZING to synchronize pending paths.
+	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_PENDING {
+		if mastership.NodeId == "" {
+			return false, nil
+		}
+		if config.Status.Paths == nil {
+			config.Status.Paths = make(map[string]*configapi.PathStatus)
+		}
+		for path, pathValue := range config.Values {
+			pathStatus, ok := config.Status.Paths[path]
+			if !ok || pathStatus.UpdateIndex != pathValue.Index {
+				config.Status.Paths[path] = &configapi.PathStatus{
+					State:       configapi.PathState_PATH_UPDATE_PENDING,
+					UpdateIndex: pathValue.Index,
+				}
+			}
+		}
+		config.Status.State = configapi.ConfigurationState_CONFIGURATION_SYNCHRONIZING
+		err := r.configurations.UpdateStatus(ctx, config)
+		if err != nil {
+			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	}
+
+	// If we've made it this far, we know there's a master relation.
+	// Get the relation and check whether this node is the source
+	relation, err := r.topo.Get(ctx, topoapi.ID(mastership.NodeId))
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return false, err
 		}
 		return false, nil
 	}
-
-	targetMasterInstanceID := targetMasterRelation.GetRelation().SrcEntityID
-	localInstanceID := controllerutils.GetOnosConfigID()
-
-	// If this node is not the master, skip reconciliation of the configuration
-	if localInstanceID != targetMasterInstanceID {
-		log.Debugf("Skipping Reconciliation of configuration '%s', not the master for target '%s'", config.ID, config.TargetID)
+	if relation.GetRelation().SrcEntityID != controllerutils.GetOnosConfigID() {
 		return false, nil
 	}
 
+	// Get the master connection
 	conn, err := r.conns.Get(ctx, topoapi.ID(config.TargetID))
 	if err != nil {
 		if !errors.IsNotFound(err) {
@@ -197,87 +211,53 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		log.Warnf("Reconciling configuration '%s': connection not found for target %s", config.ID, config.TargetID, err)
 		return false, nil
 	}
+	if conn.ID() != gnmi.ConnID(relation.ID) {
+		return false, nil
+	}
 
-	// If the configuration is marked as CONFIGURATION_INITIALIZING, perform full re-synchronization.
-	// of the target configuration from the root path.
-	var setRequestChanges []*configapi.PathValue
-	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_INITIALIZING {
-		log.Debugf("Reconcile configuration %s in %s state", config.ID, config.Status.State.String())
-		rootPath := &gpb.Path{Elem: make([]*gpb.PathElem, 0)}
-		getRootReq := &gpb.GetRequest{
-			Path:     []*gpb.Path{rootPath},
-			Encoding: gpb.Encoding_JSON_IETF,
-		}
-		root, err := conn.Get(ctx, getRootReq)
-		if err != nil {
-			return false, err
-		}
-
-		if len(root.Notification) == 0 {
-			return false, errors.NewInvalid("notification list is empty")
-		}
-
-		currentConfigValues := make(map[string]*configapi.PathValue)
-		for _, notification := range root.Notification {
-			for _, update := range notification.Update {
-				modelName := utils.ToModelNameV2(config.TargetType, config.TargetVersion)
-				modelPlugin, ok := r.pluginRegistry.GetPlugin(modelName)
-				if !ok {
-					return false, err
-				}
-				configValues, err := modelPlugin.GetPathValues(ctx, "", update.GetVal().GetJsonIetfVal())
-				if err != nil {
-					return false, err
-				}
-				for _, pathValue := range configValues {
-					currentConfigValues[pathValue.Path] = pathValue
-				}
-			}
-		}
-
-		log.Debugf("Current target %s config values: %v", config.TargetID, currentConfigValues)
-		desiredConfigValues := config.Values
-		log.Debugf("Desired config values to reconcile: %v", desiredConfigValues)
-		for path, desiredConfigValue := range desiredConfigValues {
-			if _, ok := currentConfigValues[path]; ok {
-				setRequestChanges = append(setRequestChanges, desiredConfigValue)
-			}
-		}
-		log.Debugf("Set request changes:", setRequestChanges)
-		// If the Configuration is marked as CONFIGURATION_UPDATING, we only need to
-		//  push paths that have changed since the target was initialized or last
-		//  updated by the controller. The set of changes made since the last
-		//  synchronization are identified by comparing the index of each path-value
-		//  to the last synchronization index, `syncIndex`.
-	} else if config.Status.State == configapi.ConfigurationState_CONFIGURATION_UPDATING {
-		log.Debugf("Reconcile configuration %s in %s state", config.ID, config.Status.State.String())
-		desiredConfigValues := config.Values
-		for _, desiredConfigValue := range desiredConfigValues {
-			// Perform partial reconciliation of target configuration (update only paths that have changed)
-			if desiredConfigValue.Index > config.Status.SyncIndex {
-				setRequestChanges = append(setRequestChanges, desiredConfigValue)
+	// Construct the set of path/value changes from the configuration status
+	pathValues := make([]*configapi.PathValue, 0, len(config.Status.Paths))
+	for path, pathStatus := range config.Status.Paths {
+		if pathStatus.State == configapi.PathState_PATH_UPDATE_PENDING {
+			pathValue, ok := config.Values[path]
+			if ok {
+				pathValues = append(pathValues, pathValue)
 			}
 		}
 	}
 
-	log.Debugf("Set request changes before creating Set request:", setRequestChanges)
-	setRequest, err := utilsv2.PathValuesToGnmiChange(setRequestChanges)
+	// Create a gNMI set request
+	log.Debugf("Set request changes before creating Set request:", pathValues)
+	setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues)
 	if err != nil {
-		return false, err
+		log.Error(err)
+		config.Status.State = configapi.ConfigurationState_CONFIGURATION_FAILED
+		err = r.configurations.UpdateStatus(ctx, config)
+		if err != nil {
+			if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
 	}
+
+	// Execute the set request
 	log.Debugf("Reconciling configuration; Set request is created for configuration %s: %v", config.ID, setRequest)
 	setResponse, err := conn.Set(ctx, setRequest)
 	if err != nil {
 		return false, err
 	}
-	// Once the target has been updated,
-	// update the target index to match the reconciled transaction index.
-	log.Debugf("Reconciling configuration %s: set response is received %v", config.ID, setResponse)
-	config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
-	config.Status.MastershipState.Term = targetMastershipTerm
-	config.Status.SyncIndex = config.Status.TransactionIndex
 
-	err = r.configurations.Update(ctx, config)
+	// Update the configuration state and path statuses
+	log.Debugf("Reconciling configuration %s: set response is received %v", config.ID, setResponse)
+	for path, pathStatus := range config.Status.Paths {
+		if _, ok := config.Values[path]; ok {
+			pathStatus.State = configapi.PathState_PATH_UPDATE_COMPLETE
+		}
+	}
+	config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
+	err = r.configurations.UpdateStatus(ctx, config)
 	if err != nil {
 		if !errors.IsConflict(err) && !errors.IsNotFound(err) {
 			return false, err
@@ -285,6 +265,5 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return false, nil
 	}
 	log.Infof("Reconciling configuration %s is in %s state", config.ID, config.Status.State)
-
 	return true, nil
 }

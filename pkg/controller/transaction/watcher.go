@@ -55,7 +55,13 @@ func (w *ConfigurationWatcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			ch <- controller.NewID(event.Configuration.Status.TransactionIndex)
+			indexes := make(map[configapi.Index]bool)
+			for _, pathValue := range event.Configuration.Values {
+				indexes[pathValue.Index] = true
+			}
+			for index := range indexes {
+				ch <- controller.NewID(index)
+			}
 		}
 	}()
 	return nil

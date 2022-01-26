@@ -17,6 +17,7 @@ package configuration
 import (
 	"context"
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -55,6 +56,9 @@ type Store interface {
 
 	// Watch watches configuration changes
 	Watch(ctx context.Context, ch chan<- configapi.ConfigurationEvent, opts ...WatchOption) error
+
+	// UpdateStatus updates a configuration status
+	UpdateStatus(ctx context.Context, configuration *configapi.Configuration) error
 
 	Close(ctx context.Context) error
 }
@@ -117,18 +121,24 @@ func (s *configurationStore) Get(ctx context.Context, id configapi.Configuration
 }
 
 func (s *configurationStore) Create(ctx context.Context, configuration *configapi.Configuration) error {
-	if configuration.ID != "" {
-		return errors.NewInvalid("configuration ID is assigned internally")
+	if configuration.ID == "" {
+		return errors.NewInvalid("no configuration ID specified")
 	}
-
 	if configuration.TargetID == "" {
 		return errors.NewInvalid("no target ID specified")
 	}
-
-	configuration.ID = configapi.ConfigurationID(configuration.TargetID)
 	if configuration.TargetVersion == "" {
 		return errors.NewInvalid("no target version specified")
 	}
+	if configuration.Revision != 0 {
+		return errors.NewInvalid("cannot create configuration with revision")
+	}
+	if configuration.Version != 0 {
+		return errors.NewInvalid("cannot create configuration with version")
+	}
+	configuration.Revision = 1
+	configuration.Created = time.Now()
+	configuration.Updated = time.Now()
 
 	log.Debugf("Creating configuration %s", configuration.ID)
 	bytes, err := proto.Marshal(configuration)
@@ -140,7 +150,7 @@ func (s *configurationStore) Create(ctx context.Context, configuration *configap
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
-	configuration.Revision = configapi.Revision(entry.Revision)
+	configuration.Version = uint64(entry.Revision)
 	return nil
 }
 
@@ -148,17 +158,49 @@ func (s *configurationStore) Update(ctx context.Context, configuration *configap
 	if configuration.ID == "" {
 		return errors.NewInvalid("no configuration ID specified")
 	}
-
 	if configuration.TargetID == "" {
 		return errors.NewInvalid("no target ID specified")
 	}
-
 	if configuration.TargetVersion == "" {
 		return errors.NewInvalid("no target version specified")
 	}
-
 	if configuration.Revision == 0 {
 		return errors.NewInvalid("configuration must contain a revision on update")
+	}
+	if configuration.Version == 0 {
+		return errors.NewInvalid("configuration must contain a version on update")
+	}
+	configuration.Revision++
+	configuration.Updated = time.Now()
+
+	log.Debugf("Updating configuration %s", configuration.ID)
+	bytes, err := proto.Marshal(configuration)
+	if err != nil {
+		return errors.NewInvalid("configuration encoding failed: %v", err)
+	}
+	entry, err := s.configurations.Put(ctx, string(configuration.ID), bytes, _map.IfMatch(meta.NewRevision(meta.Revision(configuration.Version))))
+	if err != nil {
+		return errors.FromAtomix(err)
+	}
+	configuration.Version = uint64(entry.Revision)
+	return nil
+}
+
+func (s *configurationStore) UpdateStatus(ctx context.Context, configuration *configapi.Configuration) error {
+	if configuration.ID == "" {
+		return errors.NewInvalid("no configuration ID specified")
+	}
+	if configuration.TargetID == "" {
+		return errors.NewInvalid("no target ID specified")
+	}
+	if configuration.TargetVersion == "" {
+		return errors.NewInvalid("no target version specified")
+	}
+	if configuration.Revision == 0 {
+		return errors.NewInvalid("configuration must contain a revision on update")
+	}
+	if configuration.Version == 0 {
+		return errors.NewInvalid("configuration must contain a version on update")
 	}
 
 	log.Debugf("Updating configuration %s", configuration.ID)
@@ -166,24 +208,40 @@ func (s *configurationStore) Update(ctx context.Context, configuration *configap
 	if err != nil {
 		return errors.NewInvalid("configuration encoding failed: %v", err)
 	}
-	entry, err := s.configurations.Put(ctx, string(configuration.ID), bytes, _map.IfMatch(meta.NewRevision(meta.Revision(configuration.Revision))))
+	entry, err := s.configurations.Put(ctx, string(configuration.ID), bytes, _map.IfMatch(meta.NewRevision(meta.Revision(configuration.Version))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
-	configuration.Revision = configapi.Revision(entry.Revision)
+	configuration.Version = uint64(entry.Revision)
 	return nil
 }
 
 func (s *configurationStore) Delete(ctx context.Context, configuration *configapi.Configuration) error {
-	if configuration.Revision == 0 {
-		return errors.NewInvalid("configuration must contain a revision on delete")
+	if configuration.Version == 0 {
+		return errors.NewInvalid("configuration must contain a version on delete")
 	}
 
-	log.Debugf("Deleting configuration %s", configuration.ID)
-	_, err := s.configurations.Remove(ctx, string(configuration.ID), _map.IfMatch(meta.NewRevision(meta.Revision(configuration.Revision))))
-	if err != nil {
-		log.Warnf("Failed to delete configuration %s: %s", configuration.ID, err)
-		return errors.FromAtomix(err)
+	if configuration.Deleted == nil {
+		log.Debugf("Updating configuration %s", configuration.ID)
+		t := time.Now()
+		configuration.Deleted = &t
+		bytes, err := proto.Marshal(configuration)
+		if err != nil {
+			return errors.NewInvalid("configuration encoding failed: %v", err)
+		}
+		entry, err := s.configurations.Put(ctx, string(configuration.ID), bytes, _map.IfMatch(meta.NewRevision(meta.Revision(configuration.Version))))
+		if err != nil {
+			return errors.FromAtomix(err)
+		}
+		configuration.Version = uint64(entry.Revision)
+	} else {
+		log.Debugf("Deleting configuration %s", configuration.ID)
+		_, err := s.configurations.Remove(ctx, string(configuration.ID), _map.IfMatch(meta.NewRevision(meta.Revision(configuration.Version))))
+		if err != nil {
+			log.Warnf("Failed to delete configuration %s: %s", configuration.ID, err)
+			return errors.FromAtomix(err)
+		}
+		configuration.Version = 0
 	}
 	return nil
 }
@@ -257,6 +315,7 @@ func decodeConfiguration(entry _map.Entry) (*configapi.Configuration, error) {
 		return nil, errors.NewInvalid("configuration decoding failed: %v", err)
 	}
 	configuration.ID = configapi.ConfigurationID(entry.Key)
-	configuration.Revision = configapi.Revision(entry.Revision)
+	configuration.Key = entry.Key
+	configuration.Version = uint64(entry.Revision)
 	return configuration, nil
 }

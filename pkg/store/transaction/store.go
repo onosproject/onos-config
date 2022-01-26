@@ -16,6 +16,7 @@ package transaction
 
 import (
 	"github.com/atomix/atomix-go-client/pkg/atomix"
+	"time"
 
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 	"github.com/golang/protobuf/proto"
@@ -51,6 +52,9 @@ type Store interface {
 
 	// Update updates an existing transaction
 	Update(ctx context.Context, transaction *configapi.Transaction) error
+
+	// UpdateStatus updates the status of an existing transaction
+	UpdateStatus(ctx context.Context, transaction *configapi.Transaction) error
 
 	// Delete deletes a transaction
 	Delete(ctx context.Context, transaction *configapi.Transaction) error
@@ -157,6 +161,9 @@ func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Tr
 	if transaction.Revision != 0 {
 		return errors.NewInvalid("not a new object")
 	}
+	transaction.Revision = 1
+	transaction.Created = time.Now()
+	transaction.Updated = time.Now()
 
 	bytes, err := proto.Marshal(transaction)
 	if err != nil {
@@ -169,42 +176,88 @@ func (s *transactionStore) Create(ctx context.Context, transaction *configapi.Tr
 	}
 
 	transaction.Index = configapi.Index(entry.Index)
-	transaction.Revision = configapi.Revision(entry.Revision)
+	transaction.Version = uint64(entry.Revision)
 	return nil
 }
 
 // Update updates an existing transaction
 func (s *transactionStore) Update(ctx context.Context, transaction *configapi.Transaction) error {
 	if transaction.Revision == 0 {
-		return errors.NewInvalid("not a stored object")
+		return errors.NewInvalid("configuration must contain a revision on update")
 	}
+	if transaction.Version == 0 {
+		return errors.NewInvalid("configuration must contain a version on update")
+	}
+	transaction.Revision++
+	transaction.Updated = time.Now()
 
 	bytes, err := proto.Marshal(transaction)
 	if err != nil {
 		return errors.NewInvalid("change encoding failed: %v", err)
 	}
 
-	entry, err := s.transactions.Set(ctx, indexedmap.Index(transaction.Index), string(transaction.ID), bytes, indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Revision))))
+	entry, err := s.transactions.Set(ctx, indexedmap.Index(transaction.Index), string(transaction.ID), bytes, indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Version))))
 	if err != nil {
 		return errors.FromAtomix(err)
 	}
 
-	transaction.Revision = configapi.Revision(entry.Revision)
+	transaction.Version = uint64(entry.Revision)
+	return nil
+}
+
+// UpdateStatus updates an existing transaction status
+func (s *transactionStore) UpdateStatus(ctx context.Context, transaction *configapi.Transaction) error {
+	if transaction.Revision == 0 {
+		return errors.NewInvalid("configuration must contain a revision on update")
+	}
+	if transaction.Version == 0 {
+		return errors.NewInvalid("configuration must contain a version on update")
+	}
+	transaction.Revision++
+	transaction.Updated = time.Now()
+
+	bytes, err := proto.Marshal(transaction)
+	if err != nil {
+		return errors.NewInvalid("change encoding failed: %v", err)
+	}
+
+	entry, err := s.transactions.Set(ctx, indexedmap.Index(transaction.Index), string(transaction.ID), bytes, indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Version))))
+	if err != nil {
+		return errors.FromAtomix(err)
+	}
+
+	transaction.Version = uint64(entry.Revision)
 	return nil
 }
 
 // Delete deletes a transaction
 func (s *transactionStore) Delete(ctx context.Context, transaction *configapi.Transaction) error {
-	if transaction.Revision == 0 {
-		return errors.NewInvalid("not a stored object")
+	if transaction.Version == 0 {
+		return errors.NewInvalid("transaction must contain a version on delete")
 	}
 
-	_, err := s.transactions.RemoveIndex(ctx, indexedmap.Index(transaction.Index), indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Revision))))
-	if err != nil {
-		return errors.FromAtomix(err)
+	if transaction.Deleted == nil {
+		log.Debugf("Updating transaction %s", transaction.ID)
+		t := time.Now()
+		transaction.Deleted = &t
+		bytes, err := proto.Marshal(transaction)
+		if err != nil {
+			return errors.NewInvalid("transaction encoding failed: %v", err)
+		}
+		entry, err := s.transactions.Set(ctx, indexedmap.Index(transaction.Index), string(transaction.ID), bytes, indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Version))))
+		if err != nil {
+			return errors.FromAtomix(err)
+		}
+		transaction.Version = uint64(entry.Revision)
+	} else {
+		log.Debugf("Deleting transaction %s", transaction.ID)
+		_, err := s.transactions.RemoveIndex(ctx, indexedmap.Index(transaction.Index), indexedmap.IfMatch(meta.NewRevision(meta.Revision(transaction.Version))))
+		if err != nil {
+			log.Warnf("Failed to delete transaction %s: %s", transaction.ID, err)
+			return errors.FromAtomix(err)
+		}
+		transaction.Version = 0
 	}
-
-	transaction.Revision = 0
 	return nil
 }
 
@@ -280,7 +333,7 @@ func decodeTransaction(entry indexedmap.Entry) (*configapi.Transaction, error) {
 	}
 	transaction.ID = configapi.TransactionID(entry.Key)
 	transaction.Index = configapi.Index(entry.Index)
-	transaction.Revision = configapi.Revision(entry.Revision)
+	transaction.Version = uint64(entry.Revision)
 	return transaction, nil
 }
 
