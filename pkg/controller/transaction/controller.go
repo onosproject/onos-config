@@ -74,14 +74,14 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	transactionID := id.Value.(configapi.TransactionID)
-	transaction, err := r.transactions.Get(ctx, transactionID)
+	index := id.Value.(configapi.Index)
+	transaction, err := r.transactions.GetByIndex(ctx, index)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Warnf("Failed to reconcile transaction %s, %s", transactionID, err)
+			log.Warnf("Failed to reconcile transaction %d, %s", index, err)
 			return controller.Result{}, err
 		}
-		log.Debugf("Transaction %s not found", transactionID)
+		log.Debugf("Transaction %d not found", index)
 		return controller.Result{}, nil
 	}
 
@@ -90,19 +90,12 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	// If the transaction is in a completed state, queue the next transaction to be reconciled
 	if transaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE ||
 		transaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
-		nextTransaction, err := r.transactions.GetByIndex(ctx, transaction.Index+1)
-		if err != nil {
-			if !errors.IsNotFound(err) {
-				return controller.Result{}, err
-			}
-			return controller.Result{}, nil
-		}
-		log.Debugf("Queueing next transaction %d", nextTransaction.Index)
-		return controller.Result{Requeue: controller.ID{Value: nextTransaction.ID}}, nil
+		log.Debugf("Queueing next transaction %d", index+1)
+		return controller.Result{Requeue: controller.NewID(index + 1)}, nil
 	}
 
 	if ok, err := r.reconcileTransaction(ctx, transaction); err != nil {
-		log.Warnf("Failed to reconcile transaction: %s, %s", transactionID, err)
+		log.Warnf("Failed to reconcile transaction: %d, %s", index, err)
 		return controller.Result{}, err
 	} else if ok {
 		return controller.Result{}, nil
@@ -151,7 +144,7 @@ func (r *Reconciler) reconcileTransactionPending(ctx context.Context, transactio
 		transaction.Status.State = configapi.TransactionState_TRANSACTION_VALIDATING
 		err = r.transactions.Update(ctx, transaction)
 		if err != nil {
-			if !errors.IsConflict(err) || !errors.IsNotFound(err) {
+			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 				return false, err
 			}
 			return false, nil
@@ -191,7 +184,7 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 			transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
 			err = r.transactions.Update(ctx, transaction)
 			if err != nil {
-				if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 					return false, err
 				}
 				return false, nil
@@ -200,32 +193,43 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		}
 
 		// Get the target configuration and record the source values in the transaction status
-		config, err := r.configurations.Get(ctx, targetID)
-		if err != nil {
+		var configValues map[string]*configapi.PathValue
+		configID := configuration.NewID(targetID, change.TargetType, change.TargetVersion)
+		if config, err := r.configurations.Get(ctx, configID); err != nil {
 			if !errors.IsNotFound(err) {
 				return false, err
 			}
-			return false, nil
+			configValues = make(map[string]*configapi.PathValue)
+		} else if config.Values != nil {
+			configValues = config.Values
+		} else {
+			configValues = make(map[string]*configapi.PathValue)
 		}
+
 		source := configapi.Source{
 			TargetType:    change.TargetType,
 			TargetVersion: change.TargetVersion,
 			Values:        make(map[string]configapi.PathValue),
 		}
 		for path := range change.Values {
-			pathValue, ok := config.Values[path]
+			pathValue, ok := configValues[path]
 			if ok {
 				source.Values[path] = *pathValue
+			} else {
+				source.Values[path] = configapi.PathValue{
+					Path:    path,
+					Deleted: true,
+				}
 			}
 		}
-		transaction.Status.Sources[config.TargetID] = source
+		transaction.Status.Sources[targetID] = source
 	}
 
 	// Store configuration sources and move the transaction to the APPLYING state
 	transaction.Status.State = configapi.TransactionState_TRANSACTION_APPLYING
 	err := r.transactions.Update(ctx, transaction)
 	if err != nil {
-		if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			return false, err
 		}
 		return false, nil
@@ -236,7 +240,128 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (bool, error) {
 	// Once the source configurations have been stored we can update the target configurations
 	for targetID, change := range change.Changes {
-		config, err := r.configurations.Get(ctx, targetID)
+		configID := configuration.NewID(targetID, change.TargetType, change.TargetVersion)
+		config, err := r.configurations.Get(ctx, configID)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return false, err
+			}
+
+			config = &configapi.Configuration{
+				ID:            configID,
+				TargetID:      targetID,
+				TargetType:    change.TargetType,
+				TargetVersion: change.TargetVersion,
+				Values:        make(map[string]*configapi.PathValue),
+			}
+			for path, changeValue := range change.Values {
+				config.Values[path] = &configapi.PathValue{
+					Value:   changeValue.Value,
+					Deleted: changeValue.Delete,
+					Index:   transaction.Index,
+				}
+			}
+
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
+			config.Status.TransactionIndex = transaction.Index
+			err = r.configurations.Create(ctx, config)
+			if err != nil {
+				if !errors.IsAlreadyExists(err) {
+					return false, err
+				}
+				return false, nil
+			}
+		} else {
+			if config.Values == nil {
+				config.Values = make(map[string]*configapi.PathValue)
+			}
+			for path, changeValue := range change.Values {
+				config.Values[path] = &configapi.PathValue{
+					Value:   changeValue.Value,
+					Deleted: changeValue.Delete,
+					Index:   transaction.Index,
+				}
+			}
+
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
+			config.Status.TransactionIndex = transaction.Index
+			err = r.configurations.Update(ctx, config)
+			if err != nil {
+				if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+					return false, err
+				}
+				return false, nil
+			}
+		}
+	}
+
+	// Complete the transaction once the target configurations have been updated
+	transaction.Status.State = configapi.TransactionState_TRANSACTION_COMPLETE
+	err := r.transactions.Update(ctx, transaction)
+	if err != nil {
+		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func (r *Reconciler) reconcileTransactionRollback(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (bool, error) {
+	log.Debugf("Reconciling transaction rollback %s in %s state", transaction.ID, transaction.Status.State)
+	switch transaction.Status.State {
+	case configapi.TransactionState_TRANSACTION_PENDING:
+		// If the transaction is Pending, begin validation if the prior transaction
+		// has already been applied. This simplifies concurrency control in the controller
+		// and guarantees transactions are applied to the configurations in sequential order.
+		return r.reconcileTransactionPending(ctx, transaction)
+		// if the transaction is in the Validating state, Validate the rollback in a transaction and
+		// change the state to Applying if validation passed otherwise fail the transaction
+	case configapi.TransactionState_TRANSACTION_VALIDATING:
+		return r.reconcileTransactionRollbackValidating(ctx, transaction, rollback)
+		// If the transaction is in the Applying state, rollback the Configuration for each
+		// target and Complete the transaction.
+	case configapi.TransactionState_TRANSACTION_APPLYING:
+		return r.reconcileTransactionRollbackApplying(ctx, transaction, rollback)
+	}
+	return false, nil
+}
+
+func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (bool, error) {
+	// Get the transaction being rolled back and apply its sources to this transaction
+	// The source transaction's sources are stored in the rollback transaction to ensure
+	// the rollback can be applied once it's in the APPLYING state even if the source
+	// transaction is deleted from the log during compaction.
+	targetTransaction, err := r.transactions.GetByIndex(ctx, rollback.Index)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return false, err
+		}
+		transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
+	} else {
+		switch targetTransaction.Transaction.(type) {
+		case *configapi.Transaction_Change:
+			transaction.Status.State = configapi.TransactionState_TRANSACTION_APPLYING
+			transaction.Status.Sources = targetTransaction.Status.Sources
+		case *configapi.Transaction_Rollback:
+			transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
+		}
+	}
+
+	err = r.transactions.Update(ctx, transaction)
+	if err != nil {
+		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func (r *Reconciler) reconcileTransactionRollbackApplying(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (bool, error) {
+	// Once the source configurations have been stored we can update the target configurations
+	for targetID, source := range transaction.Status.Sources {
+		config, err := r.configurations.Get(ctx, configuration.NewID(targetID, source.TargetType, source.TargetVersion))
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				return false, err
@@ -244,13 +369,15 @@ func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, tra
 			return false, nil
 		}
 
-		for path, changeValue := range change.Values {
+		// Update the configuration's values with the transaction index
+		for path, pathValue := range source.Values {
 			if config.Values == nil {
 				config.Values = make(map[string]*configapi.PathValue)
 			}
 			config.Values[path] = &configapi.PathValue{
-				Value:   changeValue.Value,
-				Deleted: changeValue.Delete,
+				Path:    path,
+				Value:   pathValue.Value,
+				Deleted: pathValue.Deleted,
 				Index:   transaction.Index,
 			}
 		}
@@ -276,8 +403,4 @@ func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, tra
 		return false, nil
 	}
 	return true, nil
-}
-
-func (r *Reconciler) reconcileTransactionRollback(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (bool, error) {
-	return false, nil
 }

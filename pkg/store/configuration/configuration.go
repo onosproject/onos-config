@@ -16,7 +16,6 @@ package configuration
 
 import (
 	"context"
-
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 
 	"github.com/golang/protobuf/proto"
@@ -32,10 +31,15 @@ import (
 
 var log = logging.GetLogger("store", "configuration")
 
+// NewID returns a new Configuration ID for the given target/type/version
+func NewID(targetID configapi.TargetID, targetType configapi.TargetType, targetVersion configapi.TargetVersion) configapi.ConfigurationID {
+	return configapi.ConfigurationID(targetID)
+}
+
 // Store configuration store interface
 type Store interface {
 	// Get gets the configuration intended for a given target ID
-	Get(ctx context.Context, id configapi.TargetID) (*configapi.Configuration, error)
+	Get(ctx context.Context, id configapi.ConfigurationID) (*configapi.Configuration, error)
 
 	// Create creates a configuration
 	Create(ctx context.Context, configuration *configapi.Configuration) error
@@ -103,7 +107,7 @@ func WithConfigurationID(id configapi.ConfigurationID) WatchOption {
 	return watchIDOption{id: id}
 }
 
-func (s *configurationStore) Get(ctx context.Context, id configapi.TargetID) (*configapi.Configuration, error) {
+func (s *configurationStore) Get(ctx context.Context, id configapi.ConfigurationID) (*configapi.Configuration, error) {
 	log.Debugf("Getting configuration %s", id)
 	entry, err := s.configurations.Get(ctx, string(id))
 	if err != nil {
