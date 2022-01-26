@@ -65,6 +65,7 @@ func TestConfigurationStore(t *testing.T) {
 	}
 
 	target1Config := &configapi.Configuration{
+		ID:            configapi.ConfigurationID(target1),
 		TargetID:      target1,
 		TargetVersion: "1.0.0",
 		Values:        target1ConfigValues,
@@ -79,6 +80,7 @@ func TestConfigurationStore(t *testing.T) {
 		},
 	}
 	target2Config := &configapi.Configuration{
+		ID:            configapi.ConfigurationID(target2),
 		TargetID:      target2,
 		TargetVersion: "1.0.0",
 		Values:        target2ConfigValues,
@@ -167,9 +169,17 @@ func TestConfigurationStore(t *testing.T) {
 	err = store1.Delete(context.TODO(), target2Config)
 	assert.NoError(t, err)
 	configuration, err := store2.Get(context.TODO(), configapi.ConfigurationID(target2))
+	assert.NoError(t, err)
+	assert.NotNil(t, configuration.Deleted)
+	err = store1.Delete(context.TODO(), target2Config)
+	assert.NoError(t, err)
+	configuration, err = store2.Get(context.TODO(), configapi.ConfigurationID(target2))
 	assert.Error(t, err)
 	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, configuration)
+	event = <-configurationCh
+	assert.Equal(t, target2Config.ID, event.Configuration.ID)
+	assert.Equal(t, configapi.ConfigurationEventType_CONFIGURATION_UPDATED, event.Type)
 	event = <-configurationCh
 	assert.Equal(t, target2Config.ID, event.Configuration.ID)
 	assert.Equal(t, configapi.ConfigurationEventType_CONFIGURATION_DELETED, event.Type)

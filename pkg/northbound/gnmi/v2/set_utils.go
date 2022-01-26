@@ -112,9 +112,6 @@ func newTransaction(targets map[configapi.TargetID]*targetInfo, extensions Exten
 			},
 		},
 		Username: username,
-		Status: configapi.TransactionStatus{
-			State: configapi.TransactionState_TRANSACTION_PENDING,
-		},
 	}
 
 	return transaction, nil
