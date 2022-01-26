@@ -202,6 +202,7 @@ func (s *configurationStore) UpdateStatus(ctx context.Context, configuration *co
 	if configuration.Version == 0 {
 		return errors.NewInvalid("configuration must contain a version on update")
 	}
+	configuration.Updated = time.Now()
 
 	log.Debugf("Updating configuration %s", configuration.ID)
 	bytes, err := proto.Marshal(configuration)

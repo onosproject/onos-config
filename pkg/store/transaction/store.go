@@ -213,7 +213,6 @@ func (s *transactionStore) UpdateStatus(ctx context.Context, transaction *config
 	if transaction.Version == 0 {
 		return errors.NewInvalid("configuration must contain a version on update")
 	}
-	transaction.Revision++
 	transaction.Updated = time.Now()
 
 	bytes, err := proto.Marshal(transaction)
