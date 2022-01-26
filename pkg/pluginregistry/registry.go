@@ -27,6 +27,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"strings"
 	"sync"
@@ -201,8 +202,8 @@ func newClient(endpoint string) (api.ModelPluginServiceClient, error) {
 	clientCreds, _ := getClientCredentials()
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(credentials.NewTLS(clientCreds)),
-		grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()),
-		grpc.WithStreamInterceptor(retry.RetryingStreamClientInterceptor()),
+		grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor(retry.WithRetryOn(codes.Unavailable))),
+		grpc.WithStreamInterceptor(retry.RetryingStreamClientInterceptor(retry.WithRetryOn(codes.Unavailable))),
 	}
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
