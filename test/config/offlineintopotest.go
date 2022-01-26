@@ -59,12 +59,8 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 
 	_ = newTarget.SetAspect(&topo.TLSOptions{Plain: true})
 
-	request := &topo.CreateRequest{
-		Object: newTarget,
-	}
-	addResponse, addResponseError := topoClient.Create(context.Background(), request)
-	assert.NotNil(t, addResponse)
-	assert.Nil(t, addResponseError)
+	err := topoClient.Create(context.Background(), newTarget)
+	assert.NoError(t, err)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
@@ -97,7 +93,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 	simulator := helm.
 		Chart("device-simulator").
 		Release(offlineInTopoModDeviceName)
-	err := simulator.Install(true)
+	err = simulator.Install(true)
 	assert.NoError(t, err)
 	device, err := gnmi.GetSimulatorTarget(simulator)
 	assert.NoError(t, err)

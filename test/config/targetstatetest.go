@@ -28,9 +28,13 @@ func (s *TestSuite) TestDeviceState(t *testing.T) {
 	defer gnmi.DeleteSimulator(t, simulator)
 
 	assert.NotNil(t, simulator)
-	found := gnmi.WaitForTarget(t, func(d *topo.Object, eventType topo.EventType) bool {
+	found := gnmi.WaitForTarget(t, func(rel *topo.Relation, eventType topo.EventType) bool {
+		topoClient, err := gnmi.NewTopoClient()
+		assert.NoError(t, err)
+		d, err := topoClient.Get(gnmi.MakeContext(), rel.TgtEntityID)
+		assert.NoError(t, err)
 		protocols := &topo.Protocols{}
-		err := d.GetAspect(protocols)
+		err = d.GetAspect(protocols)
 		assert.NoError(t, err)
 		var protocolStates []*topo.ProtocolState
 		if err != nil {

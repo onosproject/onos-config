@@ -20,7 +20,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	"io"
+	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
 	"strconv"
 	"strings"
 	"testing"
@@ -98,13 +98,11 @@ func GetSimulatorTarget(simulator *helm.HelmRelease) (*topo.Object, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	response, err := client.Get(ctx, &topo.GetRequest{
-		ID: topo.ID(simulator.Name()),
-	})
+	obj, err := client.Get(ctx, topo.ID(simulator.Name()))
 	if err != nil {
 		return nil, err
 	}
-	return response.Object, nil
+	return obj, nil
 }
 
 // NewSimulatorTargetEntity creates a topo entity for a device simulator target
@@ -171,12 +169,8 @@ func NewSimulatorTargetEntity(simulator *helm.HelmRelease, targetType string, ta
 }
 
 // NewTopoClient creates a topology client
-func NewTopoClient() (topo.TopoClient, error) {
-	conn, err := connectComponent("onos-umbrella", "onos-topo")
-	if err != nil {
-		return nil, err
-	}
-	return topo.NewTopoClient(conn), nil
+func NewTopoClient() (toposdk.Client, error) {
+	return toposdk.NewClient()
 }
 
 // NewAdminServiceClient :
@@ -205,103 +199,60 @@ func AddTargetToTopo(targetEntity *topo.Object) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, err = client.Create(ctx, &topo.CreateRequest{
-		Object: targetEntity,
-	})
-	return err
-}
-
-// RemoveTargetFromTopo removes a target from topo
-func RemoveTargetFromTopo(d *topo.Object) error {
-	client, err := NewTopoClient()
-	if err != nil {
-		return err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	_, err = client.Delete(ctx, &topo.DeleteRequest{
-		ID: d.ID,
-	})
+	err = client.Create(ctx, targetEntity)
 	return err
 }
 
 // WaitForTarget waits for a target to match the given predicate
-func WaitForTarget(t *testing.T, predicate func(*topo.Object, topo.EventType) bool, timeout time.Duration) bool {
+func WaitForTarget(t *testing.T, predicate func(*topo.Relation, topo.EventType) bool, timeout time.Duration) bool {
 	cl, err := NewTopoClient()
 	assert.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	stream, err := cl.Watch(ctx, &topo.WatchRequest{})
+	stream := make(chan topo.Event)
+	err = cl.Watch(ctx, stream)
 	assert.NoError(t, err)
-	for {
-		response, err := stream.Recv() // Wait here for topo events
-		if err == io.EOF {
-			assert.Fail(t, "topo stream closed prematurely")
-			return false
-		} else if err != nil {
-			assert.Fail(t, fmt.Sprintf("topo stream failed with error %s", err.Error()))
-			return false
-		} else if response.Event.Object.Type == topo.Object_ENTITY {
-			err = response.Event.Object.GetAspect(&topo.Configurable{})
-			if err == nil {
-				topoTarget := &response.Event.Object
-				if predicate(topoTarget, response.Event.GetType()) {
-					return true
-				} // Otherwise, loop and wait for the next topo event
+	for event := range stream {
+		if rel, ok := event.Object.Obj.(*topo.Object_Relation); ok {
+			if rel.Relation.KindID == topo.CONTROLS {
+				if err == nil {
+					if predicate(rel.Relation, event.GetType()) {
+						return true
+					} // Otherwise, loop and wait for the next topo event
+				}
 			}
 		}
 	}
+	return false
 }
 
 // WaitForTargetAvailable waits for a target to become available
 func WaitForTargetAvailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
-	return WaitForTarget(t, func(object *topo.Object, eventType topo.EventType) bool {
-		if object.ID != objectID {
-			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, object.ID, objectID)
+	return WaitForTarget(t, func(rel *topo.Relation, eventType topo.EventType) bool {
+		if rel.TgtEntityID != objectID {
+			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, rel.TgtEntityID, objectID)
 			return false
 		}
 
-		protocols := &topo.Protocols{}
-		err := object.GetAspect(protocols)
-		var protocolStates []*topo.ProtocolState
-		if err != nil {
-			protocolStates = nil
-		} else {
-			protocolStates = protocols.State
+		if (eventType == topo.EventType_ADDED || eventType == topo.EventType_UPDATED) &&
+			rel.KindID == topo.CONTROLS {
+			return true
 		}
 
-		for _, protocol := range protocolStates {
-			if protocol.Protocol == topo.Protocol_GNMI && protocol.ServiceState == topo.ServiceState_AVAILABLE {
-				//fmt.Printf("Topo %s on %s is AVAILABLE. Has: %v\n", eventType, dev.ID, protocol)
-				return true
-			}
-		}
-		//fmt.Printf("Topo %s on %s not AVAILABLE. Protocols: %v\n", eventType, dev.ID, dev.Protocols)
 		return false
 	}, timeout)
 }
 
 // WaitForTargetUnavailable waits for a target to become available
 func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Duration) bool {
-	return WaitForTarget(t, func(object *topo.Object, eventType topo.EventType) bool {
-		if object.ID != objectID {
-			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, object.ID, objectID)
+	return WaitForTarget(t, func(rel *topo.Relation, eventType topo.EventType) bool {
+		if rel.TgtEntityID != objectID {
+			fmt.Printf("Topo %s event from %s (expected %s). Discarding\n", eventType, rel.TgtEntityID, objectID)
 			return false
 		}
 
-		protocols := &topo.Protocols{}
-		err := object.GetAspect(protocols)
-		var protocolStates []*topo.ProtocolState
-		if err != nil {
-			protocolStates = nil
-		} else {
-			protocolStates = protocols.State
-		}
-
-		for _, protocol := range protocolStates {
-			if protocol.Protocol == topo.Protocol_GNMI && protocol.ServiceState == topo.ServiceState_UNAVAILABLE {
-				return true
-			}
+		if eventType == topo.EventType_REMOVED && rel.KindID == topo.CONTROLS {
+			return true
 		}
 		return false
 	}, timeout)
@@ -657,10 +608,5 @@ func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
 
 // DeleteSimulator shuts down the simulator pod and removes the target from topology
 func DeleteSimulator(t *testing.T, simulator *helm.HelmRelease) {
-	simulatorTarget, err := GetSimulatorTarget(simulator)
-	assert.NoError(t, err)
-	err = simulator.Uninstall()
-	assert.NoError(t, err)
-	err = RemoveTargetFromTopo(simulatorTarget)
-	assert.NoError(t, err)
+	assert.NoError(t, simulator.Uninstall())
 }

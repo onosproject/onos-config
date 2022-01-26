@@ -33,9 +33,13 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 	assert.NotNil(t, simulator)
 	var currentTerm uint64
 	var masterNode string
-	found := gnmi.WaitForTarget(t, func(d *topo.Object, eventType topo.EventType) bool {
+	found := gnmi.WaitForTarget(t, func(rel *topo.Relation, eventType topo.EventType) bool {
+		topoClient, err := gnmi.NewTopoClient()
+		assert.NoError(t, err)
+		d, err := topoClient.Get(gnmi.MakeContext(), rel.TgtEntityID)
+		assert.NoError(t, err)
 		mastership := &topo.MastershipState{}
-		err := d.GetAspect(mastership)
+		err = d.GetAspect(mastership)
 		assert.NoError(t, err)
 		currentTerm = mastership.Term
 		masterNode = mastership.NodeId
@@ -63,9 +67,13 @@ func (s *TestSuite) TestSessionFailOver(t *testing.T) {
 
 	// Waits for a new master to be elected (i.e. the term will be increased), it establishes a connection to the device
 	// and updates the device state
-	found = gnmi.WaitForTarget(t, func(d *topo.Object, eventType topo.EventType) bool {
+	found = gnmi.WaitForTarget(t, func(rel *topo.Relation, eventType topo.EventType) bool {
+		topoClient, err := gnmi.NewTopoClient()
+		assert.NoError(t, err)
+		d, err := topoClient.Get(gnmi.MakeContext(), rel.TgtEntityID)
+		assert.NoError(t, err)
 		mastership := &topo.MastershipState{}
-		err := d.GetAspect(mastership)
+		err = d.GetAspect(mastership)
 		assert.NoError(t, err)
 		currentTerm = mastership.Term
 		masterNode = mastership.NodeId

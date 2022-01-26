@@ -25,11 +25,6 @@ import (
 	"time"
 )
 
-// NewTopoClient creates a new topo SDK client
-func NewTopoClient() (toposdk.Client, error) {
-	return toposdk.NewClient()
-}
-
 // getEntityOrDie queries an entity of the given kind and fails if it isn't found
 func getEntityOrDie(ctx context.Context, t *testing.T, c toposdk.Client, kind string) topo.Object {
 	filter := &topo.Filters{
@@ -109,7 +104,7 @@ func checkTopo(t *testing.T) {
 	)
 
 	// Get a topology API client
-	client, err := NewTopoClient()
+	client, err := gnmi.NewTopoClient()
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 

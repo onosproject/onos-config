@@ -63,12 +63,8 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 
 	_ = newTarget.SetAspect(&topo.TLSOptions{Plain: true})
 
-	request := &topo.CreateRequest{
-		Object: newTarget,
-	}
-	addResponse, err := topoClient.Create(context.Background(), request)
-	assert.NotNil(t, addResponse)
-	assert.Nil(t, err)
+	err = topoClient.Create(context.Background(), newTarget)
+	assert.NoError(t, err)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
