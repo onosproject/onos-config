@@ -51,7 +51,7 @@ func newUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operati
 }
 
 func computeChanges(targets map[configapi.TargetID]*targetInfo) (map[configapi.TargetID]configapi.Change, error) {
-	allChanges := make(map[configapi.TargetID]configapi.Change, 0)
+	allChanges := make(map[configapi.TargetID]configapi.Change)
 	for targetID, target := range targets {
 		change, err := computeChange(target)
 		if err != nil {
