@@ -50,14 +50,14 @@ func newUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operati
 
 }
 
-func computeChanges(targets map[configapi.TargetID]*targetInfo) ([]configapi.Change, error) {
-	allChanges := make([]configapi.Change, 0)
-	for _, target := range targets {
+func computeChanges(targets map[configapi.TargetID]*targetInfo) (map[configapi.TargetID]configapi.Change, error) {
+	allChanges := make(map[configapi.TargetID]configapi.Change, 0)
+	for targetID, target := range targets {
 		change, err := computeChange(target)
 		if err != nil {
 			return nil, err
 		}
-		allChanges = append(allChanges, change)
+		allChanges[targetID] = change
 	}
 	return allChanges, nil
 }
@@ -65,23 +65,22 @@ func computeChanges(targets map[configapi.TargetID]*targetInfo) ([]configapi.Cha
 // computeChange computes a given target change the given its updates and deletes, according to the path
 // on the configuration for the specified target
 func computeChange(target *targetInfo) (configapi.Change, error) {
-	var newChanges = make([]configapi.ChangeValue, 0)
 	//updates
+	newChanges := make(map[string]configapi.ChangeValue)
 	for path, value := range target.updates {
 		updateValue, err := valueutils.NewChangeValue(path, *value, false)
 		if err != nil {
 			return configapi.Change{}, err
 		}
-		newChanges = append(newChanges, *updateValue)
+		newChanges[path] = *updateValue
 	}
 	//deletes
 	for _, path := range target.removes {
 		deleteValue, _ := valueutils.NewChangeValue(path, *configapi.NewTypedValueEmpty(), true)
-		newChanges = append(newChanges, *deleteValue)
+		newChanges[path] = *deleteValue
 	}
 
 	changeElement := configapi.Change{
-		TargetID:      target.targetID,
 		TargetVersion: target.targetVersion,
 		TargetType:    target.targetType,
 		Values:        newChanges,

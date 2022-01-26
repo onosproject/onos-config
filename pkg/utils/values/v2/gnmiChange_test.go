@@ -35,19 +35,16 @@ const (
 // Test_NativeChangeToGnmiChange tests conversion from an ONOS change to a GNMI change
 func Test_NativeChangeToGnmiChange(t *testing.T) {
 	// Some test data. One update, one remove
-	testValues := []configapi.ChangeValue{
-		{
-			Path:   "/path1/path2/path3",
+	testValues := map[string]configapi.ChangeValue{
+		"/path1/path2/path3": {
 			Value:  *configapi.NewTypedValueString("value"),
 			Delete: false,
 		},
-		{
-			Path:   "/rpath1/rpath2/rpath3",
+		"/rpath1/rpath2/rpath3": {
 			Delete: true,
 		},
 	}
 	testChange := &configapi.Change{
-		TargetID:      "Device1",
 		TargetVersion: "Device1-1.0.0",
 		TargetType:    "devicesim",
 		Values:        testValues,
@@ -78,19 +75,16 @@ func Test_NativeChangeToGnmiChange(t *testing.T) {
 
 func Test_convertChangeToGnmi(t *testing.T) {
 	// Some test data. One update, one remove
-	testValues := []configapi.ChangeValue{
-		{
-			Path:   Test1Cont1ACont2ALeaf2C,
+	testValues := map[string]configapi.ChangeValue{
+		Test1Cont1ACont2ALeaf2C: {
 			Value:  *configapi.NewTypedValueString(ValueLeaf2CDef),
 			Delete: false,
 		},
-		{
-			Path:   Test1Cont1AList2ATxout2,
+		Test1Cont1AList2ATxout2: {
 			Delete: true,
 		},
 	}
 	change3 := &configapi.Change{
-		TargetID:      "Device1",
 		TargetVersion: "Device1-1.0.0",
 		Values:        testValues,
 	}

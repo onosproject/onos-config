@@ -241,9 +241,9 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 
 		desiredConfigValues := config.Values
 		log.Debugf("Desired config values to reconcile: %v", desiredConfigValues)
-		for _, desiredConfigValue := range desiredConfigValues {
+		for path, desiredConfigValue := range desiredConfigValues {
 			if currentConfigValue, ok := currentConfigValuesMap[desiredConfigValue.Path]; ok {
-				if desiredConfigValue.Path == currentConfigValue.Path {
+				if path == currentConfigValue.Path {
 					setRequestChanges = append(setRequestChanges, desiredConfigValue)
 				}
 			}

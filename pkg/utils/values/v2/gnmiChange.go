@@ -27,11 +27,10 @@ import (
 // NewChangeValue decodes a path and value in to a ChangeValue
 func NewChangeValue(path string, value configapi.TypedValue, delete bool) (*configapi.ChangeValue, error) {
 	cv := configapi.ChangeValue{
-		Path:   path,
 		Value:  value,
 		Delete: delete,
 	}
-	if err := pathutils.IsPathValid(cv.GetPath()); err != nil {
+	if err := pathutils.IsPathValid(path); err != nil {
 		return nil, err
 	}
 	return &cv, nil
@@ -43,8 +42,8 @@ func NativeChangeToGnmiChange(c *configapi.Change) (*gnmi.SetRequest, error) {
 	var replacedPaths = []*gnmi.Update{}
 	var updatedPaths = []*gnmi.Update{}
 
-	for _, changeValue := range c.Values {
-		elems := utils.SplitPath(changeValue.Path)
+	for path, changeValue := range c.Values {
+		elems := utils.SplitPath(path)
 		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
 
 		if parseError != nil {
@@ -56,7 +55,7 @@ func NativeChangeToGnmiChange(c *configapi.Change) (*gnmi.SetRequest, error) {
 		} else {
 			gnmiValue, err := NativeTypeToGnmiTypedValue(&changeValue.Value)
 			if err != nil {
-				return nil, errors.NewInvalid("error converting %s: %s", changeValue.Path, err)
+				return nil, errors.NewInvalid("error converting %s: %s", path, err)
 			}
 			updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
 			updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: gnmiValue})
