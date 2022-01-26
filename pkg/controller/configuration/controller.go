@@ -217,7 +217,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			return false, errors.NewInvalid("notification list is empty")
 		}
 
-		var currentConfigValues []*configapi.PathValue
+		currentConfigValues := make(map[string]*configapi.PathValue)
 		for _, notification := range root.Notification {
 			for _, update := range notification.Update {
 				modelName := utils.ToModelNameV2(config.TargetType, config.TargetVersion)
@@ -229,23 +229,18 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 				if err != nil {
 					return false, err
 				}
-				currentConfigValues = append(currentConfigValues, configValues...)
+				for _, pathValue := range configValues {
+					currentConfigValues[pathValue.Path] = pathValue
+				}
 			}
 		}
+
 		log.Debugf("Current target %s config values: %v", config.TargetID, currentConfigValues)
-		currentConfigValuesMap := make(map[string]*configapi.PathValue, len(currentConfigValues))
-
-		for _, configValue := range currentConfigValues {
-			currentConfigValuesMap[configValue.Path] = configValue
-		}
-
 		desiredConfigValues := config.Values
 		log.Debugf("Desired config values to reconcile: %v", desiredConfigValues)
 		for path, desiredConfigValue := range desiredConfigValues {
-			if currentConfigValue, ok := currentConfigValuesMap[desiredConfigValue.Path]; ok {
-				if path == currentConfigValue.Path {
-					setRequestChanges = append(setRequestChanges, desiredConfigValue)
-				}
+			if _, ok := currentConfigValues[path]; ok {
+				setRequestChanges = append(setRequestChanges, desiredConfigValue)
 			}
 		}
 		log.Debugf("Set request changes:", setRequestChanges)
