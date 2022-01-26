@@ -215,10 +215,18 @@ func TestTransactionStore(t *testing.T) {
 	err = store1.Delete(context.TODO(), transaction2)
 	assert.NoError(t, err)
 	transaction, err := store2.Get(context.TODO(), "transaction-2")
+	assert.NoError(t, err)
+	assert.NotNil(t, transaction.Deleted)
+	err = store1.Delete(context.TODO(), transaction2)
+	assert.NoError(t, err)
+	transaction, err = store2.Get(context.TODO(), "transaction-2")
 	assert.Error(t, err)
 	assert.True(t, errors.IsNotFound(err))
 	assert.Nil(t, transaction)
 
+	event = <-transactionCh
+	assert.Equal(t, transaction2.ID, event.Transaction.ID)
+	assert.Equal(t, configapi.TransactionEventType_TRANSACTION_UPDATED, event.Type)
 	event = <-transactionCh
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
 	assert.Equal(t, configapi.TransactionEventType_TRANSACTION_DELETED, event.Type)
