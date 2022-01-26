@@ -162,21 +162,22 @@ func (r *Reconciler) reconcileTransactionPending(ctx context.Context, transactio
 }
 
 func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (bool, error) {
-	for _, change := range change.Changes {
+	// Look through the change targets and validate changes for each target
+	for targetID, change := range change.Changes {
 		modelName := utils.ToModelNameV2(change.TargetType, change.TargetVersion)
 		modelPlugin, ok := r.pluginRegistry.GetPlugin(modelName)
 		if !ok {
 			return false, errors.NewNotFound("model plugin not found")
 		}
 
-		pathValues := make([]*configapi.PathValue, len(change.Values))
-		for i, changeValue := range change.Values {
+		pathValues := make([]*configapi.PathValue, 0, len(change.Values))
+		for path, changeValue := range change.Values {
 			pathValue := &configapi.PathValue{
-				Path:    changeValue.Path,
+				Path:    path,
 				Value:   changeValue.Value,
 				Deleted: changeValue.Delete,
 			}
-			pathValues[i] = pathValue
+			pathValues = append(pathValues, pathValue)
 		}
 
 		jsonTree, err := tree.BuildTree(pathValues, true)
@@ -197,8 +198,30 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 			}
 			return true, nil
 		}
+
+		// Get the target configuration and record the source values in the transaction status
+		config, err := r.configurations.Get(ctx, targetID)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		source := configapi.Source{
+			TargetType:    change.TargetType,
+			TargetVersion: change.TargetVersion,
+			Values:        make(map[string]configapi.PathValue),
+		}
+		for path := range change.Values {
+			pathValue, ok := config.Values[path]
+			if ok {
+				source.Values[path] = *pathValue
+			}
+		}
+		transaction.Status.Sources[config.TargetID] = source
 	}
 
+	// Store configuration sources and move the transaction to the APPLYING state
 	transaction.Status.State = configapi.TransactionState_TRANSACTION_APPLYING
 	err := r.transactions.Update(ctx, transaction)
 	if err != nil {
@@ -211,48 +234,21 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 }
 
 func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (bool, error) {
-	transaction.Status.Sources = make(map[configapi.TargetID]*configapi.Source)
-	configs := make(map[configapi.TargetID]*configapi.Configuration)
-	for _, change := range change.Changes {
-		config, err := r.configurations.Get(ctx, change.TargetID)
+	// Once the source configurations have been stored we can update the target configurations
+	for targetID, change := range change.Changes {
+		config, err := r.configurations.Get(ctx, targetID)
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				return false, err
 			}
 			return false, nil
 		}
-		configs[config.TargetID] = config
-		source := &configapi.Source{
-			Values: make(map[string]configapi.Index),
-		}
-		for _, changeValue := range change.Values {
-			pathValue, ok := config.Values[changeValue.Path]
-			if ok {
-				source.Values[pathValue.Path] = pathValue.Index
-			}
-		}
-		transaction.Status.Sources[config.TargetID] = source
-	}
 
-	// The source configurations must be stored prior to updating the target configurations
-	// otherwise they will be lost.
-	err := r.transactions.Update(ctx, transaction)
-	if err != nil {
-		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-			return false, err
-		}
-		return false, nil
-	}
-
-	// Once the source configurations have been stored we can update the target configurations
-	for _, change := range change.Changes {
-		config := configs[change.TargetID]
-		for _, changeValue := range change.Values {
+		for path, changeValue := range change.Values {
 			if config.Values == nil {
 				config.Values = make(map[string]*configapi.PathValue)
 			}
-			config.Values[changeValue.Path] = &configapi.PathValue{
-				Path:    changeValue.Path,
+			config.Values[path] = &configapi.PathValue{
 				Value:   changeValue.Value,
 				Deleted: changeValue.Delete,
 				Index:   transaction.Index,
@@ -272,7 +268,7 @@ func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, tra
 
 	// Complete the transaction once the target configurations have been updated
 	transaction.Status.State = configapi.TransactionState_TRANSACTION_COMPLETE
-	err = r.transactions.Update(ctx, transaction)
+	err := r.transactions.Update(ctx, transaction)
 	if err != nil {
 		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			return false, err
