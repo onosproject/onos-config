@@ -82,16 +82,17 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	config, err := r.configurations.Get(ctx, configurationID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Warnf("Failed to reconcile configuration %s, %s", configurationID, err)
+			log.Warnf("Failed to reconcile Configuration '%s'", configurationID, err)
 			return controller.Result{}, err
 		}
-		log.Debugf("Configuration %s not found", configurationID)
+		log.Debugf("Configuration '%s' not found", configurationID)
 		return controller.Result{}, nil
 	}
 
-	log.Infof("Reconciling configuration %v", config)
+	log.Infof("Reconciling Configuration '%s'", config.ID)
+	log.Debug(config)
+
 	if ok, err := r.reconcileConfiguration(ctx, config); err != nil {
-		log.Warnf("Failed to reconcile configuration: %s, %s", configurationID, err)
 		return controller.Result{}, err
 	} else if ok {
 		return controller.Result{}, nil
@@ -103,13 +104,17 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	// If the configuration revision has changed, set the configuration to PENDING
 	// to reconcile changes to the configuration.
 	if config.Revision > config.Status.Revision {
+		log.Infof("Processing Configuration '%s' revision %d", config.ID, config.Revision)
 		config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
 		config.Status.Revision = config.Revision
+		log.Debug(config.Status)
 		err := r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
 			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+				log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
 				return false, err
 			}
+			log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
 			return false, nil
 		}
 		return true, nil
@@ -119,19 +124,25 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	target, err := r.topo.Get(ctx, topoapi.ID(config.TargetID))
 	if err != nil {
 		if !errors.IsNotFound(err) {
+			log.Errorf("Failed fetching target Entity '%s' from topo", config.TargetID, err)
 			return false, err
 		}
+		log.Debugf("Target entity '%s' not found", config.TargetID)
 
 		// If the target entity is not found, set the configuration to PENDING
 		if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
+			log.Infof("Target entity '%s' not found; preparing Configuration '%s' for re-sync", config.TargetID, config.ID)
 			config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
 			config.Status.MastershipState.Term = 0
 			config.Status.Paths = nil
+			log.Debug(config.Status)
 			err := r.configurations.UpdateStatus(ctx, config)
 			if err != nil {
 				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+					log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
 					return false, err
 				}
+				log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
 				return false, nil
 			}
 			return true, nil
@@ -147,14 +158,18 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	// force reconciliation of all paths.
 	if (mastership.NodeId == "" && config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING) ||
 		configapi.MastershipTerm(mastership.Term) > config.Status.MastershipState.Term {
+		log.Infof("Mastership changed; preparing Configuration '%s' for re-sync", config.ID)
 		config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
 		config.Status.MastershipState.Term = configapi.MastershipTerm(mastership.Term)
 		config.Status.Paths = nil
+		log.Debug(config.Status)
 		err := r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
 			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+				log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
 				return false, err
 			}
+			log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
 			return false, nil
 		}
 		return true, nil
@@ -164,8 +179,11 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	// PENDING and set the configuration to SYNCHRONIZING to synchronize pending paths.
 	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_PENDING {
 		if mastership.NodeId == "" {
+			log.Warnf("No master found for target '%s'", config.TargetID)
 			return false, nil
 		}
+
+		log.Infof("Preparing Configuration '%s' for synchronization", config.ID)
 		if config.Status.Paths == nil {
 			config.Status.Paths = make(map[string]*configapi.PathStatus)
 		}
@@ -179,14 +197,23 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			}
 		}
 		config.Status.State = configapi.ConfigurationState_CONFIGURATION_SYNCHRONIZING
+		log.Debug(config.Status)
 		err := r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
 			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+				log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
 				return false, err
 			}
+			log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
 			return false, nil
 		}
 		return true, nil
+	}
+
+	// Skip if the configuration is already in a completed state
+	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_COMPLETE ||
+		config.Status.State == configapi.ConfigurationState_CONFIGURATION_FAILED {
+		return false, nil
 	}
 
 	// If we've made it this far, we know there's a master relation.
@@ -194,11 +221,14 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	relation, err := r.topo.Get(ctx, topoapi.ID(mastership.NodeId))
 	if err != nil {
 		if !errors.IsNotFound(err) {
+			log.Errorf("Failed fetching master Relation '%s' from topo", mastership.NodeId, err)
 			return false, err
 		}
+		log.Warnf("Master relation not found for target '%s'", config.TargetID)
 		return false, nil
 	}
 	if relation.GetRelation().SrcEntityID != controllerutils.GetOnosConfigID() {
+		log.Debugf("Not the master for target '%s'", config.TargetID)
 		return false, nil
 	}
 
@@ -206,12 +236,14 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	conn, err := r.conns.Get(ctx, topoapi.ID(config.TargetID))
 	if err != nil {
 		if !errors.IsNotFound(err) {
+			log.Errorf("Failed connection to '%s'", config.TargetID, err)
 			return false, err
 		}
-		log.Warnf("Reconciling configuration '%s': connection not found for target %s", config.ID, config.TargetID, err)
+		log.Warnf("Connection not found for target '%s'", config.TargetID)
 		return false, nil
 	}
 	if conn.ID() != gnmi.ConnID(relation.ID) {
+		log.Warnf("Connection mismatch for target '%s''", config.TargetID)
 		return false, nil
 	}
 
@@ -225,45 +257,52 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			}
 		}
 	}
+	log.Infof("Synchronizing %d pending updates to target '%s'", len(pathValues), config.TargetID)
 
 	// Create a gNMI set request
-	log.Debugf("Set request changes before creating Set request:", pathValues)
 	setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("Failed constructing Set request for Configuration '%s'", config.ID, err)
 		config.Status.State = configapi.ConfigurationState_CONFIGURATION_FAILED
+		log.Debug(config.Status)
 		err = r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
 			if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+				log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
 				return false, err
 			}
+			log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
 			return false, nil
 		}
 		return true, nil
 	}
 
 	// Execute the set request
-	log.Debugf("Reconciling configuration; Set request is created for configuration %s: %v", config.ID, setRequest)
+	log.Debugf("Sending SetRequest %+v", setRequest)
 	setResponse, err := conn.Set(ctx, setRequest)
 	if err != nil {
+		log.Errorf("Failed sending SetRequest %+v", setRequest, err)
 		return false, err
 	}
+	log.Debugf("Received SetResponse %+v", setResponse)
 
 	// Update the configuration state and path statuses
-	log.Debugf("Reconciling configuration %s: set response is received %v", config.ID, setResponse)
+	log.Infof("Finalizing Configuration '%s' status", config.ID)
 	for path, pathStatus := range config.Status.Paths {
 		if _, ok := config.Values[path]; ok {
 			pathStatus.State = configapi.PathState_PATH_UPDATE_COMPLETE
 		}
 	}
 	config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
+	log.Debug(config.Status)
 	err = r.configurations.UpdateStatus(ctx, config)
 	if err != nil {
 		if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+			log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
 			return false, err
 		}
+		log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
 		return false, nil
 	}
-	log.Infof("Reconciling configuration %s is in %s state", config.ID, config.Status.State)
 	return true, nil
 }
