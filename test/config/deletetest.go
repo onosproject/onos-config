@@ -38,35 +38,35 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 		newValues = []string{newValue}
 	)
 
-	// Get the configured devices from the environment.
-	device1 := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, device1)
-	devices := make([]string, 1)
-	devices[0] = device1.Name()
+	// Get the configured targets from the environment.
+	target1 := gnmi.CreateSimulator(t)
+	defer gnmi.DeleteSimulator(t, target1)
+	targets := make([]string, 1)
+	targets[0] = target1.Name()
 
-	// Wait for config to connect to the device
-	gnmi.WaitForTargetAvailable(t, topo.ID(device1.Name()), 10*time.Second)
+	// Wait for config to connect to the target
+	gnmi.WaitForTargetAvailable(t, topo.ID(target1.Name()), 10*time.Second)
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
 	// Set values
-	var devicePathsForSet = gnmi.GetTargetPathsWithValues(devices, newPaths, newValues)
-	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
+	var targetPathsForSet = gnmi.GetTargetPathsWithValues(targets, newPaths, newValues)
+	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
 
-	devicePathsForGet := gnmi.GetTargetPaths(devices, newPaths)
+	targetPathsForGet := gnmi.GetTargetPaths(targets, newPaths)
 
 	// Check that the values were set correctly
 	expectedValues := []string{newValue}
-	gnmi.CheckGNMIValues(t, gnmiClient, devicePathsForGet, expectedValues, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValues(t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Wait for the network change to complete
 	complete := gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
 	assert.True(t, complete, "Set never completed")
 
-	// Check that the values are set on the devices
-	device1GnmiClient := gnmi.GetTargetGNMIClientOrFail(t, device1)
-	gnmi.CheckTargetValue(t, device1GnmiClient, devicePathsForGet[0:1], newValue)
+	// Check that the values are set on the targets
+	target1GnmiClient := gnmi.GetTargetGNMIClientOrFail(t, target1)
+	gnmi.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[0:1], newValue)
 
 	// Now rollback the change
 	adminClient, err := gnmi.NewAdminServiceClient()
@@ -79,6 +79,6 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 	assert.Contains(t, rollbackResponse.Message, transactionID, "rollbackResponse message does not contain change ID")
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
-	_, _, err = gnmi.GetGNMIValue(gnmi.MakeContext(), device1GnmiClient, devicePathsForGet, gbp.Encoding_PROTO)
+	_, _, err = gnmi.GetGNMIValue(gnmi.MakeContext(), target1GnmiClient, targetPathsForGet, gbp.Encoding_PROTO)
 	assert.Error(t, err)
 }

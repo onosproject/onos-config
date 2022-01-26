@@ -30,34 +30,34 @@ import (
 )
 
 const (
-	unreachableDeviceModPath          = "/system/clock/config/timezone-name"
-	unreachableDeviceModValue         = "Europe/Rome"
-	unreachableDeviceModDeviceName    = "unreachable-dev-1"
-	unreachableDeviceModDeviceVersion = "1.0.0"
-	unreachableDeviceModDeviceType    = "devicesim-1.0.x"
-	unreachableDeviceAddress          = "198.18.0.1:4"
+	unreachableTargetModPath          = "/system/clock/config/timezone-name"
+	unreachableTargetModValue         = "Europe/Rome"
+	unreachableTargetModTargetName    = "unreachable-dev-1"
+	unreachableTargetModTargetVersion = "1.0.0"
+	unreachableTargetModTargetType    = "devicesim-1.0.x"
+	unreachableTargetAddress          = "198.18.0.1:4"
 )
 
-// TestUnreachableDevice tests set/query of a single GNMI path to a device that will never respond
-func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
+// TestUnreachableTarget tests set/query of a single GNMI path to a target that will never respond
+func (s *TestSuite) TestUnreachableTarget(t *testing.T) {
 	topoClient, err := gnmi.NewTopoClient()
 	assert.NotNil(t, topoClient)
 	assert.Nil(t, err)
 
 	newTarget := &topo.Object{
-		ID:   unreachableDeviceModDeviceName,
+		ID:   unreachableTargetModTargetName,
 		Type: topo.Object_ENTITY,
 		Obj: &topo.Object_Entity{
 			Entity: &topo.Entity{
-				KindID: unreachableDeviceModDeviceType,
+				KindID: unreachableTargetModTargetType,
 			},
 		},
 	}
 
 	_ = newTarget.SetAspect(&topo.Configurable{
-		Type:    unreachableDeviceModDeviceType,
-		Address: unreachableDeviceAddress,
-		Version: unreachableDeviceModDeviceVersion,
+		Type:    unreachableTargetModTargetType,
+		Address: unreachableTargetAddress,
+		Version: unreachableTargetModTargetVersion,
 		Timeout: uint64((10 * time.Second).Milliseconds()),
 	})
 
@@ -69,29 +69,29 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
-	// Set a value using gNMI client to the device
-	extNameDeviceType := gnmi_ext.Extension_RegisteredExt{
+	// Set a value using gNMI client to the target
+	extNameTargetType := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
 			Id:  gnb.GnmiExtensionDeviceType,
-			Msg: []byte(unreachableDeviceModDeviceType),
+			Msg: []byte(unreachableTargetModTargetType),
 		},
 	}
-	extNameDeviceVersion := gnmi_ext.Extension_RegisteredExt{
+	extNameTargetVersion := gnmi_ext.Extension_RegisteredExt{
 		RegisteredExt: &gnmi_ext.RegisteredExtension{
 			Id:  gnb.GnmiExtensionVersion,
-			Msg: []byte(unreachableDeviceModDeviceVersion),
+			Msg: []byte(unreachableTargetModTargetVersion),
 		},
 	}
-	extensions := []*gnmi_ext.Extension{{Ext: &extNameDeviceType}, {Ext: &extNameDeviceVersion}}
+	extensions := []*gnmi_ext.Extension{{Ext: &extNameTargetType}, {Ext: &extNameTargetVersion}}
 
-	devicePath := gnmi.GetTargetPathWithValue(unreachableDeviceModDeviceName, unreachableDeviceModPath, unreachableDeviceModValue, proto.StringVal)
+	targetPath := gnmi.GetTargetPathWithValue(unreachableTargetModTargetName, unreachableTargetModPath, unreachableTargetModValue, proto.StringVal)
 
 	// Set the value - should return a pending change
-	transactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, extensions)
+	transactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmi.NoPaths, extensions)
 	assert.NotNil(t, transactionID)
 
 	// Check that the value was set correctly in the cache
-	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, unreachableDeviceModValue, 0, "Query after set returned the wrong value")
+	gnmi.CheckGNMIValue(t, gnmiClient, targetPath, unreachableTargetModValue, 0, "Query after set returned the wrong value")
 
 	// Validate that the network change is listed and shows as pending.
 	//changeClient, err := gnmi.NewChangeServiceClient()
@@ -117,7 +117,7 @@ func (s *TestSuite) TestUnreachableDevice(t *testing.T) {
 	//adminClient, err := gnmi.NewAdminServiceClient()
 	//assert.NoError(t, err)
 
-	// Rollback the set - should be possible even if device is unreachable
+	// Rollback the set - should be possible even if target is unreachable
 	//rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
 	//	context.Background(), &admin.RollbackRequest{Name: string(changeID)})
 	//assert.NoError(t, rollbackError, "Rollback returned an error")
