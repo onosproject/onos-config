@@ -55,21 +55,7 @@ func (w *ConfigurationWatcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			configTransactionIndex := event.Configuration.Status.TransactionIndex
-			configSyncIndex := event.Configuration.Status.SyncIndex
-			configTransaction, err := w.transactions.GetByIndex(ctx, configTransactionIndex)
-			if err != nil {
-				log.Warn(err)
-				continue
-			}
-			configSyncTransaction, err := w.transactions.GetByIndex(ctx, configSyncIndex)
-			if err != nil {
-				log.Warn(err)
-				continue
-			}
-
-			ch <- controller.NewID(configTransaction.ID)
-			ch <- controller.NewID(configSyncTransaction.ID)
+			ch <- controller.NewID(event.Configuration.Status.TransactionIndex)
 		}
 	}()
 	return nil
@@ -111,7 +97,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			ch <- controller.NewID(event.Transaction.ID)
+			ch <- controller.NewID(event.Transaction.Index)
 		}
 	}()
 

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -110,7 +111,8 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo targetInfo, prefix *g
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
 
-	targetConfig, err := s.configurations.Get(ctx, targetInfo.targetID)
+	// TODO: Add target type and version to configuration ID
+	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetID, "", ""))
 	if err != nil {
 		return nil, err
 	}

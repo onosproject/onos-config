@@ -83,7 +83,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	defer cancel()
 
 	configurationID := id.Value.(configapi.ConfigurationID)
-	config, err := r.configurations.Get(ctx, configapi.TargetID(configurationID))
+	config, err := r.configurations.Get(ctx, configurationID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			log.Warnf("Failed to reconcile configuration %s, %s", configurationID, err)
