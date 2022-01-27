@@ -16,10 +16,10 @@
 package config
 
 import (
+	"testing"
+
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"testing"
-	"time"
 )
 
 // TestOneLiveOneDeadDevice tests GNMI operations to an offline device followed by operations to a connected device
@@ -47,8 +47,7 @@ func (s *TestSuite) TestOneLiveOneDeadDevice(t *testing.T) {
 
 	// Set a value to the online device
 	onlineDevicePath := gnmi.GetTargetPathWithValue(onlineSimulator.Name(), modPath, modValue, proto.StringVal)
-	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, onlineDevicePath, gnmi.NoPaths, gnmi.NoExtensions)
-	gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, onlineDevicePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Check that the value was set correctly in the cache
 	gnmi.CheckGNMIValue(t, gnmiClient, onlineDevicePath, modValue, 0, "Query after set returned the wrong value")

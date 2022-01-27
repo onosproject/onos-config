@@ -15,8 +15,9 @@
 package transaction
 
 import (
-	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"time"
+
+	"github.com/atomix/atomix-go-client/pkg/atomix"
 
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 	"github.com/golang/protobuf/proto"

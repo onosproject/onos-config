@@ -41,7 +41,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
 	// create a target entity in topo
-	createOfflineTarget(t, offlineTargetName, "devicesim-1.0.x", "1.0.0", offlineTargetName+":11161")
+	createOfflineTarget(t, offlineTargetName, "devicesim-1.0.x", "1.0.0", "")
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
 	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, []*gnmi_ext.Extension{})

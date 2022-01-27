@@ -17,13 +17,14 @@ package config
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -67,7 +68,7 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 
 	// Set a value using gNMI client to the offline device
 	devicePath := gnmi.GetTargetPathWithValue(offlineInTopoModDeviceName, offlineInTopoModPath, offlineInTopoModValue, proto.StringVal)
-	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Check that the value was set correctly
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, offlineInTopoModValue, 0, "Query after set returned the wrong value")
@@ -102,9 +103,6 @@ func (s *TestSuite) TestOfflineDeviceInTopo(t *testing.T) {
 
 	// Wait for config to connect to the device
 	gnmi.WaitForTargetAvailable(t, offlineInTopoModDeviceName, 1*time.Minute)
-
-	// Check that the network change has completed
-	gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
 
 	// Interrogate the device to check that the value was set properly
 	deviceGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)

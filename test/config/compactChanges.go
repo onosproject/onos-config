@@ -16,15 +16,16 @@ package config
 
 import (
 	"context"
+	"io"
+	"testing"
+	"time"
+
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"testing"
-	"time"
 )
 
 // TestCompactChanges tests the CompactChanges and Snapshot RPCs on the Admin gRPC interface. This
@@ -55,7 +56,6 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	const domainNamePath = "/system/config/domain-name"
 	const domainNameSim1 = "sim1.domain.name"
 	const domainNameSim2 = "sim2.domain.name"
-	const wait = 60 * time.Second
 
 	// Create 2 simulators
 	simulator1 := gnmi.CreateSimulator(t)
@@ -71,32 +71,22 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 
 	// Set a value using gNMI client
 	sim1Path1 := gnmi.GetTargetPathWithValue(simulator1.Name(), tzPath, tzValue, proto.StringVal)
-	sim1nwTransactionID1, sim1nwTransactionIndex1 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path1, gnmi.NoPaths, gnmi.NoExtensions)
-	complete := gnmi.WaitForTransactionComplete(t, sim1nwTransactionID1, sim1nwTransactionIndex1, wait)
-	assert.True(t, complete)
+	sim1nwTransactionID1, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path1, gnmi.NoPaths, gnmi.NoExtensions)
 
 	sim1Path2 := gnmi.GetTargetPathWithValue(simulator1.Name(), motdPath, motdValue1, proto.StringVal)
-	sim1nwTransactionID2, sim1nwTransactionIndex2 := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path2, gnmi.NoPaths, gnmi.NoExtensions)
-	complete = gnmi.WaitForTransactionComplete(t, sim1nwTransactionID2, sim1nwTransactionIndex2, wait)
-	assert.True(t, complete)
+	sim1nwTransactionID2, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path2, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Make a triple path change to Sim2
 	sim2Path1 := gnmi.GetTargetPathWithValue(simulator2.Name(), tzPath, tzParis, proto.StringVal)
 	sim2Path2 := gnmi.GetTargetPathWithValue(simulator2.Name(), motdPath, motdValue2, proto.StringVal)
 	sim2Path3 := gnmi.GetTargetPathWithValue(simulator2.Name(), domainNamePath, domainNameSim2, proto.StringVal)
 
-	sim2nwTransactionID2, sim2nwTransactionIndex2 := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, gnmi.NoPaths, gnmi.NoExtensions)
-	complete = gnmi.WaitForTransactionComplete(t, sim2nwTransactionID2, sim2nwTransactionIndex2, wait)
-	assert.True(t, complete)
+	sim2nwTransactionID2, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Finally make a change to both devices
 	sim1Path3 := gnmi.GetTargetPathWithValue(simulator1.Name(), loginBnrPath, loginBnr1, proto.StringVal)
 	sim2Path4 := gnmi.GetTargetPathWithValue(simulator2.Name(), loginBnrPath, loginBnr2, proto.StringVal)
-	bothSimNwTransactionID, bothSimNwTransactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path3[0], sim2Path4[0]}, gnmi.NoPaths, gnmi.NoExtensions)
-
-	// Wait for the change to transition to complete
-	complete = gnmi.WaitForTransactionComplete(t, bothSimNwTransactionID, bothSimNwTransactionIndex, wait)
-	assert.True(t, complete)
+	bothSimNwTransactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path3[0], sim2Path4[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	t.Logf("Testing CompactChanges - nw changes %s, %s on %s AND %s on %s AND %s on both",
 		sim1nwTransactionID1, sim1nwTransactionID2, simulator1.Name(), sim2nwTransactionID2, simulator2.Name(), bothSimNwTransactionID)
@@ -173,11 +163,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	// Set a value using gNMI client
 	sim1Path4 := gnmi.GetTargetPathWithValue(simulator1.Name(), tzPath, tzMilan, proto.StringVal)
 	sim1Path5 := gnmi.GetTargetPathWithValue(simulator1.Name(), domainNamePath, domainNameSim1, proto.StringVal)
-	afterSnapshotTransactionID, afterSnapshotTransactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
-
-	// Wait for the change to transition to complete
-	complete = gnmi.WaitForTransactionComplete(t, afterSnapshotTransactionID, afterSnapshotTransactionIndex, wait)
-	assert.True(t, complete)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Now check every value for both sim1 and sim2
 	expectedValues, _, err := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient,
