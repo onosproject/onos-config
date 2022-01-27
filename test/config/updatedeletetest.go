@@ -16,6 +16,10 @@ package config
 
 import (
 	"testing"
+	"time"
+
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -45,6 +49,9 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
 
+	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target.Name()), time.Minute)
+	assert.NoError(t, err)
+
 	gnmi.CheckGNMIValue(t, gnmiClient, setNamePath, udtestNameValue, 0, "Query name after set returned the wrong value")
 
 	// Set initial values for Enabled and Description using gNMI client
@@ -53,6 +60,9 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 		{TargetName: target.Name(), Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, gnmi.NoPaths, gnmi.NoExtensions)
+
+	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target.Name()), time.Minute)
+	assert.NoError(t, err)
 
 	// Update Enabled, delete Description using gNMI client
 	updateEnabledPath := []proto.TargetPath{
@@ -63,6 +73,8 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, gnmi.NoExtensions)
 
+	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target.Name()), time.Minute)
+	assert.NoError(t, err)
 	// Check that the Enabled value is set correctly
 	gnmi.CheckGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
 
