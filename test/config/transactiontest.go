@@ -16,6 +16,7 @@ package config
 
 import (
 	"context"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"testing"
 	"time"
 
@@ -28,7 +29,6 @@ import (
 
 // TestTransaction tests setting multiple paths in a single request and rolling it back
 func (s *TestSuite) TestTransaction(t *testing.T) {
-	t.Skip()
 	const (
 		value1     = "test-motd-banner"
 		path1      = "/system/config/motd-banner"
@@ -72,7 +72,12 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Create a change that can be rolled back
 	targetPathsForSet := gnmi.GetTargetPathsWithValues(targets, paths, values)
-	transactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
+	_, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
+
+	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
+	assert.NoError(t, err)
+	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target2.Name()), time.Minute)
+	assert.NoError(t, err)
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}
@@ -91,11 +96,15 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	adminClient, err := gnmi.NewAdminServiceClient()
 	assert.NoError(t, err)
 	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
-		context.Background(), &admin.RollbackRequest{Name: string(transactionID)})
+		context.Background(), &admin.RollbackRequest{Index: transactionIndex})
 
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
-	assert.Contains(t, rollbackResponse.Message, transactionID, "rollbackResponse message does not contain change ID")
+
+	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
+	assert.NoError(t, err)
+	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target2.Name()), time.Minute)
+	assert.NoError(t, err)
 
 	// Check that the values were really rolled back in onos-config
 	expectedValuesAfterRollback := []string{initValue1, initValue2}
