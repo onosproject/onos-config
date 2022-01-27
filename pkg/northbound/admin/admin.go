@@ -17,14 +17,17 @@ package admin
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
+	v2 "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
+	"github.com/onosproject/onos-lib-go/pkg/uri"
 	"google.golang.org/grpc"
 )
 
@@ -96,16 +99,29 @@ func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.Co
 		}
 		err := stream.Send(msg)
 		if err != nil {
-			log.Errorf("error sending ModelInfor from plugin %v: %v", p.ID, err)
+			log.Errorf("error sending ModelInfo from plugin %v: %v", p.ID, err)
 			return err
 		}
 	}
 	return nil
 }
 
-// RollbackNetworkChange rolls back a named atomix-based network change.
+// RollbackNetworkChange rolls back a configuration change transaction with the specified index.
 func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRequest) (*admin.RollbackResponse, error) {
-	return nil, errors.NewNotSupported("not implemented")
+	id := v2.TransactionID(uri.NewURI(uri.WithScheme("uuid"), uri.WithOpaque(uuid.New().String())).String())
+	t := &v2.Transaction{
+		ID: id,
+		Transaction: &v2.Transaction_Rollback{
+			Rollback: &v2.TransactionRollback{
+				Index: req.Index,
+			},
+		},
+	}
+	if err := s.transactionsStore.Create(ctx, t); err != nil {
+		log.Errorf("Unable to rollback transaction with index %d: %+v", req.Index, err)
+		return nil, errors.Status(err).Err()
+	}
+	return &admin.RollbackResponse{}, nil
 }
 
 // ListSnapshots lists snapshots for all devices
