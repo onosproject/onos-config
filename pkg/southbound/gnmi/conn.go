@@ -105,22 +105,10 @@ func newConn(options ...func(conn *conn)) *conn {
 }
 
 func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
-	asset := &topoapi.Asset{}
-	err := target.GetAspect(asset)
-	if err != nil {
-		return nil, errors.NewInvalid("target entity %s must have 'onos.topo.Asset' aspect to work with onos-config", target.ID)
-	}
-
 	configurable := &topoapi.Configurable{}
-	err = target.GetAspect(configurable)
+	err := target.GetAspect(configurable)
 	if err != nil {
 		return nil, errors.NewInvalid("target entity %s must have 'onos.topo.Configurable' aspect to work with onos-config", target.ID)
-	}
-
-	mastership := &topoapi.MastershipState{}
-	err = target.GetAspect(mastership)
-	if err != nil {
-		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.MastershipState' aspect to work with onos-config", target.ID)
 	}
 
 	tlsOptions := &topoapi.TLSOptions{}
