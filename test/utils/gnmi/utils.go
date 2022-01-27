@@ -277,6 +277,41 @@ func WaitForConfigurationCompleteOrFail(t *testing.T, configurationID configapi.
 	return errors.NewInvalid("configuration %s  failed", configurationID)
 }
 
+// WaitForRollback waits for a COMPLETED status on the most recent rollback transaction
+func WaitForRollback(t *testing.T, transactionIndex v2.Index, wait time.Duration) bool {
+	client, err := NewTransactionServiceClient()
+	assert.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+
+	stream, err := client.WatchTransactions(ctx, &admin.WatchTransactionsRequest{})
+	assert.NoError(t, err)
+	assert.NotNil(t, stream)
+
+	start := time.Now()
+
+	for {
+		resp, err := stream.Recv()
+		if err != nil {
+			return false
+		}
+		assert.NotNil(t, resp)
+		fmt.Printf("%v\n", resp.TransactionEvent)
+
+		t := resp.TransactionEvent.Transaction
+		if rt := t.GetRollback(); rt != nil {
+			if rt.Index == transactionIndex {
+				return true
+			}
+		}
+
+		if time.Since(start) > wait {
+			return false
+		}
+	}
+}
+
 // NoPaths can be used on a request that does not need path values
 var NoPaths = make([]protoutils.TargetPath, 0)
 

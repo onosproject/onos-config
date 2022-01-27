@@ -16,6 +16,7 @@ package config
 
 import (
 	"context"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"testing"
 	"time"
 
@@ -27,8 +28,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestDelete :
-func (s *TestSuite) TestDelete(t *testing.T) {
+// TestDeleteAndRollback tests target deletion and rollback
+func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 	const (
 		newValue = "new-value"
 		newPath  = "/system/config/login-banner"
@@ -53,7 +54,10 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 
 	// Set values
 	var targetPathsForSet = gnmi.GetTargetPathsWithValues(targets, newPaths, newValues)
-	transactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
+	_, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
+
+	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
+	assert.NoError(t, err)
 
 	targetPathsForGet := gnmi.GetTargetPaths(targets, newPaths)
 
@@ -68,12 +72,13 @@ func (s *TestSuite) TestDelete(t *testing.T) {
 	// Now rollback the change
 	adminClient, err := gnmi.NewAdminServiceClient()
 	assert.NoError(t, err)
-	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
-		context.Background(), &admin.RollbackRequest{Name: string(transactionID)})
+	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(context.Background(), &admin.RollbackRequest{Index: transactionIndex})
 
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
-	assert.Contains(t, rollbackResponse.Message, transactionID, "rollbackResponse message does not contain change ID")
+
+	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
+	assert.NoError(t, err)
 
 	// Check that the value was really rolled back- should be an error here since the node was deleted
 	_, _, err = gnmi.GetGNMIValue(gnmi.MakeContext(), target1GnmiClient, targetPathsForGet, gbp.Encoding_PROTO)
