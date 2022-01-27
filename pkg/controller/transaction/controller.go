@@ -102,33 +102,20 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		}
 		return controller.Result{}, nil
 	}
-
-	// If the transaction is in a completed state, queue the next transaction to be reconciled
-	if transaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE ||
-		transaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
-		log.Debugf("Queueing next Transaction %d for reconciliation", transaction.Index+1)
-		return controller.Result{Requeue: controller.NewID(transaction.Index + 1)}, nil
-	}
-
-	if ok, err := r.reconcileTransaction(ctx, transaction); err != nil {
-		return controller.Result{}, err
-	} else if ok {
-		return controller.Result{}, nil
-	}
-	return controller.Result{}, nil
+	return r.reconcileTransaction(ctx, transaction)
 }
 
-func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *configapi.Transaction) (bool, error) {
+func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
 	switch t := transaction.Transaction.(type) {
 	case *configapi.Transaction_Change:
 		return r.reconcileTransactionChange(ctx, transaction, t.Change)
 	case *configapi.Transaction_Rollback:
 		return r.reconcileTransactionRollback(ctx, transaction, t.Rollback)
 	}
-	return false, nil
+	return controller.Result{}, nil
 }
 
-func (r *Reconciler) reconcileTransactionChange(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (bool, error) {
+func (r *Reconciler) reconcileTransactionChange(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (controller.Result, error) {
 	switch transaction.Status.State {
 	case configapi.TransactionState_TRANSACTION_PENDING:
 		// If the transaction is Pending, begin validation if the prior transaction
@@ -144,14 +131,14 @@ func (r *Reconciler) reconcileTransactionChange(ctx context.Context, transaction
 	case configapi.TransactionState_TRANSACTION_APPLYING:
 		return r.reconcileTransactionChangeApplying(ctx, transaction, change)
 	}
-	return false, nil
+	return controller.Result{}, nil
 }
 
-func (r *Reconciler) reconcileTransactionPending(ctx context.Context, transaction *configapi.Transaction) (bool, error) {
+func (r *Reconciler) reconcileTransactionPending(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
 	log.Debugf("Checking preconditions for Transaction %d", transaction.Index)
 	prevTransaction, err := r.transactions.GetByIndex(ctx, transaction.Index-1)
 	if err != nil && !errors.IsNotFound(err) {
-		return false, err
+		return controller.Result{}, err
 	}
 	if errors.IsNotFound(err) ||
 		prevTransaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE ||
@@ -163,17 +150,17 @@ func (r *Reconciler) reconcileTransactionPending(ctx context.Context, transactio
 		if err != nil {
 			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 				log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
-				return false, err
+				return controller.Result{}, err
 			}
 			log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
-			return false, nil
+			return controller.Result{}, nil
 		}
-		return true, nil
+		return controller.Result{}, nil
 	}
-	return false, nil
+	return controller.Result{}, nil
 }
 
-func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (bool, error) {
+func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (controller.Result, error) {
 	log.Infof("Validating change Transaction %d", transaction.Index)
 	// Look through the change targets and validate changes for each target
 	transaction.Status.Sources = make(map[configapi.TargetID]configapi.Source)
@@ -181,7 +168,7 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		modelName := utils.ToModelNameV2(change.TargetType, change.TargetVersion)
 		modelPlugin, ok := r.pluginRegistry.GetPlugin(modelName)
 		if !ok {
-			return false, errors.NewNotFound("model plugin not found")
+			return controller.Result{}, errors.NewNotFound("model plugin not found")
 		}
 
 		pathValues := make([]*configapi.PathValue, 0, len(change.Values))
@@ -197,7 +184,7 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 
 		jsonTree, err := tree.BuildTree(pathValues, true)
 		if err != nil {
-			return false, err
+			return controller.Result{}, err
 		}
 		// If validation fails any target, mark the transaction Failed.
 		// If validation is successful, proceed to Applying.
@@ -210,12 +197,13 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 			if err != nil {
 				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 					log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
-					return false, err
+					return controller.Result{}, err
 				}
 				log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
-				return false, nil
+				return controller.Result{}, nil
 			}
-			return true, nil
+			log.Debugf("Queueing next Transaction %d for reconciliation", transaction.Index+1)
+			return controller.Result{Requeue: controller.NewID(transaction.Index + 1)}, nil
 		}
 
 		// Get the target configuration and record the source values in the transaction status
@@ -223,7 +211,7 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		configID := configuration.NewID(targetID, change.TargetType, change.TargetVersion)
 		if config, err := r.configurations.Get(ctx, configID); err != nil {
 			if !errors.IsNotFound(err) {
-				return false, err
+				return controller.Result{}, err
 			}
 			configValues = make(map[string]*configapi.PathValue)
 		} else if config.Values != nil {
@@ -254,15 +242,15 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 	if err != nil {
 		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
-			return false, err
+			return controller.Result{}, err
 		}
 		log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
-		return false, nil
+		return controller.Result{}, nil
 	}
-	return true, nil
+	return controller.Result{}, nil
 }
 
-func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (bool, error) {
+func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, transaction *configapi.Transaction, change *configapi.TransactionChange) (controller.Result, error) {
 	log.Infof("Applying change Transaction %d", transaction.Index)
 	// Once the source configurations have been stored we can update the target configurations
 	for targetID, change := range change.Changes {
@@ -272,7 +260,7 @@ func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, tra
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				log.Errorf("Failed applying Transaction %d to target '%s'", transaction.Index, targetID, err)
-				return false, err
+				return controller.Result{}, err
 			}
 
 			log.Infof("Initializing Configuration for target '%s'", targetID)
@@ -297,9 +285,10 @@ func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, tra
 			if err != nil {
 				if !errors.IsAlreadyExists(err) {
 					log.Errorf("Failed initializing Configuration for target '%s'", targetID, err)
-					return false, err
+					return controller.Result{}, err
 				}
-				return false, nil
+				log.Warnf("Write conflict updating Configuration '%s' - retrying", targetID)
+				return controller.Result{Requeue: controller.NewID(transaction.Index)}, nil
 			}
 		} else {
 			log.Infof("Updating Configuration for target '%s'", targetID)
@@ -319,9 +308,10 @@ func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, tra
 			if err != nil {
 				if !errors.IsConflict(err) && !errors.IsNotFound(err) {
 					log.Errorf("Failed updating Configuration for target '%s'", targetID, err)
-					return false, err
+					return controller.Result{}, err
 				}
-				return false, nil
+				log.Warnf("Write conflict updating Configuration '%s' - retrying", targetID)
+				return controller.Result{Requeue: controller.NewID(transaction.Index)}, nil
 			}
 		}
 	}
@@ -334,15 +324,16 @@ func (r *Reconciler) reconcileTransactionChangeApplying(ctx context.Context, tra
 	if err != nil {
 		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
-			return false, err
+			return controller.Result{}, err
 		}
 		log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
-		return false, nil
+		return controller.Result{}, nil
 	}
-	return true, nil
+	log.Debugf("Queueing next Transaction %d for reconciliation", transaction.Index+1)
+	return controller.Result{Requeue: controller.NewID(transaction.Index + 1)}, nil
 }
 
-func (r *Reconciler) reconcileTransactionRollback(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (bool, error) {
+func (r *Reconciler) reconcileTransactionRollback(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (controller.Result, error) {
 	log.Debugf("Reconciling transaction rollback %s in %s state", transaction.ID, transaction.Status.State)
 	switch transaction.Status.State {
 	case configapi.TransactionState_TRANSACTION_PENDING:
@@ -359,10 +350,10 @@ func (r *Reconciler) reconcileTransactionRollback(ctx context.Context, transacti
 	case configapi.TransactionState_TRANSACTION_APPLYING:
 		return r.reconcileTransactionRollbackApplying(ctx, transaction, rollback)
 	}
-	return false, nil
+	return controller.Result{}, nil
 }
 
-func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (bool, error) {
+func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (controller.Result, error) {
 	log.Infof("Validating rollback Transaction %d", transaction.Index)
 	// Get the transaction being rolled back and apply its sources to this transaction
 	// The source transaction's sources are stored in the rollback transaction to ensure
@@ -372,7 +363,7 @@ func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context,
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			log.Errorf("Failed validating rollback Transaction %d", transaction.Index, err)
-			return false, err
+			return controller.Result{}, err
 		}
 		log.Warnf("Rollback Transaction %d failed: target Transaction %d not found", transaction.Index, rollback.Index)
 		transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
@@ -388,9 +379,9 @@ func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context,
 				if err != nil {
 					if !errors.IsNotFound(err) {
 						log.Errorf("Failed validating rollback Transaction %d for target '%s'", transaction.Index, targetID, err)
-						return false, err
+						return controller.Result{}, err
 					}
-					return false, nil
+					return controller.Result{}, nil
 				}
 				if config.Values == nil {
 					config.Values = make(map[string]*configapi.PathValue)
@@ -406,12 +397,13 @@ func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context,
 						if err != nil {
 							if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 								log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
-								return false, err
+								return controller.Result{}, err
 							}
 							log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
-							return false, nil
+							return controller.Result{}, nil
 						}
-						return true, nil
+						log.Debugf("Queueing next Transaction %d for reconciliation", transaction.Index+1)
+						return controller.Result{Requeue: controller.NewID(transaction.Index + 1)}, nil
 					}
 				}
 			}
@@ -452,15 +444,20 @@ func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context,
 	if err != nil {
 		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
-			return false, err
+			return controller.Result{}, err
 		}
 		log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
-		return false, nil
+		return controller.Result{}, nil
 	}
-	return true, nil
+
+	if transaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
+		log.Debugf("Queueing next Transaction %d for reconciliation", transaction.Index+1)
+		return controller.Result{Requeue: controller.NewID(transaction.Index + 1)}, nil
+	}
+	return controller.Result{}, nil
 }
 
-func (r *Reconciler) reconcileTransactionRollbackApplying(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (bool, error) {
+func (r *Reconciler) reconcileTransactionRollbackApplying(ctx context.Context, transaction *configapi.Transaction, rollback *configapi.TransactionRollback) (controller.Result, error) {
 	log.Infof("Applying rollback Transaction %d", transaction.Index)
 	// Once the source configurations have been stored we can update the target configurations
 	for targetID, source := range transaction.Status.Sources {
@@ -470,9 +467,9 @@ func (r *Reconciler) reconcileTransactionRollbackApplying(ctx context.Context, t
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				log.Errorf("Failed applying rollback Transaction %d to target '%s'", transaction.Index, targetID, err)
-				return false, err
+				return controller.Result{}, err
 			}
-			return false, nil
+			return controller.Result{}, nil
 		}
 
 		log.Infof("Updating Configuration for target '%s'", targetID)
@@ -495,9 +492,10 @@ func (r *Reconciler) reconcileTransactionRollbackApplying(ctx context.Context, t
 		if err != nil {
 			if !errors.IsConflict(err) && !errors.IsNotFound(err) {
 				log.Errorf("Failed updating Configuration for target '%s'", targetID, err)
-				return false, err
+				return controller.Result{}, err
 			}
-			return false, nil
+			log.Warnf("Write conflict updating Configuration '%s' - retrying", targetID)
+			return controller.Result{Requeue: controller.NewID(transaction.Index)}, nil
 		}
 	}
 
@@ -509,10 +507,11 @@ func (r *Reconciler) reconcileTransactionRollbackApplying(ctx context.Context, t
 	if err != nil {
 		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 			log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
-			return false, err
+			return controller.Result{}, err
 		}
 		log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
-		return false, nil
+		return controller.Result{}, nil
 	}
-	return true, nil
+	log.Debugf("Queueing next Transaction %d for reconciliation", transaction.Index+1)
+	return controller.Result{Requeue: controller.NewID(transaction.Index + 1)}, nil
 }
