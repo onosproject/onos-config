@@ -163,7 +163,7 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	// Set a value using gNMI client
 	sim1Path4 := gnmi.GetTargetPathWithValue(simulator1.Name(), tzPath, tzMilan, proto.StringVal)
 	sim1Path5 := gnmi.GetTargetPathWithValue(simulator1.Name(), domainNamePath, domainNameSim1, proto.StringVal)
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	_, _ = gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Now check every value for both sim1 and sim2
 	expectedValues, _, err := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient,

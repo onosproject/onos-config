@@ -67,7 +67,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Set initial values
 	targetPathsForInit := gnmi.GetTargetPathsWithValues(targets, paths, initialValues)
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
+	_, _ = gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
 	gnmi.CheckGNMIValues(t, gnmiClient, targetPathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
 
 	// Create a change that can be rolled back
