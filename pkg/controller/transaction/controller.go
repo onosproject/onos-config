@@ -171,15 +171,43 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 			return controller.Result{}, errors.NewNotFound("model plugin not found")
 		}
 
+		// validation should be done on the whole config tree if it does exist. the list of path values
+		// that can be used for validation should include both of current path values in the configuration and new ones part of
+		// the transaction
+		configID := configuration.NewID(targetID, change.TargetType, change.TargetVersion)
+		config, err := r.configurations.Get(ctx, configID)
 		pathValues := make([]*configapi.PathValue, 0, len(change.Values))
-		for path, changeValue := range change.Values {
-			pathValue := &configapi.PathValue{
-				Path:    path,
-				Value:   changeValue.Value,
-				Deleted: changeValue.Delete,
-				Index:   transaction.Index,
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				log.Errorf("Failed applying Transaction %d to target '%s'", transaction.Index, targetID, err)
+				return controller.Result{}, err
 			}
-			pathValues = append(pathValues, pathValue)
+			for path, changeValue := range change.Values {
+				pathValue := &configapi.PathValue{
+					Path:    path,
+					Value:   changeValue.Value,
+					Deleted: changeValue.Delete,
+					Index:   transaction.Index,
+				}
+				pathValues = append(pathValues, pathValue)
+			}
+
+		} else {
+			if config.Values == nil {
+				config.Values = make(map[string]*configapi.PathValue)
+			}
+			currentConfigValues := config.Values
+			for path, changeValue := range change.Values {
+				currentConfigValues[path] = &configapi.PathValue{
+					Path:    path,
+					Value:   changeValue.Value,
+					Deleted: changeValue.Delete,
+					Index:   transaction.Index,
+				}
+			}
+			for _, pathValue := range currentConfigValues {
+				pathValues = append(pathValues, pathValue)
+			}
 		}
 
 		jsonTree, err := tree.BuildTree(pathValues, true)
@@ -208,7 +236,7 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 
 		// Get the target configuration and record the source values in the transaction status
 		var configValues map[string]*configapi.PathValue
-		configID := configuration.NewID(targetID, change.TargetType, change.TargetVersion)
+		configID = configuration.NewID(targetID, change.TargetType, change.TargetVersion)
 		if config, err := r.configurations.Get(ctx, configID); err != nil {
 			if !errors.IsNotFound(err) {
 				return controller.Result{}, err
