@@ -133,35 +133,12 @@ func NewSimulatorTargetEntity(simulator *helm.HelmRelease, targetType string, ta
 		return nil, err
 	}
 
-	err = o.SetAspect(&topo.Asset{
-		Name: simulator.Name(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if err := o.SetAspect(&topo.MastershipState{}); err != nil {
-		return nil, err
-	}
-
 	err = o.SetAspect(&topo.Configurable{
 		Type:    targetType,
 		Address: service.Ports()[0].Address(true),
 		Version: targetVersion,
 		Timeout: uint64(time.Second * 30),
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	protocolState := &topo.ProtocolState{
-		Protocol:          topo.Protocol_GNMI,
-		ConnectivityState: topo.ConnectivityState_REACHABLE,
-		ChannelState:      topo.ChannelState_CONNECTED,
-		ServiceState:      topo.ServiceState_AVAILABLE,
-	}
-	protocolStates := []*topo.ProtocolState{protocolState}
-	err = o.SetAspect(&topo.Protocols{State: protocolStates})
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +167,15 @@ func NewTransactionServiceClient() (admin.TransactionServiceClient, error) {
 		return nil, err
 	}
 	return admin.NewTransactionServiceClient(conn), nil
+}
+
+// NewConfigurationServiceClient returns configuration store client
+func NewConfigurationServiceClient() (admin.ConfigurationServiceClient, error) {
+	conn, err := connectComponent("onos-umbrella", "onos-config")
+	if err != nil {
+		return nil, err
+	}
+	return admin.NewConfigurationServiceClient(conn), nil
 }
 
 // AddTargetToTopo adds a new target to topo
@@ -257,6 +243,10 @@ func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Durat
 		}
 		return false
 	}, timeout)
+}
+
+func WaitForConfigurationComplete(t *testing.T, configurationID configapi.ConfigurationID) bool {
+	return false
 }
 
 // WaitForTransactionComplete waits for a COMPLETED status on the given transaction

@@ -19,12 +19,13 @@ import (
 	"context"
 	"time"
 
+	"testing"
+
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const (
@@ -98,16 +99,19 @@ func createOfflineTarget(t *testing.T, targetID topo.ID, targetType string, targ
 			},
 		},
 	}
+	err = newTarget.SetAspect(&topo.TLSOptions{
+		Insecure: true,
+		Plain:    true,
+	})
+	assert.NoError(t, err)
 
-	_ = newTarget.SetAspect(&topo.Configurable{
+	err = newTarget.SetAspect(&topo.Configurable{
 		Type:    targetType,
 		Address: targetAddress,
 		Version: targetVersion,
 		Timeout: uint64((10 * time.Second).Milliseconds()),
 	})
-
-	_ = newTarget.SetAspect(&topo.TLSOptions{Plain: true})
-
+	assert.NoError(t, err)
 	err = topoClient.Create(context.Background(), newTarget)
 	assert.NoError(t, err)
 }
