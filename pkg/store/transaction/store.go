@@ -293,18 +293,18 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 		defer close(ch)
 		for event := range indexMapCh {
 			if transaction, err := decodeTransaction(event.Entry); err == nil {
-				var eventType configapi.TransactionEventType
+				var eventType configapi.TransactionEvent_TransactionEventType
 				switch event.Type {
 				case indexedmap.EventReplay:
-					eventType = configapi.TransactionEventType_TRANSACTION_EVENT_UNKNOWN
+					eventType = configapi.TransactionEvent_TRANSACTION_EVENT_UNKNOWN
 				case indexedmap.EventInsert:
-					eventType = configapi.TransactionEventType_TRANSACTION_CREATED
+					eventType = configapi.TransactionEvent_TRANSACTION_CREATED
 				case indexedmap.EventRemove:
-					eventType = configapi.TransactionEventType_TRANSACTION_DELETED
+					eventType = configapi.TransactionEvent_TRANSACTION_DELETED
 				case indexedmap.EventUpdate:
-					eventType = configapi.TransactionEventType_TRANSACTION_UPDATED
+					eventType = configapi.TransactionEvent_TRANSACTION_UPDATED
 				default:
-					eventType = configapi.TransactionEventType_TRANSACTION_UPDATED
+					eventType = configapi.TransactionEvent_TRANSACTION_UPDATED
 				}
 				ch <- configapi.TransactionEvent{
 					Type:        eventType,

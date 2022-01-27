@@ -226,10 +226,10 @@ func TestTransactionStore(t *testing.T) {
 
 	event = <-transactionCh
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
-	assert.Equal(t, configapi.TransactionEventType_TRANSACTION_UPDATED, event.Type)
+	assert.Equal(t, configapi.TransactionEvent_TRANSACTION_UPDATED, event.Type)
 	event = <-transactionCh
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
-	assert.Equal(t, configapi.TransactionEventType_TRANSACTION_DELETED, event.Type)
+	assert.Equal(t, configapi.TransactionEvent_TRANSACTION_DELETED, event.Type)
 
 	transaction = &configapi.Transaction{
 		ID: "transaction-3",

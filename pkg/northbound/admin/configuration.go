@@ -78,7 +78,7 @@ func (s Server) WatchConfigurations(req *admin.WatchConfigurationsRequest, strea
 func (s Server) streamConfigurations(server admin.ConfigurationService_WatchConfigurationsServer, ch chan configapi.ConfigurationEvent) error {
 	for event := range ch {
 		res := &admin.WatchConfigurationsResponse{
-			Event: event,
+			ConfigurationEvent: event,
 		}
 
 		log.Debugf("Sending WatchConfigurationsResponse %+v", res)
