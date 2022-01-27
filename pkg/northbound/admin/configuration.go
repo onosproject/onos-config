@@ -59,6 +59,10 @@ func (s Server) WatchConfigurations(req *admin.WatchConfigurationsRequest, strea
 		watchOpts = append(watchOpts, configuration.WithReplay())
 	}
 
+	if len(req.ConfigurationID) > 0 {
+		watchOpts = append(watchOpts, configuration.WithConfigurationID(req.ConfigurationID))
+	}
+
 	ch := make(chan configapi.ConfigurationEvent)
 	if err := s.configurationsStore.Watch(stream.Context(), ch, watchOpts...); err != nil {
 		log.Warnf("WatchConfigurationsRequest %+v failed: %v", req, err)
