@@ -25,8 +25,7 @@ import (
 // GetConfiguration returns response with the requested configuration
 func (s Server) GetConfiguration(ctx context.Context, req *admin.GetConfigurationRequest) (*admin.GetConfigurationResponse, error) {
 	log.Infof("Received GetConfiguration request: %+v", req)
-	// TODO: Add target type and version to configuration ID
-	conf, err := s.configurationsStore.Get(ctx, configuration.NewID(req.TargetID, "", ""))
+	conf, err := s.configurationsStore.Get(ctx, req.ConfigurationID)
 	if err != nil {
 		log.Warnf("GetConfiguration %+v failed: %v", req, err)
 		return nil, errors.Status(err).Err()
@@ -58,6 +57,10 @@ func (s Server) WatchConfigurations(req *admin.WatchConfigurationsRequest, strea
 	var watchOpts []configuration.WatchOption
 	if !req.Noreplay {
 		watchOpts = append(watchOpts, configuration.WithReplay())
+	}
+
+	if len(req.ConfigurationID) > 0 {
+		watchOpts = append(watchOpts, configuration.WithConfigurationID(req.ConfigurationID))
 	}
 
 	ch := make(chan configapi.ConfigurationEvent)
