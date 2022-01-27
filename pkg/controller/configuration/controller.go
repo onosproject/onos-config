@@ -51,8 +51,12 @@ func NewController(topo topo.Store, conns gnmi.ConnManager, configurations confi
 	})
 
 	c.Watch(&TopoWatcher{
-		topo:           topo,
-		configurations: configurations,
+		topo: topo,
+	})
+
+	c.Watch(&ConnWatcher{
+		conns: conns,
+		topo:  topo,
 	})
 
 	c.Reconcile(&Reconciler{
