@@ -15,9 +15,10 @@
 package config
 
 import (
+	"testing"
+
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"testing"
 )
 
 const (
@@ -43,6 +44,8 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 		{TargetName: target.Name(), Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
+
+	gnmi.CheckGNMIValue(t, gnmiClient, setNamePath, udtestNameValue, 0, "Query name after set returned the wrong value")
 
 	// Set initial values for Enabled and Description using gNMI client
 	setInitialValuesPath := []proto.TargetPath{

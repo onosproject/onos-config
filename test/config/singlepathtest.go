@@ -16,6 +16,11 @@ package config
 
 import (
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -40,11 +45,17 @@ func (s *TestSuite) TestSinglePath(t *testing.T) {
 	// Set a value using gNMI client
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
 
+	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
+	assert.NoError(t, err)
+
 	// Check that the value was set correctly
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, devicePath, gnmi.NoExtensions)
+
+	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
+	assert.NoError(t, err)
 
 	//  Make sure it got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")

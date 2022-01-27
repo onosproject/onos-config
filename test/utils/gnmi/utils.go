@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"testing"
@@ -133,35 +134,12 @@ func NewSimulatorTargetEntity(simulator *helm.HelmRelease, targetType string, ta
 		return nil, err
 	}
 
-	err = o.SetAspect(&topo.Asset{
-		Name: simulator.Name(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if err := o.SetAspect(&topo.MastershipState{}); err != nil {
-		return nil, err
-	}
-
 	err = o.SetAspect(&topo.Configurable{
 		Type:    targetType,
 		Address: service.Ports()[0].Address(true),
 		Version: targetVersion,
 		Timeout: uint64(time.Second * 30),
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	protocolState := &topo.ProtocolState{
-		Protocol:          topo.Protocol_GNMI,
-		ConnectivityState: topo.ConnectivityState_REACHABLE,
-		ChannelState:      topo.ChannelState_CONNECTED,
-		ServiceState:      topo.ServiceState_AVAILABLE,
-	}
-	protocolStates := []*topo.ProtocolState{protocolState}
-	err = o.SetAspect(&topo.Protocols{State: protocolStates})
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +168,15 @@ func NewTransactionServiceClient() (admin.TransactionServiceClient, error) {
 		return nil, err
 	}
 	return admin.NewTransactionServiceClient(conn), nil
+}
+
+// NewConfigurationServiceClient returns configuration store client
+func NewConfigurationServiceClient() (admin.ConfigurationServiceClient, error) {
+	conn, err := connectComponent("onos-umbrella", "onos-config")
+	if err != nil {
+		return nil, err
+	}
+	return admin.NewConfigurationServiceClient(conn), nil
 }
 
 // AddTargetToTopo adds a new target to topo
@@ -259,30 +246,35 @@ func WaitForTargetUnavailable(t *testing.T, objectID topo.ID, timeout time.Durat
 	}, timeout)
 }
 
-// WaitForTransactionComplete waits for a COMPLETED status on the given transaction
-func WaitForTransactionComplete(t *testing.T, transactionID configapi.TransactionID, transactionIndex v2.Index, wait time.Duration) bool {
-	getTransactionRequest := &admin.GetTransactionRequest{
-		ID:    transactionID,
-		Index: transactionIndex,
-	}
-
-	client, err := NewTransactionServiceClient()
+// WaitForConfigurationCompleteOrFail wait for a configuration to complete or fail
+func WaitForConfigurationCompleteOrFail(t *testing.T, configurationID configapi.ConfigurationID, wait time.Duration) error {
+	client, err := NewConfigurationServiceClient()
 	assert.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
-
+	response, err := client.WatchConfigurations(ctx, &admin.WatchConfigurationsRequest{
+		ConfigurationID: configurationID,
+		Noreplay:        false,
+	})
+	assert.NoError(t, err)
 	for {
-		response, err := client.GetTransaction(ctx, getTransactionRequest)
-		assert.NoError(t, err)
-		assert.NotNil(t, response)
-
-		// Check if the transaction has completed
-		if response.Transaction.Status.State == v2.TransactionState_TRANSACTION_COMPLETE {
-			return true
+		resp, err := response.Recv()
+		configuration := resp.ConfigurationEvent.GetConfiguration()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return errors.NewInvalid(err.Error())
+		} else {
+			configStatus := configuration.GetStatus()
+			if configStatus.GetState() == configapi.ConfigurationState_CONFIGURATION_COMPLETE {
+				return nil
+			} else if configStatus.GetState() == configapi.ConfigurationState_CONFIGURATION_FAILED {
+				break
+			}
 		}
-		time.Sleep(wait)
 	}
+	return errors.NewInvalid("configuration %s  failed", configurationID)
 }
 
 // NoPaths can be used on a request that does not need path values

@@ -19,9 +19,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-test/pkg/onostest"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	"github.com/onosproject/helmit/pkg/helm"
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
 )
@@ -35,22 +39,28 @@ const (
 // TestOfflineTarget tests set/query of a single GNMI path to a single target that is initially not in the config
 func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmi.GetGNMIClientOrFail(t)
-
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	// create a target entity in topo
 	createOfflineTarget(t, offlineTargetName, "devicesim-1.0.x", "1.0.0", "")
+	// Sends a set request using onos-config NB
+	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
+	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, []*gnmi_ext.Extension{})
 
-	devicePath := gnmi.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, []*gnmi_ext.Extension{})
-
-	// Bring the target online
-	simulator := gnmi.CreateSimulatorWithName(t, offlineTargetName)
-	defer gnmi.DeleteSimulator(t, simulator)
+	// Install simulator
+	simulator := helm.
+		Chart("device-simulator", onostest.OnosChartRepo).
+		Release(offlineTargetName).
+		Set("image.tag", "latest")
+	err := simulator.Install(true)
+	assert.NoError(t, err, "could not install device simulator %v", err)
 
 	// Wait for config to connect to the target
-	gnmi.WaitForTargetAvailable(t, topo.ID(simulator.Name()), time.Minute)
-	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, modValue, 0, "Query after set returned the wrong value")
+	gnmiutils.WaitForTargetAvailable(t, topoapi.ID(simulator.Name()), time.Minute)
+	gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, modValue, 0, "Query after set returned the wrong value")
 
 	// Check that the value was set properly on the target, wait for configuration gets completed
-	targetGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
-	gnmi.CheckTargetValue(t, targetGnmiClient, devicePath, modValue)
+	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
+	gnmiutils.CheckTargetValue(t, targetGnmiClient, targetPath, modValue)
+	err = simulator.Uninstall()
+	assert.NoError(t, err)
 }

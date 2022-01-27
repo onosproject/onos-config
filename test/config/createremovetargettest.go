@@ -17,13 +17,14 @@ package config
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/onosproject/helmit/pkg/helm"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -80,17 +81,13 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 	targetPath := gnmi.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
 
 	// Set a value using gNMI client - target is up
-	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, c, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
-	assert.True(t, transactionID != "")
+	gnmi.SetGNMIValueOrFail(t, c, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Check that the value was set correctly
 	gnmi.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue1, 0, "Query after set returned the wrong value")
 
 	// Wait for config to reconnect to the target
 	gnmi.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 1*time.Minute)
-
-	// Check that the network change has completed
-	gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
 
 	// interrogate the target to check that the value was set properly
 	targetGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
@@ -102,8 +99,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 
 	// Set a value using gNMI client - target is down
 	setPath2 := gnmi.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
-	transactionID2, transactionIndex2 := gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
-	assert.True(t, transactionID2 != "")
+	gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
 
 	//  Restart simulated target
 	err = simulator.Install(true)
@@ -114,9 +110,6 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 
 	// Check that the value was set correctly
 	gnmi.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
-
-	// Check that the network change has completed
-	gnmi.WaitForTransactionComplete(t, transactionID2, transactionIndex2, 10*time.Second)
 
 	// interrogate the target to check that the value was set properly
 	targetGnmiClient2 := gnmi.GetTargetGNMIClientOrFail(t, simulator)

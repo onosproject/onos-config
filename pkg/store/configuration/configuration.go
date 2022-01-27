@@ -16,8 +16,9 @@ package configuration
 
 import (
 	"context"
-	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 	"time"
+
+	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
 
 	"github.com/golang/protobuf/proto"
 

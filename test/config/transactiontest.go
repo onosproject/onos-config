@@ -16,9 +16,10 @@ package config
 
 import (
 	"context"
-	"github.com/onosproject/onos-api/go/onos/topo"
 	"testing"
 	"time"
+
+	"github.com/onosproject/onos-api/go/onos/topo"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
@@ -66,23 +67,16 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Set initial values
 	targetPathsForInit := gnmi.GetTargetPathsWithValues(targets, paths, initialValues)
-	initialTransactionID, initialTransactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
-	complete := gnmi.WaitForTransactionComplete(t, initialTransactionID, initialTransactionIndex, 10*time.Second)
-	assert.True(t, complete, "Set never completed")
+	_, _ = gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
 	gnmi.CheckGNMIValues(t, gnmiClient, targetPathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
 
 	// Create a change that can be rolled back
 	targetPathsForSet := gnmi.GetTargetPathsWithValues(targets, paths, values)
-	transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
-	gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
+	transactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}
 	gnmi.CheckGNMIValues(t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
-
-	// Wait for the network change to complete
-	complete = gnmi.WaitForTransactionComplete(t, transactionID, transactionIndex, 10*time.Second)
-	assert.True(t, complete, "Set never completed")
 
 	// Check that the values are set on the targets
 	target1GnmiClient := gnmi.GetTargetGNMIClientOrFail(t, target1)

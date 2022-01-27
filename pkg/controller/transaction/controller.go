@@ -190,16 +190,16 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		// If validation is successful, proceed to Applying.
 		err = modelPlugin.Validate(ctx, jsonTree)
 		if err != nil {
-			log.Warnf("Failed validating Transaction %d", transaction.Index, err)
+			log.Warnf("Failed validating Transaction %d, %v", transaction.Index, err)
 			transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
 			log.Debug(transaction.Status)
 			err = r.transactions.UpdateStatus(ctx, transaction)
 			if err != nil {
 				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-					log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
+					log.Errorf("Failed updating Transaction %d status %v", transaction.Index, err)
 					return controller.Result{}, err
 				}
-				log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
+				log.Warnf("Write conflict updating Transaction %d status %v", transaction.Index, err)
 				return controller.Result{}, nil
 			}
 			log.Debugf("Queueing next Transaction %d for reconciliation", transaction.Index+1)
@@ -241,10 +241,10 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 	err := r.transactions.UpdateStatus(ctx, transaction)
 	if err != nil {
 		if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-			log.Errorf("Failed updating Transaction %d status", transaction.Index, err)
+			log.Errorf("Failed updating Transaction %d status %v", transaction.Index, err)
 			return controller.Result{}, err
 		}
-		log.Warnf("Write conflict updating Transaction %d status", transaction.Index, err)
+		log.Warnf("Write conflict updating Transaction %d status %v", transaction.Index, err)
 		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil
