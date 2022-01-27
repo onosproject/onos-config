@@ -74,7 +74,7 @@ func (s Server) WatchTransactions(req *admin.WatchTransactionsRequest, stream ad
 func (s Server) streamTransactions(server admin.TransactionService_WatchTransactionsServer, ch chan configapi.TransactionEvent) error {
 	for event := range ch {
 		res := &admin.WatchTransactionsResponse{
-			Event: event,
+			TransactionEvent: event,
 		}
 
 		log.Debugf("Sending WatchTransactionsResponse %+v", res)

@@ -279,18 +279,18 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 		defer close(ch)
 		for event := range mapCh {
 			if configuration, err := decodeConfiguration(event.Entry); err == nil {
-				var eventType configapi.ConfigurationEventType
+				var eventType configapi.ConfigurationEvent_ConfigurationEventType
 				switch event.Type {
 				case _map.EventReplay:
-					eventType = configapi.ConfigurationEventType_CONFIGURATION_EVENT_UNKNOWN
+					eventType = configapi.ConfigurationEvent_CONFIGURATION_EVENT_UNKNOWN
 				case _map.EventInsert:
-					eventType = configapi.ConfigurationEventType_CONFIGURATION_CREATED
+					eventType = configapi.ConfigurationEvent_CONFIGURATION_CREATED
 				case _map.EventRemove:
-					eventType = configapi.ConfigurationEventType_CONFIGURATION_DELETED
+					eventType = configapi.ConfigurationEvent_CONFIGURATION_DELETED
 				case _map.EventUpdate:
-					eventType = configapi.ConfigurationEventType_CONFIGURATION_UPDATED
+					eventType = configapi.ConfigurationEvent_CONFIGURATION_UPDATED
 				default:
-					eventType = configapi.ConfigurationEventType_CONFIGURATION_UPDATED
+					eventType = configapi.ConfigurationEvent_CONFIGURATION_UPDATED
 				}
 				ch <- configapi.ConfigurationEvent{
 					Type:          eventType,

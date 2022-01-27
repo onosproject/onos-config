@@ -179,10 +179,10 @@ func TestConfigurationStore(t *testing.T) {
 	assert.Nil(t, configuration)
 	event = <-configurationCh
 	assert.Equal(t, target2Config.ID, event.Configuration.ID)
-	assert.Equal(t, configapi.ConfigurationEventType_CONFIGURATION_UPDATED, event.Type)
+	assert.Equal(t, configapi.ConfigurationEvent_CONFIGURATION_UPDATED, event.Type)
 	event = <-configurationCh
 	assert.Equal(t, target2Config.ID, event.Configuration.ID)
-	assert.Equal(t, configapi.ConfigurationEventType_CONFIGURATION_DELETED, event.Type)
+	assert.Equal(t, configapi.ConfigurationEvent_CONFIGURATION_DELETED, event.Type)
 
 	// Checks list of configuration after deleting a configuration
 	configurationList, err = store2.List(context.TODO())
