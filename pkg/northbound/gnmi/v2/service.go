@@ -79,15 +79,19 @@ type Server struct {
 
 // Capabilities implements gNMI Capabilities
 func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) (*gnmi.CapabilityResponse, error) {
-	// TODO adds capability
-	/*capabilities, err := s.modelRegistry.Capabilities()
-	if err != nil {
-		return nil, err
-	}*/
+	plugins := s.pluginRegistry.GetPlugins()
+
+	supportedModels := make([]*gnmi.ModelData, 0)
+	for _, plugin := range plugins {
+		capabilities := plugin.Capabilities(ctx, nil)
+		for _, supportedModel := range capabilities.SupportedModels {
+			supportedModels = append(supportedModels, supportedModel)
+		}
+	}
 
 	v, _ := getGNMIServiceVersion()
 	return &gnmi.CapabilityResponse{
-		SupportedModels:    nil,
+		SupportedModels:    supportedModels,
 		SupportedEncodings: []gnmi.Encoding{gnmi.Encoding_JSON, gnmi.Encoding_JSON_IETF, gnmi.Encoding_PROTO},
 		GNMIVersion:        *v,
 	}, nil
