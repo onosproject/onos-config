@@ -15,8 +15,9 @@
 package config
 
 import (
-	"github.com/Pallinder/go-randomdata"
 	"testing"
+
+	"github.com/Pallinder/go-randomdata"
 
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
@@ -41,8 +42,6 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmi.GetGNMIClientOrFail(t)
 
-	//var transactionIDs []network.ID
-
 	for i := 0; i < 10; i++ {
 
 		msValue := generateTimezoneName()
@@ -51,9 +50,6 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 		targetPath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, msValue, proto.StringVal)
 		transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
 		assert.NotNil(t, transactionID, transactionIndex)
-
-		// Append the transactionID to list of transactionIDs
-		//transactionIDs = append(transactionIDs, transactionID)
 
 		// Check that the value was set correctly
 		gnmi.CheckGNMIValue(t, gnmiClient, targetPath, msValue, 0, "Query after set returned the wrong value")
@@ -64,10 +60,4 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 		//  Make sure it got removed
 		gnmi.CheckGNMIValue(t, gnmiClient, targetPath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 	}
-
-	// Make sure all of the changes have been completed
-	//for _, changeID := range transactionIDs {
-	//	complete := gnmi.WaitForTransactionComplete(t, changeID, 5*time.Second)
-	//	assert.True(t, complete, "Set never completed")
-	//}
 }

@@ -19,12 +19,13 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
 
 	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
