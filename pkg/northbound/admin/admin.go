@@ -106,8 +106,8 @@ func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.Co
 	return nil
 }
 
-// RollbackNetworkChange rolls back a configuration change transaction with the specified index.
-func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRequest) (*admin.RollbackResponse, error) {
+// RollbackTransaction rolls back configuration change transaction with the specified index.
+func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequest) (*admin.RollbackResponse, error) {
 	id := v2.TransactionID(uri.NewURI(uri.WithScheme("uuid"), uri.WithOpaque(uuid.New().String())).String())
 	t := &v2.Transaction{
 		ID: id,
@@ -121,7 +121,7 @@ func (s Server) RollbackNetworkChange(ctx context.Context, req *admin.RollbackRe
 		log.Errorf("Unable to rollback transaction with index %d: %+v", req.Index, err)
 		return nil, errors.Status(err).Err()
 	}
-	return &admin.RollbackResponse{}, nil
+	return &admin.RollbackResponse{ID: t.ID, Index: t.Index}, nil
 }
 
 // ListSnapshots lists snapshots for all devices

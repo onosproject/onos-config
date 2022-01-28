@@ -95,7 +95,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	// Now rollback the change
 	adminClient, err := gnmi.NewAdminServiceClient()
 	assert.NoError(t, err)
-	rollbackResponse, rollbackError := adminClient.RollbackNetworkChange(
+	rollbackResponse, rollbackError := adminClient.RollbackTransaction(
 		context.Background(), &admin.RollbackRequest{Index: transactionIndex})
 
 	assert.NoError(t, rollbackError, "Rollback returned an error")
