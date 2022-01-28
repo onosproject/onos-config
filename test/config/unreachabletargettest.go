@@ -16,12 +16,8 @@
 package config
 
 import (
-	"context"
-	"time"
-
 	"testing"
 
-	"github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
@@ -83,35 +79,4 @@ func (s *TestSuite) TestUnreachableTarget(t *testing.T) {
 	//assert.NoError(t, rollbackError, "Rollback returned an error")
 	//assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 	//assert.Contains(t, rollbackResponse.Message, changeID, "rollbackResponse message does not contain change ID")
-}
-
-func createOfflineTarget(t *testing.T, targetID topo.ID, targetType string, targetVersion string, targetAddress string) {
-	topoClient, err := gnmi.NewTopoClient()
-	assert.NotNil(t, topoClient)
-	assert.Nil(t, err)
-
-	newTarget := &topo.Object{
-		ID:   targetID,
-		Type: topo.Object_ENTITY,
-		Obj: &topo.Object_Entity{
-			Entity: &topo.Entity{
-				KindID: topo.ID(targetType),
-			},
-		},
-	}
-	err = newTarget.SetAspect(&topo.TLSOptions{
-		Insecure: true,
-		Plain:    true,
-	})
-	assert.NoError(t, err)
-
-	err = newTarget.SetAspect(&topo.Configurable{
-		Type:    targetType,
-		Address: targetAddress,
-		Version: targetVersion,
-		Timeout: uint64((10 * time.Second).Milliseconds()),
-	})
-	assert.NoError(t, err)
-	err = topoClient.Create(context.Background(), newTarget)
-	assert.NoError(t, err)
 }
