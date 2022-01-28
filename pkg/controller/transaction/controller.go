@@ -176,30 +176,29 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		// the transaction
 		configID := configuration.NewID(targetID, change.TargetType, change.TargetVersion)
 		config, err := r.configurations.Get(ctx, configID)
+		pathValues := make(map[string]*configapi.PathValue)
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				log.Errorf("Failed applying Transaction %d to target '%s'", transaction.Index, targetID, err)
 				return controller.Result{}, err
 			}
-		}
-		pathValues := make([]*configapi.PathValue, 0, len(change.Values))
-		currentConfigValues := make(map[string]*configapi.PathValue)
-		if config.GetValues() != nil {
-			currentConfigValues = config.Values
+		} else {
+			pathValues = config.Values
 		}
 
 		for path, changeValue := range change.Values {
-			currentConfigValues[path] = &configapi.PathValue{
+			pathValues[path] = &configapi.PathValue{
 				Path:    path,
 				Value:   changeValue.Value,
 				Deleted: changeValue.Delete,
 			}
 		}
-		for _, pathValue := range currentConfigValues {
-			pathValues = append(pathValues, pathValue)
+		values := make([]*configapi.PathValue, 0, len(change.Values))
+		for _, pathValue := range pathValues {
+			values = append(values, pathValue)
 		}
 
-		jsonTree, err := tree.BuildTree(pathValues, true)
+		jsonTree, err := tree.BuildTree(values, true)
 		if err != nil {
 			return controller.Result{}, err
 		}
@@ -224,17 +223,16 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		}
 
 		// Get the target configuration and record the source values in the transaction status
-		var configValues map[string]*configapi.PathValue
 		configID = configuration.NewID(targetID, change.TargetType, change.TargetVersion)
 		if config, err := r.configurations.Get(ctx, configID); err != nil {
 			if !errors.IsNotFound(err) {
 				return controller.Result{}, err
 			}
-			configValues = make(map[string]*configapi.PathValue)
-		} else if config.GetValues() != nil {
-			configValues = config.Values
+			pathValues = make(map[string]*configapi.PathValue)
+		} else if config.Values != nil {
+			pathValues = config.Values
 		} else {
-			configValues = make(map[string]*configapi.PathValue)
+			pathValues = make(map[string]*configapi.PathValue)
 		}
 
 		source := configapi.Source{
@@ -243,7 +241,7 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 			Values:        make(map[string]configapi.PathValue),
 		}
 		for path := range change.Values {
-			pathValue, ok := configValues[path]
+			pathValue, ok := pathValues[path]
 			if ok {
 				source.Values[path] = *pathValue
 			}
