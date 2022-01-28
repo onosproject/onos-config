@@ -68,23 +68,28 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 	// List the objects in the topo store
 	objects, err := r.topo.List(ctx, &topoapi.Filters{
-		RelationFilter: &topoapi.RelationFilter{
-			RelationKind: topoapi.CONTROLS,
-			TargetId:     string(targetID),
+		KindFilter: &topoapi.Filter{
+			Filter: &topoapi.Filter_Equal_{
+				Equal_: &topoapi.EqualFilter{
+					Value: topoapi.CONTROLS,
+				},
+			},
 		},
 	})
 	if err != nil {
 		log.Warnf("Updating MastershipState for target '%s' failed: %v", targetEntity.GetID(), err)
 		return controller.Result{}, err
 	}
-	controlsRelations := make(map[string]topoapi.Object)
+	controlsRelations := make(map[topoapi.ID]topoapi.Object)
 	for _, object := range objects {
-		controlsRelations[string(object.ID)] = object
+		if object.GetRelation().TgtEntityID == targetID {
+			controlsRelations[object.ID] = object
+		}
 	}
 
 	mastership := &topoapi.MastershipState{}
 	_ = targetEntity.GetAspect(mastership)
-	if _, ok := controlsRelations[mastership.NodeId]; ok {
+	if _, ok := controlsRelations[topoapi.ID(mastership.NodeId)]; ok {
 		log.Debugf("Updating MastershipState for the gNMI target '%s'", targetEntity.GetID())
 		if len(controlsRelations) == 0 {
 			if mastership.NodeId == "" {
