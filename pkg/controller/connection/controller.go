@@ -88,7 +88,7 @@ func (r *Reconciler) createRelation(ctx context.Context, conn gnmi.Conn) (contro
 		}
 		err = r.topo.Create(ctx, relation)
 		if err != nil {
-			if !errors.IsNotFound(err) {
+			if !errors.IsAlreadyExists(err) {
 				return controller.Result{}, err
 			}
 			return controller.Result{}, nil
