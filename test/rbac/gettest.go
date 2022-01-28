@@ -30,7 +30,7 @@ const (
 	otherInterface       = "other"
 	descriptionLeafName  = "description"
 	nameLeafName         = "name"
-	enabledLeafName      = "description"
+	enabledLeafName      = "enabled"
 	descriptionLeafValue = "ABC123"
 	keycloakURL          = "https://keycloak-dev.onlab.us/auth/realms/master"
 )
@@ -231,7 +231,7 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 				if len(values) != 0 {
 					value = values[0].PathDataValue
 				}
-				assert.Equal(t, value, testCase.expectedValue)
+				assert.Equal(t, testCase.expectedValue, value)
 			},
 		)
 	}

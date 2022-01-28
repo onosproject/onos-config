@@ -39,7 +39,7 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:          "Eather ROC Admin user",
+			name:          "Aether ROC Admin user",
 			username:      "alicea",
 			expectedError: "",
 		},
