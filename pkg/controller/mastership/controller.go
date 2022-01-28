@@ -90,11 +90,11 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	mastership := &topoapi.MastershipState{}
 	_ = targetEntity.GetAspect(mastership)
 	if _, ok := targetRelations[topoapi.ID(mastership.NodeId)]; !ok {
-		log.Debugf("Updating MastershipState for the gNMI target '%s'", targetEntity.GetID())
 		if len(targetRelations) == 0 {
 			if mastership.NodeId == "" {
-				log.Warnf("No controls relations found for target entity '%s'", targetEntity.GetID())
+				return controller.Result{}, nil
 			}
+			log.Debugf("Master in term %d resigned for the gNMI target '%s'", mastership.Term, targetEntity.GetID())
 			mastership.NodeId = ""
 		} else {
 			// Select a random master to assign to the gnmi target
@@ -107,6 +107,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			// Increment the mastership term and assign the selected master
 			mastership.Term++
 			mastership.NodeId = string(relation.ID)
+			log.Debugf("Elected new master '%s' in term %d for the gNMI target '%s'", mastership.NodeId, mastership.Term, targetEntity.GetID())
 		}
 
 		err = targetEntity.SetAspect(mastership)
