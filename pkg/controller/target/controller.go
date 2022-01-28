@@ -58,9 +58,11 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	defer cancel()
 
 	targetID := id.Value.(topoapi.ID)
+	log.Infof("Reconciling Target '%s'", targetID)
 	target, err := r.topo.Get(ctx, targetID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
+			log.Errorf("Failed reconciling Target '%s'", targetID, err)
 			return controller.Result{}, err
 		}
 		return r.disconnect(ctx, targetID)
@@ -69,20 +71,26 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 }
 
 func (r *Reconciler) connect(ctx context.Context, target *topoapi.Object) (controller.Result, error) {
+	log.Info("Connecting to Target '%s'", target.ID)
 	if err := r.conns.Connect(ctx, target); err != nil {
 		if !errors.IsAlreadyExists(err) {
+			log.Errorf("Failed connecting to Target '%s'", target.ID, err)
 			return controller.Result{}, err
 		}
+		log.Warnf("Failed connecting to Target '%s'", target.ID, err)
 		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil
 }
 
 func (r *Reconciler) disconnect(ctx context.Context, targetID topoapi.ID) (controller.Result, error) {
+	log.Info("Disconnecting from Target '%s'", targetID)
 	if err := r.conns.Disconnect(ctx, targetID); err != nil {
 		if !errors.IsNotFound(err) {
+			log.Errorf("Failed disconnecting from Target '%s'", targetID, err)
 			return controller.Result{}, err
 		}
+		log.Warnf("Failed disconnecting from Target '%s'", targetID, err)
 		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil

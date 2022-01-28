@@ -62,6 +62,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	defer cancel()
 
 	connID := id.Value.(gnmi.ConnID)
+	log.Infof("Reconciling Conn '%s'", connID)
 	conn, ok := r.conns.Get(ctx, connID)
 	if !ok {
 		return r.deleteRelation(ctx, connID)
@@ -73,8 +74,10 @@ func (r *Reconciler) createRelation(ctx context.Context, conn gnmi.Conn) (contro
 	relation, err := r.topo.Get(ctx, topoapi.ID(conn.ID()))
 	if err != nil {
 		if !errors.IsNotFound(err) {
+			log.Errorf("Failed reconciling Conn '%s'", conn.ID(), err)
 			return controller.Result{}, err
 		}
+		log.Infof("Creating CONTROLS relation '%s'", conn.ID())
 		relation = &topoapi.Object{
 			ID:   topoapi.ID(conn.ID()),
 			Type: topoapi.Object_RELATION,
@@ -89,8 +92,10 @@ func (r *Reconciler) createRelation(ctx context.Context, conn gnmi.Conn) (contro
 		err = r.topo.Create(ctx, relation)
 		if err != nil {
 			if !errors.IsAlreadyExists(err) {
+				log.Errorf("Failed creating CONTROLS relation '%s'", conn.ID(), err)
 				return controller.Result{}, err
 			}
+			log.Warnf("Failed creating CONTROLS relation '%s'", conn.ID(), err)
 			return controller.Result{}, nil
 		}
 	}
@@ -101,15 +106,20 @@ func (r *Reconciler) deleteRelation(ctx context.Context, connID gnmi.ConnID) (co
 	relation, err := r.topo.Get(ctx, topoapi.ID(connID))
 	if err != nil {
 		if !errors.IsNotFound(err) {
+			log.Errorf("Failed reconciling Conn '%s'", connID, err)
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
 	}
+	log.Infof("Deleting CONTROLS relation '%s'", connID)
 	err = r.topo.Delete(ctx, relation)
 	if err != nil {
 		if !errors.IsNotFound(err) {
+			log.Errorf("Failed deleting CONTROLS relation '%s'", connID, err)
 			return controller.Result{}, err
 		}
+		log.Warnf("Failed deleting CONTROLS relation '%s'", connID, err)
+		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil
 }
