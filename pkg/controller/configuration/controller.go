@@ -45,27 +45,18 @@ const (
 // NewController returns a configuration controller
 func NewController(topo topo.Store, conns gnmi.ConnManager, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) *controller.Controller {
 	c := controller.NewController("configuration")
-
 	c.Watch(&Watcher{
 		configurations: configurations,
 	})
-
 	c.Watch(&TopoWatcher{
 		topo: topo,
 	})
-
-	c.Watch(&ConnWatcher{
-		conns: conns,
-		topo:  topo,
-	})
-
 	c.Reconcile(&Reconciler{
 		conns:          conns,
 		topo:           topo,
 		configurations: configurations,
 		pluginRegistry: pluginRegistry,
 	})
-
 	return c
 }
 
@@ -237,17 +228,9 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	}
 
 	// Get the master connection
-	conn, err := r.conns.Get(ctx, topoapi.ID(config.TargetID))
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			log.Errorf("Failed connection to '%s'", config.TargetID, err)
-			return false, err
-		}
+	conn, ok := r.conns.Get(ctx, gnmi.ConnID(relation.ID))
+	if !ok {
 		log.Warnf("Connection not found for target '%s'", config.TargetID)
-		return false, nil
-	}
-	if conn.ID() != gnmi.ConnID(relation.ID) {
-		log.Warnf("Connection mismatch for target '%s''", config.TargetID)
 		return false, nil
 	}
 

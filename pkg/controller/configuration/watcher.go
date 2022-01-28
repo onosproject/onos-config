@@ -16,7 +16,6 @@ package configuration
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/southbound/gnmi"
 	"sync"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
@@ -118,53 +117,6 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 
 // Stop stops the topology watcher
 func (w *TopoWatcher) Stop() {
-	w.mu.Lock()
-	if w.cancel != nil {
-		w.cancel()
-		w.cancel = nil
-	}
-	w.mu.Unlock()
-}
-
-// ConnWatcher connection watcher
-type ConnWatcher struct {
-	conns  gnmi.ConnManager
-	topo   topo.Store
-	cancel context.CancelFunc
-	mu     sync.Mutex
-}
-
-// Start starts the connection watcher
-func (w *ConnWatcher) Start(ch chan<- controller.ID) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if w.cancel != nil {
-		return nil
-	}
-
-	eventCh := make(chan gnmi.ConnEvent, queueSize)
-	ctx, cancel := context.WithCancel(context.Background())
-
-	err := w.conns.Watch(ctx, eventCh)
-	if err != nil {
-		cancel()
-		return err
-	}
-	w.cancel = cancel
-	go func() {
-		for event := range eventCh {
-			if relation, err := w.topo.Get(ctx, topoapi.ID(event.Conn.ID())); err == nil {
-				// TODO: Get target type and version from topo entity
-				ch <- controller.NewID(configuration.NewID(configapi.TargetID(relation.GetRelation().TgtEntityID), "", ""))
-			}
-		}
-	}()
-
-	return nil
-}
-
-// Stop stops the connection watcher
-func (w *ConnWatcher) Stop() {
 	w.mu.Lock()
 	if w.cancel != nil {
 		w.cancel()

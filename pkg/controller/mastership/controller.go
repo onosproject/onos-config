@@ -57,91 +57,69 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 	targetID := id.Value.(topoapi.ID)
 	log.Infof("Reconciling mastership election for the gNMI target  %s", targetID)
-	target, err := r.topo.Get(ctx, targetID)
+	targetEntity, err := r.topo.Get(ctx, targetID)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return controller.Result{}, nil
 		}
-		log.Warnf("Failed to reconcile mastership election for the gNMI target with ID %s: %s", target.ID, err)
+		log.Warnf("Failed to reconcile mastership election for the gNMI target with ID %s: %s", targetEntity.ID, err)
 		return controller.Result{}, err
-	}
-	return r.reconcileMastershipElection(target)
-}
-
-func (r *Reconciler) reconcileMastershipElection(target *topoapi.Object) (controller.Result, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-
-	if err := r.updateTargetMaster(ctx, target); err != nil {
-		return controller.Result{}, err
-	}
-	return controller.Result{}, nil
-}
-
-func (r *Reconciler) updateTargetMaster(ctx context.Context, target *topoapi.Object) error {
-	log.Debugf("Verifying mastership for gNMI target '%s'", target.GetID())
-	targetEntity, err := r.topo.Get(ctx, target.GetID())
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			log.Warnf("Updating MastershipState for gNMI target '%s' failed: %v", target.GetID(), err)
-			return err
-		}
-		log.Warnf("gNMI target entity '%s' not found", target.GetID())
-		return nil
 	}
 
 	// List the objects in the topo store
-	objects, err := r.topo.List(ctx, nil)
+	objects, err := r.topo.List(ctx, &topoapi.Filters{
+		RelationFilter: &topoapi.RelationFilter{
+			RelationKind: topoapi.CONTROLS,
+			TargetId:     string(targetID),
+		},
+	})
 	if err != nil {
-		log.Warnf("Updating MastershipState for target '%s' failed: %v", target.GetID(), err)
-		return err
+		log.Warnf("Updating MastershipState for target '%s' failed: %v", targetEntity.GetID(), err)
+		return controller.Result{}, err
 	}
-
-	// Filter the topo objects for relations
-	targetRelations := make(map[string]topoapi.Object)
+	controlsRelations := make(map[string]topoapi.Object)
 	for _, object := range objects {
-		if relation, ok := object.Obj.(*topoapi.Object_Relation); ok &&
-			relation.Relation.KindID == topoapi.CONTROLS &&
-			relation.Relation.TgtEntityID == target.GetID() {
-			targetRelations[string(object.ID)] = object
-		}
+		controlsRelations[string(object.ID)] = object
 	}
 
 	mastership := &topoapi.MastershipState{}
 	_ = targetEntity.GetAspect(mastership)
-	if _, ok := targetRelations[mastership.NodeId]; !ok {
-		log.Debugf("Updating MastershipState for the gNMI target '%s'", target.GetID())
-		if len(targetRelations) == 0 {
-			log.Warnf("No controls relations found for target entity '%s'", target.GetID())
-			return nil
+	if _, ok := controlsRelations[mastership.NodeId]; ok {
+		log.Debugf("Updating MastershipState for the gNMI target '%s'", targetEntity.GetID())
+		if len(controlsRelations) == 0 {
+			if mastership.NodeId == "" {
+				log.Warnf("No controls relations found for target entity '%s'", targetEntity.GetID())
+			}
+			mastership.NodeId = ""
+		} else {
+			// Select a random master to assign to the gnmi target
+			relations := make([]topoapi.Object, 0, len(controlsRelations))
+			for _, targetRelation := range relations {
+				relations = append(relations, targetRelation)
+			}
+			relation := relations[rand.Intn(len(relations))]
+
+			// Increment the mastership term and assign the selected master
+			mastership.Term++
+			mastership.NodeId = string(relation.ID)
 		}
 
-		// Select a random master to assign to the gnmi target
-		relations := make([]topoapi.Object, 0, len(targetRelations))
-		for _, targetRelation := range targetRelations {
-			relations = append(relations, targetRelation)
-		}
-		relation := relations[rand.Intn(len(relations))]
-
-		// Increment the mastership term and assign the selected master
-		mastership.Term++
-		mastership.NodeId = string(relation.ID)
 		err = targetEntity.SetAspect(mastership)
 		if err != nil {
-			log.Warnf("Updating MastershipState for gNMI target '%s' failed: %v", target.GetID(), err)
-			return err
+			log.Warnf("Updating MastershipState for gNMI target '%s' failed: %v", targetEntity.GetID(), err)
+			return controller.Result{}, err
 		}
 
 		// Update the gNMI target entity
 		err = r.topo.Update(ctx, targetEntity)
 		if err != nil {
 			if !errors.IsNotFound(err) {
-				log.Warnf("Updating MastershipState for gNMI target '%s' failed: %v", target.GetID(), err)
-				return err
+				log.Warnf("Updating MastershipState for gNMI target '%s' failed: %v", targetEntity.GetID(), err)
+				return controller.Result{}, err
 			}
-			return nil
+			return controller.Result{}, nil
 		}
-		return nil
+		return controller.Result{}, nil
 	}
-	return nil
+	return controller.Result{}, nil
 }

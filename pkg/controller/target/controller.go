@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connection
+package target
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/controller/utils"
 	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -37,9 +36,6 @@ const (
 // NewController returns a new gNMI connection  controller
 func NewController(topo topo.Store, conns gnmi.ConnManager) *controller.Controller {
 	c := controller.NewController("connection")
-	c.Watch(&ConnWatcher{
-		conns: conns,
-	})
 	c.Watch(&TopoWatcher{
 		topo: topo,
 	})
@@ -61,55 +57,33 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	connID := id.Value.(gnmi.ConnID)
-	conn, ok := r.conns.Get(ctx, connID)
-	if !ok {
-		return r.deleteRelation(ctx, connID)
-	}
-	return r.createRelation(ctx, conn)
-}
-
-func (r *Reconciler) createRelation(ctx context.Context, conn gnmi.Conn) (controller.Result, error) {
-	relation, err := r.topo.Get(ctx, topoapi.ID(conn.ID()))
+	targetID := id.Value.(topoapi.ID)
+	target, err := r.topo.Get(ctx, targetID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return controller.Result{}, err
 		}
-		relation = &topoapi.Object{
-			ID:   topoapi.ID(conn.ID()),
-			Type: topoapi.Object_RELATION,
-			Obj: &topoapi.Object_Relation{
-				Relation: &topoapi.Relation{
-					KindID:      topoapi.CONTROLS,
-					SrcEntityID: utils.GetOnosConfigID(),
-					TgtEntityID: conn.TargetID(),
-				},
-			},
-		}
-		err = r.topo.Create(ctx, relation)
-		if err != nil {
-			if !errors.IsNotFound(err) {
-				return controller.Result{}, err
-			}
-			return controller.Result{}, nil
-		}
+		return r.disconnect(ctx, targetID)
 	}
-	return controller.Result{}, nil
+	return r.connect(ctx, target)
 }
 
-func (r *Reconciler) deleteRelation(ctx context.Context, connID gnmi.ConnID) (controller.Result, error) {
-	relation, err := r.topo.Get(ctx, topoapi.ID(connID))
-	if err != nil {
-		if !errors.IsNotFound(err) {
+func (r *Reconciler) connect(ctx context.Context, target *topoapi.Object) (controller.Result, error) {
+	if err := r.conns.Connect(ctx, target); err != nil {
+		if !errors.IsAlreadyExists(err) {
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
 	}
-	err = r.topo.Delete(ctx, relation)
-	if err != nil {
+	return controller.Result{}, nil
+}
+
+func (r *Reconciler) disconnect(ctx context.Context, targetID topoapi.ID) (controller.Result, error) {
+	if err := r.conns.Disconnect(ctx, targetID); err != nil {
 		if !errors.IsNotFound(err) {
 			return controller.Result{}, err
 		}
+		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil
 }

@@ -20,8 +20,8 @@ import (
 	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration"
 	"github.com/onosproject/onos-config/pkg/controller/connection"
 	mastershipcontroller "github.com/onosproject/onos-config/pkg/controller/mastership"
+	"github.com/onosproject/onos-config/pkg/controller/target"
 
-	"github.com/onosproject/onos-config/pkg/controller/controlrelation"
 	"github.com/onosproject/onos-config/pkg/controller/node"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
 	gnminb "github.com/onosproject/onos-config/pkg/northbound/gnmi/v2"
@@ -132,10 +132,10 @@ func (m *Manager) startConnController(topo topo.Store, conns sb.ConnManager) err
 	return connController.Start()
 }
 
-// startControlRelationController starts control relation controller
-func (m *Manager) startControlRelationController(topo topo.Store, conns sb.ConnManager) error {
-	controlRelationController := controlrelation.NewController(topo, conns)
-	return controlRelationController.Start()
+// startTargetController starts target controller
+func (m *Manager) startTargetController(topo topo.Store, conns sb.ConnManager) error {
+	targetController := target.NewController(topo, conns)
+	return targetController.Start()
 }
 
 // startMastershipController starts mastership controller
@@ -196,7 +196,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	err = m.startControlRelationController(topoStore, conns)
+	err = m.startTargetController(topoStore, conns)
 	if err != nil {
 		return err
 	}

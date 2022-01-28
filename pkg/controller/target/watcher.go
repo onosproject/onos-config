@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connection
+package target
 
 import (
 	"context"
@@ -27,6 +27,55 @@ import (
 )
 
 const queueSize = 100
+
+// TopoWatcher is a topology watcher
+type TopoWatcher struct {
+	topo   topo.Store
+	cancel context.CancelFunc
+	mu     sync.Mutex
+}
+
+// Start starts the topo store watcher
+func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.cancel != nil {
+		return nil
+	}
+
+	eventCh := make(chan topoapi.Event, queueSize)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	err := w.topo.Watch(ctx, eventCh, nil)
+	if err != nil {
+		cancel()
+		return err
+	}
+	w.cancel = cancel
+	go func() {
+		for event := range eventCh {
+			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
+				// If the entity object has configurable aspect then the controller
+				// can make a connection to it
+				err = event.Object.GetAspect(&topoapi.Configurable{})
+				if err == nil {
+					ch <- controller.NewID(event.Object.ID)
+				}
+			}
+		}
+	}()
+	return nil
+}
+
+// Stop stops the topology watcher
+func (w *TopoWatcher) Stop() {
+	w.mu.Lock()
+	if w.cancel != nil {
+		w.cancel()
+		w.cancel = nil
+	}
+	w.mu.Unlock()
+}
 
 // ConnWatcher is a gnmi connection watcher
 type ConnWatcher struct {
@@ -56,7 +105,7 @@ func (c *ConnWatcher) Start(ch chan<- controller.ID) error {
 	go func() {
 		for conn := range c.connCh {
 			log.Debugf("Received gNMI Connection event for connection '%s'", conn.ID())
-			ch <- controller.NewID(conn.ID())
+			ch <- controller.NewID(conn.TargetID())
 		}
 		close(ch)
 	}()
@@ -71,51 +120,4 @@ func (c *ConnWatcher) Stop() {
 		c.cancel = nil
 	}
 	c.mu.Unlock()
-}
-
-// TopoWatcher is a topology watcher
-type TopoWatcher struct {
-	topo   topo.Store
-	cancel context.CancelFunc
-	mu     sync.Mutex
-}
-
-// Start starts the topo store watcher
-func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if w.cancel != nil {
-		return nil
-	}
-
-	eventCh := make(chan topoapi.Event, queueSize)
-	ctx, cancel := context.WithCancel(context.Background())
-
-	err := w.topo.Watch(ctx, eventCh, nil)
-	if err != nil {
-		cancel()
-		return err
-	}
-	w.cancel = cancel
-	go func() {
-		for event := range eventCh {
-			if relation, ok := event.Object.Obj.(*topoapi.Object_Relation); ok {
-				if relation.Relation.KindID == topoapi.CONTROLS {
-					ch <- controller.NewID(gnmi.ConnID(event.Object.ID))
-				}
-			}
-		}
-	}()
-
-	return nil
-}
-
-// Stop stops the topology watcher
-func (w *TopoWatcher) Stop() {
-	w.mu.Lock()
-	if w.cancel != nil {
-		w.cancel()
-		w.cancel = nil
-	}
-	w.mu.Unlock()
 }
