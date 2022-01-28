@@ -89,7 +89,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 	mastership := &topoapi.MastershipState{}
 	_ = targetEntity.GetAspect(mastership)
-	if _, ok := controlsRelations[topoapi.ID(mastership.NodeId)]; ok {
+	if _, ok := controlsRelations[topoapi.ID(mastership.NodeId)]; !ok {
 		log.Debugf("Updating MastershipState for the gNMI target '%s'", targetEntity.GetID())
 		if len(controlsRelations) == 0 {
 			if mastership.NodeId == "" {
