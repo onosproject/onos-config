@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	baseClient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
@@ -42,9 +43,10 @@ type ConnManager interface {
 // NewConnManager creates a new gNMI connection manager
 func NewConnManager() ConnManager {
 	mgr := &connManager{
-		targets: make(map[topoapi.ID]*grpc.ClientConn),
-		conns:   make(map[ConnID]Conn),
-		eventCh: make(chan Conn),
+		targets:  make(map[topoapi.ID]*grpc.ClientConn),
+		conns:    make(map[ConnID]Conn),
+		watchers: make(map[uuid.UUID]chan<- Conn),
+		eventCh:  make(chan Conn),
 	}
 	go mgr.processEvents()
 	return mgr
@@ -54,7 +56,7 @@ type connManager struct {
 	targets    map[topoapi.ID]*grpc.ClientConn
 	conns      map[ConnID]Conn
 	stateMu    sync.RWMutex
-	watchers   []chan<- Conn
+	watchers   map[uuid.UUID]chan<- Conn
 	watchersMu sync.RWMutex
 	eventCh    chan Conn
 }
@@ -191,9 +193,10 @@ func (m *connManager) Disconnect(ctx context.Context, targetID topoapi.ID) error
 }
 
 func (m *connManager) Watch(ctx context.Context, ch chan<- Conn) error {
+	id := uuid.New()
 	m.watchersMu.Lock()
 	m.stateMu.Lock()
-	m.watchers = append(m.watchers, ch)
+	m.watchers[id] = ch
 	m.watchersMu.Unlock()
 
 	go func() {
@@ -204,13 +207,7 @@ func (m *connManager) Watch(ctx context.Context, ch chan<- Conn) error {
 
 		<-ctx.Done()
 		m.watchersMu.Lock()
-		watchers := make([]chan<- Conn, 0, len(m.watchers)-1)
-		for _, watcher := range watchers {
-			if watcher != ch {
-				watchers = append(watchers, watcher)
-			}
-		}
-		m.watchers = watchers
+		delete(m.watchers, id)
 		m.watchersMu.Unlock()
 	}()
 	return nil
