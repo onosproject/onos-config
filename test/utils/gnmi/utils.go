@@ -115,9 +115,13 @@ func NewSimulatorTargetEntity(simulator *helm.HelmRelease, targetType string, ta
 		return nil, err
 	}
 	service := services[0]
+	return NewTargetEntity(simulator.Name(), targetType, targetVersion, service.Ports()[0].Address(true))
+}
 
+// NewTargetEntity creates a topo entity with the specified target name, type, version and service address
+func NewTargetEntity(name string, targetType string, targetVersion string, serviceAddress string) (*topo.Object, error) {
 	o := topo.Object{
-		ID:   topo.ID(simulator.Name()),
+		ID:   topo.ID(name),
 		Type: topo.Object_ENTITY,
 		Obj: &topo.Object_Entity{
 			Entity: &topo.Entity{
@@ -126,21 +130,16 @@ func NewSimulatorTargetEntity(simulator *helm.HelmRelease, targetType string, ta
 		},
 	}
 
-	err = o.SetAspect(&topo.TLSOptions{
-		Insecure: true,
-		Plain:    true,
-	})
-	if err != nil {
+	if err := o.SetAspect(&topo.TLSOptions{Insecure: true, Plain: true}); err != nil {
 		return nil, err
 	}
 
-	err = o.SetAspect(&topo.Configurable{
+	if err := o.SetAspect(&topo.Configurable{
 		Type:    targetType,
-		Address: service.Ports()[0].Address(true),
+		Address: serviceAddress,
 		Version: targetVersion,
 		Timeout: uint64(time.Second * 30),
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
@@ -611,11 +610,11 @@ func MakeProtoPath(target string, path string) string {
 
 // CreateSimulator creates a device simulator
 func CreateSimulator(t *testing.T) *helm.HelmRelease {
-	return CreateSimulatorWithName(t, random.NewPetName(2))
+	return CreateSimulatorWithName(t, random.NewPetName(2), true)
 }
 
 // CreateSimulatorWithName creates a device simulator
-func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
+func CreateSimulatorWithName(t *testing.T, name string, createTopoEntity bool) *helm.HelmRelease {
 	simulator := helm.
 		Chart("device-simulator", onostest.OnosChartRepo).
 		Release(name).
@@ -625,11 +624,13 @@ func CreateSimulatorWithName(t *testing.T, name string) *helm.HelmRelease {
 
 	time.Sleep(2 * time.Second)
 
-	simulatorTarget, err := NewSimulatorTargetEntity(simulator, SimulatorTargetType, SimulatorTargetVersion)
-	assert.NoError(t, err, "could not make target for simulator %v", err)
+	if createTopoEntity {
+		simulatorTarget, err := NewSimulatorTargetEntity(simulator, SimulatorTargetType, SimulatorTargetVersion)
+		assert.NoError(t, err, "could not make target for simulator %v", err)
 
-	err = AddTargetToTopo(simulatorTarget)
-	assert.NoError(t, err, "could not add target to topo for simulator %v", err)
+		err = AddTargetToTopo(simulatorTarget)
+		assert.NoError(t, err, "could not add target to topo for simulator %v", err)
+	}
 
 	return simulator
 }

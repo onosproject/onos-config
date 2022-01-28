@@ -22,10 +22,8 @@ import (
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
-	"github.com/onosproject/onos-test/pkg/onostest"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/onosproject/helmit/pkg/helm"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
@@ -51,17 +49,13 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
 	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, []*gnmi_ext.Extension{})
 
-	// Install simulator
-	simulator := helm.
-		Chart("device-simulator", onostest.OnosChartRepo).
-		Release(offlineTargetName).
-		Set("image.tag", "latest")
-	err := simulator.Install(true)
-	assert.NoError(t, err, "could not install device simulator %v", err)
+	// Install and start target simulator
+	simulator := gnmiutils.CreateSimulatorWithName(t, offlineTargetName, false)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the target
 	gnmiutils.WaitForTargetAvailable(t, topoapi.ID(simulator.Name()), time.Minute)
-	err = gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
+	err := gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
 	assert.NoError(t, err)
 
 	gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, modValue, 0, "Query after set returned the wrong value")
@@ -69,9 +63,6 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 	// Check that the value was set properly on the target, wait for configuration gets completed
 	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
 	gnmiutils.CheckTargetValue(t, targetGnmiClient, targetPath, modValue)
-
-	err = simulator.Uninstall()
-	assert.NoError(t, err)
 }
 
 func createOfflineTarget(t *testing.T, targetID topoapi.ID, targetType string, targetVersion string, targetAddress string) {
@@ -79,27 +70,7 @@ func createOfflineTarget(t *testing.T, targetID topoapi.ID, targetType string, t
 	assert.NotNil(t, topoClient)
 	assert.Nil(t, err)
 
-	newTarget := &topoapi.Object{
-		ID:   targetID,
-		Type: topoapi.Object_ENTITY,
-		Obj: &topoapi.Object_Entity{
-			Entity: &topoapi.Entity{
-				KindID: topoapi.ID(targetType),
-			},
-		},
-	}
-	err = newTarget.SetAspect(&topoapi.TLSOptions{
-		Insecure: true,
-		Plain:    true,
-	})
-	assert.NoError(t, err)
-
-	err = newTarget.SetAspect(&topoapi.Configurable{
-		Type:    targetType,
-		Address: targetAddress,
-		Version: targetVersion,
-		Timeout: uint64(3000000 * time.Second),
-	})
+	newTarget, err := gnmiutils.NewTargetEntity(string(targetID), targetType, targetVersion, targetAddress)
 	assert.NoError(t, err)
 	err = topoClient.Create(context.Background(), newTarget)
 	assert.NoError(t, err)
