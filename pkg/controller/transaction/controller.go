@@ -176,15 +176,15 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		// the transaction
 		configID := configuration.NewID(targetID, change.TargetType, change.TargetVersion)
 		config, err := r.configurations.Get(ctx, configID)
-		pathValues := make([]*configapi.PathValue, 0, len(change.Values))
-		currentConfigValues := make(map[string]*configapi.PathValue)
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				log.Errorf("Failed applying Transaction %d to target '%s'", transaction.Index, targetID, err)
 				return controller.Result{}, err
 			}
 		}
-		if config.Values != nil {
+		pathValues := make([]*configapi.PathValue, 0, len(change.Values))
+		currentConfigValues := make(map[string]*configapi.PathValue)
+		if config.GetValues() != nil {
 			currentConfigValues = config.Values
 		}
 
@@ -231,7 +231,7 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 				return controller.Result{}, err
 			}
 			configValues = make(map[string]*configapi.PathValue)
-		} else if config.Values != nil {
+		} else if config.GetValues() != nil {
 			configValues = config.Values
 		} else {
 			configValues = make(map[string]*configapi.PathValue)
