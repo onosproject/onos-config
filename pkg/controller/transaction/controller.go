@@ -177,37 +177,26 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		configID := configuration.NewID(targetID, change.TargetType, change.TargetVersion)
 		config, err := r.configurations.Get(ctx, configID)
 		pathValues := make([]*configapi.PathValue, 0, len(change.Values))
+		currentConfigValues := make(map[string]*configapi.PathValue)
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				log.Errorf("Failed applying Transaction %d to target '%s'", transaction.Index, targetID, err)
 				return controller.Result{}, err
 			}
-			for path, changeValue := range change.Values {
-				pathValue := &configapi.PathValue{
-					Path:    path,
-					Value:   changeValue.Value,
-					Deleted: changeValue.Delete,
-					Index:   transaction.Index,
-				}
-				pathValues = append(pathValues, pathValue)
-			}
+		}
+		if config.Values != nil {
+			currentConfigValues = config.Values
+		}
 
-		} else {
-			if config.Values == nil {
-				config.Values = make(map[string]*configapi.PathValue)
+		for path, changeValue := range change.Values {
+			currentConfigValues[path] = &configapi.PathValue{
+				Path:    path,
+				Value:   changeValue.Value,
+				Deleted: changeValue.Delete,
 			}
-			currentConfigValues := config.Values
-			for path, changeValue := range change.Values {
-				currentConfigValues[path] = &configapi.PathValue{
-					Path:    path,
-					Value:   changeValue.Value,
-					Deleted: changeValue.Delete,
-					Index:   transaction.Index,
-				}
-			}
-			for _, pathValue := range currentConfigValues {
-				pathValues = append(pathValues, pathValue)
-			}
+		}
+		for _, pathValue := range currentConfigValues {
+			pathValues = append(pathValues, pathValue)
 		}
 
 		jsonTree, err := tree.BuildTree(pathValues, true)
