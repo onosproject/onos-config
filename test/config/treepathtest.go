@@ -15,9 +15,13 @@
 package config
 
 import (
+	"testing"
+	"time"
+
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"testing"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -53,6 +57,9 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	}
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, setPath, gnmi.NoPaths, gnmi.NoExtensions)
 
+	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
+	assert.NoError(t, err)
+
 	// Check that the name value was set correctly
 	gnmi.CheckGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "Query name after set returned the wrong value")
 
@@ -61,6 +68,9 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 
 	// Remove the root path we added
 	gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, getPath, gnmi.NoExtensions)
+
+	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
+	assert.NoError(t, err)
 
 	//  Make sure child got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "New child was not removed")
