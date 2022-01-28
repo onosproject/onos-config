@@ -297,7 +297,7 @@ func (s *transactionStore) Watch(ctx context.Context, ch chan<- configapi.Transa
 				var eventType configapi.TransactionEvent_TransactionEventType
 				switch event.Type {
 				case indexedmap.EventReplay:
-					eventType = configapi.TransactionEvent_TRANSACTION_EVENT_UNKNOWN
+					eventType = configapi.TransactionEvent_TRANSACTION_REPLAYED
 				case indexedmap.EventInsert:
 					eventType = configapi.TransactionEvent_TRANSACTION_CREATED
 				case indexedmap.EventRemove:

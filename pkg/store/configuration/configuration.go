@@ -283,7 +283,7 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 				var eventType configapi.ConfigurationEvent_ConfigurationEventType
 				switch event.Type {
 				case _map.EventReplay:
-					eventType = configapi.ConfigurationEvent_CONFIGURATION_EVENT_UNKNOWN
+					eventType = configapi.ConfigurationEvent_CONFIGURATION_REPLAYED
 				case _map.EventInsert:
 					eventType = configapi.ConfigurationEvent_CONFIGURATION_CREATED
 				case _map.EventRemove:
