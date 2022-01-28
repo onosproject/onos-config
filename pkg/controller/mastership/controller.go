@@ -80,26 +80,26 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		log.Warnf("Updating MastershipState for target '%s' failed: %v", targetEntity.GetID(), err)
 		return controller.Result{}, err
 	}
-	controlsRelations := make(map[topoapi.ID]topoapi.Object)
+	targetRelations := make(map[topoapi.ID]topoapi.Object)
 	for _, object := range objects {
 		if object.GetRelation().TgtEntityID == targetID {
-			controlsRelations[object.ID] = object
+			targetRelations[object.ID] = object
 		}
 	}
 
 	mastership := &topoapi.MastershipState{}
 	_ = targetEntity.GetAspect(mastership)
-	if _, ok := controlsRelations[topoapi.ID(mastership.NodeId)]; !ok {
+	if _, ok := targetRelations[topoapi.ID(mastership.NodeId)]; !ok {
 		log.Debugf("Updating MastershipState for the gNMI target '%s'", targetEntity.GetID())
-		if len(controlsRelations) == 0 {
+		if len(targetRelations) == 0 {
 			if mastership.NodeId == "" {
 				log.Warnf("No controls relations found for target entity '%s'", targetEntity.GetID())
 			}
 			mastership.NodeId = ""
 		} else {
 			// Select a random master to assign to the gnmi target
-			relations := make([]topoapi.Object, 0, len(controlsRelations))
-			for _, targetRelation := range relations {
+			relations := make([]topoapi.Object, 0, len(targetRelations))
+			for _, targetRelation := range targetRelations {
 				relations = append(relations, targetRelation)
 			}
 			relation := relations[rand.Intn(len(relations))]
