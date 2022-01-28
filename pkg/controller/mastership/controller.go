@@ -94,7 +94,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			if mastership.NodeId == "" {
 				return controller.Result{}, nil
 			}
-			log.Debugf("Master in term %d resigned for the gNMI target '%s'", mastership.Term, targetEntity.GetID())
+			log.Infof("Master in term %d resigned for the gNMI target '%s'", mastership.Term, targetEntity.GetID())
 			mastership.NodeId = ""
 		} else {
 			// Select a random master to assign to the gnmi target
@@ -107,7 +107,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			// Increment the mastership term and assign the selected master
 			mastership.Term++
 			mastership.NodeId = string(relation.ID)
-			log.Debugf("Elected new master '%s' in term %d for the gNMI target '%s'", mastership.NodeId, mastership.Term, targetEntity.GetID())
+			log.Infof("Elected new master '%s' in term %d for the gNMI target '%s'", mastership.NodeId, mastership.Term, targetEntity.GetID())
 		}
 
 		err = targetEntity.SetAspect(mastership)
