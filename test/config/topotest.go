@@ -76,10 +76,9 @@ func (s *TestSuite) checkTopo(t *testing.T, targetID topoapi.ID) {
 func (s *TestSuite) TestTopoIntegration(t *testing.T) {
 	// Create simulated targets
 	targetID := "test-topo-integration-target-1"
-	simulator := gnmiutils.CreateSimulatorWithName(t, targetID)
+	simulator := gnmiutils.CreateSimulatorWithName(t, targetID, true)
 	assert.NotNil(t, simulator)
 	gnmiutils.WaitForTargetAvailable(t, topoapi.ID(targetID), 2*time.Minute)
 	defer gnmiutils.DeleteSimulator(t, simulator)
 	s.checkTopo(t, topoapi.ID(targetID))
-
 }
