@@ -123,14 +123,25 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 		for clientConn.WaitForStateChange(context.Background(), state) {
 			state = clientConn.GetState()
 
-			// If the channel is idle, start the keep-alive goroutine.
-			// Otherwise, shutdown the keep-alive goroutine while the channel is active.
+			// If the channel is active, ensure a connection is added to the manager.
+			// If the channel failed, remove the connection from the manager.
 			switch state {
-			case connectivity.Idle:
+			case connectivity.Connecting, connectivity.Ready, connectivity.Idle:
 				if conn == nil {
 					conn = newConn(target.ID, gnmiClient)
 					m.addConn(conn)
 				}
+			default:
+				if conn != nil {
+					m.removeConn(conn.ID())
+					conn = nil
+				}
+			}
+
+			// If the channel is idle, start the keep-alive goroutine.
+			// Otherwise, shutdown the keep-alive goroutine while the channel is active.
+			switch state {
+			case connectivity.Idle:
 				if keepAliveCancel == nil {
 					ctx, cancel := context.WithCancel(context.Background())
 					go func() {
@@ -153,21 +164,6 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 				if keepAliveCancel != nil {
 					keepAliveCancel()
 					keepAliveCancel = nil
-				}
-			}
-
-			// If the channel is active, ensure a connection is added to the manager.
-			// If the channel failed, remove the connection from the manager.
-			switch state {
-			case connectivity.Connecting, connectivity.Ready, connectivity.Idle:
-				if conn == nil {
-					conn = newConn(target.ID, gnmiClient)
-					m.addConn(conn)
-				}
-			default:
-				if conn != nil {
-					m.removeConn(conn.ID())
-					conn = nil
 				}
 			}
 
