@@ -108,24 +108,10 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 	}
 	m.targets[target.ID] = clientConn
 
-	keepAliveCtx, keepAliveCancel := context.WithCancel(context.Background())
-	go func() {
-		ticker := time.NewTicker(defaultKeepAliveInterval)
-		for {
-			select {
-			case _, ok := <-ticker.C:
-				if !ok {
-					return
-				}
-				clientConn.Connect()
-			case <-keepAliveCtx.Done():
-				ticker.Stop()
-			}
-		}
-	}()
-
 	go func() {
 		var conn Conn
+		var keepAliveCancel context.CancelFunc
+
 		state := clientConn.GetState()
 		switch state {
 		case connectivity.Connecting, connectivity.Ready, connectivity.Idle:
@@ -134,28 +120,62 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 		}
 		for clientConn.WaitForStateChange(context.Background(), state) {
 			state = clientConn.GetState()
+
+			// If the channel is idle, start the keep-alive goroutine.
+			// Otherwise, shutdown the keep-alive goroutine while the channel is active.
+			switch state {
+			case connectivity.Idle:
+				if conn == nil {
+					conn = newConn(target.ID, gnmiClient)
+					m.addConn(conn)
+				}
+				if keepAliveCancel == nil {
+					ctx, cancel := context.WithCancel(context.Background())
+					go func() {
+						ticker := time.NewTicker(defaultKeepAliveInterval)
+						for {
+							select {
+							case _, ok := <-ticker.C:
+								if !ok {
+									return
+								}
+								clientConn.Connect()
+							case <-ctx.Done():
+								ticker.Stop()
+							}
+						}
+					}()
+					keepAliveCancel = cancel
+				}
+			default:
+				if keepAliveCancel != nil {
+					keepAliveCancel()
+					keepAliveCancel = nil
+				}
+			}
+
+			// If the channel is active, ensure a connection is added to the manager.
+			// If the channel failed, remove the connection from the manager.
 			switch state {
 			case connectivity.Connecting, connectivity.Ready, connectivity.Idle:
 				if conn == nil {
 					conn = newConn(target.ID, gnmiClient)
 					m.addConn(conn)
 				}
-			case connectivity.TransientFailure:
+			default:
 				if conn != nil {
 					m.removeConn(conn.ID())
 					conn = nil
 				}
+			}
+
+			// If the channel is shutting down, exit the goroutine.
+			switch state {
 			case connectivity.Shutdown:
-				if conn != nil {
-					m.removeConn(conn.ID())
-					conn = nil
-				}
-				keepAliveCancel()
 				return
 			}
 		}
 	}()
-	return nil
 	return nil
 }
 
