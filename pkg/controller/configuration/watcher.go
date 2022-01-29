@@ -103,11 +103,6 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 					// TODO: Get target type and version from topo entity
 					ch <- controller.NewID(configuration.NewID(configapi.TargetID(event.Object.ID), "", ""))
 				}
-			} else if relation, ok := event.Object.Obj.(*topoapi.Object_Relation); ok {
-				if relation.Relation.KindID == topoapi.CONTROLS {
-					// TODO: Get target type and version from topo entity
-					ch <- controller.NewID(configuration.NewID(configapi.TargetID(relation.Relation.TgtEntityID), "", ""))
-				}
 			}
 		}
 	}()
