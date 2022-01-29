@@ -16,6 +16,7 @@ package connection
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/pkg/controller/utils"
 	"sync"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -100,7 +101,8 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 	go func() {
 		for event := range eventCh {
 			if relation, ok := event.Object.Obj.(*topoapi.Object_Relation); ok {
-				if relation.Relation.KindID == topoapi.CONTROLS {
+				if relation.Relation.KindID == topoapi.CONTROLS &&
+					relation.Relation.SrcEntityID == utils.GetOnosConfigID() {
 					ch <- controller.NewID(gnmi.ConnID(event.Object.ID))
 				}
 			}

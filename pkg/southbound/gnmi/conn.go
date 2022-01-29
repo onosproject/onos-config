@@ -15,6 +15,7 @@
 package gnmi
 
 import (
+	"github.com/onosproject/onos-config/pkg/controller/utils"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,6 +34,10 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	baseClient "github.com/openconfig/gnmi/client"
 )
+
+func init() {
+	uuid.SetNodeID([]byte(utils.GetOnosConfigID()))
+}
 
 var log = logging.GetLogger("southbound", "gnmi")
 
