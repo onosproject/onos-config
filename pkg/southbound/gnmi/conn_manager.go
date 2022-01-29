@@ -16,169 +16,186 @@ package gnmi
 
 import (
 	"context"
+	"github.com/google/uuid"
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
+	baseClient "github.com/openconfig/gnmi/client"
+	gclient "github.com/openconfig/gnmi/client/gnmi"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials"
 	"math"
 	"sync"
-
-	"google.golang.org/grpc"
-
-	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-
-	"github.com/onosproject/onos-lib-go/pkg/errors"
 )
 
 // ConnManager gNMI connection manager
 type ConnManager interface {
-	Get(ctx context.Context, targetID topoapi.ID) (Conn, error)
-	List(ctx context.Context) ([]Conn, error)
-	Watch(ctx context.Context, ch chan<- ConnEvent) error
-	Connect(ctx context.Context, target *topoapi.Object) (Conn, error)
-	Close(ctx context.Context, targetID topoapi.ID) error
+	Get(ctx context.Context, connID ConnID) (Conn, bool)
+	Connect(ctx context.Context, target *topoapi.Object) error
+	Disconnect(ctx context.Context, targetID topoapi.ID) error
+	Watch(ctx context.Context, ch chan<- Conn) error
 }
 
 // NewConnManager creates a new gNMI connection manager
 func NewConnManager() ConnManager {
 	mgr := &connManager{
-		conns:   make(map[topoapi.ID]Conn),
-		eventCh: make(chan ConnEvent),
+		targets:  make(map[topoapi.ID]*grpc.ClientConn),
+		conns:    make(map[ConnID]Conn),
+		watchers: make(map[uuid.UUID]chan<- Conn),
+		eventCh:  make(chan Conn),
 	}
 	go mgr.processEvents()
 	return mgr
 }
 
 type connManager struct {
-	conns      map[topoapi.ID]Conn
+	targets    map[topoapi.ID]*grpc.ClientConn
+	conns      map[ConnID]Conn
 	connsMu    sync.RWMutex
-	watchers   []chan<- ConnEvent
+	watchers   map[uuid.UUID]chan<- Conn
 	watchersMu sync.RWMutex
-	eventCh    chan ConnEvent
+	eventCh    chan Conn
 }
 
-// newConn creates a new gNMI connection
-func (m *connManager) connect(ctx context.Context, target *topoapi.Object) (Conn, error) {
-	m.connsMu.Lock()
-	currentConn, ok := m.conns[target.ID]
+func (m *connManager) Get(ctx context.Context, connID ConnID) (Conn, bool) {
+	m.connsMu.RLock()
+	defer m.connsMu.RUnlock()
+	conn, ok := m.conns[connID]
+	return conn, ok
+}
+
+func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error {
+	m.connsMu.RLock()
+	clientConn, ok := m.targets[target.ID]
+	m.connsMu.RUnlock()
 	if ok {
-		m.connsMu.Unlock()
-		return nil, errors.NewAlreadyExists("gNMI connection %s already exists for target %s", currentConn.ID(), target.ID)
+		return errors.NewAlreadyExists("target '%s' already exists", target.ID)
 	}
-	m.connsMu.Unlock()
+
+	m.connsMu.Lock()
+	defer m.connsMu.Unlock()
+
+	clientConn, ok = m.targets[target.ID]
+	if ok {
+		return errors.NewAlreadyExists("target '%s' already exists", target.ID)
+	}
+
 	if target.Type != topoapi.Object_ENTITY {
-		return nil, errors.NewInvalid("object is not a topo entity %v+", target)
+		return errors.NewInvalid("object is not a topo entity %v+", target)
 	}
 
 	typeKindID := string(target.GetEntity().KindID)
 	if len(typeKindID) == 0 {
-		return nil, errors.NewInvalid("target entity %s must have a 'kindID' to work with onos-config", target.ID)
+		return errors.NewInvalid("target entity %s must have a 'kindID' to work with onos-config", target.ID)
 	}
 
 	destination, err := newDestination(target)
 	if err != nil {
 		log.Warnf("Failed to create a new target %s", err)
-		return nil, err
+		return err
 	}
+
 	log.Infof("Connecting to gNMI target: %+v", destination)
 	opts := []grpc.DialOption{
-		grpc.WithBlock(),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)),
 	}
-	gnmiClient, clientConn, err := newGNMIClient(ctx, *destination, opts)
+	gnmiClient, clientConn, err := connect(ctx, *destination, opts...)
 	if err != nil {
 		log.Warnf("Failed to connect to the gNMI target %s: %s", destination.Target, err)
-		return nil, err
+		return err
 	}
+	m.targets[target.ID] = clientConn
 
-	conn := newConn(
-		WithClientConn(clientConn),
-		WithClient(gnmiClient),
-		WithTargetID(target.ID))
-
-	log.Infof("Adding a gNMI connection %s for the target %s", conn.ID(), target.ID)
-
-	m.connsMu.Lock()
-	m.conns[target.ID] = conn
-	m.connsMu.Unlock()
-	m.eventCh <- ConnEvent{
-		Conn:      conn,
-		EventType: Connected,
-	}
-	return conn, nil
-}
-
-// Connect connecting to a gNMI target and adding a new gNMI connection
-func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) (Conn, error) {
-	newConn, err := m.connect(ctx, target)
-	if err != nil {
-		return nil, err
-	}
-	return newConn, nil
-}
-
-// Get returns a gNMI connection based on a given target ID
-func (m *connManager) Get(ctx context.Context, targetID topoapi.ID) (Conn, error) {
-	m.connsMu.RLock()
-	defer m.connsMu.RUnlock()
-	conn, ok := m.conns[targetID]
-	if !ok {
-		return nil, errors.NewNotFound("gNMI connection for target '%s' not found", targetID)
-	}
-	return conn, nil
-}
-
-// List lists all  gNMI connections
-func (m *connManager) List(ctx context.Context) ([]Conn, error) {
-	m.connsMu.RLock()
-	defer m.connsMu.RUnlock()
-	conns := make([]Conn, 0, len(m.conns))
-	for _, conn := range m.conns {
-		conns = append(conns, conn)
-	}
-	return conns, nil
-}
-
-func (m *connManager) Close(ctx context.Context, targetID topoapi.ID) error {
-	m.connsMu.Lock()
-	defer m.connsMu.Unlock()
-	if conn, ok := m.conns[targetID]; ok {
-		err := conn.Close()
-		if err != nil {
-			return err
+	go func() {
+		var conn Conn
+		state := clientConn.GetState()
+		switch state {
+		case connectivity.Ready:
+			conn = newConn(target.ID, gnmiClient)
+			m.addConn(conn)
 		}
-		delete(m.conns, targetID)
-		m.eventCh <- ConnEvent{
-			Conn:      conn,
-			EventType: Disconnected,
+		for clientConn.WaitForStateChange(context.Background(), state) {
+			state = clientConn.GetState()
+			log.Infof("Connection state changed for Target '%s': %s", target.ID, state)
+
+			// If the channel is active, ensure a connection is added to the manager.
+			// If the channel is idle, do not change its state (this can occur when
+			// connected or disconnected).
+			// In all other states, remove the connection from the manager.
+			switch state {
+			case connectivity.Ready:
+				if conn == nil {
+					conn = newConn(target.ID, gnmiClient)
+					m.addConn(conn)
+				}
+			case connectivity.Idle:
+				clientConn.Connect()
+			default:
+				if conn != nil {
+					m.removeConn(conn.ID())
+					conn = nil
+				}
+			}
+
+			// If the channel is shutting down, exit the goroutine.
+			switch state {
+			case connectivity.Shutdown:
+				return
+			}
 		}
-	}
+	}()
 	return nil
 }
 
-// Watch watches gNMI connection changes
-func (m *connManager) Watch(ctx context.Context, ch chan<- ConnEvent) error {
+func (m *connManager) Disconnect(ctx context.Context, targetID topoapi.ID) error {
+	m.connsMu.Lock()
+	clientConn, ok := m.targets[targetID]
+	if !ok {
+		m.connsMu.Unlock()
+		return errors.NewNotFound("target '%s' not found", targetID)
+	}
+	delete(m.targets, targetID)
+	m.connsMu.Unlock()
+	return clientConn.Close()
+}
+
+func (m *connManager) Watch(ctx context.Context, ch chan<- Conn) error {
+	id := uuid.New()
 	m.watchersMu.Lock()
 	m.connsMu.Lock()
-	m.watchers = append(m.watchers, ch)
+	m.watchers[id] = ch
 	m.watchersMu.Unlock()
 
 	go func() {
-		for _, stream := range m.conns {
-			ch <- ConnEvent{
-				Conn: stream,
-			}
+		for _, conn := range m.conns {
+			ch <- conn
 		}
 		m.connsMu.Unlock()
 
 		<-ctx.Done()
 		m.watchersMu.Lock()
-		watchers := make([]chan<- ConnEvent, 0, len(m.watchers)-1)
-		for _, watcher := range watchers {
-			if watcher != ch {
-				watchers = append(watchers, watcher)
-			}
-		}
-		m.watchers = watchers
+		delete(m.watchers, id)
 		m.watchersMu.Unlock()
 	}()
 	return nil
+}
+
+func (m *connManager) addConn(conn Conn) {
+	m.connsMu.Lock()
+	m.conns[conn.ID()] = conn
+	m.connsMu.Unlock()
+	m.eventCh <- conn
+}
+
+func (m *connManager) removeConn(connID ConnID) {
+	m.connsMu.Lock()
+	if conn, ok := m.conns[connID]; ok {
+		delete(m.conns, connID)
+		m.connsMu.Unlock()
+		m.eventCh <- conn
+	} else {
+		m.connsMu.Unlock()
+	}
 }
 
 func (m *connManager) processEvents() {
@@ -187,13 +204,54 @@ func (m *connManager) processEvents() {
 	}
 }
 
-func (m *connManager) processEvent(connEvent ConnEvent) {
-	log.Infof("Notifying gNMI connection: %s", connEvent.Conn.ID())
+func (m *connManager) processEvent(conn Conn) {
+	log.Infof("Notifying gNMI connection: %s", conn.ID())
 	m.watchersMu.RLock()
 	for _, watcher := range m.watchers {
-		watcher <- connEvent
+		watcher <- conn
 	}
 	m.watchersMu.RUnlock()
 }
 
 var _ ConnManager = &connManager{}
+
+func connect(ctx context.Context, d baseClient.Destination, opts ...grpc.DialOption) (*client, *grpc.ClientConn, error) {
+	switch d.TLS {
+	case nil:
+		opts = append(opts, grpc.WithInsecure())
+	default:
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(d.TLS)))
+	}
+
+	if d.Credentials != nil {
+		secure := true
+		if d.TLS == nil {
+			secure = false
+		}
+		pc := newPassCred(d.Credentials.Username, d.Credentials.Password, secure)
+		opts = append(opts, grpc.WithPerRPCCredentials(pc))
+	}
+
+	gCtx, cancel := context.WithTimeout(ctx, d.Timeout)
+	defer cancel()
+
+	addr := ""
+	if len(d.Addrs) != 0 {
+		addr = d.Addrs[0]
+	}
+	conn, err := grpc.DialContext(gCtx, addr, opts...)
+	if err != nil {
+		return nil, nil, errors.NewInternal("Dialer(%s, %v): %v", addr, d.Timeout, err)
+	}
+
+	cl, err := gclient.NewFromConn(gCtx, conn, d)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	gnmiClient := &client{
+		client: cl,
+	}
+
+	return gnmiClient, conn, nil
+}

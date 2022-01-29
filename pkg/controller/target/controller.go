@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connection
+package target
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/controller/utils"
 	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -28,7 +27,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
-var log = logging.GetLogger("controller", "connection")
+var log = logging.GetLogger("controller", "target")
 
 const (
 	defaultTimeout = 30 * time.Second
@@ -37,9 +36,6 @@ const (
 // NewController returns a new gNMI connection  controller
 func NewController(topo topo.Store, conns gnmi.ConnManager) *controller.Controller {
 	c := controller.NewController("connection")
-	c.Watch(&ConnWatcher{
-		conns: conns,
-	})
 	c.Watch(&TopoWatcher{
 		topo: topo,
 	})
@@ -61,64 +57,40 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	connID := id.Value.(gnmi.ConnID)
-	log.Infof("Reconciling Conn '%s'", connID)
-	conn, ok := r.conns.Get(ctx, connID)
-	if !ok {
-		return r.deleteRelation(ctx, connID)
-	}
-	return r.createRelation(ctx, conn)
-}
-
-func (r *Reconciler) createRelation(ctx context.Context, conn gnmi.Conn) (controller.Result, error) {
-	_, err := r.topo.Get(ctx, topoapi.ID(conn.ID()))
+	targetID := id.Value.(topoapi.ID)
+	log.Infof("Reconciling Target '%s'", targetID)
+	target, err := r.topo.Get(ctx, targetID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Errorf("Failed reconciling Conn '%s'", conn.ID(), err)
+			log.Errorf("Failed reconciling Target '%s'", targetID, err)
 			return controller.Result{}, err
 		}
-		log.Infof("Creating CONTROLS relation '%s'", conn.ID())
-		relation := &topoapi.Object{
-			ID:   topoapi.ID(conn.ID()),
-			Type: topoapi.Object_RELATION,
-			Obj: &topoapi.Object_Relation{
-				Relation: &topoapi.Relation{
-					KindID:      topoapi.CONTROLS,
-					SrcEntityID: utils.GetOnosConfigID(),
-					TgtEntityID: conn.TargetID(),
-				},
-			},
+		return r.disconnect(ctx, targetID)
+	}
+	return r.connect(ctx, target)
+}
+
+func (r *Reconciler) connect(ctx context.Context, target *topoapi.Object) (controller.Result, error) {
+	log.Infof("Connecting to Target '%s'", target.ID)
+	if err := r.conns.Connect(ctx, target); err != nil {
+		if !errors.IsAlreadyExists(err) {
+			log.Errorf("Failed connecting to Target '%s'", target.ID, err)
+			return controller.Result{}, err
 		}
-		err = r.topo.Create(ctx, relation)
-		if err != nil {
-			if !errors.IsAlreadyExists(err) {
-				log.Errorf("Failed creating CONTROLS relation '%s'", conn.ID(), err)
-				return controller.Result{}, err
-			}
-			log.Warnf("Failed creating CONTROLS relation '%s'", conn.ID(), err)
-			return controller.Result{}, nil
-		}
+		log.Warnf("Failed connecting to Target '%s'", target.ID, err)
+		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil
 }
 
-func (r *Reconciler) deleteRelation(ctx context.Context, connID gnmi.ConnID) (controller.Result, error) {
-	relation, err := r.topo.Get(ctx, topoapi.ID(connID))
-	if err != nil {
+func (r *Reconciler) disconnect(ctx context.Context, targetID topoapi.ID) (controller.Result, error) {
+	log.Info("Disconnecting from Target '%s'", targetID)
+	if err := r.conns.Disconnect(ctx, targetID); err != nil {
 		if !errors.IsNotFound(err) {
-			log.Errorf("Failed reconciling Conn '%s'", connID, err)
+			log.Errorf("Failed disconnecting from Target '%s'", targetID, err)
 			return controller.Result{}, err
 		}
-		return controller.Result{}, nil
-	}
-	log.Infof("Deleting CONTROLS relation '%s'", connID)
-	err = r.topo.Delete(ctx, relation)
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			log.Errorf("Failed deleting CONTROLS relation '%s'", connID, err)
-			return controller.Result{}, err
-		}
-		log.Warnf("Failed deleting CONTROLS relation '%s'", connID, err)
+		log.Warnf("Failed disconnecting from Target '%s'", targetID, err)
 		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil

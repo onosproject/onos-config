@@ -93,7 +93,6 @@ func newGNMIClient(ctx context.Context, d baseClient.Destination, opts []grpc.Di
 	}
 
 	return gnmiClient, conn, nil
-
 }
 
 // Capabilities returns the capabilities of the target

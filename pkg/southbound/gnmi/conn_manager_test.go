@@ -20,10 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc/connectivity"
-
-	"github.com/onosproject/onos-lib-go/pkg/errors"
-
 	"github.com/onosproject/onos-config/pkg/utils"
 
 	"google.golang.org/grpc"
@@ -199,13 +195,14 @@ func getNonTLSServerConfig(t *testing.T) *northbound.ServerConfig {
 
 func TestGNMIConn_CapabilitiesWithString(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	conn, err := mgr.Connect(ctx, target1)
+	destination, err := newDestination(target1)
+	assert.NoError(t, err)
+	conn, _, err := connect(ctx, *destination)
 	assert.NoError(t, err)
 
 	capabilityResponse, capabilityErr := conn.CapabilitiesWithString(ctx, "")
@@ -220,13 +217,14 @@ func TestGNMIConn_CapabilitiesWithString(t *testing.T) {
 
 func TestGNMIConn_GetWithString(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	conn, err := mgr.Connect(ctx, target1)
+	destination, err := newDestination(target1)
+	assert.NoError(t, err)
+	conn, _, err := connect(ctx, *destination)
 	assert.NoError(t, err)
 
 	request := "path: <elem: <name: 'system'> elem:<name:'config'> elem: <name: 'hostname'>>"
@@ -242,13 +240,14 @@ func TestGNMIConn_GetWithString(t *testing.T) {
 
 func TestGNMIConn_Get(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	conn, err := mgr.Connect(ctx, target1)
+	destination, err := newDestination(target1)
+	assert.NoError(t, err)
+	conn, _, err := connect(ctx, *destination)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
@@ -266,13 +265,14 @@ func TestGNMIConn_Get(t *testing.T) {
 
 func TestGNMIConn_SetWithString(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	conn, err := mgr.Connect(ctx, target1)
+	destination, err := newDestination(target1)
+	assert.NoError(t, err)
+	conn, _, err := connect(ctx, *destination)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
@@ -288,12 +288,14 @@ func TestGNMIConn_SetWithString(t *testing.T) {
 
 func TestGNMIConn_Set(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	conn, err := mgr.Connect(ctx, target1)
+	destination, err := newDestination(target1)
+	assert.NoError(t, err)
+	conn, _, err := connect(ctx, *destination)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
@@ -308,12 +310,14 @@ func TestGNMIConn_Set(t *testing.T) {
 
 func TestGNMIConn_Capabilities(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	conn, err := mgr.Connect(ctx, target1)
+	destination, err := newDestination(target1)
+	assert.NoError(t, err)
+	conn, _, err := connect(ctx, *destination)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
@@ -325,117 +329,36 @@ func TestGNMIConn_Capabilities(t *testing.T) {
 
 func TestConnManager_List(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 	target2 := createTestTarget(t, target2, true)
 
-	conn1, err := mgr.Connect(ctx, target1)
+	destination1, err := newDestination(target1)
+	assert.NoError(t, err)
+	conn1, _, err := connect(ctx, *destination1)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn1)
 
-	conn2, err := mgr.Connect(ctx, target2)
+	destination2, err := newDestination(target2)
+	assert.NoError(t, err)
+	conn2, _, err := connect(ctx, *destination2)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn2)
-
-	connections, err := mgr.List(ctx)
-	assert.NoError(t, err)
-	assert.Equal(t, len(connections), 2)
 	s.Stop()
-
-}
-
-func TestConnManager_Watch(t *testing.T) {
-	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	target1 := createTestTarget(t, target1, true)
-
-	ch := make(chan ConnEvent)
-
-	err := mgr.Watch(ctx, ch)
-	assert.NoError(t, err)
-	conn1, err := mgr.Connect(ctx, target1)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn1)
-
-	event := <-ch
-	assert.Equal(t, event.Conn.ID(), conn1.ID())
-
-	target2 := createTestTarget(t, target2, true)
-	assert.NoError(t, err)
-	conn2, err := mgr.Connect(ctx, target2)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn2)
-
-	_, err = mgr.Connect(ctx, target1)
-	assert.Equal(t, true, errors.IsAlreadyExists(err))
-	event = <-ch
-	assert.Equal(t, event.Conn.ID(), conn2.ID())
-	s.Stop()
-}
-
-func TestNewConnManager_Connect(t *testing.T) {
-	t.Skip()
-	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	target1 := createTestTarget(t, target1, true)
-
-	stateCh1 := make(chan connectivity.State)
-	conn1, err := mgr.Connect(ctx, target1)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn1)
-	// Starts watching connectivity state for conn1
-	err = conn1.WatchState(ctx, stateCh1)
-	assert.NoError(t, err)
-	connState := <-stateCh1
-	assert.Equal(t, connectivity.Ready, connState)
-
-	stateCh2 := make(chan connectivity.State)
-	target2 := createTestTarget(t, target2, true)
-	assert.NoError(t, err)
-	conn2, err := mgr.Connect(ctx, target2)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn2)
-	// Starts watching connectivity state for conn2
-	err = conn2.WatchState(ctx, stateCh2)
-	assert.NoError(t, err)
-	connState = <-stateCh2
-	assert.Equal(t, connectivity.Ready, connState)
-
-	_, err = mgr.Connect(ctx, target1)
-	assert.Equal(t, true, errors.IsAlreadyExists(err))
-
-	_, err = mgr.Connect(ctx, target2)
-	assert.Equal(t, true, errors.IsAlreadyExists(err))
-	// Closing conn1
-	err = conn1.Close()
-	assert.NoError(t, err)
-	connState = <-stateCh1
-	assert.Equal(t, connectivity.Shutdown, connState)
-
-	err = conn2.Close()
-	assert.NoError(t, err)
-	connState = <-stateCh2
-	assert.Equal(t, connectivity.Shutdown, connState)
-	s.Stop()
-
 }
 
 func TestGNMICon_GetBadRequest(t *testing.T) {
 	s := setup(t, getTLSServerConfig(t))
-	mgr := NewConnManager()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	conn, err := mgr.Connect(ctx, target1)
+	destination, err := newDestination(target1)
+	assert.NoError(t, err)
+	conn, _, err := connect(ctx, *destination)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
@@ -454,13 +377,14 @@ func TestGNMICon_GetBadRequest(t *testing.T) {
 
 func TestGNMIConn_NonTLS(t *testing.T) {
 	s := setup(t, getNonTLSServerConfig(t))
-	mgr := NewConnManager()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	target1 := createTestTarget(t, target1, true)
 
-	conn, err := mgr.Connect(ctx, target1)
+	destination, err := newDestination(target1)
+	assert.NoError(t, err)
+	conn, _, err := connect(ctx, *destination)
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
