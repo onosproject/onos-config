@@ -71,14 +71,14 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 }
 
 func (r *Reconciler) createRelation(ctx context.Context, conn gnmi.Conn) (controller.Result, error) {
-	relation, err := r.topo.Get(ctx, topoapi.ID(conn.ID()))
+	_, err := r.topo.Get(ctx, topoapi.ID(conn.ID()))
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			log.Errorf("Failed reconciling Conn '%s'", conn.ID(), err)
 			return controller.Result{}, err
 		}
 		log.Infof("Creating CONTROLS relation '%s'", conn.ID())
-		relation = &topoapi.Object{
+		relation := &topoapi.Object{
 			ID:   topoapi.ID(conn.ID()),
 			Type: topoapi.Object_RELATION,
 			Obj: &topoapi.Object_Relation{
