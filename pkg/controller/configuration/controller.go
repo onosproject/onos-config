@@ -16,6 +16,7 @@ package configuration
 
 import (
 	"context"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 	"time"
 
 	controllerutils "github.com/onosproject/onos-config/pkg/controller/utils"
@@ -257,13 +258,35 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return true, nil
 	}
 
+	// Add the master arbitration extension to provide concurrency control for multi-node controllers.
+	setRequest.Extension = append(setRequest.Extension, &gnmi_ext.Extension{
+		Ext: &gnmi_ext.Extension_MasterArbitration{
+			MasterArbitration: &gnmi_ext.MasterArbitration{
+				Role: &gnmi_ext.Role{
+					Id: "onos-config",
+				},
+				ElectionId: &gnmi_ext.Uint128{
+					Low: uint64(mastershipTerm),
+				},
+			},
+		},
+	})
+
 	// Execute the set request
 	log.Debugf("Sending SetRequest %+v", setRequest)
 	setResponse, err := conn.Set(ctx, setRequest)
 	if err != nil {
+		// The gNMI Set request can be denied if this master has been superseded by a master in a later term.
+		// Rather than reverting to the STALE state now, wait for this node to see the mastership state change
+		// to avoid flapping between states while the system converges.
+		if errors.IsForbidden(err) {
+			log.Warnf("Configuration '%s' mastership superseded for term %d", config.ID, mastershipTerm)
+			return true, nil
+		}
 		log.Errorf("Failed sending SetRequest %+v", setRequest, err)
 		return false, err
 	}
+
 	log.Debugf("Received SetResponse %+v", setResponse)
 
 	// Update the configuration state and path statuses
