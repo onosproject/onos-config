@@ -212,8 +212,8 @@ func (m *connManager) Watch(ctx context.Context, ch chan<- Conn) error {
 
 func (m *connManager) addConn(conn Conn) {
 	m.connsMu.Lock()
-	defer m.connsMu.Unlock()
 	m.conns[conn.ID()] = conn
+	m.connsMu.Unlock()
 	m.eventCh <- conn
 }
 
