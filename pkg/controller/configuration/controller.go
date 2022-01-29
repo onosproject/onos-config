@@ -96,12 +96,20 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 }
 
 func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configapi.Configuration) (bool, error) {
-	// If the configuration revision has changed, set the configuration to PENDING
-	// to reconcile changes to the configuration.
-	if config.Revision > config.Status.Revision {
-		log.Infof("Processing Configuration '%s' revision %d", config.ID, config.Revision)
+	// Get the target entity from topo
+	target, err := r.topo.Get(ctx, topoapi.ID(config.TargetID))
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			log.Errorf("Failed fetching target Entity '%s' from topo", config.TargetID, err)
+			return false, err
+		}
+		log.Debugf("Target entity '%s' not found", config.TargetID)
+
+		// If the target was deleted after a master was already elected for it,
+		// SOUND THE ALARM! and revert back to the PENDING state.
+		log.Errorf("Mastership state lost for target '%s'. Future configuration changes may not be applicable!")
 		config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
-		config.Status.Revision = config.Revision
+		config.Status.MastershipState.Term = 0
 		log.Debug(config.Status)
 		err := r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
@@ -115,20 +123,24 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return true, nil
 	}
 
-	// Get the target entity from topo
-	target, err := r.topo.Get(ctx, topoapi.ID(config.TargetID))
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			log.Errorf("Failed fetching target Entity '%s' from topo", config.TargetID, err)
-			return false, err
-		}
-		log.Debugf("Target entity '%s' not found", config.TargetID)
+	// Get the target mastership state
+	mastership := topoapi.MastershipState{}
+	_ = target.GetAspect(&mastership)
+	mastershipTerm := configapi.MastershipTerm(mastership.Term)
 
-		// If the target entity is not found, set the configuration to PENDING
-		if config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING {
-			log.Infof("Target entity '%s' not found; preparing Configuration '%s' for re-sync", config.TargetID, config.ID)
-			config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
-			config.Status.MastershipState.Term = 0
+	// Reconcile the PENDING and STALE states in which the control plane configuration
+	// is potentially out-of-sync with the target.
+	switch config.Status.State {
+	// If the configuration is STALE, clear the configured paths and process the
+	// configuration again once a new master is assigned.
+	case configapi.ConfigurationState_CONFIGURATION_PENDING,
+		configapi.ConfigurationState_CONFIGURATION_STALE:
+		// If a new master has been assigned, clean the configuration state from
+		// the prior term and reconcile the configuration for the new term.
+		if mastershipTerm > config.Status.MastershipState.Term {
+			log.Infof("Synchronizing Configuration '%s' for new mastership term %d", config.ID, mastershipTerm)
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_UPDATING
+			config.Status.MastershipState.Term = mastershipTerm
 			config.Status.Paths = nil
 			log.Debug(config.Status)
 			err := r.configurations.UpdateStatus(ctx, config)
@@ -143,69 +155,45 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			return true, nil
 		}
 		return false, nil
-	}
-
-	// Get the target mastership state
-	mastership := topoapi.MastershipState{}
-	_ = target.GetAspect(&mastership)
-
-	// If the mastership has changed, set the configuration state to PENDING and
-	// force reconciliation of all paths.
-	if (mastership.NodeId == "" && config.Status.State != configapi.ConfigurationState_CONFIGURATION_PENDING) ||
-		configapi.MastershipTerm(mastership.Term) > config.Status.MastershipState.Term {
-		log.Infof("Mastership changed; preparing Configuration '%s' for re-sync", config.ID)
-		config.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
-		config.Status.MastershipState.Term = configapi.MastershipTerm(mastership.Term)
-		config.Status.Paths = nil
-		log.Debug(config.Status)
-		err := r.configurations.UpdateStatus(ctx, config)
-		if err != nil {
-			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-				log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
-				return false, err
-			}
-			log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
-			return false, nil
-		}
-		return true, nil
-	}
-
-	// If the configuration is PENDING and a master exists, set changed paths to
-	// PENDING and set the configuration to SYNCHRONIZING to synchronize pending paths.
-	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_PENDING {
-		if mastership.NodeId == "" {
-			log.Warnf("No master found for target '%s'", config.TargetID)
-			return false, nil
-		}
-
-		log.Infof("Preparing Configuration '%s' for synchronization", config.ID)
-		if config.Status.Paths == nil {
-			config.Status.Paths = make(map[string]*configapi.PathStatus)
-		}
-		for path, pathValue := range config.Values {
-			pathStatus, ok := config.Status.Paths[path]
-			if !ok || pathStatus.UpdateIndex != pathValue.Index {
-				config.Status.Paths[path] = &configapi.PathStatus{
-					State:       configapi.PathState_PATH_UPDATE_PENDING,
-					UpdateIndex: pathValue.Index,
+	default:
+		// If the configuration is not STALE and mastership has changed, set the
+		// configuration state to STALE to force reconciliation of all paths.
+		if mastershipTerm > config.Status.MastershipState.Term || mastership.NodeId == "" {
+			log.Infof("Mastership term expired; Configuration '%s' may be stale", config.ID)
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_STALE
+			log.Debug(config.Status)
+			err := r.configurations.UpdateStatus(ctx, config)
+			if err != nil {
+				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+					log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
+					return false, err
 				}
+				log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
+				return false, nil
 			}
+			return true, nil
 		}
-		config.Status.State = configapi.ConfigurationState_CONFIGURATION_SYNCHRONIZING
-		log.Debug(config.Status)
-		err := r.configurations.UpdateStatus(ctx, config)
-		if err != nil {
-			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-				log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
-				return false, err
+
+		// If the revision has changed, trigger propagation of new updates if necessary.
+		if config.Revision > config.Status.Revision {
+			log.Infof("Updating Configuration '%s' to revision %d", config.ID, config.Revision)
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_UPDATING
+			config.Status.Revision = config.Revision
+			log.Debug(config.Status)
+			err := r.configurations.UpdateStatus(ctx, config)
+			if err != nil {
+				if !errors.IsNotFound(err) && !errors.IsConflict(err) {
+					log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
+					return false, err
+				}
+				log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
+				return false, nil
 			}
-			log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
-			return false, nil
+			return true, nil
 		}
-		return true, nil
 	}
 
-	// Skip if the configuration is already in a completed state
+	// The remainder of the algorithm reconciles the state on the target. Ignore completed configurations.
 	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_COMPLETE ||
 		config.Status.State == configapi.ConfigurationState_CONFIGURATION_FAILED {
 		return false, nil
@@ -234,27 +222,28 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return false, nil
 	}
 
+	// While in the UPDATING state, push pending updates to the target via gNMI Set.
 	// Construct the set of path/value changes from the configuration status
+	if config.Status.Paths == nil {
+		config.Status.Paths = make(map[string]*configapi.PathStatus)
+	}
 	pathValues := make([]*configapi.PathValue, 0, len(config.Status.Paths))
-	for path, pathStatus := range config.Status.Paths {
-		if pathStatus.State == configapi.PathState_PATH_UPDATE_PENDING {
-			pathValue, ok := config.Values[path]
-			if ok {
-				pathValues = append(pathValues, pathValue)
-			}
+	pathUpdates := make(map[string]configapi.Index)
+	for path, pathValue := range config.Values {
+		pathStatus, ok := config.Status.Paths[path]
+		if !ok || pathStatus.Index != pathValue.Index {
+			pathValues = append(pathValues, pathValue)
+			pathUpdates[path] = pathValue.Index
 		}
 	}
-	log.Infof("Synchronizing %d pending updates to target '%s'", len(pathValues), config.TargetID)
+	log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
 
 	// Create a gNMI set request
 	setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues)
 	if err != nil {
 		log.Errorf("Failed constructing Set request for Configuration '%s'", config.ID, err)
 		config.Status.State = configapi.ConfigurationState_CONFIGURATION_FAILED
-		config.Status.Failure = &configapi.Failure{
-			Type:        configapi.Failure_INVALID,
-			Description: err.Error(),
-		}
+		config.Status.Revision = config.Revision
 		log.Debug(config.Status)
 		err = r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
@@ -279,12 +268,13 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 
 	// Update the configuration state and path statuses
 	log.Infof("Finalizing Configuration '%s' status", config.ID)
-	for path, pathStatus := range config.Status.Paths {
-		if _, ok := config.Values[path]; ok {
-			pathStatus.State = configapi.PathState_PATH_UPDATE_COMPLETE
+	for path, index := range pathUpdates {
+		config.Status.Paths[path] = &configapi.PathStatus{
+			Index: index,
 		}
 	}
 	config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
+	config.Status.Revision = config.Revision
 	log.Debug(config.Status)
 	err = r.configurations.UpdateStatus(ctx, config)
 	if err != nil {
