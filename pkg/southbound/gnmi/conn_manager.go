@@ -17,6 +17,7 @@ package gnmi
 import (
 	"context"
 	"github.com/google/uuid"
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	baseClient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
@@ -26,11 +27,7 @@ import (
 	"math"
 	"sync"
 	"time"
-
-	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 )
-
-const defaultKeepAliveInterval = 10 * time.Second
 
 // ConnManager gNMI connection manager
 type ConnManager interface {
@@ -112,8 +109,6 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 
 	go func() {
 		var conn Conn
-		var keepAliveCancel context.CancelFunc
-
 		state := clientConn.GetState()
 		switch state {
 		case connectivity.Ready:
@@ -135,39 +130,15 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 					m.addConn(conn)
 				}
 			case connectivity.Idle:
+				if conn == nil {
+					time.AfterFunc(10*time.Second, clientConn.Connect)
+				} else {
+					clientConn.Connect()
+				}
 			default:
 				if conn != nil {
 					m.removeConn(conn.ID())
 					conn = nil
-				}
-			}
-
-			// If the channel is idle, start the keep-alive goroutine.
-			// Otherwise, shutdown the keep-alive goroutine while the channel is active.
-			switch state {
-			case connectivity.Idle:
-				if keepAliveCancel == nil {
-					ctx, cancel := context.WithCancel(context.Background())
-					go func() {
-						ticker := time.NewTicker(defaultKeepAliveInterval)
-						for {
-							select {
-							case _, ok := <-ticker.C:
-								if !ok {
-									return
-								}
-								clientConn.Connect()
-							case <-ctx.Done():
-								ticker.Stop()
-							}
-						}
-					}()
-					keepAliveCancel = cancel
-				}
-			default:
-				if keepAliveCancel != nil {
-					keepAliveCancel()
-					keepAliveCancel = nil
 				}
 			}
 
