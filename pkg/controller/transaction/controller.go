@@ -16,6 +16,7 @@ package transaction
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/onosproject/onos-config/pkg/utils/tree"
@@ -208,6 +209,10 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 		if err != nil {
 			log.Warnf("Failed validating Transaction %d, %v", transaction.Index, err)
 			transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
+			transaction.Status.Failure = &configapi.Failure{
+				Type:        configapi.Failure_INVALID,
+				Description: err.Error(),
+			}
 			log.Debug(transaction.Status)
 			err = r.transactions.UpdateStatus(ctx, transaction)
 			if err != nil {
@@ -382,6 +387,10 @@ func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context,
 		}
 		log.Warnf("Rollback Transaction %d failed: target Transaction %d not found", transaction.Index, rollback.Index)
 		transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
+		transaction.Status.Failure = &configapi.Failure{
+			Type:        configapi.Failure_NOT_FOUND,
+			Description: err.Error(),
+		}
 	} else {
 		switch t := targetTransaction.Transaction.(type) {
 		case *configapi.Transaction_Change:
@@ -405,8 +414,13 @@ func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context,
 				for path := range targetSource.Values {
 					configValue, ok := config.Values[path]
 					if !ok || configValue.Index != rollback.Index {
-						log.Warnf("Rollback Transaction %d failed: target Transaction %d is superseded by one or more later Transactions", transaction.Index, rollback.Index)
+						err := fmt.Errorf("Rollback Transaction %d failed: target Transaction %d is superseded by one or more later Transactions", transaction.Index, rollback.Index)
+						log.Warnf(err.Error())
 						transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
+						transaction.Status.Failure = &configapi.Failure{
+							Type:        configapi.Failure_FORBIDDEN,
+							Description: err.Error(),
+						}
 						log.Debug(transaction.Status)
 						err = r.transactions.UpdateStatus(ctx, transaction)
 						if err != nil {
@@ -449,8 +463,14 @@ func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context,
 			log.Infof("Successfully validated rollback Transaction %d", transaction.Index)
 			transaction.Status.State = configapi.TransactionState_TRANSACTION_APPLYING
 		default:
-			log.Warnf("Rollback Transaction %d failed: target Transaction %d is not a change", transaction.Index, rollback.Index)
+			err = fmt.Errorf("Rollback Transaction %d failed: target Transaction %d is not a change", transaction.Index, rollback.Index)
+			log.Warnf(err.Error())
 			transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
+			transaction.Status.Failure = &configapi.Failure{
+				Type:        configapi.Failure_FORBIDDEN,
+				Description: err.Error(),
+			}
+
 		}
 	}
 
