@@ -15,11 +15,12 @@
 package config
 
 import (
+	"testing"
+
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/status"
-	"testing"
 )
 
 // TestModels tests GNMI operation involving unknown or illegal paths
@@ -62,14 +63,12 @@ func (s *TestSuite) TestModels(t *testing.T) {
 				value := thisTestCase.value
 				valueType := thisTestCase.valueType
 				expectedError := thisTestCase.expectedError
-				// t.Parallel() -- would delete simulator before tests
-
 				t.Logf("testing %q", description)
 
 				setResult := gnmi.GetTargetPathWithValue(simulator.Name(), path, value, valueType)
-				msg, _, errorSet := gnmi.SetGNMIValue(gnmi.MakeContext(), gnmiClient, setResult, gnmi.NoPaths, gnmi.NoExtensions)
-				assert.NotNil(t, errorSet, "Set operation for %s does not generate an error", description)
-				assert.Contains(t, status.Convert(errorSet).Message(), expectedError,
+				msg, _, err := gnmi.SetGNMIValue(gnmi.MakeContext(), gnmiClient, setResult, gnmi.NoPaths, gnmi.NoExtensions)
+				assert.NotNil(t, err, "Set operation for %s does not generate an error", description)
+				assert.Contains(t, status.Convert(err).Message(), expectedError,
 					"set operation for %s generates wrong error %s", description, msg)
 			})
 	}
