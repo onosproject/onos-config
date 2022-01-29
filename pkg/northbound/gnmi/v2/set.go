@@ -181,8 +181,34 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			return setResponse, nil
 
 		} else if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
-			return nil, errors.NewInvalid("transaction %s failed", transaction.ID)
+			description := transactionEvent.Transaction.Status.Failure.Description
+			switch transactionEvent.Transaction.Status.Failure.Type {
+			case configapi.Failure_UNKNOWN:
+				return nil, errors.Status(errors.NewUnknown(description)).Err()
+			case configapi.Failure_CANCELED:
+				return nil, errors.Status(errors.NewCanceled(description)).Err()
+			case configapi.Failure_NOT_FOUND:
+				return nil, errors.Status(errors.NewNotFound(description)).Err()
+			case configapi.Failure_ALREADY_EXISTS:
+				return nil, errors.Status(errors.NewAlreadyExists(description)).Err()
+			case configapi.Failure_UNAUTHORIZED:
+				return nil, errors.Status(errors.NewUnauthorized(description)).Err()
+			case configapi.Failure_FORBIDDEN:
+				return nil, errors.Status(errors.NewForbidden(description)).Err()
+			case configapi.Failure_CONFLICT:
+				return nil, errors.Status(errors.NewConflict(description)).Err()
+			case configapi.Failure_INVALID:
+				return nil, errors.Status(errors.NewInvalid(description)).Err()
+			case configapi.Failure_UNAVAILABLE:
+				return nil, errors.Status(errors.NewUnavailable(description)).Err()
+			case configapi.Failure_NOT_SUPPORTED:
+				return nil, errors.Status(errors.NewNotSupported(description)).Err()
+			case configapi.Failure_TIMEOUT:
+				return nil, errors.Status(errors.NewTimeout(description)).Err()
+			case configapi.Failure_INTERNAL:
+				return nil, errors.Status(errors.NewInternal(description)).Err()
 
+			}
 		}
 	}
 
@@ -222,14 +248,14 @@ func (s *Server) getModelPlugin(ctx context.Context, targetID topoapi.ID) (*plug
 	target, err := s.topo.Get(ctx, targetID)
 	if err != nil {
 		log.Warn(err)
-		return nil, errors.Status(err).Err()
+		return nil, err
 	}
 
 	targetConfigurableAspect := &topoapi.Configurable{}
 	err = target.GetAspect(targetConfigurableAspect)
 	if err != nil {
 		log.Warn(err)
-		return nil, errors.Status(err).Err()
+		return nil, err
 	}
 
 	modelName := utils.ToModelNameV2(configapi.TargetType(targetConfigurableAspect.Type), configapi.TargetVersion(targetConfigurableAspect.Version))
@@ -237,7 +263,7 @@ func (s *Server) getModelPlugin(ctx context.Context, targetID topoapi.ID) (*plug
 	if !ok {
 		err = errors.NewNotFound("model %s plugin not found", modelName)
 		log.Warn(err)
-		return nil, errors.Status(err).Err()
+		return nil, err
 	}
 	return modelPlugin, nil
 }
