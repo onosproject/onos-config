@@ -119,7 +119,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		// Update the gNMI target entity
 		err = r.topo.Update(ctx, targetEntity)
 		if err != nil {
-			if !errors.IsNotFound(err) {
+			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
 				log.Warnf("Updating MastershipState for gNMI target '%s' failed: %v", targetEntity.GetID(), err)
 				return controller.Result{}, err
 			}
