@@ -78,7 +78,7 @@ func (r *Reconciler) connect(ctx context.Context, target *topoapi.Object) (contr
 			return controller.Result{}, err
 		}
 		log.Warnf("Failed connecting to Target '%s'", target.ID, err)
-		return controller.Result{}, err
+		return controller.Result{}, nil
 	}
 	return controller.Result{}, nil
 }
