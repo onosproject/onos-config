@@ -132,8 +132,6 @@ github.com/Shopify/sarama v1.29.1 h1:wBAacXbYVLmWieEA/0X/JagDdCZ8NVFOfS6l6+2u5S0
 github.com/Shopify/sarama v1.29.1/go.mod h1:mdtqvCSg8JOxk8PmpTNGyo6wzd4BMm4QXSfDnTXmgkE=
 github.com/Shopify/toxiproxy v2.1.4+incompatible h1:TKdv8HiTLgE5wdJuEML90aBgNWsokNbMijUGhmcoBJc=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
-github.com/adibrastegarnia/onos-api/go v0.0.0-20220128214827-657a3bbcaa6a h1:jsFnkR8zJA9SEP4xLr95aj0WHoFw2lPqHZdN2dk/U44=
-github.com/adibrastegarnia/onos-api/go v0.0.0-20220128214827-657a3bbcaa6a/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 h1:JYp7IbQjafoB+tBA3gMyHYHrpOtNuDiK/uB5uXxq5wM=
@@ -982,10 +980,8 @@ github.com/onosproject/helmit v0.6.19 h1:2Il7qhJhUjYFdweDaOzgPanUArDNGRs8SaLV3tx
 github.com/onosproject/helmit v0.6.19/go.mod h1:4LUwMtLcV0njiCEcAoVdzoiRfit+04z4Yn7z8lXSuMk=
 github.com/onosproject/onos-api/go v0.8.0/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
 github.com/onosproject/onos-api/go v0.8.10/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
-github.com/onosproject/onos-api/go v0.8.37 h1:LMsJ/TMgMboHD8Ja9qdjQVUVNMtEhNLIpv8P9v2NRC8=
-github.com/onosproject/onos-api/go v0.8.37/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
-github.com/onosproject/onos-api/go v0.8.39 h1:LOJbGKAFMZh4VfVa3fE+ub6KLmqT6gmotCVA3bASu5s=
-github.com/onosproject/onos-api/go v0.8.39/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
+github.com/onosproject/onos-api/go v0.8.41 h1:ZbL4RC92SJLAeCEPae50JHIAQk3PTwG7m0WsxTyCzMw=
+github.com/onosproject/onos-api/go v0.8.41/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSYfNXHiI4BJ/Ry7UI=
 github.com/onosproject/onos-lib-go v0.8.1 h1:debi/WjARXRmYNRtnMPVj3q1MuTl9kPFmrbRf0NGCQU=
 github.com/onosproject/onos-lib-go v0.8.1/go.mod h1:1klcUPfLoXPVu4fzM/sYi1V3Pggm2NRbY2fTzG2W1HY=
 github.com/onosproject/onos-proxy v0.1.0/go.mod h1:Julz7LLRkjnwIvioNEI1CjpujpxoA33vOdWSs0/wY9I=
