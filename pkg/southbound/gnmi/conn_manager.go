@@ -126,7 +126,7 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 			// If the channel is active, ensure a connection is added to the manager.
 			// If the channel failed, remove the connection from the manager.
 			switch state {
-			case connectivity.Connecting, connectivity.Ready, connectivity.Idle:
+			case connectivity.Ready, connectivity.Idle:
 				if conn == nil {
 					conn = newConn(target.ID, gnmiClient)
 					m.addConn(conn)
