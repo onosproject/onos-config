@@ -230,12 +230,10 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	pathValues := make([]*configapi.PathValue, 0, len(config.Status.Paths))
 	pathUpdates := make(map[string]configapi.Index)
 	for path, pathValue := range config.Values {
-		if pathValue.Index > 0 || pathValue.Deleted {
-			pathStatus, ok := config.Status.Paths[path]
-			if !ok || pathStatus.Index != pathValue.Index {
-				pathValues = append(pathValues, pathValue)
-				pathUpdates[path] = pathValue.Index
-			}
+		pathStatus, ok := config.Status.Paths[path]
+		if !ok || pathStatus.Index != pathValue.Index {
+			pathValues = append(pathValues, pathValue)
+			pathUpdates[path] = pathValue.Index
 		}
 	}
 	log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
