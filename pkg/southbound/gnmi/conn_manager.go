@@ -54,30 +54,30 @@ func NewConnManager() ConnManager {
 
 type connManager struct {
 	targets    map[topoapi.ID]*grpc.ClientConn
-	conns      map[ConnID]Conn
-	stateMu    sync.RWMutex
-	watchers   map[uuid.UUID]chan<- Conn
+	conns    map[ConnID]Conn
+	connsMu  sync.RWMutex
+	watchers map[uuid.UUID]chan<- Conn
 	watchersMu sync.RWMutex
 	eventCh    chan Conn
 }
 
 func (m *connManager) Get(ctx context.Context, connID ConnID) (Conn, bool) {
-	m.stateMu.RLock()
-	defer m.stateMu.RUnlock()
+	m.connsMu.RLock()
+	defer m.connsMu.RUnlock()
 	conn, ok := m.conns[connID]
 	return conn, ok
 }
 
 func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error {
-	m.stateMu.RLock()
+	m.connsMu.RLock()
 	clientConn, ok := m.targets[target.ID]
-	m.stateMu.RUnlock()
+	m.connsMu.RUnlock()
 	if ok {
 		return errors.NewAlreadyExists("target '%s' already exists", target.ID)
 	}
 
-	m.stateMu.Lock()
-	defer m.stateMu.Unlock()
+	m.connsMu.Lock()
+	defer m.connsMu.Unlock()
 
 	clientConn, ok = m.targets[target.ID]
 	if ok {
@@ -178,20 +178,21 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 }
 
 func (m *connManager) Disconnect(ctx context.Context, targetID topoapi.ID) error {
-	m.stateMu.Lock()
-	defer m.stateMu.Unlock()
+	m.connsMu.Lock()
 	clientConn, ok := m.targets[targetID]
 	if !ok {
+		m.connsMu.Unlock()
 		return errors.NewNotFound("target '%s' not found", targetID)
 	}
 	delete(m.targets, targetID)
+	m.connsMu.Unlock()
 	return clientConn.Close()
 }
 
 func (m *connManager) Watch(ctx context.Context, ch chan<- Conn) error {
 	id := uuid.New()
 	m.watchersMu.Lock()
-	m.stateMu.Lock()
+	m.connsMu.Lock()
 	m.watchers[id] = ch
 	m.watchersMu.Unlock()
 
@@ -199,7 +200,7 @@ func (m *connManager) Watch(ctx context.Context, ch chan<- Conn) error {
 		for _, conn := range m.conns {
 			ch <- conn
 		}
-		m.stateMu.Unlock()
+		m.connsMu.Unlock()
 
 		<-ctx.Done()
 		m.watchersMu.Lock()
@@ -210,20 +211,20 @@ func (m *connManager) Watch(ctx context.Context, ch chan<- Conn) error {
 }
 
 func (m *connManager) addConn(conn Conn) {
-	m.stateMu.Lock()
-	defer m.stateMu.Unlock()
+	m.connsMu.Lock()
+	defer m.connsMu.Unlock()
 	m.conns[conn.ID()] = conn
 	m.eventCh <- conn
 }
 
 func (m *connManager) removeConn(connID ConnID) {
-	m.stateMu.Lock()
+	m.connsMu.Lock()
 	if conn, ok := m.conns[connID]; ok {
 		delete(m.conns, connID)
-		m.stateMu.Unlock()
+		m.connsMu.Unlock()
 		m.eventCh <- conn
 	} else {
-		m.stateMu.Unlock()
+		m.connsMu.Unlock()
 	}
 }
 
