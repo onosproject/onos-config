@@ -16,8 +16,6 @@ package configuration
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/pkg/utils"
-	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"time"
 
 	controllerutils "github.com/onosproject/onos-config/pkg/controller/utils"
@@ -140,8 +138,9 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		// the prior term and reconcile the configuration for the new term.
 		if mastershipTerm > config.Status.MastershipState.Term {
 			log.Infof("Initializing Configuration '%s' tree for new mastership term %d", config.ID, mastershipTerm)
-			config.Status.State = configapi.ConfigurationState_CONFIGURATION_INITIALIZING
+			config.Status.State = configapi.ConfigurationState_CONFIGURATION_UPDATING
 			config.Status.MastershipState.Term = mastershipTerm
+			config.Status.Paths = nil
 			log.Debug(config.Status)
 			err := r.configurations.UpdateStatus(ctx, config)
 			if err != nil {
@@ -228,120 +227,29 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return false, nil
 	}
 
-	// Reconcile states that actively interact with the target.
-	// While in the INITIALIZING state, fetch the root of the target tree and merge it with
-	// the Configuration tree, prioritizing the Configuration values over the target's.
 	// While in the UPDATING state, push pending updates to the target via gNMI Set.
-	switch config.Status.State {
-	case configapi.ConfigurationState_CONFIGURATION_INITIALIZING:
-		log.Infof("Initializing Configuration '%s' paths from target '%s'", config.ID, config.TargetID)
-		rootPath := &gpb.Path{Elem: make([]*gpb.PathElem, 0)}
-		getRequest := &gpb.GetRequest{
-			Path:     []*gpb.Path{rootPath},
-			Encoding: gpb.Encoding_JSON_IETF,
-		}
-
-		log.Debugf("Sending GetRequest %+v", getRequest)
-		getResponse, err := conn.Get(ctx, getRequest)
-		if err != nil {
-			log.Errorf("Failed sending GetRequest %+v", getRequest, err)
-			return false, err
-		}
-		log.Debugf("Received GetResponse %+v", getResponse)
-
-		for _, notification := range getResponse.Notification {
-			for _, update := range notification.Update {
-				modelName := utils.ToModelNameV2(config.TargetType, config.TargetVersion)
-				modelPlugin, ok := r.pluginRegistry.GetPlugin(modelName)
-				if !ok {
-					return false, err
-				}
-				targetValues, err := modelPlugin.GetPathValues(ctx, "", update.GetVal().GetJsonIetfVal())
-				if err != nil {
-					return false, err
-				}
-				for _, targetValue := range targetValues {
-					configValue, ok := config.Values[targetValue.Path]
-					if !ok || (configValue.Index == 0 && !configValue.Deleted) {
-						config.Values[targetValue.Path] = &configapi.PathValue{
-							Path:  targetValue.Path,
-							Value: targetValue.Value,
-						}
-					}
-				}
+	// Construct the set of path/value changes from the configuration status
+	if config.Status.Paths == nil {
+		config.Status.Paths = make(map[string]*configapi.PathStatus)
+	}
+	pathValues := make([]*configapi.PathValue, 0, len(config.Status.Paths))
+	pathUpdates := make(map[string]configapi.Index)
+	for path, pathValue := range config.Values {
+		if pathValue.Index > 0 || pathValue.Deleted {
+			pathStatus, ok := config.Status.Paths[path]
+			if !ok || pathStatus.Index != pathValue.Index {
+				pathValues = append(pathValues, pathValue)
+				pathUpdates[path] = pathValue.Index
 			}
 		}
+	}
+	log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
 
-		config.Status.State = configapi.ConfigurationState_CONFIGURATION_UPDATING
-		config.Status.Paths = nil
-		log.Debug(config.Status)
-		err = r.configurations.UpdateStatus(ctx, config)
-		if err != nil {
-			if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-				log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
-				return false, err
-			}
-			log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
-			return false, nil
-		}
-		return true, nil
-	case configapi.ConfigurationState_CONFIGURATION_UPDATING:
-		// Construct the set of path/value changes from the configuration status
-		if config.Status.Paths == nil {
-			config.Status.Paths = make(map[string]*configapi.PathStatus)
-		}
-		pathValues := make([]*configapi.PathValue, 0, len(config.Status.Paths))
-		pathUpdates := make(map[string]configapi.Index)
-		for path, pathValue := range config.Values {
-			if pathValue.Index > 0 || pathValue.Deleted {
-				pathStatus, ok := config.Status.Paths[path]
-				if !ok || pathStatus.Index != pathValue.Index {
-					pathValues = append(pathValues, pathValue)
-					pathUpdates[path] = pathValue.Index
-				}
-			}
-		}
-		log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
-
-		// Create a gNMI set request
-		setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues)
-		if err != nil {
-			log.Errorf("Failed constructing Set request for Configuration '%s'", config.ID, err)
-			config.Status.State = configapi.ConfigurationState_CONFIGURATION_FAILED
-			config.Status.Failure = &configapi.Failure{
-				Type:        configapi.Failure_INVALID,
-				Description: err.Error(),
-			}
-			log.Debug(config.Status)
-			err = r.configurations.UpdateStatus(ctx, config)
-			if err != nil {
-				if !errors.IsConflict(err) && !errors.IsNotFound(err) {
-					log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
-					return false, err
-				}
-				log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
-				return false, nil
-			}
-			return true, nil
-		}
-
-		// Execute the set request
-		log.Debugf("Sending SetRequest %+v", setRequest)
-		setResponse, err := conn.Set(ctx, setRequest)
-		if err != nil {
-			log.Errorf("Failed sending SetRequest %+v", setRequest, err)
-			return false, err
-		}
-		log.Debugf("Received SetResponse %+v", setResponse)
-
-		// Update the configuration state and path statuses
-		log.Infof("Finalizing Configuration '%s' status", config.ID)
-		for path, index := range pathUpdates {
-			config.Status.Paths[path] = &configapi.PathStatus{
-				Index: index,
-			}
-		}
-		config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
+	// Create a gNMI set request
+	setRequest, err := utilsv2.PathValuesToGnmiChange(pathValues)
+	if err != nil {
+		log.Errorf("Failed constructing Set request for Configuration '%s'", config.ID, err)
+		config.Status.State = configapi.ConfigurationState_CONFIGURATION_FAILED
 		config.Status.Revision = config.Revision
 		log.Debug(config.Status)
 		err = r.configurations.UpdateStatus(ctx, config)
@@ -355,5 +263,34 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		}
 		return true, nil
 	}
-	return false, nil
+
+	// Execute the set request
+	log.Debugf("Sending SetRequest %+v", setRequest)
+	setResponse, err := conn.Set(ctx, setRequest)
+	if err != nil {
+		log.Errorf("Failed sending SetRequest %+v", setRequest, err)
+		return false, err
+	}
+	log.Debugf("Received SetResponse %+v", setResponse)
+
+	// Update the configuration state and path statuses
+	log.Infof("Finalizing Configuration '%s' status", config.ID)
+	for path, index := range pathUpdates {
+		config.Status.Paths[path] = &configapi.PathStatus{
+			Index: index,
+		}
+	}
+	config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
+	config.Status.Revision = config.Revision
+	log.Debug(config.Status)
+	err = r.configurations.UpdateStatus(ctx, config)
+	if err != nil {
+		if !errors.IsConflict(err) && !errors.IsNotFound(err) {
+			log.Errorf("Failed updating Configuration '%s' status", config.ID, err)
+			return false, err
+		}
+		log.Warnf("Write conflict updating Configuration '%s' status", config.ID, err)
+		return false, nil
+	}
+	return true, nil
 }
