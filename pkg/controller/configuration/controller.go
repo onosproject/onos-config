@@ -133,7 +133,8 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	switch config.Status.State {
 	// If the configuration is STALE, clear the configured paths and process the
 	// configuration again once a new master is assigned.
-	case configapi.ConfigurationState_CONFIGURATION_PENDING, configapi.ConfigurationState_CONFIGURATION_STALE:
+	case configapi.ConfigurationState_CONFIGURATION_PENDING,
+		configapi.ConfigurationState_CONFIGURATION_STALE:
 		// If a new master has been assigned, clean the configuration state from
 		// the prior term and reconcile the configuration for the new term.
 		if mastershipTerm > config.Status.MastershipState.Term {
@@ -172,13 +173,8 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 			}
 			return true, nil
 		}
-	}
 
-	// Reconcile the configuration revision to trigger propagation of new updates if necessary.
-	switch config.Status.State {
-	case configapi.ConfigurationState_CONFIGURATION_UPDATING,
-		configapi.ConfigurationState_CONFIGURATION_COMPLETE,
-		configapi.ConfigurationState_CONFIGURATION_FAILED:
+		// If the revision has changed, trigger propagation of new updates if necessary.
 		if config.Revision > config.Status.Revision {
 			log.Infof("Updating Configuration '%s' to revision %d", config.ID, config.Revision)
 			config.Status.State = configapi.ConfigurationState_CONFIGURATION_UPDATING
@@ -198,9 +194,8 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	}
 
 	// The remainder of the algorithm reconciles the state on the target. Ignore completed configurations.
-	switch config.Status.State {
-	case configapi.ConfigurationState_CONFIGURATION_COMPLETE,
-		configapi.ConfigurationState_CONFIGURATION_FAILED:
+	if config.Status.State == configapi.ConfigurationState_CONFIGURATION_COMPLETE ||
+		config.Status.State == configapi.ConfigurationState_CONFIGURATION_FAILED {
 		return false, nil
 	}
 
