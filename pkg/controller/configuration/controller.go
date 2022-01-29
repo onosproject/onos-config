@@ -251,6 +251,10 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	if err != nil {
 		log.Errorf("Failed constructing Set request for Configuration '%s'", config.ID, err)
 		config.Status.State = configapi.ConfigurationState_CONFIGURATION_FAILED
+		config.Status.Failure = &configapi.Failure{
+			Type:        configapi.Failure_INVALID,
+			Description: err.Error(),
+		}
 		log.Debug(config.Status)
 		err = r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
