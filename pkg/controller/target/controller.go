@@ -71,7 +71,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 }
 
 func (r *Reconciler) connect(ctx context.Context, target *topoapi.Object) (controller.Result, error) {
-	log.Info("Connecting to Target '%s'", target.ID)
+	log.Infof("Connecting to Target '%s'", target.ID)
 	if err := r.conns.Connect(ctx, target); err != nil {
 		if !errors.IsAlreadyExists(err) {
 			log.Errorf("Failed connecting to Target '%s'", target.ID, err)

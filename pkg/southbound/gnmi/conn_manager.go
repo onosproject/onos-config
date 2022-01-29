@@ -30,7 +30,7 @@ import (
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 )
 
-const defaultKeepAliveInterval = 30 * time.Second
+const defaultKeepAliveInterval = 10 * time.Second
 
 // ConnManager gNMI connection manager
 type ConnManager interface {
@@ -54,9 +54,9 @@ func NewConnManager() ConnManager {
 
 type connManager struct {
 	targets    map[topoapi.ID]*grpc.ClientConn
-	conns    map[ConnID]Conn
-	connsMu  sync.RWMutex
-	watchers map[uuid.UUID]chan<- Conn
+	conns      map[ConnID]Conn
+	connsMu    sync.RWMutex
+	watchers   map[uuid.UUID]chan<- Conn
 	watchersMu sync.RWMutex
 	eventCh    chan Conn
 }
@@ -116,21 +116,25 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 
 		state := clientConn.GetState()
 		switch state {
-		case connectivity.Connecting, connectivity.Ready, connectivity.Idle:
+		case connectivity.Ready:
 			conn = newConn(target.ID, gnmiClient)
 			m.addConn(conn)
 		}
 		for clientConn.WaitForStateChange(context.Background(), state) {
 			state = clientConn.GetState()
+			log.Infof("Connection state changed for Target '%s': %s", target.ID, state)
 
 			// If the channel is active, ensure a connection is added to the manager.
-			// If the channel failed, remove the connection from the manager.
+			// If the channel is idle, do not change its state (this can occur when
+			// connected or disconnected).
+			// In all other states, remove the connection from the manager.
 			switch state {
-			case connectivity.Ready, connectivity.Idle:
+			case connectivity.Ready:
 				if conn == nil {
 					conn = newConn(target.ID, gnmiClient)
 					m.addConn(conn)
 				}
+			case connectivity.Idle:
 			default:
 				if conn != nil {
 					m.removeConn(conn.ID())
