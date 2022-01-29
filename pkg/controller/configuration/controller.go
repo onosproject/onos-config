@@ -138,7 +138,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		// If a new master has been assigned, clean the configuration state from
 		// the prior term and reconcile the configuration for the new term.
 		if mastershipTerm > config.Status.MastershipState.Term {
-			log.Infof("Initializing Configuration '%s' tree for new mastership term %d", config.ID, mastershipTerm)
+			log.Infof("Synchronizing Configuration '%s' for new mastership term %d", config.ID, mastershipTerm)
 			config.Status.State = configapi.ConfigurationState_CONFIGURATION_UPDATING
 			config.Status.MastershipState.Term = mastershipTerm
 			config.Status.Paths = nil
