@@ -26,7 +26,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	"math"
 	"sync"
-	"time"
 )
 
 // ConnManager gNMI connection manager
@@ -130,11 +129,7 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 					m.addConn(conn)
 				}
 			case connectivity.Idle:
-				if conn == nil {
-					time.AfterFunc(10*time.Second, clientConn.Connect)
-				} else {
-					clientConn.Connect()
-				}
+				clientConn.Connect()
 			default:
 				if conn != nil {
 					m.removeConn(conn.ID())
