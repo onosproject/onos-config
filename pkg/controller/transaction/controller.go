@@ -415,7 +415,7 @@ func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context,
 					configValue, ok := config.Values[path]
 					if !ok || configValue.Index != rollback.Index {
 						err := fmt.Errorf("Rollback Transaction %d failed: target Transaction %d is superseded by one or more later Transactions", transaction.Index, rollback.Index)
-						log.Warnf(err.Error())
+						log.Warn(err.Error())
 						transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
 						transaction.Status.Failure = &configapi.Failure{
 							Type:        configapi.Failure_FORBIDDEN,
@@ -464,7 +464,7 @@ func (r *Reconciler) reconcileTransactionRollbackValidating(ctx context.Context,
 			transaction.Status.State = configapi.TransactionState_TRANSACTION_APPLYING
 		default:
 			err = fmt.Errorf("Rollback Transaction %d failed: target Transaction %d is not a change", transaction.Index, rollback.Index)
-			log.Warnf(err.Error())
+			log.Warn(err.Error())
 			transaction.Status.State = configapi.TransactionState_TRANSACTION_FAILED
 			transaction.Status.Failure = &configapi.Failure{
 				Type:        configapi.Failure_FORBIDDEN,
