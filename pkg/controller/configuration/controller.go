@@ -228,6 +228,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	if config.Status.Paths == nil {
 		config.Status.Paths = make(map[string]*configapi.PathStatus)
 	}
+	targetIndex := config.Status.TargetIndex
 	pathValues := make([]*configapi.PathValue, 0, len(config.Status.Paths))
 	pathUpdates := make(map[string]configapi.Index)
 	for path, pathValue := range config.Values {
@@ -235,6 +236,9 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		if !ok || pathStatus.Index != pathValue.Index {
 			pathValues = append(pathValues, pathValue)
 			pathUpdates[path] = pathValue.Index
+			if pathValue.Index > config.Status.TargetIndex {
+				targetIndex = pathValue.Index
+			}
 		}
 	}
 	log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
@@ -244,7 +248,12 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	if err != nil {
 		log.Errorf("Failed constructing Set request for Configuration '%s'", config.ID, err)
 		config.Status.State = configapi.ConfigurationState_CONFIGURATION_FAILED
+		config.Status.Failure = &configapi.Failure{
+			Type:        configapi.Failure_INVALID,
+			Description: err.Error(),
+		}
 		config.Status.Revision = config.Revision
+		config.Status.TargetIndex = targetIndex
 		log.Debug(config.Status)
 		err = r.configurations.UpdateStatus(ctx, config)
 		if err != nil {
@@ -298,6 +307,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	}
 	config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
 	config.Status.Revision = config.Revision
+	config.Status.TargetIndex = targetIndex
 	log.Debug(config.Status)
 	err = r.configurations.UpdateStatus(ctx, config)
 	if err != nil {
