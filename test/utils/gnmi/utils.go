@@ -17,10 +17,8 @@ package gnmi
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -40,7 +38,6 @@ import (
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/config/v2"
-	"github.com/onosproject/onos-config/pkg/northbound/gnmi/v2"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
 	gnmiclient "github.com/openconfig/gnmi/client"
@@ -556,24 +553,22 @@ func SetGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmic
 		return "", 0, err
 	}
 
-	var transactionID configapi.TransactionID
-	var transactionIndex v2.Index
+	var transactionInfo *configapi.TransactionInfo
 	for _, extension := range extensionsSet {
-		registeredExt := extension.GetRegisteredExt()
-		if registeredExt.Id.String() == strconv.Itoa(gnmi.ExtensionTransactionID) {
-			transactionID = configapi.TransactionID(registeredExt.Msg)
-		}
-		if registeredExt.Id.String() == strconv.Itoa(gnmi.ExtensionTransactionIndex) {
-			i := binary.BigEndian.Uint64(registeredExt.Msg)
-			transactionIndex = v2.Index(i)
+		if ext, ok := extension.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
+			ext.RegisteredExt.Id == configapi.TransactionModeExtensionID {
+			bytes := ext.RegisteredExt.Msg
+			transactionInfo = &configapi.TransactionInfo{}
+			err := proto.Unmarshal(bytes, transactionInfo)
+			assert.NoError(t, err)
 		}
 	}
 
-	if transactionID == "" {
+	if transactionInfo == nil {
 		return "", 0, errors.NewNotFound("transaction ID extension not found")
 	}
 
-	return transactionID, transactionIndex, err
+	return transactionInfo.ID, transactionInfo.Index, err
 }
 
 // SetGNMIValueOrFail does a GNMI set operation to the given client, and fails the test if there is an error
@@ -581,21 +576,6 @@ func SetGNMIValueOrFail(t *testing.T, gnmiClient gnmiclient.Impl,
 	updatePaths []protoutils.TargetPath, deletePaths []protoutils.TargetPath,
 	extensions []*gnmi_ext.Extension) (configapi.TransactionID, v2.Index) {
 	return SetGNMIValueWithContextOrFail(MakeContext(), t, gnmiClient, updatePaths, deletePaths, extensions)
-}
-
-// GetSimulatorExtensions creates the default set of extensions for a simulated target
-func GetSimulatorExtensions() []*gnmi_ext.Extension {
-	const (
-		targetType = "devicesim-1.0.x"
-	)
-
-	extTargetType := gnmi_ext.Extension_RegisteredExt{
-		RegisteredExt: &gnmi_ext.RegisteredExtension{
-			Id:  gnmi.ExtensionTransactionID,
-			Msg: []byte(targetType),
-		},
-	}
-	return []*gnmi_ext.Extension{{Ext: &extTargetType}}
 }
 
 // MakeProtoPath returns a Path: element for a given target and Path
