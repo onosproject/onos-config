@@ -89,21 +89,14 @@ func computeChange(target *targetInfo) (configapi.Change, error) {
 	return changeElement, nil
 }
 
-func newTransaction(targets map[configapi.TargetID]*targetInfo, extensions Extensions, username string) (*configapi.Transaction, error) {
+func newTransaction(targets map[configapi.TargetID]*targetInfo, mode *configapi.TransactionMode, username string) (*configapi.Transaction, error) {
 	changes, err := computeChanges(targets)
 	if err != nil {
 		return nil, err
 	}
-	var transactionID configapi.TransactionID
-	if extensions.transactionID != "" {
-		transactionID = extensions.transactionID
-
-	} else {
-		transactionID = configapi.TransactionID(uri.NewURI(
-			uri.WithScheme("uuid"),
-			uri.WithOpaque(uuid.New().String())).String())
-	}
-
+	transactionID := configapi.TransactionID(uri.NewURI(
+		uri.WithScheme("uuid"),
+		uri.WithOpaque(uuid.New().String())).String())
 	transaction := &configapi.Transaction{
 		ID: transactionID,
 		Transaction: &configapi.Transaction_Change{
@@ -112,6 +105,7 @@ func newTransaction(targets map[configapi.TargetID]*targetInfo, extensions Exten
 			},
 		},
 		Username: username,
+		Atomic:   mode != nil && mode.Atomic,
 	}
 
 	return transaction, nil

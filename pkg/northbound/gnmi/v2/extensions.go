@@ -15,47 +15,26 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-lib-go/pkg/errors"
-
+	"github.com/gogo/protobuf/proto"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/gnmi/proto/gnmi_ext"
 )
 
 var log = logging.GetLogger("northbound", "gnmi")
 
-const (
-	// ExtensionTransactionID transaction ID extension
-	ExtensionTransactionID = 100
-
-	// ExtensionTransactionIndex transaction index extension
-	ExtensionTransactionIndex = 102
-)
-
-// Extensions list of gNMI extensions
-type Extensions struct {
-	transactionID configapi.TransactionID
-}
-
-func extractExtensions(req interface{}) (Extensions, error) {
-	var transactionID configapi.TransactionID
-	switch v := req.(type) {
-	case *gnmi.SetRequest:
-		for _, ext := range v.GetExtension() {
-			extID := ext.GetRegisteredExt().GetId()
-			extMsg := ext.GetRegisteredExt().GetMsg()
-			if extID == ExtensionTransactionID {
-				transactionID = configapi.TransactionID(extMsg)
-			} else {
-				return Extensions{}, errors.NewInvalid("unexpected extension %d = '%s' in Set()", ext.GetRegisteredExt().GetId(), ext.GetRegisteredExt().GetMsg())
+func getSetExtensions(request *gnmi.SetRequest) (*configapi.TransactionMode, error) {
+	var transactionMode *configapi.TransactionMode
+	for _, ext := range request.GetExtension() {
+		if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
+			regExt.RegisteredExt.Id == configapi.TransactionModeExtensionID {
+			bytes := regExt.RegisteredExt.Msg
+			transactionMode = &configapi.TransactionMode{}
+			if err := proto.Unmarshal(bytes, transactionMode); err != nil {
+				return nil, err
 			}
 		}
-	case *gnmi.GetRequest:
 	}
-
-	extensions := Extensions{
-		transactionID: transactionID,
-	}
-
-	return extensions, nil
+	return transactionMode, nil
 }

@@ -16,8 +16,8 @@ package gnmi
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"strings"
 	"time"
 
@@ -60,7 +60,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	prefixTargetID := configapi.TargetID(req.GetPrefix().GetTarget())
 	targets := make(map[configapi.TargetID]*targetInfo)
 
-	extensions, err := extractExtensions(req)
+	transactionMode, err := getSetExtensions(req)
 	if err != nil {
 		log.Warn(err)
 		return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
@@ -111,7 +111,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 	}
 
-	transaction, err := newTransaction(targets, extensions, userName)
+	transaction, err := newTransaction(targets, transactionMode, userName)
 	if err != nil {
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
@@ -128,8 +128,9 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, errors.Status(err).Err()
 	}
 
+	isSync := transactionMode != nil && transactionMode.Sync
 	for transactionEvent := range ch {
-		if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_APPLYING ||
+		if (!isSync && transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_APPLYING) ||
 			transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE {
 			// Build the responses
 			updateResults := make([]*gnmi.UpdateResult, 0)
@@ -153,8 +154,16 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 				}
 			}
 
-			transactionIndex := make([]byte, 8)
-			binary.BigEndian.PutUint64(transactionIndex, uint64(transaction.Index))
+			transactionInfo := &configapi.TransactionInfo{
+				ID:    transaction.ID,
+				Index: transaction.Index,
+			}
+			transactionInfoBytes, err := proto.Marshal(transactionInfo)
+			if err != nil {
+				log.Warn(err)
+				return nil, errors.Status(errors.NewInternal(err.Error())).Err()
+			}
+
 			setResponse := &gnmi.SetResponse{
 				Response:  updateResults,
 				Timestamp: time.Now().Unix(),
@@ -162,17 +171,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 					{
 						Ext: &gnmi_ext.Extension_RegisteredExt{
 							RegisteredExt: &gnmi_ext.RegisteredExtension{
-								Id:  ExtensionTransactionID,
-								Msg: []byte(transaction.ID),
-							},
-						},
-					},
-					{
-
-						Ext: &gnmi_ext.Extension_RegisteredExt{
-							RegisteredExt: &gnmi_ext.RegisteredExtension{
-								Id:  ExtensionTransactionIndex,
-								Msg: transactionIndex,
+								Id:  configapi.TransactionInfoExtensionID,
+								Msg: transactionInfoBytes,
 							},
 						},
 					},
