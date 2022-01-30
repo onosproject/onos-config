@@ -129,7 +129,8 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 
 	for transactionEvent := range ch {
-		if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE {
+		if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_APPLYING ||
+			transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE {
 			// Build the responses
 			updateResults := make([]*gnmi.UpdateResult, 0)
 			for targetID, change := range transaction.GetChange().Changes {
