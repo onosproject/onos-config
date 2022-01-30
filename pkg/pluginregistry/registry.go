@@ -240,7 +240,7 @@ func (r *PluginRegistry) GetPlugins() []*ModelPlugin {
 }
 
 // Capabilities returns the model plugin gNMI capabilities response
-func (p *ModelPlugin) Capabilities(ctx context.Context, jsonData []byte) *gnmi.CapabilityResponse {
+func (p *ModelPlugin) Capabilities(ctx context.Context) *gnmi.CapabilityResponse {
 	return &gnmi.CapabilityResponse{
 		SupportedModels:    p.Info.ModelData,
 		SupportedEncodings: p.Info.SupportedEncodings,
