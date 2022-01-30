@@ -556,7 +556,7 @@ func SetGNMIValueWithContext(ctx context.Context, t *testing.T, gnmiClient gnmic
 	var transactionInfo *configapi.TransactionInfo
 	for _, extension := range extensionsSet {
 		if ext, ok := extension.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
-			ext.RegisteredExt.Id == configapi.TransactionModeExtensionID {
+			ext.RegisteredExt.Id == configapi.TransactionInfoExtensionID {
 			bytes := ext.RegisteredExt.Msg
 			transactionInfo = &configapi.TransactionInfo{}
 			err := proto.Unmarshal(bytes, transactionInfo)
