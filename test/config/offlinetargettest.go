@@ -28,7 +28,6 @@ import (
 
 	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/openconfig/gnmi/proto/gnmi_ext"
 )
 
 const (
@@ -47,7 +46,7 @@ func (s *TestSuite) TestOfflineTarget(t *testing.T) {
 
 	// Sends a set request using onos-config NB
 	targetPath := gnmiutils.GetTargetPathWithValue(offlineTargetName, modPath, modValue, proto.StringVal)
-	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, []*gnmi_ext.Extension{})
+	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	// Install and start target simulator
 	simulator := gnmiutils.CreateSimulatorWithName(t, offlineTargetName, false)

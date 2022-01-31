@@ -23,7 +23,7 @@ import (
 	"github.com/onosproject/onos-api/go/onos/topo"
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -45,55 +45,50 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	)
 
 	// Get the configured targets from the environment.
-	target1 := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, target1)
+	target1 := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, target1)
 
 	// Wait for config to connect to the targets
-	gnmi.WaitForTargetAvailable(t, topo.ID(target1.Name()), time.Minute)
+	gnmiutils.WaitForTargetAvailable(t, topo.ID(target1.Name()), time.Minute)
 
-	target2 := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, target2)
+	target2 := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, target2)
 
 	// Wait for config to connect to the targets
-	gnmi.WaitForTargetAvailable(t, topo.ID(target2.Name()), time.Minute)
+	gnmiutils.WaitForTargetAvailable(t, topo.ID(target2.Name()), time.Minute)
 
 	targets := make([]string, 2)
 	targets[0] = target1.Name()
 	targets[1] = target2.Name()
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmi.GetGNMIClientOrFail(t)
-	targetPathsForGet := gnmi.GetTargetPaths(targets, paths)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	targetPathsForGet := gnmiutils.GetTargetPaths(targets, paths)
 
 	// Set initial values
-	targetPathsForInit := gnmi.GetTargetPathsWithValues(targets, paths, initialValues)
-	_, _ = gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForInit, gnmi.NoPaths, gnmi.NoExtensions)
-	gnmi.CheckGNMIValues(t, gnmiClient, targetPathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
+	targetPathsForInit := gnmiutils.GetTargetPathsWithValues(targets, paths, initialValues)
+	_, _ = gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPathsForInit, gnmiutils.NoPaths, gnmiutils.NoExtensions)
+	gnmiutils.CheckGNMIValues(t, gnmiClient, targetPathsForGet, initialValues, 0, "Query after initial set returned the wrong value")
 
 	// Create a change that can be rolled back
-	targetPathsForSet := gnmi.GetTargetPathsWithValues(targets, paths, values)
-	_, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
-
-	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
-	assert.NoError(t, err)
-	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target2.Name()), time.Minute)
-	assert.NoError(t, err)
+	targetPathsForSet := gnmiutils.GetTargetPathsWithValues(targets, paths, values)
+	_, transactionIndex := gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}
-	gnmi.CheckGNMIValues(t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValues(t, gnmiClient, targetPathsForGet, expectedValues, 0, "Query after set returned the wrong value")
 
 	// Check that the values are set on the targets
-	target1GnmiClient := gnmi.GetTargetGNMIClientOrFail(t, target1)
-	target2GnmiClient := gnmi.GetTargetGNMIClientOrFail(t, target2)
+	target1GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, target1)
+	target2GnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, target2)
 
-	gnmi.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[0:1], value1)
-	gnmi.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[1:2], value2)
-	gnmi.CheckTargetValue(t, target2GnmiClient, targetPathsForGet[2:3], value1)
-	gnmi.CheckTargetValue(t, target2GnmiClient, targetPathsForGet[3:4], value2)
+	gnmiutils.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[0:1], value1)
+	gnmiutils.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[1:2], value2)
+	gnmiutils.CheckTargetValue(t, target2GnmiClient, targetPathsForGet[2:3], value1)
+	gnmiutils.CheckTargetValue(t, target2GnmiClient, targetPathsForGet[3:4], value2)
 
 	// Now rollback the change
-	adminClient, err := gnmi.NewAdminServiceClient()
+	adminClient, err := gnmiutils.NewAdminServiceClient()
 	assert.NoError(t, err)
 	rollbackResponse, rollbackError := adminClient.RollbackTransaction(
 		context.Background(), &admin.RollbackRequest{Index: transactionIndex})
@@ -101,18 +96,18 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
 
-	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
+	err = gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
 	assert.NoError(t, err)
-	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target2.Name()), time.Minute)
+	err = gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target2.Name()), time.Minute)
 	assert.NoError(t, err)
 
 	// Check that the values were really rolled back in onos-config
 	expectedValuesAfterRollback := []string{initValue1, initValue2}
-	gnmi.CheckGNMIValues(t, gnmiClient, targetPathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
+	gnmiutils.CheckGNMIValues(t, gnmiClient, targetPathsForGet, expectedValuesAfterRollback, 0, "Query after rollback returned the wrong value")
 
 	// Check that the values were rolled back on the targets
-	gnmi.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[0:1], initValue1)
-	gnmi.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[1:2], initValue2)
-	gnmi.CheckTargetValue(t, target2GnmiClient, targetPathsForGet[2:3], initValue1)
-	gnmi.CheckTargetValue(t, target2GnmiClient, targetPathsForGet[3:4], initValue2)
+	gnmiutils.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[0:1], initValue1)
+	gnmiutils.CheckTargetValue(t, target1GnmiClient, targetPathsForGet[1:2], initValue2)
+	gnmiutils.CheckTargetValue(t, target2GnmiClient, targetPathsForGet[2:3], initValue1)
+	gnmiutils.CheckTargetValue(t, target2GnmiClient, targetPathsForGet[3:4], initValue2)
 }

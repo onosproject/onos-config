@@ -17,7 +17,7 @@ package config
 import (
 	"testing"
 
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/status"
@@ -32,8 +32,8 @@ func (s *TestSuite) TestModels(t *testing.T) {
 		clockTimeZonePath = "/system/clock/config/timezone-name"
 	)
 
-	simulator := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, simulator)
+	simulator := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Data to run the test cases
 	testCases := []struct {
@@ -51,7 +51,7 @@ func (s *TestSuite) TestModels(t *testing.T) {
 	}
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmi.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
 
 	// Run the test cases
 	for _, testCase := range testCases {
@@ -65,8 +65,8 @@ func (s *TestSuite) TestModels(t *testing.T) {
 				expectedError := thisTestCase.expectedError
 				t.Logf("testing %q", description)
 
-				setResult := gnmi.GetTargetPathWithValue(simulator.Name(), path, value, valueType)
-				msg, _, err := gnmi.SetGNMIValue(gnmi.MakeContext(), gnmiClient, setResult, gnmi.NoPaths, gnmi.NoExtensions)
+				setResult := gnmiutils.GetTargetPathWithValue(simulator.Name(), path, value, valueType)
+				msg, _, err := gnmiutils.SetGNMIValue(gnmiutils.MakeContext(), gnmiClient, setResult, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 				assert.NotNil(t, err, "Set operation for %s does not generate an error", description)
 				assert.Contains(t, status.Convert(err).Message(), expectedError,
 					"set operation for %s generates wrong error %s", description, msg)

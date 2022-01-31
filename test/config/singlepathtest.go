@@ -16,13 +16,8 @@ package config
 
 import (
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
-
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 )
 
@@ -34,29 +29,23 @@ const (
 // TestSinglePath tests query/set/delete of a single GNMI path to a single device
 func (s *TestSuite) TestSinglePath(t *testing.T) {
 	// Create a simulated device
-	simulator := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, simulator)
+	simulator := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmi.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
 
-	devicePath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 
 	// Set a value using gNMI client
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmi.NoPaths, gnmi.NoExtensions)
-
-	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
-	assert.NoError(t, err)
+	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, devicePath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the value was set correctly
-	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(t, gnmiClient, devicePath, tzValue, 0, "Query after set returned the wrong value")
 
 	// Remove the path we added
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, devicePath, gnmi.NoExtensions)
-
-	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
-	assert.NoError(t, err)
+	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, gnmiutils.NoPaths, devicePath, gnmiutils.SyncExtension(t))
 
 	//  Make sure it got removed
-	gnmi.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+	gnmiutils.CheckGNMIValue(t, gnmiClient, devicePath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 }
