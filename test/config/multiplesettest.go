@@ -15,15 +15,11 @@
 package config
 
 import (
-	"testing"
-	"time"
-
 	"github.com/Pallinder/go-randomdata"
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func generateTimezoneName() string {
@@ -50,20 +46,14 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 
 		// Set a value using gNMI client
 		targetPath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, msValue, proto.StringVal)
-		transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
+		transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmi.NoPaths, gnmi.SyncExtension(t))
 		assert.NotNil(t, transactionID, transactionIndex)
-
-		err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
-		assert.NoError(t, err)
 
 		// Check that the value was set correctly
 		gnmi.CheckGNMIValue(t, gnmiClient, targetPath, msValue, 0, "Query after set returned the wrong value")
 
 		// Remove the path we added
-		gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, targetPath, gnmi.NoExtensions)
-
-		err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
-		assert.NoError(t, err)
+		gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, targetPath, gnmi.SyncExtension(t))
 
 		//  Make sure it got removed
 		gnmi.CheckGNMIValue(t, gnmiClient, targetPath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")

@@ -72,12 +72,7 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	// Create a change that can be rolled back
 	targetPathsForSet := gnmi.GetTargetPathsWithValues(targets, paths, values)
-	_, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
-
-	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
-	assert.NoError(t, err)
-	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target2.Name()), time.Minute)
-	assert.NoError(t, err)
+	_, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.SyncExtension(t))
 
 	// Check that the values were set correctly
 	expectedValues := []string{value1, value2}

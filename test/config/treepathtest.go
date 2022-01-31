@@ -15,13 +15,9 @@
 package config
 
 import (
-	"testing"
-	"time"
-
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
-	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 const (
@@ -55,10 +51,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 		{TargetName: simulator.Name(), Path: newRootDescriptionPath, PathDataValue: newDescription, PathDataType: proto.StringVal},
 		{TargetName: simulator.Name(), Path: newRootEnabledPath, PathDataValue: "false", PathDataType: proto.BoolVal},
 	}
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, setPath, gnmi.NoPaths, gnmi.NoExtensions)
-
-	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
-	assert.NoError(t, err)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, setPath, gnmi.NoPaths, gnmi.SyncExtension(t))
 
 	// Check that the name value was set correctly
 	gnmi.CheckGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "Query name after set returned the wrong value")
@@ -67,10 +60,7 @@ func (s *TestSuite) TestTreePath(t *testing.T) {
 	gnmi.CheckGNMIValue(t, gnmiClient, getPath, "false", 0, "Query enabled after set returned the wrong value")
 
 	// Remove the root path we added
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, getPath, gnmi.NoExtensions)
-
-	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(simulator.Name()), time.Minute)
-	assert.NoError(t, err)
+	gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, getPath, gnmi.SyncExtension(t))
 
 	//  Make sure child got removed
 	gnmi.CheckGNMIValue(t, gnmiClient, setNamePath, newRootName, 0, "New child was not removed")

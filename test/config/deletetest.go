@@ -54,10 +54,7 @@ func (s *TestSuite) TestDeleteAndRollback(t *testing.T) {
 
 	// Set values
 	var targetPathsForSet = gnmi.GetTargetPathsWithValues(targets, newPaths, newValues)
-	_, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.NoExtensions)
-
-	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
-	assert.NoError(t, err)
+	_, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPathsForSet, gnmi.NoPaths, gnmi.SyncExtension(t))
 
 	targetPathsForGet := gnmi.GetTargetPaths(targets, newPaths)
 

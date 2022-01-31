@@ -314,6 +314,25 @@ var NoPaths = make([]protoutils.TargetPath, 0)
 // NoExtensions can be used on a request that does not need extension values
 var NoExtensions = make([]*gnmi_ext.Extension, 0)
 
+func SyncExtension(t *testing.T) []*gnmi_ext.Extension {
+	return []*gnmi_ext.Extension{TransactionModeExtension(t, true, true)}
+}
+
+// TransactionModeExtension returns a transaction mode extension populated with the specified fields
+func TransactionModeExtension(t *testing.T, sync bool, atomic bool) *gnmi_ext.Extension {
+	ext := v2.TransactionMode{Sync: sync, Atomic: atomic}
+	b, err := ext.Marshal()
+	assert.NoError(t, err)
+	return &gnmi_ext.Extension{
+		Ext: &gnmi_ext.Extension_RegisteredExt{
+			RegisteredExt: &gnmi_ext.RegisteredExtension{
+				Id:  v2.TransactionModeExtensionID,
+				Msg: b,
+			},
+		},
+	}
+}
+
 func convertGetResults(response *gpb.GetResponse) ([]protoutils.TargetPath, []*gnmi_ext.Extension, error) {
 	entryCount := len(response.Notification)
 	result := make([]protoutils.TargetPath, entryCount)

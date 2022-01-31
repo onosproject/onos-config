@@ -45,7 +45,7 @@ func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
 
 	// Set a value using gNMI client - target is up
 	c := gnmi.GetGNMIClientOrFail(t)
-	_, _ = gnmi.SetGNMIValueOrFail(t, c, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
+	_, _ = gnmi.SetGNMIValueOrFail(t, c, targetPath, gnmi.NoPaths, gnmi.SyncExtension(t))
 
 	// Check that the value was set correctly
 	gnmi.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue1, 0, "Query after set returned the wrong value")
