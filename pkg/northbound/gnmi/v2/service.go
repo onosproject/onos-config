@@ -82,9 +82,16 @@ func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) 
 	plugins := s.pluginRegistry.GetPlugins()
 
 	supportedModels := make([]*gnmi.ModelData, 0)
+	uniqueModels := make(map[string]*gnmi.ModelData)
 	for _, plugin := range plugins {
 		capabilities := plugin.Capabilities(ctx)
-		supportedModels = append(supportedModels, capabilities.SupportedModels...)
+		for _, model := range capabilities.SupportedModels {
+			modelKey := model.Name + "!" + model.Version
+			if uniqueModels[modelKey] == nil {
+				supportedModels = append(supportedModels, model)
+				uniqueModels[modelKey] = model
+			}
+		}
 	}
 
 	v, _ := getGNMIServiceVersion()
