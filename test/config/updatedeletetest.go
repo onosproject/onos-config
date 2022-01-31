@@ -21,7 +21,7 @@ import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 )
 
@@ -37,31 +37,31 @@ const (
 // TestUpdateDelete tests update and delete paths in a single GNMI request
 func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	// Get the first configured target from the environment.
-	target := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, target)
+	target := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, target)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmi.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
 
 	// Create interface tree using gNMI client
 	setNamePath := []proto.TargetPath{
 		{TargetName: target.Name(), Path: udtestNamePath, PathDataValue: udtestNameValue, PathDataType: proto.StringVal},
 	}
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
+	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
-	err := gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target.Name()), time.Minute)
+	err := gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target.Name()), time.Minute)
 	assert.NoError(t, err)
 
-	gnmi.CheckGNMIValue(t, gnmiClient, setNamePath, udtestNameValue, 0, "Query name after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(t, gnmiClient, setNamePath, udtestNameValue, 0, "Query name after set returned the wrong value")
 
 	// Set initial values for Enabled and Description using gNMI client
 	setInitialValuesPath := []proto.TargetPath{
 		{TargetName: target.Name(), Path: udtestEnabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
 		{TargetName: target.Name(), Path: udtestDescriptionPath, PathDataValue: udtestDescriptionValue, PathDataType: proto.StringVal},
 	}
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, gnmi.NoPaths, gnmi.NoExtensions)
+	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, setInitialValuesPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
-	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target.Name()), time.Minute)
+	err = gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target.Name()), time.Minute)
 	assert.NoError(t, err)
 
 	// Update Enabled, delete Description using gNMI client
@@ -71,13 +71,13 @@ func (s *TestSuite) TestUpdateDelete(t *testing.T) {
 	deleteDescriptionPath := []proto.TargetPath{
 		{TargetName: target.Name(), Path: udtestDescriptionPath},
 	}
-	gnmi.SetGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, gnmi.NoExtensions)
+	gnmiutils.SetGNMIValueOrFail(t, gnmiClient, updateEnabledPath, deleteDescriptionPath, gnmiutils.NoExtensions)
 
-	err = gnmi.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target.Name()), time.Minute)
+	err = gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target.Name()), time.Minute)
 	assert.NoError(t, err)
 	// Check that the Enabled value is set correctly
-	gnmi.CheckGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(t, gnmiClient, updateEnabledPath, "false", 0, "Query name after set returned the wrong value")
 
 	//  Make sure Description got removed
-	gnmi.CheckGNMIValue(t, gnmiClient, gnmi.GetTargetPath(target.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
+	gnmiutils.CheckGNMIValue(t, gnmiClient, gnmiutils.GetTargetPath(target.Name(), udtestDescriptionPath), "", 0, "New child was not removed")
 }

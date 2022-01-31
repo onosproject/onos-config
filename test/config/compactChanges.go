@@ -22,7 +22,7 @@ import (
 
 	"github.com/onosproject/onos-api/go/onos/config/admin"
 	"github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
@@ -58,40 +58,40 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	const domainNameSim2 = "sim2.domain.name"
 
 	// Create 2 simulators
-	simulator1 := gnmi.CreateSimulator(t)
-	simulator2 := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, simulator1)
-	defer gnmi.DeleteSimulator(t, simulator2)
+	simulator1 := gnmiutils.CreateSimulator(t)
+	simulator2 := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, simulator1)
+	defer gnmiutils.DeleteSimulator(t, simulator2)
 
-	gnmi.WaitForTargetAvailable(t, topo.ID(simulator1.Name()), 2*time.Minute)
-	gnmi.WaitForTargetAvailable(t, topo.ID(simulator2.Name()), 2*time.Minute)
+	gnmiutils.WaitForTargetAvailable(t, topo.ID(simulator1.Name()), 2*time.Minute)
+	gnmiutils.WaitForTargetAvailable(t, topo.ID(simulator2.Name()), 2*time.Minute)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmi.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
 
 	// Set a value using gNMI client
-	sim1Path1 := gnmi.GetTargetPathWithValue(simulator1.Name(), tzPath, tzValue, proto.StringVal)
-	sim1nwTransactionID1, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path1, gnmi.NoPaths, gnmi.NoExtensions)
+	sim1Path1 := gnmiutils.GetTargetPathWithValue(simulator1.Name(), tzPath, tzValue, proto.StringVal)
+	sim1nwTransactionID1, _ := gnmiutils.SetGNMIValueOrFail(t, gnmiClient, sim1Path1, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
-	sim1Path2 := gnmi.GetTargetPathWithValue(simulator1.Name(), motdPath, motdValue1, proto.StringVal)
-	sim1nwTransactionID2, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, sim1Path2, gnmi.NoPaths, gnmi.NoExtensions)
+	sim1Path2 := gnmiutils.GetTargetPathWithValue(simulator1.Name(), motdPath, motdValue1, proto.StringVal)
+	sim1nwTransactionID2, _ := gnmiutils.SetGNMIValueOrFail(t, gnmiClient, sim1Path2, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	// Make a triple path change to Sim2
-	sim2Path1 := gnmi.GetTargetPathWithValue(simulator2.Name(), tzPath, tzParis, proto.StringVal)
-	sim2Path2 := gnmi.GetTargetPathWithValue(simulator2.Name(), motdPath, motdValue2, proto.StringVal)
-	sim2Path3 := gnmi.GetTargetPathWithValue(simulator2.Name(), domainNamePath, domainNameSim2, proto.StringVal)
+	sim2Path1 := gnmiutils.GetTargetPathWithValue(simulator2.Name(), tzPath, tzParis, proto.StringVal)
+	sim2Path2 := gnmiutils.GetTargetPathWithValue(simulator2.Name(), motdPath, motdValue2, proto.StringVal)
+	sim2Path3 := gnmiutils.GetTargetPathWithValue(simulator2.Name(), domainNamePath, domainNameSim2, proto.StringVal)
 
-	sim2nwTransactionID2, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	sim2nwTransactionID2, _ := gnmiutils.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim2Path1[0], sim2Path2[0], sim2Path3[0]}, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	// Finally make a change to both devices
-	sim1Path3 := gnmi.GetTargetPathWithValue(simulator1.Name(), loginBnrPath, loginBnr1, proto.StringVal)
-	sim2Path4 := gnmi.GetTargetPathWithValue(simulator2.Name(), loginBnrPath, loginBnr2, proto.StringVal)
-	bothSimNwTransactionID, _ := gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path3[0], sim2Path4[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	sim1Path3 := gnmiutils.GetTargetPathWithValue(simulator1.Name(), loginBnrPath, loginBnr1, proto.StringVal)
+	sim2Path4 := gnmiutils.GetTargetPathWithValue(simulator2.Name(), loginBnrPath, loginBnr2, proto.StringVal)
+	bothSimNwTransactionID, _ := gnmiutils.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path3[0], sim2Path4[0]}, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	t.Logf("Testing CompactChanges - nw changes %s, %s on %s AND %s on %s AND %s on both",
 		sim1nwTransactionID1, sim1nwTransactionID2, simulator1.Name(), sim2nwTransactionID2, simulator2.Name(), bothSimNwTransactionID)
 
-	adminClient, err := gnmi.NewAdminServiceClient()
+	adminClient, err := gnmiutils.NewAdminServiceClient()
 	assert.NoError(t, err)
 
 	// Now try compacting changes
@@ -161,12 +161,12 @@ func (s *TestSuite) TestCompactChanges(t *testing.T) {
 	}
 
 	// Set a value using gNMI client
-	sim1Path4 := gnmi.GetTargetPathWithValue(simulator1.Name(), tzPath, tzMilan, proto.StringVal)
-	sim1Path5 := gnmi.GetTargetPathWithValue(simulator1.Name(), domainNamePath, domainNameSim1, proto.StringVal)
-	_, _ = gnmi.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path4[0], sim1Path5[0]}, gnmi.NoPaths, gnmi.NoExtensions)
+	sim1Path4 := gnmiutils.GetTargetPathWithValue(simulator1.Name(), tzPath, tzMilan, proto.StringVal)
+	sim1Path5 := gnmiutils.GetTargetPathWithValue(simulator1.Name(), domainNamePath, domainNameSim1, proto.StringVal)
+	_, _ = gnmiutils.SetGNMIValueOrFail(t, gnmiClient, []proto.TargetPath{sim1Path4[0], sim1Path5[0]}, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	// Now check every value for both sim1 and sim2
-	expectedValues, _, err := gnmi.GetGNMIValue(gnmi.MakeContext(), gnmiClient,
+	expectedValues, _, err := gnmiutils.GetGNMIValue(gnmiutils.MakeContext(), gnmiClient,
 		[]proto.TargetPath{
 			sim1Path4[0], sim1Path2[0], sim1Path3[0], sim1Path5[0],
 			sim2Path1[0], sim2Path2[0], sim2Path3[0], sim2Path4[0],

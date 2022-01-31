@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,47 +33,47 @@ const (
 
 // TestCreatedRemovedTarget tests set/query of a single GNMI path to a single target that is created, removed, then created again
 func (s *TestSuite) TestCreatedRemovedTarget(t *testing.T) {
-	simulator := gnmi.CreateSimulatorWithName(t, createRemoveTargetModTargetName, true)
+	simulator := gnmiutils.CreateSimulatorWithName(t, createRemoveTargetModTargetName, true)
 	assert.NotNil(t, simulator)
-	defer gnmi.DeleteSimulator(t, simulator)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Wait for config to connect to the target
-	ready := gnmi.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 1*time.Minute)
+	ready := gnmiutils.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 1*time.Minute)
 	assert.True(t, ready)
 
-	targetPath := gnmi.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
+	targetPath := gnmiutils.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue1, proto.StringVal)
 
 	// Set a value using gNMI client - target is up
-	c := gnmi.GetGNMIClientOrFail(t)
-	_, _ = gnmi.SetGNMIValueOrFail(t, c, targetPath, gnmi.NoPaths, gnmi.SyncExtension(t))
+	c := gnmiutils.GetGNMIClientOrFail(t)
+	_, _ = gnmiutils.SetGNMIValueOrFail(t, c, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 
 	// Check that the value was set correctly
-	gnmi.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue1, 0, "Query after set returned the wrong value")
+	gnmiutils.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue1, 0, "Query after set returned the wrong value")
 
 	// interrogate the target to check that the value was set properly
-	targetGnmiClient := gnmi.GetTargetGNMIClientOrFail(t, simulator)
-	gnmi.CheckTargetValue(t, targetGnmiClient, targetPath, createRemoveTargetModValue1)
+	targetGnmiClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
+	gnmiutils.CheckTargetValue(t, targetGnmiClient, targetPath, createRemoveTargetModValue1)
 
 	//  Shut down the simulator
-	gnmi.DeleteSimulator(t, simulator)
-	gnmi.WaitForTargetUnavailable(t, createRemoveTargetModTargetName, 1*time.Minute)
+	gnmiutils.DeleteSimulator(t, simulator)
+	gnmiutils.WaitForTargetUnavailable(t, createRemoveTargetModTargetName, 1*time.Minute)
 
 	// Set a value using gNMI client - target is down
-	setPath2 := gnmi.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
-	_, _ = gnmi.SetGNMIValueOrFail(t, c, setPath2, gnmi.NoPaths, gnmi.NoExtensions)
+	setPath2 := gnmiutils.GetTargetPathWithValue(createRemoveTargetModTargetName, createRemoveTargetModPath, createRemoveTargetModValue2, proto.StringVal)
+	_, _ = gnmiutils.SetGNMIValueOrFail(t, c, setPath2, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 	//  Restart simulated target
-	simulator = gnmi.CreateSimulatorWithName(t, createRemoveTargetModTargetName, false)
+	simulator = gnmiutils.CreateSimulatorWithName(t, createRemoveTargetModTargetName, false)
 	assert.NotNil(t, simulator)
 
 	// Wait for config to connect to the target
-	ready = gnmi.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 2*time.Minute)
+	ready = gnmiutils.WaitForTargetAvailable(t, createRemoveTargetModTargetName, 2*time.Minute)
 	assert.True(t, ready)
 
 	// Check that the value was set correctly
-	gnmi.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
+	gnmiutils.CheckGNMIValue(t, c, targetPath, createRemoveTargetModValue2, 0, "Query after set 2 returns wrong value")
 
 	// interrogate the target to check that the value was set properly
-	targetGnmiClient2 := gnmi.GetTargetGNMIClientOrFail(t, simulator)
-	gnmi.CheckTargetValue(t, targetGnmiClient2, targetPath, createRemoveTargetModValue2)
+	targetGnmiClient2 := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
+	gnmiutils.CheckTargetValue(t, targetGnmiClient2, targetPath, createRemoveTargetModValue2)
 }

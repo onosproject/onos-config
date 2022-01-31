@@ -16,7 +16,7 @@ package config
 
 import (
 	"github.com/Pallinder/go-randomdata"
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -34,28 +34,28 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 	generateTimezoneName()
 
 	// Create a simulated device
-	simulator := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, simulator)
+	simulator := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmi.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
 
 	for i := 0; i < 10; i++ {
 
 		msValue := generateTimezoneName()
 
 		// Set a value using gNMI client
-		targetPath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, msValue, proto.StringVal)
-		transactionID, transactionIndex := gnmi.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmi.NoPaths, gnmi.SyncExtension(t))
+		targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, msValue, proto.StringVal)
+		transactionID, transactionIndex := gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 		assert.NotNil(t, transactionID, transactionIndex)
 
 		// Check that the value was set correctly
-		gnmi.CheckGNMIValue(t, gnmiClient, targetPath, msValue, 0, "Query after set returned the wrong value")
+		gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, msValue, 0, "Query after set returned the wrong value")
 
 		// Remove the path we added
-		gnmi.SetGNMIValueOrFail(t, gnmiClient, gnmi.NoPaths, targetPath, gnmi.SyncExtension(t))
+		gnmiutils.SetGNMIValueOrFail(t, gnmiClient, gnmiutils.NoPaths, targetPath, gnmiutils.SyncExtension(t))
 
 		//  Make sure it got removed
-		gnmi.CheckGNMIValue(t, gnmiClient, targetPath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+		gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
 	}
 }

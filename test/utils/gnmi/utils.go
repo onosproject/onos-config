@@ -314,6 +314,7 @@ var NoPaths = make([]protoutils.TargetPath, 0)
 // NoExtensions can be used on a request that does not need extension values
 var NoExtensions = make([]*gnmi_ext.Extension, 0)
 
+// SyncExtension returns list of extensions with just the transaction mode extension set to sync and atomic.
 func SyncExtension(t *testing.T) []*gnmi_ext.Extension {
 	return []*gnmi_ext.Extension{TransactionModeExtension(t, true, true)}
 }
