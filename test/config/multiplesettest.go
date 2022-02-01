@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func generateTimezoneName() string {
@@ -39,9 +40,9 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 
 	// Make a GNMI client to use for requests
 	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
+	targetClient := gnmiutils.GetTargetGNMIClientOrFail(t, simulator)
 
 	for i := 0; i < 10; i++ {
-
 		msValue := generateTimezoneName()
 
 		// Set a value using gNMI client
@@ -49,13 +50,21 @@ func (s *TestSuite) TestMultipleSet(t *testing.T) {
 		transactionID, transactionIndex := gnmiutils.SetGNMIValueOrFail(t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.SyncExtension(t))
 		assert.NotNil(t, transactionID, transactionIndex)
 
-		// Check that the value was set correctly
+		// Check that the value was set correctly, both in onos-config and the target
 		gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, msValue, 0, "Query after set returned the wrong value")
+
+		// FIXME: Allow some time for target to commit the change; this should not be necessary
+		time.Sleep(2 * time.Second)
+		gnmiutils.CheckTargetValue(t, targetClient, targetPath, msValue)
 
 		// Remove the path we added
 		gnmiutils.SetGNMIValueOrFail(t, gnmiClient, gnmiutils.NoPaths, targetPath, gnmiutils.SyncExtension(t))
 
-		//  Make sure it got removed
+		//  Make sure it got removed, both from onos-config and the target
 		gnmiutils.CheckGNMIValue(t, gnmiClient, targetPath, "", 0, "incorrect value found for path /system/clock/config/timezone-name after delete")
+
+		// FIXME: Allow some time for target to commit the change; this should not be necessary
+		time.Sleep(2 * time.Second)
+		gnmiutils.CheckTargetValueDeleted(t, targetClient, targetPath)
 	}
 }
