@@ -18,14 +18,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"time"
+
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-config/pkg/store/configuration"
 
 	"github.com/onosproject/onos-config/pkg/utils/tree"
 
@@ -57,24 +57,63 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		return nil, errors.Status(err).Err()
 	}
 
-	targetInfo := targetInfo{}
 	prefix := req.GetPrefix()
+	targets := make(map[configapi.TargetID]*targetInfo)
+	paths := make(map[*gnmi.Path]*pathInfo)
+
+	// Get configuration for each target and forms targets info map
+	// and process paths in the request and forms a map of paths info
 	for _, path := range req.GetPath() {
-		updates, err := s.getUpdate(ctx, targetInfo, prefix, path, req.GetEncoding(), groups)
-		if err != nil {
-			return nil, errors.Status(err).Err()
+		targetID := configapi.TargetID(path.GetTarget())
+		if targetID == "" {
+			targetID = configapi.TargetID(prefix.Target)
 		}
-		notification := &gnmi.Notification{
-			Timestamp: time.Now().Unix(),
-			Update:    updates,
-			Prefix:    prefix,
+		if _, ok := targets[targetID]; !ok {
+			modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
+			if err != nil {
+				log.Warn(err)
+				return nil, errors.Status(err).Err()
+			}
+			targetInfo := &targetInfo{
+				targetID:      targetID,
+				targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
+				targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
+			}
+			targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetID, "", ""))
+			if err != nil {
+				return nil, errors.Status(err).Err()
+			}
+			targetInfo.configuration = targetConfig
+			targets[targetID] = targetInfo
 		}
-
-		notifications = append(notifications, notification)
+		paths[path] = &pathInfo{
+			targetID: targetID,
+		}
 	}
-	// Alternatively - if there's only the prefix
-	if len(req.GetPath()) == 0 {
-		updates, err := s.getUpdate(ctx, targetInfo, prefix, nil, req.GetEncoding(), groups)
+
+	// if there's only the prefix
+	if len(paths) == 0 && prefix != nil {
+		targetID := configapi.TargetID(prefix.Target)
+		if _, ok := targets[targetID]; !ok {
+			modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
+			if err != nil {
+				log.Warn(err)
+				return nil, errors.Status(err).Err()
+			}
+			targetInfo := &targetInfo{
+				targetID:      targetID,
+				targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
+				targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
+			}
+			targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID, "", ""))
+			if err != nil {
+				return nil, errors.Status(err).Err()
+			}
+			targetInfo.configuration = targetConfig
+			targets[targetID] = targetInfo
+		}
+
+		updates, err := s.getUpdate(ctx, targets[targetID], prefix, nil, req.GetEncoding(), groups)
 		if err != nil {
 			return nil, errors.Status(err).Err()
 		}
@@ -83,8 +122,23 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			Update:    updates,
 			Prefix:    prefix,
 		}
-
 		notifications = append(notifications, notification)
+
+	}
+
+	for path, pathInfo := range paths {
+		if targetInfo, ok := targets[pathInfo.targetID]; ok {
+			updates, err := s.getUpdate(ctx, targetInfo, prefix, path, req.GetEncoding(), groups)
+			if err != nil {
+				return nil, errors.Status(err).Err()
+			}
+			notification := &gnmi.Notification{
+				Timestamp: time.Now().Unix(),
+				Update:    updates,
+				Prefix:    prefix,
+			}
+			notifications = append(notifications, notification)
+		}
 	}
 
 	response := gnmi.GetResponse{
@@ -94,18 +148,10 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 }
 
 // getUpdate utility method for getting an Update for a given path
-func (s *Server) getUpdate(ctx context.Context, targetInfo targetInfo, prefix *gnmi.Path, path *gnmi.Path,
+func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *gnmi.Path, path *gnmi.Path,
 	encoding gnmi.Encoding, groups []string) ([]*gnmi.Update, error) {
 	if (path == nil || path.Target == "") && (prefix == nil || prefix.Target == "") {
 		return nil, errors.NewInvalid("invalid request - Path %s has no target", utils.StrPath(path))
-	}
-
-	// If a target exists on the path, use it. If not use target of Prefix
-	targetID := configapi.TargetID(path.GetTarget())
-	if targetID == "" {
-		targetInfo.targetID = configapi.TargetID(prefix.Target)
-	} else {
-		targetInfo.targetID = targetID
 	}
 
 	pathAsString := utils.StrPath(path)
@@ -113,12 +159,7 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo targetInfo, prefix *g
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
 	pathAsString = strings.TrimSuffix(pathAsString, "/")
-
-	// TODO: Add target type and version to configuration ID
-	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID, "", ""))
-	if err != nil {
-		return nil, err
-	}
+	targetConfig := targetInfo.configuration
 
 	var configValues []*configapi.PathValue
 	for _, configValue := range targetConfig.Values {
@@ -128,6 +169,7 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo targetInfo, prefix *g
 	}
 
 	var configValuesAllowed []*configapi.PathValue
+	var err error
 	// Filter config values using open policy agent
 	if len(os.Getenv(OIDCServerURL)) > 0 {
 		configValuesAllowed, err = s.checkOpaAllowed(ctx, targetInfo, configValues, groups)
@@ -139,23 +181,20 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo targetInfo, prefix *g
 		copy(configValuesAllowed, configValues)
 	}
 
-	return createUpdate(prefix, path, configValuesAllowed, encoding)
-}
-
-func filterTargetForURL(target string) string {
-	re := regexp.MustCompile(`[.-]`)
-	return re.ReplaceAllString(target, "_")
-}
-
-func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo targetInfo, configValues []*configapi.PathValue, groups []string) ([]*configapi.PathValue, error) {
-	modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetInfo.targetID))
-	if err != nil {
-		log.Warn(err)
-		return nil, err
+	filteredValues := make([]*configapi.PathValue, 0)
+	pathRegexp := utils.MatchWildcardRegexp(pathAsString, false)
+	for _, cv := range configValuesAllowed {
+		if pathRegexp.MatchString(cv.Path) {
+			filteredValues = append(filteredValues, cv)
+		}
 	}
 
-	targetVersion := filterTargetForURL(modelPlugin.GetInfo().Info.Version)
-	targetType := filterTargetForURL(modelPlugin.GetInfo().Info.Name)
+	return createUpdate(prefix, path, filteredValues, encoding)
+}
+
+func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo *targetInfo, configValues []*configapi.PathValue, groups []string) ([]*configapi.PathValue, error) {
+	targetVersion := filterTargetForURL(string(targetInfo.targetVersion))
+	targetType := filterTargetForURL(string(targetInfo.targetType))
 
 	jsonTree, err := tree.BuildTree(configValues, true)
 	if err != nil {
@@ -191,5 +230,10 @@ func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo targetInfo, con
 	}
 
 	log.Debugf("body text of response from OPA:\n%s", bodyText)
+	modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetInfo.targetID))
+	if err != nil {
+		log.Warn(err)
+		return nil, err
+	}
 	return modelPlugin.GetPathValues(ctx, "", []byte(bodyText))
 }

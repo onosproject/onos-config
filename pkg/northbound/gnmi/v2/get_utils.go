@@ -16,6 +16,7 @@ package gnmi
 
 import (
 	"fmt"
+	"regexp"
 
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 
@@ -84,5 +85,9 @@ func createUpdate(prefix *gnmi.Path, path *gnmi.Path, configValues []*configapi.
 	default:
 		return nil, fmt.Errorf("unsupported encoding %v", encoding)
 	}
+}
 
+func filterTargetForURL(target string) string {
+	re := regexp.MustCompile(`[.-]`)
+	return re.ReplaceAllString(target, "_")
 }
