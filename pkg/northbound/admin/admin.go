@@ -38,11 +38,11 @@ type Service struct {
 	northbound.Service
 	transactionsStore   transaction.Store
 	configurationsStore configuration.Store
-	pluginRegistry      *pluginregistry.PluginRegistry
+	pluginRegistry      pluginregistry.PluginRegistry
 }
 
 // NewService allocates a Service struct with the given parameters
-func NewService(transactionsStore transaction.Store, configurationsStore configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) Service {
+func NewService(transactionsStore transaction.Store, configurationsStore configuration.Store, pluginRegistry pluginregistry.PluginRegistry) Service {
 	return Service{
 		transactionsStore:   transactionsStore,
 		configurationsStore: configurationsStore,
@@ -65,7 +65,7 @@ func (s Service) Register(r *grpc.Server) {
 type Server struct {
 	transactionsStore   transaction.Store
 	configurationsStore configuration.Store
-	pluginRegistry      *pluginregistry.PluginRegistry
+	pluginRegistry      pluginregistry.PluginRegistry
 }
 
 // ListRegisteredModels lists the registered models..
