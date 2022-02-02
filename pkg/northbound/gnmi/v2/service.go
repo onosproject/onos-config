@@ -16,12 +16,13 @@
 package gnmi
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
-	"fmt"
-	"io/ioutil"
 	"sync"
+
+	"github.com/golang/protobuf/proto"
+	protobuf "github.com/golang/protobuf/protoc-gen-go/descriptor"
+
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 
@@ -30,8 +31,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/store/topo"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"google.golang.org/grpc"
@@ -94,34 +93,29 @@ func (s *Server) Capabilities(ctx context.Context, req *gnmi.CapabilityRequest) 
 		}
 	}
 
-	v, _ := getGNMIServiceVersion()
+	v, err := getGNMIServiceVersion()
+	if err != nil {
+		return nil, errors.Status(err).Err()
+	}
 	return &gnmi.CapabilityResponse{
 		SupportedModels:    supportedModels,
 		SupportedEncodings: []gnmi.Encoding{gnmi.Encoding_JSON, gnmi.Encoding_JSON_IETF, gnmi.Encoding_PROTO},
-		GNMIVersion:        *v,
+		GNMIVersion:        v,
 	}, nil
 }
 
 // getGNMIServiceVersion returns a pointer to the gNMI service version string.
 // The method is non-trivial because of the way it is defined in the proto file.
-func getGNMIServiceVersion() (*string, error) {
-	gzB, _ := (&gnmi.Update{}).Descriptor()
-	r, err := gzip.NewReader(bytes.NewReader(gzB))
-	if err != nil {
-		return nil, fmt.Errorf("error in initializing gzip reader: %v", err)
+func getGNMIServiceVersion() (string, error) {
+	parentFile := (&gnmi.Update{}).ProtoReflect().Descriptor().ParentFile()
+	options := parentFile.Options()
+	version := ""
+	if fileOptions, ok := options.(*protobuf.FileOptions); ok {
+		ver, err := proto.GetExtension(fileOptions, gnmi.E_GnmiService)
+		if err != nil {
+			return "", errors.NewInvalid(err.Error())
+		}
+		version = *ver.(*string)
 	}
-	defer r.Close()
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("error in reading gzip data: %v", err)
-	}
-	desc := &descriptor.FileDescriptorProto{}
-	if err := proto.Unmarshal(b, desc); err != nil {
-		return nil, fmt.Errorf("error in unmarshaling proto: %v", err)
-	}
-	ver, err := proto.GetExtension(desc.Options, gnmi.E_GnmiService)
-	if err != nil {
-		return nil, fmt.Errorf("error in getting version from proto extension: %v", err)
-	}
-	return ver.(*string), nil
+	return version, nil
 }
