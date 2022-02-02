@@ -27,7 +27,7 @@ import (
 const testEndpoint1 = "testmodel1:5152"
 const testEndpoint2 = "testmodel2:5153"
 
-var pr = NewPluginRegistry(testEndpoint1, testEndpoint2)
+var pr = NewPluginRegistry(testEndpoint1, testEndpoint2).(*pluginRegistry)
 
 type MockModelPluginServiceClient struct {
 	getModelInfoResponse *admin.ModelInfoResponse
@@ -46,7 +46,6 @@ func (MockModelPluginServiceClient) GetPathValues(ctx context.Context, in *admin
 }
 
 func TestLoadPluginInfo(t *testing.T) {
-
 	assert.Equal(t, 0, len(pr.plugins), "Plugins list is not empty at the beginning of the test")
 
 	plugin := &ModelPlugin{

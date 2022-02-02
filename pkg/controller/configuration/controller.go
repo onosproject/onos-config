@@ -44,7 +44,7 @@ const (
 )
 
 // NewController returns a configuration controller
-func NewController(topo topo.Store, conns gnmi.ConnManager, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) *controller.Controller {
+func NewController(topo topo.Store, conns gnmi.ConnManager, configurations configuration.Store, pluginRegistry pluginregistry.PluginRegistry) *controller.Controller {
 	c := controller.NewController("configuration")
 	c.Watch(&Watcher{
 		configurations: configurations,
@@ -66,7 +66,7 @@ type Reconciler struct {
 	conns          gnmi.ConnManager
 	topo           topo.Store
 	configurations configuration.Store
-	pluginRegistry *pluginregistry.PluginRegistry
+	pluginRegistry pluginregistry.PluginRegistry
 }
 
 // Reconcile reconciles target configurations

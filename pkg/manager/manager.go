@@ -57,7 +57,7 @@ type Config struct {
 // Manager single point of entry for the config system.
 type Manager struct {
 	Config         Config
-	pluginRegistry *pluginregistry.PluginRegistry
+	pluginRegistry pluginregistry.PluginRegistry
 }
 
 // NewManager initializes the network config manager subsystem.
@@ -81,8 +81,7 @@ func (m *Manager) Run() {
 
 // Creates gRPC server and registers various services; then serves.
 func (m *Manager) startNorthboundServer(topo topo.Store, transactionsStore transaction.Store,
-	configurationsStore configuration.Store,
-	pluginRegistry *pluginregistry.PluginRegistry) error {
+	configurationsStore configuration.Store, pluginRegistry pluginregistry.PluginRegistry) error {
 	authorization := false
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
 		authorization = true
@@ -143,12 +142,12 @@ func (m *Manager) startMastershipController(topo topo.Store) error {
 	mastershipController := mastershipcontroller.NewController(topo)
 	return mastershipController.Start()
 }
-func (m *Manager) startConfigurationController(topo topo.Store, conns sb.ConnManager, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) error {
+func (m *Manager) startConfigurationController(topo topo.Store, conns sb.ConnManager, configurations configuration.Store, pluginRegistry pluginregistry.PluginRegistry) error {
 	configurationController := configurationcontroller.NewController(topo, conns, configurations, pluginRegistry)
 	return configurationController.Start()
 }
 
-func (m *Manager) startTransactionController(configurations configuration.Store, transactions transaction.Store, pluginRegistry *pluginregistry.PluginRegistry) error {
+func (m *Manager) startTransactionController(configurations configuration.Store, transactions transaction.Store, pluginRegistry pluginregistry.PluginRegistry) error {
 	transactionController := transactioncontroller.NewController(transactions, configurations, pluginRegistry)
 	return transactionController.Start()
 

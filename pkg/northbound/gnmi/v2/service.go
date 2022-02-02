@@ -39,7 +39,7 @@ import (
 // Service implements Service for GNMI
 type Service struct {
 	northbound.Service
-	pluginRegistry *pluginregistry.PluginRegistry
+	pluginRegistry pluginregistry.PluginRegistry
 	topo           topo.Store
 	transactions   transaction.Store
 	configurations configuration.Store
@@ -47,7 +47,7 @@ type Service struct {
 
 // NewService allocates a Service struct with the given parameters
 func NewService(topo topo.Store,
-	transactions transaction.Store, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) Service {
+	transactions transaction.Store, configurations configuration.Store, pluginRegistry pluginregistry.PluginRegistry) Service {
 	return Service{
 		pluginRegistry: pluginRegistry,
 		topo:           topo,
@@ -70,7 +70,7 @@ func (s Service) Register(r *grpc.Server) {
 // Server implements the grpc GNMI service
 type Server struct {
 	mu             sync.RWMutex
-	pluginRegistry *pluginregistry.PluginRegistry
+	pluginRegistry pluginregistry.PluginRegistry
 	topo           topo.Store
 	transactions   transaction.Store
 	configurations configuration.Store

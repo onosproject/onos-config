@@ -39,7 +39,7 @@ const defaultTimeout = 30 * time.Second
 var log = logging.GetLogger("controller", "transaction")
 
 // NewController returns a new control relation  controller
-func NewController(transactions transaction.Store, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) *controller.Controller {
+func NewController(transactions transaction.Store, configurations configuration.Store, pluginRegistry pluginregistry.PluginRegistry) *controller.Controller {
 	c := controller.NewController("transaction")
 
 	c.Watch(&Watcher{
@@ -64,7 +64,7 @@ func NewController(transactions transaction.Store, configurations configuration.
 type Reconciler struct {
 	transactions   transaction.Store
 	configurations configuration.Store
-	pluginRegistry *pluginregistry.PluginRegistry
+	pluginRegistry pluginregistry.PluginRegistry
 }
 
 // Reconcile reconciles transactions
