@@ -69,8 +69,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			targetID = configapi.TargetID(prefix.Target)
 		}
 		if targetID == "" {
-			return nil, errors.NewInvalid("target is not set for path", path.String())
+			return nil, errors.NewInvalid("target is not set")
 		}
+
 		if _, ok := targets[targetID]; !ok {
 			modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
 			if err != nil {
@@ -125,6 +126,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			Update:    updates,
 			Prefix:    prefix,
 		}
+
 		notifications = append(notifications, notification)
 
 	}
