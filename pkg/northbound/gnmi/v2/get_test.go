@@ -16,11 +16,11 @@ package gnmi
 
 import (
 	"context"
-	"fmt"
 	atomixtest "github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	gnmitest "github.com/onosproject/onos-config/pkg/northbound/gnmi/test"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
@@ -31,16 +31,18 @@ import (
 	"testing"
 )
 
-func createServer(t *testing.T) (*Server, *gomock.Controller, *atomixtest.Test) {
+func createServer(t *testing.T) (*Server, *gomock.Controller, *atomixtest.Test, *gnmitest.MockStore, *gnmitest.MockPluginRegistry) {
 	mctl := gomock.NewController(t)
 	test, cfgStore, txStore := testStores(t)
+	registryMock := gnmitest.NewMockPluginRegistry(mctl)
+	topoMock := gnmitest.NewMockStore(mctl)
 	return &Server{
 		mu:             sync.RWMutex{},
-		pluginRegistry: gnmitest.NewMockPluginRegistry(mctl),
-		topo:           gnmitest.NewMockStore(mctl),
+		pluginRegistry: registryMock,
+		topo:           topoMock,
 		transactions:   txStore,
 		configurations: cfgStore,
-	}, mctl, test
+	}, mctl, test, topoMock, registryMock
 }
 
 func testStores(t *testing.T) (*atomixtest.Test, configuration.Store, transaction.Store) {
@@ -66,8 +68,25 @@ func targetPath(t *testing.T, target configapi.TargetID, elms ...string) *gnmi.P
 	return path
 }
 
+func topoEntity(id topoapi.ID, targetType string, targetVersion string) *topoapi.Object {
+	entity := &topoapi.Object{
+		ID:   id,
+		Type: topoapi.Object_ENTITY,
+		Obj: &topoapi.Object_Entity{
+			Entity: &topoapi.Entity{},
+		},
+	}
+	_ = entity.SetAspect(&topoapi.Configurable{
+		Type:    targetType,
+		Address: "",
+		Target:  string(id),
+		Version: targetVersion,
+	})
+	return entity
+}
+
 func Test_GetNoTarget(t *testing.T) {
-	server, mctl, test := createServer(t)
+	server, mctl, test, _, _ := createServer(t)
 	defer test.Stop()
 	defer mctl.Finish()
 
@@ -84,7 +103,7 @@ func Test_GetNoTarget(t *testing.T) {
 }
 
 func Test_GetUnsupportedEncoding(t *testing.T) {
-	server, mctl, test := createServer(t)
+	server, mctl, test, _, _ := createServer(t)
 	defer test.Stop()
 	defer mctl.Finish()
 
@@ -99,9 +118,16 @@ func Test_GetUnsupportedEncoding(t *testing.T) {
 }
 
 func Test_BasicGet(t *testing.T) {
-	server, mctl, test := createServer(t)
+	server, mctl, test, topo, registry := createServer(t)
 	defer test.Stop()
 	defer mctl.Finish()
+
+	id := "target-1"
+	topo.EXPECT().Get(gomock.Any(), gomock.Eq(topoapi.ID(id))).AnyTimes().
+		Return(topoEntity(topoapi.ID(id), "devicesim-1.0.x", "1.0.0"), nil)
+	plugin := gnmitest.NewMockModelPlugin(mctl)
+	plugin.EXPECT().Validate(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	registry.EXPECT().GetPlugin("devicesim", "1.0.0").AnyTimes().Return(plugin, true)
 
 	targetConfigValues := make(map[string]*configapi.PathValue)
 	targetConfigValues["/foo"] = &configapi.PathValue{
@@ -112,7 +138,7 @@ func Test_BasicGet(t *testing.T) {
 		},
 	}
 
-	target := configapi.TargetID("target-1")
+	target := configapi.TargetID(id)
 	targetConfig := &configapi.Configuration{
 		ID:            configapi.ConfigurationID(target),
 		TargetID:      target,
@@ -137,9 +163,16 @@ func Test_BasicGet(t *testing.T) {
 }
 
 func Test_GetWithPrefixOnly(t *testing.T) {
-	server, mctl, test := createServer(t)
+	server, mctl, test, topo, registry := createServer(t)
 	defer test.Stop()
 	defer mctl.Finish()
+
+	id := "target-1"
+	topo.EXPECT().Get(gomock.Any(), gomock.Eq(topoapi.ID(id))).AnyTimes().
+		Return(topoEntity(topoapi.ID(id), "devicesim-1.0.0", "1.0.0"), nil)
+	plugin := gnmitest.NewMockModelPlugin(mctl)
+	plugin.EXPECT().Validate(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	registry.EXPECT().GetPlugin("devicesim", "1.0.0").AnyTimes().Return(plugin, true)
 
 	targetConfigValues := make(map[string]*configapi.PathValue)
 	targetConfigValues["/foo"] = &configapi.PathValue{
@@ -150,7 +183,7 @@ func Test_GetWithPrefixOnly(t *testing.T) {
 		},
 	}
 
-	target := configapi.TargetID("target-1")
+	target := configapi.TargetID(id)
 	targetConfig := &configapi.Configuration{
 		ID:            configapi.ConfigurationID(target),
 		TargetID:      target,
@@ -168,7 +201,6 @@ func Test_GetWithPrefixOnly(t *testing.T) {
 	}
 
 	result, err := server.Get(context.TODO(), &request)
-	fmt.Printf("%+v\n", result)
 	assert.NoError(t, err)
 	assert.Len(t, result.Notification, 1)
 	assert.Len(t, result.Notification[0].Update, 1)

@@ -31,7 +31,7 @@ type targetInfo struct {
 	targetID      configapi.TargetID
 	targetVersion configapi.TargetVersion
 	targetType    configapi.TargetType
-	plugin        *pluginregistry.ModelPlugin
+	plugin        pluginregistry.ModelPlugin
 	updates       configapi.TypedValueMap
 	removes       []string
 }

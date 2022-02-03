@@ -84,7 +84,8 @@ func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.Co
 	// TODO support filters
 
 	plugins := s.pluginRegistry.GetPlugins()
-	for _, p := range plugins {
+	for _, plugin := range plugins {
+		p := plugin.GetInfo()
 		log.Infow("Found plugin",
 			"ID", p.ID,
 			"Name", p.Info.Name,
