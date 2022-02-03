@@ -54,7 +54,7 @@ const (
 	// SimulatorTargetVersion default version for simulated target
 	SimulatorTargetVersion = "1.0.0"
 	// SimulatorTargetType type for simulated target
-	SimulatorTargetType = "devicesim-1.0.x"
+	SimulatorTargetType = "devicesim"
 )
 
 // MakeContext returns a new context for use in GNMI requests
