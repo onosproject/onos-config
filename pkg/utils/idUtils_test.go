@@ -32,14 +32,3 @@ func TestToConfigName(t *testing.T) {
 	assert.Assert(t, strings.Contains(configName, deviceID))
 	assert.Assert(t, strings.Contains(configName, deviceVersion))
 }
-
-// TestToModelName : ToModelName() simple test
-func TestToModelName(t *testing.T) {
-	const (
-		deviceName    = "abc"
-		deviceVersion = "1.2.3"
-	)
-	modelName := ToModelName(deviceName, deviceVersion)
-	assert.Assert(t, strings.Contains(modelName, deviceName))
-	assert.Assert(t, strings.Contains(modelName, deviceVersion))
-}

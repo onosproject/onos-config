@@ -104,9 +104,9 @@ func (m *MockPluginRegistry) EXPECT() *MockPluginRegistryMockRecorder {
 }
 
 // GetPlugin mocks base method.
-func (m *MockPluginRegistry) GetPlugin(id string) (*pluginregistry.ModelPlugin, bool) {
+func (m *MockPluginRegistry) GetPlugin(model v2.TargetType, version v2.TargetVersion) (*pluginregistry.ModelPlugin, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPlugin", id)
+	ret := m.ctrl.Call(m, "GetPlugin", model, version)
 	ret0, _ := ret[0].(*pluginregistry.ModelPlugin)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
