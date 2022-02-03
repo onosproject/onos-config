@@ -112,9 +112,10 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo targetInfo, prefix *g
 	if prefix != nil && prefix.Elem != nil {
 		pathAsString = utils.StrPath(prefix) + pathAsString
 	}
+	pathAsString = strings.TrimSuffix(pathAsString, "/")
 
 	// TODO: Add target type and version to configuration ID
-	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetID, "", ""))
+	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID, "", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -189,6 +190,6 @@ func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo targetInfo, con
 		return nil, nil
 	}
 
-	log.Debugf("body text of respose from OPA:\n%s", bodyText)
+	log.Debugf("body text of response from OPA:\n%s", bodyText)
 	return modelPlugin.GetPathValues(ctx, "", []byte(bodyText))
 }
