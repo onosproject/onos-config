@@ -259,10 +259,9 @@ func (s *Server) getModelPlugin(ctx context.Context, targetID topoapi.ID) (*plug
 		return nil, err
 	}
 
-	modelName := utils.ToModelNameV2(configapi.TargetType(targetConfigurableAspect.Type), configapi.TargetVersion(targetConfigurableAspect.Version))
-	modelPlugin, ok := s.pluginRegistry.GetPlugin(modelName)
+	modelPlugin, ok := s.pluginRegistry.GetPlugin(configapi.TargetType(targetConfigurableAspect.Type), configapi.TargetVersion(targetConfigurableAspect.Version))
 	if !ok {
-		err = errors.NewNotFound("model %s plugin not found", modelName)
+		err = errors.NewNotFound("model %s (v%s) plugin not found", targetConfigurableAspect.Type, targetConfigurableAspect.Version)
 		log.Warn(err)
 		return nil, err
 	}

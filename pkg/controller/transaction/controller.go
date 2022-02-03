@@ -21,8 +21,6 @@ import (
 
 	"github.com/onosproject/onos-config/pkg/utils/tree"
 
-	"github.com/onosproject/onos-config/pkg/utils"
-
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -221,8 +219,7 @@ func (r *Reconciler) reconcileTransactionChangeValidating(ctx context.Context, t
 	// Look through the change targets and validate changes for each target
 	transaction.Status.Targets = make(map[configapi.TargetID]configapi.TargetStatus)
 	for targetID, change := range change.Changes {
-		modelName := utils.ToModelNameV2(change.TargetType, change.TargetVersion)
-		modelPlugin, ok := r.pluginRegistry.GetPlugin(modelName)
+		modelPlugin, ok := r.pluginRegistry.GetPlugin(change.TargetType, change.TargetVersion)
 		if !ok {
 			return controller.Result{}, errors.NewNotFound("model plugin not found")
 		}

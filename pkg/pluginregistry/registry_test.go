@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"strings"
@@ -66,7 +67,9 @@ func TestLoadPluginInfo(t *testing.T) {
 
 func TestGetPlugin(t *testing.T) {
 
-	testID := "testmodel-1.0.0"
+	modelType := configapi.TargetType("testmodel")
+	modelVersion := configapi.TargetVersion("1.0.0")
+	testID := fmt.Sprintf("%s-%s", modelType, modelVersion)
 	p1 := &ModelPlugin{
 		Endpoint: "localhost:5152",
 		ID:       testID,
@@ -79,15 +82,16 @@ func TestGetPlugin(t *testing.T) {
 	pr.plugins[p1.ID] = p1
 	pr.plugins[p2.ID] = p2
 
-	plugin, found := pr.GetPlugin(testID)
+	plugin, found := pr.GetPlugin(modelType, modelVersion)
 	assert.True(t, found, "Plugin not found")
 	assert.NotNil(t, plugin, "Plugin not found")
 
-	n, notFound := pr.GetPlugin("non-existing")
+	n, notFound := pr.GetPlugin(configapi.TargetType("non-existing"), configapi.TargetVersion("1.0.0"))
 	assert.False(t, notFound, "Plugin should not have been found")
 	assert.Nil(t, n)
 
-	plugin, found = pr.GetPlugin("Testmodel-1.0.0")
+	// test that the plugin lookup is case insensitive
+	plugin, found = pr.GetPlugin(configapi.TargetType("Testmodel"), modelVersion)
 	assert.True(t, found, "Plugin not found")
 	assert.NotNil(t, plugin, "Plugin not found")
 }
