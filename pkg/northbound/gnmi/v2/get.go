@@ -69,7 +69,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			targetID = configapi.TargetID(prefix.Target)
 		}
 		if targetID == "" {
-			return nil, errors.NewInvalid("target is not set")
+			return nil, errors.NewInvalid("has no target")
 		}
 
 		if _, ok := targets[targetID]; !ok {
@@ -98,6 +98,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	// if there's only the prefix
 	if len(paths) == 0 && prefix != nil {
 		targetID := configapi.TargetID(prefix.Target)
+		if targetID == "" {
+			return nil, errors.NewInvalid("has no target")
+		}
 		if _, ok := targets[targetID]; !ok {
 			modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
 			if err != nil {
@@ -126,9 +129,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			Update:    updates,
 			Prefix:    prefix,
 		}
-
 		notifications = append(notifications, notification)
-
 	}
 
 	for path, pathInfo := range paths {
