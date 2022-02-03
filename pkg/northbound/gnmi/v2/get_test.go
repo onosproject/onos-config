@@ -16,6 +16,9 @@ package gnmi
 
 import (
 	"context"
+	"sync"
+	"testing"
+
 	atomixtest "github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
@@ -27,8 +30,6 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/stretchr/testify/assert"
-	"sync"
-	"testing"
 )
 
 type testContext struct {

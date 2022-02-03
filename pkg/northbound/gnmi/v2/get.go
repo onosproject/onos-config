@@ -64,9 +64,12 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	// Get configuration for each target and forms targets info map
 	// and process paths in the request and forms a map of paths info
 	for _, path := range req.GetPath() {
-		targetID := configapi.TargetID(path.GetTarget())
-		if targetID == "" {
+		targetID := configapi.TargetID(path.Target)
+		if targetID == "" && prefix != nil {
 			targetID = configapi.TargetID(prefix.Target)
+		}
+		if targetID == "" {
+			return nil, errors.NewInvalid("target is not set for path", path.String())
 		}
 		if _, ok := targets[targetID]; !ok {
 			modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
@@ -79,7 +82,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 				targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
 				targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
 			}
-			targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetID, "", ""))
+			targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID, "", ""))
 			if err != nil {
 				return nil, errors.Status(err).Err()
 			}
