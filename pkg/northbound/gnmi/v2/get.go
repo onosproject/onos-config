@@ -59,7 +59,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	prefix := req.GetPrefix()
 	targets := make(map[configapi.TargetID]*targetInfo)
-	paths := make(map[*gnmi.Path]*pathInfo)
+	paths := []*pathInfo{}
 
 	// Get configuration for each target and forms targets info map
 	// and process paths in the request and forms a map of paths info
@@ -69,57 +69,34 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 			targetID = configapi.TargetID(prefix.Target)
 		}
 		if targetID == "" {
-			return nil, errors.NewInvalid("has no target")
+			return nil, errors.Status(errors.NewInvalid("has no target")).Err()
 		}
 
 		if _, ok := targets[targetID]; !ok {
-			modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
+			err := s.addTarget(ctx, targetID, targets)
 			if err != nil {
 				log.Warn(err)
 				return nil, errors.Status(err).Err()
 			}
-			targetInfo := &targetInfo{
-				targetID:      targetID,
-				targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
-				targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
-			}
-			targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID, "", ""))
-			if err != nil {
-				return nil, errors.Status(err).Err()
-			}
-			targetInfo.configuration = targetConfig
-			targets[targetID] = targetInfo
 		}
-		paths[path] = &pathInfo{
+		paths = append(paths, &pathInfo{
 			targetID: targetID,
-		}
+			path:     path,
+		})
 	}
 
 	// if there's only the prefix
-	if len(paths) == 0 && prefix != nil {
+	if len(req.GetPath()) == 0 && prefix != nil {
 		targetID := configapi.TargetID(prefix.Target)
 		if targetID == "" {
-			return nil, errors.NewInvalid("has no target")
+			return nil, errors.Status(errors.NewInvalid("has no target")).Err()
 		}
 		if _, ok := targets[targetID]; !ok {
-			modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
+			err := s.addTarget(ctx, targetID, targets)
 			if err != nil {
-				log.Warn(err)
-				return nil, errors.Status(err).Err()
+				return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
 			}
-			targetInfo := &targetInfo{
-				targetID:      targetID,
-				targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
-				targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
-			}
-			targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID, "", ""))
-			if err != nil {
-				return nil, errors.Status(err).Err()
-			}
-			targetInfo.configuration = targetConfig
-			targets[targetID] = targetInfo
 		}
-
 		updates, err := s.getUpdate(ctx, targets[targetID], prefix, nil, req.GetEncoding(), groups)
 		if err != nil {
 			return nil, errors.Status(err).Err()
@@ -132,9 +109,9 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		notifications = append(notifications, notification)
 	}
 
-	for path, pathInfo := range paths {
+	for _, pathInfo := range paths {
 		if targetInfo, ok := targets[pathInfo.targetID]; ok {
-			updates, err := s.getUpdate(ctx, targetInfo, prefix, path, req.GetEncoding(), groups)
+			updates, err := s.getUpdate(ctx, targetInfo, prefix, pathInfo.path, req.GetEncoding(), groups)
 			if err != nil {
 				return nil, errors.Status(err).Err()
 			}
@@ -151,6 +128,26 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 		Notification: notifications,
 	}
 	return &response, nil
+}
+
+func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, targets map[configapi.TargetID]*targetInfo) error {
+	modelPlugin, err := s.getModelPlugin(ctx, topoapi.ID(targetID))
+	if err != nil {
+		log.Warn(err)
+		return err
+	}
+	targetInfo := &targetInfo{
+		targetID:      targetID,
+		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
+		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
+	}
+	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID, "", ""))
+	if err != nil {
+		return err
+	}
+	targetInfo.configuration = targetConfig
+	targets[targetID] = targetInfo
+	return nil
 }
 
 // getUpdate utility method for getting an Update for a given path

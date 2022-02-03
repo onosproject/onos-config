@@ -17,6 +17,7 @@ package gnmi
 import (
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
+	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
 type targetInfo struct {
@@ -31,4 +32,5 @@ type targetInfo struct {
 
 type pathInfo struct {
 	targetID configapi.TargetID
+	path     *gnmi.Path
 }
