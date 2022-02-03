@@ -40,6 +40,7 @@ import (
 	"github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/utils"
 	protoutils "github.com/onosproject/onos-config/test/utils/proto"
+	"github.com/onosproject/onos-lib-go/pkg/grpc/retry"
 	gnmiclient "github.com/openconfig/gnmi/client"
 	gclient "github.com/openconfig/gnmi/client/gnmi"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
@@ -508,13 +509,19 @@ func GetOnosConfigDestination() (gnmiclient.Destination, error) {
 // GetGNMIClientWithContextOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
 func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T) gnmiclient.Impl {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	gCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	dest, err := GetOnosConfigDestination()
 	if !assert.NoError(t, err) {
 		t.Fail()
 	}
-	client, err := gclient.New(ctx, dest)
+	opts := make([]grpc.DialOption, 0)
+	opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(dest.TLS)))
+	opts = append(opts, grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()))
+
+	conn, err := grpc.DialContext(gCtx, dest.Addrs[0], opts...)
+	assert.NoError(t, err)
+	client, err := gclient.NewFromConn(gCtx, conn, dest)
 	assert.NoError(t, err)
 	assert.True(t, client != nil, "Fetching target client returned nil")
 	return client
