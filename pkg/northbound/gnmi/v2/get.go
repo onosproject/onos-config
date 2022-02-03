@@ -154,8 +154,8 @@ func (s *Server) checkOpaAllowed(ctx context.Context, targetInfo targetInfo, con
 		return nil, err
 	}
 
-	targetVersion := filterTargetForURL(modelPlugin.Info.Version)
-	targetType := filterTargetForURL(modelPlugin.Info.Name)
+	targetVersion := filterTargetForURL(modelPlugin.GetInfo().Info.Version)
+	targetType := filterTargetForURL(modelPlugin.GetInfo().Info.Name)
 
 	jsonTree, err := tree.BuildTree(configValues, true)
 	if err != nil {

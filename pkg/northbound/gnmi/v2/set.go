@@ -234,8 +234,8 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 
 	target := &targetInfo{
 		targetID:      targetID,
-		targetVersion: configapi.TargetVersion(modelPlugin.Info.Version),
-		targetType:    configapi.TargetType(modelPlugin.Info.Name),
+		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
+		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
 		plugin:        modelPlugin,
 		updates:       make(configapi.TypedValueMap),
 		removes:       make([]string, 0),
@@ -245,7 +245,7 @@ func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.Target
 	return target, nil
 }
 
-func (s *Server) getModelPlugin(ctx context.Context, targetID topoapi.ID) (*pluginregistry.ModelPlugin, error) {
+func (s *Server) getModelPlugin(ctx context.Context, targetID topoapi.ID) (pluginregistry.ModelPlugin, error) {
 	target, err := s.topo.Get(ctx, targetID)
 	if err != nil {
 		log.Warn(err)
@@ -293,7 +293,7 @@ func (s *Server) doUpdateOrReplace(ctx context.Context, prefix *gnmi.Path, u *gn
 			target.updates[cv.Path] = &cv.Value
 		}
 	} else {
-		_, rwPathElem, err := pathutils.FindPathFromModel(path, target.plugin.ReadWritePaths, true)
+		_, rwPathElem, err := pathutils.FindPathFromModel(path, target.plugin.GetInfo().ReadWritePaths, true)
 		if err != nil {
 			return err
 		}
@@ -317,7 +317,7 @@ func (s *Server) doDelete(prefix *gnmi.Path, gnmiPath *gnmi.Path, target *target
 		path = fmt.Sprintf("%s%s", prefixPath, path)
 	}
 	// Checks for read only paths
-	isExactMatch, rwPath, err := pathutils.FindPathFromModel(path, target.plugin.ReadWritePaths, false)
+	isExactMatch, rwPath, err := pathutils.FindPathFromModel(path, target.plugin.GetInfo().ReadWritePaths, false)
 	if err != nil {
 		return err
 	}

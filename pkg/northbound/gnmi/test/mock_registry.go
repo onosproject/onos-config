@@ -14,31 +14,31 @@ import (
 	gnmi "github.com/openconfig/gnmi/proto/gnmi"
 )
 
-// MockModelPluginService is a mock of ModelPluginService interface.
-type MockModelPluginService struct {
+// MockModelPlugin is a mock of ModelPlugin interface.
+type MockModelPlugin struct {
 	ctrl     *gomock.Controller
-	recorder *MockModelPluginServiceMockRecorder
+	recorder *MockModelPluginMockRecorder
 }
 
-// MockModelPluginServiceMockRecorder is the mock recorder for MockModelPluginService.
-type MockModelPluginServiceMockRecorder struct {
-	mock *MockModelPluginService
+// MockModelPluginMockRecorder is the mock recorder for MockModelPlugin.
+type MockModelPluginMockRecorder struct {
+	mock *MockModelPlugin
 }
 
-// NewMockModelPluginService creates a new mock instance.
-func NewMockModelPluginService(ctrl *gomock.Controller) *MockModelPluginService {
-	mock := &MockModelPluginService{ctrl: ctrl}
-	mock.recorder = &MockModelPluginServiceMockRecorder{mock}
+// NewMockModelPlugin creates a new mock instance.
+func NewMockModelPlugin(ctrl *gomock.Controller) *MockModelPlugin {
+	mock := &MockModelPlugin{ctrl: ctrl}
+	mock.recorder = &MockModelPluginMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockModelPluginService) EXPECT() *MockModelPluginServiceMockRecorder {
+func (m *MockModelPlugin) EXPECT() *MockModelPluginMockRecorder {
 	return m.recorder
 }
 
 // Capabilities mocks base method.
-func (m *MockModelPluginService) Capabilities(ctx context.Context) *gnmi.CapabilityResponse {
+func (m *MockModelPlugin) Capabilities(ctx context.Context) *gnmi.CapabilityResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Capabilities", ctx)
 	ret0, _ := ret[0].(*gnmi.CapabilityResponse)
@@ -46,13 +46,27 @@ func (m *MockModelPluginService) Capabilities(ctx context.Context) *gnmi.Capabil
 }
 
 // Capabilities indicates an expected call of Capabilities.
-func (mr *MockModelPluginServiceMockRecorder) Capabilities(ctx interface{}) *gomock.Call {
+func (mr *MockModelPluginMockRecorder) Capabilities(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Capabilities", reflect.TypeOf((*MockModelPluginService)(nil).Capabilities), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Capabilities", reflect.TypeOf((*MockModelPlugin)(nil).Capabilities), ctx)
+}
+
+// GetInfo mocks base method.
+func (m *MockModelPlugin) GetInfo() *pluginregistry.ModelPluginInfo {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInfo")
+	ret0, _ := ret[0].(*pluginregistry.ModelPluginInfo)
+	return ret0
+}
+
+// GetInfo indicates an expected call of GetInfo.
+func (mr *MockModelPluginMockRecorder) GetInfo() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInfo", reflect.TypeOf((*MockModelPlugin)(nil).GetInfo))
 }
 
 // GetPathValues mocks base method.
-func (m *MockModelPluginService) GetPathValues(ctx context.Context, pathPrefix string, jsonData []byte) ([]*v2.PathValue, error) {
+func (m *MockModelPlugin) GetPathValues(ctx context.Context, pathPrefix string, jsonData []byte) ([]*v2.PathValue, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPathValues", ctx, pathPrefix, jsonData)
 	ret0, _ := ret[0].([]*v2.PathValue)
@@ -61,13 +75,13 @@ func (m *MockModelPluginService) GetPathValues(ctx context.Context, pathPrefix s
 }
 
 // GetPathValues indicates an expected call of GetPathValues.
-func (mr *MockModelPluginServiceMockRecorder) GetPathValues(ctx, pathPrefix, jsonData interface{}) *gomock.Call {
+func (mr *MockModelPluginMockRecorder) GetPathValues(ctx, pathPrefix, jsonData interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPathValues", reflect.TypeOf((*MockModelPluginService)(nil).GetPathValues), ctx, pathPrefix, jsonData)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPathValues", reflect.TypeOf((*MockModelPlugin)(nil).GetPathValues), ctx, pathPrefix, jsonData)
 }
 
 // Validate mocks base method.
-func (m *MockModelPluginService) Validate(ctx context.Context, jsonData []byte) error {
+func (m *MockModelPlugin) Validate(ctx context.Context, jsonData []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Validate", ctx, jsonData)
 	ret0, _ := ret[0].(error)
@@ -75,9 +89,9 @@ func (m *MockModelPluginService) Validate(ctx context.Context, jsonData []byte) 
 }
 
 // Validate indicates an expected call of Validate.
-func (mr *MockModelPluginServiceMockRecorder) Validate(ctx, jsonData interface{}) *gomock.Call {
+func (mr *MockModelPluginMockRecorder) Validate(ctx, jsonData interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockModelPluginService)(nil).Validate), ctx, jsonData)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockModelPlugin)(nil).Validate), ctx, jsonData)
 }
 
 // MockPluginRegistry is a mock of PluginRegistry interface.
@@ -104,25 +118,25 @@ func (m *MockPluginRegistry) EXPECT() *MockPluginRegistryMockRecorder {
 }
 
 // GetPlugin mocks base method.
-func (m *MockPluginRegistry) GetPlugin(model v2.TargetType, version v2.TargetVersion) (*pluginregistry.ModelPlugin, bool) {
+func (m *MockPluginRegistry) GetPlugin(model v2.TargetType, version v2.TargetVersion) (pluginregistry.ModelPlugin, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPlugin", model, version)
-	ret0, _ := ret[0].(*pluginregistry.ModelPlugin)
+	ret0, _ := ret[0].(pluginregistry.ModelPlugin)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // GetPlugin indicates an expected call of GetPlugin.
-func (mr *MockPluginRegistryMockRecorder) GetPlugin(id interface{}) *gomock.Call {
+func (mr *MockPluginRegistryMockRecorder) GetPlugin(model, version interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlugin", reflect.TypeOf((*MockPluginRegistry)(nil).GetPlugin), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlugin", reflect.TypeOf((*MockPluginRegistry)(nil).GetPlugin), model, version)
 }
 
 // GetPlugins mocks base method.
-func (m *MockPluginRegistry) GetPlugins() []*pluginregistry.ModelPlugin {
+func (m *MockPluginRegistry) GetPlugins() []pluginregistry.ModelPlugin {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPlugins")
-	ret0, _ := ret[0].([]*pluginregistry.ModelPlugin)
+	ret0, _ := ret[0].([]pluginregistry.ModelPlugin)
 	return ret0
 }
 

@@ -49,7 +49,7 @@ func (MockModelPluginServiceClient) GetPathValues(ctx context.Context, in *admin
 func TestLoadPluginInfo(t *testing.T) {
 	assert.Equal(t, 0, len(pr.plugins), "Plugins list is not empty at the beginning of the test")
 
-	plugin := &ModelPlugin{
+	plugin := &ModelPluginInfo{
 		Endpoint: "localhost:5152",
 	}
 
@@ -66,15 +66,14 @@ func TestLoadPluginInfo(t *testing.T) {
 }
 
 func TestGetPlugin(t *testing.T) {
-
 	modelType := configapi.TargetType("testmodel")
 	modelVersion := configapi.TargetVersion("1.0.0")
 	testID := fmt.Sprintf("%s-%s", modelType, modelVersion)
-	p1 := &ModelPlugin{
+	p1 := &ModelPluginInfo{
 		Endpoint: "localhost:5152",
 		ID:       testID,
 	}
-	p2 := &ModelPlugin{
+	p2 := &ModelPluginInfo{
 		Endpoint: "localhost:5153",
 		ID:       "someID",
 	}
