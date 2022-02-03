@@ -59,7 +59,7 @@ func (s *Server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	prefix := req.GetPrefix()
 	targets := make(map[configapi.TargetID]*targetInfo)
-	paths := []*pathInfo{}
+	var paths []*pathInfo
 
 	// Get configuration for each target and forms targets info map
 	// and process paths in the request and forms a map of paths info
@@ -166,9 +166,7 @@ func (s *Server) getUpdate(ctx context.Context, targetInfo *targetInfo, prefix *
 
 	var configValues []*configapi.PathValue
 	for _, configValue := range targetConfig.Values {
-		if configValue.Path == pathAsString {
-			configValues = append(configValues, configValue)
-		}
+		configValues = append(configValues, configValue)
 	}
 
 	var configValuesAllowed []*configapi.PathValue
