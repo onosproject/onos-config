@@ -15,8 +15,9 @@
 package gnmi
 
 import (
-	"github.com/onosproject/onos-config/pkg/controller/utils"
 	"time"
+
+	"github.com/onosproject/onos-config/pkg/controller/utils"
 
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-lib-go/pkg/uri"
@@ -38,6 +39,8 @@ import (
 func init() {
 	uuid.SetNodeID([]byte(utils.GetOnosConfigID()))
 }
+
+const defaultTimeout = 60 * time.Second
 
 var log = logging.GetLogger("southbound", "gnmi")
 
@@ -64,10 +67,15 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.TLSOptions' aspect to work with onos-config", target.ID)
 	}
 
+	timeout := time.Duration(configurable.Timeout)
+	if timeout == 0 {
+		timeout = defaultTimeout
+	}
+
 	destination := &baseClient.Destination{
 		Addrs:   []string{configurable.Address},
 		Target:  string(target.ID),
-		Timeout: time.Duration(configurable.Timeout),
+		Timeout: timeout,
 	}
 
 	if tlsOptions.Plain {
