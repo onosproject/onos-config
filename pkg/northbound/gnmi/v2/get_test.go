@@ -179,7 +179,7 @@ func Test_GetWithPrefixOnly(t *testing.T) {
 
 	id := "target-1"
 	test.topo.EXPECT().Get(gomock.Any(), gomock.Eq(topoapi.ID(id))).AnyTimes().
-		Return(topoEntity(topoapi.ID(id), "devicesim", "1.0.0"), nil)
+		Return(topoEntity(topoapi.ID(id), "devicesim-1.0.0", "1.0.0"), nil)
 	plugin := gnmitest.NewMockModelPlugin(test.mctl)
 	plugin.EXPECT().Validate(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	test.registry.EXPECT().GetPlugin("devicesim", "1.0.0").AnyTimes().Return(plugin, true)
