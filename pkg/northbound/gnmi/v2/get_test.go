@@ -19,6 +19,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/onosproject/onos-config/pkg/pluginregistry"
+
+	adminapi "github.com/onosproject/onos-api/go/onos/config/admin"
+
 	atomixtest "github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	"github.com/golang/mock/gomock"
@@ -134,10 +138,11 @@ func Test_BasicGet(t *testing.T) {
 
 	id := "target-1"
 	test.topo.EXPECT().Get(gomock.Any(), gomock.Eq(topoapi.ID(id))).AnyTimes().
-		Return(topoEntity(topoapi.ID(id), "devicesim-1.0.x", "1.0.0"), nil)
+		Return(topoEntity(topoapi.ID(id), "devicesim", "1.0.0"), nil)
 	plugin := gnmitest.NewMockModelPlugin(test.mctl)
+	plugin.EXPECT().GetInfo().AnyTimes().Return(&pluginregistry.ModelPluginInfo{Info: adminapi.ModelInfo{Name: "devicesim", Version: "1.0.0"}})
 	plugin.EXPECT().Validate(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
-	test.registry.EXPECT().GetPlugin("devicesim", "1.0.0").AnyTimes().Return(plugin, true)
+	test.registry.EXPECT().GetPlugin(configapi.TargetType("devicesim"), configapi.TargetVersion("1.0.0")).AnyTimes().Return(plugin, true)
 
 	targetConfigValues := make(map[string]*configapi.PathValue)
 	targetConfigValues["/foo"] = &configapi.PathValue{
@@ -179,10 +184,11 @@ func Test_GetWithPrefixOnly(t *testing.T) {
 
 	id := "target-1"
 	test.topo.EXPECT().Get(gomock.Any(), gomock.Eq(topoapi.ID(id))).AnyTimes().
-		Return(topoEntity(topoapi.ID(id), "devicesim-1.0.0", "1.0.0"), nil)
+		Return(topoEntity(topoapi.ID(id), "devicesim", "1.0.0"), nil)
 	plugin := gnmitest.NewMockModelPlugin(test.mctl)
+	plugin.EXPECT().GetInfo().AnyTimes().Return(&pluginregistry.ModelPluginInfo{Info: adminapi.ModelInfo{Name: "devicesim", Version: "1.0.0"}})
 	plugin.EXPECT().Validate(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
-	test.registry.EXPECT().GetPlugin("devicesim", "1.0.0").AnyTimes().Return(plugin, true)
+	test.registry.EXPECT().GetPlugin(configapi.TargetType("devicesim"), configapi.TargetVersion("1.0.0")).AnyTimes().Return(plugin, true)
 
 	targetConfigValues := make(map[string]*configapi.PathValue)
 	targetConfigValues["/foo"] = &configapi.PathValue{
