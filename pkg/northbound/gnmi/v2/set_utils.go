@@ -17,24 +17,11 @@ package gnmi
 import (
 	"github.com/google/uuid"
 	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
-	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/utils"
 	valueutils "github.com/onosproject/onos-config/pkg/utils/values/v2"
 	"github.com/onosproject/onos-lib-go/pkg/uri"
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
-
-type mapTargetUpdates map[configapi.TargetID]configapi.TypedValueMap
-type mapTargetRemoves map[configapi.TargetID][]string
-
-type targetInfo struct {
-	targetID      configapi.TargetID
-	targetVersion configapi.TargetVersion
-	targetType    configapi.TargetType
-	plugin        pluginregistry.ModelPlugin
-	updates       configapi.TypedValueMap
-	removes       []string
-}
 
 func newUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operation) (*gnmi.UpdateResult, error) {
 	path, err := utils.ParseGNMIElements(utils.SplitPath(pathStr))
