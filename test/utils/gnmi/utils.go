@@ -55,6 +55,8 @@ const (
 	SimulatorTargetVersion = "1.0.0"
 	// SimulatorTargetType type for simulated target
 	SimulatorTargetType = "devicesim"
+
+	defaultTimeout = time.Second * 30
 )
 
 // MakeContext returns a new context for use in GNMI requests
@@ -132,11 +134,12 @@ func NewTargetEntity(name string, targetType string, targetVersion string, servi
 		return nil, err
 	}
 
+	timeout := defaultTimeout
 	if err := o.SetAspect(&topo.Configurable{
 		Type:    targetType,
 		Address: serviceAddress,
 		Version: targetVersion,
-		Timeout: uint64(time.Second * 30),
+		Timeout: &timeout,
 	}); err != nil {
 		return nil, err
 	}

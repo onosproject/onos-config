@@ -17,15 +17,17 @@ package topo
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"testing"
+	"time"
+
 	atomix "github.com/atomix/atomix-go-client/pkg/atomix/test"
 	"github.com/atomix/atomix-go-client/pkg/atomix/test/rsm"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	topomgr "github.com/onosproject/onos-topo/pkg/manager"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"os"
-	"testing"
 )
 
 const (
@@ -129,13 +131,14 @@ func Test_Basics(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, o3.ID, topoapi.ID("bar"))
 
+	timeout := time.Second * 20
 	// Update an object with a new aspect
 	err = o3.SetAspect(&topoapi.Configurable{
 		Type:    "app",
 		Address: "nowhere.local",
 		Target:  "bar",
 		Version: "0.1",
-		Timeout: 20,
+		Timeout: &timeout,
 	})
 	assert.NoError(t, err)
 	err = store.Update(context.TODO(), o3)
