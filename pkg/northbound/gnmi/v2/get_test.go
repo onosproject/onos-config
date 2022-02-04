@@ -47,9 +47,9 @@ type testContext struct {
 	topo                    *gnmitest.MockStore
 	registry                *gnmitest.MockPluginRegistry
 	conns                   sb.ConnManager
-	configuration           *configuration.Store
+	configuration           configuration.Store
 	configurationController *controller.Controller
-	transaction             *transaction.Store
+	transaction             transaction.Store
 	transactionController   *controller.Controller
 	server                  *Server
 }
@@ -65,8 +65,8 @@ func createServer(t *testing.T) *testContext {
 		atomix:        atomixTest,
 		topo:          topoMock,
 		registry:      registryMock,
-		configuration: &cfgStore,
-		transaction:   &txStore,
+		configuration: cfgStore,
+		transaction:   txStore,
 		server: &Server{
 			mu:             sync.RWMutex{},
 			pluginRegistry: registryMock,
@@ -131,20 +131,33 @@ func topoEntity(id topoapi.ID, targetType string, targetVersion string) *topoapi
 	return entity
 }
 
-func setupTopoAndRegistry(test *testContext, id string, model string, version string) {
+func setupTopoAndRegistry(test *testContext, id string, model string, version string, noPlugin bool) {
 	plugin := gnmitest.NewMockModelPlugin(test.mctl)
 	rwPaths := path.ReadWritePathMap{}
-	rwPaths["/foo"] = path.ReadWritePathElem{
-		ReadOnlyAttrib: path.ReadOnlyAttrib{
-			ValueType: configapi.ValueType_STRING,
-		},
+	for _, p := range []string{"/foo", "/bar", "/goo"} {
+		rwPaths[p] = path.ReadWritePathElem{
+			ReadOnlyAttrib: path.ReadOnlyAttrib{
+				ValueType: configapi.ValueType_STRING,
+			},
+		}
 	}
 	plugin.EXPECT().GetInfo().AnyTimes().
 		Return(&pluginregistry.ModelPluginInfo{Info: adminapi.ModelInfo{Name: model, Version: version}, ReadWritePaths: rwPaths})
 	plugin.EXPECT().Validate(gomock.Any(), gomock.Any()).AnyTimes().
 		Return(nil)
+
+	pathValues := make([]*configapi.PathValue, 0)
+	pathValues = append(pathValues, &configapi.PathValue{
+		Path:    "/foo",
+		Value:   configapi.TypedValue{Bytes: []byte("Yo!"), Type: configapi.ValueType_STRING, TypeOpts: []int32{}},
+		Deleted: false,
+		Index:   0,
+	})
+	plugin.EXPECT().GetPathValues(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().
+		Return(pathValues, nil)
+
 	test.registry.EXPECT().GetPlugin(configapi.TargetType(model), configapi.TargetVersion(version)).AnyTimes().
-		Return(plugin, true)
+		Return(plugin, !noPlugin)
 	test.topo.EXPECT().Get(gomock.Any(), gomock.Eq(topoapi.ID(id))).AnyTimes().
 		Return(topoEntity(topoapi.ID(id), model, version), nil)
 	test.topo.EXPECT().Watch(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().
@@ -188,7 +201,7 @@ func Test_BasicGet(t *testing.T) {
 	defer test.atomix.Stop()
 	defer test.mctl.Finish()
 
-	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0")
+	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
 
 	targetConfigValues := make(map[string]*configapi.PathValue)
 	targetConfigValues["/foo"] = &configapi.PathValue{
@@ -228,7 +241,7 @@ func Test_GetWithPrefixOnly(t *testing.T) {
 	defer test.atomix.Stop()
 	defer test.mctl.Finish()
 
-	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0")
+	setupTopoAndRegistry(test, "target-1", "devicesim", "1.0.0", false)
 
 	targetConfigValues := make(map[string]*configapi.PathValue)
 	targetConfigValues["/foo"] = &configapi.PathValue{
