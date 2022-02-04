@@ -34,7 +34,7 @@ func (s *TestSuite) TestGetOperationAfterNodeRestart(t *testing.T) {
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for onos-config requests
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(context.Background(), t)
+	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(context.Background(), t, gnmiutils.WithRetry)
 
 	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
 
@@ -64,7 +64,7 @@ func (s *TestSuite) TestSetOperationAfterNodeRestart(t *testing.T) {
 	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for onos-config requests
-	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(context.Background(), t)
+	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(context.Background(), t, gnmiutils.WithRetry)
 
 	targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), restartTzPath, restartTzValue, proto.StringVal)
 

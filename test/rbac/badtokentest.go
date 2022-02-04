@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutuils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-config/test/utils/rbac"
 )
@@ -89,10 +89,10 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 	}
 
 	// Create a simulated target
-	simulator := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, simulator)
+	simulator := gnmiutuils.CreateSimulator(t)
+	defer gnmiutuils.DeleteSimulator(t, simulator)
 
-	devicePath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	devicePath := gnmiutuils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 
 	// Run the test cases
 	for testCaseIndex := range testCases {
@@ -110,10 +110,10 @@ func (s *TestSuite) TestBadTokens(t *testing.T) {
 
 				// Make a GNMI client to use for requests
 				ctx := rbac.GetBearerContext(context.Background(), testCase.token)
-				gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
+				gnmiClient := gnmiutuils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutuils.NoRetry)
 
 				// Try to fetch a value from the GNMI client
-				_, _, err = gnmi.GetGNMIValue(ctx, gnmiClient, devicePath, gpb.Encoding_PROTO)
+				_, _, err = gnmiutuils.GetGNMIValue(ctx, gnmiClient, devicePath, gpb.Encoding_PROTO)
 
 				if testCase.expectedGetError != "" {
 					// An error is expected
