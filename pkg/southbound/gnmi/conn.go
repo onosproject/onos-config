@@ -67,8 +67,8 @@ func newDestination(target *topoapi.Object) (*baseClient.Destination, error) {
 		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.TLSOptions' aspect to work with onos-config", target.ID)
 	}
 
-	timeout := time.Duration(configurable.Timeout)
-	if timeout == 0 {
+	timeout := configurable.Timeout
+	if timeout == nil {
 		timeout = defaultTimeout
 	}
 
