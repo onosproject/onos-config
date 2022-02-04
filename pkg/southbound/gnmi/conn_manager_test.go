@@ -137,11 +137,12 @@ func createTestTarget(t *testing.T, targetID string, insecure bool) *topoapi.Obj
 	err = target.SetAspect(&topoapi.MastershipState{})
 	assert.NoError(t, err)
 
+	timeout := time.Second * 30
 	err = target.SetAspect(&topoapi.Configurable{
 		Type:    targetType,
 		Address: targetAddress,
 		Version: targetVersion,
-		Timeout: uint64(timeout),
+		Timeout: &timeout,
 	})
 	assert.NoError(t, err)
 
