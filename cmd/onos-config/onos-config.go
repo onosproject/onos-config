@@ -63,7 +63,6 @@ func getRootCommand() *cobra.Command {
 	}
 	cmd.Flags().Int("port", 5150, "gRPC port")
 	cmd.Flags().Bool("allowUnvalidatedConfig", false, "allow configuration for devices without a corresponding model plugin")
-	cmd.Flags().Bool("usePluginRegistry", false, "enable model plugin lookup and validation in the new registry")
 	cmd.Flags().String("caPath", "", "path to CA certificate")
 	cmd.Flags().String("keyPath", "", "path to client private key")
 	cmd.Flags().String("certPath", "", "ppath to client certificate")
