@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 )
 
@@ -31,15 +31,15 @@ func (s *TestSuite) TestNoToken(t *testing.T) {
 		tzPath  = "/system/clock/config/timezone-name"
 	)
 	// Create a simulated device
-	simulator := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, simulator)
+	simulator := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	// Make a GNMI client to use for requests
-	gnmiClient := gnmi.GetGNMIClientOrFail(t)
+	gnmiClient := gnmiutils.GetGNMIClientOrFail(t)
 
 	// Try to fetch a value from the GNMI client
-	devicePath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
-	_, _, err := gnmi.GetGNMIValue(context.Background(), gnmiClient, devicePath, gpb.Encoding_PROTO)
+	devicePath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+	_, _, err := gnmiutils.GetGNMIValue(context.Background(), gnmiClient, devicePath, gpb.Encoding_PROTO)
 
 	// An error indicating an unauthenticated request is expected
 	assert.Error(t, err)

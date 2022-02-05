@@ -59,6 +59,17 @@ const (
 	defaultTimeout = time.Second * 30
 )
 
+// RetryOption specifies if a client should retry request errors
+type RetryOption int
+
+const (
+	// NoRetry do not attempt to retry
+	NoRetry RetryOption = iota
+
+	// WithRetry adds a retry option to the client
+	WithRetry
+)
+
 // MakeContext returns a new context for use in GNMI requests
 func MakeContext() context.Context {
 	ctx := context.Background()
@@ -510,7 +521,7 @@ func GetOnosConfigDestination() (gnmiclient.Destination, error) {
 }
 
 // GetGNMIClientWithContextOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
-func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T) gnmiclient.Impl {
+func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T, retryOption RetryOption) gnmiclient.Impl {
 	t.Helper()
 	gCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -520,7 +531,9 @@ func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T) gnmiclien
 	}
 	opts := make([]grpc.DialOption, 0)
 	opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(dest.TLS)))
-	opts = append(opts, grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()))
+	if retryOption == WithRetry {
+		opts = append(opts, grpc.WithUnaryInterceptor(retry.RetryingUnaryClientInterceptor()))
+	}
 
 	conn, err := grpc.DialContext(gCtx, dest.Addrs[0], opts...)
 	assert.NoError(t, err)
@@ -533,7 +546,7 @@ func GetGNMIClientWithContextOrFail(ctx context.Context, t *testing.T) gnmiclien
 // GetGNMIClientOrFail makes a GNMI client to use for requests. If creating the client fails, the test is failed.
 func GetGNMIClientOrFail(t *testing.T) gnmiclient.Impl {
 	t.Helper()
-	return GetGNMIClientWithContextOrFail(context.Background(), t)
+	return GetGNMIClientWithContextOrFail(context.Background(), t, WithRetry)
 }
 
 // CheckGNMIValueWithContext makes sure a value has been assigned properly by querying the onos-config northbound API

@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 )
 
@@ -56,8 +56,8 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 	}
 
 	// Create a simulated target
-	simulator := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, simulator)
+	simulator := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	for testCaseIndex := range testCases {
 		testCase := testCases[testCaseIndex]
@@ -70,25 +70,25 @@ func (s *TestSuite) TestSetOperations(t *testing.T) {
 
 				// Make a GNMI client to use for requests
 				ctx := rbac.GetBearerContext(context.Background(), token)
-				gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
+				gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.WithRetry)
 				assert.NotNil(t, gnmiClient)
 
 				// Get path for the test value
-				targetPath := gnmi.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
+				targetPath := gnmiutils.GetTargetPathWithValue(simulator.Name(), tzPath, tzValue, proto.StringVal)
 				assert.NotNil(t, targetPath)
 
 				// Set a value using gNMI client
-				_, _, err = gnmi.SetGNMIValueWithContext(ctx, t, gnmiClient, targetPath, gnmi.NoPaths, gnmi.NoExtensions)
+				_, _, err = gnmiutils.SetGNMIValueWithContext(ctx, t, gnmiClient, targetPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 				if testCase.expectedError != "" {
 					assert.Contains(t, err.Error(), testCase.expectedError)
 					return
 				}
 
 				// Check that the value was set correctly
-				gnmi.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, tzValue, 0, "Query after set returned the wrong value")
+				gnmiutils.CheckGNMIValueWithContext(ctx, t, gnmiClient, targetPath, tzValue, 0, "Query after set returned the wrong value")
 
 				// Remove the path we added
-				gnmi.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, gnmi.NoPaths, targetPath, gnmi.NoExtensions)
+				gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, gnmiutils.NoPaths, targetPath, gnmiutils.NoExtensions)
 			},
 		)
 	}

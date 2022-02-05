@@ -16,7 +16,7 @@ package rbac
 
 import (
 	"context"
-	"github.com/onosproject/onos-config/test/utils/gnmi"
+	gnmiutils "github.com/onosproject/onos-config/test/utils/gnmi"
 	"github.com/onosproject/onos-config/test/utils/proto"
 	"github.com/onosproject/onos-config/test/utils/rbac"
 	gpb "github.com/openconfig/gnmi/proto/gnmi"
@@ -48,7 +48,7 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 
 	// Make a GNMI client to use for requests
 	ctx := rbac.GetBearerContext(context.Background(), token)
-	gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
+	gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.WithRetry)
 
 	var interfaceNames = [...]string{starbucksInterface, acmeInterface, otherInterface}
 
@@ -61,14 +61,14 @@ func setUpInterfaces(t *testing.T, target string, password string) {
 		setNamePath := []proto.TargetPath{
 			{TargetName: target, Path: namePath, PathDataValue: interfaceName, PathDataType: proto.StringVal},
 		}
-		gnmi.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setNamePath, gnmi.NoPaths, gnmi.NoExtensions)
+		gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setNamePath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 
 		// Set initial values for Enabled and Description using gNMI client
 		setInitialValuesPath := []proto.TargetPath{
 			{TargetName: target, Path: enabledPath, PathDataValue: "true", PathDataType: proto.BoolVal},
 			{TargetName: target, Path: descriptionPath, PathDataValue: descriptionLeafValue, PathDataType: proto.StringVal},
 		}
-		gnmi.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setInitialValuesPath, gnmi.NoPaths, gnmi.NoExtensions)
+		gnmiutils.SetGNMIValueWithContextOrFail(ctx, t, gnmiClient, setInitialValuesPath, gnmiutils.NoPaths, gnmiutils.NoExtensions)
 	}
 }
 
@@ -200,8 +200,8 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 	}
 
 	// Create a simulated device
-	simulator := gnmi.CreateSimulator(t)
-	defer gnmi.DeleteSimulator(t, simulator)
+	simulator := gnmiutils.CreateSimulator(t)
+	defer gnmiutils.DeleteSimulator(t, simulator)
 
 	setUpInterfaces(t, simulator.Name(), s.keycloakPassword)
 
@@ -214,7 +214,7 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 
 				// Make a GNMI client to use for requests
 				ctx := rbac.GetBearerContext(context.Background(), token)
-				gnmiClient := gnmi.GetGNMIClientWithContextOrFail(ctx, t)
+				gnmiClient := gnmiutils.GetGNMIClientWithContextOrFail(ctx, t, gnmiutils.WithRetry)
 				assert.NotNil(t, gnmiClient)
 
 				descriptionPath := getLeafPath(testCase.interfaceName, descriptionLeafName)
@@ -225,7 +225,7 @@ func (s *TestSuite) TestGetOperations(t *testing.T) {
 				}
 
 				// Check that the value can be read via get
-				values, _, err := gnmi.GetGNMIValue(ctx, gnmiClient, targetPath, gpb.Encoding_PROTO)
+				values, _, err := gnmiutils.GetGNMIValue(ctx, gnmiClient, targetPath, gpb.Encoding_PROTO)
 				assert.NoError(t, err)
 				value := ""
 				if len(values) != 0 {
