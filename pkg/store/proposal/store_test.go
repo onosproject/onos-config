@@ -55,8 +55,8 @@ func TestProposalStore(t *testing.T) {
 	err = store2.Watch(context.Background(), ch)
 	assert.NoError(t, err)
 
-	target1ConfigValues := make(map[string]configapi.PathValue)
-	target1ConfigValues["/foo"] = configapi.PathValue{
+	target1ConfigValues := make(map[string]*configapi.PathValue)
+	target1ConfigValues["/foo"] = &configapi.PathValue{
 		Value: configapi.TypedValue{
 			Bytes: []byte("Hello world!"),
 			Type:  configapi.ValueType_STRING,
@@ -74,8 +74,8 @@ func TestProposalStore(t *testing.T) {
 		},
 	}
 
-	target2ConfigValues := make(map[string]configapi.PathValue)
-	target2ConfigValues["/foo"] = configapi.PathValue{
+	target2ConfigValues := make(map[string]*configapi.PathValue)
+	target2ConfigValues["/foo"] = &configapi.PathValue{
 		Value: configapi.TypedValue{
 			Bytes: []byte("Hello world again!"),
 			Type:  configapi.ValueType_STRING,

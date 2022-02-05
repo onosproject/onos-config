@@ -60,9 +60,9 @@ func TestTransactionStore(t *testing.T) {
 		ID: "transaction-1",
 		Details: &configapi.Transaction_Change{
 			Change: &configapi.ChangeTransaction{
-				Values: map[configapi.TargetID]configapi.PathValues{
+				Values: map[configapi.TargetID]*configapi.PathValues{
 					target1: {
-						Values: map[string]configapi.PathValue{
+						Values: map[string]*configapi.PathValue{
 							"foo": {
 								Value: configapi.TypedValue{
 									Bytes: []byte("Hello world!"),
@@ -78,7 +78,7 @@ func TestTransactionStore(t *testing.T) {
 						},
 					},
 					target2: {
-						Values: map[string]configapi.PathValue{
+						Values: map[string]*configapi.PathValue{
 							"baz": {
 								Value: configapi.TypedValue{
 									Bytes: []byte("Goodbye world!"),
@@ -96,9 +96,9 @@ func TestTransactionStore(t *testing.T) {
 		ID: "transaction-2",
 		Details: &configapi.Transaction_Change{
 			Change: &configapi.ChangeTransaction{
-				Values: map[configapi.TargetID]configapi.PathValues{
+				Values: map[configapi.TargetID]*configapi.PathValues{
 					target1: {
-						Values: map[string]configapi.PathValue{
+						Values: map[string]*configapi.PathValue{
 							"foo": {
 								Deleted: true,
 							},
@@ -247,9 +247,9 @@ func TestTransactionStore(t *testing.T) {
 		ID: "transaction-3",
 		Details: &configapi.Transaction_Change{
 			Change: &configapi.ChangeTransaction{
-				Values: map[configapi.TargetID]configapi.PathValues{
+				Values: map[configapi.TargetID]*configapi.PathValues{
 					target1: {
-						Values: map[string]configapi.PathValue{
+						Values: map[string]*configapi.PathValue{
 							"foo": {
 								Value: configapi.TypedValue{
 									Bytes: []byte("Hello world!"),
@@ -270,9 +270,9 @@ func TestTransactionStore(t *testing.T) {
 		ID: "transaction-4",
 		Details: &configapi.Transaction_Change{
 			Change: &configapi.ChangeTransaction{
-				Values: map[configapi.TargetID]configapi.PathValues{
+				Values: map[configapi.TargetID]*configapi.PathValues{
 					target2: {
-						Values: map[string]configapi.PathValue{
+						Values: map[string]*configapi.PathValue{
 							"bar": {
 								Value: configapi.TypedValue{
 									Bytes: []byte("Hello world!"),
