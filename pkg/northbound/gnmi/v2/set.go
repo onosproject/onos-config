@@ -122,22 +122,37 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
 	}
-	ch := make(chan configapi.TransactionEvent)
-	err = s.transactions.Watch(ctx, ch, transactionstore.WithReplay(), transactionstore.WithTransactionID(transaction.ID))
+	eventCh := make(chan configapi.TransactionEvent)
+	err = s.transactions.Watch(ctx, eventCh, transactionstore.WithReplay(), transactionstore.WithTransactionID(transaction.ID))
 	if err != nil {
 		return nil, errors.Status(err).Err()
 	}
 
 	isSync := transactionMode != nil && transactionMode.Sync
-	for transactionEvent := range ch {
-		if (!isSync && transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_APPLYING) ||
-			transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_COMPLETE {
-			// Build the responses
+	for transactionEvent := range eventCh {
+		if transactionEvent.Transaction.Status.Phases.Initialize != nil &&
+			transactionEvent.Transaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_FAILED {
+			err := getErrorFromFailure(transactionEvent.Transaction.Status.Phases.Initialize.Failure)
+			log.Errorf("Transaction failed", err)
+			return nil, errors.Status(err).Err()
+		}
+
+		if transactionEvent.Transaction.Status.Phases.Validate != nil &&
+			transactionEvent.Transaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED {
+			err := getErrorFromFailure(transactionEvent.Transaction.Status.Phases.Validate.Failure)
+			log.Errorf("Transaction failed validation", err)
+			return nil, errors.Status(err).Err()
+		}
+
+		if (!isSync && transactionEvent.Transaction.Status.Phases.Commit != nil &&
+			transactionEvent.Transaction.Status.Phases.Commit.State == configapi.TransactionCommitPhase_COMMITTED) ||
+			(isSync && transactionEvent.Transaction.Status.Phases.Apply != nil &&
+				transactionEvent.Transaction.Status.Phases.Apply.State == configapi.TransactionApplyPhase_APPLIED) {
 			updateResults := make([]*gnmi.UpdateResult, 0)
-			for targetID, change := range transaction.GetChange().Changes {
+			for targetID, change := range transaction.GetChange().Values {
 				for path, valueUpdate := range change.Values {
 					var updateResult *gnmi.UpdateResult
-					if valueUpdate.Delete {
+					if valueUpdate.Deleted {
 						updateResult, err = newUpdateResult(path, string(targetID), gnmi.UpdateResult_DELETE)
 						if err != nil {
 							log.Warn(err)
@@ -164,7 +179,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 				return nil, errors.Status(errors.NewInternal(err.Error())).Err()
 			}
 
-			setResponse := &gnmi.SetResponse{
+			response := &gnmi.SetResponse{
 				Response:  updateResults,
 				Timestamp: time.Now().Unix(),
 				Extension: []*gnmi_ext.Extension{
@@ -178,42 +193,46 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 					},
 				},
 			}
-
-			return setResponse, nil
-
-		} else if transactionEvent.Transaction.Status.State == configapi.TransactionState_TRANSACTION_FAILED {
-			description := transactionEvent.Transaction.Status.Failure.Description
-			switch transactionEvent.Transaction.Status.Failure.Type {
-			case configapi.Failure_UNKNOWN:
-				return nil, errors.Status(errors.NewUnknown(description)).Err()
-			case configapi.Failure_CANCELED:
-				return nil, errors.Status(errors.NewCanceled(description)).Err()
-			case configapi.Failure_NOT_FOUND:
-				return nil, errors.Status(errors.NewNotFound(description)).Err()
-			case configapi.Failure_ALREADY_EXISTS:
-				return nil, errors.Status(errors.NewAlreadyExists(description)).Err()
-			case configapi.Failure_UNAUTHORIZED:
-				return nil, errors.Status(errors.NewUnauthorized(description)).Err()
-			case configapi.Failure_FORBIDDEN:
-				return nil, errors.Status(errors.NewForbidden(description)).Err()
-			case configapi.Failure_CONFLICT:
-				return nil, errors.Status(errors.NewConflict(description)).Err()
-			case configapi.Failure_INVALID:
-				return nil, errors.Status(errors.NewInvalid(description)).Err()
-			case configapi.Failure_UNAVAILABLE:
-				return nil, errors.Status(errors.NewUnavailable(description)).Err()
-			case configapi.Failure_NOT_SUPPORTED:
-				return nil, errors.Status(errors.NewNotSupported(description)).Err()
-			case configapi.Failure_TIMEOUT:
-				return nil, errors.Status(errors.NewTimeout(description)).Err()
-			case configapi.Failure_INTERNAL:
-				return nil, errors.Status(errors.NewInternal(description)).Err()
-
-			}
+			log.Debugf("Sending SetResponse %+v", response)
+			return response, nil
 		}
 	}
+	return nil, ctx.Err()
+}
 
-	return nil, nil
+func getErrorFromFailure(failure *configapi.Failure) error {
+	if failure == nil {
+		return errors.NewUnknown("unknown failure occurred")
+	}
+
+	switch failure.Type {
+	case configapi.Failure_UNKNOWN:
+		return errors.NewUnknown(failure.Description)
+	case configapi.Failure_CANCELED:
+		return errors.NewCanceled(failure.Description)
+	case configapi.Failure_NOT_FOUND:
+		return errors.NewNotFound(failure.Description)
+	case configapi.Failure_ALREADY_EXISTS:
+		return errors.NewAlreadyExists(failure.Description)
+	case configapi.Failure_UNAUTHORIZED:
+		return errors.NewUnauthorized(failure.Description)
+	case configapi.Failure_FORBIDDEN:
+		return errors.NewForbidden(failure.Description)
+	case configapi.Failure_CONFLICT:
+		return errors.NewConflict(failure.Description)
+	case configapi.Failure_INVALID:
+		return errors.NewInvalid(failure.Description)
+	case configapi.Failure_UNAVAILABLE:
+		return errors.NewUnavailable(failure.Description)
+	case configapi.Failure_NOT_SUPPORTED:
+		return errors.NewNotSupported(failure.Description)
+	case configapi.Failure_TIMEOUT:
+		return errors.NewTimeout(failure.Description)
+	case configapi.Failure_INTERNAL:
+		return errors.NewInternal(failure.Description)
+	default:
+		return errors.NewUnknown(failure.Description)
+	}
 }
 
 func (s *Server) getTargetInfo(ctx context.Context, targets map[configapi.TargetID]*targetInfo, idPrefix string, id configapi.TargetID) (*targetInfo, error) {
