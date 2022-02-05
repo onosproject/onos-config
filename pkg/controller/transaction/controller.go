@@ -158,11 +158,14 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 					}
 					err = errors.NewNotFound("transaction %d not found", details.Rollback.RollbackIndex)
 					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
-					transaction.Status.Phases.Initialize.Failure = &configapi.Failure{
+					failure := &configapi.Failure{
 						Type:        configapi.Failure_NOT_FOUND,
 						Description: err.Error(),
 					}
+					transaction.Status.State = configapi.TransactionStatus_FAILED
+					transaction.Status.Failure = failure
+					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
+					transaction.Status.Phases.Initialize.Failure = failure
 					transaction.Status.Phases.Initialize.End = getCurrentTimestamp()
 					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
 						return controller.Result{}, err
@@ -204,11 +207,14 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 				case *configapi.Transaction_Rollback:
 					err = errors.NewNotFound("transaction %d is not a valid change", details.Rollback.RollbackIndex)
 					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
-					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
-					transaction.Status.Phases.Initialize.Failure = &configapi.Failure{
+					failure := &configapi.Failure{
 						Type:        configapi.Failure_FORBIDDEN,
 						Description: err.Error(),
 					}
+					transaction.Status.State = configapi.TransactionStatus_FAILED
+					transaction.Status.Failure = failure
+					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
+					transaction.Status.Phases.Initialize.Failure = failure
 					transaction.Status.Phases.Initialize.End = getCurrentTimestamp()
 					if err := r.updateTransactionStatus(ctx, transaction); err != nil {
 						return controller.Result{}, err
@@ -283,11 +289,9 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 							return controller.Result{}, err
 						}
 					} else {
-						// Return if waiting for the previous transaction to commit.
-						if !(prevTransaction.Status.Phases.Initialize != nil && prevTransaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_FAILED) &&
-							!(prevTransaction.Status.Phases.Validate != nil && prevTransaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED) &&
-							!(prevTransaction.Status.Phases.Commit != nil && prevTransaction.Status.Phases.Commit.State == configapi.TransactionCommitPhase_COMMITTED) {
-							log.Infof("Transaction %d waiting for Transaction %d to be committed", transaction.Index, prevTransaction.Index)
+						// Return if waiting for a previous atomic transaction to be validated.
+						if prevTransaction.Atomic && prevTransaction.Status.State < configapi.TransactionStatus_VALIDATED {
+							log.Infof("Transaction %d waiting for Transaction %d to be validated", transaction.Index, prevTransaction.Index)
 							return controller.Result{}, nil
 						}
 					}
@@ -345,6 +349,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 				allValidated = false
 			case configapi.ProposalValidatePhase_FAILED:
 				log.Infof("Transaction %d failed", transaction.Index)
+				transaction.Status.State = configapi.TransactionStatus_FAILED
+				transaction.Status.Failure = proposal.Status.Phases.Validate.Failure
 				transaction.Status.Phases.Validate.State = configapi.TransactionValidatePhase_FAILED
 				transaction.Status.Phases.Validate.Failure = proposal.Status.Phases.Validate.Failure
 				transaction.Status.Phases.Validate.End = getCurrentTimestamp()
@@ -356,7 +362,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 		}
 
 		if allValidated {
-			log.Infof("Transaction %d committed", transaction.Index)
+			log.Infof("Transaction %d validated", transaction.Index)
+			transaction.Status.State = configapi.TransactionStatus_VALIDATED
 			transaction.Status.Phases.Validate.State = configapi.TransactionValidatePhase_VALIDATED
 			transaction.Status.Phases.Validate.End = getCurrentTimestamp()
 			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
@@ -385,10 +392,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 							return controller.Result{}, err
 						}
 					} else {
-						// Return if waiting for the previous transaction to commit.
-						if !(prevTransaction.Status.Phases.Initialize != nil && prevTransaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_FAILED) &&
-							!(prevTransaction.Status.Phases.Validate != nil && prevTransaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED) &&
-							!(prevTransaction.Status.Phases.Commit != nil && prevTransaction.Status.Phases.Commit.State == configapi.TransactionCommitPhase_COMMITTED) {
+						// Return if waiting for a previous atomic transaction to commit.
+						if prevTransaction.Atomic && prevTransaction.Status.State < configapi.TransactionStatus_COMMITTED {
 							log.Infof("Transaction %d waiting for Transaction %d to be committed", transaction.Index, prevTransaction.Index)
 							return controller.Result{}, nil
 						}
@@ -407,9 +412,7 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 		if err := r.updateTransactionStatus(ctx, transaction); err != nil {
 			return controller.Result{}, err
 		}
-		return controller.Result{
-			Requeue: controller.NewID(transaction.Index + 1),
-		}, nil
+		return controller.Result{}, nil
 	default:
 		return controller.Result{}, nil
 	}
@@ -450,6 +453,7 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 
 		if allCommitted {
 			log.Infof("Transaction %d committed", transaction.Index)
+			transaction.Status.State = configapi.TransactionStatus_COMMITTED
 			transaction.Status.Phases.Commit.State = configapi.TransactionCommitPhase_COMMITTED
 			transaction.Status.Phases.Commit.End = getCurrentTimestamp()
 			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
@@ -477,10 +481,8 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 							return controller.Result{}, err
 						}
 					} else {
-						// Return if waiting for the previous transaction to be applied.
-						if !(prevTransaction.Status.Phases.Initialize != nil && prevTransaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_FAILED) &&
-							!(prevTransaction.Status.Phases.Validate != nil && prevTransaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED) &&
-							!(prevTransaction.Status.Phases.Apply != nil && prevTransaction.Status.Phases.Apply.State == configapi.TransactionApplyPhase_APPLIED) {
+						// Return if waiting for a previous atomic transaction to applied.
+						if prevTransaction.Atomic && prevTransaction.Status.State < configapi.TransactionStatus_APPLIED {
 							log.Infof("Transaction %d waiting for Transaction %d to be applied", transaction.Index, prevTransaction.Index)
 							return controller.Result{}, nil
 						}
@@ -499,9 +501,7 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 		if err := r.updateTransactionStatus(ctx, transaction); err != nil {
 			return controller.Result{}, err
 		}
-		return controller.Result{
-			Requeue: controller.NewID(transaction.Index + 1),
-		}, nil
+		return controller.Result{}, nil
 	default:
 		return controller.Result{}, nil
 	}
@@ -542,6 +542,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.
 
 		if allApplied {
 			log.Infof("Transaction %d applied", transaction.Index)
+			transaction.Status.State = configapi.TransactionStatus_APPLIED
 			transaction.Status.Phases.Apply.State = configapi.TransactionApplyPhase_APPLIED
 			transaction.Status.Phases.Apply.End = getCurrentTimestamp()
 			if err := r.updateTransactionStatus(ctx, transaction); err != nil {
@@ -550,10 +551,6 @@ func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.
 			return controller.Result{}, nil
 		}
 		return controller.Result{}, nil
-	case configapi.TransactionApplyPhase_APPLIED:
-		return controller.Result{
-			Requeue: controller.NewID(transaction.Index + 1),
-		}, nil
 	default:
 		return controller.Result{}, nil
 	}

@@ -24,15 +24,14 @@ import (
 
 var log = logging.GetLogger("northbound", "gnmi")
 
-func getSetExtensions(request *gnmi.SetRequest) (*configapi.TransactionMode, error) {
-	var transactionMode *configapi.TransactionMode
+func getSetExtensions(request *gnmi.SetRequest) (configapi.TransactionMode, error) {
+	var transactionMode configapi.TransactionMode
 	for _, ext := range request.GetExtension() {
 		if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
 			regExt.RegisteredExt.Id == configapi.TransactionModeExtensionID {
 			bytes := regExt.RegisteredExt.Msg
-			transactionMode = &configapi.TransactionMode{}
-			if err := proto.Unmarshal(bytes, transactionMode); err != nil {
-				return nil, err
+			if err := proto.Unmarshal(bytes, &transactionMode); err != nil {
+				return transactionMode, err
 			}
 		}
 	}

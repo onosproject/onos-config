@@ -129,27 +129,15 @@ func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequ
 		return nil, errors.Status(err).Err()
 	}
 	for transactionEvent := range eventCh {
-		if transactionEvent.Transaction.Status.Phases.Initialize != nil &&
-			transactionEvent.Transaction.Status.Phases.Initialize.State == v2.TransactionInitializePhase_FAILED {
-			err := getErrorFromFailure(transactionEvent.Transaction.Status.Phases.Initialize.Failure)
-			log.Errorf("Transaction failed", err)
-			return nil, errors.Status(err).Err()
-		}
-
-		if transactionEvent.Transaction.Status.Phases.Validate != nil &&
-			transactionEvent.Transaction.Status.Phases.Validate.State == v2.TransactionValidatePhase_FAILED {
-			err := getErrorFromFailure(transactionEvent.Transaction.Status.Phases.Validate.Failure)
-			log.Errorf("Transaction failed validation", err)
-			return nil, errors.Status(err).Err()
-		}
-
-		// Rollbacks are synchronous by default.
-		// TODO: Add options for sync/async rollback.
-		if transactionEvent.Transaction.Status.Phases.Apply != nil &&
-			transactionEvent.Transaction.Status.Phases.Apply.State == v2.TransactionApplyPhase_APPLIED {
+		switch transactionEvent.Transaction.Status.State {
+		case v2.TransactionStatus_APPLIED:
 			response := &admin.RollbackResponse{ID: t.ID, Index: t.Index}
 			log.Debugf("Sending RollbackResponse %+v", response)
 			return response, nil
+		case v2.TransactionStatus_FAILED:
+			err := getErrorFromFailure(transactionEvent.Transaction.Status.Failure)
+			log.Errorf("Transaction failed", err)
+			return nil, errors.Status(err).Err()
 		}
 	}
 	return nil, ctx.Err()
