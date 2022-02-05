@@ -284,7 +284,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 						}
 					} else {
 						// Return if waiting for the previous transaction to commit.
-						if !(prevTransaction.Status.Phases.Validate != nil && prevTransaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED) &&
+						if !(prevTransaction.Status.Phases.Initialize != nil && prevTransaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_FAILED) &&
+							!(prevTransaction.Status.Phases.Validate != nil && prevTransaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED) &&
 							!(prevTransaction.Status.Phases.Commit != nil && prevTransaction.Status.Phases.Commit.State == configapi.TransactionCommitPhase_COMMITTED) {
 							log.Infof("Transaction %d waiting for Transaction %d to be committed", transaction.Index, prevTransaction.Index)
 							return controller.Result{}, nil
@@ -345,6 +346,7 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 			case configapi.ProposalValidatePhase_FAILED:
 				log.Infof("Transaction %d failed", transaction.Index)
 				transaction.Status.Phases.Validate.State = configapi.TransactionValidatePhase_FAILED
+				transaction.Status.Phases.Validate.Failure = proposal.Status.Phases.Validate.Failure
 				transaction.Status.Phases.Validate.End = getCurrentTimestamp()
 				if err := r.updateTransactionStatus(ctx, transaction); err != nil {
 					return controller.Result{}, err
@@ -384,7 +386,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 						}
 					} else {
 						// Return if waiting for the previous transaction to commit.
-						if !(prevTransaction.Status.Phases.Validate != nil && prevTransaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED) &&
+						if !(prevTransaction.Status.Phases.Initialize != nil && prevTransaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_FAILED) &&
+							!(prevTransaction.Status.Phases.Validate != nil && prevTransaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED) &&
 							!(prevTransaction.Status.Phases.Commit != nil && prevTransaction.Status.Phases.Commit.State == configapi.TransactionCommitPhase_COMMITTED) {
 							log.Infof("Transaction %d waiting for Transaction %d to be committed", transaction.Index, prevTransaction.Index)
 							return controller.Result{}, nil
@@ -475,7 +478,8 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 						}
 					} else {
 						// Return if waiting for the previous transaction to be applied.
-						if !(prevTransaction.Status.Phases.Validate != nil && prevTransaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED) &&
+						if !(prevTransaction.Status.Phases.Initialize != nil && prevTransaction.Status.Phases.Initialize.State == configapi.TransactionInitializePhase_FAILED) &&
+							!(prevTransaction.Status.Phases.Validate != nil && prevTransaction.Status.Phases.Validate.State == configapi.TransactionValidatePhase_FAILED) &&
 							!(prevTransaction.Status.Phases.Apply != nil && prevTransaction.Status.Phases.Apply.State == configapi.TransactionApplyPhase_APPLIED) {
 							log.Infof("Transaction %d waiting for Transaction %d to be applied", transaction.Index, prevTransaction.Index)
 							return controller.Result{}, nil
