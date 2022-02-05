@@ -20,7 +20,9 @@ import (
 	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration"
 	"github.com/onosproject/onos-config/pkg/controller/connection"
 	mastershipcontroller "github.com/onosproject/onos-config/pkg/controller/mastership"
+	proposalcontroller "github.com/onosproject/onos-config/pkg/controller/proposal"
 	"github.com/onosproject/onos-config/pkg/controller/target"
+	"github.com/onosproject/onos-config/pkg/store/proposal"
 
 	"github.com/onosproject/onos-config/pkg/controller/node"
 	"github.com/onosproject/onos-config/pkg/northbound/admin"
@@ -142,15 +144,20 @@ func (m *Manager) startMastershipController(topo topo.Store) error {
 	mastershipController := mastershipcontroller.NewController(topo)
 	return mastershipController.Start()
 }
-func (m *Manager) startConfigurationController(topo topo.Store, conns sb.ConnManager, configurations configuration.Store, pluginRegistry pluginregistry.PluginRegistry) error {
-	configurationController := configurationcontroller.NewController(topo, conns, configurations, pluginRegistry)
+
+func (m *Manager) startConfigurationController(topo topo.Store, conns sb.ConnManager, configurations configuration.Store) error {
+	configurationController := configurationcontroller.NewController(topo, conns, configurations)
 	return configurationController.Start()
 }
 
-func (m *Manager) startTransactionController(configurations configuration.Store, transactions transaction.Store, pluginRegistry pluginregistry.PluginRegistry) error {
-	transactionController := transactioncontroller.NewController(transactions, configurations, pluginRegistry)
-	return transactionController.Start()
+func (m *Manager) startProposalController(topo topo.Store, conns sb.ConnManager, proposals proposal.Store, configurations configuration.Store, pluginRegistry pluginregistry.PluginRegistry) error {
+	proposalController := proposalcontroller.NewController(topo, conns, proposals, configurations, pluginRegistry)
+	return proposalController.Start()
+}
 
+func (m *Manager) startTransactionController(transactions transaction.Store, proposals proposal.Store) error {
+	transactionController := transactioncontroller.NewController(transactions, proposals)
+	return transactionController.Start()
 }
 
 // Start starts the manager
@@ -170,6 +177,12 @@ func (m *Manager) Start() error {
 
 	// Create the transactions store
 	transactions, err := transaction.NewAtomixStore(atomixClient)
+	if err != nil {
+		return err
+	}
+
+	// Create the proposals store
+	proposals, err := proposal.NewAtomixStore(atomixClient)
 	if err != nil {
 		return err
 	}
@@ -199,12 +212,18 @@ func (m *Manager) Start() error {
 	if err != nil {
 		return err
 	}
-	err = m.startConfigurationController(topoStore, conns, configurations, m.pluginRegistry)
+
+	err = m.startConfigurationController(topoStore, conns, configurations)
 	if err != nil {
 		return err
 	}
 
-	err = m.startTransactionController(configurations, transactions, m.pluginRegistry)
+	err = m.startProposalController(topoStore, conns, proposals, configurations, m.pluginRegistry)
+	if err != nil {
+		return err
+	}
+
+	err = m.startTransactionController(transactions, proposals)
 	if err != nil {
 		return err
 	}

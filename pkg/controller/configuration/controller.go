@@ -21,8 +21,6 @@ import (
 
 	controllerutils "github.com/onosproject/onos-config/pkg/controller/utils"
 
-	"github.com/onosproject/onos-config/pkg/pluginregistry"
-
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -44,7 +42,7 @@ const (
 )
 
 // NewController returns a configuration controller
-func NewController(topo topo.Store, conns gnmi.ConnManager, configurations configuration.Store, pluginRegistry *pluginregistry.PluginRegistry) *controller.Controller {
+func NewController(topo topo.Store, conns gnmi.ConnManager, configurations configuration.Store) *controller.Controller {
 	c := controller.NewController("configuration")
 	c.Watch(&Watcher{
 		configurations: configurations,
@@ -56,7 +54,6 @@ func NewController(topo topo.Store, conns gnmi.ConnManager, configurations confi
 		conns:          conns,
 		topo:           topo,
 		configurations: configurations,
-		pluginRegistry: pluginRegistry,
 	})
 	return c
 }
@@ -66,7 +63,6 @@ type Reconciler struct {
 	conns          gnmi.ConnManager
 	topo           topo.Store
 	configurations configuration.Store
-	pluginRegistry *pluginregistry.PluginRegistry
 }
 
 // Reconcile reconciles target configurations
