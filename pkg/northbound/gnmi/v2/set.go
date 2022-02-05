@@ -60,7 +60,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	prefixTargetID := configapi.TargetID(req.GetPrefix().GetTarget())
 	targets := make(map[configapi.TargetID]*targetInfo)
 
-	transactionMode, err := getSetExtensions(req)
+	transactionStrategy, err := getSetExtensions(req)
 	if err != nil {
 		log.Warn(err)
 		return nil, errors.Status(errors.NewInvalid(err.Error())).Err()
@@ -111,7 +111,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 	}
 
-	transaction, err := newTransaction(targets, transactionMode, userName)
+	transaction, err := newTransaction(targets, transactionStrategy, userName)
 	if err != nil {
 		log.Warn(err)
 		return nil, errors.Status(err).Err()
@@ -128,48 +128,11 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		return nil, errors.Status(err).Err()
 	}
 
-	isSync := transactionMode.Sync
 	for transactionEvent := range eventCh {
-		if transactionEvent.Transaction.Status.State == configapi.TransactionStatus_FAILED {
-			var err error
-			if transactionEvent.Transaction.Status.Failure != nil {
-				switch transactionEvent.Transaction.Status.Failure.Type {
-				case configapi.Failure_UNKNOWN:
-					err = errors.NewUnknown(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_CANCELED:
-					err = errors.NewCanceled(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_NOT_FOUND:
-					err = errors.NewNotFound(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_ALREADY_EXISTS:
-					err = errors.NewAlreadyExists(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_UNAUTHORIZED:
-					err = errors.NewUnauthorized(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_FORBIDDEN:
-					err = errors.NewForbidden(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_CONFLICT:
-					err = errors.NewConflict(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_INVALID:
-					err = errors.NewInvalid(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_UNAVAILABLE:
-					err = errors.NewUnavailable(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_NOT_SUPPORTED:
-					err = errors.NewNotSupported(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_TIMEOUT:
-					err = errors.NewTimeout(transactionEvent.Transaction.Status.Failure.Description)
-				case configapi.Failure_INTERNAL:
-					err = errors.NewInternal(transactionEvent.Transaction.Status.Failure.Description)
-				default:
-					err = errors.NewUnknown(transactionEvent.Transaction.Status.Failure.Description)
-				}
-			} else {
-				err = errors.NewUnknown("unknown failure occurred")
-			}
-			log.Errorf("Transaction failed", err)
-			return nil, errors.Status(err).Err()
-		}
-
-		if (!isSync && transactionEvent.Transaction.Status.State == configapi.TransactionStatus_COMMITTED) ||
-			(isSync && transactionEvent.Transaction.Status.State == configapi.TransactionStatus_APPLIED) {
+		if (transactionEvent.Transaction.TransactionStrategy.Synchronicity == configapi.TransactionStrategy_ASYNCHRONOUS &&
+			transactionEvent.Transaction.Status.State == configapi.TransactionStatus_COMMITTED) ||
+			(transactionEvent.Transaction.TransactionStrategy.Synchronicity == configapi.TransactionStrategy_SYNCHRONOUS &&
+				transactionEvent.Transaction.Status.State == configapi.TransactionStatus_APPLIED) {
 			updateResults := make([]*gnmi.UpdateResult, 0)
 			for targetID, change := range transaction.GetChange().Values {
 				for path, valueUpdate := range change.Values {
@@ -217,6 +180,42 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 			}
 			log.Debugf("Sending SetResponse %+v", response)
 			return response, nil
+		} else if transactionEvent.Transaction.Status.State == configapi.TransactionStatus_FAILED {
+			var err error
+			if transactionEvent.Transaction.Status.Failure != nil {
+				switch transactionEvent.Transaction.Status.Failure.Type {
+				case configapi.Failure_UNKNOWN:
+					err = errors.NewUnknown(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_CANCELED:
+					err = errors.NewCanceled(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_NOT_FOUND:
+					err = errors.NewNotFound(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_ALREADY_EXISTS:
+					err = errors.NewAlreadyExists(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_UNAUTHORIZED:
+					err = errors.NewUnauthorized(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_FORBIDDEN:
+					err = errors.NewForbidden(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_CONFLICT:
+					err = errors.NewConflict(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_INVALID:
+					err = errors.NewInvalid(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_UNAVAILABLE:
+					err = errors.NewUnavailable(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_NOT_SUPPORTED:
+					err = errors.NewNotSupported(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_TIMEOUT:
+					err = errors.NewTimeout(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_INTERNAL:
+					err = errors.NewInternal(transactionEvent.Transaction.Status.Failure.Description)
+				default:
+					err = errors.NewUnknown(transactionEvent.Transaction.Status.Failure.Description)
+				}
+			} else {
+				err = errors.NewUnknown("unknown failure occurred")
+			}
+			log.Errorf("Transaction failed", err)
+			return nil, errors.Status(err).Err()
 		}
 	}
 	return nil, ctx.Err()

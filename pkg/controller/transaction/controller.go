@@ -290,7 +290,8 @@ func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *confi
 						}
 					} else {
 						// Return if waiting for a previous atomic transaction to be validated.
-						if prevTransaction.Atomic && prevTransaction.Status.State < configapi.TransactionStatus_VALIDATED {
+						if prevTransaction.Isolation == configapi.TransactionStrategy_SERIALIZABLE &&
+							prevTransaction.Status.State < configapi.TransactionStatus_VALIDATED {
 							log.Infof("Transaction %d waiting for Transaction %d to be validated", transaction.Index, prevTransaction.Index)
 							return controller.Result{}, nil
 						}
@@ -393,7 +394,8 @@ func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configa
 						}
 					} else {
 						// Return if waiting for a previous atomic transaction to commit.
-						if prevTransaction.Atomic && prevTransaction.Status.State < configapi.TransactionStatus_COMMITTED {
+						if prevTransaction.Isolation == configapi.TransactionStrategy_SERIALIZABLE &&
+							prevTransaction.Status.State < configapi.TransactionStatus_COMMITTED {
 							log.Infof("Transaction %d waiting for Transaction %d to be committed", transaction.Index, prevTransaction.Index)
 							return controller.Result{}, nil
 						}
@@ -482,7 +484,8 @@ func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi
 						}
 					} else {
 						// Return if waiting for a previous atomic transaction to applied.
-						if prevTransaction.Atomic && prevTransaction.Status.State < configapi.TransactionStatus_APPLIED {
+						if prevTransaction.Isolation == configapi.TransactionStrategy_SERIALIZABLE &&
+							prevTransaction.Status.State < configapi.TransactionStatus_APPLIED {
 							log.Infof("Transaction %d waiting for Transaction %d to be applied", transaction.Index, prevTransaction.Index)
 							return controller.Result{}, nil
 						}

@@ -74,7 +74,7 @@ func computeChange(target *targetInfo) (*configapi.PathValues, error) {
 	return changeElement, nil
 }
 
-func newTransaction(targets map[configapi.TargetID]*targetInfo, mode configapi.TransactionMode, username string) (*configapi.Transaction, error) {
+func newTransaction(targets map[configapi.TargetID]*targetInfo, strategy configapi.TransactionStrategy, username string) (*configapi.Transaction, error) {
 	values, err := computeChanges(targets)
 	if err != nil {
 		return nil, err
@@ -89,8 +89,8 @@ func newTransaction(targets map[configapi.TargetID]*targetInfo, mode configapi.T
 				Values: values,
 			},
 		},
-		Username: username,
-		Atomic:   mode.Atomic,
+		Username:            username,
+		TransactionStrategy: strategy,
 	}
 
 	return transaction, nil

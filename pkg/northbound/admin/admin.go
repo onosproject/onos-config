@@ -20,7 +20,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/onosproject/onos-api/go/onos/config/admin"
-	v2 "github.com/onosproject/onos-api/go/onos/config/v2"
+	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"github.com/onosproject/onos-config/pkg/pluginregistry"
 	"github.com/onosproject/onos-config/pkg/store/configuration"
 	"github.com/onosproject/onos-config/pkg/store/transaction"
@@ -110,11 +110,11 @@ func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.Co
 // RollbackTransaction rolls back configuration change transaction with the specified index.
 func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequest) (*admin.RollbackResponse, error) {
 	log.Debugf("Received RollbackRequest %+v", req)
-	id := v2.TransactionID(uri.NewURI(uri.WithScheme("uuid"), uri.WithOpaque(uuid.New().String())).String())
-	t := &v2.Transaction{
+	id := configapi.TransactionID(uri.NewURI(uri.WithScheme("uuid"), uri.WithOpaque(uuid.New().String())).String())
+	t := &configapi.Transaction{
 		ID: id,
-		Details: &v2.Transaction_Rollback{
-			Rollback: &v2.RollbackTransaction{
+		Details: &configapi.Transaction_Rollback{
+			Rollback: &configapi.RollbackTransaction{
 				RollbackIndex: req.Index,
 			},
 		},
@@ -123,18 +123,62 @@ func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequ
 		log.Errorf("Unable to rollback transaction with index %d: %+v", req.Index, err)
 		return nil, errors.Status(err).Err()
 	}
-	eventCh := make(chan v2.TransactionEvent)
+	eventCh := make(chan configapi.TransactionEvent)
 	err := s.transactionsStore.Watch(ctx, eventCh, transaction.WithReplay(), transaction.WithTransactionID(t.ID))
 	if err != nil {
 		return nil, errors.Status(err).Err()
 	}
 	for transactionEvent := range eventCh {
-		switch transactionEvent.Transaction.Status.State {
-		case v2.TransactionStatus_APPLIED:
+		if (transactionEvent.Transaction.TransactionStrategy.Synchronicity == configapi.TransactionStrategy_ASYNCHRONOUS &&
+			transactionEvent.Transaction.Status.State == configapi.TransactionStatus_COMMITTED) ||
+			(transactionEvent.Transaction.TransactionStrategy.Synchronicity == configapi.TransactionStrategy_SYNCHRONOUS &&
+				transactionEvent.Transaction.Status.State == configapi.TransactionStatus_APPLIED) {
 			response := &admin.RollbackResponse{ID: t.ID, Index: t.Index}
 			log.Debugf("Sending RollbackResponse %+v", response)
 			return response, nil
-		case v2.TransactionStatus_FAILED:
+		} else if transactionEvent.Transaction.Status.State == configapi.TransactionStatus_FAILED {
+			var err error
+			if transactionEvent.Transaction.Status.Failure != nil {
+				switch transactionEvent.Transaction.Status.Failure.Type {
+				case configapi.Failure_UNKNOWN:
+					err = errors.NewUnknown(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_CANCELED:
+					err = errors.NewCanceled(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_NOT_FOUND:
+					err = errors.NewNotFound(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_ALREADY_EXISTS:
+					err = errors.NewAlreadyExists(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_UNAUTHORIZED:
+					err = errors.NewUnauthorized(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_FORBIDDEN:
+					err = errors.NewForbidden(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_CONFLICT:
+					err = errors.NewConflict(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_INVALID:
+					err = errors.NewInvalid(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_UNAVAILABLE:
+					err = errors.NewUnavailable(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_NOT_SUPPORTED:
+					err = errors.NewNotSupported(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_TIMEOUT:
+					err = errors.NewTimeout(transactionEvent.Transaction.Status.Failure.Description)
+				case configapi.Failure_INTERNAL:
+					err = errors.NewInternal(transactionEvent.Transaction.Status.Failure.Description)
+				default:
+					err = errors.NewUnknown(transactionEvent.Transaction.Status.Failure.Description)
+				}
+			} else {
+				err = errors.NewUnknown("unknown failure occurred")
+			}
+			log.Errorf("Transaction failed", err)
+			return nil, errors.Status(err).Err()
+		}
+		switch transactionEvent.Transaction.Status.State {
+		case configapi.TransactionStatus_APPLIED:
+			response := &admin.RollbackResponse{ID: t.ID, Index: t.Index}
+			log.Debugf("Sending RollbackResponse %+v", response)
+			return response, nil
+		case configapi.TransactionStatus_FAILED:
 			err := getErrorFromFailure(transactionEvent.Transaction.Status.Failure)
 			log.Errorf("Transaction failed", err)
 			return nil, errors.Status(err).Err()
@@ -159,35 +203,35 @@ func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegist
 	return errors.NewNotSupported("dynamic model registration has been deprecated")
 }
 
-func getErrorFromFailure(failure *v2.Failure) error {
+func getErrorFromFailure(failure *configapi.Failure) error {
 	if failure == nil {
 		return errors.NewUnknown("unknown failure occurred")
 	}
 
 	switch failure.Type {
-	case v2.Failure_UNKNOWN:
+	case configapi.Failure_UNKNOWN:
 		return errors.NewUnknown(failure.Description)
-	case v2.Failure_CANCELED:
+	case configapi.Failure_CANCELED:
 		return errors.NewCanceled(failure.Description)
-	case v2.Failure_NOT_FOUND:
+	case configapi.Failure_NOT_FOUND:
 		return errors.NewNotFound(failure.Description)
-	case v2.Failure_ALREADY_EXISTS:
+	case configapi.Failure_ALREADY_EXISTS:
 		return errors.NewAlreadyExists(failure.Description)
-	case v2.Failure_UNAUTHORIZED:
+	case configapi.Failure_UNAUTHORIZED:
 		return errors.NewUnauthorized(failure.Description)
-	case v2.Failure_FORBIDDEN:
+	case configapi.Failure_FORBIDDEN:
 		return errors.NewForbidden(failure.Description)
-	case v2.Failure_CONFLICT:
+	case configapi.Failure_CONFLICT:
 		return errors.NewConflict(failure.Description)
-	case v2.Failure_INVALID:
+	case configapi.Failure_INVALID:
 		return errors.NewInvalid(failure.Description)
-	case v2.Failure_UNAVAILABLE:
+	case configapi.Failure_UNAVAILABLE:
 		return errors.NewUnavailable(failure.Description)
-	case v2.Failure_NOT_SUPPORTED:
+	case configapi.Failure_NOT_SUPPORTED:
 		return errors.NewNotSupported(failure.Description)
-	case v2.Failure_TIMEOUT:
+	case configapi.Failure_TIMEOUT:
 		return errors.NewTimeout(failure.Description)
-	case v2.Failure_INTERNAL:
+	case configapi.Failure_INTERNAL:
 		return errors.NewInternal(failure.Description)
 	default:
 		return errors.NewUnknown(failure.Description)
