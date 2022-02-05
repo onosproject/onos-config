@@ -100,8 +100,7 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
 				err = event.Object.GetAspect(&topoapi.Configurable{})
 				if err == nil {
-					// TODO: Get target type and version from topo entity
-					ch <- controller.NewID(configuration.NewID(configapi.TargetID(event.Object.ID), "", ""))
+					ch <- controller.NewID(configuration.NewID(configapi.TargetID(event.Object.ID)))
 				}
 			}
 		}
