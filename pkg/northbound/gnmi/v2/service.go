@@ -17,6 +17,7 @@ package gnmi
 
 import (
 	"context"
+	"github.com/onosproject/onos-config/pkg/store/proposal"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -73,6 +74,7 @@ type Server struct {
 	pluginRegistry pluginregistry.PluginRegistry
 	topo           topo.Store
 	transactions   transaction.Store
+	proposals      proposal.Store
 	configurations configuration.Store
 }
 

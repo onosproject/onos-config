@@ -36,7 +36,7 @@ const (
 // NewController returns a transaction controller
 func NewController(transactions transactionstore.Store, proposals proposalstore.Store) *controller.Controller {
 	c := controller.NewController("transaction")
-	c.Watch(&TransactionWatcher{
+	c.Watch(&Watcher{
 		transactions: transactions,
 	})
 	c.Watch(&ProposalWatcher{

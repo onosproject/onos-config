@@ -292,7 +292,7 @@ func (s *proposalStore) Watch(ctx context.Context, ch chan<- configapi.ProposalE
 					eventType = configapi.ProposalEvent_UPDATED
 				}
 				ch <- configapi.ProposalEvent{
-					Type:          eventType,
+					Type:     eventType,
 					Proposal: *proposal,
 				}
 			}

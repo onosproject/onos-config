@@ -27,15 +27,15 @@ import (
 
 const queueSize = 100
 
-// TransactionWatcher transaction store watcher
-type TransactionWatcher struct {
+// Watcher transaction store watcher
+type Watcher struct {
 	transactions transactionstore.Store
 	cancel       context.CancelFunc
 	mu           sync.Mutex
 }
 
 // Start starts the watcher
-func (w *TransactionWatcher) Start(ch chan<- controller.ID) error {
+func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.cancel != nil {
@@ -60,7 +60,7 @@ func (w *TransactionWatcher) Start(ch chan<- controller.ID) error {
 }
 
 // Stop stops the watcher
-func (w *TransactionWatcher) Stop() {
+func (w *Watcher) Stop() {
 	w.mu.Lock()
 	if w.cancel != nil {
 		w.cancel()

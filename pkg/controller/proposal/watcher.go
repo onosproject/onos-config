@@ -27,15 +27,15 @@ import (
 
 const queueSize = 100
 
-// ProposalWatcher proposal store watcher
-type ProposalWatcher struct {
+// Watcher proposal store watcher
+type Watcher struct {
 	proposals proposalstore.Store
 	cancel    context.CancelFunc
 	mu        sync.Mutex
 }
 
 // Start starts the watcher
-func (w *ProposalWatcher) Start(ch chan<- controller.ID) error {
+func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.cancel != nil {
@@ -60,7 +60,7 @@ func (w *ProposalWatcher) Start(ch chan<- controller.ID) error {
 }
 
 // Stop stops the watcher
-func (w *ProposalWatcher) Stop() {
+func (w *Watcher) Stop() {
 	w.mu.Lock()
 	if w.cancel != nil {
 		w.cancel()

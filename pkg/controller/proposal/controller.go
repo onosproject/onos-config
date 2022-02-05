@@ -47,7 +47,7 @@ const (
 // NewController returns a proposal controller
 func NewController(topo topo.Store, conns gnmi.ConnManager, proposals proposalstore.Store, configurations configuration.Store, pluginRegistry pluginregistry.PluginRegistry) *controller.Controller {
 	c := controller.NewController("proposal")
-	c.Watch(&ProposalWatcher{
+	c.Watch(&Watcher{
 		proposals: proposals,
 	})
 	c.Watch(&ConfigurationWatcher{
@@ -64,8 +64,10 @@ func NewController(topo topo.Store, conns gnmi.ConnManager, proposals proposalst
 	return c
 }
 
+// Partitioner is a proposal partitioner
 type Partitioner struct{}
 
+// Partition partitions proposals by target ID
 func (p *Partitioner) Partition(id controller.ID) (controller.PartitionKey, error) {
 	proposalID := string(id.Value.(configapi.ProposalID))
 	targetID := proposalID[:strings.LastIndex(proposalID, "-")]

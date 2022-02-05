@@ -17,8 +17,10 @@ package gnmi
 import (
 	"context"
 	configurationcontroller "github.com/onosproject/onos-config/pkg/controller/configuration"
+	proposalcontroller "github.com/onosproject/onos-config/pkg/controller/proposal"
 	transactioncontroller "github.com/onosproject/onos-config/pkg/controller/transaction"
 	sb "github.com/onosproject/onos-config/pkg/southbound/gnmi"
+	"github.com/onosproject/onos-config/pkg/store/proposal"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
 	"sync"
 	"testing"
@@ -49,6 +51,8 @@ type testContext struct {
 	conns                   sb.ConnManager
 	configuration           configuration.Store
 	configurationController *controller.Controller
+	proposal                proposal.Store
+	proposalController      *controller.Controller
 	transaction             transaction.Store
 	transactionController   *controller.Controller
 	server                  *Server
@@ -79,10 +83,13 @@ func createServer(t *testing.T) *testContext {
 
 func (test *testContext) startControllers(t *testing.T) {
 	test.conns = sb.NewConnManager()
-	test.configurationController = configurationcontroller.NewController(test.topo, test.conns, test.server.configurations, test.registry)
+	test.configurationController = configurationcontroller.NewController(test.topo, test.conns, test.server.configurations)
 	assert.NoError(t, test.configurationController.Start())
 
-	test.transactionController = transactioncontroller.NewController(test.server.transactions, test.server.configurations, test.registry)
+	test.proposalController = proposalcontroller.NewController(test.topo, test.conns, test.server.proposals, test.server.configurations, test.registry)
+	assert.NoError(t, test.configurationController.Start())
+
+	test.transactionController = transactioncontroller.NewController(test.server.transactions, test.server.proposals)
 	assert.NoError(t, test.transactionController.Start())
 }
 
@@ -151,7 +158,6 @@ func setupTopoAndRegistry(test *testContext, id string, model string, version st
 		Path:    "/foo",
 		Value:   configapi.TypedValue{Bytes: []byte("Yo!"), Type: configapi.ValueType_STRING, TypeOpts: []int32{}},
 		Deleted: false,
-		Index:   0,
 	})
 	plugin.EXPECT().GetPathValues(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().
 		Return(pathValues, nil)
@@ -214,10 +220,9 @@ func Test_BasicGet(t *testing.T) {
 
 	targetID := configapi.TargetID("target-1")
 	targetConfig := &configapi.Configuration{
-		ID:            configapi.ConfigurationID(targetID),
-		TargetID:      targetID,
-		TargetVersion: "1.0.0",
-		Values:        targetConfigValues,
+		ID:       configapi.ConfigurationID(targetID),
+		TargetID: targetID,
+		Values:   targetConfigValues,
 	}
 
 	err := test.server.configurations.Create(context.TODO(), targetConfig)
@@ -254,10 +259,9 @@ func Test_GetWithPrefixOnly(t *testing.T) {
 
 	targetID := configapi.TargetID("target-1")
 	targetConfig := &configapi.Configuration{
-		ID:            configapi.ConfigurationID(targetID),
-		TargetID:      targetID,
-		TargetVersion: "1.0.0",
-		Values:        targetConfigValues,
+		ID:       configapi.ConfigurationID(targetID),
+		TargetID: targetID,
+		Values:   targetConfigValues,
 	}
 
 	err := test.server.configurations.Create(context.TODO(), targetConfig)
