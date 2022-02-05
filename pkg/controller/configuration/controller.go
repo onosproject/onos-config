@@ -145,6 +145,12 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return controller.Result{}, nil
 	}
 
+	// If the master node ID is not set, skip reconciliation.
+	if mastership.NodeId == "" {
+		log.Debugf("No master for target '%s'", config.TargetID)
+		return controller.Result{}, nil
+	}
+
 	// If the applied index is 0, skip applying changes.
 	if config.Status.Applied.Index == 0 {
 		log.Infof("Skipping synchronization of Configuration '%s': no applied changes to synchronize", config.ID)

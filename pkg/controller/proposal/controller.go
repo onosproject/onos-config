@@ -505,6 +505,12 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			return controller.Result{}, nil
 		}
 
+		// If the master node ID is not set, skip reconciliation.
+		if mastership.NodeId == "" {
+			log.Debugf("No master for target '%s'", proposal.TargetID)
+			return controller.Result{}, nil
+		}
+
 		// If we've made it this far, we know there's a master relation.
 		// Get the relation and check whether this node is the source
 		relation, err := r.topo.Get(ctx, topoapi.ID(mastership.NodeId))

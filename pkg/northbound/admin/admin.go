@@ -109,6 +109,7 @@ func (s Server) ListRegisteredModels(r *admin.ListModelsRequest, stream admin.Co
 
 // RollbackTransaction rolls back configuration change transaction with the specified index.
 func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequest) (*admin.RollbackResponse, error) {
+	log.Debugf("Received RollbackRequest %+v", req)
 	id := v2.TransactionID(uri.NewURI(uri.WithScheme("uuid"), uri.WithOpaque(uuid.New().String())).String())
 	t := &v2.Transaction{
 		ID: id,
@@ -122,7 +123,36 @@ func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequ
 		log.Errorf("Unable to rollback transaction with index %d: %+v", req.Index, err)
 		return nil, errors.Status(err).Err()
 	}
-	return &admin.RollbackResponse{ID: t.ID, Index: t.Index}, nil
+	eventCh := make(chan v2.TransactionEvent)
+	err := s.transactionsStore.Watch(ctx, eventCh, transaction.WithReplay(), transaction.WithTransactionID(t.ID))
+	if err != nil {
+		return nil, errors.Status(err).Err()
+	}
+	for transactionEvent := range eventCh {
+		if transactionEvent.Transaction.Status.Phases.Initialize != nil &&
+			transactionEvent.Transaction.Status.Phases.Initialize.State == v2.TransactionInitializePhase_FAILED {
+			err := getErrorFromFailure(transactionEvent.Transaction.Status.Phases.Initialize.Failure)
+			log.Errorf("Transaction failed", err)
+			return nil, errors.Status(err).Err()
+		}
+
+		if transactionEvent.Transaction.Status.Phases.Validate != nil &&
+			transactionEvent.Transaction.Status.Phases.Validate.State == v2.TransactionValidatePhase_FAILED {
+			err := getErrorFromFailure(transactionEvent.Transaction.Status.Phases.Validate.Failure)
+			log.Errorf("Transaction failed validation", err)
+			return nil, errors.Status(err).Err()
+		}
+
+		// Rollbacks are synchronous by default.
+		// TODO: Add options for sync/async rollback.
+		if transactionEvent.Transaction.Status.Phases.Apply != nil &&
+			transactionEvent.Transaction.Status.Phases.Apply.State == v2.TransactionApplyPhase_APPLIED {
+			response := &admin.RollbackResponse{ID: t.ID, Index: t.Index}
+			log.Debugf("Sending RollbackResponse %+v", response)
+			return response, nil
+		}
+	}
+	return nil, ctx.Err()
 }
 
 // ListSnapshots lists snapshots for all devices
@@ -139,4 +169,39 @@ func (s Server) CompactChanges(ctx context.Context, request *admin.CompactChange
 // Deprecated: models should only be loaded at startup
 func (s Server) UploadRegisterModel(stream admin.ConfigAdminService_UploadRegisterModelServer) error {
 	return errors.NewNotSupported("dynamic model registration has been deprecated")
+}
+
+func getErrorFromFailure(failure *v2.Failure) error {
+	if failure == nil {
+		return errors.NewUnknown("unknown failure occurred")
+	}
+
+	switch failure.Type {
+	case v2.Failure_UNKNOWN:
+		return errors.NewUnknown(failure.Description)
+	case v2.Failure_CANCELED:
+		return errors.NewCanceled(failure.Description)
+	case v2.Failure_NOT_FOUND:
+		return errors.NewNotFound(failure.Description)
+	case v2.Failure_ALREADY_EXISTS:
+		return errors.NewAlreadyExists(failure.Description)
+	case v2.Failure_UNAUTHORIZED:
+		return errors.NewUnauthorized(failure.Description)
+	case v2.Failure_FORBIDDEN:
+		return errors.NewForbidden(failure.Description)
+	case v2.Failure_CONFLICT:
+		return errors.NewConflict(failure.Description)
+	case v2.Failure_INVALID:
+		return errors.NewInvalid(failure.Description)
+	case v2.Failure_UNAVAILABLE:
+		return errors.NewUnavailable(failure.Description)
+	case v2.Failure_NOT_SUPPORTED:
+		return errors.NewNotSupported(failure.Description)
+	case v2.Failure_TIMEOUT:
+		return errors.NewTimeout(failure.Description)
+	case v2.Failure_INTERNAL:
+		return errors.NewInternal(failure.Description)
+	default:
+		return errors.NewUnknown(failure.Description)
+	}
 }
