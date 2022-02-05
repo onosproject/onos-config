@@ -37,8 +37,8 @@ func newUpdateResult(pathStr string, target string, op gnmi.UpdateResult_Operati
 
 }
 
-func computeChanges(targets map[configapi.TargetID]*targetInfo) (map[configapi.TargetID]configapi.Change, error) {
-	allChanges := make(map[configapi.TargetID]configapi.Change)
+func computeChanges(targets map[configapi.TargetID]*targetInfo) (map[configapi.TargetID]*configapi.PathValues, error) {
+	allChanges := make(map[configapi.TargetID]*configapi.PathValues)
 	for targetID, target := range targets {
 		change, err := computeChange(target)
 		if err != nil {
@@ -51,33 +51,31 @@ func computeChanges(targets map[configapi.TargetID]*targetInfo) (map[configapi.T
 
 // computeChange computes a given target change the given its updates and deletes, according to the path
 // on the configuration for the specified target
-func computeChange(target *targetInfo) (configapi.Change, error) {
+func computeChange(target *targetInfo) (*configapi.PathValues, error) {
 	//updates
-	newChanges := make(map[string]configapi.ChangeValue)
+	newChanges := make(map[string]*configapi.PathValue)
 	for path, value := range target.updates {
 		updateValue, err := valueutils.NewChangeValue(path, *value, false)
 		if err != nil {
-			return configapi.Change{}, err
+			return &configapi.PathValues{}, err
 		}
-		newChanges[path] = *updateValue
+		newChanges[path] = updateValue
 	}
 	//deletes
 	for _, path := range target.removes {
 		deleteValue, _ := valueutils.NewChangeValue(path, *configapi.NewTypedValueEmpty(), true)
-		newChanges[path] = *deleteValue
+		newChanges[path] = deleteValue
 	}
 
-	changeElement := configapi.Change{
-		TargetVersion: target.targetVersion,
-		TargetType:    target.targetType,
-		Values:        newChanges,
+	changeElement := &configapi.PathValues{
+		Values: newChanges,
 	}
 
 	return changeElement, nil
 }
 
-func newTransaction(targets map[configapi.TargetID]*targetInfo, mode *configapi.TransactionMode, username string) (*configapi.Transaction, error) {
-	changes, err := computeChanges(targets)
+func newTransaction(targets map[configapi.TargetID]*targetInfo, username string) (*configapi.Transaction, error) {
+	values, err := computeChanges(targets)
 	if err != nil {
 		return nil, err
 	}
@@ -86,13 +84,12 @@ func newTransaction(targets map[configapi.TargetID]*targetInfo, mode *configapi.
 		uri.WithOpaque(uuid.New().String())).String())
 	transaction := &configapi.Transaction{
 		ID: transactionID,
-		Transaction: &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Changes: changes,
+		Details: &configapi.Transaction_Change{
+			Change: &configapi.ChangeTransaction{
+				Values: values,
 			},
 		},
 		Username: username,
-		Atomic:   mode != nil && mode.Atomic,
 	}
 
 	return transaction, nil

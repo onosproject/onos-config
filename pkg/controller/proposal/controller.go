@@ -231,9 +231,9 @@ func (r *Reconciler) reconcileChangeValidate(ctx context.Context, proposal *conf
 		log.Infof("Validating Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID)
 
 		var rollbackIndex configapi.Index
-		var rollbackValues map[string]configapi.PathValue
+		var rollbackValues map[string]*configapi.PathValue
 
-		changeValues := make(map[string]configapi.PathValue)
+		changeValues := make(map[string]*configapi.PathValue)
 		for path, pathValue := range config.Values {
 			changeValues[path] = pathValue
 		}
@@ -271,13 +271,13 @@ func (r *Reconciler) reconcileChangeValidate(ctx context.Context, proposal *conf
 		switch details := proposal.Details.(type) {
 		case *configapi.Proposal_Change:
 			rollbackIndex = config.Index
-			rollbackValues = make(map[string]configapi.PathValue)
+			rollbackValues = make(map[string]*configapi.PathValue)
 			for path, changeValue := range details.Change.Values {
 				changeValues[path] = changeValue
 				if configValue, ok := config.Values[path]; ok {
 					rollbackValues[path] = configValue
 				} else {
-					rollbackValues[path] = configapi.PathValue{
+					rollbackValues[path] = &configapi.PathValue{
 						Path:    path,
 						Deleted: true,
 					}
@@ -345,8 +345,7 @@ func (r *Reconciler) reconcileChangeValidate(ctx context.Context, proposal *conf
 
 		values := make([]*configapi.PathValue, 0, len(changeValues))
 		for _, changeValue := range changeValues {
-			copyValue := changeValue
-			values = append(values, &copyValue)
+			values = append(values, changeValue)
 		}
 
 		jsonTree, err := tree.BuildTree(values, true)
@@ -399,7 +398,7 @@ func (r *Reconciler) reconcileChangeCommit(ctx context.Context, proposal *config
 		}
 
 		if config.Status.Committed.Index == proposal.Status.PrevIndex {
-			var changeValues map[string]configapi.PathValue
+			var changeValues map[string]*configapi.PathValue
 			switch details := proposal.Details.(type) {
 			case *configapi.Proposal_Change:
 				config.Index = proposal.TransactionIndex
@@ -522,7 +521,7 @@ func (r *Reconciler) reconcileChangeApply(ctx context.Context, proposal *configa
 
 		// Get the set of changes. If the Proposal is a change, use the change values.
 		// If the proposal is a rollback, use the rollback values.
-		var changeValues map[string]configapi.PathValue
+		var changeValues map[string]*configapi.PathValue
 		switch details := proposal.Details.(type) {
 		case *configapi.Proposal_Change:
 			changeValues = details.Change.Values
@@ -533,8 +532,7 @@ func (r *Reconciler) reconcileChangeApply(ctx context.Context, proposal *configa
 		// Create a list of PathValue pairs from which to construct a gNMI Set for the Proposal.
 		pathValues := make([]*configapi.PathValue, 0, len(changeValues))
 		for _, changeValue := range changeValues {
-			copyValue := changeValue
-			pathValues = append(pathValues, &copyValue)
+			pathValues = append(pathValues, changeValue)
 		}
 
 		log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)

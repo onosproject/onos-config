@@ -25,50 +25,15 @@ import (
 )
 
 // NewChangeValue decodes a path and value in to a ChangeValue
-func NewChangeValue(path string, value configapi.TypedValue, delete bool) (*configapi.ChangeValue, error) {
-	cv := configapi.ChangeValue{
-		Value:  value,
-		Delete: delete,
+func NewChangeValue(path string, value configapi.TypedValue, delete bool) (*configapi.PathValue, error) {
+	cv := configapi.PathValue{
+		Value:   value,
+		Deleted: delete,
 	}
 	if err := pathutils.IsPathValid(path); err != nil {
 		return nil, err
 	}
 	return &cv, nil
-}
-
-// NativeChangeToGnmiChange converts a Protobuf defined Change object to gNMI format
-func NativeChangeToGnmiChange(c *configapi.Change) (*gnmi.SetRequest, error) {
-	var deletePaths = []*gnmi.Path{}
-	var replacedPaths = []*gnmi.Update{}
-	var updatedPaths = []*gnmi.Update{}
-
-	for path, changeValue := range c.Values {
-		elems := utils.SplitPath(path)
-		pathElemsRefs, parseError := utils.ParseGNMIElements(elems)
-
-		if parseError != nil {
-			return nil, parseError
-		}
-
-		if changeValue.Delete {
-			deletePaths = append(deletePaths, &gnmi.Path{Elem: pathElemsRefs.Elem})
-		} else {
-			gnmiValue, err := NativeTypeToGnmiTypedValue(&changeValue.Value)
-			if err != nil {
-				return nil, errors.NewInvalid("error converting %s: %s", path, err)
-			}
-			updatePath := gnmi.Path{Elem: pathElemsRefs.Elem}
-			updatedPaths = append(updatedPaths, &gnmi.Update{Path: &updatePath, Val: gnmiValue})
-		}
-	}
-
-	var setRequest = gnmi.SetRequest{
-		Delete:  deletePaths,
-		Replace: replacedPaths,
-		Update:  updatedPaths,
-	}
-
-	return &setRequest, nil
 }
 
 // PathValuesToGnmiChange converts a Protobuf defined array of values objects to gNMI format

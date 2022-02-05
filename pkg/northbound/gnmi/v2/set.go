@@ -111,7 +111,7 @@ func (s *Server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 		}
 	}
 
-	transaction, err := newTransaction(targets, transactionMode, userName)
+	transaction, err := newTransaction(targets, userName)
 	if err != nil {
 		log.Warn(err)
 		return nil, errors.Status(err).Err()

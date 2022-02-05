@@ -112,9 +112,9 @@ func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequ
 	id := v2.TransactionID(uri.NewURI(uri.WithScheme("uuid"), uri.WithOpaque(uuid.New().String())).String())
 	t := &v2.Transaction{
 		ID: id,
-		Transaction: &v2.Transaction_Rollback{
-			Rollback: &v2.TransactionRollback{
-				Index: req.Index,
+		Details: &v2.Transaction_Rollback{
+			Rollback: &v2.RollbackTransaction{
+				RollbackIndex: req.Index,
 			},
 		},
 	}

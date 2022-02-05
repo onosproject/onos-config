@@ -170,8 +170,7 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 
 	pathValues := make([]*configapi.PathValue, 0, len(config.Status.Applied.Values))
 	for _, appliedValue := range config.Status.Applied.Values {
-		copyValue := appliedValue
-		pathValues = append(pathValues, &copyValue)
+		pathValues = append(pathValues, appliedValue)
 	}
 	log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
 
