@@ -62,7 +62,7 @@ func createServer(t *testing.T) *testContext {
 	mctl := gomock.NewController(t)
 	registryMock := gnmitest.NewMockPluginRegistry(mctl)
 	topoMock := gnmitest.NewMockStore(mctl)
-	atomixTest, cfgStore, txStore := testStores(t)
+	atomixTest, cfgStore, propStore, txStore := testStores(t)
 
 	return &testContext{
 		mctl:          mctl,
@@ -70,12 +70,14 @@ func createServer(t *testing.T) *testContext {
 		topo:          topoMock,
 		registry:      registryMock,
 		configuration: cfgStore,
+		proposal:      propStore,
 		transaction:   txStore,
 		server: &Server{
 			mu:             sync.RWMutex{},
 			pluginRegistry: registryMock,
 			topo:           topoMock,
 			transactions:   txStore,
+			proposals:      propStore,
 			configurations: cfgStore,
 		},
 	}
@@ -87,7 +89,7 @@ func (test *testContext) startControllers(t *testing.T) {
 	assert.NoError(t, test.configurationController.Start())
 
 	test.proposalController = proposalcontroller.NewController(test.topo, test.conns, test.server.proposals, test.server.configurations, test.registry)
-	assert.NoError(t, test.configurationController.Start())
+	assert.NoError(t, test.proposalController.Start())
 
 	test.transactionController = transactioncontroller.NewController(test.server.transactions, test.server.proposals)
 	assert.NoError(t, test.transactionController.Start())
@@ -98,7 +100,7 @@ func (test *testContext) stopControllers() {
 	test.configurationController.Stop()
 }
 
-func testStores(t *testing.T) (*atomixtest.Test, configuration.Store, transaction.Store) {
+func testStores(t *testing.T) (*atomixtest.Test, configuration.Store, proposal.Store, transaction.Store) {
 	test := atomixtest.NewTest(rsm.NewProtocol(), atomixtest.WithReplicas(1), atomixtest.WithPartitions(1))
 	assert.NoError(t, test.Start())
 
@@ -108,10 +110,13 @@ func testStores(t *testing.T) (*atomixtest.Test, configuration.Store, transactio
 	cfgStore, err := configuration.NewAtomixStore(client1)
 	assert.NoError(t, err)
 
+	propStore, err := proposal.NewAtomixStore(client1)
+	assert.NoError(t, err)
+
 	txStore, err := transaction.NewAtomixStore(client1)
 	assert.NoError(t, err)
 
-	return test, cfgStore, txStore
+	return test, cfgStore, propStore, txStore
 }
 
 func targetPath(t *testing.T, target configapi.TargetID, elms ...string) *gnmi.Path {

@@ -43,16 +43,22 @@ type Service struct {
 	pluginRegistry pluginregistry.PluginRegistry
 	topo           topo.Store
 	transactions   transaction.Store
+	proposals      proposal.Store
 	configurations configuration.Store
 }
 
 // NewService allocates a Service struct with the given parameters
-func NewService(topo topo.Store,
-	transactions transaction.Store, configurations configuration.Store, pluginRegistry pluginregistry.PluginRegistry) Service {
+func NewService(
+	topo topo.Store,
+	transactions transaction.Store,
+	proposals proposal.Store,
+	configurations configuration.Store,
+	pluginRegistry pluginregistry.PluginRegistry) Service {
 	return Service{
 		pluginRegistry: pluginRegistry,
 		topo:           topo,
 		transactions:   transactions,
+		proposals:      proposals,
 		configurations: configurations,
 	}
 }
@@ -64,6 +70,7 @@ func (s Service) Register(r *grpc.Server) {
 			pluginRegistry: s.pluginRegistry,
 			topo:           s.topo,
 			transactions:   s.transactions,
+			proposals:      s.proposals,
 			configurations: s.configurations,
 		})
 }

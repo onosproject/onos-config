@@ -82,8 +82,12 @@ func (m *Manager) Run() {
 }
 
 // Creates gRPC server and registers various services; then serves.
-func (m *Manager) startNorthboundServer(topo topo.Store, transactionsStore transaction.Store,
-	configurationsStore configuration.Store, pluginRegistry pluginregistry.PluginRegistry) error {
+func (m *Manager) startNorthboundServer(
+	topo topo.Store,
+	transactionsStore transaction.Store,
+	proposalsStore proposal.Store,
+	configurationsStore configuration.Store,
+	pluginRegistry pluginregistry.PluginRegistry) error {
 	authorization := false
 	if oidcURL := os.Getenv(OIDCServerURL); oidcURL != "" {
 		authorization = true
@@ -104,7 +108,7 @@ func (m *Manager) startNorthboundServer(topo topo.Store, transactionsStore trans
 	s.AddService(logging.Service{})
 
 	adminService := admin.NewService(transactionsStore, configurationsStore, pluginRegistry)
-	gnmi := gnminb.NewService(topo, transactionsStore, configurationsStore, pluginRegistry)
+	gnmi := gnminb.NewService(topo, transactionsStore, proposalsStore, configurationsStore, pluginRegistry)
 	s.AddService(adminService)
 	s.AddService(gnmi)
 
@@ -233,7 +237,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	err = m.startNorthboundServer(topoStore, transactions, configurations, m.pluginRegistry)
+	err = m.startNorthboundServer(topoStore, transactions, proposals, configurations, m.pluginRegistry)
 	if err != nil {
 		return err
 	}
