@@ -118,9 +118,9 @@ func (r *Reconciler) reconcileChangeInitialize(ctx context.Context, transaction 
 
 		if transaction.Status.Proposals == nil {
 			var proposals []configapi.ProposalID
-			switch t := transaction.Transaction.(type) {
+			switch details := transaction.Details.(type) {
 			case *configapi.Transaction_Change:
-				for targetID, change := range t.Change.Changes {
+				for targetID, change := range details.Change.Values {
 					proposalID := proposalstore.NewID(targetID, transaction.Index)
 					_, err := r.proposals.Get(ctx, proposalID)
 					if err != nil {
@@ -130,14 +130,11 @@ func (r *Reconciler) reconcileChangeInitialize(ctx context.Context, transaction 
 						}
 						proposal := &configapi.Proposal{
 							ID:               proposalID,
-							TransactionID:    transaction.ID,
 							TransactionIndex: transaction.Index,
 							TargetID:         targetID,
-							Proposal: &configapi.Proposal_Change{
+							Details: &configapi.Proposal_Change{
 								Change: &configapi.ChangeProposal{
-									TargetType:    change.TargetType,
-									TargetVersion: change.TargetVersion,
-									Values:        change.Values,
+									Values: change.Values,
 								},
 							},
 						}
@@ -153,13 +150,13 @@ func (r *Reconciler) reconcileChangeInitialize(ctx context.Context, transaction 
 					proposals = append(proposals, proposalID)
 				}
 			case *configapi.Transaction_Rollback:
-				targetTransaction, err := r.transactions.GetByIndex(ctx, t.Rollback.RollbackIndex)
+				targetTransaction, err := r.transactions.GetByIndex(ctx, details.Rollback.RollbackIndex)
 				if err != nil {
 					if !errors.IsNotFound(err) {
 						log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
 						return controller.Result{}, err
 					}
-					err = errors.NewNotFound("transaction %d not found", t.Rollback.RollbackIndex)
+					err = errors.NewNotFound("transaction %d not found", details.Rollback.RollbackIndex)
 					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
 					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
 					transaction.Status.Phases.Initialize.Failure = &configapi.Failure{
@@ -173,8 +170,9 @@ func (r *Reconciler) reconcileChangeInitialize(ctx context.Context, transaction 
 					return controller.Result{}, nil
 				}
 
-				if targetChange, ok := targetTransaction.Transaction.(*configapi.Transaction_Change); ok {
-					for targetID := range targetChange.Change.Changes {
+				switch targetDetails := targetTransaction.Details.(type) {
+				case *configapi.Transaction_Change:
+					for targetID := range targetDetails.Change.Values {
 						proposalID := proposalstore.NewID(targetID, transaction.Index)
 						_, err = r.proposals.Get(ctx, proposalID)
 						if err != nil {
@@ -184,12 +182,11 @@ func (r *Reconciler) reconcileChangeInitialize(ctx context.Context, transaction 
 							}
 							proposal := &configapi.Proposal{
 								ID:               proposalID,
-								TransactionID:    transaction.ID,
 								TransactionIndex: transaction.Index,
 								TargetID:         targetID,
-								Proposal: &configapi.Proposal_Rollback{
+								Details: &configapi.Proposal_Rollback{
 									Rollback: &configapi.RollbackProposal{
-										RollbackIndex: t.Rollback.RollbackIndex,
+										RollbackIndex: details.Rollback.RollbackIndex,
 									},
 								},
 							}
@@ -204,8 +201,8 @@ func (r *Reconciler) reconcileChangeInitialize(ctx context.Context, transaction 
 						}
 						proposals = append(proposals, proposalID)
 					}
-				} else {
-					err = errors.NewNotFound("transaction %d is not a valid change", t.Rollback.RollbackIndex)
+				case *configapi.Transaction_Rollback:
+					err = errors.NewNotFound("transaction %d is not a valid change", details.Rollback.RollbackIndex)
 					log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
 					transaction.Status.Phases.Initialize.State = configapi.TransactionInitializePhase_FAILED
 					transaction.Status.Phases.Initialize.Failure = &configapi.Failure{

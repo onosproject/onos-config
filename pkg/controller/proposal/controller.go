@@ -268,11 +268,11 @@ func (r *Reconciler) reconcileChangeValidate(ctx context.Context, proposal *conf
 			return controller.Result{}, nil
 		}
 
-		switch p := proposal.Details.(type) {
+		switch details := proposal.Details.(type) {
 		case *configapi.Proposal_Change:
 			rollbackIndex = config.Index
 			rollbackValues = make(map[string]configapi.PathValue)
-			for path, changeValue := range p.Change.Values {
+			for path, changeValue := range details.Change.Values {
 				changeValues[path] = changeValue
 				if configValue, ok := config.Values[path]; ok {
 					rollbackValues[path] = configValue
@@ -284,8 +284,8 @@ func (r *Reconciler) reconcileChangeValidate(ctx context.Context, proposal *conf
 				}
 			}
 		case *configapi.Proposal_Rollback:
-			if config.Index != p.Rollback.RollbackIndex {
-				err := errors.NewForbidden("proposal %d is not the latest change to target '%s'", p.Rollback.RollbackIndex, proposal.TargetID)
+			if config.Index != details.Rollback.RollbackIndex {
+				err := errors.NewForbidden("proposal %d is not the latest change to target '%s'", details.Rollback.RollbackIndex, proposal.TargetID)
 				log.Warnf("Transaction %d Proposal to target '%s' is invalid", proposal.TransactionIndex, proposal.TargetID, err)
 				proposal.Status.Phases.Validate.State = configapi.ProposalValidatePhase_FAILED
 				proposal.Status.Phases.Validate.Failure = &configapi.Failure{
@@ -299,14 +299,14 @@ func (r *Reconciler) reconcileChangeValidate(ctx context.Context, proposal *conf
 				return controller.Result{}, nil
 			}
 
-			targetProposalID := proposalstore.NewID(proposal.TargetID, p.Rollback.RollbackIndex)
+			targetProposalID := proposalstore.NewID(proposal.TargetID, details.Rollback.RollbackIndex)
 			targetProposal, err := r.proposals.Get(ctx, targetProposalID)
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
 					return controller.Result{}, err
 				}
-				err := errors.NewForbidden("proposal %d not found for target '%s'", p.Rollback.RollbackIndex, proposal.TargetID)
+				err := errors.NewForbidden("proposal %d not found for target '%s'", details.Rollback.RollbackIndex, proposal.TargetID)
 				log.Warnf("Transaction %d Proposal to target '%s' is invalid", proposal.TransactionIndex, proposal.TargetID, err)
 				proposal.Status.Phases.Validate.State = configapi.ProposalValidatePhase_FAILED
 				proposal.Status.Phases.Validate.Failure = &configapi.Failure{
@@ -328,7 +328,7 @@ func (r *Reconciler) reconcileChangeValidate(ctx context.Context, proposal *conf
 				rollbackIndex = targetProposal.Status.RollbackIndex
 				rollbackValues = targetProposal.Status.RollbackValues
 			case *configapi.Proposal_Rollback:
-				err := errors.NewForbidden("proposal %d is not a valid change to target '%s'", p.Rollback.RollbackIndex, proposal.TargetID)
+				err := errors.NewForbidden("proposal %d is not a valid change to target '%s'", details.Rollback.RollbackIndex, proposal.TargetID)
 				log.Warnf("Transaction %d Proposal to target '%s' is invalid", proposal.TransactionIndex, proposal.TargetID, err)
 				proposal.Status.Phases.Validate.State = configapi.ProposalValidatePhase_FAILED
 				proposal.Status.Phases.Validate.Failure = &configapi.Failure{
@@ -400,10 +400,10 @@ func (r *Reconciler) reconcileChangeCommit(ctx context.Context, proposal *config
 
 		if config.Status.Committed.Index == proposal.Status.PrevIndex {
 			var changeValues map[string]configapi.PathValue
-			switch p := proposal.Details.(type) {
+			switch details := proposal.Details.(type) {
 			case *configapi.Proposal_Change:
 				config.Index = proposal.TransactionIndex
-				changeValues = p.Change.Values
+				changeValues = details.Change.Values
 			case *configapi.Proposal_Rollback:
 				config.Index = proposal.Status.RollbackIndex
 				changeValues = proposal.Status.RollbackValues
@@ -523,9 +523,9 @@ func (r *Reconciler) reconcileChangeApply(ctx context.Context, proposal *configa
 		// Get the set of changes. If the Proposal is a change, use the change values.
 		// If the proposal is a rollback, use the rollback values.
 		var changeValues map[string]configapi.PathValue
-		switch p := proposal.Details.(type) {
+		switch details := proposal.Details.(type) {
 		case *configapi.Proposal_Change:
-			changeValues = p.Change.Values
+			changeValues = details.Change.Values
 		case *configapi.Proposal_Rollback:
 			changeValues = proposal.Status.RollbackValues
 		}
