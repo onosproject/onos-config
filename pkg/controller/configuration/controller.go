@@ -145,6 +145,16 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 		return controller.Result{}, nil
 	}
 
+	// If the applied index is 0, skip applying changes.
+	if config.Status.Applied.Index == 0 {
+		log.Infof("Skipping synchronization of Configuration '%s': no applied changes to synchronize", config.ID)
+		config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
+		if err := r.updateConfigurationStatus(ctx, config); err != nil {
+			return controller.Result{}, err
+		}
+		return controller.Result{}, nil
+	}
+
 	// If we've made it this far, we know there's a master relation.
 	// Get the relation and check whether this node is the source
 	relation, err := r.topo.Get(ctx, topoapi.ID(mastership.NodeId))
@@ -169,8 +179,10 @@ func (r *Reconciler) reconcileConfiguration(ctx context.Context, config *configa
 	}
 
 	pathValues := make([]*configapi.PathValue, 0, len(config.Status.Applied.Values))
-	for _, appliedValue := range config.Status.Applied.Values {
-		pathValues = append(pathValues, appliedValue)
+	if config.Status.Applied.Values != nil {
+		for _, appliedValue := range config.Status.Applied.Values {
+			pathValues = append(pathValues, appliedValue)
+		}
 	}
 	log.Infof("Updating %d paths on target '%s'", len(pathValues), config.TargetID)
 

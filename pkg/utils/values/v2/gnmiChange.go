@@ -27,6 +27,7 @@ import (
 // NewChangeValue decodes a path and value in to a ChangeValue
 func NewChangeValue(path string, value configapi.TypedValue, delete bool) (*configapi.PathValue, error) {
 	cv := configapi.PathValue{
+		Path:    path,
 		Value:   value,
 		Deleted: delete,
 	}

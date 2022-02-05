@@ -78,13 +78,13 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
 	if transaction.Status.Phases.Apply != nil {
-		return r.reconcileChangeApply(ctx, transaction)
+		return r.reconcileApply(ctx, transaction)
 	} else if transaction.Status.Phases.Commit != nil {
-		return r.reconcileChangeCommit(ctx, transaction)
+		return r.reconcileCommit(ctx, transaction)
 	} else if transaction.Status.Phases.Validate != nil {
-		return r.reconcileChangeValidate(ctx, transaction)
+		return r.reconcileValidate(ctx, transaction)
 	} else if transaction.Status.Phases.Initialize != nil {
-		return r.reconcileChangeInitialize(ctx, transaction)
+		return r.reconcileInitialize(ctx, transaction)
 	} else {
 		log.Infof("Initializing Transaction %d", transaction.Index)
 		transaction.Status.Phases.Initialize = &configapi.TransactionInitializePhase{
@@ -99,7 +99,7 @@ func (r *Reconciler) reconcileTransaction(ctx context.Context, transaction *conf
 	}
 }
 
-func (r *Reconciler) reconcileChangeInitialize(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+func (r *Reconciler) reconcileInitialize(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
 	switch transaction.Status.Phases.Initialize.State {
 	case configapi.TransactionInitializePhase_INITIALIZING:
 		prevTransaction, err := r.transactions.GetByIndex(ctx, transaction.Index-1)
@@ -279,6 +279,7 @@ func (r *Reconciler) reconcileChangeInitialize(ctx context.Context, transaction 
 					prevTransaction, err := r.transactions.GetByIndex(ctx, proposal.Status.PrevIndex)
 					if err != nil {
 						if !errors.IsNotFound(err) {
+							log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
 							return controller.Result{}, err
 						}
 					} else {
@@ -311,7 +312,7 @@ func (r *Reconciler) reconcileChangeInitialize(ctx context.Context, transaction 
 	}
 }
 
-func (r *Reconciler) reconcileChangeValidate(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+func (r *Reconciler) reconcileValidate(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
 	switch transaction.Status.Phases.Validate.State {
 	case configapi.TransactionValidatePhase_VALIDATING:
 		allValidated := true
@@ -378,6 +379,7 @@ func (r *Reconciler) reconcileChangeValidate(ctx context.Context, transaction *c
 					prevTransaction, err := r.transactions.GetByIndex(ctx, proposal.Status.PrevIndex)
 					if err != nil {
 						if !errors.IsNotFound(err) {
+							log.Errorf("Failed reconciling Transaction %d", transaction.Index, err)
 							return controller.Result{}, err
 						}
 					} else {
@@ -410,7 +412,7 @@ func (r *Reconciler) reconcileChangeValidate(ctx context.Context, transaction *c
 	}
 }
 
-func (r *Reconciler) reconcileChangeCommit(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+func (r *Reconciler) reconcileCommit(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
 	switch transaction.Status.Phases.Commit.State {
 	case configapi.TransactionCommitPhase_COMMITTING:
 		allCommitted := true
@@ -501,7 +503,7 @@ func (r *Reconciler) reconcileChangeCommit(ctx context.Context, transaction *con
 	}
 }
 
-func (r *Reconciler) reconcileChangeApply(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
+func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.Transaction) (controller.Result, error) {
 	switch transaction.Status.Phases.Apply.State {
 	case configapi.TransactionApplyPhase_APPLYING:
 		allApplied := true
