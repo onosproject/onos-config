@@ -66,7 +66,6 @@ func TestProposalStore(t *testing.T) {
 	target1Config := &configapi.Proposal{
 		ID:               configapi.ProposalID(target1),
 		TargetID:         target1,
-		TransactionID:    "transaction-1",
 		TransactionIndex: 1,
 		Details: &configapi.Proposal_Change{
 			Change: &configapi.ChangeProposal{
@@ -85,7 +84,6 @@ func TestProposalStore(t *testing.T) {
 	target2Config := &configapi.Proposal{
 		ID:               configapi.ProposalID(target2),
 		TargetID:         target2,
-		TransactionID:    "transaction-1",
 		TransactionIndex: 1,
 		Details: &configapi.Proposal_Change{
 			Change: &configapi.ChangeProposal{

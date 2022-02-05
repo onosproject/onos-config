@@ -157,9 +157,6 @@ func (s *proposalStore) Update(ctx context.Context, proposal *configapi.Proposal
 	if proposal.ID == "" {
 		return errors.NewInvalid("no proposal ID specified")
 	}
-	if proposal.TransactionID == "" {
-		return errors.NewInvalid("no transaction ID specified")
-	}
 	if proposal.TransactionIndex == 0 {
 		return errors.NewInvalid("no transaction index specified")
 	}
@@ -191,9 +188,6 @@ func (s *proposalStore) Update(ctx context.Context, proposal *configapi.Proposal
 func (s *proposalStore) UpdateStatus(ctx context.Context, proposal *configapi.Proposal) error {
 	if proposal.ID == "" {
 		return errors.NewInvalid("no proposal ID specified")
-	}
-	if proposal.TransactionID == "" {
-		return errors.NewInvalid("no transaction ID specified")
 	}
 	if proposal.TransactionIndex == 0 {
 		return errors.NewInvalid("no transaction index specified")

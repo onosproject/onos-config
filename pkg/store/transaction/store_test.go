@@ -58,12 +58,11 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction1 := &configapi.Transaction{
 		ID: "transaction-1",
-		Transaction: &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Changes: map[configapi.TargetID]configapi.Change{
+		Details: &configapi.Transaction_Change{
+			Change: &configapi.ChangeTransaction{
+				Values: map[configapi.TargetID]configapi.PathValues{
 					target1: {
-						TargetVersion: "1.0.0",
-						Values: map[string]configapi.ChangeValue{
+						Values: map[string]configapi.PathValue{
 							"foo": {
 								Value: configapi.TypedValue{
 									Bytes: []byte("Hello world!"),
@@ -79,7 +78,7 @@ func TestTransactionStore(t *testing.T) {
 						},
 					},
 					target2: {
-						Values: map[string]configapi.ChangeValue{
+						Values: map[string]configapi.PathValue{
 							"baz": {
 								Value: configapi.TypedValue{
 									Bytes: []byte("Goodbye world!"),
@@ -95,13 +94,13 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction2 := &configapi.Transaction{
 		ID: "transaction-2",
-		Transaction: &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Changes: map[configapi.TargetID]configapi.Change{
+		Details: &configapi.Transaction_Change{
+			Change: &configapi.ChangeTransaction{
+				Values: map[configapi.TargetID]configapi.PathValues{
 					target1: {
-						Values: map[string]configapi.ChangeValue{
+						Values: map[string]configapi.PathValue{
 							"foo": {
-								Delete: true,
+								Deleted: true,
 							},
 						},
 					},
@@ -174,7 +173,12 @@ func TestTransactionStore(t *testing.T) {
 	transaction2, err = store2.Get(context.TODO(), "transaction-2")
 	assert.NoError(t, err)
 	assert.NotNil(t, transaction2)
-	transaction2.Status.State = configapi.TransactionState_TRANSACTION_COMPLETE
+	now := time.Now()
+	transaction2.Status.Phases.Initialize = &configapi.TransactionInitializePhase{
+		TransactionPhaseStatus: configapi.TransactionPhaseStatus{
+			Start: &now,
+		},
+	}
 	revision = transaction2.Revision
 	err = store1.Update(context.TODO(), transaction2)
 	assert.NoError(t, err)
@@ -190,11 +194,19 @@ func TestTransactionStore(t *testing.T) {
 	transaction12, err := store2.Get(context.TODO(), "transaction-1")
 	assert.NoError(t, err)
 
-	transaction11.Status.State = configapi.TransactionState_TRANSACTION_COMPLETE
+	transaction11.Status.Phases.Initialize = &configapi.TransactionInitializePhase{
+		TransactionPhaseStatus: configapi.TransactionPhaseStatus{
+			Start: &now,
+		},
+	}
 	err = store1.Update(context.TODO(), transaction11)
 	assert.NoError(t, err)
 
-	transaction12.Status.State = configapi.TransactionState_TRANSACTION_FAILED
+	transaction12.Status.Phases.Initialize = &configapi.TransactionInitializePhase{
+		TransactionPhaseStatus: configapi.TransactionPhaseStatus{
+			Start: &now,
+		},
+	}
 	err = store2.Update(context.TODO(), transaction12)
 	assert.Error(t, err)
 
@@ -226,18 +238,18 @@ func TestTransactionStore(t *testing.T) {
 
 	event = <-transactionCh
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
-	assert.Equal(t, configapi.TransactionEvent_TRANSACTION_UPDATED, event.Type)
+	assert.Equal(t, configapi.TransactionEvent_UPDATED, event.Type)
 	event = <-transactionCh
 	assert.Equal(t, transaction2.ID, event.Transaction.ID)
-	assert.Equal(t, configapi.TransactionEvent_TRANSACTION_DELETED, event.Type)
+	assert.Equal(t, configapi.TransactionEvent_DELETED, event.Type)
 
 	transaction = &configapi.Transaction{
 		ID: "transaction-3",
-		Transaction: &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Changes: map[configapi.TargetID]configapi.Change{
+		Details: &configapi.Transaction_Change{
+			Change: &configapi.ChangeTransaction{
+				Values: map[configapi.TargetID]configapi.PathValues{
 					target1: {
-						Values: map[string]configapi.ChangeValue{
+						Values: map[string]configapi.PathValue{
 							"foo": {
 								Value: configapi.TypedValue{
 									Bytes: []byte("Hello world!"),
@@ -256,11 +268,11 @@ func TestTransactionStore(t *testing.T) {
 
 	transaction = &configapi.Transaction{
 		ID: "transaction-4",
-		Transaction: &configapi.Transaction_Change{
-			Change: &configapi.TransactionChange{
-				Changes: map[configapi.TargetID]configapi.Change{
+		Details: &configapi.Transaction_Change{
+			Change: &configapi.ChangeTransaction{
+				Values: map[configapi.TargetID]configapi.PathValues{
 					target2: {
-						Values: map[string]configapi.ChangeValue{
+						Values: map[string]configapi.PathValue{
 							"bar": {
 								Value: configapi.TypedValue{
 									Bytes: []byte("Hello world!"),
