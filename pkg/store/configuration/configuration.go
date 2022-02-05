@@ -34,7 +34,7 @@ import (
 var log = logging.GetLogger("store", "configuration")
 
 // NewID returns a new Configuration ID for the given target/type/version
-func NewID(targetID configapi.TargetID, targetType configapi.TargetType, targetVersion configapi.TargetVersion) configapi.ConfigurationID {
+func NewID(targetID configapi.TargetID) configapi.ConfigurationID {
 	return configapi.ConfigurationID(targetID)
 }
 
