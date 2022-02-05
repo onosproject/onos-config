@@ -17,7 +17,7 @@ require (
 	github.com/onosproject/onos-lib-go v0.8.0
 	github.com/onosproject/onos-ric-sdk-go v0.8.2
 	github.com/onosproject/onos-test v0.6.6
-	github.com/onosproject/onos-topo v0.9.1
+	github.com/onosproject/onos-topo v0.9.2
 	github.com/openconfig/gnmi v0.0.0-20200617225440-d2b4e6a45802
 	github.com/openconfig/goyang v0.3.1
 	github.com/openconfig/ygot v0.12.4 // indirect
