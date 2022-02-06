@@ -329,17 +329,15 @@ var NoExtensions = make([]*gnmi_ext.Extension, 0)
 
 // SyncExtension returns list of extensions with just the transaction mode extension set to sync and atomic.
 func SyncExtension(t *testing.T) []*gnmi_ext.Extension {
-	return []*gnmi_ext.Extension{TransactionStrategyExtension(t, configapi.TransactionStrategy_SYNCHRONOUS, 0, 0)}
+	return []*gnmi_ext.Extension{TransactionStrategyExtension(t, configapi.TransactionStrategy_SYNCHRONOUS, 0)}
 }
 
 // TransactionStrategyExtension returns a transaction strategy extension populated with the specified fields
 func TransactionStrategyExtension(t *testing.T,
 	synchronicity configapi.TransactionStrategy_Synchronicity,
-	atomicity configapi.TransactionStrategy_Atomicity,
 	isolation configapi.TransactionStrategy_Isolation) *gnmi_ext.Extension {
 	ext := v2.TransactionStrategy{
 		Synchronicity: synchronicity,
-		Atomicity:     atomicity,
 		Isolation:     isolation,
 	}
 	b, err := ext.Marshal()
@@ -347,7 +345,7 @@ func TransactionStrategyExtension(t *testing.T,
 	return &gnmi_ext.Extension{
 		Ext: &gnmi_ext.Extension_RegisteredExt{
 			RegisteredExt: &gnmi_ext.RegisteredExtension{
-				Id:  v2.TransactionModeExtensionID,
+				Id:  v2.TransactionStrategyExtensionID,
 				Msg: b,
 			},
 		},

@@ -28,7 +28,7 @@ func getSetExtensions(request *gnmi.SetRequest) (configapi.TransactionStrategy, 
 	var transactionStrategy configapi.TransactionStrategy
 	for _, ext := range request.GetExtension() {
 		if regExt, ok := ext.Ext.(*gnmi_ext.Extension_RegisteredExt); ok &&
-			regExt.RegisteredExt.Id == configapi.TransactionModeExtensionID {
+			regExt.RegisteredExt.Id == configapi.TransactionStrategyExtensionID {
 			bytes := regExt.RegisteredExt.Msg
 			if err := proto.Unmarshal(bytes, &transactionStrategy); err != nil {
 				return transactionStrategy, err
