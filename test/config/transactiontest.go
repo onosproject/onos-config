@@ -16,7 +16,6 @@ package config
 
 import (
 	"context"
-	configapi "github.com/onosproject/onos-api/go/onos/config/v2"
 	"testing"
 	"time"
 
@@ -95,11 +94,6 @@ func (s *TestSuite) TestTransaction(t *testing.T) {
 
 	assert.NoError(t, rollbackError, "Rollback returned an error")
 	assert.NotNil(t, rollbackResponse, "Response for rollback is nil")
-
-	err = gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target1.Name()), time.Minute)
-	assert.NoError(t, err)
-	err = gnmiutils.WaitForConfigurationCompleteOrFail(t, configapi.ConfigurationID(target2.Name()), time.Minute)
-	assert.NoError(t, err)
 
 	// Check that the values were really rolled back in onos-config
 	expectedValuesAfterRollback := []string{initValue1, initValue2}

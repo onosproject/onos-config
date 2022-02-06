@@ -141,7 +141,7 @@ func (s *Server) addTarget(ctx context.Context, targetID configapi.TargetID, tar
 		targetVersion: configapi.TargetVersion(modelPlugin.GetInfo().Info.Version),
 		targetType:    configapi.TargetType(modelPlugin.GetInfo().Info.Name),
 	}
-	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID, "", ""))
+	targetConfig, err := s.configurations.Get(ctx, configuration.NewID(targetInfo.targetID))
 	if err != nil {
 		return err
 	}

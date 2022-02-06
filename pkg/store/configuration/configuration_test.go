@@ -65,10 +65,9 @@ func TestConfigurationStore(t *testing.T) {
 	}
 
 	target1Config := &configapi.Configuration{
-		ID:            configapi.ConfigurationID(target1),
-		TargetID:      target1,
-		TargetVersion: "1.0.0",
-		Values:        target1ConfigValues,
+		ID:       configapi.ConfigurationID(target1),
+		TargetID: target1,
+		Values:   target1ConfigValues,
 	}
 
 	target2ConfigValues := make(map[string]*configapi.PathValue)
@@ -80,10 +79,9 @@ func TestConfigurationStore(t *testing.T) {
 		},
 	}
 	target2Config := &configapi.Configuration{
-		ID:            configapi.ConfigurationID(target2),
-		TargetID:      target2,
-		TargetVersion: "1.0.0",
-		Values:        target2ConfigValues,
+		ID:       configapi.ConfigurationID(target2),
+		TargetID: target2,
+		Values:   target2ConfigValues,
 	}
 
 	err = store1.Create(context.TODO(), target1Config)
@@ -133,7 +131,7 @@ func TestConfigurationStore(t *testing.T) {
 	target2Config, err = store2.Get(context.TODO(), configapi.ConfigurationID(target2))
 	assert.NoError(t, err)
 	assert.NotNil(t, target2Config)
-	target2Config.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
+	target2Config.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
 	revision = target2Config.Revision
 	err = store1.Update(context.TODO(), target2Config)
 	assert.NoError(t, err)
@@ -149,11 +147,11 @@ func TestConfigurationStore(t *testing.T) {
 	target1Config12, err := store2.Get(context.TODO(), configapi.ConfigurationID(target1))
 	assert.NoError(t, err)
 
-	target1Config11.Status.State = configapi.ConfigurationState_CONFIGURATION_COMPLETE
+	target1Config11.Status.State = configapi.ConfigurationStatus_SYNCHRONIZED
 	err = store1.Update(context.TODO(), target1Config11)
 	assert.NoError(t, err)
 
-	target1Config12.Status.State = configapi.ConfigurationState_CONFIGURATION_PENDING
+	target1Config12.Status.State = configapi.ConfigurationStatus_SYNCHRONIZING
 	err = store2.Update(context.TODO(), target1Config12)
 	assert.Error(t, err)
 
@@ -179,10 +177,10 @@ func TestConfigurationStore(t *testing.T) {
 	assert.Nil(t, configuration)
 	event = <-configurationCh
 	assert.Equal(t, target2Config.ID, event.Configuration.ID)
-	assert.Equal(t, configapi.ConfigurationEvent_CONFIGURATION_UPDATED, event.Type)
+	assert.Equal(t, configapi.ConfigurationEvent_UPDATED, event.Type)
 	event = <-configurationCh
 	assert.Equal(t, target2Config.ID, event.Configuration.ID)
-	assert.Equal(t, configapi.ConfigurationEvent_CONFIGURATION_DELETED, event.Type)
+	assert.Equal(t, configapi.ConfigurationEvent_DELETED, event.Type)
 
 	// Checks list of configuration after deleting a configuration
 	configurationList, err = store2.List(context.TODO())

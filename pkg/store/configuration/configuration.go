@@ -34,7 +34,7 @@ import (
 var log = logging.GetLogger("store", "configuration")
 
 // NewID returns a new Configuration ID for the given target/type/version
-func NewID(targetID configapi.TargetID, targetType configapi.TargetType, targetVersion configapi.TargetVersion) configapi.ConfigurationID {
+func NewID(targetID configapi.TargetID) configapi.ConfigurationID {
 	return configapi.ConfigurationID(targetID)
 }
 
@@ -128,9 +128,6 @@ func (s *configurationStore) Create(ctx context.Context, configuration *configap
 	if configuration.TargetID == "" {
 		return errors.NewInvalid("no target ID specified")
 	}
-	if configuration.TargetVersion == "" {
-		return errors.NewInvalid("no target version specified")
-	}
 	if configuration.Revision != 0 {
 		return errors.NewInvalid("cannot create configuration with revision")
 	}
@@ -162,9 +159,6 @@ func (s *configurationStore) Update(ctx context.Context, configuration *configap
 	if configuration.TargetID == "" {
 		return errors.NewInvalid("no target ID specified")
 	}
-	if configuration.TargetVersion == "" {
-		return errors.NewInvalid("no target version specified")
-	}
 	if configuration.Revision == 0 {
 		return errors.NewInvalid("configuration must contain a revision on update")
 	}
@@ -193,9 +187,6 @@ func (s *configurationStore) UpdateStatus(ctx context.Context, configuration *co
 	}
 	if configuration.TargetID == "" {
 		return errors.NewInvalid("no target ID specified")
-	}
-	if configuration.TargetVersion == "" {
-		return errors.NewInvalid("no target version specified")
 	}
 	if configuration.Revision == 0 {
 		return errors.NewInvalid("configuration must contain a revision on update")
@@ -280,18 +271,18 @@ func (s *configurationStore) Watch(ctx context.Context, ch chan<- configapi.Conf
 		defer close(ch)
 		for event := range mapCh {
 			if configuration, err := decodeConfiguration(event.Entry); err == nil {
-				var eventType configapi.ConfigurationEvent_ConfigurationEventType
+				var eventType configapi.ConfigurationEvent_EventType
 				switch event.Type {
 				case _map.EventReplay:
-					eventType = configapi.ConfigurationEvent_CONFIGURATION_REPLAYED
+					eventType = configapi.ConfigurationEvent_REPLAYED
 				case _map.EventInsert:
-					eventType = configapi.ConfigurationEvent_CONFIGURATION_CREATED
+					eventType = configapi.ConfigurationEvent_CREATED
 				case _map.EventRemove:
-					eventType = configapi.ConfigurationEvent_CONFIGURATION_DELETED
+					eventType = configapi.ConfigurationEvent_DELETED
 				case _map.EventUpdate:
-					eventType = configapi.ConfigurationEvent_CONFIGURATION_UPDATED
+					eventType = configapi.ConfigurationEvent_UPDATED
 				default:
-					eventType = configapi.ConfigurationEvent_CONFIGURATION_UPDATED
+					eventType = configapi.ConfigurationEvent_UPDATED
 				}
 				ch <- configapi.ConfigurationEvent{
 					Type:          eventType,

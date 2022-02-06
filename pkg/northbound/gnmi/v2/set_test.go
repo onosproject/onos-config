@@ -51,7 +51,8 @@ func Test_BasicSetUpdate(t *testing.T) {
 	assert.NoError(t, proto.Unmarshal(result.Extension[0].GetRegisteredExt().GetMsg(), transactionInfo))
 	tx, err := test.transaction.Get(context.TODO(), transactionInfo.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, configapi.TransactionState_TRANSACTION_APPLYING, tx.Status.State)
+	assert.NotNil(t, tx.Status.Phases.Commit)
+	assert.Equal(t, configapi.TransactionCommitPhase_COMMITTED, tx.Status.Phases.Commit.State)
 }
 
 func Test_SetJsonUpdate(t *testing.T) {
@@ -82,7 +83,8 @@ func Test_SetJsonUpdate(t *testing.T) {
 	assert.NoError(t, proto.Unmarshal(result.Extension[0].GetRegisteredExt().GetMsg(), transactionInfo))
 	tx, err := test.transaction.Get(context.TODO(), transactionInfo.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, configapi.TransactionState_TRANSACTION_APPLYING, tx.Status.State)
+	assert.NotNil(t, tx.Status.Phases.Commit)
+	assert.Equal(t, configapi.TransactionCommitPhase_COMMITTED, tx.Status.Phases.Commit.State)
 }
 
 func Test_SetUpdateReplaceDelete(t *testing.T) {
@@ -120,7 +122,8 @@ func Test_SetUpdateReplaceDelete(t *testing.T) {
 	assert.NoError(t, proto.Unmarshal(result.Extension[0].GetRegisteredExt().GetMsg(), transactionInfo))
 	tx, err := test.transaction.Get(context.TODO(), transactionInfo.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, configapi.TransactionState_TRANSACTION_APPLYING, tx.Status.State)
+	assert.NotNil(t, tx.Status.Phases.Commit)
+	assert.Equal(t, configapi.TransactionCommitPhase_COMMITTED, tx.Status.Phases.Commit.State)
 }
 
 func Test_NoUpdateSet(t *testing.T) {

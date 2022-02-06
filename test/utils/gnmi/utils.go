@@ -278,10 +278,8 @@ func WaitForConfigurationCompleteOrFail(t *testing.T, configurationID configapi.
 			return errors.NewInvalid(err.Error())
 		} else {
 			configStatus := configuration.GetStatus()
-			if configStatus.GetState() == configapi.ConfigurationState_CONFIGURATION_COMPLETE {
+			if configStatus.GetState() == configapi.ConfigurationStatus_SYNCHRONIZED {
 				return nil
-			} else if configStatus.GetState() == configapi.ConfigurationState_CONFIGURATION_FAILED {
-				break
 			}
 		}
 	}
@@ -312,7 +310,7 @@ func WaitForRollback(t *testing.T, transactionIndex v2.Index, wait time.Duration
 
 		t := resp.TransactionEvent.Transaction
 		if rt := t.GetRollback(); rt != nil {
-			if rt.Index == transactionIndex {
+			if rt.RollbackIndex == transactionIndex {
 				return true
 			}
 		}
@@ -331,18 +329,23 @@ var NoExtensions = make([]*gnmi_ext.Extension, 0)
 
 // SyncExtension returns list of extensions with just the transaction mode extension set to sync and atomic.
 func SyncExtension(t *testing.T) []*gnmi_ext.Extension {
-	return []*gnmi_ext.Extension{TransactionModeExtension(t, true, true)}
+	return []*gnmi_ext.Extension{TransactionStrategyExtension(t, configapi.TransactionStrategy_SYNCHRONOUS, 0)}
 }
 
-// TransactionModeExtension returns a transaction mode extension populated with the specified fields
-func TransactionModeExtension(t *testing.T, sync bool, atomic bool) *gnmi_ext.Extension {
-	ext := v2.TransactionMode{Sync: sync, Atomic: atomic}
+// TransactionStrategyExtension returns a transaction strategy extension populated with the specified fields
+func TransactionStrategyExtension(t *testing.T,
+	synchronicity configapi.TransactionStrategy_Synchronicity,
+	isolation configapi.TransactionStrategy_Isolation) *gnmi_ext.Extension {
+	ext := v2.TransactionStrategy{
+		Synchronicity: synchronicity,
+		Isolation:     isolation,
+	}
 	b, err := ext.Marshal()
 	assert.NoError(t, err)
 	return &gnmi_ext.Extension{
 		Ext: &gnmi_ext.Extension_RegisteredExt{
 			RegisteredExt: &gnmi_ext.RegisteredExtension{
-				Id:  v2.TransactionModeExtensionID,
+				Id:  v2.TransactionStrategyExtensionID,
 				Msg: b,
 			},
 		},
