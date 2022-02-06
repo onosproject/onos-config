@@ -173,16 +173,6 @@ func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequ
 			log.Errorf("Transaction failed", err)
 			return nil, errors.Status(err).Err()
 		}
-		switch transactionEvent.Transaction.Status.State {
-		case configapi.TransactionStatus_APPLIED:
-			response := &admin.RollbackResponse{ID: t.ID, Index: t.Index}
-			log.Debugf("Sending RollbackResponse %+v", response)
-			return response, nil
-		case configapi.TransactionStatus_FAILED:
-			err := getErrorFromFailure(transactionEvent.Transaction.Status.Failure)
-			log.Errorf("Transaction failed", err)
-			return nil, errors.Status(err).Err()
-		}
 	}
 	return nil, ctx.Err()
 }
