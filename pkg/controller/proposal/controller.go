@@ -23,6 +23,8 @@ import (
 	"github.com/onosproject/onos-config/pkg/utils/tree"
 	utilsv2 "github.com/onosproject/onos-config/pkg/utils/values/v2"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strings"
 	"time"
 
@@ -614,18 +616,57 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 		log.Debugf("Sending SetRequest %+v", setRequest)
 		setResponse, err := conn.Set(ctx, setRequest)
 		if err != nil {
-			// The gNMI Set request can be denied if this master has been superseded by a master in a later term.
-			// Rather than reverting to the STALE state now, wait for this node to see the mastership state change
-			// to avoid flapping between states while the system converges.
-			if errors.IsForbidden(err) {
+			switch status.Code(err) {
+			case codes.InvalidArgument:
+				proposal.Status.Phases.Apply.Failure = &configapi.Failure{
+					Type:        configapi.Failure_INVALID,
+					Description: err.Error(),
+				}
+			case codes.Unauthenticated:
+				proposal.Status.Phases.Apply.Failure = &configapi.Failure{
+					Type:        configapi.Failure_UNAUTHORIZED,
+					Description: err.Error(),
+				}
+			case codes.Unimplemented:
+				proposal.Status.Phases.Apply.Failure = &configapi.Failure{
+					Type:        configapi.Failure_NOT_SUPPORTED,
+					Description: err.Error(),
+				}
+			case codes.PermissionDenied:
+				// The gNMI Set request can be denied if this master has been superseded by a master in a later term.
+				// Rather than reverting to the STALE state now, wait for this node to see the mastership state change
+				// to avoid flapping between states while the system converges.
 				log.Warnf("Configuration '%s' mastership superseded for term %d", config.ID, mastershipTerm)
 				return controller.Result{}, nil
+			default:
+				log.Errorf("Failed sending SetRequest %+v", setRequest, err)
+				return controller.Result{}, err
 			}
-			log.Errorf("Failed sending SetRequest %+v", setRequest, err)
-			return controller.Result{}, err
+
+			// If we made it this far the application of the Proposal failed.
+			// Update the Configuration's applied index to indicate this Proposal was applied even though it failed.
+			log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, mastershipTerm)
+			config.Status.Applied.Index = proposal.TransactionIndex
+			config.Status.Applied.Term = mastershipTerm
+			if err := r.configurations.UpdateStatus(ctx, config); err != nil {
+				log.Errorf("Failed reconciling Transaction %d Proposal to target '%s'", proposal.TransactionIndex, proposal.TargetID, err)
+				return controller.Result{}, err
+			}
+
+			// Update the proposal's apply phase state.
+			log.Warnf("Failed applying Proposal '%s'", proposal.ID, err)
+			proposal.Status.Phases.Apply.State = configapi.ProposalApplyPhase_FAILED
+			proposal.Status.Phases.Apply.Term = mastershipTerm
+			proposal.Status.Phases.Apply.End = getCurrentTimestamp()
+			if err := r.updateProposalStatus(ctx, proposal); err != nil {
+				return controller.Result{}, err
+			}
+			return controller.Result{}, nil
 		}
 		log.Debugf("Received SetResponse %+v", setResponse)
 
+		// Update the Configuration's applied index to indicate this Proposal was applied.
+		log.Infof("Updating applied index for Configuration '%s' to %d in term %d", config.ID, proposal.TransactionIndex, mastershipTerm)
 		config.Status.Applied.Index = proposal.TransactionIndex
 		config.Status.Applied.Term = mastershipTerm
 		if config.Status.Applied.Values == nil {
@@ -639,6 +680,7 @@ func (r *Reconciler) reconcileApply(ctx context.Context, proposal *configapi.Pro
 			return controller.Result{}, err
 		}
 
+		// Update the proposal state to APPLIED.
 		log.Infof("Applied Proposal '%s'", proposal.ID)
 		proposal.Status.Phases.Apply.State = configapi.ProposalApplyPhase_APPLIED
 		proposal.Status.Phases.Apply.Term = mastershipTerm

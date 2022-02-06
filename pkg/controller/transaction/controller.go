@@ -540,6 +540,17 @@ func (r *Reconciler) reconcileApply(ctx context.Context, transaction *configapi.
 			switch proposal.Status.Phases.Apply.State {
 			case configapi.ProposalApplyPhase_APPLYING:
 				allApplied = false
+			case configapi.ProposalApplyPhase_FAILED:
+				log.Warnf("Transaction %d apply failed", transaction.Index)
+				transaction.Status.State = configapi.TransactionStatus_FAILED
+				transaction.Status.Failure = proposal.Status.Phases.Apply.Failure
+				transaction.Status.Phases.Apply.State = configapi.TransactionApplyPhase_FAILED
+				transaction.Status.Phases.Apply.Failure = proposal.Status.Phases.Apply.Failure
+				transaction.Status.Phases.Apply.End = getCurrentTimestamp()
+				if err := r.updateTransactionStatus(ctx, transaction); err != nil {
+					return controller.Result{}, err
+				}
+				return controller.Result{}, nil
 			}
 		}
 
