@@ -118,6 +118,10 @@ func (s Server) RollbackTransaction(ctx context.Context, req *admin.RollbackRequ
 				RollbackIndex: req.Index,
 			},
 		},
+		TransactionStrategy: configapi.TransactionStrategy{
+			// TODO: Make synchronicity and isolation configurable for rollbacks
+			Synchronicity: configapi.TransactionStrategy_SYNCHRONOUS,
+		},
 	}
 	if err := s.transactionsStore.Create(ctx, t); err != nil {
 		log.Errorf("Unable to rollback transaction with index %d: %+v", req.Index, err)
